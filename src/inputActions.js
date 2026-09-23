@@ -90,6 +90,54 @@ export function wrapMenuIndex(index, delta, length) {
     return (current + delta + length) % length;
 }
 
+const SPATIAL_VECTORS = Object.freeze({
+    up: Object.freeze({ x: 0, y: -1 }),
+    down: Object.freeze({ x: 0, y: 1 }),
+    left: Object.freeze({ x: -1, y: 0 }),
+    right: Object.freeze({ x: 1, y: 0 })
+});
+
+/**
+ * Choose the nearest focus target in the requested visual direction. Primary
+ * axis distance dominates; perpendicular drift breaks ties. If no candidate
+ * exists in that half-plane, wrap to the opposite edge while staying near the
+ * same row/column. This makes 2D Deck navigation independent of DOM order.
+ */
+export function spatialFocusIndex(rects = [], currentIndex = 0, direction = 'down') {
+    if (!Array.isArray(rects) || rects.length === 0) return 0;
+    const vector = SPATIAL_VECTORS[direction];
+    const current = rects[currentIndex] ?? rects[0];
+    if (!vector || !current) return Math.max(0, Math.min(currentIndex, rects.length - 1));
+    const center = (rect) => ({
+        x: Number(rect.left) + (Number(rect.width) / 2),
+        y: Number(rect.top) + (Number(rect.height) / 2)
+    });
+    const from = center(current);
+    const candidates = rects.map((rect, index) => {
+        const to = center(rect);
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const primary = (dx * vector.x) + (dy * vector.y);
+        const perpendicular = Math.abs((dx * vector.y) - (dy * vector.x));
+        return { index, primary, perpendicular };
+    }).filter((candidate) => candidate.index !== currentIndex && candidate.primary > 0.5);
+
+    if (candidates.length > 0) {
+        candidates.sort((a, b) => (a.primary * 10 + a.perpendicular * 4)
+            - (b.primary * 10 + b.perpendicular * 4));
+        return candidates[0].index;
+    }
+
+    const wrapped = rects.map((rect, index) => {
+        const to = center(rect);
+        const axis = (to.x * vector.x) + (to.y * vector.y);
+        const perpendicular = Math.abs(((to.x - from.x) * vector.y) - ((to.y - from.y) * vector.x));
+        return { index, axis, perpendicular };
+    }).filter((candidate) => candidate.index !== currentIndex);
+    wrapped.sort((a, b) => a.axis - b.axis || a.perpendicular - b.perpendicular || a.index - b.index);
+    return wrapped[0]?.index ?? currentIndex;
+}
+
 export function hasControllerContinuePress(actions = {}) {
     return Boolean(
         actions.confirm || actions.back || actions.pause
@@ -219,4 +267,30 @@ export function createActionRouter() {
             return { set: activeSet, actions };
         }
     };
+}
+
+/**
+ * Real pointer movement has to hand the UI back to mouse mode.
+ *
+ * The UI used to leave controller mode only on keydown and pointerdown. On a
+ * Steam Deck the trackpad MOVES the pointer without clicking, so once anything
+ * had been done with the stick or buttons, sliding the trackpad no longer moved
+ * the selection -- the cursor drifted over controls that never highlighted.
+ *
+ * Touch is excluded because the Deck's touchscreen emits synthetic moves while
+ * a finger rests on it, and the jitter threshold stops a controller-driven or
+ * sub-pixel event from flapping the mode back and forth.
+ */
+export const POINTER_MODE_MOVEMENT_THRESHOLD_PX = 6;
+
+export function shouldPointerRestoreMouseMode(event, lastPosition = null) {
+    if (!event?.isTrusted) return false;
+    const pointerType = event.pointerType;
+    if (pointerType && pointerType !== 'mouse' && pointerType !== 'pen') return false;
+    const x = Number(event.clientX);
+    const y = Number(event.clientY);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+    if (!lastPosition || !Number.isFinite(lastPosition.x) || !Number.isFinite(lastPosition.y)) return true;
+    const travelled = Math.abs(x - lastPosition.x) + Math.abs(y - lastPosition.y);
+    return travelled >= POINTER_MODE_MOVEMENT_THRESHOLD_PX;
 }

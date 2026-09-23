@@ -87,6 +87,17 @@
       "engineer": "エンジニア",
       "reroute": "再配線",
       "cheaper_consoles": "コンソール割安",
+      "role_infiltrator": "潜入兵",
+      "role_breacher": "突入兵",
+      "role_logistics": "補給兵",
+      "tag_active": "アクティブ:",
+      "tag_passive": "パッシブ:",
+      "spec_scout_mobility": "機動性: 最大",
+      "spec_scout_armor": "装甲: 軽装",
+      "spec_tank_defense": "防御力: 最大",
+      "spec_tank_armor": "装甲: 重装",
+      "spec_eng_utility": "ユーティリティ: 最大",
+      "spec_eng_armor": "装甲: 耐環境",
       "esc": "[ESC]",
       "return_main": "← メインメニューに戻る"
     },
@@ -127,6 +138,7 @@
       "desktop_controls": "デスクトップ操作",
       "cat_operator": "オペレーターとシステムデータ",
       "callsign": "オペレーターコールサイン",
+      "operator_id": "オペレーターID",
       "cloud_sync": "STEAMクラウド同期",
       "save_data": "セーブデータ",
       "new_game_reset": "ニューゲームリセット",
@@ -296,7 +308,9 @@
       "blackbox_recoverable": "回収可能（セクター {depth}）",
       "blackbox_none": "なし",
       "equipped_none": "なし",
-      "arsenal_count": "アーセナル：武器 {made} / {total} 製造済み"
+      "arsenal_count": "アーセナル：武器 {made} / {total} 製造済み",
+      "condition": "状態:",
+      "condition_nominal": "正常"
     },
     "dlg": {
       "channel": "マザーシップ通信チャンネル7",
@@ -392,10 +406,16 @@
       "accent_credits": "// クレジット"
     },
     "hero_detail": {
-      "field_loadout": "フィールド装備"
+      "chassis_spec": "シャシー仕様"
     },
     "archive": {
       "bunker_archive": "◈ バンカー・アーカイブ",
+      "lore_logs": "伝承ログ",
+      "story_endings": "物語の結末",
+      "active_directives": "進行中の指令",
+      "open_full_dossier": "戦術ドシエをすべて開く",
+      "linked_unlock": "関連アンロック",
+      "pathway_unresolved": "条件は未達成です。取り返しのつかない選択によって、この軌道はまだ封じられていません。",
       "recovered_kicker": "アーカイブ・シミュレーションを復元",
       "in_progress": "進行中",
       "ready": "準備完了",
@@ -623,7 +643,8 @@
     "vitals": {
       "vitals": "バイタル",
       "aria_label_health": "体力",
-      "cover": "遮蔽"
+      "cover": "遮蔽",
+      "fatigue": "疲労"
     },
     "queens_ledger_hud": {
       "obedience_0_seats_1_4": "♛ 服従度 0 · 議席 1/4 · ベクトル：不安定"
@@ -775,7 +796,8 @@
       "aria_label_optional_base_defense": "任意の基地防衛",
       "defense_turret": "防衛タレット",
       "optional_north_door_defense_repairing": "北扉の任意防衛。生命維持の修理ではタレットは建たない。",
-      "bunker_tree_cross_linked_protocols": "バンカー・ツリー // 相互連結プロトコル"
+      "bunker_tree_cross_linked_protocols": "バンカー・ツリー // 相互連結プロトコル",
+      "ring_route": "リングルート"
     },
     "terminal_bank": {
       "current_run_stats": "現在のランの統計",
@@ -926,6 +948,18 @@
       "full_loot_claim": "戦利品の完全取得",
       "rival_bounties": "ライバル賞金",
       "mission_objective": "任務目標：",
+      "career_ledger": "キャリア記録",
+      "campaign_ledger": "現在のキャンペーン",
+      "runs": "出撃",
+      "deaths": "死亡",
+      "victories": "勝利",
+      "deepest": "最深部",
+      "attempts": "試行",
+      "lives_lost": "損失ライフ",
+      "day": "日",
+      "depth": "深度",
+      "black_box_recovery": "ブラックボックス回収",
+      "tracked_objectives": "追跡中の目標",
       "sector_frequency_uplink": "セクター周波数とアップリンク",
       "ch_07": "CH-07",
       "sector_room_code": "セクタールームコード",
@@ -1099,7 +1133,12 @@
       "host_control_required": "ホスト権限が必要です",
       "host_new_lobby": "新しいロビーを作成",
       "start_match": "マッチ開始",
-      "mode_members": "{mode} // オペレーティブ {count}/4"
+      "mode_members": "{mode} // オペレーティブ {count}/4",
+      "black_box_active": "{depth}mで有効 // 技術 {tech} · コイン {coin} · 医療 {med}",
+      "black_box_clear": "回収信号なし",
+      "no_tracked_objectives": "追跡中の目標なし",
+      "surface": "地表",
+      "story_prelude": "第I幕 // 人類の序章"
     },
     "dossier": {
       "title": "戦術ドシエ",
@@ -1142,7 +1181,8 @@
       "defeat_guard": "守衛を倒してブラックボックスを解放せよ",
       "recover_black_box": "ブラックボックスを回収",
       "recover_final": "最終コンポーネントを回収",
-      "interact": "調べる"
+      "interact": "調べる",
+      "rest_end_day": "休息 — {day}日目を終える"
     },
     "telemeter": {
       "passive_scan": "地表スキャン // パッシブ",
@@ -1174,7 +1214,15 @@
       "base_status": "{type} 基地状態 {state}",
       "active_exosuit": "[稼働中エクソスーツ]",
       "standby": "[待機]",
-      "field_stabilizer": "{type} フィールド安定装置"
+      "field_stabilizer": "{type} フィールド安定装置",
+      "ring_route_progress": "{done}/{total} · {stage}",
+      "ring_route_open": "ルート開通",
+      "ring_route_stages": {
+        "previous_crossing": "前の通過点",
+        "ship_goal": "艦の目標",
+        "ring_mission": "リング任務",
+        "milestone_boss": "マイルストーン"
+      }
     },
     "journal": {
       "day_time": "D{day} {minute}:{second}",
@@ -1381,7 +1429,8 @@
       "callsign": "コールサイン {callsign}",
       "listen_hint": "話を聞いてから、どう助けるか決めよ。",
       "quote": "「{text}」",
-      "next_action": "次の行動が打ち上げ目録とエンディングの方向を変える。"
+      "next_action": "次の行動が打ち上げ目録とエンディングの方向を変える。",
+      "scar_gained": "昨夜の代償: {scar}"
     },
     "title": {
       "pregalien_command": "PREGALIEN | ハイブ司令部",

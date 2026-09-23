@@ -108,22 +108,36 @@ describe('WorldPlan crossing runtime adapter', () => {
         expect(clampPositionToAuthoredRing(201, 0, { x: 0, z: 0 }, 2, radii).blocked).toBe(false);
     });
 
-    it('chooses the farther topology socket on tangential spiral crossings', () => {
-        const availableSidesByCrossing = {
-            'ring-1-gate': ['n', 's'],
-            'ring-2-gate': ['n', 's'],
-            'ring-3-gate': ['e', 'w'],
-            'ring-4-gate': ['e', 'w']
-        };
-        expect(Object.fromEntries(worldPlan.ringCrossings.map((crossing) => [
-            crossing.id,
-            selectRingCrossingFarSide(worldPlan, crossing.id, availableSidesByCrossing[crossing.id])
-        ]))).toEqual({
-            'ring-1-gate': 's',
-            'ring-2-gate': 's',
-            'ring-3-gate': 'w',
-            'ring-4-gate': 'w'
-        });
+    // This used to hardcode an axis per gate (n/s for 1-2, e/w for 3-4), which
+    // only held while gate placement was a deterministic argmin that dropped
+    // every gate on the same chunk every run. Gates are seeded now, so the
+    // fixture asserts the real contract instead of the memorized answer: given
+    // the sides a chunk actually has, the far side is a cardinal direction
+    // pointing at that gate's neighbour along the spine.
+    it('names a far side that points along the spine', () => {
+        const ALL_SIDES = ['n', 's', 'e', 'w'];
+        const DELTA_BY_SIDE = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
+
+        for (const crossing of worldPlan.ringCrossings) {
+            const side = selectRingCrossingFarSide(worldPlan, crossing.id, ALL_SIDES);
+            expect(side, `${crossing.id} far side`).not.toBe(null);
+            expect(ALL_SIDES).toContain(side);
+
+            // The named side must land on a chunk that is this gate's neighbour
+            // in the spine sequence -- that is what makes it the FAR side.
+            const [chunkX, chunkY] = crossing.chunkKey.split(',').map(Number);
+            const [dx, dy] = DELTA_BY_SIDE[side];
+            const neighborKey = `${chunkX + dx},${chunkY + dy}`;
+            const spine = worldPlan.topology.spineChunkKeys;
+            const adjacentInSpine = spine.some((key, index) => key === crossing.chunkKey
+                && (spine[index + 1] === neighborKey || spine[index - 1] === neighborKey));
+            expect(adjacentInSpine, `${crossing.id} far side ${side} follows the spine`).toBe(true);
+        }
+    });
+
+    it('returns null rather than guessing when no available side fits', () => {
+        const crossing = worldPlan.ringCrossings[0];
+        expect(selectRingCrossingFarSide(worldPlan, crossing.id, [])).toBe(null);
     });
 
 });
@@ -198,7 +212,7 @@ describe('WorldPlan reservation runtime adapter', () => {
     });
 
     it('returns an explicit fallback for an unsupported real reservation family', () => {
-        const reservation = worldPlan.reservations.find((entry) => entry.role === 'campTerritory');
+        const reservation = worldPlan.reservations.find((entry) => entry.role === 'finale');
         const result = resolveAuthoredChunkStructure(seededRandom(46), worldPlan, {
             chunkX: reservation.chunkX,
             chunkY: reservation.chunkY,
@@ -220,7 +234,9 @@ describe('WorldPlan reservation runtime adapter', () => {
     });
 
     it('resolves an authored multi-chunk setpiece structure when claimed by the world plan', () => {
-        const fullPlan = realWorldPlan(44);
+        // This seed fits all three bridge modules without borrowing a camp
+        // or hive room. Other seeds correctly degrade to the pivot module.
+        const fullPlan = realWorldPlan(3);
         const setpieceClaim = fullPlan.setpieceClaims?.[0];
         expect(setpieceClaim).toBeDefined();
         const outerModule = setpieceClaim.modules.find((m) => !fullPlan.reservations.some((r) => r.chunkKey === m.chunkKey))

@@ -157,20 +157,101 @@ export function importSaveCode(code, storage = null) {
     if (!data || typeof data !== 'object') return -1;
 
     let written = 0;
+    let importedLegacyCampaign = false;
     for (const [key, value] of Object.entries(data)) {
         if (key.startsWith(SAVE_PREFIX) && typeof value === 'string') {
-            try { store.setItem(key, value); written++; } catch { /* ignore */ }
+            try {
+                store.setItem(key, value);
+                written++;
+                if (CAMPAIGN_SPECIFIC_STORAGE_KEYS.includes(key) && key !== 'hb_campaign_world_v1') {
+                    try {
+                        const parsed = JSON.parse(value);
+                        importedLegacyCampaign ||= Boolean(parsed && typeof parsed === 'object' && !Array.isArray(parsed));
+                    } catch { /* malformed records do not identify a legacy campaign */ }
+                }
+            } catch { /* ignore */ }
         }
+    }
+    // Older exports had story/day state but no world identity. Keeping this
+    // device's previous seed and opened doors would attach a different world's
+    // progress to that imported campaign. Its first launch creates an identity.
+    if (importedLegacyCampaign && !Object.hasOwn(data, 'hb_campaign_world_v1')) {
+        try { store.removeItem('hb_campaign_world_v1'); } catch { /* best effort */ }
     }
     return written;
 }
 
-import { blackBoxStore } from './blackBox.js';
+import { createBlackBoxStorage } from './blackBox.js';
+
+// Campaign-specific keys that reset when starting a genuine NEW GAME / NEW CAMPAIGN.
+// Permanent keys (hb_profile, hb_season_pass, hb_item_ownership, hb_achievements,
+// hb_bank_v1, hb_fabricator_v1, hb_codex, hb_story_archive, hb_loadout) are preserved.
+export const CAMPAIGN_SPECIFIC_STORAGE_KEYS = Object.freeze([
+    'hb_arc_v1',
+    'hb_act2_v1',
+    'hb_side_stories_v1',
+    'hb_day_cycle',
+    'hb_fatigue',
+    'hb_overnight_v1',
+    'hb_wanderer_state_v1',
+    'hb_bounties_v1',
+    'hb_campaign_ledger_v1',
+    'hb_campaign_world_v1',
+    // Remove pre-versioned campaign records too, so an old save cannot be
+    // resurrected by a migration after the player explicitly starts over.
+    'hb_arc_state',
+    'hb_act2_state',
+    'hb_side_stories'
+]);
+
+export const ACTIVE_ATTEMPT_STORAGE_KEYS = Object.freeze([
+    'hb_run_checkpoint_v1',
+    'hb_run_checkpoint',
+    'hb_run_modifiers'
+]);
+
+function removeStorageKeys(store, keys) {
+    let removed = 0;
+    for (const key of keys) {
+        try {
+            if (store.getItem(key) !== null) {
+                store.removeItem(key);
+                removed++;
+            }
+        } catch {
+            // Ignore inaccessible records.
+        }
+    }
+    return removed;
+}
+
+/**
+ * End only the in-flight attempt. Campaign story state and lifetime career
+ * records remain intact. Any unrecovered Black Box is retired while its loss
+ * archive remains available to career/debriefing surfaces.
+ */
+export function resetActiveAttempt(storage = null) {
+    const store = getStorage(storage);
+    if (!store) return 0;
+    const removed = removeStorageKeys(store, ACTIVE_ATTEMPT_STORAGE_KEYS);
+    try { createBlackBoxStorage({ storage: store }).recoverActive(); } catch { /* best effort */ }
+    return removed;
+}
+
+/**
+ * Start a new campaign. Resets campaign narrative linchpins, story points,
+ * and active run checkpoints while preserving lifetime career stats, owned
+ * inventory, Dossier progress, unlocked achievements, and bank salvage.
+ */
+export function startNewCampaign(storage = null) {
+    const store = getStorage(storage);
+    if (!store) return 0;
+    return resetActiveAttempt(store) + removeStorageKeys(store, CAMPAIGN_SPECIFIC_STORAGE_KEYS);
+}
 
 // Clear only persistent Hunker Bunker save records. Preferences such as audio
 // mix and key bindings intentionally live outside hb_* and survive a new game.
 export function clearSaveData(storage = null) {
-    try { blackBoxStore.clear(); } catch { /* best effort */ }
     const store = getStorage(storage);
     if (!store) return 0;
 
@@ -187,4 +268,10 @@ export function clearSaveData(storage = null) {
         }
     }
     return removed;
+}
+
+// Explicit name used by destructive settings UI. Keep clearSaveData as a
+// compatibility alias for existing integrations and imported save tooling.
+export function resetAllDataFactory(storage = null) {
+    return clearSaveData(storage);
 }

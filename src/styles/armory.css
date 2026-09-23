@@ -533,19 +533,20 @@
 
 #armory-screen .loadout-effect {
   min-width: 0;
-  padding: calc(var(--vu) * 0.35) calc(var(--vu) * 0.5);
+  padding: calc(var(--vu) * 0.4) calc(var(--vu) * 0.55);
   display: grid;
-  gap: calc(var(--vu) * 0.15);
+  gap: calc(var(--vu) * 0.2);
   border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(0, 0, 0, 0.3);
-  color: rgba(148, 163, 184, 0.8);
-  font: 700 calc(var(--font-xs) * 0.6) / 1.15 'Space Mono', monospace;
+  background: rgba(0, 0, 0, 0.38);
+  color: rgba(148, 163, 184, 0.85);
+  font: 700 calc(var(--font-xs) * 0.64) / 1.2 'Space Mono', monospace;
   box-sizing: border-box;
+  border-radius: 4px;
 }
 
 #armory-screen .loadout-effect.is-active {
   border-color: var(--armory-border);
-  color: rgba(255, 255, 255, 0.86);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 #armory-screen .loadout-effect.is-inactive {
@@ -560,27 +561,30 @@
 #armory-screen .loadout-effect__slot {
   color: var(--armory-accent);
   letter-spacing: 0.04em;
-  font-size: calc(var(--font-xs) * 0.58);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: calc(var(--font-xs) * 0.6);
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 #armory-screen .loadout-effect b {
   color: #fff;
-  font-size: calc(var(--font-xs) * 0.62);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: calc(var(--font-xs) * 0.66);
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 #armory-screen .loadout-effect > span:last-child {
   overflow: hidden;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
-  line-height: 1.15;
+  line-height: 1.2;
+}
+
+#armory-screen .armory-polish-rig-btn {
+  width: 100%;
+  margin-top: calc(var(--vu) * 0.15);
 }
 
 #armory-screen .armory-hud-theme-preview {

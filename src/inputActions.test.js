@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
     ACTION_SETS,
     MENU_FOCUS_ROOT_IDS,
+    POINTER_MODE_MOVEMENT_THRESHOLD_PX,
+    shouldPointerRestoreMouseMode,
     actionSetForAppPhase,
     createActionRouter,
     hasControllerContinuePress,
     menuKeyboardDirection,
+    spatialFocusIndex,
     wrapMenuIndex,
     shouldPreferBrowserGamepad
 } from './inputActions.js';
@@ -231,6 +234,27 @@ describe('createActionRouter', () => {
     });
 });
 
+describe('deterministic spatial focus routing', () => {
+    const rect = (left, top, width = 40, height = 30) => ({ left, top, width, height });
+    const grid = [rect(0, 0), rect(100, 0), rect(0, 100), rect(100, 100)];
+
+    it('moves through a two-dimensional grid instead of DOM order', () => {
+        expect(spatialFocusIndex(grid, 0, 'right')).toBe(1);
+        expect(spatialFocusIndex(grid, 0, 'down')).toBe(2);
+        expect(spatialFocusIndex(grid, 3, 'left')).toBe(2);
+        expect(spatialFocusIndex(grid, 3, 'up')).toBe(1);
+    });
+
+    it('wraps to the opposite visual edge on each axis', () => {
+        expect(spatialFocusIndex(grid, 1, 'right')).toBe(0);
+        expect(spatialFocusIndex(grid, 2, 'down')).toBe(0);
+    });
+
+    it('prefers a nearby row over a diagonally distant control', () => {
+        expect(spatialFocusIndex([rect(0, 0), rect(80, 10), rect(60, 200)], 0, 'right')).toBe(1);
+    });
+});
+
 describe('actionSetForAppPhase', () => {
     it('maps field play and archive phases to their semantic action sets', () => {
         expect(actionSetForAppPhase('gameplay')).toBe(ACTION_SETS.GAMEPLAY);
@@ -274,5 +298,41 @@ describe('shouldPreferBrowserGamepad', () => {
             nativeControllerCount: 1,
             browserEngaged: true
         })).toBe(true);
+    });
+});
+
+describe('pointer movement restores mouse mode', () => {
+    const move = (overrides = {}) => ({
+        isTrusted: true, pointerType: 'mouse', clientX: 100, clientY: 100, ...overrides
+    });
+
+    it('hands control back to the mouse on a real first move', () => {
+        expect(shouldPointerRestoreMouseMode(move(), null)).toBe(true);
+    });
+
+    // The Deck trackpad moves the pointer without ever clicking, which is why
+    // pointerdown alone was not enough.
+    it('accepts movement past the jitter threshold', () => {
+        const last = { x: 100, y: 100 };
+        expect(shouldPointerRestoreMouseMode(move({ clientX: 100 + POINTER_MODE_MOVEMENT_THRESHOLD_PX }), last)).toBe(true);
+    });
+
+    it('ignores sub-threshold drift so the mode cannot flap', () => {
+        const last = { x: 100, y: 100 };
+        expect(shouldPointerRestoreMouseMode(move({ clientX: 101, clientY: 101 }), last)).toBe(false);
+        expect(shouldPointerRestoreMouseMode(move({ clientX: 100, clientY: 100 }), last)).toBe(false);
+    });
+
+    it('ignores touch, which the Deck screen emits while a finger rests on it', () => {
+        expect(shouldPointerRestoreMouseMode(move({ pointerType: 'touch', clientX: 400 }), { x: 100, y: 100 })).toBe(false);
+    });
+
+    it('ignores synthetic events', () => {
+        expect(shouldPointerRestoreMouseMode(move({ isTrusted: false, clientX: 400 }), { x: 100, y: 100 })).toBe(false);
+    });
+
+    it('survives malformed events', () => {
+        expect(shouldPointerRestoreMouseMode(null, null)).toBe(false);
+        expect(shouldPointerRestoreMouseMode(move({ clientX: Number.NaN }), null)).toBe(false);
     });
 });

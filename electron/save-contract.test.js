@@ -29,6 +29,7 @@ describe('Electron save contract', () => {
     it('documents every current save-key family', () => {
         expect(KNOWN_SAVE_KEYS).toContain('hb_profile_v1');
         expect(KNOWN_SAVE_KEYS).toContain('hb_minigame_rgb_v1');
+        expect(KNOWN_SAVE_KEYS).toContain('hb_campaign_world_v1');
         expect(KNOWN_SAVE_KEYS).toContain('hb_daily_v1_*');
     });
 
@@ -36,6 +37,7 @@ describe('Electron save contract', () => {
         const result = migrateSaveDocument({
             hb_profile_v1: '{"callsign":"ICE"}',
             hb_act2_v1: '{broken',
+            hb_campaign_world_v1: '{broken',
             external_token: 'do-not-restore',
             hb_active_class_v1: 'SCOUT'
         });

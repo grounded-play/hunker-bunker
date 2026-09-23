@@ -166,6 +166,11 @@ export const ACT2_DIALOGUE_FINAL_STAGE = 3;
 export const ACT2_FINAL_URGE_BASE_COST = 15;
 export const ACT2_FINAL_URGE_COST_STEP = 10;
 
+function refreshHiveSynapse(state) {
+    state.networks.hiveSynapseOnline = state.hives.every((hive) => hive.networked
+        || ['slain', 'queen_consumed', 'expired_by_cure'].includes(hive.status));
+}
+
 // The queen's pull grows with every final you resist.
 export function campFinalUrgeCost(finalsDone = 0) {
     return ACT2_FINAL_URGE_BASE_COST + ACT2_FINAL_URGE_COST_STEP * Math.max(0, finalsDone);
@@ -911,6 +916,7 @@ export class Act2Manager {
             if (!hive || !ACT2_HIVE_STATUSES.includes(status)) return;
             hive.status = status;
             hive.aboard = status === 'aboard' || status === 'rescued';
+            refreshHiveSynapse(s);
         });
     }
 
@@ -1020,6 +1026,7 @@ export class Act2Manager {
             hive.status = 'queen_consumed';
             hive.aboard = false;
             s.queenObedience = Math.min(ACT2_MAX_OBEDIENCE, (s.queenObedience ?? 0) + 1);
+            refreshHiveSynapse(s);
         });
     }
 
@@ -1031,6 +1038,7 @@ export class Act2Manager {
             hive.status = 'slain';
             hive.aboard = false;
             s.queenObedience = Math.min(ACT2_MAX_OBEDIENCE, (s.queenObedience ?? 0) + 1);
+            refreshHiveSynapse(s);
         });
     }
 
@@ -1039,8 +1047,7 @@ export class Act2Manager {
             const hive = s.hives.find((h) => h.id === id);
             if (!hive) return;
             hive.networked = Boolean(networked);
-            s.networks.hiveSynapseOnline = s.hives.every((h) => h.networked
-                || ['slain', 'queen_consumed', 'expired_by_cure'].includes(h.status));
+            refreshHiveSynapse(s);
         });
     }
 
@@ -1116,6 +1123,7 @@ export class Act2Manager {
                     hive.aboard = false;
                 }
             }
+            refreshHiveSynapse(s);
         });
     }
 

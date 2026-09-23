@@ -19,6 +19,17 @@ export function humanityDecayProgress(deltaSeconds = 0, { multiplier = 1, second
     return (delta / cadence) * mult;
 }
 
+/**
+ * Stages worth showing. RESTED and ALERT are deliberately absent: they are the
+ * baseline, and a HUD that shouts about being fine is noise. Keyed by the stage
+ * ids in src/fatigue.js.
+ */
+const FATIGUE_STAGE_BODY_CLASS = Object.freeze({
+    STRAINED: 'fatigue-strained',
+    RAGGED: 'fatigue-ragged',
+    LONG_DARK: 'fatigue-long-dark'
+});
+
 export class VitalsHUD {
     constructor({
         root = document,
@@ -26,7 +37,9 @@ export class VitalsHUD {
         heartsId = 'vitals-hearts',
         o2BarId = 'vitals-o2-bar',
         o2PctId = 'vitals-o2-pct',
-        o2LabelId = 'vitals-o2-label'
+        o2LabelId = 'vitals-o2-label',
+        fatigueRowId = 'vitals-fatigue-row',
+        fatigueStageId = 'vitals-fatigue-stage'
     } = {}) {
         this.root = root;
         this.panel = root.getElementById(panelId);
@@ -34,6 +47,8 @@ export class VitalsHUD {
         this.o2BarEl = root.getElementById(o2BarId);
         this.o2PctEl = root.getElementById(o2PctId);
         this.o2LabelEl = root.getElementById(o2LabelId);
+        this.fatigueRowEl = root.getElementById(fatigueRowId);
+        this.fatigueStageEl = root.getElementById(fatigueStageId);
 
         this.state = {
             hp: 3,
@@ -45,11 +60,20 @@ export class VitalsHUD {
 
         this.handleHealth = this.handleHealth.bind(this);
         this.handleO2 = this.handleO2.bind(this);
+        this.handleFatigue = this.handleFatigue.bind(this);
+        // The stage currently painted on <body>, so destroy() can remove
+        // exactly what it added rather than guessing.
+        this.fatigueBodyClass = null;
 
         if (this.panel && this.heartsEl && this.o2BarEl && this.o2PctEl) {
             window.addEventListener('player-health-changed', this.handleHealth);
             window.addEventListener('player-o2-changed', this.handleO2);
             this.render();
+        }
+        // Fatigue is rendered even when the O2/hearts nodes are absent: the
+        // strain treatment is a body class, and a HUD-less surface still wants it.
+        if (typeof window !== 'undefined') {
+            window.addEventListener('fatigue-changed', this.handleFatigue);
         }
     }
 
@@ -74,6 +98,33 @@ export class VitalsHUD {
             debugLog.debug('VITALS', `Oxygen level: ${Math.round(this.state.o2)}% (Bubble: ${this.state.bubbleActive})`);
         }
         this.renderO2();
+    }
+
+    /**
+     * Fatigue is owned by src/fatigue.js and persisted by the runtime. This
+     * reads the stage off the event and paints it -- it never derives, stores
+     * or advances a ladder of its own.
+     */
+    handleFatigue(event) {
+        const detail = event?.detail ?? {};
+        const stageId = typeof detail.stageId === 'string' ? detail.stageId : null;
+        const known = FATIGUE_STAGE_BODY_CLASS[stageId] ?? null;
+
+        if (this.fatigueBodyClass && typeof document !== 'undefined') {
+            document.body?.classList?.remove(this.fatigueBodyClass);
+        }
+        this.fatigueBodyClass = known;
+        if (known && typeof document !== 'undefined') {
+            document.body?.classList?.add(known);
+        }
+
+        // RESTED and ALERT are the unremarkable states; the row stays out of
+        // the way until there is something worth telling the player.
+        const notable = Boolean(known);
+        if (this.fatigueStageEl) {
+            this.fatigueStageEl.textContent = notable ? String(detail.stageLabel ?? stageId ?? '') : '';
+        }
+        this.fatigueRowEl?.classList?.toggle('hidden', !notable);
     }
 
     render() {
@@ -122,6 +173,11 @@ export class VitalsHUD {
     destroy() {
         window.removeEventListener('player-health-changed', this.handleHealth);
         window.removeEventListener('player-o2-changed', this.handleO2);
+        window.removeEventListener('fatigue-changed', this.handleFatigue);
         document.body.classList.remove('vitals-critical');
+        if (this.fatigueBodyClass) {
+            document.body?.classList?.remove(this.fatigueBodyClass);
+            this.fatigueBodyClass = null;
+        }
     }
 }

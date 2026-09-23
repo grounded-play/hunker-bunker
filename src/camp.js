@@ -251,6 +251,28 @@ function loadKeyedTexture(path, threshold = 15, onLoad = null, fallbackCanvas = 
 
 const INTERACT_RADIUS = 2.8;
 const SIGNAL_FLARE_HEIGHT = 11;
+/**
+ * How a night's raid reads on the camp itself.
+ *
+ * The overnight simulation already decides the condition; this is the only
+ * place that decides what it LOOKS like, so a player can tell a breached camp
+ * from a secure one across the clearing without opening a menu. Each step
+ * removes one more sign of a working settlement, in the same order a real
+ * place would lose them: first the defences, then the stores, then the fire,
+ * then the people.
+ */
+export const CAMP_CONDITION_DRESSING = Object.freeze({
+    secure: Object.freeze({ sandbagsLost: 0, storesLost: false, fireDoused: false, peopleGone: false }),
+    strained: Object.freeze({ sandbagsLost: 1, storesLost: false, fireDoused: false, peopleGone: false }),
+    breached: Object.freeze({ sandbagsLost: 2, storesLost: true, fireDoused: false, peopleGone: false }),
+    overrun: Object.freeze({ sandbagsLost: 3, storesLost: true, fireDoused: true, peopleGone: false }),
+    abandoned: Object.freeze({ sandbagsLost: 3, storesLost: true, fireDoused: true, peopleGone: true })
+});
+
+export function getCampConditionDressing(condition) {
+    return CAMP_CONDITION_DRESSING[condition] ?? CAMP_CONDITION_DRESSING.secure;
+}
+
 export const CAMP_FLOOR_SIZE = 9;
 export const CAMP_CLEARING_RADIUS = 4;
 
@@ -317,6 +339,8 @@ export class SurvivorCamp {
         this.recruited = false;
         this.turned = false;
         this.status = 'alive';
+        // Set by the runtime from hb_overnight_v1 after a night passes.
+        this.overnightCondition = 'secure';
         // docs/human-ai-activation-plan.md Slice 3: per-worker humanAI.js
         // state (worker.humanState, set in createCampWorkers/update), derived
         // each frame from status/suspicion/destroyed. Not persisted — it's a
@@ -893,9 +917,24 @@ export class SurvivorCamp {
         turret.group.position.y = -0.12;
     }
 
+    /**
+     * Apply the condition the overnight simulation left this camp in. Separate
+     * from setStatus(): status is the story (culled, turned, recruited), while
+     * condition is the wear a night of raids left behind, and a camp can be
+     * both alive and half wrecked.
+     */
+    setOvernightCondition(condition = 'secure') {
+        const next = CAMP_CONDITION_DRESSING[condition] ? condition : 'secure';
+        if (next === this.overnightCondition) return this.overnightCondition;
+        this.overnightCondition = next;
+        this.updatePropVisuals();
+        return this.overnightCondition;
+    }
+
     updatePropVisuals() {
         if (!this.propSprites) return;
-        const lit = this.status !== 'culled';
+        const wear = getCampConditionDressing(this.overnightCondition);
+        const lit = this.status !== 'culled' && !wear.fireDoused;
         const lockdown = this.isLockedDown;
         const audio = typeof window !== 'undefined' ? window.AudioManager : null;
 
@@ -907,7 +946,7 @@ export class SurvivorCamp {
         if (this.propSprites.crates) {
             this.propSprites.crates.material.map = (lockdown && lit) ? this.texCratesChained : this.texCrates;
             this.propSprites.crates.material.needsUpdate = true;
-            this.propSprites.crates.visible = lit && this.status !== 'robbed';
+            this.propSprites.crates.visible = lit && this.status !== 'robbed' && !wear.storesLost;
         }
 
         if (this.propSprites.placard) {
@@ -921,7 +960,7 @@ export class SurvivorCamp {
         // The same authored dressing now tells the aftermath at a glance:
         // evacuated camps are packed bare, robbed camps lose their stores,
         // turned camps abandon human routines, and a cull leaves only graves.
-        const occupiedByHumans = ['alive', 'robbed'].includes(this.status);
+        const occupiedByHumans = ['alive', 'robbed'].includes(this.status) && !wear.peopleGone;
         if (this.propSprites.laundry) this.propSprites.laundry.visible = occupiedByHumans;
         if (this.propSprites.bedrolls) this.propSprites.bedrolls.visible = occupiedByHumans && this.status !== 'robbed';
         if (this.propSprites.grave) this.propSprites.grave.visible = this.status === 'culled';
@@ -930,8 +969,11 @@ export class SurvivorCamp {
         }
 
         if (this.sandbagSprites) {
+            // Defences are the first thing a raid takes, so the wall the player
+            // paid for visibly thins before anything else changes.
+            const standing = Math.max(0, this.level - wear.sandbagsLost);
             this.sandbagSprites.forEach((sprite, i) => {
-                sprite.visible = this.level > i && lit;
+                sprite.visible = standing > i && lit;
             });
         }
 

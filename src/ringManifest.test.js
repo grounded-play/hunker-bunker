@@ -245,7 +245,7 @@ describe('WorldPlan handoff contract', () => {
         expect(first.seed).toBe(8128);
         expect(first.topology).toEqual(expedition.topology);
         expect(first.ringManifests).toHaveLength(5);
-        expect(first.reservations).toHaveLength(81 + CAMP_QUEST_COUNT);
+        expect(first.reservations).toHaveLength(111 + CAMP_QUEST_COUNT);
         expect(first.territories.map((territory) => territory.id).sort()).toEqual([
             'territory:camp_meridian',
             'territory:camp_tallow',

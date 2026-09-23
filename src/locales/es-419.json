@@ -87,6 +87,17 @@
       "engineer": "INGENIERO",
       "reroute": "DESVIAR",
       "cheaper_consoles": "CONSOLAS MÁS BARATAS",
+      "role_infiltrator": "INFILTRADOR",
+      "role_breacher": "BRECHADOR",
+      "role_logistics": "LOGÍSTICA",
+      "tag_active": "ACTIVA:",
+      "tag_passive": "PASIVA:",
+      "spec_scout_mobility": "MOVILIDAD: MÁX",
+      "spec_scout_armor": "BLINDAJE: LIGERO",
+      "spec_tank_defense": "DEFENSA: MÁX",
+      "spec_tank_armor": "BLINDAJE: PESADO",
+      "spec_eng_utility": "UTILIDAD: MÁX",
+      "spec_eng_armor": "BLINDAJE: HAZARD",
       "esc": "[ESC]",
       "return_main": "← VOLVER AL MENÚ PRINCIPAL"
     },
@@ -127,6 +138,7 @@
       "desktop_controls": "CONTROLES DE ESCRITORIO",
       "cat_operator": "OPERADOR Y DATOS DEL SISTEMA",
       "callsign": "INDICATIVO DEL OPERADOR",
+      "operator_id": "ID DEL OPERADOR",
       "cloud_sync": "SINCRONIZACIÓN STEAM CLOUD",
       "save_data": "DATOS GUARDADOS",
       "new_game_reset": "REINICIO DE PARTIDA",
@@ -296,7 +308,9 @@
       "blackbox_recoverable": "RECUPERABLE (SECTOR {depth})",
       "blackbox_none": "NINGUNA",
       "equipped_none": "NULO",
-      "arsenal_count": "ARSENAL: {made} / {total} ARMAS FABRICADAS"
+      "arsenal_count": "ARSENAL: {made} / {total} ARMAS FABRICADAS",
+      "condition": "CONDICIÓN:",
+      "condition_nominal": "NORMAL"
     },
     "dlg": {
       "channel": "CANAL 7 DE ENLACE CON LA NODRIZA",
@@ -392,10 +406,16 @@
       "accent_credits": "// CRÉDITOS"
     },
     "hero_detail": {
-      "field_loadout": "EQUIPO DE CAMPO"
+      "chassis_spec": "ESPECIFICACIÓN DEL CHASIS"
     },
     "archive": {
       "bunker_archive": "◈ ARCHIVO DEL BÚNKER",
+      "lore_logs": "REGISTROS DE HISTORIA",
+      "story_endings": "FINALES DE HISTORIA",
+      "active_directives": "DIRECTIVAS ACTIVAS",
+      "open_full_dossier": "ABRIR DOSSIER TÁCTICO COMPLETO",
+      "linked_unlock": "DESBLOQUEO VINCULADO",
+      "pathway_unresolved": "Los requisitos siguen pendientes. Ninguna decisión irreversible ha sellado esta trayectoria.",
       "recovered_kicker": "SIMULACIÓN DE ARCHIVO RECUPERADA",
       "in_progress": "EN CURSO",
       "ready": "LISTO",
@@ -623,7 +643,8 @@
     "vitals": {
       "vitals": "CONSTANTES",
       "aria_label_health": "Salud",
-      "cover": "COBERTURA"
+      "cover": "COBERTURA",
+      "fatigue": "FATIGA"
     },
     "queens_ledger_hud": {
       "obedience_0_seats_1_4": "♛ OBEDIENCIA 0 · ASIENTOS 1/4 · VECTOR: INESTABLE"
@@ -775,7 +796,8 @@
       "aria_label_optional_base_defense": "Defensa opcional de la base",
       "defense_turret": "TORRETA DEFENSIVA",
       "optional_north_door_defense_repairing": "Defensa opcional de la puerta norte. Reparar el soporte vital no construye una torreta.",
-      "bunker_tree_cross_linked_protocols": "ÁRBOL DEL BÚNKER // PROTOCOLOS ENLAZADOS"
+      "bunker_tree_cross_linked_protocols": "ÁRBOL DEL BÚNKER // PROTOCOLOS ENLAZADOS",
+      "ring_route": "RUTA DE ANILLO"
     },
     "terminal_bank": {
       "current_run_stats": "ESTADÍSTICAS DE LA PARTIDA",
@@ -926,6 +948,18 @@
       "full_loot_claim": "RECLAMO TOTAL DEL BOTÍN",
       "rival_bounties": "RECOMPENSAS POR RIVALES",
       "mission_objective": "OBJETIVO DE LA MISIÓN:",
+      "career_ledger": "REGISTRO DE CARRERA",
+      "campaign_ledger": "CAMPAÑA ACTUAL",
+      "runs": "INCURSIONES",
+      "deaths": "MUERTES",
+      "victories": "VICTORIAS",
+      "deepest": "MÁX. PROFUNDIDAD",
+      "attempts": "INTENTOS",
+      "lives_lost": "VIDAS PERDIDAS",
+      "day": "DÍA",
+      "depth": "PROFUNDIDAD",
+      "black_box_recovery": "RECUPERACIÓN DE CAJA NEGRA",
+      "tracked_objectives": "OBJETIVOS SEGUIDOS",
       "sector_frequency_uplink": "FRECUENCIA DEL SECTOR Y ENLACE",
       "ch_07": "CH-07",
       "sector_room_code": "CÓDIGO DE SALA DEL SECTOR",
@@ -1099,7 +1133,12 @@
       "host_control_required": "SE REQUIERE CONTROL DEL ANFITRIÓN",
       "host_new_lobby": "CREAR NUEVO VESTÍBULO",
       "start_match": "INICIAR PARTIDA",
-      "mode_members": "{mode} // {count}/4 OPERATIVOS"
+      "mode_members": "{mode} // {count}/4 OPERATIVOS",
+      "black_box_active": "ACTIVA A {depth}m // {tech} TEC · {coin} MON · {med} MED",
+      "black_box_clear": "SIN SEÑAL DE RECUPERACIÓN ACTIVA",
+      "no_tracked_objectives": "SIN OBJETIVOS SEGUIDOS",
+      "surface": "SUPERFICIE",
+      "story_prelude": "ACTO I // PRELUDIO HUMANO"
     },
     "dossier": {
       "title": "EXPEDIENTE TÁCTICO",
@@ -1142,7 +1181,8 @@
       "defeat_guard": "DERROTA AL GUARDIA PARA DESBLOQUEAR LA CAJA NEGRA",
       "recover_black_box": "RECUPERAR CAJA NEGRA",
       "recover_final": "RECUPERAR COMPONENTE FINAL",
-      "interact": "INTERACTUAR"
+      "interact": "INTERACTUAR",
+      "rest_end_day": "DESCANSAR — TERMINAR DÍA {day}"
     },
     "telemeter": {
       "passive_scan": "ESCANEO DE SUPERFICIE // PASIVO",
@@ -1174,7 +1214,15 @@
       "base_status": "ESTADO DE LA BASE {type} {state}",
       "active_exosuit": "[EXOTRAJE ACTIVO]",
       "standby": "[EN ESPERA]",
-      "field_stabilizer": "ESTABILIZADOR DE CAMPO {type}"
+      "field_stabilizer": "ESTABILIZADOR DE CAMPO {type}",
+      "ring_route_progress": "{done}/{total} · {stage}",
+      "ring_route_open": "RUTA ABIERTA",
+      "ring_route_stages": {
+        "previous_crossing": "CRUCE PREVIO",
+        "ship_goal": "META DE NAVE",
+        "ring_mission": "MISIÓN DE ANILLO",
+        "milestone_boss": "HITO"
+      }
     },
     "journal": {
       "day_time": "D{day} {minute}:{second}",
@@ -1381,7 +1429,8 @@
       "callsign": "DISTINTIVO {callsign}",
       "listen_hint": "Escucha y luego decide cómo quieres ayudar.",
       "quote": "«{text}»",
-      "next_action": "Tu próxima acción cambia el manifiesto de lanzamiento y el vector del final."
+      "next_action": "Tu próxima acción cambia el manifiesto de lanzamiento y el vector del final.",
+      "scar_gained": "LA NOCHE DEJÓ SU MARCA: {scar}"
     },
     "title": {
       "pregalien_command": "PREGALIEN | MANDO DE LA COLMENA",

@@ -87,6 +87,17 @@
       "engineer": "ИНЖЕНЕР",
       "reroute": "ПЕРЕНАПРАВИТЬ",
       "cheaper_consoles": "ДЕШЕВЛЕ КОНСОЛИ",
+      "role_infiltrator": "ДИВЕРСАНТ",
+      "role_breacher": "ШТУРМОВИК",
+      "role_logistics": "СНАБЖЕНИЕ",
+      "tag_active": "АКТИВНОЕ:",
+      "tag_passive": "ПАССИВНОЕ:",
+      "spec_scout_mobility": "МОБИЛЬНОСТЬ: МАКС",
+      "spec_scout_armor": "БРОНЯ: ЛЕГКАЯ",
+      "spec_tank_defense": "ЗАЩИТА: МАКС",
+      "spec_tank_armor": "БРОНЯ: ТЯЖЕЛАЯ",
+      "spec_eng_utility": "ПОДДЕРЖКА: МАКС",
+      "spec_eng_armor": "БРОНЯ: ЗАЩИТНАЯ",
       "esc": "[ESC]",
       "return_main": "← ВЕРНУТЬСЯ В ГЛАВНОЕ МЕНЮ"
     },
@@ -127,6 +138,7 @@
       "desktop_controls": "УПРАВЛЕНИЕ НА ПК",
       "cat_operator": "ОПЕРАТОР И СИСТЕМНЫЕ ДАННЫЕ",
       "callsign": "ПОЗЫВНОЙ ОПЕРАТОРА",
+      "operator_id": "ID ОПЕРАТОРА",
       "cloud_sync": "СИНХРОНИЗАЦИЯ STEAM CLOUD",
       "save_data": "ДАННЫЕ СОХРАНЕНИЯ",
       "new_game_reset": "СБРОС ДЛЯ НОВОЙ ИГРЫ",
@@ -296,7 +308,9 @@
       "blackbox_recoverable": "МОЖНО ИЗВЛЕЧЬ (СЕКТОР {depth})",
       "blackbox_none": "НЕТ",
       "equipped_none": "НЕТ",
-      "arsenal_count": "АРСЕНАЛ: СОБРАНО ОРУЖИЯ {made} / {total}"
+      "arsenal_count": "АРСЕНАЛ: СОБРАНО ОРУЖИЯ {made} / {total}",
+      "condition": "СОСТОЯНИЕ:",
+      "condition_nominal": "НОРМА"
     },
     "dlg": {
       "channel": "КАНАЛ СВЯЗИ С МАТКОЙ 7",
@@ -392,10 +406,16 @@
       "accent_credits": "// ТИТРЫ"
     },
     "hero_detail": {
-      "field_loadout": "ПОЛЕВОЕ СНАРЯЖЕНИЕ"
+      "chassis_spec": "СПЕЦИФИКАЦИЯ ШАССИ"
     },
     "archive": {
       "bunker_archive": "◈ АРХИВ БУНКЕРА",
+      "lore_logs": "ЗАПИСИ ЛОРА",
+      "story_endings": "ФИНАЛЫ ИСТОРИИ",
+      "active_directives": "АКТИВНЫЕ ДИРЕКТИВЫ",
+      "open_full_dossier": "ОТКРЫТЬ ПОЛНОЕ ТАКТИЧЕСКОЕ ДОСЬЕ",
+      "linked_unlock": "СВЯЗАННАЯ НАГРАДА",
+      "pathway_unresolved": "Условия ещё не выполнены. Необратимый выбор пока не закрыл эту траекторию.",
       "recovered_kicker": "АРХИВНАЯ СИМУЛЯЦИЯ ВОССТАНОВЛЕНА",
       "in_progress": "В ПРОЦЕССЕ",
       "ready": "ГОТОВО",
@@ -623,7 +643,8 @@
     "vitals": {
       "vitals": "ЖИЗНЕННЫЕ ПОКАЗАТЕЛИ",
       "aria_label_health": "Здоровье",
-      "cover": "УКРЫТИЕ"
+      "cover": "УКРЫТИЕ",
+      "fatigue": "УСТАЛОСТЬ"
     },
     "queens_ledger_hud": {
       "obedience_0_seats_1_4": "♛ ПОВИНОВЕНИЕ 0 · МЕСТА 1/4 · ВЕКТОР: НЕСТАБИЛЕН"
@@ -775,7 +796,8 @@
       "aria_label_optional_base_defense": "Дополнительная оборона базы",
       "defense_turret": "ОБОРОНИТЕЛЬНАЯ ТУРЕЛЬ",
       "optional_north_door_defense_repairing": "Дополнительная оборона северной двери. Ремонт жизнеобеспечения не строит турель.",
-      "bunker_tree_cross_linked_protocols": "ДЕРЕВО БУНКЕРА // СВЯЗАННЫЕ ПРОТОКОЛЫ"
+      "bunker_tree_cross_linked_protocols": "ДЕРЕВО БУНКЕРА // СВЯЗАННЫЕ ПРОТОКОЛЫ",
+      "ring_route": "КОЛЬЦЕВОЙ МАРШРУТ"
     },
     "terminal_bank": {
       "current_run_stats": "СТАТИСТИКА ТЕКУЩЕГО ЗАБЕГА",
@@ -926,6 +948,18 @@
       "full_loot_claim": "ПОЛНОЕ ПРАВО НА ДОБЫЧУ",
       "rival_bounties": "НАГРАДЫ ЗА СОПЕРНИКОВ",
       "mission_objective": "ЦЕЛЬ МИССИИ:",
+      "career_ledger": "ЖУРНАЛ КАРЬЕРЫ",
+      "campaign_ledger": "ТЕКУЩАЯ КАМПАНИЯ",
+      "runs": "ВЫЛЕТЫ",
+      "deaths": "СМЕРТИ",
+      "victories": "ПОБЕДЫ",
+      "deepest": "МАКС. ГЛУБИНА",
+      "attempts": "ПОПЫТКИ",
+      "lives_lost": "ПОТЕРЯНО ЖИЗНЕЙ",
+      "day": "ДЕНЬ",
+      "depth": "ГЛУБИНА",
+      "black_box_recovery": "ВОЗВРАТ ЧЁРНОГО ЯЩИКА",
+      "tracked_objectives": "ОТСЛЕЖИВАЕМЫЕ ЦЕЛИ",
       "sector_frequency_uplink": "ЧАСТОТА СЕКТОРА И КАНАЛ СВЯЗИ",
       "ch_07": "CH-07",
       "sector_room_code": "КОД КОМНАТЫ СЕКТОРА",
@@ -1099,7 +1133,12 @@
       "host_control_required": "ТРЕБУЕТСЯ УПРАВЛЕНИЕ ХОСТА",
       "host_new_lobby": "СОЗДАТЬ НОВОЕ ЛОББИ",
       "start_match": "НАЧАТЬ МАТЧ",
-      "mode_members": "{mode} // {count}/4 ОПЕРАТИВНИКОВ"
+      "mode_members": "{mode} // {count}/4 ОПЕРАТИВНИКОВ",
+      "black_box_active": "АКТИВЕН НА {depth}м // {tech} ТЕХ · {coin} МОН · {med} МЕД",
+      "black_box_clear": "НЕТ АКТИВНОГО СИГНАЛА",
+      "no_tracked_objectives": "НЕТ ОТСЛЕЖИВАЕМЫХ ЦЕЛЕЙ",
+      "surface": "ПОВЕРХНОСТЬ",
+      "story_prelude": "АКТ I // ПРОЛОГ ЛЮДЕЙ"
     },
     "dossier": {
       "title": "ТАКТИЧЕСКОЕ ДОСЬЕ",
@@ -1142,7 +1181,8 @@
       "defeat_guard": "ПОБЕДИТЕ СТРАЖА, ЧТОБЫ ОТКРЫТЬ ЧЁРНЫЙ ЯЩИК",
       "recover_black_box": "ИЗВЛЕЧЬ ЧЁРНЫЙ ЯЩИК",
       "recover_final": "ИЗВЛЕЧЬ ПОСЛЕДНИЙ КОМПОНЕНТ",
-      "interact": "ВЗАИМОДЕЙСТВИЕ"
+      "interact": "ВЗАИМОДЕЙСТВИЕ",
+      "rest_end_day": "ОТДЫХ — ЗАВЕРШИТЬ ДЕНЬ {day}"
     },
     "telemeter": {
       "passive_scan": "СКАНИРОВАНИЕ ПОВЕРХНОСТИ // ПАССИВНО",
@@ -1174,7 +1214,15 @@
       "base_status": "СТАТУС БАЗЫ {type} {state}",
       "active_exosuit": "[АКТИВНЫЙ ЭКЗОКОСТЮМ]",
       "standby": "[ОЖИДАНИЕ]",
-      "field_stabilizer": "ПОЛЕВОЙ СТАБИЛИЗАТОР {type}"
+      "field_stabilizer": "ПОЛЕВОЙ СТАБИЛИЗАТОР {type}",
+      "ring_route_progress": "{done}/{total} · {stage}",
+      "ring_route_open": "МАРШРУТ ОТКРЫТ",
+      "ring_route_stages": {
+        "previous_crossing": "ПРЕДЫДУЩИЙ ПЕРЕХОД",
+        "ship_goal": "ЦЕЛЬ КОРАБЛЯ",
+        "ring_mission": "МИССИЯ КОЛЬЦА",
+        "milestone_boss": "ВЕХА"
+      }
     },
     "journal": {
       "day_time": "Д{day} {minute}:{second}",
@@ -1381,7 +1429,8 @@
       "callsign": "ПОЗЫВНОЙ {callsign}",
       "listen_hint": "Выслушайте, затем решите, чем помочь.",
       "quote": "«{text}»",
-      "next_action": "Твой следующий шаг изменит манифест запуска и вектор финала."
+      "next_action": "Твой следующий шаг изменит манифест запуска и вектор финала.",
+      "scar_gained": "ПРОШЛАЯ НОЧЬ ОСТАВИЛА СЛЕД: {scar}"
     },
     "title": {
       "pregalien_command": "PREGALIEN | КОМАНДОВАНИЕ УЛЬЯ",

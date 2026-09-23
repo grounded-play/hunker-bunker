@@ -833,6 +833,26 @@ export class BankManager {
         return true;
     }
 
+    setFoundryActivated(activated = true) {
+        const next = this.getState();
+        next.foundryActivated = Boolean(activated);
+        this.save(next);
+        emit('bank-updated', { bank: this.getState() });
+        emit('foundry-activated', { bank: this.getState() });
+        return true;
+    }
+
+    grantDebugSalvage({ tech = 50, coin = 50, med = 50 } = {}) {
+        const next = this.getState();
+        next.tech = (next.tech || 0) + tech;
+        next.coin = (next.coin || 0) + coin;
+        next.med = (next.med || 0) + med;
+        this.save(next);
+        emit('bank-updated', { bank: this.getState() });
+        return { tech: next.tech, coin: next.coin, med: next.med };
+    }
+
+
     getGoalCost(goalKey) {
         return GOAL_COSTS[goalKey] ?? null;
     }

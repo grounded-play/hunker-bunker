@@ -121,6 +121,7 @@
     })();
   </script>
   <div id="game-viewport">
+    <div id="fatigue-strain-overlay" aria-hidden="true"></div>
     <script>
       (function () {
         try {
@@ -345,15 +346,8 @@
 
     <!-- Briefing Console (#menu) -->
     <div id="menu" class="hidden">
-      <!-- Presentation-only console glass. It sits above the background plate
-           and below every control, so its cropped corners, guide rails, and
-           advance dock can visually join the UI without intercepting input. -->
-      <div class="homebase-plate-overlay" aria-hidden="true"></div>
-      <div class="homebase-frame-overlay" aria-hidden="true"></div>
+
       <!-- Settings gear: pinned to top-right corner of menu, never displaced by layout -->
-      <div class="menu-corner-settings">
-        <button class="calibrate-btn open-settings-btn">⚙</button>
-      </div>
       <div class="header-bar">
         <div class="title-group">
           <h1 class="title-small"><span>HUNKER</span><span>BUNKER</span></h1>
@@ -383,6 +377,7 @@
                   <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.total_distance">TOTAL DISTANCE:</span> <b id="roster-stat-distance">0u</b></div>
                   <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.hostiles">HOSTILES:</span> <b data-i18n="ui.roster.0_eliminated" id="roster-stat-kills">0 ELIMINATED</b></div>
                   <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.black_box">BLACK BOX:</span> <b data-i18n="ui.roster.none" id="roster-stat-blackbox">NONE</b></div>
+                  <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.condition">CONDITION:</span> <b data-i18n="ui.roster.condition_nominal" id="roster-stat-condition">NOMINAL</b></div>
                 </div>
               </section>
               <div class="menu-header-actions">
@@ -428,23 +423,11 @@
 
             <!-- Module 2: Hero UI -->
             <div class="preview-box">
-              <section class="homebase-identity" aria-labelledby="homebase-identity-title">
-                <div class="homebase-section-kicker" id="homebase-identity-title" data-i18n="ui.roster.registration_title">OPERATIVE REGISTRATION</div>
-                <div class="roster-id-row">
-                  <label data-i18n="ui.roster.callsign" class="roster-callsign-label" for="roster-callsign-input">CALLSIGN:</label>
-                  <input data-i18n-placeholder="ui.roster.placeholder_agent_01" type="text" id="roster-callsign-input" class="operator-callsign-input" maxlength="16" placeholder="AGENT-01" autocomplete="off" spellcheck="false">
-                  <button type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" aria-label="Randomize Callsign" data-i18n-aria-label="ui.roster.randomize">↻</button>
-                </div>
-                <div class="homebase-identity__meta">
-                  <span class="roster-id-badge"><span data-i18n="ui.roster.id_label">ID:</span> <span class="roster-id" id="roster-id">op-—</span></span>
-                  <span id="homebase-loadout-summary">FIELD LOADOUT // STANDARD ISSUE</span>
-                </div>
-              </section>
               <div class="hero-identity-block">
                 <div class="char-preview-stage" aria-hidden="true">
                   <img id="char-preview-fallback" class="char-preview-fallback" src="/Tank.full_v2.png" alt="" />
                   <canvas id="char-preview-sprite" width="256" height="256"></canvas>
-                  <canvas id="char-preview-3d" class="hidden" width="320" height="320"></canvas>
+                  <canvas id="char-preview-3d" class="hidden" width="480" height="480"></canvas>
                   <div id="char-preview-door" class="char-preview-door">
                     <div class="char-preview-door__panel char-preview-door__panel--top">
                       <div class="char-preview-door__texture"></div>
@@ -456,83 +439,118 @@
                     <div class="char-preview-door__panel char-preview-door__panel--right"></div>
                   </div>
                 </div>
-                <div id="char-preview-name">TANK</div>
+                <div id="char-preview-name" class="hidden">TANK</div>
               </div>
-              <div class="hero-detail-panel" id="hero-detail-panel">
-                <div data-i18n="ui.hero_detail.field_loadout" class="hero-detail-panel__kicker">FIELD LOADOUT</div>
-                <div class="hero-detail-line1" id="hero-detail-active">—</div>
-                <div class="hero-detail-line2" id="hero-detail-passive">—</div>
-              </div>
-              <div class="hero-stats-compact" id="hero-stats-row">
-                <div data-i18n-aria-label="ui.menu.aria_label_s_o_u"
-                  class="hero-stats-compact__title"
-                  aria-label="S.O.U.L — Speed, O2 Usage, Loot-Range"
-                >S.O.U.L</div>
-                <div class="hero-stat-compact-row">
-                  <span data-i18n="ui.menu.speed" class="hero-stat-compact-label">SPEED</span>
-                  <div class="hero-stat-pips" id="hero-stat-spd"></div>
-                  <span data-i18n="ui.menu.fast" class="hero-stat-compact-value" id="hero-stat-spd-val">FAST</span>
+              <section class="homebase-identity" aria-labelledby="homebase-identity-title">
+                <div class="homebase-section-kicker" id="homebase-identity-title" data-i18n="ui.roster.registration_title">OPERATIVE REGISTRATION</div>
+                <div class="roster-id-row">
+                  <label data-i18n="ui.roster.callsign" class="roster-callsign-label" for="roster-callsign-input">CALLSIGN:</label>
+                  <input data-i18n-placeholder="ui.roster.placeholder_agent_01" type="text" id="roster-callsign-input" class="operator-callsign-input" maxlength="16" placeholder="AGENT-01" autocomplete="off" spellcheck="false">
+                  <button type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" aria-label="Randomize Callsign" data-i18n-aria-label="ui.roster.randomize">↻</button>
                 </div>
-                <div class="hero-stat-compact-row">
-                  <span id="hero-stat-o2-label" data-i18n="ui.menu.o2_use" data-i18n-aria-label="ui.menu.aria_label_o2_consumption_rate" class="hero-stat-compact-label" aria-label="O2 Consumption Rate — Lower is Better">O₂ USE</span>
-                  <div class="hero-stat-pips" id="hero-stat-o2"></div>
-                  <span data-i18n="ui.menu.low" class="hero-stat-compact-value" id="hero-stat-o2-val">LOW</span>
+                <div class="homebase-identity__meta hidden">
+                  <span class="roster-id-badge hidden"><span data-i18n="ui.roster.id_label">ID:</span> <span class="roster-id" id="roster-id">op-—</span></span>
+                  <span id="homebase-loadout-summary">CHASSIS SPECIFICATION // BULWARK FRAME</span>
                 </div>
-                <div class="hero-stat-compact-row">
-                  <span data-i18n="ui.menu.loot_mag" data-i18n-aria-label="ui.menu.aria_label_loot_magnet_range" class="hero-stat-compact-label" aria-label="Loot magnet range">LOOT-MAG</span>
-                  <div class="hero-stat-pips" id="hero-stat-loot"></div>
-                  <span data-i18n="ui.menu.med" class="hero-stat-compact-value" id="hero-stat-loot-val">MED</span>
+              </section>
+              <div class="hero-specs-row">
+                <div class="hero-detail-panel" id="hero-detail-panel">
+                  <div data-i18n="ui.hero_detail.chassis_spec" class="hero-detail-panel__kicker">CHASSIS SPECIFICATION</div>
+                  <div class="hero-detail-line1" id="hero-detail-active">—</div>
+                  <div class="hero-detail-line2" id="hero-detail-passive">—</div>
                 </div>
-                <button type="button" class="hero-polish-slot" id="hero-polish-btn" aria-describedby="homebase-command-info">
-                  <span class="hero-polish-slot__swatch" id="hero-polish-swatch"></span>
-                  <span class="hero-polish-slot__copy">
-                    <span data-i18n="ui.menu.suit_polish" class="hero-polish-slot__label">SUIT POLISH</span>
-                    <span class="hero-polish-slot__name" id="hero-polish-name">STANDARD ISSUE</span>
-                  </span>
-                  <span class="hero-polish-slot__count" id="hero-polish-count">1/16</span>
-                </button>
-                <div class="module-scanline"></div>
+                <div class="hero-stats-compact" id="hero-stats-row">
+                  <div data-i18n-aria-label="ui.menu.aria_label_s_o_u"
+                    class="hero-stats-compact__title"
+                    aria-label="S.O.U.L — Speed, O2 Usage, Loot-Range"
+                  >S.O.U.L</div>
+                  <div class="hero-stat-compact-row">
+                    <span data-i18n="ui.menu.speed" class="hero-stat-compact-label">SPEED</span>
+                    <div class="hero-stat-pips" id="hero-stat-spd"></div>
+                    <span data-i18n="ui.menu.fast" class="hero-stat-compact-value" id="hero-stat-spd-val">FAST</span>
+                  </div>
+                  <div class="hero-stat-compact-row">
+                    <span id="hero-stat-o2-label" data-i18n="ui.menu.o2_use" data-i18n-aria-label="ui.menu.aria_label_o2_consumption_rate" class="hero-stat-compact-label" aria-label="O2 Consumption Rate — Lower is Better">O₂ USE</span>
+                    <div class="hero-stat-pips" id="hero-stat-o2"></div>
+                    <span data-i18n="ui.menu.low" class="hero-stat-compact-value" id="hero-stat-o2-val">LOW</span>
+                  </div>
+                  <div class="hero-stat-compact-row">
+                    <span data-i18n="ui.menu.loot_mag" data-i18n-aria-label="ui.menu.aria_label_loot_magnet_range" class="hero-stat-compact-label" aria-label="Loot magnet range">LOOT-MAG</span>
+                    <div class="hero-stat-pips" id="hero-stat-loot"></div>
+                    <span data-i18n="ui.menu.med" class="hero-stat-compact-value" id="hero-stat-loot-val">MED</span>
+                  </div>
+                  <button type="button" class="hero-polish-slot" id="hero-polish-btn" aria-describedby="homebase-command-info">
+                    <span class="hero-polish-slot__swatch" id="hero-polish-swatch"></span>
+                    <span class="hero-polish-slot__copy">
+                      <span data-i18n="ui.menu.suit_polish" class="hero-polish-slot__label">SUIT POLISH</span>
+                      <span class="hero-polish-slot__name" id="hero-polish-name">STANDARD ISSUE</span>
+                    </span>
+                    <span class="hero-polish-slot__count" id="hero-polish-count">1/16</span>
+                  </button>
+                  <div class="module-scanline"></div>
+                </div>
               </div>
               <div class="module-scanline"></div>
             </div>
 
             <!-- Module 3: Selection Stack -->
             <div class="char-selection">
-              <div class="char-card" data-type="SCOUT">
+              <div class="char-card" data-type="SCOUT" role="button" tabindex="0" aria-pressed="false">
                 <div class="char-info">
-                  <span data-i18n="ui.menu.recon_frame" class="char-kicker">RECON FRAME</span>
+                  <div class="char-header-row">
+                    <span data-i18n="ui.menu.recon_frame" class="char-kicker">RECON FRAME</span>
+                    <span data-i18n="ui.menu.role_infiltrator" class="char-role-badge">INFILTRATOR</span>
+                  </div>
                   <span data-i18n="ui.menu.scout" class="char-name">SCOUT</span>
                   <div class="char-desc-lines">
-                    <span data-i18n="ui.menu.sprint_burst" class="char-desc-line1">SPRINT BURST</span>
-                    <span data-i18n="ui.menu.wide_magnet" class="char-desc-line2">WIDE MAGNET</span>
+                    <span class="char-desc-line1"><span data-i18n="ui.menu.tag_active" class="char-desc-tag">ACTIVE:</span> <span data-i18n="ui.menu.sprint_burst">SPRINT BURST</span></span>
+                    <span class="char-desc-line2"><span data-i18n="ui.menu.tag_passive" class="char-desc-tag">PASSIVE:</span> <span data-i18n="ui.menu.wide_magnet">WIDE MAGNET</span></span>
+                  </div>
+                  <div class="char-spec-pills">
+                    <span data-i18n="ui.menu.spec_scout_mobility" class="char-spec-pill">MOBILITY: MAX</span>
+                    <span data-i18n="ui.menu.spec_scout_armor" class="char-spec-pill">ARMOR: LIGHT</span>
                   </div>
                   <span class="char-best-score" id="char-best-SCOUT"></span>
                 </div>
-                <div class="char-icon">↗</div>
+                <div class="char-icon" aria-hidden="true">↗</div>
               </div>
-              <div class="char-card selected" data-type="TANK">
+              <div class="char-card selected" data-type="TANK" role="button" tabindex="0" aria-pressed="true">
                 <div class="char-info">
-                  <span data-i18n="ui.menu.bulwark_frame" class="char-kicker">BULWARK FRAME</span>
+                  <div class="char-header-row">
+                    <span data-i18n="ui.menu.bulwark_frame" class="char-kicker">BULWARK FRAME</span>
+                    <span data-i18n="ui.menu.role_breacher" class="char-role-badge">BREACHER</span>
+                  </div>
                   <span data-i18n="ui.menu.tank" class="char-name">TANK</span>
                   <div class="char-desc-lines">
-                    <span data-i18n="ui.menu.brace" class="char-desc-line1">BRACE</span>
-                    <span data-i18n="ui.menu.low_o2_drain" class="char-desc-line2">LOW O₂ DRAIN</span>
+                    <span class="char-desc-line1"><span data-i18n="ui.menu.tag_active" class="char-desc-tag">ACTIVE:</span> <span data-i18n="ui.menu.brace">BRACE</span></span>
+                    <span class="char-desc-line2"><span data-i18n="ui.menu.tag_passive" class="char-desc-tag">PASSIVE:</span> <span data-i18n="ui.menu.low_o2_drain">LOW O₂ DRAIN</span></span>
+                  </div>
+                  <div class="char-spec-pills">
+                    <span data-i18n="ui.menu.spec_tank_defense" class="char-spec-pill">DEFENSE: MAX</span>
+                    <span data-i18n="ui.menu.spec_tank_armor" class="char-spec-pill">ARMOR: HEAVY</span>
                   </div>
                   <span class="char-best-score" id="char-best-TANK"></span>
                 </div>
-                <div class="char-icon">▰</div>
+                <div class="char-icon" aria-hidden="true">▰</div>
               </div>
-              <div class="char-card" data-type="ENGINEER">
+              <div class="char-card" data-type="ENGINEER" role="button" tabindex="0" aria-pressed="false">
                 <div class="char-info">
-                  <span data-i18n="ui.menu.utility_frame" class="char-kicker">UTILITY FRAME</span>
+                  <div class="char-header-row">
+                    <span data-i18n="ui.menu.utility_frame" class="char-kicker">UTILITY FRAME</span>
+                    <span data-i18n="ui.menu.role_logistics" class="char-role-badge">LOGISTICS</span>
+                  </div>
                   <span data-i18n="ui.menu.engineer" class="char-name">ENGINEER</span>
                   <div class="char-desc-lines">
-                    <span data-i18n="ui.menu.reroute" class="char-desc-line1">REROUTE</span>
-                    <span data-i18n="ui.menu.cheaper_consoles" class="char-desc-line2">CHEAPER CONSOLES</span>
+                    <span class="char-desc-line1"><span data-i18n="ui.menu.tag_active" class="char-desc-tag">ACTIVE:</span> <span data-i18n="ui.menu.reroute">REROUTE</span></span>
+                    <span class="char-desc-line2"><span data-i18n="ui.menu.tag_passive" class="char-desc-tag">PASSIVE:</span> <span data-i18n="ui.menu.cheaper_consoles">CHEAPER CONSOLES</span></span>
+                  </div>
+                  <div class="char-spec-pills">
+                    <span data-i18n="ui.menu.spec_eng_utility" class="char-spec-pill">UTILITY: MAX</span>
+                    <span data-i18n="ui.menu.spec_eng_armor" class="char-spec-pill">ARMOR: HAZARD</span>
                   </div>
                   <span class="char-best-score" id="char-best-ENGINEER"></span>
                 </div>
-                <div class="char-icon">⚙</div>
+                <div class="char-icon" aria-hidden="true">⚙</div>
               </div>
             </div>
           </div>
@@ -542,11 +560,21 @@
 
     </div>
 
+    <!-- Settings gear: sits beside #menu rather than inside it, because
+         #menu carries a 3D mouse-tilt transform that shifted the gear as
+         the mouse moved. Same stage slot as the Armory and HUD gears
+         (style.css "Settings gear: one slot, every screen"). -->
+    <div class="menu-corner-settings">
+      <button class="calibrate-btn open-settings-btn">⚙</button>
+    </div>
+
     <!-- INITIALIZE lives beside #menu, not inside it: #menu carries a 3D
          mouse-tilt transform and its panels use contain: layout paint, and
          either would trap the shared bottom-right advance slot
          (style.css .hb-advance-slot). Hidden whenever #menu is. -->
     <button class="start-btn map-initialize-btn hb-advance-slot" id="start-game" data-i18n="ui.hub.enter_armory">ENTER ARMORY</button>
+    <!-- Non-clickable foreground overlay: frames the 3 console bays and advance slot behind the bunker chassis -->
+    <div class="homebase-plate-overlay" aria-hidden="true"></div>
 
     <!-- Fullsize 3D Pre-Mission Armory (#armory-screen) -->
     <section data-i18n-aria-label="ui.armory.aria_label_pre_mission_armory" id="armory-screen" class="hidden" aria-label="Pre-Mission Armory">
@@ -560,10 +588,30 @@
         <div class="terminal-scanline"></div>
         <div class="archive-header">
           <button class="close-modal" id="close-archive-modal">×</button>
-          <div data-i18n="ui.archive.bunker_archive" class="archive-title">◈ BUNKER ARCHIVE</div>
+          <div id="archive-console-title" data-i18n="ui.archive.bunker_archive" class="archive-title">◈ BUNKER ARCHIVE</div>
           <div id="archive-summary" class="archive-summary">LOGS RECOVERED: 0 / 27</div>
         </div>
-        <div id="archive-log-list" class="archive-log-list"></div>
+        <div class="archive-console-tabs" role="tablist" aria-labelledby="archive-console-title">
+          <button id="archive-tab-lore" class="archive-console-tab active" type="button" role="tab" aria-selected="true" aria-controls="archive-panel-lore" data-archive-tab="lore" data-i18n="ui.archive.lore_logs">LORE LOGS</button>
+          <button id="archive-tab-dossier" class="archive-console-tab" type="button" role="tab" aria-selected="false" aria-controls="archive-panel-dossier" data-archive-tab="dossier" data-i18n="ui.hub.dossier">DOSSIER</button>
+          <button id="archive-tab-endings" class="archive-console-tab" type="button" role="tab" aria-selected="false" aria-controls="archive-panel-endings" data-archive-tab="endings" data-i18n="ui.archive.story_endings">STORY ENDINGS</button>
+          <button id="archive-tab-achievements" class="archive-console-tab" type="button" role="tab" aria-selected="false" aria-controls="archive-panel-achievements" data-archive-tab="achievements" data-i18n="ui.hub.achievements">ACHIEVEMENTS</button>
+        </div>
+        <div class="archive-console-body">
+          <section id="archive-panel-lore" class="archive-console-panel" role="tabpanel" aria-labelledby="archive-tab-lore">
+            <div id="archive-log-list" class="archive-log-list"></div>
+          </section>
+          <section id="archive-panel-dossier" class="archive-console-panel hidden" role="tabpanel" aria-labelledby="archive-tab-dossier">
+            <div id="archive-dossier-summary" class="archive-console-grid"></div>
+          </section>
+          <section id="archive-panel-endings" class="archive-console-panel hidden" role="tabpanel" aria-labelledby="archive-tab-endings">
+            <div id="archive-endings-grid" class="ending-archive-grid"></div>
+          </section>
+          <section id="archive-panel-achievements" class="archive-console-panel hidden" role="tabpanel" aria-labelledby="archive-tab-achievements">
+            <div id="archive-achievements-summary" class="archive-console-section-summary"></div>
+            <div id="archive-achievements-grid" class="achievements-grid archive-achievements-grid"></div>
+          </section>
+        </div>
       </div>
     </div>
 
@@ -1273,6 +1321,10 @@
               </div>
               <span class="vitals-panel__o2-pct" id="vitals-o2-pct">100%</span>
             </div>
+            <div class="vitals-panel__fatigue-row hidden" id="vitals-fatigue-row">
+              <span data-i18n="ui.vitals.fatigue" class="vitals-panel__o2-label">FATIGUE</span>
+              <span class="vitals-panel__fatigue-stage" id="vitals-fatigue-stage"></span>
+            </div>
             <div class="vitals-panel__o2-row vitals-panel__cover-row hidden" id="vitals-cover-row">
               <span data-i18n="ui.vitals.cover" class="vitals-panel__o2-label" id="vitals-cover-label">COVER</span>
               <div class="vitals-panel__o2-bar-track">
@@ -1904,6 +1956,7 @@
             <div><span data-i18n="ui.console_terminal.cycle_phase">CYCLE PHASE</span><strong id="terminal-log-phase">EXPEDITION</strong></div>
             <div><span data-i18n="ui.console_terminal.local_light">LOCAL LIGHT</span><strong id="terminal-log-light">DAYLIGHT</strong></div>
             <div><span data-i18n="ui.console_terminal.next_transition">NEXT TRANSITION</span><strong id="terminal-log-transition">--:--</strong></div>
+            <div><span data-i18n="ui.console_terminal.ring_route">RING ROUTE</span><strong id="terminal-log-route">--</strong></div>
           </div>
           <div id="terminal-objectives-grid" class="terminal-objectives-grid">
             <section data-i18n-aria-label="ui.console_terminal.aria_label_objective_history" class="terminal-section terminal-objective-journal" aria-label="Objective history">
@@ -2405,6 +2458,10 @@
             <input data-i18n-placeholder="ui.settings.placeholder_agent" type="text" id="operator-callsign" data-i18n-aria-label="ui.aria.callsign_input" class="operator-callsign-input" maxlength="16" placeholder="AGENT" autocomplete="off" spellcheck="false" aria-label="Operator callsign">
           </div>
           <div class="setting-item">
+            <span data-i18n="ui.settings.operator_id">OPERATOR ID</span>
+            <span id="settings-operator-id" class="setting-val-display font-mono">OP-—</span>
+          </div>
+          <div class="setting-item">
             <span data-i18n="ui.settings.cloud_sync">STEAM CLOUD SYNC</span>
             <span id="setting-steam-cloud-status" class="setting-val-display" data-state="checking">CHECKING…</span>
           </div>
@@ -2893,6 +2950,38 @@
           <div class="net-mode-description" id="net-mode-description">
             CO-OP EXPEDITION: Deploy joint squads through the outer ring. Shared salvage, synchronized telemetry, and emergency revival.
           </div>
+        </div>
+
+        <!-- Shared deployment intelligence. Solo uses this as its primary
+             briefing; Co-op keeps it visible above relay/roster controls. -->
+        <div class="net-deployment-ledger hidden" id="net-deployment-ledger">
+          <section class="net-ledger-panel" aria-labelledby="net-career-ledger-title">
+            <div class="net-ledger-title" id="net-career-ledger-title" data-i18n="ui.multiplayer.career_ledger">CAREER LEDGER</div>
+            <div class="net-ledger-stats">
+              <span><b id="net-career-runs">0</b><small data-i18n="ui.multiplayer.runs">RUNS</small></span>
+              <span><b id="net-career-deaths">0</b><small data-i18n="ui.multiplayer.deaths">DEATHS</small></span>
+              <span><b id="net-career-victories">0</b><small data-i18n="ui.multiplayer.victories">VICTORIES</small></span>
+              <span><b id="net-career-depth">SURFACE</b><small data-i18n="ui.multiplayer.deepest">DEEPEST</small></span>
+            </div>
+          </section>
+          <section class="net-ledger-panel" aria-labelledby="net-campaign-ledger-title">
+            <div class="net-ledger-title" id="net-campaign-ledger-title" data-i18n="ui.multiplayer.campaign_ledger">CURRENT CAMPAIGN</div>
+            <div class="net-ledger-stats">
+              <span><b id="net-campaign-runs">0</b><small data-i18n="ui.multiplayer.attempts">ATTEMPTS</small></span>
+              <span><b id="net-campaign-deaths">0</b><small data-i18n="ui.multiplayer.lives_lost">LIVES LOST</small></span>
+              <span><b id="net-campaign-day">1</b><small data-i18n="ui.multiplayer.day">DAY</small></span>
+              <span><b id="net-campaign-depth">SURFACE</b><small data-i18n="ui.multiplayer.depth">DEPTH</small></span>
+            </div>
+            <div class="net-ledger-context" id="net-campaign-story">ACT I // HUMAN PRELUDE</div>
+          </section>
+          <section class="net-ledger-panel net-ledger-panel--recovery" aria-labelledby="net-recovery-title">
+            <div class="net-ledger-title" id="net-recovery-title" data-i18n="ui.multiplayer.black_box_recovery">BLACK BOX RECOVERY</div>
+            <div class="net-ledger-context" id="net-black-box-summary">NO ACTIVE RECOVERY SIGNAL</div>
+          </section>
+          <section class="net-ledger-panel net-ledger-panel--objectives" aria-labelledby="net-objectives-title">
+            <div class="net-ledger-title" id="net-objectives-title" data-i18n="ui.multiplayer.tracked_objectives">TRACKED OBJECTIVES</div>
+            <div class="net-objective-list" id="net-briefing-objectives"></div>
+          </section>
         </div>
 
         <!-- Main Split Grid -->

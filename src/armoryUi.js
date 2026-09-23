@@ -14,7 +14,7 @@ import {
 import { ITEM_TYPE, getCatalogIdsByType, getCatalogEntry } from './itemOwnership.js';
 import { getVoiceBank } from './data/voiceBanks.js';
 import { hudThemeInlineStyle, resolveHudTheme } from './hudThemes.js';
-import { unlockAllPolishes } from './operatorPolishes.js';
+import { getSelectedPolish, unlockAllPolishes } from './operatorPolishes.js';
 import { getEquipmentStatus } from './data/equipmentDefinitions.js';
 import {
     ARCHETYPE_SKINS,
@@ -517,7 +517,10 @@ export function createArmoryUi({
         const loadout = loadoutManager.getClassLoadout(cls);
         const archetype = loadout.archetypeId || DEFAULT_ARCHETYPES[cls];
         const chassisSkinId = loadoutManager.getEquippedChassisSkinId?.();
-        const selectedWeapon = pickerFields().weapon.currentName();
+        const fields = pickerFields();
+        const selectedWeapon = fields.weapon.currentName();
+        const selectedSheen = fields.sheen.currentName();
+        const selectedPolish = getSelectedPolish().name;
         const hudTheme = resolveHudTheme(loadoutManager.state.hudThemeId);
         const hudThemeStyle = hudThemeInlineStyle(loadoutManager.state.hudThemeId);
         const qaAudit = ownership.auditEquippableCatalog?.() ?? { total: 0, available: 0, complete: false };
@@ -585,17 +588,21 @@ export function createArmoryUi({
                     <div class="armory-stage-column">
                         <aside class="armory-stage-readout" aria-label="Live Armory Preview">
                             <div class="armory-stage-readout__info">
-                                <div class="armory-stage-readout__eyebrow" data-i18n="ui.armory.stage_eyebrow">◈ LIVE STAGE PREVIEW</div>
+                                <div class="armory-stage-readout__eyebrow" data-i18n="ui.armory.stage_eyebrow">◈ LIVE STAGE PREVIEW // DEPLOYMENT LOADOUT</div>
                                 <div class="armory-stage-readout__title">${activeClass.toUpperCase()} // ${ARCHETYPE_NAMES[archetype] || archetype}</div>
                                 <div class="armory-stage-readout__details">
                                     <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.weapon_label">WEAPON:</b> ${selectedWeapon}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_sheen">WEAPON SHEEN:</b> ${selectedSheen}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.sheen_kicker">OPERATOR SHEEN:</b> ${selectedPolish}</span>
                                     <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.chassis_label">CHASSIS:</b> ${nameForItem(chassisSkinId, 'STANDARD')}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_charm">CHARM:</b> ${fields.charm.currentName()}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_bay_a">BAY A:</b> ${fields.mod1.currentName()}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_bay_b">BAY B:</b> ${fields.mod2.currentName()}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_patch">PATCH:</b> ${fields.decal.currentName()}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_hud">HUD:</b> ${fields.hud.currentName()}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_voicebank">RADIO:</b> ${fields.voicebank.currentName()}</span>
                                 </div>
                             </div>
-                            <button type="button" class="armory-stage-readout__polish" id="armory-polish-btn">
-                                <span class="armory-stage-readout__polish-swatch" aria-hidden="true"></span>
-                                <span><small data-i18n="ui.armory.sheen_kicker">OPERATOR SHEEN</small><b data-i18n="ui.armory.sheen_cta">OPEN SUIT TINT MATRIX</b></span>
-                            </button>
                             <div class="armory-stage-readout__hint" data-i18n="ui.armory.stage_hint">DRAG 3D STAGE TO INSPECT OPERATOR &amp; WEAPON</div>
                         </aside>
                     </div>
@@ -681,22 +688,31 @@ export function createArmoryUi({
                                     ${slotHtml('chassis')}
                                 </div>
                                 <div class="bench-field">
+                                    <label><span data-i18n="ui.armory.sheen_kicker">OPERATOR SHEEN</span></label>
+                                    <button type="button" class="armory-stage-readout__polish armory-polish-rig-btn" id="armory-polish-btn">
+                                        <span class="armory-stage-readout__polish-swatch" aria-hidden="true"></span>
+                                        <span><small data-i18n="ui.armory.sheen_kicker">OPERATOR SHEEN</small><b data-i18n="ui.armory.sheen_cta">OPEN SUIT TINT MATRIX</b></span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="bench-stack bench-row-two-col">
+                                <div class="bench-field">
                                     <label data-i18n="ui.armory.f_patch">SHOULDER PATCH &amp; INSIGNIA</label>
                                     ${slotHtml('decal')}
                                 </div>
+                                <div class="bench-field">
+                                    <label data-i18n="ui.armory.f_voicebank">ALT RADIO VOICE BANK</label>
+                                    ${slotHtml('voicebank')}
+                                </div>
                             </div>
                             <div class="bench-row-two-col armory-systems-row">
-                                <div class="bench-field">
+                                <div class="bench-field" style="grid-column: 1 / -1;">
                                     <label data-i18n="ui.armory.f_hud">TACTICAL HUD THEME</label>
                                     ${slotHtml('hud')}
                                     <div class="armory-hud-theme-preview" data-hud-theme="${hudTheme?.id ?? 'default'}" data-hud-shape="${hudTheme?.shape ?? 'default'}" style="${hudThemeStyle}" aria-label="Equipped HUD preview">
                                         <span class="armory-hud-theme-preview__map" aria-hidden="true">⌁</span>
                                         <span class="armory-hud-theme-preview__copy"><b>${hudTheme?.name ?? 'Default Monochrome'}</b><small>♥♥♥ · O₂ 96% · LIVE PREVIEW</small></span>
                                     </div>
-                                </div>
-                                <div class="bench-field">
-                                    <label data-i18n="ui.armory.f_voicebank">ALT RADIO VOICE BANK</label>
-                                    ${slotHtml('voicebank')}
                                 </div>
                             </div>
                         </section>
@@ -850,7 +866,7 @@ export function createArmoryUi({
             if (onOpenSettings) {
                 onOpenSettings();
             } else {
-                document.querySelector('#menu .open-settings-btn')?.click?.();
+                document.querySelector('.menu-corner-settings .open-settings-btn')?.click?.();
             }
         });
 
@@ -875,9 +891,15 @@ export function createArmoryUi({
             if (!qaToolsEnabled || !ownership.isLocalInventoryAllowed?.()) return;
             const items = ownership.grantDevSet?.('marketplace');
             const keys = ownership.grantDevSet?.('keys', 5);
+            try {
+                window.bankManager?.setFoundryActivated?.(true);
+                window.bankManager?.grantDebugSalvage?.({ tech: 50, coin: 50, med: 50 });
+            } catch {
+                // best effort
+            }
             const button = container.querySelector?.('#armory-debug-grant-kit-btn');
             if (button) button.textContent = items?.ok && keys?.ok
-                ? `✓ SYNTHETIC ${items.granted.length} + KEYS`
+                ? `✓ TEST KIT + FOUNDRY READY`
                 : 'GRANT REJECTED';
             playSound('ui_click_confirm1');
         });

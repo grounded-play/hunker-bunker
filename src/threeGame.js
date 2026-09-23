@@ -286,9 +286,22 @@ import {
     fatigueMaxHealthPenalty,
     getFatigueStage,
     normalizeFatigueState,
+    SCAR_TREATMENT_COST,
+    nextTreatableScar,
     recordExpedition,
-    restoreOnSleep
+    restoreOnSleep,
+    sprintPricing,
+    treatScar
 } from './fatigue.js';
+import { summarizeRingRoute } from './ringCrossingStages.js';
+import { syncSurvivalTension } from './survivalTension.js';
+import {
+    OVERNIGHT_STATE_KEY,
+    createOvernightState,
+    normalizeOvernightState,
+    planAllCreepDecals,
+    runOvernight
+} from './overnightBridge.js';
 import {
     clampPositionToUnlockedRing,
     generateRadialMazeExpedition,
@@ -344,6 +357,7 @@ import {
 } from './playerSpriteLayouts.js';
 import { repackGeneratedSpriteAtlas } from './spriteAtlasRuntime.js';
 import { createFreshRunEntropy } from './runEntropy.js';
+import { campaignWorldStore } from './campaignWorld.js';
 import {
     ENEMY_SPRITE_LAYOUTS,
     STATIC_ENEMY_SPRITE_PATHS,
@@ -458,6 +472,19 @@ const FOUNDRY_DISCOVERY_MAX_DISTANCE = 58;
 // Dawn. Waking always lands here so a new campaign day reads as a new morning
 // rather than resuming wherever the short visual sky loop happened to be.
 const MORNING_TIME_OF_DAY = 0.26;
+// Stage label lookups for the ring-route readout, kept as explicit keys so the
+// i18n audit can see each reference.
+const RING_ROUTE_STAGE_LABELS = Object.freeze({
+    previous_crossing: () => t('ui.console.ring_route_stages.previous_crossing'),
+    ship_goal: () => t('ui.console.ring_route_stages.ship_goal'),
+    ring_mission: () => t('ui.console.ring_route_stages.ring_mission'),
+    milestone_boss: () => t('ui.console.ring_route_stages.milestone_boss')
+});
+// The operator's cot, offset from the bunker spawn so it sits inside the hab
+// rather than on the airlock threshold. Reachable from a little further than a
+// normal prop: a bed the player has to hunt for is a bed they will not use.
+const BUNKER_COT_OFFSET = Object.freeze({ x: -2.4, z: 1.9 });
+const BUNKER_COT_REACH = 2.6;
 const MENU_SHOWROOM_FLOOR_SIZE = 160;
 // World units per major grid cell. The floor snaps to this when it follows the
 // operative, so the grid scrolls underfoot instead of sliding with them.
@@ -1503,11 +1530,10 @@ export class ThreeGame {
         this.chunkGroups = new THREE.Group();
         this._chunkTemplateCache = new Map();
         this.globalSeedOffset = 0;
-        // Per-run entropy for one-off placements (foundry, cave). Rerolled on
-        // every run reset so discoveries land somewhere new each attempt; pinned
-        // to 0 for Daily Ops so all players share the same daily layout.
+        // Geography belongs to the campaign; expedition challenges get their
+        // own seed. Fixed daily/multiplayer worlds bypass this local save.
         this.fixedRunEntropy = false;
-        this.runEntropy = createFreshRunEntropy();
+        this.runEntropy = campaignWorldStore.getOrCreate().seed;
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys = new Set();
         this._slowFrameChunkMountTick = 0;
@@ -1594,6 +1620,7 @@ export class ThreeGame {
         // It survives runs and only advances through an explicit camp sleep.
         this.dayState = this.loadDayCycleState();
         this.fatigueState = this.loadFatigueState();
+        this.overnightState = this.loadOvernightState();
         // Weather (Note 9): pooled Points field, biome/time-biased state machine.
         this.weather = {
             state: 'clear',
@@ -3848,6 +3875,34 @@ export class ThreeGame {
         this.setupCrashedShips();
         this.setupBunkerBlastDoor();
         this.setupBaseDefenseTurret();
+        this.setupBunkerCot();
+    }
+
+    /**
+     * The operator's cot. A bed the player cannot see is a bed they will not
+     * use, so the rest point gets a prop rather than being an invisible
+     * trigger volume. Cosmetic only: getRestPointAt() is the authority on
+     * whether rest is offered, and it works whether or not this texture loads.
+     */
+    setupBunkerCot() {
+        const point = this.getBunkerRestPoint();
+        const material = new THREE.SpriteMaterial({
+            transparent: true,
+            alphaTest: 0.05,
+            depthWrite: true,
+            depthTest: true
+        });
+        const sprite = new THREE.Sprite(material);
+        sprite.scale.set(2.1, 1.4, 1);
+        sprite.position.set(point.x, 0.7, point.z);
+        sprite.visible = this.performanceProfile === 'gameplay';
+        sprite.userData = { isBunkerCot: true };
+        this.bunkerCotSprite = sprite;
+        this.scene.add(sprite);
+        this.loadKeyedSpriteTexture?.('/prop_camp_cot.png', 15, (tex) => {
+            material.map = tex;
+            material.needsUpdate = true;
+        });
     }
 
     setupCrashedShips() {
@@ -6865,6 +6920,7 @@ export class ThreeGame {
         handled = this.interactWithLoreTerminal() || handled;
         if (!handled) handled = this.interactWithCaveEntrance();
         if (!handled) handled = this.interactWithAct2Camp();
+        if (!handled) handled = this.interactWithBunkerCot();
         if (!handled) handled = this.interactWithScientist();
         if (!handled) handled = this.interactWithHiveSite();
         if (!handled) handled = this.interactWithCampQuestObject();
@@ -7088,6 +7144,50 @@ export class ThreeGame {
         this.scene.add(mesh);
         this.inRunLootDrops.push(mesh);
         return mesh;
+    }
+
+    /**
+     * Terrain height plus whether it is real.
+     *
+     * getTerrainHeightAt() cannot distinguish "the ground here is GROUND" from
+     * "this chunk has not streamed in yet, have a default" -- both return the
+     * same number. Anything that ANCHORS a set piece to the ground needs that
+     * difference, or it will bury the piece at the default height and never
+     * learn better.
+     */
+    sampleTerrainHeight(worldX, worldZ) {
+        const height = this.getTerrainHeightAt(worldX, worldZ);
+        return { height, anchored: this.hasLoadedTerrainAt(worldX, worldZ) };
+    }
+
+    hasLoadedTerrainAt(worldX, worldZ) {
+        if (!Number.isFinite(worldX) || !Number.isFinite(worldZ)) return false;
+        const chunkX = Math.floor(Math.round(worldX) / this.chunkSize);
+        const chunkY = Math.floor(Math.round(worldZ) / this.chunkSize);
+        const chunk = this.chunkCache?.get(`${chunkX},${chunkY}`);
+        return Boolean(chunk && Array.isArray(chunk.heightmap) && chunk.heightmap.length > 0);
+    }
+
+    /**
+     * Re-anchor any revealed camp that was placed before its chunk existed.
+     *
+     * Camps are revealed the moment the story says so -- after the first boss,
+     * from across the map -- which is long before their chunk streams in. The
+     * height sample fell back to GROUND, so a camp sitting on raised terrain
+     * was left buried under the floor: present in the objective list, invisible
+     * in the world.
+     */
+    reanchorUnanchoredCamps() {
+        let reanchored = 0;
+        for (const camp of this.camps ?? []) {
+            if (!camp?.revealed || camp._groundAnchored) continue;
+            const pos = camp.getPosition?.() ?? camp.pos ?? null;
+            if (!pos || !this.hasLoadedTerrainAt(pos.x, pos.z)) continue;
+            camp.reveal(pos.x, pos.z, this.getTerrainHeightAt(pos.x, pos.z));
+            camp._groundAnchored = true;
+            reanchored += 1;
+        }
+        return reanchored;
     }
 
     getTerrainHeightAt(worldX, worldZ) {
@@ -8203,7 +8303,7 @@ export class ThreeGame {
         const width = this.container.clientWidth || 1;
         const height = this.container.clientHeight || 1;
         const aspect = width / height;
-        const viewSize = this.performanceProfile === 'menu' ? 2.6 : 5.2;
+        const viewSize = this.performanceProfile === 'menu' ? 1.4 : 5.2;
 
         this.menuPixelRatio = cappedPixelRatio({
             width,
@@ -8401,6 +8501,9 @@ export class ThreeGame {
         }
         if (this.menuShowroomReticle) {
             this.menuShowroomReticle.visible = nextProfile === 'menu';
+        }
+        if (this.bunkerCotSprite) {
+            this.bunkerCotSprite.visible = nextProfile === 'gameplay';
         }
         if (nextProfile === 'menu' && this.darknessOverlay) {
             this.darknessOverlay.style.opacity = '0';
@@ -8898,6 +9001,7 @@ export class ThreeGame {
             fp.measure('updateBiomeAtmosphere', () => this.biomeAtmosphere?.update(delta, this.player ? this.player.position : { x: 0, y: 0, z: 0 }));
             fp.measure('updateWeather', () => this.updateWeather(delta));
             fp.measure('updateDayNightCycle', () => this.updateDayNightCycle(delta));
+            this.updateSurvivalTension?.();
             // After updateDayNightCycle: it resets fog colour from the biome
             // palette every frame, so the sky has to take the last word on it.
             fp.measure('updateSky', () => this.updateSky(delta));
@@ -11161,6 +11265,7 @@ export class ThreeGame {
         this._runCheckpointTimer = (this._runCheckpointTimer ?? 0) - delta;
         if (this._runCheckpointTimer > 0) return;
         this._runCheckpointTimer = RUN_CHECKPOINT_INTERVAL_SECONDS;
+        this.persistCampaignWorld?.();
 
         const inventory = this.getSessionInventory();
         runCheckpointStore.save({
@@ -11879,6 +11984,39 @@ export class ThreeGame {
         return null;
     }
 
+    /**
+     * One line for the terminal: how far along the ring route the player is and
+     * what the next unmet stage of the active crossing is. Derived from the
+     * same plan and state the crossing reconciler already owns, so the readout
+     * cannot drift from whether the door actually opens.
+     */
+    describeRingRouteProgress() {
+        const plan = this.worldPlan ?? null;
+        // Live context so the goal stage's sub-steps reflect what the bank
+        // actually holds, rather than showing a checkbox nothing can tick.
+        const route = summarizeRingRoute(plan, this.ringCrossingState, {
+            builtGoalKeys: typeof this.getBuiltGoalKeys === 'function' ? this.getBuiltGoalKeys() : null,
+            canAffordGoal: (goalKey) => {
+                const cost = this.bank?.getGoalUpgradeCost?.(goalKey, 1) ?? null;
+                return cost ? Boolean(this.bank?.canAfford?.(cost)) : false;
+            }
+        });
+        if (!route.active) {
+            return route.crossings.length > 0 ? t('ui.console.ring_route_open') : '--';
+        }
+        // Keys are written out rather than built from the stage id: the i18n
+        // audit resolves references statically, and a template-literal key
+        // reads to it as an orphaned translation.
+        const stageName = route.active.next
+            ? (RING_ROUTE_STAGE_LABELS[route.active.next.id]?.() ?? route.active.next.id)
+            : '';
+        return t('ui.console.ring_route_progress', {
+            done: route.active.completed,
+            total: route.active.total,
+            stage: stageName
+        });
+    }
+
     renderTerminalObjectiveJournal(bankState, activeGoal) {
         const day = this.dayState?.day ?? 1;
         const phase = String(this.dayState?.phase ?? REST_PHASES.EXPEDITION).replace(/_/g, ' ').toUpperCase();
@@ -11893,6 +12031,7 @@ export class ThreeGame {
         setText('terminal-log-day', t('ui.console.day_n', { day }));
         setText('terminal-log-phase', phase);
         setText('terminal-log-light', lightIsDay ? t('ui.console.daylight') : t('ui.console.night_ops'));
+        setText('terminal-log-route', this.describeRingRouteProgress?.() ?? '--');
         setText('terminal-log-transition', t('ui.console.transition_in', {
             phase: lightIsDay ? t('ui.console.dusk') : t('ui.console.dawn'),
             time: `${String(Math.floor(transitionSeconds / 60)).padStart(2, '0')}:${String(transitionSeconds % 60).padStart(2, '0')}`
@@ -14166,11 +14305,14 @@ export class ThreeGame {
             }
         }
 
+        this.reanchorUnanchoredCamps?.();
         this.updateCampCivilians(delta);
         this.updateCampTurrets(delta, phase);
         this.updateCampPrompt(phase);
         this.updateScientistPromptState();
         this.updateWandererPromptState();
+        // Last, so a camp verb at the same spot always wins the prompt.
+        this.updateRestPrompt?.();
     }
 
     // Camp defense turrets: friendly artillery in Act 1, the first hostile
@@ -14460,7 +14602,8 @@ export class ThreeGame {
                 const seed = ((this.runEntropy ?? 0) ^ (this.globalSeedOffset ?? 0) ^ 0x52494e47) >>> 0;
                 candidate = generateRadialMazeExpedition(seed);
                 signature = this.getRadialLayoutSignature(candidate);
-                if (this.fixedRunEntropy || signature !== this._previousRadialLayoutSignature) break;
+                if (this.fixedRunEntropy || this._campaignWorldSeed === this.runEntropy
+                    || signature !== this._previousRadialLayoutSignature) break;
                 this.runEntropy = createFreshRunEntropy(this.runEntropy);
             }
             this.radialMazePlan = candidate;
@@ -14489,7 +14632,18 @@ export class ThreeGame {
         return this.getRadialMazePlan()?.topology ?? null;
     }
 
+    getAuthoredSitePosition(siteId) {
+        if (!this.authoredWorldTiles) return null;
+        const plan = this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
+        const heart = plan?.reservations?.find((entry) => entry.id === `territory:${siteId}`);
+        if (!Number.isInteger(heart?.chunkX) || !Number.isInteger(heart?.chunkY)) return null;
+        const size = this.chunkSize ?? 49;
+        return { x: heart.chunkX * size + Math.floor(size / 2), z: heart.chunkY * size + Math.floor(size / 2) };
+    }
+
     chooseRadialSitePosition(siteId, seed, clearanceRadius = 0) {
+        const authored = this.getAuthoredSitePosition?.(siteId);
+        if (authored) return authored;
         const site = getRadialSite(this.getRadialMazePlan(), siteId);
         if (!site) return null;
         return this.chooseProgressionSitePosition({
@@ -14503,6 +14657,8 @@ export class ThreeGame {
 
     isSiteOnPlannedRing(x, z, siteId) {
         if (!Number.isFinite(x) || !Number.isFinite(z)) return false;
+        const authored = this.getAuthoredSitePosition?.(siteId);
+        if (authored) return Math.hypot(x - authored.x, z - authored.z) < 0.5;
         const site = getRadialSite(this.getRadialMazePlan(), siteId);
         if (!site) return true;
         const anchor = this.getBiomeAnchorPosition();
@@ -14810,21 +14966,38 @@ export class ThreeGame {
     resolveHiveChoice(action, payload = {}) {
         const hive = this.getHiveById(payload.hiveId);
         if (!hive || !this.act2) return false;
+        const before = this.getHiveRecord(hive.id);
+        if (!before) return false;
+        const deny = (reason = 'choice-unavailable') => {
+            window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+            window.dispatchEvent(new CustomEvent('camp-choice-denied', {
+                detail: { campId: hive.id, campLabel: hive.label, action, reason }
+            }));
+            return true;
+        };
+        if (hive.id === 'hive_suture' && this.isDayDeadlineExpired?.('hive_suture_parley')
+            && (action === 'hive-final' || (action === 'hive-quest' && payload.questId === 'host_mercy'))) {
+            return deny('deadline-expired');
+        }
+        // A modal can outlive its choice. Rebuild eligibility from the
+        // persisted record before spending resources or paying a reward.
+        const offered = ThreeGame.prototype.buildHiveChoiceOptions.call(this, before)
+            .find((option) => option.action === action
+                && (action !== 'hive-quest' || option.questId === payload.questId));
+        if (!offered || offered.disabled) {
+            const expired = action === 'hive-quest' && hive.id === 'hive_suture'
+                && payload.questId === 'host_mercy'
+                && this.isDayDeadlineExpired?.('hive_suture_parley');
+            return deny(expired ? 'deadline-expired' : 'choice-unavailable');
+        }
 
         if (action === 'hive-talk') {
             return this.talkToLeader('hive', hive);
         }
         if (action === 'hive-final') {
             this.act2.completeHiveFinal(hive.id);
-            const rec = this.getHiveRecord(hive.id);
-            hive.syncFromRecord(rec);
-            window.AudioManager?.play?.('class_lock', { volume: 0.5, playbackRate: 0.68 });
-            window.dispatchEvent(new CustomEvent('hive-choice-resolved', {
-                detail: { hiveId: hive.id, hiveLabel: hive.label, action: 'hive-final', status: rec?.status, bond: rec?.bond }
-            }));
-            return true;
-        }
-        if (action === 'hive-tend') {
+        } else if (action === 'hive-tend') {
+            if (before.bond >= ACT2_MAX_BOND && before.extractionLevel <= 0) return deny('already-tended');
             if (!this.bank?.canAffordShells?.(5)) {
                 window.AudioManager?.play?.('ui_error', { volume: 0.4 });
                 window.dispatchEvent(new CustomEvent('camp-support-denied', {
@@ -14832,40 +15005,38 @@ export class ThreeGame {
                 }));
                 return true;
             }
-            this.bank.spendShells(5);
+            if (!this.bank.spendShells(5)) return deny('insufficient-shells');
             this.act2.adjustHiveBond(hive.id, 1);
             this.act2.healHiveExtraction(hive.id, 1);
         } else if (action === 'hive-quest') {
-            if (hive.id === 'hive_suture' && payload.questId === 'host_mercy'
-                && this.isDayDeadlineExpired?.('hive_suture_parley')) {
-                window.dispatchEvent(new CustomEvent('camp-choice-denied', {
-                    detail: { campId: hive.id, campLabel: hive.label, action, reason: 'deadline-expired' }
-                }));
-                return true;
-            }
             this.act2.completeHiveQuest(hive.id, payload.questId, 1);
-            if (hive.id === 'hive_suture' && payload.questId === 'host_mercy') {
-                this.resolveDayDeadline?.('hive_suture_parley');
-            }
         } else if (action === 'hive-network') {
             this.act2.setHiveNetworked(hive.id, true);
         } else if (action === 'hive-rescue') {
             this.act2.rescueHive(hive.id);
         } else if (action === 'hive-harvest') {
             this.act2.harvestHive(hive.id);
+        } else if (action === 'hive-sacrifice') {
+            this.act2.sacrificeHive(hive.id);
+        } else {
+            return false;
+        }
+
+        const after = this.getHiveRecord(hive.id);
+        if (JSON.stringify(after) === JSON.stringify(before)) return deny('choice-not-applied');
+        if ((action === 'hive-quest' || action === 'hive-final')
+            && hive.id === 'hive_suture' && after.questFlags?.host_mercy === 'done') {
+            this.resolveDayDeadline?.('hive_suture_parley');
+        }
+        if (action === 'hive-harvest' && after.status === 'slain') {
             this.bank?.deposit?.({ tech: 3, med: 3, coin: 3 });
             this.bank?.addShells?.(12);
             this.spawnGearPoofEffect(hive.pos.x, hive.pos.z, 'bunker_junk_rare');
             this.triggerCameraShake?.(0.3, 0.5);
             this.spawnHiveHarvestBoss(hive, 3);
         } else if (action === 'hive-sacrifice') {
-            this.act2.sacrificeHive(hive.id);
             this.triggerCameraShake?.(0.35, 0.6);
-        } else {
-            return false;
         }
-
-        const after = this.getHiveRecord(hive.id);
         hive.syncFromRecord(after);
         window.AudioManager?.play?.('class_lock', { volume: 0.45, playbackRate: 0.8 });
         window.dispatchEvent(new CustomEvent('hive-choice-resolved', {
@@ -14920,7 +15091,11 @@ export class ThreeGame {
             // Camps are full set pieces, not floating overlays. Anchor the
             // foundation to the sampled terrain after validating its entire
             // nine-unit footprint above.
-            camp.reveal(x, z, this.getTerrainHeightAt?.(x, z) ?? 0);
+            // Remember whether this height came from real terrain. If it did
+            // not, reanchorUnanchoredCamps() fixes it once the chunk arrives.
+            const ground = this.sampleTerrainHeight?.(x, z) ?? { height: 0, anchored: false };
+            camp.reveal(x, z, ground.height);
+            camp._groundAnchored = ground.anchored;
             camp.setLevel(record.level);
             camp.setAided(record.aided);
             camp.setStatus(record.status);
@@ -15478,11 +15653,18 @@ export class ThreeGame {
     // while this is set). See CAMP_QUEST_GAMEPLAY_TARGET for per-quest counts.
     acceptCampQuest(camp, quest) {
         if (!camp || !quest || this._activeCampQuest) return;
-        this.act2.setCampQuestActive(camp.id, quest.id);
-        const target = CAMP_QUEST_GAMEPLAY_TARGET[quest.id] ?? 1;
+        const authoredQuest = CAMP_QUESTS[camp.id]?.find((entry) => entry.id === quest.id);
+        const record = this.getCampRecord?.(camp.id);
+        if (!authoredQuest || record?.questFlags?.[quest.id] === 'done'
+            || (record?.status && record.status !== 'alive')) return;
+        // Signatures close the existing quest chain with a physical task.
+        // Validate before persisting: unsupported offers must never leave an
+        // "active" flag without a world objective to finish.
+        const signatureTargets = { grid_covenant: 1, warm_pipes: 3, iron_ledger: 3 };
+        const target = signatureTargets[quest.id] ?? CAMP_QUEST_GAMEPLAY_TARGET[quest.id] ?? 1;
         this._activeCampQuest = {
             campId: camp.id,
-            quest,
+            quest: { ...quest, signature: authoredQuest.signature === true },
             kind: null,
             current: 0,
             target,
@@ -15511,10 +15693,27 @@ export class ThreeGame {
         } else if (quest.id === 'bunker_holdout') {
             this._activeCampQuest.kind = 'wave';
             this.spawnBunkerHoldoutWave(camp);
+        } else if (quest.id === 'iron_ledger') {
+            this._activeCampQuest.kind = 'wave';
+            this.spawnBunkerHoldoutWave(camp);
+        } else if (quest.id === 'grid_covenant' || quest.id === 'warm_pipes') {
+            this._activeCampQuest.kind = 'interact';
+            for (let index = 0; index < target; index += 1) {
+                const { x, z } = this.findCampQuestSpawnSpot(camp, index, target);
+                const sprite = this.spawnCampQuestMarkerProp(camp, { type: 'quest_prop', x, z, index });
+                if (sprite) this._activeCampQuest.props.push(sprite);
+            }
         } else {
             this._activeCampQuest = null;
             return;
         }
+        if (this._activeCampQuest.props.length === 0
+            || (this._activeCampQuest.kind !== 'wave' && this._activeCampQuest.props.length < target)) {
+            this.clearActiveCampQuestEntities?.();
+            this._activeCampQuest = null;
+            return;
+        }
+        this.act2.setCampQuestActive(camp.id, quest.id);
         window.AudioManager?.play?.('ui_scan_ping', { volume: 0.5, playbackRate: 1.0 });
         window.dispatchEvent(new CustomEvent('camp-quest-progress', {
             detail: { campId: camp.id, questId: quest.id, label: quest.label, current: 0, target: this._activeCampQuest.target }
@@ -15608,16 +15807,31 @@ export class ThreeGame {
     }
 
     spawnHiveArchiveObject(camp, _quest) {
-        const hivePos = this.hives && this.hives.length > 0 ? this.hives[0].pos : null;
-        let x, z;
-        if (hivePos) {
-            x = hivePos.x + 2;
-            z = hivePos.z + 2;
-        } else {
-            const spot = this.findCampQuestSpawnSpot(camp, 0, 1);
-            x = spot.x;
-            z = spot.z;
+        const hiveByCamp = {
+            camp_meridian: 'hive_suture',
+            camp_tallow: 'hive_carapace',
+            camp_vesper: 'hive_relay'
+        };
+        const hive = this.hives?.find((entry) => entry.id === hiveByCamp[camp.id]);
+        const usable = (spot) => Number.isFinite(spot?.x) && Number.isFinite(spot?.z)
+            && this.isSnailTileWalkable(Math.round(spot.x), Math.round(spot.z))
+            && this.canOccupyPosition(spot.x, spot.z);
+        let spot = null;
+        // Search the matching ring's hive first. A fixed +2 offset can put
+        // an archive inside its wall once the seeded approach changes.
+        for (const site of [hive, camp].filter(Boolean)) {
+            for (let index = 0; index < 16; index += 1) {
+                const candidate = this.findCampQuestSpawnSpot(site, index, 16);
+                if (usable(candidate)) {
+                    spot = candidate;
+                    break;
+                }
+            }
+            if (!spot && usable(site.pos)) spot = site.pos;
+            if (spot) break;
         }
+        if (!spot) return;
+        const { x, z } = spot;
         const sprite = this.spawnCampQuestMarkerProp(camp, { type: 'quest_prop', x, z, index: 0, scale: 1.2 });
         if (sprite) this._activeCampQuest.props.push(sprite);
     }
@@ -15854,7 +16068,9 @@ export class ThreeGame {
             sprite.geometry?.dispose?.();
             this.scatterSprites = this.scatterSprites.filter((s) => s !== sprite);
         }
-        this.act2.completeCampQuest(aq.campId, aq.quest.id, this.getCampQuestBondDelta?.(1) ?? 1);
+        const baseBondReward = aq.quest.signature ? 2 : 1;
+        this.act2.completeCampQuest(aq.campId, aq.quest.id,
+            this.getCampQuestBondDelta?.(baseBondReward) ?? baseBondReward);
         if (aq.campId === 'camp_vesper' && aq.quest.id === 'bunker_holdout') {
             this.resolveDayDeadline?.('vesper_last_shelter');
         }
@@ -15863,7 +16079,8 @@ export class ThreeGame {
         });
         if (camp) {
             const record = this.getCampRecord(camp.id);
-            camp.setStatus(record?.status ?? 'alive');
+            if (this.syncCampVisualFromRecord) this.syncCampVisualFromRecord(camp, record);
+            else camp.setStatus(record?.status ?? 'alive');
             this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, 'bunker_junk_rare');
         }
         // Heavy Munitions needs an immediate recompute so +1 shotDamage is
@@ -16049,6 +16266,51 @@ export class ThreeGame {
         return true;
     }
 
+    resetCampaignState() {
+        // The renderer survives a title-screen NEW CAMPAIGN. Retire its old
+        // save authority before teardown can emit another progression event.
+        this._campaignProgressRestored = false;
+        this._campaignWorldSeed = null;
+        this._restoredAuthoredWorldIdentity = null;
+        campaignWorldStore.reset();
+        this.expeditionIndex = 0;
+        this.expeditionSeed = null;
+        this.dayState = createDayState();
+        this.fatigueState = createFatigueState();
+        this.overnightState = createOvernightState();
+        this.completedRingCrossingMissionIds = new Set();
+        this.defeatedMilestoneBosses = new Set();
+        this.milestoneBossLifecycleState = createMilestoneBossLifecycleState({
+            builtGoalKeys: this.getBuiltGoalKeys?.() ?? []
+        });
+        this._milestoneBossRestagePending = true;
+        this._deepAnchorSpawnedCrossings = new Set();
+        this._campVerbLastUsedMs = {};
+        this._campVerbUsedOnce = {};
+        this._caveAnomalySignaled = false;
+        this._hiveKinKills = 0;
+        this._terminalEvent = null;
+        this._terminalEventResolvedIds?.clear?.();
+        this._terminalObjectiveHistory = [];
+        this._meridianCompassLock = null;
+        this.clearCompanions?.();
+        this.clearCorpses?.();
+        this.clearLoreDrops?.();
+        this.clearBlackBoxMarker?.();
+        this.resetAct2World?.();
+        this.clearLoadedChunksForRunReset?.();
+        this._previousRadialLayoutSignature = null;
+        this._currentRadialLayoutSignature = null;
+        this.queenFightSprite = null;
+        this._overnightCreepSprites = [];
+        this.foundry?.reset?.();
+        if (this.wandererManager?.load) this.wandererManager.state = this.wandererManager.load();
+        this.persistDayCycleState?.();
+        this.persistFatigueState?.();
+        this.persistOvernightState?.();
+        this.setTimeOfDayToMorning?.();
+    }
+
     loadDayCycleState() {
         if (typeof localStorage === 'undefined') return createDayState();
         try {
@@ -16056,6 +16318,109 @@ export class ThreeGame {
         } catch {
             return createDayState();
         }
+    }
+
+    loadOvernightState() {
+        if (typeof localStorage === 'undefined') return createOvernightState();
+        try {
+            return normalizeOvernightState(JSON.parse(localStorage.getItem(OVERNIGHT_STATE_KEY) ?? 'null'));
+        } catch {
+            return createOvernightState();
+        }
+    }
+
+    persistOvernightState() {
+        this.overnightState = normalizeOvernightState(this.overnightState);
+        try {
+            if (typeof localStorage !== 'undefined') {
+                localStorage.setItem(OVERNIGHT_STATE_KEY, JSON.stringify(this.overnightState));
+            }
+        } catch {
+            // Same contract as the day cycle: never strand the live session.
+        }
+        return this.overnightState;
+    }
+
+    /**
+     * Resolve the night the player just slept through and return its ledger for
+     * the morning debrief. Reads live act2 records so the simulation reacts to
+     * the camps the player actually supplied and the hives they actually left
+     * standing.
+     */
+    simulateNightPassed() {
+        const world = this.act2?.getState?.() ?? null;
+        const night = runOvernight({
+            day: this.dayState?.day ?? 1,
+            difficulty: threatScaleForDay(this.dayState?.day ?? 1, { hp: 1, speed: 1 }).hp,
+            campRecords: world?.camps ?? [],
+            hiveRecords: world?.hives ?? [],
+            overnightState: this.overnightState
+        });
+        this.overnightState = night.state;
+        this.persistOvernightState();
+        // The night has to show in the world, not only in the ledger.
+        this.applyOvernightWorldPresence();
+        return night.result;
+    }
+
+    /**
+     * Put the night on the ground: creep patches around hives that spread, and
+     * raid wear on camps that did not hold. Called after a rest resolves and
+     * again when the world is rebuilt, so a reload shows the same damage.
+     */
+    applyOvernightWorldPresence() {
+        this.applyCampOvernightConditions();
+        this.stampOvernightCreep();
+    }
+
+    applyCampOvernightConditions() {
+        const stored = normalizeOvernightState(this.overnightState);
+        for (const camp of this.camps ?? []) {
+            const condition = stored.camps[camp?.id]?.condition ?? 'secure';
+            camp?.setOvernightCondition?.(condition);
+        }
+    }
+
+    /**
+     * Re-stamp every creep decal from stored state. Clears its own sprites
+     * first so this is idempotent: calling it twice leaves one patch, not two.
+     */
+    stampOvernightCreep() {
+        for (const sprite of this._overnightCreepSprites ?? []) {
+            sprite.parent?.remove(sprite);
+            const index = this.scatterSprites?.indexOf(sprite) ?? -1;
+            if (index >= 0) this.scatterSprites.splice(index, 1);
+        }
+        this._overnightCreepSprites = [];
+        if (this.performanceProfile !== 'gameplay') return 0;
+
+        const hives = this.act2?.getState?.().hives ?? [];
+        const placements = planAllCreepDecals(hives, this.overnightState);
+        for (const placement of placements) {
+            const sprite = this.createScatterInstance?.({
+                x: placement.x,
+                z: placement.z,
+                type: placement.type,
+                scatterKey: `overnight-creep:${placement.hiveId}:${placement.ring}:${placement.x.toFixed(2)}`,
+                scale: placement.scale,
+                rotation: placement.rotation,
+                tiltX: 0,
+                tiltZ: 0,
+                elevation: 0.035,
+                groupType: 'decal',
+                phase: 0,
+                opacity: 1,
+                biomeTint: 0xffffff
+            });
+            if (!sprite) continue;
+            const chunkX = Math.floor(placement.x / this.chunkSize);
+            const chunkY = Math.floor(placement.z / this.chunkSize);
+            const group = this.chunkMeshes?.get(`${chunkX},${chunkY}`) ?? this.scene;
+            group.add(sprite);
+            this.scatterSprites?.push(sprite);
+            this._overnightCreepSprites.push(sprite);
+        }
+        return this._overnightCreepSprites.length;
     }
 
     loadFatigueState() {
@@ -16137,6 +16502,113 @@ export class ThreeGame {
     }
 
     /**
+     * Pay a camp medic to walk one scar down a tier. Never clears it: a treated
+     * scar is quieter, never absent, so the cost of a hard campaign stays on
+     * the operator's record.
+     */
+    treatScarAtCamp(camp, scarId) {
+        if (!scarId) return false;
+        if (!this.bank?.canAffordShells?.(SCAR_TREATMENT_COST)) {
+            window.AudioManager?.play?.('ui_error', { volume: 0.45 });
+            window.dispatchEvent(new CustomEvent('camp-support-denied', {
+                detail: { campId: camp?.id ?? null, campLabel: camp?.label ?? '', cost: SCAR_TREATMENT_COST }
+            }));
+            return true;
+        }
+
+        const result = treatScar(this.fatigueState, scarId);
+        if (!result.treated) return false;
+        this.bank.spendShells(SCAR_TREATMENT_COST);
+        this.fatigueState = result.state;
+        this.persistFatigueState?.();
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 0.9 });
+        window.dispatchEvent(new CustomEvent('scar-treated', {
+            detail: {
+                campId: camp?.id ?? null,
+                campLabel: camp?.label ?? '',
+                scarId,
+                severity: result.state.scars.find((scar) => scar.id === scarId)?.severity ?? 1,
+                cost: SCAR_TREATMENT_COST
+            }
+        }));
+        return true;
+    }
+
+    /**
+     * Sleep at the bunker cot. Routes through the same beginCampRest() the camp
+     * bedrolls use -- confirmation on a closing deadline, overnight ledger,
+     * morning -- so there is one sleep sequence, not two.
+     */
+    interactWithBunkerCot() {
+        if (!this.isGameplayInputActive?.() || !this.player) return false;
+        const point = this.getRestPointAt(this.player.position.x, this.player.position.z);
+        if (!point) return false;
+        return this.beginCampRest(point) !== false;
+    }
+
+    /**
+     * Show the rest prompt while the player stands at a bed. Reuses the shared
+     * action prompt rather than adding a second prompt surface.
+     */
+    updateRestPrompt() {
+        if (typeof document === 'undefined') return;
+        const promptEl = document.getElementById('console-hud-prompt');
+        if (!promptEl) return;
+        const actionText = promptEl.querySelector('.prompt-text');
+        const point = this.player && this.isGameplayInputActive?.()
+            ? this.getRestPointAt(this.player.position.x, this.player.position.z)
+            : null;
+
+        if (point) {
+            if (actionText) {
+                actionText.textContent = t('ui.prompt.rest_end_day', { day: point.nextDay });
+                actionText.dataset.restPrompt = '1';
+            }
+            const promptKey = promptEl.querySelector('.prompt-key');
+            if (promptKey) {
+                const label = this.getPromptKeyLabel('E');
+                promptKey.textContent = label;
+                promptKey.classList.toggle('prompt-key--tap', label === 'TAP');
+            }
+            promptEl.classList.add('visible');
+            promptEl.classList.remove('hidden');
+            return;
+        }
+
+        // Only ever retract our own prompt: another system may own it now.
+        if (actionText?.dataset?.restPrompt === '1') {
+            delete actionText.dataset.restPrompt;
+            promptEl.classList.add('hidden');
+            promptEl.classList.remove('visible');
+        }
+    }
+
+    /** Where the bunker cot stands, in world coordinates. */
+    getBunkerRestPoint() {
+        const spawn = this.getSpawnTile?.() ?? null;
+        return {
+            id: 'bunker_cot',
+            label: 'BUNKER COT',
+            x: (spawn?.x ?? 0) + BUNKER_COT_OFFSET.x,
+            z: (spawn?.y ?? 0) + BUNKER_COT_OFFSET.z
+        };
+    }
+
+    /**
+     * The rest point the player is standing at, or null. Asks canRestAt() --
+     * the same rule the camp verb uses -- so the cot can never disagree with a
+     * bedroll about whether sleeping is allowed right now.
+     */
+    getRestPointAt(x, z) {
+        if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
+        const cot = this.getBunkerRestPoint();
+        if (Math.hypot(cot.x - x, cot.z - z) > BUNKER_COT_REACH) return null;
+        const check = this.canRestAt(cot, { status: 'alive', safeSpace: true });
+        if (!check.allowed) return null;
+        return { ...cot, nextDay: check.nextDay };
+    }
+
+    /**
      * Can the player sleep at this site? One rule for every bed: camp bedroll,
      * bunker cot, outpost pod. The site-specific part is only "is this a safe
      * space" -- the campaign-state part belongs to dayCycle.canRestNow().
@@ -16197,6 +16669,7 @@ export class ThreeGame {
         const recovered = restoreOnSleep(this.fatigueState);
         this.fatigueState = recovered.state;
         this.persistFatigueState?.();
+        const night = this.simulateNightPassed?.() ?? null;
         this.setTimeOfDayToMorning?.();
         // The Foundry interior is the first authored between-day tableau. Its
         // existing pocket-plane isolation pauses surface combat while the
@@ -16213,6 +16686,10 @@ export class ThreeGame {
                 closing: sleeping.closing,
                 // What last night cost: null unless they slept from RAGGED or worse.
                 gainedScar: recovered.gainedScar,
+                // One line per real change; the morning debrief renders these
+                // rather than re-deriving what happened.
+                ledger: night?.ledger ?? [],
+                threat: night?.threat ?? null,
                 safeSpace: enteredRestSpace ? 'foundry-interior' : 'camp-exterior'
             }
         }));
@@ -16456,6 +16933,20 @@ export class ThreeGame {
                             : gate.reason === 'insufficient_resources' ? ' (NEEDS SUPPLIES)'
                                 : ' (UNAVAILABLE)';
                     return { camp, action: 'active-verb', verb, gate, label: `${verb.label}${suffix}` };
+                }
+            }
+            // A camp medic can quiet a scar, never clear it. Offered before
+            // rest so a player who walks in wrecked is shown the treatment
+            // before the bed, which is the order they would want them in.
+            if (phase === 'dormant' && status === 'alive') {
+                const treatable = nextTreatableScar(this.fatigueState);
+                if (treatable) {
+                    return {
+                        camp,
+                        action: 'treat-scar',
+                        scarId: treatable.id,
+                        label: `TREAT ${treatable.id.replace(/_/g, ' ')} — ${SCAR_TREATMENT_COST} SHELLS`
+                    };
                 }
             }
             // Rest stays the last verb offered here, so urgent camp story is
@@ -16910,6 +17401,8 @@ export class ThreeGame {
         const actionable = this.getActionableCampAt(this.player.position.x, this.player.position.z);
         if (!actionable) return false;
         const { camp, action } = actionable;
+
+        if (action === 'treat-scar') return this.treatScarAtCamp(camp, actionable.scarId);
 
         if (action === 'rest') return this.beginCampRest(camp);
 
@@ -18566,6 +19059,16 @@ export class ThreeGame {
             const chunkWorldX = Number.isFinite(cx) ? cx * this.chunkSize : 0;
             const chunkWorldZ = Number.isFinite(cy) ? cy * this.chunkSize : 0;
             for (const room of metadata?.roomInstances ?? []) {
+                // Territory shelter follows its actual faction state. A
+                // betrayed camp or harvested hive cannot remain an invisible
+                // invulnerability volume just because its blueprint is quiet.
+                if (room.siteId?.startsWith('camp_')) {
+                    const status = this.getCampRecord?.(room.siteId)?.status;
+                    if (status === 'culled' || (this.isAct2Active?.() && ['alive', 'robbed'].includes(status))) continue;
+                } else if (room.siteId?.startsWith('hive_')) {
+                    const status = this.getHiveRecord?.(room.siteId)?.status;
+                    if (['harvested', 'destroyed'].includes(status)) continue;
+                }
                 const isSafe = Boolean(
                     room.isSafe === true
                     || room.safeZone === true
@@ -18677,6 +19180,7 @@ export class ThreeGame {
                 if (definition) this.defeatedMilestoneBosses?.add(definition.goalKey);
             }
         }
+        if (result.changed) this.persistCampaignWorld?.();
         return result;
     }
 
@@ -18884,6 +19388,7 @@ export class ThreeGame {
                 lock: isOpen ? null : door.lock
             });
         }
+        if (result.changed) this.persistCampaignWorld?.();
         return result;
     }
 
@@ -19166,6 +19671,7 @@ export class ThreeGame {
             type: MILESTONE_BOSS_EVENT_TYPES.PLAYER_DEATH
         });
         this._milestoneBossRestagePending = true;
+        this.persistCampaignWorld?.();
         this.closeConsoleModal();
         const inventory = this.getSessionInventory();
         const salvage = {
@@ -19179,6 +19685,7 @@ export class ThreeGame {
             `Depth tier: ${this.getDepthTierName(this.maxDepthTierReached)}.`,
             `Recoverable salvage: ${salvage.tech} TECH / ${salvage.coin} COIN / ${salvage.med} MED.`
         ].join(' ');
+        this.clearBlackBoxMarker?.();
         const blackBoxState = blackBoxStore.recordDeath({
             x: this.player?.position?.x ?? 0,
             z: this.player?.position?.z ?? 0,
@@ -19188,6 +19695,7 @@ export class ThreeGame {
             cause: reason,
             log: deathLog
         });
+        this._blackBoxState = blackBoxState;
         this.showBunkerLine(
             getDialogueLine('death', Math.random, this.buildLineDirectorContext().register)
             ?? 'SUIT FAILURE LOGGED. BLACK BOX ARMED.'
@@ -19205,6 +19713,8 @@ export class ThreeGame {
     }
 
     clearLoadedChunksForRunReset() {
+        this.persistCampaignWorld?.();
+        this._campaignProgressRestored = false;
         if (this.radialMazePlan) {
             this._previousRadialLayoutSignature = this._currentRadialLayoutSignature
                 ?? this.getRadialLayoutSignature?.(this.radialMazePlan)
@@ -19266,6 +19776,7 @@ export class ThreeGame {
     }
 
     respawnPlayer({ resetRunState = true, skipEffects = false, deferChunkMount = false } = {}) {
+        const campaign = resetRunState ? this.beginCampaignExpedition?.() : null;
         if (resetRunState) this.resetRunDrops();
         this.resetVitalsForRun({ emit: false });
         this.resetWeaponState({ emit: false });
@@ -19361,7 +19872,7 @@ export class ThreeGame {
             this.cinematicLock = false;
             this.runEntropy = this.fixedRunEntropy
                 ? 0
-                : createFreshRunEntropy(this.runEntropy);
+                : campaign?.seed ?? createFreshRunEntropy(this.runEntropy);
             this.resetMayorTinaEncounter();
             this.clearBlackBoxMarker();
             this._blackBoxState = blackBoxStore.load();
@@ -19383,6 +19894,10 @@ export class ThreeGame {
                 bossPanel.classList.add('hidden');
             }
             this.clearLoadedChunksForRunReset();
+            this.completedRingCrossingMissionIds = new Set();
+            this.defeatedMilestoneBosses?.clear?.();
+            if (campaign?.mazeState) this.restoreMazePersistenceState(campaign.mazeState);
+            this._campaignProgressRestored = Boolean(campaign);
             this.syncVisibleChunks(true, { processLimit: deferChunkMount ? 0 : null });
             this.applyMilestoneBossRuntimeEvent?.({
                 type: MILESTONE_BOSS_EVENT_TYPES.BASE_RETURN,
@@ -19504,6 +20019,7 @@ export class ThreeGame {
         if (this.missionState) this.missionState.status = 'extracted';
         this.inputEnabled = false;
         this.recordExpeditionEnded?.();
+        this.persistCampaignWorld?.();
         // A clean extraction is a graceful run end -- nothing left to
         // crash-recover, and the salvage below is being deposited for real.
         runCheckpointStore.clear();
@@ -20179,10 +20695,40 @@ export class ThreeGame {
         }
     }
 
+    /**
+     * Drive the survival-tension mix: suffocation and daze muffling from
+     * vitals, plus the duller mix exhaustion brings. One owner for the low-pass
+     * filter -- a second caller would fight this one for the same node.
+     *
+     * Only pushed when the inputs actually change, so a steady state is not
+     * re-scheduling an audio ramp every frame.
+     */
+    updateSurvivalTension() {
+        const stageId = getFatigueStage(this.fatigueState).id;
+        const vitals = this.playerVitals ?? {};
+        const key = `${stageId}|${Math.round(vitals.o2 ?? 0)}|${vitals.hp ?? 0}|${vitals.maxHp ?? 0}`;
+        if (key === this._survivalTensionKey) return;
+        this._survivalTensionKey = key;
+        syncSurvivalTension({
+            vitals: {
+                o2: vitals.o2 ?? 100,
+                maxO2: vitals.maxO2 ?? 100,
+                hp: vitals.hp ?? 3,
+                maxHp: vitals.maxHp ?? 3
+            },
+            audioManager: typeof window !== 'undefined' ? window.AudioManager : null,
+            fatigueStageId: stageId
+        });
+    }
+
     updateSprintState(_delta) {
         const active = Boolean(this.sprinting) && this.isGameplayInputActive() && (this.playerVitals?.o2 ?? 0) > 0;
-        this._sprintMoveSpeedMult = active ? 1.6 : 1.0;
-        this._sprintO2DrainMult = active ? 2.5 : 1.0;
+        // Fatigue prices sprint, it never revokes it: `active` above is
+        // untouched. A tired operator still sprints -- it just costs more air
+        // and carries a little less of the bonus.
+        const pricing = sprintPricing(this.fatigueState);
+        this._sprintMoveSpeedMult = active ? 1 + (0.6 * pricing.speedBonusScale) : 1.0;
+        this._sprintO2DrainMult = active ? 2.5 * pricing.o2DrainMultiplier : 1.0;
         if (active && !this._wasSprinting) {
             if (typeof window !== 'undefined') window.AudioManager?.play('fx_scout_sprint', { volume: 0.45, bus: 'sfx' });
         }
@@ -33567,6 +34113,36 @@ export class ThreeGame {
         return showroom;
     }
 
+    beginCampaignExpedition() {
+        if (this.performanceProfile === 'menu') return null;
+        if (this.fixedRunEntropy || this.isMultiplayer) {
+            this._campaignWorldSeed = null;
+            this._campaignProgressRestored = false;
+            this.expeditionIndex = 0;
+            this.expeditionSeed = (Number(this.globalSeedOffset) >>> 0);
+            return null;
+        }
+        this.persistCampaignWorld?.();
+        const campaign = campaignWorldStore.beginExpedition();
+        this._campaignWorldSeed = campaign.seed;
+        this._campaignProgressRestored = false;
+        this._restoredAuthoredWorldIdentity = null;
+        this.runEntropy = campaign.seed;
+        this.expeditionIndex = campaign.expeditionIndex;
+        this.expeditionSeed = campaign.expeditionSeed;
+        return campaign;
+    }
+
+    persistCampaignWorld() {
+        if (this.fixedRunEntropy || this.isMultiplayer || !this._campaignProgressRestored
+            || this._campaignWorldSeed !== this.runEntropy || this.globalSeedOffset) return false;
+        // A title-screen NEW CAMPAIGN or imported save may replace storage
+        // while this renderer still exists. Never write the previous world
+        // into that new campaign, nor create a save just by idling in menus.
+        if (campaignWorldStore.getState()?.seed !== this._campaignWorldSeed) return false;
+        return campaignWorldStore.saveMazeState(this._campaignWorldSeed, this.getMazePersistenceState());
+    }
+
     getMazePersistenceState() {
         return {
             generationVersion: 2,
@@ -33574,6 +34150,13 @@ export class ThreeGame {
             doors: serializeDoorStates(this.proceduralDoorStates),
             milestoneBosses: this.milestoneBossLifecycleState ?? null,
             ringCrossings: this.ringCrossingState ?? null,
+            worldChanges: {
+                destroyedWalls: [...(this.destroyedWallKeys ?? [])],
+                destroyedExteriorWalls: [...(this.destroyedExteriorWallKeys ?? [])],
+                discoveredChunks: [...(this.discoveredMapChunkKeys ?? [])],
+                discoveredRooms: [...(this.discoveredMapRoomKeys ?? [])],
+                discoveredCells: [...(this.discoveredMapCellKeys ?? [])]
+            },
             authoredWorld: {
                 enabled: Boolean(this.authoredWorldTiles),
                 seed: this.worldPlan?.seed ?? null,
@@ -33587,8 +34170,22 @@ export class ThreeGame {
         if (!raw || raw.generationVersion !== 2) return false;
         this.mazeAccessState = createAccessState(raw.access);
         this.proceduralDoorStates = restoreDoorStates(raw.doors);
+        if (raw.worldChanges && typeof raw.worldChanges === 'object') {
+            const strings = (values) => new Set(Array.isArray(values)
+                ? values.filter((value) => typeof value === 'string') : []);
+            this.destroyedWallKeys = strings(raw.worldChanges.destroyedWalls);
+            this.destroyedExteriorWallKeys = strings(raw.worldChanges.destroyedExteriorWalls);
+            this.discoveredMapChunkKeys = strings(raw.worldChanges.discoveredChunks);
+            this.discoveredMapChunkKeys.add('0,0');
+            this.discoveredMapRoomKeys = strings(raw.worldChanges.discoveredRooms);
+            this.discoveredMapCellKeys = strings(raw.worldChanges.discoveredCells);
+        }
         if (raw.milestoneBosses) {
             this.milestoneBossLifecycleState = migrateMilestoneBossLifecycleState(raw.milestoneBosses);
+            this.defeatedMilestoneBosses = new Set(MILESTONE_BOSS_DEFINITIONS
+                .filter((definition) => this.milestoneBossLifecycleState.milestones?.[definition.milestoneId]?.status
+                    === MILESTONE_BOSS_STATES.DEFEATED)
+                .map((definition) => definition.goalKey));
         }
         if (raw.ringCrossings) {
             this.ringCrossingState = raw.ringCrossings;

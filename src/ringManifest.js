@@ -124,6 +124,18 @@ function reservation(spec) {
     };
 }
 
+function territoryRoomReservations(site, family, beats, heartKey) {
+    return beats.filter((beat) => beat.id !== heartKey).map((beat) => reservation({
+        id: `room:${site.id}:${beat.id}`,
+        ring: site.ring,
+        role: 'territoryRoom',
+        siteId: site.id,
+        roomFamily: family,
+        territoryId: `territory:${site.id}`,
+        territoryBeatKey: beat.id
+    }));
+}
+
 function makeCoreReservations(expedition, ring) {
     const reservations = [reservation({
         id: `ring-${ring}:entry`,
@@ -165,6 +177,7 @@ function makeCoreReservations(expedition, ring) {
             })),
             stateAnchorIds: ACT2_CAMP_STATUSES.map((stateKey) => `${camp.id}:state:${stateKey}`)
         }));
+        reservations.push(...territoryRoomReservations(camp, 'camp', CAMP_TERRITORY_BEATS, 'central'));
         for (const stateKey of ACT2_CAMP_STATUSES) {
             reservations.push(reservation({
                 id: `${camp.id}:state:${stateKey}`,
@@ -207,6 +220,7 @@ function makeCoreReservations(expedition, ring) {
             })),
             stateAnchorIds: ACT2_HIVE_STATUSES.map((stateKey) => `${hive.id}:state:${stateKey}`)
         }));
+        reservations.push(...territoryRoomReservations(hive, 'hive', HIVE_TERRITORY_BEATS, 'choice_chamber'));
         for (const stateKey of ACT2_HIVE_STATUSES) {
             reservations.push(reservation({
                 id: `${hive.id}:state:${stateKey}`,
@@ -668,10 +682,27 @@ export function projectManifestReservations(expedition, manifestPlan, territoryP
         const anchor = territoryAnchorBeat(territory);
         const assignment = assignmentFor(anchor?.ownerChunkKey, 'territoryAnchor', {
             territoryId: territory.id,
-            territoryBeatId: anchor?.id ?? null
+            territoryBeatId: anchor?.id ?? null,
+            territoryBeatKey: anchor?.sourceId?.split(':').at(-1),
+            territoryVariant: stableHash(`${expedition.seed}|${territory.id}`) % 3
         });
         if (!assignment) errors.push(`${territory.reservationId} has no allocated territory anchor`);
         else assignments.set(territory.reservationId, assignment);
+    }
+
+    // The macro territory already owns every member chunk. Project each
+    // chamber as an authored reservation instead of silently streaming five
+    // generic chunks around a single camp/hive heart.
+    for (const room of sourceReservations.filter((entry) => entry.role === 'territoryRoom')) {
+        const territory = territoryById.get(room.territoryId);
+        const beat = territory?.beats.find((entry) => entry.sourceId === `${room.siteId}:${room.territoryBeatKey}`);
+        const assignment = assignmentFor(beat?.ownerChunkKey, 'territoryRoom', {
+            territoryId: room.territoryId,
+            territoryBeatId: beat?.id ?? null,
+            territoryVariant: stableHash(`${expedition.seed}|${room.territoryId}`) % 3
+        });
+        if (!assignment) errors.push(`${room.id} has no allocated territory room`);
+        else assignments.set(room.id, assignment);
     }
 
     // Consequence states are alternate presentations of one territory, not
@@ -685,6 +716,8 @@ export function projectManifestReservations(expedition, manifestPlan, territoryP
         const assignment = assignmentFor(anchor?.ownerChunkKey, 'territoryStateAlias', {
             territoryId,
             territoryBeatId: anchor?.id ?? null,
+            territoryBeatKey: anchor?.sourceId?.split(':').at(-1),
+            territoryVariant: stableHash(`${expedition.seed}|${territoryId}`) % 3,
             shareWithReservationId: territoryId
         });
         if (!assignment) errors.push(`${reservation.id} cannot resolve territory ${territoryId}`);
@@ -707,7 +740,9 @@ export function projectManifestReservations(expedition, manifestPlan, territoryP
         occupied.add(finale.placement.chunkKey);
     }
 
-    const unassigned = sourceReservations.filter((reservation) => !assignments.has(reservation.id));
+    const unassigned = sourceReservations.filter((reservation) => (
+        !assignments.has(reservation.id) && reservation.role !== 'territoryRoom'
+    ));
     const records = unassigned.map((reservation) => ({
         reservation,
         candidates: candidateChunksForReservation(
@@ -860,7 +895,9 @@ export function findWorldPlanReservationConflicts(worldPlan) {
     for (const [chunkKey, reservationIds] of occupants) {
         if (reservationIds.length > 1) conflicts.push({ kind: 'reservation_overlap', chunkKey, reservationIds });
         const beat = territoryBeats.get(chunkKey);
-        const allowedTerritoryAnchor = reservationIds.length === 1 && reservationIds[0] === beat?.territoryId;
+        const owner = reservationIds.length === 1 ? getWorldReservation(worldPlan, reservationIds[0]) : null;
+        const allowedTerritoryAnchor = owner && (owner.id === beat?.territoryId
+            || (owner.role === 'territoryRoom' && owner.territoryId === beat?.territoryId && owner.territoryBeatId === beat?.beatId));
         if (beat && !allowedTerritoryAnchor) {
             conflicts.push({
                 kind: 'territory_overlap',

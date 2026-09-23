@@ -87,6 +87,17 @@
       "engineer": "ENGINEER",
       "reroute": "REROUTE",
       "cheaper_consoles": "CHEAPER CONSOLES",
+      "role_infiltrator": "INFILTRATOR",
+      "role_breacher": "BREACHER",
+      "role_logistics": "LOGISTICS",
+      "tag_active": "ACTIVE:",
+      "tag_passive": "PASSIVE:",
+      "spec_scout_mobility": "MOBILITY: MAX",
+      "spec_scout_armor": "ARMOR: LIGHT",
+      "spec_tank_defense": "DEFENSE: MAX",
+      "spec_tank_armor": "ARMOR: HEAVY",
+      "spec_eng_utility": "UTILITY: MAX",
+      "spec_eng_armor": "ARMOR: HAZARD",
       "esc": "[ESC]",
       "return_main": "← RETURN TO MAIN MENU"
     },
@@ -127,6 +138,7 @@
       "desktop_controls": "DESKTOP CONTROLS",
       "cat_operator": "OPERATOR & SYSTEM DATA",
       "callsign": "OPERATOR CALLSIGN",
+      "operator_id": "OPERATOR ID",
       "cloud_sync": "STEAM CLOUD SYNC",
       "save_data": "SAVE DATA",
       "new_game_reset": "NEW GAME RESET",
@@ -296,7 +308,9 @@
       "blackbox_recoverable": "RECOVERABLE (SECTOR {depth})",
       "blackbox_none": "NONE",
       "equipped_none": "NULL",
-      "arsenal_count": "ARSENAL: {made} / {total} WEAPONS FABRICATED"
+      "arsenal_count": "ARSENAL: {made} / {total} WEAPONS FABRICATED",
+      "condition": "CONDITION:",
+      "condition_nominal": "NOMINAL"
     },
     "dlg": {
       "channel": "MOTHERSHIP UPLINK CHANNEL 7",
@@ -392,10 +406,16 @@
       "accent_credits": "// CREDITS"
     },
     "hero_detail": {
-      "field_loadout": "FIELD LOADOUT"
+      "chassis_spec": "CHASSIS SPECIFICATION"
     },
     "archive": {
       "bunker_archive": "◈ BUNKER ARCHIVE",
+      "lore_logs": "LORE LOGS",
+      "story_endings": "STORY ENDINGS",
+      "active_directives": "ACTIVE DIRECTIVES",
+      "open_full_dossier": "OPEN FULL TACTICAL DOSSIER",
+      "linked_unlock": "LINKED UNLOCK",
+      "pathway_unresolved": "Requirements remain unresolved. No irreversible choice has sealed this trajectory.",
       "recovered_kicker": "ARCHIVE SIMULATION RECOVERED",
       "in_progress": "IN PROGRESS",
       "ready": "READY",
@@ -623,7 +643,8 @@
     "vitals": {
       "vitals": "VITALS",
       "aria_label_health": "Health",
-      "cover": "COVER"
+      "cover": "COVER",
+      "fatigue": "FATIGUE"
     },
     "queens_ledger_hud": {
       "obedience_0_seats_1_4": "♛ OBEDIENCE 0 · SEATS 1/4 · VECTOR: UNSTABLE"
@@ -775,7 +796,8 @@
       "aria_label_optional_base_defense": "Optional base defense",
       "defense_turret": "DEFENSE TURRET",
       "optional_north_door_defense_repairing": "Optional north-door defense. Repairing life support does not build a turret.",
-      "bunker_tree_cross_linked_protocols": "BUNKER TREE // CROSS-LINKED PROTOCOLS"
+      "bunker_tree_cross_linked_protocols": "BUNKER TREE // CROSS-LINKED PROTOCOLS",
+      "ring_route": "RING ROUTE"
     },
     "terminal_bank": {
       "current_run_stats": "CURRENT RUN STATS",
@@ -926,6 +948,18 @@
       "full_loot_claim": "FULL LOOT CLAIM",
       "rival_bounties": "RIVAL BOUNTIES",
       "mission_objective": "MISSION OBJECTIVE:",
+      "career_ledger": "CAREER LEDGER",
+      "campaign_ledger": "CURRENT CAMPAIGN",
+      "runs": "RUNS",
+      "deaths": "DEATHS",
+      "victories": "VICTORIES",
+      "deepest": "DEEPEST",
+      "attempts": "ATTEMPTS",
+      "lives_lost": "LIVES LOST",
+      "day": "DAY",
+      "depth": "DEPTH",
+      "black_box_recovery": "BLACK BOX RECOVERY",
+      "tracked_objectives": "TRACKED OBJECTIVES",
       "sector_frequency_uplink": "SECTOR FREQUENCY & UPLINK",
       "ch_07": "CH-07",
       "sector_room_code": "SECTOR ROOM CODE",
@@ -1099,7 +1133,12 @@
       "host_control_required": "HOST CONTROL REQUIRED",
       "host_new_lobby": "HOST NEW LOBBY",
       "start_match": "START MATCH",
-      "mode_members": "{mode} // {count}/4 OPERATIVES"
+      "mode_members": "{mode} // {count}/4 OPERATIVES",
+      "black_box_active": "ACTIVE AT {depth}m // {tech} TECH · {coin} COIN · {med} MED",
+      "black_box_clear": "NO ACTIVE RECOVERY SIGNAL",
+      "no_tracked_objectives": "NO TRACKED OBJECTIVES",
+      "surface": "SURFACE",
+      "story_prelude": "ACT I // HUMAN PRELUDE"
     },
     "dossier": {
       "title": "TACTICAL DOSSIER",
@@ -1142,7 +1181,8 @@
       "defeat_guard": "DEFEAT GUARD TO UNLOCK BLACK BOX",
       "recover_black_box": "RECOVER BLACK BOX",
       "recover_final": "RECOVER FINAL COMPONENT",
-      "interact": "INTERACT"
+      "interact": "INTERACT",
+      "rest_end_day": "REST — END DAY {day}"
     },
     "telemeter": {
       "passive_scan": "SURFACE SCAN // PASSIVE",
@@ -1174,7 +1214,15 @@
       "base_status": "{type} BASE STATUS {state}",
       "active_exosuit": "[ACTIVE EXOSUIT]",
       "standby": "[STANDBY]",
-      "field_stabilizer": "{type} FIELD STABILIZER"
+      "field_stabilizer": "{type} FIELD STABILIZER",
+      "ring_route_progress": "{done}/{total} · {stage}",
+      "ring_route_open": "ROUTE OPEN",
+      "ring_route_stages": {
+        "previous_crossing": "PRIOR CROSSING",
+        "ship_goal": "SHIP GOAL",
+        "ring_mission": "RING MISSION",
+        "milestone_boss": "MILESTONE"
+      }
     },
     "journal": {
       "day_time": "D{day} {minute}:{second}",
@@ -1381,7 +1429,8 @@
       "callsign": "CALLSIGN {callsign}",
       "listen_hint": "Listen, then decide how you want to help.",
       "quote": "\"{text}\"",
-      "next_action": "Your next action changes the launch manifest and the ending vector."
+      "next_action": "Your next action changes the launch manifest and the ending vector.",
+      "scar_gained": "LAST NIGHT LEFT ITS MARK: {scar}"
     },
     "title": {
       "pregalien_command": "PREGALIEN | HIVE COMMAND",

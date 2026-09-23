@@ -18,7 +18,7 @@ import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { ExpeditionReceipt } from './src/economyReceipt.js';
 import { renderReturnManifest } from './src/returnManifest.js';
 import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, getFabricatedOutputIds } from './src/fabricator.js';
-import { ProfileManager, clearSaveData, exportSaveCode, importSaveCode } from './src/profile.js';
+import { ProfileManager, exportSaveCode, importSaveCode, resetAllDataFactory, startNewCampaign } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
 import { DEPTH_TIER_NAMES } from './src/data/loot.js';
@@ -28,7 +28,7 @@ import { getDeathCinematicSpec, getEventCinematicSpec, normalizeCinematicStillSp
 import { DialogueManager, resolveEffectiveVoicePackId } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
 import { blackBoxStore } from './src/blackBox.js';
-import { runCheckpointStore, recoverCrashedRunCheckpoint } from './src/runCheckpoint.js';
+import { recoverCrashedRunCheckpoint } from './src/runCheckpoint.js';
 import { codexStore, getClassWreckageLog, recordSpecimen0047OriginIfFound } from './src/codex.js';
 import { formatCrossingDeltaSummary } from './src/depthContract.js';
 import { CODEX_ENTRIES, CODEX_CATEGORIES, getCodexEntry, CODEX_TOTAL, LORE_METADATA } from './src/data/codex.js';
@@ -59,10 +59,12 @@ import { getControllerGlyphLabel } from './src/inputGlyphs.js';
 import {
     ACTION_SETS,
     MENU_FOCUS_ROOT_IDS,
+    shouldPointerRestoreMouseMode,
     actionSetForAppPhase,
     createActionRouter,
     hasControllerContinuePress,
     menuKeyboardDirection,
+    spatialFocusIndex,
     wrapMenuIndex,
     shouldPreferBrowserGamepad
 } from './src/inputActions.js';
@@ -73,10 +75,12 @@ import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { createArmoryScene } from './src/armoryScene.js';
 import { createArmoryUi } from './src/armoryUi.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
-import { initSeasonPassUI, cancelXpFeedback, beginSeasonRun, getSeasonRunSummary } from './src/seasonPassUi.js';
+import { initSeasonPassUI, cancelXpFeedback, beginSeasonRun, getSeasonRunSummary, openSeasonPassModal, seasonPass } from './src/seasonPassUi.js';
 import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
+import { campaignLedger } from './src/campaignLedger.js';
+import { campaignWorldStore, deriveExpeditionSeed } from './src/campaignWorld.js';
 import { clearMultiplayerSession } from './src/gameController.js';
 import { playerTradeManager, TRADEABLE_RESOURCES } from './src/playerTrade.js';
 import { npcDialogueTreeManager, NPC_DIALOGUE_TREES } from './src/npcDialogueTrees.js';
@@ -85,6 +89,7 @@ import { matureContentAudit } from './src/matureContentAudit.js';
 import { progressionWalkthrough } from './src/progressionWalkthrough.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { flushPendingRunSubmits, submitRunWithRetryQueue } from './src/steam/runSubmitQueue.js';
+import { FATIGUE_STATE_KEY, describeScars, normalizeFatigueState } from './src/fatigue.js';
 import { unlockSheenForMilestone, reconcileSheenUnlocks, unlockAllSheens } from './src/weaponSheens.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
 import { createOwnershipStore } from './src/itemOwnership.js';
@@ -701,8 +706,7 @@ function recordSteamTimelineEvent(type, title, description, {
 }
 
 function isSteamControllerInputActive() {
-    return steamInputState.lastInputMode === 'controller'
-        || (steamInputState.isSteamDeck && steamInputState.controllerCount > 0);
+    return steamInputState.lastInputMode === 'controller';
 }
 
 function getPromptKeyText(defaultKey = 'E', action = 'interact') {
@@ -755,7 +759,7 @@ function setLastInputMode(mode, { refresh = true } = {}) {
     }
 
     if (changed && refresh) refreshInteractivePromptKeys();
-    if (isController) ensureControllerMenuFocus();
+    if (changed && isController) ensureControllerMenuFocus();
     return changed;
 }
 
@@ -799,6 +803,16 @@ function isFocusRootOpen(element) {
         && isElementVisible(element);
 }
 
+function isElementInFocusRoot(root, element) {
+    if (!root || !element) return false;
+    if (root.contains(element)) return true;
+    if (root.id === 'menu') {
+        if (element.id === 'start-game') return true;
+        if (element.closest?.('.menu-corner-settings')) return true;
+    }
+    return false;
+}
+
 function getVisibleControllerFocusables(root = document) {
     if (!root) return [];
     const selector = [
@@ -807,9 +821,17 @@ function getVisibleControllerFocusables(root = document) {
         'textarea:not([disabled])',
         'select:not([disabled])',
         'a[href]',
+        '.char-card',
         '[tabindex]:not([tabindex="-1"])'
     ].join(', ');
-    return Array.from(root.querySelectorAll(selector)).filter((element) => {
+    const elements = Array.from(root.querySelectorAll(selector));
+    if (root.id === 'menu') {
+        const settingsBtn = document.querySelector('.menu-corner-settings .open-settings-btn');
+        if (settingsBtn && !elements.includes(settingsBtn)) elements.push(settingsBtn);
+        const startGame = document.getElementById('start-game');
+        if (startGame && !elements.includes(startGame)) elements.push(startGame);
+    }
+    return elements.filter((element) => {
         if (!isElementVisible(element)) return false;
         if (element.disabled || element.getAttribute('aria-disabled') === 'true') return false;
         if (element.closest('.hidden, [hidden], [inert]')) return false;
@@ -1138,20 +1160,20 @@ function syncControllerFocusBoundary() {
     let closingInvoker = null;
 
     if (nextRoot !== activeControllerFocusRoot) {
-        if (isModalFocusRoot(nextRoot) && active && active !== document.body && !nextRoot.contains(active)) {
+        if (isModalFocusRoot(nextRoot) && active && active !== document.body && !isElementInFocusRoot(nextRoot, active)) {
             controllerFocusInvokers.set(nextRoot, active);
         }
         if (isModalFocusRoot(activeControllerFocusRoot)) {
             closingInvoker = controllerFocusInvokers.get(activeControllerFocusRoot) ?? null;
         }
-        if (activeControllerFocusRoot?.contains?.(active)) {
+        if (isElementInFocusRoot(activeControllerFocusRoot, active)) {
             controllerFocusMemory.set(activeControllerFocusRoot, active);
         }
         activeControllerFocusRoot = nextRoot;
     }
 
     if (!nextRoot) return null;
-    if (active && active !== document.body && nextRoot.contains(active)) return active;
+    if (active && active !== document.body && isElementInFocusRoot(nextRoot, active)) return active;
 
     const focusables = getVisibleControllerFocusables(nextRoot);
     const remembered = controllerFocusMemory.get(nextRoot);
@@ -1170,7 +1192,7 @@ function moveControllerFocus(delta) {
     if (!focusables.length) return null;
 
     let index = focusables.indexOf(document.activeElement);
-    if (index < 0 || (root && !root.contains(document.activeElement))) {
+    if (index < 0 || (root && !isElementInFocusRoot(root, document.activeElement))) {
         const preferred = getPreferredControllerFocusTarget(root, focusables);
         if (preferred) {
             index = focusables.indexOf(preferred);
@@ -1184,6 +1206,30 @@ function moveControllerFocus(delta) {
     const target = focusables[index] ?? null;
     focusControllerTarget(target, { playHover: true });
     return target;
+}
+
+const SPATIAL_FOCUS_ROOT_IDS = new Set([
+    'armory-screen',
+    'fabrication-modal',
+    'archive-modal',
+    'codex-modal',
+    'multiplayer-modal'
+]);
+
+function moveSpatialControllerFocus(root, code) {
+    if (!root || !SPATIAL_FOCUS_ROOT_IDS.has(root.id)) return false;
+    const direction = code === 'KeyW' || code === 'ArrowUp' ? 'up'
+        : code === 'KeyS' || code === 'ArrowDown' ? 'down'
+            : code === 'KeyA' || code === 'ArrowLeft' ? 'left'
+                : code === 'KeyD' || code === 'ArrowRight' ? 'right'
+                    : null;
+    if (!direction) return false;
+    const focusables = getVisibleControllerFocusables(root);
+    if (!focusables.length) return false;
+    const currentIndex = Math.max(0, focusables.indexOf(document.activeElement));
+    const rects = focusables.map((element) => element.getBoundingClientRect());
+    const nextIndex = spatialFocusIndex(rects, currentIndex, direction);
+    return focusControllerTarget(focusables[nextIndex], { playHover: true });
 }
 
 function moveSettingsDirectionalFocus(code) {
@@ -1269,7 +1315,7 @@ function moveHeroSelectPanelFocus(code) {
         const index = Math.max(0, focusableElements.indexOf(active));
         let target = null;
         if (isUp) {
-            if (index === 0) target = document.querySelector('#menu .menu-corner-settings .open-settings-btn');
+            if (index === 0) target = document.querySelector('.menu-corner-settings .open-settings-btn');
             else target = focusableElements[index - 1];
         } else if (isDown) {
             if (index < focusableElements.length - 1) target = focusableElements[index + 1];
@@ -1278,7 +1324,7 @@ function moveHeroSelectPanelFocus(code) {
             if (active === heroBackBtn) target = document.getElementById('start-game');
             else target = document.getElementById('hero-polish-btn');
         } else if (isRight) {
-            target = document.querySelector('#menu .menu-corner-settings .open-settings-btn');
+            target = document.querySelector('.menu-corner-settings .open-settings-btn');
         }
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
@@ -1289,7 +1335,7 @@ function moveHeroSelectPanelFocus(code) {
             : isLeft
                 ? (lastHeroMenuCommandFocus ?? getVisibleControllerFocusables(document.querySelector('.menu-header-actions'))[0])
                 : isUp
-                    ? document.querySelector('#menu .menu-corner-settings .open-settings-btn')
+                    ? document.querySelector('.menu-corner-settings .open-settings-btn')
                     : document.getElementById('start-game');
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
@@ -1431,7 +1477,7 @@ document.addEventListener('keydown', (event) => {
             adjustRangeInputValue(active, direction)
             || adjustSelectValue(active, direction)
         );
-        if (!adjusted) moveControllerFocus(direction);
+        if (!adjusted && !moveSpatialControllerFocus(root, event.code)) moveControllerFocus(direction);
     } else if (event.code === 'Enter' || event.code === 'Space') {
         event.preventDefault();
         activateControllerFocusedElement();
@@ -1484,7 +1530,7 @@ const controllerFocusObserver = new MutationObserver(() => {
     queueMicrotask(() => {
         const root = getControllerFocusRoot();
         syncSteamInputPhase();
-        if (root !== activeControllerFocusRoot || isSteamControllerInputActive() || isModalFocusRoot(root)) {
+        if (root !== activeControllerFocusRoot || (steamInputState.lastInputMode === 'controller' && (isSteamControllerInputActive() || isModalFocusRoot(root)))) {
             syncControllerFocusBoundary();
         }
     });
@@ -1620,7 +1666,7 @@ function activateControllerFocusedElement() {
     const root = getControllerFocusRoot();
     const focusables = getVisibleControllerFocusables(root ?? document);
     let activeElement = document.activeElement;
-    if (!activeElement || activeElement === document.body || (root && !root.contains(activeElement))) {
+    if (!activeElement || activeElement === document.body || (root && !isElementInFocusRoot(root, activeElement))) {
         activeElement = getPreferredControllerFocusTarget(root, focusables);
         if (activeElement) focusControllerTarget(activeElement);
     }
@@ -1776,6 +1822,12 @@ function handleSteamInputSnapshot(snapshot = {}) {
         debugLog.info('INPUT', 'Steam Input state changed', window.__hbSteamInputState);
     }
 
+    if (previousDeck !== steamInputState.isSteamDeck && steamInputState.isSteamDeck && steamInputState.controllerCount > 0) {
+        if (steamInputState.lastInputMode !== 'controller') {
+            setLastInputMode('controller', { refresh: false });
+        }
+    }
+
     if (steamInputState.anyInput) {
         setLastInputMode('controller', { refresh: false });
     } else if (steamInputState.controllerCount === 0 && steamInputState.lastInputMode === 'controller') {
@@ -1833,7 +1885,10 @@ function updateControllerInputMemory(controller, nextState) {
 
 function handleControllerTabNavigation(root, direction) {
     if (!root) return false;
-    const tabs = Array.from(root.querySelectorAll('.tab-btn, .vault-tab-btn, .terminal-tab-btn, [role="tab"], .category-btn, .sub-tab-btn, .rgb-path-btn'))
+    const selector = root.id === 'menu'
+        ? '.char-selection .char-card'
+        : '.tab-btn, .vault-tab-btn, .terminal-tab-btn, [role="tab"], .category-btn, .sub-tab-btn, .rgb-path-btn, .class-tab';
+    const tabs = Array.from(root.querySelectorAll(selector))
         .filter((el) => isElementVisible(el) && !el.disabled);
     if (tabs.length < 2) return false;
 
@@ -1962,7 +2017,7 @@ function handleSteamMenuInput(actions) {
     ));
 
     const root = getControllerFocusRoot();
-    if (!document.activeElement || document.activeElement === document.body || !root?.contains?.(document.activeElement)) {
+    if (steamInputState.lastInputMode === 'controller' && (!document.activeElement || document.activeElement === document.body || !isElementInFocusRoot(root, document.activeElement))) {
         const focusables = getVisibleControllerFocusables(root ?? document);
         const preferred = getPreferredControllerFocusTarget(root, focusables);
         if (preferred) focusControllerTarget(preferred);
@@ -1980,7 +2035,7 @@ function handleSteamMenuInput(actions) {
                     : 'ArrowRight';
         if (root?.id === 'menu') moveMenuDirectionalFocus(code);
         else if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(code)) return;
-        else moveControllerFocus((actions.up || actions.left) ? -1 : 1);
+        else if (!moveSpatialControllerFocus(root, code)) moveControllerFocus((actions.up || actions.left) ? -1 : 1);
     }
 
     if (actions.confirm || actions.fire || actions.triggerRight) {
@@ -2023,7 +2078,7 @@ window.addEventListener('gamepad-menu-nav', (event) => {
         const root = getControllerFocusRoot();
         if (root?.id === 'menu') moveMenuDirectionalFocus(codeByAction[action]);
         else if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(codeByAction[action])) return;
-        else moveControllerFocus(action === 'menu_up' || action === 'menu_left' ? -1 : 1);
+        else if (!moveSpatialControllerFocus(root, codeByAction[action])) moveControllerFocus(action === 'menu_up' || action === 'menu_left' ? -1 : 1);
     } else if (action === 'menu_confirm') {
         activateControllerFocusedElement();
     } else if (action === 'menu_back') {
@@ -2449,6 +2504,18 @@ window.addEventListener('keydown', (event) => {
 
 window.addEventListener('pointerdown', (event) => {
     if (!event.isTrusted) return;
+    lastPointerModePosition = { x: event.clientX, y: event.clientY };
+    setLastInputMode('keyboard');
+}, true);
+
+// Moving the pointer counts as using the mouse, not only clicking it. The Deck
+// trackpad slides the cursor without ever pressing, so without this the UI
+// stayed in controller mode after any stick or button input and the cursor
+// drifted over controls that never highlighted.
+let lastPointerModePosition = null;
+window.addEventListener('pointermove', (event) => {
+    if (!shouldPointerRestoreMouseMode(event, lastPointerModePosition)) return;
+    lastPointerModePosition = { x: event.clientX, y: event.clientY };
     setLastInputMode('keyboard');
 }, true);
 
@@ -2888,6 +2955,53 @@ function getDailyOpsBriefingStatus() {
         state: record?.completed ? 'completed' : record?.attempted ? 'in_progress' : 'ready',
         score: record?.score ?? 0,
         grade: record?.grade ?? 'D'
+    };
+}
+
+function getDeploymentBriefingStatus() {
+    const achievementStats = achievementEngine.getState().stats ?? {};
+    const campaign = campaignLedger.getState();
+    const arc = arcManager.getState();
+    const act2 = act2Manager.getState();
+    let storedDay = 1;
+    try { storedDay = JSON.parse(localStorage.getItem('hb_day_cycle') ?? 'null')?.day ?? 1; } catch { /* default day */ }
+    const day = window.game?.dayState?.day ?? storedDay;
+    const blackBox = blackBoxStore.load();
+    const daily = getDailyOpsBriefingStatus();
+    const seasonObjectives = window.seasonPass?.getActiveWeeklies?.()
+        ?.filter((objective) => !objective.completed)
+        .slice(0, 3)
+        .map((objective) => ({
+            title: objective.title,
+            progress: objective.progress,
+            target: objective.target
+        })) ?? [];
+    const campaignDepth = Math.max(campaign.deepestDepthTier, Number(arc.signals?.deepestDepthTier) || 0);
+    const storyProgress = act2.phase && act2.phase !== 'dormant'
+        ? `ACT II // ${String(act2.phase).replace(/_/g, ' ').toUpperCase()}`
+        : `ACT I // ${String(arc.arcState ?? 'human_prelude').replace(/_/g, ' ').toUpperCase()}`;
+
+    return {
+        career: {
+            runs: achievementStats.runCount ?? 0,
+            deaths: achievementStats.totalDeaths ?? 0,
+            victories: achievementStats.victories ?? 0,
+            deepestDepth: DEPTH_TIER_NAMES[Math.max(0, Math.min(DEPTH_TIER_NAMES.length - 1, achievementStats.maxDepthTier ?? campaignDepth))] ?? 'SURFACE'
+        },
+        campaign: {
+            runs: campaign.runs,
+            deaths: campaign.deaths,
+            day,
+            deepestDepth: DEPTH_TIER_NAMES[Math.max(0, Math.min(DEPTH_TIER_NAMES.length - 1, campaignDepth))] ?? 'SURFACE',
+            storyProgress
+        },
+        blackBox: blackBox.active ? {
+            active: true,
+            depth: Math.round(blackBox.depth ?? 0),
+            salvage: blackBox.salvage ?? {}
+        } : { active: false },
+        daily,
+        seasonObjectives
     };
 }
 
@@ -4529,12 +4643,12 @@ document.getElementById('debug-unlock-all-polishes')?.addEventListener('click', 
 });
 
 // ---- Game Over Screen ----
-function assignMission() {
+function assignMission(random = Math.random, { seeded = false } = {}) {
     const key = 'hb_season_one_expedition_history';
     let history = [];
     try { history = JSON.parse(localStorage.getItem(key) ?? '[]'); } catch { /* new history */ }
     if (!Array.isArray(history)) history = [];
-    const mission = nextSeasonExpedition(history);
+    const mission = nextSeasonExpedition(seeded ? [] : history, random);
     localStorage.setItem(key, JSON.stringify([...history, mission.id].slice(-2)));
     return mission;
 }
@@ -5098,14 +5212,21 @@ function resetRunToStartingState({
             classType: window.game?.playerType ?? getSelectedHeroType()
         });
         const act2Run = isAct2RunActive();
-        currentMission = act2Run ? null : assignMission();
+        const campaign = !window.game?.fixedRunEntropy && !window.game?.isMultiplayer
+            ? campaignWorldStore.getOrCreate() : null;
+        const challengeSeed = campaign
+            ? deriveExpeditionSeed(campaign.seed, campaign.expeditionIndex + 1)
+            : Number(window.game?.globalSeedOffset) >>> 0;
+        const missionRandom = window.game?.createSeededRandom?.(challengeSeed ^ 0x4d49534e) ?? Math.random;
+        currentMission = act2Run ? null : assignMission(missionRandom, { seeded: true });
         const runModifierSeed = (window.game?.isMultiplayer || window.activeMultiplayerSession)
             && (window.activeMultiplayerSession?.seed || window.game?.multiplayerRoomCode)
             ? `run-${window.activeMultiplayerSession?.seed || window.game?.multiplayerRoomCode}`
-            : undefined;
-        currentRunModifier = pickRunModifier(Math.random, runModifierSeed ? { seed: runModifierSeed } : {});
+            : `expedition-${challengeSeed}`;
+        currentRunModifier = pickRunModifier(Math.random, { seed: runModifierSeed, recentKeys: [] });
 
         resetPickupCounter();
+        if (window.game) window.game.currentRunModifier = currentRunModifier;
         window.game?.respawnPlayer?.({ resetRunState: true, skipEffects, deferChunkMount });
         if (currentMission) {
             window.game?.initMission?.(currentMission);
@@ -5506,6 +5627,18 @@ function buildArchiveModal() {
     updateMenuCommandStatuses();
     listEl.innerHTML = '';
 
+    const achievementLink = document.createElement('button');
+    achievementLink.type = 'button';
+    achievementLink.className = 'archive-lore-achievement-link';
+    const archivist = ACHIEVEMENT_DEFS.find((def) => def.key === 'archivist');
+    const archivistProgress = archivist ? getAchievementProgress(archivist, achievementEngine.getState()) : null;
+    achievementLink.textContent = `${t('ui.archive.linked_unlock')}: ${archivist?.title ?? 'ARCHIVIST'}${archivistProgress ? ` ${archivistProgress.current}/${archivistProgress.target}` : ''}`;
+    achievementLink.addEventListener('click', () => {
+        setArchiveTab('achievements', { focus: true });
+        document.getElementById('archive-linked-achievement')?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+    });
+    listEl.appendChild(achievementLink);
+
     const historicalKeys = ALL_LORE_KEYS.filter(k => LORE_METADATA[k]?.group === 'historical');
     const recentKeys = ALL_LORE_KEYS.filter(k => LORE_METADATA[k]?.group === 'recent');
 
@@ -5584,6 +5717,91 @@ function buildArchiveModal() {
     if (summaryEl) {
         summaryEl.textContent = t('ui.lore.summary', { found: found.size, total: ALL_LORE_KEYS.length });
     }
+
+    renderArchiveDossier();
+    renderArchiveEndings();
+    renderArchiveAchievements();
+}
+
+let activeArchiveTab = 'lore';
+
+function renderArchiveDossier() {
+    const root = document.getElementById('archive-dossier-summary');
+    if (!root) return;
+    root.innerHTML = '';
+
+    const progress = seasonPass.getTierProgress();
+    const directives = seasonPass.getActiveWeeklies();
+    const cards = [
+        {
+            label: t('ui.season_pass.title'),
+            value: t('ui.dossier.rank', { tier: progress.tier, total: 50 }),
+            detail: `${seasonPass.getTotalXp().toLocaleString()} XP`
+        },
+        {
+            label: t('ui.archive.active_directives'),
+            value: `${directives.filter((entry) => entry.completed).length} / ${directives.length}`,
+            detail: directives.length
+                ? directives.slice(0, 3).map((entry) => `${entry.title}: ${entry.progress}/${entry.target}`).join(' · ')
+                : t('ui.multiplayer.no_tracked_objectives')
+        }
+    ];
+
+    for (const item of cards) {
+        const card = document.createElement('article');
+        card.className = 'archive-console-card';
+        const label = document.createElement('div');
+        label.className = 'archive-console-card__label';
+        label.textContent = item.label;
+        const value = document.createElement('strong');
+        value.className = 'archive-console-card__value';
+        value.textContent = item.value;
+        const detail = document.createElement('p');
+        detail.className = 'archive-console-card__detail';
+        detail.textContent = item.detail;
+        card.append(label, value, detail);
+        root.appendChild(card);
+    }
+
+    const open = document.createElement('button');
+    open.type = 'button';
+    open.className = 'start-btn archive-console-open';
+    open.textContent = t('ui.archive.open_full_dossier');
+    open.addEventListener('click', () => {
+        closeArchiveModal();
+        openSeasonPassModal();
+    });
+    root.appendChild(open);
+}
+
+function renderArchiveEndings() {
+    const grid = document.getElementById('archive-endings-grid');
+    if (grid) renderEndingArchiveCards(grid);
+}
+
+function renderArchiveAchievements() {
+    const state = achievementEngine.getState();
+    const summary = document.getElementById('archive-achievements-summary');
+    if (summary) summary.textContent = t('ui.ach.summary_unlocked', { unlocked: getAchievementUnlockCount(state), total: getLiveAchievementCount() });
+    renderAchievementCards(document.getElementById('archive-achievements-grid'), state);
+}
+
+function setArchiveTab(tab, { focus = false } = {}) {
+    const known = ['lore', 'dossier', 'endings', 'achievements'];
+    activeArchiveTab = known.includes(tab) ? tab : 'lore';
+    for (const name of known) {
+        const button = document.getElementById(`archive-tab-${name}`);
+        const panel = document.getElementById(`archive-panel-${name}`);
+        const selected = name === activeArchiveTab;
+        button?.classList.toggle('active', selected);
+        button?.setAttribute('aria-selected', String(selected));
+        button?.setAttribute('tabindex', selected ? '0' : '-1');
+        panel?.classList.toggle('hidden', !selected);
+    }
+    if (activeArchiveTab === 'dossier') renderArchiveDossier();
+    if (activeArchiveTab === 'endings') renderArchiveEndings();
+    if (activeArchiveTab === 'achievements') renderArchiveAchievements();
+    if (focus) document.getElementById(`archive-tab-${activeArchiveTab}`)?.focus?.();
 }
 
 // ── Achievement / Unlock System ───────────────────────────────
@@ -5704,19 +5922,14 @@ function recordAchievementEvent(name, detail = {}, options = {}) {
 
 function recordAchievementRunEnd(stats = {}, options = {}) {
     const result = achievementEngine.recordRunEnd(stats);
+    campaignLedger.recordRun({ outcome: stats.outcome, depthTier: stats.depthTier });
     handleAchievementUnlocks(result.newUnlocks, options);
     syncSteamStats(result.state, window.electronAPI?.setStat);
     announceAchievementStatsChanged();
     return result;
 }
 
-function renderAchievementsModal() {
-    const state = achievementEngine.getState();
-    const grid = document.getElementById('achievements-grid');
-    const summary = document.getElementById('achievements-summary');
-    const status = document.getElementById('achievements-save-status');
-    if (summary) summary.textContent = t('ui.ach.summary_unlocked', { unlocked: getAchievementUnlockCount(state), total: getLiveAchievementCount() });
-    if (status) status.textContent = '';
+function renderAchievementCards(grid, state = achievementEngine.getState()) {
     if (!grid) return;
     grid.innerHTML = '';
 
@@ -5728,8 +5941,10 @@ function renderAchievementsModal() {
         card.className = [
             'achievement-card',
             unlocked ? 'achievement-card--unlocked' : 'achievement-card--locked',
-            def.comingSoon ? 'achievement-card--soon' : ''
+            def.comingSoon ? 'achievement-card--soon' : '',
+            def.key === 'archivist' ? 'achievement-card--archive-linked' : ''
         ].filter(Boolean).join(' ');
+        if (def.key === 'archivist') card.id = 'archive-linked-achievement';
 
         const icon = document.createElement('div');
         icon.className = 'achievement-card__icon';
@@ -5776,6 +5991,16 @@ function renderAchievementsModal() {
         card.append(icon, body);
         grid.appendChild(card);
     }
+}
+
+function renderAchievementsModal() {
+    const state = achievementEngine.getState();
+    const grid = document.getElementById('achievements-grid');
+    const summary = document.getElementById('achievements-summary');
+    const status = document.getElementById('achievements-save-status');
+    if (summary) summary.textContent = t('ui.ach.summary_unlocked', { unlocked: getAchievementUnlockCount(state), total: getLiveAchievementCount() });
+    if (status) status.textContent = '';
+    renderAchievementCards(grid, state);
 }
 
 function openAchievementsModal() {
@@ -8382,17 +8607,8 @@ async function openArmoryGate(embarkAction, { skipDoor = false } = {}) {
 function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
     const playerType = getSelectedHeroType();
     saveHeroType(playerType);
-    // Standard solo deployments always roll a fresh world. Daily Ops and an
-    // active multiplayer session are the two modes allowed to retain a
-    // fixed shared seed -- multiplayer's replays this exact function via
-    // the #start-game click chain (src/gameController.js's
-    // startMultiplayerRun), running AFTER ThreeGame.setupMultiplayerNetwork
-    // already pinned fixedRunEntropy/globalSeedOffset to the match's shared
-    // seed (see that method's own comment: without this guard, this
-    // unconditional reset silently wiped that sync out before world
-    // generation ever ran, since this fires before respawnPlayer's own
-    // seed-reset logic). isMultiplayer is already correctly set by that
-    // point, so it's a reliable gate here.
+    // Solo geography resumes the campaign. Fixed daily/multiplayer layouts
+    // remain separate from the locally saved campaign seed and progression.
     _isDailyOpsRun = false;
     if (window.game && !window.game.isMultiplayer) {
         window.game.fixedRunEntropy = false;
@@ -8466,6 +8682,7 @@ if (startBtn) {
                 onLaunch: () => launchStandardRun({ resetBank: true, playIntro: true }),
                 onDailyLaunch: beginDailyOpsRun,
                 getDailyOpsStatus: getDailyOpsBriefingStatus,
+                getDeploymentBriefing: getDeploymentBriefingStatus,
                 onCancel: () => {
                     const playerType = getSelectedHeroType();
                     triggerDoorTransition(
@@ -8490,10 +8707,10 @@ function beginDailyOpsRun() {
             saveDailyOpsRecord({ attempted: true, completed: false, date: getTodayDateString() });
             _isDailyOpsRun = true;
             if (window.game) {
-                // Retain the date-derived Daily Ops theme, but roll a fresh
-                // topology for every deployment instead of pinning one layout.
+                // A daily operation shares its date-derived layout and never
+                // reads or advances the solo campaign's world snapshot.
                 window.game.globalSeedOffset = getDailySeedInt();
-                window.game.fixedRunEntropy = false;
+                window.game.fixedRunEntropy = true;
             }
             document.body.classList.add('mission-intro-active');
             const deploymentHold = suspendGameForFullscreenVideo();
@@ -10006,6 +10223,8 @@ function openSettingsModal() {
     setResetSaveConfirmOpen(false);
     setCrosshairColorOpen(false);
     setLanguageSelectOpen(false);
+    const opIdEl = document.getElementById('settings-operator-id');
+    if (opIdEl) opIdEl.textContent = profile.getProfileId();
 }
 
 document.getElementById('setting-language-select')?.addEventListener('change', (e) => {
@@ -10370,7 +10589,7 @@ resetSaveConfirmBtn?.addEventListener('click', () => {
     if (window.bankManager?.reset) {
         window.bankManager.reset();
     }
-    const removed = clearSaveData();
+    const removed = resetAllDataFactory();
     window.AudioManager?.play?.('ui_click', { volume: 0.55 });
     setResetSaveConfirmOpen(false);
     settingsPopup?.classList.add('hidden');
@@ -11486,8 +11705,32 @@ setupClickOutside('about-modal', () => {
 setupClickOutside('lore-modal', closeLoreModalAndResume);
 
 // Archive modal
+function closeArchiveModal() {
+    const modal = document.getElementById('archive-modal');
+    closeArchiveLogDetail();
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+}
+
+for (const tab of document.querySelectorAll('[data-archive-tab]')) {
+    tab.addEventListener('click', () => setArchiveTab(tab.dataset.archiveTab, { focus: true }));
+    tab.addEventListener('keydown', (event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const tabs = ['lore', 'dossier', 'endings', 'achievements'];
+        const current = tabs.indexOf(activeArchiveTab);
+        const next = event.key === 'Home' ? 0
+            : event.key === 'End' ? tabs.length - 1
+                : (current + (event.key === 'ArrowLeft' ? -1 : 1) + tabs.length) % tabs.length;
+        setArchiveTab(tabs[next], { focus: true });
+    });
+}
+
 document.getElementById('archive-btn')?.addEventListener('click', () => {
     buildArchiveModal();
+    setArchiveTab(activeArchiveTab);
     const modal = document.getElementById('archive-modal');
     if (modal) {
         modal.classList.remove('hidden');
@@ -11495,14 +11738,10 @@ document.getElementById('archive-btn')?.addEventListener('click', () => {
     }
 });
 document.getElementById('close-archive-modal')?.addEventListener('click', () => {
-    const modal = document.getElementById('archive-modal');
-    closeArchiveLogDetail();
-    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+    closeArchiveModal();
 });
 setupClickOutside('archive-modal', () => {
-    const modal = document.getElementById('archive-modal');
-    closeArchiveLogDetail();
-    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+    closeArchiveModal();
 });
 document.getElementById('close-archive-log-detail')?.addEventListener('click', closeArchiveLogDetail);
 setupClickOutside('archive-log-detail-modal', closeArchiveLogDetail);
@@ -11988,6 +12227,51 @@ function closeCodexDetailModal() {
     }
 }
 
+function renderEndingArchiveCards(grid) {
+    if (!grid) return;
+    grid.innerHTML = '';
+    const endings = buildEndingArchive(window.game?.act2?.getState?.() ?? act2Manager.getState(), achievementEngine.getState().unlocked);
+    for (const ending of endings) {
+        const lockedThisRun = ending.causes.length > 0;
+        const card = document.createElement('article');
+        card.className = `ending-card ${ending.discovered ? 'ending-card--discovered' : (lockedThisRun ? 'ending-card--locked-run' : 'ending-card--undiscovered')}`;
+
+        const artWrap = document.createElement('div');
+        artWrap.className = 'ending-card__art-wrap';
+        const art = document.createElement('img');
+        art.src = assetUrl(`/ach_ending_${ending.id}${ending.discovered ? '' : '_locked'}.jpg`);
+        art.alt = ACT2_ENDING_TITLES[ending.id] ?? ending.id;
+        art.loading = 'lazy';
+        art.width = 96;
+        art.height = 96;
+        art.className = `ending-card__art${ending.discovered ? '' : ' ending-card__art--silhouette'}`;
+        const badge = document.createElement('span');
+        badge.className = `ending-card__badge ${ending.discovered ? 'badge--discovered' : (lockedThisRun ? 'badge--locked-run' : 'badge--undiscovered')}`;
+        badge.textContent = ending.discovered ? t('ui.codex.discovered') : (lockedThisRun ? t('ui.codex.locked_this_run') : t('ui.codex.undiscovered'));
+        artWrap.append(art, badge);
+
+        const content = document.createElement('div');
+        content.className = 'ending-card__content';
+        const title = document.createElement('h3');
+        title.className = 'ending-card__title';
+        title.textContent = ending.discovered || lockedThisRun
+            ? (ACT2_ENDING_TITLES[ending.id] ?? ending.id.toUpperCase())
+            : t('ui.codex.classified');
+        const detail = document.createElement('p');
+        detail.className = 'ending-card__desc';
+        if (ending.discovered) {
+            detail.textContent = explainEnding(ending.id);
+        } else if (lockedThisRun) {
+            detail.textContent = `${t('ui.codex.closed_by')} ${ending.causes.map((cause) => `${formatStoryToken(cause.id)} [${formatStoryToken(cause.resolution)}]`).join(' · ')}`;
+        } else {
+            detail.textContent = t('ui.archive.pathway_unresolved');
+        }
+        content.append(title, detail);
+        card.append(artWrap, content);
+        grid.appendChild(card);
+    }
+}
+
 function renderCodexModal() {
     const grid = document.getElementById('codex-grid');
     const summary = document.getElementById('codex-summary');
@@ -12184,6 +12468,15 @@ window.addEventListener('day-rest-open', (event) => {
     showBiomePrompt(`> DAY ${detail.day} // ${detail.campLabel ?? 'CAMP'} REST CYCLE COMPLETE // THREAT ${Number(detail.difficulty ?? 1).toFixed(2)}×`);
     if (detail.expired?.length) {
         showBiomePrompt(`> MISSED SIGNALS CLOSED: ${detail.expired.join(', ').replaceAll('_', ' ').toUpperCase()}`);
+    }
+    // The overnight ledger: one line per real change, already written by
+    // simulateOvernight(). Rendered rather than re-derived, so the debrief can
+    // never disagree with what the simulation actually did.
+    for (const line of detail.ledger ?? []) {
+        if (line?.text) showBiomePrompt(`> ${line.text}`);
+    }
+    if (detail.gainedScar) {
+        showBiomePrompt(`> ${t('ui.camp.scar_gained', { scar: String(detail.gainedScar).replaceAll('_', ' ') })}`);
     }
     openFabricationModal();
 });
@@ -13378,6 +13671,18 @@ const HOMEBASE_COMMAND_DESCRIPTIONS = Object.freeze({
     'hero-polish-btn': 'ui.menu.title_choose_operator_polish'
 });
 
+// Scars the operator still carries, for the Homebase CONDITION line. Reads the
+// same hb_fatigue save the runtime writes; the "nothing wrong" copy is owned
+// here because src/fatigue.js holds no localized strings.
+function describeOperatorCondition() {
+    try {
+        const raw = JSON.parse(localStorage.getItem(FATIGUE_STATE_KEY) ?? 'null');
+        return describeScars(normalizeFatigueState(raw)) ?? t('ui.roster.condition_nominal');
+    } catch {
+        return t('ui.roster.condition_nominal');
+    }
+}
+
 function wireHomebaseCommandInfo() {
     const panel = document.getElementById('homebase-command-info');
     if (!panel) return;
@@ -13396,6 +13701,8 @@ function wireHomebaseCommandInfo() {
     });
     showDescription(controls.find((control) => !control.closest('.hidden')) ?? controls[0]);
 }
+
+let activePreviewType = 'TANK';
 
 function renderHomebaseConsole({ initializeCallsign = false } = {}) {
     const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
@@ -13432,7 +13739,12 @@ function renderHomebaseConsole({ initializeCallsign = false } = {}) {
     }
 
     setTxt('roster-id', profile.getProfileId());
-    setTxt('homebase-loadout-summary', `${t('ui.hero_detail.field_loadout')} // ${loadout.getEquippedLabel(fabricator)}`);
+    const activeChassisSpec = activePreviewType === 'TANK'
+        ? `${t('ui.menu.bulwark_frame')} · ${t('ui.menu.spec_tank_armor')}`
+        : (activePreviewType === 'SCOUT'
+            ? `${t('ui.menu.recon_frame')} · ${t('ui.menu.spec_scout_armor')}`
+            : `${t('ui.menu.utility_frame')} · ${t('ui.menu.spec_eng_armor')}`);
+    setTxt('homebase-loadout-summary', `${t('ui.hero_detail.chassis_spec')} // ${activeChassisSpec}`);
 
     // Profile identity and career totals survive NEW RUN. Never source these
     // tiles from ThreeGame.getRunStats(): that object is the active expedition
@@ -13449,11 +13761,13 @@ function renderHomebaseConsole({ initializeCallsign = false } = {}) {
         setTxt('roster-stat-distance', `${Math.round(distVal)}u`);
         setTxt('roster-stat-kills', t('ui.roster.stat_hostiles', { count: killVal }));
         setTxt('roster-stat-blackbox', t('ui.roster.stat_blackboxes_recovered', { count: recoveredVal }));
+        setTxt('roster-stat-condition', describeOperatorCondition());
     } catch {
         setTxt('roster-stat-depth', t('ui.roster.stat_sector', { depth: 0 }));
         setTxt('roster-stat-distance', '0u');
         setTxt('roster-stat-kills', t('ui.roster.stat_hostiles', { count: 0 }));
         setTxt('roster-stat-blackbox', t('ui.roster.stat_blackboxes_recovered', { count: 0 }));
+        setTxt('roster-stat-condition', t('ui.roster.condition_nominal'));
     }
 
     const weapons = FAB_RECIPES.filter((r) => r.klass === 'WEAPON');
@@ -13724,7 +14038,6 @@ let previewFrameIndex = 0;
 let previewAnimationTimer = null;
 let previewDoorTimer = null;
 let pendingPreviewType = null;
-let activePreviewType = 'TANK';
 let scoutHeroPreview = null;
 void createScoutHeroPreview(preview3dCanvas)
     .then((preview) => {
@@ -13857,18 +14170,26 @@ async function syncHeroPreview(type) {
     if (!data) return;
 
     activePreviewType = type;
-    // The sprite is the posed, class-correct fallback while the replacement
-    // rig and its idle clip load. Never reveal the previous class or a bind
-    // pose just because an async GLB is late.
-    scoutHeroPreview?.setVisible(false);
-    previewSprite?.classList.remove('hidden');
-    if (previewName) previewName.textContent = data.name;
-    if (previewFallback) {
-        previewFallback.src = assetUrl(PREVIEW_PORTRAITS[type] ?? PREVIEW_PORTRAITS.SCOUT);
-        previewFallback.classList.remove('hidden');
+    const is3dActive = scoutHeroPreview && preview3dCanvas && !preview3dCanvas.classList.contains('hidden');
+    if (!is3dActive) {
+        scoutHeroPreview?.setVisible(false);
+        previewSprite?.classList.remove('hidden');
+        if (previewFallback) {
+            previewFallback.src = assetUrl(PREVIEW_PORTRAITS[type] ?? PREVIEW_PORTRAITS.SCOUT);
+            previewFallback.classList.remove('hidden');
+        }
+        previewFrameIndex = 0;
+        void renderPreviewFrame(type, previewFrameIndex);
     }
-    previewFrameIndex = 0;
-    void renderPreviewFrame(type, previewFrameIndex);
+    if (previewName) previewName.textContent = data.name;
+
+    const activeChassisSpec = type === 'TANK'
+        ? `${t('ui.menu.bulwark_frame')} · ${t('ui.menu.spec_tank_armor')}`
+        : (type === 'SCOUT'
+            ? `${t('ui.menu.recon_frame')} · ${t('ui.menu.spec_scout_armor')}`
+            : `${t('ui.menu.utility_frame')} · ${t('ui.menu.spec_eng_armor')}`);
+    const summaryEl = document.getElementById('homebase-loadout-summary');
+    if (summaryEl) summaryEl.textContent = `${t('ui.hero_detail.chassis_spec')} // ${activeChassisSpec}`;
 
     if (scoutHeroPreview) {
         const loaded = await Promise.race([
@@ -13878,10 +14199,16 @@ async function syncHeroPreview(type) {
             }),
             new Promise((resolve) => window.setTimeout(() => resolve(false), 8000))
         ]);
-        if (activePreviewType === type && loaded) {
-            scoutHeroPreview.setVisible(true);
-            previewSprite?.classList.add('hidden');
-            previewFallback?.classList.add('hidden');
+        if (activePreviewType === type) {
+            if (loaded) {
+                scoutHeroPreview.setVisible(true);
+                previewSprite?.classList.add('hidden');
+                previewFallback?.classList.add('hidden');
+            } else if (!is3dActive) {
+                scoutHeroPreview.setVisible(false);
+                previewSprite?.classList.remove('hidden');
+                previewFallback?.classList.remove('hidden');
+            }
         }
     }
 
@@ -14563,9 +14890,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         // of that chain.
         clearMultiplayerSession();
         transitionFromTitleToMenu(() => {
-            clearSaveData();
-            blackBoxStore.clear();
-            runCheckpointStore.clear();
+            startNewCampaign();
+            arcManager.reset();
+            act2Manager.reset();
+            sideStoryManager.state = sideStoryManager.load();
+            sideStoryManager.notifyChange();
+            window.game?.resetCampaignState?.();
             window.game?.clearBlackBoxMarker?.();
             updateContinueButtonState();
             renderHomebaseConsole({ initializeCallsign: true });

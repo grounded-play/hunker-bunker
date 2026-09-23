@@ -409,6 +409,7 @@ export function allocateTerritories(topology, reservations = [], {
             const coordinates = parseChunkKey(ownerChunkKey);
             return {
                 id: beat.id,
+                sourceId: beat.sourceId,
                 territoryId,
                 reservationId: sourceReservationId,
                 order: beat.order,

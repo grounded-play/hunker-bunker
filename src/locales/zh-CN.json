@@ -87,6 +87,17 @@
       "engineer": "工程兵",
       "reroute": "改道",
       "cheaper_consoles": "控制台更便宜",
+      "role_infiltrator": "渗透者",
+      "role_breacher": "突击者",
+      "role_logistics": "后勤兵",
+      "tag_active": "主动:",
+      "tag_passive": "被动:",
+      "spec_scout_mobility": "机动性: 最大",
+      "spec_scout_armor": "护甲: 轻型",
+      "spec_tank_defense": "防御力: 最大",
+      "spec_tank_armor": "护甲: 重型",
+      "spec_eng_utility": "多功能: 最大",
+      "spec_eng_armor": "护甲: 防化",
       "esc": "[ESC]",
       "return_main": "← 返回主菜单"
     },
@@ -127,6 +138,7 @@
       "desktop_controls": "键鼠操作",
       "cat_operator": "操作员与系统数据",
       "callsign": "操作员呼号",
+      "operator_id": "操作员ID",
       "cloud_sync": "STEAM 云同步",
       "save_data": "存档数据",
       "new_game_reset": "重置新游戏",
@@ -296,7 +308,9 @@
       "blackbox_recoverable": "可回收（区域 {depth}）",
       "blackbox_none": "无",
       "equipped_none": "无",
-      "arsenal_count": "军械库：已制造 {made} / {total} 件武器"
+      "arsenal_count": "军械库：已制造 {made} / {total} 件武器",
+      "condition": "状态:",
+      "condition_nominal": "正常"
     },
     "dlg": {
       "channel": "母舰上行链路 7 号频道",
@@ -392,10 +406,16 @@
       "accent_credits": "// 制作名单"
     },
     "hero_detail": {
-      "field_loadout": "野战配置"
+      "chassis_spec": "机体规格"
     },
     "archive": {
       "bunker_archive": "◈ 地堡档案",
+      "lore_logs": "传说日志",
+      "story_endings": "故事结局",
+      "active_directives": "当前指令",
+      "open_full_dossier": "打开完整战术档案",
+      "linked_unlock": "关联解锁",
+      "pathway_unresolved": "条件尚未满足。没有不可逆的选择封锁这条轨迹。",
       "recovered_kicker": "已恢复档案模拟",
       "in_progress": "进行中",
       "ready": "就绪",
@@ -623,7 +643,8 @@
     "vitals": {
       "vitals": "生命体征",
       "aria_label_health": "生命值",
-      "cover": "掩体"
+      "cover": "掩体",
+      "fatigue": "疲劳"
     },
     "queens_ledger_hud": {
       "obedience_0_seats_1_4": "♛ 服从度 0 · 席位 1/4 · 向量：不稳定"
@@ -775,7 +796,8 @@
       "aria_label_optional_base_defense": "可选基地防御",
       "defense_turret": "防御炮塔",
       "optional_north_door_defense_repairing": "可选的北门防御。修复生命维持系统不会建造炮塔。",
-      "bunker_tree_cross_linked_protocols": "地堡树 // 交叉链接协议"
+      "bunker_tree_cross_linked_protocols": "地堡树 // 交叉链接协议",
+      "ring_route": "环形路线"
     },
     "terminal_bank": {
       "current_run_stats": "本次征程数据",
@@ -926,6 +948,18 @@
       "full_loot_claim": "独占全部战利品",
       "rival_bounties": "对手赏金",
       "mission_objective": "任务目标：",
+      "career_ledger": "生涯记录",
+      "campaign_ledger": "当前战役",
+      "runs": "出击",
+      "deaths": "阵亡",
+      "victories": "胜利",
+      "deepest": "最深处",
+      "attempts": "尝试",
+      "lives_lost": "损失生命",
+      "day": "天数",
+      "depth": "深度",
+      "black_box_recovery": "黑匣子回收",
+      "tracked_objectives": "追踪目标",
       "sector_frequency_uplink": "区域频率与上行链路",
       "ch_07": "CH-07",
       "sector_room_code": "区域房间代码",
@@ -1099,7 +1133,12 @@
       "host_control_required": "需要房主权限",
       "host_new_lobby": "创建新大厅",
       "start_match": "开始对战",
-      "mode_members": "{mode} // {count}/4 名特工"
+      "mode_members": "{mode} // {count}/4 名特工",
+      "black_box_active": "{depth}米处激活 // 技术 {tech} · 硬币 {coin} · 医疗 {med}",
+      "black_box_clear": "无活动回收信号",
+      "no_tracked_objectives": "无追踪目标",
+      "surface": "地表",
+      "story_prelude": "第一幕 // 人类序章"
     },
     "dossier": {
       "title": "战术档案",
@@ -1142,7 +1181,8 @@
       "defeat_guard": "击败守卫以解锁黑匣子",
       "recover_black_box": "回收黑匣子",
       "recover_final": "回收最终组件",
-      "interact": "交互"
+      "interact": "交互",
+      "rest_end_day": "休息 — 结束第 {day} 天"
     },
     "telemeter": {
       "passive_scan": "地表扫描 // 被动",
@@ -1174,7 +1214,15 @@
       "base_status": "{type} 基地状态 {state}",
       "active_exosuit": "[当前外骨骼]",
       "standby": "[待机]",
-      "field_stabilizer": "{type} 力场稳定器"
+      "field_stabilizer": "{type} 力场稳定器",
+      "ring_route_progress": "{done}/{total} · {stage}",
+      "ring_route_open": "路线开通",
+      "ring_route_stages": {
+        "previous_crossing": "前一通道",
+        "ship_goal": "舰船目标",
+        "ring_mission": "环形任务",
+        "milestone_boss": "里程碑"
+      }
     },
     "journal": {
       "day_time": "D{day} {minute}:{second}",
@@ -1381,7 +1429,8 @@
       "callsign": "呼号 {callsign}",
       "listen_hint": "先倾听，再决定你想如何帮忙。",
       "quote": "“{text}”",
-      "next_action": "你的下一步行动将改变发射清单与结局走向。"
+      "next_action": "你的下一步行动将改变发射清单与结局走向。",
+      "scar_gained": "昨夜留下了印记: {scar}"
     },
     "title": {
       "pregalien_command": "PREGALIEN | 虫巢指挥",

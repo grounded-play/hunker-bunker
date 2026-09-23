@@ -164,10 +164,30 @@ export function getRelayTelemetry() {
 // "which web page may script this connection," not "who is allowed to
 // act" -- those are different questions and only the second one is
 // actually a trust boundary here.
+export function isEquivalentLoopbackOrigin(origin, allowedOrigins = []) {
+    try {
+        const requested = new URL(origin);
+        const loopbackHosts = new Set(['localhost', '127.0.0.1', '[::1]']);
+        if (!loopbackHosts.has(requested.hostname)) return false;
+        return allowedOrigins.some((allowedOrigin) => {
+            try {
+                const allowed = new URL(allowedOrigin);
+                return loopbackHosts.has(allowed.hostname)
+                    && allowed.protocol === requested.protocol
+                    && allowed.port === requested.port;
+            } catch {
+                return false;
+            }
+        });
+    } catch {
+        return false;
+    }
+}
+
 export function isAllowedRelayOrigin(origin, allowedOrigins = []) {
     if (allowedOrigins.length === 0) return true; // dev/local: no allowlist configured
     if (!origin || origin === 'null' || origin.startsWith('file://')) return true;
-    return allowedOrigins.includes(origin);
+    return allowedOrigins.includes(origin) || isEquivalentLoopbackOrigin(origin, allowedOrigins);
 }
 
 export function attachRelay(server, { allowedOrigins = [] } = {}) {

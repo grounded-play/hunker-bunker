@@ -103,7 +103,7 @@ describe('resolveChunkStructureForReservation against Lane A\'s real WorldPlan',
     });
 
     it('returns null (not a thrown error) for a reservation whose family the vertical-slice catalog does not cover yet', () => {
-        const reservation = worldPlan.reservations.find((r) => r.role === 'campTerritory');
+        const reservation = worldPlan.reservations.find((r) => r.role === 'finale');
         expect(reservation).toBeDefined();
         expect(catalogFamilies.has(reservation.roomFamily)).toBe(false);
         expect(resolveChunkStructureForReservation(seededRandom(5), reservation, {})).toBeNull();

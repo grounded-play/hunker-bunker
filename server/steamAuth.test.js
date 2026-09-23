@@ -243,6 +243,88 @@ describe('steam auth backend helpers', () => {
         }
     });
 
+    it('POST /steam/session accepts the browser placeholder ticket in development even with Steam configured', async () => {
+        process.env.NODE_ENV = 'development';
+        process.env.HB_STEAM_PUBLISHER_KEY = 'publisher-key';
+        process.env.HB_SESSION_SECRET = 'session-secret';
+        delete process.env.HB_ALLOW_DEV_STEAM_AUTH;
+        globalThis.fetch = vi.fn();
+
+        const app = express();
+        app.use(express.json());
+        attachSteamAuthRoutes(app);
+        const server = await new Promise((resolve) => {
+            const s = app.listen(0, '127.0.0.1', () => resolve(s));
+        });
+
+        try {
+            const addr = server.address();
+            const response = await ORIGINAL_FETCH(`http://127.0.0.1:${addr.port}/steam/session`, {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    ticketHex: '00'.repeat(32),
+                    identity: 'browser-dev'
+                })
+            });
+
+            expect(response.status).toBe(200);
+            const body = await response.json();
+            expect(body).toMatchObject({
+                ok: true,
+                identity: 'browser-dev',
+                devMode: true,
+                authMethod: 'dev_fallback'
+            });
+            expect(verifySteamSessionToken(body.token)).toMatchObject({
+                ok: true,
+                isDevMode: true
+            });
+            expect(globalThis.fetch).not.toHaveBeenCalled();
+        } finally {
+            await new Promise((resolve) => server.close(resolve));
+        }
+    });
+
+    it('POST /steam/session never bypasses Steam verification for the placeholder ticket in production', async () => {
+        process.env.NODE_ENV = 'production';
+        process.env.HB_STEAM_PUBLISHER_KEY = 'publisher-key';
+        process.env.HB_SESSION_SECRET = 'session-secret';
+        globalThis.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({ response: { params: { result: 'Invalid' } } })
+        });
+
+        const app = express();
+        app.use(express.json());
+        attachSteamAuthRoutes(app);
+        const server = await new Promise((resolve) => {
+            const s = app.listen(0, '127.0.0.1', () => resolve(s));
+        });
+
+        try {
+            const addr = server.address();
+            const response = await ORIGINAL_FETCH(`http://127.0.0.1:${addr.port}/steam/session`, {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    ticketHex: '00'.repeat(32),
+                    identity: 'browser-dev'
+                })
+            });
+
+            expect(response.status).toBe(401);
+            expect(await response.json()).toMatchObject({
+                ok: false,
+                reason: 'steam_auth_rejected'
+            });
+            expect(globalThis.fetch).toHaveBeenCalledOnce();
+        } finally {
+            await new Promise((resolve) => server.close(resolve));
+        }
+    });
+
     it('GET /health reports Steam auth and storage readiness', async () => {
         process.env.HB_DB_STORAGE_PATH = '/tmp/hb-health-test-db.json';
         const app = express();

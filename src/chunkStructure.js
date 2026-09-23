@@ -3,6 +3,7 @@ import { collapseChunkLattice, extractChunkWfcMetadata } from './wfcGenerator.js
 import { generateArchitecturalMazeChunk } from './architecturalMaze.js';
 import { ROOM_BUILD_CATALOG, selectRoomBuild, rotateRoomBuild, stampRoomBuild, buildRoomInstanceFromBuild } from './roomBuilds.js';
 import { HALLWAY_BUILD_CATALOG, selectHallwayArchetype, realizeHallwayConnector } from './hallwayConnector.js';
+import { createTerritoryRoomBuild } from './territoryStructures.js';
 
 // Sprint 23 Phase 0A / Lane B.
 //
@@ -217,14 +218,25 @@ export function buildAuthoredRoomChunkStructure(random, {
     biome = null,
     roles = null,
     rotationSteps = 0,
-    roll = 0
+    roll = 0,
+    roomBuild = null
 } = {}) {
-    const catalogBuild = selectRoomBuild(ROOM_BUILD_CATALOG, { family, tier, biome, roles, roll });
+    const catalogBuild = roomBuild ?? selectRoomBuild(ROOM_BUILD_CATALOG, { family, tier, biome, roles, roll });
     if (!catalogBuild) return null;
     const build = rotateRoomBuild(catalogBuild, rotationSteps);
     const stamped = stampRoomBuild(build, random, { size: chunkSize, openings });
     const chunkKey = `${chunkX},${chunkY}`;
     const room = buildRoomInstanceFromBuild(build, stamped, { chunkX, chunkY, ring: tier, tier });
+    if (build.siteId) {
+        room.siteId = build.siteId;
+        room.territoryBeatKey = build.territoryBeatKey;
+        room.label = build.label;
+    }
+    const siteAnchors = build.centerAnchor ? [{
+        ...build.centerAnchor,
+        x: Math.floor(chunkSize / 2),
+        y: Math.floor(chunkSize / 2)
+    }] : [];
 
     return {
         version: CHUNK_STRUCTURE_VERSION,
@@ -232,7 +244,7 @@ export function buildAuthoredRoomChunkStructure(random, {
         generatorId: STRUCTURE_GENERATOR.AUTHORED_ROOM,
         grid: stamped.grid,
         rooms: [room],
-        anchors: anchorsOf(room),
+        anchors: [...anchorsOf(room), ...siteAnchors],
         zones: zonesOf(room),
         sockets: { ...openings },
         wayfindingMarkers: [],
@@ -275,6 +287,7 @@ export function resolveChunkStructureForReservation(random, reservation, options
         chunkY: reservation.chunkY,
         family: reservation.roomFamily,
         tier: Number.isInteger(reservation.ring) ? reservation.ring : null,
+        roomBuild: createTerritoryRoomBuild(reservation),
         ...options
     });
 }

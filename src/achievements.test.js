@@ -220,6 +220,16 @@ describe('achievement persistence wrappers', () => {
         expect(hasAnyUnlock(stored)).toBe(true);
     });
 
+    it('keeps lifetime deepest depth when later runs end shallower', () => {
+        const storage = makeStorage();
+        const engine = new AchievementEngine({ storage, now: () => 100 });
+        engine.recordRunEnd({ outcome: 'death', depthTier: 7 });
+        engine.recordRunEnd({ outcome: 'death', depthTier: 2 });
+
+        expect(engine.getState().stats.maxDepthTier).toBe(7);
+        expect(new AchievementEngine({ storage }).getState().stats.maxDepthTier).toBe(7);
+    });
+
     it('engine records events against the same schema', () => {
         const storage = makeStorage();
         const engine = new AchievementEngine({ storage, now: () => 99 });

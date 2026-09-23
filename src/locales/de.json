@@ -87,6 +87,17 @@
       "engineer": "INGENIEUR",
       "reroute": "UMLEITEN",
       "cheaper_consoles": "GÜNSTIGERE KONSOLEN",
+      "role_infiltrator": "INFILTRATOR",
+      "role_breacher": "BREACHER",
+      "role_logistics": "LOGISTIK",
+      "tag_active": "AKTIV:",
+      "tag_passive": "PASSIV:",
+      "spec_scout_mobility": "BEWEGLICHKEIT: MAX",
+      "spec_scout_armor": "RÜSTUNG: LEICHT",
+      "spec_tank_defense": "VERTEIDIGUNG: MAX",
+      "spec_tank_armor": "RÜSTUNG: SCHWER",
+      "spec_eng_utility": "NUTZEN: MAX",
+      "spec_eng_armor": "RÜSTUNG: HAZARD",
       "esc": "[ESC]",
       "return_main": "← ZURÜCK ZUM HAUPTMENÜ"
     },
@@ -125,9 +136,10 @@
       "crosshair_color": "FADENKREUZFARBE",
       "colorblind": "FARBENBLINDHEITSHILFE",
       "desktop_controls": "DESKTOP-STEUERUNG",
-      "cat_operator": "OPERATOR & SYSTEMDATEN",
+      "cat_operator": "OPERATOR- & SYSTEMDATEN",
       "callsign": "OPERATOR-RUFZEICHEN",
-      "cloud_sync": "STEAM-CLOUD-SYNC",
+      "operator_id": "OPERATOR-ID",
+      "cloud_sync": "STEAM CLOUD-SYNCHRONISIERUNG",
       "save_data": "SPIELSTAND",
       "new_game_reset": "NEUSTART",
       "exit_app": "ANWENDUNG BEENDEN",
@@ -296,7 +308,9 @@
       "blackbox_recoverable": "BERGBAR (SEKTOR {depth})",
       "blackbox_none": "KEINE",
       "equipped_none": "KEINE",
-      "arsenal_count": "ARSENAL: {made} / {total} WAFFEN GEFERTIGT"
+      "arsenal_count": "ARSENAL: {made} / {total} WAFFEN GEFERTIGT",
+      "condition": "ZUSTAND:",
+      "condition_nominal": "NORMAL"
     },
     "dlg": {
       "channel": "MUTTERSCHIFF-UPLINK KANAL 7",
@@ -392,10 +406,16 @@
       "accent_credits": "// CREDITS"
     },
     "hero_detail": {
-      "field_loadout": "FELDAUSRÜSTUNG"
+      "chassis_spec": "CHASSIS-SPEZIFIKATION"
     },
     "archive": {
       "bunker_archive": "◈ BUNKER-ARCHIV",
+      "lore_logs": "LORE-PROTOKOLLE",
+      "story_endings": "STORY-ENDINGEN",
+      "active_directives": "AKTIVE DIREKTIVEN",
+      "open_full_dossier": "VOLLSTÄNDIGES TAKTISCHES DOSSIER ÖFFNEN",
+      "linked_unlock": "VERKNÜPFTE FREISCHALTUNG",
+      "pathway_unresolved": "Die Voraussetzungen sind noch offen. Keine unumkehrbare Entscheidung hat diesen Verlauf versiegelt.",
       "recovered_kicker": "ARCHIV-SIMULATION WIEDERHERGESTELLT",
       "in_progress": "LÄUFT",
       "ready": "BEREIT",
@@ -623,7 +643,8 @@
     "vitals": {
       "vitals": "VITALWERTE",
       "aria_label_health": "Gesundheit",
-      "cover": "DECKUNG"
+      "cover": "DECKUNG",
+      "fatigue": "ERMÜDUNG"
     },
     "queens_ledger_hud": {
       "obedience_0_seats_1_4": "♛ GEHORSAM 0 · SITZE 1/4 · VEKTOR: INSTABIL"
@@ -775,7 +796,8 @@
       "aria_label_optional_base_defense": "Optionale Basisverteidigung",
       "defense_turret": "VERTEIDIGUNGSGESCHÜTZ",
       "optional_north_door_defense_repairing": "Optionale Verteidigung der Nordtür. Die Reparatur der Lebenserhaltung baut kein Geschütz.",
-      "bunker_tree_cross_linked_protocols": "BUNKER-BAUM // VERKNÜPFTE PROTOKOLLE"
+      "bunker_tree_cross_linked_protocols": "BUNKER-BAUM // VERKNÜPFTE PROTOKOLLE",
+      "ring_route": "RINGROUTE"
     },
     "terminal_bank": {
       "current_run_stats": "AKTUELLE RUN-STATISTIK",
@@ -926,6 +948,18 @@
       "full_loot_claim": "VOLLER BEUTEANSPRUCH",
       "rival_bounties": "RIVALEN-KOPFGELDER",
       "mission_objective": "MISSIONSZIEL:",
+      "career_ledger": "KARRIERE-LEDGER",
+      "campaign_ledger": "AKTUELLE KAMPAGNE",
+      "runs": "EINSÄTZE",
+      "deaths": "TODE",
+      "victories": "SIEGE",
+      "deepest": "TIEFSTER PUNKT",
+      "attempts": "VERSUCHE",
+      "lives_lost": "VERLORENE LEBEN",
+      "day": "TAG",
+      "depth": "TIEFE",
+      "black_box_recovery": "BLACK-BOX-BERGUNG",
+      "tracked_objectives": "VERFOLGTE ZIELE",
       "sector_frequency_uplink": "SEKTORFREQUENZ & UPLINK",
       "ch_07": "CH-07",
       "sector_room_code": "SEKTOR-RAUMCODE",
@@ -1099,7 +1133,12 @@
       "host_control_required": "HOST-KONTROLLE ERFORDERLICH",
       "host_new_lobby": "NEUE LOBBY HOSTEN",
       "start_match": "MATCH STARTEN",
-      "mode_members": "{mode} // {count}/4 OPERATIVE"
+      "mode_members": "{mode} // {count}/4 OPERATIVE",
+      "black_box_active": "AKTIV BEI {depth}m // {tech} TECH · {coin} MÜNZE · {med} MED",
+      "black_box_clear": "KEIN AKTIVES BERGUNGSSIGNAL",
+      "no_tracked_objectives": "KEINE VERFOLGTEN ZIELE",
+      "surface": "OBERFLÄCHE",
+      "story_prelude": "AKT I // MENSCHLICHES VORSPIEL"
     },
     "dossier": {
       "title": "TAKTISCHES DOSSIER",
@@ -1142,7 +1181,8 @@
       "defeat_guard": "WÄCHTER BESIEGEN, UM DIE BLACKBOX FREIZUSCHALTEN",
       "recover_black_box": "BLACKBOX BERGEN",
       "recover_final": "LETZTE KOMPONENTE BERGEN",
-      "interact": "INTERAGIEREN"
+      "interact": "INTERAGIEREN",
+      "rest_end_day": "RASTEN — TAG {day} BEENDEN"
     },
     "telemeter": {
       "passive_scan": "OBERFLÄCHENSCAN // PASSIV",
@@ -1174,7 +1214,15 @@
       "base_status": "{type} BASIS-STATUS {state}",
       "active_exosuit": "[AKTIVER EXOANZUG]",
       "standby": "[BEREITSCHAFT]",
-      "field_stabilizer": "{type} FELDSTABILISATOR"
+      "field_stabilizer": "{type} FELDSTABILISATOR",
+      "ring_route_progress": "{done}/{total} · {stage}",
+      "ring_route_open": "ROUTE OFFEN",
+      "ring_route_stages": {
+        "previous_crossing": "VORIGER ÜBERGANG",
+        "ship_goal": "SCHIFFSZIEL",
+        "ring_mission": "RINGMISSION",
+        "milestone_boss": "MEILENSTEIN"
+      }
     },
     "journal": {
       "day_time": "T{day} {minute}:{second}",
@@ -1381,7 +1429,8 @@
       "callsign": "RUFZEICHEN {callsign}",
       "listen_hint": "Hör zu und entscheide dann, wie du helfen willst.",
       "quote": "„{text}“",
-      "next_action": "Deine nächste Handlung ändert die Startliste und den Endverlauf."
+      "next_action": "Deine nächste Handlung ändert die Startliste und den Endverlauf.",
+      "scar_gained": "DIE NACHT HAT SPUREN HINTERLASSEN: {scar}"
     },
     "title": {
       "pregalien_command": "PREGALIEN | NEST-KOMMANDO",

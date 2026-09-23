@@ -350,6 +350,8 @@ export function resolveAuthoredChunkStructure(random, worldPlan, {
     const rejectedSockets = [];
     const errors = [];
     let producedAnyStructure = false;
+    // Best-effort room for a ring crossing: see the acceptance note below.
+    let crossingBestEffort = null;
 
     for (const rotationSteps of CARDINAL_ROTATIONS) {
         attemptedRotations.push(rotationSteps);
@@ -377,6 +379,16 @@ export function resolveAuthoredChunkStructure(random, worldPlan, {
                 : [];
         if (skippedSockets.length > 0) {
             rejectedSockets.push({ rotationSteps, skippedSockets });
+            // A ring crossing is the one reservation that cannot be skipped:
+            // its room carries both the threshold and the gate_control anchor
+            // the mission needs. When no rotation covers every socket cleanly,
+            // keep the first one that at least produced a room, rather than
+            // falling through to a setpiece module that stamps no doors and no
+            // controls -- that left the gate looking right and permanently
+            // shut, blocking the ring outright.
+            if (reservation?.crossingId && !crossingBestEffort) {
+                crossingBestEffort = { structure, rotationSteps, skippedSockets };
+            }
             continue;
         }
 
@@ -400,6 +412,32 @@ export function resolveAuthoredChunkStructure(random, worldPlan, {
         };
     }
 
+    if (crossingBestEffort) {
+        const acceptedStructure = withReservationMetadata(
+            crossingBestEffort.structure,
+            reservation,
+            crossingBestEffort.rotationSteps
+        );
+        return {
+            status: AUTHORED_STRUCTURE_RESOLUTION.ACCEPTED,
+            chunkKey,
+            reservation,
+            reservationId: reservation.id,
+            generatorId: acceptedStructure.generatorId,
+            wayfindingMarkers: acceptedStructure.wayfindingMarkers,
+            structure: acceptedStructure,
+            diagnostics: {
+                fallbackRequired: false,
+                reason: AUTHORED_STRUCTURE_FALLBACK_REASONS.SOCKET_MISMATCH,
+                attemptedRotations,
+                rejectedSockets,
+                errors,
+                acceptedRotationSteps: crossingBestEffort.rotationSteps,
+                crossingBestEffort: true
+            }
+        };
+    }
+
     // If no single-chunk room in ROOM_BUILD_CATALOG matched this reservation,
     // check if a multi-chunk setpiece claim covers it
     const setpieceClaim = (worldPlan?.setpieceClaims ?? []).find((claim) => (
@@ -409,7 +447,16 @@ export function resolveAuthoredChunkStructure(random, worldPlan, {
         const setpieceStructure = resolveSetpieceChunkStructure(setpieceClaim, chunkX, chunkY, {
             chunkSize: producerOptions.chunkSize
         });
-        if (setpieceStructure) {
+        // A ring crossing has to keep its threshold. Setpiece modules away from
+        // the pivot stamp no doors, so accepting one here left the gate with
+        // nothing to convert into a crossing door: the chunk looked right and
+        // could never be opened, permanently blocking that ring. Falling
+        // through instead hands the chunk to the standard generator, which
+        // always cuts doors. A gate that opens beats a prettier gate that does
+        // not.
+        const crossingNeedsDoor = Boolean(reservation?.crossingId)
+            && !(setpieceStructure?.doors?.length > 0);
+        if (setpieceStructure && !crossingNeedsDoor) {
             const acceptedStructure = withReservationMetadata(setpieceStructure, reservation, setpieceClaim.rotation ?? 0);
             return {
                 status: AUTHORED_STRUCTURE_RESOLUTION.ACCEPTED,

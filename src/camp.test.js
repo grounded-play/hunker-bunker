@@ -224,3 +224,60 @@ describe('SurvivorCamp', () => {
         expect(Number.isFinite(camp.npcSprite.position.y)).toBe(true);
     });
 });
+
+describe('overnight condition dressing', () => {
+    const buildCamp = (level = 3) => {
+        const camp = new SurvivorCamp(new THREE.Scene(), { id: 'camp_tallow' });
+        camp.reveal(0, 0, 0);
+        camp.level = level;
+        return camp;
+    };
+
+    it('starts secure and ignores conditions it does not know', () => {
+        const camp = buildCamp();
+        expect(camp.overnightCondition).toBe('secure');
+        camp.setOvernightCondition('not-a-condition');
+        expect(camp.overnightCondition).toBe('secure');
+    });
+
+    // The point of the dressing: you can read a camp's night across the
+    // clearing, without opening a menu.
+    it('thins the defences the player paid for, one step at a time', () => {
+        const camp = buildCamp(3);
+        const standing = () => camp.sandbagSprites.filter((s) => s.visible).length;
+        camp.updatePropVisuals();
+        expect(standing()).toBe(3);
+        camp.setOvernightCondition('strained');
+        expect(standing()).toBe(2);
+        camp.setOvernightCondition('breached');
+        expect(standing()).toBe(1);
+        camp.setOvernightCondition('overrun');
+        expect(standing()).toBe(0);
+    });
+
+    it('takes the stores at breached and the fire at overrun', () => {
+        const camp = buildCamp();
+        camp.setOvernightCondition('breached');
+        expect(camp.propSprites.crates.visible).toBe(false);
+        // The fire is still burning: the camp is damaged, not dead.
+        expect(camp.propSprites.cookfire.material.map).toBe(camp.texCookfireLit);
+        camp.setOvernightCondition('overrun');
+        expect(camp.propSprites.cookfire.material.map).toBe(camp.texCookfireDoused);
+    });
+
+    it('empties the camp only once it is abandoned', () => {
+        const camp = buildCamp();
+        camp.setOvernightCondition('overrun');
+        expect(camp.propSprites.laundry.visible).toBe(true);
+        camp.setOvernightCondition('abandoned');
+        expect(camp.propSprites.laundry.visible).toBe(false);
+    });
+
+    it('recovers its dressing when the camp is resupplied and holds', () => {
+        const camp = buildCamp(3);
+        camp.setOvernightCondition('overrun');
+        camp.setOvernightCondition('secure');
+        expect(camp.sandbagSprites.filter((s) => s.visible).length).toBe(3);
+        expect(camp.propSprites.crates.visible).toBe(true);
+    });
+});

@@ -262,6 +262,8 @@ export class HiveSite {
         const ringMat = new THREE.MeshStandardMaterial({ color: 0x1b2226, roughness: 0.8 });
         const ring = new THREE.Mesh(ringGeo, ringMat);
         ring.rotation.x = Math.PI / 2;
+        ring.userData = { kind: 'hive-synapse-ring', hiveId: this.id };
+        this.synapseRing = ring;
         group.add(ring);
 
         // 3D Billboard Sprite for ambient walker
@@ -456,6 +458,13 @@ export class HiveSite {
         const isHurt = this.status === 'wounded' || this.status === 'mined';
         const vacated = isVacatedHiveStatus(this.status);
         const audio = typeof window !== 'undefined' ? window.AudioManager : null;
+
+        if (this.synapseRing) {
+            const linked = this.networked && !vacated;
+            this.synapseRing.material.color.set(linked ? 0x8cfff0 : 0x1b2226);
+            this.synapseRing.material.emissive.set(linked ? 0x00ffcc : 0x000000);
+            this.synapseRing.material.emissiveIntensity = linked ? 0.9 : 0;
+        }
 
         if (this.propSprites.eggs) {
             this.propSprites.eggs.material.map = isHurt ? this.texEggsHatched : this.texEggsIntact;

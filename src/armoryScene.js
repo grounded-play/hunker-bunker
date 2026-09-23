@@ -9,7 +9,7 @@ import {
     WEAPON_SKIN_MESHES
 } from './player3dOverlay.js';
 import { getCatalogEntry as getItemCatalogEntry } from './itemOwnership.js';
-import { getCharmSocketTransform, resolveCharmModelOffset } from './charmSockets.js';
+import { getCharmCordLoopPoints, getCharmSocketTransform, resolveCharmModelOffset } from './charmSockets.js';
 import { applyWeaponSheen as tintWeapon, disposeWeaponSheen } from './weaponSheenMaterial.js';
 import { isMaterialFinish, applyWeaponMaterialFinish, disposeWeaponMaterialFinish } from './weaponFinishMaterial.js';
 import { getSelectedSheen } from './weaponSheens.js';
@@ -274,21 +274,16 @@ export async function createArmoryScene(canvas) {
         const normalized = ['SCOUT', 'TANK', 'ENGINEER'].includes(String(classType).toUpperCase())
             ? String(classType).toUpperCase()
             : 'SCOUT';
-        activeClass = normalized;
-
-        if (currentOverlay) {
-            operatorGroup.remove(currentOverlay.root);
-            currentOverlay = null;
-        }
-
         const configs = {
             SCOUT: {
+                operatorClass: 'SCOUT',
                 modelUrl: '/3d/scouting-scout/Scout.game.glb',
                 targetHeight: 1.85,
                 idleActionName: 'heroIdle',
                 weaponVisible: false
             },
             ENGINEER: {
+                operatorClass: 'ENGINEER',
                 modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
@@ -298,6 +293,7 @@ export async function createArmoryScene(canvas) {
                 weaponEnabled: true
             },
             TANK: {
+                operatorClass: 'TANK',
                 modelUrl: '/3d/runtime/tank-rigged.glb',
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
@@ -330,7 +326,9 @@ export async function createArmoryScene(canvas) {
                 wearableOverclocks: [currentMod1Mesh, currentMod2Mesh]
             });
             if (gen !== loadGen) { overlay.dispose(); return; }
+            const previousOverlay = currentOverlay;
             currentOverlay = overlay;
+            activeClass = normalized;
             overlay.root.rotation.y = 0.35; // Angle slightly toward center weapon bench
             overlay.root.traverse((child) => {
                 if (child.isMesh) {
@@ -341,6 +339,10 @@ export async function createArmoryScene(canvas) {
             operatorGroup.add(overlay.root);
             overlay.setOperatorPolish?.(currentPolishColor);
             applyDecalSprite(currentDecalId);
+            if (previousOverlay) {
+                operatorGroup.remove(previousOverlay.root);
+                previousOverlay.dispose?.();
+            }
         } catch (err) {
             console.warn('[armoryScene] Failed loading operator overlay:', err);
             if (customModel) await loadOperatorModel(classType, null);
@@ -392,6 +394,7 @@ export async function createArmoryScene(canvas) {
         charmSocket.scale.setScalar(transform.scale);
         charmSocket.userData.archetype = transform.archetype;
         charmSocket.userData.anchor = transform.anchor;
+        charmSocket.userData.cordDrop = transform.cordDrop;
         charmPhysics.angleX = 0;
         charmPhysics.angleZ = 0;
         charmPhysics.velX = 0;
@@ -399,6 +402,7 @@ export async function createArmoryScene(canvas) {
     }
 
     let currentCharmMesh = null;
+    let currentCharmCord = null;
     let charmLoadGen = 0;
     const modLoadGen = { 1: 0, 2: 0 };
     let currentMod1Mesh = null;
@@ -486,6 +490,14 @@ export async function createArmoryScene(canvas) {
                 charmSocket.remove(currentCharmMesh);
                 currentCharmMesh = null;
             }
+            if (currentCharmCord) {
+                charmSocket.remove(currentCharmCord);
+                currentCharmCord.traverse((node) => {
+                    node.geometry?.dispose?.();
+                    node.material?.dispose?.();
+                });
+                currentCharmCord = null;
+            }
             return;
         }
 
@@ -494,6 +506,13 @@ export async function createArmoryScene(canvas) {
             const gltf = await loadArmoryGltfCached(gltfLoader, url);
             if (gen !== charmLoadGen) return;
             if (currentCharmMesh) charmSocket.remove(currentCharmMesh);
+            if (currentCharmCord) {
+                charmSocket.remove(currentCharmCord);
+                currentCharmCord.traverse((node) => {
+                    node.geometry?.dispose?.();
+                    node.material?.dispose?.();
+                });
+            }
 
             const model = gltf.scene.clone(true);
             const bbox = new THREE.Box3().setFromObject(model);
@@ -510,7 +529,27 @@ export async function createArmoryScene(canvas) {
                 }
             });
 
+            // Authored tactile cord loop connecting the weapon anchor to the
+            // charm ring. It belongs to the socket, not the scaled charm, so
+            // its thickness and drop remain physical across every charm mesh.
+            const cordDrop = charmSocket.userData.cordDrop ?? 0.045;
+            const cordMat = new THREE.MeshStandardMaterial({ color: 0x24272c, roughness: 0.85, metalness: 0.2 });
+            const curve = new THREE.CatmullRomCurve3(
+                getCharmCordLoopPoints(cordDrop).map((point) => new THREE.Vector3(...point)),
+                true,
+                'centripetal'
+            );
+            const cordMesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 28, 0.0022, 6, true), cordMat);
+            cordMesh.name = 'charmTactileCord';
+            cordMesh.castShadow = true;
+            const cordGroup = new THREE.Group();
+            cordGroup.name = 'charmTactileCordLoop';
+            cordGroup.add(cordMesh);
+            model.position.y -= cordDrop;
+
             currentCharmMesh = model;
+            currentCharmCord = cordGroup;
+            charmSocket.add(cordGroup);
             charmSocket.add(model);
             triggerCharmSpringImpulse(2.0);
         } catch (err) {

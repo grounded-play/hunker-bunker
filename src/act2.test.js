@@ -555,6 +555,28 @@ describe('hive reducers', () => {
         m.setHiveNetworked('hive_relay', true);
         expect(m.getState().networks.hiveSynapseOnline).toBe(true);
     });
+
+    it.each(['harvestHive', 'sacrificeHive'])('reconciles the chorus when %s removes the last unlinked hive', (resolve) => {
+        const m = boot();
+        m.setHiveNetworked('hive_suture', true);
+        m.setHiveNetworked('hive_relay', true);
+        expect(m.getState().networks.hiveSynapseOnline).toBe(false);
+        m[resolve]('hive_carapace');
+        expect(m.getState().networks.hiveSynapseOnline).toBe(true);
+        const reloaded = new Act2Manager({ storage: m.storage });
+        expect(reloaded.getState().networks.hiveSynapseOnline).toBe(true);
+        reloaded.setHiveNetworked('hive_relay', false);
+        expect(reloaded.getState().networks.hiveSynapseOnline).toBe(false);
+    });
+
+    it('reconciles the chorus when curing expires unsecured, unlinked hives', () => {
+        const m = boot();
+        m.adjustHiveBond('hive_suture', ACT2_HIVE_RESCUE_BOND_THRESHOLD);
+        m.setHiveNetworked('hive_suture', true);
+        m.setQueenStatus('rejected');
+        m.uninfectSelf();
+        expect(m.getState().networks.hiveSynapseOnline).toBe(true);
+    });
 });
 
 describe('outing propagation', () => {

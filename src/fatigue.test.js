@@ -6,10 +6,14 @@ import {
     FATIGUE_STAGES,
     FATIGUE_STATE_KEY,
     createFatigueState,
+    describeScars,
     fatigueModifiers,
     getFatigueStage,
+    nextTreatableScar,
+    SCAR_TREATMENT_COST,
     normalizeFatigueState,
     recordExpedition,
+    sprintPricing,
     restoreOnSleep,
     treatScar
 } from './fatigue.js';
@@ -221,5 +225,83 @@ describe('composing into the loadout bus', () => {
     it('tolerates a missing base object', () => {
         expect(() => composeFatigueIntoLoadoutMods(null, createFatigueState())).not.toThrow();
         expect(() => composeFatigueIntoLoadoutMods(undefined, null)).not.toThrow();
+    });
+});
+
+describe('sprint pricing', () => {
+    const at = (n) => {
+        let state = createFatigueState();
+        for (let i = 0; i < n; i += 1) state = recordExpedition(state);
+        return state;
+    };
+
+    it('is free at baseline', () => {
+        expect(sprintPricing(at(1))).toEqual({ o2DrainMultiplier: 1, speedBonusScale: 1 });
+    });
+
+    it('gets steadily more expensive, never cheaper', () => {
+        const costs = [1, 2, 3, 4, 5].map((n) => sprintPricing(at(n)).o2DrainMultiplier);
+        for (let i = 1; i < costs.length; i += 1) {
+            expect(costs[i]).toBeGreaterThanOrEqual(costs[i - 1]);
+        }
+        expect(costs.at(-1)).toBeGreaterThan(costs[0]);
+    });
+
+    // The verb must survive: sprint is priced, never removed.
+    it('never scales the speed bonus to zero at any stage', () => {
+        for (let n = 0; n <= 8; n += 1) {
+            const { speedBonusScale } = sprintPricing(at(n));
+            expect(speedBonusScale).toBeGreaterThan(0.5);
+            expect(speedBonusScale).toBeLessThanOrEqual(1);
+        }
+    });
+});
+
+describe('describeScars', () => {
+    it('reports nothing when the operator is unmarked', () => {
+        expect(describeScars(createFatigueState())).toBe(null);
+        expect(describeScars(null)).toBe(null);
+    });
+
+    it('names each scar and marks severity above the first tier', () => {
+        const state = normalizeFatigueState({
+            scars: [{ id: 'TREMOR', severity: 2 }, { id: 'HYPERVIGILANCE', severity: 1 }]
+        });
+        expect(describeScars(state)).toBe('TREMOR x2 / HYPERVIGILANCE');
+    });
+
+    // Copy for the empty case belongs to the caller, which owns localization.
+    it('never invents a "nothing wrong" string of its own', () => {
+        expect(describeScars(createFatigueState())).toBe(null);
+    });
+});
+
+describe('camp medic treatment targets', () => {
+    it('offers nothing when the operator is unmarked', () => {
+        expect(nextTreatableScar(createFatigueState())).toBe(null);
+    });
+
+    it('works on the worst treatable scar first', () => {
+        const state = normalizeFatigueState({
+            scars: [{ id: 'TREMOR', severity: 2 }, { id: 'HYPERVIGILANCE', severity: 3 }]
+        });
+        expect(nextTreatableScar(state).id).toBe('HYPERVIGILANCE');
+    });
+
+    // Offering to treat the untreatable would promise a cure that does not exist.
+    it('never offers the untreatable scar', () => {
+        const state = normalizeFatigueState({ scars: [{ id: 'BLUNTED', severity: 3 }] });
+        expect(nextTreatableScar(state)).toBe(null);
+    });
+
+    // A scar already walked down to its floor has nothing left to give.
+    it('does not offer a scar that is already at its floor', () => {
+        const state = normalizeFatigueState({ scars: [{ id: 'TREMOR', severity: 1 }] });
+        expect(nextTreatableScar(state)).toBe(null);
+    });
+
+    it('charges a cost the caller can check against shells', () => {
+        expect(SCAR_TREATMENT_COST).toBeGreaterThan(0);
+        expect(Number.isInteger(SCAR_TREATMENT_COST)).toBe(true);
     });
 });

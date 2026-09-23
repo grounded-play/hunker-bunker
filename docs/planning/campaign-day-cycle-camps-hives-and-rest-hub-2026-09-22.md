@@ -226,36 +226,53 @@ Unchanged and already implemented in `src/dayCycle.js` `STORY_DEADLINES`: Meridi
 
 ## 6. Implementation Status & Roadmap
 
-### Done (this pass)
+### Done
 
 | Item | Where | Notes |
 |---|---|---|
-| Fatigue ladder, scars, partial treatment | `src/fatigue.js` + `src/fatigue.test.js` | Pure module, `hb_fatigue`, 14 tests |
-| Overnight simulation | `src/overnightSim.js` + `src/overnightSim.test.js` | Pure, deterministic, 11 tests |
-| One rest rule for every bed | `canRestNow()` in `src/dayCycle.js`, `canRestAt()` in `src/threeGame.js` | Replaces the inline Act 2 gate |
-| Clocks connected | `setTimeOfDayToMorning()` in `src/threeGame.js` | Pins dawn, recomputes sky + lighting |
-| Console reconciliation | §1A | Homebase console keeps identity/armory/deploy; bed ends the day |
+| Fatigue ladder, scars, partial treatment | `src/fatigue.js` (+tests) | Pure, `hb_fatigue` |
+| Overnight simulation | `src/overnightSim.js` (+tests) | Pure, deterministic |
+| One rest rule for every bed | `canRestNow()` / `canRestAt()` | Replaced the inline Act 2 gate |
+| Clocks connected | `setTimeOfDayToMorning()` | Pins dawn, recomputes sky + lighting |
+| Console reconciliation | §1A | Console keeps identity/armory/deploy; bed ends the day |
 | Real identifiers | §4 | `MANDATORY_SHIP_GOALS`, `ringCrossings`, `HIVE_TERRITORY_BEATS` |
 | Open questions answered | §5A | Death, co-op, creep pace, camp raids |
+| **A — fatigue runtime** | `threeGame` | `recordExpeditionEnded()` on death AND extraction; `restoreOnSleep()` on sleep; composed into `loadoutMods`; heart penalty applied separately and floored at 1 |
+| **B — fatigue presentation** | `src/vitals.js`, `style.css` | HUD stage row (hidden at RESTED/ALERT), `#fatigue-strain-overlay` within §2.4 limits, `sprintPricing()`, Homebase CONDITION line |
+| **C — bed interactables** | `threeGame` | Bunker cot rest point + prop, prompt, routed through `canRestAt()` and the shared `beginCampRest()` sequence |
+| **D — overnight wiring** | `src/overnightBridge.js` (+tests) | Live act2 camps/hives → sim → `hb_overnight_v1`; ledger rendered in the morning debrief |
+| **E — ring crossing stages** | `src/ringCrossingStages.js` (+tests) | Ordered stage checklist joined to the goal anchors; terminal route readout |
 
-### Remaining (runtime and presentation, not pure logic)
+### Remaining
 
-**Phase A — Fatigue runtime.** Call `recordExpedition()` when an expedition ends (extraction *and* death); call `restoreOnSleep()` inside `beginCampRest`; merge `fatigueModifiers()` into the loadout bus where `loadoutMods` is applied in `threeGame`. Persist to `hb_fatigue` beside `hb_day_cycle`, and register the key in `electron/save-contract.cjs`.
+- **Ring mission and boss stages have no sub-steps.** The goal stage now breaks
+  into prerequisite / resources / install because each has a truth source. The
+  mission and milestone stages stay single booleans until something tracks their
+  intermediate progress.
+- **Creep is cosmetic.** Decals stamp and persist, but creep does not yet block
+  movement, damage, or change spawns. It marks territory; it does not hold it.
+- **Camp condition does not feed the economy.** A breached camp looks breached
+  and loses its stores visually, but trade prices and verb availability are
+  unchanged by it.
 
-**Phase B — Fatigue presentation.** Stage readout on the HUD (`VitalsHUD` reads, never owns). Strain vignette and audio damping within §2.4's limits: capped blur, never full black, linear aim, sprint priced not disabled. Scar list surfaced wherever the operator dossier lives.
+### Shipped after Phases A-E
 
-**Phase C — Bed interactables.** A cot prop in the Sector 0 bunker and bedrolls at the three camps, all routing through `canRestAt()`. Prompt: `[E] REST (END DAY N)`.
-
-**Phase D — Overnight wiring.** Feed real camp fortification from `campEconomy.js` and hive status from `hiveSite.js` / `act2.js` into `simulateOvernight()`, apply the returned deltas, and render `ledger` as the morning debrief.
-
-**Phase E — Ring crossing multi-stage objectives.** Attach staged requirements to `ringCrossings.js` states and the four `MANDATORY_SHIP_GOALS` anchors.
+| Item | Where |
+|---|---|
+| Creep on the ground, deterministic and idempotent | `planCreepDecals()`, `stampOvernightCreep()` |
+| Camp raid wear | `CAMP_CONDITION_DRESSING`, `setOvernightCondition()` |
+| Camp medic scar treatment | `nextTreatableScar()`, `treatScarAtCamp()` |
+| Strain audio muffling | folded into `survivalTension.js` (which also had no caller before) |
+| Ship goal sub-steps | `describeShipGoalSteps()` |
 
 ### Verification
 
 ```bash
-npx vitest run src/fatigue.test.js src/overnightSim.test.js src/dayCycle.test.js src/threeGame.dayCycleRuntime.test.js
 npx vitest run     # full suite
 npx eslint .
 ```
 
-Manual, once Phases A–D land: rest at a camp, confirm the deadline warning when one closes tonight, confirm the day advances, confirm **the sky is dawn on waking**, confirm the ledger lists only real changes, and confirm no input is ever dropped and no blur hides a threat.
+Manual: rest at a camp or the bunker cot, confirm the deadline warning when one
+closes tonight, confirm the day advances, confirm **the sky is dawn on waking**,
+confirm the ledger lists only real changes, and confirm no input is ever dropped
+and no strain effect hides a threat.
