@@ -176,7 +176,9 @@ describe('camp quest reset and persisted restoration', () => {
                 questFlags: { reactor_venting: 'active' }
             }]
         });
-        fakeThis.spawnReactorVentingObjects = vi.fn();
+        fakeThis.spawnReactorVentingObjects = vi.fn(() => {
+            fakeThis._activeCampQuest.props = [makeQuestProp(), makeQuestProp(), makeQuestProp()];
+        });
 
         const first = ThreeGame.prototype.restoreActiveCampQuestFromState.call(fakeThis);
         const second = ThreeGame.prototype.restoreActiveCampQuestFromState.call(fakeThis);

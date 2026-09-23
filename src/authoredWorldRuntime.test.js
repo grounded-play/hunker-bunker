@@ -212,7 +212,7 @@ describe('WorldPlan reservation runtime adapter', () => {
     });
 
     it('returns an explicit fallback for an unsupported real reservation family', () => {
-        const reservation = worldPlan.reservations.find((entry) => entry.role === 'campTerritory');
+        const reservation = worldPlan.reservations.find((entry) => entry.role === 'finale');
         const result = resolveAuthoredChunkStructure(seededRandom(46), worldPlan, {
             chunkX: reservation.chunkX,
             chunkY: reservation.chunkY,
@@ -234,7 +234,9 @@ describe('WorldPlan reservation runtime adapter', () => {
     });
 
     it('resolves an authored multi-chunk setpiece structure when claimed by the world plan', () => {
-        const fullPlan = realWorldPlan(44);
+        // This seed fits all three bridge modules without borrowing a camp
+        // or hive room. Other seeds correctly degrade to the pivot module.
+        const fullPlan = realWorldPlan(3);
         const setpieceClaim = fullPlan.setpieceClaims?.[0];
         expect(setpieceClaim).toBeDefined();
         const outerModule = setpieceClaim.modules.find((m) => !fullPlan.reservations.some((r) => r.chunkKey === m.chunkKey))

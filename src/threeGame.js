@@ -357,6 +357,7 @@ import {
 } from './playerSpriteLayouts.js';
 import { repackGeneratedSpriteAtlas } from './spriteAtlasRuntime.js';
 import { createFreshRunEntropy } from './runEntropy.js';
+import { campaignWorldStore } from './campaignWorld.js';
 import {
     ENEMY_SPRITE_LAYOUTS,
     STATIC_ENEMY_SPRITE_PATHS,
@@ -1529,11 +1530,10 @@ export class ThreeGame {
         this.chunkGroups = new THREE.Group();
         this._chunkTemplateCache = new Map();
         this.globalSeedOffset = 0;
-        // Per-run entropy for one-off placements (foundry, cave). Rerolled on
-        // every run reset so discoveries land somewhere new each attempt; pinned
-        // to 0 for Daily Ops so all players share the same daily layout.
+        // Geography belongs to the campaign; expedition challenges get their
+        // own seed. Fixed daily/multiplayer worlds bypass this local save.
         this.fixedRunEntropy = false;
-        this.runEntropy = createFreshRunEntropy();
+        this.runEntropy = campaignWorldStore.getOrCreate().seed;
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys = new Set();
         this._slowFrameChunkMountTick = 0;
@@ -11265,6 +11265,7 @@ export class ThreeGame {
         this._runCheckpointTimer = (this._runCheckpointTimer ?? 0) - delta;
         if (this._runCheckpointTimer > 0) return;
         this._runCheckpointTimer = RUN_CHECKPOINT_INTERVAL_SECONDS;
+        this.persistCampaignWorld?.();
 
         const inventory = this.getSessionInventory();
         runCheckpointStore.save({
@@ -14601,7 +14602,8 @@ export class ThreeGame {
                 const seed = ((this.runEntropy ?? 0) ^ (this.globalSeedOffset ?? 0) ^ 0x52494e47) >>> 0;
                 candidate = generateRadialMazeExpedition(seed);
                 signature = this.getRadialLayoutSignature(candidate);
-                if (this.fixedRunEntropy || signature !== this._previousRadialLayoutSignature) break;
+                if (this.fixedRunEntropy || this._campaignWorldSeed === this.runEntropy
+                    || signature !== this._previousRadialLayoutSignature) break;
                 this.runEntropy = createFreshRunEntropy(this.runEntropy);
             }
             this.radialMazePlan = candidate;
@@ -14630,7 +14632,18 @@ export class ThreeGame {
         return this.getRadialMazePlan()?.topology ?? null;
     }
 
+    getAuthoredSitePosition(siteId) {
+        if (!this.authoredWorldTiles) return null;
+        const plan = this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
+        const heart = plan?.reservations?.find((entry) => entry.id === `territory:${siteId}`);
+        if (!Number.isInteger(heart?.chunkX) || !Number.isInteger(heart?.chunkY)) return null;
+        const size = this.chunkSize ?? 49;
+        return { x: heart.chunkX * size + Math.floor(size / 2), z: heart.chunkY * size + Math.floor(size / 2) };
+    }
+
     chooseRadialSitePosition(siteId, seed, clearanceRadius = 0) {
+        const authored = this.getAuthoredSitePosition?.(siteId);
+        if (authored) return authored;
         const site = getRadialSite(this.getRadialMazePlan(), siteId);
         if (!site) return null;
         return this.chooseProgressionSitePosition({
@@ -14644,6 +14657,8 @@ export class ThreeGame {
 
     isSiteOnPlannedRing(x, z, siteId) {
         if (!Number.isFinite(x) || !Number.isFinite(z)) return false;
+        const authored = this.getAuthoredSitePosition?.(siteId);
+        if (authored) return Math.hypot(x - authored.x, z - authored.z) < 0.5;
         const site = getRadialSite(this.getRadialMazePlan(), siteId);
         if (!site) return true;
         const anchor = this.getBiomeAnchorPosition();
@@ -14951,21 +14966,38 @@ export class ThreeGame {
     resolveHiveChoice(action, payload = {}) {
         const hive = this.getHiveById(payload.hiveId);
         if (!hive || !this.act2) return false;
+        const before = this.getHiveRecord(hive.id);
+        if (!before) return false;
+        const deny = (reason = 'choice-unavailable') => {
+            window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+            window.dispatchEvent(new CustomEvent('camp-choice-denied', {
+                detail: { campId: hive.id, campLabel: hive.label, action, reason }
+            }));
+            return true;
+        };
+        if (hive.id === 'hive_suture' && this.isDayDeadlineExpired?.('hive_suture_parley')
+            && (action === 'hive-final' || (action === 'hive-quest' && payload.questId === 'host_mercy'))) {
+            return deny('deadline-expired');
+        }
+        // A modal can outlive its choice. Rebuild eligibility from the
+        // persisted record before spending resources or paying a reward.
+        const offered = ThreeGame.prototype.buildHiveChoiceOptions.call(this, before)
+            .find((option) => option.action === action
+                && (action !== 'hive-quest' || option.questId === payload.questId));
+        if (!offered || offered.disabled) {
+            const expired = action === 'hive-quest' && hive.id === 'hive_suture'
+                && payload.questId === 'host_mercy'
+                && this.isDayDeadlineExpired?.('hive_suture_parley');
+            return deny(expired ? 'deadline-expired' : 'choice-unavailable');
+        }
 
         if (action === 'hive-talk') {
             return this.talkToLeader('hive', hive);
         }
         if (action === 'hive-final') {
             this.act2.completeHiveFinal(hive.id);
-            const rec = this.getHiveRecord(hive.id);
-            hive.syncFromRecord(rec);
-            window.AudioManager?.play?.('class_lock', { volume: 0.5, playbackRate: 0.68 });
-            window.dispatchEvent(new CustomEvent('hive-choice-resolved', {
-                detail: { hiveId: hive.id, hiveLabel: hive.label, action: 'hive-final', status: rec?.status, bond: rec?.bond }
-            }));
-            return true;
-        }
-        if (action === 'hive-tend') {
+        } else if (action === 'hive-tend') {
+            if (before.bond >= ACT2_MAX_BOND && before.extractionLevel <= 0) return deny('already-tended');
             if (!this.bank?.canAffordShells?.(5)) {
                 window.AudioManager?.play?.('ui_error', { volume: 0.4 });
                 window.dispatchEvent(new CustomEvent('camp-support-denied', {
@@ -14973,40 +15005,38 @@ export class ThreeGame {
                 }));
                 return true;
             }
-            this.bank.spendShells(5);
+            if (!this.bank.spendShells(5)) return deny('insufficient-shells');
             this.act2.adjustHiveBond(hive.id, 1);
             this.act2.healHiveExtraction(hive.id, 1);
         } else if (action === 'hive-quest') {
-            if (hive.id === 'hive_suture' && payload.questId === 'host_mercy'
-                && this.isDayDeadlineExpired?.('hive_suture_parley')) {
-                window.dispatchEvent(new CustomEvent('camp-choice-denied', {
-                    detail: { campId: hive.id, campLabel: hive.label, action, reason: 'deadline-expired' }
-                }));
-                return true;
-            }
             this.act2.completeHiveQuest(hive.id, payload.questId, 1);
-            if (hive.id === 'hive_suture' && payload.questId === 'host_mercy') {
-                this.resolveDayDeadline?.('hive_suture_parley');
-            }
         } else if (action === 'hive-network') {
             this.act2.setHiveNetworked(hive.id, true);
         } else if (action === 'hive-rescue') {
             this.act2.rescueHive(hive.id);
         } else if (action === 'hive-harvest') {
             this.act2.harvestHive(hive.id);
+        } else if (action === 'hive-sacrifice') {
+            this.act2.sacrificeHive(hive.id);
+        } else {
+            return false;
+        }
+
+        const after = this.getHiveRecord(hive.id);
+        if (JSON.stringify(after) === JSON.stringify(before)) return deny('choice-not-applied');
+        if ((action === 'hive-quest' || action === 'hive-final')
+            && hive.id === 'hive_suture' && after.questFlags?.host_mercy === 'done') {
+            this.resolveDayDeadline?.('hive_suture_parley');
+        }
+        if (action === 'hive-harvest' && after.status === 'slain') {
             this.bank?.deposit?.({ tech: 3, med: 3, coin: 3 });
             this.bank?.addShells?.(12);
             this.spawnGearPoofEffect(hive.pos.x, hive.pos.z, 'bunker_junk_rare');
             this.triggerCameraShake?.(0.3, 0.5);
             this.spawnHiveHarvestBoss(hive, 3);
         } else if (action === 'hive-sacrifice') {
-            this.act2.sacrificeHive(hive.id);
             this.triggerCameraShake?.(0.35, 0.6);
-        } else {
-            return false;
         }
-
-        const after = this.getHiveRecord(hive.id);
         hive.syncFromRecord(after);
         window.AudioManager?.play?.('class_lock', { volume: 0.45, playbackRate: 0.8 });
         window.dispatchEvent(new CustomEvent('hive-choice-resolved', {
@@ -15623,11 +15653,18 @@ export class ThreeGame {
     // while this is set). See CAMP_QUEST_GAMEPLAY_TARGET for per-quest counts.
     acceptCampQuest(camp, quest) {
         if (!camp || !quest || this._activeCampQuest) return;
-        this.act2.setCampQuestActive(camp.id, quest.id);
-        const target = CAMP_QUEST_GAMEPLAY_TARGET[quest.id] ?? 1;
+        const authoredQuest = CAMP_QUESTS[camp.id]?.find((entry) => entry.id === quest.id);
+        const record = this.getCampRecord?.(camp.id);
+        if (!authoredQuest || record?.questFlags?.[quest.id] === 'done'
+            || (record?.status && record.status !== 'alive')) return;
+        // Signatures close the existing quest chain with a physical task.
+        // Validate before persisting: unsupported offers must never leave an
+        // "active" flag without a world objective to finish.
+        const signatureTargets = { grid_covenant: 1, warm_pipes: 3, iron_ledger: 3 };
+        const target = signatureTargets[quest.id] ?? CAMP_QUEST_GAMEPLAY_TARGET[quest.id] ?? 1;
         this._activeCampQuest = {
             campId: camp.id,
-            quest,
+            quest: { ...quest, signature: authoredQuest.signature === true },
             kind: null,
             current: 0,
             target,
@@ -15656,10 +15693,27 @@ export class ThreeGame {
         } else if (quest.id === 'bunker_holdout') {
             this._activeCampQuest.kind = 'wave';
             this.spawnBunkerHoldoutWave(camp);
+        } else if (quest.id === 'iron_ledger') {
+            this._activeCampQuest.kind = 'wave';
+            this.spawnBunkerHoldoutWave(camp);
+        } else if (quest.id === 'grid_covenant' || quest.id === 'warm_pipes') {
+            this._activeCampQuest.kind = 'interact';
+            for (let index = 0; index < target; index += 1) {
+                const { x, z } = this.findCampQuestSpawnSpot(camp, index, target);
+                const sprite = this.spawnCampQuestMarkerProp(camp, { type: 'quest_prop', x, z, index });
+                if (sprite) this._activeCampQuest.props.push(sprite);
+            }
         } else {
             this._activeCampQuest = null;
             return;
         }
+        if (this._activeCampQuest.props.length === 0
+            || (this._activeCampQuest.kind !== 'wave' && this._activeCampQuest.props.length < target)) {
+            this.clearActiveCampQuestEntities?.();
+            this._activeCampQuest = null;
+            return;
+        }
+        this.act2.setCampQuestActive(camp.id, quest.id);
         window.AudioManager?.play?.('ui_scan_ping', { volume: 0.5, playbackRate: 1.0 });
         window.dispatchEvent(new CustomEvent('camp-quest-progress', {
             detail: { campId: camp.id, questId: quest.id, label: quest.label, current: 0, target: this._activeCampQuest.target }
@@ -15753,16 +15807,31 @@ export class ThreeGame {
     }
 
     spawnHiveArchiveObject(camp, _quest) {
-        const hivePos = this.hives && this.hives.length > 0 ? this.hives[0].pos : null;
-        let x, z;
-        if (hivePos) {
-            x = hivePos.x + 2;
-            z = hivePos.z + 2;
-        } else {
-            const spot = this.findCampQuestSpawnSpot(camp, 0, 1);
-            x = spot.x;
-            z = spot.z;
+        const hiveByCamp = {
+            camp_meridian: 'hive_suture',
+            camp_tallow: 'hive_carapace',
+            camp_vesper: 'hive_relay'
+        };
+        const hive = this.hives?.find((entry) => entry.id === hiveByCamp[camp.id]);
+        const usable = (spot) => Number.isFinite(spot?.x) && Number.isFinite(spot?.z)
+            && this.isSnailTileWalkable(Math.round(spot.x), Math.round(spot.z))
+            && this.canOccupyPosition(spot.x, spot.z);
+        let spot = null;
+        // Search the matching ring's hive first. A fixed +2 offset can put
+        // an archive inside its wall once the seeded approach changes.
+        for (const site of [hive, camp].filter(Boolean)) {
+            for (let index = 0; index < 16; index += 1) {
+                const candidate = this.findCampQuestSpawnSpot(site, index, 16);
+                if (usable(candidate)) {
+                    spot = candidate;
+                    break;
+                }
+            }
+            if (!spot && usable(site.pos)) spot = site.pos;
+            if (spot) break;
         }
+        if (!spot) return;
+        const { x, z } = spot;
         const sprite = this.spawnCampQuestMarkerProp(camp, { type: 'quest_prop', x, z, index: 0, scale: 1.2 });
         if (sprite) this._activeCampQuest.props.push(sprite);
     }
@@ -15999,7 +16068,9 @@ export class ThreeGame {
             sprite.geometry?.dispose?.();
             this.scatterSprites = this.scatterSprites.filter((s) => s !== sprite);
         }
-        this.act2.completeCampQuest(aq.campId, aq.quest.id, this.getCampQuestBondDelta?.(1) ?? 1);
+        const baseBondReward = aq.quest.signature ? 2 : 1;
+        this.act2.completeCampQuest(aq.campId, aq.quest.id,
+            this.getCampQuestBondDelta?.(baseBondReward) ?? baseBondReward);
         if (aq.campId === 'camp_vesper' && aq.quest.id === 'bunker_holdout') {
             this.resolveDayDeadline?.('vesper_last_shelter');
         }
@@ -16008,7 +16079,8 @@ export class ThreeGame {
         });
         if (camp) {
             const record = this.getCampRecord(camp.id);
-            camp.setStatus(record?.status ?? 'alive');
+            if (this.syncCampVisualFromRecord) this.syncCampVisualFromRecord(camp, record);
+            else camp.setStatus(record?.status ?? 'alive');
             this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, 'bunker_junk_rare');
         }
         // Heavy Munitions needs an immediate recompute so +1 shotDamage is
@@ -16192,6 +16264,51 @@ export class ThreeGame {
             }
         }));
         return true;
+    }
+
+    resetCampaignState() {
+        // The renderer survives a title-screen NEW CAMPAIGN. Retire its old
+        // save authority before teardown can emit another progression event.
+        this._campaignProgressRestored = false;
+        this._campaignWorldSeed = null;
+        this._restoredAuthoredWorldIdentity = null;
+        campaignWorldStore.reset();
+        this.expeditionIndex = 0;
+        this.expeditionSeed = null;
+        this.dayState = createDayState();
+        this.fatigueState = createFatigueState();
+        this.overnightState = createOvernightState();
+        this.completedRingCrossingMissionIds = new Set();
+        this.defeatedMilestoneBosses = new Set();
+        this.milestoneBossLifecycleState = createMilestoneBossLifecycleState({
+            builtGoalKeys: this.getBuiltGoalKeys?.() ?? []
+        });
+        this._milestoneBossRestagePending = true;
+        this._deepAnchorSpawnedCrossings = new Set();
+        this._campVerbLastUsedMs = {};
+        this._campVerbUsedOnce = {};
+        this._caveAnomalySignaled = false;
+        this._hiveKinKills = 0;
+        this._terminalEvent = null;
+        this._terminalEventResolvedIds?.clear?.();
+        this._terminalObjectiveHistory = [];
+        this._meridianCompassLock = null;
+        this.clearCompanions?.();
+        this.clearCorpses?.();
+        this.clearLoreDrops?.();
+        this.clearBlackBoxMarker?.();
+        this.resetAct2World?.();
+        this.clearLoadedChunksForRunReset?.();
+        this._previousRadialLayoutSignature = null;
+        this._currentRadialLayoutSignature = null;
+        this.queenFightSprite = null;
+        this._overnightCreepSprites = [];
+        this.foundry?.reset?.();
+        if (this.wandererManager?.load) this.wandererManager.state = this.wandererManager.load();
+        this.persistDayCycleState?.();
+        this.persistFatigueState?.();
+        this.persistOvernightState?.();
+        this.setTimeOfDayToMorning?.();
     }
 
     loadDayCycleState() {
@@ -18942,6 +19059,16 @@ export class ThreeGame {
             const chunkWorldX = Number.isFinite(cx) ? cx * this.chunkSize : 0;
             const chunkWorldZ = Number.isFinite(cy) ? cy * this.chunkSize : 0;
             for (const room of metadata?.roomInstances ?? []) {
+                // Territory shelter follows its actual faction state. A
+                // betrayed camp or harvested hive cannot remain an invisible
+                // invulnerability volume just because its blueprint is quiet.
+                if (room.siteId?.startsWith('camp_')) {
+                    const status = this.getCampRecord?.(room.siteId)?.status;
+                    if (status === 'culled' || (this.isAct2Active?.() && ['alive', 'robbed'].includes(status))) continue;
+                } else if (room.siteId?.startsWith('hive_')) {
+                    const status = this.getHiveRecord?.(room.siteId)?.status;
+                    if (['harvested', 'destroyed'].includes(status)) continue;
+                }
                 const isSafe = Boolean(
                     room.isSafe === true
                     || room.safeZone === true
@@ -19053,6 +19180,7 @@ export class ThreeGame {
                 if (definition) this.defeatedMilestoneBosses?.add(definition.goalKey);
             }
         }
+        if (result.changed) this.persistCampaignWorld?.();
         return result;
     }
 
@@ -19260,6 +19388,7 @@ export class ThreeGame {
                 lock: isOpen ? null : door.lock
             });
         }
+        if (result.changed) this.persistCampaignWorld?.();
         return result;
     }
 
@@ -19542,6 +19671,7 @@ export class ThreeGame {
             type: MILESTONE_BOSS_EVENT_TYPES.PLAYER_DEATH
         });
         this._milestoneBossRestagePending = true;
+        this.persistCampaignWorld?.();
         this.closeConsoleModal();
         const inventory = this.getSessionInventory();
         const salvage = {
@@ -19583,6 +19713,8 @@ export class ThreeGame {
     }
 
     clearLoadedChunksForRunReset() {
+        this.persistCampaignWorld?.();
+        this._campaignProgressRestored = false;
         if (this.radialMazePlan) {
             this._previousRadialLayoutSignature = this._currentRadialLayoutSignature
                 ?? this.getRadialLayoutSignature?.(this.radialMazePlan)
@@ -19644,6 +19776,7 @@ export class ThreeGame {
     }
 
     respawnPlayer({ resetRunState = true, skipEffects = false, deferChunkMount = false } = {}) {
+        const campaign = resetRunState ? this.beginCampaignExpedition?.() : null;
         if (resetRunState) this.resetRunDrops();
         this.resetVitalsForRun({ emit: false });
         this.resetWeaponState({ emit: false });
@@ -19739,7 +19872,7 @@ export class ThreeGame {
             this.cinematicLock = false;
             this.runEntropy = this.fixedRunEntropy
                 ? 0
-                : createFreshRunEntropy(this.runEntropy);
+                : campaign?.seed ?? createFreshRunEntropy(this.runEntropy);
             this.resetMayorTinaEncounter();
             this.clearBlackBoxMarker();
             this._blackBoxState = blackBoxStore.load();
@@ -19761,6 +19894,10 @@ export class ThreeGame {
                 bossPanel.classList.add('hidden');
             }
             this.clearLoadedChunksForRunReset();
+            this.completedRingCrossingMissionIds = new Set();
+            this.defeatedMilestoneBosses?.clear?.();
+            if (campaign?.mazeState) this.restoreMazePersistenceState(campaign.mazeState);
+            this._campaignProgressRestored = Boolean(campaign);
             this.syncVisibleChunks(true, { processLimit: deferChunkMount ? 0 : null });
             this.applyMilestoneBossRuntimeEvent?.({
                 type: MILESTONE_BOSS_EVENT_TYPES.BASE_RETURN,
@@ -19882,6 +20019,7 @@ export class ThreeGame {
         if (this.missionState) this.missionState.status = 'extracted';
         this.inputEnabled = false;
         this.recordExpeditionEnded?.();
+        this.persistCampaignWorld?.();
         // A clean extraction is a graceful run end -- nothing left to
         // crash-recover, and the salvage below is being deposited for real.
         runCheckpointStore.clear();
@@ -33975,6 +34113,36 @@ export class ThreeGame {
         return showroom;
     }
 
+    beginCampaignExpedition() {
+        if (this.performanceProfile === 'menu') return null;
+        if (this.fixedRunEntropy || this.isMultiplayer) {
+            this._campaignWorldSeed = null;
+            this._campaignProgressRestored = false;
+            this.expeditionIndex = 0;
+            this.expeditionSeed = (Number(this.globalSeedOffset) >>> 0);
+            return null;
+        }
+        this.persistCampaignWorld?.();
+        const campaign = campaignWorldStore.beginExpedition();
+        this._campaignWorldSeed = campaign.seed;
+        this._campaignProgressRestored = false;
+        this._restoredAuthoredWorldIdentity = null;
+        this.runEntropy = campaign.seed;
+        this.expeditionIndex = campaign.expeditionIndex;
+        this.expeditionSeed = campaign.expeditionSeed;
+        return campaign;
+    }
+
+    persistCampaignWorld() {
+        if (this.fixedRunEntropy || this.isMultiplayer || !this._campaignProgressRestored
+            || this._campaignWorldSeed !== this.runEntropy || this.globalSeedOffset) return false;
+        // A title-screen NEW CAMPAIGN or imported save may replace storage
+        // while this renderer still exists. Never write the previous world
+        // into that new campaign, nor create a save just by idling in menus.
+        if (campaignWorldStore.getState()?.seed !== this._campaignWorldSeed) return false;
+        return campaignWorldStore.saveMazeState(this._campaignWorldSeed, this.getMazePersistenceState());
+    }
+
     getMazePersistenceState() {
         return {
             generationVersion: 2,
@@ -33982,6 +34150,13 @@ export class ThreeGame {
             doors: serializeDoorStates(this.proceduralDoorStates),
             milestoneBosses: this.milestoneBossLifecycleState ?? null,
             ringCrossings: this.ringCrossingState ?? null,
+            worldChanges: {
+                destroyedWalls: [...(this.destroyedWallKeys ?? [])],
+                destroyedExteriorWalls: [...(this.destroyedExteriorWallKeys ?? [])],
+                discoveredChunks: [...(this.discoveredMapChunkKeys ?? [])],
+                discoveredRooms: [...(this.discoveredMapRoomKeys ?? [])],
+                discoveredCells: [...(this.discoveredMapCellKeys ?? [])]
+            },
             authoredWorld: {
                 enabled: Boolean(this.authoredWorldTiles),
                 seed: this.worldPlan?.seed ?? null,
@@ -33995,8 +34170,22 @@ export class ThreeGame {
         if (!raw || raw.generationVersion !== 2) return false;
         this.mazeAccessState = createAccessState(raw.access);
         this.proceduralDoorStates = restoreDoorStates(raw.doors);
+        if (raw.worldChanges && typeof raw.worldChanges === 'object') {
+            const strings = (values) => new Set(Array.isArray(values)
+                ? values.filter((value) => typeof value === 'string') : []);
+            this.destroyedWallKeys = strings(raw.worldChanges.destroyedWalls);
+            this.destroyedExteriorWallKeys = strings(raw.worldChanges.destroyedExteriorWalls);
+            this.discoveredMapChunkKeys = strings(raw.worldChanges.discoveredChunks);
+            this.discoveredMapChunkKeys.add('0,0');
+            this.discoveredMapRoomKeys = strings(raw.worldChanges.discoveredRooms);
+            this.discoveredMapCellKeys = strings(raw.worldChanges.discoveredCells);
+        }
         if (raw.milestoneBosses) {
             this.milestoneBossLifecycleState = migrateMilestoneBossLifecycleState(raw.milestoneBosses);
+            this.defeatedMilestoneBosses = new Set(MILESTONE_BOSS_DEFINITIONS
+                .filter((definition) => this.milestoneBossLifecycleState.milestones?.[definition.milestoneId]?.status
+                    === MILESTONE_BOSS_STATES.DEFEATED)
+                .map((definition) => definition.goalKey));
         }
         if (raw.ringCrossings) {
             this.ringCrossingState = raw.ringCrossings;

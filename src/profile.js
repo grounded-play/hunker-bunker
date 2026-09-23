@@ -157,10 +157,26 @@ export function importSaveCode(code, storage = null) {
     if (!data || typeof data !== 'object') return -1;
 
     let written = 0;
+    let importedLegacyCampaign = false;
     for (const [key, value] of Object.entries(data)) {
         if (key.startsWith(SAVE_PREFIX) && typeof value === 'string') {
-            try { store.setItem(key, value); written++; } catch { /* ignore */ }
+            try {
+                store.setItem(key, value);
+                written++;
+                if (CAMPAIGN_SPECIFIC_STORAGE_KEYS.includes(key) && key !== 'hb_campaign_world_v1') {
+                    try {
+                        const parsed = JSON.parse(value);
+                        importedLegacyCampaign ||= Boolean(parsed && typeof parsed === 'object' && !Array.isArray(parsed));
+                    } catch { /* malformed records do not identify a legacy campaign */ }
+                }
+            } catch { /* ignore */ }
         }
+    }
+    // Older exports had story/day state but no world identity. Keeping this
+    // device's previous seed and opened doors would attach a different world's
+    // progress to that imported campaign. Its first launch creates an identity.
+    if (importedLegacyCampaign && !Object.hasOwn(data, 'hb_campaign_world_v1')) {
+        try { store.removeItem('hb_campaign_world_v1'); } catch { /* best effort */ }
     }
     return written;
 }
@@ -180,6 +196,7 @@ export const CAMPAIGN_SPECIFIC_STORAGE_KEYS = Object.freeze([
     'hb_wanderer_state_v1',
     'hb_bounties_v1',
     'hb_campaign_ledger_v1',
+    'hb_campaign_world_v1',
     // Remove pre-versioned campaign records too, so an old save cannot be
     // resurrected by a migration after the player explicitly starts over.
     'hb_arc_state',

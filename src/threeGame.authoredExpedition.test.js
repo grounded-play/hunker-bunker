@@ -425,7 +425,7 @@ describe('threeGame authored expedition runtime integration', () => {
         });
 
         it('stamps the real crossing far-side door and only opens it after all canonical requirements', () => {
-            const worldPlan = buildWorldPlan(generateRadialMazeExpedition(8));
+            const worldPlan = buildWorldPlan(generateRadialMazeExpedition(200));
             const crossing = worldPlan.ringCrossings[0];
             const fakeThis = authoredBuildFixture(worldPlan);
 

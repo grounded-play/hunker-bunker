@@ -282,7 +282,7 @@ export function stampRoomBuild(build, random, { size = CHUNK_SIZE, openings = {}
     const bounds = { left: originX, right: originX + width - 1, top: originY, bottom: originY + height - 1 };
 
     // Connect each exterior portal to the room's own boundary on the
-    // matching side via an L-bend: first along the portal's own edge to
+    // matching side via an inset L-bend: first inside the border seal to
     // line up with the room's cross-axis center, then straight in to the
     // boundary — never past it. A portal's chunk-edge offset is
     // independent of where this particular room's footprint was centered,
@@ -307,10 +307,19 @@ export function stampRoomBuild(build, random, { size = CHUNK_SIZE, openings = {}
             : shortSide === 's' ? { x: crossCenterX, y: bounds.bottom }
             : shortSide === 'w' ? { x: bounds.left, y: crossCenterY }
             : { x: bounds.right, y: crossCenterY };
+        // Keep the bend inside the two-cell border seal. Bending along the
+        // outer edge gets erased by constrainBorderSockets below whenever
+        // a seeded portal is offset from the room center, stranding the
+        // entrance even though the metadata still declares it connected.
+        const inset = shortSide === 'n' ? { x: portal.x, y: 3 }
+            : shortSide === 's' ? { x: portal.x, y: size - 4 }
+                : shortSide === 'w' ? { x: 3, y: portal.y }
+                    : { x: size - 4, y: portal.y };
         const bend = shortSide === 'n' || shortSide === 's'
-            ? { x: crossCenterX, y: portal.y }
-            : { x: portal.x, y: crossCenterY };
-        carveLine(grid, portal, bend, 1);
+            ? { x: crossCenterX, y: inset.y }
+            : { x: inset.x, y: crossCenterY };
+        carveLine(grid, portal, inset, 1);
+        carveLine(grid, inset, bend, 1);
         carveLine(grid, bend, boundaryPoint, 1);
     }
     // `random` is accepted (not yet used) to keep this signature composable

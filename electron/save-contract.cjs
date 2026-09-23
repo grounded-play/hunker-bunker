@@ -9,6 +9,7 @@ const JSON_VALUE_KEYS = new Set([
     'hb_bank',
     'hb_bank_v1',
     'hb_black_box_v1',
+    'hb_campaign_world_v1',
     'hb_codex_v1',
     'hb_fabricator_v1',
     'hb_fatigue',

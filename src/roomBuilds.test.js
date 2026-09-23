@@ -10,6 +10,7 @@ import {
     buildRoomInstanceFromBuild
 } from './roomBuilds.js';
 import { CHUNK_SIZE } from './tileCatalog.js';
+import { collectReachableCells } from './roomEncounters.js';
 
 function seededRandom(seed) {
     let state = (seed >>> 0) || 1;
@@ -135,6 +136,24 @@ describe('stampRoomBuild', () => {
         const a = stampRoomBuild(build, seededRandom(9), options);
         const b = stampRoomBuild(build, seededRandom(9), options);
         expect(a.grid).toEqual(b.grid);
+    });
+
+    it('keeps offset edge portals physically connected to authored interiors after border sealing', () => {
+        const sideNames = { n: 'north', e: 'east', s: 'south', w: 'west' };
+        for (const catalogBuild of ROOM_BUILD_CATALOG) {
+            for (let rotation = 0; rotation < 4; rotation += 1) {
+                const rotated = rotateRoomBuild(catalogBuild, rotation);
+                const side = sideNames[rotated.sockets[0].side];
+                for (const offset of [1, 8, 22]) {
+                    const stamped = stampRoomBuild(rotated, seededRandom(1), {
+                        openings: { [side]: { open: true, offset } }
+                    });
+                    const reachable = collectReachableCells(stamped.grid);
+                    expect(stamped.interior.every((cell) => reachable.has(`${cell.x},${cell.y}`)),
+                        `${rotated.id}, rotation ${rotation}, offset ${offset}`).toBe(true);
+                }
+            }
+        }
     });
 
     it('never carves through the room\'s own structural obstruction, and skips openings with no matching declared socket', () => {
