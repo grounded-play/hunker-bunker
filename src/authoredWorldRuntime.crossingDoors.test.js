@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ThreeGame } from './threeGame.js';
-import { generateRadialMazeExpedition } from './mazeExpedition.js';
+import { generateRadialMazeExpedition, ROUTE_LAYOUT_VERSION } from './mazeExpedition.js';
 import { buildWorldPlan } from './ringManifest.js';
 import { createMilestoneBossLifecycleState } from './milestoneBossLifecycle.js';
 
@@ -28,8 +28,8 @@ function topologyEdgeOpening(worldPlan, axis, edgeX, edgeY) {
     };
 }
 
-function buildGateChunk(seed) {
-    const worldPlan = buildWorldPlan(generateRadialMazeExpedition(seed));
+function buildGateChunk(seed, layoutVersion = undefined) {
+    const worldPlan = buildWorldPlan(generateRadialMazeExpedition(seed, { layoutVersion }));
     const crossing = worldPlan.ringCrossings[0];
     const fakeThis = {
         chunkSize: 49,
@@ -113,5 +113,17 @@ describe('ring crossing chunks keep their threshold', () => {
             expect((metadata.doors ?? []).filter((d) => d.ringCrossingId === crossing.id)).toHaveLength(1);
         }
         expect(checked, 'sweep found no non-pivot gate chunks — it has gone stale').toBeGreaterThan(0);
+    });
+
+    // The same regression on the current route generation, whose coils put
+    // gates on non-pivot modules at different seeds.
+    it('keeps the threshold on non-pivot gates of the current route generation', () => {
+        for (const seed of [2, 3]) {
+            const { crossing, metadata, onSetpiece, onSetpiecePivot } = buildGateChunk(seed, ROUTE_LAYOUT_VERSION);
+            expect(onSetpiece && onSetpiecePivot === false, `seed ${seed} no longer lands on a non-pivot module`).toBe(true);
+            expect(metadata.generatorId, `seed ${seed}`).not.toBe('authored-setpiece');
+            expect((metadata.doors ?? []).filter((d) => d.ringCrossingId === crossing.id)).toHaveLength(1);
+            expect((metadata.accessSources ?? []).some((source) => source.id === `${crossing.id}:mission-control`)).toBe(true);
+        }
     });
 });

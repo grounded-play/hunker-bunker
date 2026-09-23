@@ -1471,6 +1471,79 @@
       "goal_leaderboard_req": "Deine Punkte kommen auf die heutige Tafel",
       "deploy": "TAGESEINSATZ STARTEN",
       "deploy_done": "MORGEN WIEDER"
+    },
+    "expedition": {
+      "kicker": "EXPEDITION {index} // SEKTORBEDINGUNGEN",
+      "threat": "BEDROHUNG {level}",
+      "salvage": "BERGUNG ×{value}",
+      "bounty": "KOPFGELD: {label}",
+      "location": "{site} · {room}",
+      "first_visit": "NEU",
+      "conditions": {
+        "glacial_gale": {
+          "name": "GLETSCHERSTURM",
+          "tagline": "Eisiger Blizzard. Glatteis überzieht die Korridore.",
+          "effect": "Schnellerer Tritt · O₂ sinkt 10 % schneller · Kryo hält 25 % länger · Feinde verlangsamt · Kryo-Kills frieren ihr Rudel ein"
+        },
+        "spore_bloom": {
+          "name": "SPORENBLÜTE",
+          "tagline": "Giftiger Sporennebel treibt durch offene Hallen.",
+          "effect": "O₂ sinkt 12 % schneller · Dichtere Patrouillen · Sporenschnecken platzen mit Extra-Bergung"
+        },
+        "bio_resin_surge": {
+          "name": "BIOHARZ-FLUT",
+          "tagline": "Springflut im Stock. Schwärmer umkreisen die Grenzen.",
+          "effect": "Feinde 18 % schneller · Dichtere Patrouillen · Harz bremst deinen Schritt · Stock-Ernten bringen +50 %"
+        },
+        "geothermal_arc": {
+          "name": "GEOTHERMISCHER BOGEN",
+          "tagline": "Überlastete Leitungen schlagen Funken über zerstörte Schotten.",
+          "effect": "Schildstoß: ein 20-Punkte-Schild, der früher auflädt · Kills können auf dich überspringen"
+        },
+        "subzero_stillness": {
+          "name": "FROSTSTILLE",
+          "tagline": "Unheimliche Stille. Elite-Jäger beherrschen die Routen.",
+          "effect": "Wenige Patrouillen · Elite-Chance ×2,5 · Verborgene Räume aus größerer Distanz erkannt"
+        }
+      },
+      "bounties": {
+        "salvage_run": "Birg 120+ Schrott aus tiefen Korridoren",
+        "eliminate_elite": "Erledige einen mutierten Sektor-Jäger",
+        "scout_compound": "Unterwandere und kartiere einen Außenposten",
+        "clearing_breach": "Zerschlage 6 tragende Trennwände"
+      },
+      "sites": {
+        "camp_meridian": "MERIDIAN-GEHÖFT",
+        "camp_tallow": "TALLOW-GEHÖFT",
+        "camp_vesper": "VESPER-GEHÖFT",
+        "hive_suture": "STOCK SUTURE",
+        "hive_relay": "STOCK RELAY",
+        "hive_carapace": "STOCK CARAPACE"
+      },
+      "rooms": {
+        "camp": {
+          "approach": "SIGNALZUGANG",
+          "perimeter": "VERTEIDIGUNGSRING",
+          "central": "GEMEINSCHAFTSPLATZ",
+          "service": "WERKSTATT",
+          "leader_quest": "KOMMANDORAUM",
+          "exit": "MISSIONSAUSGANG"
+        },
+        "hive": {
+          "warning": "WARNKAMMER",
+          "approach": "VERSEUCHTER ZUGANG",
+          "outer_nest": "VERTEIDIGTES NEST",
+          "choice_chamber": "KOMMUNIONSKAMMER",
+          "consequence": "HARZ-BRUTSTÄTTE",
+          "escape": "FLUCHTKANAL"
+        }
+      },
+      "transformed": {
+        "bridge": "> CANYONÜBERGANG ÜBERBRÜCKT — DIE SCHLUCHT IST BEGEHBAR",
+        "camp_fortified": "> {site} BEFESTIGT — GESCHÜTZE HALTEN DEN RING",
+        "hive_bonded": "> {site} VERBUNDEN — VERSEUCHTER BODEN WEICHT FÜR DICH",
+        "hive_harvested": "> {site} GEERNTET — SEINE BRUT TOBT"
+      }
     }
   },
   "narrative": {

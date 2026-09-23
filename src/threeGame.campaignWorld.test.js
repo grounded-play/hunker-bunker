@@ -25,7 +25,8 @@ function game() {
         'restoreMazePersistenceState', 'getRadialMazePlan', 'getRadialLayoutSignature',
         'ensureAuthoredWorldPlan', 'getBuiltGoalKeys', 'completeRingCrossingMission',
         'reconcileAuthoredWorldProgression', 'applyMilestoneBossRuntimeEvent', 'getAuthoredSitePosition',
-        'chooseRadialSitePosition', 'isSiteOnPlannedRing']) world[method] = ThreeGame.prototype[method];
+        'chooseRadialSitePosition', 'isSiteOnPlannedRing', 'setActiveExpedition', 'getExpeditionEffects',
+        'applyExpeditionPlayerEffects']) world[method] = ThreeGame.prototype[method];
     return world;
 }
 

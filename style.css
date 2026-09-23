@@ -9737,6 +9737,139 @@ body.mission-intro-active #game-container canvas {
   line-height: 1.35;
 }
 
+/* ── Expedition briefing + compound location title ────────── */
+/* Top center, below the right-aligned vitals header and clear of the
+   right-hand notification deck. Both fade out on their own timers. */
+.expedition-briefing-card {
+  position: absolute;
+  top: calc(var(--vu) * 12.5);
+  left: 50%;
+  width: min(calc(var(--vu) * 60), 86vw);
+  box-sizing: border-box;
+  border: 1.5px solid rgba(133, 208, 255, 0.72);
+  border-radius: 8px;
+  background: rgba(8, 13, 18, 0.92);
+  box-shadow:
+    0 0 22px rgba(66, 152, 219, 0.22),
+    inset 0 0 8px rgba(115, 203, 255, 0.12);
+  padding: calc(var(--vu) * 1.6) calc(var(--vu) * 2.4);
+  z-index: 17000;
+  opacity: 0;
+  transform: translate(-50%, calc(var(--vu) * -2));
+  transition: opacity 320ms ease-out, transform 360ms ease-out;
+  pointer-events: none;
+  font-family: 'Outfit', sans-serif;
+  text-align: center;
+}
+
+.expedition-briefing-card.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.expedition-briefing-card.hidden,
+.compound-location-title.hidden,
+.compound-location-title__tag.hidden {
+  display: none !important;
+}
+
+.expedition-briefing-card__kicker {
+  font-size: var(--font-xs);
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: rgba(158, 224, 255, 0.85);
+}
+
+.expedition-briefing-card__title {
+  margin-top: calc(var(--vu) * 0.5);
+  font-size: calc(var(--vu) * 3);
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #e4f7ff;
+  text-transform: uppercase;
+}
+
+.expedition-briefing-card__tagline {
+  margin-top: calc(var(--vu) * 0.4);
+  font-size: calc(var(--vu) * 1.7);
+  color: rgba(214, 238, 255, 0.86);
+}
+
+.expedition-briefing-card__effect {
+  margin-top: calc(var(--vu) * 1);
+  font-size: calc(var(--vu) * 1.6);
+  font-weight: 700;
+  color: #ffd166;
+  line-height: 1.4;
+}
+
+.expedition-briefing-card__meta {
+  margin-top: calc(var(--vu) * 0.9);
+  padding-top: calc(var(--vu) * 0.8);
+  border-top: 1px solid rgba(133, 208, 255, 0.28);
+  font-size: var(--font-xs);
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: rgba(193, 237, 255, 0.9);
+}
+
+.compound-location-title {
+  position: absolute;
+  /* Below the header row (vitals / sidearm / integrity end near 5.7vu). */
+  top: calc(var(--vu) * 7);
+  left: 50%;
+  max-width: min(calc(var(--vu) * 64), 80vw);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 1.2);
+  padding: calc(var(--vu) * 0.7) calc(var(--vu) * 2);
+  border-top: 1px solid rgba(133, 208, 255, 0.55);
+  border-bottom: 1px solid rgba(133, 208, 255, 0.55);
+  background: linear-gradient(90deg, transparent, rgba(8, 13, 18, 0.82) 18%, rgba(8, 13, 18, 0.82) 82%, transparent);
+  z-index: 16900;
+  opacity: 0;
+  transform: translate(-50%, 0);
+  transition: opacity 420ms ease-out;
+  pointer-events: none;
+  font-family: 'Outfit', sans-serif;
+  white-space: nowrap;
+}
+
+.compound-location-title.visible {
+  opacity: 1;
+}
+
+.compound-location-title__text {
+  font-size: calc(var(--vu) * 1.9);
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: #e4f7ff;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compound-location-title__tag {
+  font-size: var(--font-xs);
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #081016;
+  background: #ffd166;
+  border-radius: 3px;
+  padding: calc(var(--vu) * 0.2) calc(var(--vu) * 0.7);
+}
+
+body.mission-intro-active .expedition-briefing-card,
+body.mission-intro-active .compound-location-title {
+  opacity: 0 !important;
+}
+
+/* Siblings of #ui inside #game-viewport, so #ui's own hiding misses them. */
+body.hud-hidden .expedition-briefing-card,
+body.hud-hidden .compound-location-title {
+  display: none !important;
+}
+
 /* ── Radio Transmission CRT Prompt ─────────────────────────── */
 .radio-transmission-prompt {
   position: absolute;

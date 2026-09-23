@@ -4,7 +4,7 @@ import {
     createCampaignWorldStore,
     deriveExpeditionSeed
 } from './campaignWorld.js';
-import { generateRadialMazeExpedition } from './mazeExpedition.js';
+import { generateRadialMazeExpedition, LEGACY_ROUTE_LAYOUT_VERSION, ROUTE_LAYOUT_VERSION } from './mazeExpedition.js';
 import { exportSaveCode, importSaveCode, resetActiveAttempt, startNewCampaign } from './profile.js';
 
 function makeStorage() {
@@ -30,6 +30,20 @@ function completedRoute() {
 }
 
 describe('campaign world continuity', () => {
+    it('creates new campaigns on the current route generation and keeps old saves on theirs', () => {
+        const storage = makeStorage();
+        const store = createCampaignWorldStore({ storage, createSeed: () => 4040 });
+        expect(store.getOrCreate().layoutVersion).toBe(ROUTE_LAYOUT_VERSION);
+        expect(store.beginExpedition().layoutVersion).toBe(ROUTE_LAYOUT_VERSION);
+
+        const legacy = makeStorage();
+        legacy.setItem(CAMPAIGN_WORLD_STORAGE_KEY, JSON.stringify({ version: 1, seed: 77, expeditionIndex: 3, mazeState: null }));
+        const resumed = createCampaignWorldStore({ storage: legacy });
+        expect(resumed.getState().layoutVersion).toBe(LEGACY_ROUTE_LAYOUT_VERSION);
+        expect(resumed.beginExpedition().layoutVersion).toBe(LEGACY_ROUTE_LAYOUT_VERSION);
+        expect(JSON.parse(legacy.getItem(CAMPAIGN_WORLD_STORAGE_KEY)).layoutVersion).toBe(LEGACY_ROUTE_LAYOUT_VERSION);
+    });
+
     it('preserves terrain through deployment, active-attempt reset, and a fresh session', () => {
         const storage = makeStorage();
         const first = createCampaignWorldStore({ storage, createSeed: () => 8128 });

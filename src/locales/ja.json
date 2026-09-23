@@ -1471,6 +1471,79 @@
       "goal_leaderboard_req": "スコアが本日のランキングに載る",
       "deploy": "デイリー作戦に出撃",
       "deploy_done": "また明日"
+    },
+    "expedition": {
+      "kicker": "遠征 {index} // セクター状況",
+      "threat": "脅威 {level}",
+      "salvage": "回収 ×{value}",
+      "bounty": "懸賞: {label}",
+      "location": "{site} · {room}",
+      "first_visit": "NEW",
+      "conditions": {
+        "glacial_gale": {
+          "name": "氷河の烈風",
+          "tagline": "氷点下の吹雪。通路は凍結している。",
+          "effect": "足取りが速い · O₂消費10%増 · 凍結時間25%延長 · 敵が鈍化 · 凍結敵の撃破で群れが凍る"
+        },
+        "spore_bloom": {
+          "name": "胞子の開花",
+          "tagline": "有毒な胞子の霧が開いた通路を漂う。",
+          "effect": "O₂消費12%増 · 巡回が増加 · 胞子カタツムリが追加回収品を落とす"
+        },
+        "bio_resin_surge": {
+          "name": "生体樹脂の奔流",
+          "tagline": "巣の満潮。群れが外縁をうろつく。",
+          "effect": "敵の速度18%増 · 巡回が増加 · 樹脂が足を鈍らせる · 巣の収穫量+50%"
+        },
+        "geothermal_arc": {
+          "name": "地熱アーク",
+          "tagline": "過負荷の導管が損傷した隔壁に火花を散らす。",
+          "effect": "シールドサージ: 早く再充電される20ポイントのシールド · 撃破時に放電を受けることがある"
+        },
+        "subzero_stillness": {
+          "name": "零下の静寂",
+          "tagline": "不気味な静けさ。精鋭の追跡者がルートを支配する。",
+          "effect": "巡回が少ない · 精鋭出現率×2.5 · 隠し部屋を遠くから感知"
+        }
+      },
+      "bounties": {
+        "salvage_run": "深部通路からスクラップを120以上回収",
+        "eliminate_elite": "変異したセクターの追跡者を排除",
+        "scout_compound": "外縁の拠点に潜入して地図化",
+        "clearing_breach": "構造隔壁を6枚破壊"
+      },
+      "sites": {
+        "camp_meridian": "メリディアン拠点",
+        "camp_tallow": "タロー拠点",
+        "camp_vesper": "ヴェスパー拠点",
+        "hive_suture": "巣 スーチャー",
+        "hive_relay": "巣 リレー",
+        "hive_carapace": "巣 カラペイス"
+      },
+      "rooms": {
+        "camp": {
+          "approach": "信号アプローチ",
+          "perimeter": "防衛線",
+          "central": "共有広場",
+          "service": "作業場",
+          "leader_quest": "指令室",
+          "exit": "出撃口"
+        },
+        "hive": {
+          "warning": "警告の間",
+          "approach": "汚染された通路",
+          "outer_nest": "守られた巣",
+          "choice_chamber": "交感の間",
+          "consequence": "樹脂の育房",
+          "escape": "脱出導管"
+        }
+      },
+      "transformed": {
+        "bridge": "> 峡谷の渡河路に橋が架かった — 裂け目を渡れる",
+        "camp_fortified": "> {site} 要塞化 — タレットが防衛線を守る",
+        "hive_bonded": "> {site} と絆を結んだ — 汚染地帯が道を開く",
+        "hive_harvested": "> {site} を収穫した — 幼体が激昂している"
+      }
     }
   },
   "narrative": {

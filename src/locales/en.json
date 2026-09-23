@@ -1471,6 +1471,79 @@
       "goal_leaderboard_req": "Your score joins today's Daily Ops board",
       "deploy": "DEPLOY DAILY OPS",
       "deploy_done": "BACK TOMORROW"
+    },
+    "expedition": {
+      "kicker": "EXPEDITION {index} // SECTOR CONDITIONS",
+      "threat": "THREAT {level}",
+      "salvage": "SALVAGE ×{value}",
+      "bounty": "BOUNTY: {label}",
+      "location": "{site} · {room}",
+      "first_visit": "NEW",
+      "conditions": {
+        "glacial_gale": {
+          "name": "GLACIAL GALE",
+          "tagline": "Sub-zero blizzard. Ice slicks the corridors.",
+          "effect": "Faster footing · O₂ drains 10% faster · Cryo holds 25% longer · Hostiles slowed · Cryo kills freeze their pack"
+        },
+        "spore_bloom": {
+          "name": "SPORE BLOOM",
+          "tagline": "Toxic spore mist drifts through unsealed halls.",
+          "effect": "O₂ drains 12% faster · Denser patrols · Spore snails burst with extra salvage"
+        },
+        "bio_resin_surge": {
+          "name": "BIO-RESIN SURGE",
+          "tagline": "Hive high tide. Swarmers stalk the perimeters.",
+          "effect": "Hostiles 18% faster · Denser patrols · Resin slows your stride · Hive harvests yield +50%"
+        },
+        "geothermal_arc": {
+          "name": "GEOTHERMAL ARC",
+          "tagline": "Overloaded conduits arc across damaged bulkheads.",
+          "effect": "Shield surge: a 20-point shield that recharges sooner · Kills may arc into you"
+        },
+        "subzero_stillness": {
+          "name": "SUB-ZERO STILLNESS",
+          "tagline": "Eerie silence. Elite stalkers own the routes.",
+          "effect": "Sparse patrols · Elite odds ×2.5 · Hidden rooms sensed farther"
+        }
+      },
+      "bounties": {
+        "salvage_run": "Extract 120+ scrap from deep corridors",
+        "eliminate_elite": "Eliminate a mutated sector stalker",
+        "scout_compound": "Infiltrate and map an outlying compound",
+        "clearing_breach": "Smash 6 structural wall dividers"
+      },
+      "sites": {
+        "camp_meridian": "MERIDIAN COMPOUND",
+        "camp_tallow": "TALLOW COMPOUND",
+        "camp_vesper": "VESPER COMPOUND",
+        "hive_suture": "HIVE SUTURE",
+        "hive_relay": "HIVE RELAY",
+        "hive_carapace": "HIVE CARAPACE"
+      },
+      "rooms": {
+        "camp": {
+          "approach": "SIGNAL APPROACH",
+          "perimeter": "DEFENSIVE PERIMETER",
+          "central": "COMMON GROUND",
+          "service": "WORKSHOP BAY",
+          "leader_quest": "COMMAND ROOM",
+          "exit": "MISSION DEPARTURE"
+        },
+        "hive": {
+          "warning": "WARNING CHAMBER",
+          "approach": "CONTAMINATED APPROACH",
+          "outer_nest": "DEFENDED NEST",
+          "choice_chamber": "COMMUNION CHAMBER",
+          "consequence": "RESIN NURSERY",
+          "escape": "ESCAPE CONDUIT"
+        }
+      },
+      "transformed": {
+        "bridge": "> CANYON CROSSING BRIDGED — THE CHASM IS WALKABLE",
+        "camp_fortified": "> {site} FORTIFIED — TURRETS HOLD THE PERIMETER",
+        "hive_bonded": "> {site} BONDED — INFESTED GROUND PARTS FOR YOU",
+        "hive_harvested": "> {site} HARVESTED — ITS BROOD RUNS ENRAGED"
+      }
     }
   },
   "narrative": {

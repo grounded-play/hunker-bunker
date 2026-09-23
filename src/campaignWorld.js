@@ -1,5 +1,6 @@
 import { createFreshRunEntropy } from './runEntropy.js';
 import { deriveExpeditionSeed, createExpeditionProfile } from './expeditionSystem.js';
+import { LEGACY_ROUTE_LAYOUT_VERSION, ROUTE_LAYOUT_VERSION } from './mazeExpedition.js';
 
 export const CAMPAIGN_WORLD_STORAGE_KEY = 'hb_campaign_world_v1';
 export const CAMPAIGN_WORLD_VERSION = 1;
@@ -45,6 +46,11 @@ function normalize(raw) {
     return {
         version: CAMPAIGN_WORLD_VERSION,
         seed: raw.seed,
+        // Saves from before layout generations were recorded were built
+        // with the legacy generator, and must keep that geography.
+        layoutVersion: Number.isSafeInteger(raw.layoutVersion) && raw.layoutVersion >= LEGACY_ROUTE_LAYOUT_VERSION
+            ? raw.layoutVersion
+            : LEGACY_ROUTE_LAYOUT_VERSION,
         expeditionIndex,
         expeditionSeed,
         activeExpedition,
@@ -115,6 +121,7 @@ export function createCampaignWorldStore({
         return write({
             version: CAMPAIGN_WORLD_VERSION,
             seed: campaignSeed,
+            layoutVersion: ROUTE_LAYOUT_VERSION,
             expeditionIndex: 0,
             expeditionSeed: activeExpedition.expeditionSeed,
             activeExpedition,

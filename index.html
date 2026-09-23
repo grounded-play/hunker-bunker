@@ -1562,6 +1562,20 @@
       </div>
     </div>
 
+    <!-- Deployment conditions and compound room names: top center, clear of the
+         right-hand notification deck. Filled from ui.expedition.* by main.js. -->
+    <div id="expedition-briefing-card" class="expedition-briefing-card hidden" role="status" aria-live="polite">
+      <div id="expedition-briefing-kicker" class="expedition-briefing-card__kicker"></div>
+      <div id="expedition-briefing-title" class="expedition-briefing-card__title"></div>
+      <div id="expedition-briefing-tagline" class="expedition-briefing-card__tagline"></div>
+      <div id="expedition-briefing-effect" class="expedition-briefing-card__effect"></div>
+      <div id="expedition-briefing-meta" class="expedition-briefing-card__meta"></div>
+    </div>
+    <div id="compound-location-title" class="compound-location-title hidden" aria-live="polite">
+      <span id="compound-location-text" class="compound-location-title__text"></span>
+      <span id="compound-location-tag" class="compound-location-title__tag hidden"></span>
+    </div>
+
     <!-- Mission/action prompts sit below the popup deck -->
     <div class="hud-mission-stack">
       <div id="biome-hud-prompt" class="biome-hud-prompt hidden" aria-live="polite">

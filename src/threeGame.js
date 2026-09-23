@@ -305,6 +305,7 @@ import {
 import {
     clampPositionToUnlockedRing,
     generateRadialMazeExpedition,
+    ROUTE_LAYOUT_VERSION,
     getMaxUnlockedRing,
     getRadialSite,
     isChunkOnRingBarrier,
@@ -358,6 +359,30 @@ import {
 import { repackGeneratedSpriteAtlas } from './spriteAtlasRuntime.js';
 import { createFreshRunEntropy } from './runEntropy.js';
 import { campaignWorldStore } from './campaignWorld.js';
+import {
+    createExpeditionProfile,
+    getExpeditionEffects,
+    composeExpeditionIntoLoadoutMods,
+    scaleExpeditionSalvage,
+    scaleExpeditionEliteRoll,
+    planExpeditionObstacles,
+    planExpeditionDeathEffect,
+    expeditionAtmosphere
+} from './expeditionSystem.js';
+import {
+    HIVE_OUTCOMES,
+    bondedHiveSpeedMultiplier,
+    deriveHiveOutcome,
+    getBridgedCrossingIds,
+    isCampLevelFortified,
+    isWithinHarvestedHiveRange,
+    planBridgeDeckCells,
+    planBridgeSpan,
+    selectHarvestOverclock,
+    territoryRoomWorldCenter
+} from './worldTransformations.js';
+import { createCrossingBridgeMesh } from './crossingBridge.js';
+import { getTerritoryLocation } from './territoryStructures.js';
 import {
     ENEMY_SPRITE_LAYOUTS,
     STATIC_ENEMY_SPRITE_PATHS,
@@ -1038,6 +1063,9 @@ const SENTINEL_COIN_DROP = 1;
 
 const SNAIL_MAX_HP = 2;
 const SNAIL_MOVE_SPEED = 1.2;
+// Hostiles spawned around a harvested hive carry its grievance: faster, not
+// tougher, so the choice reads as a change in pressure rather than a stat wall.
+const HARVESTED_HIVE_ENRAGE_SPEED = 1.25;
 const SNAIL_ENRAGED_MOVE_SPEED = 2.1;
 const SNAIL_ENRAGED_TINT = 0xff4a4a;
 const SNAIL_HIT_RADIUS = 0.62;
@@ -6962,6 +6990,7 @@ export class ThreeGame {
         if (!handled) handled = this.interactWithBunkerCot();
         if (!handled) handled = this.interactWithScientist();
         if (!handled) handled = this.interactWithHiveSite();
+        if (!handled) handled = this.interactWithBioConduit?.() ?? false;
         if (!handled) handled = this.interactWithCampQuestObject();
         if (!handled) handled = this.interactWithWanderer();
         if (!handled) handled = this.interactWithHoleTile();
@@ -7814,6 +7843,11 @@ export class ThreeGame {
         // Fatigue rides the same bus as equipment, so every downstream
         // `loadoutMods.X` read picks it up without a second code path.
         this.loadoutMods = composeFatigueIntoLoadoutMods(this.loadoutMods, this.fatigueState);
+        // The expedition's condition rides the same bus, but the pre-expedition
+        // mods are kept so the next deployment can swap conditions without
+        // rebuilding the whole operator (see applyExpeditionPlayerEffects).
+        this._loadoutModsBeforeExpedition = this.loadoutMods;
+        this.loadoutMods = composeExpeditionIntoLoadoutMods(this.loadoutMods, this.activeExpedition);
         if (this.loadoutMods?.moveSpeedMultiplier) {
             this.moveSpeed *= this.loadoutMods.moveSpeedMultiplier;
         }
@@ -14572,6 +14606,7 @@ export class ThreeGame {
         this.ensureHiveSites();
         for (const hive of this.hives) hive.update(delta);
         this.updateHivePrompt();
+        this.updateBioConduitPrompt?.();
     }
 
     // Shared quality gate for camp/hive placement: a natural CRATER/FIELD
@@ -14635,13 +14670,23 @@ export class ThreeGame {
         return true;
     }
 
+    // A campaign keeps the route generation it was created with; see
+    // ROUTE_LAYOUT_VERSION. Everything unsaved uses the current generator.
+    getRouteLayoutVersion() {
+        if (this.fixedRunEntropy || this.isMultiplayer || !this._campaignWorldSeed) return ROUTE_LAYOUT_VERSION;
+        const state = campaignWorldStore.getState();
+        return state?.seed === this._campaignWorldSeed ? state.layoutVersion : ROUTE_LAYOUT_VERSION;
+    }
+
     getRadialMazePlan() {
         if (!this.radialMazePlan) {
             let candidate = null;
             let signature = null;
             for (let attempt = 0; attempt < 32; attempt += 1) {
                 const seed = ((this.runEntropy ?? 0) ^ (this.globalSeedOffset ?? 0) ^ 0x52494e47) >>> 0;
-                candidate = generateRadialMazeExpedition(seed);
+                candidate = generateRadialMazeExpedition(seed, {
+                    layoutVersion: this.getRouteLayoutVersion?.() ?? ROUTE_LAYOUT_VERSION
+                });
                 signature = this.getRadialLayoutSignature(candidate);
                 if (this.fixedRunEntropy || this._campaignWorldSeed === this.runEntropy
                     || signature !== this._previousRadialLayoutSignature) break;
@@ -14847,8 +14892,15 @@ export class ThreeGame {
             hive_relay: { tech: 2 },
             hive_carapace: { coin: 2 }
         };
-        this.bank?.deposit?.(yields[hive.id] ?? { tech: 1 });
-        this.bank?.addShells?.(4);
+        // A Bio-Resin Surge swells every harvest; fractional yield pays out as
+        // a chance of one more unit, like all expedition salvage.
+        const resinMultiplier = this.getExpeditionEffects?.().world.resinYieldMultiplier ?? 1;
+        const baseYield = yields[hive.id] ?? { tech: 1 };
+        this.bank?.deposit?.(Object.fromEntries(Object.entries(baseYield).map(([key, amount]) => (
+            [key, scaleExpeditionSalvage(amount, resinMultiplier, Math.random())]
+        ))));
+        const shellsGained = scaleExpeditionSalvage(4, resinMultiplier, Math.random());
+        this.bank?.addShells?.(shellsGained);
         hive.syncFromRecord(after);
         this.spawnGearPoofEffect(hive.pos.x, hive.pos.z, 'bio_spores');
         this.triggerCameraShake?.(0.14, 0.3);
@@ -14865,7 +14917,7 @@ export class ThreeGame {
             }
         }));
         window.dispatchEvent(new CustomEvent('shell-collected', {
-            detail: { gained: 4, total: this.bank?.getShells?.() ?? 0, isBoss: false }
+            detail: { gained: shellsGained, total: this.bank?.getShells?.() ?? 0, isBoss: false }
         }));
         this.syncSurvivorContract?.({
             type: 'hive-harvested',
@@ -15072,6 +15124,10 @@ export class ThreeGame {
         if (action === 'hive-harvest' && after.status === 'slain') {
             this.bank?.deposit?.({ tech: 3, med: 3, coin: 3 });
             this.bank?.addShells?.(12);
+            // The radical harvest's exotic payout: an overclock ripped from
+            // the hive's core, dropped where the being died.
+            const overclock = selectHarvestOverclock(WEAPON_OVERCLOCKS, (this.runOverclocks ?? []).map((drop) => drop.id));
+            if (overclock) this.spawnPhysicalLootDrop?.(hive.pos.x + 1.2, hive.pos.z, overclock);
             this.spawnGearPoofEffect(hive.pos.x, hive.pos.z, 'bunker_junk_rare');
             this.triggerCameraShake?.(0.3, 0.5);
             this.spawnHiveHarvestBoss(hive, 3);
@@ -15079,6 +15135,7 @@ export class ThreeGame {
             this.triggerCameraShake?.(0.35, 0.6);
         }
         hive.syncFromRecord(after);
+        this.syncWorldTransformations?.();
         window.AudioManager?.play?.('class_lock', { volume: 0.45, playbackRate: 0.8 });
         window.dispatchEvent(new CustomEvent('hive-choice-resolved', {
             detail: {
@@ -15137,6 +15194,7 @@ export class ThreeGame {
             const ground = this.sampleTerrainHeight?.(x, z) ?? { height: 0, anchored: false };
             camp.reveal(x, z, ground.height);
             camp._groundAnchored = ground.anchored;
+            camp.setPerimeterAnchor?.(this.getTerritoryRoomCenter?.(record.id, 'perimeter'));
             camp.setLevel(record.level);
             camp.setAided(record.aided);
             camp.setStatus(record.status);
@@ -16215,6 +16273,13 @@ export class ThreeGame {
                     desc: `Defy her openly to stand with them. Consequence: OBEDIENCE −${1 + finalsDone}, they board suspicious & safe.`
                 });
             }
+            if (!isCampLevelFortified(camp.level) && camp.level < ACT2_CAMP_MAX_LEVEL) {
+                options.push({
+                    action: 'fortify',
+                    label: `FORTIFY PERIMETER — ${campSupportCost(camp.level)} SHELLS`,
+                    desc: 'Raise their defense grid: turrets and searchlights at the perimeter checkpoint. Consequence: camp level +1, bond +1.'
+                });
+            }
             options.push({
                 action: 'steal',
                 label: 'STEAL STOCKPILE',
@@ -16314,6 +16379,7 @@ export class ThreeGame {
         this._campaignWorldSeed = null;
         this._restoredAuthoredWorldIdentity = null;
         campaignWorldStore.reset();
+        this._recordedWorldTransformations = new Set();
         this.expeditionIndex = 0;
         this.expeditionSeed = null;
         this.dayState = createDayState();
@@ -16939,10 +17005,12 @@ export class ThreeGame {
                 }
             }
             if (phase === 'dormant' && status === 'alive' && camp.level < ACT2_CAMP_MAX_LEVEL) {
+                // The purchase that raises the defense grid says so up front.
+                const fortifies = !isCampLevelFortified(camp.level) && isCampLevelFortified(camp.level + 1);
                 return {
                     camp,
                     action: 'support',
-                    label: `SUPPORT CAMP — ${campSupportCost(camp.level)} SHELLS`
+                    label: `${fortifies ? 'FORTIFY PERIMETER' : 'SUPPORT CAMP'} — ${campSupportCost(camp.level)} SHELLS`
                 };
             }
             if (phase === 'dormant' && status === 'alive' && !this._activeCampQuest) {
@@ -17524,39 +17592,7 @@ export class ThreeGame {
 
         // Act 1: invest shells in the camp. Pays off now (O2 haven) and pays
         // out later (harder, richer cull in Act 2).
-        if (action === 'support') {
-            const cost = campSupportCost(camp.level);
-            if (!this.bank?.canAffordShells?.(cost)) {
-                window.AudioManager?.play?.('ui_error', { volume: 0.45 });
-                window.dispatchEvent(new CustomEvent('camp-support-denied', {
-                    detail: { campId: camp.id, campLabel: camp.label, cost }
-                }));
-                return true;
-            }
-            this.bank.spendShells(cost);
-            this.act2.upgradeCamp(camp.id);
-            this.act2.adjustCampBond(camp.id, 1);
-            const record = this.getCampRecord(camp.id);
-            const level = record?.level ?? camp.level + 1;
-            camp.setLevel(level);
-            camp.setStatus(record?.status ?? 'alive');
-            this.adjustOxygen(CAMP_SUPPORT_O2_REFILL);
-            const supplyCache = this.applyCampPayoutEffects({
-                med: 1 + (level >= 3 ? 1 : 0),
-                tech: 1,
-                coin: level >= 2 ? 1 : 0
-            }, camp.id);
-            this.bank?.deposit?.(supplyCache);
-            this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, 'bunker_junk_uncommon');
-            window.AudioManager?.play?.('class_lock', { volume: 0.5 });
-            window.dispatchEvent(new CustomEvent('salvage-cache-opened', {
-                detail: { ...supplyCache, source: 'camp-support', campId: camp.id, campLabel: camp.label }
-            }));
-            window.dispatchEvent(new CustomEvent('camp-supported', {
-                detail: { campId: camp.id, campLabel: camp.label, level, bond: record?.bond ?? 0, cost }
-            }));
-            return true;
-        }
+        if (action === 'support') return this.supportCamp(camp);
 
         if (action === 'quest-offer') {
             this.acceptCampQuest(camp, actionable.quest);
@@ -17648,6 +17684,43 @@ export class ThreeGame {
         return false;
     }
 
+    // Shared by the Act 1 support prompt and the modal's FORTIFY choice.
+    supportCamp(camp) {
+        const cost = campSupportCost(camp.level);
+        if (!this.bank?.canAffordShells?.(cost)) {
+            window.AudioManager?.play?.('ui_error', { volume: 0.45 });
+            window.dispatchEvent(new CustomEvent('camp-support-denied', {
+                detail: { campId: camp.id, campLabel: camp.label, cost }
+            }));
+            return true;
+        }
+        this.bank.spendShells(cost);
+        this.act2.upgradeCamp(camp.id);
+        this.act2.adjustCampBond(camp.id, 1);
+        const record = this.getCampRecord(camp.id);
+        const level = record?.level ?? camp.level + 1;
+        camp.setLevel(level);
+        camp.setStatus(record?.status ?? 'alive');
+        this.syncWorldTransformations?.();
+        this.adjustOxygen(CAMP_SUPPORT_O2_REFILL);
+        const supplyCache = this.applyCampPayoutEffects({
+            med: 1 + (level >= 3 ? 1 : 0),
+            tech: 1,
+            coin: level >= 2 ? 1 : 0
+        }, camp.id);
+        this.bank?.deposit?.(supplyCache);
+        this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, 'bunker_junk_uncommon');
+        window.AudioManager?.play?.('class_lock', { volume: 0.5 });
+        window.dispatchEvent(new CustomEvent('salvage-cache-opened', {
+            detail: { ...supplyCache, source: 'camp-support', campId: camp.id, campLabel: camp.label }
+        }));
+        window.dispatchEvent(new CustomEvent('camp-supported', {
+            detail: { campId: camp.id, campLabel: camp.label, level, bond: record?.bond ?? 0, cost }
+        }));
+        return true;
+    
+    }
+
     resolveCampChoice(action, payload = {}) {
         if (payload.hiveId || String(action).startsWith('hive-')) {
             return this.resolveHiveChoice(action, payload);
@@ -17659,6 +17732,11 @@ export class ThreeGame {
         if (action === 'recruit') return this.resolveCampRecruit(camp, 'human');
         if (action === 'turn') return this.resolveCampRecruit(camp, 'turned');
         if (action === 'talk') return this.talkToLeader('camp', camp);
+        if (action === 'fortify') {
+            // Rebuilt from the record: a stale modal cannot buy past the grid.
+            const offered = this.buildCampChoiceOptions(camp).some((option) => option.action === 'fortify' && !option.disabled);
+            return offered ? this.supportCamp(camp) : false;
+        }
         if (action === 'final-urge' || action === 'final-betray') {
             const mode = action === 'final-urge' ? 'urge' : 'betray';
             const before = this.getCampRecord(camp.id);
@@ -18938,7 +19016,14 @@ export class ThreeGame {
                 }
             }
         }
-        for (const room of this.wfcMetadataCache?.get(chunkKey)?.roomInstances ?? []) {
+        const chunkRooms = this.wfcMetadataCache?.get(chunkKey)?.roomInstances ?? [];
+        // Authored compound rooms carry chunk-local bounds, not a footprint.
+        const territoryRoom = chunkRooms.find((room) => room.siteId && room.territoryBeatKey
+            && localX >= room.bounds?.left && localX <= room.bounds?.right
+            && localY >= room.bounds?.top && localY <= room.bounds?.bottom);
+        if (territoryRoom) this.announceTerritoryLocation(territoryRoom);
+        else if (!chunkRooms.some((room) => room.siteId)) this._currentTerritoryLocationKey = null;
+        for (const room of chunkRooms) {
             if ((room.footprint ?? []).some((cell) => cell.x === localX && cell.y === localY)) {
                 const roomKey = `${chunkKey}:${room.id}`;
                 if (!this.discoveredMapRoomKeys.has(roomKey)) {
@@ -18953,6 +19038,21 @@ export class ThreeGame {
                 }
             }
         }
+    }
+
+    // Fires once per room change inside a compound, not per step: the title
+    // card names where the player now stands (MERIDIAN · WORKSHOP).
+    announceTerritoryLocation(room) {
+        const location = getTerritoryLocation(room?.siteId, room?.territoryBeatKey);
+        if (!location) return false;
+        const key = `${location.siteId}:${location.beatKey}`;
+        if (key === this._currentTerritoryLocationKey) return false;
+        this._currentTerritoryLocationKey = key;
+        this._visitedTerritoryLocations ??= new Set();
+        const firstVisit = !this._visitedTerritoryLocations.has(key);
+        this._visitedTerritoryLocations.add(key);
+        window.dispatchEvent(new CustomEvent('location-discovered', { detail: { ...location, firstVisit } }));
+        return true;
     }
 
     setGodMode(enabled = false) {
@@ -19412,6 +19512,216 @@ export class ThreeGame {
         return this.completedRingCrossingMissionIds.size !== previousSize;
     }
 
+    getTerritoryRoomCenter(siteId, beatKey) {
+        if (!this.authoredWorldTiles) return null;
+        const plan = this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
+        return territoryRoomWorldCenter(plan, siteId, beatKey, this.chunkSize ?? 49);
+    }
+
+    // Persists one physical world change into the solo campaign. Fixed-seed
+    // and multiplayer worlds are rebuilt from scratch every run, so their
+    // changes stay live-only, exactly like their maze progress.
+    recordWorldTransformation(type, id, details = {}) {
+        if (this.fixedRunEntropy || this.isMultiplayer || !this._campaignWorldSeed) return false;
+        if (campaignWorldStore.getState()?.seed !== this._campaignWorldSeed) return false;
+        const key = `${type}:${id}:${details.outcome ?? ''}`;
+        this._recordedWorldTransformations ??= new Set();
+        if (this._recordedWorldTransformations.has(key)) return false;
+        this._recordedWorldTransformations.add(key);
+        const known = campaignWorldStore.getWorldTransformations();
+        const already = type === 'bridge' ? known.bridgesConstructed.includes(id)
+            : type === 'camp_fortified' ? known.campsFortified.includes(id)
+                : type === 'shortcut' ? known.shortcutsOpened.includes(id)
+                    : type === 'hive_transformed' ? known.hivesTransformed[id]?.outcome === details.outcome
+                        : false;
+        if (already) return false;
+        campaignWorldStore.recordWorldTransformation(type, id, details);
+        window.dispatchEvent(new CustomEvent('world-transformed', { detail: { type, id, ...details } }));
+        return true;
+    }
+
+    syncCrossingBridges(worldPlan = this.worldPlan) {
+        for (const crossingId of getBridgedCrossingIds(worldPlan, this._openCrossings)) {
+            if (this.ensureCrossingBridge(crossingId)) this.recordWorldTransformation('bridge', crossingId);
+        }
+    }
+
+    clearCrossingBridges() {
+        for (const bridge of this.crossingBridges?.values() ?? []) {
+            bridge.removeFromParent();
+            bridge.traverse((child) => {
+                child.geometry?.dispose?.();
+                child.material?.dispose?.();
+            });
+        }
+        this.crossingBridges?.clear();
+    }
+
+    // Chunks built (or rebuilt after eviction) once a canyon crossing is open
+    // carry its corridor as bridge deck from the start.
+    applyCrossingBridgeTiles(grid, chunkX, chunkY) {
+        const doors = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)?.doors ?? [];
+        if (!grid || !doors.some((door) => door.ringCrossingId)) return [];
+        const bridged = new Set(getBridgedCrossingIds(this.worldPlan, this._openCrossings));
+        const cells = [];
+        for (const door of doors) {
+            if (!bridged.has(door.ringCrossingId)) continue;
+            for (const cell of planBridgeDeckCells(grid, door)) {
+                grid[cell.y][cell.x] = VERTICAL_TILE.BRIDGE;
+                cells.push(cell);
+            }
+        }
+        return cells;
+    }
+
+    // A cleared canyon crossing spans the chasm beyond its gantry door. The
+    // door's chunk may not be built yet; every reconcile retries until it is.
+    ensureCrossingBridge(crossingId) {
+        this.crossingBridges ??= new Map();
+        if (this.crossingBridges.has(crossingId)) return this.crossingBridges.get(crossingId);
+        const size = this.chunkSize ?? 49;
+        const door = [...(this.proceduralDoorStates?.values() ?? [])]
+            .find((entry) => entry?.ringCrossingId === crossingId && entry.chunkKey);
+        if (!door) return null;
+        const [chunkX, chunkY] = door.chunkKey.split(',').map(Number);
+        const edges = { n: door.localY, s: size - 1 - door.localY, w: door.localX, e: size - 1 - door.localX };
+        const side = edges[door.side] !== undefined ? door.side
+            : Object.entries(edges).sort((a, b) => a[1] - b[1])[0][0];
+        // The deck follows the real corridor the gantry opens onto; the
+        // cached grid is re-tagged so the crossing is bridge tile, not floor.
+        const grid = this.chunkCache?.get?.(door.chunkKey);
+        const deckCells = grid ? planBridgeDeckCells(grid, { ...door, side }) : [];
+        for (const { x, y } of deckCells) grid[y][x] = VERTICAL_TILE.BRIDGE;
+        const lanes = Math.max(1, door.cells?.length ?? 1);
+        const run = deckCells.length ? Math.ceil(deckCells.length / lanes) : 0;
+        const span = planBridgeSpan({
+            worldX: chunkX * size + door.localX,
+            worldZ: chunkY * size + door.localY,
+            side
+        }, run ? { length: run + 1, inset: 0.5 } : undefined);
+        if (!span) return null;
+        const bridge = createCrossingBridgeMesh(span, { crossingId });
+        this.scene?.add(bridge);
+        this.crossingBridges.set(crossingId, bridge);
+        window.dispatchEvent(new CustomEvent('crossing-bridge-built', {
+            detail: { crossingId, x: span.center.x, z: span.center.z }
+        }));
+        return bridge;
+    }
+
+    // Folds every resolved compound choice into the world: fortified camps,
+    // bonded/harvested hives and their passives. Idempotent -- safe on every
+    // respawn and after every choice.
+    syncWorldTransformations() {
+        const plan = this.authoredWorldTiles ? (this.ensureAuthoredWorldPlan?.() ?? this.worldPlan) : null;
+        if (plan) this.syncCrossingBridges(plan);
+        for (const camp of this.camps ?? []) {
+            const record = this.getCampRecord?.(camp.id);
+            if (isCampLevelFortified(record?.level ?? camp.level) && record?.status !== 'culled') {
+                this.recordWorldTransformation('camp_fortified', camp.id);
+            }
+        }
+        const hivesTransformed = {};
+        const harvestedPositions = [];
+        for (const hive of this.hives ?? []) {
+            const outcome = deriveHiveOutcome(this.getHiveRecord?.(hive.id));
+            if (!outcome) continue;
+            hivesTransformed[hive.id] = { outcome };
+            if (outcome === HIVE_OUTCOMES.HARVESTED && hive.pos) harvestedPositions.push({ ...hive.pos });
+            this.recordWorldTransformation('hive_transformed', hive.id, { outcome });
+            if (outcome === HIVE_OUTCOMES.BONDED) this.recordWorldTransformation('shortcut', `${hive.id}:escape`);
+        }
+        this._harvestedHivePositions = harvestedPositions;
+        this._bondedHiveSpeedMultiplier = bondedHiveSpeedMultiplier(hivesTransformed);
+        this.syncBioConduits?.(hivesTransformed);
+        return { hivesTransformed, harvestedPositions };
+    }
+
+    // A bonded hive opens its escape passage for its kin: a living conduit in
+    // the compound's escape room that carries the carrier straight back to
+    // the crash site, skipping the ring routes home.
+    syncBioConduits(hivesTransformed = {}) {
+        this.bioConduits ??= new Map();
+        for (const [hiveId, entry] of Object.entries(hivesTransformed)) {
+            if (entry?.outcome !== HIVE_OUTCOMES.BONDED || this.bioConduits.has(hiveId)) continue;
+            const center = this.getTerritoryRoomCenter?.(hiveId, 'escape');
+            if (!center) continue;
+            const group = new THREE.Group();
+            group.name = `bio-conduit:${hiveId}`;
+            group.userData = { kind: 'bio-conduit', hiveId };
+            group.position.set(center.x, 0, center.z);
+            const ring = new THREE.Mesh(
+                new THREE.TorusGeometry(1.1, 0.14, 8, 28),
+                new THREE.MeshBasicMaterial({ color: 0x7dffcf })
+            );
+            ring.position.y = 1.15;
+            const mouth = new THREE.Mesh(
+                new THREE.CircleGeometry(1.0, 28),
+                new THREE.MeshBasicMaterial({
+                    color: 0x2fae86, transparent: true, opacity: 0.45, depthWrite: false, side: THREE.DoubleSide
+                })
+            );
+            mouth.position.y = 1.15;
+            const pool = new THREE.Mesh(
+                new THREE.CircleGeometry(1.6, 28),
+                new THREE.MeshBasicMaterial({ color: 0x7dffcf, transparent: true, opacity: 0.16, depthWrite: false })
+            );
+            pool.rotation.x = -Math.PI / 2;
+            pool.position.y = 0.03;
+            group.add(ring, mouth, pool);
+            this.scene?.add(group);
+            this.bioConduits.set(hiveId, group);
+        }
+    }
+
+    clearBioConduits() {
+        for (const group of this.bioConduits?.values() ?? []) {
+            group.removeFromParent();
+            group.traverse((child) => {
+                child.geometry?.dispose?.();
+                child.material?.dispose?.();
+            });
+        }
+        this.bioConduits?.clear();
+    }
+
+    getBioConduitAt(x, z, radius = 1.8) {
+        for (const [hiveId, group] of this.bioConduits ?? []) {
+            if (Math.hypot(group.position.x - x, group.position.z - z) <= radius) return { hiveId, group };
+        }
+        return null;
+    }
+
+    updateBioConduitPrompt() {
+        const eligible = this.isGameplayInputActive?.() && this.player && !this.isPlayerDead;
+        const conduit = eligible ? this.getBioConduitAt(this.player.position.x, this.player.position.z) : null;
+        const label = conduit ? 'ENTER BIO-CONDUIT — RETURN TO THE SHIP' : null;
+        if (label === this._bioConduitPromptLabel) return;
+        this._bioConduitPromptLabel = label;
+        if (label) {
+            if (!this._hivePromptLabel && !this._campPromptLabel) {
+                window.dispatchEvent(new CustomEvent('camp-prompt-nearby', { detail: { label } }));
+            }
+        } else if (!this._hivePromptLabel && !this._campPromptLabel) {
+            window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+        }
+    }
+
+    interactWithBioConduit() {
+        if (!this.isGameplayInputActive?.() || !this.player) return false;
+        const conduit = this.getBioConduitAt(this.player.position.x, this.player.position.z);
+        if (!conduit) return false;
+        const spawn = this.getSpawnTile();
+        this.spawnPhysicalBurst?.(this.player.position.x, this.player.position.z, { color: 0x7dffcf, count: 16, upward: 0.3, spread: 1.4 });
+        this.player.position.x = spawn.x + 1.5;
+        this.player.position.z = spawn.y + 1.5;
+        this.syncVisibleChunks?.(true);
+        this.spawnPhysicalBurst?.(this.player.position.x, this.player.position.z, { color: 0x7dffcf, count: 16, upward: 0.3, spread: 1.4 });
+        window.AudioManager?.play?.('class_lock', { volume: 0.45, playbackRate: 0.7 });
+        window.dispatchEvent(new CustomEvent('bio-conduit-traversed', { detail: { hiveId: conduit.hiveId } }));
+        return true;
+    }
+
     reconcileAuthoredWorldProgression() {
         if (!this.authoredWorldTiles) return null;
         const worldPlan = this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
@@ -19433,6 +19743,7 @@ export class ThreeGame {
         this.ringCrossingState = result.state;
         this._openCrossings = result.openCrossingIds;
         this._traversalUnlocks = result.traversalUnlocks;
+        this.syncCrossingBridges?.(worldPlan);
         for (const crossingId of result.openCrossingIds) {
             this.mazeAccessState?.completedObjectives?.add(`ring-crossing-open:${crossingId}`);
             if (priorCrossingState[crossingId]?.status !== 'open' && this.loadoutMods?.ringCrossingSpawnsElite) {
@@ -19796,6 +20107,9 @@ export class ThreeGame {
         this.ringCrossingState = null;
         this._openCrossings = new Set();
         this._traversalUnlocks = [];
+        this.clearCrossingBridges?.();
+        this.clearBioConduits?.();
+        this._currentTerritoryLocationKey = null;
         this.wfcMetadataCache?.clear();
         this.proceduralDoorStates?.clear();
         this.proceduralDoorMeshes?.clear();
@@ -20011,6 +20325,10 @@ export class ThreeGame {
         this.emitVitalsState();
         this.emitWeaponClipState();
         this.emitShipHealthState();
+        if (resetRunState) {
+            this.syncWorldTransformations?.();
+            this.announceExpeditionBriefing();
+        }
         window.dispatchEvent(new CustomEvent('player-respawned', {
             detail: {
                 hp: this.playerVitals.hp,
@@ -21132,11 +21450,21 @@ export class ThreeGame {
             if (this.loadoutMods?.lowHpSpeedBoostActive && (this.health / (this.maxHealth || 100)) < 0.25) {
                 speed *= 1.15;
             }
+            // Bonded hives part the infested ground for their kin.
+            if (this.currentBiomeKey === BIOME_KEYS.BIO && this._bondedHiveSpeedMultiplier > 1) {
+                speed *= this._bondedHiveSpeedMultiplier;
+            }
             if (this.playerSlowTimer > 0 && !(this._sprintMoveSpeedMult > 1) && !this.noclip) {
                 speed *= 0.55;
             }
             if ((this._sprintMoveSpeedMult > 1 || this.noclip) && Math.random() < 0.45) {
                 this._spawnSprintTrail();
+                // A sprint in a glacial gale smokes with chilling vapour.
+                if (this.activeExpedition?.condition?.id === 'glacial_gale' && Math.random() < 0.25) {
+                    this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, {
+                        color: 0xdff6ff, count: 2, upward: 0.08, spread: 0.35
+                    });
+                }
             }
             const moveVector = new THREE.Vector3(moveAxisX, 0, moveAxisZ).normalize().multiplyScalar(speed * delta);
             const current = this.player.position.clone();
@@ -21598,7 +21926,11 @@ export class ThreeGame {
             this.biomeLightingColors.ambientA,
             this.biomeLightingColors.ambientB
         );
-        this.ambientLight.color.lerp(blendedAmbient, lerpAlpha);
+        // Blended in its own colour so an expedition tint applied later in the
+        // frame (updateDayNightCycle) never feeds back into the next blend.
+        this._ambientBiomeColor ??= this.ambientLight.color.clone();
+        this._ambientBiomeColor.lerp(blendedAmbient, lerpAlpha);
+        this.ambientLight.color.copy(this._ambientBiomeColor);
 
         const blendedDirectional = this.blendBiomeColor(
             BIOME_LIGHTING[BIOME_KEYS.ACTIVE].directional,
@@ -21780,6 +22112,11 @@ export class ThreeGame {
                 skyState.horizonColor.g,
                 skyState.horizonColor.b
             );
+            const atmosphere = this.getExpeditionAtmosphere?.();
+            if (atmosphere) {
+                this._expeditionFogTint ??= new THREE.Color();
+                this.scene.fog.color.lerp(this._expeditionFogTint.setHex(atmosphere.fog), atmosphere.fogStrength);
+            }
         }
 
         // The sun becomes the key light's actual direction. Elevation is clamped
@@ -21863,7 +22200,22 @@ export class ThreeGame {
             this.fillLight.intensity *= Math.min(1, weatherLightMult + 0.06);
         }
 
-        const minAmbientFloor = 0.45;
+        // The deployment's condition tints and (for a grid arc) browns out the
+        // world light. Colour and intensity only: the light count never
+        // changes, so no material recompiles.
+        const atmosphere = this.getExpeditionAtmosphere?.();
+        if (this._ambientBiomeColor) this.ambientLight.color.copy(this._ambientBiomeColor);
+        if (atmosphere) {
+            this._expeditionAmbientTint ??= new THREE.Color();
+            this.ambientLight.color.lerp(this._expeditionAmbientTint.setHex(atmosphere.ambient), atmosphere.ambientStrength);
+            this.ambientLight.intensity *= atmosphere.intensity;
+            this.directionalLight.intensity *= atmosphere.intensity;
+            if (atmosphere.sparking && !this._expeditionSparking) {
+                window.AudioManager?.play?.('metal_stress', { volume: 0.18, playbackRate: 2.2, bus: 'world' });
+            }
+            this._expeditionSparking = atmosphere.sparking;
+        }
+        const minAmbientFloor = atmosphere?.sparking ? 0.3 : 0.45;
         if (this.ambientLight.intensity < minAmbientFloor) {
             this.ambientLight.intensity = minAmbientFloor;
         }
@@ -25150,6 +25502,43 @@ export class ThreeGame {
         return wall;
     }
 
+    // This deployment's corridor rubble. Only generic procedural chunks take
+    // it -- never the crash site, the tutorial ring, a reserved room or a ring
+    // crossing -- and only in hallway cells clear of doors and anchors. The
+    // planner itself refuses any pile that would split the chunk.
+    applyExpeditionObstacles(grid, chunkX, chunkY) {
+        if (!grid || !this.activeExpedition?.expeditionSeed || this.performanceProfile !== 'gameplay') return [];
+        if ((chunkX === 0 && chunkY === 0) || this.isInTutorialRing?.(chunkX, chunkY)) return [];
+        const chunkKey = `${chunkX},${chunkY}`;
+        const metadata = this.wfcMetadataCache?.get(chunkKey);
+        if (!metadata || metadata.reservationId || metadata.ringCrossingId) return [];
+        if (!['architectural-room', 'architectural-connector'].includes(metadata.generatorId)) return [];
+        const protectedCells = new Set();
+        const protect = (x, y, pad) => {
+            if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+            for (let dy = -pad; dy <= pad; dy += 1) {
+                for (let dx = -pad; dx <= pad; dx += 1) protectedCells.add(`${x + dx},${y + dy}`);
+            }
+        };
+        for (const room of metadata.roomInstances ?? []) {
+            for (const cell of room.interior ?? []) protect(cell.x, cell.y, 0);
+        }
+        for (const door of metadata.doors ?? []) {
+            protect(door.localX, door.localY, 2);
+            for (const cell of door.cells ?? []) protect(cell.x, cell.y, 2);
+        }
+        for (const anchor of metadata.anchors ?? []) protect(anchor.x ?? anchor.localX, anchor.y ?? anchor.localY, 1);
+        for (const source of metadata.accessSources ?? []) protect(source.localX, source.localY, 1);
+        const cells = planExpeditionObstacles(grid, {
+            expeditionSeed: this.activeExpedition.expeditionSeed,
+            chunkKey,
+            protectedCells
+        });
+        for (const { x, y } of cells) grid[y][x] = '#';
+        metadata.expeditionObstacles = cells;
+        return cells;
+    }
+
     applyDestroyedWallsToGrid(grid, chunkX, chunkY) {
         if (!grid || !this.destroyedWallKeys?.size) return grid;
         for (let localY = 0; localY < this.chunkSize; localY += 1) {
@@ -27733,8 +28122,10 @@ export class ThreeGame {
         // already fed the director, but the card's snailDensityMult had no
         // consumer, so the blurb's density half was text only. Scale both the
         // per-chunk budget and the roll chance so the promised delta is real.
-        const snailDensityMult = Number(this.getRunCardEffects?.()?.spawnBias?.snailDensityMult);
-        const snailSpawnConfig = Number.isFinite(snailDensityMult) && snailDensityMult > 0
+        const cardDensityMult = Number(this.getRunCardEffects?.()?.spawnBias?.snailDensityMult);
+        const snailDensityMult = (Number.isFinite(cardDensityMult) && cardDensityMult > 0 ? cardDensityMult : 1)
+            * (this.getExpeditionEffects?.().world.enemyDensityMultiplier ?? 1);
+        const snailSpawnConfig = snailDensityMult !== 1
             ? {
                 maxCount: Math.max(0, Math.round(baseSnailSpawnConfig.maxCount * snailDensityMult)),
                 chance: Math.min(1, baseSnailSpawnConfig.chance * snailDensityMult)
@@ -27945,7 +28336,10 @@ export class ThreeGame {
                 // fixed amount per placement and the elite set is reproducible
                 // from the seed alone. Ring I's contract chance is 0, so the
                 // opening ring stays free of promotions by construction.
-                spawnedElite: rollElitePromotion(depthTierForScatter + 1, random(), {
+                spawnedElite: rollElitePromotion(depthTierForScatter + 1, scaleExpeditionEliteRoll(
+                    random(),
+                    this.getExpeditionEffects?.().world.eliteChanceMultiplier
+                ), {
                     type: finalType,
                     isDisplayModel: Boolean(p.isDisplayModel)
                 })
@@ -29203,7 +29597,13 @@ export class ThreeGame {
                                 value: 1,
                                 amount: pickup.userData?.amount ?? (pickupType === 'ammo'
                                     ? 4
-                                    : (pickupType === 'coin' ? Math.max(1, this.loadoutMods?.salvageValueMultiplier ?? 1) : 1))
+                                    : (pickupType === 'coin'
+                                        ? scaleExpeditionSalvage(
+                                            Math.max(1, this.loadoutMods?.salvageValueMultiplier ?? 1),
+                                            this.getExpeditionEffects?.().world.salvageMultiplier,
+                                            Math.random()
+                                        )
+                                        : 1))
                             }
                         }));
                     }
@@ -29644,6 +30044,7 @@ export class ThreeGame {
             upward: 0.22,
             spread: sprite.userData.isBoss ? 2.0 : 1.5
         });
+        this.applyExpeditionDeathEffect?.(sprite);
         if (isCrawler) {
             window.AudioManager?.play('enemy_death_crawler', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: isBoss ? 0.6 : 0.4, playbackRate: isBoss ? 0.75 : 1.0 }) ?? { volume: isBoss ? 0.6 : 0.4, playbackRate: isBoss ? 0.75 : 1.0 }));
         } else {
@@ -29663,6 +30064,45 @@ export class ThreeGame {
         this.syncSurvivorContract?.({
             type: 'enemy-killed', id: `kill:${this.runEntropy}:${this.snailsKilledThisRun}`
         });
+    }
+
+    applyExpeditionDeathEffect(sprite) {
+        const effect = planExpeditionDeathEffect(this.activeExpedition, {
+            type: sprite?.userData?.type,
+            isBoss: Boolean(sprite?.userData?.isBoss),
+            roll: Math.random()
+        });
+        if (!effect) return null;
+        const x = sprite.position.x;
+        const z = sprite.position.z;
+        if (effect.kind === 'frost_ring') {
+            for (const other of this.scatterSprites ?? []) {
+                if (other === sprite || !this.isEnemyType?.(other.userData?.type)) continue;
+                if (other.userData.hp <= 0 || other.userData.isBoss) continue;
+                if (Math.hypot(other.position.x - x, other.position.z - z) <= effect.radius) {
+                    other.userData.frozenTimer = Math.max(other.userData.frozenTimer ?? 0, effect.freezeSeconds);
+                }
+            }
+            this.spawnPhysicalBurst?.(x, z, { color: effect.color, count: 14, upward: 0.12, spread: effect.radius });
+        } else if (effect.kind === 'spore_cache' && sprite.parent) {
+            for (let i = 0; i < effect.count; i += 1) {
+                const angle = Math.random() * Math.PI * 2;
+                const placement = this.createSnailDropPlacement(x, z, x + Math.cos(angle) * 0.5, z + Math.sin(angle) * 0.5, effect.dropType);
+                const pickup = this.createPickupInstance(placement);
+                if (!pickup) continue;
+                sprite.parent.add(pickup);
+                this.pickupMeshes.push(pickup);
+            }
+            this.spawnPhysicalBurst?.(x, z, { color: effect.color, count: 10, upward: 0.3, spread: 1.2 });
+        } else if (effect.kind === 'arc_discharge') {
+            this.spawnPhysicalBurst?.(x, z, { color: effect.color, count: 9, upward: 0.35, spread: effect.radius });
+            const player = this.player?.position;
+            if (player && !this.isPlayerDead && !this.godMode
+                && Math.hypot(player.x - x, player.z - z) <= effect.radius) {
+                this.takeDamage?.(effect.playerDamage, 'expedition-arc', x, z);
+            }
+        }
+        return effect;
     }
 
     spawnEnemyCorpse(enemySprite) {
@@ -31677,8 +32117,17 @@ export class ThreeGame {
             const dirZ = toGoalZ / moveDistance;
             // ...and the card's snailSpeedMult half, likewise previously inert.
             const speedMult = Number(this.getRunCardEffects?.()?.spawnBias?.snailSpeedMult);
+            // Decided once per hostile: a harvested hive's grievance reaches
+            // whatever was spawned inside its range.
+            if (data.hiveEnraged === undefined) {
+                data.hiveEnraged = !data.isBoss && isWithinHarvestedHiveRange(
+                    sprite.position.x, sprite.position.z, this._harvestedHivePositions
+                );
+            }
             const snailSpeed = (data.speed ?? SNAIL_MOVE_SPEED)
-                * (Number.isFinite(speedMult) && speedMult > 0 ? speedMult : 1);
+                * (Number.isFinite(speedMult) && speedMult > 0 ? speedMult : 1)
+                * (data.isBoss ? 1 : (this.getExpeditionEffects?.().world.enemySpeedMultiplier ?? 1))
+                * (data.hiveEnraged ? HARVESTED_HIVE_ENRAGE_SPEED : 1);
             const step = Math.min(moveDistance, snailSpeed * delta);
             const nextX = sprite.position.x + dirX * step;
             const nextZ = sprite.position.z + dirZ * step;
@@ -34192,6 +34641,7 @@ export class ThreeGame {
             this._campaignProgressRestored = false;
             this.expeditionIndex = 0;
             this.expeditionSeed = (Number(this.globalSeedOffset) >>> 0);
+            this.setActiveExpedition?.(createExpeditionProfile(this.expeditionSeed, 0));
             return null;
         }
         this.persistCampaignWorld?.();
@@ -34202,7 +34652,58 @@ export class ThreeGame {
         this.runEntropy = campaign.seed;
         this.expeditionIndex = campaign.expeditionIndex;
         this.expeditionSeed = campaign.expeditionSeed;
+        this.setActiveExpedition?.(campaign.activeExpedition
+            ?? createExpeditionProfile(campaign.seed, campaign.expeditionIndex));
         return campaign;
+    }
+
+    // The deployment's condition. Solo campaigns roll it from the campaign
+    // store; fixed-seed and multiplayer runs derive it from the shared seed so
+    // every peer deploys into the same weather.
+    setActiveExpedition(profile) {
+        this.activeExpedition = profile ?? null;
+        this._expeditionEffects = getExpeditionEffects(this.activeExpedition);
+        this.applyExpeditionPlayerEffects();
+        return this.activeExpedition;
+    }
+
+    getExpeditionAtmosphere() {
+        if (this.performanceProfile !== 'gameplay') return null;
+        return expeditionAtmosphere(this.activeExpedition?.condition?.id, performance.now() / 1000);
+    }
+
+    getExpeditionEffects() {
+        return this._expeditionEffects ?? getExpeditionEffects(this.activeExpedition);
+    }
+
+    applyExpeditionPlayerEffects() {
+        // Before the first updatePlayerType there is no operator to adjust;
+        // that call composes the active expedition itself.
+        if (this._loadoutModsBeforeExpedition === undefined) return;
+        const previous = this.loadoutMods ?? {};
+        const next = composeExpeditionIntoLoadoutMods(this._loadoutModsBeforeExpedition, this.activeExpedition);
+        const ratio = (key) => (Number(next[key]) || 1) / (Number(previous[key]) || 1);
+        if (Number.isFinite(this.moveSpeed)) this.moveSpeed *= ratio('moveSpeedMultiplier');
+        if (Number.isFinite(this.o2DrainMult)) this.o2DrainMult *= ratio('oxygenDrainMultiplier');
+        this.loadoutMods = next;
+    }
+
+    announceExpeditionBriefing() {
+        const profile = this.activeExpedition;
+        if (!profile?.condition || this.performanceProfile !== 'gameplay') return false;
+        window.dispatchEvent(new CustomEvent('expedition-briefing', {
+            detail: {
+                expeditionIndex: profile.expeditionIndex,
+                expeditionSeed: profile.expeditionSeed,
+                conditionId: profile.condition.id,
+                bountyId: profile.bounty?.id ?? null,
+                threatIndex: profile.threatIndex,
+                title: profile.title,
+                briefing: profile.briefing,
+                effects: this.getExpeditionEffects()
+            }
+        }));
+        return true;
     }
 
     persistCampaignWorld() {
@@ -34313,6 +34814,8 @@ export class ThreeGame {
                 }
             }
             const rawGrid = this.buildChunk(chunkX, chunkY);
+            this.applyExpeditionObstacles?.(rawGrid, chunkX, chunkY);
+            this.applyCrossingBridgeTiles?.(rawGrid, chunkX, chunkY);
             const landform = rawGrid.landform ?? LANDFORMS.MAZE;
             const grid = this.applyDestroyedWallsToGrid(rawGrid, chunkX, chunkY);
             grid.heightmap = generateHeightmapGrid(grid, landform);

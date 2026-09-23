@@ -30,6 +30,23 @@ export const ROOM_ENCOUNTER_PROFILES = Object.freeze({
             { type: 'sporesnail', min: 1, max: 2, weight: 1 },
             { type: 'crawler', min: 0, max: 1, weight: 0.4 }
         ]
+    }),
+    // Hive compound rooms (territoryStructures.js). A hive only exists past
+    // its ring gate, and the locked-ring rule already withholds spawns there,
+    // so no depth floor: a defended nest is never found undefended.
+    'hive-guardians': Object.freeze({
+        minDepthTier: 0,
+        enemies: [
+            { type: 'sporesnail', min: 2, max: 3, weight: 1 },
+            { type: 'crawler', min: 1, max: 2, weight: 1 }
+        ]
+    }),
+    'hive-infested': Object.freeze({
+        minDepthTier: 0,
+        enemies: [
+            { type: 'sporesnail', min: 1, max: 2, weight: 1 },
+            { type: 'crawler', min: 0, max: 1, weight: 0.4 }
+        ]
     })
 });
 
@@ -105,7 +122,8 @@ export function planRoomEncounter(room, grid, random, {
     maxUnlockedRing = 5,
     reachableCells = null
 } = {}) {
-    const profileId = room.themeConfig?.encounterProfile ?? 'standard';
+    // An authored room's own profile outranks the theme it was dressed in.
+    const profileId = room.encounterProfile ?? room.themeConfig?.encounterProfile ?? 'standard';
     const profile = ROOM_ENCOUNTER_PROFILES[profileId] ?? ROOM_ENCOUNTER_PROFILES.standard;
     const roomRing = room.ring ?? room.tier ?? 1;
 

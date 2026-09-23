@@ -1471,6 +1471,79 @@
       "goal_leaderboard_req": "你的分数将进入今日排行榜",
       "deploy": "部署每日行动",
       "deploy_done": "明天再来"
+    },
+    "expedition": {
+      "kicker": "远征 {index} // 区域状况",
+      "threat": "威胁 {level}",
+      "salvage": "回收 ×{value}",
+      "bounty": "悬赏：{label}",
+      "location": "{site} · {room}",
+      "first_visit": "新",
+      "conditions": {
+        "glacial_gale": {
+          "name": "冰川狂风",
+          "tagline": "零下暴雪。走廊结满薄冰。",
+          "effect": "步伐更快 · 氧气消耗加快10% · 冷冻持续延长25% · 敌人减速 · 击杀冰霜敌人会冻结其同伴"
+        },
+        "spore_bloom": {
+          "name": "孢子绽放",
+          "tagline": "有毒孢子雾飘过未封闭的大厅。",
+          "effect": "氧气消耗加快12% · 巡逻更密集 · 孢子蜗牛爆出额外回收物"
+        },
+        "bio_resin_surge": {
+          "name": "生物树脂潮涌",
+          "tagline": "巢穴涨潮。虫群在外围潜行。",
+          "effect": "敌人加速18% · 巡逻更密集 · 树脂拖慢脚步 · 巢穴收割产出+50%"
+        },
+        "geothermal_arc": {
+          "name": "地热电弧",
+          "tagline": "过载的导管在受损舱壁上迸出电弧。",
+          "effect": "护盾涌动：一面更快充能的20点护盾 · 击杀可能向你放电"
+        },
+        "subzero_stillness": {
+          "name": "零下寂静",
+          "tagline": "诡异的寂静。精英猎手盘踞路线。",
+          "effect": "巡逻稀少 · 精英几率×2.5 · 更远距离感知隐藏房间"
+        }
+      },
+      "bounties": {
+        "salvage_run": "从深层走廊回收120以上废料",
+        "eliminate_elite": "消灭一只变异的区域猎手",
+        "scout_compound": "潜入并测绘一处外围据点",
+        "clearing_breach": "摧毁6面结构隔墙"
+      },
+      "sites": {
+        "camp_meridian": "子午据点",
+        "camp_tallow": "塔洛据点",
+        "camp_vesper": "维斯珀据点",
+        "hive_suture": "缝合巢穴",
+        "hive_relay": "中继巢穴",
+        "hive_carapace": "甲壳巢穴"
+      },
+      "rooms": {
+        "camp": {
+          "approach": "信号入口",
+          "perimeter": "防御外围",
+          "central": "公共广场",
+          "service": "工坊",
+          "leader_quest": "指挥室",
+          "exit": "任务出口"
+        },
+        "hive": {
+          "warning": "警示之室",
+          "approach": "污染通道",
+          "outer_nest": "守卫之巢",
+          "choice_chamber": "交融之室",
+          "consequence": "树脂育房",
+          "escape": "逃生导管"
+        }
+      },
+      "transformed": {
+        "bridge": "> 峡谷通道已架桥 — 深渊可以通行",
+        "camp_fortified": "> {site} 已加固 — 炮塔守住外围",
+        "hive_bonded": "> 已与{site}结缘 — 感染之地为你让路",
+        "hive_harvested": "> 已收割{site} — 其幼体陷入狂暴"
+      }
     }
   },
   "narrative": {

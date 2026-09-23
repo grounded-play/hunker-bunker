@@ -6220,6 +6220,139 @@ function fireMothershipReactiveLine(trigger) {
     if (line) showBiomePrompt(line.text);
 }
 
+// ── Expedition briefing & compound location title ───────────
+// The briefing fires during respawn, often before the deploy intro hands
+// the HUD over, so it waits (briefly) for the gameplay HUD to be live.
+const EXPEDITION_BRIEFING_VISIBLE_MS = 7500;
+const EXPEDITION_BRIEFING_WAIT_MS = 30000;
+const COMPOUND_LOCATION_VISIBLE_MS = 3800;
+let expeditionBriefingTimer = null;
+let compoundLocationTimer = null;
+// Literal keys, not template-built ones: the i18n audit credits a catalog
+// key only when its full path appears in source.
+const EXPEDITION_CONDITION_KEYS = Object.freeze({
+    glacial_gale: { name: 'ui.expedition.conditions.glacial_gale.name', tagline: 'ui.expedition.conditions.glacial_gale.tagline', effect: 'ui.expedition.conditions.glacial_gale.effect' },
+    spore_bloom: { name: 'ui.expedition.conditions.spore_bloom.name', tagline: 'ui.expedition.conditions.spore_bloom.tagline', effect: 'ui.expedition.conditions.spore_bloom.effect' },
+    bio_resin_surge: { name: 'ui.expedition.conditions.bio_resin_surge.name', tagline: 'ui.expedition.conditions.bio_resin_surge.tagline', effect: 'ui.expedition.conditions.bio_resin_surge.effect' },
+    geothermal_arc: { name: 'ui.expedition.conditions.geothermal_arc.name', tagline: 'ui.expedition.conditions.geothermal_arc.tagline', effect: 'ui.expedition.conditions.geothermal_arc.effect' },
+    subzero_stillness: { name: 'ui.expedition.conditions.subzero_stillness.name', tagline: 'ui.expedition.conditions.subzero_stillness.tagline', effect: 'ui.expedition.conditions.subzero_stillness.effect' }
+});
+const EXPEDITION_BOUNTY_KEYS = Object.freeze({
+    salvage_run: 'ui.expedition.bounties.salvage_run',
+    eliminate_elite: 'ui.expedition.bounties.eliminate_elite',
+    scout_compound: 'ui.expedition.bounties.scout_compound',
+    clearing_breach: 'ui.expedition.bounties.clearing_breach'
+});
+const COMPOUND_SITE_KEYS = Object.freeze({
+    camp_meridian: 'ui.expedition.sites.camp_meridian',
+    camp_tallow: 'ui.expedition.sites.camp_tallow',
+    camp_vesper: 'ui.expedition.sites.camp_vesper',
+    hive_suture: 'ui.expedition.sites.hive_suture',
+    hive_relay: 'ui.expedition.sites.hive_relay',
+    hive_carapace: 'ui.expedition.sites.hive_carapace'
+});
+const COMPOUND_ROOM_KEYS = Object.freeze({
+    camp: Object.freeze({
+        approach: 'ui.expedition.rooms.camp.approach',
+        perimeter: 'ui.expedition.rooms.camp.perimeter',
+        central: 'ui.expedition.rooms.camp.central',
+        service: 'ui.expedition.rooms.camp.service',
+        leader_quest: 'ui.expedition.rooms.camp.leader_quest',
+        exit: 'ui.expedition.rooms.camp.exit'
+    }),
+    hive: Object.freeze({
+        warning: 'ui.expedition.rooms.hive.warning',
+        approach: 'ui.expedition.rooms.hive.approach',
+        outer_nest: 'ui.expedition.rooms.hive.outer_nest',
+        choice_chamber: 'ui.expedition.rooms.hive.choice_chamber',
+        consequence: 'ui.expedition.rooms.hive.consequence',
+        escape: 'ui.expedition.rooms.hive.escape'
+    })
+});
+
+function setHudCardText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+}
+
+function fadeHudCard(card, visibleMs, timerRef) {
+    clearTimeout(timerRef.current);
+    card.classList.remove('hidden');
+    requestAnimationFrame(() => card.classList.add('visible'));
+    timerRef.current = setTimeout(() => {
+        card.classList.remove('visible');
+        timerRef.current = setTimeout(() => card.classList.add('hidden'), 450);
+    }, visibleMs);
+}
+
+const expeditionBriefingTimerRef = { get current() { return expeditionBriefingTimer; }, set current(value) { expeditionBriefingTimer = value; } };
+const compoundLocationTimerRef = { get current() { return compoundLocationTimer; }, set current(value) { compoundLocationTimer = value; } };
+
+function renderExpeditionBriefing(detail = {}) {
+    const card = document.getElementById('expedition-briefing-card');
+    const condition = EXPEDITION_CONDITION_KEYS[detail.conditionId];
+    if (!card || !condition) return false;
+    // A campaign's first deployment is expedition index 1 (index 0 is the
+    // undeployed profile getOrCreate seeds); shared-seed runs report 0.
+    setHudCardText('expedition-briefing-kicker', t('ui.expedition.kicker', { index: Math.max(1, detail.expeditionIndex ?? 1) }));
+    setHudCardText('expedition-briefing-title', t(condition.name));
+    setHudCardText('expedition-briefing-tagline', t(condition.tagline));
+    setHudCardText('expedition-briefing-effect', t(condition.effect));
+    const salvage = Number(detail.effects?.world?.salvageMultiplier ?? 1);
+    const meta = [
+        t('ui.expedition.threat', { level: detail.threatIndex ?? 1 }),
+        t('ui.expedition.salvage', { value: salvage.toFixed(2).replace(/\.?0+$/, '') })
+    ];
+    if (EXPEDITION_BOUNTY_KEYS[detail.bountyId]) {
+        meta.push(t('ui.expedition.bounty', { label: t(EXPEDITION_BOUNTY_KEYS[detail.bountyId]) }));
+    }
+    setHudCardText('expedition-briefing-meta', meta.join(' · '));
+    fadeHudCard(card, EXPEDITION_BRIEFING_VISIBLE_MS, expeditionBriefingTimerRef);
+    return true;
+}
+
+window.addEventListener('expedition-briefing', (event) => {
+    const detail = event?.detail ?? {};
+    const startedAt = Date.now();
+    const present = () => {
+        if (isGameplayHudActive() && !document.body.classList.contains('mission-intro-active')) {
+            renderExpeditionBriefing(detail);
+            return;
+        }
+        if (Date.now() - startedAt < EXPEDITION_BRIEFING_WAIT_MS) {
+            expeditionBriefingTimer = setTimeout(present, 400);
+        }
+    };
+    clearTimeout(expeditionBriefingTimer);
+    present();
+});
+
+window.addEventListener('location-discovered', (event) => {
+    const detail = event?.detail ?? {};
+    const card = document.getElementById('compound-location-title');
+    const siteKey = COMPOUND_SITE_KEYS[detail.siteId];
+    const roomKey = COMPOUND_ROOM_KEYS[detail.family]?.[detail.beatKey];
+    if (!card || !siteKey || !roomKey || !isGameplayHudActive()) return;
+    setHudCardText('compound-location-text', t('ui.expedition.location', { site: t(siteKey), room: t(roomKey) }));
+    const tag = document.getElementById('compound-location-tag');
+    if (tag) {
+        tag.textContent = t('ui.expedition.first_visit');
+        tag.classList.toggle('hidden', !detail.firstVisit);
+    }
+    fadeHudCard(card, COMPOUND_LOCATION_VISIBLE_MS, compoundLocationTimerRef);
+});
+
+window.addEventListener('world-transformed', (event) => {
+    const { type, id, outcome } = event?.detail ?? {};
+    const site = COMPOUND_SITE_KEYS[id] ? t(COMPOUND_SITE_KEYS[id]) : '';
+    const message = type === 'bridge' ? t('ui.expedition.transformed.bridge')
+        : type === 'camp_fortified' ? t('ui.expedition.transformed.camp_fortified', { site })
+            : type === 'hive_transformed' && outcome === 'bonded' ? t('ui.expedition.transformed.hive_bonded', { site })
+                : type === 'hive_transformed' && outcome === 'harvested' ? t('ui.expedition.transformed.hive_harvested', { site })
+                    : null;
+    if (message && isGameplayHudActive()) showBiomePrompt(message);
+});
+
 window.addEventListener('special-room-discovered', (event) => {
     const label = event?.detail?.label ?? 'SPECIAL ROOM';
     const template = event?.detail?.template ?? '';

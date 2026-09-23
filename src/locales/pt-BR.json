@@ -1471,6 +1471,79 @@
       "goal_leaderboard_req": "Sua pontuação entra no placar de hoje",
       "deploy": "IMPLANTAR OPS DIÁRIAS",
       "deploy_done": "VOLTE AMANHÃ"
+    },
+    "expedition": {
+      "kicker": "EXPEDIÇÃO {index} // CONDIÇÕES DO SETOR",
+      "threat": "AMEAÇA {level}",
+      "salvage": "RECUPERAÇÃO ×{value}",
+      "bounty": "RECOMPENSA: {label}",
+      "location": "{site} · {room}",
+      "first_visit": "NOVO",
+      "conditions": {
+        "glacial_gale": {
+          "name": "VENDAVAL GLACIAL",
+          "tagline": "Nevasca abaixo de zero. O gelo cobre os corredores.",
+          "effect": "Passada mais rápida · O₂ cai 10% mais rápido · Crio dura 25% mais · Hostis mais lentos · Abates crio congelam o bando"
+        },
+        "spore_bloom": {
+          "name": "FLORAÇÃO DE ESPOROS",
+          "tagline": "Névoa tóxica de esporos flutua pelos corredores abertos.",
+          "effect": "O₂ cai 12% mais rápido · Patrulhas mais densas · Caracóis de esporos estouram com recuperação extra"
+        },
+        "bio_resin_surge": {
+          "name": "ONDA DE BIORRESINA",
+          "tagline": "Maré alta da colmeia. Enxames rondam os perímetros.",
+          "effect": "Hostis 18% mais rápidos · Patrulhas mais densas · A resina freia seus passos · Colheitas de colmeia rendem +50%"
+        },
+        "geothermal_arc": {
+          "name": "ARCO GEOTÉRMICO",
+          "tagline": "Condutos sobrecarregados faíscam nas anteparas danificadas.",
+          "effect": "Surto de escudo: um escudo de 20 pontos que recarrega antes · Abates podem descarregar em você"
+        },
+        "subzero_stillness": {
+          "name": "QUIETUDE SUBZERO",
+          "tagline": "Silêncio sinistro. Caçadores de elite dominam as rotas.",
+          "effect": "Poucas patrulhas · Chance de elite ×2,5 · Salas ocultas detectadas de mais longe"
+        }
+      },
+      "bounties": {
+        "salvage_run": "Extraia mais de 120 de sucata de corredores profundos",
+        "eliminate_elite": "Elimine um caçador mutante do setor",
+        "scout_compound": "Infiltre e mapeie um complexo distante",
+        "clearing_breach": "Destrua 6 paredes divisórias estruturais"
+      },
+      "sites": {
+        "camp_meridian": "COMPLEXO MERIDIAN",
+        "camp_tallow": "COMPLEXO TALLOW",
+        "camp_vesper": "COMPLEXO VESPER",
+        "hive_suture": "COLMEIA SUTURE",
+        "hive_relay": "COLMEIA RELAY",
+        "hive_carapace": "COLMEIA CARAPACE"
+      },
+      "rooms": {
+        "camp": {
+          "approach": "ACESSO DO SINAL",
+          "perimeter": "PERÍMETRO DEFENSIVO",
+          "central": "ÁREA COMUM",
+          "service": "OFICINA",
+          "leader_quest": "SALA DE COMANDO",
+          "exit": "PARTIDA DA MISSÃO"
+        },
+        "hive": {
+          "warning": "CÂMARA DE ALERTA",
+          "approach": "ACESSO CONTAMINADO",
+          "outer_nest": "NINHO DEFENDIDO",
+          "choice_chamber": "CÂMARA DE COMUNHÃO",
+          "consequence": "BERÇÁRIO DE RESINA",
+          "escape": "CONDUTO DE FUGA"
+        }
+      },
+      "transformed": {
+        "bridge": "> TRAVESSIA DO CÂNION COM PONTE — O ABISMO É TRANSPONÍVEL",
+        "camp_fortified": "> {site} FORTIFICADO — TORRETAS SEGURAM O PERÍMETRO",
+        "hive_bonded": "> {site} VINCULADA — O SOLO INFESTADO SE ABRE PARA VOCÊ",
+        "hive_harvested": "> {site} COLHIDA — SUA CRIA CORRE ENFURECIDA"
+      }
     }
   },
   "narrative": {

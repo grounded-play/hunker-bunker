@@ -1471,6 +1471,79 @@
       "goal_leaderboard_req": "Tu puntaje entra al tablero de hoy",
       "deploy": "DESPLEGAR OPS DIARIAS",
       "deploy_done": "VUELVE MAÑANA"
+    },
+    "expedition": {
+      "kicker": "EXPEDICIÓN {index} // CONDICIONES DEL SECTOR",
+      "threat": "AMENAZA {level}",
+      "salvage": "RECUPERACIÓN ×{value}",
+      "bounty": "RECOMPENSA: {label}",
+      "location": "{site} · {room}",
+      "first_visit": "NUEVO",
+      "conditions": {
+        "glacial_gale": {
+          "name": "VENDAVAL GLACIAL",
+          "tagline": "Ventisca bajo cero. El hielo cubre los pasillos.",
+          "effect": "Pisada más rápida · O₂ baja 10 % más rápido · Crio dura 25 % más · Hostiles ralentizados · Las bajas crio congelan a su manada"
+        },
+        "spore_bloom": {
+          "name": "FLORACIÓN DE ESPORAS",
+          "tagline": "Niebla tóxica de esporas recorre los pasillos abiertos.",
+          "effect": "O₂ baja 12 % más rápido · Patrullas más densas · Los caracoles de esporas sueltan recuperación extra"
+        },
+        "bio_resin_surge": {
+          "name": "OLEADA DE BIORRESINA",
+          "tagline": "Marea alta de la colmena. Enjambres acechan los perímetros.",
+          "effect": "Hostiles 18 % más rápidos · Patrullas más densas · La resina frena tu paso · Las cosechas de colmena rinden +50 %"
+        },
+        "geothermal_arc": {
+          "name": "ARCO GEOTÉRMICO",
+          "tagline": "Conductos sobrecargados chispean en mamparos dañados.",
+          "effect": "Pulso de escudo: un escudo de 20 puntos que se recarga antes · Las bajas pueden descargarse en ti"
+        },
+        "subzero_stillness": {
+          "name": "QUIETUD BAJO CERO",
+          "tagline": "Silencio inquietante. Acechadores de élite dominan las rutas.",
+          "effect": "Pocas patrullas · Probabilidad de élite ×2,5 · Salas ocultas detectadas desde más lejos"
+        }
+      },
+      "bounties": {
+        "salvage_run": "Extrae más de 120 de chatarra de pasillos profundos",
+        "eliminate_elite": "Elimina a un acechador mutado del sector",
+        "scout_compound": "Infiltra y cartografía un complejo remoto",
+        "clearing_breach": "Destruye 6 muros divisorios estructurales"
+      },
+      "sites": {
+        "camp_meridian": "COMPLEJO MERIDIAN",
+        "camp_tallow": "COMPLEJO TALLOW",
+        "camp_vesper": "COMPLEJO VESPER",
+        "hive_suture": "COLMENA SUTURE",
+        "hive_relay": "COLMENA RELAY",
+        "hive_carapace": "COLMENA CARAPACE"
+      },
+      "rooms": {
+        "camp": {
+          "approach": "ACCESO DE SEÑAL",
+          "perimeter": "PERÍMETRO DEFENSIVO",
+          "central": "ÁREA COMÚN",
+          "service": "TALLER",
+          "leader_quest": "SALA DE MANDO",
+          "exit": "SALIDA DE MISIÓN"
+        },
+        "hive": {
+          "warning": "CÁMARA DE ADVERTENCIA",
+          "approach": "ACCESO CONTAMINADO",
+          "outer_nest": "NIDO DEFENDIDO",
+          "choice_chamber": "CÁMARA DE COMUNIÓN",
+          "consequence": "CRIADERO DE RESINA",
+          "escape": "CONDUCTO DE ESCAPE"
+        }
+      },
+      "transformed": {
+        "bridge": "> CRUCE DEL CAÑÓN CON PUENTE — EL ABISMO ES TRANSITABLE",
+        "camp_fortified": "> {site} FORTIFICADO — LAS TORRETAS SOSTIENEN EL PERÍMETRO",
+        "hive_bonded": "> {site} VINCULADA — EL SUELO INFESTADO SE ABRE PARA TI",
+        "hive_harvested": "> {site} COSECHADA — SU CRÍA CORRE ENFURECIDA"
+      }
     }
   },
   "narrative": {

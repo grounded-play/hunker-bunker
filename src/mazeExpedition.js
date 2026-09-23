@@ -203,6 +203,48 @@ function connectChunkPoints(from, to, preferHorizontal, visit) {
     return { x, y };
 }
 
+// Route layout generations. A campaign's geography is fixed for its life:
+// saves key destroyed walls, explored cells and door state by world
+// position, so a campaign keeps the generation it was created with.
+//   1 -- one counter-clockwise coil for every seed, and a raw xorshift seed
+//        whose first draw is near zero for small seeds (seeds 1..~1000 all
+//        shared one site phase).
+//   2 -- seed-mixed streams and a per-campaign coil (deriveRouteCoil).
+export const LEGACY_ROUTE_LAYOUT_VERSION = 1;
+export const ROUTE_LAYOUT_VERSION = 2;
+
+const LEGACY_ROUTE_COIL = Object.freeze({ chirality: 1, baseTurns: 2.2, wobbleFrequency: 7, wobbleAmplitude: 0.16 });
+
+// Murmur3's finalizer: spreads nearby seeds across the whole 32-bit range
+// before they reach xorshift, whose first outputs track the seed's magnitude.
+function mixSeed(seed) {
+    let hash = (Number(seed) >>> 0) ^ 0x9e3779b9;
+    hash = Math.imul(hash ^ (hash >>> 16), 0x85ebca6b);
+    hash = Math.imul(hash ^ (hash >>> 13), 0xc2b2ae35);
+    hash ^= hash >>> 16;
+    return (hash >>> 0) || 1;
+}
+
+/**
+ * How the campaign's spine coils. Drawn from its own stream so the route's
+ * edge-ordering stream is untouched. Every campaign still leaves the crash
+ * site through the north blast door (startAngle), but the snake may wind
+ * either way, coil tighter or looser, and wobble at its own rhythm, so two
+ * campaigns meet their camps and gates from different sides and in a
+ * different rhythm. Turn counts stay in a band that keeps the queen far
+ * enough down the snake for every ring's content.
+ */
+export function deriveRouteCoil(seed = 1, layoutVersion = ROUTE_LAYOUT_VERSION) {
+    if (layoutVersion < ROUTE_LAYOUT_VERSION) return { ...LEGACY_ROUTE_COIL };
+    const random = seededRandom(mixSeed((Number(seed) ^ 0x434f494c) >>> 0));
+    return {
+        chirality: random() < 0.5 ? 1 : -1,
+        baseTurns: 2.05 + random() * 0.35,
+        wobbleFrequency: 5 + Math.floor(random() * 5),
+        wobbleAmplitude: 0.1 + random() * 0.1
+    };
+}
+
 /**
  * Builds the authoritative, streamed chunk graph for one run.
  *
@@ -215,7 +257,8 @@ function connectChunkPoints(from, to, preferHorizontal, visit) {
 export function generateRegionalRouteTopology(seed = 1, {
     chunkSize = CHUNK_SIZE,
     radii = RADIAL_RING_RADII,
-    phase = 0
+    phase = 0,
+    layoutVersion = LEGACY_ROUTE_LAYOUT_VERSION
 } = {}) {
     const random = seededRandom((Number(seed) ^ 0x44595354) >>> 0);
     const routeChunks = new Map();
@@ -247,12 +290,13 @@ export function generateRegionalRouteTopology(seed = 1, {
     const snakeControlPoints = [{ x: 0, y: 0 }, { x: 0, y: -1 }, { x: 0, y: -2 }];
     const sampleCount = outerRadius * 18;
     const startAngle = -Math.PI / 2 + phase * 0.12;
+    const { chirality, baseTurns, wobbleFrequency, wobbleAmplitude } = deriveRouteCoil(seed, layoutVersion);
     for (let index = 1; index <= sampleCount; index += 1) {
         const t = index / sampleCount;
         const radius = 1.6 + t * (outerRadius - 1.2);
-        const turns = 2.2 + t * 0.65;
-        const angle = startAngle + t * Math.PI * 2 * turns
-            + Math.sin(t * Math.PI * 7 + phase) * 0.16;
+        const turns = baseTurns + t * 0.65;
+        const angle = startAngle + chirality * (t * Math.PI * 2 * turns
+            + Math.sin(t * Math.PI * wobbleFrequency + phase) * wobbleAmplitude);
         const point = {
             x: roundCoordinate(Math.cos(angle) * radius),
             y: roundCoordinate(Math.sin(angle) * radius)
@@ -360,8 +404,11 @@ export function computeTopologyDistances(topology, startKey = topology?.startChu
     return distances;
 }
 
-export function generateRadialMazeExpedition(seed = 1, { chunkSize = CHUNK_SIZE } = {}) {
-    const random = seededRandom(seed);
+export function generateRadialMazeExpedition(seed = 1, {
+    chunkSize = CHUNK_SIZE,
+    layoutVersion = LEGACY_ROUTE_LAYOUT_VERSION
+} = {}) {
+    const random = seededRandom(layoutVersion >= ROUTE_LAYOUT_VERSION ? mixSeed(seed) : seed);
     const phase = random() * Math.PI * 2;
     const nodes = [{
         id: 'o2_ship',
@@ -467,6 +514,7 @@ export function generateRadialMazeExpedition(seed = 1, { chunkSize = CHUNK_SIZE 
 
     const topology = generateRegionalRouteTopology(seed, {
         phase,
+        layoutVersion,
         radii: RADIAL_RING_RADII
     });
 
@@ -571,6 +619,7 @@ export function generateRadialMazeExpedition(seed = 1, { chunkSize = CHUNK_SIZE 
 
     return {
         seed: Number(seed) >>> 0,
+        layoutVersion,
         phase,
         radii: [...RADIAL_RING_RADII],
         nodes,
