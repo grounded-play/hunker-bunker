@@ -5913,7 +5913,8 @@ input:checked+.slider:before {
 
 .hud-corner-settings,
 .menu-corner-settings,
-.armory-corner-settings {
+.armory-corner-settings,
+.net-corner-settings {
   position: absolute !important;
   top: var(--corner-settings-top) !important;
   right: var(--corner-settings-right) !important;
@@ -5929,7 +5930,8 @@ input:checked+.slider:before {
 
 .hud-corner-settings .open-settings-btn,
 .menu-corner-settings .open-settings-btn,
-.armory-corner-settings .open-settings-btn {
+.armory-corner-settings .open-settings-btn,
+.net-corner-settings .open-settings-btn {
   width: var(--corner-settings-size) !important;
   height: var(--corner-settings-size) !important;
   min-width: 44px !important;
@@ -24026,7 +24028,9 @@ html.phase-gameplay #tactical-telemeter-box {
 #game-viewport .hud-corner-settings,
 #game-viewport .menu-corner-settings,
 #game-viewport .armory-corner-settings,
+#game-viewport .net-corner-settings,
 #armory-screen .armory-corner-settings,
+#multiplayer-modal .net-corner-settings,
 #ui .hud-corner-settings {
   position: absolute !important;
   top: var(--corner-settings-top) !important;
@@ -24048,7 +24052,9 @@ html.phase-gameplay #tactical-telemeter-box {
 #game-viewport .hud-corner-settings .calibrate-btn,
 #game-viewport .menu-corner-settings .calibrate-btn,
 #game-viewport .armory-corner-settings .calibrate-btn,
+#game-viewport .net-corner-settings .calibrate-btn,
 #armory-screen .armory-corner-settings .calibrate-btn,
+#multiplayer-modal .net-corner-settings .calibrate-btn,
 #ui .hud-corner-settings .calibrate-btn {
   width: var(--corner-settings-hit) !important;
   height: var(--corner-settings-hit) !important;
@@ -24062,6 +24068,25 @@ html.phase-gameplay #tactical-telemeter-box {
   line-height: 1 !important;
   padding: 0 !important;
   margin: 0 !important;
+}
+
+#multiplayer-modal .net-header .close-modal {
+  position: absolute !important;
+  top: var(--corner-settings-top) !important;
+  right: calc(var(--corner-settings-right) + var(--corner-settings-hit) + var(--vu) * 1) !important;
+  width: var(--corner-settings-hit) !important;
+  height: var(--corner-settings-hit) !important;
+  min-width: var(--corner-settings-hit) !important;
+  min-height: var(--corner-settings-hit) !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: calc(var(--vu) * 2.6) !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  z-index: 17100 !important;
 }
 
 /* Hidden with the menu it belongs to, now that it is no longer inside it. */
