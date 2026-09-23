@@ -910,7 +910,7 @@
     "controls": {
       "steam_deck": "STEAM DECK:",
       "desktop": "DESKTOP:",
-      "deck_hint": "Left stick moves or navigates · Right stick aims and controls the visible pointer · A accepts/interacts · B backs out/dodges · Menu opens settings.",
+      "deck_hint": "Left stick moves or navigates · Right stick aims and controls visible pointer · RT Fire · Y / RB Smash (Secondary Attack) · A accepts/interacts · B backs out/dodges · Menu opens settings.",
       "desktop_hint": "Click a slot, then press a key to bind it. ESC cancels."
     },
     "mothership_dialogue": {

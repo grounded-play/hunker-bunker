@@ -425,6 +425,41 @@ const SUIT_LIGHT_WALL_PADDING = 0.35;
 // at least this roughness; the IBL sky reflections keep the real value.
 const HB_DIRECT_SPECULAR_MIN_ROUGHNESS = 0.6;
 
+export function disposeTransientEffect(game, effect) {
+    if (!effect) return;
+    if (typeof effect.dispose === 'function') {
+        try { effect.dispose(); } catch { /* best effort */ }
+    } else if (typeof effect.userData?.dispose === 'function') {
+        try { effect.userData.dispose(); } catch { /* best effort */ }
+    }
+    const target = effect.mesh ?? effect;
+    if (target && target.isObject3D) {
+        target.traverse?.((child) => {
+            child.material?.map?.dispose?.();
+            child.material?.dispose?.();
+            child.geometry?.dispose?.();
+        });
+        if (target.parent) target.parent.remove(target);
+        else game?.scene?.remove?.(target);
+    }
+}
+
+export function registerTransientEffect(game, effect) {
+    if (!effect) return effect;
+    if (!Array.isArray(game?.transientEffects)) {
+        if (game) game.transientEffects = [];
+    }
+    if (Array.isArray(game?.transientEffects)) {
+        const MAX_TRANSIENT_EFFECTS = 64;
+        while (game.transientEffects.length >= MAX_TRANSIENT_EFFECTS) {
+            const oldest = game.transientEffects.shift();
+            if (oldest) disposeTransientEffect(game, oldest);
+        }
+        game.transientEffects.push(effect);
+    }
+    return effect;
+}
+
 export function softenDirectSpecularHighlights(shader) {
     shader.fragmentShader = shader.fragmentShader
         .replace(
@@ -6165,13 +6200,17 @@ export class ThreeGame {
                 root.position.copy(source.position);
                 // Must match syncWorld3dReplacement, which adds WORLD_3D_FACING_YAW.
                 // Without it the model faced one way when it loaded and snapped
-                // 180 degrees on the next frame's sync.
                 root.rotation.y = (source.material?.rotation ?? 0) + WORLD_3D_FACING_YAW;
-                root.visible = owner ? Boolean(owner.isVisible) : source.visible;
+                const ownerVisible = owner
+                    ? (typeof owner.isVisible !== 'undefined'
+                        ? Boolean(owner.isVisible)
+                        : (typeof owner.isRevealed !== 'undefined' ? Boolean(owner.isRevealed) : Boolean(source.visible)))
+                    : Boolean(source.visible);
+                root.visible = ownerVisible;
                 source.parent.add(root);
                 root.userData.world3dSource = source;
                 source.userData.world3dRoot = root;
-                source.userData.world3dDesiredVisible = source.visible;
+                source.userData.world3dDesiredVisible = ownerVisible;
                 source.userData.replacedBy3d = true;
                 source.visible = false;
                 syncWorld3dReplacement(source);
@@ -7916,7 +7955,7 @@ export class ThreeGame {
         }
 
         this.scene.add(effect);
-        this.transientEffects.push(effect);
+        registerTransientEffect(this, effect);
     }
 
     refreshActivePlayerSprite(type) {
@@ -9270,6 +9309,8 @@ export class ThreeGame {
         }
 
         if (mission?.status === 'objective_complete') return { key: 'extract', label: 'EXTRACT — RETURN TO SHIP' };
+        const defeatedBossCount = Math.max(this.killedBosses?.size ?? 0, this.defeatedMilestoneBosses?.size ?? 0);
+        if (defeatedBossCount >= 3) return { key: 'extract', label: 'SECTOR PURGED — RETURN TO EXTRACTION AIRLOCK' };
         if (!o2?.isOnline) return { key: 'o2', label: 'REPAIR O2 AT THE SHIP' };
         if (mission?.type && mission.label) return { key: 'objective', label: 'SECURE ACTIVE OBJECTIVE' };
         // Playtest P0-3: the black box used to be a loop step of its own here.
@@ -11028,14 +11069,14 @@ export class ThreeGame {
                 type: 'wall',
                 targetId: 'chasm',
                 badgeLabel: 'CHASM',
-                kicker: 'ENVIRONMENTAL HAZARD // DROP',
+                kicker: 'ENVIRONMENTAL HAZARD // CANYON',
                 title: 'GLACIAL CANYON CHASM EDGE',
-                subtitle: 'SUB-LEVEL VOID // FALL HAZARD',
+                subtitle: 'IMPASSABLE CANYON // ROUTE VIA CONNECTED BRIDGE',
                 coords: { x: tileX, z: tileZ },
                 distance: playerDist,
                 integrity: 100,
                 promptKey: null,
-                promptText: 'HAZARDOUS DROP'
+                promptText: 'IMPASSABLE CANYON'
             };
         }
 
@@ -18560,6 +18601,25 @@ export class ThreeGame {
             }
         }
 
+        const defeatedBossCount = Math.max(this.killedBosses?.size ?? 0, this.defeatedMilestoneBosses?.size ?? 0);
+        if (defeatedBossCount >= 3) {
+            const ship = this.crashedShips?.find((s) => s.type === this.playerType) ?? this.crashedShips?.[0];
+            if (ship) {
+                const dx = ship.tileX - this.player.position.x;
+                const dz = ship.tileZ - this.player.position.z;
+                const dist = Math.hypot(dx, dz);
+                if (dist > 3.0) {
+                    return {
+                        active: true,
+                        mode: 'ship',
+                        label: 'EXTRACTION AIRLOCK',
+                        angle: this.planarAngleTo(dx, dz, dist),
+                        distance: dist
+                    };
+                }
+            }
+        }
+
         // The shared registry arbitrates authored objectives, camp quests,
         // missions, and priority-50 lore after the still-migrating bespoke
         // story-critical branches above. This preserves their explicit order
@@ -20145,7 +20205,7 @@ export class ThreeGame {
         mesh.renderOrder = 9999;
         this.scene.add(mesh);
 
-        this.transientEffects.push({
+        registerTransientEffect(this, {
             mesh,
             age: 0,
             duration,
@@ -20237,7 +20297,7 @@ export class ThreeGame {
 
         this.scene.add(ghostGroup);
 
-        this.transientEffects.push({
+        registerTransientEffect(this, {
             mesh: ghostGroup,
             age: 0,
             duration,
@@ -20290,7 +20350,7 @@ export class ThreeGame {
         mesh.renderOrder = 9997;
         this.scene.add(mesh);
 
-        this.transientEffects.push({
+        registerTransientEffect(this, {
             mesh,
             age: 0,
             duration,
@@ -20465,7 +20525,7 @@ export class ThreeGame {
 
         const pingedIds = new Set();
 
-        this.transientEffects.push({
+        registerTransientEffect(this, {
             mesh: scanGroup,
             age: 0,
             duration: 1.2,
@@ -20539,7 +20599,7 @@ export class ThreeGame {
         const oz = (Math.random() - 0.5) * 0.35;
         mesh.position.set(this.player.position.x + ox, 0.03, this.player.position.z + oz);
         this.scene.add(mesh);
-        this.transientEffects.push({
+        registerTransientEffect(this, {
             mesh,
             age: 0,
             maxAge: 0.28,
@@ -20549,7 +20609,11 @@ export class ThreeGame {
                 mesh.material.opacity = 0.55 * (1 - t);
                 mesh.scale.setScalar(1 + t * 0.6);
             },
-            dispose() { mesh.material.dispose(); mesh.geometry.dispose(); }
+            dispose() {
+                if (mesh.parent) mesh.parent.remove(mesh);
+                mesh.material?.dispose();
+                mesh.geometry?.dispose();
+            }
         });
     }
 
@@ -22445,7 +22509,7 @@ export class ThreeGame {
         const duration = 0.3 + Math.random() * 0.16;
         const peakScale = 1 + (2.05 * scaleBoost);
         const baseOpacity = 0.5 + Math.random() * 0.12;
-        this.transientEffects.push({
+        registerTransientEffect(this, {
             mesh: splash,
             age: 0,
             duration,
@@ -22532,13 +22596,17 @@ export class ThreeGame {
         this.scene.add(footprint);
 
         const duration = 2.7 + Math.random() * 1.7;
-        this.transientEffects.push({
+        registerTransientEffect(this, {
             mesh: footprint,
             age: 0,
             duration,
             update: (_dt, age) => {
                 const t = Math.min(age / duration, 1);
                 footprint.material.opacity = 0.38 * (1 - t * t);
+            },
+            dispose: () => {
+                footprint.geometry?.dispose();
+                footprint.material?.dispose();
             }
         });
     }
@@ -23530,7 +23598,7 @@ export class ThreeGame {
         effect.position.set(x, 0.45, z);
         effect.renderOrder = 31;
         this.scene.add(effect);
-        this.transientEffects.push(effect);
+        registerTransientEffect(this, effect);
 
         this.traumaManager?.addTrauma(WEAPON_TRAUMA_TABLE.rifle || 0.12);
     }
@@ -23539,7 +23607,7 @@ export class ThreeGame {
         const effect = createImpactBurst();
         effect.position.set(x, (this.getTerrainHeightAt?.(x, z) ?? 0), z);
         this.scene.add(effect);
-        this.transientEffects.push(effect);
+        registerTransientEffect(this, effect);
     }
 
     spawnTextureBurstEffect(x, z, {
@@ -23580,7 +23648,7 @@ export class ThreeGame {
         }
 
         this.scene.add(effect);
-        this.transientEffects.push(effect);
+        registerTransientEffect(this, effect);
         return effect;
     }
 
@@ -23629,7 +23697,7 @@ export class ThreeGame {
         });
 
         const duration = 0.7;
-        this.transientEffects.push({
+        registerTransientEffect(this, {
             mesh: group,
             age: 0,
             duration,
@@ -23724,7 +23792,7 @@ export class ThreeGame {
 
         const maxScale = isBoss ? 4.8 : 2.6;
         const ringDuration = 0.28;
-        this.transientEffects.push({
+        registerTransientEffect(this, {
             mesh: ringMesh,
             age: 0,
             duration: ringDuration,
@@ -23841,7 +23909,7 @@ export class ThreeGame {
 
         this._wallDecals = this._wallDecals ?? [];
         this._wallDecals.push(effect);
-        this.transientEffects.push(effect);
+        registerTransientEffect(this, effect);
 
         // Recycle the oldest decal if we exceed the cap.
         while (this._wallDecals.length > WALL_DECAL_CAP) {
@@ -29790,17 +29858,17 @@ export class ThreeGame {
                 sprite.position.y += dt * 1.5;
                 const t = Math.min(effect.age / effect.duration, 1);
                 material.opacity = 1 - t;
+            },
+            dispose: () => {
+                if (sprite.parent) sprite.parent.remove(sprite);
+                else this.scene.remove(sprite);
+                texture.dispose();
+                material.dispose();
             }
         };
 
         this.scene.add(sprite);
-        this.transientEffects.push(effect);
-
-        setTimeout(() => {
-            this.scene.remove(sprite);
-            texture.dispose();
-            material.dispose();
-        }, effect.duration * 1000);
+        registerTransientEffect(this, effect);
     }
 
     isSnailTileWalkable(tileX, tileZ) {
@@ -31915,19 +31983,23 @@ export class ThreeGame {
         );
         ring.rotation.x = -Math.PI / 2;
         ring.position.set(x, 0.08, z);
+        ring.scale.set(0.01, 0.01, 1);
         this.scene.add(ring);
         
         const duration = 0.6;
-        this.transientEffects.push({
+        registerTransientEffect(this, {
             mesh: ring,
             age: 0,
             duration,
             update: (dt, age) => {
                 const t = age / duration;
-                const r = t * maxRadius;
-                ring.geometry.dispose();
-                ring.geometry = new THREE.RingGeometry(Math.max(0.1, r - 0.25), r + 0.05, 32);
+                const r = Math.max(0.01, t * maxRadius);
+                ring.scale.set(r, r, 1);
                 ring.material.opacity = 0.8 * (1 - t);
+            },
+            dispose: () => {
+                ring.geometry?.dispose?.();
+                ring.material?.dispose?.();
             }
         });
     }
@@ -31948,7 +32020,7 @@ export class ThreeGame {
         this.scene.add(sprite);
         
         const duration = isLarge ? 6.5 : 4.0;
-        this.transientEffects.push({
+        registerTransientEffect(this, {
             mesh: sprite,
             age: 0,
             duration,
@@ -32013,7 +32085,7 @@ export class ThreeGame {
         this.scene.add(sprite);
         
         const duration = isBoss ? 4.2 : 2.5;
-        this.transientEffects.push({
+        registerTransientEffect(this, {
             mesh: sprite,
             age: 0,
             duration,
@@ -32570,7 +32642,7 @@ export class ThreeGame {
         effect.position.set(x, 0.02, z);
         effect.userData = { age: 0, duration: 0.56 };
         this.scene.add(effect);
-        this.transientEffects.push(effect);
+        registerTransientEffect(this, effect);
         span.end();
     }
 
@@ -32768,6 +32840,14 @@ export class ThreeGame {
         }
     }
 
+    addTransientEffect(effect) {
+        return registerTransientEffect(this, effect);
+    }
+
+    disposeTransientEffect(effect) {
+        return disposeTransientEffect(this, effect);
+    }
+
     updateTransientEffects(delta) {
         const removals = [];
 
@@ -32780,7 +32860,7 @@ export class ThreeGame {
                 } else {
                     effect.update(delta);
                 }
-                if (effect.mesh) {
+                if (effect.mesh && effect.mesh.visible !== false) {
                     this.applyFogOfWarOpacity(
                         effect.mesh,
                         this.getFogOfWarVisibility(effect.mesh.position.x, effect.mesh.position.z),
@@ -32794,11 +32874,13 @@ export class ThreeGame {
 
             if (typeof effect.userData?.update === 'function') {
                 const finished = effect.userData.update(delta);
-                this.applyFogOfWarOpacity(
-                    effect,
-                    this.getFogOfWarVisibility(effect.position.x, effect.position.z),
-                    { captureCurrent: true }
-                );
+                if (effect.visible !== false) {
+                    this.applyFogOfWarOpacity(
+                        effect,
+                        this.getFogOfWarVisibility(effect.position.x, effect.position.z),
+                        { captureCurrent: true }
+                    );
+                }
                 if (finished) removals.push(effect);
                 continue;
             }
@@ -32826,11 +32908,13 @@ export class ThreeGame {
                 }
             }
 
-            this.applyFogOfWarOpacity(
-                effect,
-                this.getFogOfWarVisibility(effect.position.x, effect.position.z),
-                { captureCurrent: true }
-            );
+            if (effect.visible !== false) {
+                this.applyFogOfWarOpacity(
+                    effect,
+                    this.getFogOfWarVisibility(effect.position.x, effect.position.z),
+                    { captureCurrent: true }
+                );
+            }
 
             if (t >= 1) {
                 removals.push(effect);
@@ -32838,24 +32922,7 @@ export class ThreeGame {
         }
 
         for (const effect of removals) {
-            if (typeof effect.update === 'function') {
-                if (typeof effect.dispose === 'function') {
-                    effect.dispose();
-                } else {
-                    effect.mesh?.material?.dispose?.();
-                    effect.mesh?.geometry?.dispose?.();
-                }
-                this.scene.remove(effect.mesh);
-            } else {
-                if (typeof effect.userData?.dispose === 'function') {
-                    effect.userData.dispose();
-                }
-                effect.traverse((child) => {
-                    child.material?.dispose?.();
-                    child.geometry?.dispose?.();
-                });
-                this.scene.remove(effect);
-            }
+            this.disposeTransientEffect(effect);
         }
 
         this.transientEffects = this.transientEffects.filter((effect) => !removals.includes(effect));
@@ -32943,7 +33010,12 @@ export class ThreeGame {
                 // A hidden source blocks only when it is the authoritative
                 // collision proxy for a visible GLB replacement. Arbitrarily
                 // hidden/cull-state sprites must not leave invisible walls.
-                if (prop.visible === false && !prop.userData.replacedBy3d) continue;
+                if (prop.visible === false) {
+                    const root3d = prop.userData?.world3dRoot;
+                    if (!prop.userData?.replacedBy3d || !root3d || !root3d.parent || root3d.visible === false) {
+                        continue;
+                    }
+                }
                 const collisionRadius = prop.userData.collisionRadius ?? 0.38;
                 if (Math.hypot(x - prop.position.x, z - prop.position.z) < collisionRadius + this.playerRadius) {
                     return false;

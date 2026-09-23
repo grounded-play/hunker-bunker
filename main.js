@@ -1768,15 +1768,19 @@ function getControllerBackTarget(root) {
     return null;
 }
 
+let lastModalCloseTimestamp = 0;
+
 function triggerControllerPauseAction() {
     const settingsPopup = document.getElementById('settings-popup');
     if (settingsPopup && !settingsPopup.classList.contains('hidden')) {
         dispatchControllerEscape();
+        lastModalCloseTimestamp = performance.now();
         return true;
     }
     const tacticalMapModal = document.getElementById('tactical-map-modal');
     if (tacticalMapModal && !tacticalMapModal.classList.contains('hidden')) {
         toggleTacticalMapModal(false);
+        lastModalCloseTimestamp = performance.now();
         return true;
     }
     const activeModal = STEAM_INPUT_FOCUS_ROOT_IDS
@@ -1785,6 +1789,10 @@ function triggerControllerPauseAction() {
         .find((element) => element && !element.classList.contains('hidden') && element !== settingsPopup);
     if (activeModal) {
         dispatchControllerEscape();
+        lastModalCloseTimestamp = performance.now();
+        return true;
+    }
+    if (performance.now() - lastModalCloseTimestamp < 350) {
         return true;
     }
     document.querySelector('.open-settings-btn')?.click();
@@ -1953,10 +1961,19 @@ function updateVirtualGamepadCursorPosition(clientX, clientY, visible = true) {
 function handleSteamMenuInput(actions) {
     const tacticalMapModal = document.getElementById('tactical-map-modal');
     if (tacticalMapModal && !tacticalMapModal.classList.contains('hidden')) {
-        if (actions.back || actions.pause) {
+        if (actions.back || actions.pause || actions.toggleMap) {
             toggleTacticalMapModal(false);
             return;
         }
+        const panX = Number(actions.move?.x) || Number(actions.camera?.x) || (actions.menu_right ? 1 : 0) - (actions.menu_left ? 1 : 0);
+        const panY = Number(actions.move?.y) || Number(actions.camera?.y) || (actions.menu_down ? 1 : 0) - (actions.menu_up ? 1 : 0);
+        if (Math.abs(panX) > 0.05 || Math.abs(panY) > 0.05) {
+            tacticalMapState.panX -= panX * 7;
+            tacticalMapState.panY -= panY * 7;
+        }
+        if (actions.menuTabLeft) adjustTacticalMapZoom(-0.02);
+        if (actions.menuTabRight) adjustTacticalMapZoom(0.02);
+        return;
     }
 
     const camStickX = Math.abs(Number(actions.camera?.x) || 0) > 0.15 ? Number(actions.camera?.x) : 0;
@@ -2245,6 +2262,21 @@ debugLog.subscribe((entry) => {
 
 function handleSteamGameplayInput(controller) {
     const prev = steamInputPrevControllers.get(controller.handle) ?? {};
+    const tacticalMapModal = document.getElementById('tactical-map-modal');
+    const isMapOpen = tacticalMapModal && !tacticalMapModal.classList.contains('hidden');
+    if (isMapOpen) {
+        if ((controller.dash && !prev.dash) || (controller.toggleMap && !prev.toggleMap) || (controller.pause && !prev.pause)) {
+            toggleTacticalMapModal(false);
+        }
+        updateControllerInputMemory(controller, {
+            ...prev,
+            dash: Boolean(controller.dash),
+            toggleMap: Boolean(controller.toggleMap),
+            pause: Boolean(controller.pause)
+        });
+        return;
+    }
+
     const moveX = Math.abs(Number(controller.move?.x) || 0) > 0.18 ? Number(controller.move?.x) || 0 : 0;
     const moveY = Math.abs(Number(controller.move?.y) || 0) > 0.18 ? Number(controller.move?.y) || 0 : 0;
     const aimX = Math.abs(Number(controller.camera?.x) || 0) > 0.18 ? Number(controller.camera?.x) || 0 : 0;
@@ -2300,20 +2332,6 @@ function handleSteamGameplayInput(controller) {
     }
     if (controller.scan && !prev.scan) {
         window.game?.triggerRadarScan?.();
-    }
-    const tacticalMapModal = document.getElementById('tactical-map-modal');
-    const isMapOpen = tacticalMapModal && !tacticalMapModal.classList.contains('hidden');
-    if (isMapOpen) {
-        if ((controller.dash && !prev.dash) || (controller.toggleMap && !prev.toggleMap) || (controller.pause && !prev.pause)) {
-            toggleTacticalMapModal(false);
-            updateControllerInputMemory(controller, {
-                ...prev,
-                dash: Boolean(controller.dash),
-                toggleMap: Boolean(controller.toggleMap),
-                pause: Boolean(controller.pause)
-            });
-            return;
-        }
     }
 
     if (controller.pause && !prev.pause) {
@@ -11004,6 +11022,18 @@ function pollTacticalMapGamepadInput() {
     const pad = gamepads[0] || gamepads[1] || gamepads[2] || gamepads[3];
     if (!pad) return;
 
+    const closeButtonPressed = Boolean(pad.buttons?.[1]?.pressed || pad.buttons?.[8]?.pressed || pad.buttons?.[9]?.pressed);
+    if (closeButtonPressed) {
+        if (!tacticalMapState.prevCloseButtonPressed) {
+            tacticalMapState.prevCloseButtonPressed = true;
+            lastModalCloseTimestamp = performance.now();
+            toggleTacticalMapModal(false);
+            return;
+        }
+    } else {
+        tacticalMapState.prevCloseButtonPressed = false;
+    }
+
     const deadzone = 0.2;
     const stickX = Math.abs(pad.axes?.[0] ?? 0) > deadzone ? pad.axes[0] : 0;
     const stickY = Math.abs(pad.axes?.[1] ?? 0) > deadzone ? pad.axes[1] : 0;
@@ -11357,6 +11387,7 @@ function toggleTacticalMapModal(forceState) {
             tacticalMapAnimFrame = null;
         }
     }
+    syncSteamInputPhase();
 }
 
 document.getElementById('close-tactical-map-modal')?.addEventListener('click', () => toggleTacticalMapModal(false));

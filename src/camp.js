@@ -1149,6 +1149,10 @@ export class SurvivorCamp {
 
     get isRevealed() { return this.revealed; }
 
+    get isVisible() {
+        return Boolean(this.revealed && this.group && this.group.visible !== false);
+    }
+
     getPosition() { return this.built ? { ...this.pos } : null; }
 
     distanceTo(x, z) {
