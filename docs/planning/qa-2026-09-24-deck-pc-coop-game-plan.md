@@ -147,7 +147,9 @@ Today these are two unconnected windows: the Steam Vault (main menu; tabs for ow
 | Trade-up (smelter) | per current Vault rules | 5→1 trade-ups; results logged and reflected immediately (see the smelter item) |
 | Store | per current Vault rules | Quartermaster purchases |
 
-Locked tabs stay visible with their unlock condition, never hidden. In-game access opens the same hub (at the Foundry, the Fabricate tab first); the main menu opens it at Stash. The hero screen uses the same item cards and preview.
+Locked tabs stay visible with their unlock condition, never hidden.
+
+**Look (owner, 2026-09-24):** Loadout is a tab of the hub. The hub uses the **Armory's look as its base**, made **more in theme with the game** (the in-run HUD's bunker/terminal styling) and **themed to the active class**. The class theme already exists for the Armory — `--armory-accent` / `--armory-accent-secondary` per class in `style.css` (Scout `#00f0ff`, Tank `#ff9f1c`, Engineer green), from [armory-ui-redesign-and-class-theming-spec.md](../armory-ui-redesign-and-class-theming-spec.md) — so the hub reuses those tokens across every tab, and switching class in the Loadout tab re-themes the whole hub. No hard-coded colours; every string localized (today's "READY TO ACTIVATE" in the Fab Bay is not). In-game access opens the same hub (at the Foundry, the Fabricate tab first); the main menu opens it at Stash. The hero screen uses the same item cards and preview.
 
 Acceptance: a test that walks every catalog id through each surface's card data and asserts the same name, rarity and image everywhere; no two items share an image; no shipped item falls back to initials or a placeholder; a screenshot set of one item in all four surfaces.
 
@@ -166,7 +168,7 @@ Remote death/downed, black-box ownership, wall persistence, smelt results, fabri
 1. ~~Map variety~~ — **answered:** TRY AGAIN keeps the map; MAIN MENU resets the run and the map.
 2. ~~Co-op persistence~~ — **answered:** on TRY AGAIN the map continues, so destroyed walls stay destroyed; MAIN MENU starts fresh.
 3. ~~Co-op fresh start~~ — **answered:** Meridian appeared as the recruited companion following the player (stuck behind a wall); see the companion item. Power-ups: **answered** — they were not seen by both players and looked different; see "Everything in co-op must be networked".
-4. ~~Foundry~~ — **answered:** the UI is out of date and item images do not match; Armory, Foundry and hero screen should be one UI (see "One item presentation"). The hub design is answered (Stash / Loadout / Fabricate (locked until unlocked in a playthrough) / Trade-up / Store). Still open: should the hub follow the Armory's current look, and is "trade in / trade up" the smelter (the logs point there)?
+4. ~~Foundry~~ — **answered:** the UI is out of date and item images do not match; Armory, Foundry and hero screen should be one UI (see "One item presentation"). The hub design and look are answered (Stash / Loadout / Fabricate (locked until unlocked in a playthrough) / Trade-up / Store; Armory look, in the game's theme, class-themed). Still open: is "trade in / trade up" the smelter (the logs point there)?
 5. **Invisible models.** Which objects, in which rooms?
 6. ~~22-minute gap~~ — **answered:** the owner turned the Deck off and came back. The log agrees: last entry 20:16:22 on the main menu, next 20:38:19; input, Steam and the controller came back at once and the next deployment started 35 s later, with 1.7 s and 1.1 s stalls just after waking. This was a suspend **at the menu**, not mid-expedition, so resuming an interrupted expedition (Invisible Essentials Phase 1) is still untested on hardware. Also seen: after MAIN MENU on the results screen the app phase never left `gameover` (the next logged transition is `gameover -> armory`), which may be part of why MAIN MENU did not reset the run.
 
