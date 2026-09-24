@@ -111,3 +111,27 @@ export function buildExpeditionReport({ conditionNameKey = null, bounty = null, 
     if (death?.next && death.next.key !== NEXT_ACTION_KEYS.build) lines.push(death.next);
     return lines;
 }
+
+/**
+ * Resolve a report line to text. Names (condition, goal, drop, enemy,
+ * resources) are filled in before an item's own label is translated, since
+ * labels such as "{drop} recovered" use them. `t` is the i18n function.
+ */
+export function formatReportLine(line, t) {
+    const params = { ...(line.params ?? {}) };
+    const named = (key, fallback) => { const text = t(key); return text !== key ? text : fallback; };
+    if (params.conditionKey) params.condition = t(params.conditionKey);
+    if (params.goalKey) params.goal = t(params.goalKey);
+    if (params.dropKey) params.drop = named(params.dropKey, params.name ?? params.dropId ?? '');
+    if (params.enemyKey) params.enemy = t(params.enemyKey);
+    if (Array.isArray(params.dropKeys)) {
+        params.drops = params.dropKeys.map((key, index) => named(key, params.dropIds?.[index] ?? key)).join(' + ');
+    }
+    if (line.parts) {
+        params.missing = line.parts
+            .map((part) => `${part.amount} ${part.resourceKey ? t(part.resourceKey) : part.resource}`)
+            .join(' · ');
+    }
+    if (params.labelKey) params.label = t(params.labelKey, params);
+    return t(line.key, params);
+}

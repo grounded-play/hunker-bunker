@@ -50,7 +50,7 @@ import {
 } from './src/accessibilitySettings.js';
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock, saveAchievements } from './src/achievements.js';
 import { SteamAchievementSync } from './src/steamAchievementSync.js';
-import { buildExpeditionReport } from './src/expeditionReport.js';
+import { buildExpeditionReport, formatReportLine } from './src/expeditionReport.js';
 import { EVENT_RESPONSE_DESC_KEYS, EVENT_RESPONSE_LABEL_KEYS, EVENT_TEXT_KEYS } from './src/expeditionEvents.js';
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized, isRankedRunPayload } from './src/steam/steamEvents.js';
 import { syncSteamStats } from './src/steamStats.js';
@@ -5490,26 +5490,7 @@ function renderGameOverAct2Summary() {
 
 // Accomplishments, the bounty and the next ship goal for the results screen.
 function formatExpeditionReportLine(line) {
-    const params = { ...(line.params ?? {}) };
-    if (params.conditionKey) params.condition = t(params.conditionKey);
-    if (params.labelKey) params.label = t(params.labelKey, params);
-    if (params.goalKey) params.goal = t(params.goalKey);
-    if (params.dropKey) {
-        const drop = t(params.dropKey);
-        params.drop = drop !== params.dropKey ? drop : (params.name ?? params.dropId ?? '');
-    }
-    if (params.enemyKey) params.enemy = t(params.enemyKey);
-    if (Array.isArray(params.dropKeys)) {
-        params.drops = params.dropKeys
-            .map((key, index) => { const name = t(key); return name !== key ? name : (params.dropIds?.[index] ?? key); })
-            .join(' + ');
-    }
-    if (line.parts) {
-        params.missing = line.parts
-            .map((part) => `${part.amount} ${part.resourceKey ? t(part.resourceKey) : part.resource}`)
-            .join(' · ');
-    }
-    return t(line.key, params);
+    return formatReportLine(line, t);
 }
 
 function renderExpeditionReport() {

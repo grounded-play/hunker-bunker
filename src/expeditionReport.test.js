@@ -101,3 +101,18 @@ describe('death lines', () => {
         expect(buildExpeditionReport({ nextGoal: null }).map((line) => line.key)).toEqual(['ui.go.report.none_completed', 'ui.go.report.all_goals']);
     });
 });
+
+describe('formatReportLine', () => {
+    it('fills names in before translating an item label that uses them', async () => {
+        const { formatReportLine } = await import('./expeditionReport.js');
+        const { t } = await import('./i18n.js');
+        const reward = formatReportLine({ key: 'ui.go.report.item_discovery', params: { labelKey: 'ui.events.report_reward', dropKey: 'ui.relics.shatter_engine.name', name: 'Shatter Engine' } }, t);
+        expect(reward).toBe(t('ui.go.report.item_discovery', { label: t('ui.events.report_reward', { drop: t('ui.relics.shatter_engine.name') }) }));
+        expect(reward).not.toContain('{');
+        const cache = formatReportLine({ key: 'ui.go.report.item_discovery', params: { labelKey: 'ui.cache.report.opened', dropId: 'cryo_rime', dropKey: 'ui.relics.cryo_rime.name' } }, t);
+        expect(cache).toContain(t('ui.relics.cryo_rime.name'));
+        expect(cache).not.toContain('{');
+        const missing = formatReportLine({ key: 'ui.go.report.item_discovery', params: { labelKey: 'ui.events.report_reward', dropKey: 'ui.relics.no_such.name', name: 'Fallback' } }, t);
+        expect(missing).toContain('Fallback');
+    });
+});
