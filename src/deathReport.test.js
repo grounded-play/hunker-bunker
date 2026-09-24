@@ -56,10 +56,14 @@ describe('the build line', () => {
 describe('what was left in the field', () => {
     it('lists the black box salvage and its distance from the ship', () => {
         const loss = describeFieldLoss({ x: 39, z: 51, salvage: { tech: 3, coin: 0, med: 2 } }, { x: 9, z: 11 });
-        expect(loss).toEqual({ key: FIELD_LINE_KEYS.black_box, params: { meters: 50 }, parts: [{ resource: 'tech', amount: 3 }, { resource: 'med', amount: 2 }] });
+        expect(loss).toEqual({ key: FIELD_LINE_KEYS.black_box, params: { meters: 50 }, parts: [
+            { resource: 'tech', resourceKey: 'ui.pickup_counter.tech', amount: 3 },
+            { resource: 'med', resourceKey: 'ui.pickup_counter.med', amount: 2 }
+        ] });
+        for (const part of loss.parts) expect(typeof lookup(part.resourceKey)).toBe('string');
         expect(describeFieldLoss({ x: 1, z: 1, salvage: {} }, { x: 0, z: 0 })).toEqual({ key: FIELD_LINE_KEYS.black_box_empty });
         expect(describeFieldLoss(null)).toBeNull();
-        expect(salvageParts({ tech: -1, coin: 'x', med: 1.7 })).toEqual([{ resource: 'med', amount: 1 }]);
+        expect(salvageParts({ tech: -1, coin: 'x', med: 1.7 })).toEqual([{ resource: 'med', resourceKey: 'ui.pickup_counter.med', amount: 1 }]);
     });
 });
 

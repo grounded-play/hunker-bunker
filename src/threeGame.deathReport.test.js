@@ -37,7 +37,10 @@ describe('the death report in the runtime', () => {
     it('names the cause, the black box salvage and distance, and sends the player to recover it first', () => {
         const death = game().getDeathReportData();
         expect(death.cause).toEqual({ key: 'ui.death.cause.enemy', params: { enemyKey: 'ui.death.enemy.boss_cryosnail' } });
-        expect(death.field).toEqual({ key: 'ui.death.field.black_box', params: { meters: 50 }, parts: [{ resource: 'tech', amount: 3 }, { resource: 'coin', amount: 1 }] });
+        expect(death.field).toEqual({ key: 'ui.death.field.black_box', params: { meters: 50 }, parts: [
+            { resource: 'tech', resourceKey: 'ui.pickup_counter.tech', amount: 3 },
+            { resource: 'coin', resourceKey: 'ui.pickup_counter.coin', amount: 1 }
+        ] });
         expect(death.next).toEqual({ key: 'ui.death.next.recover_black_box', params: { meters: 50 } });
     });
 

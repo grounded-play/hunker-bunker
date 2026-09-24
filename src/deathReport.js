@@ -109,10 +109,17 @@ export const FIELD_LINE_KEYS = Object.freeze({
 
 const SALVAGE_ORDER = Object.freeze(['tech', 'coin', 'med']);
 
+// The HUD's own resource names, so the report reads TECH / COIN / MED.
+const SALVAGE_NAME_KEYS = Object.freeze({
+    tech: 'ui.pickup_counter.tech',
+    coin: 'ui.pickup_counter.coin',
+    med: 'ui.pickup_counter.med'
+});
+
 /** Salvage entries with something in them, in a fixed order. */
 export function salvageParts(salvage = {}) {
     return SALVAGE_ORDER
-        .map((resource) => ({ resource, amount: Math.max(0, Math.floor(Number(salvage[resource]) || 0)) }))
+        .map((resource) => ({ resource, resourceKey: SALVAGE_NAME_KEYS[resource], amount: Math.max(0, Math.floor(Number(salvage[resource]) || 0)) }))
         .filter((part) => part.amount > 0);
 }
 
