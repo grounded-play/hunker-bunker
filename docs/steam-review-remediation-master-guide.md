@@ -216,7 +216,7 @@ Navigate to: **Steamworks App Admin** → **Edit Store Page** → **Content Surv
 
 - **Did you use AI tools to generate content for your game?** → **Yes**
 - **Pre-Generated AI Content:** → **[x] Yes**
-- **Live-Generated AI Content:** → **[ ] No** (No runtime models executed on client machines)
+- **Live-Generated AI Content:** → **( ) No** (No runtime models executed on client machines)
 
 #### Exact Description Text:
 ```text

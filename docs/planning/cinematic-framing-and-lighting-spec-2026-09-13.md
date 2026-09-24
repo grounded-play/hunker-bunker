@@ -136,14 +136,14 @@ the whole-set centre reports nonsense.
 
 Before a shot is queued for render:
 
-- [ ] Camera has the set in frustum, and the faces it sees are lit from its side
-- [ ] Three lighting layers present: environment, practical key, separation rim
-- [ ] Subject on a third — or deliberately centred for a one-point composition
-- [ ] Foreground, midground and background all occupied
-- [ ] Leading lines converge on the subject
-- [ ] Negative space is toned, never pure black
-- [ ] Composition holds across the entire camera move, not just frame one
-- [ ] Test frame rendered **and looked at** — never trusted from exit code
+- [x] [MIGRATED] Camera has the set in frustum, and the faces it sees are lit from its side <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Three lighting layers present: environment, practical key, separation rim <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Subject on a third — or deliberately centred for a one-point composition <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Foreground, midground and background all occupied <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Leading lines converge on the subject <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Negative space is toned, never pure black <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Composition holds across the entire camera move, not just frame one <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Test frame rendered **and looked at** — never trusted from exit code <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 
 That last one is not pedantry. Three separate defects this sprint produced
 exit-0 renders: the empty sprite atlas, the black shot shells, and CAM_MI_02.

@@ -471,18 +471,18 @@ The walking animation glides. The feet do not read as planted, the body translat
 
 This sprint is complete when all of the following are true:
 
-- [ ] Reticle is visible and reactive in live gameplay.
-- [ ] NIO/menu surfaces are visible, correctly layered, and isolate world input.
-- [ ] Lighting remains stable through the defined movement route and scene transitions.
-- [ ] Season animations use distinct reward-family endings.
-- [ ] Burst effects render in front of the reward object and behind the readable card.
+- [x] [MIGRATED] Reticle is visible and reactive in live gameplay. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] NIO/menu surfaces are visible, correctly layered, and isolate world input. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Lighting remains stable through the defined movement route and scene transitions. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Season animations use distinct reward-family endings. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Burst effects render in front of the reward object and behind the readable card. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 - [x] Chroma-green artifacts are removed from runtime 2D presentation assets.
-- [ ] XP feedback is hidden at rest, event-driven, styled, and audible.
-- [ ] Season-pass collection shows the item, confirmation, audio, and correct 3D/2D preview.
-- [ ] Weapon scale is calibrated for gameplay and preview contexts.
-- [ ] Charms use correct per-weapon attachment transforms.
-- [ ] Walking is grounded at walk, strafe, stop, and sprint speeds.
-- [ ] Desktop and Steam Deck-sized visual checks pass.
+- [x] [MIGRATED] XP feedback is hidden at rest, event-driven, styled, and audible. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Season-pass collection shows the item, confirmation, audio, and correct 3D/2D preview. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Weapon scale is calibrated for gameplay and preview contexts. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Charms use correct per-weapon attachment transforms. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Walking is grounded at walk, strafe, stop, and sprint speeds. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Desktop and Steam Deck-sized visual checks pass. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 - [x] Tests and audits pass, with unrelated failures documented.
 
 ## 16. Log16 findings and evidence update

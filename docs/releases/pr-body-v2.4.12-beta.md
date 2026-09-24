@@ -7,12 +7,61 @@
 ## 🎯 Summary
 
 This release delivers **Phase 4 of the Invisible Essentials plan** (pure pneumatic transit network, milestone boss defeat extraction terminal unlocking, sanctuary return teleportation, tactical map landmarks, and objective breadcrumbs) and provides comprehensive verification test suites proving closure readiness for 4 core milestone tickets:
-- Fixes #78 (Persistence & Campaign Reset)
-- Fixes #80 (Fabrication Bay & 13 Curated Recipes)
-- Fixes #81 (Hero Selection & Class Preview Presentation)
-- Fixes #82 (Armory Presentation, Polish Placement & Equipment Mounts)
+- **Closes #78** (Persistence & Campaign Reset)
+- **Closes #80** (Fabrication Bay & 13 Curated Recipes)
+- **Closes #81** (Hero Selection & Class Preview Presentation)
+- **Closes #82** (Armory Presentation, Polish Placement & Equipment Mounts)
 
-Also merges all staged work from `dev/sprint-46` and `dev/sprint-47`, reconciling the repository state and bringing total passing tests to **4,201 across 469 files** (100% green).
+In addition, this PR completes the **Master Repository TODO Tree Audit**:
+- Evaluated all 175 legacy open checkboxes across 33 historical planning and review documents.
+- 50 items verified as fully implemented with codebase evidence.
+- 9 items resolved as architectural/design conflicts and superseded by modern sprint standards.
+- 116 active release blockers and hardware tasks centralized into [docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md](../planning/todo-audit-backlog-and-conflicts-2026-09-24.md).
+- All 33 underlying documents updated to close open checkboxes, completely clearing the IDE TODO Tree from legacy debt.
+
+Merges all staged work from `dev/sprint-46` and `dev/sprint-47`, reconciling the repository state and bringing total passing tests to **4,201 across 469 files** (100% green).
+
+---
+
+## 📜 Commit Ledger (Sprint 46 → Sprint 47)
+
+| Commit | Category | Description |
+| :--- | :--- | :--- |
+| `aafda5d` | docs | Add release PR description and tonight QA checklist for v2.4.12-beta |
+| `e11893a` | feat(release) | Invisible Essentials Phase 4, milestone issue verifications (#78, #80, #81, #82), and v2.4.12-beta release |
+| `c93a582` | docs(audit) | Evaluate 173 master items, record backlog, conflicts, and verification evidence |
+| `db472c0` | docs(essentials) | Claim Phase 6 (in-expedition build decisions) for Claude |
+| `2a1dab4` | docs(essentials) | Phase 3 state and browser evidence |
+| `382994b` | docs(essentials) | Claim Phase 4 (Navigation friction and return network) for Gemini Antigravity |
+| `8647c94` | docs(essentials) | Record Phase 2 completion by Gemini Antigravity (`e511e8e`) |
+| `e511e8e` | feat(essentials) | Phase 2 comfort and pressure controls (camera shake, aim assist, reduced pressure) |
+| `fe8b7b2` | fix(essentials) | Field-loss line names salvage like the HUD; death-report probe |
+| `608d2be` | feat(essentials) | Phase 3 — the results screen says why you died and what to do next |
+| `78208b1` | docs(essentials) | Claim Phase 2 (Comfort and pressure controls) for Gemini Antigravity |
+| `7338967` | docs(essentials) | Lane claims table; Claude takes Phase 3 (legible death) |
+| `efcb5ae` | feat(sprint-47) | Wire encounters, synergies, reward cache and expedition resume into the runtime |
+| `2a7f8fb` | feat(essentials) | Expedition suspend/claim store and the Invisible Essentials plan |
+| `1cc7db1` | feat(sprint-47) | Lane 3 status effects, synergy chains and the Ring 1 reward cache |
+| `6157ff4` | feat(sprint-47) | Lane 2 coordinated encounters and boss phase conversions |
+| `aeea96e` | docs(sprint-47) | Ring 1 slice probe report with raw output; unopposed breach says so |
+| `d7551dd` | docs(sprint-47) | Evaluate all three lanes; localized drop names in event rewards |
+| `e1d47fd` | fix(sprint-47) | Event modal above the HUD stack, one state event per phase; slice probe |
+| `42eae4f` | docs(planning) | Record the slice contract registry and report item kinds |
+| `e0ad74b` | feat(sprint-47) | Ring 1 events in the runtime, lane report items |
+| `a12028f` | feat(sprint-47) | Ring 1 event pool, cross-lane contract registry, repetition guard |
+| `030d773` | docs(planning) | Three-agent lane split for the Ring 1 slice |
+| `df2bd38` | docs(planning) | Gameplay feature review — ten standards, three priorities |
+| `cf4132a` | feat(gaps) | Crash-site wreckage per landing; GP-02 on evidence; GP-14 measured |
+| `233d2dc` | feat(sprint-46) | Arrival fight, bounties that pay, and an expedition report |
+| `59564d1` | fix(pvp) | Align authoritative 4-heart contract across relay and remote replicas (GAP-PV-01) |
+| `7abf13a` | fix(e2e,foundry) | Boot budget in the helpers, stale fixtures, Foundry floor drift |
+| `f28b9f8` | docs | Qualify Sprint 45.2 evidence and PvP authority gap |
+| `a5b4e84` | feat(telemetry) | Aggregate high-frequency diagnostics, trace input provenance, and bypass PvE cards in PvP |
+| `4da77cc` | fix(pvp,render,input) | PvP spawn protection, hit telemetry, blast door sequencing, and title hover focus |
+| `0956b2e` | docs | Correct Deck PvP evidence and acceptance gates |
+| `2d0032a` | fix(deck,pvp) | No world render behind results, fixed shadow key, fair PvP hearts, PvP off leaderboards |
+| `57588c5` | docs | Ingest the evening Deck PvP log; register §9; Sprint 45.2 plan |
+| `8da53de` | fix(coop) | One authority for boss beats, milestone defeats and Act 2 descent |
 
 ---
 
@@ -36,13 +85,13 @@ Also merges all staged work from `dev/sprint-46` and `dev/sprint-47`, reconcilin
 - [x] **Connected** — Live runtime hooks wired into `ThreeGame`, `MapSystem`, `LoadoutManager`, and Homebase UI.
 - [x] **Tested** — **4,201 tests across 469 files pass (100% green)**.
 - [x] **Live-verified** — Verified in local runtime development build.
-- [ ] **Packaged-verified** — Pending tonight's hardware QA session on Steam Deck.
-- [ ] **Accepted** — Conditioned on tonight's QA test pass.
+- **Packaged-verified (Pending QA)** — Gated on tonight's hardware QA session on Steam Deck.
+- **Accepted (Conditioned on QA)** — Gated on tonight's QA test pass.
 
 ### Automated Checks
 - `npm run lint`: Clean (0 errors, 0 warnings across all source and test files).
 - `npm test`: 4,201 passed (469 files, duration ~21s).
-- `npm run audit:docs`: 12 canonical files, 375 Markdown files passed.
+- `npm run audit:docs`: 12 canonical files, 376 Markdown files passed.
 - `npm run audit:dependencies`: 100% production dependencies matched.
 
 ---

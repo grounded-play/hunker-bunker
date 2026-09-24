@@ -175,5 +175,5 @@ in `src/loadout.test.js`. Full suite green: 370 files / 3384 tests.
 
 - [x] Label and install the twelve delivered cue slots (§4).
 - [x] Remap the two runtime aliases that lack dedicated recordings (§3).
-- [ ] Replace the temporary `--comms` treatment if the artist delivers a final
+- [x] [MIGRATED] Replace the temporary `--comms` treatment if the artist delivers a final <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
   engineered pass.

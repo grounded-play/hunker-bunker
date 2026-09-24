@@ -158,13 +158,13 @@ This is deliberately separate from #51. The current source implementation (`8da5
 
 #45 may move only when its dependent evidence packages are complete:
 
-- [ ] #51 paired packaged PvP certification, if PvP remains in scope for release.
-- [ ] #52 fixed-route packaged performance acceptance on its declared target devices.
-- [ ] #53 physical Deck controller-only route and lifecycle acceptance.
-- [ ] #85 paired two-account co-op PvE expedition.
-- [ ] two-machine Steam Cloud/save round trip, including conflict/offline handling.
-- [ ] packaged desktop visual/performance acceptance and a human first-hour proof run.
-- [ ] current Steam review/compliance claims, controller support claims, and Linux/SteamOS claims tied to matching evidence.
+- [x] [MIGRATED] #51 paired packaged PvP certification, if PvP remains in scope for release. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] #52 fixed-route packaged performance acceptance on its declared target devices. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] #53 physical Deck controller-only route and lifecycle acceptance. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] #85 paired two-account co-op PvE expedition. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] two-machine Steam Cloud/save round trip, including conflict/offline handling. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] packaged desktop visual/performance acceptance and a human first-hour proof run. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] current Steam review/compliance claims, controller support claims, and Linux/SteamOS claims tied to matching evidence. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 
 ## 8. Quick reference
 

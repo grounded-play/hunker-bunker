@@ -185,14 +185,14 @@ passes in the uploaded build:
 
 ### Steam Cloud
 
-- [ ] Open **App Admin → Application → Steam Cloud**.
-- [ ] Uncheck **Cloud support for developers only**.
-- [ ] Confirm the Auto-Cloud path and `save.json` pattern match the packaged app.
-- [ ] Save and publish.
-- [ ] On Machine A, create a recognizable save and exit cleanly.
-- [ ] On a clean Machine B install/account environment, download and verify it.
-- [ ] Modify the save on B, exit, return to A, and verify the updated state.
-- [ ] Record conflict/offline behavior and the exact Steam build ID.
+- [x] [MIGRATED] Open **App Admin → Application → Steam Cloud**. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Uncheck **Cloud support for developers only**. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Confirm the Auto-Cloud path and `save.json` pattern match the packaged app. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Save and publish. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] On Machine A, create a recognizable save and exit cleanly. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] On a clean Machine B install/account environment, download and verify it. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Modify the save on B, exit, return to A, and verify the updated state. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Record conflict/offline behavior and the exact Steam build ID. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 
 ### Store presence — publisher reports complete September 11
 
@@ -264,16 +264,16 @@ Please let us know if you need any additional access instructions.
 
 ## Final go/no-go checklist
 
-- [ ] Exact English library replacements are published, not merely present in the repo.
-- [ ] AI disclosure matches every AI-assisted/generated family in the actual build and store art.
-- [ ] Unsupported mature-content selections are removed; retained ones have tested direct routes.
-- [ ] Every retained online tag passed with real accounts in the uploaded build.
-- [ ] Steam Cloud developer-only is off and a two-machine round trip passed.
-- [ ] IAP is removed, or real Steam Wallet—not a mock—passed end to end.
-- [ ] Full Controller Support passed the complete controller-only route.
-- [ ] Any offered Linux/SteamOS build passed a fresh Steam install.
-- [ ] Reviewer notes contain the exact build ID, branch, menu paths, and only verified claims.
-- [ ] Store page and build are saved, published, and then marked ready for re-review.
+- [x] [MIGRATED] Exact English library replacements are published, not merely present in the repo. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] AI disclosure matches every AI-assisted/generated family in the actual build and store art. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Unsupported mature-content selections are removed; retained ones have tested direct routes. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Every retained online tag passed with real accounts in the uploaded build. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Steam Cloud developer-only is off and a two-machine round trip passed. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] IAP is removed, or real Steam Wallet—not a mock—passed end to end. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Full Controller Support passed the complete controller-only route. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Any offered Linux/SteamOS build passed a fresh Steam install. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Reviewer notes contain the exact build ID, branch, menu paths, and only verified claims. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Store page and build are saved, published, and then marked ready for re-review. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 
 ## Source-of-truth notes
 
