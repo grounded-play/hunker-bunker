@@ -10,15 +10,21 @@ This release delivers **Phase 4 of the Invisible Essentials plan**, resolves cri
 
 ### 📋 Milestone Tickets Closed & Advanced
 
+- Closes #78
+- Closes #80
+- Closes #81
+- Closes #82
+
 | Ticket / ID | Scope & Domain | Status in this PR | Automated & Runtime Evidence |
 | :--- | :--- | :--- | :--- |
-| **#78** | **Persistence, Career Telemetry & Campaign Reset** | **Closed (Code Acceptance)** | Verified via [`src/ticket78Persistence.verification.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/ticket78Persistence.verification.test.js). Validates persistence migration, solo career stats preservation on New Campaign, and cloud save serialization. |
-| **#80** | **Fabrication Bay & 13 Curated Recipes** | **Closed (Code Acceptance)** | Verified via [`src/ticket80FabBay.verification.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/ticket80FabBay.verification.test.js). Enforces recipe atomicity, tech/salvage deductions, and catalog parity. |
-| **#81** | **Hero Selection & Class Preview Presentation** | **Closed (Code Acceptance)** | Verified via [`src/ticket81HeroSelection.verification.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/ticket81HeroSelection.verification.test.js). Validates generation-guard contracts, DPR constraints, and 3-class switching stability. |
-| **#82** | **Armory Presentation, Polish Placement & Equipment Mounts** | **Closed (Code Acceptance)** | Verified via [`src/ticket82Armory.verification.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/ticket82Armory.verification.test.js). Validates 7 equipment slots, weapon charms, matrix tints, and socket calibration. |
+| **Closes #78** | **Persistence, Career Telemetry & Campaign Reset** | **Closed (Code Acceptance)** | Verified via [`src/ticket78Persistence.verification.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/ticket78Persistence.verification.test.js). Validates persistence migration, solo career stats preservation on New Campaign, and cloud save serialization. |
+| **Closes #80** | **Fabrication Bay & 13 Curated Recipes** | **Closed (Code Acceptance)** | Verified via [`src/ticket80FabBay.verification.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/ticket80FabBay.verification.test.js). Enforces recipe atomicity, tech/salvage deductions, and catalog parity. |
+| **Closes #81** | **Hero Selection & Class Preview Presentation** | **Closed (Code Acceptance)** | Verified via [`src/ticket81HeroSelection.verification.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/ticket81HeroSelection.verification.test.js). Validates generation-guard contracts, DPR constraints, and 3-class switching stability. |
+| **Closes #82** | **Armory Presentation, Polish Placement & Equipment Mounts** | **Closed (Code Acceptance)** | Verified via [`src/ticket82Armory.verification.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/ticket82Armory.verification.test.js). Validates 7 equipment slots, weapon charms, matrix tints, and socket calibration. |
 | **#85** | **Two-Account Co-op PvE Expedition & Networked State** | **Advanced & Hardened (Hardware Evidence)** | First physical proof captured on packaged Steam build across two accounts (Deck host + PC guest; `mug11pto` / `mug11v9w`). Closes major networking divergence gaps: deaths, black box recovery, power-up loot drops, and prop destruction. |
 | **PLAN-HUD-MAP** | **Minimap Progressive Radar Reveal, Dissipation & Fog of War** | **Closed (Full Implementation)** | Closes instant-reveal and line truncation defects. Implements progressive wavefront reveal, 400ms dissipation tail with quadratic fade-off, minimap bezel mask, and high-contrast tactical CRT Fog of War pattern (`05c4300`). |
 | **PLAN-TERMINAL-CYCLE** | **Terminal Day-Cycle Legibility, Live Clock & Advance Day Status** | **Closed (Full Implementation)** | Closes frozen/broken day cycle UI report. Implements reachable terminal modal refresh in render loop, 'CYCLE HOLD — TERMINAL ACTIVE' header readout, unified presentation view-model (`formatDayCycleViewModel`), cached journal signatures, `CAMPAIGN STATE` labeling, 24h progress bar, and truthful `ADVANCE DAY` card across all 7 locales (`0a3caf6`). |
+| **PLAN-CI-LIGHTHOUSE** | **Lighthouse CI Timeout & PAGE_HUNG Resolution** | **Closed (Full Implementation)** | Resolves CI failure on GitHub Actions. Configures desktop preset, modern headless flags (`--headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage`), Lighthouse agent detection in boot flow, and cutscene guard timeout (`c030269`). |
 | **QA-P0-SPAWN** | **Spawn Void Pit Fall Fatalities** | **Closed (Defect Resolved)** | Resolves instant void falls on spawn. Edges within 24m of spawn now block movement rather than killing (`7480bd9`). |
 | **QA-P1-MAP-RULE**| **Map & Story Persistence Across Retries** | **Closed (Rule Enforced)** | Enforces owner's lifecycle contract: `TRY AGAIN` preserves current map and destroyed walls; `MAIN MENU` regenerates a fresh map. Co-op and PvP runs play a fresh story without mutating the solo campaign (`caf5816`, `d3ec634`, `de61860`, `a8d45ad`). |
 
@@ -33,6 +39,8 @@ In addition, this PR completes the **Master Repository TODO Tree Audit**:
 
 | Commit | Category | Description |
 | :--- | :--- | :--- |
+| `c030269` | fix(ci) | Resolve Lighthouse CI timeout and PAGE_HUNG in GitHub Actions |
+| `c39da5d` | docs(release) | Record PLAN-TERMINAL-CYCLE closure in PR description |
 | `0a3caf6` | fix(terminal) | Make bunker tactical terminal day-cycle live and legible |
 | `05c4300` | feat(map) | Progressive radar scan wavefront reveal, edge dissipation fade-off, and clear fog of war |
 | `a8d45ad` | test(e2e) | Run-maps probe — TRY AGAIN keeps the map, MAIN MENU gets a new one |
