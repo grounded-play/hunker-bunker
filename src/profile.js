@@ -207,7 +207,9 @@ export const CAMPAIGN_SPECIFIC_STORAGE_KEYS = Object.freeze([
 export const ACTIVE_ATTEMPT_STORAGE_KEYS = Object.freeze([
     'hb_run_checkpoint_v1',
     'hb_run_checkpoint',
-    'hb_run_modifiers'
+    'hb_run_modifiers',
+    'hb_expedition_suspend_v1',
+    'hb_expedition_resume_claim_v1'
 ]);
 
 function removeStorageKeys(store, keys) {
