@@ -27,6 +27,7 @@ Three agents work this plan on `dev/sprint-47` at once. Claim a phase here, in a
 | 2 — Comfort and pressure controls | Gemini Antigravity (committed in `e511e8e`) | 2026-09-24 |
 | 3 — Legible death and continuation | Claude (committed in `608d2be`, `fe8b7b2`) | 2026-09-24 |
 | 4 — Navigation friction and return network | Gemini Antigravity | 2026-09-24 |
+| 6 — In-expedition build decisions | Claude | 2026-09-24 |
 
 ---
 
