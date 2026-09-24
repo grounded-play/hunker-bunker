@@ -9170,6 +9170,9 @@ function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapsho
         window.game.fixedRunEntropy = false;
         window.game.globalSeedOffset = 0;
         if (resumeSnapshot && !window.game.prepareExpeditionResume?.(resumeSnapshot)) return false;
+        // A run started from the menu plays a new map with the story carried
+        // over; TRY AGAIN (which does not come through here) keeps its map.
+        if (!resumeSnapshot) window.game.beginNewCampaignRun?.();
     }
     // Hold one continuous black/simulation barrier from the menu close,
     // through world warm-up and the authored intro, to the final door reveal.

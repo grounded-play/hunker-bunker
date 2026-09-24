@@ -30,7 +30,7 @@ afterEach(() => {
 });
 
 const METHODS = [
-    'beginCampaignExpedition', 'persistCampaignWorld', 'getMazePersistenceState',
+    'beginCampaignExpedition', 'isCampaignMap', 'persistCampaignWorld', 'getMazePersistenceState',
     'restoreMazePersistenceState', 'getRadialMazePlan', 'getRadialLayoutSignature',
     'ensureAuthoredWorldPlan', 'getBuiltGoalKeys', 'completeRingCrossingMission',
     'reconcileAuthoredWorldProgression', 'applyMilestoneBossRuntimeEvent', 'getAuthoredSitePosition',

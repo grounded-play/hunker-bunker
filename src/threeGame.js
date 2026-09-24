@@ -15754,7 +15754,7 @@ export class ThreeGame {
                     layoutVersion: this.getRouteLayoutVersion?.() ?? ROUTE_LAYOUT_VERSION
                 });
                 signature = this.getRadialLayoutSignature(candidate);
-                if (this.fixedRunEntropy || this._campaignWorldSeed === this.runEntropy
+                if (this.fixedRunEntropy || this.isCampaignMap?.()
                     || signature !== this._previousRadialLayoutSignature) break;
                 this.runEntropy = createFreshRunEntropy(this.runEntropy);
             }
@@ -36538,10 +36538,24 @@ export class ThreeGame {
         return showroom;
     }
 
+    // Whether this run is on the solo campaign's current map.
+    isCampaignMap() {
+        return this._campaignWorldSeed != null
+            && ((this._campaignMapSeed ?? this._campaignWorldSeed) >>> 0) === ((this.runEntropy ?? -1) >>> 0);
+    }
+
+    // A solo run started from the menu gets a new map; the story carries over
+    // (campaignWorldStore.beginNewRun). TRY AGAIN does not come through here.
+    beginNewCampaignRun() {
+        if (this.fixedRunEntropy || this.isMultiplayer) return null;
+        return campaignWorldStore.beginNewRun?.() ?? null;
+    }
+
     beginCampaignExpedition() {
         if (this.performanceProfile === 'menu') return null;
         if (this.fixedRunEntropy || this.isMultiplayer) {
             this._campaignWorldSeed = null;
+            this._campaignMapSeed = null;
             this._campaignProgressRestored = false;
             this.expeditionIndex = 0;
             this.expeditionSeed = (Number(this.globalSeedOffset) >>> 0);
@@ -36555,8 +36569,9 @@ export class ThreeGame {
             && savedCampaign.expeditionSeed === resume.expedition.expeditionSeed
             && savedCampaign.expeditionIndex === resume.expedition.expeditionIndex) {
             this._campaignWorldSeed = savedCampaign.seed;
+            this._campaignMapSeed = savedCampaign.mapSeed ?? savedCampaign.seed;
             this._campaignProgressRestored = true;
-            this.runEntropy = savedCampaign.seed;
+            this.runEntropy = this._campaignMapSeed;
             this.expeditionIndex = savedCampaign.expeditionIndex;
             this.expeditionSeed = savedCampaign.expeditionSeed;
             this.setActiveExpedition?.(resume.expedition.profile ?? savedCampaign.activeExpedition);
@@ -36565,9 +36580,11 @@ export class ThreeGame {
         this.persistCampaignWorld?.();
         const campaign = campaignWorldStore.beginExpedition();
         this._campaignWorldSeed = campaign.seed;
+        // The map belongs to the run (campaignWorldStore.beginNewRun).
+        this._campaignMapSeed = campaign.mapSeed ?? campaign.seed;
         this._campaignProgressRestored = false;
         this._restoredAuthoredWorldIdentity = null;
-        this.runEntropy = campaign.seed;
+        this.runEntropy = this._campaignMapSeed;
         this.expeditionIndex = campaign.expeditionIndex;
         this.expeditionSeed = campaign.expeditionSeed;
         this.setActiveExpedition?.(campaign.activeExpedition
@@ -36585,7 +36602,9 @@ export class ThreeGame {
         const bountyEligible = isCampaignBountyProfile({
             profile: this.activeExpedition,
             campaignWorldSeed: this._campaignWorldSeed,
-            runEntropy: this.runEntropy,
+            // The run's map seed differs from the campaign seed once maps are
+            // per run; being on the campaign's current map is what counts.
+            runEntropy: this.isCampaignMap?.() ? this._campaignWorldSeed : this.runEntropy,
             fixedRunEntropy: this.fixedRunEntropy,
             isMultiplayer: this.isMultiplayer
         });
@@ -37226,7 +37245,7 @@ export class ThreeGame {
 
     persistCampaignWorld() {
         if (this.fixedRunEntropy || this.isMultiplayer || !this._campaignProgressRestored
-            || this._campaignWorldSeed !== this.runEntropy || this.globalSeedOffset) return false;
+            || !this.isCampaignMap?.() || this.globalSeedOffset) return false;
         // A title-screen NEW CAMPAIGN or imported save may replace storage
         // while this renderer still exists. Never write the previous world
         // into that new campaign, nor create a save just by idling in menus.
