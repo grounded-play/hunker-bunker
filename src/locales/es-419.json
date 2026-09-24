@@ -1667,6 +1667,7 @@
         "bypassed": "Derivación completa. La bóveda se abre en silencio.",
         "report_bypassed": "Abriste la bóveda de chatarra con una derivación",
         "report_breached": "Forzaste la bóveda de chatarra y la defendiste",
+        "report_breached_quiet": "Forzaste la bóveda de chatarra; ningún defensor respondió",
         "report_left": "Dejaste la bóveda de chatarra sellada",
         "response_breach": "Toma la recompensa ya; los defensores despiertan.",
         "response_bypass": "Quédate {seconds} s en la cerradura. Sin combate, pero tu oxígeno baja más rápido.",

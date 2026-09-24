@@ -1667,6 +1667,7 @@
         "bypassed": "Desvio concluído. O cofre se abre em silêncio.",
         "report_bypassed": "Abriu o cofre de sucata por desvio",
         "report_breached": "Arrombou o cofre de sucata e o defendeu",
+        "report_breached_quiet": "Arrombou o cofre de sucata; nenhum defensor apareceu",
         "report_left": "Deixou o cofre de sucata lacrado",
         "response_breach": "Pegue a recompensa agora; os defensores acordam.",
         "response_bypass": "Fique {seconds} s na fechadura. Sem combate, mas seu oxigênio cai mais rápido.",

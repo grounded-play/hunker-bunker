@@ -1667,6 +1667,7 @@
         "bypassed": "Umgehung abgeschlossen. Der Tresor öffnet sich leise.",
         "report_bypassed": "Den Bergungstresor per Umgehung geöffnet",
         "report_breached": "Den Bergungstresor aufgebrochen und gehalten",
+        "report_breached_quiet": "Den Bergungstresor aufgebrochen; keine Verteidiger kamen",
         "report_left": "Den Bergungstresor verschlossen gelassen",
         "response_breach": "Nimm die Belohnung sofort; die Verteidiger erwachen.",
         "response_bypass": "Bleib {seconds} s am Schloss. Kein Kampf, aber dein Sauerstoff sinkt schneller.",

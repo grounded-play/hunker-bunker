@@ -75,6 +75,7 @@ export const EVENT_TEXT_KEYS = Object.freeze({
         bypassed: 'ui.events.unstable_vault.bypassed',
         report_bypassed: 'ui.events.unstable_vault.report_bypassed',
         report_breached: 'ui.events.unstable_vault.report_breached',
+        report_breached_quiet: 'ui.events.unstable_vault.report_breached_quiet',
         report_left: 'ui.events.unstable_vault.report_left',
         response_breach: 'ui.events.unstable_vault.response_breach',
         response_bypass: 'ui.events.unstable_vault.response_bypass',
@@ -196,9 +197,15 @@ export function applyEventAction(plan, state, action = {}) {
         return { state: { ...state, phase: 'resolved', response: 'leave', outcome: 'left' }, effects: [{ kind: 'report', item: { kind: 'event', labelKey: EVENT_TEXT_KEYS[plan.eventId].report_left } }] };
     }
     // The fight could not start (no encounter recipe registered, or nothing
-    // spawned). The vault's reward was already taken; the bait pays nothing.
+    // spawned). The vault's reward was already taken, and the report says no
+    // defenders came rather than claiming a fight was held; the bait pays nothing.
     if (type === 'encounter_unavailable' && state.phase === 'engaged') {
-        if (plan.eventId === 'unstable_vault') return applyEventAction(plan, state, { type: 'encounter_cleared' });
+        if (plan.eventId === 'unstable_vault') {
+            return {
+                state: { ...state, phase: 'resolved', outcome: 'breach_unopposed' },
+                effects: [{ kind: 'report', item: { kind: 'event', labelKey: EVENT_TEXT_KEYS.unstable_vault.report_breached_quiet } }]
+            };
+        }
         return {
             state: { ...state, phase: 'resolved', outcome: 'ambush_empty' },
             effects: [{ kind: 'report', item: { kind: 'event', labelKey: 'ui.events.false_distress.report_empty' } }]

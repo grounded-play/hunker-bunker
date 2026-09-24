@@ -516,11 +516,11 @@ Checked against each lane's goal prompt on `dev/sprint-47`. Every claim below wa
 |---|---|---|
 | `src/expeditionEvents.js`: False Distress Signal, Unstable Salvage Vault, ≥2 responses, condition variants | Done | scan/open/leave and breach/bypass/leave; bait vs survivor, signal clarity, recipe and bypass time vary by condition — `src/expeditionEvents.test.js` |
 | Repetition guard (condition and event) | Done | `continueExpeditionProfile`; 6 campaigns × 12 deployments never repeat — `src/expeditionSystem.test.js` |
-| Signal at 1:00–3:00 as a visible optional route beside the ship goal | Done in code; seen in probe | Signal 60–150 s. Slice probe (after, 8 of 9 runs at time of writing): route chip shown every run, and the two tracker cards remain the mission and the ship-goal option |
+| Signal at 1:00–3:00 as a visible optional route beside the ship goal | Done; seen in probe | Signal 60–150 s. Slice probe, after 9/9: route chip shown every run; the two tracker cards stay the mission and the ship-goal option |
 | Fights only via `spawnEncounterRecipe`, rewards only via `grantRunDrop` | Done; degrades honestly | `src/sliceContracts.js`. Without a registered contract the game says so (`slice-contract-missing`, "component lost", an empty ambush pays nothing) — `src/threeGame.expeditionEvents.test.js` |
 | `expedition-report-item` rendered from all lanes | Done | kinds settlement / event / discovery / unlock / faction / lead, lead after the ship goal — `src/expeditionReport.test.js` |
-| Slice probes, 3 seeds × 3 classes, before/after | Before done (9/9, `030d773`); after in progress on `e1d47fd`; integrated after pending | `tests/e2e/probes/slice.spec.js`; the integrated run waits on Lanes 2/3 being committed and imported |
-| Slice report (observed vs assumed) | Pending | follows the integrated run |
+| Slice probes, 3 seeds × 3 classes, before/after | Before 9/9 (`030d773`), after 9/9 (`e1d47fd`); **integrated run pending** | `tests/e2e/probes/slice.spec.js`; raw output and screenshots in `docs/reports/assets/sprint-47/`. No fight or drop happened in-game yet (no Lane 2/3 contract at runtime), so the per-class build comparison has no in-game data |
+| Slice report (observed vs assumed) | Done for Lane 1; extended after the integrated run | [sprint-47-ring1-slice-2026-09-24.md](../reports/sprint-47-ring1-slice-2026-09-24.md). It found an unopposed vault breach reported as a held fight (fixed) and a probe teleport that completed the 31337 mission (flagged as an artefact) |
 
 **Lane 2 — Codex (uncommitted)**
 

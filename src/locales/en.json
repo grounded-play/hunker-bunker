@@ -1667,6 +1667,7 @@
         "bypassed": "Bypass complete. The vault opens quietly.",
         "report_bypassed": "Opened the salvage vault by bypass",
         "report_breached": "Breached the salvage vault and held it",
+        "report_breached_quiet": "Breached the salvage vault; no defenders answered",
         "report_left": "Left the salvage vault sealed",
         "response_breach": "Take the reward now; the defenders wake.",
         "response_bypass": "Stay {seconds}s at the lock. No fight, but your oxygen drains faster.",

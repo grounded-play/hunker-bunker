@@ -1667,6 +1667,7 @@
         "bypassed": "旁路完成。保险库悄然打开。",
         "report_bypassed": "通过旁路打开了打捞保险库",
         "report_breached": "强行突破打捞保险库并守住了它",
+        "report_breached_quiet": "强行突破了打捞保险库；没有守卫出现",
         "report_left": "没有打开打捞保险库",
         "response_breach": "立刻拿走奖励；守卫会醒来。",
         "response_bypass": "在锁旁停留{seconds}秒。不用战斗，但氧气消耗更快。",

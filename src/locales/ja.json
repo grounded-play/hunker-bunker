@@ -1667,6 +1667,7 @@
         "bypassed": "バイパス完了。金庫が静かに開く。",
         "report_bypassed": "バイパスでサルベージ金庫を開けた",
         "report_breached": "サルベージ金庫を突破し、守り抜いた",
+        "report_breached_quiet": "サルベージ金庫を突破した。守護者は現れなかった",
         "report_left": "サルベージ金庫を封鎖したまま残した",
         "response_breach": "今すぐ報酬を取る。守護者が目覚める。",
         "response_bypass": "ロックに{seconds}秒とどまる。戦闘なし、ただし酸素の減りが速い。",

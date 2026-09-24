@@ -156,7 +156,8 @@ describe('when no fight can start', () => {
 
         const vault = planDeploymentEvent({ expeditionSeed: 11, conditionId: 'glacial_gale', eventId: 'unstable_vault', worldPlan });
         const breached = run(vault, [{ type: 'signal' }, { type: 'breach' }, { type: 'encounter_unavailable' }]);
-        expect(breached.state.outcome).toBe('breach_held');
+        expect(breached.state.outcome).toBe('breach_unopposed');
+        expect(breached.effects.at(-1).item.labelKey).toBe('ui.events.unstable_vault.report_breached_quiet');
         expect(breached.kinds.filter((kind) => kind === 'grant')).toHaveLength(1);
     });
 
