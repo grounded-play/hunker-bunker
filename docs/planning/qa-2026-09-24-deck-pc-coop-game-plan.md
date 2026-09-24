@@ -19,6 +19,14 @@ The `logs/` directory is git-ignored; the numbers below are quoted from the logs
 
 **What the session proves:** two separate Steam accounts joined one relay room, readied, deployed together, saw each other's 3D avatars and redeployed after death on packaged builds — the first real evidence for the two-account co-op gate. No errors were logged on either machine. The leaderboard accepted the co-op run payload.
 
+## Claims
+
+Several agents work this plan at once. Claim an item here, in a commit, before editing its files; `git status` before every edit.
+
+| Item | Owner | Since |
+|---|---|---|
+| Everything networked (co-op deaths, black boxes, power-up drops, props, world state across TRY AGAIN) | Claude | 2026-09-24 |
+
 ## Findings
 
 ### P0 — Frame rate on the Deck (confirmed)
