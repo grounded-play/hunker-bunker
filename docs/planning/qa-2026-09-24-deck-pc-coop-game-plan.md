@@ -52,7 +52,9 @@ Plan: replicate death/downed state to the remote avatar (pose + black-box marker
 - **Big square rooms with no hallways:** 15 of 62 generated chunks are "canyon" chunks that are entirely floor (2,030–2,049 floor tiles, 0 walls, **0 portals**) — three of them surround spawn. Another 23 maze chunks use the `large-room` architecture.
 - **No camps:** in 62 minutes there is no camp contact, discovery or quest event; only camp props were broken (crates, sandbags at z 33–66).
 
-Plan: decide the rule (question 1); make co-op sessions draw a fresh layout per deployment; replace all-floor canyon chunks near spawn with rooms joined by corridors (portals on every chunk edge that has a route); grow Ring 1 so the first route has somewhere to go; guarantee a camp within reach of Ring 1 and log camp discovery. Acceptance: three co-op deployments in one room produce three different spawn neighbourhoods; no chunk within 2 of spawn has zero portals.
+**Owner's rule (2026-09-24):** after a death, **TRY AGAIN keeps the same map** — right there, with its changes; **MAIN MENU resets the run**, and the next deployment gets a new map. Against the logs: the co-op TRY AGAIN kept the same map (as intended) but restored the destroyed walls (not intended); the Deck's first solo death → MAIN MENU → next deployment produced the **same** spawn neighbourhood (not intended). The cause is a design decision, not a glitch: solo geography is keyed to the campaign (`campaignWorld.js`, route layout per campaign), and only New Campaign changes it. This rule replaces that: the map belongs to the run, not the campaign.
+
+Plan: key the layout to the run — TRY AGAIN reuses the run's seed and saved maze state, MAIN MENU (and a fresh co-op session) draws a new one; keep campaign progress (bank, goals, unlocks) separate from geography; replace all-floor canyon chunks near spawn with rooms joined by corridors (portals on every chunk edge that has a route); grow Ring 1 so the first route has somewhere to go; guarantee a camp within reach of Ring 1 and log camp discovery. Acceptance: three co-op deployments in one room produce three different spawn neighbourhoods; no chunk within 2 of spawn has zero portals.
 
 ### P1 — Co-op does not start fresh (reported; not in the logs)
 
@@ -64,7 +66,9 @@ Plan: a co-op session starts from a clean shared state; solo campaign progress i
 
 The logs record wall damage and destruction (`wall:destroy` 18×) but nothing about persistence. In co-op the redeploy regenerates the identical world (above), which would restore walls; the solo campaign saves maze state, co-op does not.
 
-Plan: decide whether co-op world changes persist within a session (question 2); if so, keep host-authoritative maze state across redeploys in the same room.
+Owner's rule: TRY AGAIN continues the same map, so destroyed walls and opened routes must stay destroyed on a retry, in solo and co-op (host-authoritative in co-op); MAIN MENU starts over with a new map.
+
+Plan: carry the run's maze state across TRY AGAIN (co-op: the host's state, sent to the guest on redeploy); clear it on MAIN MENU. Acceptance: break a wall, die, TRY AGAIN — the wall is still broken on both machines; die, MAIN MENU, deploy — a different map.
 
 ### P1 — Steam Vault trade-up does not stick (partly confirmed)
 
@@ -90,8 +94,8 @@ Remote death/downed, black-box ownership, wall persistence, smelt results, fabri
 
 ## Questions for the owner
 
-1. **Map variety.** Solo campaigns keep one geography per campaign on purpose (only conditions change). Should each deployment draw a new layout, or should the campaign keep its world and just vary more of it?
-2. **Co-op persistence.** Within one co-op session, should destroyed walls and opened routes stay destroyed after a death?
+1. ~~Map variety~~ — **answered:** TRY AGAIN keeps the map; MAIN MENU resets the run and the map.
+2. ~~Co-op persistence~~ — **answered:** on TRY AGAIN the map continues, so destroyed walls stay destroyed; MAIN MENU starts fresh.
 3. **Co-op fresh start.** Where did Camp Meridian and the power-ups show up — mission text, run cards, the HUD, or on the map?
 4. **Foundry.** Which models looked old, and which output did not match? A screenshot would pin it. Is "trade in / trade up" the Steam Vault smelter (the logs point there)?
 5. **Invisible models.** Which objects, in which rooms?
