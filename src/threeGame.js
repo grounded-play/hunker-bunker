@@ -448,6 +448,7 @@ import { chooseNextAction, describeDeathCause, describeFieldLoss, summarizeBuild
 import { GOAL_NAME_KEYS } from './expeditionReport.js';
 import { EVENT_ROUTE_KEYS, EVENT_TEXT_KEYS, EVENT_TUNING, applyEventAction, createEventState, planDeploymentEvent, selectDeploymentEvent } from './expeditionEvents.js';
 import { callSliceContract } from './sliceContracts.js';
+import { registerStoryManager } from './storyScope.js';
 import './encounterRecipes.js';
 import {
     COOP_ROLE,
@@ -1811,6 +1812,8 @@ export class ThreeGame {
         // radius as the player travels can't dispose of one mid-follow.
         this.companions = [];
         this.wandererManager = new WandererManager();
+        // Recruited companions are story: fresh in co-op/PvP (src/storyScope.js).
+        registerStoryManager(this.wandererManager);
         this.activeWanderer = null;
         this.activeWanderer3d = null;
         this._wandererPromptLabel = null;

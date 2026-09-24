@@ -38,6 +38,7 @@ import { nextSeasonExpedition } from './src/data/seasonOneExpeditions.js';
 import { DIALOGUE_LINES, getDialogueLine } from './src/data/dialogueLines.js';
 import { MOTHERSHIP_REACTIVE_LINES } from './src/data/lineDirectorPools.js';
 import { ArcStateManager } from './src/arcState.js';
+import { registerStoryManager } from './src/storyScope.js';
 import { CaveRevealController } from './src/caveReveal.js';
 import { Act2Manager, ACT2_LINES, getAct2EndingLines, pickAct2Ending, buildAct2Manifest, resolveEndingCutscene } from './src/act2.js';
 import { isDemoBuild, isGoreEnabled, setGoreEnabled } from './src/featureFlags.js';
@@ -2916,6 +2917,9 @@ let cutsceneManager = null;
 let dialogueManager = null;
 const arcManager = new ArcStateManager();
 const act2Manager = new Act2Manager();
+// Co-op/PvP runs swap these to a fresh session story (src/storyScope.js).
+registerStoryManager(arcManager);
+registerStoryManager(act2Manager);
 let missionFlowRunning = false;
 let isResettingRun = false;
 
@@ -11505,6 +11509,7 @@ function setupNpcDialogueEvents() {
     window.NPC_DIALOGUE_TREES = NPC_DIALOGUE_TREES;
     window.npcDialogueTreeManager = npcDialogueTreeManager;
     window.sideStoryManager = sideStoryManager;
+    registerStoryManager(sideStoryManager);
     window.SIDE_STORIES_CONFIG = SIDE_STORIES_CONFIG;
     window.SIDE_STORY_STATUS = SIDE_STORY_STATUS;
 }
