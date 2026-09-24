@@ -58,6 +58,20 @@ What is **not** shared — each machine does it on its own:
 | Companions | local only | Meridian stuck on one screen |
 | Ring 1 events, arrival fight, reward cache, bounty | solo-only by design (Sprint 46/47) | — |
 
+**Status (Claude, 2026-09-24):**
+
+| Gap | Fix | Commit |
+|---|---|---|
+| Deaths other than downed | every co-op death announces `player-died`; the partner sees the body down where it fell with its black box; TRY AGAIN announces `player-redeployed` | `39a7375` |
+| Black box ownership | recoveries carry the owner; a squadmate's recovery no longer wipes ours | `39a7375` |
+| Power-up drops | only the host rolls (`dropLootForKill`); `loot-drop-spawned` / `loot-drop-collected` | `39a7375` |
+| Relay dropping events in busy fights | streamed effects (projectiles, radio lines) get their own 40/s budget; state events 20/s (was 8/s shared) | `39a7375` |
+| World state across TRY AGAIN | a co-op death keeps the run's world changes; a retry in the same room restores them; MAIN MENU clears them | `42c4bbc` |
+| Props and their drops | the breaker rolls once and announces `prop-broken` with each drop; the partner breaks the same prop with identical drops and shared pickup ids | `42c4bbc` |
+| Solo companion in co-op | co-op starts without the solo profile's companion (companions stay solo until networked) | `1dd8056` |
+
+All covered by unit and relay tests (`src/threeGame.coopNetworkedState.test.js`, `server/relaySharedWorldEvents.test.js`); **none is verified on two real machines yet** — the next Deck + PC session should confirm each row. Still open: networked companions; the Sprint 46/47 solo-only systems (Ring 1 events, arrival fight, reward cache, bounty) made host-authoritative instead of solo-only; a two-client probe that diffs both worlds.
+
 Plan: one rule for co-op — **the host decides, everyone sees it.** Anything random that changes the world (drops, props, companions, events) is rolled on the host and broadcast; guests render it. Route every death through a relayed state (not only downed); black boxes carry their owner. Make the Sprint 46/47 solo-only systems host-authoritative instead of solo-only. Add a relay test per event type and a two-client probe that compares both clients' world after a scripted sequence (kill with a drop, break a prop, pit-fall, TRY AGAIN) and fails on any difference.
 
 ### P0 — Co-op spawns next to a lethal pit (confirmed)
