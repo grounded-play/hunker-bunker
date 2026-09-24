@@ -5840,7 +5840,7 @@ export class ThreeGame {
         this.resolveCoopSquadWipe?.();
     }
 
-    showRemotePlayerDeathMarker(remote) {
+    showRemotePlayerDeathMarker(remote, { keepBody = false } = {}) {
         if (!remote?.mesh?.position || remote.deathMarker) return remote?.deathMarker ?? null;
         const { x, z } = remote.mesh.position;
         if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
@@ -5850,7 +5850,8 @@ export class ThreeGame {
         marker.userData.remotePlayerId = remote.id;
         this.scene?.add?.(marker);
         remote.deathMarker = marker;
-        remote.mesh.visible = false;
+        // PvP removes the rival; co-op keeps the downed body beside the box.
+        if (!keepBody) remote.mesh.visible = false;
         return marker;
     }
 
@@ -6143,7 +6144,11 @@ export class ThreeGame {
         } else if (event === 'maze-access-granted') {
             dedupeKey = `${event}:${detail.sourceId ?? detail.requirement?.id ?? detail.requirement?.type ?? ''}`;
         } else if (event === 'black-box-recovered') {
-            dedupeKey = `${event}:${detail.recovered?.recoveredAt ?? 'active'}`;
+            dedupeKey = `${event}:${detail.ownerId ?? ''}:${detail.recovered?.timestamp ?? detail.recovered?.recoveredAt ?? 'active'}`;
+        } else if (event === 'player-died' || event === 'player-redeployed') {
+            dedupeKey = `${event}:${detail.playerId}:${detail.seq}`;
+        } else if (event === 'loot-drop-spawned' || event === 'loot-drop-collected') {
+            dedupeKey = `${event}:${detail.dropId}`;
         } else if (event === 'lore-terminal-read') {
             dedupeKey = `${event}:${detail.loreKey}`;
         } else {
@@ -6238,10 +6243,24 @@ export class ThreeGame {
                 }
             }
         } else if (event === 'black-box-recovered') {
-            this.clearBlackBoxMarker?.();
-            this._blackBoxState = null;
+            // Every operator has their own black box. A squadmate recovering
+            // theirs must not wipe ours (the 2026-09-24 Deck + PC session: the
+            // guest's recovery cleared the host's box).
+            if (detail.ownerId && detail.ownerId === this.multiplayerLocalPlayerId) {
+                this.clearBlackBoxMarker?.();
+                this._blackBoxState = null;
+            }
+            this.clearRemotePlayerDeathMarker?.(this.remotePlayers?.get(detail.ownerId));
             this.arcManager?.recordSignal?.({ blackBoxesRecovered: 1 });
             this.arcManager?.evaluate?.();
+        } else if (event === 'player-died') {
+            this.applyRemotePlayerDeath(detail);
+        } else if (event === 'player-redeployed') {
+            this.applyRemotePlayerRedeploy(detail);
+        } else if (event === 'loot-drop-spawned') {
+            this.applyRemoteLootDrop(detail);
+        } else if (event === 'loot-drop-collected') {
+            this.removeLootDrop(detail.dropId);
         } else if (event === COOP_TRANSITION_EVENTS.MILESTONE_DEFEATED) {
             this.applyRemoteMilestoneDefeat(detail);
         } else if (event === COOP_TRANSITION_EVENTS.ELEVATOR_DESCENDED) {
@@ -6345,6 +6364,82 @@ export class ThreeGame {
             applied += 1;
         }
         return applied > 0;
+    }
+
+    // In co-op only the host rolls: each client rolling its own dice gave the
+    // two players different power-ups (2026-09-24 QA). The host announces the
+    // drop and the guest renders that one (applyRemoteLootDrop).
+    dropLootForKill(sprite, { isElite = false, isBoss = false } = {}) {
+        const role = coopRole(this);
+        if (role === COOP_ROLE.GUEST) return null;
+        const drop = rollEnemyLootDrop(Math.random, {
+            isElite,
+            isBoss,
+            ring: (this.currentDepthTier ?? 0) + 1 + Math.max(0, this.loadoutMods?.relicRarityTierBonus ?? 0),
+            excludedIds: [
+                ...(this.loadoutMods?.duplicateRelicsToShards ? [] : [...(this.runOverclocks ?? []), ...(this.runRelics ?? [])]),
+                ...(this.inRunLootDrops ?? []).map((pickup) => pickup.userData.item)
+            ].map((item) => item.id)
+        });
+        if (!drop) return null;
+        const x = sprite.position?.x ?? 0;
+        const z = sprite.position?.z ?? 0;
+        const mesh = this.spawnPhysicalLootDrop?.(x, z, drop);
+        if (role === COOP_ROLE.HOST) {
+            this._lootDropSeq = (this._lootDropSeq ?? 0) + 1;
+            const dropId = `${this.multiplayerLocalPlayerId ?? 'host'}:${this._lootDropSeq}`;
+            if (mesh?.userData) mesh.userData.lootDropId = dropId;
+            this.broadcastSharedWorldEvent?.('loot-drop-spawned', { dropId, itemId: drop.id, x, z });
+        }
+        return drop;
+    }
+
+    // A squadmate died (any cause): their body goes down where it fell and
+    // their black box shows there, instead of a standing operator.
+    applyRemotePlayerDeath(detail = {}) {
+        const remote = this.remotePlayers?.get(detail.playerId);
+        if (!remote) return false;
+        remote.isDown = true;
+        remote.hp = 0;
+        if (remote.mesh?.position && Number.isFinite(detail.x) && Number.isFinite(detail.z)) {
+            remote.mesh.position.x = detail.x;
+            remote.mesh.position.z = detail.z;
+        }
+        remote.overlay?.setDowned?.(true);
+        this.showRemotePlayerDeathMarker?.(remote, { keepBody: true });
+        window.showToastNotification?.(`SQUADMATE LOST: ${remote.callsign ?? ''}`.trim());
+        window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+        debugLog.info('MULTIPLAYER', 'remote-player-died', { playerId: detail.playerId, reason: detail.reason ?? null, x: detail.x, z: detail.z });
+        return true;
+    }
+
+    applyRemotePlayerRedeploy(detail = {}) {
+        const remote = this.remotePlayers?.get(detail.playerId);
+        if (!remote) return false;
+        remote.isDown = false;
+        remote.hp = remote.maxHp ?? remote.hp;
+        remote.overlay?.setDowned?.(false);
+        this.clearRemotePlayerDeathMarker?.(remote);
+        debugLog.info('MULTIPLAYER', 'remote-player-redeployed', { playerId: detail.playerId });
+        return true;
+    }
+
+    // The host's drop, rendered here; nothing is rolled on a guest.
+    applyRemoteLootDrop(detail = {}) {
+        const item = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS].find((entry) => entry.id === detail.itemId);
+        if (!item || !Number.isFinite(detail.x) || !Number.isFinite(detail.z)) return false;
+        if ((this.inRunLootDrops ?? []).some((mesh) => mesh.userData?.lootDropId === detail.dropId)) return false;
+        const mesh = this.spawnPhysicalLootDrop?.(detail.x, detail.z, item);
+        if (mesh?.userData) mesh.userData.lootDropId = detail.dropId;
+        return Boolean(mesh);
+    }
+
+    removeLootDrop(dropId) {
+        const index = (this.inRunLootDrops ?? []).findIndex((mesh) => mesh.userData?.lootDropId === dropId);
+        if (index < 0) return false;
+        const [mesh] = this.inRunLootDrops.splice(index, 1);
+        disposeExpeditionEffect(mesh);
+        return true;
     }
 
     removeRemotePlayer(id) {
@@ -10258,7 +10353,7 @@ export class ThreeGame {
         this.arcManager?.recordSignal?.({ blackBoxesRecovered: 1 });
         this.arcManager?.evaluate?.();
         if (this.isMultiplayer) {
-            this.broadcastSharedWorldEvent?.('black-box-recovered', { recovered });
+            this.broadcastSharedWorldEvent?.('black-box-recovered', { recovered, ownerId: this.multiplayerLocalPlayerId ?? null });
         }
         window.dispatchEvent(new CustomEvent('black-box-recovered', { detail: recovered }));
         return true;
@@ -21422,6 +21517,20 @@ export class ThreeGame {
             });
             this._blackBoxState = blackBoxState;
         }
+        // Every co-op death, not only being downed, reaches the squad: a
+        // pit-fall comes straight here, and the partner used to keep seeing a
+        // standing operator.
+        if (coopRole(this) !== COOP_ROLE.SOLO) {
+            this._coopLifeSeq = (this._coopLifeSeq ?? 0) + 1;
+            this.broadcastSharedWorldEvent?.('player-died', {
+                playerId: this.multiplayerLocalPlayerId ?? null,
+                seq: this._coopLifeSeq,
+                x: this.player?.position?.x ?? 0,
+                z: this.player?.position?.z ?? 0,
+                reason,
+                classType: this.playerType
+            });
+        }
         this.showBunkerLine(
             getDialogueLine('death', Math.random, this.buildLineDirectorContext().register)
             ?? 'SUIT FAILURE LOGGED. BLACK BOX ARMED.'
@@ -21695,6 +21804,13 @@ export class ThreeGame {
                     detail: { goalKey, packageId: this.objectivePackageState.goals[goalKey].packageId, stepId: pending.id }
                 }));
             }
+        }
+        // A redeployed squadmate stands up again on the partner's screen.
+        if (coopRole(this) !== COOP_ROLE.SOLO && (this._coopLifeSeq ?? 0) > 0) {
+            this.broadcastSharedWorldEvent?.('player-redeployed', {
+                playerId: this.multiplayerLocalPlayerId ?? null,
+                seq: this._coopLifeSeq
+            });
         }
         window.dispatchEvent(new CustomEvent('player-respawned', {
             detail: {
@@ -22910,6 +23026,10 @@ export class ThreeGame {
                     disposeExpeditionEffect(dropMesh);
                     this.inRunLootDrops.splice(i, 1);
                     this.equipRunDrop(dropMesh.userData.item);
+                    // Taken: it disappears for the squadmate too.
+                    if (dropMesh.userData?.lootDropId) {
+                        this.broadcastSharedWorldEvent?.('loot-drop-collected', { dropId: dropMesh.userData.lootDropId });
+                    }
                 }
             }
         }
@@ -31588,18 +31708,7 @@ export class ThreeGame {
         // docs/design/one-more-ring-design-pillars.md item 1 (Sprint 28):
         // deeper rings bias this roll toward relics (see runDrops.js's
         // rollEnemyLootDrop / rollsRareRelic).
-        const drop = rollEnemyLootDrop(Math.random, {
-            isElite,
-            isBoss: isBossEnemy,
-            ring: (this.currentDepthTier ?? 0) + 1 + Math.max(0, this.loadoutMods?.relicRarityTierBonus ?? 0),
-            excludedIds: [
-                ...(this.loadoutMods?.duplicateRelicsToShards ? [] : [...(this.runOverclocks ?? []), ...(this.runRelics ?? [])]),
-                ...(this.inRunLootDrops ?? []).map((pickup) => pickup.userData.item)
-            ].map((item) => item.id)
-        });
-        if (drop) {
-            this.spawnPhysicalLootDrop?.(sprite.position?.x ?? 0, sprite.position?.z ?? 0, drop);
-        }
+        this.dropLootForKill?.(sprite, { isElite, isBoss: isBossEnemy });
 
         if (this.missionState?.type === 'elimination' && this.missionState.status === 'active') {
             this.missionState.killCount = (this.missionState.killCount ?? 0) + 1;
