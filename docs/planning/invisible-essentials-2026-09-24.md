@@ -25,7 +25,7 @@ Three agents work this plan on `dev/sprint-47` at once. Claim a phase here, in a
 |---|---|---|
 | 1 — Solo expedition continuation | the agent that built `src/expeditionSuspend.js` (committed in `2a7f8fb`/`efcb5ae`) | 2026-09-24 |
 | 2 — Comfort and pressure controls | Gemini Antigravity (committed in `e511e8e`) | 2026-09-24 |
-| 3 — Legible death and continuation | Claude | 2026-09-24 |
+| 3 — Legible death and continuation | Claude (committed in `608d2be`, `fe8b7b2`) | 2026-09-24 |
 | 4 — Navigation friction and return network | Gemini Antigravity | 2026-09-24 |
 
 ---
@@ -103,6 +103,14 @@ Accessibility and comfort settings must be first-class, player-facing options in
 ## Phase 3 — Legible Death and Continuation
 
 Death in a roguelike must teach, orient, and motivate the next attempt instead of displaying arbitrary numbers and dropping the player into disorientation.
+
+### Implementation State (Claude, `608d2be` + `fe8b7b2`)
+- **Module**: [src/deathReport.js](../../src/deathReport.js) (pure) — cause of death from the damage `reason` (18 named hostiles; O₂, fall, toxic ground, boss attack, hostile fire, turret, backlash, ship, squad, abort; "not recorded" instead of a guess), the build line (the synergy that fired most, else the equipped components, else "no field upgrades"), salvage left in the field with the black box's distance from the ship, and one next action (recover the black box → build an affordable goal → follow a lead → redeploy).
+- **Runtime**: `handleDeath` keeps the reason; Cryo Shatter and Bio Predator count activations, damage and vitals restored per deployment; `getDeathReportData` feeds the Sprint 46 expedition report, which now opens with the cause and closes with the field loss and next action (the next action is dropped when it would repeat the ship-goal line). All text in 7 locales (`ui.death.*`).
+- **Tests**: `src/deathReport.test.js`, `src/threeGame.deathReport.test.js`, `src/expeditionReport.test.js`.
+- **Observed in the browser** ([tests/e2e/probes/death-report.spec.js](../../tests/e2e/probes/death-report.spec.js), raw output and screenshots in [docs/reports/assets/essentials-phase3/](../reports/assets/essentials-phase3/)): an O₂ death carrying 3 TECH + 2 COIN reads "Suffocated — the suit ran out of oxygen … Left in the field: 3 TECH · 2 COIN — Black Box 26 m from the ship · Next action: recover the Black Box (26 m out) before another death replaces it"; a Cybersnail death with nothing carried reads "Killed by Cybersnail … Nothing was left in the field · Next action: redeploy". The deaths are scripted through `takeDamage` with the game's own reason strings. Each case's first attempt stalled in the armory during boot on a freshly started dev server (a harness flake, logged) and passed on rerun.
+- **Redeploy**: already one click — TRY AGAIN starts the next deployment directly (used by the Sprint 46 and 47 probes). No separate button was added; the "within 3 seconds" target was not measured.
+- **Open**: the build line only counts the two Sprint 47 synergies, not per-drop damage; the report text is small and the fixed TRY AGAIN/MAIN MENU bar overlaps the bottom of the results panel (pre-existing) — neither checked at Deck size; whether an unfamiliar player understands what they kept and lost needs a human playtest.
 
 ### Current State & Code Audit
 - On player death, [src/threeGame.js:21196](../../src/threeGame.js#L21196) (`handleDeath`) sets `isPlayerDead = true`, arms the Black Box marker, and records death telemetry.
