@@ -101,6 +101,13 @@ Plan: replicate death/downed state to the remote avatar (pose + black-box marker
 
 Plan: key the layout to the run — TRY AGAIN reuses the run's seed and saved maze state, MAIN MENU (and a fresh co-op session) draws a new one; keep campaign progress (bank, goals, unlocks) separate from geography; replace all-floor canyon chunks near spawn with rooms joined by corridors (portals on every chunk edge that has a route); grow Ring 1 so the first route has somewhere to go; guarantee a camp within reach of Ring 1 and log camp discovery. Acceptance: three runs each started from MAIN MENU (solo, and co-op in the same room) produce three different spawn neighbourhoods, while TRY AGAIN reproduces the same map with its changes; no chunk within 2 of spawn has zero portals.
 
+### Owner's run and story rules (2026-09-24)
+
+1. **Co-op and PvP:** every new run starts the story fresh. Today the story managers (`arcManager`, `act2Manager`) are profile-wide, so a co-op run reads the solo story (how Meridian appeared) and writes back into it.
+2. **Solo:** CONTINUE on the title screen keeps the story. Today only NEW CAMPAIGN resets it; MAIN MENU from a run does not touch it in code (`returnToMainMenuFromRun` respawns with `resetRunState: false`).
+3. **Map:** TRY AGAIN keeps the map with its changes; MAIN MENU ends the run, and the next run gets a new map.
+4. **To confirm with the owner:** whether "returning to the main menu is resetting the game" describes something seen in play (a bug — the code does not reset the story there) or the intended rule; and whether campaign world changes (bridges built, camps fortified, hives transformed, shortcuts opened) belong to the story (kept) or to the map (reset with it).
+
 ### P1 — Co-op does not start fresh (reported; not in the logs)
 
 The player saw Camp Meridian and power-ups at co-op start. The logs have no camp or relic events at the co-op deployment, so where they appeared is unknown (question 3). Code check needed: which solo campaign state (act 2 camps, run drops, bank) the co-op run reads.
