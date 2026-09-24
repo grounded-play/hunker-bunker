@@ -24,20 +24,21 @@ function normalizeResourceCounts(resources = {}) {
     };
 }
 
-function buildLeaderboardTargets({ score, runMs, isVictory, isDailyOps, depthTier, distanceTravelled }) {
+function buildLeaderboardTargets({ score, runMs, isVictory, isDailyOps, depthTier, distanceTravelled, assisted = false }) {
+    const prefix = assisted ? 'assisted_' : '';
     const targets = [
         {
-            name: 'best_run_score',
+            name: `${prefix}best_run_score`,
             score,
             keep: 'best'
         },
         {
-            name: 'survival_time_seconds',
+            name: `${prefix}survival_time_seconds`,
             score: Math.floor(runMs / 1000),
             keep: 'best'
         },
         {
-            name: 'deepest_depth_score',
+            name: `${prefix}deepest_depth_score`,
             score: (depthTier * 100000) + distanceTravelled,
             keep: 'best'
         }
@@ -45,7 +46,7 @@ function buildLeaderboardTargets({ score, runMs, isVictory, isDailyOps, depthTie
 
     if (isDailyOps) {
         targets.push({
-            name: 'daily_ops_score',
+            name: `${prefix}daily_ops_score`,
             score,
             keep: 'best'
         });
@@ -53,7 +54,7 @@ function buildLeaderboardTargets({ score, runMs, isVictory, isDailyOps, depthTie
 
     if (isVictory) {
         targets.push({
-            name: 'fastest_extraction_ms',
+            name: `${prefix}fastest_extraction_ms`,
             score: runMs,
             keep: 'best'
         });
@@ -79,7 +80,8 @@ export function buildSteamRunScorePayload({
     gameVersion = null,
     multiplayer = {},
     exploration = {},
-    trades = {}
+    trades = {},
+    assisted = false
 } = {}) {
     const normalizedScore = clampInteger(score);
     const startedAt = clampInteger(runStartTime, endedAt);
@@ -167,13 +169,15 @@ export function buildSteamRunScorePayload({
             fullHealthAtEnd: Boolean(stats.fullHealthAtEnd)
         },
         depositedResources: normalizeResourceCounts(depositedResources),
+        assisted: Boolean(assisted),
         leaderboardTargets: buildLeaderboardTargets({
             score: normalizedScore,
             runMs,
             isVictory: victory,
             isDailyOps: dailyOps,
             depthTier,
-            distanceTravelled
+            distanceTravelled,
+            assisted: Boolean(assisted)
         })
     };
 }

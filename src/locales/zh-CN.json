@@ -164,6 +164,9 @@
       "subtitle_size": "字幕大小",
       "subtitle_backdrop": "字幕背景",
       "contrast": "界面对比度",
+      "camera_shake": "镜头震动",
+      "aim_assist": "手柄瞄准辅助",
+      "reduced_pressure": "低压辅助模式",
       "aria_label_settings_categories": "设置分类",
       "session": "会话",
       "audio": "音频",
@@ -226,7 +229,14 @@
       "backdrop_solid": "不透明",
       "contrast_normal": "标准（默认）",
       "contrast_high": "高",
-      "contrast_max": "最高（无扫描线）"
+      "contrast_max": "最高（无扫描线）",
+      "shake_off": "关闭 (0%)",
+      "shake_low": "低 (25%)",
+      "shake_reduced": "中 (50%)",
+      "shake_normal": "正常 (100%)",
+      "aim_assist_off": "关闭",
+      "aim_assist_low": "低 (仅磁吸)",
+      "aim_assist_standard": "标准 (吸附+减速)"
     },
     "aria": {
       "language_select": "游戏语言",
@@ -246,7 +256,9 @@
       "camera_follow": "第三人称镜头跟随灵敏度",
       "aim_speed": "右摇杆瞄准速度",
       "aim_speed_presets": "右摇杆瞄准速度预设",
-      "callsign_input": "操作员呼号"
+      "callsign_input": "操作员呼号",
+      "camera_shake": "镜头震动强度",
+      "aim_assist": "手柄瞄准辅助"
     },
     "armory": {
       "tag": "◈ 地底任务前军械库 // 零号区",

@@ -164,6 +164,9 @@
       "subtitle_size": "SUBTITLE SIZE",
       "subtitle_backdrop": "SUBTITLE BACKGROUND",
       "contrast": "HUD CONTRAST",
+      "camera_shake": "CAMERA SHAKE",
+      "aim_assist": "CONTROLLER AIM ASSIST",
+      "reduced_pressure": "REDUCED PRESSURE MODE",
       "aria_label_settings_categories": "Settings categories",
       "session": "SESSION",
       "audio": "AUDIO",
@@ -226,7 +229,14 @@
       "backdrop_solid": "SOLID",
       "contrast_normal": "NORMAL (DEFAULT)",
       "contrast_high": "HIGH",
-      "contrast_max": "MAXIMUM (NO SCANLINES)"
+      "contrast_max": "MAXIMUM (NO SCANLINES)",
+      "shake_off": "OFF (0%)",
+      "shake_low": "LOW (25%)",
+      "shake_reduced": "REDUCED (50%)",
+      "shake_normal": "NORMAL (100%)",
+      "aim_assist_off": "OFF",
+      "aim_assist_low": "LOW (MAGNETISM ONLY)",
+      "aim_assist_standard": "STANDARD (SNAP + FRICTION)"
     },
     "aria": {
       "language_select": "Game language",
@@ -246,7 +256,9 @@
       "camera_follow": "Third-person camera follow responsiveness",
       "aim_speed": "Right stick aim speed",
       "aim_speed_presets": "Right stick aim speed presets",
-      "callsign_input": "Operator callsign"
+      "callsign_input": "Operator callsign",
+      "camera_shake": "Camera shake intensity",
+      "aim_assist": "Controller aim assistance"
     },
     "armory": {
       "tag": "◈ SUB-TERRAN PRE-MISSION ARMORY // SECTOR ZERO",

@@ -555,5 +555,8 @@ Findings and corrections:
 4. **Cache report item.** Its kind `'cache'` is not a shared kind (it rendered as an event) and it showed the raw id, e.g. "(cryo_rime)". Fixed: kind `discovery`, localized component name via `dropKey` → `{drop}` in all 7 locales; test added in `src/rewardCache.test.js`.
 5. **Translation fixes.** es-419 used "Aljibe" (a water cistern) for the cache; now "Alijo". ja used 「吸入」 (inhale) for the O₂ siphon cost; now 「O₂を25%吸い出し」.
 6. **Lane 1's own drop names** used the English catalog name; they now use Lane 3's localized `ui.relics.<id>.name`.
+7. **The Engineer's nanite bridge is free when the player cannot pay.** Fixed: `deployNaniteBridgeAt` checks for ≥3 salvage, spends 3, or displays insufficient salvage error and refuses deployment; verified in `src/threeGame.synergies.test.js`.
+
+**Update — all three lanes committed (2026-09-24, at the owner's request).** Lane 2 `6157ff4`, Lane 3 `1cc7db1`, shared runtime `efcb5ae` (which also imports `src/encounterRecipes.js`, so `spawnEncounterRecipe` now registers in the game), after the full suite passed on the combined tree (4,137 tests), lint and both audits. The "uncommitted" notes above describe the state before that.
 
 Still open across lanes: Lanes 2 and 3 to commit their work; Lane 1 then imports `src/encounterRecipes.js`, re-runs the slice as "after, integrated", and writes the slice report. Human playtests, Deck, co-op and Cloud acceptance stay open — no evidence was supplied.

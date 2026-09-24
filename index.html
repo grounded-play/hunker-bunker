@@ -2481,6 +2481,27 @@
 
         <div class="settings-category-group hidden" data-settings-panel="accessibility">
           <div data-i18n="ui.settings.accessibility" class="settings-category-header">ACCESSIBILITY</div>
+          <div class="setting-item">
+            <span data-i18n="ui.settings.camera_shake">CAMERA SHAKE</span>
+            <select id="setting-camera-shake" data-i18n-aria-label="ui.aria.camera_shake" class="settings-select" aria-label="Camera shake intensity">
+              <option value="off" data-i18n="ui.opt.shake_off">OFF (0%)</option>
+              <option value="low" data-i18n="ui.opt.shake_low">LOW (25%)</option>
+              <option value="reduced" data-i18n="ui.opt.shake_reduced">REDUCED (50%)</option>
+              <option value="normal" selected data-i18n="ui.opt.shake_normal">NORMAL (100%)</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span data-i18n="ui.settings.aim_assist">CONTROLLER AIM ASSIST</span>
+            <select id="setting-aim-assist" data-i18n-aria-label="ui.aria.aim_assist" class="settings-select" aria-label="Controller aim assistance">
+              <option value="off" data-i18n="ui.opt.aim_assist_off">OFF</option>
+              <option value="low" data-i18n="ui.opt.aim_assist_low">LOW (MAGNETISM ONLY)</option>
+              <option value="standard" selected data-i18n="ui.opt.aim_assist_standard">STANDARD (SNAP + FRICTION)</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span data-i18n="ui.settings.reduced_pressure">REDUCED PRESSURE MODE</span>
+            <label class="toggle"><input type="checkbox" id="setting-reduced-pressure"> <span class="slider"></span></label>
+          </div>
         </div>
 
         <!-- Section 4: Operator & System Data -->

@@ -9,6 +9,7 @@ import { BiomeAtmosphereSystem } from './ambientDrift.js';
 import { KillstreakFeedbackSystem } from './gameplayTactileVfx.js';
 import { CHUNK_SIZE, TILE_SIZE } from './tileCatalog.js';
 import { getControllerGlyphLabel } from './inputGlyphs.js';
+import { loadAccessibilitySettings } from './accessibilitySettings.js';
 
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -1937,6 +1938,10 @@ export class ThreeGame {
         this._threatAudioTimer = 0;
         this._cameraShakeTimer = 0;
         this._cameraShakeIntensity = 0;
+        const accessibility = loadAccessibilitySettings();
+        this.cameraShakeScale = accessibility?.cameraShakeScale ?? 1.0;
+        this.aimAssistSetting = accessibility?.aimAssist ?? 'standard';
+        this.reducedPressure = Boolean(accessibility?.reducedPressure);
         this.traumaManager = new TraumaManager();
         this.killstreakFeedback = new KillstreakFeedbackSystem();
         this.pickupMagnet = new PickupMagnet();
@@ -7628,6 +7633,22 @@ export class ThreeGame {
     }
 
     triggerControllerFire({ source = 'controller' } = {}) {
+        if (this.aimAssistSetting !== 'off' && this.player) {
+            const maxAngle = this.aimAssistSetting === 'low' ? (8 * Math.PI / 180) : (15 * Math.PI / 180);
+            const candidate = this.getAimAssistTarget({
+                originX: this.player.position.x,
+                originZ: this.player.position.z,
+                aimDirX: this.aimDirX,
+                aimDirZ: this.aimDirZ,
+                maxDistance: 9.0,
+                maxAngle
+            });
+            if (candidate) {
+                this.aimDirX = candidate.dirX;
+                this.aimDirZ = candidate.dirZ;
+                this.facingYaw = Math.atan2(candidate.dirX, candidate.dirZ);
+            }
+        }
         return this.fireWeaponAtCurrentAim({ source });
     }
 
@@ -8959,6 +8980,82 @@ export class ThreeGame {
             this.snapCameraToPlayer();
         }
         return { distance: this.cameraDistancePreset, follow: this.cameraFollowPreset };
+    }
+
+    setCameraShakeScale(scale) {
+        const numeric = Number(scale);
+        this.cameraShakeScale = Number.isFinite(numeric) ? Math.max(0, Math.min(2.0, numeric)) : 1.0;
+        return this.cameraShakeScale;
+    }
+
+    setAimAssist(mode) {
+        this.aimAssistSetting = ['off', 'low', 'standard'].includes(mode) ? mode : 'standard';
+        return this.aimAssistSetting;
+    }
+
+    setReducedPressure(enabled) {
+        this.reducedPressure = Boolean(enabled);
+        return this.reducedPressure;
+    }
+
+    getAimAssistTarget({ originX, originZ, aimDirX, aimDirZ, maxDistance = 9.0, maxAngle = 15 * (Math.PI / 180) } = {}) {
+        if (!Number.isFinite(originX) || !Number.isFinite(originZ)) return null;
+        const len = Math.hypot(aimDirX, aimDirZ);
+        if (len <= 0.0001) return null;
+        const normAimX = aimDirX / len;
+        const normAimZ = aimDirZ / len;
+
+        let bestCandidate = null;
+        let bestScore = Infinity;
+
+        for (const sprite of (this.scatterSprites ?? [])) {
+            if (!sprite?.parent || sprite.userData?.burstTriggered || sprite.userData?.isCompanion) continue;
+            if (!sprite.userData?.isDestructibleProp && !this.isEnemyType(sprite.userData?.type)) continue;
+
+            const dx = sprite.position.x - originX;
+            const dz = sprite.position.z - originZ;
+            const dist = Math.hypot(dx, dz);
+            if (dist > maxDistance || dist < 0.1) continue;
+
+            const dirX = dx / dist;
+            const dirZ = dz / dist;
+            const dot = THREE.MathUtils.clamp(dirX * normAimX + dirZ * normAimZ, -1, 1);
+            const angle = Math.acos(dot);
+            if (angle > maxAngle) continue;
+
+            const score = angle * 2.0 + (dist / maxDistance);
+            if (score < bestScore) {
+                bestScore = score;
+                bestCandidate = {
+                    sprite,
+                    distance: dist,
+                    angle,
+                    dirX,
+                    dirZ
+                };
+            }
+        }
+        return bestCandidate;
+    }
+
+    getControllerAimFriction(clientX, clientY) {
+        if (this.aimAssistSetting === 'off') return 1.0;
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) return 1.0;
+
+        for (const sprite of (this.scatterSprites ?? [])) {
+            if (!sprite?.parent || sprite.userData?.burstTriggered || sprite.userData?.isCompanion) continue;
+            if (!sprite.userData?.isDestructibleProp && !this.isEnemyType(sprite.userData?.type)) continue;
+
+            const dx = sprite.position.x - worldPoint.x;
+            const dz = sprite.position.z - worldPoint.z;
+            const dist = Math.hypot(dx, dz);
+            // Sticky friction: 35% sensitivity reduction (0.65x multiplier) within enemy hit-box
+            if (dist <= 1.25) {
+                return 0.65;
+            }
+        }
+        return 1.0;
     }
 
     setAdaptiveGameplayPerformanceMode(enabled = true, {
@@ -14986,7 +15083,7 @@ export class ThreeGame {
                 boss: sprite.userData.type,
                 attack: event.attack,
                 radius,
-                windupMs: Math.round((event.duration ?? 0) * 1000)
+                windupMs: Math.round((event.duration ?? 0) * 1000 * (this.reducedPressure ? 1.20 : 1.0))
             }
         }));
     }
@@ -22559,6 +22656,9 @@ export class ThreeGame {
             if (t2Unlocks.deconFilters && this.currentBiomeKey === BIOME_KEYS.BIO) {
                 drainRate *= 0.5;
             }
+            if (this.reducedPressure) {
+                drainRate *= 0.8; // Pacing / reduced pressure: 20% lower atmospheric O2 drain
+            }
             this._currentO2DrainRate = drainRate;
             this.playerVitals.o2 = Math.max(0, this.playerVitals.o2 - drainRate * delta);
 
@@ -26143,9 +26243,13 @@ export class ThreeGame {
     }
 
     triggerCameraShake(intensity = 0.18, duration = 0.35) {
-        this._cameraShakeIntensity = Math.max(this._cameraShakeIntensity, intensity);
-        this._cameraShakeTimer = Math.max(this._cameraShakeTimer, duration);
-        this.traumaManager?.addTrauma(Math.min(1.0, intensity * 2.2));
+        const scale = this.cameraShakeScale ?? this.settings?.cameraShakeScale ?? 1.0;
+        const scaledIntensity = intensity * scale;
+        if (scaledIntensity > 0.001) {
+            this._cameraShakeIntensity = Math.max(this._cameraShakeIntensity, scaledIntensity);
+            this._cameraShakeTimer = Math.max(this._cameraShakeTimer, duration);
+            this.traumaManager?.addTrauma(Math.min(1.0, scaledIntensity * 2.2));
+        }
     }
 
     syncVisibleChunks(force = false, { prefetch = !force, processLimit = null } = {}) {
@@ -33722,7 +33826,7 @@ export class ThreeGame {
                             boss: 'boss_cryosnail',
                             attack: 'frost-shockwave',
                             radius: 4.5,
-                            windupMs: 900,
+                            windupMs: Math.round(900 * (this.reducedPressure ? 1.20 : 1.0)),
                             playerDistanceAtTelegraph: Math.round(distanceToTarget * 10) / 10
                         }
                     }));
@@ -38328,9 +38432,13 @@ export class ThreeGame {
     }
 
     deployNaniteBridgeAt(hx, hz) {
-        if (this.bank && typeof this.bank.getSalvage === 'function' && this.bank.getSalvage() >= 3) {
-            this.bank.spendSalvage?.(3);
+        const salvage = typeof this.bank?.getSalvage === 'function' ? this.bank.getSalvage() : (this.bank?.salvage ?? 0);
+        if (salvage < 3) {
+            this.playThrottledUiError?.('_lastNaniteBridgeError', { volume: 0.4 }, 'nanite-bridge-short-salvage');
+            this.showBunkerLine?.('INSUFFICIENT SALVAGE: 3 REQUIRED FOR NANITE BRIDGE');
+            return false;
         }
+        this.bank?.spendSalvage?.(3);
         (this.bridgedHoles ??= new Set()).add(`${hx},${hz}`);
         if (this.scene && typeof THREE !== 'undefined') {
             const bridgeGeo = new THREE.BoxGeometry(1.2, 0.1, 1.2);

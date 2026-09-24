@@ -25,12 +25,19 @@ function fakeDoc(ids = []) {
     return { doc, classes, props, el: (id) => elements.get(id) };
 }
 
-const ALL = ['setting-subtitle-size', 'setting-subtitle-backdrop', 'setting-contrast'];
+const ALL = [
+    'setting-subtitle-size',
+    'setting-subtitle-backdrop',
+    'setting-contrast',
+    'setting-camera-shake',
+    'setting-aim-assist',
+    'setting-reduced-pressure'
+];
 
 describe('installAccessibilitySettings', () => {
-    it('binds all three controls and applies stored settings on boot', () => {
+    it('binds all six controls and applies stored settings on boot', () => {
         const { doc } = fakeDoc(ALL);
-        expect(installAccessibilitySettings(doc)).toEqual({ applied: true, bound: 3 });
+        expect(installAccessibilitySettings(doc)).toEqual({ applied: true, bound: 6 });
     });
 
     it('reflects the stored value into each control so it cannot disagree with the screen', () => {
@@ -38,6 +45,8 @@ describe('installAccessibilitySettings', () => {
         installAccessibilitySettings(doc);
         expect(el('setting-subtitle-size').value).toBeTruthy();
         expect(el('setting-contrast').value).toBeTruthy();
+        expect(el('setting-camera-shake').value).toBeTruthy();
+        expect(el('setting-aim-assist').value).toBeTruthy();
     });
 
     it('a change on the contrast control reaches the document', () => {
@@ -52,6 +61,13 @@ describe('installAccessibilitySettings', () => {
         installAccessibilitySettings(doc);
         el('setting-subtitle-size').fire('xlarge');
         expect(props['--hb-subtitle-scale']).toBeTruthy();
+    });
+
+    it('a change on the camera shake control writes the CSS custom property', () => {
+        const { doc, props, el } = fakeDoc(ALL);
+        installAccessibilitySettings(doc);
+        el('setting-camera-shake').fire('off');
+        expect(props['--hb-camera-shake-scale']).toBe('0');
     });
 
     it('binds whatever is present when controls are missing', () => {

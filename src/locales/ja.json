@@ -164,6 +164,9 @@
       "subtitle_size": "字幕サイズ",
       "subtitle_backdrop": "字幕の背景",
       "contrast": "HUDコントラスト",
+      "camera_shake": "カメラの揺れ",
+      "aim_assist": "コントローラー照準アシスト",
+      "reduced_pressure": "プレッシャー軽減モード",
       "aria_label_settings_categories": "設定カテゴリ",
       "session": "セッション",
       "audio": "オーディオ",
@@ -226,7 +229,14 @@
       "backdrop_solid": "不透明",
       "contrast_normal": "標準（既定）",
       "contrast_high": "高",
-      "contrast_max": "最大（走査線なし）"
+      "contrast_max": "最大（走査線なし）",
+      "shake_off": "オフ (0%)",
+      "shake_low": "弱 (25%)",
+      "shake_reduced": "中 (50%)",
+      "shake_normal": "通常 (100%)",
+      "aim_assist_off": "オフ",
+      "aim_assist_low": "低 (吸着のみ)",
+      "aim_assist_standard": "標準 (吸着＋減速)"
     },
     "aria": {
       "language_select": "ゲーム言語",
@@ -246,7 +256,9 @@
       "camera_follow": "三人称カメラ追従の応答性",
       "aim_speed": "右スティックのエイム速度",
       "aim_speed_presets": "右スティックのエイム速度プリセット",
-      "callsign_input": "オペレーターコールサイン"
+      "callsign_input": "オペレーターコールサイン",
+      "camera_shake": "カメラの揺れ強度",
+      "aim_assist": "コントローラー照準アシスト設定"
     },
     "armory": {
       "tag": "◈ 地下プレミッション兵器庫 // セクターゼロ",

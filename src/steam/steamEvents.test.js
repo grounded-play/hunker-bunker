@@ -146,6 +146,22 @@ describe('buildSteamRunScorePayload', () => {
             o2Traded: 3
         });
     });
+
+    it('tags assisted runs and routes to assisted leaderboards', () => {
+        const payload = buildSteamRunScorePayload({
+            score: 1500,
+            runStartTime: 1000,
+            endedAt: 61000,
+            assisted: true,
+            stats: { distanceTravelled: 500, depthTier: 1 }
+        });
+        expect(payload.assisted).toBe(true);
+        expect(payload.leaderboardTargets).toEqual([
+            { name: 'assisted_best_run_score', score: 1500, keep: 'best' },
+            { name: 'assisted_survival_time_seconds', score: 60, keep: 'best' },
+            { name: 'assisted_deepest_depth_score', score: 100500, keep: 'best' }
+        ]);
+    });
 });
 
 describe('isRankedRunPayload', () => {

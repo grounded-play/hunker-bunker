@@ -2408,8 +2408,12 @@ function handleSteamGameplayInput(controller) {
     if (!controllerAimCursor) controllerAimCursor = { x: width / 2, y: height / 2 };
     const aimSensitivity = Math.min(2, Math.max(0.5, Number(state.settings.aimSensitivity) || 1));
     const invertAimSign = state.settings.invertAimY ? -1 : 1;
-    const deltaX = (aimX * 14 + (Number(controller.cameraDelta?.x) || 0) * 0.55) * aimSensitivity;
-    const deltaY = (aimY * 14 + (Number(controller.cameraDelta?.y) || 0) * 0.55) * aimSensitivity * invertAimSign;
+    let aimFriction = 1.0;
+    if (state.settings.aimAssist !== 'off') {
+        aimFriction = window.game?.getControllerAimFriction?.(controllerAimCursor.x, controllerAimCursor.y) ?? 1.0;
+    }
+    const deltaX = (aimX * 14 + (Number(controller.cameraDelta?.x) || 0) * 0.55) * aimSensitivity * aimFriction;
+    const deltaY = (aimY * 14 + (Number(controller.cameraDelta?.y) || 0) * 0.55) * aimSensitivity * invertAimSign * aimFriction;
     if (!thirdPersonCamera && Math.hypot(deltaX, deltaY) > 0.01) {
         controllerAimCursor.x = Math.min(width - 8, Math.max(8, controllerAimCursor.x + deltaX));
         controllerAimCursor.y = Math.min(height - 8, Math.max(8, controllerAimCursor.y + deltaY));
@@ -2699,6 +2703,14 @@ const state = {
         crosshairColor: /^#[0-9a-f]{6}$/i.test(localStorage.getItem(CROSSHAIR_COLOR_STORAGE_KEY) ?? '')
             ? localStorage.getItem(CROSSHAIR_COLOR_STORAGE_KEY)
             : DEFAULT_CROSSHAIR_COLOR,
+        aimAssist: ['off', 'low', 'standard'].includes(localStorage.getItem('hb_aim_assist'))
+            ? localStorage.getItem('hb_aim_assist')
+            : 'standard',
+        cameraShake: ['off', 'low', 'reduced', 'normal'].includes(localStorage.getItem('hb_camera_shake'))
+            ? localStorage.getItem('hb_camera_shake')
+            : 'normal',
+        cameraShakeScale: ({ off: 0.0, low: 0.25, reduced: 0.5, normal: 1.0 })[localStorage.getItem('hb_camera_shake')] ?? 1.0,
+        reducedPressure: localStorage.getItem('hb_reduced_pressure') === 'true',
         keyBindings: cloneKeyBindings(DEFAULT_KEY_BINDINGS)
     },
     onlineCount: 1,
@@ -5140,6 +5152,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
         seed: activeRunSeed,
         runCards: activeRunCards,
         depositedResources: window.game?.runDepositedResources ?? {},
+        assisted: Boolean(window.game?.reducedPressure || state.settings?.reducedPressure),
         multiplayer: {
             isMultiplayer,
             mode: mpMode,
@@ -10650,6 +10663,9 @@ function organizeSettingsPanels() {
         ['setting-subtitle-size', 'accessibility'],
         ['setting-subtitle-backdrop', 'accessibility'],
         ['setting-contrast', 'accessibility'],
+        ['setting-camera-shake', 'accessibility'],
+        ['setting-aim-assist', 'controls'],
+        ['setting-reduced-pressure', 'accessibility'],
         ['setting-gore-toggle', 'accessibility']
     ].forEach(([id, target]) => moveControl(id, target));
 }

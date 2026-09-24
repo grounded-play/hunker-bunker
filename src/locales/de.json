@@ -164,6 +164,9 @@
       "subtitle_size": "UNTERTITELGRÖSSE",
       "subtitle_backdrop": "UNTERTITEL-HINTERGRUND",
       "contrast": "HUD-KONTRAST",
+      "camera_shake": "KAMERAWACKELN",
+      "aim_assist": "CONTROLLER-ZIELHILFE",
+      "reduced_pressure": "REDUZIERTER DRUCK-MODUS",
       "aria_label_settings_categories": "Einstellungskategorien",
       "session": "SITZUNG",
       "audio": "AUDIO",
@@ -226,7 +229,14 @@
       "backdrop_solid": "DECKEND",
       "contrast_normal": "NORMAL (STANDARD)",
       "contrast_high": "HOCH",
-      "contrast_max": "MAXIMUM (OHNE SCANLINES)"
+      "contrast_max": "MAXIMUM (OHNE SCANLINES)",
+      "shake_off": "AUS (0%)",
+      "shake_low": "NIEDRIG (25%)",
+      "shake_reduced": "REDUZIERT (50%)",
+      "shake_normal": "NORMAL (100%)",
+      "aim_assist_off": "AUS",
+      "aim_assist_low": "NIEDRIG (NUR MAGNETISMUS)",
+      "aim_assist_standard": "STANDARD (FANGEN + REIBUNG)"
     },
     "aria": {
       "language_select": "Spielsprache",
@@ -246,7 +256,9 @@
       "camera_follow": "Reaktionsfreudigkeit der Kameraverfolgung",
       "aim_speed": "Zielgeschwindigkeit rechter Stick",
       "aim_speed_presets": "Vorgaben für Zielgeschwindigkeit rechter Stick",
-      "callsign_input": "Operator-Rufzeichen"
+      "callsign_input": "Operator-Rufzeichen",
+      "camera_shake": "Kamerawackeln-Intensität",
+      "aim_assist": "Controller-Zielhilfe"
     },
     "armory": {
       "tag": "◈ SUBTERRANES EINSATZARSENAL // SEKTOR NULL",

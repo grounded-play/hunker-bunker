@@ -164,6 +164,9 @@
       "subtitle_size": "TAMANHO DAS LEGENDAS",
       "subtitle_backdrop": "FUNDO DAS LEGENDAS",
       "contrast": "CONTRASTE DO HUD",
+      "camera_shake": "TREMOR DE CÂMERA",
+      "aim_assist": "ASSISTÊNCIA DE MIRA",
+      "reduced_pressure": "MODO DE PRESSÃO REDUZIDA",
       "aria_label_settings_categories": "Categorias de ajustes",
       "session": "SESSÃO",
       "audio": "ÁUDIO",
@@ -226,7 +229,14 @@
       "backdrop_solid": "SÓLIDO",
       "contrast_normal": "NORMAL (PADRÃO)",
       "contrast_high": "ALTO",
-      "contrast_max": "MÁXIMO (SEM LINHAS DE VARREDURA)"
+      "contrast_max": "MÁXIMO (SEM LINHAS DE VARREDURA)",
+      "shake_off": "DESLIGADO (0%)",
+      "shake_low": "BAIXO (25%)",
+      "shake_reduced": "REDUZIDO (50%)",
+      "shake_normal": "NORMAL (100%)",
+      "aim_assist_off": "DESLIGADO",
+      "aim_assist_low": "BAIXO (APENAS MAGNETISMO)",
+      "aim_assist_standard": "PADRÃO (TRAVAMENTO + FRICÇÃO)"
     },
     "aria": {
       "language_select": "Idioma do jogo",
@@ -246,7 +256,9 @@
       "camera_follow": "Resposta do seguimento da câmera em terceira pessoa",
       "aim_speed": "Velocidade de mira do analógico direito",
       "aim_speed_presets": "Predefinições de velocidade de mira do analógico direito",
-      "callsign_input": "Codinome do operador"
+      "callsign_input": "Codinome do operador",
+      "camera_shake": "Intensidade do tremor de câmera",
+      "aim_assist": "Assistência de mira do controle"
     },
     "armory": {
       "tag": "◈ ARSENAL SUBTERRÂNEO PRÉ-MISSÃO // SETOR ZERO",

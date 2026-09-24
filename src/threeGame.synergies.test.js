@@ -246,6 +246,22 @@ describe('Sprint 47 Lane 3: Synergies and Class Traversal Integration', () => {
                 detail: { x: 12, z: 10 }
             }));
         });
+
+        it('refuses nanite bridge when salvage is short (< 3)', () => {
+            const game = makeMockGame({
+                playerType: 'ENGINEER',
+                currentDepthTier: 0,
+                bank: {
+                    salvage: 2,
+                    getSalvage() { return this.salvage; },
+                    spendSalvage(amt) { this.salvage -= amt; return true; }
+                }
+            });
+            const deployed = game.deployNaniteBridgeAt(12, 10);
+            expect(deployed).toBe(false);
+            expect(game.bank.salvage).toBe(2);
+            expect(game.isHoleBridged(12, 10)).toBe(false);
+        });
     });
 
     describe('High-Stakes Reward Cache', () => {

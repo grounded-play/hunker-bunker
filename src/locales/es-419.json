@@ -164,6 +164,9 @@
       "subtitle_size": "TAMAÑO DE SUBTÍTULOS",
       "subtitle_backdrop": "FONDO DE SUBTÍTULOS",
       "contrast": "CONTRASTE DE INTERFAZ",
+      "camera_shake": "VIBRACIÓN DE CÁMARA",
+      "aim_assist": "ASISTENCIA DE APUNTADO",
+      "reduced_pressure": "MODO DE PRESIÓN REDUCIDA",
       "aria_label_settings_categories": "Categorías de ajustes",
       "session": "SESIÓN",
       "audio": "AUDIO",
@@ -226,7 +229,14 @@
       "backdrop_solid": "SÓLIDO",
       "contrast_normal": "NORMAL (PREDET.)",
       "contrast_high": "ALTO",
-      "contrast_max": "MÁXIMO (SIN LÍNEAS DE BARRIDO)"
+      "contrast_max": "MÁXIMO (SIN LÍNEAS DE BARRIDO)",
+      "shake_off": "DESACTIVADO (0%)",
+      "shake_low": "BAJO (25%)",
+      "shake_reduced": "REDUCIDO (50%)",
+      "shake_normal": "NORMAL (100%)",
+      "aim_assist_off": "DESACTIVADO",
+      "aim_assist_low": "BAJO (SOLO MAGNETISMO)",
+      "aim_assist_standard": "ESTÁNDAR (IMÁN Y FRICCIÓN)"
     },
     "aria": {
       "language_select": "Idioma del juego",
@@ -246,7 +256,9 @@
       "camera_follow": "Respuesta del seguimiento de la cámara en tercera persona",
       "aim_speed": "Velocidad de apuntado del stick derecho",
       "aim_speed_presets": "Ajustes de velocidad de apuntado del stick derecho",
-      "callsign_input": "Indicativo del operador"
+      "callsign_input": "Indicativo del operador",
+      "camera_shake": "Intensidad de vibración de cámara",
+      "aim_assist": "Asistencia de apuntado para control"
     },
     "armory": {
       "tag": "◈ ARMERÍA SUBTERRÁNEA PREMISIÓN // SECTOR CERO",
