@@ -127,6 +127,9 @@ describe('the Ring 1 event in the runtime', () => {
         expect(g.getExpeditionReportData().items).toEqual([
             { kind: 'event', labelKey: 'ui.events.false_distress.report_left', params: {} }
         ]);
+        // The event's live tracker label never doubles as a 'completed' line.
+        registry.getHistory = () => [{ id: 'expedition-event', outcome: 'complete', label: 'BYPASS · 15/16s', resolvedAt: Date.now() }];
+        expect(g.getExpeditionReportData().completed).toEqual([]);
     });
 
     it('rewards only through grantRunDrop, and says so plainly when no lane can grant', () => {
@@ -206,6 +209,8 @@ describe('the Ring 1 event in the runtime', () => {
         g.updateExpeditionEvent(bypassSeconds);
         expect(g._expeditionEvent.state.outcome).toBe('bypassed');
         expect(g._expeditionEventO2DrainMult).toBe(1);
+        // One state event per phase, not one per bypass frame.
+        expect(of('expedition-event-state').map((d) => d.phase)).toEqual(['signalled', 'bypassing', 'resolved']);
     });
 
     it('does not run in co-op, and a new deployment clears the old route', () => {

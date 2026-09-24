@@ -36077,6 +36077,7 @@ export class ThreeGame {
         if (!event?.state) return false;
         const result = applyEventAction(event.plan, event.state, action);
         if (result.state === event.state) return false;
+        const phaseChanged = result.state.phase !== event.state.phase;
         event.state = result.state;
         for (const effect of result.effects) this.runExpeditionEventEffect(effect);
         if (event.state.phase === 'resolved') {
@@ -36084,6 +36085,9 @@ export class ThreeGame {
             const success = !['left', 'ambush_empty'].includes(event.state.outcome);
             window.objectiveRegistry?.resolveObjective?.('expedition-event', success ? 'complete' : 'abandoned');
         }
+        // Bypass progress ticks every frame; the throttled route sync in
+        // updateExpeditionEvent shows it. Only a new phase is announced.
+        if (!phaseChanged && action.type === 'bypass_tick') return true;
         this.syncExpeditionEventRoute();
         window.dispatchEvent?.(new CustomEvent('expedition-event-state', {
             detail: { eventId: event.plan.eventId, action: action.type, phase: event.state.phase, outcome: event.state.outcome }
@@ -36145,7 +36149,9 @@ export class ThreeGame {
         const since = this._deploymentStartedAt ?? 0;
         const history = typeof window !== 'undefined' ? window.objectiveRegistry?.getHistory?.() ?? [] : [];
         const completed = history
-            .filter((entry) => entry.outcome === 'complete' && (entry.resolvedAt ?? 0) >= since && entry.id !== 'expedition-bounty')
+            // The bounty and the event report themselves in their own lines.
+            .filter((entry) => entry.outcome === 'complete' && (entry.resolvedAt ?? 0) >= since
+                && entry.id !== 'expedition-bounty' && entry.id !== 'expedition-event')
             .map((entry) => entry.label);
         const goalKey = this.getCurrentPackageGoal?.() ?? null;
         const bankState = this.bank?.getState?.() ?? {};

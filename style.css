@@ -22508,6 +22508,11 @@ body.colorblind-assist #net-mode-pvp-btn.active {
   color: #ff8b7a;
 }
 
+/* Above the HUD notification stack (17000), which otherwise covers the close button. */
+.expedition-event-modal {
+  z-index: 17100;
+}
+
 .expedition-event-options {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
