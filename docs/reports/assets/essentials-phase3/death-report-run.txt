@@ -1,0 +1,40 @@
+
+Running 2 tests using 1 worker
+
+  ✘  1 [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/death-report.spec.js:19:5 › phase3 death report: o2 (3.1m)
+  ✓  2 [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/death-report.spec.js:19:5 › phase3 death report: enemy (3.6m)
+
+
+  1) [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/death-report.spec.js:19:5 › phase3 death report: o2 
+
+    Error: run-start flow did not reach gameplay: {"appPhase":"armory","isGameplayPhase":false,"isGameplayHudActive":{"uiVisible":false,"menuHidden":true,"gameOverHidden":true,"splashHidden":true},"gameplayReady":false,"profile":"menu","inputEnabled":false,"loadingPaused":false,"blockingOverlay":false,"container":{"width":0,"height":0},"armoryVisible":true,"deploymentVisible":false}
+
+       at helpers.js:191
+
+      189 |             deploymentVisible: !document.getElementById('multiplayer-modal')?.classList.contains('hidden')
+      190 |         })).catch(() => null);
+    > 191 |         throw new Error(`run-start flow did not reach gameplay: ${JSON.stringify(state)}`);
+          |               ^
+      192 |     }
+      193 |     await page.evaluate(() => {
+      194 |         const settings = document.getElementById('settings-popup');
+        at startRunAndSkipIntro (/home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/helpers.js:191:15)
+        at /home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/death-report.spec.js:22:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results-p3/probes-death-report-phase3-death-report-o2-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results-p3/probes-death-report-phase3-death-report-o2-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../test-results-p3/probes-death-report-phase3-death-report-o2-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../test-results-p3/probes-death-report-phase3-death-report-o2-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/death-report.spec.js:19:5 › phase3 death report: o2 
+  1 passed (7.2m)

@@ -1,6 +1,6 @@
 # Sprint 47 Ring 1 slice — Lane 1 probe report
 
-Status: Lane 1 before/after measured · integrated run pending Lanes 2 and 3 · Updated: 2026-09-24
+Status: before, after (Lane 1 only) and integrated (all three lanes) measured · Updated: 2026-09-24
 
 This report covers what the Ring 1 events (Lane 1) change for a player's first deployment, measured by a scripted browser probe. It separates what the probe **observed** from what it **assumes** or cannot see. No human has played this build: there are no playtest findings, and nothing here was measured on a Steam Deck, in co-op or against Steam Cloud.
 
@@ -51,20 +51,46 @@ Shortcuts, each recorded in the raw output:
 
 - **Whether a player notices the chip, reads the radio line or understands the choice.** The probe proves they render; it cannot tell whether anyone looks at them.
 - **Reaching the site.** Straight-line distances (49–108 m) are not path lengths; nobody walked there.
-- **The fights.** No encounter spawned in any after-run (no Lane 2 contract at runtime), so the per-class fight comparison — the build probe — has no in-game data yet. The only class difference observed is the policy the probe chose (Tank breached, Scout and Engineer bypassed).
-- **Rewards.** No drop was granted (no Lane 3 contract), so no run shows a synergy component changing the rest of the deployment.
+- **The fights (Lane 1 only run).** No encounter spawned in the after-run (no Lane 2 contract at runtime). See the integrated run below for real fights.
+- **What a granted component changes.** The integrated run shows drops granted; no run measures how the rest of the deployment plays with them.
+- **Scripted aim.** Fights use a scripted aim-and-fire that never moves the operator; a player would reposition, reload or retreat.
 - **Deck, co-op, Cloud, frame pacing:** not touched. Co-op does not run events at all (solo only, by design).
 
-## Pending: integrated run
+## Integrated run — all three lanes (`efcb5ae`)
 
-Lanes 2 and 3 were still uncommitted when this ran. Once they land, Lane 1 imports `src/encounterRecipes.js` (Lane 3's `src/statusEffects.js` is already imported by its own runtime changes), and the same probe runs again as `after-integrated` on the same seeds and classes. That run is what can show real fights per class, real drops, and the vault's breach-versus-bypass trade.
+Same probe, seeds and classes, on the commit that wires Lane 2's encounters (`spawnEncounterRecipe`) and Lane 3's drops (`grantRunDrop`) into the runtime. **9/9 passed**: the first pass passed 5 and stalled at boot in 4 (machine load average 37–58 from other agents' work; failures were in `bootToOperatorMenu`/`startRunAndSkipIntro`, before any slice step); those 4 passed on a serial rerun.
+
+| Seed · class | Response | Fight | Result |
+|---|---|---|---|
+| 31337 Scout, Engineer | bypass | none | bypassed; Shatter Engine granted; O₂ 100 → 91 / 93 |
+| 31337 Tank | breach | Cold Pincer, 4 members | cleared in 13 shots, 7 s wall, no hearts lost; Shatter Engine granted |
+| 99991 Tank | scan → open (bait) | Locked Crossfire, 3 members | cleared in 40 shots, 17 s wall, no hearts lost; Caustic Payload granted |
+| 99991 Scout | scan → open (bait) | Locked Crossfire, 3 members | **not cleared** in the probe's 240 s cap; the screenshot shows SIDEARM 0/6, CACHE 0/54 — the Scout ran out of ammunition, after which the probe's 423 "shots" only triggered the melee fallback at range |
+| 99991 Engineer | scan → leave | none | left; nothing granted |
+| 5150 all | scan → open (survivor) | none | rescued; Caustic Payload granted |
+
+Observed:
+
+- **Both contracts work in the game.** Every grant was delivered (`in-run-drop-equipped` fired; radio "Recovered: Shatter Engine."), and every fight came from `spawnEncounterRecipe` (`encounter-started` / `encounter-cleared` with recipe ids). No `slice-contract-missing` event fired.
+- **Breach versus bypass is a real trade:** the Tank's breach cost a 4-member fight; the bypass cost 7–9 % O₂ and no fight.
+- **Class difference seen:** against the same Locked Crossfire the Tank cleared in 40 shots; the Scout, with the starting sidearm and an empty reserve, ran dry. Part of that is the probe (it never moves, reloads or retreats), but it also shows a Scout can open the bait without enough ammunition to finish it.
+- **The route chip changes to "FIGHT · DISTRESS SIGNAL"** while engaged (see `integrated-99991-SCOUT-after.webp`).
+
+Problems found:
+
+1. **"Found: {drop} recovered".** The report printed the raw placeholder: the formatter translated an item's label before filling in the component name. Fixed in `2d2dfd4` (`formatReportLine`, tested); the committed raw output shows the old text.
+2. **Lane 2's damage rule is modelled, not played.** `encounterDamageMultiplier` (anchors and supports shielding the formation) is used only by the priority simulation in `src/encounterRecipes.js`; the runtime never calls it. The combat audit's priority table therefore describes a rule the game does not apply. Recorded for Lane 2.
+3. **The 31337 artefact from the after-run repeats** (the site is on the spine; placing the operator there completed the mission).
+
+Not measured here: whether the Scout would clear the ambush with a player's movement and reloading; how the granted components change the rest of a deployment; anything on a Deck or in co-op.
 
 ## Raw output
 
 `docs/reports/assets/sprint-47/`:
 
-- `slice-before.jsonl`, `slice-after.jsonl` — one record per run (the after file has the 5150 Engineer rerun as its ninth line)
-- `slice-before-run.log`, `slice-after-run.log`, `slice-after-retry-run.log` — Playwright output
+- `slice-before.jsonl`, `slice-after.jsonl`, `slice-integrated.jsonl` — one record per run (after: the 5150 Engineer rerun is the ninth line; integrated: the four reruns are lines 6–9)
+- `slice-before-run.txt`, `slice-after-run.txt`, `slice-after-retry-run.txt`, `slice-integrated-run.txt`, `slice-integrated-retry-run.txt` — Playwright output (renamed from `.log`, which the repo ignores; earlier versions of this report listed them before they were tracked)
+- integrated screenshots (WebP): `integrated-31337-TANK-after`, `integrated-31337-SCOUT-results`, `integrated-99991-SCOUT-after`, `integrated-99991-TANK-results`, `integrated-5150-SCOUT-results`
 - screenshots (WebP): `after-31337-SCOUT-{signal,modal,results}`, `after-99991-SCOUT-{modal,results}`, `after-99991-ENGINEER-results`, `after-5150-TANK-{signal,results}`, `before-31337-SCOUT-{after,results}`, `before-99991-SCOUT-results`, `before-5150-TANK-results`
 
 ## Reproduce
