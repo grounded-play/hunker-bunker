@@ -17,6 +17,15 @@ A paying player should be able to start, understand, pause, resume, cooperate, f
 7. **Let the ship remember.** Use a small number of persistent trophies, repairs, companions, and conversations as physical campaign history.
 8. **Reward mastery without compulsory grind.** Audit Daily Ops, Depth Contract, achievements, class mastery, hidden synergies, and alternate goals before adding another progression track.
 
+## Lane claims
+
+Three agents work this plan on `dev/sprint-47` at once. Claim a phase here, in a commit, before editing its files; `git status` before every edit.
+
+| Phase | Owner | Since |
+|---|---|---|
+| 1 — Solo expedition continuation | the agent that built `src/expeditionSuspend.js` (committed in `2a7f8fb`/`efcb5ae`) | 2026-09-24 |
+| 3 — Legible death and continuation | Claude | 2026-09-24 |
+
 ---
 
 ## Phase 1 — Solo Expedition Continuation
