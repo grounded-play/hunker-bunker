@@ -185,3 +185,82 @@ describe('only the host rolls power-ups', () => {
         });
     });
 });
+
+describe('TRY AGAIN continues the co-op map with its changes', () => {
+    it('a co-op death keeps the run’s world changes for a retry in the same room', () => {
+        const broadcast = vi.fn();
+        vi.stubGlobal('window', { dispatchEvent: () => true, CustomEvent });
+        const maze = { generationVersion: 2, worldChanges: { destroyedWalls: ['wall:3,4'] } };
+        const game = {
+            isPlayerDead: false,
+            getSessionInventory: () => ({ health: 0, ammo: 0, weapon: 0, coin: 0, total: 0 }),
+            closeConsoleModal: () => {},
+            showBunkerLine: () => {},
+            buildLineDirectorContext: () => ({ register: 'default' }),
+            getDepthTierName: () => 'SURFACE',
+            maxDepthTierReached: 0,
+            playerType: 'TANK',
+            player: { position: { x: 0, z: 0 } },
+            isMultiplayer: true,
+            multiplayerMode: 'coop',
+            netSocket: { emit: vi.fn() },
+            multiplayerLocalPlayerId: 'pc',
+            multiplayerRoomCode: 'STEAM-1',
+            broadcastSharedWorldEvent: broadcast,
+            getMazePersistenceState: () => maze,
+            shouldCarryCoopRun: ThreeGame.prototype.shouldCarryCoopRun
+        };
+        ThreeGame.prototype.handleDeath.call(game, 'pit-fall');
+        expect(game._coopRunCarry).toEqual({ roomCode: 'STEAM-1', maze });
+        expect(game.shouldCarryCoopRun()).toBe(true);
+        // Another room, or a solo run, does not inherit it.
+        expect(ThreeGame.prototype.shouldCarryCoopRun.call({ ...game, multiplayerRoomCode: 'STEAM-2' })).toBe(false);
+        expect(ThreeGame.prototype.shouldCarryCoopRun.call({ ...game, isMultiplayer: false })).toBe(false);
+        // MAIN MENU clears it (setPerformanceProfile('menu') sets it to null).
+        expect(ThreeGame.prototype.shouldCarryCoopRun.call({ ...game, _coopRunCarry: null })).toBe(false);
+    });
+});
+
+describe('a broken prop breaks on both screens with the same drops', () => {
+    function propGame(overrides = {}) {
+        vi.stubGlobal('window', { dispatchEvent: () => true, CustomEvent, AudioManager: { play: vi.fn(), playMetalStress: vi.fn() } });
+        const parent = { add: vi.fn(), remove: vi.fn() };
+        const prop = { position: { x: 10, z: 20 }, parent, userData: { type: 'prop_camp_crates', scatterKey: 'prop:10:20', propHp: 1 } };
+        const game = {
+            isMultiplayer: true,
+            multiplayerMode: 'coop',
+            netSocket: { emit: vi.fn() },
+            multiplayerLocalPlayerId: 'deck',
+            scatterSprites: [prop],
+            pickupMeshes: [],
+            loadoutMods: {},
+            player: { position: { x: 9, z: 20 } },
+            spawnGearPoofEffect: vi.fn(),
+            spawnToxicSporePuddle: vi.fn(),
+            createSnailDropPlacement: (sx, sz, x, z, type) => ({ worldX: x, worldZ: z, type }),
+            createPickupInstance: (placement) => ({ position: { x: placement.worldX, z: placement.worldZ }, userData: { type: placement.type } }),
+            ...overrides
+        };
+        for (const method of ['broadcastSharedWorldEvent', 'handleSharedWorldEvent', 'breakScatterProp', 'applyRemotePropBroken', 'spawnDestructiblePropDrops']) {
+            game[method] = ThreeGame.prototype[method];
+        }
+        return { game, prop };
+    }
+
+    it('the breaker announces the prop and its rolled drops; the partner reproduces them exactly', () => {
+        const { game: deck, prop } = propGame();
+        deck.breakScatterProp(prop);
+        const [, payload] = deck.netSocket.emit.mock.calls.find(([name, body]) => name === 'worldEvent' && body.event === 'prop-broken');
+        expect(payload.detail.scatterKey).toBe('prop:10:20');
+        expect(payload.detail.drops.length).toBeGreaterThan(0);
+        expect(deck.scatterSprites).toHaveLength(0);
+
+        const { game: pc } = propGame({ multiplayerLocalPlayerId: 'pc' });
+        pc.handleSharedWorldEvent({ event: 'prop-broken', detail: payload.detail, originId: 'deck' });
+        expect(pc.scatterSprites).toHaveLength(0);
+        expect(pc.pickupMeshes.map((p) => [p.userData.type, p.position.x, p.position.z, p.userData.pickupId]))
+            .toEqual(deck.pickupMeshes.map((p) => [p.userData.type, p.position.x, p.position.z, p.userData.pickupId]));
+        // The partner does not re-announce it.
+        expect(pc.netSocket.emit.mock.calls.some(([, body]) => body?.event === 'prop-broken')).toBe(false);
+    });
+});

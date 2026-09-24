@@ -6149,6 +6149,8 @@ export class ThreeGame {
             dedupeKey = `${event}:${detail.playerId}:${detail.seq}`;
         } else if (event === 'loot-drop-spawned' || event === 'loot-drop-collected') {
             dedupeKey = `${event}:${detail.dropId}`;
+        } else if (event === 'prop-broken') {
+            dedupeKey = `${event}:${detail.scatterKey ?? `${Math.round(detail.x)},${Math.round(detail.z)}`}`;
         } else if (event === 'lore-terminal-read') {
             dedupeKey = `${event}:${detail.loreKey}`;
         } else {
@@ -6261,6 +6263,8 @@ export class ThreeGame {
             this.applyRemoteLootDrop(detail);
         } else if (event === 'loot-drop-collected') {
             this.removeLootDrop(detail.dropId);
+        } else if (event === 'prop-broken') {
+            this.applyRemotePropBroken(detail);
         } else if (event === COOP_TRANSITION_EVENTS.MILESTONE_DEFEATED) {
             this.applyRemoteMilestoneDefeat(detail);
         } else if (event === COOP_TRANSITION_EVENTS.ELEVATOR_DESCENDED) {
@@ -6392,6 +6396,13 @@ export class ThreeGame {
             this.broadcastSharedWorldEvent?.('loot-drop-spawned', { dropId, itemId: drop.id, x, z });
         }
         return drop;
+    }
+
+    // A co-op TRY AGAIN in the same room continues the run's map and changes.
+    shouldCarryCoopRun() {
+        const carry = this._coopRunCarry;
+        return Boolean(carry?.maze) && coopRole(this) !== COOP_ROLE.SOLO
+            && carry.roomCode === (this.multiplayerRoomCode ?? null);
     }
 
     // A squadmate died (any cause): their body goes down where it fell and
@@ -9062,6 +9073,8 @@ export class ThreeGame {
                 this.snapCameraToPlayer();
             }
             this.clearLoadedChunksForRunReset();
+            // MAIN MENU resets the run: a co-op retry no longer continues it.
+            this._coopRunCarry = null;
             this.resetAct2World();
             window.AudioManager?.stopAmbience?.();
             if (typeof window.transitionToMenuMusic === 'function') {
@@ -21521,6 +21534,10 @@ export class ThreeGame {
         // pit-fall comes straight here, and the partner used to keep seeing a
         // standing operator.
         if (coopRole(this) !== COOP_ROLE.SOLO) {
+            // TRY AGAIN continues this map with its changes (owner's rule,
+            // 2026-09-24): keep this run's world changes for the retry. Both
+            // clients hold the same changes because each one is networked.
+            this._coopRunCarry = { roomCode: this.multiplayerRoomCode ?? null, maze: this.getMazePersistenceState?.() ?? null };
             this._coopLifeSeq = (this._coopLifeSeq ?? 0) + 1;
             this.broadcastSharedWorldEvent?.('player-died', {
                 playerId: this.multiplayerLocalPlayerId ?? null,
@@ -21739,7 +21756,11 @@ export class ThreeGame {
             this.clearLoadedChunksForRunReset();
             this.completedRingCrossingMissionIds = new Set();
             this.defeatedMilestoneBosses?.clear?.();
-            if (campaign?.mazeState) this.restoreMazePersistenceState(campaign.mazeState);
+            if (campaign?.mazeState) {
+                this.restoreMazePersistenceState(campaign.mazeState);
+            } else if (this.shouldCarryCoopRun?.()) {
+                this.restoreMazePersistenceState(this._coopRunCarry.maze);
+            }
             this._campaignProgressRestored = Boolean(campaign);
             this.syncVisibleChunks(true, { processLimit: deferChunkMount ? 0 : null });
             this.applyMilestoneBossRuntimeEvent?.({
@@ -31498,56 +31519,98 @@ export class ThreeGame {
         }
         window.AudioManager?.play('enemy_hit_soft', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.35 }) ?? { volume: 0.35 }));
 
-        if (sprite.userData.propHp <= 0) {
-            sprite.userData.burstTriggered = true;
-            const isBio = sprite.userData.type?.includes?.('spore') || sprite.userData.type?.includes?.('specimen');
-            // Props with a 3D model come apart into physical chunks; the poof
-            // remains the fallback for flat-sprite props that have nothing to
-            // fracture. spawnPropDebris reports which happened, so a prop never
-            // gets both a debris field and a puff of smoke standing in for one.
-            const brokeApart = spawnPropDebris(this, sprite, {
-                direction: this.player ? {
-                    x: sprite.position.x - this.player.position.x,
-                    z: sprite.position.z - this.player.position.z
-                } : null
-            });
-            if (!brokeApart) {
-                this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, isBio ? 'bio_spores' : 'bunker_junk');
-            }
-            if (isBio) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
-            window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 1.85, force: true });
-
-            this.spawnDestructiblePropDrops(sprite);
-
-            const idx = this.scatterSprites.indexOf(sprite);
-            if (idx !== -1) this.scatterSprites.splice(idx, 1);
-            sprite.userData.world3dRoot?.removeFromParent();
-            if (sprite.parent) sprite.parent.remove(sprite);
-            return true;
-        }
+        if (sprite.userData.propHp <= 0) return this.breakScatterProp(sprite);
         return false;
     }
 
-    spawnDestructiblePropDrops(sprite) {
+    // Break a prop: debris, drops, removal. The client that broke it rolls the
+    // drops once and tells the squad, which breaks the same prop with the same
+    // drops (2026-09-24 QA: nothing in co-op may differ between screens).
+    breakScatterProp(sprite, { plannedDrops = null, fromRemote = false } = {}) {
+        sprite.userData.burstTriggered = true;
+        const isBio = sprite.userData.type?.includes?.('spore') || sprite.userData.type?.includes?.('specimen');
+        // Props with a 3D model come apart into physical chunks; the poof
+        // remains the fallback for flat-sprite props that have nothing to
+        // fracture. spawnPropDebris reports which happened, so a prop never
+        // gets both a debris field and a puff of smoke standing in for one.
+        const brokeApart = spawnPropDebris(this, sprite, {
+            direction: this.player ? {
+                x: sprite.position.x - this.player.position.x,
+                z: sprite.position.z - this.player.position.z
+            } : null
+        });
+        if (!brokeApart) {
+            this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, isBio ? 'bio_spores' : 'bunker_junk');
+        }
+        if (isBio) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
+        window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 1.85, force: true });
+
+        this.spawnDestructiblePropDrops(sprite, plannedDrops);
+        if (!fromRemote && coopRole(this) !== COOP_ROLE.SOLO) {
+            this.broadcastSharedWorldEvent?.('prop-broken', {
+                scatterKey: sprite.userData.scatterKey ?? null,
+                x: sprite.position.x,
+                z: sprite.position.z,
+                drops: sprite.userData.dropPlan ?? []
+            });
+        }
+
+        const idx = this.scatterSprites.indexOf(sprite);
+        if (idx !== -1) this.scatterSprites.splice(idx, 1);
+        sprite.userData.world3dRoot?.removeFromParent();
+        if (sprite.parent) sprite.parent.remove(sprite);
+        return true;
+    }
+
+    // The prop a squadmate broke: same key, else the nearest prop at that spot.
+    applyRemotePropBroken(detail = {}) {
+        const sprite = (this.scatterSprites ?? []).find((candidate) => (
+            detail.scatterKey && candidate.userData?.scatterKey === detail.scatterKey && !candidate.userData?.burstTriggered
+        )) ?? (this.scatterSprites ?? []).find((candidate) => (
+            candidate.userData?.propHp !== undefined && !candidate.userData?.burstTriggered
+            && Math.hypot(candidate.position.x - detail.x, candidate.position.z - detail.z) <= 0.6
+        ));
+        if (!sprite) return false;
+        sprite.userData.propHp = 0;
+        return this.breakScatterProp(sprite, { plannedDrops: Array.isArray(detail.drops) ? detail.drops : [], fromRemote: true });
+    }
+
+    spawnDestructiblePropDrops(sprite, plannedDrops = null) {
         const parent = sprite?.parent;
         if (!parent) return 0;
-        const ammoCount = sprite.userData?.isAmmoLocker ? 3 : 1;
-        const dropTypes = Array.from({ length: ammoCount }, () => 'ammo');
-        if (!sprite.userData?.isAmmoLocker && Math.random() < 0.2) dropTypes.push('health');
-        if (this.loadoutMods?.propsDropSalvage) dropTypes.push('coin');
+        // A squadmate's break arrives with its drops already rolled.
+        const plan = Array.isArray(plannedDrops) ? plannedDrops : (() => {
+            const ammoCount = sprite.userData?.isAmmoLocker ? 3 : 1;
+            const types = Array.from({ length: ammoCount }, () => 'ammo');
+            if (!sprite.userData?.isAmmoLocker && Math.random() < 0.2) types.push('health');
+            if (this.loadoutMods?.propsDropSalvage) types.push('coin');
+            return types.map((type, index) => {
+                const angle = (index / Math.max(types.length, 1)) * Math.PI * 2 + Math.random() * 0.35;
+                const radius = 0.4 + Math.random() * 0.25;
+                return {
+                    type,
+                    x: sprite.position.x + Math.cos(angle) * radius,
+                    z: sprite.position.z + Math.sin(angle) * radius
+                };
+            });
+        })();
+        sprite.userData.dropPlan = plan;
+        const dropTypes = plan.map((drop) => drop.type);
         let spawned = 0;
-        for (let index = 0; index < dropTypes.length; index += 1) {
-            const angle = (index / Math.max(dropTypes.length, 1)) * Math.PI * 2 + Math.random() * 0.35;
-            const radius = 0.4 + Math.random() * 0.25;
+        for (let index = 0; index < plan.length; index += 1) {
+            const drop = plan[index];
+            if (!Number.isFinite(drop?.x) || !Number.isFinite(drop?.z) || typeof drop?.type !== 'string') continue;
             const placement = this.createSnailDropPlacement(
                 sprite.position.x,
                 sprite.position.z,
-                sprite.position.x + Math.cos(angle) * radius,
-                sprite.position.z + Math.sin(angle) * radius,
-                dropTypes[index]
+                drop.x,
+                drop.z,
+                drop.type
             );
             const pickup = this.createPickupInstance(placement);
             if (!pickup) continue;
+            // The same id on every screen, so taking it removes it for both.
+            if (pickup.userData && sprite.userData?.scatterKey) pickup.userData.pickupId = `prop:${sprite.userData.scatterKey}:${index}`;
             parent.add(pickup);
             this.pickupMeshes.push(pickup);
             spawned += 1;
