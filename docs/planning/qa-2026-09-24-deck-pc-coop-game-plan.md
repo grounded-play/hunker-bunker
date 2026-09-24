@@ -106,7 +106,7 @@ Plan: key the layout to the run — TRY AGAIN reuses the run's seed and saved ma
 1. **Co-op and PvP:** every new run starts the story fresh. Today the story managers (`arcManager`, `act2Manager`) are profile-wide, so a co-op run reads the solo story (how Meridian appeared) and writes back into it.
 2. **Solo:** CONTINUE on the title screen keeps the story. Today only NEW CAMPAIGN resets it; MAIN MENU from a run does not touch it in code (`returnToMainMenuFromRun` respawns with `resetRunState: false`).
 3. **Map:** TRY AGAIN keeps the map with its changes; MAIN MENU ends the run, and the next run gets a new map.
-4. **To confirm with the owner:** whether "returning to the main menu is resetting the game" describes something seen in play (a bug — the code does not reset the story there) or the intended rule; and whether campaign world changes (bridges built, camps fortified, hives transformed, shortcuts opened) belong to the story (kept) or to the map (reset with it).
+4. **Answered:** the owner meant NEW CAMPAIGN — it resets the story, which the game already does (no bug). Campaign world changes (bridges built, camps fortified, hives transformed, shortcuts opened) **count as story**: kept with CONTINUE, reset by NEW CAMPAIGN. Consequence for rule 3: a new map per run can only keep them if they are stored by what they are (camp id, crossing id, hive id), not by map position, so they can be re-applied to the new layout — to check before building the solo half.
 
 ### P1 — Co-op does not start fresh (reported; not in the logs)
 
