@@ -22149,7 +22149,10 @@ export class ThreeGame {
             }
         }
 
-        if (this.player) {
+        // Pockets (the Foundry interior, sub-level voids) are flat at
+        // POCKET_WORLD_Y; the surface heightmap under the same x/z pulled the
+        // player up out of the Foundry floor.
+        if (this.player && !this.isInPocket) {
             const targetHeight = this.getTerrainHeightAt(this.player.position.x, this.player.position.z);
             this.player.position.y = THREE.MathUtils.lerp(
                 this.player.position.y,

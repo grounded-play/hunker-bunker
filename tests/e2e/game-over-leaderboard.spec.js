@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
+import { bootToOperatorMenu, startRunAndSkipIntro, isHostNetworkBlip } from './helpers.js';
 
 // Phase 13: "Game-over leaderboard states" (docs/steam-launch-readiness-master-plan.md).
 // renderGameOverLeaderboard (main.js) already implements all three states —
@@ -14,7 +14,7 @@ test.describe('Game-over leaderboard', () => {
     test('shows the offline state (no window.electronAPI) with the score banked-locally message', async ({ page }) => {
         const consoleErrors = [];
         page.on('console', (msg) => {
-            if (msg.type() === 'error') consoleErrors.push(msg.text());
+            if (msg.type() === 'error' && !isHostNetworkBlip(msg.text())) consoleErrors.push(msg.text());
         });
         page.on('pageerror', (err) => consoleErrors.push(err.message));
 

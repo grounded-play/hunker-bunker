@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
+import { bootToOperatorMenu, startRunAndSkipIntro, isHostNetworkBlip } from './helpers.js';
 
 // docs/planning/depth-01-elite-and-relic-lane-2026-09-09.md D1/D2/D5.
 //
@@ -41,7 +41,7 @@ async function placementsForTier(page, targetTier) {
 test.describe('Depth Contract elite promotion (live engine)', () => {
     test('ring I promotes nobody and a deep ring promotes eligible families only', async ({ page }) => {
         const consoleErrors = [];
-        page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
+        page.on('console', (msg) => { if (msg.type() === 'error' && !isHostNetworkBlip(msg.text())) consoleErrors.push(msg.text()); });
         page.on('pageerror', (err) => consoleErrors.push(err.message));
 
         await bootToOperatorMenu(page);

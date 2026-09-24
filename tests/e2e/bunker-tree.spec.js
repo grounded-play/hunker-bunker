@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
+import { bootToOperatorMenu, startRunAndSkipIntro, isHostNetworkBlip } from './helpers.js';
 
 // Phase 13: "Use Bunker Tree" (docs/steam-launch-readiness-master-plan.md).
 // Exercises the unified skill tree end to end: opening it, switching
@@ -13,7 +13,7 @@ test.describe('Bunker Tree (console skill tree)', () => {
         test.setTimeout(240_000);
         const consoleErrors = [];
         page.on('console', (msg) => {
-            if (msg.type() === 'error') consoleErrors.push(msg.text());
+            if (msg.type() === 'error' && !isHostNetworkBlip(msg.text())) consoleErrors.push(msg.text());
         });
         page.on('pageerror', (err) => consoleErrors.push(err.message));
 
