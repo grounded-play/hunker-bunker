@@ -11,9 +11,9 @@ The latest reviewed capture is one 12-minute Steam Deck session from packaged `v
 | Ticket | Local status | What the capture adds | What remains required |
 | --- | --- | --- | --- |
 | #45 | **Open** | Physical packaged evidence exists for one client. | Every dependent gate below, plus Cloud/save and human proof run. |
-| #51 — PvP certification | **Partial, one-sided** | Lobby, ready, deploy, remote 3D readiness, inbound damage, one `pvp-rival` death, and respawn. | Paired hit evidence, full result/reconnect, and all PvP rule gates. |
-| #52 — performance | **Open** | Effects sampled 0–64 (final 13); p50 84.7 ms, p95 223.6 ms, p99 519.5 ms, max 4.614 s. | Fixed-route before/after benchmark and measured remediation. |
-| #53 — Deck controller-only | **Open** | Package ran on physical Deck at 1280×800. | Controller-only attestation and route; input events alone cannot prove it. |
+| #51 — PvP certification | **Partial, one-sided** | Lobby, ready, deploy, remote 3D readiness, inbound damage, one `pvp-rival` death, and respawn. | **P0 first:** align local four-heart code with relay/remote three-heart initialization, then obtain paired hit evidence, full result/reconnect, and all PvP rule gates. |
+| #52 — performance | **Open** | Effects sampled 0–64 (final 13); p50 84.7 ms, p95 223.6 ms, p99 519.5 ms, max 4.614 s. | Current source has unit-tested render/shadow mitigations; require fixed-route packaged before/after benchmark. |
+| #53 — Deck controller-only | **Open** | Package ran on physical Deck at 1280×800. | Current source adds provenance/action-set diagnostics, but controller-only attestation and route remain required. |
 | #85 — two-account co-op PvE | **Open / unaffected** | None; PvP does not qualify as co-op evidence. | Paired host/guest expedition through boss and Act 2 descent. |
 | #86 — log intake | Evidence added | This report documents a new capture. | Maintain readable, paired capture workflow; do not infer ticket closure. |
 
@@ -31,7 +31,7 @@ Every report under `docs/reports/` must record:
 - local filename and server-upload filename/SHA for every participating client;
 - a criterion-by-criterion pass, fail, or not-observed conclusion with links to event IDs/timestamps, screenshots/video, or human notes.
 
-Current diagnostics export the build identity but expose a `null` seed and no expedition-index field. Record intended seed/index outside the log until the export is extended.
+The captured package exports the build identity but exposes a `null` seed and no expedition-index field. Current source adds route/action-set identifiers; record the intended seed/index outside the log until a new packaged capture proves the export.
 
 ### Upload and pairing procedure
 
@@ -53,7 +53,7 @@ Certify a fair, observable PvP lifecycle for two real Steam accounts in a packag
 
 - Both clients run the exact recorded packaged build and are authenticated Steam accounts.
 - Relay health is checked before the run; record the result in the report.
-- The current intended PvP HP/loadout policy is written into the report **before** testing. If the product rule is normalized health, both players must start equally even when their solo fatigue states differ.
+- The intended PvP HP/loadout policy is written into the report **before** testing. The current source is not certifiable yet: local vitals target four hearts while the relay and fresh remote replicas initialize at three. Align the authority contract before the test, then confirm every participant starts at the same configured maximum even when solo fatigue differs.
 - Use a dedicated test room and capture the room code, player roles, chassis/loadouts, and map/ruleset.
 - Both clients have `uploadlogs` available and a local `exportlogs` fallback.
 
@@ -64,7 +64,7 @@ Certify a fair, observable PvP lifecycle for two real Steam accounts in a packag
 | 51-TC01 | Lobby and roster | Host a PvP room; guest joins through Steam; both ready, then guest un-readies/re-readies once. | Both logs agree on roster, ready state, room, and deploy event. |
 | 51-TC02 | Remote avatar handoff | Observe the remote chassis during deploy, movement, sprint, turn, and weapon use. | Full 3D readiness timing recorded on both clients. Existing target is ≤200 ms without placeholder fallback; the latest Deck capture recorded about 678 ms fallback and therefore does not pass this case. |
 | 51-TC03 | Bidirectional server verdict | A shoots B, then B shoots A under the same controlled weapon/range setup. | Each side logs shot intent, relay/server verdict, recipient health change, and attribution. A local projectile alone is insufficient. |
-| 51-TC04 | HP/loadout normalization | Repeat 51-TC03 with players intentionally carrying different solo fatigue states, if fatigue exists outside PvP. | Observed PvP maximum HP/loadout behavior matches the written ruleset; no unexplained campaign-fatigue advantage. |
+| 51-TC04 | HP/loadout authority and normalization | Before firing, record local player, remote replica, and relay maximum HP; repeat 51-TC03 with players intentionally carrying different solo fatigue states. | All three authorities use the same written PvP maximum. A four-heart local / three-heart relay or replica mismatch is a fail; no campaign-fatigue advantage. |
 | 51-TC05 | Death, kill, and respawn | Reduce each player to zero in turn; observe the configured PvP death flow and respawn. | Both logs agree on killer/victim/reason, respawn location, health, protection timer if intended, and collision-safe placement. PvP direct death is acceptable if it is the specified mode behavior; do not require co-op crawl/downed state. |
 | 51-TC06 | Spawn fairness | Immediately after each respawn, test separation, invulnerability/protection timing if designed, and collision/depenetration. | Paired position/timing evidence; no unsupported conclusion that a single death proves camping. |
 | 51-TC07 | Rewards and persistence | Perform a PvP death and inspect Black Box, objective XP, season XP, polish, salvage, and save state. Repeat enough times to distinguish an intended one-off from a repeatable loop. | The observed result matches the published PvP reward rule; no accidental campaign reward leakage. |
@@ -98,7 +98,7 @@ The prior desktop target remains: 60 FPS nominal, p50 ≤16.6 ms, p95 ≤20 ms, 
 1. Capture a cold launch, staging, sector entry, combat encounter, game-over/result transition, return to menu, and a second deploy.
 2. Repeat on the same package and device after the proposed remediation.
 3. Report observed and retained frame-interval counts; p50/p95/p99/max; `PERF` diagnostic-window count and maximum; GPU query average/max/drops; heap; estimated GPU memory; programs/geometries/textures/chunks/effects; and the active quality profile.
-4. Trace the candidate path before changing it. The latest capture makes shader/profile/chunk/material work and the game-over transition plausible targets; it does not prove their causality.
+4. Trace the candidate path before changing it. Current source keeps the shadow-map key stable and suspends the world-render path on game-over, but the latest capture only made those plausible targets; it does not prove their causality or package benefit.
 5. Run the relevant regression suite after a confirmed code fix, then re-run the physical benchmark. Automated coverage does not pass #52 by itself.
 
 ### #52 closure package
@@ -119,7 +119,7 @@ Certify that the packaged Steam build is usable at native 1280×800 in Gaming Mo
 
 - Steam Deck in Gaming Mode, native 1280×800; record LCD/OLED, SteamOS version, selected refresh cap, and official Steam Input layout.
 - No mouse, keyboard, touch, or Desktop Mode assistance. Tester attests to this in the report.
-- Log the active Steam Input action set at title, menu, map/pause, gameplay, death/result, and extraction/return.
+- Log the active Steam Input action set at title, menu, map/pause, gameplay, death/result, and extraction/return. Verify the current source's action-set/input/route diagnostics appear in the uploaded package capture.
 
 ### Controller-only route
 
