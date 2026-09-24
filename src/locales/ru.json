@@ -1722,6 +1722,58 @@
       "report": {
         "opened": "Высокорисковый контейнер наград вскрыт ({drop})"
       }
+    },
+    "death": {
+      "cause": {
+        "enemy": "Убийца: {enemy}",
+        "projectile": "Убит вражеским огнём",
+        "boss_attack": "Убит атакой босса",
+        "o2": "Удушье — в скафандре кончился кислород",
+        "fall": "Падение в пропасть",
+        "hazard": "Убит токсичной землёй",
+        "turret": "Убит турелью лагеря",
+        "backlash": "Убит отдачей Молока Королевы",
+        "ship": "Корабль уничтожен",
+        "squad": "Погиб весь отряд",
+        "abort": "Миссия прервана",
+        "unknown": "Причина смерти не записана"
+      },
+      "enemy": {
+        "cybersnail": "киберулитка",
+        "cryosnail": "криоулитка",
+        "sporesnail": "споровая улитка",
+        "sentinel": "страж",
+        "crawler": "ползун прорыва",
+        "alien_proto_crawler": "протоползун",
+        "alien_proto_spitter": "протоплевун",
+        "mycelium_stalker": "мицелиевый охотник",
+        "bio_charger": "биотаран",
+        "spore_mortar": "споровая мортира",
+        "fungal_spore_vent": "споровый выброс",
+        "boss_cybersnail": "босс-киберулитка",
+        "boss_cryosnail": "босс-криоулитка",
+        "boss_sporesnail": "босс — споровая улитка",
+        "boss_corrupted_scout": "осквернённый Scout",
+        "boss_corrupted_tank": "осквернённый Tank",
+        "boss_corrupted_engineer": "осквернённый Engineer",
+        "boss_queen": "Королева"
+      },
+      "build": {
+        "cryo_shatter": "Сборка: Криораскол сработал {count}× — {damage} урона",
+        "bio_predator": "Сборка: Биохищник сработал {count}×, восстановив {o2}% O₂ и {hearts} сердец",
+        "equipped": "Сборка: {drops} (синергия не сработала)",
+        "none": "Сборка: нет полевых улучшений в этой высадке"
+      },
+      "field": {
+        "black_box": "Осталось в поле: {missing} — чёрный ящик в {meters} м от корабля",
+        "black_box_empty": "В поле ничего не осталось"
+      },
+      "next": {
+        "recover_black_box": "Дальше: заберите чёрный ящик ({meters} м), пока следующая смерть его не заменила",
+        "build_goal": "Дальше: постройте {goal} у консоли корабля",
+        "follow_lead": "Дальше: идите по следу — {label}",
+        "redeploy": "Дальше: новая высадка"
+      }
     }
   },
   "narrative": {

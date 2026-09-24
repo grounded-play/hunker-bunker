@@ -1722,6 +1722,58 @@
       "report": {
         "opened": "Alijo de recompensa de alto riesgo forzado ({drop})"
       }
+    },
+    "death": {
+      "cause": {
+        "enemy": "Te mató {enemy}",
+        "projectile": "Te mató el fuego hostil",
+        "boss_attack": "Te mató un ataque de jefe",
+        "o2": "Asfixia: el traje se quedó sin oxígeno",
+        "fall": "Caíste a un abismo",
+        "hazard": "Te mató el suelo tóxico",
+        "turret": "Te mató una torreta del campamento",
+        "backlash": "Te mató el rebote de la Leche de la Reina",
+        "ship": "La nave fue destruida",
+        "squad": "Cayó todo el escuadrón",
+        "abort": "Misión abortada",
+        "unknown": "No se registró la causa de muerte"
+      },
+      "enemy": {
+        "cybersnail": "Cibercaracol",
+        "cryosnail": "Criocaracol",
+        "sporesnail": "Caracol de esporas",
+        "sentinel": "Centinela",
+        "crawler": "Reptador de brecha",
+        "alien_proto_crawler": "Proto-reptador",
+        "alien_proto_spitter": "Proto-escupidor",
+        "mycelium_stalker": "Acechador de micelio",
+        "bio_charger": "Bio-embestidor",
+        "spore_mortar": "Mortero de esporas",
+        "fungal_spore_vent": "Respiradero de esporas",
+        "boss_cybersnail": "el jefe Cibercaracol",
+        "boss_cryosnail": "el jefe Criocaracol",
+        "boss_sporesnail": "el jefe Caracol de esporas",
+        "boss_corrupted_scout": "el Scout corrompido",
+        "boss_corrupted_tank": "el Tank corrompido",
+        "boss_corrupted_engineer": "el Engineer corrompido",
+        "boss_queen": "la Reina"
+      },
+      "build": {
+        "cryo_shatter": "Build: Crio-fragmentación se activó {count}× con {damage} de daño",
+        "bio_predator": "Build: Biodepredador se activó {count}×, restaurando {o2}% de O₂ y {hearts} corazones",
+        "equipped": "Build: {drops} (ninguna sinergia se activó)",
+        "none": "Build: sin mejoras de campo en este despliegue"
+      },
+      "field": {
+        "black_box": "Quedó en el campo: {missing} — Caja negra a {meters} m de la nave",
+        "black_box_empty": "No quedó nada en el campo"
+      },
+      "next": {
+        "recover_black_box": "Siguiente paso: recupera la Caja negra (a {meters} m) antes de que otra muerte la reemplace",
+        "build_goal": "Siguiente paso: construye {goal} en la consola de la nave",
+        "follow_lead": "Siguiente paso: sigue la pista — {label}",
+        "redeploy": "Siguiente paso: vuelve a desplegar"
+      }
     }
   },
   "narrative": {

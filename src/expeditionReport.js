@@ -10,6 +10,8 @@
 // { kind, labelKey, params } (docs/planning/gameplay-feature-review-2026-09-24.md,
 // shared contracts); the runtime collects them per deployment as `items`.
 
+import { NEXT_ACTION_KEYS } from './deathReport.js';
+
 export const GOAL_NAME_KEYS = Object.freeze({
     o2Bubble: 'ui.console_terminal.o2_generator_module',
     hullExpansion: 'ui.console_terminal.hull_expansion_matrix',
@@ -68,12 +70,16 @@ export function missingForCost(cost = {}, bank = {}) {
  * @param {string[]} report.completed - labels resolved complete this deployment
  * @param {object|null} report.nextGoal - { goalKey, cost, bank } or null when all are built
  * @param {Array} [report.items] - `expedition-report-item` details from every lane
+ * @param {object|null} [report.death] - src/deathReport.js lines: { cause, field, next }
+ * @param {object|null} [report.build] - src/deathReport.js summarizeBuild line
  * @returns {Array<{ key: string, params?: object, parts?: Array }>}
  */
-export function buildExpeditionReport({ conditionNameKey = null, bounty = null, completed = [], nextGoal = null, items = [] } = {}) {
+export function buildExpeditionReport({ conditionNameKey = null, bounty = null, completed = [], nextGoal = null, items = [], death = null, build = null } = {}) {
     const itemLines = reportItemLines(items);
     const lines = [];
     if (conditionNameKey) lines.push({ key: 'ui.go.report.condition', params: { conditionKey: conditionNameKey } });
+    // Why the run ended comes before what it achieved.
+    if (death?.cause) lines.push(death.cause);
     if (bounty) {
         lines.push(bounty.completed
             ? { key: 'ui.go.report.bounty_met', params: { labelKey: bounty.labelKey, shells: bounty.paidShells ?? 0 } }
@@ -84,6 +90,7 @@ export function buildExpeditionReport({ conditionNameKey = null, bounty = null, 
         ? { key: 'ui.go.report.completed', params: { list: done.join(' · ') } }
         : { key: 'ui.go.report.none_completed' });
     lines.push(...itemLines.filter((entry) => entry.kind !== 'lead').map((entry) => entry.line));
+    if (build) lines.push(build);
     if (!nextGoal) {
         lines.push({ key: 'ui.go.report.all_goals' });
     } else {
@@ -98,5 +105,9 @@ export function buildExpeditionReport({ conditionNameKey = null, bounty = null, 
             });
     }
     lines.push(...itemLines.filter((entry) => entry.kind === 'lead').map((entry) => entry.line));
+    if (death?.field) lines.push(death.field);
+    // One explicit next action closes the report, unless it would only
+    // repeat the ship-goal line above.
+    if (death?.next && death.next.key !== NEXT_ACTION_KEYS.build) lines.push(death.next);
     return lines;
 }

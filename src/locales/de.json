@@ -1722,6 +1722,58 @@
       "report": {
         "opened": "Hochrisiko-Belohnungscache aufgebrochen ({drop})"
       }
+    },
+    "death": {
+      "cause": {
+        "enemy": "Getötet durch {enemy}",
+        "projectile": "Durch feindliches Feuer getötet",
+        "boss_attack": "Durch einen Boss-Angriff getötet",
+        "o2": "Erstickt – dem Anzug ging der Sauerstoff aus",
+        "fall": "In eine Schlucht gestürzt",
+        "hazard": "Durch giftigen Boden getötet",
+        "turret": "Durch ein Lagergeschütz getötet",
+        "backlash": "Durch den Rückschlag der Königinnenmilch getötet",
+        "ship": "Das Schiff wurde zerstört",
+        "squad": "Der ganze Trupp ist gefallen",
+        "abort": "Mission abgebrochen",
+        "unknown": "Todesursache nicht erfasst"
+      },
+      "enemy": {
+        "cybersnail": "Cyberschnecke",
+        "cryosnail": "Kryoschnecke",
+        "sporesnail": "Sporenschnecke",
+        "sentinel": "Wächter",
+        "crawler": "Bruchkriecher",
+        "alien_proto_crawler": "Proto-Kriecher",
+        "alien_proto_spitter": "Proto-Spucker",
+        "mycelium_stalker": "Myzel-Pirscher",
+        "bio_charger": "Bio-Stürmer",
+        "spore_mortar": "Sporenmörser",
+        "fungal_spore_vent": "Sporenschlot",
+        "boss_cybersnail": "den Cyberschnecken-Boss",
+        "boss_cryosnail": "den Kryoschnecken-Boss",
+        "boss_sporesnail": "den Sporenschnecken-Boss",
+        "boss_corrupted_scout": "den verderbten Scout",
+        "boss_corrupted_tank": "den verderbten Tank",
+        "boss_corrupted_engineer": "den verderbten Engineer",
+        "boss_queen": "die Königin"
+      },
+      "build": {
+        "cryo_shatter": "Build: Kryo-Splitter {count}× ausgelöst, {damage} Schaden",
+        "bio_predator": "Build: Bio-Räuber {count}× ausgelöst, {o2}% O₂ und {hearts} Herzen wiederhergestellt",
+        "equipped": "Build: {drops} (keine Synergie ausgelöst)",
+        "none": "Build: keine Feld-Upgrades in diesem Einsatz"
+      },
+      "field": {
+        "black_box": "Im Feld zurückgelassen: {missing} – Black Box {meters} m vom Schiff entfernt",
+        "black_box_empty": "Im Feld wurde nichts zurückgelassen"
+      },
+      "next": {
+        "recover_black_box": "Nächster Schritt: Hol die Black Box ({meters} m entfernt), bevor ein weiterer Tod sie ersetzt",
+        "build_goal": "Nächster Schritt: Baue {goal} an der Schiffskonsole",
+        "follow_lead": "Nächster Schritt: Folge der Spur – {label}",
+        "redeploy": "Nächster Schritt: erneut einsetzen"
+      }
     }
   },
   "narrative": {

@@ -1722,6 +1722,58 @@
       "report": {
         "opened": "破拆高风险奖励储藏箱 ({drop})"
       }
+    },
+    "death": {
+      "cause": {
+        "enemy": "死于{enemy}",
+        "projectile": "死于敌方火力",
+        "boss_attack": "死于首领攻击",
+        "o2": "窒息——装甲服氧气耗尽",
+        "fall": "坠入深渊",
+        "hazard": "死于有毒地面",
+        "turret": "死于营地炮塔",
+        "backlash": "死于女王之乳的反噬",
+        "ship": "飞船被摧毁",
+        "squad": "全队阵亡",
+        "abort": "任务中止",
+        "unknown": "未记录死因"
+      },
+      "enemy": {
+        "cybersnail": "赛博蜗牛",
+        "cryosnail": "冰冻蜗牛",
+        "sporesnail": "孢子蜗牛",
+        "sentinel": "哨兵",
+        "crawler": "裂隙爬行者",
+        "alien_proto_crawler": "原型爬行者",
+        "alien_proto_spitter": "原型喷吐者",
+        "mycelium_stalker": "菌丝潜猎者",
+        "bio_charger": "生化冲锋者",
+        "spore_mortar": "孢子迫击炮",
+        "fungal_spore_vent": "孢子喷口",
+        "boss_cybersnail": "赛博蜗牛首领",
+        "boss_cryosnail": "冰冻蜗牛首领",
+        "boss_sporesnail": "孢子蜗牛首领",
+        "boss_corrupted_scout": "堕落的侦察兵",
+        "boss_corrupted_tank": "堕落的坦克",
+        "boss_corrupted_engineer": "堕落的工程师",
+        "boss_queen": "女王"
+      },
+      "build": {
+        "cryo_shatter": "构建：冰霜碎裂触发{count}次，造成{damage}点伤害",
+        "bio_predator": "构建：生化掠食者触发{count}次，恢复{o2}%氧气和{hearts}颗心",
+        "equipped": "构建：{drops}（未触发协同）",
+        "none": "构建：本次部署没有战地升级"
+      },
+      "field": {
+        "black_box": "遗留在野外：{missing}——黑匣子距飞船{meters}米",
+        "black_box_empty": "野外没有遗留任何物品"
+      },
+      "next": {
+        "recover_black_box": "下一步：在下一次死亡覆盖它之前回收黑匣子（{meters}米外）",
+        "build_goal": "下一步：在飞船控制台建造{goal}",
+        "follow_lead": "下一步：追踪线索——{label}",
+        "redeploy": "下一步：重新部署"
+      }
     }
   },
   "narrative": {

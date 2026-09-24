@@ -1722,6 +1722,58 @@
       "report": {
         "opened": "Breached High-Stakes Reward Cache ({drop})"
       }
+    },
+    "death": {
+      "cause": {
+        "enemy": "Killed by {enemy}",
+        "projectile": "Killed by hostile fire",
+        "boss_attack": "Killed by a boss attack",
+        "o2": "Suffocated — the suit ran out of oxygen",
+        "fall": "Fell into a chasm",
+        "hazard": "Killed by toxic ground",
+        "turret": "Killed by a camp turret",
+        "backlash": "Killed by Queen's Milk backlash",
+        "ship": "The ship was destroyed",
+        "squad": "The whole squad went down",
+        "abort": "Mission aborted",
+        "unknown": "Cause of death was not recorded"
+      },
+      "enemy": {
+        "cybersnail": "Cybersnail",
+        "cryosnail": "Cryosnail",
+        "sporesnail": "Sporesnail",
+        "sentinel": "Sentinel",
+        "crawler": "Breach Crawler",
+        "alien_proto_crawler": "Proto-Crawler",
+        "alien_proto_spitter": "Proto-Spitter",
+        "mycelium_stalker": "Mycelium Stalker",
+        "bio_charger": "Bio-Charger",
+        "spore_mortar": "Spore Mortar",
+        "fungal_spore_vent": "Spore Vent",
+        "boss_cybersnail": "the Cybersnail boss",
+        "boss_cryosnail": "the Cryosnail boss",
+        "boss_sporesnail": "the Sporesnail boss",
+        "boss_corrupted_scout": "the corrupted Scout",
+        "boss_corrupted_tank": "the corrupted Tank",
+        "boss_corrupted_engineer": "the corrupted Engineer",
+        "boss_queen": "the Queen"
+      },
+      "build": {
+        "cryo_shatter": "Build: Cryo Shatter fired {count}× for {damage} damage",
+        "bio_predator": "Build: Bio Predator fired {count}×, restoring {o2}% O₂ and {hearts} hearts",
+        "equipped": "Build: {drops} (no synergy fired)",
+        "none": "Build: no field upgrades this deployment"
+      },
+      "field": {
+        "black_box": "Left in the field: {missing} — Black Box {meters} m from the ship",
+        "black_box_empty": "Nothing was left in the field"
+      },
+      "next": {
+        "recover_black_box": "Next action: recover the Black Box ({meters} m out) before another death replaces it",
+        "build_goal": "Next action: build {goal} at the ship console",
+        "follow_lead": "Next action: follow the lead — {label}",
+        "redeploy": "Next action: redeploy"
+      }
     }
   },
   "narrative": {

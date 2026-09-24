@@ -5485,6 +5485,12 @@ function formatExpeditionReportLine(line) {
         const drop = t(params.dropKey);
         params.drop = drop !== params.dropKey ? drop : (params.name ?? params.dropId ?? '');
     }
+    if (params.enemyKey) params.enemy = t(params.enemyKey);
+    if (Array.isArray(params.dropKeys)) {
+        params.drops = params.dropKeys
+            .map((key, index) => { const name = t(key); return name !== key ? name : (params.dropIds?.[index] ?? key); })
+            .join(' + ');
+    }
     if (line.parts) {
         params.missing = line.parts
             .map((part) => `${part.amount} ${part.resourceKey ? t(part.resourceKey) : part.resource}`)

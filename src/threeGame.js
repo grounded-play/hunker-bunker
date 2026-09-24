@@ -433,6 +433,8 @@ import {
     recordBountyEvent
 } from './expeditionBounties.js';
 import { planArrivalIncident, planCrashSiteDebris } from './arrivalIncident.js';
+import { chooseNextAction, describeDeathCause, describeFieldLoss, summarizeBuild } from './deathReport.js';
+import { GOAL_NAME_KEYS } from './expeditionReport.js';
 import { EVENT_ROUTE_KEYS, EVENT_TEXT_KEYS, EVENT_TUNING, applyEventAction, createEventState, planDeploymentEvent, selectDeploymentEvent } from './expeditionEvents.js';
 import { callSliceContract } from './sliceContracts.js';
 import './encounterRecipes.js';
@@ -21197,6 +21199,8 @@ export class ThreeGame {
         if (this.isPlayerDead) return;
         if (this.performanceProfile && this.performanceProfile !== 'gameplay') return;
         this.isPlayerDead = true;
+        // The results screen names the cause (src/deathReport.js).
+        this._lastDeathReason = reason;
         this.recordExpeditionEnded?.();
         this.cancelGoalModuleRise?.();
         this.clearCinematicCameraFocus?.();
@@ -36199,6 +36203,9 @@ export class ThreeGame {
             ? createBountyProgress(this.activeExpedition?.bounty?.id)
             : null;
         this._deploymentStartedAt = Date.now();
+        // What the build did this deployment, for the results screen.
+        this._runBuildTelemetry = {};
+        this._lastDeathReason = null;
         this.syncExpeditionBountyTracker?.();
         this.armArrivalIncident?.();
         this.armExpeditionEvent?.();
@@ -36646,6 +36653,30 @@ export class ThreeGame {
         this.applyExpeditionEventAction({ type: beaten ? 'encounter_cleared' : 'leave' });
     }
 
+    // Why the operator died, what waits in the field and the one next action
+    // (src/deathReport.js). Null unless this deployment ended in death.
+    getDeathReportData(goalKey = this.getCurrentPackageGoal?.() ?? null) {
+        if (!this.isPlayerDead || !this._lastDeathReason) return null;
+        const ship = this.crashedShips?.[0];
+        const shipPosition = ship ? { x: ship.tileX, z: ship.tileZ } : null;
+        const field = describeFieldLoss(this._blackBoxState?.active === false ? null : this._blackBoxState, shipPosition);
+        const bank = this.bank?.getState?.() ?? {};
+        const cost = goalKey ? (this.getGoalBuildCost?.(goalKey) ?? {}) : {};
+        const affordable = Boolean(goalKey) && Object.entries(cost)
+            .every(([resource, amount]) => (Number(bank[resource]) || 0) >= (Number(amount) || 0));
+        const lead = (this._expeditionReportItems ?? []).find((item) => item.kind === 'lead');
+        return {
+            cause: describeDeathCause(this._lastDeathReason),
+            field,
+            next: chooseNextAction({
+                fieldLoss: field,
+                nextGoalAffordable: affordable,
+                goalNameKey: goalKey ? GOAL_NAME_KEYS[goalKey] ?? null : null,
+                leadLabelKey: lead?.labelKey ?? null
+            })
+        };
+    }
+
     // Facts for the results screen's expedition report (src/expeditionReport.js).
     getExpeditionReportData() {
         const conditionId = this.activeExpedition?.condition?.id ?? null;
@@ -36671,6 +36702,11 @@ export class ThreeGame {
             } : null,
             completed,
             items: [...(this._expeditionReportItems ?? [])],
+            build: summarizeBuild({
+                equippedDropIds: [...(this.runOverclocks ?? []), ...(this.runRelics ?? [])].map((drop) => drop?.id),
+                telemetry: this._runBuildTelemetry ?? {}
+            }),
+            death: this.getDeathReportData?.(goalKey) ?? null,
             nextGoal: goalKey ? {
                 goalKey,
                 cost: this.getGoalBuildCost?.(goalKey) ?? {},
@@ -38219,7 +38255,10 @@ export class ThreeGame {
             shatterChillDuration: 2.0,
             sourceSprite: targetSprite
         });
+        const shatter = ((this._runBuildTelemetry ??= {}).cryo_shatter ??= { activations: 0, damage: 0 });
+        shatter.activations += 1;
         for (const affected of novaTargets) {
+            shatter.damage += Number(affected.damage) || 0;
             this.applyPlayerDamageToEnemy(affected.sprite, affected.damage);
             applyStatus(affected.sprite, 'freeze', 34);
         }
@@ -38273,6 +38312,10 @@ export class ThreeGame {
                 this.playerVitals.o2 = Math.min(this.playerVitals.maxO2 ?? 100, (this.playerVitals.o2 ?? 0) + outcome.o2Restored);
                 this.emitO2State?.();
             }
+            const predator = ((this._runBuildTelemetry ??= {}).bio_predator ??= { activations: 0, o2: 0, hearts: 0 });
+            predator.activations += 1;
+            predator.o2 += outcome.o2Restored > 0 ? outcome.o2Restored : 0;
+            predator.hearts += outcome.heartRestored > 0 ? 1 : 0;
             if (outcome.heartRestored > 0 && this.playerVitals) {
                 this.playerVitals.hp = Math.min(this.playerVitals.maxHp ?? 4, (this.playerVitals.hp ?? 0) + 1);
             }

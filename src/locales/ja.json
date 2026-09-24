@@ -1722,6 +1722,58 @@
       "report": {
         "opened": "高リスク報酬キャッシュを開放 ({drop})"
       }
+    },
+    "death": {
+      "cause": {
+        "enemy": "死因：{enemy}",
+        "projectile": "死因：敵の射撃",
+        "boss_attack": "死因：ボスの攻撃",
+        "o2": "窒息——スーツの酸素が尽きた",
+        "fall": "死因：裂け目への転落",
+        "hazard": "死因：有毒な地面",
+        "turret": "死因：キャンプのタレット",
+        "backlash": "死因：女王の乳の反動",
+        "ship": "船が破壊された",
+        "squad": "分隊が全滅した",
+        "abort": "ミッション中止",
+        "unknown": "死因は記録されていない"
+      },
+      "enemy": {
+        "cybersnail": "サイバースネイル",
+        "cryosnail": "クライオスネイル",
+        "sporesnail": "スポアスネイル",
+        "sentinel": "セントリネル",
+        "crawler": "ブリーチクローラー",
+        "alien_proto_crawler": "プロトクローラー",
+        "alien_proto_spitter": "プロトスピッター",
+        "mycelium_stalker": "菌糸ストーカー",
+        "bio_charger": "バイオチャージャー",
+        "spore_mortar": "胞子迫撃砲",
+        "fungal_spore_vent": "胞子噴出口",
+        "boss_cybersnail": "ボス・サイバースネイル",
+        "boss_cryosnail": "ボス・クライオスネイル",
+        "boss_sporesnail": "ボス・スポアスネイル",
+        "boss_corrupted_scout": "堕ちたスカウト",
+        "boss_corrupted_tank": "堕ちたタンク",
+        "boss_corrupted_engineer": "堕ちたエンジニア",
+        "boss_queen": "女王"
+      },
+      "build": {
+        "cryo_shatter": "ビルド：クライオシャッターが{count}回発動、{damage}ダメージ",
+        "bio_predator": "ビルド：バイオプレデターが{count}回発動、O₂を{o2}%とハート{hearts}個回復",
+        "equipped": "ビルド：{drops}（シナジー未発動）",
+        "none": "ビルド：今回の出撃ではフィールド強化なし"
+      },
+      "field": {
+        "black_box": "フィールドに残した物：{missing}——ブラックボックスは船から{meters}m",
+        "black_box_empty": "フィールドに残した物はない"
+      },
+      "next": {
+        "recover_black_box": "次の行動：次の死で上書きされる前にブラックボックス（{meters}m先）を回収",
+        "build_goal": "次の行動：船のコンソールで{goal}を建造",
+        "follow_lead": "次の行動：手がかりを追う——{label}",
+        "redeploy": "次の行動：再出撃"
+      }
     }
   },
   "narrative": {

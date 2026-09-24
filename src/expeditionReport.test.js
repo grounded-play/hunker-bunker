@@ -67,3 +67,37 @@ describe('expedition report items from every lane', () => {
         expect(REPORT_ITEM_KINDS).toEqual(['settlement', 'event', 'discovery', 'unlock', 'faction', 'lead']);
     });
 });
+
+describe('death lines', () => {
+    it('puts the cause first, the build after the objectives, and the next action last', () => {
+        const lines = buildExpeditionReport({
+            conditionNameKey: 'ui.expedition.conditions.glacial_gale.name',
+            completed: [],
+            nextGoal: { goalKey: 'o2Bubble', cost: { tech: 10 }, bank: { tech: 0 } },
+            items: [{ kind: 'lead', labelKey: 'lead.key' }],
+            death: {
+                cause: { key: 'ui.death.cause.o2' },
+                field: { key: 'ui.death.field.black_box', params: { meters: 40 }, parts: [{ resource: 'tech', amount: 3 }] },
+                next: { key: 'ui.death.next.recover_black_box', params: { meters: 40 } }
+            },
+            build: { key: 'ui.death.build.none' }
+        });
+        expect(lines.map((line) => line.key)).toEqual([
+            'ui.go.report.condition',
+            'ui.death.cause.o2',
+            'ui.go.report.none_completed',
+            'ui.death.build.none',
+            'ui.go.report.next_goal_short',
+            'ui.go.report.item_lead',
+            'ui.death.field.black_box',
+            'ui.death.next.recover_black_box'
+        ]);
+    });
+
+    it('does not repeat an affordable ship goal as the next action, and extraction has no death lines', () => {
+        const next = { key: 'ui.death.next.build_goal', params: { goalKey: 'g' } };
+        const lines = buildExpeditionReport({ nextGoal: { goalKey: 'o2Bubble', cost: {}, bank: {} }, death: { cause: { key: 'ui.death.cause.fall' }, next } });
+        expect(lines.map((line) => line.key)).not.toContain('ui.death.next.build_goal');
+        expect(buildExpeditionReport({ nextGoal: null }).map((line) => line.key)).toEqual(['ui.go.report.none_completed', 'ui.go.report.all_goals']);
+    });
+});
