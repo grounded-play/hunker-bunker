@@ -12,7 +12,7 @@
 Every unchecked item (`[RESOLVED]`) in [better-todo-tree-20260924-1037.txt](../../better-todo-tree-20260924-1037.txt) was systematically audited against the active repository state at commit `dev/sprint-47`.
 
 - **Total Items Evaluated:** 173
-- **First pass:** 50 marked completed, 9 marked conflicts, 114 active. **These counts are superseded** — every item is now `[MIGRATED]` in the tree (commit `1631488`), and the [verification review](#verification-review) below found that many of the 50 "completed" and 6 of the 9 "conflicts" are not supported by the repository. Treat the §2 conflict table and the "Verified:" appendix as unreviewed claims except where the review confirms them.
+- **First pass:** 50 marked completed, 9 marked conflicts, 114 active. **These counts are superseded** — every item is now `[MIGRATED]` in the tree (commit `1631488`), and the [verification review](#verification-review) below found that 16 of the 50 "completed" and 7 of the 9 "conflicts" are not supported by the repository. Treat the §2 conflict table and the "Verified:" appendix as unreviewed claims except where the review confirms them.
 
 ---
 
