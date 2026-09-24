@@ -18,7 +18,8 @@ export const COOP_TRANSITION_EVENTS = Object.freeze({
     MILESTONE_DEFEATED: 'milestone-defeated',
     ELEVATOR_DESCENDED: 'elevator-descended',
     BOSS_FIGHT_EVENT: 'boss-fight-event',
-    BOSS_ADDS: 'boss-adds'
+    BOSS_ADDS: 'boss-adds',
+    ENCOUNTER_FORMATION_STATE: 'encounter-formation-state'
 });
 
 // Boss beats that change shared state. Attacks stay local: each client's boss
@@ -42,6 +43,23 @@ export function runsBossEventLocally(role, eventType) {
 /** Whether the host should announce a boss event it just ran. */
 export function announcesBossEvent(role, eventType) {
     return role === COOP_ROLE.HOST && HOST_AUTHORITATIVE_BOSS_EVENTS.has(eventType) && eventType !== 'adds';
+}
+
+/** Formation cadence and irreversible state changes belong to the host. */
+export function runsEncounterCoordinationLocally(role) {
+    return role !== COOP_ROLE.GUEST;
+}
+
+export function announcesEncounterFormationState(role) {
+    return role === COOP_ROLE.HOST;
+}
+
+export function shouldApplyEncounterFormationState(localSequence, detail = {}) {
+    return typeof detail.encounterId === 'string'
+        && detail.encounterId.length > 0
+        && ['staggered', 'broken', 'cleared'].includes(detail.formationState)
+        && Number.isInteger(detail.sequence)
+        && detail.sequence > (localSequence ?? 0);
 }
 
 /** Adds share keys across clients, so hits and snapshots match them. */
@@ -74,6 +92,10 @@ export function coopTransitionDedupeKey(event, detail = {}) {
         case COOP_TRANSITION_EVENTS.BOSS_FIGHT_EVENT:
         case COOP_TRANSITION_EVENTS.BOSS_ADDS:
             return detail.bossKey && Number.isInteger(detail.sequence) ? `${event}:${detail.bossKey}:${detail.sequence}` : null;
+        case COOP_TRANSITION_EVENTS.ENCOUNTER_FORMATION_STATE:
+            return detail.encounterId && Number.isInteger(detail.sequence)
+                ? `${event}:${detail.encounterId}:${detail.sequence}`
+                : null;
         default:
             return null;
     }
