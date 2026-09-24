@@ -44,8 +44,20 @@
     "elite_contact": "TRAJE: Contato de elite. Inimigo blindado — mantenha uma rota de fuga."
   },
   "ui": {
+    "encounters": {
+      "locked_crossfire": {
+        "name": "Fogo cruzado fechado"
+      },
+      "bloom_push": {
+        "name": "Avanço floral"
+      },
+      "cold_pincer": {
+        "name": "Pinça glacial"
+      }
+    },
     "menu": {
       "continue": "CONTINUAR",
+      "resume_expedition": "RETOMAR EXPEDIÇÃO",
       "switch_class": "TROCAR CLASSE",
       "new_run": "NOVA INCURSÃO",
       "achievements": "CONQUISTAS",
@@ -1672,6 +1684,43 @@
         "response_breach": "Pegue a recompensa agora; os defensores acordam.",
         "response_bypass": "Fique {seconds} s na fechadura. Sem combate, mas seu oxigênio cai mais rápido.",
         "response_leave": "Siga em frente. Sem risco, sem recompensa."
+      }
+    },
+    "relics": {
+      "synergy": {
+        "cryo_shatter": "Fragmentação Criogênica",
+        "bio_predator": "Predador Biológico"
+      },
+      "cryo_rime": {
+        "name": "Injetor de Geada Criogênica",
+        "description": "Disparos congelam inimigos e reduzem sua velocidade de movimento."
+      },
+      "shatter_engine": {
+        "name": "Motor de Fragmentação",
+        "description": "Derrotar inimigos congelados causa uma nova de estilhaços de gelo."
+      },
+      "caustic_payload": {
+        "name": "Carga de Esporos Cáusticos",
+        "description": "Disparos causam biocorrosão que causa dano ao longo do tempo."
+      },
+      "bio_vampirism": {
+        "name": "Membrana Biovampírica",
+        "description": "Abater inimigos biológicos recupera sinais vitais de O₂ e a bateria do traje."
+      }
+    },
+    "cache": {
+      "title": "RESERVA DE RECOMPENSA DE ALTO RISCO",
+      "preview": "CONTÉM: {dropName}",
+      "risk_cost": "CUSTO OPERACIONAL: {cost}",
+      "open_prompt": "ARROMBAR RESERVA [F]",
+      "walk_away": "AFASTAR-SE",
+      "cost": {
+        "escalated_wave": "ONDA HOSTIL ESCALADA",
+        "o2_siphon": "SIFÃO DE 25% DE O₂",
+        "lockdown": "BLOQUEIO DE CONTENÇÃO DE 12s"
+      },
+      "report": {
+        "opened": "Reserva de recompensa de alto risco arrombada ({drop})"
       }
     }
   },

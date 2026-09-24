@@ -44,8 +44,20 @@
     "elite_contact": "スーツ：エリート敵と接触。重装甲目標――退路を確保せよ。"
   },
   "ui": {
+    "encounters": {
+      "locked_crossfire": {
+        "name": "封鎖十字砲火"
+      },
+      "bloom_push": {
+        "name": "開花前進"
+      },
+      "cold_pincer": {
+        "name": "氷結挟撃"
+      }
+    },
     "menu": {
       "continue": "つづきから",
+      "resume_expedition": "遠征を再開",
       "switch_class": "クラス変更",
       "new_run": "ニューラン",
       "achievements": "実績",
@@ -1672,6 +1684,43 @@
         "response_breach": "今すぐ報酬を取る。守護者が目覚める。",
         "response_bypass": "ロックに{seconds}秒とどまる。戦闘なし、ただし酸素の減りが速い。",
         "response_leave": "立ち去る。リスクなし、報酬なし。"
+      }
+    },
+    "relics": {
+      "synergy": {
+        "cryo_shatter": "クライオシャッター",
+        "bio_predator": "バイオプレデター"
+      },
+      "cryo_rime": {
+        "name": "クライオライムインジェクター",
+        "description": "弾丸が敵を凍結させ、移動速度を低下させる。"
+      },
+      "shatter_engine": {
+        "name": "シャッターエンジン",
+        "description": "凍結した敵を倒すと氷破片のノヴァが発生する。"
+      },
+      "caustic_payload": {
+        "name": "腐食性胞子弾頭",
+        "description": "弾丸が生物腐食を引き起こし、継続ダメージを与える。"
+      },
+      "bio_vampirism": {
+        "name": "生体吸血膜",
+        "description": "生体エネミーを倒すとO₂バイタルとスーツバッテリーが回復する。"
+      }
+    },
+    "cache": {
+      "title": "高リスク報酬キャッシュ",
+      "preview": "格納アイテム: {dropName}",
+      "risk_cost": "作戦コスト: {cost}",
+      "open_prompt": "キャッシュを強行開放 [F]",
+      "walk_away": "立ち去る",
+      "cost": {
+        "escalated_wave": "激化した敵ウェーブ",
+        "o2_siphon": "O₂を25%吸い出し",
+        "lockdown": "12秒の封鎖"
+      },
+      "report": {
+        "opened": "高リスク報酬キャッシュを開放 ({drop})"
       }
     }
   },

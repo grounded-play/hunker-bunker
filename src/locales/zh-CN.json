@@ -44,8 +44,20 @@
     "elite_contact": "机甲：接触精英目标。重装敌方单位——注意保留撤退路线。"
   },
   "ui": {
+    "encounters": {
+      "locked_crossfire": {
+        "name": "封锁交叉火力"
+      },
+      "bloom_push": {
+        "name": "花潮推进"
+      },
+      "cold_pincer": {
+        "name": "寒冰钳击"
+      }
+    },
     "menu": {
       "continue": "继续游戏",
+      "resume_expedition": "继续远征",
       "switch_class": "更换职业",
       "new_run": "新的征程",
       "achievements": "成就",
@@ -1672,6 +1684,43 @@
         "response_breach": "立刻拿走奖励；守卫会醒来。",
         "response_bypass": "在锁旁停留{seconds}秒。不用战斗，但氧气消耗更快。",
         "response_leave": "走开。没有风险，也没有回报。"
+      }
+    },
+    "relics": {
+      "synergy": {
+        "cryo_shatter": "低温粉碎",
+        "bio_predator": "生化掠食者"
+      },
+      "cryo_rime": {
+        "name": "冰霜注入器",
+        "description": "射击冻结敌人并降低其移动速度。"
+      },
+      "shatter_engine": {
+        "name": "粉碎引擎",
+        "description": "消灭被冻结的敌人会引发冰晶破片新星。"
+      },
+      "caustic_payload": {
+        "name": "腐蚀孢子弹头",
+        "description": "射击造成生化腐蚀并附带持续伤害。"
+      },
+      "bio_vampirism": {
+        "name": "生化吸血薄膜",
+        "description": "击杀生化敌人恢复氧气与防护服电量。"
+      }
+    },
+    "cache": {
+      "title": "高风险奖励储藏箱",
+      "preview": "内含: {dropName}",
+      "risk_cost": "行动代价: {cost}",
+      "open_prompt": "破拆储藏箱 [F]",
+      "walk_away": "离开",
+      "cost": {
+        "escalated_wave": "升级敌军波次",
+        "o2_siphon": "抽取25%氧气",
+        "lockdown": "12秒区域封锁"
+      },
+      "report": {
+        "opened": "破拆高风险奖励储藏箱 ({drop})"
       }
     }
   },

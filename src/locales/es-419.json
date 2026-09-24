@@ -44,8 +44,20 @@
     "elite_contact": "TRAJE: Contacto de élite. Hostil blindado — mantén una ruta de escape."
   },
   "ui": {
+    "encounters": {
+      "locked_crossfire": {
+        "name": "Fuego cruzado cerrado"
+      },
+      "bloom_push": {
+        "name": "Avance floral"
+      },
+      "cold_pincer": {
+        "name": "Pinza gélida"
+      }
+    },
     "menu": {
       "continue": "CONTINUAR",
+      "resume_expedition": "REANUDAR EXPEDICIÓN",
       "switch_class": "CAMBIAR CLASE",
       "new_run": "NUEVA PARTIDA",
       "achievements": "LOGROS",
@@ -1672,6 +1684,43 @@
         "response_breach": "Toma la recompensa ya; los defensores despiertan.",
         "response_bypass": "Quédate {seconds} s en la cerradura. Sin combate, pero tu oxígeno baja más rápido.",
         "response_leave": "Sigue de largo. Sin riesgo, sin recompensa."
+      }
+    },
+    "relics": {
+      "synergy": {
+        "cryo_shatter": "Fragmentación Criogénica",
+        "bio_predator": "Depredador Biológico"
+      },
+      "cryo_rime": {
+        "name": "Inyector de Escarcha Criogénica",
+        "description": "Los disparos congelan a los enemigos y ralentizan su movimiento."
+      },
+      "shatter_engine": {
+        "name": "Motor de Fragmentación",
+        "description": "Derrotar enemigos congelados desata una nova de metralla de hielo."
+      },
+      "caustic_payload": {
+        "name": "Carga de Esporas Cáusticas",
+        "description": "Los disparos provocan biocorrosión que causa daño con el tiempo."
+      },
+      "bio_vampirism": {
+        "name": "Membrana Biovampírica",
+        "description": "Eliminar enemigos biológicos restaura el O₂ y la batería del traje."
+      }
+    },
+    "cache": {
+      "title": "ALIJO DE RECOMPENSA DE ALTO RIESGO",
+      "preview": "CONTIENE: {dropName}",
+      "risk_cost": "COSTO OPERATIVO: {cost}",
+      "open_prompt": "FORZAR ALIJO [F]",
+      "walk_away": "RETIRARSE",
+      "cost": {
+        "escalated_wave": "OLEADA HOSTIL ESCALADA",
+        "o2_siphon": "SIFÓN DE 25% DE O₂",
+        "lockdown": "BLOQUEO DE CONTENCIÓN DE 12s"
+      },
+      "report": {
+        "opened": "Alijo de recompensa de alto riesgo forzado ({drop})"
       }
     }
   },

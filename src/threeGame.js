@@ -187,6 +187,7 @@ import { HiveSite } from './hiveSite.js';
 import { describeDialogueProgress, leaderKeyFromName, nextDialogueBeat, isFinalStage } from './data/campDialogue.js';
 import { blackBoxStore } from './blackBox.js';
 import { runCheckpointStore } from './runCheckpoint.js';
+import { expeditionSuspendStore, normalizeExpeditionSuspendSnapshot } from './expeditionSuspend.js';
 import { CHASSIS_SKIN_MODELS, createPlayer3dOverlay, ENGINEER_GESTURES, excludePlayerSelfLights } from './player3dOverlay.js';
 import { remoteEquipmentSignature, resolveRemoteEquipmentVisuals } from './remoteLoadout.js';
 
@@ -331,6 +332,10 @@ export const LEDGE_TILE = 'O';
 import {
     rollEnemyLootDrop,
     computeActiveSynergies,
+    resolveCryoShatterNova,
+    resolveBioVampirismKill,
+    getTurretElementalInheritance,
+    isBioEnemy,
     WEAPON_OVERCLOCKS,
     SUIT_RELICS,
     applyLastBreathDamage,
@@ -349,11 +354,14 @@ import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound, LORE_DROPS } from './loreDrops.js';
 import {
     createBossFight,
+    currentPhase,
     tickBossFight,
     applyBossDamage,
     QUEEN_FIGHT_DEF,
     QUEEN_PHASE_LINES,
     SPORESNAIL_FIGHT_DEF,
+    CYBERSNAIL_FIGHT_DEF,
+    CRYO_BOSS_FIGHT_DEF,
     createEnemyStaggerState,
     applyStaggerDamage,
     tickStaggerState,
@@ -427,6 +435,7 @@ import {
 import { planArrivalIncident, planCrashSiteDebris } from './arrivalIncident.js';
 import { EVENT_ROUTE_KEYS, EVENT_TEXT_KEYS, EVENT_TUNING, applyEventAction, createEventState, planDeploymentEvent, selectDeploymentEvent } from './expeditionEvents.js';
 import { callSliceContract } from './sliceContracts.js';
+import './encounterRecipes.js';
 import {
     COOP_ROLE,
     COOP_TRANSITION_EVENTS,
@@ -436,8 +445,20 @@ import {
     coopTransitionDedupeKey,
     descentSeedOffset,
     runsBossEventLocally,
+    shouldApplyEncounterFormationState,
     shouldApplyDescent
 } from './coopTransitions.js';
+import {
+    applyStatus,
+    getStatus,
+    clearStatus,
+    tickStatusEffects
+} from './statusEffects.js';
+import {
+    planRewardCache,
+    claimRewardCache,
+    REWARD_CACHE_I18N_KEYS
+} from './rewardCache.js';
 
 /**
  * Boss display names by spawn type. Was an eight-branch if/else assigning
@@ -1187,6 +1208,7 @@ export const CLASS_MELEE_PROFILES = Object.freeze({
         knockbackForce: 4.2,
         knockbackDuration: 0.16,
         onHitSpeedBoost: Object.freeze({ duration: 0.85, multiplier: 1.35 }),
+        shatterFrozen: true,
         shakeIntensity: 0.10,
         shakeDuration: 0.14,
         burstColor: 0x44d8ff,
@@ -1203,6 +1225,7 @@ export const CLASS_MELEE_PROFILES = Object.freeze({
         knockbackForce: 9.5,
         knockbackDuration: 0.50,
         wallBreach: true,
+        corrosionPull: true,
         shakeIntensity: 0.28,
         shakeDuration: 0.30,
         burstColor: 0xffaa33,
@@ -1219,6 +1242,7 @@ export const CLASS_MELEE_PROFILES = Object.freeze({
         knockbackForce: 2.5,
         knockbackDuration: 0.65,
         magneticPullRadius: 8.0,
+        inheritsCarrierElement: true,
         shakeIntensity: 0.14,
         shakeDuration: 0.20,
         burstColor: 0x55ffaa,
@@ -6210,6 +6234,8 @@ export class ThreeGame {
             this.applyRemoteBossFightEvent(detail);
         } else if (event === COOP_TRANSITION_EVENTS.BOSS_ADDS) {
             this.applyRemoteBossAdds(detail);
+        } else if (event === COOP_TRANSITION_EVENTS.ENCOUNTER_FORMATION_STATE) {
+            this.applyRemoteEncounterFormationState(detail);
         } else if (event === 'lore-terminal-read') {
             if (detail.loreKey) {
                 this._readLoreKeys = this._readLoreKeys ?? new Set();
@@ -6227,6 +6253,12 @@ export class ThreeGame {
             }));
         }
         return true;
+    }
+
+    applyRemoteEncounterFormationState(detail) {
+        const handle = this.coordinatedEncounters?.get?.(detail?.encounterId);
+        if (!handle || !shouldApplyEncounterFormationState(handle.state?.sequence, detail)) return false;
+        return handle.applyRemoteFormation?.(detail) === true;
     }
 
     materializeRemoteBoss(state) {
@@ -7268,6 +7300,32 @@ export class ThreeGame {
                 });
             }
         }
+        if (this.activeRewardCache && this.activeRewardCache.state === 'sealed' && this.activeRewardCache.coords) {
+            const distance = Math.hypot(px - this.activeRewardCache.coords.x, pz - this.activeRewardCache.coords.z);
+            if (distance <= 2.8) {
+                candidates.push({
+                    id: 'reward-cache',
+                    // Name what is inside and what opening it costs.
+                    label: `${t(REWARD_CACHE_I18N_KEYS.preview, { dropName: t(this.activeRewardCache.dropNameKey) })} · ${t(REWARD_CACHE_I18N_KEYS.riskCost, { cost: t(this.activeRewardCache.costConfig?.labelKey) })}`,
+                    distance,
+                    interact: () => this.interactWithRewardCache()
+                });
+            }
+        }
+        if (this.playerType === 'ENGINEER' && (this.currentDepthTier ?? 0) === 0) {
+            const dirLen = Math.hypot(this.aimDirX, this.aimDirZ) || 1;
+            const hx = Math.round(px + (this.aimDirX / dirLen) * 1.5);
+            const hz = Math.round(pz + (this.aimDirZ / dirLen) * 1.5);
+            if (this.getHoleVisualInfo?.(hx, hz) && !this.isHoleBridged?.(hx, hz)) {
+                const distance = Math.hypot(px - hx, pz - hz);
+                candidates.push({
+                    id: 'nanite-bridge',
+                    label: 'DEPLOY NANITE BRIDGE (3 SALVAGE)',
+                    distance,
+                    interact: () => this.deployNaniteBridgeAt(hx, hz)
+                });
+            }
+        }
         candidates.sort((a, b) => Number(Boolean(a.secondary)) - Number(Boolean(b.secondary)) || a.distance - b.distance);
         return candidates;
     }
@@ -7629,6 +7687,16 @@ export class ThreeGame {
             this._scoutSlipstreamTimer = profile.onHitSpeedBoost.duration;
         }
 
+        // Scout: Slipstream Strike shatters frozen targets into an ice shrapnel nova
+        if (profile.shatterFrozen || this.playerType === 'SCOUT') {
+            for (const target of targets) {
+                const fStatus = getStatus?.(target.sprite, 'freeze') ?? {};
+                if (fStatus.isFrozen || target.sprite?.userData?.frozen || (target.sprite?.userData?.frozenTimer ?? 0) > 0) {
+                    this.triggerCryoShatter?.(target.sprite);
+                }
+            }
+        }
+
         // Tank: Seismic Slam breaches walls in the frontal cone
         if (profile.wallBreach) {
             const checkDistances = [1.2, 1.8, 2.4];
@@ -7640,6 +7708,13 @@ export class ThreeGame {
                     this.damageWall?.(wall, 4, { source: 'player' });
                 }
             }
+        }
+
+        // Tank: Seismic Slam pulls corroded targets together toward the slam center
+        if (profile.corrosionPull || this.playerType === 'TANK') {
+            const slamX = this.player.position.x + aimX * (reach * 0.75);
+            const slamZ = this.player.position.z + aimZ * (reach * 0.75);
+            this.handleTankCorrosionPull?.(slamX, slamZ, 7.0);
         }
 
         // Engineer: Overcharge Pulse EMP magnetic pull on nearby pickups
@@ -11618,7 +11693,7 @@ export class ThreeGame {
     // reached a graceful end (crash/force-quit/tab-close) -- main.js's
     // boot sequence converts it into a normal black-box death-stain entry.
     updateRunCheckpoint(delta) {
-        if (this.isPlayerDead || !this.player) return;
+        if (this.isPlayerDead || !this.player || this.isMultiplayer || this.fixedRunEntropy) return;
         this._runCheckpointTimer = (this._runCheckpointTimer ?? 0) - delta;
         if (this._runCheckpointTimer > 0) return;
         this._runCheckpointTimer = RUN_CHECKPOINT_INTERVAL_SECONDS;
@@ -11636,6 +11711,179 @@ export class ThreeGame {
                 med: inventory.health ?? 0
             }
         });
+        this.saveExpeditionSuspend?.();
+    }
+
+    createExpeditionSuspendSnapshot() {
+        if (this.isPlayerDead || !this.player || this.isMultiplayer || this.fixedRunEntropy) return null;
+        const campaign = campaignWorldStore.getState?.();
+        const profile = this.activeExpedition;
+        if (!campaign || !profile || campaign.seed !== this._campaignWorldSeed
+            || profile.expeditionSeed !== campaign.expeditionSeed) return null;
+        const inventory = this.getSessionInventory();
+        const enemies = (this.scatterSprites ?? [])
+            .filter((sprite) => sprite?.parent && sprite.userData?.isEnemy
+                && !sprite.userData?.burstTriggered && sprite.userData?.scatterKey)
+            .map((sprite) => ({
+                scatterKey: sprite.userData.scatterKey,
+                type: sprite.userData.type,
+                x: sprite.position.x,
+                z: sprite.position.z,
+                hp: sprite.userData.hp,
+                maxHp: sprite.userData.maxHp,
+                speed: sprite.userData.speed,
+                enraged: sprite.userData.enraged,
+                isBoss: sprite.userData.isBoss,
+                isElite: sprite.userData.isElite,
+                aiMode: sprite.userData.aiMode,
+                targetType: sprite.userData.targetType,
+                dynamic: !/^-?\d+,-?\d+:/.test(sprite.userData.scatterKey),
+                statusEffects: sprite.userData.statusEffects ?? null
+            }));
+        return normalizeExpeditionSuspendSnapshot({
+            version: 1,
+            mode: 'solo',
+            resumeId: this._expeditionResumeId
+                ?? globalThis.crypto?.randomUUID?.()
+                ?? `resume-${campaign.seed}-${profile.expeditionSeed}-${Date.now()}`,
+            expedition: {
+                campaignSeed: campaign.seed,
+                expeditionSeed: profile.expeditionSeed,
+                expeditionIndex: profile.expeditionIndex,
+                profile
+            },
+            player: {
+                classType: this.playerType,
+                x: this.player.position.x,
+                z: this.player.position.z,
+                facingYaw: this.facingYaw,
+                vitals: this.playerVitals,
+                inventory,
+                weapon: { clipAmmo: this.weaponClipAmmo, clipSize: this.weaponClipSize }
+            },
+            run: {
+                startedAt: this.runStartTime,
+                elapsedMs: Math.max(0, Date.now() - (this.runStartTime ?? Date.now())),
+                missionState: this.missionState,
+                modifier: this.currentRunModifier,
+                overclockIds: (this.runOverclocks ?? []).map((drop) => drop.id),
+                relicIds: (this.runRelics ?? []).map((drop) => drop.id),
+                shardCount: this.runShardCount,
+                depositedResources: {
+                    health: this.runDepositedResources?.med,
+                    weapon: this.runDepositedResources?.tech,
+                    coin: this.runDepositedResources?.coin
+                },
+                kills: this.snailsKilledThisRun,
+                maxDepthTierReached: this.maxDepthTierReached,
+                currentDepthTier: this.currentDepthTier,
+                totalDistanceTravelled: this.totalDistanceTravelled
+            },
+            world: {
+                maze: this.getMazePersistenceState(),
+                killedEnemyScatterKeys: [...(this.killedEnemyScatterKeys ?? [])],
+                depletedGearPileKeys: [...(this.depletedGearPileKeys ?? [])],
+                killedBosses: [...(this.killedBosses ?? [])],
+                visitedChunks: [...(this.visitedChunks ?? [])],
+                enemies
+            }
+        });
+    }
+
+    saveExpeditionSuspend() {
+        const snapshot = this.createExpeditionSuspendSnapshot();
+        if (!snapshot) return null;
+        const saved = expeditionSuspendStore.save(snapshot);
+        if (saved) this._expeditionResumeId = saved.resumeId;
+        return saved;
+    }
+
+    prepareExpeditionResume(raw) {
+        const snapshot = normalizeExpeditionSuspendSnapshot(raw);
+        const campaign = campaignWorldStore.getState?.();
+        if (!snapshot || this.isMultiplayer || this.fixedRunEntropy || !campaign
+            || campaign.seed !== snapshot.expedition.campaignSeed
+            || campaign.expeditionSeed !== snapshot.expedition.expeditionSeed
+            || campaign.expeditionIndex !== snapshot.expedition.expeditionIndex) return false;
+        this._pendingExpeditionResume = snapshot;
+        this._expeditionResumeId = snapshot.resumeId;
+        return true;
+    }
+
+    restoreExpeditionSuspend(raw = this._pendingExpeditionResume) {
+        const snapshot = normalizeExpeditionSuspendSnapshot(raw);
+        if (!snapshot || !this.player || !this._pendingExpeditionResume) return false;
+        this.clearLoadedChunksForRunReset();
+        this.restoreMazePersistenceState(snapshot.world.maze);
+        this.killedEnemyScatterKeys = new Set(snapshot.world.killedEnemyScatterKeys);
+        this.depletedGearPileKeys = new Set(snapshot.world.depletedGearPileKeys);
+        this.killedBosses = new Set(snapshot.world.killedBosses);
+        this.visitedChunks = new Set(snapshot.world.visitedChunks);
+        this._suspendedEnemyStateByKey = new Map(snapshot.world.enemies.map((enemy) => [enemy.scatterKey, enemy]));
+
+        this.player.position.set(snapshot.player.x, 0, snapshot.player.z);
+        this.playerGlow?.position?.set?.(snapshot.player.x, 1.6, snapshot.player.z);
+        this.playerMarker?.position?.set?.(snapshot.player.x, this.playerMarkerHeight, snapshot.player.z);
+        this.updateFacingYaw?.(snapshot.player.facingYaw);
+        Object.assign(this.playerVitals, snapshot.player.vitals, { o2HealthTimer: 0 });
+        this.weaponClipSize = snapshot.player.weapon.clipSize;
+        this.weaponClipAmmo = Math.min(snapshot.player.weapon.clipAmmo, this.weaponClipSize);
+        window.restorePickupCounterState?.(snapshot.player.inventory, snapshot.player.classType);
+
+        this.missionState = snapshot.run.missionState ?? this.missionState;
+        this.currentRunModifier = snapshot.run.modifier;
+        this.runStartTime = Date.now() - snapshot.run.elapsedMs;
+        const overclocks = new Map(WEAPON_OVERCLOCKS.map((drop) => [drop.id, drop]));
+        const relics = new Map(SUIT_RELICS.map((drop) => [drop.id, drop]));
+        this.runOverclocks = snapshot.run.overclockIds.map((id) => overclocks.get(id)).filter(Boolean);
+        this.runRelics = snapshot.run.relicIds.map((id) => relics.get(id)).filter(Boolean);
+        this.activeSynergies = computeActiveSynergies([...this.runOverclocks, ...this.runRelics]);
+        this.runShardCount = snapshot.run.shardCount;
+        this.runDepositedResources = {
+            tech: snapshot.run.depositedResources.weapon,
+            med: snapshot.run.depositedResources.health,
+            coin: snapshot.run.depositedResources.coin
+        };
+        this.snailsKilledThisRun = snapshot.run.kills;
+        this.maxDepthTierReached = snapshot.run.maxDepthTierReached;
+        this.currentDepthTier = snapshot.run.currentDepthTier;
+        this.totalDistanceTravelled = snapshot.run.totalDistanceTravelled;
+
+        this.syncVisibleChunks(true);
+        for (const sprite of this.scatterSprites ?? []) this.applySuspendedEnemyState(sprite);
+        const restoredKeys = new Set((this.scatterSprites ?? []).map((sprite) => sprite?.userData?.scatterKey));
+        for (const enemy of snapshot.world.enemies) {
+            if (!enemy.dynamic || restoredKeys.has(enemy.scatterKey)) continue;
+            const sprite = this.spawnEnemyInstance?.(enemy.type, enemy.x, enemy.z);
+            if (!sprite) continue;
+            sprite.userData.scatterKey = enemy.scatterKey;
+            this.applySuspendedEnemyState(sprite);
+        }
+        this.emitHealthState?.();
+        this.emitO2State?.();
+        this.emitWeaponClipState?.();
+        this._pendingExpeditionResume = null;
+        const committed = this.saveExpeditionSuspend();
+        window.dispatchEvent?.(new CustomEvent('expedition-resumed', {
+            detail: { resumeId: snapshot.resumeId, generation: committed?.generation ?? snapshot.generation }
+        }));
+        return true;
+    }
+
+    applySuspendedEnemyState(sprite) {
+        const saved = this._suspendedEnemyStateByKey?.get?.(sprite?.userData?.scatterKey);
+        if (!saved || saved.type !== sprite.userData.type) return false;
+        sprite.position.x = saved.x;
+        sprite.position.z = saved.z;
+        sprite.userData.maxHp = saved.maxHp;
+        sprite.userData.hp = Math.min(saved.hp, saved.maxHp);
+        sprite.userData.speed = saved.speed;
+        sprite.userData.enraged = saved.enraged;
+        sprite.userData.isElite = saved.isElite;
+        sprite.userData.aiMode = saved.aiMode;
+        sprite.userData.targetType = saved.targetType;
+        if (saved.statusEffects) sprite.userData.statusEffects = structuredClone(saved.statusEffects);
+        return true;
     }
 
     showBunkerLine(text, { fromRemote = false } = {}) {
@@ -14462,16 +14710,26 @@ export class ThreeGame {
             sequence: data.fightAnnouncements,
             kind,
             type: event.type,
-            phase: event.phase ?? null
+            phase: event.phase ?? null,
+            attack: event.attack ?? null,
+            duration: event.duration ?? null,
+            mechanic: event.mechanic ?? null
         });
     }
 
     applyRemoteBossFightEvent(detail) {
         const sprite = (this.scatterSprites ?? []).find((entry) => entry.userData?.scatterKey === detail.bossKey);
         if (!sprite || sprite.userData?.burstTriggered) return false;
-        const event = { type: detail.type, phase: detail.phase ?? undefined };
+        const event = {
+            type: detail.type,
+            phase: detail.phase ?? undefined,
+            attack: detail.attack ?? undefined,
+            duration: detail.duration ?? undefined,
+            mechanic: detail.mechanic ?? undefined
+        };
         if (detail.kind === 'queen') this.handleQueenFightEvent(event, sprite, { fromRemote: true });
-        else this.handleSporesnailFightEvent(event, sprite, { fromRemote: true });
+        else if (detail.kind === 'sporesnail') this.handleSporesnailFightEvent(event, sprite, { fromRemote: true });
+        else this.handleBiomeBossFightEvent(event, sprite, { fromRemote: true });
         return true;
     }
 
@@ -14481,11 +14739,12 @@ export class ThreeGame {
             && typeof placement.type === 'string' && this.scatterMaterials?.[placement.type] && typeof placement.scatterKey === 'string');
         const sprite = (this.scatterSprites ?? []).find((entry) => entry.userData?.scatterKey === detail.bossKey);
         if (!sprite || !valid.length) return 0;
-        const flag = detail.flag === 'sporesnailAdd' ? 'sporesnailAdd' : 'queenAdd';
+        const flag = detail.flag === 'sporesnailAdd' ? 'sporesnailAdd'
+            : detail.flag === 'biomeBossAdd' ? 'biomeBossAdd' : 'queenAdd';
         return this.spawnBossAdds(sprite, flag, valid, { fromRemote: true });
     }
 
-    applyPlayerDamageToEnemy(sprite, amount, { fromNetwork = false, reporterId = null } = {}) {
+    applyPlayerDamageToEnemy(sprite, amount, { fromNetwork = false, reporterId = null, element = null, statusOptions = null } = {}) {
         if (sprite?.userData?.isDestructibleProp) {
             this.damageScatterProp(sprite, amount);
             return;
@@ -14495,7 +14754,8 @@ export class ThreeGame {
         // loadout. Scaling it again here multiplied it by the receiver's.
         const localHit = !fromNetwork && reporterId == null;
         if (localHit) {
-            const bossTarget = Boolean(sprite?.userData?.isBoss || sprite?.userData?.queenFight || sprite?.userData?.sporesnailFight);
+            const bossTarget = Boolean(sprite?.userData?.isBoss || sprite?.userData?.queenFight
+                || sprite?.userData?.sporesnailFight || sprite?.userData?.biomeBossFight);
             amount *= bossTarget
                 ? (this.loadoutMods?.bossDamageMultiplier ?? 1)
                 : (this.loadoutMods?.nonBossDamageMultiplier ?? 1);
@@ -14505,6 +14765,16 @@ export class ThreeGame {
             const cryoMult = this.loadoutMods?.cryoDurationMultiplier ?? 1.0;
             if (sprite?.userData && cryoMult > 1.0 && Math.random() < 0.18) {
                 sprite.userData.frozenTimer = Math.max(sprite.userData.frozenTimer ?? 0, 1.0 * cryoMult);
+            }
+
+            // Sprint 47 Lane 3 Status Procs (Cryo Rime & Caustic Payload)
+            const activeElement = element || (this.hasActiveOverclock?.('cryo_rime') ? 'cryo' : (this.hasActiveOverclock?.('caustic_payload') ? 'bio' : null));
+            if (activeElement === 'cryo') {
+                const freezeAmount = statusOptions?.freezePerHit ?? 34;
+                applyStatus(sprite, 'freeze', freezeAmount);
+            } else if (activeElement === 'bio') {
+                const poisonDuration = statusOptions?.poisonDuration ?? 3.0;
+                applyStatus(sprite, 'corrosion', poisonDuration);
             }
         }
         // Sprint 24 Milestone A co-op enemy hit-sync, now host-authoritative
@@ -14559,6 +14829,12 @@ export class ThreeGame {
         const sporesnailFight = sprite?.userData?.sporesnailFight;
         if (sporesnailFight) {
             const dealt = applyBossDamage(sporesnailFight, amount);
+            this.damageSnail(sprite, dealt);
+            return;
+        }
+        const biomeBossFight = sprite?.userData?.biomeBossFight;
+        if (biomeBossFight) {
+            const dealt = applyBossDamage(biomeBossFight, amount);
             this.damageSnail(sprite, dealt);
             return;
         }
@@ -14631,6 +14907,157 @@ export class ThreeGame {
                 // existing kill sequence (drops, VFX, milestone dispatch)
                 // already fires once sprite.userData.hp reaches 0.
                 break;
+        }
+    }
+
+    updateBiomeBossFightTick(sprite, delta, distanceToTarget) {
+        const data = sprite.userData;
+        const fight = data.biomeBossFight;
+        if (!fight || fight.defeated) return;
+        // Existing trail patches must keep expiring even after the operator
+        // leaves the boss's aggro radius; otherwise they become permanent.
+        this.updateFrozenPathwayMechanic(sprite, delta);
+        if (distanceToTarget > 14) return;
+        let activeAdds = 0;
+        for (const other of this.scatterSprites) {
+            if (other !== sprite && other.userData?.biomeBossAdd && !other.userData?.burstTriggered) activeAdds += 1;
+        }
+        const events = tickBossFight(fight, delta, { activeAdds });
+        for (const event of events) this.handleBiomeBossFightEvent(event, sprite);
+    }
+
+    handleBiomeBossFightEvent(event, sprite, { fromRemote = false } = {}) {
+        const data = sprite.userData;
+        const role = coopRole(this);
+        if (!fromRemote && !runsBossEventLocally(role, event.type)) return;
+        if (!fromRemote && announcesBossEvent(role, event.type)) this.announceBossFightEvent(sprite, data.type, event);
+        switch (event.type) {
+            case 'phase': {
+                const phase = data.biomeBossFight ? currentPhase(data.biomeBossFight) : null;
+                const mechanic = event.mechanic ?? phase?.mechanic;
+                data.frozenPathwaysActive = mechanic?.kind === 'frozen-pathways';
+                data.frozenPathwayTimer = 0;
+                if (mechanic?.kind === 'carapace-shattered') {
+                    data.speed = (data.baseBossSpeed ?? data.speed) * (mechanic.speedMultiplier ?? 1.4);
+                    sprite.material?.color?.setHex?.(0xff9f43);
+                }
+                this.triggerCameraShake?.(0.2, 0.35);
+                window.AudioManager?.playMetalStress?.({ volume: 0.62, playbackRate: 0.58, force: true });
+                window.dispatchEvent(new CustomEvent('boss-phase-changed', {
+                    detail: { boss: data.type, phase: event.phase, mechanic: mechanic?.kind ?? null }
+                }));
+                break;
+            }
+            case 'attack-telegraph':
+                this.telegraphBiomeBossAttack(sprite, event);
+                break;
+            case 'attack':
+                this.fireBiomeBossAttack(sprite, event.attack);
+                break;
+            case 'weakpoint-open':
+                data.weakpointOpen = true;
+                sprite.material?.color?.setHex?.(0xffe066);
+                window.AudioManager?.play?.('ui_scan_ping', { volume: 0.42, playbackRate: 0.5 });
+                break;
+            case 'weakpoint-close':
+                data.weakpointOpen = false;
+                sprite.material?.color?.setHex?.(data.biomeTint ?? 0xffffff);
+                break;
+            case 'adds':
+                this.spawnBiomeBossAdds(sprite, event.addType, event.count);
+                break;
+            default:
+                break;
+        }
+    }
+
+    telegraphBiomeBossAttack(sprite, event) {
+        const radius = event.attack === 'radial_emp' ? 5.2
+            : event.attack === 'deep_freeze_wave' ? 5.8 : 4.5;
+        this.spawnFrostShockwaveEffect?.(sprite.position.x, sprite.position.z, radius);
+        window.AudioManager?.play?.('ui_scan_ping', {
+            volume: 0.48,
+            playbackRate: event.attack === 'mortar_volley' ? 1.35 : 0.38
+        });
+        window.dispatchEvent(new CustomEvent('boss-attack-telegraph', {
+            detail: {
+                boss: sprite.userData.type,
+                attack: event.attack,
+                radius,
+                windupMs: Math.round((event.duration ?? 0) * 1000)
+            }
+        }));
+    }
+
+    fireBiomeBossAttack(sprite, attackKey) {
+        if (!this.player || this.isPlayerDead) return;
+        const dx = this.player.position.x - sprite.position.x;
+        const dz = this.player.position.z - sprite.position.z;
+        const distance = Math.hypot(dx, dz);
+        const angle = Math.atan2(dz, dx);
+        if (attackKey === 'mortar_volley' || attackKey === 'ice_needle_barrage') {
+            const speed = attackKey === 'ice_needle_barrage' ? 8.5 : 7.5;
+            for (const step of [-1, 0, 1]) {
+                const shotAngle = angle + step * (attackKey === 'ice_needle_barrage' ? 0.14 : 0.22);
+                this.spawnProjectile({
+                    x: sprite.position.x,
+                    z: sprite.position.z,
+                    vx: Math.cos(shotAngle) * speed,
+                    vz: Math.sin(shotAngle) * speed,
+                    ttl: 2,
+                    damage: 1,
+                    radius: 0.22,
+                    isEnemy: true
+                });
+            }
+        } else if (attackKey === 'radial_emp' || attackKey === 'deep_freeze_wave') {
+            const radius = attackKey === 'radial_emp' ? 5.2 : 5.8;
+            this.spawnFrostShockwaveEffect?.(sprite.position.x, sprite.position.z, radius);
+            if (distance <= radius) {
+                this.takeDamage?.(attackKey === 'radial_emp' ? 2 : 1, attackKey, sprite.position.x, sprite.position.z);
+                this.applyPlayerSlow?.(attackKey === 'deep_freeze_wave' ? 3 : 1.5);
+            }
+        }
+    }
+
+    spawnBiomeBossAdds(sprite, addType, count) {
+        if (coopRole(this) === COOP_ROLE.GUEST || !sprite.parent) return 0;
+        const offsets = [[1.5, 1.5], [-1.5, -1.5], [1.5, -1.5], [-1.5, 1.5]];
+        const placements = offsets.slice(0, count).map(([dx, dz]) => ({
+            x: sprite.position.x + dx,
+            z: sprite.position.z + dz,
+            type: addType,
+            scale: 0.95,
+            elevation: 0.1
+        })).filter(({ x, z }) => this.isSnailTileWalkable(Math.round(x), Math.round(z)));
+        return this.spawnBossAdds(sprite, 'biomeBossAdd', placements);
+    }
+
+    updateFrozenPathwayMechanic(sprite, delta) {
+        const data = sprite.userData;
+        data.frozenPathwayPatches ??= [];
+        data.frozenPathwayPatches = data.frozenPathwayPatches
+            .map((patch) => ({ ...patch, remaining: patch.remaining - delta }))
+            .filter((patch) => patch.remaining > 0);
+        if (!data.frozenPathwaysActive) return;
+        const mechanic = currentPhase(data.biomeBossFight)?.mechanic ?? {};
+        data.frozenPathwayTimer = (data.frozenPathwayTimer ?? 0) - delta;
+        if (data.frozenPathwayTimer <= 0) {
+            data.frozenPathwayTimer = mechanic.patchEvery ?? 1.25;
+            data.frozenPathwayPatches.push({
+                x: sprite.position.x,
+                z: sprite.position.z,
+                remaining: mechanic.patchDuration ?? 8
+            });
+            this.spawnTextureBurstEffect?.(sprite.position.x, sprite.position.z, {
+                textureKey: 'fx_steam_puff', color: 0x88ccff, count: 3,
+                baseScale: 0.7, duration: 0.8, speed: 0.08, rise: 0.05, opacity: 0.7
+            });
+        }
+        if (this.player && data.frozenPathwayPatches.some((patch) => (
+            Math.hypot(this.player.position.x - patch.x, this.player.position.z - patch.z) <= 1.2
+        ))) {
+            this.applyPlayerSlow?.(mechanic.slowDuration ?? 1.2);
         }
     }
 
@@ -20784,6 +21211,7 @@ export class ThreeGame {
         // A real death is now gracefully recorded via blackBoxStore.recordDeath
         // below -- the crash-only checkpoint has nothing left to add.
         runCheckpointStore.clear();
+        expeditionSuspendStore.clear();
         this.applyMilestoneBossRuntimeEvent?.({
             type: MILESTONE_BOSS_EVENT_TYPES.PLAYER_DEATH
         });
@@ -21201,6 +21629,7 @@ export class ThreeGame {
         // A clean extraction is a graceful run end -- nothing left to
         // crash-recover, and the salvage below is being deposited for real.
         runCheckpointStore.clear();
+        expeditionSuspendStore.clear();
 
         const inventory = this.getSessionInventory();
         const depositPayload = {
@@ -21938,6 +22367,7 @@ export class ThreeGame {
         const dx = target.position.x - tx;
         const dz = target.position.z - tz;
         const len = Math.hypot(dx, dz) || 1;
+        const elementalMod = getTurretElementalInheritance([...(this.runOverclocks ?? []), ...(this.runRelics ?? [])]);
         this.spawnProjectile({
             x: tx,
             z: tz,
@@ -21945,7 +22375,12 @@ export class ThreeGame {
             vz: (dz / len) * PROJECTILE_SPEED,
             ttl: PROJECTILE_TTL,
             damage: TURRET_DAMAGE,
-            radius: PROJECTILE_RADIUS
+            radius: PROJECTILE_RADIUS,
+            ...(elementalMod ? {
+                element: elementalMod.element,
+                statusOptions: elementalMod,
+                color: elementalMod.bulletColor
+            } : {})
         });
     }
 
@@ -22253,6 +22688,7 @@ export class ThreeGame {
         this.spawnInvulnerabilityTimer = Math.max(0, (this.spawnInvulnerabilityTimer ?? 0) - delta);
         this.updateArrivalIncident?.(delta);
         this.updateExpeditionEvent?.(delta);
+        this.updateCoordinatedEncounters?.(delta);
         this.perfectReloadBuffTimer = Math.max(0, (this.perfectReloadBuffTimer ?? 0) - delta);
         this.recoilBloom = Math.max(0, (this.recoilBloom ?? 0) - 1.2 * delta);
 
@@ -25353,7 +25789,10 @@ export class ThreeGame {
 
                 const snail = this.checkProjectileSnailHit(projectile);
                 if (snail) {
-                    this.applyPlayerDamageToEnemy(snail, projectile.damage);
+                    this.applyPlayerDamageToEnemy(snail, projectile.damage, {
+                        element: projectile.element,
+                        statusOptions: projectile.statusOptions
+                    });
                     if (projectile.pierceRemaining && projectile.pierceRemaining > 0) {
                         projectile.pierceRemaining -= 1;
                         this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
@@ -29736,6 +30175,7 @@ export class ThreeGame {
                 chargeDirZ: 0,
                 attackCooldown: 0
             };
+            this.applySuspendedEnemyState?.(sprite);
             this.setupEnemy3dCosmeticOverlay(sprite);
             return sprite;
         }
@@ -29777,6 +30217,7 @@ export class ThreeGame {
                 biomeTint: 0xffdd44,
                 staggerState: createEnemyStaggerState(ENEMY_STAGGER_DEFS.sentinel)
             };
+            this.applySuspendedEnemyState?.(sprite);
             this.setupEnemy3dCosmeticOverlay(sprite);
             return sprite;
         }
@@ -29851,6 +30292,11 @@ export class ThreeGame {
             const sporesnailFight = (placement.type === 'boss_sporesnail' && !hadExplicitMaxHp)
                 ? createBossFight(SPORESNAIL_FIGHT_DEF)
                 : null;
+            const biomeBossDef = placement.type === 'boss_cybersnail' ? CYBERSNAIL_FIGHT_DEF
+                : placement.type === 'boss_cryosnail' ? CRYO_BOSS_FIGHT_DEF : null;
+            const biomeBossFight = biomeBossDef
+                ? createBossFight({ ...biomeBossDef, maxHp })
+                : null;
             if (!isBoss) {
                 const anchor = this.getBiomeAnchorPosition();
                 const depth = Math.hypot(placement.x - anchor.x, placement.z - anchor.z);
@@ -29895,6 +30341,7 @@ export class ThreeGame {
                 hp: maxHp,
                 maxHp: maxHp,
                 speed: speed,
+                baseBossSpeed: speed,
                 enraged: isPreEnraged,
                 isElite,
                 facingSign: 1,
@@ -29910,11 +30357,13 @@ export class ThreeGame {
                 sporeEmitTimer: 0,
                 biomeTint: isElite ? ELITE_IDENTITY.tint : tintColor,
                 sporesnailFight,
+                biomeBossFight,
                 staggerState
             };
             if (isPreEnraged && !isBoss) {
                 clonedMat.color.setHex(SNAIL_ENRAGED_TINT);
             }
+            this.applySuspendedEnemyState?.(sprite);
             this.setupEnemy3dCosmeticOverlay(sprite);
             return sprite;
         }
@@ -30916,6 +31365,10 @@ export class ThreeGame {
             this.spawnPhysicalBurst(sprite.position.x, sprite.position.z, { color: 0x88ccff, count: 12, upward: 0.15 });
         }
 
+        // Sprint 47 Lane 3 Synergy On-Death Triggers
+        this.checkCryoShatterOnDeath?.(sprite);
+        this.checkBioVampirismOnDeath?.(sprite);
+
         // Season 0 Zero-Point Flux Overdrive overclock (itemdef 4147): 5 kills in 3s refunds 1 dash charge
         const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
         this._recentKillTimestamps = (this._recentKillTimestamps || []).filter((t) => (now - t) <= 3000);
@@ -31447,6 +31900,7 @@ export class ThreeGame {
             boss.userData.easyTier = true;
             boss.userData.maxHp = 5;
             boss.userData.hp = 5;
+            boss.userData.biomeBossFight = createBossFight({ ...CYBERSNAIL_FIGHT_DEF, maxHp: 5 });
         }
 
         // Parent to the player's (loaded) chunk group so the boss persists in
@@ -33027,12 +33481,24 @@ export class ThreeGame {
         data.pathRetargetTimer = Math.max(0, (data.pathRetargetTimer ?? 0) - delta);
         data.wallBreakCooldown = Math.max(0, (data.wallBreakCooldown ?? 0) - delta);
 
-        // Season 0 Cryo-Capacitor Overclock proc (itemdef 4140, docs/season-zero-protocol/03 §4):
+        // Status effect ticking (freeze decay, corrosion DoT)
+        tickStatusEffects(sprite, delta, {
+            onCorrosionTick: (target, dmg) => {
+                this.damageSnail(target, dmg);
+                this.spawnPhysicalBurst(target.position.x, target.position.z, { color: 0x66ff66, count: 4, upward: 0.1 });
+            },
+            onThaw: () => {
+                sprite.material?.color?.setHex?.(data.biomeTint ?? 0x88ff88);
+            }
+        });
+
+        // Season 0 Cryo-Capacitor Overclock proc and Sprint 47 Lane 3 Freeze:
         // freezes hostiles in place on hit, duration extended by loadoutMods.cryoDurationMultiplier.
-        if (data.frozenTimer > 0) {
-            data.frozenTimer = Math.max(0, data.frozenTimer - delta);
+        const freezeStatus = getStatus(sprite, 'freeze');
+        if (freezeStatus.isFrozen || data.frozenTimer > 0) {
+            data.frozenTimer = Math.max(0, (data.frozenTimer ?? 0) - delta);
             sprite.material?.color?.setHex?.(0x88ccff);
-            if (data.frozenTimer <= 0) {
+            if (data.frozenTimer <= 0 && !freezeStatus.isFrozen) {
                 sprite.material?.color?.setHex?.(data.biomeTint ?? 0x88ff88);
             }
             return;
@@ -33210,7 +33676,9 @@ export class ThreeGame {
         // flat per-type cooldown below, which still serves every other boss
         // type and the reduced-hp sporesnail variants (hive-harvest, the
         // o2Bubble easy tier) that never get a fight object attached.
-        if (data.isBoss && data.aiMode === 'hunt' && data.sporesnailFight) {
+        if (data.isBoss && data.aiMode === 'hunt' && data.biomeBossFight) {
+            this.updateBiomeBossFightTick(sprite, delta, distanceToTarget);
+        } else if (data.isBoss && data.aiMode === 'hunt' && data.sporesnailFight) {
             this.updateSporesnailFightTick(sprite, delta, distanceToTarget);
         } else if (data.isBoss && data.aiMode === 'hunt') {
             data.bossAttackTimer = (data.bossAttackTimer ?? 0) - delta;
@@ -35122,6 +35590,11 @@ export class ThreeGame {
     }
 
     isPlayerOverAnyHole(px, pz) {
+        // Sprint 47 Lane 3 Scout Traversal Affordance: Scout dashing or under slipstream vaults over chasms in Ring 1
+        if (this.playerType === 'SCOUT' && (this.currentDepthTier ?? 0) === 0) {
+            if (this.isDashing || (this._scoutSlipstreamTimer ?? 0) > 0) return false;
+        }
+
         const cx = Math.round(px);
         const cz = Math.round(pz);
         const radiusToCheck = 2;
@@ -35129,6 +35602,9 @@ export class ThreeGame {
             for (let dz = -radiusToCheck; dz <= radiusToCheck; dz++) {
                 const hx = cx + dx;
                 const hz = cz + dz;
+                // Sprint 47 Lane 3 Engineer Traversal Affordance: Nanite bridge resolves chasm pit-fall (GAP-GP-05)
+                if (this.isHoleBridged?.(hx, hz)) continue;
+
                 const holeInfo = this.getHoleVisualInfo(hx, hz);
                 if (holeInfo) {
                     const dist = Math.hypot(px - hx, pz - hz);
@@ -35677,6 +36153,20 @@ export class ThreeGame {
             this.setActiveExpedition?.(createExpeditionProfile(this.expeditionSeed, 0));
             return null;
         }
+        const resume = this._pendingExpeditionResume;
+        const savedCampaign = resume ? campaignWorldStore.getState?.() : null;
+        if (resume && savedCampaign
+            && savedCampaign.seed === resume.expedition.campaignSeed
+            && savedCampaign.expeditionSeed === resume.expedition.expeditionSeed
+            && savedCampaign.expeditionIndex === resume.expedition.expeditionIndex) {
+            this._campaignWorldSeed = savedCampaign.seed;
+            this._campaignProgressRestored = true;
+            this.runEntropy = savedCampaign.seed;
+            this.expeditionIndex = savedCampaign.expeditionIndex;
+            this.expeditionSeed = savedCampaign.expeditionSeed;
+            this.setActiveExpedition?.(resume.expedition.profile ?? savedCampaign.activeExpedition);
+            return savedCampaign;
+        }
         this.persistCampaignWorld?.();
         const campaign = campaignWorldStore.beginExpedition();
         this._campaignWorldSeed = campaign.seed;
@@ -35712,6 +36202,7 @@ export class ThreeGame {
         this.syncExpeditionBountyTracker?.();
         this.armArrivalIncident?.();
         this.armExpeditionEvent?.();
+        this.armRewardCache?.();
         return this.activeExpedition;
     }
 
@@ -35821,6 +36312,16 @@ export class ThreeGame {
         window.objectiveRegistry?.resolveObjective?.('arrival-incident', 'complete');
         this.showBunkerLine?.(t('ui.expedition.arrival.cleared'));
         window.dispatchEvent(new CustomEvent('arrival-incident-cleared', { detail: { count: killed.length } }));
+    }
+
+    updateCoordinatedEncounters(delta) {
+        if (!this.coordinatedEncounters?.size) return;
+        for (const [encounterId, handle] of this.coordinatedEncounters) {
+            handle.tick?.(delta);
+            if (handle.state?.formationState === 'cleared') {
+                this.coordinatedEncounters.delete(encounterId);
+            }
+        }
     }
 
     spawnArrivalIncident() {
@@ -37688,5 +38189,166 @@ export class ThreeGame {
         this.gpuFrameTimer?.dispose?.();
         this.renderer.dispose();
         this.container.replaceChildren();
+    }
+
+    // ── Sprint 47 Lane 3: Wild builds and class traversal (Gemini Antigravity) ───
+    hasActiveOverclock(id) {
+        return Array.isArray(this.runOverclocks) && this.runOverclocks.some((item) => item?.id === id);
+    }
+
+    hasActiveRelic(id) {
+        return Array.isArray(this.runRelics) && this.runRelics.some((item) => item?.id === id);
+    }
+
+    hasActiveSynergy(id) {
+        const active = computeActiveSynergies([...(this.runOverclocks ?? []), ...(this.runRelics ?? [])]);
+        return active.some((syn) => syn?.id === id);
+    }
+
+    triggerCryoShatter(targetSprite) {
+        if (!targetSprite?.position) return;
+        const tx = targetSprite.position.x;
+        const tz = targetSprite.position.z;
+        this.spawnPhysicalBurst(tx, tz, { color: 0x7df2ff, count: 10, upward: 0.25 });
+        const novaTargets = resolveCryoShatterNova({
+            originX: tx,
+            originZ: tz,
+            scatterSprites: this.scatterSprites,
+            shatterRadius: 4.0,
+            shatterDamage: 25,
+            shatterChillDuration: 2.0,
+            sourceSprite: targetSprite
+        });
+        for (const affected of novaTargets) {
+            this.applyPlayerDamageToEnemy(affected.sprite, affected.damage);
+            applyStatus(affected.sprite, 'freeze', 34);
+        }
+        clearStatus(targetSprite, 'freeze');
+        if (typeof window !== 'undefined') {
+            window.AudioManager?.play?.('crystal_shatter', { volume: 0.5, playbackRate: 1.2 });
+        }
+    }
+
+    handleTankCorrosionPull(slamX, slamZ, radius = 7.0) {
+        let pulledCount = 0;
+        for (const sprite of this.scatterSprites ?? []) {
+            if (!sprite?.parent || sprite.userData?.burstTriggered) continue;
+            if (!this.isEnemyType(sprite.userData?.type)) continue;
+            const cStatus = getStatus(sprite, 'corrosion');
+            if (cStatus.active || sprite.userData?.corroded) {
+                const dist = Math.hypot(sprite.position.x - slamX, sprite.position.z - slamZ);
+                if (dist <= radius && dist > 0.1) {
+                    sprite.position.x += (slamX - sprite.position.x) * 0.65;
+                    sprite.position.z += (slamZ - sprite.position.z) * 0.65;
+                    pulledCount++;
+                }
+            }
+        }
+        if (pulledCount > 0) {
+            this.spawnPhysicalBurst(slamX, slamZ, { color: 0x66ff66, count: 8, upward: 0.15 });
+        }
+    }
+
+    checkCryoShatterOnDeath(sprite) {
+        if (!sprite?.position) return;
+        const isFrozen = getStatus(sprite, 'freeze').isFrozen || sprite.userData?.frozen || (sprite.userData?.frozenTimer ?? 0) > 0;
+        const hasShatter = this.hasActiveRelic?.('shatter_engine') || this.hasActiveSynergy?.('cryo_shatter');
+        if (isFrozen && hasShatter) {
+            this.triggerCryoShatter(sprite);
+        }
+    }
+
+    checkBioVampirismOnDeath(sprite) {
+        if (!sprite?.userData) return;
+        const isCorroded = getStatus(sprite, 'corrosion').active || Boolean(sprite.userData.corroded);
+        const hasVampirism = this.hasActiveRelic?.('bio_vampirism') || this.hasActiveSynergy?.('bio_predator');
+        if (isCorroded && hasVampirism && isBioEnemy(sprite.userData.type)) {
+            const vitals = this.playerVitals ?? {};
+            const outcome = resolveBioVampirismKill({
+                playerVitals: vitals,
+                enemyType: sprite.userData.type,
+                isCorroded: true
+            });
+            if (outcome.o2Restored > 0 && this.playerVitals) {
+                this.playerVitals.o2 = Math.min(this.playerVitals.maxO2 ?? 100, (this.playerVitals.o2 ?? 0) + outcome.o2Restored);
+                this.emitO2State?.();
+            }
+            if (outcome.heartRestored > 0 && this.playerVitals) {
+                this.playerVitals.hp = Math.min(this.playerVitals.maxHp ?? 4, (this.playerVitals.hp ?? 0) + 1);
+            }
+            this.spawnPhysicalBurst(sprite.position.x, sprite.position.z, { color: 0x44ff88, count: 6, upward: 0.15 });
+        }
+    }
+
+    isHoleBridged(hx, hz) {
+        return this.bridgedHoles?.has?.(`${hx},${hz}`) === true;
+    }
+
+    deployNaniteBridgeAt(hx, hz) {
+        if (this.bank && typeof this.bank.getSalvage === 'function' && this.bank.getSalvage() >= 3) {
+            this.bank.spendSalvage?.(3);
+        }
+        (this.bridgedHoles ??= new Set()).add(`${hx},${hz}`);
+        if (this.scene && typeof THREE !== 'undefined') {
+            const bridgeGeo = new THREE.BoxGeometry(1.2, 0.1, 1.2);
+            const bridgeMat = new THREE.MeshStandardMaterial({
+                color: 0x00e5ff,
+                emissive: 0x00aacc,
+                transparent: true,
+                opacity: 0.85
+            });
+            const mesh = new THREE.Mesh(bridgeGeo, bridgeMat);
+            mesh.position.set(hx, -0.05, hz);
+            this.scene.add(mesh);
+            registerTransientEffect(this, mesh);
+        }
+        this.spawnPhysicalBurst(hx, hz, { color: 0x00e5ff, count: 8, upward: 0.12 });
+        window.dispatchEvent(new CustomEvent('nanite-bridge-deployed', { detail: { x: hx, z: hz } }));
+        return true;
+    }
+
+    armRewardCache() {
+        if ((this.currentDepthTier ?? 0) !== 0) {
+            this.activeRewardCache = null;
+            return null;
+        }
+        const equippedDrops = [...(this.runOverclocks ?? []), ...(this.runRelics ?? [])];
+        const seed = this.activeExpedition?.expeditionSeed ?? this.currentRunSeed ?? 0;
+        this.activeRewardCache = planRewardCache({
+            expeditionSeed: seed,
+            ring: 1,
+            equippedDrops
+        });
+        return this.activeRewardCache;
+    }
+
+    interactWithRewardCache() {
+        if (!this.activeRewardCache || this.activeRewardCache.state !== 'sealed') return false;
+        const result = claimRewardCache(this.activeRewardCache, this);
+        if (result.success) {
+            const coords = this.activeRewardCache.coords ?? { x: this.player?.position?.x ?? 0, z: this.player?.position?.z ?? 0 };
+            this.spawnPhysicalBurst(coords.x, coords.z, { color: 0xffd700, count: 12, upward: 0.25 });
+        }
+        return result.success;
+    }
+
+    spawnRewardCacheDefenders(cacheState) {
+        const count = cacheState?.costConfig?.waveCount ?? 3;
+        const enemyType = cacheState?.costConfig?.enemyType ?? 'crawler';
+        const cx = cacheState?.coords?.x ?? (this.player?.position?.x ?? 0);
+        const cz = cacheState?.coords?.z ?? (this.player?.position?.z ?? 0);
+        for (let i = 0; i < count; i++) {
+            const angle = (i / count) * Math.PI * 2;
+            const sx = cx + Math.cos(angle) * 3.5;
+            const sz = cz + Math.sin(angle) * 3.5;
+            this.createScatterInstance?.({ x: sx, z: sz, type: enemyType });
+            this.spawnPhysicalBurst(sx, sz, { color: 0xff3333, count: 6, upward: 0.2 });
+        }
+    }
+
+    triggerLockdown(durationSeconds = 12) {
+        this.lockdownTimer = Math.max(this.lockdownTimer ?? 0, durationSeconds);
+        this.showBunkerLine?.(t('ui.cache.cost.lockdown'));
+        window.dispatchEvent(new CustomEvent('containment-lockdown', { detail: { duration: durationSeconds } }));
     }
 }

@@ -29,6 +29,7 @@ import { DialogueManager, resolveEffectiveVoicePackId } from './src/dialogue.js'
 import { VitalsHUD } from './src/vitals.js';
 import { blackBoxStore } from './src/blackBox.js';
 import { recoverCrashedRunCheckpoint } from './src/runCheckpoint.js';
+import { expeditionSuspendStore } from './src/expeditionSuspend.js';
 import { codexStore, getClassWreckageLog, recordSpecimen0047OriginIfFound } from './src/codex.js';
 import { formatCrossingDeltaSummary } from './src/depthContract.js';
 import { CODEX_ENTRIES, CODEX_CATEGORIES, getCodexEntry, CODEX_TOTAL, LORE_METADATA } from './src/data/codex.js';
@@ -746,6 +747,7 @@ window.addEventListener('focus', () => {
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
         clearHeldApplicationInput();
+        window.game?.saveExpeditionSuspend?.();
         return;
     }
     window.requestAnimationFrame(ensureControllerMenuFocus);
@@ -3648,6 +3650,17 @@ function resetPickupCounter(playerType = (window.game?.playerType || 'SCOUT')) {
     });
 }
 
+function restorePickupCounterState(snapshot = {}, playerType = (window.game?.playerType || 'SCOUT')) {
+    setActiveAmmoCapacity(playerType, { clampExisting: false });
+    pickupCounterState.health = Math.max(0, Math.floor(Number(snapshot.health) || 0));
+    pickupCounterState.ammo = Math.min(activeAmmoCapacity, Math.max(0, Math.floor(Number(snapshot.ammo) || 0)));
+    pickupCounterState.weapon = Math.max(0, Math.floor(Number(snapshot.weapon) || 0));
+    pickupCounterState.coin = Math.max(0, Math.floor(Number(snapshot.coin) || 0));
+    recomputePickupTotal();
+    renderPickupCounter();
+    return getSessionInventorySnapshot();
+}
+
 function getSessionInventorySnapshot() {
     return {
         health: pickupCounterState.health,
@@ -3973,6 +3986,7 @@ renderWeaponClipState({ clip: 6, maxClip: 6, cache: pickupCounterState.ammo, rel
 renderShipHealth({ hp: 1, maxHp: 1 });
 window.pickupCounterState = pickupCounterState;
 window.resetPickupCounter = resetPickupCounter;
+window.restorePickupCounterState = restorePickupCounterState;
 window.getPickupCounterState = getSessionInventorySnapshot;
 window.consumeSessionInventoryForDeposit = consumeSessionInventoryForDeposit;
 window.getClassAmmoCapacity = () => activeAmmoCapacity;
@@ -9142,8 +9156,8 @@ async function openArmoryGate(embarkAction, { skipDoor = false } = {}) {
     }
 }
 
-function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
-    const playerType = getSelectedHeroType();
+function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapshot = null } = {}) {
+    const playerType = resumeSnapshot?.player?.classType ?? getSelectedHeroType();
     saveHeroType(playerType);
     // Solo geography resumes the campaign. Fixed daily/multiplayer layouts
     // remain separate from the locally saved campaign seed and progression.
@@ -9151,6 +9165,7 @@ function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
     if (window.game && !window.game.isMultiplayer) {
         window.game.fixedRunEntropy = false;
         window.game.globalSeedOffset = 0;
+        if (resumeSnapshot && !window.game.prepareExpeditionResume?.(resumeSnapshot)) return false;
     }
     // Hold one continuous black/simulation barrier from the menu close,
     // through world warm-up and the authored intro, to the final door reveal.
@@ -9183,7 +9198,11 @@ function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
                 gameContainer.classList.add('fullscreen-mode');
                 queueGameLayoutRefresh();
             }
-            return prepareGameplayForDialogue({ loaderOverDoor: true });
+            return Promise.resolve(prepareGameplayForDialogue({ loaderOverDoor: true })).then(() => {
+                if (resumeSnapshot && !window.game?.restoreExpeditionSuspend?.(resumeSnapshot)) {
+                    throw new Error('Expedition continuation could not be restored.');
+                }
+            });
         },
         () => {
             if (!playIntro) {
@@ -15282,7 +15301,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         devicePixelRatio: window.devicePixelRatio
     });
     startBootLongTaskDiagnostics();
-    recoverCrashedRunCheckpoint();
+    // A complete continuation supersedes the legacy salvage-only crash marker.
+    // Keep the lightweight fallback only when no resumable expedition exists.
+    if (!expeditionSuspendStore.peek()) recoverCrashedRunCheckpoint();
     window.AudioManager = AudioManager; // Expose globally for the 3D engine/Telemeters
     preloadDoorAssets();
     initTacticalCursor();
@@ -15478,6 +15499,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Check if player has active save data to enable CONTINUE
     const checkHasSaveData = () => {
         try {
+            if (expeditionSuspendStore.peek()) return true;
             const bankState = window.bankManager?.getState?.() ?? {};
             const hasBanked = (Number(bankState.tech) > 0 || Number(bankState.coin) > 0 || Number(bankState.med) > 0);
             // Was `hasAnyUnlock(getAchievementProgress())` -- called with no
@@ -15497,11 +15519,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const updateContinueButtonState = () => {
         const hasSave = checkHasSaveData();
+        const hasExpedition = Boolean(expeditionSuspendStore.peek());
         if (titleContinueBtn) {
             titleContinueBtn.disabled = !hasSave;
             titleContinueBtn.classList.toggle('disabled', !hasSave);
             titleContinueBtn.classList.toggle('hidden', !hasSave);
             titleContinueBtn.style.display = hasSave ? '' : 'none';
+            titleContinueBtn.textContent = hasExpedition
+                ? t('ui.menu.resume_expedition')
+                : t('ui.menu.continue');
         }
         if (titleSwitchClassBtn) {
             titleSwitchClassBtn.classList.toggle('hidden', !hasSave);
@@ -15570,7 +15596,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             // socket listeners -- into a solo run. CONTINUE is never part of
             // multiplayer's own #start-game deploy chain, so clearing is safe.
             clearMultiplayerSession();
-            launchStandardRun({ resetBank: false, playIntro: false });
+            const resumeSnapshot = expeditionSuspendStore.claim();
+            launchStandardRun({ resetBank: false, playIntro: false, resumeSnapshot });
         });
     }
     if (titleSwitchClassBtn) {

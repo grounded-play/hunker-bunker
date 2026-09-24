@@ -44,8 +44,20 @@
     "elite_contact": "ANZUG: Elite-Kontakt. Verstärkter Feind — Rückzugsweg freihalten."
   },
   "ui": {
+    "encounters": {
+      "locked_crossfire": {
+        "name": "Kreuzfeuer-Sperre"
+      },
+      "bloom_push": {
+        "name": "Blütenvorstoß"
+      },
+      "cold_pincer": {
+        "name": "Kältezange"
+      }
+    },
     "menu": {
       "continue": "FORTSETZEN",
+      "resume_expedition": "EXPEDITION FORTSETZEN",
       "switch_class": "KLASSE WECHSELN",
       "new_run": "NEUER DURCHLAUF",
       "achievements": "ERFOLGE",
@@ -1672,6 +1684,43 @@
         "response_breach": "Nimm die Belohnung sofort; die Verteidiger erwachen.",
         "response_bypass": "Bleib {seconds} s am Schloss. Kein Kampf, aber dein Sauerstoff sinkt schneller.",
         "response_leave": "Geh weiter. Kein Risiko, keine Belohnung."
+      }
+    },
+    "relics": {
+      "synergy": {
+        "cryo_shatter": "Kryo-Zersplitterung",
+        "bio_predator": "Bio-Raubtier"
+      },
+      "cryo_rime": {
+        "name": "Kryo-Raureif-Injektor",
+        "description": "Schüsse frieren Feinde ein und verlangsamen ihr Bewegungstempo."
+      },
+      "shatter_engine": {
+        "name": "Zersplitterungs-Motor",
+        "description": "Das Besiegen eingefrorener Feinde löst eine Eissplitter-Nova aus."
+      },
+      "caustic_payload": {
+        "name": "Ätzende Sporennutzlast",
+        "description": "Schüsse verursachen Biokorrosion mit Schaden über Zeit."
+      },
+      "bio_vampirism": {
+        "name": "Bio-Vampirische Membran",
+        "description": "Das Töten von Bio-Feinden stellt O₂-Werte und Anzugbatterie wieder her."
+      }
+    },
+    "cache": {
+      "title": "HOCHRISIKO-BELOHNUNGSCACHE",
+      "preview": "ENTHÄLT: {dropName}",
+      "risk_cost": "EINSATZKOSTEN: {cost}",
+      "open_prompt": "CACHE AUFBRECHEN [F]",
+      "walk_away": "WEGGEHEN",
+      "cost": {
+        "escalated_wave": "ESKALIERTE FEINDWELLE",
+        "o2_siphon": "25% O₂-ENTZUG",
+        "lockdown": "12s ABRIEGELUNG"
+      },
+      "report": {
+        "opened": "Hochrisiko-Belohnungscache aufgebrochen ({drop})"
       }
     }
   },

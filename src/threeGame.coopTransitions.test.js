@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
-import { descentSeedOffset, coopTransitionDedupeKey } from './coopTransitions.js';
+import {
+    COOP_ROLE,
+    announcesEncounterFormationState,
+    coopTransitionDedupeKey,
+    descentSeedOffset,
+    runsEncounterCoordinationLocally,
+    shouldApplyEncounterFormationState
+} from './coopTransitions.js';
 import { MILESTONE_BOSS_DEFINITIONS } from './milestoneBossLifecycle.js';
 
 // Host and guest wired through a relay that behaves like server/relay.js's
@@ -151,8 +158,27 @@ describe('transition helpers', () => {
 
     it('keys each transition so the relay echo and duplicates dedupe', () => {
         expect(coopTransitionDedupeKey('boss-adds', { bossKey: 'b', sequence: 2 })).toBe('boss-adds:b:2');
+        expect(coopTransitionDedupeKey('encounter-formation-state', { encounterId: 'ring1:42', sequence: 3 }))
+            .toBe('encounter-formation-state:ring1:42:3');
         expect(coopTransitionDedupeKey('elevator-descended', { descentIndex: 1 })).toBe('elevator-descended:1');
         expect(coopTransitionDedupeKey('wall-destroyed', {})).toBeNull();
         expect(coopTransitionDedupeKey('boss-adds', { bossKey: 'b' })).toBeNull();
+    });
+
+    it('makes formation coordination host-authoritative and rejects stale snapshots', () => {
+        expect(runsEncounterCoordinationLocally(COOP_ROLE.SOLO)).toBe(true);
+        expect(runsEncounterCoordinationLocally(COOP_ROLE.HOST)).toBe(true);
+        expect(runsEncounterCoordinationLocally(COOP_ROLE.GUEST)).toBe(false);
+        expect(announcesEncounterFormationState(COOP_ROLE.HOST)).toBe(true);
+        expect(announcesEncounterFormationState(COOP_ROLE.GUEST)).toBe(false);
+        expect(shouldApplyEncounterFormationState(2, {
+            encounterId: 'ring1:42', formationState: 'broken', sequence: 3
+        })).toBe(true);
+        expect(shouldApplyEncounterFormationState(3, {
+            encounterId: 'ring1:42', formationState: 'broken', sequence: 3
+        })).toBe(false);
+        expect(shouldApplyEncounterFormationState(0, {
+            encounterId: 'ring1:42', formationState: 'intact', sequence: 1
+        })).toBe(false);
     });
 });

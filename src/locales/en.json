@@ -44,8 +44,20 @@
     "elite_contact": "SUIT: ELITE CONTACT. REINFORCED HOSTILE — KEEP AN ESCAPE ROUTE."
   },
   "ui": {
+    "encounters": {
+      "locked_crossfire": {
+        "name": "Locked Crossfire"
+      },
+      "bloom_push": {
+        "name": "Bloom Push"
+      },
+      "cold_pincer": {
+        "name": "Cold Pincer"
+      }
+    },
     "menu": {
       "continue": "CONTINUE",
+      "resume_expedition": "RESUME EXPEDITION",
       "switch_class": "SWITCH CLASS",
       "new_run": "NEW RUN",
       "achievements": "ACHIEVEMENTS",
@@ -1672,6 +1684,43 @@
         "response_breach": "Take the reward now; the defenders wake.",
         "response_bypass": "Stay {seconds}s at the lock. No fight, but your oxygen drains faster.",
         "response_leave": "Walk away. No risk, no reward."
+      }
+    },
+    "relics": {
+      "synergy": {
+        "cryo_shatter": "Cryo Shatter",
+        "bio_predator": "Bio Predator"
+      },
+      "cryo_rime": {
+        "name": "Cryo Rime Injector",
+        "description": "Shots freeze enemies and slow their movement speed."
+      },
+      "shatter_engine": {
+        "name": "Shatter Engine",
+        "description": "Defeating frozen hostiles triggers an ice shrapnel nova."
+      },
+      "caustic_payload": {
+        "name": "Caustic Spore Payload",
+        "description": "Shots cause bio-corrosion that ticks damage over time."
+      },
+      "bio_vampirism": {
+        "name": "Bio-Vampiric Membrane",
+        "description": "Slaying bio enemies restores O2 vitals and suit battery."
+      }
+    },
+    "cache": {
+      "title": "HIGH-STAKES REWARD CACHE",
+      "preview": "CONTAINS: {dropName}",
+      "risk_cost": "OPERATIONAL COST: {cost}",
+      "open_prompt": "BREACH CACHE [F]",
+      "walk_away": "WALK AWAY",
+      "cost": {
+        "escalated_wave": "ESCALATED HOSTILE WAVE",
+        "o2_siphon": "25% O₂ SIPHON",
+        "lockdown": "12s CONTAINMENT LOCKDOWN"
+      },
+      "report": {
+        "opened": "Breached High-Stakes Reward Cache ({drop})"
       }
     }
   },
