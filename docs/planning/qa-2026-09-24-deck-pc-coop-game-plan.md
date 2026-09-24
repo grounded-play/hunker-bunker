@@ -108,11 +108,34 @@ On the Deck, across two Vault visits, SMELT was clicked about 30 times; the card
 
 Plan: log every smelt result (inputs consumed, output granted, Steam inventory response); fix so a completed smelt is reflected immediately and after reopening. Acceptance: smelt 5 → 1 and see both counts change, close and reopen, counts unchanged.
 
-### P2 — Foundry: old/wrong models, output mismatch, UI (reported; partly in the logs)
+### P1 — One item presentation across Armory, Foundry, hero screen and Vault (reported; mismatches found in code)
 
-The Deck opened the Fabrication Bay three times (activate, fabricate target, view reveal). The log does not record which model was shown or what was output, so "wrong model / output does not match" cannot be checked from it (question 4).
+Owner (2026-09-24): the Foundry UI is out of date with current standards; weapon and item images do not match; the Armory, the in-game Foundry and the hero screen should use the same UI — make it all one, and better.
 
-Plan: screenshots of the mismatch; log the recipe id, the previewed model and the granted item on every fabricate; align the preview model with the output item.
+What the code shows — four surfaces, three unrelated art pipelines:
+
+| Surface | Where | Item art comes from |
+|---|---|---|
+| Foundry (Fab Bay) | `src/fabricator.js` recipes, markup in `main.js` | generic numbered cards `/schematics/schematic_00–07.webp`; broken images fall back to `bunker_junk_rare.png` |
+| Armory | `src/armoryUi.js`, `src/armoryPicker.js` | `/economy/<model>.png` derived from the item's 3D model (`resolveItemIcon` → `deriveIconFromModelUrl`), else the item's initials |
+| Steam Vault | `src/steamVaultUi.js` | `/economy/<id>.png`; one hardcoded chassis picture per class |
+| Hero screen | `src/scoutHeroPreview.js` | live 3D class preview |
+
+Mismatches this produces:
+
+- **The six Foundry weapons exist only in the Foundry.** `mk1_sidearm`, `pulse_carbine`, `scatter_rep`, `rail_marksman`, `neon_smg` and `cryo_lance` appear in no other source file — no 3D model, no Armory icon, no weapon entry — yet fabricating one equips it by that id. The Armory can only show initials for it.
+- **Different items share one picture.** `schematic_05` is both CRYO LANCE and CRYO-CAPACITOR; `schematic_06` both GEODETIC COMPASS CHARM and ECHO-LOCATION TRANSCEIVER; `schematic_07` is THERMAL HEAT EXCHANGER, KINETIC IMPACT BUSHING and SPORESNAIL PEARL CHARM; BIO-HAZARD FILTER uses RAIL MARKSMAN's `schematic_03`.
+- **Recipe ids name different things than they grant** (`salvage_drill` → GEODETIC COMPASS CHARM, `exo_plating` → THERMAL HEAT EXCHANGER, `tallow_thermal_wrap` → CRYO-CAPACITOR), which makes the mapping easy to get wrong again.
+- The Deck log shows three Fab Bay visits (activate, fabricate, view reveal) but records neither the previewed model nor the granted item, so the mismatch cannot be confirmed from logs alone.
+
+Plan:
+
+1. **One item catalog.** Every weapon, mod, charm, skin and relic has one entry — id, localized name key, rarity, kind, class, 3D model, and one icon — that every surface reads. Foundry recipes reference catalog ids instead of defining their own items; the six Foundry-only weapons either get real catalog entries (model, stats, icon) or are removed.
+2. **One item card and one preview.** A single card component (art, name, rarity, kind, cost/state) and a single 3D preview, used by the Armory, the Foundry, the hero screen and the Vault, built to the Armory's current styling (the newest, token-based design) unless the owner picks another.
+3. **Art that matches the item.** Icons rendered from each item's own model (the Armory's existing rule), so the card, the preview and the in-game model always agree; no shared placeholders, no junk fallback for shipped items.
+4. **Log it.** Every fabricate logs recipe id, previewed item and granted item.
+
+Acceptance: a test that walks every catalog id through each surface's card data and asserts the same name, rarity and image everywhere; no two items share an image; no shipped item falls back to initials or a placeholder; a screenshot set of one item in all four surfaces.
 
 ### P2 — Models invisible in large rooms (reported; not a load failure)
 
@@ -129,7 +152,7 @@ Remote death/downed, black-box ownership, wall persistence, smelt results, fabri
 1. ~~Map variety~~ — **answered:** TRY AGAIN keeps the map; MAIN MENU resets the run and the map.
 2. ~~Co-op persistence~~ — **answered:** on TRY AGAIN the map continues, so destroyed walls stay destroyed; MAIN MENU starts fresh.
 3. ~~Co-op fresh start~~ — **answered:** Meridian appeared as the recruited companion following the player (stuck behind a wall); see the companion item. Power-ups: **answered** — they were not seen by both players and looked different; see "Everything in co-op must be networked".
-4. **Foundry.** Which models looked old, and which output did not match? A screenshot would pin it. Is "trade in / trade up" the Steam Vault smelter (the logs point there)?
+4. ~~Foundry~~ — **answered:** the UI is out of date and item images do not match; Armory, Foundry and hero screen should be one UI (see "One item presentation"). Still open: is "trade in / trade up" the Steam Vault smelter (the logs point there), and should the unified design follow the Armory's current look?
 5. **Invisible models.** Which objects, in which rooms?
 6. ~~22-minute gap~~ — **answered:** the owner turned the Deck off and came back. The log agrees: last entry 20:16:22 on the main menu, next 20:38:19; input, Steam and the controller came back at once and the next deployment started 35 s later, with 1.7 s and 1.1 s stalls just after waking. This was a suspend **at the menu**, not mid-expedition, so resuming an interrupted expedition (Invisible Essentials Phase 1) is still untested on hardware. Also seen: after MAIN MENU on the results screen the app phase never left `gameover` (the next logged transition is `gameover -> armory`), which may be part of why MAIN MENU did not reset the run.
 
