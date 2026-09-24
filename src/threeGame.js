@@ -191,6 +191,14 @@ import { runCheckpointStore } from './runCheckpoint.js';
 import { expeditionSuspendStore, normalizeExpeditionSuspendSnapshot } from './expeditionSuspend.js';
 import { CHASSIS_SKIN_MODELS, createPlayer3dOverlay, ENGINEER_GESTURES, excludePlayerSelfLights } from './player3dOverlay.js';
 import { remoteEquipmentSignature, resolveRemoteEquipmentVisuals } from './remoteLoadout.js';
+import {
+    createTransitNetwork,
+    unlockTransitTerminal,
+    canUseTransit,
+    executeTransit,
+    formatTransitLabel,
+    TRANSIT_INTERACT_RADIUS
+} from './pneumaticTransit.js';
 
 export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
     modelUrl: '/3d/runtime/secrets/mayor-tina-rigged.glb',
@@ -1978,6 +1986,7 @@ export class ThreeGame {
         this.playerPoisonTickTimer = 0;
         this.killedBosses = new Set();
         this.defeatedMilestoneBosses = new Set();
+        this.transitNetwork = createTransitNetwork();
         const builtGoalKeys = new Set(Object.entries(this.bank?.getState?.()?.unlocks ?? {})
             .filter(([, built]) => Boolean(built))
             .map(([goalKey]) => goalKey));
@@ -7333,8 +7342,65 @@ export class ThreeGame {
                 });
             }
         }
+        if (this.transitNetwork) {
+            for (const terminal of this.transitNetwork.terminals.values()) {
+                if (!terminal.unlocked) continue;
+                const distance = Math.hypot(px - terminal.position.x, pz - terminal.position.z);
+                if (distance <= TRANSIT_INTERACT_RADIUS) {
+                    const inCombat = Boolean(this.inCombat ?? false);
+                    const check = canUseTransit(terminal, {
+                        inCombat,
+                        nearbyHostiles: this.enemies ?? [],
+                        playerPosition: { x: px, z: pz }
+                    });
+                    candidates.push({
+                        id: terminal.id,
+                        label: formatTransitLabel(terminal, {
+                            inCombat: !check.allowed && check.reason === 'in_combat',
+                            hostilesNearby: !check.allowed && check.reason === 'hostiles_nearby'
+                        }),
+                        distance,
+                        interact: () => this.interactWithTransitTerminal(terminal.id)
+                    });
+                }
+            }
+        }
         candidates.sort((a, b) => Number(Boolean(a.secondary)) - Number(Boolean(b.secondary)) || a.distance - b.distance);
         return candidates;
+    }
+
+    interactWithTransitTerminal(terminalId) {
+        if (!this.transitNetwork || !this.player) return false;
+        const terminal = this.transitNetwork.terminals.get(terminalId);
+        if (!terminal) return false;
+        const px = this.player.position.x;
+        const pz = this.player.position.z;
+        const inCombat = Boolean(this.inCombat ?? false);
+        const check = canUseTransit(terminal, {
+            inCombat,
+            nearbyHostiles: this.enemies ?? [],
+            playerPosition: { x: px, z: pz }
+        });
+        if (!check.allowed) {
+            const reasonMsg = check.reason === 'hostiles_nearby' || check.reason === 'in_combat'
+                ? 'TRANSIT LOCKDOWN: CLEAR THREATS BEFORE ACTIVATING RETURN'
+                : 'PNEUMATIC TRANSIT UNAVAILABLE';
+            this.showBunkerLine?.(reasonMsg);
+            this.playThrottledUiError?.();
+            return false;
+        }
+
+        const result = executeTransit(this.transitNetwork, terminalId, {
+            inCombat: false,
+            nearbyHostiles: [],
+            playerPosition: { x: px, z: pz }
+        });
+        if (!result.ok) return false;
+
+        this.player.position.set(result.destination.x, result.destination.y ?? 0, result.destination.z);
+        this.showBunkerLine?.('PNEUMATIC TRANSIT: RETURNED TO CRASHED SHIP SANCTUARY');
+        window.dispatchEvent(new CustomEvent('transit-executed', { detail: result }));
+        return true;
     }
 
     cycleInteractionTarget(direction = 1) {
@@ -20344,6 +20410,14 @@ export class ThreeGame {
             if (effect.type === 'milestone_defeated') {
                 const definition = getMilestoneById(effect.milestoneId);
                 if (definition) this.defeatedMilestoneBosses?.add(definition.goalKey);
+                if (this.transitNetwork) {
+                    const bossKey = definition?.goalKey || effect.milestoneId;
+                    const unlocked = unlockTransitTerminal(this.transitNetwork, bossKey);
+                    if (unlocked) {
+                        this.showBunkerLine?.('PNEUMATIC TRANSIT UNLOCKED: RETURN CHUTE ACTIVE AT ARENA');
+                        window.dispatchEvent(new CustomEvent('transit-terminal-unlocked', { detail: { terminal: unlocked } }));
+                    }
+                }
             }
         }
         if (result.changed) this.persistCampaignWorld?.();

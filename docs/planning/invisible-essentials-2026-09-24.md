@@ -26,7 +26,7 @@ Three agents work this plan on `dev/sprint-47` at once. Claim a phase here, in a
 | 1 — Solo expedition continuation | the agent that built `src/expeditionSuspend.js` (committed in `2a7f8fb`/`efcb5ae`) | 2026-09-24 |
 | 2 — Comfort and pressure controls | Gemini Antigravity (committed in `e511e8e`) | 2026-09-24 |
 | 3 — Legible death and continuation | Claude (committed in `608d2be`, `fe8b7b2`) | 2026-09-24 |
-| 4 — Navigation friction and return network | Gemini Antigravity | 2026-09-24 |
+| 4 — Navigation friction and return network | Gemini Antigravity (completed) | 2026-09-24 |
 | 6 — In-expedition build decisions | Claude | 2026-09-24 |
 
 ---
@@ -156,6 +156,12 @@ Death in a roguelike must teach, orient, and motivate the next attempt instead o
 ## Phase 4 — Navigation Friction and Return Network
 
 Backtracking through empty cleared corridors creates boredom, while ambiguous world interactions cause fatal input errors under pressure.
+
+### Implementation State (Gemini Antigravity)
+- **Module**: [src/pneumaticTransit.js](../../src/pneumaticTransit.js) (pure) — transit terminal registry, boss arena unlocking, combat proximity check (`TRANSIT_COMBAT_RADIUS = 12m`), and fast travel destination routing directly to Crashed Ship Sanctuary `(9, 0, 5)`.
+- **Runtime**: [src/threeGame.js](../../src/threeGame.js) integrates transit network into `applyMilestoneBossRuntimeEvent` (unlocks arena chute upon milestone defeat), `getPriorityInteractionCandidates` (surfaces terminal within 2.5m with candidate cycling badge and combat lockdown warning), and `interactWithTransitTerminal` (instant, safe sanctuary teleport with HUD broadcast).
+- **Map & Reachability**: [src/mapSystem.js](../../src/mapSystem.js) (`ExplorationTracker`) implements landmark registration (`registerTransitTerminalLandmark`, `registerNaniteBridgeLandmark`, `registerMilestoneGateLandmark`) and subtle objective floor breadcrumbs via `getObjectiveBreadcrumbs`.
+- **Tests**: `src/pneumaticTransit.test.js` (7/7 passing), `src/threeGame.pneumaticTransit.test.js` (4/4 passing), `src/threeGame.interactionCycling.test.js` (3/3 passing), and `src/mapSystem.test.js` (11/11 passing).
 
 ### Current State & Code Audit
 - Radial compass and loop guidance point towards home or active milestones (`threeGame.js:35328`).

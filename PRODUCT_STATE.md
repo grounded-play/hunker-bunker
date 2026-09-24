@@ -5,7 +5,7 @@ and worklogs are evidence or history; they do not override this file. Update a
 row when its implementation or acceptance state changes and link to evidence
 instead of duplicating it here.
 
-Last reconciled: 2026-09-23 · source baseline `mothership` `d12b9c4`; co-op follow-up `8da53de`; Deck/PvP follow-ups `2d0032a`, `4da77cc`, and `a5b4e84` on `dev/sprint-46`; one physical packaged capture `v2.4.11-beta` `aafe429fae34` on Steam Deck. The package predates all three hardening commits and is one client’s evidence, not release acceptance; see the [evening session analysis](docs/reports/session-log-analysis-2026-09-23-deck-pvp-session.md).
+Last reconciled: 2026-09-24 · source baseline `mothership` `d12b9c4`; co-op follow-up `8da53de`; Deck/PvP follow-ups `2d0032a`, `4da77cc`, and `a5b4e84` on `dev/sprint-46`; Sprint 47 working baseline `2.4.12-beta` on `dev/sprint-47` (and staged from `dev/sprint-45`); physical packaged capture `v2.4.11-beta` `aafe429fae34` on Steam Deck; see the [evening session analysis](docs/reports/session-log-analysis-2026-09-23-deck-pvp-session.md).
 
 Released in `v2.4.4-beta` and already on `mothership` (`e017b06`): the first deep localization sweep (7 languages, 0 unlocalized runtime strings), Alternate Radio Voice Banks (104 cue slots / 208 takes), all 10 rendered motion ending cinematics, Phase A AgX tone mapping & IBL reflections, and 52 playtest stability tickets (DP-01 through DP-52).
 
