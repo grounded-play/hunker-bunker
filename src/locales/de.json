@@ -1638,7 +1638,7 @@
       },
       "reward_recovered": "Geborgen: {name}.",
       "reward_lost": "Die Komponente hat die Bergung nicht überstanden.",
-      "report_reward": "{name} geborgen",
+      "report_reward": "{drop} geborgen",
       "report_reward_lost": "Eine Komponente bei der Bergung verloren",
       "false_distress": {
         "name": "NOTSIGNAL",

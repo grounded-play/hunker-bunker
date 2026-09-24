@@ -1638,7 +1638,7 @@
       },
       "reward_recovered": "Получено: {name}.",
       "reward_lost": "Компонент не пережил извлечение.",
-      "report_reward": "Получено: {name}",
+      "report_reward": "Получено: {drop}",
       "report_reward_lost": "Компонент потерян при извлечении",
       "false_distress": {
         "name": "СИГНАЛ БЕДСТВИЯ",

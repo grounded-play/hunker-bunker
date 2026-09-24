@@ -1638,7 +1638,7 @@
       },
       "reward_recovered": "Recuperado: {name}.",
       "reward_lost": "El componente no sobrevivió al rescate.",
-      "report_reward": "{name} recuperado",
+      "report_reward": "{drop} recuperado",
       "report_reward_lost": "Un componente perdido en el rescate",
       "false_distress": {
         "name": "SEÑAL DE SOCORRO",

@@ -1638,7 +1638,7 @@
       },
       "reward_recovered": "回収：{name}。",
       "reward_lost": "コンポーネントは回収中に壊れた。",
-      "report_reward": "{name}を回収",
+      "report_reward": "{drop}を回収",
       "report_reward_lost": "回収中にコンポーネントを失った",
       "false_distress": {
         "name": "救難信号",

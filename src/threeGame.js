@@ -36110,7 +36110,10 @@ export class ThreeGame {
             const result = callSliceContract('grantRunDrop', this, effect.dropId);
             const delivered = result.available && result.value === true;
             event?.grants.push({ dropId: effect.dropId, available: result.available, delivered });
-            const params = { name: drop?.name ?? effect.dropId };
+            // Lane 3's localized component name; the catalog name is English only.
+            const dropKey = `ui.relics.${effect.dropId}.name`;
+            const localized = t(dropKey);
+            const params = { name: localized && localized !== dropKey ? localized : (drop?.name ?? effect.dropId), dropKey };
             this.showBunkerLine?.(t(delivered ? 'ui.events.reward_recovered' : 'ui.events.reward_lost', params));
             window.dispatchEvent?.(new CustomEvent('expedition-report-item', {
                 detail: { kind: 'discovery', labelKey: delivered ? 'ui.events.report_reward' : 'ui.events.report_reward_lost', params }

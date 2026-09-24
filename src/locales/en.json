@@ -1638,7 +1638,7 @@
       },
       "reward_recovered": "Recovered: {name}.",
       "reward_lost": "The component did not survive the salvage.",
-      "report_reward": "{name} recovered",
+      "report_reward": "{drop} recovered",
       "report_reward_lost": "A component lost in salvage",
       "false_distress": {
         "name": "DISTRESS SIGNAL",

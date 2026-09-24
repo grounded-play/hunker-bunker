@@ -1638,7 +1638,7 @@
       },
       "reward_recovered": "已回收：{name}。",
       "reward_lost": "组件没能在打捞中保住。",
-      "report_reward": "回收了{name}",
+      "report_reward": "回收了{drop}",
       "report_reward_lost": "打捞中损失了一个组件",
       "false_distress": {
         "name": "求救信号",

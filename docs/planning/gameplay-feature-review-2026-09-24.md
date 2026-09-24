@@ -505,3 +505,55 @@ The exact prompts issued to each agent are recorded here so the lane scope is re
 
 #### Lane 3 — Gemini (Antigravity)
 > Sprint 47 Lane 3 (Gemini Antigravity): Wild builds and class traversal. Work on `dev/sprint-47`; read `docs/planning/gameplay-feature-review-2026-09-24.md` (Track B, Phases 2–3, the lane extension) and `git status` before every edit — Claude and Codex share the branch. Build `src/statusEffects.js` (freeze stacks, corrosion, decay, save/resume without double-granting) and export `applyStatus`, `getStatus` and `grantRunDrop` on day 1 so the other lanes can build against them. Implement the two required synergy chains from the inert catalog in `src/runDrops.js` — Cryo Shatter (`cryo_rime` + `shatter_engine`) and Bio Predator (`caustic_payload` + `bio_vampirism`) — flip only those four to `implemented: true`, and hook them into `CLASS_MELEE_PROFILES` (Scout strike shatters frozen targets, Tank slam pulls corroded targets together, Engineer turrets inherit the carrier's element at 50%). Build the Ring 1 high-stakes reward cache: it previews the synergy component, costs something explicit (escalated wave, local O₂ siphon or locked doors), and can be walked away from. Add one deliberate class traversal affordance per class in Ring 1 only. Particle and effect budgets stay within the 64-effect cap and the Deck constraints in the gaps register (GAP-RN-10/11/12). Prove it with unit tests for stack, decay, radius and refund math, and build probes showing each chain measurably changes shots-to-kill against the same pack. Every number you report must come from a test or probe run — no invented seeds, payouts, enemies or player quotes.
+
+### Lane status — evaluated 2026-09-24
+
+Checked against each lane's goal prompt on `dev/sprint-47`. Every claim below was re-run in this checkout; a number with no source here is not a finding. **Committed** means on the branch; Lanes 2 and 3 were still uncommitted working-tree changes when this was written, so their rows describe the working tree.
+
+**Lane 1 — Claude (committed: `a12028f`, `e0ad74b`, `42eae4f`, `e1d47fd`)**
+
+| Brief item | State | Evidence |
+|---|---|---|
+| `src/expeditionEvents.js`: False Distress Signal, Unstable Salvage Vault, ≥2 responses, condition variants | Done | scan/open/leave and breach/bypass/leave; bait vs survivor, signal clarity, recipe and bypass time vary by condition — `src/expeditionEvents.test.js` |
+| Repetition guard (condition and event) | Done | `continueExpeditionProfile`; 6 campaigns × 12 deployments never repeat — `src/expeditionSystem.test.js` |
+| Signal at 1:00–3:00 as a visible optional route beside the ship goal | Done in code; seen in probe | Signal 60–150 s. Slice probe (after, 8 of 9 runs at time of writing): route chip shown every run, and the two tracker cards remain the mission and the ship-goal option |
+| Fights only via `spawnEncounterRecipe`, rewards only via `grantRunDrop` | Done; degrades honestly | `src/sliceContracts.js`. Without a registered contract the game says so (`slice-contract-missing`, "component lost", an empty ambush pays nothing) — `src/threeGame.expeditionEvents.test.js` |
+| `expedition-report-item` rendered from all lanes | Done | kinds settlement / event / discovery / unlock / faction / lead, lead after the ship goal — `src/expeditionReport.test.js` |
+| Slice probes, 3 seeds × 3 classes, before/after | Before done (9/9, `030d773`); after in progress on `e1d47fd`; integrated after pending | `tests/e2e/probes/slice.spec.js`; the integrated run waits on Lanes 2/3 being committed and imported |
+| Slice report (observed vs assumed) | Pending | follows the integrated run |
+
+**Lane 2 — Codex (uncommitted)**
+
+| Brief item | State | Evidence / finding |
+|---|---|---|
+| Role coordinator, formation states, no orphaned timers | Done | `src/encounterCoordination.js`; tests pass |
+| Three Ring 1 recipes from existing hostiles | Done | Locked Crossfire, Bloom Push, Cold Pincer use only `EXISTING_ENCOUNTER_HOSTILES` |
+| `spawnEncounterRecipe` + `encounter-formation-broken` / `encounter-cleared` | Done in the module; **not reachable in the game** | Registered through `src/sliceContracts.js`, but nothing imports `src/encounterRecipes.js`, so the contract never registers at runtime. Lane 1 adds the import once the file is committed |
+| Telegraph (audio + visual) per role | Done | `playTelegraph`: audio cue, pooled burst, ground ring for ring roles |
+| Class counterplay | Declared | `CLASS_ROLE_COUNTERPLAY`; not yet demonstrated in a live fight |
+| Co-op replication | Done | `ENCOUNTER_FORMATION_STATE` in `src/coopTransitions.js`, host-authoritative, sequence-guarded |
+| Boss conversions with a rule-changing mechanic | Done | `boss_cybersnail`: cooling vent after every third volley, then carapace-shattered overdrive; `boss_cryosnail`: Deep Freeze lays slowing frozen-pathway patches |
+| `audit:combat-encounters` role coverage; priorities measurably change clear time | Partly | All five roles covered. **Finding:** the priority table is modeled (fixed aim and cadence), and in Bloom Push every priority gives the same result for every class (e.g. Scout 14 shots / 7.70 s). The claim holds for Locked Crossfire and Cold Pincer only |
+
+**Lane 3 — Gemini (uncommitted)**
+
+| Brief item | State | Evidence / finding |
+|---|---|---|
+| `src/statusEffects.js` (freeze stacks, corrosion, decay, save/resume) + `grantRunDrop` | Done | tests pass; registered through `src/sliceContracts.js`; `threeGame.js` imports it, so the contract exists in the game once committed |
+| Only the four chain drops flipped to `implemented: true` | Done | `cryo_rime`, `shatter_engine`, `caustic_payload`, `bio_vampirism` |
+| Class hooks (Scout shatter, Tank corrosion pull, Engineer 50% element) | Done in code | `src/threeGame.synergies.test.js` |
+| Chains measurably change shots-to-kill | Modeled, not in-game | `scripts/synergy-build-probe.js` is a simulation against a model pack (baseline 15 shots / 3.15 s; Cryo Shatter 3 / 0.50 s). The spaced-DoT Bio Predator row (10 shots) comes from the probe's test, not its default output |
+| Ring 1 reward cache: preview, explicit cost, walk away | **Partly** | See findings 2–4 below |
+| One traversal affordance per class, Ring 1 only | Done in code | Scout chasm vault, Tank wall breach, Engineer nanite bridge (3 salvage) |
+| Effect budget within the 64 cap | Declared | bursts ≤ 12 particles, `registerTransientEffect`; no Deck measurement (GAP-RN-10 stays open) |
+
+Findings and corrections:
+
+1. **Item IDs in Lane 3's completion report are wrong.** It paired the four drops with 4140, 4146, 4142 and 4148. Those are Steam inventory cosmetics in `steam/inventory_schema_hunker_bunker.json` (Cryo-Capacitor Overclock, Symbiotic Adrenaline Pump, Bio-Hazard Filter Vent, Soviet Sub-Commander Radio; see `docs/planning/cosmetic-loadout-gameplay-design-2026-09-10.md`). Run drops have no Steam item IDs; they are identified only by their catalog ids in `src/runDrops.js`. The wrong IDs appear in no file.
+2. **Reward cache position is fixed.** `planRewardCache` returns `{ x: 12.5, z: -10.5 }` for every deployment and seed, near the crash site and not checked for walkability. It has no world object; only a prompt within 2.8 units reveals it. Open for Lane 3: a seeded Ring 1 site (e.g. the unclaimed-chunk rule in `chooseEventSite`) and a visible marker.
+3. **Cache prompt was hardcoded English and named neither the drop nor the cost.** Fixed: it now reads "CONTAINS: {drop} · OPERATIONAL COST: {cost}" from Lane 3's own `ui.cache.*` keys, localized.
+4. **Cache report item.** Its kind `'cache'` is not a shared kind (it rendered as an event) and it showed the raw id, e.g. "(cryo_rime)". Fixed: kind `discovery`, localized component name via `dropKey` → `{drop}` in all 7 locales; test added in `src/rewardCache.test.js`.
+5. **Translation fixes.** es-419 used "Aljibe" (a water cistern) for the cache; now "Alijo". ja used 「吸入」 (inhale) for the O₂ siphon cost; now 「O₂を25%吸い出し」.
+6. **Lane 1's own drop names** used the English catalog name; they now use Lane 3's localized `ui.relics.<id>.name`.
+
+Still open across lanes: Lanes 2 and 3 to commit their work; Lane 1 then imports `src/encounterRecipes.js`, re-runs the slice as "after, integrated", and writes the slice report. Human playtests, Deck, co-op and Cloud acceptance stay open — no evidence was supplied.

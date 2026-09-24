@@ -5467,6 +5467,10 @@ function formatExpeditionReportLine(line) {
     if (params.conditionKey) params.condition = t(params.conditionKey);
     if (params.labelKey) params.label = t(params.labelKey, params);
     if (params.goalKey) params.goal = t(params.goalKey);
+    if (params.dropKey) {
+        const drop = t(params.dropKey);
+        params.drop = drop !== params.dropKey ? drop : (params.name ?? params.dropId ?? '');
+    }
     if (line.parts) {
         params.missing = line.parts
             .map((part) => `${part.amount} ${part.resourceKey ? t(part.resourceKey) : part.resource}`)
