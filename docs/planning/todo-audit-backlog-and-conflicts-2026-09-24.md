@@ -12,9 +12,7 @@
 Every unchecked item (`[RESOLVED]`) in [better-todo-tree-20260924-1037.txt](../../better-todo-tree-20260924-1037.txt) was systematically audited against the active repository state at commit `dev/sprint-47`.
 
 - **Total Items Evaluated:** 173
-- **Completed & Verified in Codebase (`[x]`):** 50
-- **Architectural & Design Conflicts (`[-]`):** 9
-- **Active Release Blockers / True TODOs (`[>]`):** 114
+- **First pass:** 50 marked completed, 9 marked conflicts, 114 active. **These counts are superseded** — every item is now `[MIGRATED]` in the tree (commit `1631488`), and the [verification review](#verification-review) below found that many of the 50 "completed" and 6 of the 9 "conflicts" are not supported by the repository. Treat the §2 conflict table and the "Verified:" appendix as unreviewed claims except where the review confirms them.
 
 ---
 
@@ -378,3 +376,55 @@ The following 50 items were previously unchecked in [better-todo-tree-20260924-1
 Any future updates to tasks listed herein must maintain bidirectional synchronization:
 1. When a task in **Section 3 (Active Backlog)** is implemented and verified, update its corresponding line in [better-todo-tree-20260924-1037.txt](../../better-todo-tree-20260924-1037.txt) to `[x] [DONE]` with commit evidence.
 2. If design direction changes, document the rationale in **Section 2 (Design Conflicts)** before modifying runtime architecture.
+
+
+<a id="verification-review"></a>
+## Verification review (Claude, 2026-09-24)
+
+A second agent re-checked the first pass against the repository on `release/v2.4.12-beta-invisible-essentials`. Method: every cited file was checked to exist, and every cited test was read for the behaviour claimed. Nothing here was play-tested; "supported" means code or automated tests cover it, not that a person saw it work.
+
+### Conflicts that are not conflicts — reopened as true TODOs
+
+| Tree line | Item | Why the conflict claim fails |
+|---|---|---|
+| L148 | Replace the temporary `--comms` treatment | No Sprint 45 audio review adopting `--comms` as canon exists; `vo-voice-banks-2026-09-13.md` is the only doc that mentions it. Needs an owner decision, not a closure. |
+| L154 | Wire quest completion to grant permanent skin access | `src/survivorContract.js` **does** carry `rewardSkinId` on contracts (lines 17, 27), contradicting "contracts award shells rather than cosmetics". Whether the skin is actually granted is unverified. |
+| L175 | Two real clients (different classes) | A live two-client check; server authority (GAP-PV-01) does not replace watching two clients play. |
+| L176 | PvP red tint reads as hostile | No "unified outline shader" or friendly-fire guard for tint exists in `src/`. |
+| L177 | Remote walk-cycle plays | No "authoritative velocity snapshots" exist in `src/`. |
+| L178 | Two remote players of the same class are distinguishable | No "callsign badges" or "class chassis shaders" exist in `src/`. |
+| L179 | Live PvP reconnect mid-match | "Superseded by Phase 5 reconnect handshake" — Phase 5 is not built (no `COOP_RECONNECT_RESTORE` anywhere). |
+
+L180 (fresh room deploy) is covered at the relay level by `server/relayReadyUp.test.js`; L261 (no touch tests) is a statement of fact, not a TODO. Both conflicts stand.
+
+### "Verified" items the evidence does not support — reopened
+
+| Tree line | Item | Finding |
+|---|---|---|
+| L45 | Smash contact **frame** agrees with damage | `threeGame.ammoAndMeleeProps.test.js` tests the damage arc, not the animation contact frame. |
+| L47 | Interaction one-shots interruptible by damage/movement | `threeGame.interactionCycling.test.js` tests candidate ordering and cycling; nothing about interruption. |
+| L48 | Retargeting adds no planar root motion | `scoutAnimationClips.test.js` only checks that the expected clips exist. |
+| L84 | Deployment stall understood and within budget on the package/hardware route | GAP-RN-10 (Deck frame pacing) is still open; a bundle-size cut is not a hardware measurement. |
+| L88 | All three classes have viable encounters and meaningful build choices | Needs play; unit tests of synergies do not show viability. |
+| L92 | Ending/result flow produces the right consequences | Cited `src/deathReport.js` (death screen lines), which does not touch the ending flow. |
+| L94 | Product State, sprint, roadmap and release claims reference the same evidence | Evidence given ("ledgers and git logs unified") is not evidence. |
+| L127 | Packaged crash/restart recovery from a mid-run checkpoint | No packaged run was exercised; `expeditionSuspend.js` is dev-build code. |
+| L129 | P0/P1 fixed with regression coverage and the route re-run | A test-file count is not a route re-run. |
+| L130 | E2E startup flakiness made deterministic | Contradicted: on 2026-09-24 the Sprint 47 slice and death-report probes stalled at boot in 7 runs under machine load (logs in `docs/reports/assets/sprint-47/`, `docs/reports/assets/essentials-phase3/`). |
+| L161 | Reticle visible and reactive in live gameplay | `threeGame.tacticalCursorTelemeter.test.js` tests the telemeter box, not the reticle, and not live. |
+| L165 | Burst renders in front of the reward and behind the card | `src/rewardReveal.js` has no z-order/render-order control for the burst. |
+| L185 | "No automated E2E coverage exists for this flow yet" | Still true: no `tests/e2e` spec covers lobby ready-up. |
+| L186, L187 | Export and analyse a stutter log using `lastPhase` | Cited `src/telemetry.js` does not exist; analysing a real freeze is a human task still to do. |
+| L263 | Per-screen overlay audit | One guard test is not a per-screen audit. |
+
+### Supported by automated tests only (live confirmation still open)
+
+L181–L183 (`server/relayReadyUp.test.js`: deploy rejected until all ready, un-ready cancels the countdown, disconnect cancels the launch), L184 (`src/multiplayerLobby.soloDeploy.test.js` exists), L201 (`src/steamAchievementCatalog.test.js` references `src/achievements.js`), L208 (`comingSoon` handled in `src/achievements.js`), L209 (`src/profile.test.js` covers achievements), L210 (`migrateAchievements` exists).
+
+### Not verifiable from the repository
+
+L204, L205, L206, L207 are Steamworks dashboard states (hidden flags, uploaded icons, publication, branch confinement). They need someone to check the dashboard.
+
+### Not re-checked
+
+L21, L22, L26, L28, L30, L83, L86, L87, L89, L93, L128, L133, L162, L164, L167–L170, L202, L203, L211, L269 keep the first pass's verdict, unreviewed. L22's evidence text in the tree is garbled (it quotes the debug-loading-report evidence of L28).

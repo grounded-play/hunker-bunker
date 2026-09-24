@@ -18,10 +18,8 @@ This release delivers **Phase 4 of the Invisible Essentials plan** (pure pneumat
 
 In addition, this PR completes the **Master Repository TODO Tree Audit**:
 - Evaluated all 175 legacy open checkboxes across 33 historical planning and review documents.
-- 50 items verified as fully implemented with codebase evidence.
-- 9 items resolved as architectural/design conflicts and superseded by modern sprint standards.
-- 116 active release blockers and hardware tasks centralized into [docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md](../planning/todo-audit-backlog-and-conflicts-2026-09-24.md).
-- All 33 underlying documents updated to close open checkboxes, completely clearing the IDE TODO Tree from legacy debt.
+- All 175 are now tracked as migrated backlog in [docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md](../planning/todo-audit-backlog-and-conflicts-2026-09-24.md); each source document's line is closed with a link to it, and the ledger links back to the source.
+- The first pass marked 50 items completed and 9 as design conflicts. A [verification review](../planning/todo-audit-backlog-and-conflicts-2026-09-24.md#verification-review) found 6 of the 9 conflicts and 17 of the "completed" items unsupported by the repository (reopened there, with reasons), 10 supported by automated tests only, 4 needing a Steamworks dashboard check, and the rest not re-checked. **No TODO is closed by this PR on the strength of the first pass alone.**
 
 Merges all staged work from `dev/sprint-46` and `dev/sprint-47`, reconciling the repository state and bringing total passing tests to **4,202 across 469 files** (100% green).
 
