@@ -10,6 +10,7 @@ import { KillstreakFeedbackSystem } from './gameplayTactileVfx.js';
 import { CHUNK_SIZE, TILE_SIZE } from './tileCatalog.js';
 import { getControllerGlyphLabel } from './inputGlyphs.js';
 import { loadAccessibilitySettings } from './accessibilitySettings.js';
+import { hasVisibleTacticalRepresentation, tacticalNameForObject } from './tacticalTargetLabels.js';
 
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -230,6 +231,7 @@ import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinch
 import { resolveSafeSpawn } from './safeSpawn.js';
 import { WORLD_3D_FACING_YAW, WORLD_3D_SWAP_PREFETCH_DISTANCE, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
+import { COMPANION_PATH_LIMITS, findCompanionPath, nextWaypoint } from './companionPath.js';
 import { SNAIL_ENCOUNTER_CONSTANTS } from './snailEncounter.js';
 import { createUniversalEncounter, resolveEncounterAction } from './universalEncounter.js';
 import { startEncounterTransition } from './snailEncounterTransition.js';
@@ -6632,6 +6634,11 @@ export class ThreeGame {
 
     loadNearbyWorld3dReplacement(source) {
         if (!source?.userData?.world3dModelType || source.userData.world3dLoading || source.userData.world3dRoot) return;
+        // Sprite fallbacks are substantially cheaper than dozens of skinned or
+        // PBR prop trees. Once emergency quality is active, do not keep adding
+        // scene complexity that the current hardware has already shown it
+        // cannot render within budget.
+        if (this.adaptiveGameplayPerformanceMode) return;
         if ((this._world3dLoadsInFlight ?? 0) >= 3 || !this.player?.position) return;
         this._world3dLoadPosition ??= new THREE.Vector3();
         source.getWorldPosition?.(this._world3dLoadPosition);
@@ -8072,6 +8079,10 @@ export class ThreeGame {
     }
 
     hasBlockingGameplayOverlay() {
+        if (this._cacheBlockingOverlayForCurrentFrame
+            && typeof this._frameBlockingOverlayState === 'boolean') {
+            return this._frameBlockingOverlayState;
+        }
         const isVisible = (id) => {
             const el = document.getElementById(id);
             return Boolean(el && !el.classList.contains('hidden'));
@@ -8086,7 +8097,7 @@ export class ThreeGame {
             }
             return false;
         };
-        return document.body.classList.contains('mission-intro-active')
+        const blocked = document.body.classList.contains('mission-intro-active')
             || hasActiveClass('modal', 'hidden')
             || hasActiveClass('class-intro-overlay', 'is-closing')
             || hasActiveClass('cinematic-still-overlay', 'is-closing')
@@ -8112,6 +8123,10 @@ export class ThreeGame {
             || isVisible('operator-polish-modal')
             || isVisible('wanderer-encounter-modal')
             || isVisible('snail-encounter-modal');
+        if (this._cacheBlockingOverlayForCurrentFrame) {
+            this._frameBlockingOverlayState = blocked;
+        }
+        return blocked;
     }
 
     clearGameplayInputState() {
@@ -9245,15 +9260,18 @@ export class ThreeGame {
         if (this.adaptiveGameplayPerformanceMode === nextEnabled) return false;
 
         this.adaptiveGameplayPerformanceMode = nextEnabled;
-        // Adaptive quality may lower the render resolution, but it must not
-        // remove the authored DOF/tilt-shift treatment. Bypassing the composer
-        // made the start-of-run handoff look like lighting and fog had unloaded.
-        this.gameplayPostProcessingEnabled = true;
+        // This mode is the emergency floor for hardware that cannot sustain
+        // gameplay. The previous implementation only lowered pixel ratio while
+        // retaining the full-screen composer and rebuilding the shadow map;
+        // both QA captures show that was not enough. Keep scene lighting, fog,
+        // and the existing shadow texture, but skip the extra post-process pass
+        // and freeze shadow-map updates for the rest of this run.
+        // shadowMap.enabled remains stable so this does not recompile materials.
+        this.gameplayPostProcessingEnabled = !nextEnabled;
         if (this.renderer?.shadowMap) {
-            // Keep the shadow variant stable while adaptive mode lowers pixel
-            // cost. Toggling shadowMap at runtime caused a
-            // visible lighting drop and texture/shader shimmer on some drivers.
             if (this.performanceProfile === 'gameplay') this.renderer.shadowMap.enabled = true;
+            this.renderer.shadowMap.autoUpdate = !nextEnabled;
+            if (!nextEnabled) this.renderer.shadowMap.needsUpdate = true;
         }
         this.tiltShiftOverlay?.classList?.toggle?.(
             'is-active',
@@ -9278,7 +9296,7 @@ export class ThreeGame {
                 fps: Number.isFinite(fps) ? Math.round(fps * 10) / 10 : null,
                 pixelRatio: targetPixelRatio,
                 shadows: Boolean(this.renderer?.shadowMap?.enabled),
-                postprocessing: true,
+                postprocessing: this.gameplayPostProcessingEnabled !== false,
                 visibleChunkRadius: this.visibleChunkRadius ?? null,
                 renderer: this.getPerformanceDiagnosticsSnapshot?.() ?? null
             };
@@ -9514,6 +9532,16 @@ export class ThreeGame {
     }
 
     renderFrameBody() {
+        // Dozens of gameplay systems ask the same DOM-derived overlay question
+        // during one synchronous frame. Cache that answer until the microtask
+        // checkpoint after this frame; input handlers between frames still see
+        // fresh modal state.
+        this._cacheBlockingOverlayForCurrentFrame = true;
+        this._frameBlockingOverlayState = undefined;
+        queueMicrotask(() => {
+            this._cacheBlockingOverlayForCurrentFrame = false;
+            this._frameBlockingOverlayState = undefined;
+        });
         // docs/perf-chunk-mount-plan-2026-08-20.md Track D: live-observed the
         // menu-showcase's #game-container collapsed to 0x0 (reparented into a
         // hidden/closed '.map-box' preview slot) while this method kept
@@ -11332,10 +11360,11 @@ export class ThreeGame {
                 if (!sprite?.parent || sprite.userData?.burstTriggered) continue;
                 const type = sprite.userData?.type;
                 if (!this.isEnemyType(type) && !sprite.userData?.isEnemy) continue;
+                if (!hasVisibleTacticalRepresentation(sprite)) continue;
                 const dist = Math.hypot(worldPoint.x - sprite.position.x, worldPoint.z - sprite.position.z);
                 const hoverRadius = sprite.userData?.isBoss ? 3.0 : (sprite.scale?.x ? Math.max(1.2, sprite.scale.x * 0.9) : 1.6);
                 if (dist <= hoverRadius) {
-                    const cleanName = (type ? type.replace(/^boss_/, '').replace(/_/g, ' ') : 'HOSTILE').toUpperCase();
+                    const cleanName = tacticalNameForObject(sprite);
                     const hp = sprite.userData?.hp ?? 100;
                     const maxHp = sprite.userData?.maxHp ?? 100;
                     const integrity = Math.max(0, Math.min(100, Math.round((hp / maxHp) * 100)));
@@ -11543,17 +11572,20 @@ export class ThreeGame {
         // silently dropping its aim response.
         for (const prop of this.scatterSprites ?? []) {
             if (!prop?.parent || !prop.userData?.isDestructibleProp || prop.userData.burstTriggered) continue;
+            if (!hasVisibleTacticalRepresentation(prop)) continue;
             const dist = Math.hypot(worldPoint.x - prop.position.x, worldPoint.z - prop.position.z);
             const radius = Math.max(0.8, (prop.userData.collisionRadius ?? 0.38) + 0.55);
             if (dist > radius) continue;
             const hp = Math.max(0, prop.userData.propHp ?? 1);
             const maxHp = Math.max(1, prop.userData.maxPropHp ?? hp);
+            const propName = tacticalNameForObject(prop);
             return {
                 type: 'enemy',
+                typeLabel: 'SALVAGE',
                 targetId: 'destructible_prop',
-                badgeLabel: 'SALVAGEABLE PROP',
-                kicker: 'WORLD OBJECT // DESTRUCTIBLE',
-                title: String(prop.userData.type ?? 'FIELD PROP').replaceAll('_', ' ').toUpperCase(),
+                badgeLabel: propName,
+                kicker: `${propName} // SALVAGEABLE`,
+                title: propName,
                 subtitle: 'BREAK TO CLEAR THE ROUTE OR RECOVER MATERIAL',
                 coords: { x: tileX, z: tileZ },
                 distance: Math.hypot(prop.position.x - this.player.position.x, prop.position.z - this.player.position.z),
@@ -11900,7 +11932,7 @@ export class ThreeGame {
 
         if (kicker) kicker.textContent = target.kicker;
         if (typeTag) {
-            typeTag.textContent = target.type.toUpperCase();
+            typeTag.textContent = (target.typeLabel ?? target.type).toUpperCase();
             typeTag.className = `telemeter-type-tag telemeter-tag--${target.type}`;
         }
         if (title) title.textContent = target.title;
@@ -20404,6 +20436,11 @@ export class ThreeGame {
             }
         }
         for (const [key, metadata] of this.wfcMetadataCache?.entries() ?? []) {
+            // Metadata is retained for every explored chunk for deterministic
+            // revisits. Combat actors only exist in mounted chunks, so scanning
+            // the entire run history here every frame made containment cost grow
+            // without bound during long sessions.
+            if (this.chunkMeshes?.size > 0 && !this.chunkMeshes.has(key)) continue;
             const [cx, cy] = String(key).split(',').map(Number);
             const chunkWorldX = Number.isFinite(cx) ? cx * this.chunkSize : 0;
             const chunkWorldZ = Number.isFinite(cy) ? cy * this.chunkSize : 0;
@@ -20469,6 +20506,8 @@ export class ThreeGame {
     getActiveDoors() {
         const doors = [];
         for (const door of this.proceduralDoorStates?.values() ?? []) {
+            if (door?.chunkKey && this.chunkMeshes?.size > 0
+                && !this.chunkMeshes.has(String(door.chunkKey))) continue;
             const [chunkX, chunkY] = String(door.chunkKey ?? '0,0').split(',').map(Number);
             const translated = translateContainmentDoor(door, {
                 x: Number.isFinite(chunkX) ? chunkX * this.chunkSize : 0,
@@ -22371,7 +22410,16 @@ export class ThreeGame {
                     const rooms = roomsReachedByScan(this.wfcMetadataCache?.get(key)?.roomInstances, {
                         chunkX, chunkY, chunkSize: this.chunkSize, x: px, z: pz, radius
                     });
-                    for (const room of rooms) this.discoveredMapRoomKeys.add(`${key}:${room.id}`);
+                    for (const room of rooms) {
+                        const roomKey = `${key}:${room.id}`;
+                        if (!this.discoveredMapRoomKeys.has(roomKey)) {
+                            const rCells = room.footprint?.length ? room.footprint : (room.interior ?? []);
+                            for (const c of rCells) {
+                                freshCells.add(`${chunkMinX + c.x},${chunkMinZ + c.y}`);
+                            }
+                        }
+                        this.discoveredMapRoomKeys.add(roomKey);
+                    }
 
                     for (let y = 0; y < grid.length; y++) {
                         for (let x = 0; x < (grid[y]?.length ?? 0); x++) {
@@ -22399,6 +22447,7 @@ export class ThreeGame {
             radius,
             at: performance.now(),
             duration: 1200,
+            dissipationDuration: 400,
             freshCells
         };
         this.checkMappingMissionComplete();
@@ -22498,12 +22547,22 @@ export class ThreeGame {
         registerTransientEffect(this, {
             mesh: scanGroup,
             age: 0,
-            duration: 1.2,
+            duration: 1.6,
             update: (dt, age) => {
-                const t = age / 1.2;
-                const currentRadius = t * maxRadius;
-                ringMesh.scale.set(currentRadius, currentRadius, 1);
-                ringMat.opacity = 0.8 * (1 - t * t);
+                const scanDur = 1.2;
+                const totalDur = 1.6;
+                let currentRadius;
+                if (age <= scanDur) {
+                    const t = age / scanDur;
+                    currentRadius = t * maxRadius;
+                    ringMesh.scale.set(currentRadius, currentRadius, 1);
+                    ringMat.opacity = 0.85 * (1 - 0.25 * t);
+                } else {
+                    const fadeT = (age - scanDur) / (totalDur - scanDur);
+                    currentRadius = (1 + fadeT * 0.08) * maxRadius;
+                    ringMesh.scale.set(currentRadius, currentRadius, 1);
+                    ringMat.opacity = 0.64 * (1 - fadeT) * (1 - fadeT);
+                }
 
                 for (const sprite of this.scatterSprites) {
                     if (!sprite || !sprite.userData || pingedIds.has(sprite.uuid)) continue;
@@ -24103,6 +24162,20 @@ export class ThreeGame {
             return;
         }
 
+        // Twenty-two scene raycasts per rendered frame were the largest
+        // measured part of updatePlayer on the QA build. The cone is cosmetic,
+        // so in the emergency quality tier update its wall contour at 4 Hz and
+        // reuse the last geometry between samples. The mesh itself still tracks
+        // player position/facing every frame, preserving responsive aiming.
+        if (this.adaptiveGameplayPerformanceMode) {
+            const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+            if (Number.isFinite(this._lastConeOcclusionAt)
+                && now - this._lastConeOcclusionAt < 250) {
+                return;
+            }
+            this._lastConeOcclusionAt = now;
+        }
+
         const raycaster = this._lightOcclusionRaycaster;
         raycaster.near = 0.05;
         raycaster.far = SUIT_CONE_VISUAL_DISTANCE;
@@ -24837,25 +24910,36 @@ export class ThreeGame {
                 this._o2GaspTimer = 2.0;
             }
 
-            this.player3dOverlay.update(delta, {
-                isFalling: this.isPlayerFalling,
-                isReloading: this.weaponReloading,
-                isMoving: visualMoving,
-                isSprinting,
-                idleActionName: 'idle',
-                // Sprint 29 §10: the walk cadence has to know how fast the
-                // player is actually travelling, or the same clip plays for a
-                // 2.6-speed TANK and a 4.8-speed SCOUT and at least one of them
-                // slides. Sprint cadence is applied inside the overlay, so this
-                // is the pre-sprint ground speed.
-                groundSpeed: this.moveSpeed,
-                isInjured: this.isPlayerInjured(),
-                hasAim: this.hasActiveAim,
-                moveX: visualMoveX,
-                moveZ: visualMoveZ,
-                aimX: this.aimDirX,
-                aimZ: this.aimDirZ
-            });
+            // Skeleton/matrix animation is presentation-only. In emergency
+            // quality, sample it at 10 Hz while movement and aiming continue at
+            // the render rate; this removes repeated hierarchy traversal from
+            // the same frames already missing budget.
+            this._adaptivePlayerAnimationDelta = (this._adaptivePlayerAnimationDelta ?? 0) + delta;
+            const shouldUpdate3dAnimation = !this.adaptiveGameplayPerformanceMode
+                || this._adaptivePlayerAnimationDelta >= 0.1;
+            if (shouldUpdate3dAnimation) this.player3dOverlay.update(
+                this.adaptiveGameplayPerformanceMode ? this._adaptivePlayerAnimationDelta : delta,
+                {
+                    isFalling: this.isPlayerFalling,
+                    isReloading: this.weaponReloading,
+                    isMoving: visualMoving,
+                    isSprinting,
+                    idleActionName: 'idle',
+                    // Sprint 29 §10: the walk cadence has to know how fast the
+                    // player is actually travelling, or the same clip plays for a
+                    // 2.6-speed TANK and a 4.8-speed SCOUT and at least one of them
+                    // slides. Sprint cadence is applied inside the overlay, so this
+                    // is the pre-sprint ground speed.
+                    groundSpeed: this.moveSpeed,
+                    isInjured: this.isPlayerInjured(),
+                    hasAim: this.hasActiveAim,
+                    moveX: visualMoveX,
+                    moveZ: visualMoveZ,
+                    aimX: this.aimDirX,
+                    aimZ: this.aimDirZ
+                }
+            );
+            if (shouldUpdate3dAnimation) this._adaptivePlayerAnimationDelta = 0;
         }
         const aiming = this.hasActiveAim;
         // Upper body tracks the aim whenever the player is aiming.
@@ -33437,6 +33521,88 @@ export class ThreeGame {
     // Companions (befriended snails, src/snailEncounter.js's 'befriend'
     // outcome) follow the player and periodically damage nearby hostile
     // snails. One companion at a time — see design doc's Companion section.
+    // Walk a companion toward `goal` around walls (src/companionPath.js). Re-plans
+    // every half second; when it stops making progress it re-plans at once,
+    // and only relocates behind the player when there is no way through.
+    stepCompanionAlongPath(companion, root, goal, delta) {
+        const player = this.player.position;
+        const walkable = (x, z) => this.isSnailTileWalkable(x, z);
+        const target = walkable(Math.round(goal.x), Math.round(goal.z)) ? goal : { x: player.x, z: player.z };
+        const toGoal = Math.hypot(target.x - root.position.x, target.z - root.position.z);
+        const relocate = () => {
+            root.position.set(goal.x, this.getTerrainHeightAt?.(goal.x, goal.z) ?? player.y ?? 0, goal.z);
+            companion.path = null;
+            companion.stuckTime = 0;
+            debugLog.info('PLAYER', 'companion-relocated', { id: companion.wanderer?.id ?? null });
+        };
+        if (toGoal > COMPANION_PATH_LIMITS.maxRange - 2) {
+            relocate();
+            return;
+        }
+        if (toGoal <= 0.35) {
+            companion.stuckTime = 0;
+            return;
+        }
+        companion.repathTimer = (companion.repathTimer ?? 0) - delta;
+        if (companion.repathTimer <= 0 || !companion.path) {
+            companion.repathTimer = 0.5;
+            companion.path = findCompanionPath(root.position, target, walkable);
+        }
+        const waypoint = nextWaypoint(companion.path, root.position, (a, b) => this.hasCompanionFireLane(a, b)) ?? target;
+        const toX = waypoint.x - root.position.x;
+        const toZ = waypoint.z - root.position.z;
+        const dist = Math.hypot(toX, toZ);
+        if (dist <= 0.05) {
+            companion.path = null;
+            return;
+        }
+        const speed = toGoal > 7 ? 5.5 : 2.6;
+        const step = Math.min(dist, speed * delta);
+        const before = { x: root.position.x, z: root.position.z };
+        const nextX = root.position.x + (toX / dist) * step;
+        const nextZ = root.position.z + (toZ / dist) * step;
+        if (walkable(Math.round(nextX), Math.round(nextZ))) {
+            root.position.x = nextX;
+            root.position.z = nextZ;
+        } else if (walkable(Math.round(nextX), Math.round(root.position.z))) {
+            root.position.x = nextX;
+        } else if (walkable(Math.round(root.position.x), Math.round(nextZ))) {
+            root.position.z = nextZ;
+        }
+        root.rotation.y = Math.atan2(toX, toZ);
+        const moved = Math.hypot(root.position.x - before.x, root.position.z - before.z);
+        companion.stuckTime = moved < step * 0.25 ? (companion.stuckTime ?? 0) + delta : 0;
+        if (companion.stuckTime > 1.2 && companion.stuckTime - delta <= 1.2) {
+            companion.path = null;
+            companion.repathTimer = 0;
+            debugLog.info('PLAYER', 'companion-repath', { id: companion.wanderer?.id ?? null });
+        }
+        if (companion.stuckTime > 4 && toGoal > 3) relocate();
+    }
+
+    fireCompanionBasicShot(companion, root, delta) {
+        companion.fireCooldown = Math.max(0, (companion.fireCooldown ?? 0) - delta);
+        if (companion.fireCooldown > 0) return false;
+        let target = null;
+        let nearest = 8.0;
+        for (const other of this.scatterSprites || []) {
+            if (!this.isEnemyType(other?.userData?.type) || other.userData.isCompanion
+                || other.userData.dead || other.userData.burstTriggered || other.userData.isDisplayModel) continue;
+            const d = Math.hypot(other.position.x - root.position.x, other.position.z - root.position.z);
+            if (d < nearest && this.hasCompanionFireLane(root.position, other.position)) {
+                nearest = d;
+                target = other;
+            }
+        }
+        if (!target) return false;
+        companion.fireCooldown = 0.9;
+        root.rotation.y = Math.atan2(target.position.x - root.position.x, target.position.z - root.position.z);
+        this.applyPlayerDamageToEnemy(target, 1);
+        this.spawnMuzzleFlash?.(root.position.x, 1.0, root.position.z);
+        window.AudioManager?.play?.('turret_fire', { volume: 0.2, playbackRate: 1.25 });
+        return true;
+    }
+
     hasCompanionFireLane(from, to) {
         const steps = Math.ceil(Math.hypot(to.x - from.x, to.z - from.z) / 0.4);
         for (let i = 1; i < steps; i += 1) {
@@ -33465,31 +33631,13 @@ export class ThreeGame {
             if (companion.isWanderer && companion.instance3d?.root) {
                 const root = companion.instance3d.root;
                 const trail = computeTrailPosition(this.player.position, facing, 2.0);
-                const toTrailX = trail.x - root.position.x;
-                const toTrailZ = trail.z - root.position.z;
-                const dist = Math.hypot(toTrailX, toTrailZ);
-                if (dist > 16) {
-                    // Recover behind the player on real ground. Keeping this
-                    // out of the player's immediate position avoids the old
-                    // visible overlap/flying companion failure.
-                    root.position.set(trail.x, this.getTerrainHeightAt?.(trail.x, trail.z) ?? this.player.position.y ?? 0, trail.z);
-                } else if (dist > 0.1) {
-                    const catchupSpeed = dist > 7 ? 5.5 : 2.5;
-                    const step = Math.min(dist, catchupSpeed * delta);
-                    const nextX = root.position.x + (toTrailX / dist) * step;
-                    const nextZ = root.position.z + (toTrailZ / dist) * step;
-                    if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
-                        root.position.x = nextX;
-                        root.position.z = nextZ;
-                    } else if (this.isSnailTileWalkable(Math.round(nextX), Math.round(root.position.z))) {
-                        root.position.x = nextX;
-                    } else if (this.isSnailTileWalkable(Math.round(root.position.x), Math.round(nextZ))) {
-                        root.position.z = nextZ;
-                    }
-                    root.rotation.y = Math.atan2(toTrailX, toTrailZ);
-                }
+                this.stepCompanionAlongPath?.(companion, root, trail, delta);
                 root.position.y = this.getTerrainHeightAt?.(root.position.x, root.position.z) ?? root.position.y ?? 0;
                 companion.instance3d.update(delta);
+
+                // A steady basic shot between assist abilities (2026-09-24 QA:
+                // the companion fired once per 12-25 s and otherwise did nothing).
+                this.fireCompanionBasicShot?.(companion, root, delta);
 
                 companion.assistCooldown = Math.max(0, (companion.assistCooldown ?? 0) - delta);
                 if (companion.assistCooldown <= 0) {
@@ -34597,10 +34745,27 @@ export class ThreeGame {
             const world3dRoot = child.userData.world3dRoot;
             if (world3dRoot) {
                 world3dRoot.position.copy(child.position);
-                world3dRoot.visible = !child.userData.burstTriggered;
+                const desiredVisible = child.userData.world3dDesiredVisible !== false
+                    && !child.userData.burstTriggered;
+                // Source sprites for many props and kit walls are transparent
+                // gameplay anchors, not valid visual fallbacks. Low-FPS mode
+                // must keep the loaded model visible or only its targeting
+                // outline remains in the world.
+                world3dRoot.visible = desiredVisible;
+                child.visible = false;
             }
             if (child.userData.enemy3dVisual) {
                 updateEnemy3dVisual(child.userData.enemy3dVisual, child, delta, time);
+                const useEnemySpriteFallback = Boolean(this.adaptiveGameplayPerformanceMode)
+                    && !child.userData.burstTriggered;
+                if (child.userData.enemy3dVisual.root) {
+                    child.userData.enemy3dVisual.root.visible = child.userData.enemy3dVisual.root.visible
+                        && !useEnemySpriteFallback;
+                }
+                // Enemy sources are real, fully-authored sprite sheets (unlike
+                // the transparent owner anchors used by props and kit walls),
+                // so they are the safe low-cost fallback on Deck-class GPUs.
+                child.visible = useEnemySpriteFallback;
             }
             if (!child.userData.burstTriggered && child.material) {
                 child.material.opacity = child.userData.baseOpacity ?? 1;
@@ -35320,7 +35485,19 @@ export class ThreeGame {
         }
 
         if (!this.isInPocket && this.scatterSprites) {
-            for (const prop of this.scatterSprites) {
+            // Most scatter entries are decoration or enemies. Cache the much
+            // smaller collider subset until the backing array changes or grows,
+            // instead of re-testing hundreds of irrelevant sprites for every
+            // depenetration and per-axis movement query.
+            if (this._solidCollisionPropsSource !== this.scatterSprites
+                || this._solidCollisionPropsLength !== this.scatterSprites.length) {
+                this._solidCollisionPropsSource = this.scatterSprites;
+                this._solidCollisionPropsLength = this.scatterSprites.length;
+                this._solidCollisionProps = this.scatterSprites.filter(
+                    (prop) => Boolean(prop?.userData?.isSolidProp)
+                );
+            }
+            for (const prop of this._solidCollisionProps ?? []) {
                 // The source sprite retains authoritative gameplay state after
                 // its GLB becomes visible, including the collider.
                 if (!prop?.parent || !prop.userData?.isSolidProp || prop.userData.burstTriggered) continue;

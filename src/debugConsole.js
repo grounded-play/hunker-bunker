@@ -5,6 +5,7 @@
 
 import { describeDevice, exportSessionLog, uploadSessionLog } from './sessionLogSink.js';
 import { createSessionLogSampler, SAMPLED_SUMMARY_CATEGORY } from './sessionLogSampler.js';
+import { createSessionPerformanceTimeline } from './sessionPerformanceTimeline.js';
 
 export class DebugLogger {
     constructor() {
@@ -12,6 +13,8 @@ export class DebugLogger {
         this.sessionLogs = [];
         this.sessionLogSampler = createSessionLogSampler();
         this.sessionStartedAt = new Date();
+        this.performanceTimeline = createSessionPerformanceTimeline();
+        this.performanceTimelineTimer = null;
         this.demoStartedAt = null;
         this.demoMarkers = [];
         this.sequence = 0;
@@ -201,8 +204,37 @@ export class DebugLogger {
         for (const eventName of eventNames) {
             window.addEventListener(eventName, (event) => {
                 this.info('EVENT', eventName, event?.detail ?? null);
+                if (this.performanceTimelineTimer) {
+                    this.capturePerformanceTimelineSample(`event:${eventName}`);
+                }
             });
         }
+    }
+
+    capturePerformanceTimelineSample(reason = 'periodic', { force = false } = {}) {
+        if (!this.performanceTimeline?.capture) return null;
+        const game = typeof window !== 'undefined' ? (window.game ?? window.threeGame) : null;
+        return this.performanceTimeline.capture({
+            game,
+            phase: typeof window !== 'undefined' ? window.__hbAppPhase ?? null : null,
+            reason,
+            force
+        });
+    }
+
+    startPerformanceTimeline(reason = 'gameplay-start') {
+        this.capturePerformanceTimelineSample(reason, { force: true });
+        if (this.performanceTimelineTimer || typeof setInterval !== 'function') return;
+        this.performanceTimelineTimer = setInterval(() => {
+            this.capturePerformanceTimelineSample('periodic');
+        }, 30_000);
+    }
+
+    stopPerformanceTimeline(reason = 'gameplay-stop') {
+        if (!this.performanceTimelineTimer) return;
+        this.capturePerformanceTimelineSample(reason, { force: true });
+        clearInterval(this.performanceTimelineTimer);
+        this.performanceTimelineTimer = null;
     }
 
     formatArgs(args) {
@@ -795,6 +827,15 @@ export class DebugLogger {
 
     buildSessionCapture() {
         this.flushSampledSessionEvents?.(Date.now(), { force: true });
+        this.capturePerformanceTimelineSample?.('export', { force: true });
+        const performanceTimeline = this.performanceTimeline?.snapshot?.() ?? {
+            sampleIntervalMs: 30_000,
+            eventMinIntervalMs: 10_000,
+            deepIntervalMs: 120_000,
+            maxSamples: 360,
+            droppedSamples: 0,
+            samples: []
+        };
         const game = typeof window !== 'undefined' ? (window.game ?? window.threeGame) : null;
         const inputState = typeof window !== 'undefined'
             ? window.HunkerInputState?.getState?.() ?? null
@@ -802,7 +843,7 @@ export class DebugLogger {
         const activePlaneId = game?.planeState?.stack?.at?.(-1)?.id ?? null;
         return {
             format: 'hunker-bunker-session-log',
-            schemaVersion: 2,
+            schemaVersion: 3,
             session: {
                 startedAt: this.sessionStartedAt.toISOString(),
                 exportedAt: new Date().toISOString(),
@@ -839,9 +880,11 @@ export class DebugLogger {
                 measurementCoverage: {
                     gpuTimingSupported: Boolean(game?.gpuFrameTimer?.supported),
                     gpuSamples: game?.gpuFrameTimer?.snapshot?.()?.samples ?? 0,
-                    frameProfilerEnabled: Boolean(game?.frameProfiler?.enabled)
+                    frameProfilerEnabled: Boolean(game?.frameProfiler?.enabled),
+                    performanceTimelineSamples: performanceTimeline.samples.length
                 }
             },
+            performanceTimeline,
             state: {
                 appPhase: typeof window !== 'undefined' ? window.__hbAppPhase ?? null : null,
                 playerType: game?.playerType ?? null,
@@ -886,7 +929,12 @@ export class DebugLogger {
                 `Entries: ${capture.entries.length}`,
                 ''
             ];
-            return header.concat(capture.entries.map((entry) => (
+            const timeline = [
+                `PERFORMANCE TIMELINE (${capture.performanceTimeline.samples.length} samples)`,
+                ...capture.performanceTimeline.samples.map((sample) => JSON.stringify(sample)),
+                ''
+            ];
+            return header.concat(timeline, capture.entries.map((entry) => (
                 `[${entry.isoTime}] [+${entry.elapsedMs}ms] [${entry.level.toUpperCase()}] [${entry.category}] ${entry.message}`
             ))).join('\n');
         }

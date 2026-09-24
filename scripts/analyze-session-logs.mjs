@@ -35,9 +35,13 @@ function yes(value) {
     return value ? 'yes' : 'no';
 }
 
-function parseLongTask(message) {
-    const match = /^Long task:\s*(\d+(?:\.\d+)?)ms/i.exec(message);
-    return match ? Number(match[1]) : null;
+function parseLongTask(entry) {
+    const message = String(entry?.message ?? '');
+    const legacy = /^Long task:\s*(\d+(?:\.\d+)?)ms/i.exec(message);
+    if (legacy) return { count: 1, maxMs: Number(legacy[1]) };
+    const window = /^Long task window:\s*(\d+) task\(s\), max (\d+(?:\.\d+)?)ms/i.exec(message);
+    if (!window) return null;
+    return { count: Number(window[1]), maxMs: Number(window[2]) };
 }
 
 for (const filename of files) {
@@ -56,7 +60,8 @@ for (const filename of files) {
     const signals = Object.fromEntries(
         Object.entries(signalPatterns).map(([name, pattern]) => [name, pattern.test(joined)])
     );
-    const longTasks = messages.map(parseLongTask).filter(Number.isFinite);
+    const longTaskWindows = entries.map(parseLongTask).filter(Boolean);
+    const longTaskCount = longTaskWindows.reduce((sum, task) => sum + task.count, 0);
     const errors = entries.filter((entry) => String(entry?.level).toLowerCase() === 'error');
     const state = capture.state ?? {};
     const perf = state.performance ?? {};
@@ -64,6 +69,14 @@ for (const filename of files) {
     const memory = perf.gpuMemory ?? {};
     const input = state.input ?? {};
     const steam = state.steam ?? {};
+    const timeline = capture.performanceTimeline ?? {};
+    const timelineSamples = Array.isArray(timeline.samples) ? timeline.samples : [];
+    const worstTimelineSample = timelineSamples.reduce((worst, sample) => {
+        const p95 = Number(sample?.frame?.p95Ms);
+        return Number.isFinite(p95) && (!worst || p95 > worst.frame.p95Ms) ? sample : worst;
+    }, null);
+    const peakTimelineHeap = Math.max(0, ...timelineSamples.map((sample) => Number(sample?.memory?.jsHeapUsedBytes) || 0));
+    const peakTimelineGpu = Math.max(0, ...timelineSamples.map((sample) => Number(sample?.memory?.gpu?.estimatedBytes) || 0));
 
     console.log(`\n${path.basename(filename)}`);
     console.log(`  session: ${capture.session?.startedAt ?? 'unknown'} -> ${capture.session?.exportedAt ?? 'unknown'} (${Math.round((capture.session?.durationMs ?? 0) / 1000)}s, ${entries.length} entries)`);
@@ -75,5 +88,10 @@ for (const filename of files) {
     console.log(`  completion: playerDamage=${yes(signals.playerDamage)} pvpDamage=${yes(signals.pvp && signals.playerDamage)} death/results=${yes(signals.deathOrResults)} extraction=${yes(signals.extraction)} reconnect=${yes(signals.reconnect)} suspend/resume=${yes(signals.suspendResume)}`);
     console.log(`  coverage: settings=${yes(signals.settings)} achievements=${yes(signals.achievements)} cloudAvailable=${yes(signals.cloudAvailable)}`);
     console.log(`  performance: gpuAvg=${gpu.averageMs ?? '?'}ms gpuMax=${gpu.maxMs ?? '?'}ms samples=${gpu.samples ?? 0} dropped=${gpu.droppedFrames ?? 0} memory=${memory.estimatedBytes ? `${(memory.estimatedBytes / 1024 / 1024).toFixed(1)}MiB` : '?'} adaptive=${yes(perf.adaptiveGameplayPerformanceMode)}`);
-    console.log(`  longTasks: count=${longTasks.length} >=100ms=${longTasks.filter((ms) => ms >= 100).length} max=${longTasks.length ? Math.max(...longTasks) : 0}ms errors=${errors.length}`);
+    console.log(`  timeline: samples=${timelineSamples.length} dropped=${timeline.droppedSamples ?? 0} interval=${timeline.sampleIntervalMs ?? '?'}ms peakHeap=${peakTimelineHeap ? `${(peakTimelineHeap / 1024 / 1024).toFixed(1)}MiB` : '?'} peakGpu=${peakTimelineGpu ? `${(peakTimelineGpu / 1024 / 1024).toFixed(1)}MiB` : '?'}`);
+    if (worstTimelineSample) {
+        const place = worstTimelineSample.place ?? {};
+        console.log(`  worst timeline frame: p95=${worstTimelineSample.frame.p95Ms}ms at=${worstTimelineSample.at ?? '?'} elapsed=${worstTimelineSample.elapsedMs ?? '?'}ms position=(${place.x ?? '?'},${place.z ?? '?'}) chunk=(${place.chunkX ?? '?'},${place.chunkZ ?? '?'}) reason=${worstTimelineSample.reason ?? '?'}`);
+    }
+    console.log(`  longTasks: count=${longTaskCount} windows>=100ms=${longTaskWindows.filter((task) => task.maxMs >= 100).length} max=${longTaskWindows.length ? Math.max(...longTaskWindows.map((task) => task.maxMs)) : 0}ms errors=${errors.length}`);
 }

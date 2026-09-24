@@ -55,6 +55,16 @@ The following items from [better-todo-tree-20260924-1037.txt](../../better-todo-
 
 The following items are **true pending tasks** required for full retail launch, external certification, Steamworks backend publication, or physical hardware verification. In [better-todo-tree-20260924-1037.txt](../../better-todo-tree-20260924-1037.txt), each is marked `[>]` with a reference to this register.
 
+### New QA finding: Terminal day-cycle UI
+
+- [ ] **P1 — Make the Terminal day-cycle status live and legible.** The
+  underlying campaign/rest simulation is active, but the terminal tick is
+  unreachable behind its own blocking-overlay return, the Objective / Night Log
+  is an open-time snapshot, and the UI does not explain that campaign day
+  advances at a cot/camp rather than through the 150-second lighting loop. See
+  the complete diagnosis, source links, implementation checklist and acceptance
+  criteria in [Terminal Day-Cycle UI TODO](terminal-day-cycle-ui-todo-2026-09-24.md).
+
 ### Domain: 3D Art & Assets
 
 | Tree Line | Source Document | Task Description | Acceptance Criteria / Owner |

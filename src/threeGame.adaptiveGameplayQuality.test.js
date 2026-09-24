@@ -17,7 +17,7 @@ function makeAdaptiveGame() {
         visibleChunkRadius: 2,
         defaultVisibleChunkRadius: 2,
         renderer: {
-            shadowMap: { enabled: true },
+            shadowMap: { enabled: true, autoUpdate: true },
             getPixelRatio: () => pixelRatio,
             setPixelRatio: vi.fn((value) => { pixelRatio = value; }),
             info: {
@@ -43,8 +43,9 @@ describe('ThreeGame adaptive gameplay quality', () => {
         ThreeGame.prototype.updateAdaptiveGameplayQuality.call(fake, 1 / 60);
 
         expect(fake.adaptiveGameplayPerformanceMode).toBe(true);
-        expect(fake.gameplayPostProcessingEnabled).toBe(true);
+        expect(fake.gameplayPostProcessingEnabled).toBe(false);
         expect(fake.renderer.shadowMap.enabled).toBe(true);
+        expect(fake.renderer.shadowMap.autoUpdate).toBe(false);
         expect(fake.renderer.setPixelRatio).toHaveBeenCalledWith(0.85);
         expect(fake.visibleChunkRadius).toBe(fake.defaultVisibleChunkRadius);
     });
@@ -75,14 +76,14 @@ describe('ThreeGame adaptive gameplay quality', () => {
         expect(fake.adaptiveGameplayPerformanceMode).toBe(false);
     });
 
-    it('retains the authored focus composer after adaptive mode engages', () => {
+    it('bypasses the focus composer after adaptive mode engages', () => {
         const composer = { render: vi.fn() };
         const renderer = { render: vi.fn() };
         const fake = {
             performanceProfile: 'gameplay',
             cameraMode: 'isometric',
             adaptiveGameplayPerformanceMode: true,
-            gameplayPostProcessingEnabled: true,
+            gameplayPostProcessingEnabled: false,
             composer,
             renderer,
             scene: {},
@@ -92,7 +93,7 @@ describe('ThreeGame adaptive gameplay quality', () => {
 
         ThreeGame.prototype.renderWithPerf.call(fake);
 
-        expect(composer.render).toHaveBeenCalledOnce();
-        expect(renderer.render).not.toHaveBeenCalled();
+        expect(renderer.render).toHaveBeenCalledOnce();
+        expect(composer.render).not.toHaveBeenCalled();
     });
 });

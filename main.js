@@ -113,6 +113,7 @@ import {
 } from './src/mazeExpedition.js';
 import { installSteamCloudSaveBridge } from './src/steamCloudSaveBridge.js';
 import { installSettingsWheelGuard } from './src/settingsWheelGuard.js';
+import { installNativeTooltipGuard } from './src/nativeTooltipGuard.js';
 import { installAccessibilitySettings } from './src/accessibilitySettings.js';
 import { recordCollectedPickup, recordDebugResourceGrant, resetRunResourceTelemetry } from './src/runTelemetry.js';
 
@@ -510,6 +511,13 @@ function setAppPhase(phase) {
     debugLog.info('PHASE', `${previousPhase ?? 'none'} -> ${phase}: ${phaseLabels[phase] ?? 'application state changed'}`);
     syncSteamInputPhase();
     syncSteamTimelinePhase(phase);
+    if (phase === 'splash') {
+        const splashEl = document.getElementById('splash');
+        if (splashEl) {
+            splashEl.scrollLeft = 0;
+            splashEl.scrollTop = 0;
+        }
+    }
     const isGameplay = phase === 'gameplay';
     document.documentElement.classList.toggle('phase-gameplay', isGameplay);
     document.documentElement.classList.toggle('phase-menu', !isGameplay);
@@ -517,6 +525,7 @@ function setAppPhase(phase) {
     // This used to only ever hide it, leaving the reveal to the first mousemove
     // -- so a player who deployed and moved with WASD had no reticle at all.
     if (isGameplay) {
+        debugLog.startPerformanceTimeline('phase:gameplay');
         debugLog.info('INPUT', 'deploy-input-provenance', {
             mode: steamInputState.lastInputMode,
             isSteamDeck: steamInputState.isSteamDeck,
@@ -527,6 +536,9 @@ function setAppPhase(phase) {
         showGameplayCrosshairAtRest();
         startReticleRefresh();
     } else {
+        if (previousPhase === 'gameplay') {
+            debugLog.stopPerformanceTimeline(`phase:${phase}`);
+        }
         stopReticleRefresh();
         updateGameplayCrosshair?.(0, 0, false);
         // §6: a pending XP burst must not fire over the death screen or a menu.
@@ -1166,7 +1178,7 @@ function focusControllerTarget(target, { playHover = false, ensureVisible = true
     } catch {
         target.focus?.();
     }
-    if (ensureVisible && !centerSettingsFocusTarget(target)) {
+    if (ensureVisible && !centerSettingsFocusTarget(target) && !target.closest?.('#splash')) {
         target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
     }
     if (playHover && previous !== target) {
@@ -2036,6 +2048,12 @@ function syncPresentationCursor() {
     const root = document.documentElement;
     if (root.classList.contains('presentation-cursor-hidden') !== active) {
         root.classList.toggle('presentation-cursor-hidden', active);
+    }
+    if (active) {
+        root.classList.remove('custom-cursor-enabled');
+        window.game?.setCursorInspectState?.(null);
+        document.getElementById('tactical-telemeter-box')?.classList.add('hidden');
+        updateGameplayCrosshair(0, 0, false);
     }
 }
 if (typeof MutationObserver !== 'undefined' && document.body) {
@@ -7597,8 +7615,8 @@ function installHudCompass() {
             syncHudColumnLayout();
             step.lastHudLayout = now;
         }
-        // Redraw faster while a radar pulse is sweeping so the reveal animates.
-        const mapInterval = isRadarScanAnimating(window.game?.lastRadarScan, now) ? 50 : 200;
+        // Redraw faster while a radar pulse is sweeping so the reveal animates smoothly.
+        const mapInterval = isRadarScanAnimating(window.game?.lastRadarScan, now) ? 33 : 200;
         if (!desktopCompass.classList.contains('hidden') && now - (step.lastMapDraw ?? 0) >= mapInterval) {
             drawTacticalMapOverlay('hud-blueprint-canvas', true);
             if (document.getElementById('tactical-telemeter-box')?.classList.contains('hidden')) {
@@ -8312,6 +8330,12 @@ function playCutsceneVideo(base, options = {}) {
     window.AudioManager?.unlock?.();
 
     return new Promise((resolve) => {
+        // Hide all pointer-owned UI before the overlay is mounted so the
+        // previous world target cannot flash over the movie's first frame.
+        document.documentElement.classList.add('presentation-cursor-hidden');
+        document.documentElement.classList.remove('custom-cursor-enabled');
+        window.game?.setCursorInspectState?.(null);
+        document.getElementById('tactical-telemeter-box')?.classList.add('hidden');
         const resumeGame = suspendGameForFullscreenVideo();
         if (typeof window !== 'undefined' && window.hbLog) {
             window.hbLog('AUDIO', 'info', `Playing cutscene video: ${base}`);
@@ -8494,6 +8518,7 @@ function playCutsceneVideo(base, options = {}) {
                 } catch { /* ignore */ }
                 video.remove();
                 overlay.remove();
+                syncPresentationCursor();
                 resumeGame();
                 resolve({ played, skipped });
             }, cleanupDelay);
@@ -11606,37 +11631,52 @@ function pollTacticalMapGamepadInput() {
     if (pad.buttons?.[5]?.pressed) adjustTacticalMapZoom(0.02);
 }
 
-// Unscanned space: a dim diagonal static, so fog reads as "unknown" rather
-// than as empty floor. One tile per document, reused by both map canvases.
+// Unscanned space: high-contrast CRT tactical radar grid with micro scanlines
+// and coordinate pips, making the Fog of War unmistakably readable as unmapped territory.
 let mapFogTile = null;
 function getMapFogPattern(ctx) {
     if (!mapFogTile) {
         mapFogTile = document.createElement('canvas');
-        mapFogTile.width = 16;
-        mapFogTile.height = 16;
+        mapFogTile.width = 24;
+        mapFogTile.height = 24;
         const tile = mapFogTile.getContext('2d');
         if (tile) {
-            tile.fillStyle = '#070d14';
-            tile.fillRect(0, 0, 16, 16);
-            tile.strokeStyle = 'rgba(120, 160, 190, 0.09)';
+            // Dark tactical navy background
+            tile.fillStyle = '#050c14';
+            tile.fillRect(0, 0, 24, 24);
+
+            // CRT scanlines
+            tile.fillStyle = 'rgba(0, 15, 25, 0.45)';
+            tile.fillRect(0, 0, 24, 1);
+            tile.fillRect(0, 12, 24, 1);
+
+            // Tactical diagonal radar static lines
+            tile.strokeStyle = 'rgba(0, 210, 255, 0.12)';
             tile.lineWidth = 1;
             tile.beginPath();
-            tile.moveTo(0, 16);
-            tile.lineTo(16, 0);
-            tile.moveTo(-4, 4);
-            tile.lineTo(4, -4);
-            tile.moveTo(12, 20);
-            tile.lineTo(20, 12);
+            tile.moveTo(0, 24);
+            tile.lineTo(24, 0);
+            tile.moveTo(-6, 6);
+            tile.lineTo(6, -6);
+            tile.moveTo(18, 30);
+            tile.lineTo(30, 18);
             tile.stroke();
-            tile.fillStyle = 'rgba(160, 190, 210, 0.07)';
-            for (const [x, y] of [[3, 5], [11, 2], [7, 12], [14, 9]]) tile.fillRect(x, y, 1, 1);
+
+            // Tactical crosshair pips for unmapped sectors
+            tile.fillStyle = 'rgba(0, 229, 255, 0.16)';
+            tile.fillRect(0, 0, 2, 2);
+            tile.fillRect(12, 12, 1, 1);
+            tile.fillStyle = 'rgba(100, 180, 220, 0.08)';
+            for (const [x, y] of [[5, 7], [17, 3], [9, 19], [21, 13]]) {
+                tile.fillRect(x, y, 1, 1);
+            }
         }
     }
     return ctx.createPattern(mapFogTile, 'repeat');
 }
 
 function isRadarScanAnimating(scan, now = performance.now()) {
-    return Boolean(scan && now - scan.at < (scan.duration ?? 1200) + 600);
+    return Boolean(scan && now - scan.at < (scan.duration ?? 1200) + (scan.dissipationDuration ?? 400) + 200);
 }
 
 function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = false) {
@@ -11727,8 +11767,63 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
         }
     }
 
-    // Render the actual stamped floors with chunk-level culling
+    // A radar pulse sweeps outward on the map as it does in the world.
+    const radarScan = mapState.radarScan;
+    const now = performance.now();
+    const scanAge = radarScan ? now - radarScan.at : Infinity;
+    const scanDuration = radarScan?.duration ?? 1200;
+    const dissipationDuration = radarScan?.dissipationDuration ?? 400;
+    const isRadarActive = Boolean(radarScan && scanAge < scanDuration + dissipationDuration);
+    const isSweeping = Boolean(radarScan && scanAge < scanDuration);
+    const sweep = isSweeping ? Math.min(1, Math.max(0, scanAge / scanDuration)) : 1;
+    const sweepReach = sweep * ((radarScan?.radius ?? 0) + 3);
+
+    // Active player sensor proximity aura: separates immediate line-of-sight from surveyed territory
+    if (player) {
+        const playerPt = worldToMap(player.x, player.z);
+        const auraRadius = (compact ? 12 : 16) * cellSize;
+        const auraGrad = ctx.createRadialGradient(
+            playerPt.x, playerPt.y, 0,
+            playerPt.x, playerPt.y, auraRadius
+        );
+        auraGrad.addColorStop(0, 'rgba(0, 255, 220, 0.12)');
+        auraGrad.addColorStop(0.65, 'rgba(0, 229, 255, 0.03)');
+        auraGrad.addColorStop(1, 'rgba(0, 229, 255, 0)');
+        ctx.fillStyle = auraGrad;
+        ctx.beginPath();
+        ctx.arc(playerPt.x, playerPt.y, auraRadius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Scanned area ambient phosphor field: provides a distinct tactical survey underglow
+    // and clean boundary separating explored space from the surrounding Fog of War.
     const chunkPixelSize = chunkSize * cellSize;
+    const cellPixels = Math.max(1.2, cellSize + 0.25);
+    if (detailedChunks.length > 0) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(0, 229, 255, 0.04)';
+        for (const chunk of detailedChunks) {
+            const chunkScreenX = chunk.chunkX * chunkPixelSize + offsetX;
+            const chunkScreenY = chunk.chunkY * chunkPixelSize + offsetY;
+            if (chunkScreenX + chunkPixelSize < -50 || chunkScreenX > width + 50 ||
+                chunkScreenY + chunkPixelSize < -50 || chunkScreenY > height + 50) {
+                continue;
+            }
+            for (const cell of chunk.cells ?? []) {
+                const wx = chunk.chunkX * chunkSize + cell.x;
+                const wz = chunk.chunkY * chunkSize + cell.y;
+                if (isSweeping && radarScan?.freshCells?.has(`${wx},${wz}`)) {
+                    if (Math.hypot(wx - radarScan.x, wz - radarScan.z) > sweepReach) continue;
+                }
+                const p = worldToMap(wx, wz);
+                if (p.x < -cellSize || p.x > width || p.y < -cellSize || p.y > height) continue;
+                ctx.fillRect(p.x - 1, p.y - 1, cellPixels + 2, cellPixels + 2);
+            }
+        }
+        ctx.restore();
+    }
+
+    // Render the actual stamped floors with chunk-level culling
     for (const chunk of detailedChunks) {
         const chunkScreenX = chunk.chunkX * chunkPixelSize + offsetX;
         const chunkScreenY = chunk.chunkY * chunkPixelSize + offsetY;
@@ -11739,53 +11834,130 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
 
         // Scanned ground cuts a clean hole in the fog before it is painted,
         // so revealed space and unscanned space never blend together.
-        const cellPixels = Math.max(1.2, cellSize + 0.25);
+        // Progressive reveal: newly discovered cells stay fogged until the pulse wave reaches them.
         ctx.globalAlpha = 1;
         ctx.fillStyle = '#02060b';
         for (const cell of chunk.cells ?? []) {
-            const p = worldToMap(chunk.chunkX * chunkSize + cell.x, chunk.chunkY * chunkSize + cell.y);
+            const wx = chunk.chunkX * chunkSize + cell.x;
+            const wz = chunk.chunkY * chunkSize + cell.y;
+            const cellKey = `${wx},${wz}`;
+            if (isSweeping) {
+                const distToScan = Math.hypot(wx - radarScan.x, wz - radarScan.z);
+                const isFresh = radarScan.freshCells?.has(cellKey);
+                if (isFresh && distToScan > sweepReach) continue;
+                if (cell.kind === 'wall' && distToScan > sweepReach && distToScan <= radarScan.radius + 4) {
+                    let bordersFresh = false;
+                    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                        if (radarScan.freshCells.has(`${wx + dx},${wz + dy}`)) {
+                            bordersFresh = true;
+                            break;
+                        }
+                    }
+                    if (bordersFresh) continue;
+                }
+            }
+            const p = worldToMap(wx, wz);
             if (p.x < -cellSize || p.x > width || p.y < -cellSize || p.y > height) continue;
             ctx.fillRect(p.x, p.y, cellPixels, cellPixels);
         }
+
         for (const cell of chunk.cells ?? []) {
-            const p = worldToMap(chunk.chunkX * chunkSize + cell.x, chunk.chunkY * chunkSize + cell.y);
+            const wx = chunk.chunkX * chunkSize + cell.x;
+            const wz = chunk.chunkY * chunkSize + cell.y;
+            const cellKey = `${wx},${wz}`;
+            let waveHighlight = 0;
+            if (isSweeping) {
+                const distToScan = Math.hypot(wx - radarScan.x, wz - radarScan.z);
+                const isFresh = radarScan.freshCells?.has(cellKey);
+                if (isFresh && distToScan > sweepReach) continue;
+                if (cell.kind === 'wall' && distToScan > sweepReach && distToScan <= radarScan.radius + 4) {
+                    let bordersFresh = false;
+                    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                        if (radarScan.freshCells.has(`${wx + dx},${wz + dy}`)) {
+                            bordersFresh = true;
+                            break;
+                        }
+                    }
+                    if (bordersFresh) continue;
+                }
+                if (isFresh) {
+                    const waveDist = sweepReach - distToScan;
+                    if (waveDist >= 0 && waveDist < 3.2) {
+                        waveHighlight = Math.max(0, 1 - waveDist / 3.2);
+                    }
+                }
+            }
+
+            const p = worldToMap(wx, wz);
             if (p.x < -cellSize || p.x > width || p.y < -cellSize || p.y > height) continue;
-            ctx.globalAlpha = cell.kind === 'door' ? 1 : cell.kind === 'room' ? 0.72 : cell.kind === 'wall' ? 0.3 : 0.5;
+            ctx.globalAlpha = cell.kind === 'door' ? 1 : cell.kind === 'room' ? 0.78 : cell.kind === 'wall' ? 0.42 : 0.60;
             ctx.fillStyle = cell.kind === 'door' ? '#ffd15c'
                 : cell.kind === 'room' ? mapPrimary
                     : cell.kind === 'wall' ? '#8fb3c7'
                         : mapSecondary;
             ctx.fillRect(p.x, p.y, cellPixels, cellPixels);
+
+            // Leading-edge wavefront phosphor flare as the wave reaches each cell
+            if (waveHighlight > 0.05) {
+                ctx.globalAlpha = 0.75 * waveHighlight;
+                ctx.fillStyle = '#e8fbff';
+                ctx.fillRect(p.x, p.y, cellPixels, cellPixels);
+            }
         }
     }
     ctx.globalAlpha = 1;
 
-    // A radar pulse sweeps outward on the map as it does in the world, and
-    // the ground it just uncovered flashes before settling into the map.
-    const radarScan = mapState.radarScan;
-    const scanAge = radarScan ? performance.now() - radarScan.at : Infinity;
-    if (radarScan && scanAge < (radarScan.duration ?? 1200) + 600) {
-        const sweep = Math.min(1, scanAge / (radarScan.duration ?? 1200));
-        const flash = Math.max(0, 1 - scanAge / ((radarScan.duration ?? 1200) + 600));
+    // A radar pulse sweeps outward on the map as it does in the world.
+    // When it reaches the perimeter edge, it completes and fades off gracefully.
+    if (isRadarActive) {
+        const flash = Math.max(0, 1 - scanAge / (scanDuration + 600));
         if (flash > 0 && radarScan.freshCells?.size) {
             ctx.fillStyle = '#e8fbff';
             const flashPixels = Math.max(1.2, cellSize + 0.25);
             for (const key of radarScan.freshCells) {
                 const [wx, wz] = key.split(',').map(Number);
-                if (Math.hypot(wx - radarScan.x, wz - radarScan.z) > sweep * (radarScan.radius + 3)) continue;
+                const cellDist = Math.hypot(wx - radarScan.x, wz - radarScan.z);
+                if (cellDist > sweepReach) continue;
                 const p = worldToMap(wx, wz);
                 if (p.x < -cellSize || p.x > width || p.y < -cellSize || p.y > height) continue;
-                ctx.globalAlpha = 0.55 * flash;
+                const distFromFront = sweepReach - cellDist;
+                const cellAlpha = Math.max(0, 1 - distFromFront / 7);
+                ctx.globalAlpha = 0.55 * flash * cellAlpha;
                 ctx.fillRect(p.x, p.y, flashPixels, flashPixels);
             }
         }
-        if (sweep < 1) {
-            const center = worldToMap(radarScan.x, radarScan.z);
+
+        const center = worldToMap(radarScan.x, radarScan.z);
+        let ringRadius;
+        let ringAlpha;
+        let strokeWidth = compact ? 1.6 : 2.2;
+
+        if (scanAge <= scanDuration) {
+            const progress = Math.max(0.01, scanAge / scanDuration);
+            ringRadius = progress * radarScan.radius * cellSize;
+            ringAlpha = 0.90 * (1 - 0.25 * progress);
+        } else {
+            // Reached the perimeter edge: graceful dissipation completion and fade-off!
+            const fadeT = (scanAge - scanDuration) / dissipationDuration;
+            ringRadius = (radarScan.radius + fadeT * 1.8) * cellSize;
+            ringAlpha = 0.62 * (1 - fadeT) * (1 - fadeT);
+            strokeWidth *= (1 + fadeT * 0.4);
+        }
+
+        if (ringAlpha > 0.01) {
             ctx.beginPath();
-            ctx.arc(center.x, center.y, sweep * radarScan.radius * cellSize, 0, Math.PI * 2);
-            ctx.globalAlpha = 0.85 * (1 - sweep * sweep);
+            ctx.arc(center.x, center.y, ringRadius, 0, Math.PI * 2);
+            ctx.globalAlpha = ringAlpha;
             ctx.strokeStyle = '#00d2ff';
-            ctx.lineWidth = compact ? 1.5 : 2;
+            ctx.lineWidth = strokeWidth;
+            ctx.stroke();
+
+            // Tactical halo echo ring for a tactile wave edge
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, Math.max(0, ringRadius - 2), 0, Math.PI * 2);
+            ctx.globalAlpha = ringAlpha * 0.35;
+            ctx.strokeStyle = '#7df9ff';
+            ctx.lineWidth = strokeWidth * 0.5;
             ctx.stroke();
         }
         ctx.globalAlpha = 1;
@@ -11925,6 +12097,21 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
             ctx.fillStyle = sp.found ? mapSecondary : mapPrimary;
             ctx.fill();
         }
+        ctx.restore();
+    }
+
+    // Minimap bezel radial falloff: softens outer edges so waves and unmapped borders fade smoothly
+    if (compact) {
+        ctx.save();
+        const edgeGrad = ctx.createRadialGradient(
+            width / 2, height / 2, Math.min(width, height) * 0.44,
+            width / 2, height / 2, Math.max(width, height) * 0.58
+        );
+        edgeGrad.addColorStop(0, 'rgba(4, 10, 18, 0)');
+        edgeGrad.addColorStop(0.75, 'rgba(4, 10, 18, 0.35)');
+        edgeGrad.addColorStop(1, 'rgba(4, 10, 18, 0.75)');
+        ctx.fillStyle = edgeGrad;
+        ctx.fillRect(0, 0, width, height);
         ctx.restore();
     }
 
@@ -15168,7 +15355,8 @@ function initTacticalCursor() {
         // Gamescope can emit synthetic mouse motion while it transfers focus
         // away from Steam's launch overlay. Do not reveal either cursor until
         // the final airlock doors have completely exposed the title menu.
-        if (document.documentElement.classList.contains('boot-cursor-hidden')) {
+        if (document.documentElement.classList.contains('boot-cursor-hidden')
+            || document.documentElement.classList.contains('presentation-cursor-hidden')) {
             cursor.classList.add('cursor-fade-out');
             document.documentElement.classList.remove('custom-cursor-enabled');
             return;
@@ -15235,6 +15423,7 @@ function initTacticalCursor() {
             hideCursorForTouch();
             return;
         }
+        if (document.documentElement.classList.contains('presentation-cursor-hidden')) return;
 
         cursor.classList.add('cursor-clicking');
         targetScale = 0.72; // Snap scale down on press and hold
@@ -15264,6 +15453,11 @@ function initTacticalCursor() {
     });
 
     function handleHoverTargetSync(rawTarget, { playBlip = false } = {}) {
+        if (document.documentElement.classList.contains('presentation-cursor-hidden')) {
+            currentHoverTarget = null;
+            cursor.classList.remove('cursor-hovering');
+            return null;
+        }
         const target = resolveInteractiveFocusTarget(rawTarget);
         if (!target) return null;
         if (currentHoverTarget !== target || document.activeElement !== target) {
@@ -15312,6 +15506,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         devicePixelRatio: window.devicePixelRatio
     });
     startBootLongTaskDiagnostics();
+    installNativeTooltipGuard();
     // A complete continuation supersedes the legacy salvage-only crash marker.
     // Keep the lightweight fallback only when no resumable expedition exists.
     if (!expeditionSuspendStore.peek()) recoverCrashedRunCheckpoint();
@@ -16306,7 +16501,13 @@ function captureGameplayPerfContext() {
 
 let gameplayLongTaskObserver = null;
 const reportGameplayLongTask = createLongTaskReporter({
-    emit: (message, context) => debugLog.warn('PERF', message, context)
+    emit: (message, context) => {
+        debugLog.warn('PERF', message, context);
+        debugLog.capturePerformanceTimelineSample('event:long-task');
+    },
+    // A one-second cadence produced more than 1,500 large diagnostic records
+    // in the Deck session while the main thread was already starved.
+    intervalMs: 10_000
 });
 function startGameplayLongTaskDiagnostics() {
     if (typeof PerformanceObserver === 'undefined' || gameplayLongTaskObserver) return;

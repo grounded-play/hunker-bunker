@@ -160,7 +160,7 @@ describe('debugConsole', () => {
         debugLog.executeCommand('demo mark first-room');
         const capture = debugLog.buildSessionCapture();
 
-        expect(capture.schemaVersion).toBe(2);
+        expect(capture.schemaVersion).toBe(3);
         expect(capture.session.demoMarkers.map((marker) => marker.label)).toEqual(['demo-start', 'first-room']);
         expect(capture.state.input.isSteamDeck).toBe(true);
         expect(capture.state.stage.stageWidth).toBe(1280);
@@ -168,6 +168,14 @@ describe('debugConsole', () => {
         expect(capture.state.performance.drawCalls).toBe(12);
         expect(capture.diagnostics.maxEntries).toBe(20000);
         expect(capture.diagnostics.measurementCoverage.gpuTimingSupported).toBe(false);
+        expect(capture.performanceTimeline).toMatchObject({
+            sampleIntervalMs: 30000,
+            deepIntervalMs: 120000,
+            maxSamples: 360
+        });
+        expect(capture.performanceTimeline.samples.at(-1)).toMatchObject({
+            reason: 'export', phase: globalThis.window.__hbAppPhase ?? null
+        });
         expect(capture.diagnostics.identifiers.build).toMatchObject({
             version: '2.4.5-beta', commit: 'abc123', branch: 'dev/sprint-41'
         });

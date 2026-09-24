@@ -945,6 +945,7 @@ body {
   position: absolute;
   inset: 0;
   overflow: hidden;
+  overflow: clip;
   isolation: isolate;
   background-color: #000;
   background-image: url('/title_key_art_v2.png');
@@ -7359,6 +7360,8 @@ html.presentation-cursor-hidden * {
 
 html.presentation-cursor-hidden #tactical-cursor,
 html.presentation-cursor-hidden #gameplay-crosshair,
+html.presentation-cursor-hidden #tactical-telemeter-box,
+html.presentation-cursor-hidden .cursor-ripple,
 html.presentation-cursor-hidden .virtual-gamepad-cursor {
   display: none !important;
 }
@@ -23826,21 +23829,23 @@ body.contrast-max .hud-panel {
    art remains visible instead of being blurred on the empty side. */
 #splash::before {
   left: auto;
-  right: 0;
-  background: linear-gradient(270deg, rgba(4, 6, 7, 0.94) 0%, rgba(4, 6, 7, 0.7) 58%, transparent 100%);
-  -webkit-mask-image: linear-gradient(270deg, black 62%, transparent 100%);
-  mask-image: linear-gradient(270deg, black 62%, transparent 100%);
+  right: -50px;
+  top: -20px;
+  bottom: -20px;
+  width: calc(60% + 50px);
+  height: calc(100% + 40px);
+  background: linear-gradient(270deg, rgba(4, 6, 7, 0.94) 0%, rgba(4, 6, 7, 0.82) 35%, rgba(4, 6, 7, 0.6) 65%, transparent 100%);
+  -webkit-mask-image: linear-gradient(270deg, black 65%, transparent 100%);
+  mask-image: linear-gradient(270deg, black 65%, transparent 100%);
 }
 
 /* The frost follows the veil to the right-hand menu side. The veil's darkest
    stop is eased slightly so the frosted art actually reads through it. */
 .splash-frost {
-  -webkit-mask-image: linear-gradient(270deg, black 0%, black 36%, transparent 58%);
-  mask-image: linear-gradient(270deg, black 0%, black 36%, transparent 58%);
-}
-
-#splash::before {
-  background: linear-gradient(270deg, rgba(4, 6, 7, 0.84) 0%, rgba(4, 6, 7, 0.62) 58%, transparent 100%);
+  inset: -50px;
+  -webkit-mask-image: linear-gradient(270deg, black 0%, black 40%, transparent 65%);
+  mask-image: linear-gradient(270deg, black 0%, black 40%, transparent 65%);
+  transform: none;
 }
 
 .splash-content {
