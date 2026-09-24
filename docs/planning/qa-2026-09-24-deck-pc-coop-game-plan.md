@@ -69,6 +69,7 @@ What is **not** shared — each machine does it on its own:
 | World state across TRY AGAIN | a co-op death keeps the run's world changes; a retry in the same room restores them; MAIN MENU clears them | `42c4bbc` |
 | Props and their drops | the breaker rolls once and announces `prop-broken` with each drop; the partner breaks the same prop with identical drops and shared pickup ids | `42c4bbc` |
 | Solo companion in co-op | co-op starts without the solo profile's companion (companions stay solo until networked) | `1dd8056` |
+| Same co-op map every run | each lobby deploy adds fresh entropy to the room seed; TRY AGAIN keeps the map | `caf5816` |
 
 All covered by unit and relay tests (`src/threeGame.coopNetworkedState.test.js`, `server/relaySharedWorldEvents.test.js`); **none is verified on two real machines yet** — the next Deck + PC session should confirm each row. Still open: networked companions; the Sprint 46/47 solo-only systems (Ring 1 events, arrival fight, reward cache, bounty) made host-authoritative instead of solo-only; a two-client probe that diffs both worlds.
 
@@ -78,7 +79,9 @@ Plan: one rule for co-op — **the host decides, everyone sees it.** Anything ra
 
 All three co-op deaths were **pit-falls a few metres from spawn**: Deck at (0.9, −2.3), again 30 s after redeploying at (−0.3, −3.3); PC Tank at (1.4, −1.9). The spawn chunk `0,0` is a "field" with **1,852 void tiles of ~2,336**. Solo spawns elsewhere (the two solo deaths were an abort and poison, far from spawn).
 
-Plan: co-op spawn points must be on walkable ground with a clear margin; add a spawn-safety check (and a unit test over seeds) that no void lies within N tiles of either co-op spawn.
+**Fixed (`7480bd9`):** within 24 tiles of the spawn a lethal edge blocks movement instead of killing; farther out cliffs stay lethal. Checked on the real map in a browser: the three QA death spots are blocked with no fall, the ledge stays walkable, a cliff at (−40, −57) is still lethal (`docs/reports/assets/qa-2026-09-24/`). Cause found with a tile dump: the ledge beside the first corridor drops straight into cliff and void with nothing to stop the player.
+
+Original plan: co-op spawn points must be on walkable ground with a clear margin; add a spawn-safety check (and a unit test over seeds) that no void lies within N tiles of either co-op spawn.
 
 ### P0 — A partner's death is not shown to the other player (partly confirmed)
 
