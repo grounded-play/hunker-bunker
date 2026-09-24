@@ -1,5 +1,5 @@
 import { createFreshRunEntropy } from './runEntropy.js';
-import { deriveExpeditionSeed, createExpeditionProfile, normalizeExpeditionProfile } from './expeditionSystem.js';
+import { continueExpeditionProfile, deriveExpeditionSeed, createExpeditionProfile, normalizeExpeditionProfile } from './expeditionSystem.js';
 import { LEGACY_ROUTE_LAYOUT_VERSION, ROUTE_LAYOUT_VERSION } from './mazeExpedition.js';
 
 export const CAMPAIGN_WORLD_STORAGE_KEY = 'hb_campaign_world_v1';
@@ -165,7 +165,7 @@ export function createCampaignWorldStore({
         beginExpedition() {
             const current = getOrCreate();
             const expeditionIndex = current.expeditionIndex + 1;
-            const activeExpedition = createExpeditionProfile(current.seed, expeditionIndex);
+            const activeExpedition = continueExpeditionProfile(current.seed, expeditionIndex, current.activeExpedition);
             return write({
                 ...current,
                 expeditionIndex,
