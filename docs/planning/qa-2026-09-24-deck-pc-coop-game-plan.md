@@ -32,6 +32,26 @@ The `logs/` directory is git-ignored; the numbers below are quoted from the logs
 
 Plan: profile what `frame:render` spends 29 ms on (draw calls, shadow passes, the invisible-model count below); make adaptive quality engage on the Deck; move chunk mounts and `world-model:prepare` off the frame or split them; fix the analyzer so every future log reports this automatically. Acceptance: a Deck log with render median ≤ 16 ms and no task ≥ 500 ms after the first minute.
 
+### P0 — Everything in co-op must be networked (owner's rule; gaps found in code)
+
+Owner (2026-09-24): power-ups were not seen by both players and did not look the same on both screens; **everything in the game should be networked.**
+
+What is shared today (sent between clients in `src/threeGame.js` / `server/relay.js`): player avatars and positions, downed state, extraction, enemy damage and hits (host-authoritative), destroyed walls, bunker and procedural doors, pickups collected, black box recovered, lore terminals, O₂ generator upgrades, maze access, radio lines, enemy projectiles; boss phases and adds, milestone defeats, descent and encounter formation (through `src/coopTransitions.js`).
+
+What is **not** shared — each machine does it on its own:
+
+| Not networked | Why it diverges | Seen in QA |
+|---|---|---|
+| In-run power-ups (relic/overclock drops) | `rollEnemyLootDrop(Math.random, …)` rolls on each client and `spawnPhysicalLootDrop` is never sent | "power-ups not seen by both, not the same" |
+| Death other than being downed | `playerDowned` is relayed, but a pit-fall calls `handleDeath('pit-fall')` directly and sends nothing | partner shown standing; black box confusion |
+| Black box placement | each client records its own; the guest's box reached the host and was "recovered" on the host's death | yes |
+| World state across TRY AGAIN | co-op redeploys regenerate the world from the room seed; no maze state is kept | walls came back |
+| Destructible props and their drops | `destructible-prop-broken` is local only | not reported |
+| Companions | local only | Meridian stuck on one screen |
+| Ring 1 events, arrival fight, reward cache, bounty | solo-only by design (Sprint 46/47) | — |
+
+Plan: one rule for co-op — **the host decides, everyone sees it.** Anything random that changes the world (drops, props, companions, events) is rolled on the host and broadcast; guests render it. Route every death through a relayed state (not only downed); black boxes carry their owner. Make the Sprint 46/47 solo-only systems host-authoritative instead of solo-only. Add a relay test per event type and a two-client probe that compares both clients' world after a scripted sequence (kill with a drop, break a prop, pit-fall, TRY AGAIN) and fails on any difference.
+
 ### P0 — Co-op spawns next to a lethal pit (confirmed)
 
 All three co-op deaths were **pit-falls a few metres from spawn**: Deck at (0.9, −2.3), again 30 s after redeploying at (−0.3, −3.3); PC Tank at (1.4, −1.9). The spawn chunk `0,0` is a "field" with **1,852 void tiles of ~2,336**. Solo spawns elsewhere (the two solo deaths were an abort and poison, far from spawn).
@@ -108,7 +128,7 @@ Remote death/downed, black-box ownership, wall persistence, smelt results, fabri
 
 1. ~~Map variety~~ — **answered:** TRY AGAIN keeps the map; MAIN MENU resets the run and the map.
 2. ~~Co-op persistence~~ — **answered:** on TRY AGAIN the map continues, so destroyed walls stay destroyed; MAIN MENU starts fresh.
-3. ~~Co-op fresh start~~ — **answered:** Meridian appeared as the recruited companion following the player (stuck behind a wall); see the companion item. Where the power-ups appeared is still open.
+3. ~~Co-op fresh start~~ — **answered:** Meridian appeared as the recruited companion following the player (stuck behind a wall); see the companion item. Power-ups: **answered** — they were not seen by both players and looked different; see "Everything in co-op must be networked".
 4. **Foundry.** Which models looked old, and which output did not match? A screenshot would pin it. Is "trade in / trade up" the Steam Vault smelter (the logs point there)?
 5. **Invisible models.** Which objects, in which rooms?
 6. ~~22-minute gap~~ — **answered:** the owner turned the Deck off and came back. The log agrees: last entry 20:16:22 on the main menu, next 20:38:19; input, Steam and the controller came back at once and the next deployment started 35 s later, with 1.7 s and 1.1 s stalls just after waking. This was a suspend **at the menu**, not mid-expedition, so resuming an interrupted expedition (Invisible Essentials Phase 1) is still untested on hardware. Also seen: after MAIN MENU on the results screen the app phase never left `gameover` (the next logged transition is `gameover -> armory`), which may be part of why MAIN MENU did not reset the run.
