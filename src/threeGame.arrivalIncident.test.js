@@ -14,7 +14,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 const METHODS = ['setActiveExpedition', 'syncExpeditionBountyTracker', 'armArrivalIncident', 'updateArrivalIncident',
-    'spawnArrivalIncident', 'spawnArrivalMember', 'dropArrivalCache'];
+    'spawnArrivalIncident', 'spawnArrivalMember', 'dropArrivalCache', 'clearCrashSiteDebris', 'placeCrashSiteDebris'];
 
 function game({ multiplayer = false } = {}) {
     const parent = { children: [], add(child) { this.children.push(child); child.parent = this; } };
@@ -25,13 +25,19 @@ function game({ multiplayer = false } = {}) {
         isMultiplayer: multiplayer,
         netSocket: multiplayer ? {} : null,
         isMultiplayerHost: false,
-        scatterMaterials: { cryosnail: {}, cybersnail: {} },
+        scatterMaterials: { cryosnail: {}, cybersnail: {}, bunker_junk: {}, bunker_junk_uncommon: {}, prop_bunker_supplies: {} },
+        crashedShips: [{ tileX: 9, tileZ: 11 }],
+        getTileType: () => '.',
         scatterSprites: [],
         pickupMeshes: [],
         chunkMeshes: new Map([['0,0', parent]]),
         scene: parent,
         isSnailTileWalkable: () => true,
-        createScatterInstance: (placement) => ({ position: { x: placement.x, z: placement.z }, userData: { type: placement.type, isElite: placement.spawnedElite } }),
+        createScatterInstance: (placement) => ({
+            position: { x: placement.x, z: placement.z },
+            userData: { type: placement.type, isElite: placement.spawnedElite },
+            removeFromParent() { this.parent = null; }
+        }),
         createSnailDropPlacement: (x, z, tx, tz, type) => ({ worldX: tx, worldZ: tz, type }),
         createPickupInstance: (placement) => ({ userData: { type: placement.type } }),
         showBunkerLine: vi.fn(),
@@ -46,23 +52,24 @@ const gale = (index) => ({ condition: { id: 'glacial_gale' }, bounty: { id: 'sal
 describe('the arrival incident in the runtime', () => {
     it('waits, announces the pack, tracks it, and leaves a salvage cache when it is cleared', () => {
         const g = game();
+        const pack = (x) => x.scatterSprites.filter((s) => s.userData.arrivalIncident);
         g.setActiveExpedition(gale(2));
         g.updateArrivalIncident(10);
-        expect(g.scatterSprites).toHaveLength(0);
+        expect(pack(g)).toHaveLength(0);
         g.updateArrivalIncident(11);
-        expect(g.scatterSprites.map((s) => s.userData.type)).toEqual(['cryosnail', 'cryosnail', 'cryosnail']);
-        expect(g.scatterSprites.every((s) => s.userData.aiMode === 'hunt' && s.userData.arrivalIncident)).toBe(true);
-        for (const sprite of g.scatterSprites) {
+        expect(pack(g).map((s) => s.userData.type)).toEqual(['cryosnail', 'cryosnail', 'cryosnail']);
+        expect(pack(g).every((s) => s.userData.aiMode === 'hunt' && s.userData.arrivalIncident)).toBe(true);
+        for (const sprite of pack(g)) {
             expect(Math.hypot(sprite.position.x - 9, sprite.position.z - 12)).toBeGreaterThan(13);
         }
         expect(g.showBunkerLine).toHaveBeenCalledTimes(1);
         expect(registry.trackObjective).toHaveBeenCalledWith(expect.objectContaining({ id: 'arrival-incident', priority: 25 }));
         expect(events).toContain('arrival-incident-started');
 
-        g.scatterSprites[0].userData.burstTriggered = true;
+        pack(g)[0].userData.burstTriggered = true;
         g.updateArrivalIncident(0.1);
         expect(g.pickupMeshes).toHaveLength(0);
-        for (const sprite of g.scatterSprites) sprite.userData.burstTriggered = true;
+        for (const sprite of pack(g)) sprite.userData.burstTriggered = true;
         g.updateArrivalIncident(0.1);
         expect(g.pickupMeshes.map((p) => p.userData.type)).toEqual(['coin', 'coin', 'coin']);
         expect(registry.resolveObjective).toHaveBeenCalledWith('arrival-incident', 'complete');
@@ -75,7 +82,7 @@ describe('the arrival incident in the runtime', () => {
         const g = game();
         g.setActiveExpedition(gale(2));
         g.updateArrivalIncident(25);
-        for (const sprite of g.scatterSprites) sprite.parent = null;
+        for (const sprite of g.scatterSprites.filter((s) => s.userData.arrivalIncident)) sprite.parent = null;
         g.updateArrivalIncident(0.1);
         expect(g.pickupMeshes).toHaveLength(0);
         expect(registry.resolveObjective).toHaveBeenLastCalledWith('arrival-incident', 'abandoned');
@@ -86,9 +93,40 @@ describe('the arrival incident in the runtime', () => {
         g.setActiveExpedition(gale(2));
         g.performanceProfile = 'menu';
         g.updateArrivalIncident(60);
-        expect(g.scatterSprites).toHaveLength(0);
+        expect(g.scatterSprites.filter((s) => s.userData.arrivalIncident)).toHaveLength(0);
         const squad = game({ multiplayer: true });
         squad.setActiveExpedition(gale(2));
         expect(squad._arrivalIncident).toBeNull();
     });
 });
+
+describe('crash-site wreckage varies each landing', () => {
+    const debris = (g) => g.scatterSprites.filter((s) => s.userData.crashDebris);
+
+    it('scatters three pieces clear of the wreck, the operator and the door lane', () => {
+        const g = game();
+        g.setActiveExpedition(gale(2));
+        g.updateArrivalIncident(0.01);
+        const placed = debris(g);
+        expect(placed).toHaveLength(3);
+        for (const piece of placed) {
+            expect(Math.hypot(piece.position.x - 9, piece.position.z - 11)).toBeGreaterThan(3.5);
+            expect(Math.hypot(piece.position.x - 9, piece.position.z - 12)).toBeGreaterThan(3);
+            expect(piece.position.x > 6.5 && piece.position.x < 11.5 && piece.position.z < 6).toBe(false);
+        }
+    });
+
+    it('changes with the deployment and never piles up across deployments', () => {
+        const g = game();
+        g.setActiveExpedition(gale(2));
+        g.updateArrivalIncident(0.01);
+        const first = debris(g).map((s) => `${s.userData.type}@${s.position.x},${s.position.z}`).sort();
+        g.setActiveExpedition({ ...gale(3), expeditionSeed: 99 });
+        g.updateArrivalIncident(0.01);
+        const second = debris(g).map((s) => `${s.userData.type}@${s.position.x},${s.position.z}`).sort();
+        expect(second).toHaveLength(3);
+        expect(second).not.toEqual(first);
+        expect(g.scatterSprites.filter((s) => s.userData.crashDebris && s.parent)).toHaveLength(3);
+    });
+});
+

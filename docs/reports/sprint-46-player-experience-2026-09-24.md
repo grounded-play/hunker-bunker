@@ -45,8 +45,13 @@ Files: `src/expeditionBounties.js`, `ThreeGame.syncExpeditionBountyTracker / rec
 The first section of the results screen now reads: the deployment's condition; the bounty met (with shells) or missed (with progress); the objectives completed *this* deployment (from the objective registry's history); and the next ship goal — "affordable, build it at the console" or exactly what it still needs.
 Files: `src/expeditionReport.js`, `ThreeGame.getExpeditionReportData`, `#go-expedition-report`.
 
+### Gap follow-up (2026-09-24)
+- **GAP-GP-08 — crash-site monotony: mitigated.** Beyond the arrival pack, each deployment now leaves three pieces of seeded, destructible wreckage in the crash room (bunker junk, supply lockers — existing props that drop salvage), placed only on floor tiles clear of the wreck, the operator and the north door lane (`planCrashSiteDebris`, `ThreeGame.placeCrashSiteDebris`). Browser-checked across two consecutive deployments: 3 pieces, all on floor, layout changed (`bunker_junk@12.5,16.5 · supplies@14.5,15.5 · junk@3.5,15.5` → `junk@3.5,15.5 · supplies@14.5,15.5 · junk@14.5,10.5`). Room walls and doors are unchanged on purpose. Whether players notice or break the wreckage is unobserved.
+- **GAP-GP-02 — controller secondary attack: resolved on evidence.** Keyboard and mouse attack with Fire and Smash (V); right-click only orbits the camera. Every controller layout binds Fire and Smash; a contract test now locks that parity.
+- **GAP-GP-14 — slow headless boots: open.** A test-only warmup bypass measured no gain (bypass 97 s / 81 s vs production 78 s / 95 s to gameplay) and was removed.
+
 ## 3. Regression tests
-`src/arrivalIncident.test.js`, `src/threeGame.arrivalIncident.test.js`, `src/expeditionBounties.test.js`, `src/threeGame.expeditionBounty.test.js`, `src/threeGame.bountyChip.test.js`, `src/expeditionReport.test.js`. `npm test`: 4,041 tests across 449 files passing; `npx eslint .` clean; `npm run i18n:audit` unchanged (all new text in 7 locales).
+`src/arrivalIncident.test.js` (incl. crash-debris plan), `src/threeGame.arrivalIncident.test.js` (incl. debris placement), `scripts/build-steam-input-configs.test.js` (controller attack parity), `src/expeditionBounties.test.js`, `src/threeGame.expeditionBounty.test.js`, `src/threeGame.bountyChip.test.js`, `src/expeditionReport.test.js`. `npm test`: 4,041 tests across 449 files passing; `npx eslint .` clean; `npm run i18n:audit` unchanged (all new text in 7 locales).
 
 ## 4. Before / after — journey probe
 

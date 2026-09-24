@@ -424,7 +424,7 @@ import {
     isCampaignBountyProfile,
     recordBountyEvent
 } from './expeditionBounties.js';
-import { planArrivalIncident } from './arrivalIncident.js';
+import { planArrivalIncident, planCrashSiteDebris } from './arrivalIncident.js';
 import {
     COOP_ROLE,
     COOP_TRANSITION_EVENTS,
@@ -35736,10 +35736,63 @@ export class ThreeGame {
             })
             : null;
         this._arrivalIncident = plan ? { plan, state: 'pending', timer: plan.delaySeconds, sprites: [] } : null;
+        this.clearCrashSiteDebris();
+        this._crashDebrisPlan = plan ? planCrashSiteDebris(this.activeExpedition?.expeditionSeed ?? 0) : null;
         return this._arrivalIncident;
     }
 
+    clearCrashSiteDebris() {
+        for (const sprite of this._crashDebris ?? []) {
+            sprite.removeFromParent?.();
+            const index = this.scatterSprites?.indexOf(sprite) ?? -1;
+            if (index >= 0) this.scatterSprites.splice(index, 1);
+        }
+        this._crashDebris = [];
+    }
+
+    // Wreckage from the landing, in this deployment's seeded spots. Waits for
+    // the crash-site chunk to mount; keeps only walkable spots clear of the
+    // wreck, the operator and the north door lane.
+    placeCrashSiteDebris() {
+        const plan = this._crashDebrisPlan;
+        const group = this.chunkMeshes?.get('0,0');
+        if (!plan || !group || !this.player) return false;
+        this._crashDebrisPlan = null;
+        const ships = (this.crashedShips ?? []).map((ship) => ({ x: ship.tileX, z: ship.tileZ }));
+        const clear = ({ x, z }) => this.getTileType?.(Math.round(x), Math.round(z)) === '.'
+            && Math.hypot(x - this.player.position.x, z - this.player.position.z) > 3
+            && ships.every((ship) => Math.hypot(x - ship.x, z - ship.z) > 3.5)
+            && !(x > 6.5 && x < 11.5 && z < 6);
+        const wanted = plan.filter((entry) => entry.preferred).length;
+        const chosen = plan.filter(clear).slice(0, wanted);
+        for (const [index, entry] of chosen.entries()) {
+            if (!this.scatterMaterials?.[entry.type]) continue;
+            const sprite = this.createScatterInstance({
+                x: entry.x,
+                z: entry.z,
+                type: entry.type,
+                scatterKey: `crash-debris:${this.activeExpedition?.expeditionSeed ?? 0}:${index}`,
+                scale: 1,
+                rotation: 0,
+                tiltX: 0,
+                tiltZ: 0,
+                elevation: 0.05,
+                groupType: 'prop',
+                phase: 0,
+                opacity: 1,
+                biomeTint: 0xffffff
+            });
+            if (!sprite) continue;
+            sprite.userData.crashDebris = true;
+            group.add(sprite);
+            this.scatterSprites.push(sprite);
+            this._crashDebris.push(sprite);
+        }
+        return true;
+    }
+
     updateArrivalIncident(delta) {
+        if (this._crashDebrisPlan && this.performanceProfile === 'gameplay') this.placeCrashSiteDebris();
         const incident = this._arrivalIncident;
         if (!incident || incident.state === 'done' || !this.player || this.isPlayerDead) return;
         if (this.performanceProfile !== 'gameplay' || this.loadingPaused || this.isInPocket) return;

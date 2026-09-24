@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ARRIVAL_PACKS, ARRIVAL_TUNING, planArrivalIncident } from './arrivalIncident.js';
+import { ARRIVAL_PACKS, ARRIVAL_TUNING, CRASH_DEBRIS_SLOTS, planArrivalIncident, planCrashSiteDebris } from './arrivalIncident.js';
 import { EXPEDITION_CONDITIONS } from './expeditionSystem.js';
 
 describe('the arrival incident opens every deployment with a fight', () => {
@@ -36,3 +36,15 @@ describe('the arrival incident opens every deployment with a fight', () => {
         expect(planArrivalIncident({ conditionId: 'spore_bloom', expeditionSeed: 3, expeditionIndex: 4 }).pack.map((m) => m.type)).toEqual([...ARRIVAL_PACKS.spore_bloom]);
     });
 });
+
+describe('crash-site wreckage plan', () => {
+    it('ranks every slot, prefers three, and differs between seeds', () => {
+        const a = planCrashSiteDebris(11);
+        expect(a).toHaveLength(CRASH_DEBRIS_SLOTS.length);
+        expect(a.filter((entry) => entry.preferred)).toHaveLength(3);
+        expect(planCrashSiteDebris(11)).toEqual(a);
+        const layouts = new Set(Array.from({ length: 20 }, (_, i) => JSON.stringify(planCrashSiteDebris(i * 7919).slice(0, 3))));
+        expect(layouts.size).toBeGreaterThan(10);
+    });
+});
+

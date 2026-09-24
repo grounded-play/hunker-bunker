@@ -64,3 +64,28 @@ export function planArrivalIncident({ conditionId, expeditionSeed = 0, expeditio
         lineKey: ARRIVAL_LINE_KEYS[conditionId]
     };
 }
+
+// The crash room is fixed geometry (its walls, north door and blast door are
+// hard-coded across the runtime and recorded in campaign saves), but what lies
+// inside it need not be. Each deployment scatters a little wreckage from the
+// landing -- existing destructible props that drop salvage when broken -- in
+// seeded spots along the walls, so no two landings look or play the same.
+export const CRASH_DEBRIS_SLOTS = Object.freeze([
+    [3.5, 5.5], [14.5, 5.5], [3.5, 10.5], [14.5, 10.5],
+    [3.5, 15.5], [14.5, 15.5], [5.5, 16.5], [12.5, 16.5]
+]);
+export const CRASH_DEBRIS_TYPES = Object.freeze(['bunker_junk', 'bunker_junk_uncommon', 'prop_bunker_supplies']);
+
+/** Candidate wreckage for one deployment, in preference order (the runtime keeps the valid ones). */
+export function planCrashSiteDebris(expeditionSeed = 0, count = 3) {
+    const order = CRASH_DEBRIS_SLOTS.map((slot, index) => ({
+        slot,
+        rank: mixRunEntropy(Number(expeditionSeed) >>> 0, 0x44454252, index + 1)
+    })).sort((a, b) => a.rank - b.rank);
+    return order.map(({ slot, rank }, index) => ({
+        x: slot[0],
+        z: slot[1],
+        type: CRASH_DEBRIS_TYPES[(rank >>> 7) % CRASH_DEBRIS_TYPES.length],
+        preferred: index < count
+    }));
+}
