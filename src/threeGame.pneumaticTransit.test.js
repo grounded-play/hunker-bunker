@@ -82,4 +82,20 @@ describe('ThreeGame: Pneumatic Transit Integration (Phase 4)', () => {
         expect(game.playThrottledUiError).toHaveBeenCalled();
         expect(game.showBunkerLine).toHaveBeenCalledWith(expect.stringContaining('TRANSIT LOCKDOWN'));
     });
+
+    it('dynamically binds transit terminal position to procedural boss arena coordinates when unlocked', () => {
+        const game = createMockGame({ playerPos: { x: 142.5, y: 0, z: -98.2 } });
+        const proceduralArenaPos = { x: 142.5, y: 0, z: -98.2 };
+
+        const unlocked = unlockTransitTerminal(game.transitNetwork, 'cybersnail', { position: proceduralArenaPos });
+        expect(unlocked).toBeDefined();
+        expect(unlocked.position.x).toBe(142.5);
+        expect(unlocked.position.z).toBe(-98.2);
+
+        // Player standing at the procedural arena can immediately interact
+        const candidates = ThreeGame.prototype.getPriorityInteractionCandidates.call(game);
+        const candidate = candidates.find((c) => c.id === 'transit_cybersnail_arena');
+        expect(candidate).toBeDefined();
+        expect(candidate.distance).toBeCloseTo(0);
+    });
 });

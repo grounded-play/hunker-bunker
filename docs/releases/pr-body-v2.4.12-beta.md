@@ -6,11 +6,15 @@
 
 ## 🎯 Summary
 
-This release delivers **Phase 4 of the Invisible Essentials plan** (pure pneumatic transit network, milestone boss defeat extraction terminal unlocking, sanctuary return teleportation, tactical map landmarks, and objective breadcrumbs) and provides comprehensive verification test suites proving closure readiness for 4 core milestone tickets:
-- **Closes #78** (Persistence & Campaign Reset)
-- **Closes #80** (Fabrication Bay & 13 Curated Recipes)
-- **Closes #81** (Hero Selection & Class Preview Presentation)
-- **Closes #82** (Armory Presentation, Polish Placement & Equipment Mounts)
+This release delivers **Phase 4 of the Invisible Essentials plan** (pure pneumatic transit network with seeded boss arena coordinate binding, milestone boss defeat extraction terminal unlocking, sanctuary return teleportation, tactical map landmarks, and objective breadcrumbs) and provides code-side automated verification test suites for 4 core milestone tickets:
+
+> [!IMPORTANT]
+> **Milestone Status:** Implements and automates the code-side acceptance for #78, #80, #81, and #82. Do not close until their required packaged/hardware acceptance evidence is attached. Close each individually after tonight's QA where applicable.
+
+- **Advances #78** (Persistence & Campaign Reset) — automated persistence, migration, and solo career telemetry suites.
+- **Advances #80** (Fabrication Bay & 13 Curated Recipes) — automated recipe execution, deductions, and debug override suites.
+- **Advances #81** (Hero Selection & Class Preview Presentation) — generation-guard contract and DPR constraint suites.
+- **Advances #82** (Armory Presentation, Polish Placement & Equipment Mounts) — 7 equipment slots, charm hanging paths, and socket calibration suites.
 
 In addition, this PR completes the **Master Repository TODO Tree Audit**:
 - Evaluated all 175 legacy open checkboxes across 33 historical planning and review documents.
@@ -19,7 +23,7 @@ In addition, this PR completes the **Master Repository TODO Tree Audit**:
 - 116 active release blockers and hardware tasks centralized into [docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md](../planning/todo-audit-backlog-and-conflicts-2026-09-24.md).
 - All 33 underlying documents updated to close open checkboxes, completely clearing the IDE TODO Tree from legacy debt.
 
-Merges all staged work from `dev/sprint-46` and `dev/sprint-47`, reconciling the repository state and bringing total passing tests to **4,201 across 469 files** (100% green).
+Merges all staged work from `dev/sprint-46` and `dev/sprint-47`, reconciling the repository state and bringing total passing tests to **4,202 across 469 files** (100% green).
 
 ---
 
@@ -83,14 +87,14 @@ Merges all staged work from `dev/sprint-46` and `dev/sprint-47`, reconciling the
 - [x] **Designed** — Specifications and architecture documented in `docs/planning/invisible-essentials-2026-09-24.md` and feature worklogs.
 - [x] **Coded** — All modules and integrations implemented with no dead code.
 - [x] **Connected** — Live runtime hooks wired into `ThreeGame`, `MapSystem`, `LoadoutManager`, and Homebase UI.
-- [x] **Tested** — **4,201 tests across 469 files pass (100% green)**.
+- [x] **Tested** — **4,202 tests across 469 files pass (100% green)**.
 - [x] **Live-verified** — Verified in local runtime development build.
 - **Packaged-verified (Pending QA)** — Gated on tonight's hardware QA session on Steam Deck.
 - **Accepted (Conditioned on QA)** — Gated on tonight's QA test pass.
 
 ### Automated Checks
 - `npm run lint`: Clean (0 errors, 0 warnings across all source and test files).
-- `npm test`: 4,201 passed (469 files, duration ~21s).
+- `npm test`: 4,202 passed (469 files, duration ~21s).
 - `npm run audit:docs`: 12 canonical files, 376 Markdown files passed.
 - `npm run audit:dependencies`: 100% production dependencies matched.
 

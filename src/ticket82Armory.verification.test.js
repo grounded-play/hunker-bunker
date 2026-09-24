@@ -87,7 +87,7 @@ describe('Ticket #82 — Armory Presentation, Polish Placement & Equipment Mount
         }
     });
 
-    it('proves loadout summary surfaces all 6 equipment slots for tactical deployment', () => {
+    it('proves loadout summary surfaces all 7 equipment slots for tactical deployment', () => {
         const slots = [
             { id: 'weapon', label: 'WEAPON' },
             { id: 'sheen', label: 'WEAPON SHEEN' },

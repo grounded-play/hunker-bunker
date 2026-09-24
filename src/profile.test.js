@@ -52,25 +52,33 @@ describe('ProfileManager', () => {
             multiplayerVictories: 0,
             tradesCompleted: 0,
             coopExpeditions: 0,
-            pvpDuels: 0
+            pvpDuels: 0,
+            soloExpeditions: 0,
+            soloVictories: 0,
+            soloDeaths: 0
         });
 
         p.recordMultiplayerRun({ mode: 'coop', isVictory: true });
         p.recordMultiplayerRun({ mode: 'pvp', isVictory: false });
         p.recordTradeCompleted();
+        p.recordSoloRun({ isVictory: false });
 
         expect(p.getStats()).toEqual({
             multiplayerMatches: 2,
             multiplayerVictories: 1,
             tradesCompleted: 1,
             coopExpeditions: 1,
-            pvpDuels: 1
+            pvpDuels: 1,
+            soloExpeditions: 1,
+            soloVictories: 0,
+            soloDeaths: 1
         });
 
         // Persisted across reloads
         const reloaded = new ProfileManager({ storage });
         expect(reloaded.getStats().multiplayerMatches).toBe(2);
         expect(reloaded.getStats().tradesCompleted).toBe(1);
+        expect(reloaded.getStats().soloDeaths).toBe(1);
     });
 });
 

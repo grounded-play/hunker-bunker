@@ -37,7 +37,9 @@ describe('Ticket #81 — Hero Selection & Class Preview Verification', () => {
         }
     });
 
-    it('proves 30 rapid swaps resolve race conditions safely via generation guard', async () => {
+    // Contract test for the generation-guard algorithm in src/scoutHeroPreview.js.
+    // Note: Live 30-swap visual and memory acceptance on physical hardware remains manual.
+    it('covers the generation-guard contract used by rapid preview switching in scoutHeroPreview.js', async () => {
         let loadGeneration = 0;
         let activeType = 'SCOUT';
         const disposedOverlays = [];

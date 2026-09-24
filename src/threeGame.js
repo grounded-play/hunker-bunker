@@ -20412,7 +20412,9 @@ export class ThreeGame {
                 if (definition) this.defeatedMilestoneBosses?.add(definition.goalKey);
                 if (this.transitNetwork) {
                     const bossKey = definition?.goalKey || effect.milestoneId;
-                    const unlocked = unlockTransitTerminal(this.transitNetwork, bossKey);
+                    const arenaPos = event?.position
+                        || (this.player?.position ? { x: this.player.position.x, y: this.player.position.y, z: this.player.position.z } : null);
+                    const unlocked = unlockTransitTerminal(this.transitNetwork, bossKey, { position: arenaPos });
                     if (unlocked) {
                         this.showBunkerLine?.('PNEUMATIC TRANSIT UNLOCKED: RETURN CHUTE ACTIVE AT ARENA');
                         window.dispatchEvent(new CustomEvent('transit-terminal-unlocked', { detail: { terminal: unlocked } }));
@@ -31636,7 +31638,8 @@ export class ThreeGame {
                 const transition = this.applyMilestoneBossRuntimeEvent({
                     type: MILESTONE_BOSS_EVENT_TYPES.ENEMY_KILLED,
                     milestoneId: sprite.userData.milestoneId,
-                    encounterId: sprite.userData.milestoneEncounterId
+                    encounterId: sprite.userData.milestoneEncounterId,
+                    position: sprite.position ? { x: sprite.position.x, y: sprite.position.y, z: sprite.position.z } : null
                 });
                 if (transition.effects?.some((effect) => effect.type === 'milestone_defeated')) {
                     const milestoneDef = getMilestoneById(sprite.userData.milestoneId);

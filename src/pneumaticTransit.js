@@ -77,13 +77,22 @@ export function registerTransitTerminal(network, terminalDef) {
 
 /**
  * Unlocks a transit terminal when its associated milestone boss is defeated.
+ * In seeded procedural campaigns, pass `position` to bind the chute directly
+ * to the actual defeated boss arena coordinates rather than fixed fallback anchors.
  */
-export function unlockTransitTerminal(network, bossKey) {
+export function unlockTransitTerminal(network, bossKey, { position = null } = {}) {
     if (!network || !bossKey) return null;
     const normalized = String(bossKey).toLowerCase();
     for (const terminal of network.terminals.values()) {
         if (terminal.bossKey && terminal.bossKey.toLowerCase() === normalized) {
             terminal.unlocked = true;
+            if (position && Number.isFinite(position.x) && Number.isFinite(position.z)) {
+                terminal.position = {
+                    x: position.x,
+                    y: Number.isFinite(position.y) ? position.y : 0,
+                    z: position.z
+                };
+            }
             return terminal;
         }
     }

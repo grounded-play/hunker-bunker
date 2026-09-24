@@ -34,21 +34,25 @@ describe('Ticket #78 — Persistence Contract Verification', () => {
         // Death 1
         storage.setItem('hb_run_checkpoint_v1', JSON.stringify({ depth: 1, hp: 0 }));
         storage.setItem('hb_expedition_suspend_v1', JSON.stringify({ active: true }));
-        profile.recordMultiplayerRun({ mode: 'solo', isVictory: false });
+        profile.recordSoloRun({ isVictory: false });
         resetActiveAttempt(storage);
 
         expect(storage.getItem('hb_run_checkpoint_v1')).toBeNull();
         expect(storage.getItem('hb_expedition_suspend_v1')).toBeNull();
-        expect(profile.getStats().coopExpeditions).toBe(1);
+        expect(profile.getStats().soloDeaths).toBe(1);
+        expect(profile.getStats().soloExpeditions).toBe(1);
+        expect(profile.getStats().coopExpeditions).toBe(0);
         expect(profile.getStats().multiplayerVictories).toBe(0);
 
         // Death 2
         storage.setItem('hb_run_checkpoint_v1', JSON.stringify({ depth: 2, hp: 0 }));
-        profile.recordMultiplayerRun({ mode: 'solo', isVictory: false });
+        profile.recordSoloRun({ isVictory: false });
         resetActiveAttempt(storage);
 
         expect(storage.getItem('hb_run_checkpoint_v1')).toBeNull();
-        expect(profile.getStats().coopExpeditions).toBe(2);
+        expect(profile.getStats().soloDeaths).toBe(2);
+        expect(profile.getStats().soloExpeditions).toBe(2);
+        expect(profile.getStats().coopExpeditions).toBe(0);
         expect(profile.getStats().multiplayerVictories).toBe(0);
         expect(profile.getCallsign()).toBe('VANGUARD-01');
     });
