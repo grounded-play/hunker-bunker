@@ -18320,6 +18320,10 @@ export class ThreeGame {
 
     checkWandererSpawning() {
         if (this.performanceProfile !== 'gameplay' || this.loadingPaused || !this.player || this.isPlayerDead) return;
+        // A co-op run starts fresh (owner, 2026-09-24): the solo profile's
+        // recruited companion followed the host into co-op and only the host
+        // could see it. Companions and wanderers stay solo until networked.
+        if (coopRole(this) !== COOP_ROLE.SOLO) return;
         if (this._wandererLoad || this._companionLoad || this.activeWanderer) return;
         const companion = this.wandererManager?.getActiveCompanion?.();
         if (companion) {

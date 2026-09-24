@@ -264,3 +264,23 @@ describe('a broken prop breaks on both screens with the same drops', () => {
         expect(pc.netSocket.emit.mock.calls.some(([, body]) => body?.event === 'prop-broken')).toBe(false);
     });
 });
+
+describe('a co-op run starts fresh', () => {
+    it('does not bring the solo profile’s companion into co-op', () => {
+        vi.stubGlobal('window', { dispatchEvent: () => true, CustomEvent });
+        const addHumanoidCompanion = vi.fn();
+        const base = {
+            performanceProfile: 'gameplay',
+            loadingPaused: false,
+            player: { position: { x: 0, z: 0 } },
+            isPlayerDead: false,
+            companions: [],
+            wandererManager: { getActiveCompanion: () => ({ id: 'meridian_recruit' }) },
+            addHumanoidCompanion
+        };
+        ThreeGame.prototype.checkWandererSpawning.call({ ...base, isMultiplayer: true, multiplayerMode: 'coop', netSocket: {} });
+        expect(addHumanoidCompanion).not.toHaveBeenCalled();
+        ThreeGame.prototype.checkWandererSpawning.call({ ...base, isMultiplayer: false });
+        expect(addHumanoidCompanion).toHaveBeenCalledTimes(1);
+    });
+});
