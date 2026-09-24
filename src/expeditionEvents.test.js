@@ -140,3 +140,46 @@ describe('the Unstable Salvage Vault', () => {
         expect(vault('subzero_stillness').bypassSeconds).toBeGreaterThan(vault('glacial_gale').bypassSeconds);
     });
 });
+
+describe('when no fight can start', () => {
+    const worldPlan = plan(7);
+
+    it('an empty ambush pays nothing; a breached vault still keeps its reward', () => {
+        let bait = null;
+        for (let seed = 1; seed < 400 && !bait; seed += 1) {
+            const candidate = planDeploymentEvent({ expeditionSeed: seed, conditionId: 'spore_bloom', eventId: 'false_distress', worldPlan });
+            if (candidate.truth === 'contaminated') bait = candidate;
+        }
+        const empty = run(bait, [{ type: 'signal' }, { type: 'open' }, { type: 'encounter_unavailable' }]);
+        expect(empty.state.outcome).toBe('ambush_empty');
+        expect(empty.kinds.filter((kind) => kind === 'grant')).toHaveLength(0);
+
+        const vault = planDeploymentEvent({ expeditionSeed: 11, conditionId: 'glacial_gale', eventId: 'unstable_vault', worldPlan });
+        const breached = run(vault, [{ type: 'signal' }, { type: 'breach' }, { type: 'encounter_unavailable' }]);
+        expect(breached.state.outcome).toBe('breach_held');
+        expect(breached.kinds.filter((kind) => kind === 'grant')).toHaveLength(1);
+    });
+
+    it('ignores it outside a fight', () => {
+        const vault = planDeploymentEvent({ expeditionSeed: 11, conditionId: 'glacial_gale', eventId: 'unstable_vault', worldPlan });
+        expect(run(vault, [{ type: 'signal' }, { type: 'encounter_unavailable' }]).state.phase).toBe('signalled');
+    });
+});
+
+describe('text keys', () => {
+    it('every line key the module can emit exists in English', async () => {
+        const { EVENT_TEXT_KEYS, EVENT_RESPONSE_DESC_KEYS, EVENT_RESPONSE_LABEL_KEYS, EVENT_ROUTE_KEYS, EVENT_RESPONSES } = await import('./expeditionEvents.js');
+        const en = (await import('./locales/en.json')).default;
+        const lookup = (key) => key.split('.').reduce((node, part) => node?.[part], en);
+        const keys = [
+            ...Object.values(EVENT_TEXT_KEYS).flatMap((table) => Object.values(table)),
+            ...Object.values(EVENT_RESPONSE_DESC_KEYS).flatMap((table) => Object.values(table)),
+            ...Object.values(EVENT_RESPONSE_LABEL_KEYS),
+            ...Object.values(EVENT_ROUTE_KEYS)
+        ];
+        for (const key of keys) expect(typeof lookup(key), key).toBe('string');
+        for (const [eventId, responses] of Object.entries(EVENT_RESPONSES)) {
+            for (const response of responses) expect(EVENT_RESPONSE_DESC_KEYS[eventId][response]).toBeTruthy();
+        }
+    });
+});

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildExpeditionReport, missingForCost } from './expeditionReport.js';
+import { REPORT_ITEM_KINDS, buildExpeditionReport, missingForCost, reportItemLines } from './expeditionReport.js';
 
 describe('the expedition report tells the player what the run achieved and what is next', () => {
     it('reports the condition, a met bounty, what was completed and an affordable next goal', () => {
@@ -31,5 +31,39 @@ describe('the expedition report tells the player what the run achieved and what 
     it('says so when every ship goal is built', () => {
         expect(buildExpeditionReport({ nextGoal: null }).at(-1).key).toBe('ui.go.report.all_goals');
         expect(missingForCost({ tech: 5 }, { tech: 9 })).toEqual([]);
+    });
+});
+
+describe('expedition report items from every lane', () => {
+    it('orders kinds, keeps the lead after the ship goal, drops duplicates', () => {
+        const lines = buildExpeditionReport({
+            completed: [],
+            nextGoal: null,
+            items: [
+                { kind: 'lead', labelKey: 'ui.events.false_distress.report_rescued' },
+                { kind: 'faction', labelKey: 'x.faction', params: { delta: 2 } },
+                { kind: 'discovery', labelKey: 'ui.events.report_reward', params: { name: 'Cryo Rime Injector' } },
+                { kind: 'discovery', labelKey: 'ui.events.report_reward', params: { name: 'Cryo Rime Injector' } },
+                { kind: 'settlement', labelKey: 'x.settled' }
+            ]
+        });
+        expect(lines.map((line) => line.key)).toEqual([
+            'ui.go.report.none_completed',
+            'ui.go.report.item_settlement',
+            'ui.go.report.item_discovery',
+            'ui.go.report.item_faction',
+            'ui.go.report.all_goals',
+            'ui.go.report.item_lead'
+        ]);
+        expect(lines[2].params).toEqual({ name: 'Cryo Rime Injector', labelKey: 'ui.events.report_reward' });
+    });
+
+    it('treats unknown kinds as events, skips unlabeled items and caps the list', () => {
+        expect(reportItemLines([{ kind: 'mystery', labelKey: 'a' }, { kind: 'lead' }])).toEqual([
+            { kind: 'event', line: { key: 'ui.go.report.item_event', params: { labelKey: 'a' } } }
+        ]);
+        const many = Array.from({ length: 10 }, (_, index) => ({ kind: 'event', labelKey: `k${index}` }));
+        expect(reportItemLines(many)).toHaveLength(6);
+        expect(REPORT_ITEM_KINDS).toEqual(['settlement', 'event', 'discovery', 'unlock', 'faction', 'lead']);
     });
 });

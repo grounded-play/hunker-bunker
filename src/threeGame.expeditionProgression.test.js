@@ -4,7 +4,7 @@ import { ThreeGame } from './threeGame.js';
 import { campaignWorldStore } from './campaignWorld.js';
 import { createAccessState } from './accessControl.js';
 import { createMilestoneBossLifecycleState, MILESTONE_BOSS_EVENT_TYPES } from './milestoneBossLifecycle.js';
-import { createExpeditionProfile, EXPEDITION_CONDITIONS } from './expeditionSystem.js';
+import { continueExpeditionProfile, createExpeditionProfile, EXPEDITION_CONDITIONS } from './expeditionSystem.js';
 import { SurvivorCamp } from './camp.js';
 import { HiveSite } from './hiveSite.js';
 import { Act2Manager } from './act2.js';
@@ -82,10 +82,17 @@ describe('seeded expeditions in a persistent campaign', () => {
         const world = game();
         const conditions = new Set();
         let signature = null;
+        let previous = campaignWorldStore.getState()?.activeExpedition ?? null;
         for (let deployment = 0; deployment < 8; deployment += 1) {
             const campaign = world.beginCampaignExpedition();
             expect(campaign.seed).toBe(8128);
-            expect(world.activeExpedition).toEqual(createExpeditionProfile(8128, campaign.expeditionIndex));
+            // Seeded, but never the previous deployment's condition or event.
+            expect(world.activeExpedition).toEqual(continueExpeditionProfile(8128, campaign.expeditionIndex, previous));
+            if (previous) {
+                expect(world.activeExpedition.condition.id).not.toBe(previous.condition.id);
+                expect(world.activeExpedition.eventId).not.toBe(previous.eventId);
+            }
+            previous = world.activeExpedition;
             conditions.add(world.activeExpedition.condition.id);
             const next = world.getRadialLayoutSignature(world.getRadialMazePlan());
             if (signature) expect(next).toBe(signature);

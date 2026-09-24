@@ -425,6 +425,8 @@ import {
     recordBountyEvent
 } from './expeditionBounties.js';
 import { planArrivalIncident, planCrashSiteDebris } from './arrivalIncident.js';
+import { EVENT_ROUTE_KEYS, EVENT_TEXT_KEYS, EVENT_TUNING, applyEventAction, createEventState, planDeploymentEvent, selectDeploymentEvent } from './expeditionEvents.js';
+import { callSliceContract } from './sliceContracts.js';
 import {
     COOP_ROLE,
     COOP_TRANSITION_EVENTS,
@@ -22080,7 +22082,9 @@ export class ThreeGame {
                 // Overnight hive creep: spore-thick air.
                 * (this._creepHere?.o2DrainMultiplier ?? 1.0)
                 // A stripped O2 room (regulator recovery) never breathes right again.
-                * (this.getThinAirMultiplier?.() ?? 1.0);
+                * (this.getThinAirMultiplier?.() ?? 1.0)
+                // Working an unstable vault's bypass (src/expeditionEvents.js).
+                * (this._expeditionEventO2DrainMult ?? 1.0);
             if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('tallows_seductive_warmth')) {
                 drainRate *= 0.80; // Seductive warmth protects against freezing drain
             }
@@ -22248,6 +22252,7 @@ export class ThreeGame {
         this.iFrameTimer = Math.max(0, (this.iFrameTimer ?? 0) - delta);
         this.spawnInvulnerabilityTimer = Math.max(0, (this.spawnInvulnerabilityTimer ?? 0) - delta);
         this.updateArrivalIncident?.(delta);
+        this.updateExpeditionEvent?.(delta);
         this.perfectReloadBuffTimer = Math.max(0, (this.perfectReloadBuffTimer ?? 0) - delta);
         this.recoilBloom = Math.max(0, (this.recoilBloom ?? 0) - 1.2 * delta);
 
@@ -35706,6 +35711,7 @@ export class ThreeGame {
         this._deploymentStartedAt = Date.now();
         this.syncExpeditionBountyTracker?.();
         this.armArrivalIncident?.();
+        this.armExpeditionEvent?.();
         return this.activeExpedition;
     }
 
@@ -35892,6 +35898,246 @@ export class ThreeGame {
         }
     }
 
+    // Ring 1's optional event (src/expeditionEvents.js): signalled 1:00-2:30
+    // into the deployment, beside the ship goal, never forced. Solo only, like
+    // the arrival fight. Planned on first update: the world plan can land after
+    // the profile does.
+    armExpeditionEvent() {
+        this.disposeExpeditionEvent();
+        this._expeditionReportItems = [];
+        this.listenForExpeditionReportItems();
+        const profile = this.activeExpedition;
+        this._expeditionEvent = coopRole(this) === COOP_ROLE.SOLO && profile?.condition?.id
+            ? { profile, plan: null, state: null, elapsed: 0, site: null, encounter: null, grants: [], promptOpen: false, declined: false, trackerTimer: 0 }
+            : null;
+        return this._expeditionEvent;
+    }
+
+    disposeExpeditionEvent() {
+        const event = this._expeditionEvent;
+        this._expeditionEvent = null;
+        this._expeditionEventO2DrainMult = 1;
+        if (typeof window === 'undefined') return;
+        if (event?.state && event.state.phase !== 'resolved') window.objectiveRegistry?.resolveObjective?.('expedition-event', 'abandoned');
+        window.dispatchEvent?.(new CustomEvent('expedition-event-route', { detail: { hidden: true } }));
+        if (event?.promptOpen) window.dispatchEvent?.(new CustomEvent('expedition-event-choice', { detail: { hidden: true } }));
+    }
+
+    // Every lane reports what the player earned or changed through one window
+    // event; the deployment keeps them for the results screen.
+    listenForExpeditionReportItems() {
+        if (this._onExpeditionReportItem || typeof window === 'undefined') return;
+        this._onExpeditionReportItem = ({ detail }) => {
+            if (!detail?.labelKey || !this._expeditionReportItems) return;
+            this._expeditionReportItems.push({ kind: detail.kind ?? 'event', labelKey: detail.labelKey, params: detail.params ?? {} });
+        };
+        this._onExpeditionEncounterCleared = ({ detail }) => this.onExpeditionEventEncounterCleared(detail);
+        window.addEventListener('expedition-report-item', this._onExpeditionReportItem);
+        window.addEventListener('encounter-cleared', this._onExpeditionEncounterCleared);
+    }
+
+    getExpeditionEventSitePosition() {
+        const event = this._expeditionEvent;
+        if (!event?.plan) return null;
+        if (event.site) return event.site;
+        const size = this.chunkSize ?? CHUNK_SIZE;
+        const centerX = Math.floor((event.plan.site.chunkX + 0.5) * size);
+        const centerZ = Math.floor((event.plan.site.chunkY + 0.5) * size);
+        // Nearest walkable tile to the chunk's centre, once its tiles exist.
+        for (let radius = 0; radius < size / 2; radius += 1) {
+            for (let dx = -radius; dx <= radius; dx += 1) {
+                for (let dz = -radius; dz <= radius; dz += 1) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) !== radius) continue;
+                    if (!this.isSnailTileWalkable?.(centerX + dx, centerZ + dz)) continue;
+                    event.site = { x: centerX + dx, z: centerZ + dz };
+                    return event.site;
+                }
+            }
+        }
+        return { x: centerX, z: centerZ };
+    }
+
+    updateExpeditionEvent(delta) {
+        const event = this._expeditionEvent;
+        if (!event || !this.player || this.isPlayerDead) return;
+        if (this.performanceProfile !== 'gameplay' || this.loadingPaused || this.isInPocket) return;
+        if (!event.plan) {
+            const worldPlan = this.authoredWorldTiles ? (this.ensureAuthoredWorldPlan?.() ?? this.worldPlan) : null;
+            if (!worldPlan) {
+                if (!this.authoredWorldTiles) this._expeditionEvent = null;
+                return;
+            }
+            const profile = event.profile;
+            const expeditionSeed = profile.expeditionSeed ?? this.expeditionSeed ?? 0;
+            event.plan = planDeploymentEvent({
+                expeditionSeed,
+                conditionId: profile.condition.id,
+                eventId: profile.eventId ?? selectDeploymentEvent({ expeditionSeed }),
+                worldPlan
+            });
+            if (!event.plan) {
+                this._expeditionEvent = null;
+                return;
+            }
+            event.state = createEventState(event.plan);
+        }
+        event.elapsed += delta;
+        const { phase } = event.state;
+        if (phase === 'dormant') {
+            if (event.elapsed >= event.plan.signalAt) this.applyExpeditionEventAction({ type: 'signal' });
+            return;
+        }
+        if (phase === 'resolved') return;
+        const site = this.getExpeditionEventSitePosition();
+        const distance = Math.hypot(this.player.position.x - site.x, this.player.position.z - site.z);
+        const near = distance <= EVENT_TUNING.siteRadius;
+        if (phase === 'bypassing') {
+            // The drain runs only while the operator stays on the bypass.
+            this._expeditionEventO2DrainMult = near ? event.plan.bypassO2Drain : 1;
+            if (near) this.applyExpeditionEventAction({ type: 'bypass_tick', seconds: delta });
+        } else if (phase === 'signalled') {
+            if (!near) event.declined = false;
+            else if (!event.promptOpen && !event.declined) this.openExpeditionEventChoice();
+        }
+        event.trackerTimer -= delta;
+        if (event.trackerTimer <= 0 && this._expeditionEvent === event) {
+            event.trackerTimer = 0.5;
+            this.syncExpeditionEventRoute(distance);
+        }
+    }
+
+    syncExpeditionEventRoute(distance = null) {
+        const event = this._expeditionEvent;
+        if (typeof window === 'undefined' || !event?.state) return;
+        const { plan, state } = event;
+        if (state.phase === 'dormant' || state.phase === 'resolved') {
+            window.dispatchEvent?.(new CustomEvent('expedition-event-route', { detail: { hidden: true } }));
+            return;
+        }
+        const site = this.getExpeditionEventSitePosition();
+        const meters = Math.round(distance ?? Math.hypot(this.player.position.x - site.x, this.player.position.z - site.z));
+        const stageKey = state.phase === 'bypassing' ? 'bypassing' : state.phase === 'engaged' ? 'engaged' : 'signalled';
+        const params = {
+            name: t(EVENT_TEXT_KEYS[plan.eventId].name),
+            meters,
+            progress: Math.floor(state.bypassProgress),
+            target: plan.bypassSeconds ?? 0
+        };
+        const label = t(EVENT_ROUTE_KEYS[stageKey], params);
+        window.dispatchEvent?.(new CustomEvent('expedition-event-route', { detail: { label, stage: stageKey, eventId: plan.eventId } }));
+        // Below the mission and the ship-goal option, so it never displaces
+        // them; the route chip keeps it in view, the tracker keeps its marker.
+        window.objectiveRegistry?.trackObjective?.({
+            id: 'expedition-event',
+            source: 'expedition-event',
+            label,
+            priority: 40,
+            compass: { x: site.x, z: site.z }
+        });
+    }
+
+    openExpeditionEventChoice() {
+        const event = this._expeditionEvent;
+        if (!event || typeof window === 'undefined') return false;
+        event.promptOpen = true;
+        const { plan, state } = event;
+        window.dispatchEvent(new CustomEvent('expedition-event-choice', {
+            detail: {
+                eventId: plan.eventId,
+                conditionId: plan.conditionId,
+                lineKey: state.scanned ? EVENT_TEXT_KEYS.false_distress[`scan_${plan.truth}`] : EVENT_TEXT_KEYS[plan.eventId].site,
+                responses: plan.responses.map((action) => ({
+                    action,
+                    disabled: action === 'scan' && state.scanned,
+                    params: action === 'bypass' ? { seconds: plan.bypassSeconds } : {}
+                }))
+            }
+        }));
+        return true;
+    }
+
+    // The choice modal's answer; null closes it without choosing, and it
+    // stays shut until the operator steps away and back.
+    respondToExpeditionEvent(action) {
+        const event = this._expeditionEvent;
+        if (!event?.state) return false;
+        event.promptOpen = false;
+        if (!action) {
+            event.declined = true;
+            return false;
+        }
+        if (!event.plan.responses.includes(action)) return false;
+        const changed = this.applyExpeditionEventAction({ type: action });
+        if (changed && event.state.phase === 'signalled') this.openExpeditionEventChoice();
+        return changed;
+    }
+
+    applyExpeditionEventAction(action) {
+        const event = this._expeditionEvent;
+        if (!event?.state) return false;
+        const result = applyEventAction(event.plan, event.state, action);
+        if (result.state === event.state) return false;
+        event.state = result.state;
+        for (const effect of result.effects) this.runExpeditionEventEffect(effect);
+        if (event.state.phase === 'resolved') {
+            this._expeditionEventO2DrainMult = 1;
+            const success = !['left', 'ambush_empty'].includes(event.state.outcome);
+            window.objectiveRegistry?.resolveObjective?.('expedition-event', success ? 'complete' : 'abandoned');
+        }
+        this.syncExpeditionEventRoute();
+        window.dispatchEvent?.(new CustomEvent('expedition-event-state', {
+            detail: { eventId: event.plan.eventId, action: action.type, phase: event.state.phase, outcome: event.state.outcome }
+        }));
+        return true;
+    }
+
+    runExpeditionEventEffect(effect) {
+        const event = this._expeditionEvent;
+        if (effect.kind === 'announce') {
+            this.showBunkerLine?.(t(effect.lineKey));
+        } else if (effect.kind === 'o2_drain') {
+            this._expeditionEventO2DrainMult = effect.multiplier;
+        } else if (effect.kind === 'report') {
+            window.dispatchEvent?.(new CustomEvent('expedition-report-item', { detail: effect.item }));
+        } else if (effect.kind === 'grant') {
+            // Rewards only through Lane 3's contract; a missing or refused
+            // grant is said plainly, never faked.
+            const drop = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS].find((entry) => entry.id === effect.dropId);
+            const result = callSliceContract('grantRunDrop', this, effect.dropId);
+            const delivered = result.available && result.value === true;
+            event?.grants.push({ dropId: effect.dropId, available: result.available, delivered });
+            const params = { name: drop?.name ?? effect.dropId };
+            this.showBunkerLine?.(t(delivered ? 'ui.events.reward_recovered' : 'ui.events.reward_lost', params));
+            window.dispatchEvent?.(new CustomEvent('expedition-report-item', {
+                detail: { kind: 'discovery', labelKey: delivered ? 'ui.events.report_reward' : 'ui.events.report_reward_lost', params }
+            }));
+            if (!result.available) window.dispatchEvent?.(new CustomEvent('slice-contract-missing', { detail: { name: 'grantRunDrop' } }));
+        } else if (effect.kind === 'encounter') {
+            // Fights only through Lane 2's recipes.
+            const origin = this.getExpeditionEventSitePosition();
+            const result = callSliceContract('spawnEncounterRecipe', this, effect.recipeId, origin, {
+                seed: event?.profile?.expeditionSeed ?? 0
+            });
+            if (!result.available) window.dispatchEvent?.(new CustomEvent('slice-contract-missing', { detail: { name: 'spawnEncounterRecipe' } }));
+            if (result.available && result.value?.encounterId) {
+                event.encounter = result.value;
+            } else if (event) {
+                this.applyExpeditionEventAction({ type: 'encounter_unavailable' });
+            }
+        }
+    }
+
+    onExpeditionEventEncounterCleared(detail) {
+        const event = this._expeditionEvent;
+        const handle = event?.encounter;
+        if (!handle || detail?.encounterId !== handle.encounterId) return;
+        event.encounter = null;
+        // Cleared by the operator, not by the fight unloading behind them.
+        const members = [...(handle.members?.values?.() ?? [])];
+        const beaten = members.every((member) => member.sprite?.userData?.burstTriggered || member.sprite?.userData?.hp <= 0);
+        this.applyExpeditionEventAction({ type: beaten ? 'encounter_cleared' : 'leave' });
+    }
+
     // Facts for the results screen's expedition report (src/expeditionReport.js).
     getExpeditionReportData() {
         const conditionId = this.activeExpedition?.condition?.id ?? null;
@@ -35914,6 +36160,7 @@ export class ThreeGame {
                 paidShells: bounty.paidShells ?? 0
             } : null,
             completed,
+            items: [...(this._expeditionReportItems ?? [])],
             nextGoal: goalKey ? {
                 goalKey,
                 cost: this.getGoalBuildCost?.(goalKey) ?? {},
@@ -37292,6 +37539,9 @@ export class ThreeGame {
         window.removeEventListener('base-turret-unlocked', this._onBaseTurretChanged);
         window.removeEventListener('base-turret-upgraded', this._onBaseTurretChanged);
         window.removeEventListener('base-turret-repaired', this._onBaseTurretChanged);
+        this.disposeExpeditionEvent?.();
+        if (this._onExpeditionReportItem) window.removeEventListener('expedition-report-item', this._onExpeditionReportItem);
+        if (this._onExpeditionEncounterCleared) window.removeEventListener('encounter-cleared', this._onExpeditionEncounterCleared);
         this.baseDefenseTurretGroup?.traverse?.((object) => {
             object.geometry?.dispose?.();
             const materials = Array.isArray(object.material) ? object.material : [object.material];

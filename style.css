@@ -22497,6 +22497,24 @@ body.colorblind-assist #net-mode-pvp-btn.active {
   border-color: rgba(126, 224, 161, 0.7);
   color: #7ee0a1;
 }
+
+.hud-event-chip {
+  border-color: rgba(125, 252, 255, 0.5);
+  color: #9ff5ff;
+}
+
+.hud-event-chip.is-engaged {
+  border-color: rgba(255, 139, 122, 0.7);
+  color: #ff8b7a;
+}
+
+.expedition-event-options {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 760px) {
+  .expedition-event-options { grid-template-columns: minmax(0, 1fr); }
+}
 .run-card-chip--faction { color: #ffc46b; }
 .run-card-chip--threat { color: #ff8b7a; }
 

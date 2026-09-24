@@ -1359,7 +1359,13 @@
         "none_completed": "今回の出撃で達成した目標はなし",
         "next_goal_ready": "次: {goal} は建造可能 — 船のコンソールで建造",
         "next_goal_short": "次: {goal} にはあと {missing} 必要",
-        "all_goals": "船の目標はすべて完成 — 女王が待つ"
+        "all_goals": "船の目標はすべて完成 — 女王が待つ",
+        "item_settlement": "精算：{label}",
+        "item_event": "イベント：{label}",
+        "item_discovery": "発見：{label}",
+        "item_unlock": "解放：{label}",
+        "item_faction": "評判：{label}",
+        "item_lead": "手がかり：{label}"
       }
     },
     "ach": {
@@ -1616,6 +1622,56 @@
       },
       "bounty_chip": "報奨 {progress}/{target} · +{shells} シェル",
       "bounty_chip_ready": "報奨達成 · 脱出で +{shells} を預け入れ"
+    },
+    "events": {
+      "kicker": "任意ルート",
+      "close": "離れる",
+      "route_signalled": "任意 · {name} · {meters}m",
+      "route_bypassing": "バイパス · {name} · {progress}/{target}秒",
+      "route_engaged": "交戦 · {name}",
+      "response": {
+        "scan": "スキャン",
+        "open": "開ける",
+        "leave": "立ち去る",
+        "breach": "突破",
+        "bypass": "バイパス"
+      },
+      "reward_recovered": "回収：{name}。",
+      "reward_lost": "コンポーネントは回収中に壊れた。",
+      "report_reward": "{name}を回収",
+      "report_reward_lost": "回収中にコンポーネントを失った",
+      "false_distress": {
+        "name": "救難信号",
+        "site": "封鎖されたシェルター。ビーコンはまだ鳴っている。中に誰か——あるいは何か——がいる。",
+        "signal_clear": "リング1で救難ビーコン。人の声がループしている。船のルートから外れる——判断は任せる。",
+        "signal_faint": "リング1、霜の下からかすかな救難ビーコン。読み取りにくい。判断は任せる。",
+        "signal_intermittent": "リング1、アークのノイズで途切れ途切れの救難ビーコン。判断は任せる。",
+        "scan_survivor": "スキャン：鼓動はひとつ、人間のリズム。中に生存者がいる。",
+        "scan_contaminated": "スキャン：鼓動がおかしい——多すぎて、遅すぎる。罠だ。",
+        "rescued": "生存者がよろめき出て、サルベージを手渡してきた。",
+        "ambush": "扉の向こうは巣だった。罠だ。",
+        "report_rescued": "怪しいビーコンから生存者を救出",
+        "report_ambush": "救難ビーコンの待ち伏せを生き延びた",
+        "report_left": "救難ビーコンに応答しなかった",
+        "report_empty": "ビーコンは罠だったが、何も来なかった",
+        "response_scan": "数秒かけて中を確かめる。",
+        "response_open": "扉を開ける。生存者なら報酬、巣なら戦闘。",
+        "response_leave": "立ち去る。リスクなし、報酬なし。"
+      },
+      "unstable_vault": {
+        "name": "サルベージ金庫",
+        "site": "ひび割れたサルベージ金庫。ロックにはまだ電力が瞬いている。",
+        "signal_clear": "リング1に不安定なサルベージ金庫。中に希少品、ロックは壊れかけ。船のルートから外れる——判断は任せる。",
+        "breach": "金庫を突破——警報で守護者が目覚める。",
+        "bypass_start": "バイパス作動中。離れるな。空気がもたなくなる。",
+        "bypassed": "バイパス完了。金庫が静かに開く。",
+        "report_bypassed": "バイパスでサルベージ金庫を開けた",
+        "report_breached": "サルベージ金庫を突破し、守り抜いた",
+        "report_left": "サルベージ金庫を封鎖したまま残した",
+        "response_breach": "今すぐ報酬を取る。守護者が目覚める。",
+        "response_bypass": "ロックに{seconds}秒とどまる。戦闘なし、ただし酸素の減りが速い。",
+        "response_leave": "立ち去る。リスクなし、報酬なし。"
+      }
     }
   },
   "narrative": {

@@ -1359,7 +1359,13 @@
         "none_completed": "No objectives completed this deployment",
         "next_goal_ready": "Next: {goal} is affordable — build it at the ship console",
         "next_goal_short": "Next: {goal} needs {missing} more",
-        "all_goals": "Every ship goal is built — the Queen waits"
+        "all_goals": "Every ship goal is built — the Queen waits",
+        "item_settlement": "Settled: {label}",
+        "item_event": "Event: {label}",
+        "item_discovery": "Found: {label}",
+        "item_unlock": "Unlocked: {label}",
+        "item_faction": "Standing: {label}",
+        "item_lead": "Lead: {label}"
       }
     },
     "ach": {
@@ -1616,6 +1622,56 @@
       },
       "bounty_chip": "BOUNTY {progress}/{target} · +{shells} shells",
       "bounty_chip_ready": "BOUNTY MET · EXTRACT TO BANK +{shells}"
+    },
+    "events": {
+      "kicker": "OPTIONAL ROUTE",
+      "close": "Step away",
+      "route_signalled": "OPTIONAL · {name} · {meters}m",
+      "route_bypassing": "BYPASS · {name} · {progress}/{target}s",
+      "route_engaged": "FIGHT · {name}",
+      "response": {
+        "scan": "Scan",
+        "open": "Open",
+        "leave": "Leave it",
+        "breach": "Breach",
+        "bypass": "Bypass"
+      },
+      "reward_recovered": "Recovered: {name}.",
+      "reward_lost": "The component did not survive the salvage.",
+      "report_reward": "{name} recovered",
+      "report_reward_lost": "A component lost in salvage",
+      "false_distress": {
+        "name": "DISTRESS SIGNAL",
+        "site": "A sealed shelter, beacon still pinging. Someone — or something — is inside.",
+        "signal_clear": "Distress beacon, Ring 1. A human voice on loop. Off the ship route — your call.",
+        "signal_faint": "A faint distress beacon under the frost, Ring 1. Hard to read. Your call.",
+        "signal_intermittent": "A distress beacon cutting in and out through the arc noise, Ring 1. Your call.",
+        "scan_survivor": "Scan: one heartbeat, human rhythm. Someone is alive in there.",
+        "scan_contaminated": "Scan: the heartbeat is wrong — too many, too slow. It is bait.",
+        "rescued": "A survivor stumbles out and presses salvage into your hands.",
+        "ambush": "The door opens on a nest. It was bait.",
+        "report_rescued": "Survivor pulled from a false-looking beacon",
+        "report_ambush": "Survived the distress-beacon ambush",
+        "report_left": "Left the distress beacon unanswered",
+        "report_empty": "The beacon was bait, but nothing came",
+        "response_scan": "Take a few seconds to read what is inside.",
+        "response_open": "Open the door. A survivor pays; a nest fights.",
+        "response_leave": "Walk away. No risk, no reward."
+      },
+      "unstable_vault": {
+        "name": "SALVAGE VAULT",
+        "site": "A cracked salvage vault, power still flickering in the lock.",
+        "signal_clear": "Unstable salvage vault, Ring 1. Something rare inside, and the lock is failing. Off the ship route — your call.",
+        "breach": "Vault breached — the alarm wakes the defenders.",
+        "bypass_start": "Bypass running. Stay on it; your air will not like it.",
+        "bypassed": "Bypass complete. The vault opens quietly.",
+        "report_bypassed": "Opened the salvage vault by bypass",
+        "report_breached": "Breached the salvage vault and held it",
+        "report_left": "Left the salvage vault sealed",
+        "response_breach": "Take the reward now; the defenders wake.",
+        "response_bypass": "Stay {seconds}s at the lock. No fight, but your oxygen drains faster.",
+        "response_leave": "Walk away. No risk, no reward."
+      }
     }
   },
   "narrative": {

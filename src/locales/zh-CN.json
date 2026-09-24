@@ -1359,7 +1359,13 @@
         "none_completed": "本次部署未完成任何目标",
         "next_goal_ready": "下一步: {goal} 已负担得起 — 在飞船控制台建造",
         "next_goal_short": "下一步: {goal} 还需 {missing}",
-        "all_goals": "所有飞船目标已建成 — 女王在等待"
+        "all_goals": "所有飞船目标已建成 — 女王在等待",
+        "item_settlement": "结算：{label}",
+        "item_event": "事件：{label}",
+        "item_discovery": "发现：{label}",
+        "item_unlock": "解锁：{label}",
+        "item_faction": "声望：{label}",
+        "item_lead": "线索：{label}"
       }
     },
     "ach": {
@@ -1616,6 +1622,56 @@
       },
       "bounty_chip": "赏金 {progress}/{target} · +{shells} 弹壳",
       "bounty_chip_ready": "赏金达成 · 撤离后存入 +{shells}"
+    },
+    "events": {
+      "kicker": "可选路线",
+      "close": "离开",
+      "route_signalled": "可选 · {name} · {meters}米",
+      "route_bypassing": "旁路 · {name} · {progress}/{target}秒",
+      "route_engaged": "交战 · {name}",
+      "response": {
+        "scan": "扫描",
+        "open": "打开",
+        "leave": "放弃",
+        "breach": "强行突破",
+        "bypass": "旁路破解"
+      },
+      "reward_recovered": "已回收：{name}。",
+      "reward_lost": "组件没能在打捞中保住。",
+      "report_reward": "回收了{name}",
+      "report_reward_lost": "打捞中损失了一个组件",
+      "false_distress": {
+        "name": "求救信号",
+        "site": "一处密封的避难所，信标仍在鸣响。里面有人——或者有东西。",
+        "signal_clear": "一号环发现求救信标。人声在循环播放。偏离飞船路线——由你决定。",
+        "signal_faint": "一号环的冰霜下传来微弱的求救信标。难以辨读。由你决定。",
+        "signal_intermittent": "一号环的求救信标在电弧噪声中时断时续。由你决定。",
+        "scan_survivor": "扫描：一个心跳，人类节律。里面有人活着。",
+        "scan_contaminated": "扫描：心跳不对——太多，太慢。这是诱饵。",
+        "rescued": "一名幸存者踉跄走出，把打捞物塞到你手里。",
+        "ambush": "门后是一个巢穴。这是诱饵。",
+        "report_rescued": "从可疑信标中救出一名幸存者",
+        "report_ambush": "在求救信标的伏击中幸存",
+        "report_left": "没有回应求救信标",
+        "report_empty": "信标是诱饵，但什么也没来",
+        "response_scan": "花几秒钟看清里面是什么。",
+        "response_open": "打开门。幸存者会给回报；巢穴会反击。",
+        "response_leave": "走开。没有风险，也没有回报。"
+      },
+      "unstable_vault": {
+        "name": "打捞保险库",
+        "site": "一座开裂的打捞保险库，锁上仍有电流闪烁。",
+        "signal_clear": "一号环有一座不稳定的打捞保险库。里面有稀有物品，锁正在失效。偏离飞船路线——由你决定。",
+        "breach": "保险库已突破——警报唤醒了守卫。",
+        "bypass_start": "旁路进行中。守在这里；你的氧气会吃紧。",
+        "bypassed": "旁路完成。保险库悄然打开。",
+        "report_bypassed": "通过旁路打开了打捞保险库",
+        "report_breached": "强行突破打捞保险库并守住了它",
+        "report_left": "没有打开打捞保险库",
+        "response_breach": "立刻拿走奖励；守卫会醒来。",
+        "response_bypass": "在锁旁停留{seconds}秒。不用战斗，但氧气消耗更快。",
+        "response_leave": "走开。没有风险，也没有回报。"
+      }
     }
   },
   "narrative": {

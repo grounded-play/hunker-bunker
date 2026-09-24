@@ -1359,7 +1359,13 @@
         "none_completed": "Ningún objetivo completado en este despliegue",
         "next_goal_ready": "Siguiente: {goal} está a tu alcance — constrúyelo en la consola de la nave",
         "next_goal_short": "Siguiente: a {goal} le faltan {missing}",
-        "all_goals": "Todos los objetivos de la nave construidos — la Reina espera"
+        "all_goals": "Todos los objetivos de la nave construidos — la Reina espera",
+        "item_settlement": "Liquidado: {label}",
+        "item_event": "Evento: {label}",
+        "item_discovery": "Hallazgo: {label}",
+        "item_unlock": "Desbloqueado: {label}",
+        "item_faction": "Reputación: {label}",
+        "item_lead": "Pista: {label}"
       }
     },
     "ach": {
@@ -1616,6 +1622,56 @@
       },
       "bounty_chip": "RECOMPENSA {progress}/{target} · +{shells} casquillos",
       "bounty_chip_ready": "RECOMPENSA LISTA · EXTRAE PARA COBRAR +{shells}"
+    },
+    "events": {
+      "kicker": "RUTA OPCIONAL",
+      "close": "Alejarse",
+      "route_signalled": "OPCIONAL · {name} · {meters} m",
+      "route_bypassing": "DERIVACIÓN · {name} · {progress}/{target} s",
+      "route_engaged": "COMBATE · {name}",
+      "response": {
+        "scan": "Escanear",
+        "open": "Abrir",
+        "leave": "Dejarlo",
+        "breach": "Forzar",
+        "bypass": "Derivar"
+      },
+      "reward_recovered": "Recuperado: {name}.",
+      "reward_lost": "El componente no sobrevivió al rescate.",
+      "report_reward": "{name} recuperado",
+      "report_reward_lost": "Un componente perdido en el rescate",
+      "false_distress": {
+        "name": "SEÑAL DE SOCORRO",
+        "site": "Un refugio sellado, la baliza aún emite. Alguien —o algo— está adentro.",
+        "signal_clear": "Baliza de socorro, Anillo 1. Una voz humana en bucle. Fuera de la ruta de la nave: tú decides.",
+        "signal_faint": "Una baliza de socorro débil bajo la escarcha, Anillo 1. Difícil de leer. Tú decides.",
+        "signal_intermittent": "Una baliza de socorro que se corta entre el ruido del arco, Anillo 1. Tú decides.",
+        "scan_survivor": "Escaneo: un latido, ritmo humano. Hay alguien vivo ahí adentro.",
+        "scan_contaminated": "Escaneo: el latido está mal: demasiados, demasiado lentos. Es una trampa.",
+        "rescued": "Un sobreviviente sale tambaleándose y te pone chatarra en las manos.",
+        "ambush": "La puerta se abre a un nido. Era una trampa.",
+        "report_rescued": "Sobreviviente rescatado de una baliza sospechosa",
+        "report_ambush": "Sobreviviste a la emboscada de la baliza",
+        "report_left": "Dejaste la baliza de socorro sin respuesta",
+        "report_empty": "La baliza era una trampa, pero nada apareció",
+        "response_scan": "Tómate unos segundos para ver qué hay adentro.",
+        "response_open": "Abre la puerta. Un sobreviviente recompensa; un nido pelea.",
+        "response_leave": "Sigue de largo. Sin riesgo, sin recompensa."
+      },
+      "unstable_vault": {
+        "name": "BÓVEDA DE CHATARRA",
+        "site": "Una bóveda de chatarra agrietada; la energía aún parpadea en la cerradura.",
+        "signal_clear": "Bóveda de chatarra inestable, Anillo 1. Algo raro adentro y la cerradura falla. Fuera de la ruta de la nave: tú decides.",
+        "breach": "Bóveda forzada: la alarma despierta a los defensores.",
+        "bypass_start": "Derivación en curso. Quédate ahí; a tu aire no le va a gustar.",
+        "bypassed": "Derivación completa. La bóveda se abre en silencio.",
+        "report_bypassed": "Abriste la bóveda de chatarra con una derivación",
+        "report_breached": "Forzaste la bóveda de chatarra y la defendiste",
+        "report_left": "Dejaste la bóveda de chatarra sellada",
+        "response_breach": "Toma la recompensa ya; los defensores despiertan.",
+        "response_bypass": "Quédate {seconds} s en la cerradura. Sin combate, pero tu oxígeno baja más rápido.",
+        "response_leave": "Sigue de largo. Sin riesgo, sin recompensa."
+      }
     }
   },
   "narrative": {

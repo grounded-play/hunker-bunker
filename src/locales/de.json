@@ -1359,7 +1359,13 @@
         "none_completed": "In diesem Einsatz kein Ziel erledigt",
         "next_goal_ready": "Als Nächstes: {goal} ist bezahlbar — an der Schiffskonsole bauen",
         "next_goal_short": "Als Nächstes: {goal} braucht noch {missing}",
-        "all_goals": "Alle Schiffsziele gebaut — die Königin wartet"
+        "all_goals": "Alle Schiffsziele gebaut — die Königin wartet",
+        "item_settlement": "Abgerechnet: {label}",
+        "item_event": "Ereignis: {label}",
+        "item_discovery": "Gefunden: {label}",
+        "item_unlock": "Freigeschaltet: {label}",
+        "item_faction": "Ansehen: {label}",
+        "item_lead": "Spur: {label}"
       }
     },
     "ach": {
@@ -1616,6 +1622,56 @@
       },
       "bounty_chip": "KOPFGELD {progress}/{target} · +{shells} Hülsen",
       "bounty_chip_ready": "KOPFGELD ERFÜLLT · EXTRAHIEREN FÜR +{shells}"
+    },
+    "events": {
+      "kicker": "OPTIONALE ROUTE",
+      "close": "Zurücktreten",
+      "route_signalled": "OPTIONAL · {name} · {meters} m",
+      "route_bypassing": "UMGEHUNG · {name} · {progress}/{target} s",
+      "route_engaged": "KAMPF · {name}",
+      "response": {
+        "scan": "Scannen",
+        "open": "Öffnen",
+        "leave": "Liegen lassen",
+        "breach": "Aufbrechen",
+        "bypass": "Umgehen"
+      },
+      "reward_recovered": "Geborgen: {name}.",
+      "reward_lost": "Die Komponente hat die Bergung nicht überstanden.",
+      "report_reward": "{name} geborgen",
+      "report_reward_lost": "Eine Komponente bei der Bergung verloren",
+      "false_distress": {
+        "name": "NOTSIGNAL",
+        "site": "Ein versiegelter Unterschlupf, das Signal pingt noch. Jemand – oder etwas – ist drin.",
+        "signal_clear": "Notsignal, Ring 1. Eine menschliche Stimme in Schleife. Abseits der Schiffsroute – deine Entscheidung.",
+        "signal_faint": "Ein schwaches Notsignal unter dem Frost, Ring 1. Schwer zu lesen. Deine Entscheidung.",
+        "signal_intermittent": "Ein Notsignal, das im Lichtbogenrauschen abreißt, Ring 1. Deine Entscheidung.",
+        "scan_survivor": "Scan: ein Herzschlag, menschlicher Rhythmus. Da drin lebt jemand.",
+        "scan_contaminated": "Scan: Der Herzschlag stimmt nicht – zu viele, zu langsam. Das ist ein Köder.",
+        "rescued": "Ein Überlebender taumelt heraus und drückt dir Bergungsgut in die Hand.",
+        "ambush": "Hinter der Tür liegt ein Nest. Es war ein Köder.",
+        "report_rescued": "Einen Überlebenden aus einem verdächtigen Notsignal geholt",
+        "report_ambush": "Den Hinterhalt am Notsignal überlebt",
+        "report_left": "Das Notsignal unbeantwortet gelassen",
+        "report_empty": "Das Signal war ein Köder, aber nichts kam",
+        "response_scan": "Nimm dir ein paar Sekunden, um zu prüfen, was drin ist.",
+        "response_open": "Öffne die Tür. Ein Überlebender lohnt sich; ein Nest kämpft.",
+        "response_leave": "Geh weiter. Kein Risiko, keine Belohnung."
+      },
+      "unstable_vault": {
+        "name": "BERGUNGSTRESOR",
+        "site": "Ein geborstener Bergungstresor, im Schloss flackert noch Strom.",
+        "signal_clear": "Instabiler Bergungstresor, Ring 1. Etwas Seltenes drin, und das Schloss versagt. Abseits der Schiffsroute – deine Entscheidung.",
+        "breach": "Tresor aufgebrochen – der Alarm weckt die Verteidiger.",
+        "bypass_start": "Umgehung läuft. Bleib dran; deine Luft wird es merken.",
+        "bypassed": "Umgehung abgeschlossen. Der Tresor öffnet sich leise.",
+        "report_bypassed": "Den Bergungstresor per Umgehung geöffnet",
+        "report_breached": "Den Bergungstresor aufgebrochen und gehalten",
+        "report_left": "Den Bergungstresor verschlossen gelassen",
+        "response_breach": "Nimm die Belohnung sofort; die Verteidiger erwachen.",
+        "response_bypass": "Bleib {seconds} s am Schloss. Kein Kampf, aber dein Sauerstoff sinkt schneller.",
+        "response_leave": "Geh weiter. Kein Risiko, keine Belohnung."
+      }
     }
   },
   "narrative": {

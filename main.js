@@ -50,6 +50,7 @@ import {
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock, saveAchievements } from './src/achievements.js';
 import { SteamAchievementSync } from './src/steamAchievementSync.js';
 import { buildExpeditionReport } from './src/expeditionReport.js';
+import { EVENT_RESPONSE_DESC_KEYS, EVENT_RESPONSE_LABEL_KEYS, EVENT_TEXT_KEYS } from './src/expeditionEvents.js';
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized, isRankedRunPayload } from './src/steam/steamEvents.js';
 import { syncSteamStats } from './src/steamStats.js';
 import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb, unlockChapter as unlockRgbChapter, isChapterUnlocked as isRgbChapterUnlocked } from './src/minigames/rgb/save.js';
@@ -5313,6 +5314,66 @@ window.addEventListener('expedition-bounty-progress', ({ detail }) => {
     chip.classList.remove('hidden');
 });
 
+// Ring 1's optional event beside the ship goal (ThreeGame.syncExpeditionEventRoute).
+window.addEventListener('expedition-event-route', ({ detail }) => {
+    const chip = document.getElementById('hud-event-chip');
+    if (!chip) return;
+    if (!detail || detail.hidden) {
+        chip.classList.add('hidden');
+        return;
+    }
+    chip.textContent = detail.label;
+    chip.classList.toggle('is-engaged', detail.stage === 'engaged');
+    chip.classList.remove('hidden');
+});
+
+function closeExpeditionEventModal(action = null) {
+    const modal = document.getElementById('expedition-event-modal');
+    if (!modal || modal.classList.contains('hidden')) return;
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+    if (isGameplayPhase()) window.game?.setInputEnabled?.(true);
+    window.game?.respondToExpeditionEvent?.(action);
+}
+
+// At the site: the event's responses (ThreeGame.openExpeditionEventChoice).
+window.addEventListener('expedition-event-choice', ({ detail }) => {
+    const modal = document.getElementById('expedition-event-modal');
+    const options = document.getElementById('expedition-event-options');
+    if (!modal || !options) return;
+    if (!detail || detail.hidden) {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+        return;
+    }
+    const textKeys = EVENT_TEXT_KEYS[detail.eventId];
+    if (!textKeys) return;
+    document.getElementById('expedition-event-title').textContent = t(textKeys.name);
+    document.getElementById('expedition-event-copy').textContent = t(detail.lineKey);
+    options.replaceChildren(...detail.responses.map((response) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `camp-choice-option camp-choice-option--${response.action === 'leave' ? 'noop' : response.action}`;
+        button.dataset.eventResponse = response.action;
+        button.disabled = Boolean(response.disabled);
+        const label = document.createElement('span');
+        label.className = 'camp-choice-option__label';
+        label.textContent = t(EVENT_RESPONSE_LABEL_KEYS[response.action]);
+        const desc = document.createElement('span');
+        desc.className = 'camp-choice-option__desc';
+        desc.textContent = t(EVENT_RESPONSE_DESC_KEYS[detail.eventId][response.action], response.params ?? {});
+        button.append(label, desc);
+        button.addEventListener('click', () => closeExpeditionEventModal(response.action));
+        return button;
+    }));
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    window.game?.setInputEnabled?.(false);
+    options.querySelector('button:not(:disabled)')?.focus();
+});
+
+document.getElementById('close-expedition-event')?.addEventListener('click', () => closeExpeditionEventModal(null));
+
 function renderGameOverAct2Summary() {
     const summaryCard = document.getElementById('game-over-act2-summary');
     if (!summaryCard) return;
@@ -5404,7 +5465,7 @@ function renderGameOverAct2Summary() {
 function formatExpeditionReportLine(line) {
     const params = { ...(line.params ?? {}) };
     if (params.conditionKey) params.condition = t(params.conditionKey);
-    if (params.labelKey) params.label = t(params.labelKey);
+    if (params.labelKey) params.label = t(params.labelKey, params);
     if (params.goalKey) params.goal = t(params.goalKey);
     if (line.parts) {
         params.missing = line.parts
@@ -12072,6 +12133,11 @@ document.addEventListener('keydown', (event) => {
 
         if (campChoiceModal && !campChoiceModal.classList.contains('hidden')) {
             closeCampChoiceModal();
+            event.preventDefault();
+            return;
+        }
+        if (document.getElementById('expedition-event-modal')?.classList.contains('hidden') === false) {
+            closeExpeditionEventModal(null);
             event.preventDefault();
             return;
         }

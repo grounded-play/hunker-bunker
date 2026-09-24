@@ -46,6 +46,62 @@ export const EVENT_RESPONSES = Object.freeze({
     unstable_vault: Object.freeze(['breach', 'bypass', 'leave'])
 });
 
+// Every line an event speaks, as literal keys (npm run i18n:audit reads them).
+export const EVENT_TEXT_KEYS = Object.freeze({
+    false_distress: Object.freeze({
+        name: 'ui.events.false_distress.name',
+        site: 'ui.events.false_distress.site',
+        signal_clear: 'ui.events.false_distress.signal_clear',
+        signal_faint: 'ui.events.false_distress.signal_faint',
+        signal_intermittent: 'ui.events.false_distress.signal_intermittent',
+        scan_survivor: 'ui.events.false_distress.scan_survivor',
+        scan_contaminated: 'ui.events.false_distress.scan_contaminated',
+        rescued: 'ui.events.false_distress.rescued',
+        ambush: 'ui.events.false_distress.ambush',
+        report_rescued: 'ui.events.false_distress.report_rescued',
+        report_ambush: 'ui.events.false_distress.report_ambush',
+        report_left: 'ui.events.false_distress.report_left',
+        report_empty: 'ui.events.false_distress.report_empty',
+        response_scan: 'ui.events.false_distress.response_scan',
+        response_open: 'ui.events.false_distress.response_open',
+        response_leave: 'ui.events.false_distress.response_leave'
+    }),
+    unstable_vault: Object.freeze({
+        name: 'ui.events.unstable_vault.name',
+        site: 'ui.events.unstable_vault.site',
+        signal_clear: 'ui.events.unstable_vault.signal_clear',
+        breach: 'ui.events.unstable_vault.breach',
+        bypass_start: 'ui.events.unstable_vault.bypass_start',
+        bypassed: 'ui.events.unstable_vault.bypassed',
+        report_bypassed: 'ui.events.unstable_vault.report_bypassed',
+        report_breached: 'ui.events.unstable_vault.report_breached',
+        report_left: 'ui.events.unstable_vault.report_left',
+        response_breach: 'ui.events.unstable_vault.response_breach',
+        response_bypass: 'ui.events.unstable_vault.response_bypass',
+        response_leave: 'ui.events.unstable_vault.response_leave'
+    })
+});
+
+export const EVENT_RESPONSE_LABEL_KEYS = Object.freeze({
+    scan: 'ui.events.response.scan',
+    open: 'ui.events.response.open',
+    leave: 'ui.events.response.leave',
+    breach: 'ui.events.response.breach',
+    bypass: 'ui.events.response.bypass'
+});
+
+// What each response does, per event.
+export const EVENT_RESPONSE_DESC_KEYS = Object.freeze(Object.fromEntries(Object.entries(EVENT_RESPONSES)
+    .map(([eventId, responses]) => [eventId, Object.freeze(Object.fromEntries(responses
+        .map((response) => [response, EVENT_TEXT_KEYS[eventId][`response_${response}`]])))])));
+
+// The optional-route chip, by stage.
+export const EVENT_ROUTE_KEYS = Object.freeze({
+    signalled: 'ui.events.route_signalled',
+    bypassing: 'ui.events.route_bypassing',
+    engaged: 'ui.events.route_engaged'
+});
+
 export const EVENT_TUNING = Object.freeze({
     // The ten-minute contract's 1:00-3:00 window.
     signalMinSeconds: 60,
@@ -125,7 +181,7 @@ export function createEventState(plan) {
  *
  * Actions: 'signal', and at the site the plan's responses ('scan', 'open',
  * 'leave' / 'breach', 'bypass', 'leave'), plus 'bypass_tick' { seconds },
- * 'encounter_cleared', 'encounter_failed'.
+ * 'encounter_cleared', 'encounter_unavailable'.
  */
 export function applyEventAction(plan, state, action = {}) {
     const none = { state, effects: [] };
@@ -133,15 +189,24 @@ export function applyEventAction(plan, state, action = {}) {
     const type = action.type;
     if (type === 'signal') {
         if (state.phase !== 'dormant') return none;
-        return { state: { ...state, phase: 'signalled' }, effects: [{ kind: 'announce', lineKey: `ui.events.${plan.eventId}.signal_${plan.signal ?? 'clear'}` }] };
+        return { state: { ...state, phase: 'signalled' }, effects: [{ kind: 'announce', lineKey: EVENT_TEXT_KEYS[plan.eventId][`signal_${plan.signal ?? 'clear'}`] }] };
     }
     if (state.phase === 'dormant') return none;
     if (type === 'leave') {
-        return { state: { ...state, phase: 'resolved', response: 'leave', outcome: 'left' }, effects: [{ kind: 'report', item: { kind: 'event', labelKey: `ui.events.${plan.eventId}.report_left` } }] };
+        return { state: { ...state, phase: 'resolved', response: 'leave', outcome: 'left' }, effects: [{ kind: 'report', item: { kind: 'event', labelKey: EVENT_TEXT_KEYS[plan.eventId].report_left } }] };
+    }
+    // The fight could not start (no encounter recipe registered, or nothing
+    // spawned). The vault's reward was already taken; the bait pays nothing.
+    if (type === 'encounter_unavailable' && state.phase === 'engaged') {
+        if (plan.eventId === 'unstable_vault') return applyEventAction(plan, state, { type: 'encounter_cleared' });
+        return {
+            state: { ...state, phase: 'resolved', outcome: 'ambush_empty' },
+            effects: [{ kind: 'report', item: { kind: 'event', labelKey: 'ui.events.false_distress.report_empty' } }]
+        };
     }
     if (plan.eventId === 'false_distress') {
         if (type === 'scan' && !state.scanned && state.phase === 'signalled') {
-            return { state: { ...state, scanned: true }, effects: [{ kind: 'announce', lineKey: `ui.events.false_distress.scan_${plan.truth}` }] };
+            return { state: { ...state, scanned: true }, effects: [{ kind: 'announce', lineKey: EVENT_TEXT_KEYS.false_distress[`scan_${plan.truth}`] }] };
         }
         if (type === 'open' && state.phase === 'signalled') {
             if (plan.truth === 'survivor') {

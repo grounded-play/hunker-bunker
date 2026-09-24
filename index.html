@@ -1253,6 +1253,7 @@
         <span id="hud-run-seed" class="level-indicator__seed hidden">SEED: —</span>
         <div data-i18n-aria-label="ui.hud_run_cards.aria_label_active_run_pressure" id="hud-run-cards" class="run-card-strip hidden" aria-label="Active run pressure"></div>
         <div id="hud-bounty-chip" class="hud-bounty-chip hidden" role="status" aria-live="polite"></div>
+        <div id="hud-event-chip" class="hud-bounty-chip hud-event-chip hidden" role="status" aria-live="polite"></div>
       </div>
 
       <!-- Desktop Compass HUD (shown only on PC) -->
@@ -2177,6 +2178,15 @@
       </div>
     </div>
 
+    <div id="expedition-event-modal" class="modal camp-choice-modal expedition-event-modal hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="expedition-event-title">
+      <div class="modal-content camp-choice-panel">
+        <button data-i18n-aria-label="ui.events.close" class="close-modal camp-choice-close" id="close-expedition-event" aria-label="Step away">×</button>
+        <div data-i18n="ui.events.kicker" class="camp-choice-kicker" id="expedition-event-kicker">OPTIONAL ROUTE</div>
+        <h2 class="modal-title camp-choice-title" id="expedition-event-title"></h2>
+        <p class="camp-choice-copy" id="expedition-event-copy"></p>
+        <div class="camp-choice-options expedition-event-options" id="expedition-event-options"></div>
+      </div>
+    </div>
     <div id="camp-choice-modal" class="modal camp-choice-modal hidden" aria-hidden="true">
       <div class="modal-content camp-choice-panel">
         <button data-i18n-aria-label="ui.camp_choice.aria_label_close_camp_decision" class="close-modal camp-choice-close" id="close-camp-choice" aria-label="Close camp decision">×</button>

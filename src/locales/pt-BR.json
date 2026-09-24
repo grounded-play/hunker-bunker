@@ -1359,7 +1359,13 @@
         "none_completed": "Nenhum objetivo concluído nesta incursão",
         "next_goal_ready": "Próximo: {goal} está ao seu alcance — construa no console da nave",
         "next_goal_short": "Próximo: {goal} ainda precisa de {missing}",
-        "all_goals": "Todos os objetivos da nave construídos — a Rainha espera"
+        "all_goals": "Todos os objetivos da nave construídos — a Rainha espera",
+        "item_settlement": "Acertado: {label}",
+        "item_event": "Evento: {label}",
+        "item_discovery": "Encontrado: {label}",
+        "item_unlock": "Desbloqueado: {label}",
+        "item_faction": "Reputação: {label}",
+        "item_lead": "Pista: {label}"
       }
     },
     "ach": {
@@ -1616,6 +1622,56 @@
       },
       "bounty_chip": "RECOMPENSA {progress}/{target} · +{shells} cartuchos",
       "bounty_chip_ready": "RECOMPENSA PRONTA · EXTRAIA PARA RECEBER +{shells}"
+    },
+    "events": {
+      "kicker": "ROTA OPCIONAL",
+      "close": "Afastar-se",
+      "route_signalled": "OPCIONAL · {name} · {meters} m",
+      "route_bypassing": "DESVIO · {name} · {progress}/{target} s",
+      "route_engaged": "COMBATE · {name}",
+      "response": {
+        "scan": "Escanear",
+        "open": "Abrir",
+        "leave": "Deixar",
+        "breach": "Arrombar",
+        "bypass": "Desviar"
+      },
+      "reward_recovered": "Recuperado: {name}.",
+      "reward_lost": "O componente não sobreviveu ao resgate.",
+      "report_reward": "{name} recuperado",
+      "report_reward_lost": "Um componente perdido no resgate",
+      "false_distress": {
+        "name": "SINAL DE SOCORRO",
+        "site": "Um abrigo lacrado, o sinalizador ainda pulsa. Alguém — ou algo — está lá dentro.",
+        "signal_clear": "Sinalizador de socorro, Anel 1. Uma voz humana em loop. Fora da rota da nave — você decide.",
+        "signal_faint": "Um sinalizador de socorro fraco sob a geada, Anel 1. Difícil de ler. Você decide.",
+        "signal_intermittent": "Um sinalizador de socorro falhando no ruído do arco, Anel 1. Você decide.",
+        "scan_survivor": "Varredura: um batimento, ritmo humano. Tem alguém vivo lá dentro.",
+        "scan_contaminated": "Varredura: o batimento está errado — muitos, lentos demais. É isca.",
+        "rescued": "Um sobrevivente sai cambaleando e coloca sucata nas suas mãos.",
+        "ambush": "A porta se abre para um ninho. Era isca.",
+        "report_rescued": "Sobrevivente resgatado de um sinal suspeito",
+        "report_ambush": "Sobreviveu à emboscada do sinal de socorro",
+        "report_left": "Deixou o sinal de socorro sem resposta",
+        "report_empty": "O sinal era isca, mas nada apareceu",
+        "response_scan": "Leve alguns segundos para ver o que há lá dentro.",
+        "response_open": "Abra a porta. Um sobrevivente recompensa; um ninho luta.",
+        "response_leave": "Siga em frente. Sem risco, sem recompensa."
+      },
+      "unstable_vault": {
+        "name": "COFRE DE SUCATA",
+        "site": "Um cofre de sucata rachado, a energia ainda pisca na fechadura.",
+        "signal_clear": "Cofre de sucata instável, Anel 1. Algo raro lá dentro, e a fechadura está falhando. Fora da rota da nave — você decide.",
+        "breach": "Cofre arrombado — o alarme acorda os defensores.",
+        "bypass_start": "Desvio em andamento. Fique nele; seu ar não vai gostar.",
+        "bypassed": "Desvio concluído. O cofre se abre em silêncio.",
+        "report_bypassed": "Abriu o cofre de sucata por desvio",
+        "report_breached": "Arrombou o cofre de sucata e o defendeu",
+        "report_left": "Deixou o cofre de sucata lacrado",
+        "response_breach": "Pegue a recompensa agora; os defensores acordam.",
+        "response_bypass": "Fique {seconds} s na fechadura. Sem combate, mas seu oxigênio cai mais rápido.",
+        "response_leave": "Siga em frente. Sem risco, sem recompensa."
+      }
     }
   },
   "narrative": {
