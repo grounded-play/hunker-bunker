@@ -288,6 +288,8 @@ import {
     completeRest,
     createDayState,
     deadlinesClosingTonight,
+    formatDayCycleViewModel,
+    getDayFactorFromTimeOfDay,
     normalizeDayState,
     resolveDeadline,
     threatScaleForDay
@@ -2069,6 +2071,8 @@ export class ThreeGame {
         this._terminalEvent = null;
         this._terminalEventResolvedIds = new Set();
         this._terminalObjectiveHistory = [];
+        this._lastJournalDomSignature = null;
+        this._lastTerminalModalRefresh = 0;
         this._terminalEventIsMimic = false;   // forged terminal — punishes unverified trust
         this._terminalMimicDisarmed = false;  // Engineer verify neutralizes the trap
         this._compassCorruptUntil = 0;
@@ -9660,6 +9664,9 @@ export class ThreeGame {
             this.clearGameplayInputState();
             this.updateCamera(delta);
             this.updateHiddenPlayerMarker(now);
+            if (this.isConsoleTerminalModalVisible?.()) {
+                this.updateTerminalModalRefresh(delta, now);
+            }
             renderFrame();
             return;
         }
@@ -12940,31 +12947,17 @@ export class ThreeGame {
     }
 
     renderTerminalObjectiveJournal(bankState, activeGoal) {
+        this.updateTerminalCycleStatus?.();
+
         const day = this.dayState?.day ?? 1;
         const phase = String(this.dayState?.phase ?? REST_PHASES.EXPEDITION).replace(/_/g, ' ').toUpperCase();
-        const lightIsDay = this.getDayFactor() >= 0.5;
-        const nextPoint = lightIsDay ? 0.75 : 0.25;
-        const cycleFraction = (nextPoint - this.timeOfDay + 1) % 1;
-        const transitionSeconds = Math.max(0, Math.round(cycleFraction * this.dayCycleSeconds));
-        const setText = (id, text) => {
-            const element = document.getElementById(id);
-            if (element) element.textContent = text;
-        };
-        setText('terminal-log-day', t('ui.console.day_n', { day }));
-        setText('terminal-log-phase', phase);
-        setText('terminal-log-light', lightIsDay ? t('ui.console.daylight') : t('ui.console.night_ops'));
-        setText('terminal-log-route', this.describeRingRouteProgress?.() ?? '--');
-        setText('terminal-log-transition', t('ui.console.transition_in', {
-            phase: lightIsDay ? t('ui.console.dusk') : t('ui.console.dawn'),
-            time: `${String(Math.floor(transitionSeconds / 60)).padStart(2, '0')}:${String(transitionSeconds % 60).padStart(2, '0')}`
-        }));
-
         const mission = this.missionState;
         const missionLabel = mission?.label || 'EXPLORE · BANK SALVAGE';
         const missionStatus = String(mission?.status || 'active').replace(/_/g, ' ').toUpperCase();
         const goalLabel = activeGoal?.title ?? 'BASE SYSTEMS MAXIMUM';
-        const goalStatus = activeGoal ? (this.bank.canAfford(activeGoal.cost) ? 'READY' : 'RESOURCE DEFICIT') : 'COMPLETE';
+        const goalStatus = activeGoal ? (this.bank?.canAfford?.(activeGoal.cost) ? 'READY' : 'RESOURCE DEFICIT') : 'COMPLETE';
         const snapshot = `${day}|${phase}|${missionLabel}|${missionStatus}|${goalLabel}|${goalStatus}`;
+
         this._terminalObjectiveHistory ??= [];
         if (this._terminalObjectiveHistory.at(-1)?.snapshot !== snapshot) {
             const elapsed = Math.max(0, Math.floor((Date.now() - (this.runStartTime || Date.now())) / 1000));
@@ -12974,6 +12967,17 @@ export class ThreeGame {
 
         const list = document.getElementById('terminal-objective-journal-list');
         if (!list) return;
+
+        const resolvedList = [...(this.dayState?.resolved ?? [])].sort().join(',');
+        const expiredList = [...(this.dayState?.expired ?? [])].sort().join(',');
+        const affordStatus = activeGoal ? (this.bank?.canAfford?.(activeGoal.cost) ? 'afford' : 'deficit') : 'complete';
+        const journalDomSignature = `${snapshot}|${resolvedList}|${expiredList}|${this._terminalObjectiveHistory.length}|${affordStatus}`;
+
+        if (this._lastJournalDomSignature === journalDomSignature && list.children?.length > 0) {
+            return;
+        }
+        this._lastJournalDomSignature = journalDomSignature;
+
         list.replaceChildren();
         const rows = [...this._terminalObjectiveHistory].reverse();
         for (const entry of rows) {
@@ -12981,9 +12985,12 @@ export class ThreeGame {
             const minute = String(Math.floor(entry.elapsed / 60)).padStart(2, '0');
             const second = String(entry.elapsed % 60).padStart(2, '0');
             item.innerHTML = `<span class="terminal-objective-journal-time"></span><span class="terminal-objective-journal-copy"></span><strong class="terminal-objective-journal-state"></strong>`;
-            item.querySelector('.terminal-objective-journal-time').textContent = t('ui.journal.day_time', { day: entry.day, minute, second });
-            item.querySelector('.terminal-objective-journal-copy').textContent = t('ui.journal.mission_next', { mission: entry.missionLabel, goal: entry.goalLabel });
-            item.querySelector('.terminal-objective-journal-state').textContent = `${entry.missionStatus} · ${entry.goalStatus}`;
+            const timeEl = item.querySelector('.terminal-objective-journal-time');
+            if (timeEl) timeEl.textContent = typeof t === 'function' ? t('ui.journal.day_time', { day: entry.day, minute, second }) : `D${entry.day} ${minute}:${second}`;
+            const copyEl = item.querySelector('.terminal-objective-journal-copy');
+            if (copyEl) copyEl.textContent = typeof t === 'function' ? t('ui.journal.mission_next', { mission: entry.missionLabel, goal: entry.goalLabel }) : `${entry.missionLabel} → ${entry.goalLabel}`;
+            const stateEl = item.querySelector('.terminal-objective-journal-state');
+            if (stateEl) stateEl.textContent = `${entry.missionStatus} · ${entry.goalStatus}`;
             list.append(item);
         }
 
@@ -12993,10 +13000,15 @@ export class ThreeGame {
             if (!resolved.has(deadline.id) && !expired.has(deadline.id) && day + 1 < deadline.closesOnDay) continue;
             const item = document.createElement('li');
             item.className = expired.has(deadline.id) ? 'is-expired' : resolved.has(deadline.id) ? 'is-complete' : 'is-warning';
-            item.innerHTML = `<span class="terminal-objective-journal-time">${t('ui.journal.story')}</span><span class="terminal-objective-journal-copy"></span><strong class="terminal-objective-journal-state"></strong>`;
-            item.querySelector('.terminal-objective-journal-copy').textContent = deadline.label;
-            item.querySelector('.terminal-objective-journal-state').textContent = resolved.has(deadline.id)
-                ? 'RESOLVED' : expired.has(deadline.id) ? 'EXPIRED' : `CLOSES DAY ${deadline.closesOnDay}`;
+            const storyLabel = typeof t === 'function' ? t('ui.journal.story') : 'STORY';
+            item.innerHTML = `<span class="terminal-objective-journal-time">${storyLabel}</span><span class="terminal-objective-journal-copy"></span><strong class="terminal-objective-journal-state"></strong>`;
+            const copyEl = item.querySelector('.terminal-objective-journal-copy');
+            if (copyEl) copyEl.textContent = deadline.label;
+            const stateEl = item.querySelector('.terminal-objective-journal-state');
+            if (stateEl) {
+                stateEl.textContent = resolved.has(deadline.id)
+                    ? 'RESOLVED' : expired.has(deadline.id) ? 'EXPIRED' : `CLOSES DAY ${deadline.closesOnDay}`;
+            }
             list.append(item);
         }
     }
@@ -17516,6 +17528,7 @@ export class ThreeGame {
         this._terminalEvent = null;
         this._terminalEventResolvedIds?.clear?.();
         this._terminalObjectiveHistory = [];
+        this._lastJournalDomSignature = null;
         this._meridianCompassLock = null;
         this.clearCompanions?.();
         this.clearCorpses?.();
@@ -23786,17 +23799,22 @@ export class ThreeGame {
     // identity is preserved. Advances only while gameplay input is enabled, so
     // menus/cutscenes/terminals effectively pause the clock (ask A6).
     getDayFactor() {
-        // 0 at midnight, 1 at noon, smooth cosine.
-        return 0.5 - 0.5 * Math.cos(this.timeOfDay * Math.PI * 2);
+        return getDayFactorFromTimeOfDay(this.timeOfDay);
+    }
+
+    getDayCycleViewModel(options = {}) {
+        return formatDayCycleViewModel({
+            dayState: this.dayState,
+            timeOfDay: this.timeOfDay,
+            dayCycleSeconds: this.dayCycleSeconds,
+            difficulty: threatScaleForDay(this.dayState?.day ?? 1, { hp: 1, speed: 1 }).hp,
+            ...options
+        });
     }
 
     // "HH:MM · DAY|NIGHT" string for the terminal clock readout (Note 8 display).
-    getTimeOfDayLabel() {
-        const totalMinutes = Math.floor((this.timeOfDay % 1) * 24 * 60);
-        const hh = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
-        const mm = String(totalMinutes % 60).padStart(2, '0');
-        const phase = this.getDayFactor() >= 0.5 ? 'DAY' : 'NIGHT';
-        return `${hh}:${mm} · ${phase}`;
+    getTimeOfDayLabel(options = {}) {
+        return this.getDayCycleViewModel(options).clockLabel;
     }
 
     // Seconds survived this run (since the last run reset).
@@ -23804,20 +23822,161 @@ export class ThreeGame {
         return Math.max(0, Math.floor((Date.now() - (this.runStartTime ?? Date.now())) / 1000));
     }
 
+    isConsoleTerminalModalVisible() {
+        const modal = document.getElementById('console-terminal-modal');
+        return Boolean(modal && !modal.classList.contains('hidden'));
+    }
+
+    getAdvanceDayStatus() {
+        if (this.isMultiplayer && !this.isMultiplayerHost) {
+            return {
+                id: 'coop_visitor',
+                label: 'CO-OP VISITOR — LOCAL CAMPAIGN CYCLE LOCKED',
+                allowed: false
+            };
+        }
+        if (this._activeCampQuest) {
+            return {
+                id: 'blocked_contract',
+                label: 'BLOCKED — ACTIVE CONTRACT',
+                allowed: false
+            };
+        }
+        if (Array.isArray(this.camps) && this.player?.position) {
+            const px = this.player.position.x;
+            const pz = this.player.position.z;
+            for (const camp of this.camps) {
+                if (camp && typeof camp.isWithinInteractRange === 'function' && camp.isWithinInteractRange(px, pz)) {
+                    const status = this.getCampRecord?.(camp.id)?.status ?? camp.status ?? 'alive';
+                    const check = this.canRestAt?.(camp, { status, safeSpace: true });
+                    if (check?.allowed) {
+                        return {
+                            id: 'camp_available',
+                            label: 'AVAILABLE AT SAFE CAMP',
+                            allowed: true,
+                            nextDay: check.nextDay ?? ((this.dayState?.day ?? 1) + 1)
+                        };
+                    }
+                    return {
+                        id: 'blocked_unsafe',
+                        label: 'BLOCKED — SITE UNSAFE',
+                        allowed: false
+                    };
+                }
+            }
+        }
+        const cot = this.getBunkerRestPoint?.();
+        const check = cot && this.canRestAt ? this.canRestAt(cot, { status: 'alive', safeSpace: true }) : { allowed: true };
+        if (check && !check.allowed) {
+            if (check.reason === 'active_quest') {
+                return {
+                    id: 'blocked_contract',
+                    label: 'BLOCKED — ACTIVE CONTRACT',
+                    allowed: false
+                };
+            }
+            return {
+                id: 'blocked_unsafe',
+                label: 'BLOCKED — SITE UNSAFE',
+                allowed: false
+            };
+        }
+        return {
+            id: 'cot_available',
+            label: 'AVAILABLE AT BUNKER COT',
+            allowed: true,
+            nextDay: check?.nextDay ?? ((this.dayState?.day ?? 1) + 1)
+        };
+    }
+
+    updateTerminalCycleStatus() {
+        const vm = this.getDayCycleViewModel();
+        const setText = (id, text) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = text;
+        };
+        const dayText = typeof t === 'function' ? t('ui.console.day_n', { day: vm.campaignDay }) : `DAY ${vm.campaignDay}`;
+        setText('terminal-log-day', dayText);
+        setText('terminal-log-phase', vm.campaignState);
+        const lightText = vm.isDaylight
+            ? (typeof t === 'function' ? t('ui.console.daylight') : 'DAYLIGHT')
+            : (typeof t === 'function' ? t('ui.console.night_ops') : 'NIGHT OPS');
+        setText('terminal-log-light', lightText);
+        setText('terminal-log-route', this.describeRingRouteProgress?.() ?? '--');
+        const nextPhaseText = vm.isDaylight
+            ? (typeof t === 'function' ? t('ui.console.dusk') : 'DUSK')
+            : (typeof t === 'function' ? t('ui.console.dawn') : 'DAWN');
+        setText('terminal-log-transition', typeof t === 'function'
+            ? t('ui.console.transition_in', { phase: nextPhaseText, time: vm.transitionCountdown })
+            : `${nextPhaseText} IN ${vm.transitionCountdown}`);
+
+        const ADVANCE_STATUS_I18N = {
+            cot_available: 'ui.console_terminal.advance_status_cot_available',
+            camp_available: 'ui.console_terminal.advance_status_camp_available',
+            blocked_contract: 'ui.console_terminal.advance_status_blocked_contract',
+            blocked_unsafe: 'ui.console_terminal.advance_status_blocked_unsafe',
+            coop_visitor: 'ui.console_terminal.advance_status_coop_visitor',
+            legacy_phase: 'ui.console_terminal.cycle_phase'
+        };
+        const advanceStatus = this.getAdvanceDayStatus();
+        const advanceEl = document.getElementById('terminal-log-advance-day');
+        if (advanceEl) {
+            const key = ADVANCE_STATUS_I18N[advanceStatus.id] ?? ADVANCE_STATUS_I18N.cot_available;
+            const localized = typeof t === 'function' ? t(key) : advanceStatus.label;
+            advanceEl.textContent = (localized && localized !== key) ? localized : advanceStatus.label;
+            advanceEl.dataset.advanceStatus = advanceStatus.id;
+            advanceEl.dataset.allowed = advanceStatus.allowed ? 'true' : 'false';
+        }
+
+        const compactEl = document.getElementById('terminal-cycle-compact-text');
+        if (compactEl) {
+            compactEl.textContent = `${dayText} · ${vm.solarTime} · ${lightText}`;
+        }
+        const cycleFill = document.getElementById('terminal-cycle-fill');
+        const percent = Math.round(vm.cycleProgress * 100);
+        if (cycleFill) {
+            cycleFill.style.width = `${percent}%`;
+        }
+        const progressWrap = document.getElementById('terminal-cycle-progress-wrap');
+        if (progressWrap) {
+            progressWrap.setAttribute('aria-valuenow', String(percent));
+            const cycleLabelKey = 'ui.console_terminal.cycle_progress_label';
+            const localizedLabel = typeof t === 'function' ? t(cycleLabelKey, { percent }) : `${percent}% OF 24H CYCLE`;
+            const progressLabel = (localizedLabel && localizedLabel !== cycleLabelKey) ? localizedLabel : `${percent}% OF 24H CYCLE`;
+            progressWrap.setAttribute('aria-valuetext', progressLabel);
+            const textEl = document.getElementById('terminal-cycle-progress-text');
+            if (textEl) textEl.textContent = progressLabel;
+        }
+    }
+
+    updateTerminalModalRefresh(delta, now = performance.now()) {
+        if (!this.isConsoleTerminalModalVisible()) return;
+        if (now - (this._lastTerminalModalRefresh ?? 0) < 500) return;
+        this._lastTerminalModalRefresh = now;
+        this.updateTerminalClock(true);
+        this.updateTerminalCycleStatus();
+        this.renderTerminalObjectiveJournalIfNeeded();
+    }
+
     // Live-tick the terminal clock (~1/sec) while the terminal modal is open.
     updateTerminalClockTick(now = performance.now()) {
-        const modal = document.getElementById('console-terminal-modal');
-        if (!modal || modal.classList.contains('hidden')) return;
-        if (now - (this._lastTerminalClockTick ?? 0) < 500) return;
-        this._lastTerminalClockTick = now;
-        this.updateTerminalClock();
+        if (!this.isConsoleTerminalModalVisible()) return;
+        this.updateTerminalModalRefresh(0, now);
     }
 
     // Refresh the terminal's TIME OF DAY / SURVIVED readouts. Called on terminal
     // render and, while the terminal is open, ticked live from the render loop.
-    updateTerminalClock() {
+    updateTerminalClock(isHeld = false) {
         const todEl = document.getElementById('terminal-time-of-day');
         if (todEl) todEl.textContent = this.getTimeOfDayLabel();
+        const statusEl = document.getElementById('terminal-clock-status');
+        if (statusEl) {
+            const cycleHoldKey = 'ui.console_terminal.cycle_hold';
+            const localizedHold = typeof t === 'function' ? t(cycleHoldKey) : 'CYCLE HOLD — TERMINAL ACTIVE';
+            const cycleHoldText = (localizedHold && localizedHold !== cycleHoldKey) ? localizedHold : 'CYCLE HOLD — TERMINAL ACTIVE';
+            statusEl.textContent = isHeld ? cycleHoldText : '';
+            statusEl.classList.toggle('hidden', !isHeld);
+        }
         const survEl = document.getElementById('terminal-time-survived');
         if (survEl) {
             const secs = this.getRunElapsedSeconds();
@@ -23825,6 +23984,12 @@ export class ThreeGame {
             const ss = String(secs % 60).padStart(2, '0');
             survEl.textContent = `${mm}:${ss}`;
         }
+    }
+
+    renderTerminalObjectiveJournalIfNeeded() {
+        const bankState = this.bank?.getState?.() ?? {};
+        const activeGoal = this.getActiveBaseGoal?.(bankState) ?? null;
+        this.renderTerminalObjectiveJournal(bankState, activeGoal);
     }
 
     // ── Sky (docs/sky-layer-and-weather-asset-catalog-2026-08-25.md) ──

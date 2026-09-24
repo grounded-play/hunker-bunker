@@ -243,3 +243,92 @@ export function threatScaleForDay(day, depthScale) {
         speed: (Number(base.speed) || 1) * (1 + ((factor - 1) / 3))
     };
 }
+
+/**
+ * 0 at midnight, 1 at noon, smooth cosine curve over [0, 1) visual time.
+ */
+export function getDayFactorFromTimeOfDay(timeOfDay = 0) {
+    const t = Number.isFinite(timeOfDay) ? timeOfDay : 0;
+    return 0.5 - 0.5 * Math.cos((((t % 1) + 1) % 1) * Math.PI * 2);
+}
+
+/**
+ * Solar clock "HH:MM" string for a normalized time of day [0, 1).
+ */
+export function getSolarTimeFromTimeOfDay(timeOfDay = 0) {
+    const normalizedTime = ((Number(timeOfDay) % 1) + 1) % 1;
+    const totalMinutes = Math.floor(normalizedTime * 24 * 60);
+    const hh = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+    const mm = String(totalMinutes % 60).padStart(2, '0');
+    return `${hh}:${mm}`;
+}
+
+/**
+ * Next light transition, phase label, and countdown seconds.
+ */
+export function getNextLightTransition(timeOfDay = 0, dayCycleSeconds = 600) {
+    const normalizedTime = ((Number(timeOfDay) % 1) + 1) % 1;
+    const factor = getDayFactorFromTimeOfDay(normalizedTime);
+    const isDaylight = factor >= 0.5;
+    const nextPoint = isDaylight ? 0.75 : 0.25;
+    const cycleFraction = (nextPoint - normalizedTime + 1) % 1;
+    const transitionSeconds = Math.max(0, Math.round(cycleFraction * dayCycleSeconds));
+    const transM = String(Math.floor(transitionSeconds / 60)).padStart(2, '0');
+    const transS = String(transitionSeconds % 60).padStart(2, '0');
+    const nextPhase = isDaylight ? 'DUSK' : 'DAWN';
+    return {
+        isDaylight,
+        nextPhase,
+        nextPhaseLabel: nextPhase,
+        transitionSeconds,
+        transitionCountdown: `${transM}:${transS}`
+    };
+}
+
+/**
+ * Single presentation contract for the campaign day, lighting loop,
+ * transition countdown, and difficulty.
+ *
+ * Keeps simulation/storage of timeOfDay (lighting) and dayState.day (campaign day)
+ * strictly separate while providing one consistent view-model for HUD and terminal.
+ */
+export function formatDayCycleViewModel({
+    dayState,
+    timeOfDay = 0,
+    dayCycleSeconds = 600,
+    difficulty,
+    isHeld = false
+} = {}) {
+    const s = normalizeDayState(dayState);
+    const campaignDay = s.day;
+    const campaignState = String(s.phase ?? REST_PHASES.EXPEDITION).replace(/_/g, ' ').toUpperCase();
+
+    const normalizedTime = ((Number(timeOfDay) % 1) + 1) % 1;
+    const factor = getDayFactorFromTimeOfDay(normalizedTime);
+    const isDaylight = factor >= 0.5;
+    const lightPhase = isDaylight ? 'day' : 'night';
+
+    const solarTime = getSolarTimeFromTimeOfDay(normalizedTime);
+    const lightLabel = isDaylight ? 'DAY' : 'NIGHT';
+    const clockLabel = `${solarTime} · ${lightLabel}`;
+
+    const transition = getNextLightTransition(normalizedTime, dayCycleSeconds);
+    const calculatedDifficulty = difficulty ?? difficultyForDay(campaignDay);
+
+    return {
+        campaignDay,
+        campaignState,
+        solarTime,
+        lightPhase,
+        isDaylight,
+        clockLabel,
+        nextPhase: transition.nextPhase,
+        nextPhaseLabel: transition.nextPhase,
+        transitionCountdown: transition.transitionCountdown,
+        transitionSeconds: transition.transitionSeconds,
+        difficulty: calculatedDifficulty,
+        cycleProgress: normalizedTime,
+        isHeld
+    };
+}
+

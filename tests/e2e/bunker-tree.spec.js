@@ -45,6 +45,8 @@ test.describe('Bunker Tree (console skill tree)', () => {
         await page.locator('#terminal-tab-objectives').click();
         await expect(page.locator('#terminal-tab-objectives-content')).toBeVisible();
         await expect(page.locator('#terminal-log-day')).toContainText('DAY');
+        await expect(page.locator('#terminal-log-advance-day')).toBeVisible();
+        await expect(page.locator('#terminal-cycle-compact-text')).toBeVisible();
         await expect(page.locator('#terminal-objective-journal-list li').first()).toBeVisible();
         await expect(page.locator('#hull-expansion-section')).toBeVisible();
 

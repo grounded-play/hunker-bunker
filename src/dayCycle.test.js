@@ -3,7 +3,9 @@ import {
     REST_PHASES, STORY_DEADLINES, DIFFICULTY_CAP,
     createDayState, normalizeDayState, difficultyForDay, threatScaleForDay,
     beginSleep, completeRest, beginExpedition, resolveDeadline,
-    openDeadlines, deadlinesClosingTonight, canRestNow
+    openDeadlines, deadlinesClosingTonight, canRestNow,
+    formatDayCycleViewModel, getDayFactorFromTimeOfDay, getSolarTimeFromTimeOfDay,
+    getNextLightTransition
 } from './dayCycle.js';
 
 const sleepThrough = (state) => completeRest(beginSleep(state).state).state;
@@ -178,5 +180,51 @@ describe('canRestNow — the single rest rule', () => {
         for (const siteStatus of ['alive', undefined, null]) {
             expect(canRestNow(base, { safeSpace: true, siteStatus }).allowed).toBe(true);
         }
+    });
+});
+
+describe('day cycle view-model and presentation contract', () => {
+    it('computes daytime solar calculations at noon and midnight', () => {
+        expect(getDayFactorFromTimeOfDay(0.5)).toBeCloseTo(1, 5); // noon = full light
+        expect(getDayFactorFromTimeOfDay(0)).toBeCloseTo(0, 5); // midnight = full dark
+        expect(getSolarTimeFromTimeOfDay(0.5)).toBe('12:00');
+        expect(getSolarTimeFromTimeOfDay(0.75)).toBe('18:00');
+        expect(getSolarTimeFromTimeOfDay(0)).toBe('00:00');
+    });
+
+    it('predicts the next light transition and countdown accurately', () => {
+        // At 0.5 (noon, day), next transition is dusk at 0.75 (cycleFraction = 0.25).
+        // With dayCycleSeconds = 600, transitionSeconds = 150 (2m 30s).
+        const duskTransition = getNextLightTransition(0.5, 600);
+        expect(duskTransition.isDaylight).toBe(true);
+        expect(duskTransition.nextPhase).toBe('DUSK');
+        expect(duskTransition.transitionSeconds).toBe(150);
+        expect(duskTransition.transitionCountdown).toBe('02:30');
+
+        // At 0.8 (night), next transition is dawn at 0.25 (cycleFraction = 0.45).
+        // With dayCycleSeconds = 600, transitionSeconds = 270 (4m 30s).
+        const dawnTransition = getNextLightTransition(0.8, 600);
+        expect(dawnTransition.isDaylight).toBe(false);
+        expect(dawnTransition.nextPhase).toBe('DAWN');
+        expect(dawnTransition.transitionSeconds).toBe(270);
+        expect(dawnTransition.transitionCountdown).toBe('04:30');
+    });
+
+    it('formats a complete day cycle view-model preserving campaign day vs solar time separation', () => {
+        const dayState = { day: 5, phase: REST_PHASES.EXPEDITION };
+        const vm = formatDayCycleViewModel({
+            dayState,
+            timeOfDay: 0.5,
+            dayCycleSeconds: 150
+        });
+
+        expect(vm.campaignDay).toBe(5);
+        expect(vm.campaignState).toBe('EXPEDITION');
+        expect(vm.isDaylight).toBe(true);
+        expect(vm.solarTime).toBe('12:00');
+        expect(vm.clockLabel).toBe('12:00 · DAY');
+        expect(vm.cycleProgress).toBeCloseTo(0.5, 5);
+        expect(vm.nextPhase).toBe('DUSK');
+        expect(vm.transitionCountdown).toBe('00:38'); // 0.25 * 150 = 37.5s -> 38s
     });
 });

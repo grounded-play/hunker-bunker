@@ -1,9 +1,10 @@
 # TODO: Make the Terminal Day Cycle Legible and Live
 
-**Status:** Open  
+**Status:** Complete  
 **Priority:** P1 — visible feature appears inactive  
 **Reported:** 2026-09-24 QA, build `v2.4.12-beta`  
 **Branch inspected:** `release/v2.4.12-beta-invisible-essentials`
+**Resolved:** 2026-09-24
 
 ## Player report
 
@@ -117,14 +118,14 @@ look intentionally paused, not broken.
 
 ### A. Restore a reachable terminal-only refresh
 
-- [ ] Call a lightweight terminal refresh before the blocking-overlay return in
+- [x] Call a lightweight terminal refresh before the blocking-overlay return in
   `ThreeGame.render()`.
-- [ ] Gate it on `#console-terminal-modal` being visible; do no terminal DOM work
+- [x] Gate it on `#console-terminal-modal` being visible; do no terminal DOM work
   during ordinary gameplay.
-- [ ] Continue refreshing `SURVIVED` while the modal is open.
-- [ ] Do not resume enemy AI, hazards, O₂ drain, lighting simulation, combat or
+- [x] Continue refreshing `SURVIVED` while the modal is open.
+- [x] Do not resume enemy AI, hazards, O₂ drain, lighting simulation, combat or
   other world systems behind the terminal.
-- [ ] Display `CYCLE HOLD — TERMINAL ACTIVE` when the local-light clock is paused.
+- [x] Display `CYCLE HOLD — TERMINAL ACTIVE` when the local-light clock is paused.
 
 Primary code:
 
@@ -134,14 +135,14 @@ Primary code:
 
 ### B. Split lightweight status updates from journal reconstruction
 
-- [ ] Extract a terminal cycle-status renderer for day, campaign state, local
+- [x] Extract a terminal cycle-status renderer for day, campaign state, local
   time, light phase and transition countdown.
-- [ ] Update text/progress values at most twice per second while open.
-- [ ] Rebuild journal rows only when a bounded state signature changes; do not
+- [x] Update text/progress values at most twice per second while open.
+- [x] Rebuild journal rows only when a bounded state signature changes; do not
   replace the list every animation frame.
-- [ ] Include mission status, active base goal, resolved deadlines and expired
+- [x] Include mission status, active base goal, resolved deadlines and expired
   deadlines in the journal signature.
-- [ ] Reset the terminal-only signature when a new expedition starts.
+- [x] Reset the terminal-only signature when a new expedition starts.
 
 Primary code:
 
@@ -151,18 +152,18 @@ Primary code:
 
 ### C. Make the UI explain how campaign days work
 
-- [ ] Rename or clarify `CYCLE PHASE` as `CAMPAIGN STATE` so `EXPEDITION` is not
+- [x] Rename or clarify `CYCLE PHASE` as `CAMPAIGN STATE` so `EXPEDITION` is not
   mistaken for a day/night phase.
-- [ ] Add a compact status to the Objective / Night Log tab, for example
+- [x] Add a compact status to the Objective / Night Log tab, for example
   `DAY 3 · 18:42 · NIGHT`.
-- [ ] Add an `ADVANCE DAY` status card with one of these truthful states:
+- [x] Add an `ADVANCE DAY` status card with one of these truthful states:
   - `AVAILABLE AT BUNKER COT`
   - `AVAILABLE AT SAFE CAMP`
   - `BLOCKED — ACTIVE CONTRACT`
   - `BLOCKED — SITE UNSAFE`
   - `CO-OP VISITOR — LOCAL CAMPAIGN CYCLE LOCKED`
-- [ ] Add a visible full-cycle progress track and accessible text equivalent.
-- [ ] Keep all new strings in the locale catalogs; do not add English-only UI.
+- [x] Add a visible full-cycle progress track and accessible text equivalent.
+- [x] Keep all new strings in the locale catalogs; do not add English-only UI.
 
 Primary code:
 
@@ -173,12 +174,12 @@ Primary code:
 
 ### D. Keep the HUD and terminal on one presentation contract
 
-- [ ] Introduce one formatter/view-model for campaign day, local time, light
+- [x] Introduce one formatter/view-model for campaign day, local time, light
   phase, transition countdown and difficulty.
-- [ ] Use it from both the HUD event payload and terminal renderer.
-- [ ] Keep `timeOfDay` and `dayState.day` separate in storage and simulation;
+- [x] Use it from both the HUD event payload and terminal renderer.
+- [x] Keep `timeOfDay` and `dayState.day` separate in storage and simulation;
   presentation unification must not merge their gameplay meanings.
-- [ ] Ensure sleeping pins local time to morning and immediately refreshes both
+- [x] Ensure sleeping pins local time to morning and immediately refreshes both
   HUD and terminal state.
 
 Primary code:
@@ -206,27 +207,27 @@ directly.
 
 ### Unit tests
 
-- [ ] Extend [`threeGame.terminalObjectiveJournal.test.js`](../../src/threeGame.terminalObjectiveJournal.test.js)
+- [x] Extend [`threeGame.terminalObjectiveJournal.test.js`](../../src/threeGame.terminalObjectiveJournal.test.js)
   to cover live status refresh, campaign/local-clock labels, transition
   countdown and no duplicate journal rows.
-- [ ] Extend [`threeGame.dayCycleRuntime.test.js`](../../src/threeGame.dayCycleRuntime.test.js)
+- [x] Extend [`threeGame.dayCycleRuntime.test.js`](../../src/threeGame.dayCycleRuntime.test.js)
   to verify the terminal presentation never advances campaign day.
-- [ ] Add coverage proving the terminal-only tick runs from the blocking-overlay
+- [x] Add coverage proving the terminal-only tick runs from the blocking-overlay
   branch without running world simulation.
-- [ ] Verify co-op shows the visitor-cycle explanation and cannot invoke rest.
+- [x] Verify co-op shows the visitor-cycle explanation and cannot invoke rest.
 
 ### Browser QA
 
-- [ ] Open Objective / Night Log and verify all fields have real values rather
+- [x] Open Objective / Night Log and verify all fields have real values rather
   than initial `--:--` placeholders.
-- [ ] Leave the terminal open for at least five seconds: `SURVIVED` changes,
+- [x] Leave the terminal open for at least five seconds: `SURVIVED` changes,
   while local time is explicitly marked as held.
-- [ ] Close the terminal: local time resumes without jumping.
-- [ ] Sleep at the bunker cot: campaign day increments once, morning time is
+- [x] Close the terminal: local time resumes without jumping.
+- [x] Sleep at the bunker cot: campaign day increments once, morning time is
   visible immediately, and journal/deadline rows update.
-- [ ] Repeat at a safe camp and with an active contract blocking rest.
-- [ ] Verify 1280×800 PC, 1280×800 Steam Deck/Gamescope and co-op visitor UI.
-- [ ] Confirm the Objective / Night Log tab remains bounded without accidental
+- [x] Repeat at a safe camp and with an active contract blocking rest.
+- [x] Verify 1280×800 PC, 1280×800 Steam Deck/Gamescope and co-op visitor UI.
+- [x] Confirm the Objective / Night Log tab remains bounded without accidental
   full-terminal scrolling.
 
 Existing browser coverage to extend:
