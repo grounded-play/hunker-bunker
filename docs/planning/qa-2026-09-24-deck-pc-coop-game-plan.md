@@ -135,6 +135,20 @@ Plan:
 3. **Art that matches the item.** Icons rendered from each item's own model (the Armory's existing rule), so the card, the preview and the in-game model always agree; no shared placeholders, no junk fallback for shipped items.
 4. **Log it.** Every fabricate logs recipe id, previewed item and granted item.
 
+**Owner's design (2026-09-24): the Foundry is one hub with tabs, some locked.** It is more than one thing: it is the player's **stash** (resources and owned items) and where things are **made**. It opens from the **main menu** and **in game** (at the Foundry). **Making things must be unlocked during a playthrough, but the player can always see their resources**, even before the unlock.
+
+Today these are two unconnected windows: the Steam Vault (main menu; tabs for owned inventory, smelter & dispensary, store) and the Fabrication Bay (in game; unlocked by discovering the Foundry in a run and paying its activation cost, with a "have / need" readout). The hub merges them:
+
+| Tab | Available | Contents |
+|---|---|---|
+| Stash | always, main menu and in game | resources (bank and carried), owned weapons, mods, charms, skins, relics — one card per item from the one catalog |
+| Loadout | always | what the Armory does today, on the same cards and 3D preview |
+| Fabricate | **locked** until the Foundry is discovered and activated in a playthrough; shows what unlocks it and the player's progress toward the cost | recipes and printing |
+| Trade-up (smelter) | per current Vault rules | 5→1 trade-ups; results logged and reflected immediately (see the smelter item) |
+| Store | per current Vault rules | Quartermaster purchases |
+
+Locked tabs stay visible with their unlock condition, never hidden. In-game access opens the same hub (at the Foundry, the Fabricate tab first); the main menu opens it at Stash. The hero screen uses the same item cards and preview.
+
 Acceptance: a test that walks every catalog id through each surface's card data and asserts the same name, rarity and image everywhere; no two items share an image; no shipped item falls back to initials or a placeholder; a screenshot set of one item in all four surfaces.
 
 ### P2 — Models invisible in large rooms (reported; not a load failure)
@@ -152,7 +166,7 @@ Remote death/downed, black-box ownership, wall persistence, smelt results, fabri
 1. ~~Map variety~~ — **answered:** TRY AGAIN keeps the map; MAIN MENU resets the run and the map.
 2. ~~Co-op persistence~~ — **answered:** on TRY AGAIN the map continues, so destroyed walls stay destroyed; MAIN MENU starts fresh.
 3. ~~Co-op fresh start~~ — **answered:** Meridian appeared as the recruited companion following the player (stuck behind a wall); see the companion item. Power-ups: **answered** — they were not seen by both players and looked different; see "Everything in co-op must be networked".
-4. ~~Foundry~~ — **answered:** the UI is out of date and item images do not match; Armory, Foundry and hero screen should be one UI (see "One item presentation"). Still open: is "trade in / trade up" the Steam Vault smelter (the logs point there), and should the unified design follow the Armory's current look?
+4. ~~Foundry~~ — **answered:** the UI is out of date and item images do not match; Armory, Foundry and hero screen should be one UI (see "One item presentation"). The hub design is answered (Stash / Loadout / Fabricate (locked until unlocked in a playthrough) / Trade-up / Store). Still open: should the hub follow the Armory's current look, and is "trade in / trade up" the smelter (the logs point there)?
 5. **Invisible models.** Which objects, in which rooms?
 6. ~~22-minute gap~~ — **answered:** the owner turned the Deck off and came back. The log agrees: last entry 20:16:22 on the main menu, next 20:38:19; input, Steam and the controller came back at once and the next deployment started 35 s later, with 1.7 s and 1.1 s stalls just after waking. This was a suspend **at the menu**, not mid-expedition, so resuming an interrupted expedition (Invisible Essentials Phase 1) is still untested on hardware. Also seen: after MAIN MENU on the results screen the app phase never left `gameover` (the next logged transition is `gameover -> armory`), which may be part of why MAIN MENU did not reset the run.
 
