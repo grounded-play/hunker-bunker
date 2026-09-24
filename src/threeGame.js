@@ -337,6 +337,8 @@ import { ExplorationTracker } from './mapSystem.js';
 
 export const EXTERIOR_CANYON_TILE = 'X';
 export const CLIFF_TILE = 'C';
+// Tiles around the spawn where lethal edges block movement instead of killing.
+export const SPAWN_SAFE_EDGE_RADIUS = 24;
 export const LEDGE_TILE = 'O';
 import {
     rollEnemyLootDrop,
@@ -35236,6 +35238,7 @@ export class ThreeGame {
     }
 
     canOccupyPosition(x, z) {
+        if (this.blocksSpawnSafeEdge?.(x, z)) return false;
         if (this.crashedShips && !this.isInPocket) {
             for (const ship of this.crashedShips) {
                 if (!ship.isVisible) continue;
@@ -35950,6 +35953,32 @@ export class ThreeGame {
         return true;
     }
 
+    // 2026-09-24 QA: every co-op death was a walk off an unguarded cliff a few
+    // steps from the start room. Near spawn, lethal edges behave like walls;
+    // farther out they stay the hazard they were designed to be.
+    isInSpawnSafeZone(x, z) {
+        if (this.isInPocket || this.performanceProfile !== 'gameplay') return false;
+        const spawn = this.getSpawnTile?.();
+        if (!spawn) return false;
+        return Math.hypot(x - spawn.x, z - spawn.y) <= SPAWN_SAFE_EDGE_RADIUS;
+    }
+
+    blocksSpawnSafeEdge(x, z) {
+        if (!this.isInSpawnSafeZone(x, z)) return false;
+        const cx = Math.round(x);
+        const cz = Math.round(z);
+        for (let dx = -1; dx <= 1; dx += 1) {
+            for (let dz = -1; dz <= 1; dz += 1) {
+                const hx = cx + dx;
+                const hz = cz + dz;
+                if (this.isHoleBridged?.(hx, hz)) continue;
+                const hole = this.getHoleVisualInfo?.(hx, hz);
+                if (hole?.lethal && Math.hypot(x - hx, z - hz) < hole.fallRadius + 0.1) return true;
+            }
+        }
+        return false;
+    }
+
     isPlayerOverAnyHole(px, pz) {
         // Sprint 47 Lane 3 Scout Traversal Affordance: Scout dashing or under slipstream vaults over chasms in Ring 1
         if (this.playerType === 'SCOUT' && (this.currentDepthTier ?? 0) === 0) {
@@ -35965,6 +35994,8 @@ export class ThreeGame {
                 const hz = cz + dz;
                 // Sprint 47 Lane 3 Engineer Traversal Affordance: Nanite bridge resolves chasm pit-fall (GAP-GP-05)
                 if (this.isHoleBridged?.(hx, hz)) continue;
+                // Edges near spawn block movement instead (blocksSpawnSafeEdge).
+                if (this.isInSpawnSafeZone?.(hx, hz)) continue;
 
                 const holeInfo = this.getHoleVisualInfo(hx, hz);
                 if (holeInfo) {
