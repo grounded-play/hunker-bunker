@@ -27,10 +27,13 @@ function matchRule(entry) {
         && (message === rule.event || message.startsWith(`${rule.event} `) || message.startsWith(`${rule.event}\n`))) ?? null;
 }
 
+const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
 function breakdownValue(message, field) {
     if (!field) return null;
     const match = String(message).match(new RegExp(`"${field}"\\s*:\\s*"([^"]{1,64})"`));
-    return match?.[1] ?? 'unknown';
+    const val = match?.[1] ?? 'unknown';
+    return FORBIDDEN_KEYS.has(val) ? 'unknown' : val;
 }
 
 export function createSessionLogSampler({ windowMs = 10_000, keepPerWindow = 3 } = {}) {
@@ -39,7 +42,7 @@ export function createSessionLogSampler({ windowMs = 10_000, keepPerWindow = 3 }
 
     function bucketFor(rule) {
         const key = `${rule.category} ${rule.event}`;
-        if (!counts.has(key)) counts.set(key, { total: 0, retained: 0, by: {} });
+        if (!counts.has(key)) counts.set(key, { total: 0, retained: 0, by: new Map() });
         return counts.get(key);
     }
 
@@ -51,7 +54,9 @@ export function createSessionLogSampler({ windowMs = 10_000, keepPerWindow = 3 }
         const bucket = bucketFor(rule);
         bucket.total += 1;
         const value = breakdownValue(entry.message, rule.breakdown);
-        if (value !== null) bucket.by[value] = (bucket.by[value] ?? 0) + 1;
+        if (value !== null) {
+            bucket.by.set(value, (bucket.by.get(value) ?? 0) + 1);
+        }
         if (bucket.retained < keepPerWindow) {
             bucket.retained += 1;
             return true;
@@ -66,9 +71,19 @@ export function createSessionLogSampler({ windowMs = 10_000, keepPerWindow = 3 }
     function flush(nowMs, { force = false } = {}) {
         if (windowStart === null || counts.size === 0) return null;
         if (!force && nowMs - windowStart < windowMs) return null;
+        const events = Object.fromEntries(
+            [...counts].map(([key, bucket]) => [
+                key,
+                {
+                    total: bucket.total,
+                    retained: bucket.retained,
+                    by: Object.fromEntries([...bucket.by.entries()].filter(([k]) => !FORBIDDEN_KEYS.has(k)))
+                }
+            ])
+        );
         const summary = {
             windowMs: Math.max(0, Math.round(nowMs - windowStart)),
-            events: Object.fromEntries([...counts].map(([key, bucket]) => [key, bucket]))
+            events
         };
         windowStart = null;
         counts = new Map();

@@ -40,4 +40,15 @@ describe('session log sampling (GAP-TS-04)', () => {
             by: { controller: 2, pointer: 1 }
         });
     });
+
+    it('safely neutralizes prototype pollution and remote property injection attempts', () => {
+        const sampler = createSessionLogSampler();
+        const malicious = { category: 'WEAPON', message: 'fire-input {\n  "source": "__proto__"\n}' };
+        sampler.retain(malicious, 100);
+        const summary = sampler.flush(200, { force: true });
+        expect(summary.events['WEAPON fire-input'].by.__proto__).toBe(Object.prototype);
+        expect(summary.events['WEAPON fire-input'].by.unknown).toBe(1);
+        expect(Object.prototype.polluted).toBeUndefined();
+    });
 });
+

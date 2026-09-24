@@ -3,5 +3,6 @@
     "vite": false
   },
   "console-ninja.output.showNetworkRequests": false,
-  "console-ninja.showWelcomeMessageInTools": false
+  "console-ninja.showWelcomeMessageInTools": false,
+  "better-todo-tree.tree.scanMode": "workspace"
 }
