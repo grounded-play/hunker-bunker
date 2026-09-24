@@ -5464,8 +5464,8 @@ export class ThreeGame {
             facingRow: PLAYER_DEFAULT_DIRECTION_INDEX,
             animationTimer: 0,
             lastAnimationColumn: -1,
-            hp: isPvP ? 3 : 100,
-            maxHp: isPvP ? 3 : 100,
+            hp: isPvP ? PVP_HEARTS : 100,
+            maxHp: isPvP ? PVP_HEARTS : 100,
             isDown: false,
             lastUpdate: Date.now()
         };

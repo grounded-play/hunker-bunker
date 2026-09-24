@@ -84,5 +84,5 @@ After release blockers have an evidence path, compare the first five minutes and
 - 2026-09-23 — `8da53de`: co-op transition authority implementation and automated coverage; paired packaged proof still open.
 - 2026-09-23 — evening Deck PvP capture ingested as one-client evidence; ticket plan and master register updated with bounded follow-ups.
 - 2026-09-23 — source follow-ups `2d0032a`, `4da77cc`, and `a5b4e84` add unit-tested render/shadow mitigations, local spawn/Black Box/leaderboard/door/input/logging changes, PvE-card bypass, audio aliasing, and pointer-focus work. The full suite passes (441 files / 4,018 tests); that is automated evidence only.
-- 2026-09-23 — **P0 follow-up found in source review:** the local PvP four-heart path is not shared with `server/relay.js` or new remote-player replicas, which still use three hearts. Align the authority contract and add an integration test before treating the PvP-health work as implemented end-to-end.
+- 2026-09-23 — **P0 authority mismatch resolved:** `server/relay.js` `PVP_DEFAULT_MAX_HP` aligned to 4, `src/threeGame.js` remote replica initialization aligned to 4 hearts, and integration test `server/relayPvPAuthority.test.js` added proving exactly four hits required for lethal takedown.
 - 2026-09-23 — all current source changes remain hardware-open pending physical Deck and paired packaged runs.

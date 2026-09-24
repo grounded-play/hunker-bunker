@@ -12,7 +12,7 @@ const MIN_FIRE_INTERVAL_MS = 40; // ~25 shots/sec cap per socket
 // client's existing heart balance -- BASE_HEARTS (src/threeGame.js) and
 // one heart per accepted shot -- so moving authority to the server does not
 // change game balance, only who gets to decide the outcome of a hit.
-const PVP_DEFAULT_MAX_HP = 3;
+export const PVP_DEFAULT_MAX_HP = 4;
 // Relay and client both track PvP health in hearts. Keeping damage at the
 // old value of 10 against 3 max HP made the server declare a target dead
 // after one hit while the client only removed one displayed heart.
