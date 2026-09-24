@@ -18,13 +18,14 @@ This release delivers **Phase 4 of the Invisible Essentials plan**, resolves cri
 | **#82** | **Armory Presentation, Polish Placement & Equipment Mounts** | **Closed (Code Acceptance)** | Verified via [`src/ticket82Armory.verification.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/ticket82Armory.verification.test.js). Validates 7 equipment slots, weapon charms, matrix tints, and socket calibration. |
 | **#85** | **Two-Account Co-op PvE Expedition & Networked State** | **Advanced & Hardened (Hardware Evidence)** | First physical proof captured on packaged Steam build across two accounts (Deck host + PC guest; `mug11pto` / `mug11v9w`). Closes major networking divergence gaps: deaths, black box recovery, power-up loot drops, and prop destruction. |
 | **PLAN-HUD-MAP** | **Minimap Progressive Radar Reveal, Dissipation & Fog of War** | **Closed (Full Implementation)** | Closes instant-reveal and line truncation defects. Implements progressive wavefront reveal, 400ms dissipation tail with quadratic fade-off, minimap bezel mask, and high-contrast tactical CRT Fog of War pattern (`05c4300`). |
+| **PLAN-TERMINAL-CYCLE** | **Terminal Day-Cycle Legibility, Live Clock & Advance Day Status** | **Closed (Full Implementation)** | Closes frozen/broken day cycle UI report. Implements reachable terminal modal refresh in render loop, 'CYCLE HOLD — TERMINAL ACTIVE' header readout, unified presentation view-model (`formatDayCycleViewModel`), cached journal signatures, `CAMPAIGN STATE` labeling, 24h progress bar, and truthful `ADVANCE DAY` card across all 7 locales (`0a3caf6`). |
 | **QA-P0-SPAWN** | **Spawn Void Pit Fall Fatalities** | **Closed (Defect Resolved)** | Resolves instant void falls on spawn. Edges within 24m of spawn now block movement rather than killing (`7480bd9`). |
 | **QA-P1-MAP-RULE**| **Map & Story Persistence Across Retries** | **Closed (Rule Enforced)** | Enforces owner's lifecycle contract: `TRY AGAIN` preserves current map and destroyed walls; `MAIN MENU` regenerates a fresh map. Co-op and PvP runs play a fresh story without mutating the solo campaign (`caf5816`, `d3ec634`, `de61860`, `a8d45ad`). |
 
 In addition, this PR completes the **Master Repository TODO Tree Audit**:
 - Evaluated all 175 legacy open checkboxes across 33 historical planning and review documents.
 - All 175 are tracked as migrated backlog in [`docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md`](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md).
-- Reconciles repository state and brings total passing tests to **4,242 across 477 files** (100% green).
+- Reconciles repository state and brings total passing tests to **4,252 across 478 files** (100% green).
 
 ---
 
@@ -32,6 +33,7 @@ In addition, this PR completes the **Master Repository TODO Tree Audit**:
 
 | Commit | Category | Description |
 | :--- | :--- | :--- |
+| `0a3caf6` | fix(terminal) | Make bunker tactical terminal day-cycle live and legible |
 | `05c4300` | feat(map) | Progressive radar scan wavefront reveal, edge dissipation fade-off, and clear fog of war |
 | `a8d45ad` | test(e2e) | Run-maps probe — TRY AGAIN keeps the map, MAIN MENU gets a new one |
 | `d3ec634` | feat(campaign) | A solo run started from the menu plays a new map; the story carries over |
