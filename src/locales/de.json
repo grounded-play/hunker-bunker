@@ -1349,7 +1349,18 @@
       "alien_hives": "Alien-Nester",
       "obedience": "Gehorsam:",
       "seats_filled": "Besetzte Sitze:",
-      "humanity": "Menschlichkeit:"
+      "humanity": "Menschlichkeit:",
+      "report": {
+        "title": "◈ EXPEDITIONSBERICHT",
+        "condition": "Bedingung: {condition}",
+        "bounty_met": "Kopfgeld erfüllt — {label} (+{shells} Hülsen verbucht)",
+        "bounty_missed": "Kopfgeld verfehlt — {label} ({progress}/{target})",
+        "completed": "Erledigt: {list}",
+        "none_completed": "In diesem Einsatz kein Ziel erledigt",
+        "next_goal_ready": "Als Nächstes: {goal} ist bezahlbar — an der Schiffskonsole bauen",
+        "next_goal_short": "Als Nächstes: {goal} braucht noch {missing}",
+        "all_goals": "Alle Schiffsziele gebaut — die Königin wartet"
+      }
     },
     "ach": {
       "unlocked_kicker": "ERFOLG FREIGESCHALTET",
@@ -1507,10 +1518,10 @@
         }
       },
       "bounties": {
-        "salvage_run": "Birg 120+ Schrott aus tiefen Korridoren",
-        "eliminate_elite": "Erledige einen mutierten Sektor-Jäger",
-        "scout_compound": "Unterwandere und kartiere einen Außenposten",
-        "clearing_breach": "Zerschlage 6 tragende Trennwände"
+        "salvage_run": "8 Bergungsfunde sichern",
+        "eliminate_elite": "Einen mutierten Sektorjäger ausschalten",
+        "scout_compound": "3 Räume eines abgelegenen Komplexes erkunden",
+        "clearing_breach": "6 tragende Trennwände zerschlagen"
       },
       "sites": {
         "camp_meridian": "MERIDIAN-GEHÖFT",
@@ -1590,7 +1601,21 @@
         "landmark": "EXTRAKTIONSSCHLEUSE",
         "line_objective": "ZIEL ERFÜLLT. EXTRAKTIONSSCHLEUSE BEREIT. KEHR ZUM SCHIFF ZURÜCK.",
         "line_purged": "SEKTOR GESÄUBERT. EXTRAKTIONSSCHLEUSE AKTIV. KEHR ZUM SCHIFF ZURÜCK."
-      }
+      },
+      "bounty_progress": "KOPFGELD — {label} · {progress}/{target} · +{shells} Hülsen",
+      "bounty_ready": "KOPFGELD BEREIT — {label} · EVAKUIEREN ZUM VERBUCHEN VON +{shells} HÜLSEN",
+      "bounty_complete": "KOPFGELD ERFÜLLT — {label}. {shells} HÜLSEN VERBUCHT.",
+      "arrival": {
+        "glacial_gale": "BEWEGUNG IM STURM — KRYOSCHNECKEN RÜCKEN AUF DEINE POSITION VOR.",
+        "spore_bloom": "SPORENWOLKE IN BEWEGUNG — ETWAS REITET AUF IHR AUF DICH ZU.",
+        "bio_resin_surge": "KRABBLER AUS DEM HARZ — SIE HABEN DEN ABSTURZ GEROCHEN.",
+        "geothermal_arc": "DER BOGEN HAT SIE GEWECKT — FEINDE IM ANMARSCH.",
+        "subzero_stillness": "ZU STILL. EIN KONTAKT, GROSS, UND ER WEISS, WO DU BIST.",
+        "tracker": "KONTAKT — SCHALTE DIE {count} ANRÜCKENDEN FEINDE AUS",
+        "cleared": "KONTAKT ERLEDIGT. SIE TRUGEN BERGUNGSGUT — DURCHSUCH DIE KÖRPER."
+      },
+      "bounty_chip": "KOPFGELD {progress}/{target} · +{shells} Hülsen",
+      "bounty_chip_ready": "KOPFGELD ERFÜLLT · EXTRAHIEREN FÜR +{shells}"
     }
   },
   "narrative": {

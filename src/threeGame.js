@@ -418,6 +418,14 @@ import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTeleme
 import { summarizeSceneLights, diffLightCounts } from './lightingReport.js';
 import { t } from './i18n.js';
 import {
+    bountyReceiptId,
+    bountyShellReward,
+    createBountyProgress,
+    isCampaignBountyProfile,
+    recordBountyEvent
+} from './expeditionBounties.js';
+import { planArrivalIncident } from './arrivalIncident.js';
+import {
     COOP_ROLE,
     COOP_TRANSITION_EVENTS,
     announcesBossEvent,
@@ -486,6 +494,13 @@ const SUIT_LIGHT_WALL_PADDING = 0.35;
 const HB_DIRECT_SPECULAR_MIN_ROUGHNESS = 0.6;
 
 const DAMAGE_PIP_TEXTURE_CACHE_MAX = 48;
+// Literal keys so the i18n audit credits them.
+const EXPEDITION_BOUNTY_LABEL_KEYS = Object.freeze({
+    salvage_run: 'ui.expedition.bounties.salvage_run',
+    eliminate_elite: 'ui.expedition.bounties.eliminate_elite',
+    scout_compound: 'ui.expedition.bounties.scout_compound',
+    clearing_breach: 'ui.expedition.bounties.clearing_breach'
+});
 // Impact and frost rings grow by scale, so every ring can share one geometry
 // per shape instead of building and disposing one per effect.
 export const SHARED_GROUND_SHOCKWAVE_GEOMETRY = new THREE.RingGeometry(0.08, 0.16, 24);
@@ -615,9 +630,9 @@ const PICKUP_TYPES = [
     { type: 'coin', weight: 0.09 }
 ];
 export const CLASS_STATS = {
-    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, passiveName: 'EVASIVE', passiveDescription: 'Reduced duration from enemy slow/freeze effects. Faster reload.' },
-    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, passiveName: 'BULWARK', passiveDescription: 'Chance to fully block incoming damage.' },
-    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, passiveName: 'TURRET PROTOCOL', passiveDescription: 'Unlock the automated field turret deep in the Engineer skill tree.' }
+    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, passiveName: 'EVASIVE', passiveDescription: 'Reduced duration from enemy slow/freeze effects. Faster reload. Slipstream Strike grants +35% move speed on hit.' },
+    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, passiveName: 'BULWARK', passiveDescription: 'Chance to fully block incoming damage. Heavy Seismic Slam breaches walls and deals 8 damage.' },
+    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, passiveName: 'TURRET PROTOCOL', passiveDescription: 'Automated field turret. Overcharge Pulse EMP stuns hostiles and vacuums nearby salvage.' }
 };
 
 export const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
@@ -1159,6 +1174,57 @@ const MELEE_REACH = 1.8;
 const MELEE_HALF_ANGLE = THREE.MathUtils.degToRad(35);
 const MELEE_DAMAGE = 4;
 const MELEE_COOLDOWN = 0.55;
+
+export const CLASS_MELEE_PROFILES = Object.freeze({
+    SCOUT: Object.freeze({
+        name: 'Slipstream Strike',
+        reach: 1.9,
+        halfAngle: THREE.MathUtils.degToRad(35),
+        damage: 4,
+        cooldown: 0.38,
+        knockbackForce: 4.2,
+        knockbackDuration: 0.16,
+        onHitSpeedBoost: Object.freeze({ duration: 0.85, multiplier: 1.35 }),
+        shakeIntensity: 0.10,
+        shakeDuration: 0.14,
+        burstColor: 0x44d8ff,
+        burstCount: 8,
+        soundVolume: 0.35,
+        playbackRate: 1.8
+    }),
+    TANK: Object.freeze({
+        name: 'Seismic Slam',
+        reach: 2.4,
+        halfAngle: THREE.MathUtils.degToRad(55),
+        damage: 8,
+        cooldown: 0.75,
+        knockbackForce: 9.5,
+        knockbackDuration: 0.50,
+        wallBreach: true,
+        shakeIntensity: 0.28,
+        shakeDuration: 0.30,
+        burstColor: 0xffaa33,
+        burstCount: 16,
+        soundVolume: 0.65,
+        playbackRate: 0.75
+    }),
+    ENGINEER: Object.freeze({
+        name: 'Overcharge Pulse',
+        reach: 2.1,
+        halfAngle: THREE.MathUtils.degToRad(45),
+        damage: 5,
+        cooldown: 0.50,
+        knockbackForce: 2.5,
+        knockbackDuration: 0.65,
+        magneticPullRadius: 8.0,
+        shakeIntensity: 0.14,
+        shakeDuration: 0.20,
+        burstColor: 0x55ffaa,
+        burstCount: 10,
+        soundVolume: 0.45,
+        playbackRate: 1.3
+    })
+});
 const INJURED_HP_RATIO = 0.4;
 
 const SNAIL_ATTACK_RADIUS = 1.1;
@@ -7508,6 +7574,12 @@ export class ThreeGame {
         if ((this.meleeCooldownTimer ?? 0) > 0) return false;
         if (this.isInsideNoFireZone()) return false;
 
+        const profile = CLASS_MELEE_PROFILES[this.playerType] ?? CLASS_MELEE_PROFILES.ENGINEER;
+        const reach = profile.reach ?? MELEE_REACH;
+        const halfAngle = profile.halfAngle ?? MELEE_HALF_ANGLE;
+        const damage = profile.damage ?? MELEE_DAMAGE;
+        const cooldown = profile.cooldown ?? MELEE_COOLDOWN;
+
         const directionLength = Math.hypot(this.aimDirX, this.aimDirZ) || 1;
         const aimX = this.aimDirX / directionLength;
         const aimZ = this.aimDirZ / directionLength;
@@ -7519,33 +7591,72 @@ export class ThreeGame {
             const dx = sprite.position.x - this.player.position.x;
             const dz = sprite.position.z - this.player.position.z;
             const distance = Math.hypot(dx, dz);
-            if (distance > MELEE_REACH || distance < 0.001) continue;
+            if (distance > reach || distance < 0.001) continue;
             const angle = Math.acos(THREE.MathUtils.clamp(((dx / distance) * aimX) + ((dz / distance) * aimZ), -1, 1));
-            if (angle > MELEE_HALF_ANGLE) continue;
+            if (angle > halfAngle) continue;
             targets.push({ sprite, dx, dz, distance });
         }
 
-        this.meleeCooldownTimer = MELEE_COOLDOWN;
+        this.meleeCooldownTimer = cooldown;
         this.player3dOverlay?.trigger('melee');
         this.spawnPhysicalBurst(
             this.player.position.x + aimX * 0.9,
             this.player.position.z + aimZ * 0.9,
-            { color: PLAYER_COLORS[this.playerType] ?? 0xffffff, count: 9, upward: 0.22 }
+            { color: profile.burstColor ?? (PLAYER_COLORS[this.playerType] ?? 0xffffff), count: profile.burstCount ?? 9, upward: 0.22 }
         );
-        this.triggerCameraShake?.(0.12, 0.18);
-        window.AudioManager?.playMetalStress?.({ volume: 0.42, playbackRate: 1.45, force: true });
+        this.triggerCameraShake?.(profile.shakeIntensity ?? 0.12, profile.shakeDuration ?? 0.18);
+        if (typeof window !== 'undefined') {
+            window.AudioManager?.playMetalStress?.({
+                volume: profile.soundVolume ?? 0.42,
+                playbackRate: profile.playbackRate ?? 1.45,
+                force: true
+            });
+        }
 
         for (const target of targets) {
-            this.applyPlayerDamageToEnemy(target.sprite, MELEE_DAMAGE);
+            this.applyPlayerDamageToEnemy(target.sprite, damage);
             if (this.isEnemyType(target.sprite.userData?.type) && !target.sprite.userData?.burstTriggered) {
-                target.sprite.userData.knockbackVx = (target.dx / target.distance) * 4.5;
-                target.sprite.userData.knockbackVz = (target.dz / target.distance) * 4.5;
-                target.sprite.userData.knockbackTimer = Math.max(target.sprite.userData.knockbackTimer ?? 0, 0.16);
+                target.sprite.userData.knockbackVx = (target.dx / target.distance) * (profile.knockbackForce ?? 4.5);
+                target.sprite.userData.knockbackVz = (target.dz / target.distance) * (profile.knockbackForce ?? 4.5);
+                target.sprite.userData.knockbackTimer = Math.max(target.sprite.userData.knockbackTimer ?? 0, profile.knockbackDuration ?? 0.16);
             }
         }
-        window.dispatchEvent(new CustomEvent('player-melee-attack', {
-            detail: { source, targetsHit: targets.length, damage: MELEE_DAMAGE, reach: MELEE_REACH }
-        }));
+
+        // Scout: Slipstream Surge on hit (+35% move speed)
+        if (profile.onHitSpeedBoost && targets.length > 0) {
+            this._scoutSlipstreamTimer = profile.onHitSpeedBoost.duration;
+        }
+
+        // Tank: Seismic Slam breaches walls in the frontal cone
+        if (profile.wallBreach) {
+            const checkDistances = [1.2, 1.8, 2.4];
+            for (const d of checkDistances) {
+                const wx = this.player.position.x + aimX * d;
+                const wz = this.player.position.z + aimZ * d;
+                const wall = this.findWallMeshAt?.(wx, wz);
+                if (wall && !wall.userData?.destroyed && !wall.userData?.indestructible) {
+                    this.damageWall?.(wall, 4, { source: 'player' });
+                }
+            }
+        }
+
+        // Engineer: Overcharge Pulse EMP magnetic pull on nearby pickups
+        if (profile.magneticPullRadius && Array.isArray(this.pickups)) {
+            for (const p of this.pickups) {
+                if (!p || p.userData?.destroyed || p.userData?.collected) continue;
+                const pdx = p.position.x - this.player.position.x;
+                const pdz = p.position.z - this.player.position.z;
+                if (Math.hypot(pdx, pdz) <= profile.magneticPullRadius) {
+                    p.userData.state = 'magnetized';
+                }
+            }
+        }
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('player-melee-attack', {
+                detail: { source, targetsHit: targets.length, damage, reach, classMelee: profile.name }
+            }));
+        }
         return true;
     }
 
@@ -19418,6 +19529,7 @@ export class ThreeGame {
         const firstVisit = !this._visitedTerritoryLocations.has(key);
         this._visitedTerritoryLocations.add(key);
         window.dispatchEvent(new CustomEvent('location-discovered', { detail: { ...location, firstVisit } }));
+        this.recordExpeditionBountyEvent?.({ metric: 'compoundRoom', siteId: location.siteId, roomKey: location.beatKey });
         return true;
     }
 
@@ -20459,12 +20571,12 @@ export class ThreeGame {
                 return false; // Damage absorbed by safe haven or closed containment barrier
             }
         }
-        if (this.playerType === 'TANK' && Math.random() < (this.blockChance ?? 0)) {
+        if (reason !== 'abyss' && this.playerType === 'TANK' && Math.random() < (this.blockChance ?? 0)) {
             window.AudioManager?.play('fx_tank_shockwave', { volume: 0.4, bus: 'sfx' });
             window.dispatchEvent(new CustomEvent('player-blocked', { detail: { reason } }));
             return false;
         }
-        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_bio_cloaking') && Math.random() < 0.15) {
+        if (reason !== 'abyss' && typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_bio_cloaking') && Math.random() < 0.15) {
             window.dispatchEvent(new CustomEvent('player-evaded', { detail: { reason } }));
             return false;
         }
@@ -21101,6 +21213,10 @@ export class ThreeGame {
             this.runDepositedResources.coin += depositPayload.coin;
             window.consumeSessionInventoryForDeposit?.(depositPayload);
         }
+        // A bounty is cargo, not a death-farmable score source: only a clean
+        // extraction can secure it. This happens after normal cargo deposit
+        // so a failed deposit never mints a bounty payment by itself.
+        this.settleExpeditionBountyOnExtraction?.();
 
         // Sprint 26: match-completion/extraction sync -- previously this
         // was entirely local; squadmates had no way to know a player had
@@ -22128,8 +22244,10 @@ export class ThreeGame {
         // Update kinetic control timers
         this.dashCooldownTimer = Math.max(0, (this.dashCooldownTimer ?? 0) - delta);
         this.meleeCooldownTimer = Math.max(0, (this.meleeCooldownTimer ?? 0) - delta);
+        this._scoutSlipstreamTimer = Math.max(0, (this._scoutSlipstreamTimer ?? 0) - delta);
         this.iFrameTimer = Math.max(0, (this.iFrameTimer ?? 0) - delta);
         this.spawnInvulnerabilityTimer = Math.max(0, (this.spawnInvulnerabilityTimer ?? 0) - delta);
+        this.updateArrivalIncident?.(delta);
         this.perfectReloadBuffTimer = Math.max(0, (this.perfectReloadBuffTimer ?? 0) - delta);
         this.recoilBloom = Math.max(0, (this.recoilBloom ?? 0) - 1.2 * delta);
 
@@ -22229,6 +22347,9 @@ export class ThreeGame {
             const prevZ = this.player.position.z;
 
             let speed = this.moveSpeed * (this._sprintMoveSpeedMult ?? 1.0);
+            if ((this._scoutSlipstreamTimer ?? 0) > 0) {
+                speed *= 1.35;
+            }
             if (this.noclip) {
                 const sprintBoost = (this._sprintMoveSpeedMult > 1 ? 1.7 : 1.0);
                 speed *= (this.noclipSpeedMult || 3.5) * sprintBoost;
@@ -26575,6 +26696,7 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('wall-destroyed', {
             detail: { source, x: coord.tileX, z: coord.tileZ, fromRemote }
         }));
+        if (source === 'player' && !fromRemote) this.recordExpeditionBountyEvent?.({ metric: 'wallSmashed' });
         if (!fromRemote && this.isMultiplayer) {
             this.broadcastSharedWorldEvent('wall-destroyed', {
                 worldX: coord.tileX,
@@ -30449,6 +30571,9 @@ export class ThreeGame {
                         if (pickupType === 'health' && this.playerVitals.hp < this.playerVitals.maxHp) {
                             this.healPlayer(1);
                         }
+                        if (pickupType === 'health' || pickupType === 'weapon' || pickupType === 'coin') {
+                            this.recordExpeditionBountyEvent?.({ metric: 'salvage' });
+                        }
                         window.dispatchEvent(new CustomEvent('pickup-collected', {
                             detail: {
                                 type: pickupType,
@@ -30853,6 +30978,10 @@ export class ThreeGame {
                     detail: { type: 'elimination', uplinkReady: uplink.ready, uplink }
                 }));
             }
+        }
+
+        if (sprite.userData.isElite && !sprite.userData.isRemoteReplica) {
+            this.recordExpeditionBountyEvent?.({ metric: 'eliteKill' });
         }
 
         if (isBoss) {
@@ -35563,7 +35692,260 @@ export class ThreeGame {
         this.activeExpedition = profile ?? null;
         this._expeditionEffects = getExpeditionEffects(this.activeExpedition);
         this.applyExpeditionPlayerEffects();
+        const bountyEligible = isCampaignBountyProfile({
+            profile: this.activeExpedition,
+            campaignWorldSeed: this._campaignWorldSeed,
+            runEntropy: this.runEntropy,
+            fixedRunEntropy: this.fixedRunEntropy,
+            isMultiplayer: this.isMultiplayer
+        });
+        this._expeditionBountyReceiptId = bountyEligible ? bountyReceiptId(this.activeExpedition) : null;
+        this.expeditionBounty = this._expeditionBountyReceiptId
+            ? createBountyProgress(this.activeExpedition?.bounty?.id)
+            : null;
+        this._deploymentStartedAt = Date.now();
+        this.syncExpeditionBountyTracker?.();
+        this.armArrivalIncident?.();
         return this.activeExpedition;
+    }
+
+    // An expedition profile also exists for fixed and shared sessions so its
+    // world rules stay synchronized. Only the active solo campaign can pay
+    // a local progression bounty.
+    isCurrentCampaignBounty() {
+        const profile = this.activeExpedition;
+        const campaign = campaignWorldStore.getState?.();
+        return Boolean(this._expeditionBountyReceiptId
+            && profile
+            && campaign
+            && campaign.seed === this._campaignWorldSeed
+            && campaign.seed === profile.campaignSeed
+            && campaign.expeditionSeed === profile.expeditionSeed
+            && campaign.activeExpedition?.bounty?.id === profile.bounty?.id);
+    }
+
+    // Solo only: in co-op the pack would need the host authority boss adds
+    // use (src/coopTransitions.js); PvP has no expedition fight to open.
+    armArrivalIncident() {
+        if (typeof window !== 'undefined') window.objectiveRegistry?.resolveObjective?.('arrival-incident', 'abandoned');
+        const plan = coopRole(this) === COOP_ROLE.SOLO
+            ? planArrivalIncident({
+                conditionId: this.activeExpedition?.condition?.id,
+                expeditionSeed: this.activeExpedition?.expeditionSeed ?? this.expeditionSeed ?? 0,
+                expeditionIndex: this.activeExpedition?.expeditionIndex ?? this.expeditionIndex ?? 0
+            })
+            : null;
+        this._arrivalIncident = plan ? { plan, state: 'pending', timer: plan.delaySeconds, sprites: [] } : null;
+        return this._arrivalIncident;
+    }
+
+    updateArrivalIncident(delta) {
+        const incident = this._arrivalIncident;
+        if (!incident || incident.state === 'done' || !this.player || this.isPlayerDead) return;
+        if (this.performanceProfile !== 'gameplay' || this.loadingPaused || this.isInPocket) return;
+        if (incident.state === 'pending') {
+            incident.timer -= delta;
+            if (incident.timer <= 0) this.spawnArrivalIncident();
+            return;
+        }
+        const alive = incident.sprites.filter((sprite) => sprite.parent && !sprite.userData?.burstTriggered);
+        if (alive.length) return;
+        const killed = incident.sprites.filter((sprite) => sprite.userData?.burstTriggered);
+        incident.state = 'done';
+        if (!killed.length || killed.length < incident.sprites.length) {
+            // Unloaded rather than beaten: no reward, and no dangling tracker.
+            window.objectiveRegistry?.resolveObjective?.('arrival-incident', 'abandoned');
+            return;
+        }
+        const last = killed.at(-1);
+        this.dropArrivalCache(last.position.x, last.position.z, last.parent ?? this.scene, incident.plan.cacheSize);
+        window.objectiveRegistry?.resolveObjective?.('arrival-incident', 'complete');
+        this.showBunkerLine?.(t('ui.expedition.arrival.cleared'));
+        window.dispatchEvent(new CustomEvent('arrival-incident-cleared', { detail: { count: killed.length } }));
+    }
+
+    spawnArrivalIncident() {
+        const incident = this._arrivalIncident;
+        const { plan } = incident;
+        const origin = this.player.position;
+        const sprites = [];
+        plan.pack.forEach((member, index) => {
+            // Walk the ring from the rolled bearing until a walkable tile
+            // turns up; members fan out a little so they read as a pack.
+            for (let attempt = 0; attempt < 12; attempt += 1) {
+                const angle = plan.angle + (index - (plan.pack.length - 1) / 2) * 0.28 + attempt * (Math.PI / 6);
+                const x = origin.x + Math.cos(angle) * plan.distance;
+                const z = origin.z + Math.sin(angle) * plan.distance;
+                if (!this.isSnailTileWalkable?.(Math.round(x), Math.round(z))) continue;
+                const sprite = this.spawnArrivalMember(member, x, z, index);
+                if (sprite) sprites.push(sprite);
+                break;
+            }
+        });
+        incident.sprites = sprites;
+        incident.state = sprites.length ? 'active' : 'done';
+        if (!sprites.length) return false;
+        this.showBunkerLine?.(t(plan.lineKey));
+        window.objectiveRegistry?.trackObjective?.({
+            id: 'arrival-incident',
+            source: 'mission',
+            label: t('ui.expedition.arrival.tracker', { count: sprites.length }),
+            priority: 25,
+            compass: { x: sprites[0].position.x, z: sprites[0].position.z }
+        });
+        window.dispatchEvent(new CustomEvent('arrival-incident-started', { detail: { count: sprites.length, types: plan.pack.map((m) => m.type) } }));
+        return true;
+    }
+
+    spawnArrivalMember(member, x, z, index) {
+        const type = this.scatterMaterials?.[member.type] ? member.type : 'cybersnail';
+        if (!this.scatterMaterials?.[type]) return null;
+        this.snailsEnabled = true;
+        const sprite = this.createScatterInstance({
+            x,
+            z,
+            type,
+            scatterKey: `arrival:${this.activeExpedition?.expeditionSeed ?? 0}:${index}`,
+            scale: 1.15,
+            rotation: 0,
+            tiltX: 0,
+            tiltZ: 0,
+            elevation: 0.1,
+            groupType: 'enemy',
+            phase: Math.random() * Math.PI * 2,
+            opacity: 1,
+            biomeTint: 0xffffff,
+            isEnemy: true,
+            spawnedElite: Boolean(member.elite)
+        });
+        if (!sprite) return null;
+        sprite.userData.aiMode = 'hunt';
+        sprite.userData.targetType = 'player';
+        sprite.userData.arrivalIncident = true;
+        const group = this.chunkMeshes?.get(`${Math.floor(x / this.chunkSize)},${Math.floor(z / this.chunkSize)}`) ?? this.scene;
+        group.add(sprite);
+        this.scatterSprites.push(sprite);
+        return sprite;
+    }
+
+    dropArrivalCache(x, z, parent, count) {
+        for (let i = 0; i < count; i += 1) {
+            const angle = (i / Math.max(1, count)) * Math.PI * 2;
+            const placement = this.createSnailDropPlacement(x, z, x + Math.cos(angle) * 0.7, z + Math.sin(angle) * 0.7, 'coin');
+            const pickup = this.createPickupInstance?.(placement);
+            if (!pickup) continue;
+            parent.add(pickup);
+            this.pickupMeshes.push(pickup);
+        }
+    }
+
+    // Facts for the results screen's expedition report (src/expeditionReport.js).
+    getExpeditionReportData() {
+        const conditionId = this.activeExpedition?.condition?.id ?? null;
+        const bounty = this.expeditionBounty;
+        const since = this._deploymentStartedAt ?? 0;
+        const history = typeof window !== 'undefined' ? window.objectiveRegistry?.getHistory?.() ?? [] : [];
+        const completed = history
+            .filter((entry) => entry.outcome === 'complete' && (entry.resolvedAt ?? 0) >= since && entry.id !== 'expedition-bounty')
+            .map((entry) => entry.label);
+        const goalKey = this.getCurrentPackageGoal?.() ?? null;
+        const bankState = this.bank?.getState?.() ?? {};
+        return {
+            conditionNameKey: conditionId ? `ui.expedition.conditions.${conditionId}.name` : null,
+            bounty: bounty ? {
+                labelKey: EXPEDITION_BOUNTY_LABEL_KEYS[bounty.bountyId] ?? null,
+                progress: bounty.progress,
+                target: bounty.target,
+                completed: bounty.completed,
+                settled: bounty.settled === true,
+                paidShells: bounty.paidShells ?? 0
+            } : null,
+            completed,
+            nextGoal: goalKey ? {
+                goalKey,
+                cost: this.getGoalBuildCost?.(goalKey) ?? {},
+                bank: { tech: bankState.tech ?? 0, med: bankState.med ?? 0, coin: bankState.coin ?? 0 }
+            } : null
+        };
+    }
+
+    // The deployment's bounty on the objective tracker, with live progress.
+    // Its source deliberately is not a mission: a bounty becomes real only
+    // when extracted, and cannot stealth-grant Season XP on a death screen.
+    syncExpeditionBountyTracker() {
+        const bounty = this.expeditionBounty;
+        if (typeof window === 'undefined' || !window.objectiveRegistry) return;
+        if (!bounty || bounty.settled) {
+            if (!bounty) window.objectiveRegistry.resolveObjective?.('expedition-bounty', 'abandoned');
+            window.dispatchEvent?.(new CustomEvent('expedition-bounty-progress', { detail: { hidden: true } }));
+            return;
+        }
+        const labelKey = EXPEDITION_BOUNTY_LABEL_KEYS[bounty.bountyId] ?? 'ui.expedition.bounties.salvage_run';
+        const shells = bountyShellReward(bounty.bountyId);
+        // The objective tracker shows only two cards, which the mission and
+        // the ship-goal option fill; the expedition panel keeps the bounty in
+        // view for the whole deployment.
+        window.dispatchEvent?.(new CustomEvent('expedition-bounty-progress', {
+            detail: { labelKey, progress: bounty.progress, target: bounty.target, completed: bounty.completed, shells }
+        }));
+        window.objectiveRegistry.trackObjective?.({
+            id: 'expedition-bounty',
+            source: 'expedition-bounty',
+            label: t(bounty.completed ? 'ui.expedition.bounty_ready' : 'ui.expedition.bounty_progress', {
+                label: t(labelKey),
+                progress: bounty.progress,
+                target: bounty.target,
+                shells
+            }),
+            current: bounty.progress,
+            target: bounty.target,
+            priority: 60
+        });
+    }
+
+    recordExpeditionBountyEvent(event) {
+        if (!this.expeditionBounty || !this._expeditionBountyReceiptId
+            || this.performanceProfile !== 'gameplay') return false;
+        const result = recordBountyEvent(this.expeditionBounty, event);
+        if (!result.advanced && !result.completedNow) return false;
+        this.expeditionBounty = result.state;
+        this.syncExpeditionBountyTracker();
+        if (result.completedNow && typeof window !== 'undefined') {
+            const shells = bountyShellReward(this.expeditionBounty.bountyId);
+            const label = t(EXPEDITION_BOUNTY_LABEL_KEYS[this.expeditionBounty.bountyId]
+                ?? 'ui.expedition.bounties.salvage_run');
+            this.showBunkerLine?.(t('ui.expedition.bounty_ready', { label, shells }));
+            window.dispatchEvent(new CustomEvent('expedition-bounty-ready', {
+                detail: { bountyId: this.expeditionBounty.bountyId, shells }
+            }));
+        }
+        return true;
+    }
+
+    settleExpeditionBountyOnExtraction() {
+        const bounty = this.expeditionBounty;
+        if (!bounty?.completed || bounty.settled || !this.isCurrentCampaignBounty?.()) return false;
+        const shells = bountyShellReward(bounty.bountyId);
+        if (shells <= 0) return false;
+        let result;
+        try {
+            result = this.bank?.depositSeasonReward?.({ shells }, this._expeditionBountyReceiptId);
+        } catch {
+            return false;
+        }
+        if (!result?.ok) return false;
+        this.expeditionBounty = { ...bounty, settled: true, paidShells: shells };
+        if (typeof window !== 'undefined') {
+            window.objectiveRegistry?.resolveObjective?.('expedition-bounty', 'complete');
+            this.showBunkerLine?.(t('ui.expedition.bounty_complete', {
+                label: t(EXPEDITION_BOUNTY_LABEL_KEYS[bounty.bountyId] ?? 'ui.expedition.bounties.salvage_run'),
+                shells
+            }));
+            window.dispatchEvent(new CustomEvent('expedition-bounty-settled', {
+                detail: { bountyId: bounty.bountyId, shells, duplicate: Boolean(result.duplicate) }
+            }));
+        }
+        return true;
     }
 
     getExpeditionAtmosphere() {

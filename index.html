@@ -1252,6 +1252,7 @@
         <span class="level-indicator__cycle-track" aria-hidden="true"><span id="campaign-cycle-progress"></span></span>
         <span id="hud-run-seed" class="level-indicator__seed hidden">SEED: —</span>
         <div data-i18n-aria-label="ui.hud_run_cards.aria_label_active_run_pressure" id="hud-run-cards" class="run-card-strip hidden" aria-label="Active run pressure"></div>
+        <div id="hud-bounty-chip" class="hud-bounty-chip hidden" role="status" aria-live="polite"></div>
       </div>
 
       <!-- Desktop Compass HUD (shown only on PC) -->
@@ -1411,6 +1412,12 @@
           <div data-i18n="ui.game_over.exosuit_failure" class="game-over-title">EXOSUIT FAILURE</div>
           <div data-i18n="ui.game_over.agent_lost_in_sector_9" class="game-over-subtitle">&gt; AGENT LOST IN SECTOR 9. TELEMETRY RECOVERED.</div>
         </div>
+        <!-- What this deployment achieved and what the next one is for; first,
+             so the sticky actions never cover it -->
+        <section id="go-expedition-report" class="go-expedition-report hidden" aria-labelledby="go-expedition-report-title">
+          <div id="go-expedition-report-title" data-i18n="ui.go.report.title" class="go-expedition-report__title">◈ EXPEDITION REPORT</div>
+          <ul id="go-expedition-report-lines" class="go-expedition-report__lines"></ul>
+        </section>
         <div class="game-over-report">
           <div data-i18n="ui.game_over.mission_report" class="game-over-section-label">MISSION REPORT</div>
 

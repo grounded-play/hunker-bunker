@@ -12,7 +12,8 @@ Checked against the code on `dev/sprint-45` after the register was written. Seve
 | GAP-RN-01 | **Resolved.** Damage-pip textures cached per label, rain-splash and impact/frost shockwave geometry shared (`userData.shared` is skipped by the disposer), transient list capped on register and per frame. The 64-effect cap already existed; the register's "uncapped" reading predates it. | `90e1211`, `7b7c514` |
 | GAP-RN-02 | **Resolved.** Props: already fixed in `8bd955d` (a hidden source collides only while its GLB is mounted and visible). Crashed-ship modules now follow the same rule. | `8bd955d`, `7b7c514` |
 | GAP-GP-01 | **Resolved (needs Deck).** Map is a menu focus root and requests the menu action set while open; toggles debounced; the opening press must be released before it can close the map. | `8bd955d`, `7b7c514` |
-| GAP-GP-02 | **Partial.** Deck R4 binds `ability` (Smash) since `8bd955d`; no secondary fire on other controllers. | `8bd955d` |
+| GAP-GP-02 | **Partial.** Deck R4 binds `ability` (Smash) since `8bd955d`; no secondary fire on other controllers. Sprint 46 gave each class its own melee profile (`CLASS_MELEE_PROFILES`), which changes what the melee button does, not the Steam Input mapping this gap is about. | `8bd955d` |
+| GAP-GP-08 | **Partial (Sprint 46).** The opening now varies per deployment: a condition-driven arrival incident (`src/arrivalIncident.js`) brings a pack to the landing point and leaves a salvage cache. The crash-site geometry itself is unchanged on purpose (existing campaign saves and geography are preserved). | Sprint 46 |
 | GAP-GP-04 | **Resolved.** Loop step and compass already pointed home (`8bd955d`); an extraction objective, airlock landmark and one radio line per run now follow a completed objective or the third milestone boss. | `7b7c514` |
 | GAP-GP-05 | **Stale.** The chasm badge already reads `IMPASSABLE CANYON // ROUTE VIA CONNECTED BRIDGE`. | — |
 | GAP-GP-07 | **Resolved.** Route topologies carry a reachability result from `mazeTiers`' disjoint-route search; `validateRadialMazeExpedition` rejects an unreachable Queen. Two disjoint routes are reported, not required: generation-2 gates are deliberately route cut points. | `7b7c514` |
@@ -399,7 +400,7 @@ This document establishes the comprehensive, forensic register of all known gaps
 │ **P0**│ GAP-MP-01  │ Co-op boss fight hit & state synchronization    │ Sprint 45.2          │
 │ **P0**│ GAP-TS-01  │ Repair Playwright E2E gameplay boot helper      │ Sprint 45.2          │
 ├───────┼────────────┼─────────────────────────────────────────────────┼──────────────────────┤
-│ **P1**│ GAP-GP-02  │ Add secondary attack action set to Steam Input  │ Sprint 46            │
+│ **P1**│ GAP-GP-02  │ Add secondary attack action set to Steam Input  │ Sprint 46 (partial)  │
 │ **P1**│ GAP-RN-03  │ Route 24 architecture kit GLB models in-world   │ Sprint 46            │
 │ **P1**│ GAP-ST-01  │ Author alien hive quest for Tina joined branch  │ Sprint 46            │
 │ **P1**│ GAP-ST-02  │ Surface timeline ending locks in run HUD        │ Sprint 46            │
@@ -411,7 +412,7 @@ This document establishes the comprehensive, forensic register of all known gaps
 │ **P2**│ GAP-RN-05  │ Close 4 theme matrix holes                      │ Sprint 47            │
 │ **P2**│ GAP-RN-07  │ Author 4 pending achievement 3D weapon models   │ Sprint 47            │
 │ **P2**│ GAP-RN-08  │ Author textured replacement for Talon-C carbine │ Sprint 47            │
-│ **P2**│ GAP-GP-08  │ Seed-parameterized crash site spawn area        │ Sprint 47            │
+│ **P2**│ GAP-GP-08  │ Seed-parameterized crash site spawn area        │ Sprint 46 (partial)  │
 │ **P2**│ GAP-GP-06  │ Implement or retire 9 inert relics              │ Sprint 47            │
 │ **P2**│ GAP-AR-06  │ Dynamic import code-splitting for debug tools   │ Sprint 47            │
 ├───────┼────────────┼─────────────────────────────────────────────────┼──────────────────────┤

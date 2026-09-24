@@ -14285,6 +14285,39 @@ button.archive-log-entry:active {
 }
 
 /* ── Archive Row ────────────────────────────────────────────── */
+.go-expedition-report {
+  margin-top: clamp(6px, calc(var(--vu) * 0.9), 12px);
+  padding: clamp(6px, calc(var(--vu) * 0.9), 10px) clamp(8px, calc(var(--vu) * 1.2), 14px);
+  border: 1px solid rgba(255, 159, 28, 0.28);
+  background: rgba(255, 159, 28, 0.05);
+}
+
+.go-expedition-report__title {
+  color: #ff9f1c;
+  font-size: clamp(9px, calc(var(--vu) * 1.15), 13px);
+  letter-spacing: 0.12em;
+  margin-bottom: 4px;
+}
+
+.go-expedition-report__lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 3px;
+  font-size: clamp(9px, calc(var(--vu) * 1.1), 13px);
+  color: #d7dde3;
+}
+
+.go-expedition-report__line--bounty_met,
+.go-expedition-report__line--next_goal_ready {
+  color: #7ee0a1;
+}
+
+.go-expedition-report__line--bounty_missed {
+  color: #f0a45b;
+}
+
 .go-archive-row {
   grid-column: 1 / -1;
   display: flex;
@@ -22448,6 +22481,22 @@ body.colorblind-assist #net-mode-pvp-btn.active {
 }
 
 .run-card-chip--world { color: #7fd4ff; }
+
+.hud-bounty-chip {
+  margin-top: 4px;
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 159, 28, 0.55);
+  color: #ffc36b;
+  font-size: clamp(8px, calc(var(--vu) * 1.0), 11px);
+  letter-spacing: 0.06em;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.hud-bounty-chip.is-ready {
+  border-color: rgba(126, 224, 161, 0.7);
+  color: #7ee0a1;
+}
 .run-card-chip--faction { color: #ffc46b; }
 .run-card-chip--threat { color: #ff8b7a; }
 

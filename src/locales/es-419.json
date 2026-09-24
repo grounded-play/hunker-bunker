@@ -1349,7 +1349,18 @@
       "alien_hives": "Colmenas alienígenas",
       "obedience": "Obediencia:",
       "seats_filled": "Asientos ocupados:",
-      "humanity": "Humanidad:"
+      "humanity": "Humanidad:",
+      "report": {
+        "title": "◈ INFORME DE EXPEDICIÓN",
+        "condition": "Condición: {condition}",
+        "bounty_met": "Recompensa cumplida — {label} (+{shells} casquillos depositados)",
+        "bounty_missed": "Recompensa fallida — {label} ({progress}/{target})",
+        "completed": "Completado: {list}",
+        "none_completed": "Ningún objetivo completado en este despliegue",
+        "next_goal_ready": "Siguiente: {goal} está a tu alcance — constrúyelo en la consola de la nave",
+        "next_goal_short": "Siguiente: a {goal} le faltan {missing}",
+        "all_goals": "Todos los objetivos de la nave construidos — la Reina espera"
+      }
     },
     "ach": {
       "unlocked_kicker": "LOGRO DESBLOQUEADO",
@@ -1507,10 +1518,10 @@
         }
       },
       "bounties": {
-        "salvage_run": "Extrae más de 120 de chatarra de pasillos profundos",
+        "salvage_run": "Recupera 8 alijos de chatarra",
         "eliminate_elite": "Elimina a un acechador mutado del sector",
-        "scout_compound": "Infiltra y cartografía un complejo remoto",
-        "clearing_breach": "Destruye 6 muros divisorios estructurales"
+        "scout_compound": "Mapea 3 salas de un complejo remoto",
+        "clearing_breach": "Derriba 6 muros divisorios estructurales"
       },
       "sites": {
         "camp_meridian": "COMPLEJO MERIDIAN",
@@ -1590,7 +1601,21 @@
         "landmark": "ESCLUSA DE EXTRACCIÓN",
         "line_objective": "OBJETIVO CUMPLIDO. ESCLUSA DE EXTRACCIÓN LISTA. REGRESA A LA NAVE.",
         "line_purged": "SECTOR PURGADO. ESCLUSA DE EXTRACCIÓN ACTIVA. REGRESA A LA NAVE."
-      }
+      },
+      "bounty_progress": "RECOMPENSA — {label} · {progress}/{target} · +{shells} casquillos",
+      "bounty_ready": "RECOMPENSA LISTA — {label} · EXTRAE PARA GUARDAR +{shells} CASQUILLOS",
+      "bounty_complete": "RECOMPENSA CUMPLIDA — {label}. {shells} CASQUILLOS DEPOSITADOS.",
+      "arrival": {
+        "glacial_gale": "MOVIMIENTO EN LA VENTISCA — CRIOCARACOLES SE ACERCAN A TU POSICIÓN.",
+        "spore_bloom": "NUBE DE ESPORAS EN MOVIMIENTO — ALGO VIENE MONTADO EN ELLA HACIA TI.",
+        "bio_resin_surge": "REPTADORES SALEN DE LA RESINA — OLIERON EL CHOQUE.",
+        "geothermal_arc": "EL ARCO LOS DESPERTÓ — HOSTILES EN CAMINO.",
+        "subzero_stillness": "DEMASIADO SILENCIO. UN CONTACTO, GRANDE, Y SABE DÓNDE ESTÁS.",
+        "tracker": "CONTACTO — ELIMINA A LOS {count} HOSTILES QUE SE ACERCAN",
+        "cleared": "CONTACTO ELIMINADO. LLEVABAN CHATARRA — REVISA LOS CUERPOS."
+      },
+      "bounty_chip": "RECOMPENSA {progress}/{target} · +{shells} casquillos",
+      "bounty_chip_ready": "RECOMPENSA LISTA · EXTRAE PARA COBRAR +{shells}"
     }
   },
   "narrative": {

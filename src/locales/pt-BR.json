@@ -1349,7 +1349,18 @@
       "alien_hives": "Colmeias alienígenas",
       "obedience": "Obediência:",
       "seats_filled": "Assentos ocupados:",
-      "humanity": "Humanidade:"
+      "humanity": "Humanidade:",
+      "report": {
+        "title": "◈ RELATÓRIO DA EXPEDIÇÃO",
+        "condition": "Condição: {condition}",
+        "bounty_met": "Recompensa cumprida — {label} (+{shells} cartuchos depositados)",
+        "bounty_missed": "Recompensa perdida — {label} ({progress}/{target})",
+        "completed": "Concluído: {list}",
+        "none_completed": "Nenhum objetivo concluído nesta incursão",
+        "next_goal_ready": "Próximo: {goal} está ao seu alcance — construa no console da nave",
+        "next_goal_short": "Próximo: {goal} ainda precisa de {missing}",
+        "all_goals": "Todos os objetivos da nave construídos — a Rainha espera"
+      }
     },
     "ach": {
       "unlocked_kicker": "CONQUISTA DESBLOQUEADA",
@@ -1507,10 +1518,10 @@
         }
       },
       "bounties": {
-        "salvage_run": "Extraia mais de 120 de sucata de corredores profundos",
-        "eliminate_elite": "Elimine um caçador mutante do setor",
-        "scout_compound": "Infiltre e mapeie um complexo distante",
-        "clearing_breach": "Destrua 6 paredes divisórias estruturais"
+        "salvage_run": "Recupere 8 caches de sucata",
+        "eliminate_elite": "Elimine um perseguidor mutante do setor",
+        "scout_compound": "Mapeie 3 salas de um complexo afastado",
+        "clearing_breach": "Derrube 6 paredes divisórias estruturais"
       },
       "sites": {
         "camp_meridian": "COMPLEXO MERIDIAN",
@@ -1590,7 +1601,21 @@
         "landmark": "ECLUSA DE EXTRAÇÃO",
         "line_objective": "OBJETIVO CONCLUÍDO. ECLUSA DE EXTRAÇÃO ARMADA. VOLTE À NAVE.",
         "line_purged": "SETOR PURGADO. ECLUSA DE EXTRAÇÃO ATIVA. VOLTE À NAVE."
-      }
+      },
+      "bounty_progress": "RECOMPENSA — {label} · {progress}/{target} · +{shells} cartuchos",
+      "bounty_ready": "RECOMPENSA PRONTA — {label} · EXTRAIA PARA GUARDAR +{shells} CARTUCHOS",
+      "bounty_complete": "RECOMPENSA CUMPRIDA — {label}. {shells} CARTUCHOS DEPOSITADOS.",
+      "arrival": {
+        "glacial_gale": "MOVIMENTO NA NEVASCA — CRIOCARACÓIS SE APROXIMANDO DA SUA POSIÇÃO.",
+        "spore_bloom": "NUVEM DE ESPOROS EM MOVIMENTO — ALGO VEM NELA NA SUA DIREÇÃO.",
+        "bio_resin_surge": "RASTEJADORES SAINDO DA RESINA — SENTIRAM O CHEIRO DA QUEDA.",
+        "geothermal_arc": "O ARCO OS ACORDOU — HOSTIS A CAMINHO.",
+        "subzero_stillness": "SILÊNCIO DEMAIS. UM CONTATO, GRANDE, E ELE SABE ONDE VOCÊ ESTÁ.",
+        "tracker": "CONTATO — ELIMINE OS {count} HOSTIS SE APROXIMANDO",
+        "cleared": "CONTATO ELIMINADO. ELES CARREGAVAM SUCATA — REVISTE OS CORPOS."
+      },
+      "bounty_chip": "RECOMPENSA {progress}/{target} · +{shells} cartuchos",
+      "bounty_chip_ready": "RECOMPENSA PRONTA · EXTRAIA PARA RECEBER +{shells}"
     }
   },
   "narrative": {

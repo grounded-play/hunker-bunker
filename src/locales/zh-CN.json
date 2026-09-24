@@ -1349,7 +1349,18 @@
       "alien_hives": "异星虫巢",
       "obedience": "服从度：",
       "seats_filled": "已占席位：",
-      "humanity": "人性："
+      "humanity": "人性：",
+      "report": {
+        "title": "◈ 远征报告",
+        "condition": "环境: {condition}",
+        "bounty_met": "赏金达成 — {label}(已存入 +{shells} 弹壳)",
+        "bounty_missed": "赏金未达成 — {label}({progress}/{target})",
+        "completed": "已完成: {list}",
+        "none_completed": "本次部署未完成任何目标",
+        "next_goal_ready": "下一步: {goal} 已负担得起 — 在飞船控制台建造",
+        "next_goal_short": "下一步: {goal} 还需 {missing}",
+        "all_goals": "所有飞船目标已建成 — 女王在等待"
+      }
     },
     "ach": {
       "unlocked_kicker": "成就解锁",
@@ -1507,10 +1518,10 @@
         }
       },
       "bounties": {
-        "salvage_run": "从深层走廊回收120以上废料",
-        "eliminate_elite": "消灭一只变异的区域猎手",
-        "scout_compound": "潜入并测绘一处外围据点",
-        "clearing_breach": "摧毁6面结构隔墙"
+        "salvage_run": "回收 8 处物资",
+        "eliminate_elite": "消灭一只变异区域潜猎者",
+        "scout_compound": "勘察外围据点的 3 个房间",
+        "clearing_breach": "击碎 6 道结构隔墙"
       },
       "sites": {
         "camp_meridian": "子午据点",
@@ -1590,7 +1601,21 @@
         "landmark": "撤离气闸",
         "line_objective": "目标完成。撤离气闸已就绪。返回飞船。",
         "line_purged": "区域已肃清。撤离气闸已启动。返回飞船。"
-      }
+      },
+      "bounty_progress": "赏金 — {label} · {progress}/{target} · +{shells} 弹壳",
+      "bounty_ready": "赏金就绪 — {label} · 撤离以存入 +{shells} 弹壳",
+      "bounty_complete": "赏金达成 — {label}。已存入 {shells} 弹壳。",
+      "arrival": {
+        "glacial_gale": "暴风中有动静 — 冰霜蜗牛正逼近你的位置。",
+        "spore_bloom": "孢子云在移动 — 有东西正借着它向你靠近。",
+        "bio_resin_surge": "爬行者从树脂里钻出来了 — 它们闻到了坠毁的气味。",
+        "geothermal_arc": "电弧惊醒了它们 — 敌人正在接近。",
+        "subzero_stillness": "太安静了。一个接触目标，体型很大，而且它知道你在哪。",
+        "tracker": "接敌 — 清除逼近的 {count} 个敌人",
+        "cleared": "接敌已清除。它们身上带着物资 — 去搜一下尸体。"
+      },
+      "bounty_chip": "赏金 {progress}/{target} · +{shells} 弹壳",
+      "bounty_chip_ready": "赏金达成 · 撤离后存入 +{shells}"
     }
   },
   "narrative": {

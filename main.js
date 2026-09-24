@@ -49,6 +49,7 @@ import {
 } from './src/accessibilitySettings.js';
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock, saveAchievements } from './src/achievements.js';
 import { SteamAchievementSync } from './src/steamAchievementSync.js';
+import { buildExpeditionReport } from './src/expeditionReport.js';
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized, isRankedRunPayload } from './src/steam/steamEvents.js';
 import { syncSteamStats } from './src/steamStats.js';
 import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb, unlockChapter as unlockRgbChapter, isChapterUnlocked as isRgbChapterUnlocked } from './src/minigames/rgb/save.js';
@@ -5235,6 +5236,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     // told which pressure they were carrying.
     const runCardNote = document.getElementById('go-run-cards');
     if (runCardNote) runCardNote.textContent = summarizeRunCards(activeRunCards);
+    renderExpeditionReport();
 
     const modal = document.getElementById('game-over-modal');
     if (modal) {
@@ -5293,6 +5295,22 @@ window.addEventListener('run-cards-drawn', (event) => {
         cardStrip.classList.toggle('hidden', badges.length === 0);
     }
     updateQueensLedgerHUD();
+});
+
+// The deployment bounty in the expedition panel (see
+// ThreeGame.syncExpeditionBountyTracker).
+window.addEventListener('expedition-bounty-progress', ({ detail }) => {
+    const chip = document.getElementById('hud-bounty-chip');
+    if (!chip) return;
+    if (!detail || detail.hidden) {
+        chip.classList.add('hidden');
+        return;
+    }
+    const params = { label: t(detail.labelKey), progress: detail.progress, target: detail.target, shells: detail.shells };
+    chip.textContent = t(detail.completed ? 'ui.expedition.bounty_chip_ready' : 'ui.expedition.bounty_chip', params);
+    chip.title = params.label;
+    chip.classList.toggle('is-ready', Boolean(detail.completed));
+    chip.classList.remove('hidden');
 });
 
 function renderGameOverAct2Summary() {
@@ -5380,6 +5398,38 @@ function renderGameOverAct2Summary() {
         const syncWorldRender = () => window.game?.setWorldRenderSuspended?.(!gameOverModalForRender.classList.contains('hidden'));
         new MutationObserver(syncWorldRender).observe(gameOverModalForRender, { attributes: true, attributeFilter: ['class'] });
     }
+}
+
+// Accomplishments, the bounty and the next ship goal for the results screen.
+function formatExpeditionReportLine(line) {
+    const params = { ...(line.params ?? {}) };
+    if (params.conditionKey) params.condition = t(params.conditionKey);
+    if (params.labelKey) params.label = t(params.labelKey);
+    if (params.goalKey) params.goal = t(params.goalKey);
+    if (line.parts) {
+        params.missing = line.parts
+            .map((part) => `${part.amount} ${part.resourceKey ? t(part.resourceKey) : part.resource}`)
+            .join(' · ');
+    }
+    return t(line.key, params);
+}
+
+function renderExpeditionReport() {
+    const section = document.getElementById('go-expedition-report');
+    const list = document.getElementById('go-expedition-report-lines');
+    const data = window.game?.getExpeditionReportData?.();
+    if (!section || !list) return;
+    if (!data) {
+        section.classList.add('hidden');
+        return;
+    }
+    list.replaceChildren(...buildExpeditionReport(data).map((line) => {
+        const item = document.createElement('li');
+        item.className = `go-expedition-report__line go-expedition-report__line--${line.key.split('.').pop()}`;
+        item.textContent = formatExpeditionReportLine(line);
+        return item;
+    }));
+    section.classList.remove('hidden');
 }
 
 function hideGameOverScreen() {

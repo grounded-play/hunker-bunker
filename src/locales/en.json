@@ -1349,7 +1349,18 @@
       "alien_hives": "Alien Hives",
       "obedience": "Obedience:",
       "seats_filled": "Seats Filled:",
-      "humanity": "Humanity:"
+      "humanity": "Humanity:",
+      "report": {
+        "title": "◈ EXPEDITION REPORT",
+        "condition": "Condition: {condition}",
+        "bounty_met": "Bounty met — {label} (+{shells} shells banked)",
+        "bounty_missed": "Bounty missed — {label} ({progress}/{target})",
+        "completed": "Completed: {list}",
+        "none_completed": "No objectives completed this deployment",
+        "next_goal_ready": "Next: {goal} is affordable — build it at the ship console",
+        "next_goal_short": "Next: {goal} needs {missing} more",
+        "all_goals": "Every ship goal is built — the Queen waits"
+      }
     },
     "ach": {
       "unlocked_kicker": "ACHIEVEMENT UNLOCKED",
@@ -1507,9 +1518,9 @@
         }
       },
       "bounties": {
-        "salvage_run": "Extract 120+ scrap from deep corridors",
+        "salvage_run": "Recover 8 salvage caches",
         "eliminate_elite": "Eliminate a mutated sector stalker",
-        "scout_compound": "Infiltrate and map an outlying compound",
+        "scout_compound": "Map 3 rooms of one outlying compound",
         "clearing_breach": "Smash 6 structural wall dividers"
       },
       "sites": {
@@ -1590,7 +1601,21 @@
         "landmark": "EXTRACTION AIRLOCK",
         "line_objective": "OBJECTIVE COMPLETE. EXTRACTION AIRLOCK ARMED. RETURN TO SHIP.",
         "line_purged": "SECTOR PURGED. EXTRACTION AIRLOCK ACTIVE. RETURN TO SHIP."
-      }
+      },
+      "bounty_progress": "BOUNTY — {label} · {progress}/{target} · +{shells} shells",
+      "bounty_ready": "BOUNTY READY — {label} · EXTRACT TO BANK +{shells} SHELLS",
+      "bounty_complete": "BOUNTY MET — {label}. {shells} SHELLS BANKED.",
+      "arrival": {
+        "glacial_gale": "MOVEMENT ON THE GALE — CRYOSNAILS CLOSING ON YOUR POSITION.",
+        "spore_bloom": "SPORE CLOUD MOVING — SOMETHING IS RIDING IT TOWARD YOU.",
+        "bio_resin_surge": "CRAWLERS OUT OF THE RESIN — THEY SMELLED THE CRASH.",
+        "geothermal_arc": "THE ARC WOKE THEM — HOSTILES INBOUND.",
+        "subzero_stillness": "TOO QUIET. ONE CONTACT, BIG, AND IT KNOWS WHERE YOU ARE.",
+        "tracker": "CONTACT — CLEAR THE {count} HOSTILES CLOSING IN",
+        "cleared": "CONTACT CLEARED. THEY WERE CARRYING SALVAGE — CHECK THE BODIES."
+      },
+      "bounty_chip": "BOUNTY {progress}/{target} · +{shells} shells",
+      "bounty_chip_ready": "BOUNTY MET · EXTRACT TO BANK +{shells}"
     }
   },
   "narrative": {

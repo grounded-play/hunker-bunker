@@ -1,0 +1,35 @@
+import { describe, expect, it } from 'vitest';
+import { buildExpeditionReport, missingForCost } from './expeditionReport.js';
+
+describe('the expedition report tells the player what the run achieved and what is next', () => {
+    it('reports the condition, a met bounty, what was completed and an affordable next goal', () => {
+        const lines = buildExpeditionReport({
+            conditionNameKey: 'ui.expedition.conditions.spore_bloom.name',
+            bounty: { labelKey: 'ui.expedition.bounties.clearing_breach', progress: 6, target: 6, completed: true, paidShells: 5 },
+            completed: ['RECOVERY: SURVEY THE SALVAGE PERIMETER', 'RECOVERY: SURVEY THE SALVAGE PERIMETER', 'O₂ OPTION — REROUTE GATE POWER'],
+            nextGoal: { goalKey: 'hullExpansion', cost: { tech: 50, med: 20 }, bank: { tech: 60, med: 20 } }
+        });
+        expect(lines.map((line) => line.key)).toEqual([
+            'ui.go.report.condition', 'ui.go.report.bounty_met', 'ui.go.report.completed', 'ui.go.report.next_goal_ready'
+        ]);
+        expect(lines[1].params.shells).toBe(5);
+        expect(lines[2].params.list).toBe('RECOVERY: SURVEY THE SALVAGE PERIMETER · O₂ OPTION — REROUTE GATE POWER');
+        expect(lines[3].params.goalKey).toBe('ui.console_terminal.hull_expansion_matrix');
+    });
+
+    it('reports a missed bounty, an empty run and exactly what the next goal still needs', () => {
+        const lines = buildExpeditionReport({
+            bounty: { labelKey: 'ui.expedition.bounties.salvage_run', progress: 3, target: 8, completed: false },
+            completed: [],
+            nextGoal: { goalKey: 'radarNode', cost: { tech: 150, med: 30 }, bank: { tech: 40, med: 30 } }
+        });
+        expect(lines.map((line) => line.key)).toEqual(['ui.go.report.bounty_missed', 'ui.go.report.none_completed', 'ui.go.report.next_goal_short']);
+        expect(lines[0].params).toMatchObject({ progress: 3, target: 8 });
+        expect(lines[2].parts).toEqual([{ amount: 110, resourceKey: 'ui.pickup_counter.tech', resource: 'tech' }]);
+    });
+
+    it('says so when every ship goal is built', () => {
+        expect(buildExpeditionReport({ nextGoal: null }).at(-1).key).toBe('ui.go.report.all_goals');
+        expect(missingForCost({ tech: 5 }, { tech: 9 })).toEqual([]);
+    });
+});

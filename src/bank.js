@@ -633,6 +633,9 @@ export class BankManager {
         return this.getState();
     }
 
+    // Receipt-backed grants are also used by extraction-secured expedition
+    // bounties. Keep the legacy method name for the Season API, but preserve
+    // the same atomic balance+receipt contract for every caller.
     depositSeasonReward(amounts, receiptId) {
         if (!receiptId || !Object.entries(amounts).every(([key, amount]) => BANK_CURRENCY_KEYS.includes(key)
             && Number.isSafeInteger(amount) && amount >= 0)) return { ok: false };
@@ -646,6 +649,13 @@ export class BankManager {
         }
         next.seasonReceipts.push(receiptId);
         this.save(next);
+        if (amounts.shells) {
+            emit('shells-changed', {
+                shells: next.shells,
+                gained: amounts.shells,
+                bank: this.getState()
+            });
+        }
         emit('bank-updated', { bank: this.getState() });
         return { ok: true };
     }

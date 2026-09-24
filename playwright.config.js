@@ -7,6 +7,9 @@ import { defineConfig, devices } from '@playwright/test';
 // own comments for what's stubbed vs real.
 export default defineConfig({
     testDir: './tests/e2e',
+    // tests/e2e/probes/ are Sprint 46 measurement runs (journey, builds), not
+    // pass/fail specs; they take 5-20 min each. Run with HB_PROBES=1.
+    testIgnore: process.env.HB_PROBES ? [] : ['**/probes/**'],
     // Gameplay specs go through the full run-start sequence
     // (startRunAndSkipIntro in helpers.js: class intro -> cutscene ->
     // Mothership dialogue -> door-transition reveal) before they can do

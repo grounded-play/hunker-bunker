@@ -1349,7 +1349,18 @@
       "alien_hives": "エイリアンの巣",
       "obedience": "服従度：",
       "seats_filled": "議席充足：",
-      "humanity": "人間性："
+      "humanity": "人間性：",
+      "report": {
+        "title": "◈ 遠征報告",
+        "condition": "状況: {condition}",
+        "bounty_met": "報奨達成 — {label}(+{shells} シェル預け入れ)",
+        "bounty_missed": "報奨未達 — {label}({progress}/{target})",
+        "completed": "達成: {list}",
+        "none_completed": "今回の出撃で達成した目標はなし",
+        "next_goal_ready": "次: {goal} は建造可能 — 船のコンソールで建造",
+        "next_goal_short": "次: {goal} にはあと {missing} 必要",
+        "all_goals": "船の目標はすべて完成 — 女王が待つ"
+      }
     },
     "ach": {
       "unlocked_kicker": "実績解除",
@@ -1507,9 +1518,9 @@
         }
       },
       "bounties": {
-        "salvage_run": "深部通路からスクラップを120以上回収",
-        "eliminate_elite": "変異したセクターの追跡者を排除",
-        "scout_compound": "外縁の拠点に潜入して地図化",
+        "salvage_run": "サルベージを8個回収",
+        "eliminate_elite": "変異したセクター・ストーカーを排除",
+        "scout_compound": "辺境の拠点で3部屋を踏査",
         "clearing_breach": "構造隔壁を6枚破壊"
       },
       "sites": {
@@ -1590,7 +1601,21 @@
         "landmark": "脱出エアロック",
         "line_objective": "目標達成。脱出エアロック起動。船に戻れ。",
         "line_purged": "セクター制圧完了。脱出エアロック稼働中。船に戻れ。"
-      }
+      },
+      "bounty_progress": "報奨 — {label} · {progress}/{target} · +{shells} シェル",
+      "bounty_ready": "報奨準備完了 — {label} · 生還して +{shells} シェルを獲得",
+      "bounty_complete": "報奨達成 — {label}。{shells} シェルを預け入れ。",
+      "arrival": {
+        "glacial_gale": "吹雪に動きあり — クライオスネイルが接近中。",
+        "spore_bloom": "胞子雲が移動中 — 何かがそれに乗ってこちらへ来る。",
+        "bio_resin_surge": "樹脂からクローラーが出てきた — 墜落の匂いを嗅ぎつけた。",
+        "geothermal_arc": "アークが奴らを起こした — 敵が接近中。",
+        "subzero_stillness": "静かすぎる。接触1、大型、こちらの位置を把握している。",
+        "tracker": "接敵 — 接近する敵 {count} 体を排除",
+        "cleared": "接敵排除。奴らはサルベージを持っていた — 死骸を調べろ。"
+      },
+      "bounty_chip": "報奨 {progress}/{target} · +{shells} シェル",
+      "bounty_chip_ready": "報奨達成 · 脱出で +{shells} を預け入れ"
     }
   },
   "narrative": {
