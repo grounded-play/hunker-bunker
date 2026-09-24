@@ -62,6 +62,18 @@ The player saw Camp Meridian and power-ups at co-op start. The logs have no camp
 
 Plan: a co-op session starts from a clean shared state; solo campaign progress is neither shown nor applied. Test: start co-op on a profile with solo progress and assert none of it is visible.
 
+### P1 — The Meridian companion gets stuck and does nothing (reported; cause found in code)
+
+Owner: the Meridian recruit sits stuck behind a wall, does nothing, cannot be led anywhere, does not walk and shoot like an ally, and should walk to our camp instead of getting stuck in a corner. It was also present at co-op start (see "Co-op does not start fresh").
+
+Cause, from `updateCompanions` in `src/threeGame.js` and `src/companionFollow.js`:
+
+- **No pathfinding.** A companion steers in a straight line toward a point 2 m behind the player and slides along a wall only when one axis is free. Any wall between them pins it; the only recovery is a teleport when it is more than **16 m** away, so anywhere closer it stays stuck. There is no pathfinder anywhere in the codebase.
+- **It barely fights.** A wanderer companion fires one 2-damage shot, then waits its assist cooldown (12–25 s, e.g. `Covering Fire` 15 s) before the next; there is no aim, no movement toward threats and no retreat.
+- **It only follows.** No other behaviour exists — nothing that takes it to a camp or lets the player direct it.
+
+Plan: a bounded grid path search over `isSnailTileWalkable` (re-planned every ~0.5 s or when blocked) so the companion walks around walls to the player; a stuck detector that re-paths, then relocates behind the player when no path exists; a combat loop — keep a firing position with a clear lane (`hasCompanionFireLane` already exists), fire at a steady rate, use the assist ability on its own cooldown; an escort goal — once recruited, the companion can be led to (or sent to) the player's camp and settles there, with its arrival logged. Acceptance: a unit test with a wall between companion and player where the companion arrives within N s; a probe where the companion follows through three rooms without teleporting and kills a hostile; a log line for companion stuck/re-path/arrived-at-camp.
+
 ### P1 — Destroyed walls come back after death (reported; not in the logs)
 
 The logs record wall damage and destruction (`wall:destroy` 18×) but nothing about persistence. In co-op the redeploy regenerates the identical world (above), which would restore walls; the solo campaign saves maze state, co-op does not.
@@ -96,10 +108,10 @@ Remote death/downed, black-box ownership, wall persistence, smelt results, fabri
 
 1. ~~Map variety~~ — **answered:** TRY AGAIN keeps the map; MAIN MENU resets the run and the map.
 2. ~~Co-op persistence~~ — **answered:** on TRY AGAIN the map continues, so destroyed walls stay destroyed; MAIN MENU starts fresh.
-3. **Co-op fresh start.** Where did Camp Meridian and the power-ups show up — mission text, run cards, the HUD, or on the map?
+3. ~~Co-op fresh start~~ — **answered:** Meridian appeared as the recruited companion following the player (stuck behind a wall); see the companion item. Where the power-ups appeared is still open.
 4. **Foundry.** Which models looked old, and which output did not match? A screenshot would pin it. Is "trade in / trade up" the Steam Vault smelter (the logs point there)?
 5. **Invisible models.** Which objects, in which rooms?
-6. **The Deck was idle for 22 minutes** between the first solo death and the next deployment — was it suspended? Suspend/resume was not recorded, so it does not count as a suspend test.
+6. ~~22-minute gap~~ — **answered:** the owner turned the Deck off and came back. The log agrees: last entry 20:16:22 on the main menu, next 20:38:19; input, Steam and the controller came back at once and the next deployment started 35 s later, with 1.7 s and 1.1 s stalls just after waking. This was a suspend **at the menu**, not mid-expedition, so resuming an interrupted expedition (Invisible Essentials Phase 1) is still untested on hardware. Also seen: after MAIN MENU on the results screen the app phase never left `gameover` (the next logged transition is `gameover -> armory`), which may be part of why MAIN MENU did not reset the run.
 
 ## Status against tonight's QA gates
 
@@ -107,7 +119,7 @@ Remote death/downed, black-box ownership, wall persistence, smelt results, fabri
 |---|---|
 | Two-account co-op (join, ready, deploy, avatars, redeploy) | **Observed** on packaged builds |
 | Deck frame pacing | **Failed** (render median 29.4 ms; 35 % of the session in long tasks) |
-| Crash/suspend recovery | Not exercised |
+| Suspend/resume | **Observed at the menu** (22 min off, resumed cleanly); mid-expedition resume not exercised |
 | Steam Cloud | Available, not exercised |
 | Achievements | Events recorded; no unlock verified |
 | Leaderboard | Co-op payload accepted |
