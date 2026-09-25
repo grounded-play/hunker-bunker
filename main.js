@@ -8263,7 +8263,9 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         host.appendChild(overlay);
 
         window.AudioManager?.unlock?.();
-        window.AudioManager?.playVoiceCallout?.('mission_active', { volume: 0.95 });
+        if (activeVoicePackId) {
+            window.AudioManager?.playVoiceCallout?.('mission_active', { volume: 0.95, voicePackId: activeVoicePackId });
+        }
 
         playVideoSource(charBase, startLaunchStep);
     });

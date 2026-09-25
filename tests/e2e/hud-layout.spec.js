@@ -72,33 +72,47 @@ test.describe('HUD layout system and lower dock spec', () => {
             y1: 1080 * 0.69
         };
 
-        // The band: six panels share one bottom edge, sit inside the stage and
-        // below the keep-out, and never overlap; the prompt lane sits above it.
-        const band = await page.evaluate(() => ['desktop-compass', 'vitals-panel', 'pickup-counter-panel',
-            'weapon-status-panel', 'class-ability-panel', 'radar-scan-panel'].map((id) => {
-            const b = document.getElementById(id).getBoundingClientRect();
-            return { id, x: b.x, y: b.y, r: b.right, bottom: b.bottom, w: b.width, h: b.height };
-        }));
+        // The band: the three painted class housings share one bottom edge, sit
+        // inside the stage and below the keep-out, and never overlap; every live
+        // element sits inside its housing; the prompt lane sits above the band.
+        const band = await page.evaluate(() => {
+            const r = (el) => { const b = el.getBoundingClientRect(); return { x: b.x, y: b.y, r: b.right, bottom: b.bottom, w: b.width, h: b.height }; };
+            const housings = ['map', 'status', 'arms'].map((p) => ({ id: p, ...r(document.querySelector(`.dock-housing--${p}`)) }));
+            const members = { map: ['desktop-compass'], status: ['vitals-panel', 'pickup-counter-panel'], arms: ['weapon-status-panel', 'class-ability-panel', 'radar-scan-panel'] };
+            const inside = [];
+            for (const [panel, ids] of Object.entries(members)) {
+                for (const id of ids) inside.push({ id, panel, ...r(document.getElementById(id)) });
+            }
+            return { housings, inside, cls: document.documentElement.dataset.operatorClass };
+        });
+        expect(['scout', 'tank', 'engineer']).toContain(band.cls);
         const stage = await page.locator('#game-viewport').boundingBox();
-        for (const p of band) {
+        const hs = band.housings;
+        for (const p of hs) {
             expect(p.w, p.id).toBeGreaterThan(0);
-            expect(Math.abs(p.bottom - band[0].bottom), p.id).toBeLessThan(1.5);
+            expect(Math.abs(p.bottom - hs[0].bottom), p.id).toBeLessThan(1.5);
             expect(p.y, p.id).toBeGreaterThanOrEqual(keepOut.y1);
             expect(p.x, p.id).toBeGreaterThanOrEqual(stage.x - 1);
             expect(p.r, p.id).toBeLessThanOrEqual(stage.x + stage.width + 1);
         }
-        for (let i = 0; i < band.length; i += 1) {
-            for (let j = i + 1; j < band.length; j += 1) {
-                const a = band[i]; const b = band[j];
-                const overlap = Math.min(a.r, b.r) - Math.max(a.x, b.x);
-                expect(overlap, `${a.id} overlaps ${b.id}`).toBeLessThan(1.5);
+        for (let i = 0; i < hs.length; i += 1) {
+            for (let j = i + 1; j < hs.length; j += 1) {
+                const overlap = Math.min(hs[i].r, hs[j].r) - Math.max(hs[i].x, hs[j].x);
+                expect(overlap, `${hs[i].id} overlaps ${hs[j].id}`).toBeLessThan(1.5);
             }
+        }
+        for (const el of band.inside) {
+            const h = hs.find((p) => p.id === el.panel);
+            expect(el.x, el.id).toBeGreaterThanOrEqual(h.x - 1);
+            expect(el.r, el.id).toBeLessThanOrEqual(h.r + 1);
+            expect(el.y, el.id).toBeGreaterThanOrEqual(h.y - 1);
+            expect(el.bottom, el.id).toBeLessThanOrEqual(h.bottom + 1);
         }
         const lane = await page.evaluate(() => {
             const el = document.getElementById('loop-step-hud');
             return el && !el.classList.contains('hidden') ? el.getBoundingClientRect().bottom : null;
         });
-        if (lane !== null) expect(lane).toBeLessThanOrEqual(Math.min(...band.map((p) => p.y)) + 1);
+        if (lane !== null) expect(lane).toBeLessThanOrEqual(Math.min(...hs.map((p) => p.y)) + 1);
 
         // The gear stays in its fixed slot: the stage's top-right corner. The
         // stage is 16:10, so at 1920x1080 it is letterboxed inside the window;

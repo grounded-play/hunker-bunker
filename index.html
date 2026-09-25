@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="/src/styles/expeditionHud.css">
+  <link rel="stylesheet" href="/src/styles/hudDockHousings.css">
   <link rel="stylesheet" href="/src/styles/armory.css">
   <link rel="icon" type="image/png" href="/favicon.png" />
   <title data-i18n="ui.misc.hunker_bunker_tactical_command">HUNKER BUNKER | TACTICAL COMMAND</title>
@@ -1288,6 +1289,15 @@
         </div>
         <div id="hud-map-info" class="map-inspection-slot"></div>
       </div>
+      <!-- Lower-dock class housings (dock mode only; hidden otherwise). Glass sits
+           under the live HUD, the painted frame over it. Generated placement:
+           src/styles/hudDockHousings.css -->
+      <div class="dock-glass dock-glass--map" aria-hidden="true"></div>
+      <div class="dock-glass dock-glass--status" aria-hidden="true"></div>
+      <div class="dock-glass dock-glass--arms" aria-hidden="true"></div>
+      <div class="dock-housing dock-housing--map" aria-hidden="true"></div>
+      <div class="dock-housing dock-housing--status" aria-hidden="true"></div>
+      <div class="dock-housing dock-housing--arms" aria-hidden="true"></div>
       <div class="header-bar hud-header">
         <div class="hud-header__center">
           <div id="weapon-status-panel" class="weapon-status-panel" aria-live="polite">

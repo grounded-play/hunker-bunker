@@ -857,25 +857,26 @@ input mode changes (`refreshInteractivePromptKeys` already exists).
 Ship behind `hb_hud_layout = 'dock' | 'classic'` (default `classic` until Phase 5
 passes). One-click comparison, instant rollback.
 
-**Status 2026-09-25 (afternoon): Phases 1–4 landed (CSS only, dock mode):**
+**Status 2026-09-25 (late afternoon): Phases 1–4 + Painted Housings landed:**
 - **Band:** map (compact radar disc + BASE/NODE) left; hearts, O₂ and hull with the
   2 × 2 loot chips in the centre; SIDEARM ammo + class-ability and radar-scan tiles
   right. All six panels share one bottom edge at 1080p and on the Deck.
+- **Housings:** painted class housings integrated (`public/ui/dock/*`, `scripts/build_hud_dock_housings.py`,
+  and `src/styles/hudDockHousings.css`). All 3 classes (Scout, Tank, Engineer) have
+  transparent frames with window cutouts and separate glass backdrops.
 - **Above the band:** loop-step in the prompt lane; the target readout rises above the
   map only while it describes a target.
 - **Top:** a one-line sector tag with run chips below; boss and hazard in the top-centre
   alert lane (hazard steps down when a boss shows).
 - **Performance:** no `backdrop-filter` on band panels.
 - **Tests:** `hud-layout.spec.js` checks units, the classic default, the flag, the band
-  (shared bottom, inside the stage, below the keep-out, no overlaps), the prompt lane
-  above the band, and the gear slot. 4/4 green.
+  (shared bottom, inside the stage, below the keep-out, no overlaps, elements inside painted housings),
+  the prompt lane above the band, and the gear slot. 4/4 green.
 
 **Not yet:**
 - the objective drawer (C: the right-hand mission stack is unchanged);
 - PRESS-E prompts into H;
 - the scan ring (radar scan sits with the gun meanwhile);
-- the housing art (placeholder dark panels until `hud-housing-prompts-2026-09-25.md`
-  renders land);
 - the Phase 0 full-HUD rect spec.
 
 Keep the default `classic` until C is done.

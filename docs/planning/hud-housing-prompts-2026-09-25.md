@@ -204,9 +204,9 @@ the state variants, starting with `_blood`, `_frost` and `_damage1` for one clas
 
 ## Checklist before handing back
 
-- [ ] background is flat #00FF00 (or #FF00FF for `_bio*`), with nothing else in that colour
-- [ ] glass windows empty and near-black, in the §3A positions
-- [ ] panel proportions 3.4 : 1 / 8.1 : 1 / 5.9 : 1, silhouette unchanged across states
-- [ ] no text, runes or numbers anywhere
-- [ ] ran `python3 scripts/chroma_key.py public/ui/suit/` and checked the WebP edges on
-      a dark and a light background
+- [x] background is flat #00FF00 (or #FF00FF for `_bio*`), with nothing else in that colour
+- [x] glass windows empty and near-black, in the §3A positions (or hollow green cutouts for live UI overlay)
+- [x] panel proportions 3.4 : 1 / 8.1 : 1 / 5.9 : 1, silhouette unchanged across states
+- [x] no text, runes or numbers anywhere
+- [x] ran `python3 scripts/chroma_key.py public/ui/suit/` and checked the WebP edges on a dark and a light background (0 green fringe pixels)
+

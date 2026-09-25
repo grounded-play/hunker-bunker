@@ -9272,6 +9272,21 @@ export class ThreeGame {
         return 1.0;
     }
 
+    // The dock HUD's painted housing follows the operator class
+    // (src/styles/hudDockHousings.css keys off <html data-operator-class>).
+    // An accessor so every assignment — constructor, class select, co-op —
+    // keeps the DOM in step without hunting down each call site.
+    get playerType() {
+        return this._playerType;
+    }
+
+    set playerType(value) {
+        this._playerType = value;
+        if (typeof document !== 'undefined' && document.documentElement?.dataset) {
+            document.documentElement.dataset.operatorClass = String(value ?? '').toLowerCase();
+        }
+    }
+
     setAdaptiveGameplayPerformanceMode(enabled = true, {
         reason = 'sustained-low-fps',
         fps = null
