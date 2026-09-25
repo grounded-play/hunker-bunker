@@ -9,11 +9,15 @@
 > - sizes every zone from one rule that works on Deck, 1080p and the owner's PC;
 > - lists the engineering traps this repo has already hit;
 > - turns each phase into testable acceptance;
-> - makes the dock's **housing bespoke to each class and the reactive element** (§4A):
->   the DOOM-face idea built for a camera looking down. No portrait; the suit hardware
->   itself cracks, dents, sparks, frosts, fogs, flinches toward hits and ages;
-> - carries that class housing and its condition to dialogue, results, roster and
->   co-op (§4B).
+> - makes the HUD **one narrow band**, with the same layout for every class (6.8 % of
+>   the Deck screen always on, down from 24.3 %);
+> - makes the band's **housing the class flavour and the reactive element** (§4A):
+>   cracks, dents, sparks, blood splats that dry after a fight, a console that freezes
+>   up, frost, fog, and wear over time;
+> - adds **StarCraft-style talking portraits** for the operators and NPCs, rendered in
+>   Blender with one portrait light rig and composited on shared backgrounds (§4B);
+> - adds **event housings** for transformations such as the Act 2 infection track and
+>   for other characters (§4C).
 
 ---
 
@@ -39,8 +43,8 @@
 
 | Measure | Today (measured) | Target |
 | :--- | ---: | ---: |
-| Screen covered by always-on HUD, Deck 1280×800 | **24.3 %** (11 boxes, from the Deck capture) | **≤ 10 %** |
-| Same, 1080p | ~17 % (estimated) | **≤ 8 %** |
+| Screen covered by always-on HUD, Deck 1280×800 | **24.3 %** (11 boxes, from the Deck capture) | **≤ 7 %** |
+| Same, 1080p | ~17 % (estimated) | **≤ 6 %** |
 | HUD inside the player keep-out (centre 30 % × 34 %) | 0 | 0 |
 | Overlapping HUD boxes at any supported resolution | several on Deck (objective stack vs prompt card) | 0 |
 | Smallest HUD text on Deck | 9 px (bounty chip) | ≥ 11 px |
@@ -101,16 +105,24 @@ pictures cannot drift apart.
 | **C** | Objective drawer (collapsed) | 380 × 56 | top-right, left of gear | always on, 1 line | 304×45 @ 914,16 | 380×56 @ 1462,20 |
 | **N** | Notification deck (radio, tutorial) | 380 × ≤300 | under C | only when relevant | 304×240 @ 960,74 | 380×300 @ 1520,92 |
 | **S** | Settings gear | 48 × 48 | fixed corner slot | unchanged | 38×38 @ 1226,16 | 48×48 @ 1852,20 |
-| **D** | Radar + map info | 268 × 132 | bottom-left | always on | 214×106 @ 16,678 | 268×132 @ 20,928 |
-| **E** | Suit console (hearts, O₂, hull, fatigue/cover) | 440 × 84 | bottom-centre | always on | 352×67 @ 464,717 | 440×84 @ 740,976 |
-| **F** | Loot chips (MED · TECH · COIN · SHELL) | 300 × 30 | above E | always on (dim when idle) | 240×24 @ 520,686 | 300×30 @ 810,938 |
-| **H** | Prompt lane (loop step, PRESS-E, world prompts) | 520 × 44 | above F | only when relevant | 416×35 @ 432,642 | 520×44 @ 700,882 |
-| **G** | Arsenal + abilities | 420 × 96 | bottom-right | always on | 336×77 @ 928,707 | 420×96 @ 1480,964 |
-| **I** | Target readout (telemeter) | 360 × 84 | above G | on hover/aim | 288×67 @ 976,630 | 360×84 @ 1540,868 |
+| **D** | Radar (compact) | 220 × 64 | band, left | always on | 176×51 @ 16,733 | 220×64 @ 20,996 |
+| **E** | Dashboard: hearts, O₂, hull, loot | 520 × 64 | band, centre | always on | 416×51 @ 432,733 | 520×64 @ 700,996 |
+| **G** | Arsenal + abilities | 380 × 64 | band, right | always on | 304×51 @ 960,733 | 380×64 @ 1520,996 |
+| **H** | Prompt lane (loop step, PRESS-E, world prompts) | 520 × 40 | above E | only when relevant | 416×32 @ 432,693 | 520×40 @ 700,946 |
+| **I** | Target readout (telemeter) | 340 × 72 | above G | on hover/aim | 272×58 @ 992,667 | 340×72 @ 1560,914 |
+| **T** | Transmission: animated talking portrait + line (§4B) | 400 × 132 | above D | only while someone talks | 320×106 @ 16,619 | 400×132 @ 20,854 |
 | **P** | Player keep-out | 30 % × 34 % of screen | centre, y = 52 % | **no HUD ever** | 384×272 @ 448,280 | 576×367 @ 672,378 |
 
-Always-on coverage: **10.0 %** (Deck), **7.7 %** (1080p). No zone overlaps another
-or the keep-out at either resolution.
+**One narrow band.** D, E and G are the same 64 u height: 51 px on the Deck (6.4 % of
+the screen height), 64 px at 1080p. Loot folds into the dashboard. Everything above
+the band appears only when needed.
+
+Always-on coverage: **6.8 %** (Deck), **5.3 %** (1080p), down from 24.3 % today. No
+zone overlaps another or the keep-out at either resolution.
+
+**Same layout for every class.** Every class uses the identical geometry and the same
+instrument positions. The class sets only the **skin**: `data-class` on the band swaps
+the housing art (§4A). Muscle memory carries between classes and co-op partners.
 
 ### 2.3 Why these positions (not only "Hades does it")
 
@@ -123,9 +135,9 @@ or the keep-out at either resolution.
   D-pad sit under the left thumb (moving, map on D-pad up); the face buttons and
   triggers are on the right (fire, reload, ability, dash). Each wing mirrors the
   hand that uses it.
-- **The console grows upward, never sideways.** Prompts, then loot, then vitals stack
-  up the centre column. The wings stay short, so the lower corners of corridors stay
-  visible.
+- **One band, nothing stacked on it permanently.** The band never grows. Prompts,
+  the target readout and transmissions rise above it only while they matter, then
+  go away, so the lower corridors stay visible.
 
 ### 2.4 Benchmarks (from the draft)
 
@@ -168,10 +180,10 @@ The `.hud-visor-bracket` corners stay as the screen-level frame.
 
 | Design parameter | Cockpit console (owner's favourite look) | Slim cockpit (recommended) |
 | :--- | :--- | :--- |
-| Bottom band height at 1080p | ~180 px (16.6 %) | **84–132 u (7.8–12 % at the wings; 7.7 % total always-on coverage)** |
+| Bottom band height at 1080p | ~180 px (16.6 %) | **one 64 u band (5.9 %); 5.3 % total always-on coverage** |
 | Bezel | Heavy armoured casing | **Hairline frame + visor corner brackets, gradient glass (no `backdrop-filter`)** |
-| Centre | Console bulk over the floor | **Suit console 440 u wide; prompt lane only when needed** |
-| Steam Deck 1280×800 | Tight vertical fit | **10 % always-on coverage; 0.8 u floor keeps text ≥ 11 px** |
+| Centre | Console bulk over the floor | **Dashboard 520 u wide in a 64 u band; prompts only when needed** |
+| Steam Deck 1280×800 | Tight vertical fit | **51 px band; 6.8 % always-on coverage; 0.8 u floor keeps text ≥ 11 px** |
 | Feel | Simulation / immersion | **Action-roguelike readability, cockpit styling kept** |
 
 ---
@@ -225,26 +237,40 @@ as a right-side column; its children move to C and H.
 **S — Settings gear.** It keeps its fixed corner slot (`--corner-settings-*`). The
 dock must never contain it (§6.1).
 
-**D — Radar + map.** `#desktop-compass` with `#hud-blueprint-canvas`, base
-distance, radar row and the `[M]` / D-pad-up glyph. `#hud-map-info` (sector name,
-coordinates, integrity) moves to a hover/expanded state; its 3 lines are the main
-reason today's map panel is 300 px tall on Deck.
+**D — Radar (compact).** `#desktop-compass` becomes a 56 u radar disc with the
+direction arrow and radar blips (`#hud-blueprint-canvas` drawn round), plus base
+distance and node distance as two short readouts beside it and the `[M]` / D-pad-up
+glyph. `#hud-map-info` (sector, coordinates, integrity) moves to the full map `[M]`;
+its 3 lines are the main reason today's map panel is 300 px tall on Deck.
 
-**E — Suit console.**
-- Row 1: hearts (`#vitals-hearts`). These vary by class and PvP (4-heart
-  contract), so the layout must hold 1–6 hearts without resizing the panel.
-- Row 2: the O₂ arc (`#vitals-o2-bar`, `#vitals-o2-pct`).
-- Row 3: hull (`#ship-status-panel`) as a thin line.
-- Fatigue (`#vitals-fatigue-row`) and cover (`#vitals-cover-row`) show only when
-  non-nominal, as a small tag on the right of row 2.
-- Critical: the affected meter pulses (opacity), and `#damage-vignette-layer` stays
-  the screen-level cue.
+**E — Dashboard (vitals + loot).**
+- Left two-thirds:
+  - Hearts row (`#vitals-hearts`): holds 1–6 hearts without resizing; PvP uses the
+    4-heart contract.
+  - The O₂ bar (`#vitals-o2-bar`, `#vitals-o2-pct`), with hull (`#ship-status-panel`)
+    as a thin line under it.
+- Right third: loot as a 2 × 2 chip grid: `✚ MED · ⬢ TECH · ◎ COIN · ✪ SHELL`
+  (`#pickup-count-*`, `renderShellCounter`).
+  - Chips sit at **60 % opacity when idle** and pulse to 100 % for 300 ms on a gain.
+  - The TOTAL line is dropped; it only duplicates the sum.
+- Fatigue (`#vitals-fatigue-row`) and cover (`#vitals-cover-row`) appear only when
+  non-nominal, as a small tag.
+- Critical: the affected meter pulses (opacity); `#damage-vignette-layer` stays the
+  screen-level cue.
+- The status lamps (§4A) sit in the housing bezel.
 
-**F — Loot chips.** Horizontal `✚ MED · ⬢ TECH · ◎ COIN · ✪ SHELL`, reusing the
-existing counters (`#pickup-count-*`, `renderShellCounter`). The chips stay visible
-at **60 % opacity when idle** and go to 100 % with a 300 ms pulse on gain
-(recommended answer to the draft's Decision 2; see §9). The TOTAL line is dropped;
-it duplicates the sum.
+**G — Arsenal + abilities.**
+- Weapon silhouette and name, big tabular `06 / 18`, cache under it.
+- `#weapon-reload-bar` as a thin arc under the ammo.
+- Two ability tiles with their live key/glyph: class ability (`#class-ability-panel`,
+  F / Deck glyph) and radar scan (`#radar-scan-panel`, Q / Deck glyph).
+- Cooldown sweeps use a conic-gradient pseudo-element (no layout).
+
+**T — Transmission.** A StarCraft-style talking-head window that slides up above the
+radar whenever someone speaks during play: radio, suit barks, the Mothership, NPCs on
+comms. It shows the speaker's animated portrait (§4B), their name, and the current
+line typing out, then slides away 1.5 s after the line ends. Only one is on screen at
+a time; queued lines wait. It replaces the radio cards' portrait-less text in N.
 
 **H — Prompt lane.** One line at a time, by priority:
 1. Interaction prompt: `PRESS E / Ⓐ ACCESS TANK BASE SHOP`, from the 12
@@ -280,9 +306,13 @@ in 150 ms.
 Owner, 2026-09-25: take the cockpit concept
 (`ui_concept_lower_dock_1790353433507.jpg`: radar module, exosuit dashboard, weapon
 dock, joined by armoured struts) and make **its background, the physical housing
-itself, the reactive element, bespoke to each class.** No face. The camera looks
-down on the operator, so the operator reads as a **suit seen from above**, not a
-portrait. What reacts is the hardware the player looks through.
+itself, the reactive element, bespoke to each class.** The camera looks down on the
+operator, so during play the suit's condition shows on the **hardware the player looks
+through**, not on a face in the HUD. Faces live in the transmission window and in
+conversations (§4B).
+
+**Same layout, different flavour:** the band's geometry is identical for every class
+(§2.2). A class changes only the housing art and its small signature details.
 
 ### One housing per class
 
@@ -305,6 +335,8 @@ never over numbers.
 
 | Game signal (already in the code) | SCOUT | TANK | ENGINEER | Shared |
 | :--- | :--- | :--- | :--- | :--- |
+| **Blood after a fight** (`player-damaged` during combat; enemy type from `reason`) | splatter decals land on the housing glass and metal with each hit taken: ~8 splat shapes, random placement in the housing margins, never over instruments. Colour follows the attacker: red for human, acid green for alien and hive, blue-grey ichor for snails. They **dry and darken** over ~30 s once combat ends, stay for the rest of the expedition, and are wiped at the bunker or by a heal station. | | | a real "after the fight" record on the console |
+| **Console freezing** (cryo biome, `player-cold-exposed`, freeze stacks; `STATUS_IDS.FREEZE` at threshold) | ice crust grows across the glass from the edges; at a full freeze the band **locks up**: needles stick and the backlight stutters for the freeze duration, then cracks free. The numbers stay readable through the ice. | | | pairs with the shared frost overlay below |
 | Hearts lost (`player-damaged` hp / maxHp), 3 tiers | glass panels **crack**, then shatter | armour **dents and gouges**, a slab hangs loose | boards **spark**, a cable arcs, one gauge dies | persists until healed; a heal plays a 400 ms repair (seal, hammer-flat, re-solder) |
 | Hit direction (**new**: `sourceX/sourceZ` on `player-damaged`) | the module on the side facing the hit flashes and jolts for 600 ms: the DOOM "glance", as the hardware flinching toward the threat | same | same | screen-relative left / centre / right from the camera |
 | Cold (`player-cold-exposed`, freeze stacks) | frost creeps from the corners in every class; coverage follows exposure / stacks | | | thaws when warm |
@@ -318,16 +350,17 @@ never over numbers.
 | Night | backlights dim to night-cyan | | | |
 | Dead | backlights die module by module, left to right; cracks max out | | | final |
 
-**Status lamps are the new "face".** Each housing carries a short row of physical
-indicator lamps on the dashboard bezel (visible top-left of the concept's centre
-module): SUIT, O₂, HULL, THERMAL, TOX. They are the at-a-glance mood of the suit.
+**Status lamps: the at-a-glance mood during play.** Each housing carries a short row
+of physical indicator lamps on the dashboard bezel (visible top-left of the concept's
+centre module): SUIT, O₂, HULL, THERMAL, TOX. They are the at-a-glance mood of the
+suit.
 - green: nominal
 - amber: warning
 - red: critical
 - blinking: getting worse
 
-It is the same one-look read DOOM's face gives, built from something that belongs on
-a suit console seen from above.
+It is the same one-look read DOOM's face gives, built into the console, so the
+narrow band doesn't need a portrait slot.
 
 ### Art list
 
@@ -336,6 +369,8 @@ a suit console seen from above.
 | Housing 9-slice per module (D, E, G) + strut pieces | 3 modules + 2 struts, × 3 classes | WebP, ≤ 512 px long edge | from the concept, slimmed to §2.2; class material/shape per the table |
 | Class decorations (fins, pistons, clamps, lamps) | ~4 per class | WebP alpha | margin-only placement |
 | Damage tiers | 3 × 3 classes | WebP alpha | crack (SCOUT), dent (TANK), spark/burn (ENGINEER) |
+| Blood splats | ~8 shapes (shared) | WebP alpha, greyscale | tinted per attacker in CSS; a "dry" variant via filter-free overlay darkening |
+| Ice crust + freeze lock | 2 (shared) | WebP alpha | the lock-up is CSS (stutter + stuck needles) |
 | Shared condition overlays | frost, fog, toxin, corrosion, grime | WebP alpha, tileable edges | intensity via CSS mask position, not per-level art |
 | Status lamp sprites | 1 small sheet | WebP | 3 colours × 2 blink frames |
 
@@ -364,22 +399,98 @@ glass, burnt boards), not as separate paintings. This avoids the drift that sank
 
 ---
 
-## 4B. One suit identity everywhere
+## 4B. Talking portraits for everyone: StarCraft-style, rendered in Blender
 
-The class housing and its current condition are the operator's identity on other
-screens too. There is still no face.
+Owner, 2026-09-25: faces **do** belong in conversations and transmissions: rendered in
+Blender with a portrait light setup, keyed onto backgrounds each character shares
+with others, and **idle-animated like StarCraft unit portraits**, talking when they
+speak. This covers the operators and every NPC.
 
-| Surface | Today | With the class housing |
+### Who gets one
+
+| Character group | Source model (already in `public/3d`) | Today |
 | :--- | :--- | :--- |
-| Conversations: the `OPERATOR LINK` speaker in `src/dialogue.js` | stand-in survivor portraits `survivor_01/02/03.webp` | the speaker card is framed in the **class housing**, with its status lamps and current condition (frosted when cold, cracked when hurt); inside it, a top-down suit schematic of the class chassis rendered from the in-game model at the game camera's angle |
-| Radio replies, suit barks | text | a small housing tab with the relevant lamp lit (O₂ red on the low-O₂ bark) |
-| Death report / results | text | the housing as it ended the run: shattered and dark on a death, scarred and grimy on a narrow escape, clean on a clean extraction |
-| Expedition report, day log | text | the housing's end-of-expedition state (damage, grime, fatigue) as the header |
-| Hero select / lobby roster / co-op teammate chip | 3D preview / names | each player's class housing strip with their lamps, from replicated vitals |
+| Operators: SCOUT, TANK, ENGINEER | `scouting-scout/Scout.game.glb`, `runtime/tank-rigged.glb`, `runtime/engineer-rigged-gestures.glb`, plus chassis skins (`new3ds/chassis_*`, `skin_*`) | `OPERATOR LINK` lines borrow `survivor_01/02/03.webp` |
+| Named NPCs | `new3ds/npc_nahl`, `npc_alien_rhun`, `npc_alien_vey`, `npc_kaelen`, `npc_martha`, `npc_queen`, `npc_aria`, `npc_val`, `npc_civilian_miner`, `npc_civilian_researcher` | static `lore_portraits/*` |
+| Boss / transformed forms | `runtime/queen.glb`, `new3ds/boss_corrupted_martha.glb` | static |
+| Characters without a model (Mayor Tina, announcer, AURA, Briggs, …) | none | keep the painted portrait with a slow parallax + scan-line idle until a model exists |
 
-The same `suitCondition` state feeds every surface, so condition carries over. Dialogue
-lines don't need mood tags: the suit shows the operator's state, and the writing
-carries the tone.
+### The Blender portrait rig (one rig for every character)
+
+- **Camera:** head-and-shoulders framing, 85 mm equivalent, eye line at the upper
+  third, 3/4 turn toward camera-left, fixed for everyone so portraits line up.
+- **Light:** 3-point portrait setup.
+  - Key: soft box 45° up-left, warm-neutral.
+  - Fill: low, cool, ~½ stop under the key.
+  - **Rim/accent:** from behind, tinted with the character's colour (SCOUT cyan, TANK
+    amber, ENGINEER green; NPC accents set per character).
+  - A faint visor/eye emissive where the model has one.
+- **Background:** render on a **transparent film** (Blender's clean equivalent of a
+  greenscreen: no spill or keying edges). If a render must be keyed, use a
+  #00FF00 world with the rim light gelled to stop green spill. Composite in the
+  browser over shared **background sets**: mothership bridge, bunker ops, camp
+  shanty, hive cavern, cockpit/visor interior, comms static. Characters share sets;
+  each has a default.
+- **Scripted:** `tools/blender/render_portraits.py` loads a GLB, applies the rig and
+  renders every clip. Adding a character is one config entry. It can be driven
+  through the Blender MCP bridge used elsewhere in this project.
+
+### Animation clips (StarCraft portrait behaviour)
+
+| Clip | Length | Content |
+| :--- | :--- | :--- |
+| `idle` (loop) | 4–6 s | breathing, blinks where there are eyes, small head drift, occasional glance or visor flicker; different each loop through 2–3 variants |
+| `talk` (loop) | 2 s | jaw/mouth open–close (a shape key added in Blender where the GLB has none), head emphasis; helmeted operators pulse visor voice-bars instead |
+| `react` (one-shot) | 0.6–1 s | a flinch for hurt, a look-over for surprise; optional per character |
+| operator variants | as needed | `idle` / `talk` re-rendered with frost, damage and infection looks for the §4C stages |
+
+The talk clip plays while a line types out (driven by the existing typing loop, no
+audio analysis), then returns to idle.
+
+**Format:** WebM VP9 **with alpha** (Electron/Chromium plays it natively), 256 px for
+the HUD window T and 512 px for conversations, ~150–400 KB per clip. Only one or two
+portraits play at once. Clips load lazily per conversation and cache after. A
+WebP sprite-strip fallback covers any build without VP9 alpha.
+
+### Where portraits play
+
+- **T transmission window** (HUD, during play): radio, Mothership, suit barks, NPCs
+  on comms.
+- **Conversations:** `dialogue.js` speaker cards, NPC dialogue trees, camp-leader
+  talks, encounters. Both sides can show: the NPC and the player's operator.
+- **Results / death report:** the operator's final clip (a hurt idle, or a relieved
+  idle on extraction).
+- **Hero select, lobby roster, co-op:** operator idle loops.
+
+The HUD condition (blood, frost, infection) is composited over the operator's
+portrait frame in CSS, so the portrait matches the console.
+
+`getDialogueSpeaker()` returns `{ name, portrait: { clipSet, background, accent } }`
+from one `portraitCatalog.js` registry instead of hard-coded image paths. The
+registry is the single place a character's clips, set and accent live.
+
+---
+
+## 4C. Unique events: transformations and other characters
+
+The band's layout never changes, but its **whole housing can be replaced** by an
+event skin when the operator becomes something else.
+
+| Event (existing state) | Housing | Portrait |
+| :--- | :--- | :--- |
+| Act 2 infection `latent` (`ACT2_INFECTION_STAGES`) | faint vein pattern under the glass, visible only at low light | none yet |
+| `strained` | veins pulse with the heartbeat, one lamp flickers violet | occasional glitch frame |
+| `symptomatic` | chitin growths bud from the struts, glass clouds amber, blood splats turn ichor-green | operator portrait shows the infection (new render) |
+| `outed` | human camp tags scrawled on the housing: "INFECTED" stencil, hazard tape | same |
+| `ascendant` | **full alien housing**: the console is overgrown and organic; hearts render as pulsing organs, O₂ as a spiracle gauge, ammo as a bio-sac. Numbers stay in the same place and stay legible. | alien form clips |
+| `cured` | biomass burned off; permanent scorch and scar marks remain on the housing | scarred operator render |
+| Playing another character (a future playable NPC, possession, a boss form) | that character's housing set in the same layout (e.g. the Queen's throne chitin) | that character's clips |
+| Boss arena, EMP, relay blackout | temporary skins (red-alert strut beacons, EMP dead-glass, static) | — |
+
+Skins are data: `housingSkins.js` maps an event id to its asset set and fallbacks.
+`suitCondition` picks the active skin by priority (transformation > event >
+class). Each event swaps assets and CSS custom properties only, with no layout change,
+so all the §7 layout tests still hold.
 
 ---
 
@@ -389,9 +500,9 @@ carries the tone.
 | :--- | :--- | :--- | :--- |
 | `.level-indicator` (`#level-num`, `#biome-label`, `#campaign-day-indicator`, cycle track) | top-left box, ~160 px tall on Deck | **A** | one line |
 | `#hud-run-cards`, `#hud-bounty-chip`, `#hud-event-chip` | inside the top-left box | **A2** | own row, collapses to 0 |
-| `#pickup-counter-panel` (+ `#pickup-count-*`) | left, 5-line box | **F** | chips, idle-dim |
-| `#desktop-compass` (+ canvas, arrows, distances) | bottom-left, 300 px tall on Deck | **D** | 132u; map info on expand |
-| `#hud-map-info` | inside the map panel | **D** (expanded) | hidden by default |
+| `#pickup-counter-panel` (+ `#pickup-count-*`) | left, 5-line box | **E** (right third) | 2 × 2 chips, idle-dim |
+| `#desktop-compass` (+ canvas, arrows, distances) | bottom-left, 300 px tall on Deck | **D** | compact 64 u radar |
+| `#hud-map-info` | inside the map panel | full map `[M]` | removed from the band |
 | `#weapon-status-panel` (clip, cache, reload) | top-centre pill | **G** | big ammo, reload arc |
 | `#class-ability-panel`, `#radar-scan-panel` | top-right pills | **G** | tiles with live glyphs |
 | `#vitals-panel` (hearts, O₂, fatigue, cover) | top-right pill | **E** | rows; fatigue/cover conditional |
@@ -402,7 +513,8 @@ carries the tone.
 | `#objective-tracker`, `#mission-progress-hud`, `#camp-quest-hud` | right column, up to 4 cards | **C** | one line + drawer |
 | `#loop-step-hud` | bottom-centre pill | **H** | priority 2 |
 | 12 × `*-hud-prompt`, `#telemeter-action-prompt` | right mission stack | **H** | priority 1 |
-| `#tutorial-prompt`, `#radio-transmission-prompt` (cloned cards) | right notification deck | **N** | unchanged logic |
+| `#tutorial-prompt` (cloned cards) | right notification deck | **N** | unchanged logic |
+| `#radio-transmission-prompt`, suit barks, Mothership comms | text cards / "> BUNKER:" lines | **T** | animated talking portrait + line |
 | `#tactical-telemeter-box` | varies | **I** | anchored above G |
 | `.hud-corner-settings` | fixed top-right slot | **S** | unchanged |
 | `.hud-visor-bracket` ×4, `.hud-visor-telemetry` | screen corners | brackets stay; telemetry → A tooltip | frees G's corner |
@@ -482,11 +594,12 @@ passes). One-click comparison, instant rollback.
 | **1. Tokens + skeleton** | `--hud-u` / `--u` / `--hud-margin` tokens. Empty `.hud-dock` with left/centre/right wings and a top band, behind the flag. | `src/styles/expeditionHud.css`, `index.html`, `main.js` (flag) | Dock zones match §2.2 within ±2 px at all 4 sizes; gear slot unchanged (existing gear e2e green). |
 | **2. E + G** | Move vitals, ship, weapon and both ability tiles; live glyphs; reload arc. | `index.html`, `expeditionHud.css`, `main.js` (render functions keep their IDs) | All existing vitals/weapon/ability tests green; no JS logic changes beyond container lookups; Deck glyph test. |
 | **3. D** | Compass into the left wing; map info to expanded state. | same | `[M]` / D-pad-up / click opens the map as today; minimap radar reveal unchanged. |
-| **4. F + H** | Loot chips; prompt lane with the priority queue (interaction > loop step > tutorial). | `main.js` (small `hudPromptLane` module), css | Every `*-hud-prompt` shows in H; only one at a time; `verify_hud_shells` still passes. |
+| **4. Loot + H + T** | Loot chips inside E; transmission window T (static portraits until 6B); prompt lane with the priority queue (interaction > loop step > tutorial). | `main.js` (small `hudPromptLane` module), css | Every `*-hud-prompt` shows in H; only one at a time; `verify_hud_shells` still passes. |
 | **5. Top band** | A, A2, B (priority queue), C drawer, N under C. Retire `.hud-mission-stack` as a column. | `main.js`, css | Boss+hazard at once shows boss, then hazard; drawer expands on map-open (Deck) and click (PC); `steam-input-action-set.spec` green. **Flip default to `dock`.** |
 | **6. Behaviour** | Combat signal (`this.inCombat`); drawer auto-collapse; loot idle-dim; critical pulses; reduced motion. | `threeGame.js` (signal), `main.js` | Unit tests for the signal (4 s window); visual states captured in the layout spec. |
-| **6A. Living class housing** | Class housings (D, E, G + struts) per class; damage tiers (crack / dent / spark); shared overlays (frost, fog, toxin, corrosion, grime, static); status lamps; hit-direction jolt (`player-damaged` gains `sourceX/sourceZ`); `suitCondition` module. | `src/suitCondition.js` (+ tests), `main.js`, css, `public/ui/suit/<class>/*` | Unit tests: every signal → overlay, lamp and tier; heal repairs; jolt picks the right module. Layout spec captures Idle / Cold / Toxic / Critical / Dead for all 3 classes. HUD style/layout still ≤ 0.3 ms per frame. Owner art sign-off per class. |
-| **6B. Suit identity everywhere** | The dialogue `OPERATOR LINK` speaker card framed in the class housing, with the top-down chassis schematic (replaces `survivor_01/02/03`); death report, results and day-log headers; roster and co-op teammate strips from replicated vitals. | `src/dialogue.js`, `src/deathReport.js`, `main.js` | No operator line uses a stand-in survivor portrait; condition carries from HUD to dialogue; results show the end-of-run housing. |
+| **6A. Living class housing** | Class housing skins (same geometry); damage tiers (crack / dent / spark); blood splats that dry; console freeze-lock; shared frost, fog, toxin, corrosion and grime; status lamps; hit-direction jolt (`player-damaged` gains `sourceX/sourceZ`); `suitCondition` module. | `src/suitCondition.js` (+ tests), `main.js`, css, `public/ui/suit/<class>/*` | Unit tests: signal → overlay/lamp/tier; blood dries and clears at the bunker; freeze lock lasts the freeze duration. Layout spec captures Idle / Bloodied / Frozen / Toxic / Critical / Dead for 3 classes with **identical geometry**. HUD ≤ 0.3 ms per frame. |
+| **6B. Talking portraits** | Blender rig + `render_portraits.py`; idle/talk clips (WebM alpha) for 3 operators + 10 NPC models; shared background sets; `portraitCatalog.js`; transmission window T; `dialogue.js` speaker cards. | `tools/blender/render_portraits.py`, `src/portraitCatalog.js` (+ tests), `src/dialogue.js`, `main.js` | Every speaker with a model animates (idle, then talk while typing); no operator line uses a stand-in survivor portrait; at most 2 clips decode at once; clips lazy-load. |
+| **6C. Event housings** | `housingSkins.js`; Act 2 infection stages → housing + operator renders; `ascendant` alien console; temporary event skins. | `src/housingSkins.js` (+ tests), assets | Each stage renders in the layout spec with unchanged geometry; numbers legible at every stage. |
 | **7. Deck, a11y, i18n** | HUD Scale setting; contrast high/max; 7-locale pass with the longest strings; Deck hardware check. | settings UI, locales | `i18n:audit` 0; layout spec green in `de` and `ru`; owner Deck sign-off. |
 | **8. Remove classic** | Delete the old layout CSS and the flag after owner sign-off. | css, `main.js` | No dead selectors (grep); bundle CSS smaller. |
 
@@ -526,13 +639,17 @@ passes). One-click comparison, instant rollback.
    right edge in co-op? Today teammates have only in-world nameplates.
 5. **Visor frame:** keep the four corner brackets as the dock's visual language
    (**recommended**) or retire them?
-6. **Class housings:** do the three directions in §4A (SCOUT recon rig, TANK bulwark
-   plate, ENGINEER field bench) match how you see each class? And should the status
-   lamps (SUIT / O₂ / HULL / THERMAL / TOX) be the at-a-glance "mood" readout?
-7. **Beyond the HUD (§4B):** frame the operator's dialogue card and the
-   results/death screens in the class housing first (**recommended**), then the roster
-   and co-op strips?
-8. **Rollout:** ship Phases 1–5 behind the flag for a week of your play before
+6. **Class housings:** do the directions in §4A (SCOUT recon rig, TANK bulwark plate,
+   ENGINEER field bench) match each class? And are the status lamps the right
+   at-a-glance readout during play?
+7. **Blood:** wipe it at the bunker and at heal stations (**recommended**), or keep it
+   for the whole run as a badge?
+8. **Portraits (§4B):** start with the 3 operators and the Mothership and camp NPCs
+   who talk most (**recommended**), then the rest? And should the portrait rig's
+   accent colours follow the class colours as proposed?
+9. **Transformations (§4C):** is the `ascendant` alien console the right level of
+   takeover, as long as every number stays in place?
+10. **Rollout:** ship Phases 1–5 behind the flag for a week of your play before
    making it the default?
 
 ---

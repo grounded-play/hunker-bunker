@@ -17,22 +17,23 @@ def zones(w, h):
     Z = []
     def box(key, name, x, y, bw, bh, kind, note=''):
         Z.append(dict(key=key, name=name, x=round(x), y=round(y), w=round(bw), h=round(bh), kind=kind, note=note))
-    # Bottom band
-    dock_h = 84 * u
-    radar_w, radar_h = 268 * u, 132 * u
-    box('D', 'RADAR + MAP', m, h - m - radar_h, radar_w, radar_h, 'permanent', '#desktop-compass')
-    arsenal_w, arsenal_h = 420 * u, 96 * u
-    box('G', 'ARSENAL + ABILITIES', w - m - arsenal_w, h - m - arsenal_h, arsenal_w, arsenal_h, 'permanent', '#weapon-status-panel #class-ability-panel #radar-scan-panel')
-    suit_w = 440 * u
-    box('E', 'SUIT CONSOLE', (w - suit_w) / 2, h - m - dock_h, suit_w, dock_h, 'permanent', '#vitals-panel #ship-status-panel')
-    loot_w, loot_h = 300 * u, 30 * u
-    loot_y = h - m - dock_h - 8 * u - loot_h
-    box('F', 'LOOT CHIPS', (w - loot_w) / 2, loot_y, loot_w, loot_h, 'permanent', '#pickup-counter-panel')
-    lane_w, lane_h = 520 * u, 44 * u
-    lane_y = loot_y - 12 * u - lane_h
-    box('H', 'PROMPT LANE', (w - lane_w) / 2, lane_y, lane_w, lane_h, 'contextual', '#loop-step-hud, PRESS-E prompts')
-    tgt_w, tgt_h = 360 * u, 84 * u
-    box('I', 'TARGET READOUT', w - m - tgt_w, h - m - arsenal_h - 12 * u - tgt_h, tgt_w, tgt_h, 'contextual', '#tactical-telemeter-box')
+    # Bottom band: ONE narrow band, every module the same height (owner,
+    # 2026-09-25: "a narrow band so the gameplay isn't hidden"). Identical
+    # geometry for every class; only the housing skin changes.
+    band_h = 64 * u
+    band_y = h - m - band_h
+    radar_w = 220 * u
+    box('D', 'RADAR', m, band_y, radar_w, band_h, 'permanent', '#desktop-compass (compact)')
+    arsenal_w = 380 * u
+    box('G', 'ARSENAL + ABILITIES', w - m - arsenal_w, band_y, arsenal_w, band_h, 'permanent', '#weapon-status-panel #class-ability-panel #radar-scan-panel')
+    suit_w = 520 * u
+    box('E', 'DASHBOARD: VITALS + LOOT', (w - suit_w) / 2, band_y, suit_w, band_h, 'permanent', '#vitals-panel #ship-status-panel #pickup-counter-panel')
+    lane_w, lane_h = 520 * u, 40 * u
+    box('H', 'PROMPT LANE', (w - lane_w) / 2, band_y - 10 * u - lane_h, lane_w, lane_h, 'contextual', '#loop-step-hud, PRESS-E prompts')
+    tgt_w, tgt_h = 340 * u, 72 * u
+    box('I', 'TARGET READOUT', w - m - tgt_w, band_y - 10 * u - tgt_h, tgt_w, tgt_h, 'contextual', '#tactical-telemeter-box')
+    tx_w, tx_h = 400 * u, 132 * u
+    box('T', 'TRANSMISSION (talking portrait)', m, band_y - 10 * u - tx_h, tx_w, tx_h, 'contextual', 'StarCraft-style: animated portrait + line')
     # Top band
     gear = 48 * u
     box('S', 'GEAR (fixed slot)', w - m - gear, m, gear, gear, 'fixed', '.hud-corner-settings')
