@@ -195,6 +195,13 @@ Plan: identify which models (question 5); log model mounts that end up with no v
 
 Remote death/downed, black-box ownership, wall persistence, smelt results, fabricate output, invisible model mounts, the analyzer's long-task parser. Each is listed with its item above; closing them is part of the fix, so the next QA session can confirm it from logs.
 
+## Performance: quality restored (2026-09-25)
+
+The owner rejected the emergency-quality FPS approach (no post-processing,
+frozen shadows, 2D enemy sprites, no 3D props). Reverted; the frame time is
+recovered on the CPU instead with output-identical fixes. Details, evidence
+and what is still open: [perf-quality-restore-2026-09-25.md](../reports/perf-quality-restore-2026-09-25.md).
+
 ## Questions for the owner
 
 1. ~~Map variety~~ — **answered:** TRY AGAIN keeps the map; MAIN MENU resets the run and the map.

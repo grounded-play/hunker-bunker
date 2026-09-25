@@ -222,6 +222,100 @@ export function shouldBlockAttackPath(origin, target, { containmentZones = [], d
     return false;
 }
 
+function collectSafeBoxes(entries, out) {
+    for (const entry of entries ?? []) {
+        if (!entry) continue;
+        const hasSafePolicy = entry.isSafe === true
+            || entry.safeZone === true
+            || entry.type === 'safe'
+            || entry.containment === true
+            || entry.containment?.safeZone === true
+            || entry.containment?.blocksHostiles === true
+            || entry.containment?.blocksDamage === true;
+        if (hasSafePolicy) {
+            const box = normalizeContainmentBounds(entry.bounds ?? entry);
+            if (box) out.push(box);
+        }
+        if (entry.safeZones?.length) collectSafeBoxes(entry.safeZones, out);
+        if (entry.quietZones?.length) collectSafeBoxes(entry.quietZones, out);
+    }
+    return out;
+}
+
+function collectDoorBoxes(doors, out) {
+    for (const door of Array.isArray(doors) ? doors : []) {
+        if (!door) continue;
+        if (door.bounds) {
+            const box = normalizeContainmentBounds(door.bounds);
+            if (box) out.push(box);
+            continue;
+        }
+        if (Array.isArray(door.cells)) {
+            for (const cell of door.cells) {
+                const x = Number(cell?.x ?? cell?.[0]);
+                const z = Number(cell?.z ?? cell?.y ?? cell?.[1]);
+                // Unparseable cells: keep the door on the exact path.
+                if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
+                out.push({ minX: x - 0.5, maxX: x + 0.5, minZ: z - 0.5, maxZ: z + 0.5 });
+            }
+        }
+        if (door.x != null && (door.z != null || door.y != null)) {
+            const dz = Number(door.z ?? door.y);
+            const halfW = Number(door.width ?? 1.5) / 2;
+            const halfH = Number(door.height ?? door.depth ?? 1.5) / 2;
+            const x = Number(door.x);
+            if (![dz, halfW, halfH, x].every(Number.isFinite)) return null;
+            out.push({ minX: x - halfW, maxX: x + halfW, minZ: dz - halfH, maxZ: dz + halfH });
+        }
+    }
+    return out;
+}
+
+/**
+ * shouldBlockAttackPath for many segments against one set of zones and doors
+ * (enemy A* asks it for every explored edge, ~2,900 times a search). Each
+ * zone's and door's box is gathered once; a segment that touches none of them
+ * cannot be blocked and returns false without the full test. Anything that
+ * might be blocked goes through shouldBlockAttackPath itself, so answers are
+ * identical. Door open/closed state is read at call time, never cached.
+ */
+export function createAttackPathBlocker(options = {}) {
+    const safeBoxes = collectSafeBoxes(options.containmentZones, []);
+    const doorBoxes = collectDoorBoxes(options.doors, []);
+    if (!doorBoxes) return (origin, target) => shouldBlockAttackPath(origin, target, options);
+    if (safeBoxes.length === 0 && doorBoxes.length === 0) return () => false;
+    return (origin, target) => {
+        if (!origin || !target) return false;
+        const ox = origin.x;
+        const oz = origin.z ?? origin.y;
+        const tx = target.x;
+        const tz = target.z ?? target.y;
+        let candidate = false;
+        for (const box of safeBoxes) {
+            if (tx >= box.minX && tx <= box.maxX && tz >= box.minZ && tz <= box.maxZ) {
+                candidate = true;
+                break;
+            }
+        }
+        if (!candidate && doorBoxes.length > 0) {
+            const minX = Math.min(ox, tx);
+            const maxX = Math.max(ox, tx);
+            const minZ = Math.min(oz, tz);
+            const maxZ = Math.max(oz, tz);
+            for (const box of doorBoxes) {
+                if (minX <= box.maxX && maxX >= box.minX && minZ <= box.maxZ && maxZ >= box.minZ) {
+                    candidate = true;
+                    break;
+                }
+            }
+        }
+        // Non-numeric coordinates never pass the box tests above; let the
+        // exact test decide those too.
+        if (!candidate && [ox, oz, tx, tz].every(Number.isFinite)) return false;
+        return shouldBlockAttackPath(origin, target, options);
+    };
+}
+
 /**
  * Determines whether an Area of Effect (AoE) attack should be clamped/blocked between origin and target.
  * Prevents boss AoEs (like Cryosnail shockwaves) from penetrating closed bunker doors or entering safe havens.

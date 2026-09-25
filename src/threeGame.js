@@ -137,6 +137,7 @@ import {
 import {
     isCellInSafeZone,
     shouldBlockAttackPath,
+    createAttackPathBlocker,
     canHostileAggroTarget,
     isDoorClosed,
     translateContainmentZone,
@@ -231,6 +232,8 @@ import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinch
 import { resolveSafeSpawn } from './safeSpawn.js';
 import { WORLD_3D_FACING_YAW, WORLD_3D_SWAP_PREFETCH_DISTANCE, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
+import { intersectWallMeshes } from './wallRaycastIndex.js';
+import { createFlatMaterialSweeper, useSinglePassForFlatMaterials } from './singlePassFlatMaterials.js';
 import { COMPANION_PATH_LIMITS, findCompanionPath, nextWaypoint } from './companionPath.js';
 import { SNAIL_ENCOUNTER_CONSTANTS } from './snailEncounter.js';
 import { createUniversalEncounter, resolveEncounterAction } from './universalEncounter.js';
@@ -6638,11 +6641,6 @@ export class ThreeGame {
 
     loadNearbyWorld3dReplacement(source) {
         if (!source?.userData?.world3dModelType || source.userData.world3dLoading || source.userData.world3dRoot) return;
-        // Sprite fallbacks are substantially cheaper than dozens of skinned or
-        // PBR prop trees. Once emergency quality is active, do not keep adding
-        // scene complexity that the current hardware has already shown it
-        // cannot render within budget.
-        if (this.adaptiveGameplayPerformanceMode) return;
         if ((this._world3dLoadsInFlight ?? 0) >= 3 || !this.player?.position) return;
         this._world3dLoadPosition ??= new THREE.Vector3();
         source.getWorldPosition?.(this._world3dLoadPosition);
@@ -9264,18 +9262,19 @@ export class ThreeGame {
         if (this.adaptiveGameplayPerformanceMode === nextEnabled) return false;
 
         this.adaptiveGameplayPerformanceMode = nextEnabled;
-        // This mode is the emergency floor for hardware that cannot sustain
-        // gameplay. The previous implementation only lowered pixel ratio while
-        // retaining the full-screen composer and rebuilding the shadow map;
-        // both QA captures show that was not enough. Keep scene lighting, fog,
-        // and the existing shadow texture, but skip the extra post-process pass
-        // and freeze shadow-map updates for the rest of this run.
-        // shadowMap.enabled remains stable so this does not recompile materials.
-        this.gameplayPostProcessingEnabled = !nextEnabled;
+        // Adaptive quality may lower the render resolution, but it must not
+        // remove the authored DOF/tilt-shift treatment, shadows, 3D models or
+        // animation (owner, 2026-08-26 and again 2026-09-25: bypassing the
+        // composer, freezing shadows and swapping enemies to sprites made the
+        // game look unloaded, and the QA logs showed the frame time was
+        // main-thread CPU, not GPU, so none of it bought the frames back).
+        this.gameplayPostProcessingEnabled = true;
         if (this.renderer?.shadowMap) {
+            // Keep the shadow variant stable while adaptive mode lowers pixel
+            // cost. Toggling shadowMap at runtime caused a
+            // visible lighting drop and texture/shader shimmer on some drivers.
             if (this.performanceProfile === 'gameplay') this.renderer.shadowMap.enabled = true;
-            this.renderer.shadowMap.autoUpdate = !nextEnabled;
-            if (!nextEnabled) this.renderer.shadowMap.needsUpdate = true;
+            this.renderer.shadowMap.autoUpdate = true;
         }
         this.tiltShiftOverlay?.classList?.toggle?.(
             'is-active',
@@ -9300,7 +9299,7 @@ export class ThreeGame {
                 fps: Number.isFinite(fps) ? Math.round(fps * 10) / 10 : null,
                 pixelRatio: targetPixelRatio,
                 shadows: Boolean(this.renderer?.shadowMap?.enabled),
-                postprocessing: this.gameplayPostProcessingEnabled !== false,
+                postprocessing: true,
                 visibleChunkRadius: this.visibleChunkRadius ?? null,
                 renderer: this.getPerformanceDiagnosticsSnapshot?.() ?? null
             };
@@ -9411,6 +9410,10 @@ export class ThreeGame {
         // permanent lockup on Steam Deck. Detailed snapshots are captured by
         // the throttled long-task reporter instead.
         const span = beginPerfPhase(label, { profile: this.performanceProfile });
+        // Flat double-sided effects added at runtime draw in one pass, not two
+        // (src/singlePassFlatMaterials.js); chunks and GLBs are done on mount.
+        this._flatMaterialSweep ??= createFlatMaterialSweeper();
+        this._flatMaterialSweep(this.scene);
         const gpuQueryStarted = this.gpuFrameTimer?.beginFrame?.() ?? false;
         try {
             if (this.composer && usesGameplayFocusEffects(this)) {
@@ -9594,9 +9597,13 @@ export class ThreeGame {
         if (this.cliffPathMaterial) {
             this.cliffPathMaterial.opacity = 0.32 + Math.sin(now * 0.0024) * 0.12;
         }
+        // 30 fps menu cap. On a 60 Hz display two frames arrive a hair under
+        // 33.3 ms apart, so an exact comparison skipped a third frame and the
+        // menu ran at 20 fps (2026-09-25 log: menu p50 49 ms at 0.9 ms GPU).
+        // Allow a quarter-interval of vsync jitter.
         if (this.performanceProfile === 'menu'
             && this._lastMenuRenderAt > 0
-            && now - this._lastMenuRenderAt < this.menuFrameIntervalMs) {
+            && now - this._lastMenuRenderAt < this.menuFrameIntervalMs * 0.75) {
             return;
         }
         if (this.performanceProfile === 'menu') {
@@ -24330,20 +24337,6 @@ export class ThreeGame {
             return;
         }
 
-        // Twenty-two scene raycasts per rendered frame were the largest
-        // measured part of updatePlayer on the QA build. The cone is cosmetic,
-        // so in the emergency quality tier update its wall contour at 4 Hz and
-        // reuse the last geometry between samples. The mesh itself still tracks
-        // player position/facing every frame, preserving responsive aiming.
-        if (this.adaptiveGameplayPerformanceMode) {
-            const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
-            if (Number.isFinite(this._lastConeOcclusionAt)
-                && now - this._lastConeOcclusionAt < 250) {
-                return;
-            }
-            this._lastConeOcclusionAt = now;
-        }
-
         const raycaster = this._lightOcclusionRaycaster;
         raycaster.near = 0.05;
         raycaster.far = SUIT_CONE_VISUAL_DISTANCE;
@@ -24357,7 +24350,7 @@ export class ThreeGame {
             const worldAngle = facingAngle + angle;
             this._coneRayDir.set(Math.sin(worldAngle), 0, Math.cos(worldAngle));
             raycaster.set(this._coneRayOrigin, this._coneRayDir);
-            const hit = raycaster.intersectObjects(this.wallMeshes, false)[0];
+            const hit = intersectWallMeshes(raycaster, this.wallMeshes)[0];
             if (hit && hit.distance < minHitDist) {
                 minHitDist = hit.distance;
             }
@@ -24547,7 +24540,7 @@ export class ThreeGame {
         this._lightOcclusionRaycaster.set(this._hasWallOrigin, this._hasWallDir);
         this._lightOcclusionRaycaster.far = distance;
 
-        const hits = this._lightOcclusionRaycaster.intersectObjects(this.wallMeshes, false);
+        const hits = intersectWallMeshes(this._lightOcclusionRaycaster, this.wallMeshes);
         return hits.length > 0;
     }
 
@@ -25078,15 +25071,8 @@ export class ThreeGame {
                 this._o2GaspTimer = 2.0;
             }
 
-            // Skeleton/matrix animation is presentation-only. In emergency
-            // quality, sample it at 10 Hz while movement and aiming continue at
-            // the render rate; this removes repeated hierarchy traversal from
-            // the same frames already missing budget.
-            this._adaptivePlayerAnimationDelta = (this._adaptivePlayerAnimationDelta ?? 0) + delta;
-            const shouldUpdate3dAnimation = !this.adaptiveGameplayPerformanceMode
-                || this._adaptivePlayerAnimationDelta >= 0.1;
-            if (shouldUpdate3dAnimation) this.player3dOverlay.update(
-                this.adaptiveGameplayPerformanceMode ? this._adaptivePlayerAnimationDelta : delta,
+            this.player3dOverlay.update(
+                delta,
                 {
                     isFalling: this.isPlayerFalling,
                     isReloading: this.weaponReloading,
@@ -25107,7 +25093,6 @@ export class ThreeGame {
                     aimZ: this.aimDirZ
                 }
             );
-            if (shouldUpdate3dAnimation) this._adaptivePlayerAnimationDelta = 0;
         }
         const aiming = this.hasActiveAim;
         // Upper body tracks the aim whenever the player is aiming.
@@ -25487,7 +25472,7 @@ export class ThreeGame {
                     new THREE.Vector3(dx, 0, dz)
                 );
                 this._projRaycaster.far = desiredOffset + 0.05;
-                const hits = this._projRaycaster.intersectObjects(this.wallMeshes, false);
+                const hits = intersectWallMeshes(this._projRaycaster, this.wallMeshes);
                 if (hits.length > 0) {
                     const hit = hits[0];
                     const wall = (hit.object?.userData?.isInstancedWallPool && Number.isInteger(hit.instanceId))
@@ -25735,7 +25720,7 @@ export class ThreeGame {
             new THREE.Vector3(projectile.vx / speed, 0, projectile.vz / speed)
         );
         this._projRaycaster.far = Math.max(0.08, rayFar);
-        const hits = this._projRaycaster.intersectObjects(this.wallMeshes, false);
+        const hits = intersectWallMeshes(this._projRaycaster, this.wallMeshes);
         if (!hits.length) return null;
         const hit = hits[0];
         // World-space face normal (geometry normals are in local space).
@@ -26622,7 +26607,7 @@ export class ThreeGame {
             this._thirdPersonCameraRaycaster.set(pose.focus, ray.normalize());
             this._thirdPersonCameraRaycaster.near = 0;
             this._thirdPersonCameraRaycaster.far = rayLength;
-            const hit = this._thirdPersonCameraRaycaster.intersectObjects(this.wallMeshes, false)[0];
+            const hit = intersectWallMeshes(this._thirdPersonCameraRaycaster, this.wallMeshes)[0];
             if (hit) resolvedPosition = clampCameraPositionToHit(pose.focus, pose.position, hit.distance);
         }
         const blend = immediate ? 1 : 1 - Math.exp(-delta * this.cameraFollowRate);
@@ -29278,6 +29263,7 @@ export class ThreeGame {
             }
         }
 
+        useSinglePassForFlatMaterials(group);
         this.chunkGroups.add(group);
         this.chunkMeshes.set(`${chunkX},${chunkY}`, group);
     }
@@ -32906,6 +32892,7 @@ export class ThreeGame {
             containmentZones: this.getActiveContainmentZones?.() ?? [],
             doors: this.getActiveDoors?.() ?? []
         };
+        const blocksAttackPath = createAttackPathBlocker(containmentOptions);
 
         if (!this.isSnailTileWalkable(startTileX, startTileZ)) {
             return [{ x: startTileX, z: startTileZ }];
@@ -32979,10 +32966,9 @@ export class ThreeGame {
                 const nx = current.x + dir.dx;
                 const nz = current.z + dir.dz;
                 if (!this.isSnailTileWalkable(nx, nz)) continue;
-                if (shouldBlockAttackPath(
+                if (blocksAttackPath(
                     { x: current.x, z: current.z },
-                    { x: nx, z: nz },
-                    containmentOptions
+                    { x: nx, z: nz }
                 )) continue;
                 if (dir.diagonal) {
                     if (!this.isSnailTileWalkable(current.x + dir.dx, current.z) || !this.isSnailTileWalkable(current.x, current.z + dir.dz)) {
@@ -34924,16 +34910,6 @@ export class ThreeGame {
             }
             if (child.userData.enemy3dVisual) {
                 updateEnemy3dVisual(child.userData.enemy3dVisual, child, delta, time);
-                const useEnemySpriteFallback = Boolean(this.adaptiveGameplayPerformanceMode)
-                    && !child.userData.burstTriggered;
-                if (child.userData.enemy3dVisual.root) {
-                    child.userData.enemy3dVisual.root.visible = child.userData.enemy3dVisual.root.visible
-                        && !useEnemySpriteFallback;
-                }
-                // Enemy sources are real, fully-authored sprite sheets (unlike
-                // the transparent owner anchors used by props and kit walls),
-                // so they are the safe low-cost fallback on Deck-class GPUs.
-                child.visible = useEnemySpriteFallback;
             }
             if (!child.userData.burstTriggered && child.material) {
                 child.material.opacity = child.userData.baseOpacity ?? 1;
@@ -35736,7 +35712,7 @@ export class ThreeGame {
         this._hiddenMarkerDir.normalize();
         this.raycaster.set(this._hiddenMarkerOrigin, this._hiddenMarkerDir);
         this.raycaster.far = distance - this.playerRadius * 0.25;
-        const hits = this.raycaster.intersectObjects(this.wallMeshes, false);
+        const hits = intersectWallMeshes(this.raycaster, this.wallMeshes);
         const hidden = hits.length > 0;
 
         this.playerMarker.visible = hidden;
@@ -36245,7 +36221,7 @@ export class ThreeGame {
             this._audioRayDir.set(dx / distance, 0, dz / distance);
             this._audioRaycaster.set(this._audioRayOrigin, this._audioRayDir);
             this._audioRaycaster.far = far;
-            return this._audioRaycaster.intersectObjects(this.wallMeshes, false).length > 0;
+            return intersectWallMeshes(this._audioRaycaster, this.wallMeshes).length > 0;
         }
 
         // Fallback for before the meshes are built (and for headless tests):
