@@ -8,29 +8,31 @@
 
 This release delivers **Phase 4 of the Invisible Essentials plan**, resolves critical multiplayer networking and map lifecycle rules identified in the **2026-09-24 Steam Deck + PC co-op QA session**, overhauls the **Minimap Radar Scan, Fog of War, and Wavefront Dissipation**, and automates code-side verification suites across all core milestone tickets.
 
-### 📋 Milestone Tickets Closed & Advanced
+### 📋 Milestone Tickets Advanced
 
-- Closes #78
-- Closes #80
-- Closes #81
-- Closes #82
+No ticket is auto-closed by this PR. The owner's brief made closure conditional on a successful QA pass; the 2026-09-24 Deck + PC session did not exercise the #78 and #81 acceptance conditions and found defects in the #80 and #82 areas ([QA game plan](../planning/qa-2026-09-24-deck-pc-coop-game-plan.md)). Close each ticket by hand once its conditions are shown.
+
+- Advances #78
+- Advances #80
+- Advances #81
+- Advances #82
 
 | Ticket / ID | Scope & Domain | Status in this PR | Automated & Runtime Evidence |
 | :--- | :--- | :--- | :--- |
-| **Closes #78** | **Persistence, Career Telemetry & Campaign Reset** | **Closed (Code Acceptance)** | Verified via [`src/ticket78Persistence.verification.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/ticket78Persistence.verification.test.js). Validates persistence migration, solo career stats preservation on New Campaign, and cloud save serialization. |
-| **Closes #80** | **Fabrication Bay & 13 Curated Recipes** | **Closed (Code Acceptance)** | Verified via [`src/ticket80FabBay.verification.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/ticket80FabBay.verification.test.js). Enforces recipe atomicity, tech/salvage deductions, and catalog parity. |
-| **Closes #81** | **Hero Selection & Class Preview Presentation** | **Closed (Code Acceptance)** | Verified via [`src/ticket81HeroSelection.verification.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/ticket81HeroSelection.verification.test.js). Validates generation-guard contracts, DPR constraints, and 3-class switching stability. |
-| **Closes #82** | **Armory Presentation, Polish Placement & Equipment Mounts** | **Closed (Code Acceptance)** | Verified via [`src/ticket82Armory.verification.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/ticket82Armory.verification.test.js). Validates 7 equipment slots, weapon charms, matrix tints, and socket calibration. |
-| **#85** | **Two-Account Co-op PvE Expedition & Networked State** | **Advanced & Hardened (Hardware Evidence)** | First physical proof captured on packaged Steam build across two accounts (Deck host + PC guest; `mug11pto` / `mug11v9w`). Closes major networking divergence gaps: deaths, black box recovery, power-up loot drops, and prop destruction. |
+| **#78** | **Persistence, Career Telemetry & Campaign Reset** | **Advanced (code acceptance only)** | [`src/ticket78Persistence.verification.test.js`](../../src/ticket78Persistence.verification.test.js): persistence migration, career stats kept on New Campaign, save serialization. **Still to show:** two deaths, a victory, New Game, legacy migration and no duplicated ownership on a real save, and Steam Cloud behaviour. |
+| **#80** | **Fabrication Bay & 13 Curated Recipes** | **Advanced — QA found defects** | [`src/ticket80FabBay.verification.test.js`](../../src/ticket80FabBay.verification.test.js): recipe atomicity, deductions, catalog parity. **QA 2026-09-24:** old/wrong models, output not matching the preview, out-of-date UI, trade-up not sticking; in code, six Foundry-only weapons with no model or Armory icon and different items sharing one schematic image. Planned fix: the one-catalog Foundry hub. |
+| **#81** | **Hero Selection & Class Preview Presentation** | **Advanced (code acceptance only)** | [`src/ticket81HeroSelection.verification.test.js`](../../src/ticket81HeroSelection.verification.test.js): generation guard, DPR constraints, 3-class switching. **Still to show:** 30 rapid swaps with animation and memory checks, desktop and Deck captures. |
+| **#82** | **Armory Presentation, Polish Placement & Equipment Mounts** | **Advanced — QA found defects** | [`src/ticket82Armory.verification.test.js`](../../src/ticket82Armory.verification.test.js): 7 slots, charms, tints, socket calibration. **QA 2026-09-24:** UI out of date with current standards; weapon/item images do not match across Armory, Foundry and hero screen. Planned fix: one card and preview on the Armory base, class-themed. |
+| **#85** | **Two-Account Co-op PvE Expedition & Networked State** | **Advanced** | Hardware: the 2026-09-24 packaged session (Deck host + PC guest, two Steam accounts; logs `mug11pto` / `mug11v9w`) proved join, ready, deploy, avatars and redeploy — and exposed the divergences below. **Code (not yet on hardware):** deaths, black box ownership, power-up drops, props, world state across TRY AGAIN, relay budgets, per-deploy maps (`39a7375`, `42c4bbc`, `1dd8056`, `caf5816`). The next two-machine session must confirm each. |
 | **PLAN-HUD-MAP** | **Minimap Progressive Radar Reveal, Dissipation & Fog of War** | **Closed (Full Implementation)** | Closes instant-reveal and line truncation defects. Implements progressive wavefront reveal, 400ms dissipation tail with quadratic fade-off, minimap bezel mask, and high-contrast tactical CRT Fog of War pattern (`05c4300`). |
 | **PLAN-TERMINAL-CYCLE** | **Terminal Day-Cycle Legibility, Live Clock & Advance Day Status** | **Closed (Full Implementation)** | Closes frozen/broken day cycle UI report. Implements reachable terminal modal refresh in render loop, 'CYCLE HOLD — TERMINAL ACTIVE' header readout, unified presentation view-model (`formatDayCycleViewModel`), cached journal signatures, `CAMPAIGN STATE` labeling, 24h progress bar, and truthful `ADVANCE DAY` card across all 7 locales (`0a3caf6`). |
 | **PLAN-CI-LIGHTHOUSE** | **Lighthouse CI Timeout & PAGE_HUNG Resolution** | **Closed (Full Implementation)** | Resolves CI failure on GitHub Actions. Configures desktop preset, modern headless flags (`--headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage`), Lighthouse agent detection in boot flow, and cutscene guard timeout (`c030269`). |
-| **QA-P0-SPAWN** | **Spawn Void Pit Fall Fatalities** | **Closed (Defect Resolved)** | Resolves instant void falls on spawn. Edges within 24m of spawn now block movement rather than killing (`7480bd9`). |
-| **QA-P1-MAP-RULE**| **Map & Story Persistence Across Retries** | **Closed (Rule Enforced)** | Enforces owner's lifecycle contract: `TRY AGAIN` preserves current map and destroyed walls; `MAIN MENU` regenerates a fresh map. Co-op and PvP runs play a fresh story without mutating the solo campaign (`caf5816`, `d3ec634`, `de61860`, `a8d45ad`). |
+| **QA-P0-SPAWN** | **Spawn Void Pit Fall Fatalities** | **Fixed — confirm next session** | All three co-op QA deaths were a walk off an unguarded cliff by the first corridor. Lethal edges within 24 tiles of spawn now block movement (`7480bd9`); checked on the real map in a browser (the three death spots blocked, a far cliff still lethal), not yet on hardware. |
+| **QA-P1-MAP-RULE** | **Map & Story Persistence Across Retries** | **Fixed — browser-verified** | Owner's rules: `TRY AGAIN` keeps the map and its changes; `MAIN MENU` starts a new run on a new map; co-op/PvP play a fresh story; the solo story (incl. world changes) carries on with CONTINUE and resets with NEW CAMPAIGN (`caf5816`, `42c4bbc`, `de61860`, `d3ec634`, `fcce193`). The first browser probe caught the solo half not taking effect (respawn reset the map seed; fixed in `fcce193`); the rerun shows TRY AGAIN on the same map seed, MAIN MENU on a new one, same campaign (`docs/reports/assets/qa-2026-09-24/run-maps-probe.json`). Not yet on hardware. |
 
 In addition, this PR completes the **Master Repository TODO Tree Audit**:
 - Evaluated all 175 legacy open checkboxes across 33 historical planning and review documents.
-- All 175 are tracked as migrated backlog in [`docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md`](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md).
+- All 175 are tracked as migrated backlog in [`docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md`](../../docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md).
 - Reconciles repository state and brings total passing tests to **4,252 across 478 files** (100% green).
 
 ---
