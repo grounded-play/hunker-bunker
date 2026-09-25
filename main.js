@@ -9892,7 +9892,7 @@ function executeDevCommand(input) {
                 + '  seed [number]       - View or set active run seed\n'
                 + '  unlock <key>        - Unlock specific achievement\n'
                 + '  unlock_all          - Unlock all achievements\n'
-                + '  cosmetics_all [0|1] - Toggle cosmetic UNLOCK ALL (equip override)\n'
+                + '  armory_all [0|1]  - Toggle all Armory equipment, polish, and sheen unlocks\n'
                 + '  cache_infinite [0|1] - Toggle infinite dev cache/key supply\n'
                 + '  reset_inventory     - Clear dev grants + unlock flags (keeps settings)\n'
                 + '  reset_ach           - Clear local achievement unlocks\n'
@@ -10163,6 +10163,8 @@ function executeDevCommand(input) {
             break;
         case 'skins':
         case 'skins_all':
+        case 'armory_all':
+        case 'unlock_armory':
         case 'unlock_skins':
         case 'unlock_all_skins':
         case 'cosmetics':
@@ -10480,7 +10482,7 @@ document.getElementById('debug-unlock-all-codex')?.addEventListener('click', () 
     showBiomePrompt(`> DEBUG: ${res}`);
 });
 document.getElementById('debug-unlock-all-skins')?.addEventListener('click', () => {
-    const res = devSetCosmeticUnlockAll();
+    const res = devSetCosmeticUnlockAll('1');
     showBiomePrompt(`> DEBUG: ${res}`);
 });
 document.getElementById('dev-btn-unlock-all-ach')?.addEventListener('click', () => {
@@ -10492,7 +10494,7 @@ document.getElementById('dev-btn-unlock-all-codex')?.addEventListener('click', (
     logDevConsole(res, 'success');
 });
 document.getElementById('dev-btn-unlock-all-skins')?.addEventListener('click', () => {
-    const res = devSetCosmeticUnlockAll();
+    const res = devSetCosmeticUnlockAll('1');
     logDevConsole(res, 'success');
 });
 document.getElementById('dev-btn-reset-save')?.addEventListener('click', () => {

@@ -422,7 +422,7 @@ export class DebugLogger {
                 <button id="hb-main-ach-all" class="hb-cmd-btn">ACH ALL</button>
                 <button id="hb-main-codex-all" class="hb-cmd-btn">CODEX ALL</button>
                 <button id="hb-main-polish-all" class="hb-cmd-btn">POLISH ALL</button>
-                <button id="hb-main-skins-all" class="hb-cmd-btn">SKINS ALL</button>
+                <button id="hb-main-skins-all" class="hb-cmd-btn" title="Unlock all Armory equipment, operator polishes, and weapon sheens">ARMORY ALL</button>
                 <select id="hb-main-rgb-chapter" class="hb-cmd-btn" title="RGB chapter">
                     <option value="parking_lot">RGB CH 1</option><option value="warehouse">RGB CH 2</option>
                     <option value="incident_review">RGB CH 3</option><option value="medi_kiosk">RGB CH 4</option>
@@ -568,7 +568,7 @@ export class DebugLogger {
         overlay.querySelector('#hb-main-ach-all').onclick = () => runMainCommand('unlock_all');
         overlay.querySelector('#hb-main-codex-all').onclick = () => runMainCommand('codex_all');
         overlay.querySelector('#hb-main-polish-all').onclick = () => runMainCommand('polish_all');
-        overlay.querySelector('#hb-main-skins-all').onclick = () => runMainCommand('skins_all');
+        overlay.querySelector('#hb-main-skins-all').onclick = () => runMainCommand('armory_all 1');
         overlay.querySelector('#hb-main-rgb-chapter-run').onclick = () => runMainCommand(`rgb ${overlay.querySelector('#hb-main-rgb-chapter').value}`);
         overlay.querySelector('#hb-main-teleport').onchange = (event) => {
             if (event.target.value) runMainCommand(`tp ${event.target.value}`);
