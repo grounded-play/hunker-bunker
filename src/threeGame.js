@@ -26472,7 +26472,11 @@ export class ThreeGame {
     updateCamera(delta) {
         const pointerOrbitDelta = this._cameraOrbitPointerDelta ?? 0;
         this._cameraOrbitPointerDelta = 0;
-        const stickOrbit = this.cameraRotationInput ?? 0;
+        // Camera azimuth grows counter to screen direction (see
+        // computeMouseEdgeTurn), so the stick is inverted here like the mouse
+        // edge turn: right stick turns the view right (2026-09-25 Deck QA:
+        // it turned left).
+        const stickOrbit = -(this.cameraRotationInput ?? 0);
         if (this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person') {
             const turnSensitivity = THREE.MathUtils.clamp(
                 Number(globalThis.window?.state?.settings?.aimSensitivity) || 1,
