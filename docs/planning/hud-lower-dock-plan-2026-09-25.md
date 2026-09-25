@@ -102,8 +102,7 @@ All sizes are in **HUD units**:
 
 ### 2.2 Zones (computed, not hand-placed)
 
-Every box below comes from one spec script, `docs/planning/assets/hud-lower-dock/hud_zones.py` (kept with the plan
-assets). It renders the overlays in §3 from real captures, so the numbers and
+Every box below comes from one spec script, `scripts/hud_zones.py`. It renders the overlays in §3 from real captures, so the numbers and
 pictures cannot drift apart.
 
 | Zone | Name | Size (u) | Anchor | Kind | Deck px (u = 0.8) | 1080p px |
@@ -858,9 +857,22 @@ input mode changes (`refreshInteractivePromptKeys` already exists).
 Ship behind `hb_hud_layout = 'dock' | 'classic'` (default `classic` until Phase 5
 passes). One-click comparison, instant rollback.
 
+**Status 2026-09-25:** Phase 1 skeleton landed:
+- the `hb_hud_layout` flag (default `classic`) and `hb_hud_scale`;
+- the `--hud-u` / `--u` / `--hud-margin` tokens;
+- the three band zones, the sector tag and the boss lane positioned under
+  `[data-hud-layout="dock"]`;
+- `tests/e2e/hud-layout.spec.js` (units, default, flag, keep-out, gear slot), green;
+- `scripts/hud_zones.py` as the zone spec.
+
+Dock mode is **visibly incomplete** until Phases 2–5: the loop-step pill overlaps
+the band, the loot box overlaps the sector tag, and the compass content is clipped
+to 64 u. **Keep the default `classic`.** The full rect/overlap spec of Phase 0 is
+still to do.
+
 | Phase | Scope | Files | Acceptance |
 | :--- | :--- | :--- | :--- |
-| **0. Measure first** | Playwright layout spec: boot to gameplay at 1280×800, 1920×1080, 2304×1440, 3440×1440. Collect every HUD element's rect. Assert inside the safe margin, no overlaps, nothing in the keep-out, coverage ≤ budget. Save screenshots. Baseline today's numbers in the report. | `tests/e2e/hud-layout.spec.js` (new), `scripts/hud_zones.py` (moved from assets) | Runs green in `classic` mode with `expectedFailures` for today's overlaps; numbers recorded. |
+| **0. Measure first** | Playwright layout spec: boot to gameplay at 1280×800, 1920×1080, 2304×1440, 3440×1440. Collect every HUD element's rect. Assert inside the safe margin, no overlaps, nothing in the keep-out, coverage ≤ budget. Save screenshots. Baseline today's numbers in the report. | `tests/e2e/hud-layout.spec.js`, `scripts/hud_zones.py` | Runs green in `classic` mode with `expectedFailures` for today's overlaps; numbers recorded. |
 | **1. Tokens + skeleton** | `--hud-u` / `--u` / `--hud-margin` tokens. Empty `.hud-dock` with left/centre/right wings and a top band, behind the flag. | `src/styles/expeditionHud.css`, `index.html`, `main.js` (flag) | Dock zones match §2.2 within ±2 px at all 4 sizes; gear slot unchanged (existing gear e2e green). |
 | **2. E + G** | Move vitals, ship, weapon and both ability tiles; live glyphs; reload arc. | `index.html`, `expeditionHud.css`, `main.js` (render functions keep their IDs) | All existing vitals/weapon/ability tests green; no JS logic changes beyond container lookups; Deck glyph test. |
 | **3. D** | Compass into the left wing; map info to expanded state. | same | `[M]` / D-pad-up / click opens the map as today; minimap radar reveal unchanged. |

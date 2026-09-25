@@ -1033,3 +1033,119 @@
   .hud-notification-stack,
   .hud-mission-stack { width: min(300px, 38vw) !important; }
 }
+
+/* ==========================================================================
+   LOWER DOCK: the narrow three-panel band
+   (docs/planning/hud-lower-dock-plan-2026-09-25.md; art direction
+   docs/design/art-style-bible.md, "Nordic Cathedral Biomech").
+   Behind the hb_hud_layout flag: only [data-hud-layout="dock"] on <html>
+   changes anything; the default "classic" layout is untouched.
+   Phase 1 skeleton: places today's containers into the §2.2 zones. Moving
+   individual elements (loot into E, hazard into B, prompts into H) is
+   Phases 2–5.
+   ========================================================================== */
+
+:root {
+  /* 1u = 1px at 1920x1080. Floor 0.8 keeps Deck (1280x800) legible; cap 1.3 stops ballooning on 4K. */
+  --hud-u: clamp(0.8px, min(calc(100vw / 1920), calc(100vh / 1080)), 1.3px);
+  --hud-scale: 1;
+  --u: calc(var(--hud-u) * var(--hud-scale));
+  --hud-margin: calc(20 * var(--u));
+}
+
+[data-hud-layout="dock"] #ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Zone D: Radar / Compass Left Wing */
+[data-hud-layout="dock"] #ui #desktop-compass {
+  position: absolute !important;
+  left: var(--hud-margin) !important;
+  bottom: var(--hud-margin) !important;
+  top: auto !important;
+  right: auto !important;
+  width: calc(220 * var(--u)) !important;
+  height: calc(64 * var(--u)) !important;
+  margin: 0 !important;
+  pointer-events: auto;
+}
+
+/* Zone E & G: Lower Dock Header override */
+html[data-hud-layout="dock"] #ui .hud-header,
+html.phase-gameplay[data-hud-layout="dock"] #ui .hud-header,
+html.phase-gameplay[data-hud-layout="dock"] #game-container.fullscreen-mode ~ #ui .hud-header {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: var(--hud-margin) !important;
+  top: auto !important;
+  height: calc(64 * var(--u)) !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  pointer-events: none;
+  display: flex !important;
+  justify-content: space-between !important;
+}
+
+/* Centre Panel (Zone E): Dashboard: Vitals + Ship */
+html[data-hud-layout="dock"] #ui .hud-header__center,
+html.phase-gameplay[data-hud-layout="dock"] #ui .hud-header__center {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: 0 !important;
+  top: auto !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  width: calc(520 * var(--u)) !important;
+  height: calc(64 * var(--u)) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  pointer-events: auto;
+}
+
+/* Right Wing (Zone G): Arsenal + Abilities */
+html[data-hud-layout="dock"] #ui .hud-header__right,
+html.phase-gameplay[data-hud-layout="dock"] #ui .hud-header__right {
+  position: absolute !important;
+  right: var(--hud-margin) !important;
+  bottom: 0 !important;
+  left: auto !important;
+  top: auto !important;
+  width: calc(380 * var(--u)) !important;
+  height: calc(64 * var(--u)) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: calc(8 * var(--u)) !important;
+  pointer-events: auto;
+}
+
+/* Zone A: Sector Tag */
+[data-hud-layout="dock"] #ui .level-indicator {
+  position: absolute !important;
+  left: var(--hud-margin) !important;
+  top: var(--hud-margin) !important;
+  width: calc(360 * var(--u)) !important;
+  height: calc(40 * var(--u)) !important;
+  pointer-events: auto;
+}
+
+/* Zone B: Alert Lane. Only the boss bar for now: #hazard-status-panel lives
+   inside .hud-header__right, so left:50% would centre it on that wing, not
+   the screen. It moves into the alert lane with the Phase 5 DOM change. */
+[data-hud-layout="dock"] #ui #boss-status-panel {
+  position: absolute !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  top: var(--hud-margin) !important;
+  width: calc(560 * var(--u)) !important;
+  pointer-events: auto;
+}
+

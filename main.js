@@ -2746,6 +2746,12 @@ const state = {
             : 'normal',
         cameraShakeScale: ({ off: 0.0, low: 0.25, reduced: 0.5, normal: 1.0 })[localStorage.getItem('hb_camera_shake')] ?? 1.0,
         reducedPressure: localStorage.getItem('hb_reduced_pressure') === 'true',
+        hudLayout: ['dock', 'classic'].includes(localStorage.getItem('hb_hud_layout'))
+            ? localStorage.getItem('hb_hud_layout')
+            : 'classic',
+        hudScale: [0.85, 1, 1.15, 1.3].includes(Number(localStorage.getItem('hb_hud_scale')))
+            ? Number(localStorage.getItem('hb_hud_scale'))
+            : 1,
         keyBindings: cloneKeyBindings(DEFAULT_KEY_BINDINGS)
     },
     onlineCount: 1,
@@ -2754,6 +2760,8 @@ const state = {
 // Exposed so threeGame.js can read live key bindings without a circular import.
 window.state = state;
 document.documentElement.style.setProperty('--crosshair-color', state.settings.crosshairColor);
+document.documentElement.dataset.hudLayout = state.settings.hudLayout;
+document.documentElement.style.setProperty('--hud-scale', String(state.settings.hudScale));
 
 // RGB archive-sim unlock/save state (docs/mini-games/rgb/unlock-and-integration.md).
 let rgbSave = loadRgbSave(localStorage);
