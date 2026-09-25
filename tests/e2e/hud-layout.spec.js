@@ -72,12 +72,33 @@ test.describe('HUD layout system and lower dock spec', () => {
             y1: 1080 * 0.69
         };
 
-        const dockHeaderBox = await page.locator('#ui .hud-header').boundingBox();
-        expect(dockHeaderBox).not.toBeNull();
-        if (dockHeaderBox) {
-            // Dock header must sit safely below keep-out zone
-            expect(dockHeaderBox.y).toBeGreaterThanOrEqual(keepOut.y1);
+        // The band: six panels share one bottom edge, sit inside the stage and
+        // below the keep-out, and never overlap; the prompt lane sits above it.
+        const band = await page.evaluate(() => ['desktop-compass', 'vitals-panel', 'pickup-counter-panel',
+            'weapon-status-panel', 'class-ability-panel', 'radar-scan-panel'].map((id) => {
+            const b = document.getElementById(id).getBoundingClientRect();
+            return { id, x: b.x, y: b.y, r: b.right, bottom: b.bottom, w: b.width, h: b.height };
+        }));
+        const stage = await page.locator('#game-viewport').boundingBox();
+        for (const p of band) {
+            expect(p.w, p.id).toBeGreaterThan(0);
+            expect(Math.abs(p.bottom - band[0].bottom), p.id).toBeLessThan(1.5);
+            expect(p.y, p.id).toBeGreaterThanOrEqual(keepOut.y1);
+            expect(p.x, p.id).toBeGreaterThanOrEqual(stage.x - 1);
+            expect(p.r, p.id).toBeLessThanOrEqual(stage.x + stage.width + 1);
         }
+        for (let i = 0; i < band.length; i += 1) {
+            for (let j = i + 1; j < band.length; j += 1) {
+                const a = band[i]; const b = band[j];
+                const overlap = Math.min(a.r, b.r) - Math.max(a.x, b.x);
+                expect(overlap, `${a.id} overlaps ${b.id}`).toBeLessThan(1.5);
+            }
+        }
+        const lane = await page.evaluate(() => {
+            const el = document.getElementById('loop-step-hud');
+            return el && !el.classList.contains('hidden') ? el.getBoundingClientRect().bottom : null;
+        });
+        if (lane !== null) expect(lane).toBeLessThanOrEqual(Math.min(...band.map((p) => p.y)) + 1);
 
         // The gear stays in its fixed slot: the stage's top-right corner. The
         // stage is 16:10, so at 1920x1080 it is letterboxed inside the window;

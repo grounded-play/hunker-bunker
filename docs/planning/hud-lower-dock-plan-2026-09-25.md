@@ -857,18 +857,28 @@ input mode changes (`refreshInteractivePromptKeys` already exists).
 Ship behind `hb_hud_layout = 'dock' | 'classic'` (default `classic` until Phase 5
 passes). One-click comparison, instant rollback.
 
-**Status 2026-09-25:** Phase 1 skeleton landed:
-- the `hb_hud_layout` flag (default `classic`) and `hb_hud_scale`;
-- the `--hud-u` / `--u` / `--hud-margin` tokens;
-- the three band zones, the sector tag and the boss lane positioned under
-  `[data-hud-layout="dock"]`;
-- `tests/e2e/hud-layout.spec.js` (units, default, flag, keep-out, gear slot), green;
-- `scripts/hud_zones.py` as the zone spec.
+**Status 2026-09-25 (afternoon): Phases 1–4 landed (CSS only, dock mode):**
+- **Band:** map (compact radar disc + BASE/NODE) left; hearts, O₂ and hull with the
+  2 × 2 loot chips in the centre; SIDEARM ammo + class-ability and radar-scan tiles
+  right. All six panels share one bottom edge at 1080p and on the Deck.
+- **Above the band:** loop-step in the prompt lane; the target readout rises above the
+  map only while it describes a target.
+- **Top:** a one-line sector tag with run chips below; boss and hazard in the top-centre
+  alert lane (hazard steps down when a boss shows).
+- **Performance:** no `backdrop-filter` on band panels.
+- **Tests:** `hud-layout.spec.js` checks units, the classic default, the flag, the band
+  (shared bottom, inside the stage, below the keep-out, no overlaps), the prompt lane
+  above the band, and the gear slot. 4/4 green.
 
-Dock mode is **visibly incomplete** until Phases 2–5: the loop-step pill overlaps
-the band, the loot box overlaps the sector tag, and the compass content is clipped
-to 64 u. **Keep the default `classic`.** The full rect/overlap spec of Phase 0 is
-still to do.
+**Not yet:**
+- the objective drawer (C: the right-hand mission stack is unchanged);
+- PRESS-E prompts into H;
+- the scan ring (radar scan sits with the gun meanwhile);
+- the housing art (placeholder dark panels until `hud-housing-prompts-2026-09-25.md`
+  renders land);
+- the Phase 0 full-HUD rect spec.
+
+Keep the default `classic` until C is done.
 
 | Phase | Scope | Files | Acceptance |
 | :--- | :--- | :--- | :--- |
