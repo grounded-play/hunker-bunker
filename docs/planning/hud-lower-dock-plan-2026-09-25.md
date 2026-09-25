@@ -9,8 +9,13 @@
 > - sizes every zone from one rule that works on Deck, 1080p and the owner's PC;
 > - lists the engineering traps this repo has already hit;
 > - turns each phase into testable acceptance;
-> - makes the HUD **one narrow band**, with the same layout for every class (6.8 % of
->   the Deck screen always on, down from 24.3 %);
+> - makes the HUD **one narrow band of three panels**, with the same layout for every
+>   class: **map left, health and status centre, gun and ammo right**, slot by slot
+>   (§3A); 6.8 % of the Deck screen always on, down from 24.3 %;
+> - sets a **wear model** (§4A): blood wipes off, cracks repair but leave scratches,
+>   scuffs last the life, infection "squish" fades but its scars stay;
+> - turns Gemini's concept renders into a **reference board and prompts for blank
+>   panel housings** the live UI fills (§4D);
 > - makes the band's **housing the class flavour and the reactive element** (§4A):
 >   cracks, dents, sparks, blood splats that dry after a fight, a console that freezes
 >   up, frost, fog, and wear over time;
@@ -188,6 +193,66 @@ The `.hud-visor-bracket` corners stay as the screen-level frame.
 
 ---
 
+## 3A. The three panels: what goes where
+
+**Map on the left, health and status in the middle, gun and ammo on the right.** Every
+class has the same slots, in the same places. Coordinates are in u inside each panel
+(64 u tall), with the origin at the panel's top-left. Deck = × 0.8.
+
+![Three-panel slot map](assets/hud-lower-dock/three-panel-slot-map.png)
+
+### LEFT: MAP (220 × 64 u; Deck 176 × 51 px)
+
+| # | Slot | Box (x, y, w, h) | Live source | Notes |
+| :-: | :--- | :--- | :--- | :--- |
+| 1 | Radar disc: minimap, heading arrow, blips | 4, 4, 56, 56 (circle) | `#desktop-compass`, `#hud-blueprint-canvas`, `#desktop-compass-arrow` | the minimap drawn round; north-up or heading-up follows the map setting |
+| 2 | Scan ring | ring round the disc | `#radar-scan-panel` cooldown | radar scan belongs to the map, so its cooldown wraps the disc; flashes when ready |
+| 3 | BASE distance + direction | 72, 8, 140, 14 | `#desktop-compass-distance` | `BASE 12u ↗` |
+| 4 | NODE / objective distance | 72, 26, 140, 14 | `#desktop-compass-radar-distance` | hidden when there is no node |
+| 5 | Glyph hints | 72, 44, 140, 14 | live bindings | `[M]` / D-pad-up map · `[Q]` / Deck glyph scan |
+
+Removed from the band: `#hud-map-info` (sector, coordinates, integrity) moves to the
+full map `[M]`.
+
+### CENTRE: HEALTH & STATUS (520 × 64 u; Deck 416 × 51 px)
+
+| # | Slot | Box | Live source | Notes |
+| :-: | :--- | :--- | :--- | :--- |
+| 1 | Status lamp row (**housing**, not glass) | top bezel, 150, −10, 220, 8 | `suitCondition` | SUIT · O₂ · HULL · THERM · TOX: green / amber / red / blinking (§4A) |
+| 2 | Hearts | 12, 6, 170, 22 | `#vitals-hearts` | 1–6 hearts without resizing; PvP 4-heart contract |
+| 3 | Active status icons | 190, 6, 150, 22 | hazard, status effects, fatigue, cover | only active ones: ❄ cold (with freeze stacks), ☣ toxin/caustic/bio, corrosion, fatigue stage, cover; max 5, then `+n` |
+| 4 | O₂ bar + % | 12, 32, 328, 12 | `#vitals-o2-bar`, `#vitals-o2-pct` | red and pulsing under 25 % |
+| 5 | Hull line + % | 12, 48, 328, 8 | `#ship-status-panel` | thin |
+| 6 | Infection gauge | 348, 6, 12, 50 (vertical) | Act 2 `infectionLoad` 0–100 | only once Act 2 infection exists; stage ticks at 25/50/75 |
+| 7 | Loot: MED · TECH | 368, 8, 144, 22 | `#pickup-count-health`, `-weapon` | 60 % opacity idle, pulse on gain |
+| 8 | Loot: COIN · SHELL | 368, 34, 144, 22 | `#pickup-count-coin`, `-shells` | same |
+
+### RIGHT: GUN & AMMO (380 × 64 u; Deck 304 × 51 px)
+
+| # | Slot | Box | Live source | Notes |
+| :-: | :--- | :--- | :--- | :--- |
+| 1 | Weapon silhouette window | 6, 6, 120, 52 | equipped weapon icon (the Armory art) | same icon everywhere (Armory, Foundry, HUD) |
+| 2 | Weapon name | 134, 4, 110, 12 | weapon status | `SIDEARM` |
+| 3 | Ammo `06 / 18` | 134, 16, 110, 28 | `#weapon-clip-current`, `#weapon-clip-max` | largest numbers on the band; tabular figures |
+| 4 | Cache + reload arc | 134, 46, 110, 12 | `#weapon-ammo-cache`, `#weapon-reload-bar` | the arc fills while reloading |
+| 5 | Class ability tile | 252, 6, 60, 52 | `#class-ability-panel` | live key (F) / Deck glyph; cooldown sweep |
+| 6 | Melee / dash tile | 316, 6, 58, 52 | melee + dash cooldowns | two pips: V / Space (or glyphs) |
+
+### Above the band (only when needed)
+
+- **H prompt lane** over the centre: PRESS-E and world prompts, loop step.
+- **I target readout** over the right panel: what you're aiming at.
+- **T transmission** over the left panel: talking portrait + line (§4B).
+
+### Top edge (one line each)
+
+- **A** sector tag and **A2** run chips on the left.
+- **B** alert lane in the centre (boss, hazard, ledger), only when relevant.
+- **C** objective drawer on the right (one line), with **N** notifications under it.
+- **S** gear in its fixed slot.
+
+---
+
 ## 4. Zone specifications
 
 States used below: **Idle** (exploring), **Engaged** (combat signal on, see C),
@@ -237,34 +302,7 @@ as a right-side column; its children move to C and H.
 **S — Settings gear.** It keeps its fixed corner slot (`--corner-settings-*`). The
 dock must never contain it (§6.1).
 
-**D — Radar (compact).** `#desktop-compass` becomes a 56 u radar disc with the
-direction arrow and radar blips (`#hud-blueprint-canvas` drawn round), plus base
-distance and node distance as two short readouts beside it and the `[M]` / D-pad-up
-glyph. `#hud-map-info` (sector, coordinates, integrity) moves to the full map `[M]`;
-its 3 lines are the main reason today's map panel is 300 px tall on Deck.
-
-**E — Dashboard (vitals + loot).**
-- Left two-thirds:
-  - Hearts row (`#vitals-hearts`): holds 1–6 hearts without resizing; PvP uses the
-    4-heart contract.
-  - The O₂ bar (`#vitals-o2-bar`, `#vitals-o2-pct`), with hull (`#ship-status-panel`)
-    as a thin line under it.
-- Right third: loot as a 2 × 2 chip grid: `✚ MED · ⬢ TECH · ◎ COIN · ✪ SHELL`
-  (`#pickup-count-*`, `renderShellCounter`).
-  - Chips sit at **60 % opacity when idle** and pulse to 100 % for 300 ms on a gain.
-  - The TOTAL line is dropped; it only duplicates the sum.
-- Fatigue (`#vitals-fatigue-row`) and cover (`#vitals-cover-row`) appear only when
-  non-nominal, as a small tag.
-- Critical: the affected meter pulses (opacity); `#damage-vignette-layer` stays the
-  screen-level cue.
-- The status lamps (§4A) sit in the housing bezel.
-
-**G — Arsenal + abilities.**
-- Weapon silhouette and name, big tabular `06 / 18`, cache under it.
-- `#weapon-reload-bar` as a thin arc under the ammo.
-- Two ability tiles with their live key/glyph: class ability (`#class-ability-panel`,
-  F / Deck glyph) and radar scan (`#radar-scan-panel`, Q / Deck glyph).
-- Cooldown sweeps use a conic-gradient pseudo-element (no layout).
+**D, E, G: the three panels.** Slot-by-slot in §3A.
 
 **T — Transmission.** A StarCraft-style talking-head window that slides up above the
 radar whenever someone speaks during play: radio, suit barks, the Mothership, NPCs on
@@ -337,7 +375,7 @@ never over numbers.
 | :--- | :--- | :--- | :--- | :--- |
 | **Blood after a fight** (`player-damaged` during combat; enemy type from `reason`) | splatter decals land on the housing glass and metal with each hit taken: ~8 splat shapes, random placement in the housing margins, never over instruments. Colour follows the attacker: red for human, acid green for alien and hive, blue-grey ichor for snails. They **dry and darken** over ~30 s once combat ends, stay for the rest of the expedition, and are wiped at the bunker or by a heal station. | | | a real "after the fight" record on the console |
 | **Console freezing** (cryo biome, `player-cold-exposed`, freeze stacks; `STATUS_IDS.FREEZE` at threshold) | ice crust grows across the glass from the edges; at a full freeze the band **locks up**: needles stick and the backlight stutters for the freeze duration, then cracks free. The numbers stay readable through the ice. | | | pairs with the shared frost overlay below |
-| Hearts lost (`player-damaged` hp / maxHp), 3 tiers | glass panels **crack**, then shatter | armour **dents and gouges**, a slab hangs loose | boards **spark**, a cable arcs, one gauge dies | persists until healed; a heal plays a 400 ms repair (seal, hammer-flat, re-solder) |
+| Hearts lost (`player-damaged` hp / maxHp), 3 tiers | glass panels **crack**, then shatter | armour **dents and gouges**, a slab hangs loose | boards **spark**, a cable arcs, one gauge dies | stays until **repaired** (bunker terminal, Engineer repair, repair kit), which plays a 400 ms seal, hammer-flat or re-solder and leaves a permanent scratch. Every hit also adds a permanent **scuff** for this life (wear model below). |
 | Hit direction (**new**: `sourceX/sourceZ` on `player-damaged`) | the module on the side facing the hit flashes and jolts for 600 ms: the DOOM "glance", as the hardware flinching toward the threat | same | same | screen-relative left / centre / right from the camera |
 | Cold (`player-cold-exposed`, freeze stacks) | frost creeps from the corners in every class; coverage follows exposure / stacks | | | thaws when warm |
 | Low O₂ (< 25 %, `distress-mode`) | the dashboard glass fogs; its warning lamp strobes | | | O₂ arc red |
@@ -349,6 +387,43 @@ never over numbers.
 | Kill streak | accent-colour pulse runs along the struts | | | 1 s |
 | Night | backlights dim to night-cyan | | | |
 | Dead | backlights die module by module, left to right; cracks max out | | | final |
+
+### What lasts how long (the wear model)
+
+Owner, 2026-09-25: *"if you take damage you get a perma scuff and blood that wipes
+off, cracked screens can be repaired but some areas the scratches never leave until a
+new life."*
+
+| Tier | Clears when | What lives here |
+| :--- | :--- | :--- |
+| **Moment** | seconds | hit-direction jolt, sparks, lamp flashes, the freeze lock-up |
+| **While it lasts** | the condition ends | frost and ice (thaws when warm), O₂ fog (clears when O₂ > 25 %), static during a blackout |
+| **Wipes off** | at the bunker, a heal station, or a wipe at a camp | **blood splats** (they dry and darken after the fight first), toxin stains |
+| **Repairable** | a repair: bunker terminal, Engineer repair, repair kit | **cracked screens** and dents, by damage tier. Each repair leaves a **permanent scratch** where the worst crack was. |
+| **This life** | **death**: a new life starts clean | **scuffs**, one per damage instance, placed at random in the housing margins (capped density so it saturates, never covering numbers); the permanent scratches left by repairs; burn marks |
+| **This campaign** | **NEW CAMPAIGN** | **infection scars** (below); fatigue grime follows `fatigue.js` stages and clears with rest |
+
+The housing is a record: a veteran life looks scuffed and scratched, and a fresh life
+after a death looks factory-clean again.
+
+**Infection: rises with time and action, "squish fades, scars stay".**
+- The alien takeover follows Act 2's continuous **`infectionLoad` (0–100)**, not only
+  the stage names. Today it rises with time (≈ 1 point / 12 s of Act 2 play,
+  `humanityDecayProgress`, softened by Tallow and the Bio-Dampener) and fires
+  `player-humanity-changed`.
+- Add **action triggers**, which feed the same load:
+  - hive verbs;
+  - bio / caustic hits taken;
+  - spore exposure;
+  - carrying eggs aboard;
+  - Queen-link choices.
+- The housing tracks the number smoothly. Veins thicken, then chitin buds, then
+  overgrowth, keyed to load bands 25 / 50 / 75 / 100, not a jump at each stage.
+- **The squish fades:** when load falls (treatments, the cure `uninfectSelf`), the
+  biomass (veins, slime, chitin) recedes over ~20 s.
+- **Scars stay:** every load band ever reached leaves a matching scar (burn-etched vein
+  tracks, pitted metal) that stays for the campaign.
+- **Cured** = no biomass, all scars.
 
 **Status lamps: the at-a-glance mood during play.** Each housing carries a short row
 of physical indicator lamps on the dashboard bezel (visible top-left of the concept's
@@ -478,12 +553,12 @@ event skin when the operator becomes something else.
 
 | Event (existing state) | Housing | Portrait |
 | :--- | :--- | :--- |
-| Act 2 infection `latent` (`ACT2_INFECTION_STAGES`) | faint vein pattern under the glass, visible only at low light | none yet |
-| `strained` | veins pulse with the heartbeat, one lamp flickers violet | occasional glitch frame |
-| `symptomatic` | chitin growths bud from the struts, glass clouds amber, blood splats turn ichor-green | operator portrait shows the infection (new render) |
+| Act 2 infection, `infectionLoad` < 25 (`latent`) | faint vein pattern under the glass, visible only at low light | none yet |
+| load 25–49 (`strained`) | veins pulse with the heartbeat, one lamp flickers violet | occasional glitch frame |
+| load 50–74 (`symptomatic`) | chitin growths bud from the struts, glass clouds amber, blood splats turn ichor-green | operator portrait shows the infection (new render) |
 | `outed` | human camp tags scrawled on the housing: "INFECTED" stencil, hazard tape | same |
 | `ascendant` | **full alien housing**: the console is overgrown and organic; hearts render as pulsing organs, O₂ as a spiracle gauge, ammo as a bio-sac. Numbers stay in the same place and stay legible. | alien form clips |
-| `cured` | biomass burned off; permanent scorch and scar marks remain on the housing | scarred operator render |
+| `cured` | the squish fades over ~20 s; the scars of every band reached stay for the campaign (wear model) | scarred operator render |
 | Playing another character (a future playable NPC, possession, a boss form) | that character's housing set in the same layout (e.g. the Queen's throne chitin) | that character's clips |
 | Boss arena, EMP, relay blackout | temporary skins (red-alert strut beacons, EMP dead-glass, static) | — |
 
@@ -491,6 +566,94 @@ Skins are data: `housingSkins.js` maps an event id to its asset set and fallback
 `suitCondition` picks the active skin by priority (transformation > event >
 class). Each event swaps assets and CSS custom properties only, with no layout change,
 so all the §7 layout tests still hold.
+
+---
+
+## 4D. Art direction: from Gemini's renders to production panel backgrounds
+
+### What the eight concept renders teach
+
+Sources in the Antigravity brain folder: `ui_class_chassis_{tank,scout,engineer}_*`,
+`ui_chassis_tank_frozen_*`, `hud_state_freezing_*`, `hud_state_damaged_*`,
+`operator_doom_face_states_*`.
+
+| Keep (material and mood) | Drop (why) |
+| :--- | :--- |
+| TANK: round armoured radar bezel, amber glass, heavy bolts, hazard chevrons, **beacon lamps + toggle row** (= status lamps), riveted weapon dock | **Size:** every render's dock is 35–45 % of the screen height. Ours is 6–8 %. |
+| SCOUT: slim angular dark bezels, cyan glass, side light-bars, minimal struts | **Invented systems:** squads/unit tiles, turns/AP, MOVE/ATTACK/DEFEND buttons, fuel, shields, energy, thrusters, heat maps, inventory/skills tabs. None exist in the game. |
+| ENGINEER: copper conduits, heat-sink fins, **diagnostic LED column** (= status lamps), gauge bezels, conduit-wrapped dock | **Baked text and numbers:** unusable. The live UI draws every number and label, localised into 7 languages. |
+| FREEZE: icicles on bolts, frost crust, ice-web over glass, frosted bar lips | **Wrong camera/genre:** a first-person windshield (damaged), tank vehicles and treads (frozen tank), vehicle convoys (scout). |
+| DAMAGE: crack webs, sparks, red beacons, a "REPAIR REQUIRED" plate | **Screens as pictures:** fabrication schematics and maps painted into glass. Glass must be empty and dark. |
+| PORTRAITS: the nominal → strained → critical → frozen progression | Portraits don't go in the band; they're for dialogue and transmissions (§4B). |
+
+![Reference board](assets/hud-lower-dock/reference-board.jpg)
+
+### What to generate: blank housings, one module at a time
+
+The deliverable is **empty hardware**: the metal/composite frame around **flat, dark,
+empty glass** in the exact slot shapes of §3A. The live UI renders into the glass.
+Generate each module separately at its real aspect ratio, never as a full gameplay
+screenshot:
+
+| Module | Aspect | Generate at | Glass window(s) to leave empty |
+| :--- | :--- | :--- | :--- |
+| LEFT: map | 220 : 64 (3.44 : 1) | 1760 × 512 | one circle (disc, left) + one rectangle (readouts, right) |
+| CENTRE: health & status | 520 : 64 (8.1 : 1) | 2080 × 256, or 2 halves stitched | one wide rectangle (left 2/3) + one small rectangle (loot, right) + a lamp row on the top bezel (5 unlit lamps) |
+| RIGHT: gun & ammo | 380 : 64 (5.9 : 1) | 1900 × 320 | one rectangle (weapon window) + one rectangle (ammo) + two square tile sockets |
+| Struts | 1 : 1 | 512 × 512 | none: the connector between modules, tileable left/right |
+
+Image models fail at extreme aspect ratios and at empty space. If they won't hold 8 : 1,
+generate the centre at 4 : 1 and 9-slice-stretch the middle. Always check that the
+glass came back empty; regenerate if text appears.
+
+### Prompt template
+
+```
+Orthographic front view of a single empty sci-fi hardware panel for a video game HUD,
+flat-on, no perspective, no scene, isolated on a pure black background.
+Panel: {MODULE} module of the {CLASS} class console for "Hunker Bunker", a gritty
+retro-futuristic subterranean survival game.
+Housing: {CLASS_MATERIAL}. Accent lighting: {ACCENT} backlight bleeding from the bezel edges.
+Glass: {GLASS_WINDOWS}. The glass is completely EMPTY — flat, very dark, faintly
+reflective, no text, no numbers, no icons, no graphs, no maps, no UI, nothing displayed.
+Style: tactile, physically built, worn metal, screws and seams, soft studio light from
+top-left, subtle ambient occlusion, high detail, crisp edges for 9-slice scaling.
+Aspect ratio {ASPECT}. Panel fills the frame edge to edge.
+```
+
+**Negative prompt / "avoid":** text, letters, numbers, labels, logos, watermark,
+UI elements, buttons with words, icons, charts, maps, radar content, gameplay,
+characters, faces, vehicles, tank treads, perspective, 3D scene, cockpit windshield,
+background environment.
+
+| Variable | SCOUT (recon rig) | TANK (bulwark plate) | ENGINEER (field bench) |
+| :--- | :--- | :--- | :--- |
+| `{CLASS_MATERIAL}` | thin angular matte-black carbon composite, knife-edge bevels, small sensor fins and a slim antenna mast on the map module, minimal hex screws | thick riveted gunmetal armour slabs, heavy hex bolts, yellow-black hazard chevrons on the lower lip, small hydraulic pistons on the struts | brushed alloy chassis with exposed green circuit boards at the edges, copper conduit loops, heat-sink fins on top of the map module, clamp brackets, a small tool rail on the struts |
+| `{ACCENT}` | cool cyan | warm amber | emerald green with amber secondary |
+| Lamp row (centre) | 5 slim flush LED slits | 5 caged dome beacon lamps + 2 toggle switches | 5 round diagnostic LEDs in a vertical-mount strip laid horizontal |
+
+### State layers (generate as transparent overlays, not new panels)
+
+Each state is a separate transparent PNG/WebP made **on top of the same blank
+panel** (inpaint or img2img at low strength), then cut to alpha, so it stacks per the
+wear model:
+
+| Layer | Prompt addition | Notes |
+| :--- | :--- | :--- |
+| Blood (fresh / dry) | "fresh red blood spatter and drips across the bezel and glass edges, not covering the glass centre" / "dried dark-brown blood, flaking" | greyscale variant for CSS tint (alien green, snail ichor) |
+| Cracks tier 1–3 | "spiderweb crack from one impact point on the glass edge", then "two impacts", then "shattered corner with missing shards" | SCOUT glass; TANK gets **dents/gouges** in the armour, ENGINEER gets **burnt boards + sparks** |
+| Scuffs and scratches | "fine scuffs and deep scratches on the metal edges only" | the permanent life tier, randomised crops |
+| Frost / ice lock | "frost crust creeping from the corners, icicles on bolts, ice webs over glass edges" | reference: the frozen-tank crop |
+| Toxin / squish | "glossy alien biomass, veins and slime creeping over the frame" | fades |
+| Infection scars | "burn-etched vein tracks and pitted metal where growth was removed" | stays |
+| Grime | "soot, grease, tape repairs" | fatigue stages |
+
+**Production path:** use these prompts to settle the look. Then build the final
+housings in **Blender** (one model per class, orthographic render, same light rig),
+with the states as material and geometry variants of that model: dents, cracked-glass
+shader, frost shader, blood decals. Rendered layers line up pixel-perfectly across
+states, and the look doesn't drift between classes. Generated images are concept
+reference, not shipping art.
 
 ---
 
