@@ -1,3 +1,4 @@
+import { createControllerPressGate } from './src/controllerPressGate.js';
 import { crossingGuidance, expeditionDebrief } from './src/expeditionFeedback.js';
 import { runO2MilestoneChoreography } from './src/o2CinematicDoors.js';
 import { compactPerformanceSnapshot, compactPerfPhase, createLongTaskReporter } from './src/longTaskDiagnostics.js';
@@ -2507,6 +2508,8 @@ function handleSteamGameplayInput(controller) {
     });
 }
 
+const controllerPressGate = createControllerPressGate();
+
 function routeMainControllerInput(controller, gameplayActive) {
     // The native snapshot retains gameplay-shaped button names while a movie
     // temporarily owns input during a run. Check the raw controller before
@@ -2532,6 +2535,9 @@ function routeMainControllerInput(controller, gameplayActive) {
             ? ACTION_SETS.GAMEPLAY
             : ACTION_SETS.MENU;
     mainActionRouter.setActionSet(actionSet);
+    // Native Steam Input and the browser Gamepad API both see every press;
+    // the gate lets one press act once, in the context it started in.
+    controller = controllerPressGate.filter(controller, actionSet);
     const { actions } = mainActionRouter.deriveActions(controller);
     if (actionSet === ACTION_SETS.GAMEPLAY) {
         handleSteamGameplayInput(actions);
