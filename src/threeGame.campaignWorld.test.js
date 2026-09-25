@@ -21,7 +21,7 @@ function game() {
         discoveredMapRoomKeys: new Set(),
         discoveredMapCellKeys: new Set()
     };
-    for (const method of ['beginCampaignExpedition', 'persistCampaignWorld', 'getMazePersistenceState',
+    for (const method of ['beginCampaignExpedition', 'isCampaignMap', 'persistCampaignWorld', 'getMazePersistenceState',
         'restoreMazePersistenceState', 'getRadialMazePlan', 'getRadialLayoutSignature',
         'ensureAuthoredWorldPlan', 'getBuiltGoalKeys', 'completeRingCrossingMission',
         'reconcileAuthoredWorldProgression', 'applyMilestoneBossRuntimeEvent', 'getAuthoredSitePosition',

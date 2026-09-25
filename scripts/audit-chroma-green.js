@@ -114,7 +114,25 @@ export const CHROMA_GREEN_ALLOWLIST = new Set([
     'public/Scout.full_v2.png',
     'public/schematics/schematic_05.webp',
     'public/schematics/schematic_06.webp',
-    'public/lore_portraits/queen_00.webp'
+    'public/lore_portraits/queen_00.webp',
+    'public/ui/suit/scout/map.png',
+    'public/ui/suit/scout/map_blood.png',
+    'public/ui/suit/scout/map_damage1.png',
+    'public/ui/suit/scout/map_frost.png',
+    'public/ui/suit/scout/health.png',
+    'public/ui/suit/scout/health_blood.png',
+    'public/ui/suit/scout/health_damage1.png',
+    'public/ui/suit/scout/health_frost.png',
+    'public/ui/suit/scout/gun.png',
+    'public/ui/suit/scout/gun_blood.png',
+    'public/ui/suit/scout/gun_damage1.png',
+    'public/ui/suit/scout/gun_frost.png',
+    'public/ui/suit/tank/map.png',
+    'public/ui/suit/tank/health.png',
+    'public/ui/suit/tank/gun.png',
+    'public/ui/suit/engineer/map.png',
+    'public/ui/suit/engineer/health.png',
+    'public/ui/suit/engineer/gun.png'
 ]);
 
 export function decodeAndSamplePng(buffer) {

@@ -17,7 +17,7 @@ function makeAdaptiveGame() {
         visibleChunkRadius: 2,
         defaultVisibleChunkRadius: 2,
         renderer: {
-            shadowMap: { enabled: true },
+            shadowMap: { enabled: true, autoUpdate: true },
             getPixelRatio: () => pixelRatio,
             setPixelRatio: vi.fn((value) => { pixelRatio = value; }),
             info: {
@@ -36,17 +36,56 @@ function makeAdaptiveGame() {
 }
 
 describe('ThreeGame adaptive gameplay quality', () => {
-    it('engages immediately on Steam Deck and keeps world visibility intact', () => {
+    // Owner rule (2026-08-26, restated 2026-09-25): adaptive quality lowers
+    // render resolution only, and only when that can help (GPU-bound).
+    // Post-processing, live shadows, 3D models and animation stay at full
+    // quality on every tier.
+    it('does not drop the Steam Deck to a lower resolution on its first frame', () => {
         globalThis.window = { __hbSteamStatus: { isSteamDeck: true } };
         const fake = makeAdaptiveGame();
 
         ThreeGame.prototype.updateAdaptiveGameplayQuality.call(fake, 1 / 60);
 
+        expect(fake.adaptiveGameplayPerformanceMode).toBe(false);
+        expect(fake.renderer.setPixelRatio).not.toHaveBeenCalled();
+    });
+
+    it('when engaged, lowers resolution only: post-processing, shadows and world intact', () => {
+        const fake = makeAdaptiveGame();
+
+        fake.setAdaptiveGameplayPerformanceMode(true, { reason: 'test' });
+
         expect(fake.adaptiveGameplayPerformanceMode).toBe(true);
         expect(fake.gameplayPostProcessingEnabled).toBe(true);
         expect(fake.renderer.shadowMap.enabled).toBe(true);
+        expect(fake.renderer.shadowMap.autoUpdate).toBe(true);
         expect(fake.renderer.setPixelRatio).toHaveBeenCalledWith(0.85);
         expect(fake.visibleChunkRadius).toBe(fake.defaultVisibleChunkRadius);
+    });
+
+    it('keeps full resolution when slow frames are main-thread bound', () => {
+        globalThis.window = { __hbSteamStatus: { isSteamDeck: false } };
+        const fake = makeAdaptiveGame();
+        // PC log 2026-09-25: ~8 ms of GPU in ~48 ms frames.
+        fake.gpuFrameTimer = { snapshot: () => ({ supported: true, samples: 500, averageMs: 8.4 }) };
+
+        for (let i = 0; i < 120; i += 1) {
+            ThreeGame.prototype.updateAdaptiveGameplayQuality.call(fake, 0.048);
+        }
+        expect(fake.adaptiveGameplayPerformanceMode).toBe(false);
+        expect(fake.renderer.setPixelRatio).not.toHaveBeenCalled();
+    });
+
+    it('lowers resolution when the GPU fills most of each slow frame', () => {
+        globalThis.window = { __hbSteamStatus: { isSteamDeck: false } };
+        const fake = makeAdaptiveGame();
+        fake.gpuFrameTimer = { snapshot: () => ({ supported: true, samples: 500, averageMs: 36 }) };
+
+        for (let i = 0; i < 60; i += 1) {
+            ThreeGame.prototype.updateAdaptiveGameplayQuality.call(fake, 0.04);
+        }
+        expect(fake.adaptiveGameplayPerformanceMode).toBe(true);
+        expect(fake.gameplayPostProcessingEnabled).toBe(true);
     });
 
     it('waits for sustained low FPS on ordinary hardware', () => {
@@ -94,5 +133,19 @@ describe('ThreeGame adaptive gameplay quality', () => {
 
         expect(composer.render).toHaveBeenCalledOnce();
         expect(renderer.render).not.toHaveBeenCalled();
+    });
+
+    it('keeps loading 3D prop models after adaptive mode engages', () => {
+        const fake = {
+            adaptiveGameplayPerformanceMode: true,
+            _world3dLoadsInFlight: 3,
+            player: { position: { x: 0, z: 0 } }
+        };
+        const source = { userData: { world3dModelType: 'prop_o2_filter_vat' }, position: { x: 0, z: 0 } };
+        // At the in-flight cap it returns before any load; the point is that
+        // the adaptive tier is not itself a reason to stop loading models.
+        const src = ThreeGame.prototype.loadNearbyWorld3dReplacement.toString();
+        expect(src).not.toMatch(/adaptiveGameplayPerformanceMode/);
+        expect(() => ThreeGame.prototype.loadNearbyWorld3dReplacement.call(fake, source)).not.toThrow();
     });
 });

@@ -39,6 +39,7 @@ function makeFakeThis(overrides = {}) {
         damageSnail: ThreeGame.prototype.damageSnail,
         handleSporesnailFightEvent: ThreeGame.prototype.handleSporesnailFightEvent,
         spawnSporesnailAdds: ThreeGame.prototype.spawnSporesnailAdds,
+        spawnBossAdds: ThreeGame.prototype.spawnBossAdds,
         isAct2Active: () => false,
         killedBosses: new Set(),
         killedEnemyScatterKeys: new Set(),

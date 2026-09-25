@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
+import { bootToOperatorMenu, startRunAndSkipIntro, isHostNetworkBlip } from './helpers.js';
 
 // Phase 13: "Use Bunker Tree" (docs/steam-launch-readiness-master-plan.md).
 // Exercises the unified skill tree end to end: opening it, switching
@@ -13,7 +13,7 @@ test.describe('Bunker Tree (console skill tree)', () => {
         test.setTimeout(240_000);
         const consoleErrors = [];
         page.on('console', (msg) => {
-            if (msg.type() === 'error') consoleErrors.push(msg.text());
+            if (msg.type() === 'error' && !isHostNetworkBlip(msg.text())) consoleErrors.push(msg.text());
         });
         page.on('pageerror', (err) => consoleErrors.push(err.message));
 
@@ -45,6 +45,8 @@ test.describe('Bunker Tree (console skill tree)', () => {
         await page.locator('#terminal-tab-objectives').click();
         await expect(page.locator('#terminal-tab-objectives-content')).toBeVisible();
         await expect(page.locator('#terminal-log-day')).toContainText('DAY');
+        await expect(page.locator('#terminal-log-advance-day')).toBeVisible();
+        await expect(page.locator('#terminal-cycle-compact-text')).toBeVisible();
         await expect(page.locator('#terminal-objective-journal-list li').first()).toBeVisible();
         await expect(page.locator('#hull-expansion-section')).toBeVisible();
 

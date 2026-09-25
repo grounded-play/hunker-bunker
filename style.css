@@ -945,6 +945,7 @@ body {
   position: absolute;
   inset: 0;
   overflow: hidden;
+  overflow: clip;
   isolation: isolate;
   background-color: #000;
   background-image: url('/title_key_art_v2.png');
@@ -7359,6 +7360,8 @@ html.presentation-cursor-hidden * {
 
 html.presentation-cursor-hidden #tactical-cursor,
 html.presentation-cursor-hidden #gameplay-crosshair,
+html.presentation-cursor-hidden #tactical-telemeter-box,
+html.presentation-cursor-hidden .cursor-ripple,
 html.presentation-cursor-hidden .virtual-gamepad-cursor {
   display: none !important;
 }
@@ -13044,6 +13047,27 @@ button.archive-log-entry:active {
   padding: calc(var(--vu) * 0.4) calc(var(--vu) * 1.2);
 }
 
+.terminal-clock-status {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: calc(var(--vu) * 1.15);
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #ffb72e;
+  border: 1px solid rgba(255, 183, 46, 0.45);
+  background: rgba(255, 183, 46, 0.12);
+  border-radius: 4px;
+  padding: calc(var(--vu) * 0.4) calc(var(--vu) * 1.2);
+  text-shadow: 0 0 6px rgba(255, 183, 46, 0.45);
+  animation: terminalStatusPulse 2s ease-in-out infinite;
+}
+
+@keyframes terminalStatusPulse {
+  0%, 100% { opacity: 0.95; }
+  50% { opacity: 0.55; }
+}
+
 .terminal-clock-label {
   font-family: 'Outfit', sans-serif;
   font-size: calc(var(--vu) * 1.05);
@@ -14285,6 +14309,39 @@ button.archive-log-entry:active {
 }
 
 /* ── Archive Row ────────────────────────────────────────────── */
+.go-expedition-report {
+  margin-top: clamp(6px, calc(var(--vu) * 0.9), 12px);
+  padding: clamp(6px, calc(var(--vu) * 0.9), 10px) clamp(8px, calc(var(--vu) * 1.2), 14px);
+  border: 1px solid rgba(255, 159, 28, 0.28);
+  background: rgba(255, 159, 28, 0.05);
+}
+
+.go-expedition-report__title {
+  color: #ff9f1c;
+  font-size: clamp(9px, calc(var(--vu) * 1.15), 13px);
+  letter-spacing: 0.12em;
+  margin-bottom: 4px;
+}
+
+.go-expedition-report__lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 3px;
+  font-size: clamp(9px, calc(var(--vu) * 1.1), 13px);
+  color: #d7dde3;
+}
+
+.go-expedition-report__line--bounty_met,
+.go-expedition-report__line--next_goal_ready {
+  color: #7ee0a1;
+}
+
+.go-expedition-report__line--bounty_missed {
+  color: #f0a45b;
+}
+
 .go-archive-row {
   grid-column: 1 / -1;
   display: flex;
@@ -22448,6 +22505,45 @@ body.colorblind-assist #net-mode-pvp-btn.active {
 }
 
 .run-card-chip--world { color: #7fd4ff; }
+
+.hud-bounty-chip {
+  margin-top: 4px;
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 159, 28, 0.55);
+  color: #ffc36b;
+  font-size: clamp(8px, calc(var(--vu) * 1.0), 11px);
+  letter-spacing: 0.06em;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.hud-bounty-chip.is-ready {
+  border-color: rgba(126, 224, 161, 0.7);
+  color: #7ee0a1;
+}
+
+.hud-event-chip {
+  border-color: rgba(125, 252, 255, 0.5);
+  color: #9ff5ff;
+}
+
+.hud-event-chip.is-engaged {
+  border-color: rgba(255, 139, 122, 0.7);
+  color: #ff8b7a;
+}
+
+/* Above the HUD notification stack (17000), which otherwise covers the close button. */
+.expedition-event-modal {
+  z-index: 17100;
+}
+
+.expedition-event-options {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 760px) {
+  .expedition-event-options { grid-template-columns: minmax(0, 1fr); }
+}
 .run-card-chip--faction { color: #ffc46b; }
 .run-card-chip--threat { color: #ff8b7a; }
 
@@ -23087,10 +23183,34 @@ body.contrast-max .hud-panel {
 #console-terminal-modal .terminal-body { overflow: hidden; padding-right: 0; }
 #console-terminal-modal .terminal-tab-content:not(.hidden) { display: flex; flex: 1 1 auto; min-height: 0; overflow: hidden; }
 #console-terminal-modal .terminal-layout--shop { min-height: 0; overflow: hidden; }
-.terminal-objective-log-summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; margin-bottom: 12px; }
-.terminal-objective-log-summary > div { display: flex; flex-direction: column; gap: 5px; padding: 12px 14px; border: 1px solid rgba(var(--terminal-glow-rgb),.3); background: rgba(var(--terminal-glow-rgb),.07); }
+.terminal-objective-compact-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  margin-bottom: 8px;
+  border-left: 3px solid var(--terminal-glow);
+  background: rgba(var(--terminal-glow-rgb), 0.1);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: #fff;
+}
+.terminal-objective-compact-icon {
+  color: var(--terminal-glow);
+}
+.terminal-objective-log-summary { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 10px; margin-bottom: 8px; }
+.terminal-objective-log-summary > div { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border: 1px solid rgba(var(--terminal-glow-rgb),.3); background: rgba(var(--terminal-glow-rgb),.07); }
 .terminal-objective-log-summary span { color: rgba(255,255,255,.55); font-size: 11px; letter-spacing: .12em; }
-.terminal-objective-log-summary strong { color: var(--terminal-glow); font-size: clamp(14px,1.25vw,20px); }
+.terminal-objective-log-summary strong { color: var(--terminal-glow); font-size: clamp(13px,1.1vw,18px); }
+.terminal-summary-card--advance strong { font-size: clamp(11px,.85vw,13px) !important; line-height: 1.25; }
+.terminal-summary-card--advance strong[data-allowed="true"] { color: #4ade80 !important; }
+.terminal-summary-card--advance strong[data-allowed="false"] { color: #ff9f1c !important; }
+.terminal-cycle-progress-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 6px 12px; border: 1px solid rgba(var(--terminal-glow-rgb),.2); background: rgba(0,0,0,.3); }
+.terminal-cycle-track { flex: 1; height: 6px; background: rgba(255,255,255,.12); border-radius: 3px; overflow: hidden; }
+.terminal-cycle-fill { height: 100%; background: linear-gradient(90deg, #ff9f1c, var(--terminal-glow), #4ade80); border-radius: 3px; transition: width .3s ease; }
+.terminal-cycle-progress-text { font-family: 'Outfit',sans-serif; font-size: 11px; font-weight: 800; letter-spacing: .12em; color: rgba(255,255,255,.7); white-space: nowrap; }
 #terminal-tab-objectives-content { flex-direction: column; }
 .terminal-objectives-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; min-height: 0; overflow-y: auto; }
 .terminal-objective-journal { grid-column: 1 / -1; min-height: 0; }
@@ -23110,6 +23230,7 @@ body.contrast-max .hud-panel {
 
 @media (min-width: 761px) and (max-width: 1180px) and (min-height: 621px) {
   .settings-tabs { grid-template-columns: repeat(3, 1fr); }
+  .terminal-objective-log-summary { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* Hero-select commands occupy a stable 3×3 command deck above INITIALIZE.
@@ -23754,21 +23875,23 @@ body.contrast-max .hud-panel {
    art remains visible instead of being blurred on the empty side. */
 #splash::before {
   left: auto;
-  right: 0;
-  background: linear-gradient(270deg, rgba(4, 6, 7, 0.94) 0%, rgba(4, 6, 7, 0.7) 58%, transparent 100%);
-  -webkit-mask-image: linear-gradient(270deg, black 62%, transparent 100%);
-  mask-image: linear-gradient(270deg, black 62%, transparent 100%);
+  right: -50px;
+  top: -20px;
+  bottom: -20px;
+  width: calc(60% + 50px);
+  height: calc(100% + 40px);
+  background: linear-gradient(270deg, rgba(4, 6, 7, 0.94) 0%, rgba(4, 6, 7, 0.82) 35%, rgba(4, 6, 7, 0.6) 65%, transparent 100%);
+  -webkit-mask-image: linear-gradient(270deg, black 65%, transparent 100%);
+  mask-image: linear-gradient(270deg, black 65%, transparent 100%);
 }
 
 /* The frost follows the veil to the right-hand menu side. The veil's darkest
    stop is eased slightly so the frosted art actually reads through it. */
 .splash-frost {
-  -webkit-mask-image: linear-gradient(270deg, black 0%, black 36%, transparent 58%);
-  mask-image: linear-gradient(270deg, black 0%, black 36%, transparent 58%);
-}
-
-#splash::before {
-  background: linear-gradient(270deg, rgba(4, 6, 7, 0.84) 0%, rgba(4, 6, 7, 0.62) 58%, transparent 100%);
+  inset: -50px;
+  -webkit-mask-image: linear-gradient(270deg, black 0%, black 40%, transparent 65%);
+  mask-image: linear-gradient(270deg, black 0%, black 40%, transparent 65%);
+  transform: none;
 }
 
 .splash-content {

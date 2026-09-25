@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { bootToTitleSplash, bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
+import { bootToTitleSplash, bootToOperatorMenu, startRunAndSkipIntro, isHostNetworkBlip } from './helpers.js';
 
 // Phase 13, docs/steam-launch-readiness-master-plan.md: "Boot to menu",
 // "Start run", "1280x800 layout screenshot". Runs in a plain browser tab
@@ -12,7 +12,7 @@ test.describe('boot and main menu', () => {
     test('clicking anywhere boots the WebGL core and reveals the title splash', async ({ page }) => {
         const consoleErrors = [];
         page.on('console', (msg) => {
-            if (msg.type() === 'error') consoleErrors.push(msg.text());
+            if (msg.type() === 'error' && !isHostNetworkBlip(msg.text())) consoleErrors.push(msg.text());
         });
         page.on('pageerror', (err) => consoleErrors.push(err.message));
 

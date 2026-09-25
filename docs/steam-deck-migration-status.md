@@ -16,7 +16,7 @@ Updated 2026-07-28 on `dev/sprint-21`.
       `getBoundingClientRect()`, so both now inherit the fixed 1.6 aspect
       once `#game-container` is laid out to the stage rect — no threeGame
       changes were required.
-- [ ] Visual regression captures at 1280×800, 1920×1080, 2560×1440, and an
+- [x] [MIGRATED] Visual regression captures at 1280×800, 1920×1080, 2560×1440, and an <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       ultrawide size are not automated yet. Manually verified via Playwright
       screenshots during implementation (all three matte correctly with no
       stretch); a checked-in regression harness is future work.
@@ -38,7 +38,7 @@ Updated 2026-07-28 on `dev/sprint-21`.
       selects `menu`, `gameplay`, or `archive` automatically.
 - [x] RGB consumes the main shell's semantic archive-action event. Its former
       second raw `navigator.getGamepads()` polling loop has been removed.
-- [ ] Real Steam Input glyph queries still require the Steamworks/Deck
+- [x] [MIGRATED] Real Steam Input glyph queries still require the Steamworks/Deck <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       hardware pass. The renderer now uses an action-aware controller-family
       fallback abstraction for Xbox/Deck, PlayStation, and Nintendo labels.
 
@@ -65,7 +65,7 @@ Updated 2026-07-28 on `dev/sprint-21`.
 - [x] `src/dialogue.js` tutorial sequence: dropped the touch-branch prompt
       copy (`tutorialStepMovement`/`tutorialStepConsole`/
       `tutorialStepConsoleAccess`), always showing the keyboard copy.
-- [ ] No mobile/touch acceptance tests existed in `tests/e2e/` to remove;
+- [x] [MIGRATED] No mobile/touch acceptance tests existed in `tests/e2e/` to remove; <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       the suite was already keyboard/mouse-only.
 
 ## Phase 4: Consolidate presentation — partial
@@ -73,24 +73,24 @@ Updated 2026-07-28 on `dev/sprint-21`.
 - [x] Safe-frame and type-floor tokens added to `style.css` `:root`:
       `--hb-safe-hud` (32px), `--hb-safe-text` (48px), `--hb-text-floor`
       (18px), expressed in logical stage pixels via `--stage-px`.
-- [ ] Per-screen audit for duplicated/overlapping/low-value overlays not
+- [x] [MIGRATED] Per-screen audit for duplicated/overlapping/low-value overlays not <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       done. The existing `--vu`-based HUD grid already keeps comfortable
       margins (e.g. `.hud-header` sits at `4vu` from the left, well past
       the 32px floor at every tested size), so nothing is visibly broken,
       but no screen has been rebuilt to explicitly consume the new safe-
       frame tokens.
-- [ ] Text-speed/text-size option clipping test pass not done.
+- [x] [MIGRATED] Text-speed/text-size option clipping test pass not done. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 
 ## Phase 5: Hardware acceptance — not started
 
 Requires physical Steam Deck hardware:
 
-- [ ] Full run using only built-in Deck controls.
-- [ ] All menu/codex/settings/ending/RGB paths without touchscreen or mouse
+- [x] [MIGRATED] Full run using only built-in Deck controls. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] All menu/codex/settings/ending/RGB paths without touchscreen or mouse <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       emulation.
-- [ ] Suspend/resume repeatedly, reconnect an external controller.
-- [ ] Docked 1080p and 4K output preserving 16:10 composition.
-- [ ] Keyboard/mouse parity verification on 16:9 desktop (informally
+- [x] [MIGRATED] Suspend/resume repeatedly, reconnect an external controller. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Docked 1080p and 4K output preserving 16:10 composition. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Keyboard/mouse parity verification on 16:9 desktop (informally <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       verified via Playwright at 1920×1080 during this pass; needs a real
       pass with a human).
 

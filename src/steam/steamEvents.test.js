@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildSteamRunScorePayload } from './steamEvents.js';
+import { buildSteamRunScorePayload, isRankedRunPayload } from './steamEvents.js';
 
 describe('buildSteamRunScorePayload', () => {
     it('builds normalized leaderboard targets for a normal failed run', () => {
@@ -145,5 +145,30 @@ describe('buildSteamRunScorePayload', () => {
             medkitsTraded: 2,
             o2Traded: 3
         });
+    });
+
+    it('tags assisted runs and routes to assisted leaderboards', () => {
+        const payload = buildSteamRunScorePayload({
+            score: 1500,
+            runStartTime: 1000,
+            endedAt: 61000,
+            assisted: true,
+            stats: { distanceTravelled: 500, depthTier: 1 }
+        });
+        expect(payload.assisted).toBe(true);
+        expect(payload.leaderboardTargets).toEqual([
+            { name: 'assisted_best_run_score', score: 1500, keep: 'best' },
+            { name: 'assisted_survival_time_seconds', score: 60, keep: 'best' },
+            { name: 'assisted_deepest_depth_score', score: 100500, keep: 'best' }
+        ]);
+    });
+});
+
+describe('isRankedRunPayload', () => {
+    it('keeps PvP matches off the expedition leaderboards', () => {
+        expect(isRankedRunPayload({ multiplayer: { isMultiplayer: true, mode: 'pvp' } })).toBe(false);
+        expect(isRankedRunPayload({ multiplayer: { isMultiplayer: true, mode: 'coop' } })).toBe(true);
+        expect(isRankedRunPayload({ multiplayer: { isMultiplayer: false, mode: null } })).toBe(true);
+        expect(isRankedRunPayload(null)).toBe(false);
     });
 });

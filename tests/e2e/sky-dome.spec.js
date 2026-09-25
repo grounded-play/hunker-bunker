@@ -55,13 +55,18 @@ test.describe('procedural sky dome', () => {
                 childCount: group.children.length,
                 visibleLayers: group.children
                     .filter((c) => c.userData?.layerId && c.visible)
-                    .map((c) => ({
+                    .map((c) => {
+                        // Animated layers (cloud, storm, aurora) are shader
+                        // materials that carry their texture as uMap.
+                        const map = c.material?.map ?? c.material?.uniforms?.uMap?.value ?? null;
+                        return {
                         id: c.userData.layerId,
-                        hasTexture: Boolean(c.material?.map),
+                        hasTexture: Boolean(map),
                         // A texture that failed to load stays 0x0.
-                        width: c.material?.map?.image?.width ?? 0,
+                        width: map?.image?.width ?? 0,
                         opacity: c.material?.opacity ?? 0
-                    })),
+                        };
+                    }),
                 weatherState: game.skyState?.weatherState ?? null,
                 inScene: Boolean(group.parent)
             };

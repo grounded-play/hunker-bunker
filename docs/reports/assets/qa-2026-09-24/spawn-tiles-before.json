@@ -1,0 +1,39 @@
+{
+ "spawn": {
+  "x": 7.4,
+  "y": 11.799999999999999
+ },
+ "player": {
+  "x": 7.4,
+  "z": 11.799999999999999
+ },
+ "rows": [
+  "-10 XXXXXXXXXXCOOOOO...OOOOOOO#..",
+  " -9 XXXXXXXXXXCOOOOO...OOOOOOO#..",
+  " -8 XXXXXXXXXXCOOOOO...OOOOOOO#..",
+  " -7 XXXXXXXXXXCOOOOO...OOOOOOO#..",
+  " -6 XXXXXXXXXXCOOOOO...OOOOOOO#..",
+  " -5 XXXXXXXXXXCOOOOO...OOOOOOO#..",
+  " -4 XXXXXXXXXXCOOOOO...OOOOOOO#..",
+  " -3 XXXXXXXXXXCOOOO#...#OOOOOO#..",
+  " -2 XXXXXXXXXXCOOOO#...#OOOOOO###",
+  " -1 XXXXXXXXXXCOOOO#...#OOOOOOOOO",
+  "  0 ########OOOOOOO#...#OOOOOOOOO",
+  "  1 .......#OOOOOOO#...#OOOOOOOOO",
+  "  2 .......#OOOOOOO#...#OOOOOOOOO",
+  "  3 .......#O#################OOO",
+  "  4 ..##..##O#...............#OOO",
+  "  5 .......#O#...............#OOO",
+  "  6 .......#O#...............#OOO",
+  "  7 .......#O#...............#OOO",
+  "  8 ....#.##O#...............#OOO",
+  "  9 .......#O#...............#OOO",
+  " 10 .......#O#...............#OOO",
+  " 11 .......#O#...............#OOO",
+  " 12 #...#.##O#...............#OOO",
+  " 13 .......#O#...............#OOO",
+  " 14 .......#O#...............#OOO"
+ ],
+ "seed": 0,
+ "runEntropy": 3630585123
+}

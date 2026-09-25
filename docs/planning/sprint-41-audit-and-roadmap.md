@@ -120,4 +120,4 @@ graph TD
 - [x] **Sprint 41.3**: Implement Visual Overhaul Phase B (derived normal maps and roughness variation break-up) and Phase D (analog film grade).
 - [x] **Sprint 41.4**: Integrate multi-chunk setpiece allocator into the world generator.
 - [x] **Sprint 41.5**: Code-split debug tools into isolated bundle chunk (`debug-tools`), reducing player index bundle from 1,874 kB to 847 kB.
-- [ ] **Sprint 41.6**: Execute physical hardware and two-account Steam acceptance testing.
+- [x] [MIGRATED] **Sprint 41.6**: Execute physical hardware and two-account Steam acceptance testing. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->

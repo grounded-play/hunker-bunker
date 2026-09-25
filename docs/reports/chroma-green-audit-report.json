@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-09-23T21:09:03.248Z",
-  "scannedCount": 64,
+  "timestamp": "2026-09-25T19:38:04.027Z",
+  "scannedCount": 82,
   "unallowedCount": 0,
-  "allowlistCount": 105,
+  "allowlistCount": 123,
   "unallowed": [],
   "findings": [
     {
@@ -340,6 +340,114 @@
       "ratio": 0.4504,
       "width": 512,
       "height": 512
+    },
+    {
+      "file": "public/ui/suit/tank/health.png",
+      "ratio": 0.7919,
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "file": "public/ui/suit/tank/map.png",
+      "ratio": 0.5284,
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "file": "public/ui/suit/tank/gun.png",
+      "ratio": 0.7233,
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "file": "public/ui/suit/scout/map_frost.png",
+      "ratio": 0.4947,
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "file": "public/ui/suit/scout/map_blood.png",
+      "ratio": 0.5324,
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "file": "public/ui/suit/scout/health.png",
+      "ratio": 0.7986,
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "file": "public/ui/suit/scout/map.png",
+      "ratio": 0.5347,
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "file": "public/ui/suit/scout/health_blood.png",
+      "ratio": 0.7982,
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "file": "public/ui/suit/scout/gun.png",
+      "ratio": 0.7316,
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "file": "public/ui/suit/scout/health_frost.png",
+      "ratio": 0.7906,
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "file": "public/ui/suit/scout/gun_blood.png",
+      "ratio": 0.7306,
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "file": "public/ui/suit/scout/health_damage1.png",
+      "ratio": 0.7986,
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "file": "public/ui/suit/scout/gun_damage1.png",
+      "ratio": 0.7316,
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "file": "public/ui/suit/scout/map_damage1.png",
+      "ratio": 0.5344,
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "file": "public/ui/suit/scout/gun_frost.png",
+      "ratio": 0.7163,
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "file": "public/ui/suit/engineer/health.png",
+      "ratio": 0.7792,
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "file": "public/ui/suit/engineer/map.png",
+      "ratio": 0.4847,
+      "width": 2048,
+      "height": 1152
+    },
+    {
+      "file": "public/ui/suit/engineer/gun.png",
+      "ratio": 0.7023,
+      "width": 2048,
+      "height": 1152
     },
     {
       "file": "public/economy/charm_dark_matter_chroma.jpg",

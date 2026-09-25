@@ -12,7 +12,7 @@ const MIN_FIRE_INTERVAL_MS = 40; // ~25 shots/sec cap per socket
 // client's existing heart balance -- BASE_HEARTS (src/threeGame.js) and
 // one heart per accepted shot -- so moving authority to the server does not
 // change game balance, only who gets to decide the outcome of a hit.
-const PVP_DEFAULT_MAX_HP = 3;
+export const PVP_DEFAULT_MAX_HP = 4;
 // Relay and client both track PvP health in hearts. Keeping damage at the
 // old value of 10 against 3 max HP made the server declare a target dead
 // after one hit while the client only removed one displayed heart.
@@ -57,7 +57,13 @@ const PVE_MIN_HIT_INTERVAL_MS = MIN_FIRE_INTERVAL_MS;
 const PVE_STATE_MIN_INTERVAL_MS = 75;
 // A world beat is a rare, deliberate event (a goal built, a boss staged), so a
 // low ceiling is generous while still bounding a misbehaving client.
-const WORLD_EVENT_MAX_PER_SECOND = 8;
+// A Tank slam can break several walls at once, each its own event.
+const WORLD_EVENT_MAX_PER_SECOND = 20;
+// Continuous visual streams (host-spawned enemy projectiles, radio lines) get
+// their own budget, so a busy fight cannot spend the state budget and make the
+// relay silently drop a death, a drop or a destroyed wall.
+const WORLD_EVENT_STREAM_MAX_PER_SECOND = 40;
+const STREAM_WORLD_EVENTS = new Set(['enemy-projectile-spawned', 'bunker-line']);
 const WORLD_EVENT_MAX_DETAIL_BYTES = 4096;
 // Cap on a friendly-fire shove so a rapid-fire weapon cannot fling a squadmate.
 const PLAYER_NUDGE_MAX_FORCE = 4;
@@ -645,10 +651,14 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             if (!eventName) return;
 
             const now = Date.now();
-            // Cheap flood guard: a world beat is a rare, deliberate thing.
-            player.recentWorldEvents = (player.recentWorldEvents ?? []).filter((t) => now - t < 1000);
-            if (player.recentWorldEvents.length >= WORLD_EVENT_MAX_PER_SECOND) return;
-            player.recentWorldEvents.push(now);
+            // Cheap flood guard: a world beat is a rare, deliberate thing;
+            // streamed effects are counted separately (see STREAM_WORLD_EVENTS).
+            const isStream = STREAM_WORLD_EVENTS.has(eventName);
+            const bucketKey = isStream ? 'recentStreamWorldEvents' : 'recentWorldEvents';
+            const limit = isStream ? WORLD_EVENT_STREAM_MAX_PER_SECOND : WORLD_EVENT_MAX_PER_SECOND;
+            player[bucketKey] = (player[bucketKey] ?? []).filter((t) => now - t < 1000);
+            if (player[bucketKey].length >= limit) return;
+            player[bucketKey].push(now);
 
             let detail = null;
             try {

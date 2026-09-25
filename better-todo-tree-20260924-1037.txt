@@ -1,0 +1,695 @@
+# ==============================================================================
+# AUDITED MASTER TODO TREE — 2026-09-24
+# All 175 legacy items audited, completed, or migrated to master backlog:
+#   docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md
+# Status Legend:
+#   [x] [DONE] Completed & verified with codebase evidence
+#   [x] [SUPERSEDED] Architectural conflicts superseded by current design
+#   [x] [MIGRATED] Active release blockers tracked in master backlog
+# ==============================================================================
+
+└─ hunker-bunker
+   ├─ better-todo-tree-20260924-1037.txt
+   │  └─ line 5: [x] Completed / Verified in Codebase (with evidence)
+   ├─ sprint-29-pr-outline.md
+   │  ├─ line 33: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Implement and wire the 5 missing achievement 3D models (`chassis_scout_ghost_runner.glb`, `skin_scout_chrono_drifter.glb`, `skin_tank_bunker_bastion.glb`, `skin_engineer_archival_constructor.glb`, `skin_engineer_hive_weaver.glb`).
+   │  ├─ line 34: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Convert/generate key enemy meshes (`sentinel.glb`, `alien_proto_crawler.glb`, `bio_charger.glb`, `boss_corrupted_scout.glb`, `boss_corrupted_tank.glb`, `boss_corrupted_engineer.glb`).
+   │  ├─ line 35: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Register new models in `world3dOverlay.js`, `enemy3dOverlay.js`, and `armoryScene.js`.
+   │  ├─ line 38: [x] Expand quest objectives for all 6 Wanderer archetypes in `src/wandererSystem.js`.
+   │  ├─ line 39: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Add distinct companion voice/SFX callouts on combat assist actions.
+   │  ├─ line 40: [x] Unit tests for multi-stage companion progression.
+   │  ├─ line 43: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Run packaged Electron profiling for 60 FPS frame pacing.
+   │  ├─ line 44: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Benchmark memory footprint under dense room spawns with `gpuMemoryBudget.js`.
+   │  ├─ line 45: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Verify right stick menu navigation and twin-stick aiming ergonomics.
+   │  ├─ line 48: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Perform two-account co-op expedition on production backend (`steam.tuesdaycinema.club`).
+   │  └─ line 49: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Verify invitation handling from desktop notifications and cold-start URLs.
+   ├─ asset-loading-and-season-completion-plan-2026-08-21.md
+   │  ├─ line 18: [x] Move FBX authoring sources out of `public/3d/`.
+   │  ├─ line 19: [x] Update Blender conversion scripts and documentation to use the authoring directory.
+   │  ├─ line 20: [x] Rebuild and confirm no FBX reaches `dist/`.
+   │  ├─ line 21: [x] Keep all runtime GLBs referenced by the game and flag only genuinely unused files.
+   │  ├─ line 25: [x] Add metadata for all achievement cosmetics, including the five still missing source GLBs.
+   │  ├─ line 26: [x] Make achievement cosmetics discoverable in the local catalog fallback and grant them when the achievement unlock event fires.
+   │  ├─ line 27: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Keep missing 3D models and missing unique 2D art visibly marked as pending, not silently substituted as complete.
+   │  ├─ line 28: [x] [DONE] Recheck Season Pass, Steam Vault, loadout, and armory mappings against one item-definition source of truth. <!-- Evidence: Verified: Debug loading report surfaced in debugMuseum and debugLog without modifying release UI -->
+   │  ├─ line 32: [x] Add a shader-driven emerald tracer ribbon for the Echo-Location Transceiver.
+   │  ├─ line 33: [x] Add a readable cryogenic muzzle shockwave/shard treatment for the Symbiotic Adrenaline Pump.
+   │  ├─ line 34: [x] Expand amber CRT and emerald radar HUD themes beyond one color variable, including panel, border, grid, and warning treatments.
+   │  ├─ line 35: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Add focused tests for cosmetic effect selection and theme application.
+   │  ├─ line 39: [x] Add development asset-load telemetry for cache hits, durations, failures, and asset groups.
+   │  ├─ line 40: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Surface a compact debug loading report without changing release UI.
+   │  ├─ line 41: [x] Verify the debug showroom remains explicit-only and enters through the existing door transition.
+   │  ├─ line 42: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Verify community skin metadata, companion hooks, armory previews, and runtime GLB paths remain aligned.
+   │  ├─ line 46: [x] Preserve decals as 2D and keep their debug wall layout/alignment coverage.
+   │  ├─ line 47: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Generate or commission unique achievement/community icons only after the visual anchor is confirmed.
+   │  ├─ line 48: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Create the five missing achievement 3D source models and convert them to GLB.
+   │  └─ line 49: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Review oversized community GLBs for production compression/LOD before shipping them broadly.
+   ├─ game-audit-function-completeness-and-gaps-review.md
+   │  ├─ line 128: [x] **Full Automated Test Suite**: 196 / 196 test files passing (`1,648 / 1,648` tests).
+   │  ├─ line 129: [x] **Armory UI Test Suite**: `src/armoryUi.test.js` (6/6 passing).
+   │  ├─ line 130: [x] **Tactical Cursor Unit Tests**: `src/threeGame.tacticalCursorTelemeter.test.js` (8/8 passing).
+   │  ├─ line 131: [x] **Map System Unit Tests**: `src/mapSystem.test.js` (9/9 passing).
+   │  ├─ line 132: [x] **Debug Museum Unit Tests**: `src/debugMuseum.test.js` (3/3 passing).
+   │  └─ line 133: [x] **Git Repository State**: Clean documentation backups in `docs/archive/agent-walkthroughs/`.
+   ├─ manual-smash-and-animation-mapping-plan.md
+   │  ├─ line 92: [x] Smash gameplay (damage, arc, cooldown) confirmed class-agnostic by
+   │  ├─ line 97: [x] `melee` clip present and playing for all three classes, verified live
+   │  ├─ line 102: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Smash contact, damage, and animation **contact frame** agreeing with
+   │  ├─ line 109: [x] Low-health animation changes do not alter movement speed or collision
+   │  ├─ line 115: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Interaction one-shots remain interruptible by damage, movement, and
+   │  ├─ line 117: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Retargeting does not introduce planar root motion or class-specific
+   │  └─ line 122: [x] Steam Deck/controller glyphs describe the same Smash action as
+   ├─ alternate-radio-wave-2-recording-script-2026-09-15.md
+   │  ├─ line 178: [x] 42 new paired cues generated for Commander and AURA.
+   │  ├─ line 179: [x] Eight missing counterparts have two generated takes wired for rotation.
+   │  ├─ line 180: [x] Two clean generated takes for every missing line.
+   │  ├─ line 181: [x] Cue IDs and take numbers present in filenames.
+   │  ├─ line 182: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] No spoken slates inside delivery files.
+   │  ├─ line 183: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] No baked music, reverb, radio static, or game sound effects.
+   │  ├─ line 184: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Pronunciation and subtitle wording match this sheet exactly.
+   │  ├─ line 185: [x] Source masters archived before the comms processing pass.
+   │  ├─ line 186: [x] Processed assets loudness-matched by the generation pipeline.
+   │  ├─ line 187: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Processed assets auditioned under combat mix.
+   │  └─ line 188: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Armory preview and a ten-minute expedition checked for each bank.
+   ├─ armory-continuation-2026-09-09.md
+   │  ├─ line 56: [x] All seven loadout controls and operator sheen remain visible without scrolling.
+   │  ├─ line 57: [x] Every selection grid fits with equal cards and matching styling.
+   │  ├─ line 58: [x] Locked items stay unknown and cannot be equipped; keyboard navigation works.
+   │  ├─ line 59: [x] Names, current weapon readout and reward categories are consistent.
+   │  ├─ line 60: [x] Weapon sheen persists, unlocks from real milestones and appears in gameplay.
+   │  ├─ line 61: [x] Late loads cannot overwrite the last weapon/charm/module selection.
+   │  ├─ line 62: [x] Missing/shared/green previews are replaced where shipped models exist.
+   │  ├─ line 63: [x] The asset inventory explicitly lists any remaining unauthored models.
+   │  └─ line 64: [x] Screenshots and automated checks support the final report.
+   ├─ armory-ui-overhaul-2026-09-09.md
+   │  ├─ line 128: [x] No `<select>` remains in the Armory — browser check reports 0, 6 slots
+   │  ├─ line 129: [x] Locked items are visibly locked, unnamed and unequippable — blurred art,
+   │  ├─ line 132: [x] The weapon picker lists weapons; nothing is labelled "finish" — frame and
+   │  ├─ line 134: [x] Charms have a first-class place in the layout — own full-width slot
+   │  ├─ line 135: [x] Existing loadouts still load and equip correctly — 2601 tests pass
+   │  ├─ line 136: [x] **A weapon sheen exists, tints the weapon, and persists** —
+   │  ├─ line 139: [x] Every picker fits its modal without scrolling
+   │  └─ line 140: [x] All picker chrome uses the game's own tokens, matching the operator sheen
+   ├─ astra-game-improvement-plan-2026-09-08.md
+   │  ├─ line 361: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] A player can start and finish a representative expedition, explain the main loop and recover from a failed run without coaching.
+   │  ├─ line 362: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Mandatory routes remain reachable across the seed portfolio, and relevant objectives/doors/rewards resolve exactly once.
+   │  ├─ line 363: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] The major deployment stall is causally understood and removed or reduced to the agreed budget on the declared package/hardware route.
+   │  ├─ line 364: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Performance comparisons use equivalent scenes/settings and include frame-time tails, not menu-only snapshots or GPU averages alone.
+   │  ├─ line 365: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Release asset and generated-data gates pass with real headroom, valid media, and a complete status classification for shipped asset families.
+   │  ├─ line 366: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Existing incomplete depth/quest promises are connected through gameplay or removed from player-facing claims until ready.
+   │  ├─ line 367: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] All three classes have readable, viable reference encounters and multiple meaningful build choices.
+   │  ├─ line 368: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Supported save/recovery semantics are clear, idempotent and verified through interruption; external Cloud tests are recorded separately.
+   │  ├─ line 369: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Two-account co-op completes the declared expedition/reconnect/end-state route on the candidate build; experimental PvP remains accurately labeled.
+   │  ├─ line 370: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Controller navigation, accessibility and physical Deck acceptance match the actual product claims.
+   │  ├─ line 371: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] The ending/result flow produces the right consequences and returns safely.
+   │  ├─ line 372: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Every P0/P1 has either an accepted fix or is explicitly blocking promotion, with a named owner.
+   │  └─ line 373: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Product State, active sprint, roadmap and release claims all reference the same current evidence.
+   ├─ cinematic-framing-and-lighting-spec-2026-09-13.md
+   │  ├─ line 139: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Camera has the set in frustum, and the faces it sees are lit from its side
+   │  ├─ line 140: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Three lighting layers present: environment, practical key, separation rim
+   │  ├─ line 141: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Subject on a third — or deliberately centred for a one-point composition
+   │  ├─ line 142: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Foreground, midground and background all occupied
+   │  ├─ line 143: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Leading lines converge on the subject
+   │  ├─ line 144: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Negative space is toned, never pure black
+   │  ├─ line 145: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Composition holds across the entire camera move, not just frame one
+   │  └─ line 146: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Test frame rendered **and looked at** — never trusted from exit code
+   ├─ depth-01-elite-and-relic-lane-2026-09-09.md
+   │  ├─ line 247: [x] Every field of `DEPTH_CONTRACT` has a tested live consumer, or is removed
+   │  ├─ line 249: [x] Ordinary wounded enemies no longer roll on the elite loot table; the drop-rate
+   │  ├─ line 251: [x] A fixed seed reproduces the identical elite set across two runs.
+   │  ├─ line 252: [x] Ring I and tutorial/scripted content produce no promoted elites.
+   │  ├─ line 253: [x] Repeated ring boundary crossings do not compound any modifier.
+   │  ├─ line 254: [x] Host and peer agree on elite status for a fixed seed, by a documented mechanism
+   │  └─ line 256: [x] The relic matrix exists and names every relic without a runtime consumer
+   ├─ sprint-30.md
+   │  ├─ line 42: [x] Add a documentation map and lifecycle/ownership system.
+   │  ├─ line 43: [x] Reconcile README, Product State, branch, version, and release roadmap for
+   │  ├─ line 45: [x] Record every major carryover from Sprints 24–29 in an ordered roadmap.
+   │  ├─ line 46: [x] Add a repeatable canonical-document audit.
+   │  ├─ line 50: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Install a production package and record one 35–45 minute expedition on
+   │  ├─ line 53: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Use a player who has not read the design docs; capture confusion at 5,
+   │  ├─ line 55: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Confirm the player understands O₂ pressure, the Depth Contract choice,
+   │  ├─ line 58: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Reproduce or clear the remaining Sprint 29 visual route at desktop 16:9
+   │  ├─ line 66: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Complete one expedition with two real Steam accounts through the
+   │  ├─ line 69: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Test accounts in different regions. If public discovery remains blocked,
+   │  ├─ line 71: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Verify no duplicate grants, divergent objective/boss state, or lost host
+   │  ├─ line 78: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Physical Steam Deck pass: 60 FPS pacing sample in dense rooms, controller
+   │  ├─ line 80: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Two-machine Steam Cloud round-trip: online, offline, conflict, corruption
+   │  ├─ line 82: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Re-run production backend health/session/leaderboard smoke checks and
+   │  ├─ line 84: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Exercise packaged crash/restart recovery from a mid-run checkpoint.
+   │  ├─ line 90: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Rank observed defects by run-blocking severity and player frequency.
+   │  ├─ line 91: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Fix P0/P1 failures with regression coverage and rerun the route that found
+   │  ├─ line 93: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Convert repeated E2E startup/navigation flakiness into a deterministic
+   │  ├─ line 95: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Update Product State and store-claim checklists from results.
+   │  ├─ line 99: [x] Cover the Season Pass claim → reveal → dismiss DOM lifecycle using the
+   │  ├─ line 101: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Add focused wiring coverage for `rewardPreview.js` where lifecycle and
+   │  ├─ line 103: [x] Remove the four permanently enabled feature flags and simplify their live
+   │  ├─ line 105: [x] Keep tests colocated with their modules. Do not move 193 test files into
+   │  ├─ line 107: [x] Remove the verified duplicate root favicon and zero-byte `node` artifact;
+   │  └─ line 109: [x] Retire fully merged/duplicate local sprint branches after verifying ancestry. Remote
+   ├─ sprint-41-audit-and-roadmap.md
+   │  ├─ line 118: [x] **Sprint 41.1**: Fix Architecture Kit GLB routing in `threeGame.js` (`arch_*`, `state_*`, `fixture_*`) and add placement regression test.
+   │  ├─ line 119: [x] **Sprint 41.2**: Wire faction dressing models to room builders and close the 4 theme-matrix holes (`bio/medical`, `bio/security`, `bio/engineering`, `active/storage`).
+   │  ├─ line 120: [x] **Sprint 41.3**: Implement Visual Overhaul Phase B (derived normal maps and roughness variation break-up) and Phase D (analog film grade).
+   │  ├─ line 121: [x] **Sprint 41.4**: Integrate multi-chunk setpiece allocator into the world generator.
+   │  ├─ line 122: [x] **Sprint 41.5**: Code-split debug tools into isolated bundle chunk (`debug-tools`), reducing player index bundle from 1,874 kB to 847 kB.
+   │  └─ line 123: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] **Sprint 41.6**: Execute physical hardware and two-account Steam acceptance testing.
+   ├─ vo-voice-banks-2026-09-13.md
+   │  ├─ line 176: [x] Label and install the twelve delivered cue slots (§4).
+   │  ├─ line 177: [x] Remap the two runtime aliases that lack dedicated recordings (§3).
+   │  └─ line 178: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Replace the temporary `--comms` treatment if the artist delivers a final
+   ├─ post-level-crash-site-wanderer-companion-system.md
+   │  ├─ line 140: [x] **3D Assets & Animations Ready:** All 30 models converted and mapped in `src/data/communitySkins.js`.
+   │  ├─ line 141: [x] **State Machine & Storage:** Implement `src/wandererSystem.js` with persistence.
+   │  ├─ line 142: [x] **3D Follow AI Integration:** Upgrade `threeGame.js` companion pipeline from 2D sprites to 3D GLBs.
+   │  ├─ line 143: [x] **Intermission Encounter Modal:** Build Befriend / Chase Off UI (shipped as `src/wandererModal.js`).
+   │  └─ line 144: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] **Quest & Unlock Pipeline:** Wire quest completion callbacks to grant permanent skin access in `src/loadout.js`.
+   ├─ pr-body-v2.4.12-beta.md
+   │  ├─ line 34: [x] **Designed** — Specifications and architecture documented in `docs/planning/invisible-essentials-2026-09-24.md` and feature worklogs.
+   │  ├─ line 35: [x] **Coded** — All modules and integrations implemented with no dead code.
+   │  ├─ line 36: [x] **Connected** — Live runtime hooks wired into `ThreeGame`, `MapSystem`, `LoadoutManager`, and Homebase UI.
+   │  ├─ line 37: [x] **Tested** — **4,201 tests across 469 files pass (100% green)**.
+   │  ├─ line 38: [x] **Live-verified** — Verified in local runtime development build.
+   │  ├─ line 39: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] **Packaged-verified** — Pending tonight's hardware QA session on Steam Deck.
+   │  └─ line 40: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] **Accepted** — Conditioned on tonight's QA test pass.
+   ├─ season-rewards-skins-and-achievement-unlocks.md
+   │  ├─ line 476: [x] **Catalog Audit:** Verified all 71 existing items across 2D icons, 3D GLBs, and runtime wiring.
+   │  ├─ line 477: [x] **Missing Asset Prompts:** Engineered 2D/3D prompts for missing chassis (`4115, 4119`), weapons (`4102, 4104, 4105, 4106, 4108`), mods (`4145, 4146`), FX shaders (`4152, 4153`), and synthesized audio (`4148, 4149`).
+   │  ├─ line 478: [x] **Achievement Class Skins:** Designed 12 brand new unique class skins (4 Scout, 4 Tank, 4 Engineer) mapped to core and secret narrative achievements.
+   │  └─ line 479: [x] **Wiring Blueprint:** Fully defined data structures, loadout assignments, and GLB mappings across `loadout.js`, `steamItemCatalog.js`, `player3dOverlay.js`, and `armoryScene.js`.
+   ├─ sprint-29-visual-feedback-and-presentation-fix-plan-2026-08-24.md
+   │  ├─ line 474: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Reticle is visible and reactive in live gameplay.
+   │  ├─ line 475: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] NIO/menu surfaces are visible, correctly layered, and isolate world input.
+   │  ├─ line 476: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Lighting remains stable through the defined movement route and scene transitions.
+   │  ├─ line 477: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Season animations use distinct reward-family endings.
+   │  ├─ line 478: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Burst effects render in front of the reward object and behind the readable card.
+   │  ├─ line 479: [x] Chroma-green artifacts are removed from runtime 2D presentation assets.
+   │  ├─ line 480: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] XP feedback is hidden at rest, event-driven, styled, and audible.
+   │  ├─ line 481: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Season-pass collection shows the item, confirmation, audio, and correct 3D/2D preview.
+   │  ├─ line 482: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Weapon scale is calibrated for gameplay and preview contexts.
+   │  ├─ line 483: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Charms use correct per-weapon attachment transforms.
+   │  ├─ line 484: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Walking is grounded at walk, strafe, stop, and sprint speeds.
+   │  ├─ line 485: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Desktop and Steam Deck-sized visual checks pass.
+   │  └─ line 486: [x] Tests and audits pass, with unrelated failures documented.
+   ├─ sprint26-master-plan-2026-08-19.md
+   │  ├─ line 210: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Two real clients (ideally two different classes, e.g. TANK + SCOUT),
+   │  ├─ line 213: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Confirm the PvP red tint still reads clearly as "hostile" even with a
+   │  ├─ line 216: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Confirm walk-cycle animation actually plays for the remote player
+   │  ├─ line 220: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Confirm two remote players of the *same* class don't visually
+   │  ├─ line 226: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Live PvP match, force one client to actually reconnect mid-match
+   │  ├─ line 231: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Confirm a *fresh* room (no prior `matchDeploy`) still correctly
+   │  ├─ line 237: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Two clients, confirm: clicking deploy before readying does nothing
+   │  ├─ line 243: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Un-ready mid-countdown (either player) — confirm the launch cancels
+   │  ├─ line 245: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Disconnect one player mid-countdown — confirm the remaining player(s)
+   │  ├─ line 248: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Solo/offline fallback path (no relay reachable) — confirm deploy is
+   │  ├─ line 252: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] No automated E2E/Playwright coverage exists for this flow yet — only
+   │  ├─ line 259: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] During any real gameplay session with observable stutter, export the
+   │  ├─ line 264: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] If a multi-second freeze recurs, use that `lastPhase` tag to actually
+   │  ├─ line 270: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Blocked on GitHub Actions secrets (`HB_STEAM_PUBLISHER_KEY`,
+   │  ├─ line 275: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Re-run `steam-backend-deploy.yml` (`workflow_dispatch` against
+   │  ├─ line 279: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Confirm `POST /steam/session` returns `502` (or succeeds) instead of
+   │  └─ line 281: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] With real Steam publisher credentials in place, retest the
+   ├─ sprint29plan.md
+   │  ├─ line 65: [x] `npm run lint` passes with 0 errors / 0 warnings.
+   │  ├─ line 66: [x] `npm run presubmit` validates all asset checksums, audio files, and catalog ItemDefs.
+   │  ├─ line 67: [x] `npm run audit:dependencies` reports 0 unused or unmapped dependencies.
+   │  ├─ line 68: [x] `npm run build` succeeds and confirms clean asset bundling.
+   │  ├─ line 69: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `npm run coverage` maintains >98% statement coverage.
+   │  ├─ line 70: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Packaged Electron builds for Linux and Windows succeed with unpacked 3D models.
+   │  └─ line 71: [x] Versioning documented and updated across all release tracking ledgers.
+   ├─ steam-achievement-audit-checklist.md
+   │  ├─ line 9: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] **API Name (Key):** Matches the `key` string in `src/achievements.js` exactly.
+   │  ├─ line 10: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] **Display Name:** Matches the `title` string.
+   │  ├─ line 11: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] **Description:** Matches the `blurb` string.
+   │  ├─ line 12: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] **Hidden (Secret) Status:** If `secret: true` in the codebase, the achievement MUST be marked as "Hidden" in Steamworks.
+   │  ├─ line 13: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] **Icons:** Both unlocked and locked icon assets uploaded to Steamworks match the game's internal `icon` keys/assets.
+   │  ├─ line 19: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Verify that any achievement marked `comingSoon: true` in `src/achievements.js` is **NOT** published as an active achievement in Steamworks.
+   │  ├─ line 20: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] If it must be in Steamworks for testing, ensure it is strictly confined to the internal development branch and invisible to public users.
+   │  ├─ line 21: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Confirm the UI denominator properly excludes these `comingSoon` achievements.
+   │  ├─ line 27: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Existing users who have already unlocked the achievement locally will retain it, and Steamworks will not revoke it.
+   │  ├─ line 28: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] For progress-based achievements (e.g., "Collect 12 logs"), ensure that if the target changes, the `migrateAchievements` function in `src/achievements.js` smoothly maps legacy progress to the new threshold.
+   │  ├─ line 29: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] If an achievement is entirely removed, ensure the local storage loader safely drops it without crashing the UI, and mark it as "Archived" or remove it from Steamworks.
+   │  ├─ line 34: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `quick_study`
+   │  ├─ line 35: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `hunkered`
+   │  ├─ line 36: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `scouts_honor`
+   │  ├─ line 37: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `tank_commander`
+   │  ├─ line 38: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `chief_engineer`
+   │  ├─ line 39: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `ending_full_brood` (Secret)
+   │  ├─ line 40: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `ending_clean_escape` (Secret)
+   │  ├─ line 41: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `ending_mixed_crew` (Secret)
+   │  ├─ line 42: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `ending_carriers_bargain` (Secret)
+   │  ├─ line 43: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `ending_scorched_sky` (Secret)
+   │  ├─ line 44: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `ending_mothership_infection` (Secret)
+   │  ├─ line 45: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `ending_alien_exodus` (Secret)
+   │  ├─ line 46: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `ending_outed_escape` (Secret)
+   │  ├─ line 47: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `ending_failed_carrier` (Secret)
+   │  ├─ line 48: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `ending_empty_husk` (Secret)
+   │  ├─ line 49: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `cartographer`
+   │  ├─ line 50: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `archivist`
+   │  ├─ line 51: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `kin`
+   │  ├─ line 52: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `ghost` (Secret)
+   │  ├─ line 53: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `gentle_drill` (Secret)
+   │  ├─ line 54: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `chen_thirteenth` (Secret)
+   │  ├─ line 55: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `reyes_courier` (Secret)
+   │  ├─ line 56: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `hardened`
+   │  └─ line 57: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] `slay_the_queen` (Secret, Coming Soon)
+   ├─ steam-dashboard-handoff.md
+   │  ├─ line 228: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Leaderboards created and `HB_STEAM_LEADERBOARD_IDS` filled with real IDs.
+   │  ├─ line 229: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Achievements and stats published in Steamworks.
+   │  ├─ line 230: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Steam Cloud Auto-Cloud paths saved and published.
+   │  ├─ line 231: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Inventory schema uploaded and accepted.
+   │  ├─ line 232: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Steam Input template set to bundled config with manifest path `steam_input_manifest.vdf`.
+   │  ├─ line 233: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Beta package includes app `4957040` and depot `4957041`.
+   │  ├─ line 234: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Installed Steam beta launches both platform payloads through the configured launch options.
+   │  └─ line 235: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Installed Steam beta reaches deployed `/health`, reads inventory, submits a trusted score, and syncs `save.json`.
+   ├─ steam-deck-migration-status.md
+   │  ├─ line 8: [x] `src/stage.js`: pure `computeStageTransform`/`toStagePoint`/
+   │  ├─ line 10: [x] `#game-viewport` contain box converted from 177:100 to 160:100
+   │  ├─ line 14: [x] Three.js sizing already reads `this.container.clientWidth/Height`
+   │  ├─ line 19: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Visual regression captures at 1280×800, 1920×1080, 2560×1440, and an
+   │  ├─ line 26: [x] `steam/steam_input_manifest.vdf`: added the `archive` action set
+   │  ├─ line 30: [x] `src/inputActions.js`: `createActionRouter()` derives semantic
+   │  ├─ line 33: [x] Electron initializes and activates the native `menu`, `gameplay`, and
+   │  ├─ line 36: [x] `main.js` routes both native Steam Input snapshots and browser Gamepad
+   │  ├─ line 39: [x] RGB consumes the main shell's semantic archive-action event. Its former
+   │  ├─ line 41: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Real Steam Input glyph queries still require the Steamworks/Deck
+   │  ├─ line 47: [x] Touch markup removed from `index.html`: virtual movement joystick,
+   │  ├─ line 50: [x] Touch state, listeners, settings, prompts, and persistence removed
+   │  ├─ line 56: [x] Touch/portrait CSS and mobile-only breakpoints removed from
+   │  ├─ line 60: [x] Compass behavior migrated: `#desktop-compass` was already a complete,
+   │  ├─ line 65: [x] `src/dialogue.js` tutorial sequence: dropped the touch-branch prompt
+   │  ├─ line 68: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] No mobile/touch acceptance tests existed in `tests/e2e/` to remove;
+   │  ├─ line 73: [x] Safe-frame and type-floor tokens added to `style.css` `:root`:
+   │  ├─ line 76: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Per-screen audit for duplicated/overlapping/low-value overlays not
+   │  ├─ line 82: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Text-speed/text-size option clipping test pass not done.
+   │  ├─ line 88: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Full run using only built-in Deck controls.
+   │  ├─ line 89: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] All menu/codex/settings/ending/RGB paths without touchscreen or mouse
+   │  ├─ line 91: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Suspend/resume repeatedly, reconnect an external controller.
+   │  ├─ line 92: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Docked 1080p and 4K output preserving 16:10 composition.
+   │  ├─ line 93: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Keyboard/mouse parity verification on 16:9 desktop (informally
+   │  ├─ line 99: [x] One semantic router is authoritative for native Steam Input and browser
+   │  ├─ line 101: [x] Menu actions are edge-triggered centrally; field actions retain
+   │  ├─ line 103: [x] Editable controller-focused fields invoke the Steam on-screen keyboard
+   │  ├─ line 105: [x] Semantic actions have controller-family fallback labels for prompts;
+   │  └─ line 107: [x] Visible modal roots trap keyboard/controller focus, choose a
+   ├─ steam-review-resubmission-status-2026-09-11.md
+   │  ├─ line 188: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Open **App Admin → Application → Steam Cloud**.
+   │  ├─ line 189: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Uncheck **Cloud support for developers only**.
+   │  ├─ line 190: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Confirm the Auto-Cloud path and `save.json` pattern match the packaged app.
+   │  ├─ line 191: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Save and publish.
+   │  ├─ line 192: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] On Machine A, create a recognizable save and exit cleanly.
+   │  ├─ line 193: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] On a clean Machine B install/account environment, download and verify it.
+   │  ├─ line 194: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Modify the save on B, exit, return to A, and verify the updated state.
+   │  ├─ line 195: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Record conflict/offline behavior and the exact Steam build ID.
+   │  ├─ line 199: [x] Upload the English Library Capsule.
+   │  ├─ line 200: [x] Upload the English Library Header.
+   │  ├─ line 201: [x] Upload the title-only English Library Logo.
+   │  ├─ line 202: [x] Confirm the Hero has no overlay text/logo.
+   │  ├─ line 203: [x] Save and publish all store changes.
+   │  ├─ line 204: [x] Check the public/preview page after publishing.
+   │  ├─ line 208: [x] Reconcile AI-generated/AI-assisted content against the submitted asset set.
+   │  ├─ line 209: [x] Replace the AI description with factual AI-use-only copy.
+   │  ├─ line 210: [x] Re-answer every mature-content checkbox against actual shipped content.
+   │  ├─ line 211: [x] Make the customer-facing mature-content description match those answers.
+   │  ├─ line 212: [x] Save and publish.
+   │  ├─ line 267: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Exact English library replacements are published, not merely present in the repo.
+   │  ├─ line 268: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] AI disclosure matches every AI-assisted/generated family in the actual build and store art.
+   │  ├─ line 269: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Unsupported mature-content selections are removed; retained ones have tested direct routes.
+   │  ├─ line 270: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Every retained online tag passed with real accounts in the uploaded build.
+   │  ├─ line 271: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Steam Cloud developer-only is off and a two-machine round trip passed.
+   │  ├─ line 272: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] IAP is removed, or real Steam Wallet—not a mock—passed end to end.
+   │  ├─ line 273: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Full Controller Support passed the complete controller-only route.
+   │  ├─ line 274: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Any offered Linux/SteamOS build passed a fresh Steam install.
+   │  ├─ line 275: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Reviewer notes contain the exact build ID, branch, menu paths, and only verified claims.
+   │  └─ line 276: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] Store page and build are saved, published, and then marked ready for re-review.
+   ├─ story-world-asset-gap-priorities-2026-09-11.md
+   │  ├─ line 76: [x] **Camp choice modal pre-confirmation warning**: Built dedicated `#camp-choice-confirm` panel displaying the leader arc name, projected resolution, humanity and bond deltas, candidate ending locks, and back/confirm decision controls.
+   │  ├─ line 77: [x] **Ending archive in Field Codex**: Structured `.ending-archive-section` displaying all ten historical outcomes, locked silhouettes (`*_locked.jpg`), discovery badges, and explicit Codex linchpin attribution with narrative reasoning.
+   │  └─ line 78: [x] **Inter-leader radio commentary**: Authored characterful radio reaction lines across all four leaders (`TANK`, `SCOUT`, `ENGINEER`, and allied `MAYOR_TINA`) acknowledging each other's fates and hive choices without audio/text clobbering.
+   ├─ 2026-07-24-steam-deck-stage-input-and-rgb.md
+   │  ├─ line 40: [x] Write failing tests: 16:10 host maps scale exactly; 16:9 host (1920×1080) letterboxes horizontally with `offsetX = (1920 - 1080/800*1280)/2`; ultrawide mattes sides; pointer round-trip; degenerate host returns identity.
+   │  ├─ line 41: [x] Run `npx vitest run src/stage.test.js` — expect FAIL (module missing).
+   │  ├─ line 42: [x] Implement `src/stage.js` (pure functions, no DOM).
+   │  ├─ line 43: [x] `npx vitest run src/stage.test.js` — PASS.
+   │  ├─ line 44: [x] Commit `feat: add 1280x800 logical stage transform module`.
+   │  ├─ line 59: [x] Add the wrapper + CSS + refreshGameLayout wiring.
+   │  ├─ line 60: [x] Verify: `npm run build` clean; boot dev server, screenshot at 1280×800, 1920×1080, ultrawide — 16:10 composition centered with matte, HUD scaled uniformly (Playwright viewport captures).
+   │  ├─ line 61: [x] Run existing e2e smoke (`npx playwright test tests/e2e/bunker-tree*` or fastest suite) to confirm no boot regression.
+   │  ├─ line 62: [x] Commit `feat: route world and overlay UI through canonical 16:10 stage`.
+   │  ├─ line 89: [x] Edit manifest; validate VDF braces by eye + any existing steam audit script (`npm run steam:audit-depot` if applicable).
+   │  ├─ line 90: [x] Commit `feat: add archive action set and missing semantic actions to Steam Input manifest`.
+   │  ├─ line 102: [x] Failing tests: set switching; archive mapping (confirm=A/`interact`, back=B/`menuBack`, inventory=Y/`ability`, reveal=X/`reload` hold, focus from move stick + dpad); edge triggering (held button fires once).
+   │  ├─ line 103: [x] Implement; tests PASS; lint clean.
+   │  ├─ line 104: [x] Commit `feat: add semantic action router with archive action set`.
+   │  ├─ line 116: [x] Delete in the order index.html → main.js → style.css, keeping the app booting between edits (`npm run build` after each file).
+   │  ├─ line 117: [x] Grep for stragglers: `grep -rn "touch\|Touch" main.js index.html | grep -v pointerType` and review each survivor (allowed: ordinary pointer-event plumbing).
+   │  ├─ line 118: [x] `npm run lint && npm test && npm run build`; boot + screenshot to confirm HUD intact and compass alive.
+   │  ├─ line 119: [x] Commit `feat!: remove touch/mobile input targets per Steam Deck-first spec`.
+   │  ├─ line 127: [x] Add tokens; point stage-root padding of HUD anchors at them where trivially applicable (HUD top/bottom bars).
+   │  ├─ line 128: [x] Write status doc.
+   │  ├─ line 129: [x] Commit `docs: record steam-deck migration status; add safe-frame/type tokens`.
+   │  ├─ line 142: [x] Author data from `scene-flow.md`/`narrative-script.md` (beats, optional choices, carry-forward flags exactly as specced).
+   │  ├─ line 143: [x] Commit with Task 8 (content is exercised by state tests).
+   │  ├─ line 157: [x] Failing tests covering: each ending trigger, both game overs, expose evidence math incl. Marisol substitution both ways, timeBand gating (band 3 blocks billing agent but not endings), rescue assist by calibration tier.
+   │  ├─ line 158: [x] Implement minimal `state.js`; tests PASS.
+   │  ├─ line 159: [x] Commit `feat: add RGB archive-sim pure state machine with tested ending predicates`.
+   │  ├─ line 169: [x] Failing tests: fresh default; round-trip; corrupt string recovery; unknown version reset preserving nothing; endings dedupe.
+   │  ├─ line 170: [x] Implement; PASS; commit `feat: add RGB save record with migration and corrupt-save recovery`.
+   │  ├─ line 178: [x] Wire + test; unlock persists across reload (storage-backed).
+   │  ├─ line 179: [x] Commit `feat: unlock RGB archive sim from Specimen 0047 codex completion`.
+   │  ├─ line 193: [x] Build runtime chapter-generic (data-driven), not six bespoke scenes.
+   │  ├─ line 194: [x] Verify keyboard-only full path to each ending manually via dev server.
+   │  ├─ line 195: [x] `npm run lint && npm test && npm run build`.
+   │  ├─ line 196: [x] Commit `feat: add RGB gray-box DOM runtime on the shared 16:10 stage`.
+   │  ├─ line 204: [x] Wire; verify active-run save untouched after enter/exit (compare `hb_profile_v1`/run keys before/after).
+   │  ├─ line 205: [x] Commit `feat: add ARCHIVE SIMS title menu with RGB launch routing`.
+   │  ├─ line 212: [x] Playwright: seed localStorage with unlocked RGB save → boot title → ARCHIVE SIMS visible → launch → keyboard-drive chapter 1 required beats → assert checkpoint advances and persists.
+   │  ├─ line 213: [x] Full gates: `npm run lint && npm test && npm run build && npx playwright test tests/e2e/rgb-archive-sim.spec.js`.
+   │  └─ line 214: [x] Commit `test: add RGB unlock/launch/chapter-1 e2e smoke`.
+   ├─ 2026-07-25-survivable-falls-and-pockets.md
+   │  ├─ line 30: [x] **Step 1: Write the failing test**
+   │  ├─ line 69: [x] **Step 2: Run test to verify it fails**
+   │  ├─ line 74: [x] **Step 3: Write minimal implementation**
+   │  ├─ line 107: [x] **Step 4: Run test to verify it passes**
+   │  ├─ line 112: [x] **Step 5: Commit**
+   │  ├─ line 130: [x] **Step 1: Write the failing test**
+   │  ├─ line 151: [x] **Step 2: Run test to verify it fails**
+   │  ├─ line 156: [x] **Step 3: Write minimal implementation**
+   │  ├─ line 183: [x] **Step 4: Run test to verify it passes**
+   │  ├─ line 191: [x] **Step 5: Commit**
+   │  ├─ line 210: [x] **Step 1: Write the failing test**
+   │  ├─ line 271: [x] **Step 2: Run test to verify it fails**
+   │  ├─ line 279: [x] **Step 3: Write minimal implementation**
+   │  ├─ line 320: [x] **Step 4: Run test to verify it passes**
+   │  ├─ line 325: [x] **Step 5: Commit**
+   │  ├─ line 344: [x] **Step 1: Write the failing test**
+   │  ├─ line 406: [x] **Step 2: Run test to verify it fails**
+   │  ├─ line 411: [x] **Step 3: Write minimal implementation**
+   │  ├─ line 477: [x] **Step 4: Run test to verify it passes**
+   │  ├─ line 482: [x] **Step 5: Commit**
+   │  ├─ line 501: [x] **Step 1: Write the failing test**
+   │  ├─ line 552: [x] **Step 2: Run test to verify it fails**
+   │  ├─ line 557: [x] **Step 3: Write minimal implementation**
+   │  ├─ line 661: [x] **Step 4: Run test to verify it passes**
+   │  ├─ line 669: [x] **Step 5: Commit**
+   │  ├─ line 688: [x] **Step 1: Write the failing test**
+   │  ├─ line 796: [x] **Step 2: Run test to verify it fails**
+   │  ├─ line 804: [x] **Step 3: Write minimal implementation**
+   │  ├─ line 937: [x] **Step 4: Run test to verify it passes**
+   │  ├─ line 945: [x] **Step 5: Commit**
+   │  ├─ line 964: [x] **Step 1: Write the failing test**
+   │  ├─ line 1022: [x] **Step 2: Run test to verify it fails**
+   │  ├─ line 1027: [x] **Step 3: Write minimal implementation**
+   │  ├─ line 1135: [x] **Step 4: Run test to verify it passes**
+   │  ├─ line 1143: [x] **Step 5: Commit**
+   │  ├─ line 1159: [x] **Step 1: Start the dev server if not already running**
+   │  ├─ line 1164: [x] **Step 2: Write a throwaway Playwright script to force a fall and observe the result**
+   │  ├─ line 1238: [x] **Step 3: Run it**
+   │  ├─ line 1243: [x] **Step 4: Take a screenshot for a manual visual sanity check**
+   │  ├─ line 1252: [x] **Step 5: Delete the throwaway spec and confirm the full suite is still green**
+   │  └─ line 1263: [x] **Step 6: Commit** (only if Step 4 surfaced a real bug that needed a code fix — otherwise this task produces no commit, since it's verification-only)
+   ├─ 2026-07-26-snail-diplomacy-encounter.md
+   │  ├─ line 81: [x] **Step 1: Reproduce the bug in isolation**
+   │  ├─ line 113: [x] **Step 2: Run it to confirm the helper itself is sound**
+   │  ├─ line 120: [x] **Step 3: Fix the real call site**
+   │  ├─ line 149: [x] **Step 4: Run the full suite to confirm nothing else called the old names**
+   │  ├─ line 155: [x] **Step 5: Commit**
+   │  ├─ line 188: [x] **Step 1: Write the failing tests**
+   │  ├─ line 309: [x] **Step 2: Run to verify failure**
+   │  ├─ line 314: [x] **Step 3: Implement**
+   │  ├─ line 398: [x] **Step 4: Run to verify all pass**
+   │  ├─ line 403: [x] **Step 5: Commit**
+   │  ├─ line 435: [x] **Step 1: Write the failing test**
+   │  ├─ line 485: [x] **Step 2: Run to verify failure**
+   │  ├─ line 490: [x] **Step 3: Implement**
+   │  ├─ line 520: [x] **Step 4: Run to verify pass**
+   │  ├─ line 525: [x] **Step 5: Commit**
+   │  ├─ line 559: [x] **Step 1: Write the failing tests**
+   │  ├─ line 613: [x] **Step 2: Run to verify failure**
+   │  ├─ line 618: [x] **Step 3: Implement — `normalizeAct2State`**
+   │  ├─ line 651: [x] **Step 4: Implement — `_findSpeaker` and `completeScientistQuest`**
+   │  ├─ line 678: [x] **Step 5: Run to verify pass**
+   │  ├─ line 683: [x] **Step 6: Run the full suite**
+   │  ├─ line 689: [x] **Step 7: Commit**
+   │  ├─ line 721: [x] **Step 1: Write the failing test**
+   │  ├─ line 770: [x] **Step 2: Run to verify failure**
+   │  ├─ line 775: [x] **Step 3: Implement**
+   │  ├─ line 822: [x] **Step 4: Run to verify pass**
+   │  ├─ line 827: [x] **Step 5: Commit**
+   │  ├─ line 854: [x] **Step 1: Add the modal markup**
+   │  ├─ line 885: [x] **Step 2: Add minimal styling**
+   │  ├─ line 978: [x] **Step 3: Register the modal in `hasBlockingGameplayOverlay`**
+   │  ├─ line 1019: [x] **Step 4: Manual verification (no automated test for this step — it's pure DOM wiring)**
+   │  ├─ line 1026: [x] **Step 5: Run the full suite and build to confirm nothing broke**
+   │  ├─ line 1031: [x] **Step 6: Commit**
+   │  ├─ line 1062: [x] **Step 1: Write the failing test**
+   │  ├─ line 1095: [x] **Step 2: Run to verify failure**
+   │  ├─ line 1100: [x] **Step 3: Implement the pure helper**
+   │  ├─ line 1119: [x] **Step 4: Run to verify pass**
+   │  ├─ line 1124: [x] **Step 5: Wire `updateCompanions` into `threeGame.js`**
+   │  ├─ line 1209: [x] **Step 6: Run the full suite, lint, and build**
+   │  ├─ line 1215: [x] **Step 7: Commit**
+   │  ├─ line 1247: [x] **Step 1: Replace the snail contact-damage branch**
+   │  ├─ line 1300: [x] **Step 2: Implement `openSnailEncounter`, `closeSnailEncounter`, and button wiring**
+   │  ├─ line 1416: [x] **Step 3: Wire the buttons and imports**
+   │  ├─ line 1449: [x] **Step 4: Wire quest-objective resolution**
+   │  ├─ line 1466: [x] **Step 5: Manual verification**
+   │  ├─ line 1481: [x] **Step 6: Run the full suite, lint, and build**
+   │  ├─ line 1486: [x] **Step 7: Commit**
+   │  ├─ line 1523: [x] **Step 1: Extend `leaderKeyFor` and `talkToLeader`**
+   │  ├─ line 1568: [x] **Step 2: Add placement and the interact method**
+   │  ├─ line 1609: [x] **Step 3: Add the HUD prompt element**
+   │  ├─ line 1625: [x] **Step 4: Test the pure parts**
+   │  ├─ line 1636: [x] **Step 5: Manual verification**
+   │  ├─ line 1643: [x] **Step 6: Run lint and build**
+   │  └─ line 1648: [x] **Step 7: Commit**
+   ├─ 2026-07-27-wfc-tile-maze-generation-phase1.md
+   │  ├─ line 50: [x] **Step 1: Write the failing tests for the rotation helpers and socket/pattern consistency**
+   │  ├─ line 122: [x] **Step 2: Run the tests to verify they fail (module doesn't exist yet)**
+   │  ├─ line 127: [x] **Step 3: Write `src/tileCatalog.js`**
+   │  ├─ line 336: [x] **Step 4: Run the tests to verify they pass**
+   │  ├─ line 341: [x] **Step 5: Commit**
+   │  ├─ line 362: [x] **Step 1: Write the failing tests**
+   │  ├─ line 428: [x] **Step 2: Run the tests to verify they fail**
+   │  ├─ line 433: [x] **Step 3: Write `src/wfcGenerator.js` (collapse only, no stamping/reachability yet)**
+   │  ├─ line 552: [x] **Step 4: Run the tests to verify they pass**
+   │  ├─ line 560: [x] **Step 5: Commit**
+   │  ├─ line 580: [x] **Step 1: Write the failing test**
+   │  ├─ line 642: [x] **Step 2: Run the tests to verify they fail**
+   │  ├─ line 647: [x] **Step 3: Add `stampLattice` to `src/wfcGenerator.js`**
+   │  ├─ line 673: [x] **Step 4: Run the tests to verify they pass**
+   │  ├─ line 681: [x] **Step 5: Commit**
+   │  ├─ line 707: [x] **Step 1: Write the failing test**
+   │  ├─ line 780: [x] **Step 2: Run the test to verify it fails**
+   │  ├─ line 787: [x] **Step 3: Modify `buildChunk` in `src/threeGame.js`**
+   │  ├─ line 925: [x] **Step 4: Run the tests to verify they pass**
+   │  ├─ line 930: [x] **Step 5: Run the full existing test suite to check for regressions**
+   │  ├─ line 940: [x] **Step 6: Commit**
+   │  ├─ line 962: [x] **Step 1: Write the failing test**
+   │  ├─ line 999: [x] **Step 2: Run the test to verify it fails**
+   │  ├─ line 1005: [x] **Step 3: Modify `clearSpawnArea` in `src/threeGame.js`**
+   │  ├─ line 1066: [x] **Step 4: Run the test to verify it passes**
+   │  ├─ line 1071: [x] **Step 5: Run the full test suite**
+   │  ├─ line 1079: [x] **Step 6: Commit**
+   │  ├─ line 1100: [x] **Step 1: Write the failing tests**
+   │  ├─ line 1141: [x] **Step 2: Run the tests to verify they fail**
+   │  ├─ line 1147: [x] **Step 3: Add the `tutorialOnly` option to `collapseChunkLattice`**
+   │  ├─ line 1241: [x] **Step 4: Wire the tutorial ring into `buildChunk`/`getChunkLandform`**
+   │  ├─ line 1262: [x] **Step 5: Run the tests to verify they pass**
+   │  ├─ line 1267: [x] **Step 6: Run the full test suite**
+   │  ├─ line 1272: [x] **Step 7: Commit**
+   │  ├─ line 1294: [x] **Step 1: Write the failing test for protected-cell support**
+   │  ├─ line 1310: [x] **Step 2: Run the test to verify it fails**
+   │  ├─ line 1316: [x] **Step 3: Add `protectedCells` support to `src/generator.js`**
+   │  ├─ line 1367: [x] **Step 4: Run the test to verify it passes**
+   │  ├─ line 1376: [x] **Step 5: Write the failing test for the maze detail pass**
+   │  ├─ line 1409: [x] **Step 6: Run the test to verify it fails**
+   │  ├─ line 1414: [x] **Step 7: Add `runMazeDetailPass` to `src/threeGame.js`**
+   │  ├─ line 1457: [x] **Step 8: Run the tests to verify they pass**
+   │  ├─ line 1462: [x] **Step 9: Run the full test suite**
+   │  ├─ line 1467: [x] **Step 10: Run lint**
+   │  └─ line 1473: [x] **Step 11: Commit**
+   ├─ 2026-07-28-passive-class-abilities-and-universal-sprint.md
+   │  ├─ line 33: [x] **Step 1: Write the failing test**
+   │  ├─ line 109: [x] **Step 2: Run test to verify it fails**
+   │  ├─ line 114: [x] **Step 3: Replace CLASS_STATS**
+   │  ├─ line 126: [x] **Step 4: Add `resolveClassPassiveStats()`**
+   │  ├─ line 166: [x] **Step 5: Run test to verify it passes**
+   │  ├─ line 171: [x] **Step 6: Commit**
+   │  ├─ line 190: [x] **Step 1: Write the failing sprint test**
+   │  ├─ line 272: [x] **Step 2: Run test to verify it fails**
+   │  ├─ line 277: [x] **Step 3: Add sprint state fields to the constructor**
+   │  ├─ line 288: [x] **Step 4: Add `updateSprintState(delta)`**
+   │  ├─ line 304: [x] **Step 5: Run test to verify it passes (sprint state + key handling only so far)**
+   │  ├─ line 309: [x] **Step 6: Rewrite `setKeyState` and `setVirtualInputSprint`, delete `triggerSprintBurst`**
+   │  ├─ line 339: [x] **Step 7: Run test to verify it passes**
+   │  ├─ line 344: [x] **Step 8: Remove the F-key/gamepad ability trigger and the old classAbility system**
+   │  ├─ line 506: [x] **Step 9: Remove the `classAbility.active`-gated dead bonuses**
+   │  ├─ line 555: [x] **Step 10: Rewire movement/O2 to the renamed sprint multipliers, remove `fortifyActive`**
+   │  ├─ line 621: [x] **Step 11: Run the full test suite**
+   │  ├─ line 626: [x] **Step 12: Lint**
+   │  ├─ line 631: [x] **Step 13: Commit**
+   │  ├─ line 650: [x] **Step 1: Write the failing tests**
+   │  ├─ line 715: [x] **Step 2: Run test to verify it fails**
+   │  ├─ line 720: [x] **Step 3: Add `applyPlayerSlow()` and use it at all three slow-inflicting call sites**
+   │  ├─ line 738: [x] **Step 4: Add `weaponReloadDuration` field and use it in `startReload`/`emitWeaponClipState`**
+   │  ├─ line 777: [x] **Step 5: Run test to verify it passes**
+   │  ├─ line 782: [x] **Step 6: Run full suite + lint**
+   │  ├─ line 787: [x] **Step 7: Commit**
+   │  ├─ line 806: [x] **Step 1: Write the failing tests**
+   │  ├─ line 908: [x] **Step 2: Run test to verify it fails**
+   │  ├─ line 913: [x] **Step 3: Add the block-chance check to `takeDamage()`**
+   │  ├─ line 925: [x] **Step 4: Add `updateTankRegen(delta)`**
+   │  ├─ line 953: [x] **Step 5: Run test to verify it passes**
+   │  ├─ line 958: [x] **Step 6: Run full suite + lint**
+   │  ├─ line 963: [x] **Step 7: Commit**
+   │  ├─ line 982: [x] **Step 1: Write the failing tests**
+   │  ├─ line 1106: [x] **Step 2: Run test to verify it fails**
+   │  ├─ line 1111: [x] **Step 3: Add the turret constants and runtime fields**
+   │  ├─ line 1127: [x] **Step 4: Add `findNearestEnemyWithinRange`, `deployEngineerTurret`, `despawnEngineerTurret`, `fireEngineerTurret`, `updateEngineerTurret`**
+   │  ├─ line 1248: [x] **Step 5: Run test to verify it passes**
+   │  ├─ line 1253: [x] **Step 6: Run full suite + lint**
+   │  ├─ line 1258: [x] **Step 7: Commit**
+   │  ├─ line 1275: [x] **Step 1: Update SCOUT nodes**
+   │  ├─ line 1295: [x] **Step 2: Update TANK nodes**
+   │  ├─ line 1313: [x] **Step 3: Update ENGINEER nodes**
+   │  ├─ line 1331: [x] **Step 4: Run the skill tree nav test**
+   │  ├─ line 1336: [x] **Step 5: Lint**
+   │  ├─ line 1341: [x] **Step 6: Commit**
+   │  ├─ line 1360: [x] **Step 1: Fix gamepad sprint to be hold-based, remove the dead ability trigger**
+   │  ├─ line 1393: [x] **Step 2: Remove the old ability HUD event listeners and pointerdown trigger**
+   │  ├─ line 1406: [x] **Step 3: Add the `engineer-turret-tick` listener**
+   │  ├─ line 1431: [x] **Step 4: Rewrite `syncAbilityPanelLabel` for the static passive readout**
+   │  ├─ line 1454: [x] **Step 5: Update index.html default markup**
+   │  ├─ line 1470: [x] **Step 6: CSS — static-passive bar hiding, remove dead ability-active-* rules**
+   │  ├─ line 1482: [x] **Step 7: Manual smoke test**
+   │  ├─ line 1486: [x] **Step 8: Run full suite + lint**
+   │  ├─ line 1491: [x] **Step 9: Commit**
+   │  ├─ line 1504: [x] **Step 1: Run the full test suite**
+   │  ├─ line 1509: [x] **Step 2: Run lint across all touched files**
+   │  ├─ line 1514: [x] **Step 3: Grep-verify no dangling references to the removed system**
+   │  └─ line 1519: [x] **Step 4: Report results to the user**
+   ├─ 2026-08-02-line-director-overhaul.md
+   │  ├─ line 45: [x] **Step 1: Write the failing tests**
+   │  ├─ line 161: [x] **Step 2: Run the tests to verify they fail**
+   │  ├─ line 166: [x] **Step 3: Implement `src/lineDirector.js`**
+   │  ├─ line 289: [x] **Step 4: Run the tests to verify they pass**
+   │  ├─ line 294: [x] **Step 5: Commit**
+   │  ├─ line 313: [x] **Step 1: Write the failing tests**
+   │  ├─ line 382: [x] **Step 2: Run the tests to verify they fail**
+   │  ├─ line 387: [x] **Step 3: Implement `src/data/lineDirectorPools.js`**
+   │  ├─ line 457: [x] **Step 4: Run the tests to verify they pass**
+   │  ├─ line 462: [x] **Step 5: Commit**
+   │  ├─ line 480: [x] **Step 1: Add imports**
+   │  ├─ line 501: [x] **Step 2: Instantiate the arbiter in the constructor**
+   │  ├─ line 510: [x] **Step 3: Add `buildLineDirectorContext()`**
+   │  ├─ line 532: [x] **Step 4: Tick the arbiter's clock each frame**
+   │  ├─ line 545: [x] **Step 5: Rewire the `patrol` and `taunt` cases**
+   │  ├─ line 611: [x] **Step 6: Reset the arbiter alongside the Director on respawn**
+   │  ├─ line 619: [x] **Step 7: Run the full test suite**
+   │  ├─ line 624: [x] **Step 8: Manual smoke check**
+   │  ├─ line 629: [x] **Step 9: Commit**
+   │  ├─ line 647: [x] **Step 1: Add the import**
+   │  ├─ line 655: [x] **Step 2: Remove the now-redundant module-level state**
+   │  ├─ line 668: [x] **Step 3: Remove the dead no-op listener**
+   │  ├─ line 682: [x] **Step 4: Rewrite `fireMothershipReactiveLine`**
+   │  ├─ line 728: [x] **Step 5: Remove the redundant run-reset lines**
+   │  ├─ line 737: [x] **Step 6: Run the full test suite**
+   │  ├─ line 742: [x] **Step 7: Manual smoke check**
+   │  └─ line 747: [x] **Step 8: Commit**
+   ├─ 2026-08-02-wall-door-instancing.md
+   │  ├─ line 42: [x] **Step 1: Write the failing tests**
+   │  ├─ line 90: [x] **Step 2: Run the tests to verify they fail**
+   │  ├─ line 95: [x] **Step 3: Add the constructor init**
+   │  ├─ line 113: [x] **Step 4: Add `createWallInstanceRecord`**
+   │  ├─ line 167: [x] **Step 5: Run the tests to verify they pass**
+   │  ├─ line 172: [x] **Step 6: Run the full suite and check syntax**
+   │  ├─ line 177: [x] **Step 7: Commit**
+   │  ├─ line 196: [x] **Step 1: Write the failing tests**
+   │  ├─ line 232: [x] **Step 2: Run the tests to verify they fail**
+   │  ├─ line 237: [x] **Step 3: Extract the helper and use it in `configureWallMesh`**
+   │  ├─ line 284: [x] **Step 4: Run the tests to verify they pass**
+   │  ├─ line 289: [x] **Step 5: Run the full suite**
+   │  ├─ line 294: [x] **Step 6: Commit**
+   │  ├─ line 312: [x] **Step 1: Replace the hazard/damaged/standard wall branches**
+   │  ├─ line 666: [x] **Step 2: Add the bucket-building locals and `pushWallInstanceMatrix`, build pools after the loop**
+   │  ├─ line 756: [x] **Step 3: Stub the not-yet-implemented decoration hook**
+   │  ├─ line 765: [x] **Step 4: Run the full suite**
+   │  ├─ line 772: [x] **Step 5: Commit**
+   │  ├─ line 790: [x] **Step 1: Replace the stub with the real implementation**
+   │  ├─ line 827: [x] **Step 2: Build the four decoration pools after the wall-pool-building pass**
+   │  ├─ line 902: [x] **Step 2: Run the full suite**
+   │  ├─ line 908: [x] **Step 3: Commit**
+   │  ├─ line 926: [x] **Step 1: Replace the rib/panel creation with matrix collection**
+   │  ├─ line 1012: [x] **Step 2: Declare the matrix arrays and build the two pools**
+   │  ├─ line 1048: [x] **Step 3: Run the full suite**
+   │  ├─ line 1054: [x] **Step 4: Commit**
+   │  ├─ line 1073: [x] **Step 1: Write the failing tests**
+   │  ├─ line 1188: [x] **Step 2: Run the tests to verify they fail**
+   │  ├─ line 1193: [x] **Step 3: Update `findWallMeshAt`**
+   │  ├─ line 1215: [x] **Step 4: Branch `updateWallDamageColor` on `isInstancedWall`**
+   │  ├─ line 1294: [x] **Step 5: Branch `markWallTileDestroyed` and `destroyWall` on `isInstancedWall`**
+   │  ├─ line 1371: [x] **Step 6: Clean up `_wallInstanceIndex` on chunk unmount**
+   │  ├─ line 1396: [x] **Step 7: Write the failing chunk-unmount test**
+   │  ├─ line 1433: [x] **Step 8: Run the tests to verify they pass**
+   │  ├─ line 1438: [x] **Step 9: Run the full suite**
+   │  ├─ line 1443: [x] **Step 10: Commit**
+   │  ├─ line 1462: [x] **Step 1: Write the failing test**
+   │  ├─ line 1497: [x] **Step 2: Run the test to verify it fails**
+   │  ├─ line 1502: [x] **Step 3: Add `findWallByPoolInstance` and use it in `checkProjectileWallHit`**
+   │  ├─ line 1563: [x] **Step 4: Run the tests to verify they pass**
+   │  ├─ line 1568: [x] **Step 5: Run the full suite**
+   │  └─ line 1573: [x] **Step 6: Commit**
+   ├─ 2026-08-14-camera-behind-head.md
+   │  ├─ line 74: [x] **Step 1: Write the failing tests**
+   │  ├─ line 143: [x] **Step 2: Run tests to verify they fail**
+   │  ├─ line 148: [x] **Step 3: Write the implementation**
+   │  ├─ line 179: [x] **Step 4: Run tests to verify they pass**
+   │  ├─ line 184: [x] **Step 5: Commit**
+   │  ├─ line 203: [x] **Step 1: Write the failing test**
+   │  ├─ line 246: [x] **Step 2: Run test to verify it fails**
+   │  ├─ line 251: [x] **Step 3: Implement**
+   │  ├─ line 313: [x] **Step 4: Run test to verify it passes**
+   │  ├─ line 318: [x] **Step 5: Run the full unit suite to check nothing else broke**
+   │  ├─ line 323: [x] **Step 6: Commit**
+   │  ├─ line 342: [x] **Step 1: Write the failing test**
+   │  ├─ line 425: [x] **Step 2: Run tests to verify they fail**
+   │  ├─ line 430: [x] **Step 3: Implement**
+   │  ├─ line 482: [x] **Step 4: Run tests to verify they pass**
+   │  ├─ line 487: [x] **Step 5: Run the full unit suite**
+   │  ├─ line 492: [x] **Step 6: Commit**
+   │  ├─ line 511: [x] **Step 1: Write the failing tests**
+   │  ├─ line 565: [x] **Step 2: Run tests to verify they fail**
+   │  ├─ line 570: [x] **Step 3: Implement**
+   │  ├─ line 639: [x] **Step 4: Run tests to verify they pass**
+   │  ├─ line 644: [x] **Step 5: Run the full unit suite**
+   │  ├─ line 649: [x] **Step 6: Commit**
+   │  ├─ line 672: [x] **Step 1: Add pointer-lock state and the prompt element**
+   │  ├─ line 685: [x] **Step 2: Wire pointer-lock request into pointerdown, remove old absolute-cursor aim calls**
+   │  ├─ line 739: [x] **Step 3: Add pointer-lock lifecycle methods and listeners**
+   │  ├─ line 789: [x] **Step 4: Release pointer lock when a blocking overlay opens**
+   │  ├─ line 799: [x] **Step 5: Manual smoke test**
+   │  ├─ line 804: [x] **Step 6: Commit**
+   │  ├─ line 824: [x] **Step 1: Add the crosshair element**
+   │  ├─ line 834: [x] **Step 2: Show it during gameplay, hide it otherwise**
+   │  ├─ line 857: [x] **Step 3: Freeze the legacy tactical cursor while pointer-locked**
+   │  ├─ line 865: [x] **Step 4: Manual smoke test**
+   │  ├─ line 870: [x] **Step 5: Commit**
+   │  ├─ line 892: [x] **Step 1: Add the yaw sensitivity constant**
+   │  ├─ line 900: [x] **Step 2: Repoint the trackpad/gyro delta path**
+   │  ├─ line 919: [x] **Step 3: Repoint the absolute right-stick path**
+   │  ├─ line 934: [x] **Step 4: Manual smoke test**
+   │  ├─ line 939: [x] **Step 5: Commit**
+   │  ├─ line 969: [x] **Step 1: Replace the spec**
+   │  ├─ line 1068: [x] **Step 2: Run the rewritten spec**
+   │  ├─ line 1073: [x] **Step 3: Run the full e2e suite for regressions**
+   │  ├─ line 1081: [x] **Step 4: Run the full unit suite one more time**
+   │  └─ line 1086: [x] **Step 5: Commit**
+   └─ tickets-acceptance-testing-plan.md
+      ├─ line 161: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] #51 paired packaged PvP certification, if PvP remains in scope for release.
+      ├─ line 162: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] #52 fixed-route packaged performance acceptance on its declared target devices.
+      ├─ line 163: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] #53 physical Deck controller-only route and lifecycle acceptance.
+      ├─ line 164: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] #85 paired two-account co-op PvE expedition.
+      ├─ line 165: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] two-machine Steam Cloud/save round trip, including conflict/offline handling.
+      ├─ line 166: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] packaged desktop visual/performance acceptance and a human first-hour proof run.
+      └─ line 167: [x] [MIGRATED -> See docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos] current Steam review/compliance claims, controller support claims, and Linux/SteamOS claims tied to matching evidence.

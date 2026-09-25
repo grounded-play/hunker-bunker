@@ -99,7 +99,7 @@ describe('ThreeGame multiplayer spawn separation & synchronization', () => {
             expect(fakeGame.bunkerBlastDoorState.open).toBe(true);
             expect(emit).toHaveBeenCalledWith('worldEvent', {
                 event: 'bunker-door-toggled',
-                detail: { open: true }
+                detail: { open: true, seq: 1 }
             });
         });
 

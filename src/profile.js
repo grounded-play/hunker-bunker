@@ -47,7 +47,10 @@ export class ProfileManager {
                         multiplayerVictories: Number(parsed.multiplayerVictories) || 0,
                         tradesCompleted: Number(parsed.tradesCompleted) || 0,
                         coopExpeditions: Number(parsed.coopExpeditions) || 0,
-                        pvpDuels: Number(parsed.pvpDuels) || 0
+                        pvpDuels: Number(parsed.pvpDuels) || 0,
+                        soloExpeditions: Number(parsed.soloExpeditions) || 0,
+                        soloVictories: Number(parsed.soloVictories) || 0,
+                        soloDeaths: Number(parsed.soloDeaths) || 0
                     };
                 }
             }
@@ -62,7 +65,10 @@ export class ProfileManager {
             multiplayerVictories: 0,
             tradesCompleted: 0,
             coopExpeditions: 0,
-            pvpDuels: 0
+            pvpDuels: 0,
+            soloExpeditions: 0,
+            soloVictories: 0,
+            soloDeaths: 0
         };
     }
 
@@ -90,7 +96,10 @@ export class ProfileManager {
             multiplayerVictories: Number(this.state.multiplayerVictories || 0),
             tradesCompleted: Number(this.state.tradesCompleted || 0),
             coopExpeditions: Number(this.state.coopExpeditions || 0),
-            pvpDuels: Number(this.state.pvpDuels || 0)
+            pvpDuels: Number(this.state.pvpDuels || 0),
+            soloExpeditions: Number(this.state.soloExpeditions || 0),
+            soloVictories: Number(this.state.soloVictories || 0),
+            soloDeaths: Number(this.state.soloDeaths || 0)
         };
     }
 
@@ -101,8 +110,19 @@ export class ProfileManager {
         }
         if (mode === 'pvp') {
             this.state.pvpDuels = (this.state.pvpDuels || 0) + 1;
-        } else {
+        } else if (mode === 'coop') {
             this.state.coopExpeditions = (this.state.coopExpeditions || 0) + 1;
+        }
+        this.save();
+        return this.getStats();
+    }
+
+    recordSoloRun({ isVictory = false } = {}) {
+        this.state.soloExpeditions = (this.state.soloExpeditions || 0) + 1;
+        if (isVictory) {
+            this.state.soloVictories = (this.state.soloVictories || 0) + 1;
+        } else {
+            this.state.soloDeaths = (this.state.soloDeaths || 0) + 1;
         }
         this.save();
         return this.getStats();
@@ -207,7 +227,9 @@ export const CAMPAIGN_SPECIFIC_STORAGE_KEYS = Object.freeze([
 export const ACTIVE_ATTEMPT_STORAGE_KEYS = Object.freeze([
     'hb_run_checkpoint_v1',
     'hb_run_checkpoint',
-    'hb_run_modifiers'
+    'hb_run_modifiers',
+    'hb_expedition_suspend_v1',
+    'hb_expedition_resume_claim_v1'
 ]);
 
 function removeStorageKeys(store, keys) {

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
+import { bootToOperatorMenu, startRunAndSkipIntro, isHostNetworkBlip } from './helpers.js';
 
 // Phase 13: "Browser Gamepad fallback" (docs/steam-launch-readiness-master-plan.md).
 // main.js's fallback loop (startBrowserGamepadFallback) runs unconditionally
@@ -22,7 +22,7 @@ test.describe('Browser Gamepad fallback', () => {
         test.setTimeout(180_000);
         const consoleErrors = [];
         page.on('console', (msg) => {
-            if (msg.type() === 'error') consoleErrors.push(msg.text());
+            if (msg.type() === 'error' && !isHostNetworkBlip(msg.text())) consoleErrors.push(msg.text());
         });
         page.on('pageerror', (err) => consoleErrors.push(err.message));
 
@@ -69,7 +69,11 @@ test.describe('Browser Gamepad fallback', () => {
     // The D-pad had no gameplay binding in the Steam layout and never fed the
     // browser fallback's move vector either, so it was dead during a run. It
     // must now walk the player exactly like the left stick.
-    test('the D-pad walks the player like the left stick', async ({ page }) => {
+    // src/browserGamepad.js: the D-pad no longer walks the player. It carries
+    // the official Steam Input layout's secondary actions (up Map, down Scan,
+    // left Reload, right Smash), so a desktop pad and the Deck behave alike;
+    // movement is the left stick only (covered above).
+    test('the D-pad carries secondary actions, not movement', async ({ page }) => {
         test.setTimeout(180_000);
         await bootToOperatorMenu(page);
         await startRunAndSkipIntro(page);
@@ -79,7 +83,7 @@ test.describe('Browser Gamepad fallback', () => {
             z: window.game.player.position.z
         }));
 
-        // Sticks dead centre; only D-pad right (button 15) held.
+        // Sticks dead centre; only D-pad right (button 15, Smash) held.
         await page.evaluate(() => {
             const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
             buttons[15] = { pressed: true, value: 1 };
@@ -100,7 +104,7 @@ test.describe('Browser Gamepad fallback', () => {
             z: window.game.player.position.z
         }));
         const moved = Math.hypot(after.x - before.x, after.z - before.z);
-        expect(moved, 'a held D-pad direction should move the player').toBeGreaterThan(0.05);
+        expect(moved, 'a held D-pad direction must not walk the player').toBeLessThan(0.05);
 
         await page.evaluate(() => { navigator.getGamepads = () => []; });
         await page.waitForTimeout(300);

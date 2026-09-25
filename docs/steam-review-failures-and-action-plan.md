@@ -324,7 +324,7 @@ When navigating to `#operator-callsign` and pressing Controller Confirm (A):
 #### Checkbox Responses:
 - **Did you use AI tools to generate content for your game?** → **Yes**
 - **Pre-Generated AI Content:** → **[x] Yes**
-- **Live-Generated AI Content:** → **[ ] No** (No runtime generative models run on user machines)
+- **Live-Generated AI Content:** → **( ) No** (No runtime generative models run on user machines)
 
 #### AI Disclosure Description (Exact Text):
 ```text

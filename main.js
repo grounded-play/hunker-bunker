@@ -1,3 +1,4 @@
+import { createControllerPressGate } from './src/controllerPressGate.js';
 import { crossingGuidance, expeditionDebrief } from './src/expeditionFeedback.js';
 import { runO2MilestoneChoreography } from './src/o2CinematicDoors.js';
 import { compactPerformanceSnapshot, compactPerfPhase, createLongTaskReporter } from './src/longTaskDiagnostics.js';
@@ -29,6 +30,7 @@ import { DialogueManager, resolveEffectiveVoicePackId } from './src/dialogue.js'
 import { VitalsHUD } from './src/vitals.js';
 import { blackBoxStore } from './src/blackBox.js';
 import { recoverCrashedRunCheckpoint } from './src/runCheckpoint.js';
+import { expeditionSuspendStore } from './src/expeditionSuspend.js';
 import { codexStore, getClassWreckageLog, recordSpecimen0047OriginIfFound } from './src/codex.js';
 import { formatCrossingDeltaSummary } from './src/depthContract.js';
 import { CODEX_ENTRIES, CODEX_CATEGORIES, getCodexEntry, CODEX_TOTAL, LORE_METADATA } from './src/data/codex.js';
@@ -37,6 +39,7 @@ import { nextSeasonExpedition } from './src/data/seasonOneExpeditions.js';
 import { DIALOGUE_LINES, getDialogueLine } from './src/data/dialogueLines.js';
 import { MOTHERSHIP_REACTIVE_LINES } from './src/data/lineDirectorPools.js';
 import { ArcStateManager } from './src/arcState.js';
+import { registerStoryManager } from './src/storyScope.js';
 import { CaveRevealController } from './src/caveReveal.js';
 import { Act2Manager, ACT2_LINES, getAct2EndingLines, pickAct2Ending, buildAct2Manifest, resolveEndingCutscene } from './src/act2.js';
 import { isDemoBuild, isGoreEnabled, setGoreEnabled } from './src/featureFlags.js';
@@ -49,7 +52,9 @@ import {
 } from './src/accessibilitySettings.js';
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock, saveAchievements } from './src/achievements.js';
 import { SteamAchievementSync } from './src/steamAchievementSync.js';
-import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
+import { buildExpeditionReport, formatReportLine } from './src/expeditionReport.js';
+import { EVENT_RESPONSE_DESC_KEYS, EVENT_RESPONSE_LABEL_KEYS, EVENT_TEXT_KEYS } from './src/expeditionEvents.js';
+import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized, isRankedRunPayload } from './src/steam/steamEvents.js';
 import { syncSteamStats } from './src/steamStats.js';
 import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb, unlockChapter as unlockRgbChapter, isChapterUnlocked as isRgbChapterUnlocked } from './src/minigames/rgb/save.js';
 import { mountRgb } from './src/minigames/rgb/runtime.js';
@@ -109,6 +114,7 @@ import {
 } from './src/mazeExpedition.js';
 import { installSteamCloudSaveBridge } from './src/steamCloudSaveBridge.js';
 import { installSettingsWheelGuard } from './src/settingsWheelGuard.js';
+import { installNativeTooltipGuard } from './src/nativeTooltipGuard.js';
 import { installAccessibilitySettings } from './src/accessibilitySettings.js';
 import { recordCollectedPickup, recordDebugResourceGrant, resetRunResourceTelemetry } from './src/runTelemetry.js';
 
@@ -506,6 +512,13 @@ function setAppPhase(phase) {
     debugLog.info('PHASE', `${previousPhase ?? 'none'} -> ${phase}: ${phaseLabels[phase] ?? 'application state changed'}`);
     syncSteamInputPhase();
     syncSteamTimelinePhase(phase);
+    if (phase === 'splash') {
+        const splashEl = document.getElementById('splash');
+        if (splashEl) {
+            splashEl.scrollLeft = 0;
+            splashEl.scrollTop = 0;
+        }
+    }
     const isGameplay = phase === 'gameplay';
     document.documentElement.classList.toggle('phase-gameplay', isGameplay);
     document.documentElement.classList.toggle('phase-menu', !isGameplay);
@@ -513,9 +526,20 @@ function setAppPhase(phase) {
     // This used to only ever hide it, leaving the reveal to the first mousemove
     // -- so a player who deployed and moved with WASD had no reticle at all.
     if (isGameplay) {
+        debugLog.startPerformanceTimeline('phase:gameplay');
+        debugLog.info('INPUT', 'deploy-input-provenance', {
+            mode: steamInputState.lastInputMode,
+            isSteamDeck: steamInputState.isSteamDeck,
+            activeActionSet: mainActionRouter.getActionSet(),
+            primaryControllerType: steamInputState.primaryControllerType,
+            controllerCount: steamInputState.controllerCount
+        });
         showGameplayCrosshairAtRest();
         startReticleRefresh();
     } else {
+        if (previousPhase === 'gameplay') {
+            debugLog.stopPerformanceTimeline(`phase:${phase}`);
+        }
         stopReticleRefresh();
         updateGameplayCrosshair?.(0, 0, false);
         // §6: a pending XP burst must not fire over the death screen or a menu.
@@ -660,7 +684,12 @@ window.HunkerInputState = {
     isControllerPrompt: () => isSteamControllerInputActive(),
     getLastInputMode: () => steamInputState.lastInputMode,
     getPrimaryControllerType: () => steamInputState.primaryControllerType,
-    getState: () => ({ ...steamInputState })
+    getActiveActionSet: () => mainActionRouter.getActionSet(),
+    getState: () => ({
+        ...steamInputState,
+        activeActionSet: mainActionRouter.getActionSet(),
+        requestedActionSet: window.__hbSteamInputPhaseRequest ?? null
+    })
 };
 
 function syncSteamInputPhase(phaseOverride = null) {
@@ -732,6 +761,7 @@ window.addEventListener('focus', () => {
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
         clearHeldApplicationInput();
+        window.game?.saveExpeditionSuspend?.();
         return;
     }
     window.requestAnimationFrame(ensureControllerMenuFocus);
@@ -760,6 +790,14 @@ function setLastInputMode(mode, { refresh = true } = {}) {
 
     if (changed && refresh) refreshInteractivePromptKeys();
     if (changed && isController) ensureControllerMenuFocus();
+    if (changed) {
+        debugLog.info('INPUT', 'input-mode-changed', {
+            mode: normalized,
+            isSteamDeck: steamInputState.isSteamDeck,
+            activeActionSet: mainActionRouter.getActionSet(),
+            primaryControllerType: steamInputState.primaryControllerType
+        });
+    }
     return changed;
 }
 
@@ -1141,7 +1179,7 @@ function focusControllerTarget(target, { playHover = false, ensureVisible = true
     } catch {
         target.focus?.();
     }
-    if (ensureVisible && !centerSettingsFocusTarget(target)) {
+    if (ensureVisible && !centerSettingsFocusTarget(target) && !target.closest?.('#splash')) {
         target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
     }
     if (playHover && previous !== target) {
@@ -2006,11 +2044,24 @@ function isPresentationLayerActive() {
 // while a presentation layer is up. Mutation records are already batched
 // per task, so the check runs straight from the observer: waiting for a
 // frame let the pointer flash over the first frames of a movie.
+// This runs from a MutationObserver on body class changes, so it must only
+// write on a transition: clearing the cursor and reticle on every call wrote
+// classes, which re-queued the observer forever and froze the page at the
+// title screen (found by bisecting a hang to 05c4300, 2026-09-24).
+let presentationCursorWasActive = false;
 function syncPresentationCursor() {
     const active = isPresentationLayerActive();
     const root = document.documentElement;
     if (root.classList.contains('presentation-cursor-hidden') !== active) {
         root.classList.toggle('presentation-cursor-hidden', active);
+    }
+    const becameActive = active && !presentationCursorWasActive;
+    presentationCursorWasActive = active;
+    if (becameActive) {
+        root.classList.remove('custom-cursor-enabled');
+        window.game?.setCursorInspectState?.(null);
+        document.getElementById('tactical-telemeter-box')?.classList.add('hidden');
+        updateGameplayCrosshair(0, 0, false);
     }
 }
 if (typeof MutationObserver !== 'undefined' && document.body) {
@@ -2384,8 +2435,12 @@ function handleSteamGameplayInput(controller) {
     if (!controllerAimCursor) controllerAimCursor = { x: width / 2, y: height / 2 };
     const aimSensitivity = Math.min(2, Math.max(0.5, Number(state.settings.aimSensitivity) || 1));
     const invertAimSign = state.settings.invertAimY ? -1 : 1;
-    const deltaX = (aimX * 14 + (Number(controller.cameraDelta?.x) || 0) * 0.55) * aimSensitivity;
-    const deltaY = (aimY * 14 + (Number(controller.cameraDelta?.y) || 0) * 0.55) * aimSensitivity * invertAimSign;
+    let aimFriction = 1.0;
+    if (state.settings.aimAssist !== 'off') {
+        aimFriction = window.game?.getControllerAimFriction?.(controllerAimCursor.x, controllerAimCursor.y) ?? 1.0;
+    }
+    const deltaX = (aimX * 14 + (Number(controller.cameraDelta?.x) || 0) * 0.55) * aimSensitivity * aimFriction;
+    const deltaY = (aimY * 14 + (Number(controller.cameraDelta?.y) || 0) * 0.55) * aimSensitivity * invertAimSign * aimFriction;
     if (!thirdPersonCamera && Math.hypot(deltaX, deltaY) > 0.01) {
         controllerAimCursor.x = Math.min(width - 8, Math.max(8, controllerAimCursor.x + deltaX));
         controllerAimCursor.y = Math.min(height - 8, Math.max(8, controllerAimCursor.y + deltaY));
@@ -2404,7 +2459,7 @@ function handleSteamGameplayInput(controller) {
     window.game?.setCameraRotationInput?.(aimX);
 
     if (controller.fire) {
-        window.game?.triggerControllerFire?.();
+        window.game?.triggerControllerFire?.({ source: 'controller' });
     }
     if (controller.interact && !prev.interact) {
         window.game?.triggerGameplayInteract?.();
@@ -2453,6 +2508,8 @@ function handleSteamGameplayInput(controller) {
     });
 }
 
+const controllerPressGate = createControllerPressGate();
+
 function routeMainControllerInput(controller, gameplayActive) {
     // The native snapshot retains gameplay-shaped button names while a movie
     // temporarily owns input during a run. Check the raw controller before
@@ -2478,6 +2535,9 @@ function routeMainControllerInput(controller, gameplayActive) {
             ? ACTION_SETS.GAMEPLAY
             : ACTION_SETS.MENU;
     mainActionRouter.setActionSet(actionSet);
+    // Native Steam Input and the browser Gamepad API both see every press;
+    // the gate lets one press act once, in the context it started in.
+    controller = controllerPressGate.filter(controller, actionSet);
     const { actions } = mainActionRouter.deriveActions(controller);
     if (actionSet === ACTION_SETS.GAMEPLAY) {
         handleSteamGameplayInput(actions);
@@ -2545,6 +2605,9 @@ function clearBrowserGamepadGameplayInput() {
 function handleBrowserGamepadFallbackFrame() {
     const controllers = getBrowserGamepadControllers();
     if (!shouldUseBrowserGamepadFallback(controllers)) {
+        // Not routed, but the gate must still see this pad let go of a press
+        // the tactical map consumed from it (see pollTacticalMapGamepadInput).
+        for (const controller of controllers) controllerPressGate.observe(controller);
         browserGamepadFallbackEngaged = false;
         clearBrowserGamepadGameplayInput();
         browserGamepadPollRaf = window.requestAnimationFrame(handleBrowserGamepadFallbackFrame);
@@ -2675,6 +2738,20 @@ const state = {
         crosshairColor: /^#[0-9a-f]{6}$/i.test(localStorage.getItem(CROSSHAIR_COLOR_STORAGE_KEY) ?? '')
             ? localStorage.getItem(CROSSHAIR_COLOR_STORAGE_KEY)
             : DEFAULT_CROSSHAIR_COLOR,
+        aimAssist: ['off', 'low', 'standard'].includes(localStorage.getItem('hb_aim_assist'))
+            ? localStorage.getItem('hb_aim_assist')
+            : 'standard',
+        cameraShake: ['off', 'low', 'reduced', 'normal'].includes(localStorage.getItem('hb_camera_shake'))
+            ? localStorage.getItem('hb_camera_shake')
+            : 'normal',
+        cameraShakeScale: ({ off: 0.0, low: 0.25, reduced: 0.5, normal: 1.0 })[localStorage.getItem('hb_camera_shake')] ?? 1.0,
+        reducedPressure: localStorage.getItem('hb_reduced_pressure') === 'true',
+        hudLayout: ['dock', 'classic'].includes(localStorage.getItem('hb_hud_layout'))
+            ? localStorage.getItem('hb_hud_layout')
+            : 'classic',
+        hudScale: [0.85, 1, 1.15, 1.3].includes(Number(localStorage.getItem('hb_hud_scale')))
+            ? Number(localStorage.getItem('hb_hud_scale'))
+            : 1,
         keyBindings: cloneKeyBindings(DEFAULT_KEY_BINDINGS)
     },
     onlineCount: 1,
@@ -2683,6 +2760,8 @@ const state = {
 // Exposed so threeGame.js can read live key bindings without a circular import.
 window.state = state;
 document.documentElement.style.setProperty('--crosshair-color', state.settings.crosshairColor);
+document.documentElement.dataset.hudLayout = state.settings.hudLayout;
+document.documentElement.style.setProperty('--hud-scale', String(state.settings.hudScale));
 
 // RGB archive-sim unlock/save state (docs/mini-games/rgb/unlock-and-integration.md).
 let rgbSave = loadRgbSave(localStorage);
@@ -2880,6 +2959,9 @@ let cutsceneManager = null;
 let dialogueManager = null;
 const arcManager = new ArcStateManager();
 const act2Manager = new Act2Manager();
+// Co-op/PvP runs swap these to a fresh session story (src/storyScope.js).
+registerStoryManager(arcManager);
+registerStoryManager(act2Manager);
 let missionFlowRunning = false;
 let isResettingRun = false;
 
@@ -3626,6 +3708,17 @@ function resetPickupCounter(playerType = (window.game?.playerType || 'SCOUT')) {
     });
 }
 
+function restorePickupCounterState(snapshot = {}, playerType = (window.game?.playerType || 'SCOUT')) {
+    setActiveAmmoCapacity(playerType, { clampExisting: false });
+    pickupCounterState.health = Math.max(0, Math.floor(Number(snapshot.health) || 0));
+    pickupCounterState.ammo = Math.min(activeAmmoCapacity, Math.max(0, Math.floor(Number(snapshot.ammo) || 0)));
+    pickupCounterState.weapon = Math.max(0, Math.floor(Number(snapshot.weapon) || 0));
+    pickupCounterState.coin = Math.max(0, Math.floor(Number(snapshot.coin) || 0));
+    recomputePickupTotal();
+    renderPickupCounter();
+    return getSessionInventorySnapshot();
+}
+
 function getSessionInventorySnapshot() {
     return {
         health: pickupCounterState.health,
@@ -3951,6 +4044,7 @@ renderWeaponClipState({ clip: 6, maxClip: 6, cache: pickupCounterState.ammo, rel
 renderShipHealth({ hp: 1, maxHp: 1 });
 window.pickupCounterState = pickupCounterState;
 window.resetPickupCounter = resetPickupCounter;
+window.restorePickupCounterState = restorePickupCounterState;
 window.getPickupCounterState = getSessionInventorySnapshot;
 window.consumeSessionInventoryForDeposit = consumeSessionInventoryForDeposit;
 window.getClassAmmoCapacity = () => activeAmmoCapacity;
@@ -4966,6 +5060,7 @@ function clearAllTimers() {
 function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' } = {}) {
     // ── Resets & State Cleanups on Game Over ──
     setAppPhase('gameover');
+    window.game?.setWorldRenderSuspended?.(true);
     dialogueManager?.cancelDialogue();
     dialogueManager?.cancelTutorial();
     cutsceneManager?.finishActiveRun(true);
@@ -5103,6 +5198,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
         seed: activeRunSeed,
         runCards: activeRunCards,
         depositedResources: window.game?.runDepositedResources ?? {},
+        assisted: Boolean(window.game?.reducedPressure || state.settings?.reducedPressure),
         multiplayer: {
             isMultiplayer,
             mode: mpMode,
@@ -5214,6 +5310,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     // told which pressure they were carrying.
     const runCardNote = document.getElementById('go-run-cards');
     if (runCardNote) runCardNote.textContent = summarizeRunCards(activeRunCards);
+    renderExpeditionReport();
 
     const modal = document.getElementById('game-over-modal');
     if (modal) {
@@ -5273,6 +5370,82 @@ window.addEventListener('run-cards-drawn', (event) => {
     }
     updateQueensLedgerHUD();
 });
+
+// The deployment bounty in the expedition panel (see
+// ThreeGame.syncExpeditionBountyTracker).
+window.addEventListener('expedition-bounty-progress', ({ detail }) => {
+    const chip = document.getElementById('hud-bounty-chip');
+    if (!chip) return;
+    if (!detail || detail.hidden) {
+        chip.classList.add('hidden');
+        return;
+    }
+    const params = { label: t(detail.labelKey), progress: detail.progress, target: detail.target, shells: detail.shells };
+    chip.textContent = t(detail.completed ? 'ui.expedition.bounty_chip_ready' : 'ui.expedition.bounty_chip', params);
+    chip.title = params.label;
+    chip.classList.toggle('is-ready', Boolean(detail.completed));
+    chip.classList.remove('hidden');
+});
+
+// Ring 1's optional event beside the ship goal (ThreeGame.syncExpeditionEventRoute).
+window.addEventListener('expedition-event-route', ({ detail }) => {
+    const chip = document.getElementById('hud-event-chip');
+    if (!chip) return;
+    if (!detail || detail.hidden) {
+        chip.classList.add('hidden');
+        return;
+    }
+    chip.textContent = detail.label;
+    chip.classList.toggle('is-engaged', detail.stage === 'engaged');
+    chip.classList.remove('hidden');
+});
+
+function closeExpeditionEventModal(action = null) {
+    const modal = document.getElementById('expedition-event-modal');
+    if (!modal || modal.classList.contains('hidden')) return;
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+    if (isGameplayPhase()) window.game?.setInputEnabled?.(true);
+    window.game?.respondToExpeditionEvent?.(action);
+}
+
+// At the site: the event's responses (ThreeGame.openExpeditionEventChoice).
+window.addEventListener('expedition-event-choice', ({ detail }) => {
+    const modal = document.getElementById('expedition-event-modal');
+    const options = document.getElementById('expedition-event-options');
+    if (!modal || !options) return;
+    if (!detail || detail.hidden) {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+        return;
+    }
+    const textKeys = EVENT_TEXT_KEYS[detail.eventId];
+    if (!textKeys) return;
+    document.getElementById('expedition-event-title').textContent = t(textKeys.name);
+    document.getElementById('expedition-event-copy').textContent = t(detail.lineKey);
+    options.replaceChildren(...detail.responses.map((response) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `camp-choice-option camp-choice-option--${response.action === 'leave' ? 'noop' : response.action}`;
+        button.dataset.eventResponse = response.action;
+        button.disabled = Boolean(response.disabled);
+        const label = document.createElement('span');
+        label.className = 'camp-choice-option__label';
+        label.textContent = t(EVENT_RESPONSE_LABEL_KEYS[response.action]);
+        const desc = document.createElement('span');
+        desc.className = 'camp-choice-option__desc';
+        desc.textContent = t(EVENT_RESPONSE_DESC_KEYS[detail.eventId][response.action], response.params ?? {});
+        button.append(label, desc);
+        button.addEventListener('click', () => closeExpeditionEventModal(response.action));
+        return button;
+    }));
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    window.game?.setInputEnabled?.(false);
+    options.querySelector('button:not(:disabled)')?.focus();
+});
+
+document.getElementById('close-expedition-event')?.addEventListener('click', () => closeExpeditionEventModal(null));
 
 function renderGameOverAct2Summary() {
     const summaryCard = document.getElementById('game-over-act2-summary');
@@ -5350,7 +5523,42 @@ function renderGameOverAct2Summary() {
     `;
 }
 
+// The results screen covers the run; stop drawing the world under it (see
+// ThreeGame.setWorldRenderSuspended). Observed rather than set in show/hide,
+// since several paths open and close the modal directly.
+{
+    const gameOverModalForRender = document.getElementById('game-over-modal');
+    if (gameOverModalForRender && typeof MutationObserver !== 'undefined') {
+        const syncWorldRender = () => window.game?.setWorldRenderSuspended?.(!gameOverModalForRender.classList.contains('hidden'));
+        new MutationObserver(syncWorldRender).observe(gameOverModalForRender, { attributes: true, attributeFilter: ['class'] });
+    }
+}
+
+// Accomplishments, the bounty and the next ship goal for the results screen.
+function formatExpeditionReportLine(line) {
+    return formatReportLine(line, t);
+}
+
+function renderExpeditionReport() {
+    const section = document.getElementById('go-expedition-report');
+    const list = document.getElementById('go-expedition-report-lines');
+    const data = window.game?.getExpeditionReportData?.();
+    if (!section || !list) return;
+    if (!data) {
+        section.classList.add('hidden');
+        return;
+    }
+    list.replaceChildren(...buildExpeditionReport(data).map((line) => {
+        const item = document.createElement('li');
+        item.className = `go-expedition-report__line go-expedition-report__line--${line.key.split('.').pop()}`;
+        item.textContent = formatExpeditionReportLine(line);
+        return item;
+    }));
+    section.classList.remove('hidden');
+}
+
 function hideGameOverScreen() {
+    window.game?.setWorldRenderSuspended?.(false);
     const modal = document.getElementById('game-over-modal');
     if (modal) modal.classList.add('hidden');
 }
@@ -5394,18 +5602,25 @@ function resetRunToStartingState({
             classType: window.game?.playerType ?? getSelectedHeroType()
         });
         const act2Run = isAct2RunActive();
+        const isPvp = Boolean((window.game?.isMultiplayer || window.activeMultiplayerSession)
+            && (window.game?.multiplayerMode === 'pvp' || window.activeMultiplayerSession?.mode === 'pvp'));
         const campaign = !window.game?.fixedRunEntropy && !window.game?.isMultiplayer
             ? campaignWorldStore.getOrCreate() : null;
         const challengeSeed = campaign
             ? deriveExpeditionSeed(campaign.seed, campaign.expeditionIndex + 1)
             : Number(window.game?.globalSeedOffset) >>> 0;
         const missionRandom = window.game?.createSeededRandom?.(challengeSeed ^ 0x4d49534e) ?? Math.random;
-        currentMission = act2Run ? null : assignMission(missionRandom, { seeded: true });
+        currentMission = (act2Run || isPvp) ? null : assignMission(missionRandom, { seeded: true });
         const runModifierSeed = (window.game?.isMultiplayer || window.activeMultiplayerSession)
             && (window.activeMultiplayerSession?.seed || window.game?.multiplayerRoomCode)
             ? `run-${window.activeMultiplayerSession?.seed || window.game?.multiplayerRoomCode}`
             : `expedition-${challengeSeed}`;
-        currentRunModifier = pickRunModifier(Math.random, { seed: runModifierSeed, recentKeys: [] });
+        currentRunModifier = isPvp ? null : pickRunModifier(Math.random, { seed: runModifierSeed, recentKeys: [] });
+        if (isPvp) {
+            activeRunCards = [];
+            const cardStrip = document.getElementById('hud-run-cards');
+            if (cardStrip) cardStrip.classList.add('hidden');
+        }
 
         resetPickupCounter();
         if (window.game) window.game.currentRunModifier = currentRunModifier;
@@ -7424,8 +7639,8 @@ function installHudCompass() {
             syncHudColumnLayout();
             step.lastHudLayout = now;
         }
-        // Redraw faster while a radar pulse is sweeping so the reveal animates.
-        const mapInterval = isRadarScanAnimating(window.game?.lastRadarScan, now) ? 50 : 200;
+        // Redraw faster while a radar pulse is sweeping so the reveal animates smoothly.
+        const mapInterval = isRadarScanAnimating(window.game?.lastRadarScan, now) ? 33 : 200;
         if (!desktopCompass.classList.contains('hidden') && now - (step.lastMapDraw ?? 0) >= mapInterval) {
             drawTacticalMapOverlay('hud-blueprint-canvas', true);
             if (document.getElementById('tactical-telemeter-box')?.classList.contains('hidden')) {
@@ -8048,7 +8263,9 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         host.appendChild(overlay);
 
         window.AudioManager?.unlock?.();
-        window.AudioManager?.playVoiceCallout?.('mission_active', { volume: 0.95 });
+        if (activeVoicePackId) {
+            window.AudioManager?.playVoiceCallout?.('mission_active', { volume: 0.95, voicePackId: activeVoicePackId });
+        }
 
         playVideoSource(charBase, startLaunchStep);
     });
@@ -8139,6 +8356,12 @@ function playCutsceneVideo(base, options = {}) {
     window.AudioManager?.unlock?.();
 
     return new Promise((resolve) => {
+        // Hide all pointer-owned UI before the overlay is mounted so the
+        // previous world target cannot flash over the movie's first frame.
+        document.documentElement.classList.add('presentation-cursor-hidden');
+        document.documentElement.classList.remove('custom-cursor-enabled');
+        window.game?.setCursorInspectState?.(null);
+        document.getElementById('tactical-telemeter-box')?.classList.add('hidden');
         const resumeGame = suspendGameForFullscreenVideo();
         if (typeof window !== 'undefined' && window.hbLog) {
             window.hbLog('AUDIO', 'info', `Playing cutscene video: ${base}`);
@@ -8269,11 +8492,15 @@ function playCutsceneVideo(base, options = {}) {
         let played = false;
         let fadingOut = false;
         let guardTimer = 0;
+        const maxDurationTimer = window.setTimeout(() => {
+            finish({ skipped: true });
+        }, 15000);
 
         let checkGamepadInterval = null;
         const finish = ({ skipped = false } = {}) => {
             if (settled) return;
             settled = true;
+            window.clearTimeout(maxDurationTimer);
             if (checkGamepadInterval) {
                 clearInterval(checkGamepadInterval);
                 checkGamepadInterval = null;
@@ -8321,6 +8548,7 @@ function playCutsceneVideo(base, options = {}) {
                 } catch { /* ignore */ }
                 video.remove();
                 overlay.remove();
+                syncPresentationCursor();
                 resumeGame();
                 resolve({ played, skipped });
             }, cleanupDelay);
@@ -8987,8 +9215,8 @@ async function openArmoryGate(embarkAction, { skipDoor = false } = {}) {
     }
 }
 
-function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
-    const playerType = getSelectedHeroType();
+function launchStandardRun({ resetBank = false, playIntro = false, resumeSnapshot = null } = {}) {
+    const playerType = resumeSnapshot?.player?.classType ?? getSelectedHeroType();
     saveHeroType(playerType);
     // Solo geography resumes the campaign. Fixed daily/multiplayer layouts
     // remain separate from the locally saved campaign seed and progression.
@@ -8996,6 +9224,10 @@ function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
     if (window.game && !window.game.isMultiplayer) {
         window.game.fixedRunEntropy = false;
         window.game.globalSeedOffset = 0;
+        if (resumeSnapshot && !window.game.prepareExpeditionResume?.(resumeSnapshot)) return false;
+        // A run started from the menu plays a new map with the story carried
+        // over; TRY AGAIN (which does not come through here) keeps its map.
+        if (!resumeSnapshot) window.game.beginNewCampaignRun?.();
     }
     // Hold one continuous black/simulation barrier from the menu close,
     // through world warm-up and the authored intro, to the final door reveal.
@@ -9028,7 +9260,11 @@ function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
                 gameContainer.classList.add('fullscreen-mode');
                 queueGameLayoutRefresh();
             }
-            return prepareGameplayForDialogue({ loaderOverDoor: true });
+            return Promise.resolve(prepareGameplayForDialogue({ loaderOverDoor: true })).then(() => {
+                if (resumeSnapshot && !window.game?.restoreExpeditionSuspend?.(resumeSnapshot)) {
+                    throw new Error('Expedition continuation could not be restored.');
+                }
+            });
         },
         () => {
             if (!playIntro) {
@@ -9675,7 +9911,7 @@ function executeDevCommand(input) {
                 + '  seed [number]       - View or set active run seed\n'
                 + '  unlock <key>        - Unlock specific achievement\n'
                 + '  unlock_all          - Unlock all achievements\n'
-                + '  cosmetics_all [0|1] - Toggle cosmetic UNLOCK ALL (equip override)\n'
+                + '  armory_all [0|1]  - Toggle all Armory equipment, polish, and sheen unlocks\n'
                 + '  cache_infinite [0|1] - Toggle infinite dev cache/key supply\n'
                 + '  reset_inventory     - Clear dev grants + unlock flags (keeps settings)\n'
                 + '  reset_ach           - Clear local achievement unlocks\n'
@@ -9946,6 +10182,8 @@ function executeDevCommand(input) {
             break;
         case 'skins':
         case 'skins_all':
+        case 'armory_all':
+        case 'unlock_armory':
         case 'unlock_skins':
         case 'unlock_all_skins':
         case 'cosmetics':
@@ -10263,7 +10501,7 @@ document.getElementById('debug-unlock-all-codex')?.addEventListener('click', () 
     showBiomePrompt(`> DEBUG: ${res}`);
 });
 document.getElementById('debug-unlock-all-skins')?.addEventListener('click', () => {
-    const res = devSetCosmeticUnlockAll();
+    const res = devSetCosmeticUnlockAll('1');
     showBiomePrompt(`> DEBUG: ${res}`);
 });
 document.getElementById('dev-btn-unlock-all-ach')?.addEventListener('click', () => {
@@ -10275,7 +10513,7 @@ document.getElementById('dev-btn-unlock-all-codex')?.addEventListener('click', (
     logDevConsole(res, 'success');
 });
 document.getElementById('dev-btn-unlock-all-skins')?.addEventListener('click', () => {
-    const res = devSetCosmeticUnlockAll();
+    const res = devSetCosmeticUnlockAll('1');
     logDevConsole(res, 'success');
 });
 document.getElementById('dev-btn-reset-save')?.addEventListener('click', () => {
@@ -10470,6 +10708,9 @@ function organizeSettingsPanels() {
         ['setting-subtitle-size', 'accessibility'],
         ['setting-subtitle-backdrop', 'accessibility'],
         ['setting-contrast', 'accessibility'],
+        ['setting-camera-shake', 'accessibility'],
+        ['setting-aim-assist', 'controls'],
+        ['setting-reduced-pressure', 'accessibility'],
         ['setting-gore-toggle', 'accessibility']
     ].forEach(([id, target]) => moveControl(id, target));
 }
@@ -11328,6 +11569,7 @@ function setupNpcDialogueEvents() {
     window.NPC_DIALOGUE_TREES = NPC_DIALOGUE_TREES;
     window.npcDialogueTreeManager = npcDialogueTreeManager;
     window.sideStoryManager = sideStoryManager;
+    registerStoryManager(sideStoryManager);
     window.SIDE_STORIES_CONFIG = SIDE_STORIES_CONFIG;
     window.SIDE_STORY_STATUS = SIDE_STORY_STATUS;
 }
@@ -11393,6 +11635,15 @@ function pollTacticalMapGamepadInput() {
             tacticalMapState.prevCloseButtonPressed = true;
             if (performance.now() - lastTacticalMapToggleTimestamp >= 250) {
                 lastModalCloseTimestamp = performance.now();
+                // This poll reads the Gamepad API directly, outside the press
+                // gate. Tell the gate, or native Steam Input's copy of the
+                // same press arrives ~0.1 s later as a fresh B/Start and opens
+                // the pause menu behind the closing map (2026-09-24 Deck QA).
+                controllerPressGate.claim([
+                    ...(pad.buttons?.[1]?.pressed ? ['menuBack', 'dash'] : []),
+                    ...(pad.buttons?.[8]?.pressed ? ['toggleMap'] : []),
+                    ...(pad.buttons?.[9]?.pressed ? ['pause'] : [])
+                ], `browser-gamepad:${pad.index ?? 0}`);
                 toggleTacticalMapModal(false);
                 return;
             }
@@ -11421,37 +11672,52 @@ function pollTacticalMapGamepadInput() {
     if (pad.buttons?.[5]?.pressed) adjustTacticalMapZoom(0.02);
 }
 
-// Unscanned space: a dim diagonal static, so fog reads as "unknown" rather
-// than as empty floor. One tile per document, reused by both map canvases.
+// Unscanned space: high-contrast CRT tactical radar grid with micro scanlines
+// and coordinate pips, making the Fog of War unmistakably readable as unmapped territory.
 let mapFogTile = null;
 function getMapFogPattern(ctx) {
     if (!mapFogTile) {
         mapFogTile = document.createElement('canvas');
-        mapFogTile.width = 16;
-        mapFogTile.height = 16;
+        mapFogTile.width = 24;
+        mapFogTile.height = 24;
         const tile = mapFogTile.getContext('2d');
         if (tile) {
-            tile.fillStyle = '#070d14';
-            tile.fillRect(0, 0, 16, 16);
-            tile.strokeStyle = 'rgba(120, 160, 190, 0.09)';
+            // Dark tactical navy background
+            tile.fillStyle = '#050c14';
+            tile.fillRect(0, 0, 24, 24);
+
+            // CRT scanlines
+            tile.fillStyle = 'rgba(0, 15, 25, 0.45)';
+            tile.fillRect(0, 0, 24, 1);
+            tile.fillRect(0, 12, 24, 1);
+
+            // Tactical diagonal radar static lines
+            tile.strokeStyle = 'rgba(0, 210, 255, 0.12)';
             tile.lineWidth = 1;
             tile.beginPath();
-            tile.moveTo(0, 16);
-            tile.lineTo(16, 0);
-            tile.moveTo(-4, 4);
-            tile.lineTo(4, -4);
-            tile.moveTo(12, 20);
-            tile.lineTo(20, 12);
+            tile.moveTo(0, 24);
+            tile.lineTo(24, 0);
+            tile.moveTo(-6, 6);
+            tile.lineTo(6, -6);
+            tile.moveTo(18, 30);
+            tile.lineTo(30, 18);
             tile.stroke();
-            tile.fillStyle = 'rgba(160, 190, 210, 0.07)';
-            for (const [x, y] of [[3, 5], [11, 2], [7, 12], [14, 9]]) tile.fillRect(x, y, 1, 1);
+
+            // Tactical crosshair pips for unmapped sectors
+            tile.fillStyle = 'rgba(0, 229, 255, 0.16)';
+            tile.fillRect(0, 0, 2, 2);
+            tile.fillRect(12, 12, 1, 1);
+            tile.fillStyle = 'rgba(100, 180, 220, 0.08)';
+            for (const [x, y] of [[5, 7], [17, 3], [9, 19], [21, 13]]) {
+                tile.fillRect(x, y, 1, 1);
+            }
         }
     }
     return ctx.createPattern(mapFogTile, 'repeat');
 }
 
 function isRadarScanAnimating(scan, now = performance.now()) {
-    return Boolean(scan && now - scan.at < (scan.duration ?? 1200) + 600);
+    return Boolean(scan && now - scan.at < (scan.duration ?? 1200) + (scan.dissipationDuration ?? 400) + 200);
 }
 
 function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = false) {
@@ -11542,8 +11808,63 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
         }
     }
 
-    // Render the actual stamped floors with chunk-level culling
+    // A radar pulse sweeps outward on the map as it does in the world.
+    const radarScan = mapState.radarScan;
+    const now = performance.now();
+    const scanAge = radarScan ? now - radarScan.at : Infinity;
+    const scanDuration = radarScan?.duration ?? 1200;
+    const dissipationDuration = radarScan?.dissipationDuration ?? 400;
+    const isRadarActive = Boolean(radarScan && scanAge < scanDuration + dissipationDuration);
+    const isSweeping = Boolean(radarScan && scanAge < scanDuration);
+    const sweep = isSweeping ? Math.min(1, Math.max(0, scanAge / scanDuration)) : 1;
+    const sweepReach = sweep * ((radarScan?.radius ?? 0) + 3);
+
+    // Active player sensor proximity aura: separates immediate line-of-sight from surveyed territory
+    if (player) {
+        const playerPt = worldToMap(player.x, player.z);
+        const auraRadius = (compact ? 12 : 16) * cellSize;
+        const auraGrad = ctx.createRadialGradient(
+            playerPt.x, playerPt.y, 0,
+            playerPt.x, playerPt.y, auraRadius
+        );
+        auraGrad.addColorStop(0, 'rgba(0, 255, 220, 0.12)');
+        auraGrad.addColorStop(0.65, 'rgba(0, 229, 255, 0.03)');
+        auraGrad.addColorStop(1, 'rgba(0, 229, 255, 0)');
+        ctx.fillStyle = auraGrad;
+        ctx.beginPath();
+        ctx.arc(playerPt.x, playerPt.y, auraRadius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Scanned area ambient phosphor field: provides a distinct tactical survey underglow
+    // and clean boundary separating explored space from the surrounding Fog of War.
     const chunkPixelSize = chunkSize * cellSize;
+    const cellPixels = Math.max(1.2, cellSize + 0.25);
+    if (detailedChunks.length > 0) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(0, 229, 255, 0.04)';
+        for (const chunk of detailedChunks) {
+            const chunkScreenX = chunk.chunkX * chunkPixelSize + offsetX;
+            const chunkScreenY = chunk.chunkY * chunkPixelSize + offsetY;
+            if (chunkScreenX + chunkPixelSize < -50 || chunkScreenX > width + 50 ||
+                chunkScreenY + chunkPixelSize < -50 || chunkScreenY > height + 50) {
+                continue;
+            }
+            for (const cell of chunk.cells ?? []) {
+                const wx = chunk.chunkX * chunkSize + cell.x;
+                const wz = chunk.chunkY * chunkSize + cell.y;
+                if (isSweeping && radarScan?.freshCells?.has(`${wx},${wz}`)) {
+                    if (Math.hypot(wx - radarScan.x, wz - radarScan.z) > sweepReach) continue;
+                }
+                const p = worldToMap(wx, wz);
+                if (p.x < -cellSize || p.x > width || p.y < -cellSize || p.y > height) continue;
+                ctx.fillRect(p.x - 1, p.y - 1, cellPixels + 2, cellPixels + 2);
+            }
+        }
+        ctx.restore();
+    }
+
+    // Render the actual stamped floors with chunk-level culling
     for (const chunk of detailedChunks) {
         const chunkScreenX = chunk.chunkX * chunkPixelSize + offsetX;
         const chunkScreenY = chunk.chunkY * chunkPixelSize + offsetY;
@@ -11554,53 +11875,130 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
 
         // Scanned ground cuts a clean hole in the fog before it is painted,
         // so revealed space and unscanned space never blend together.
-        const cellPixels = Math.max(1.2, cellSize + 0.25);
+        // Progressive reveal: newly discovered cells stay fogged until the pulse wave reaches them.
         ctx.globalAlpha = 1;
         ctx.fillStyle = '#02060b';
         for (const cell of chunk.cells ?? []) {
-            const p = worldToMap(chunk.chunkX * chunkSize + cell.x, chunk.chunkY * chunkSize + cell.y);
+            const wx = chunk.chunkX * chunkSize + cell.x;
+            const wz = chunk.chunkY * chunkSize + cell.y;
+            const cellKey = `${wx},${wz}`;
+            if (isSweeping) {
+                const distToScan = Math.hypot(wx - radarScan.x, wz - radarScan.z);
+                const isFresh = radarScan.freshCells?.has(cellKey);
+                if (isFresh && distToScan > sweepReach) continue;
+                if (cell.kind === 'wall' && distToScan > sweepReach && distToScan <= radarScan.radius + 4) {
+                    let bordersFresh = false;
+                    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                        if (radarScan.freshCells.has(`${wx + dx},${wz + dy}`)) {
+                            bordersFresh = true;
+                            break;
+                        }
+                    }
+                    if (bordersFresh) continue;
+                }
+            }
+            const p = worldToMap(wx, wz);
             if (p.x < -cellSize || p.x > width || p.y < -cellSize || p.y > height) continue;
             ctx.fillRect(p.x, p.y, cellPixels, cellPixels);
         }
+
         for (const cell of chunk.cells ?? []) {
-            const p = worldToMap(chunk.chunkX * chunkSize + cell.x, chunk.chunkY * chunkSize + cell.y);
+            const wx = chunk.chunkX * chunkSize + cell.x;
+            const wz = chunk.chunkY * chunkSize + cell.y;
+            const cellKey = `${wx},${wz}`;
+            let waveHighlight = 0;
+            if (isSweeping) {
+                const distToScan = Math.hypot(wx - radarScan.x, wz - radarScan.z);
+                const isFresh = radarScan.freshCells?.has(cellKey);
+                if (isFresh && distToScan > sweepReach) continue;
+                if (cell.kind === 'wall' && distToScan > sweepReach && distToScan <= radarScan.radius + 4) {
+                    let bordersFresh = false;
+                    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                        if (radarScan.freshCells.has(`${wx + dx},${wz + dy}`)) {
+                            bordersFresh = true;
+                            break;
+                        }
+                    }
+                    if (bordersFresh) continue;
+                }
+                if (isFresh) {
+                    const waveDist = sweepReach - distToScan;
+                    if (waveDist >= 0 && waveDist < 3.2) {
+                        waveHighlight = Math.max(0, 1 - waveDist / 3.2);
+                    }
+                }
+            }
+
+            const p = worldToMap(wx, wz);
             if (p.x < -cellSize || p.x > width || p.y < -cellSize || p.y > height) continue;
-            ctx.globalAlpha = cell.kind === 'door' ? 1 : cell.kind === 'room' ? 0.72 : cell.kind === 'wall' ? 0.3 : 0.5;
+            ctx.globalAlpha = cell.kind === 'door' ? 1 : cell.kind === 'room' ? 0.78 : cell.kind === 'wall' ? 0.42 : 0.60;
             ctx.fillStyle = cell.kind === 'door' ? '#ffd15c'
                 : cell.kind === 'room' ? mapPrimary
                     : cell.kind === 'wall' ? '#8fb3c7'
                         : mapSecondary;
             ctx.fillRect(p.x, p.y, cellPixels, cellPixels);
+
+            // Leading-edge wavefront phosphor flare as the wave reaches each cell
+            if (waveHighlight > 0.05) {
+                ctx.globalAlpha = 0.75 * waveHighlight;
+                ctx.fillStyle = '#e8fbff';
+                ctx.fillRect(p.x, p.y, cellPixels, cellPixels);
+            }
         }
     }
     ctx.globalAlpha = 1;
 
-    // A radar pulse sweeps outward on the map as it does in the world, and
-    // the ground it just uncovered flashes before settling into the map.
-    const radarScan = mapState.radarScan;
-    const scanAge = radarScan ? performance.now() - radarScan.at : Infinity;
-    if (radarScan && scanAge < (radarScan.duration ?? 1200) + 600) {
-        const sweep = Math.min(1, scanAge / (radarScan.duration ?? 1200));
-        const flash = Math.max(0, 1 - scanAge / ((radarScan.duration ?? 1200) + 600));
+    // A radar pulse sweeps outward on the map as it does in the world.
+    // When it reaches the perimeter edge, it completes and fades off gracefully.
+    if (isRadarActive) {
+        const flash = Math.max(0, 1 - scanAge / (scanDuration + 600));
         if (flash > 0 && radarScan.freshCells?.size) {
             ctx.fillStyle = '#e8fbff';
             const flashPixels = Math.max(1.2, cellSize + 0.25);
             for (const key of radarScan.freshCells) {
                 const [wx, wz] = key.split(',').map(Number);
-                if (Math.hypot(wx - radarScan.x, wz - radarScan.z) > sweep * (radarScan.radius + 3)) continue;
+                const cellDist = Math.hypot(wx - radarScan.x, wz - radarScan.z);
+                if (cellDist > sweepReach) continue;
                 const p = worldToMap(wx, wz);
                 if (p.x < -cellSize || p.x > width || p.y < -cellSize || p.y > height) continue;
-                ctx.globalAlpha = 0.55 * flash;
+                const distFromFront = sweepReach - cellDist;
+                const cellAlpha = Math.max(0, 1 - distFromFront / 7);
+                ctx.globalAlpha = 0.55 * flash * cellAlpha;
                 ctx.fillRect(p.x, p.y, flashPixels, flashPixels);
             }
         }
-        if (sweep < 1) {
-            const center = worldToMap(radarScan.x, radarScan.z);
+
+        const center = worldToMap(radarScan.x, radarScan.z);
+        let ringRadius;
+        let ringAlpha;
+        let strokeWidth = compact ? 1.6 : 2.2;
+
+        if (scanAge <= scanDuration) {
+            const progress = Math.max(0.01, scanAge / scanDuration);
+            ringRadius = progress * radarScan.radius * cellSize;
+            ringAlpha = 0.90 * (1 - 0.25 * progress);
+        } else {
+            // Reached the perimeter edge: graceful dissipation completion and fade-off!
+            const fadeT = (scanAge - scanDuration) / dissipationDuration;
+            ringRadius = (radarScan.radius + fadeT * 1.8) * cellSize;
+            ringAlpha = 0.62 * (1 - fadeT) * (1 - fadeT);
+            strokeWidth *= (1 + fadeT * 0.4);
+        }
+
+        if (ringAlpha > 0.01) {
             ctx.beginPath();
-            ctx.arc(center.x, center.y, sweep * radarScan.radius * cellSize, 0, Math.PI * 2);
-            ctx.globalAlpha = 0.85 * (1 - sweep * sweep);
+            ctx.arc(center.x, center.y, ringRadius, 0, Math.PI * 2);
+            ctx.globalAlpha = ringAlpha;
             ctx.strokeStyle = '#00d2ff';
-            ctx.lineWidth = compact ? 1.5 : 2;
+            ctx.lineWidth = strokeWidth;
+            ctx.stroke();
+
+            // Tactical halo echo ring for a tactile wave edge
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, Math.max(0, ringRadius - 2), 0, Math.PI * 2);
+            ctx.globalAlpha = ringAlpha * 0.35;
+            ctx.strokeStyle = '#7df9ff';
+            ctx.lineWidth = strokeWidth * 0.5;
             ctx.stroke();
         }
         ctx.globalAlpha = 1;
@@ -11740,6 +12138,21 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
             ctx.fillStyle = sp.found ? mapSecondary : mapPrimary;
             ctx.fill();
         }
+        ctx.restore();
+    }
+
+    // Minimap bezel radial falloff: softens outer edges so waves and unmapped borders fade smoothly
+    if (compact) {
+        ctx.save();
+        const edgeGrad = ctx.createRadialGradient(
+            width / 2, height / 2, Math.min(width, height) * 0.44,
+            width / 2, height / 2, Math.max(width, height) * 0.58
+        );
+        edgeGrad.addColorStop(0, 'rgba(4, 10, 18, 0)');
+        edgeGrad.addColorStop(0.75, 'rgba(4, 10, 18, 0.35)');
+        edgeGrad.addColorStop(1, 'rgba(4, 10, 18, 0.75)');
+        ctx.fillStyle = edgeGrad;
+        ctx.fillRect(0, 0, width, height);
         ctx.restore();
     }
 
@@ -11982,6 +12395,11 @@ document.addEventListener('keydown', (event) => {
 
         if (campChoiceModal && !campChoiceModal.classList.contains('hidden')) {
             closeCampChoiceModal();
+            event.preventDefault();
+            return;
+        }
+        if (document.getElementById('expedition-event-modal')?.classList.contains('hidden') === false) {
+            closeExpeditionEventModal(null);
             event.preventDefault();
             return;
         }
@@ -14978,7 +15396,8 @@ function initTacticalCursor() {
         // Gamescope can emit synthetic mouse motion while it transfers focus
         // away from Steam's launch overlay. Do not reveal either cursor until
         // the final airlock doors have completely exposed the title menu.
-        if (document.documentElement.classList.contains('boot-cursor-hidden')) {
+        if (document.documentElement.classList.contains('boot-cursor-hidden')
+            || document.documentElement.classList.contains('presentation-cursor-hidden')) {
             cursor.classList.add('cursor-fade-out');
             document.documentElement.classList.remove('custom-cursor-enabled');
             return;
@@ -15045,6 +15464,7 @@ function initTacticalCursor() {
             hideCursorForTouch();
             return;
         }
+        if (document.documentElement.classList.contains('presentation-cursor-hidden')) return;
 
         cursor.classList.add('cursor-clicking');
         targetScale = 0.72; // Snap scale down on press and hold
@@ -15074,9 +15494,14 @@ function initTacticalCursor() {
     });
 
     function handleHoverTargetSync(rawTarget, { playBlip = false } = {}) {
+        if (document.documentElement.classList.contains('presentation-cursor-hidden')) {
+            currentHoverTarget = null;
+            cursor.classList.remove('cursor-hovering');
+            return null;
+        }
         const target = resolveInteractiveFocusTarget(rawTarget);
         if (!target) return null;
-        if (currentHoverTarget !== target) {
+        if (currentHoverTarget !== target || document.activeElement !== target) {
             currentHoverTarget = target;
             cursor.classList.add('cursor-hovering');
             if (document.activeElement !== target) {
@@ -15104,11 +15529,9 @@ function initTacticalCursor() {
         const target = resolveInteractiveFocusTarget(e.target);
         if (target) {
             const related = resolveInteractiveFocusTarget(e.relatedTarget);
-            if (related !== currentHoverTarget) {
-                currentHoverTarget = related;
-                if (!related) {
-                    cursor.classList.remove('cursor-hovering');
-                }
+            if (!related) {
+                currentHoverTarget = null;
+                cursor.classList.remove('cursor-hovering');
             }
         }
     });
@@ -15124,7 +15547,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         devicePixelRatio: window.devicePixelRatio
     });
     startBootLongTaskDiagnostics();
-    recoverCrashedRunCheckpoint();
+    installNativeTooltipGuard();
+    // A complete continuation supersedes the legacy salvage-only crash marker.
+    // Keep the lightweight fallback only when no resumable expedition exists.
+    if (!expeditionSuspendStore.peek()) recoverCrashedRunCheckpoint();
     window.AudioManager = AudioManager; // Expose globally for the 3D engine/Telemeters
     preloadDoorAssets();
     initTacticalCursor();
@@ -15262,6 +15688,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             { key: 'ui_error1', url: '/audio/vg2/ui_error1.wav' },
             { key: 'ui_error2', url: '/audio/vg2/ui_error2.wav' },
             { key: 'ui_error3', url: '/audio/vg2/ui_error3.wav' },
+            // Played by the game-over screen; it had no file of its own.
+            { key: 'terminal_deny', url: '/audio/vg2/ui_error3.wav' },
             { key: 'ui_scan_ping1', url: '/audio/vg2/ui_scan_ping1.wav' },
             { key: 'ui_scan_ping2', url: '/audio/vg2/ui_scan_ping2.wav' },
             { key: 'ui_scan_ping3', url: '/audio/vg2/ui_scan_ping3.wav' },
@@ -15318,6 +15746,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Check if player has active save data to enable CONTINUE
     const checkHasSaveData = () => {
         try {
+            if (expeditionSuspendStore.peek()) return true;
             const bankState = window.bankManager?.getState?.() ?? {};
             const hasBanked = (Number(bankState.tech) > 0 || Number(bankState.coin) > 0 || Number(bankState.med) > 0);
             // Was `hasAnyUnlock(getAchievementProgress())` -- called with no
@@ -15337,11 +15766,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const updateContinueButtonState = () => {
         const hasSave = checkHasSaveData();
+        const hasExpedition = Boolean(expeditionSuspendStore.peek());
         if (titleContinueBtn) {
             titleContinueBtn.disabled = !hasSave;
             titleContinueBtn.classList.toggle('disabled', !hasSave);
             titleContinueBtn.classList.toggle('hidden', !hasSave);
             titleContinueBtn.style.display = hasSave ? '' : 'none';
+            titleContinueBtn.textContent = hasExpedition
+                ? t('ui.menu.resume_expedition')
+                : t('ui.menu.continue');
         }
         if (titleSwitchClassBtn) {
             titleSwitchClassBtn.classList.toggle('hidden', !hasSave);
@@ -15410,7 +15843,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             // socket listeners -- into a solo run. CONTINUE is never part of
             // multiplayer's own #start-game deploy chain, so clearing is safe.
             clearMultiplayerSession();
-            launchStandardRun({ resetBank: false, playIntro: false });
+            const resumeSnapshot = expeditionSuspendStore.claim();
+            launchStandardRun({ resetBank: false, playIntro: false, resumeSnapshot });
         });
     }
     if (titleSwitchClassBtn) {
@@ -15790,6 +16224,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderLoaderLogs(t('ui.loading.log_steam_degraded', { reason: String(reason).toUpperCase() }));
     }
 
+    const isLighthouse = typeof navigator !== 'undefined' && (
+        /Lighthouse|Chrome-Lighthouse/i.test(navigator.userAgent) ||
+        Boolean(window.__LIGHTHOUSE_TEST__) ||
+        (typeof location !== 'undefined' && /[?&]lighthouse(=|&|$)/i.test(location.search))
+    );
+
+    if (isLighthouse) {
+        if (loaderBar) loaderBar.style.width = '100%';
+        if (loadingScreen) loadingScreen.classList.add('hidden');
+        if (splash) splash.classList.remove('hidden');
+        refreshTitleScreenState();
+        setAppPhase('splash');
+        document.documentElement.classList.remove('boot-cursor-hidden', 'loading-cursor-hidden');
+        window.HunkerTriggerBoot = () => Promise.resolve();
+        return;
+    }
+
     // 2. Load core audio & image manifest
     traceBootPhase('core-assets-start', {
         images: manifest.images.length,
@@ -15812,6 +16263,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const autoTriggerBoot = async () => {
         if (bootInitializing) return;
         bootInitializing = true;
+
         traceBootPhase('boot-triggered', { initialType });
 
         try {
@@ -16108,7 +16560,13 @@ function captureGameplayPerfContext() {
 
 let gameplayLongTaskObserver = null;
 const reportGameplayLongTask = createLongTaskReporter({
-    emit: (message, context) => debugLog.warn('PERF', message, context)
+    emit: (message, context) => {
+        debugLog.warn('PERF', message, context);
+        debugLog.capturePerformanceTimelineSample('event:long-task');
+    },
+    // A one-second cadence produced more than 1,500 large diagnostic records
+    // in the Deck session while the main thread was already starved.
+    intervalMs: 10_000
 });
 function startGameplayLongTaskDiagnostics() {
     if (typeof PerformanceObserver === 'undefined' || gameplayLongTaskObserver) return;
@@ -16444,6 +16902,10 @@ if (window.electronAPI) {
     window.addEventListener(STEAM_RUN_SCORE_FINALIZED_EVENT, (event) => {
         const payload = event?.detail;
         if (!payload || !window.electronAPI?.submitSteamRunScore) return;
+        if (!isRankedRunPayload(payload)) {
+            console.log(`[steam] PvP run not submitted to leaderboards (${payload.runId})`);
+            return;
+        }
         showDeveloperCommentary('leaderboard');
         recordSteamTimelineEvent('run_end', payload.outcome === 'victory' ? 'Extraction Complete' : 'Run Ended', `Score ${payload.score ?? 0} submitted for trusted ranking.`, {
             icon: payload.outcome === 'victory' ? 'victory' : 'run_end',

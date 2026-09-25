@@ -204,12 +204,18 @@ describe('Tactical Cursor & Telemeter Hover System', () => {
             maxPropHp: 4,
             collisionRadius: 0.48
         };
-        new THREE.Group().add(prop);
+        const group = new THREE.Group();
+        const replacement = new THREE.Group();
+        group.add(prop, replacement);
+        prop.userData.world3dRoot = replacement;
         game.scatterSprites = [prop];
 
         const target = game.resolveTacticalInspectTarget({ x: 2.1, z: 2.1 });
         expect(target).toMatchObject({
             targetId: 'destructible_prop',
+            badgeLabel: 'SPECIMEN TANK',
+            title: 'SPECIMEN TANK',
+            typeLabel: 'SALVAGE',
             integrity: 50,
             promptText: 'DISMANTLE'
         });

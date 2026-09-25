@@ -24,6 +24,8 @@
 // second time). This now does exactly what its own name says: sets up the
 // multiplayer session, then calls the launch callback directly.
 
+import { enterSessionStory, leaveSessionStory } from './storyScope.js';
+
 /**
  * Starts a multiplayer run: the single explicit entry point every
  * multiplayer deploy path (real relay round-trip and the offline/local
@@ -39,6 +41,9 @@
  *   that setupMultiplayerNetwork(session) runs first here.
  */
 export async function startMultiplayerRun(session, launchCallback) {
+    // Co-op and PvP runs start the story fresh and never write to the solo
+    // campaign (owner's rule, 2026-09-24); clearMultiplayerSession restores it.
+    enterSessionStory();
     if (typeof window !== 'undefined') {
         window.activeMultiplayerSession = session;
         // Still passed explicitly (see setupMultiplayerNetwork's own
@@ -70,6 +75,7 @@ export async function startMultiplayerRun(session, launchCallback) {
  * uses) fixes (2); this function is the solo-start-path caller of it.
  */
 export function clearMultiplayerSession() {
+    leaveSessionStory();
     if (typeof window !== 'undefined') {
         window.activeMultiplayerSession = null;
         window.game?.teardownMultiplayerNetwork?.();

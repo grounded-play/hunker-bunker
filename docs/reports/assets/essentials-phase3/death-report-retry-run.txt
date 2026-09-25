@@ -1,0 +1,6 @@
+
+Running 1 test using 1 worker
+
+  ✓  1 [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/death-report.spec.js:19:5 › phase3 death report: o2 (2.9m)
+
+  1 passed (2.9m)

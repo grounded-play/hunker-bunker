@@ -5,6 +5,7 @@ import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.j
 import { assetUrl } from './assetUrl.js';
 import { recordAssetLoad } from './assetLoadTelemetry.js';
 import { measurePerfPhase } from './perfPhases.js';
+import { useSinglePassForFlatMaterials } from './singlePassFlatMaterials.js';
 
 // docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws without this registered first.
@@ -334,6 +335,7 @@ function prepareWorld3dModel(model, type, config) {
         if (!object.geometry.boundingSphere) object.geometry.computeBoundingSphere();
         object.frustumCulled = true;
     });
+    useSinglePassForFlatMaterials(model);
     const root = new THREE.Group();
     root.name = `World3d:${type}`;
     root.add(model);

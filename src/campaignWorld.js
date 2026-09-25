@@ -1,5 +1,5 @@
 import { createFreshRunEntropy } from './runEntropy.js';
-import { deriveExpeditionSeed, createExpeditionProfile, normalizeExpeditionProfile } from './expeditionSystem.js';
+import { continueExpeditionProfile, deriveExpeditionSeed, createExpeditionProfile, normalizeExpeditionProfile } from './expeditionSystem.js';
 import { LEGACY_ROUTE_LAYOUT_VERSION, ROUTE_LAYOUT_VERSION } from './mazeExpedition.js';
 
 export const CAMPAIGN_WORLD_STORAGE_KEY = 'hb_campaign_world_v1';
@@ -44,6 +44,29 @@ function normalizeWorldTransformations(raw) {
     };
 }
 
+/**
+ * The parts of a saved maze that are story rather than map: milestone bosses,
+ * ring access and crossings, completed crossing missions and ship-goal
+ * progress. Destroyed walls, doors, explored areas and the old map's authored
+ * identity are dropped with the map. Pure.
+ */
+export function carryStoryToNewMap(mazeState) {
+    if (!mazeState || typeof mazeState !== 'object' || Array.isArray(mazeState)) return null;
+    const kept = clone(mazeState);
+    delete kept.doors;
+    kept.worldChanges = {
+        destroyedWalls: [],
+        destroyedExteriorWalls: [],
+        discoveredChunks: [],
+        discoveredRooms: [],
+        discoveredCells: []
+    };
+    if (kept.authoredWorld && typeof kept.authoredWorld === 'object') {
+        kept.authoredWorld = { ...kept.authoredWorld, seed: null, version: null };
+    }
+    return kept;
+}
+
 function normalize(raw) {
     if (!raw || raw.version !== CAMPAIGN_WORLD_VERSION || !isSeed(raw.seed)) return null;
     const expeditionIndex = Number.isSafeInteger(raw.expeditionIndex) && raw.expeditionIndex >= 0
@@ -55,6 +78,9 @@ function normalize(raw) {
     return {
         version: CAMPAIGN_WORLD_VERSION,
         seed: raw.seed,
+        // The map the current run is played on. Saves from before per-run maps
+        // keep the campaign's map until their next run starts.
+        mapSeed: isSeed(raw.mapSeed) ? raw.mapSeed : raw.seed,
         // Saves from before layout generations were recorded were built
         // with the legacy generator, and must keep that geography.
         layoutVersion: Number.isSafeInteger(raw.layoutVersion) && raw.layoutVersion >= LEGACY_ROUTE_LAYOUT_VERSION
@@ -130,6 +156,7 @@ export function createCampaignWorldStore({
         return write({
             version: CAMPAIGN_WORLD_VERSION,
             seed: campaignSeed,
+            mapSeed: campaignSeed,
             layoutVersion: ROUTE_LAYOUT_VERSION,
             expeditionIndex: 0,
             expeditionSeed: activeExpedition.expeditionSeed,
@@ -162,10 +189,27 @@ export function createCampaignWorldStore({
         getState: read,
         getOrCreate,
         ensure: getOrCreate,
+        // A run started from the menu plays a new map (owner's rule,
+        // 2026-09-24: MAIN MENU resets the run; TRY AGAIN keeps the map).
+        // The story carries over — bank, goals, unlocks, milestone bosses,
+        // ring access and the world transformations (bridges, camps, hives,
+        // shortcuts), all keyed by what they are, not where. What belongs to
+        // the old map (destroyed walls, doors, explored areas, the authored
+        // world's identity) does not.
+        beginNewRun({ mapSeed = null } = {}) {
+            const current = getOrCreate();
+            const next = isSeed(mapSeed) ? mapSeed : createSeed(current.mapSeed);
+            return write({
+                ...current,
+                mapSeed: isSeed(next) ? next : createFreshRunEntropy(current.mapSeed),
+                layoutVersion: ROUTE_LAYOUT_VERSION,
+                mazeState: carryStoryToNewMap(current.mazeState)
+            });
+        },
         beginExpedition() {
             const current = getOrCreate();
             const expeditionIndex = current.expeditionIndex + 1;
-            const activeExpedition = createExpeditionProfile(current.seed, expeditionIndex);
+            const activeExpedition = continueExpeditionProfile(current.seed, expeditionIndex, current.activeExpedition);
             return write({
                 ...current,
                 expeditionIndex,

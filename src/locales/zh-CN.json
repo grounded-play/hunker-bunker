@@ -44,8 +44,20 @@
     "elite_contact": "机甲：接触精英目标。重装敌方单位——注意保留撤退路线。"
   },
   "ui": {
+    "encounters": {
+      "locked_crossfire": {
+        "name": "封锁交叉火力"
+      },
+      "bloom_push": {
+        "name": "花潮推进"
+      },
+      "cold_pincer": {
+        "name": "寒冰钳击"
+      }
+    },
     "menu": {
       "continue": "继续游戏",
+      "resume_expedition": "继续远征",
       "switch_class": "更换职业",
       "new_run": "新的征程",
       "achievements": "成就",
@@ -152,6 +164,9 @@
       "subtitle_size": "字幕大小",
       "subtitle_backdrop": "字幕背景",
       "contrast": "界面对比度",
+      "camera_shake": "镜头震动",
+      "aim_assist": "手柄瞄准辅助",
+      "reduced_pressure": "低压辅助模式",
       "aria_label_settings_categories": "设置分类",
       "session": "会话",
       "audio": "音频",
@@ -214,7 +229,14 @@
       "backdrop_solid": "不透明",
       "contrast_normal": "标准（默认）",
       "contrast_high": "高",
-      "contrast_max": "最高（无扫描线）"
+      "contrast_max": "最高（无扫描线）",
+      "shake_off": "关闭 (0%)",
+      "shake_low": "低 (25%)",
+      "shake_reduced": "中 (50%)",
+      "shake_normal": "正常 (100%)",
+      "aim_assist_off": "关闭",
+      "aim_assist_low": "低 (仅磁吸)",
+      "aim_assist_standard": "标准 (吸附+减速)"
     },
     "aria": {
       "language_select": "游戏语言",
@@ -234,7 +256,9 @@
       "camera_follow": "第三人称镜头跟随灵敏度",
       "aim_speed": "右摇杆瞄准速度",
       "aim_speed_presets": "右摇杆瞄准速度预设",
-      "callsign_input": "操作员呼号"
+      "callsign_input": "操作员呼号",
+      "camera_shake": "镜头震动强度",
+      "aim_assist": "手柄瞄准辅助"
     },
     "armory": {
       "tag": "◈ 地底任务前军械库 // 零号区",
@@ -789,6 +813,15 @@
       "cost_300_tech_100_coin": "花费：300 科技 / 100 硬币",
       "expedition_day": "远征天数",
       "cycle_phase": "周期阶段",
+      "campaign_state": "战役状态",
+      "advance_day": "推进天数",
+      "advance_status_cot_available": "地堡行军床可用",
+      "advance_status_camp_available": "安全营地可用",
+      "advance_status_blocked_contract": "已锁定 — 合约进行中",
+      "advance_status_blocked_unsafe": "已锁定 — 区域不安全",
+      "advance_status_coop_visitor": "合作访客 — 本地战役周期锁定",
+      "cycle_hold": "周期暂停 — 终端使用中",
+      "cycle_progress_label": "24小时周期的 {percent}%",
       "local_light": "当地光照",
       "next_transition": "下次转换",
       "aria_label_objective_history": "目标历史",
@@ -1349,7 +1382,24 @@
       "alien_hives": "异星虫巢",
       "obedience": "服从度：",
       "seats_filled": "已占席位：",
-      "humanity": "人性："
+      "humanity": "人性：",
+      "report": {
+        "title": "◈ 远征报告",
+        "condition": "环境: {condition}",
+        "bounty_met": "赏金达成 — {label}(已存入 +{shells} 弹壳)",
+        "bounty_missed": "赏金未达成 — {label}({progress}/{target})",
+        "completed": "已完成: {list}",
+        "none_completed": "本次部署未完成任何目标",
+        "next_goal_ready": "下一步: {goal} 已负担得起 — 在飞船控制台建造",
+        "next_goal_short": "下一步: {goal} 还需 {missing}",
+        "all_goals": "所有飞船目标已建成 — 女王在等待",
+        "item_settlement": "结算：{label}",
+        "item_event": "事件：{label}",
+        "item_discovery": "发现：{label}",
+        "item_unlock": "解锁：{label}",
+        "item_faction": "声望：{label}",
+        "item_lead": "线索：{label}"
+      }
     },
     "ach": {
       "unlocked_kicker": "成就解锁",
@@ -1507,10 +1557,10 @@
         }
       },
       "bounties": {
-        "salvage_run": "从深层走廊回收120以上废料",
-        "eliminate_elite": "消灭一只变异的区域猎手",
-        "scout_compound": "潜入并测绘一处外围据点",
-        "clearing_breach": "摧毁6面结构隔墙"
+        "salvage_run": "回收 8 处物资",
+        "eliminate_elite": "消灭一只变异区域潜猎者",
+        "scout_compound": "勘察外围据点的 3 个房间",
+        "clearing_breach": "击碎 6 道结构隔墙"
       },
       "sites": {
         "camp_meridian": "子午据点",
@@ -1590,6 +1640,160 @@
         "landmark": "撤离气闸",
         "line_objective": "目标完成。撤离气闸已就绪。返回飞船。",
         "line_purged": "区域已肃清。撤离气闸已启动。返回飞船。"
+      },
+      "bounty_progress": "赏金 — {label} · {progress}/{target} · +{shells} 弹壳",
+      "bounty_ready": "赏金就绪 — {label} · 撤离以存入 +{shells} 弹壳",
+      "bounty_complete": "赏金达成 — {label}。已存入 {shells} 弹壳。",
+      "arrival": {
+        "glacial_gale": "暴风中有动静 — 冰霜蜗牛正逼近你的位置。",
+        "spore_bloom": "孢子云在移动 — 有东西正借着它向你靠近。",
+        "bio_resin_surge": "爬行者从树脂里钻出来了 — 它们闻到了坠毁的气味。",
+        "geothermal_arc": "电弧惊醒了它们 — 敌人正在接近。",
+        "subzero_stillness": "太安静了。一个接触目标，体型很大，而且它知道你在哪。",
+        "tracker": "接敌 — 清除逼近的 {count} 个敌人",
+        "cleared": "接敌已清除。它们身上带着物资 — 去搜一下尸体。"
+      },
+      "bounty_chip": "赏金 {progress}/{target} · +{shells} 弹壳",
+      "bounty_chip_ready": "赏金达成 · 撤离后存入 +{shells}"
+    },
+    "events": {
+      "kicker": "可选路线",
+      "close": "离开",
+      "route_signalled": "可选 · {name} · {meters}米",
+      "route_bypassing": "旁路 · {name} · {progress}/{target}秒",
+      "route_engaged": "交战 · {name}",
+      "response": {
+        "scan": "扫描",
+        "open": "打开",
+        "leave": "放弃",
+        "breach": "强行突破",
+        "bypass": "旁路破解"
+      },
+      "reward_recovered": "已回收：{name}。",
+      "reward_lost": "组件没能在打捞中保住。",
+      "report_reward": "回收了{drop}",
+      "report_reward_lost": "打捞中损失了一个组件",
+      "false_distress": {
+        "name": "求救信号",
+        "site": "一处密封的避难所，信标仍在鸣响。里面有人——或者有东西。",
+        "signal_clear": "一号环发现求救信标。人声在循环播放。偏离飞船路线——由你决定。",
+        "signal_faint": "一号环的冰霜下传来微弱的求救信标。难以辨读。由你决定。",
+        "signal_intermittent": "一号环的求救信标在电弧噪声中时断时续。由你决定。",
+        "scan_survivor": "扫描：一个心跳，人类节律。里面有人活着。",
+        "scan_contaminated": "扫描：心跳不对——太多，太慢。这是诱饵。",
+        "rescued": "一名幸存者踉跄走出，把打捞物塞到你手里。",
+        "ambush": "门后是一个巢穴。这是诱饵。",
+        "report_rescued": "从可疑信标中救出一名幸存者",
+        "report_ambush": "在求救信标的伏击中幸存",
+        "report_left": "没有回应求救信标",
+        "report_empty": "信标是诱饵，但什么也没来",
+        "response_scan": "花几秒钟看清里面是什么。",
+        "response_open": "打开门。幸存者会给回报；巢穴会反击。",
+        "response_leave": "走开。没有风险，也没有回报。"
+      },
+      "unstable_vault": {
+        "name": "打捞保险库",
+        "site": "一座开裂的打捞保险库，锁上仍有电流闪烁。",
+        "signal_clear": "一号环有一座不稳定的打捞保险库。里面有稀有物品，锁正在失效。偏离飞船路线——由你决定。",
+        "breach": "保险库已突破——警报唤醒了守卫。",
+        "bypass_start": "旁路进行中。守在这里；你的氧气会吃紧。",
+        "bypassed": "旁路完成。保险库悄然打开。",
+        "report_bypassed": "通过旁路打开了打捞保险库",
+        "report_breached": "强行突破打捞保险库并守住了它",
+        "report_breached_quiet": "强行突破了打捞保险库；没有守卫出现",
+        "report_left": "没有打开打捞保险库",
+        "response_breach": "立刻拿走奖励；守卫会醒来。",
+        "response_bypass": "在锁旁停留{seconds}秒。不用战斗，但氧气消耗更快。",
+        "response_leave": "走开。没有风险，也没有回报。"
+      }
+    },
+    "relics": {
+      "synergy": {
+        "cryo_shatter": "低温粉碎",
+        "bio_predator": "生化掠食者"
+      },
+      "cryo_rime": {
+        "name": "冰霜注入器",
+        "description": "射击冻结敌人并降低其移动速度。"
+      },
+      "shatter_engine": {
+        "name": "粉碎引擎",
+        "description": "消灭被冻结的敌人会引发冰晶破片新星。"
+      },
+      "caustic_payload": {
+        "name": "腐蚀孢子弹头",
+        "description": "射击造成生化腐蚀并附带持续伤害。"
+      },
+      "bio_vampirism": {
+        "name": "生化吸血薄膜",
+        "description": "击杀生化敌人恢复氧气与防护服电量。"
+      }
+    },
+    "cache": {
+      "title": "高风险奖励储藏箱",
+      "preview": "内含: {dropName}",
+      "risk_cost": "行动代价: {cost}",
+      "open_prompt": "破拆储藏箱 [F]",
+      "walk_away": "离开",
+      "cost": {
+        "escalated_wave": "升级敌军波次",
+        "o2_siphon": "抽取25%氧气",
+        "lockdown": "12秒区域封锁"
+      },
+      "report": {
+        "opened": "破拆高风险奖励储藏箱 ({drop})"
+      }
+    },
+    "death": {
+      "cause": {
+        "enemy": "死于{enemy}",
+        "projectile": "死于敌方火力",
+        "boss_attack": "死于首领攻击",
+        "o2": "窒息——装甲服氧气耗尽",
+        "fall": "坠入深渊",
+        "hazard": "死于有毒地面",
+        "turret": "死于营地炮塔",
+        "backlash": "死于女王之乳的反噬",
+        "ship": "飞船被摧毁",
+        "squad": "全队阵亡",
+        "abort": "任务中止",
+        "unknown": "未记录死因"
+      },
+      "enemy": {
+        "cybersnail": "赛博蜗牛",
+        "cryosnail": "冰冻蜗牛",
+        "sporesnail": "孢子蜗牛",
+        "sentinel": "哨兵",
+        "crawler": "裂隙爬行者",
+        "alien_proto_crawler": "原型爬行者",
+        "alien_proto_spitter": "原型喷吐者",
+        "mycelium_stalker": "菌丝潜猎者",
+        "bio_charger": "生化冲锋者",
+        "spore_mortar": "孢子迫击炮",
+        "fungal_spore_vent": "孢子喷口",
+        "boss_cybersnail": "赛博蜗牛首领",
+        "boss_cryosnail": "冰冻蜗牛首领",
+        "boss_sporesnail": "孢子蜗牛首领",
+        "boss_corrupted_scout": "堕落的侦察兵",
+        "boss_corrupted_tank": "堕落的坦克",
+        "boss_corrupted_engineer": "堕落的工程师",
+        "boss_queen": "女王"
+      },
+      "build": {
+        "cryo_shatter": "构建：冰霜碎裂触发{count}次，造成{damage}点伤害",
+        "bio_predator": "构建：生化掠食者触发{count}次，恢复{o2}%氧气和{hearts}颗心",
+        "equipped": "构建：{drops}（未触发协同）",
+        "none": "构建：本次部署没有战地升级"
+      },
+      "field": {
+        "black_box": "遗留在野外：{missing}——黑匣子距飞船{meters}米",
+        "black_box_empty": "野外没有遗留任何物品"
+      },
+      "next": {
+        "recover_black_box": "下一步：在下一次死亡覆盖它之前回收黑匣子（{meters}米外）",
+        "build_goal": "下一步：在飞船控制台建造{goal}",
+        "follow_lead": "下一步：追踪线索——{label}",
+        "redeploy": "下一步：重新部署"
       }
     }
   },

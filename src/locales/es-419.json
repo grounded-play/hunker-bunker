@@ -44,8 +44,20 @@
     "elite_contact": "TRAJE: Contacto de élite. Hostil blindado — mantén una ruta de escape."
   },
   "ui": {
+    "encounters": {
+      "locked_crossfire": {
+        "name": "Fuego cruzado cerrado"
+      },
+      "bloom_push": {
+        "name": "Avance floral"
+      },
+      "cold_pincer": {
+        "name": "Pinza gélida"
+      }
+    },
     "menu": {
       "continue": "CONTINUAR",
+      "resume_expedition": "REANUDAR EXPEDICIÓN",
       "switch_class": "CAMBIAR CLASE",
       "new_run": "NUEVA PARTIDA",
       "achievements": "LOGROS",
@@ -152,6 +164,9 @@
       "subtitle_size": "TAMAÑO DE SUBTÍTULOS",
       "subtitle_backdrop": "FONDO DE SUBTÍTULOS",
       "contrast": "CONTRASTE DE INTERFAZ",
+      "camera_shake": "VIBRACIÓN DE CÁMARA",
+      "aim_assist": "ASISTENCIA DE APUNTADO",
+      "reduced_pressure": "MODO DE PRESIÓN REDUCIDA",
       "aria_label_settings_categories": "Categorías de ajustes",
       "session": "SESIÓN",
       "audio": "AUDIO",
@@ -214,7 +229,14 @@
       "backdrop_solid": "SÓLIDO",
       "contrast_normal": "NORMAL (PREDET.)",
       "contrast_high": "ALTO",
-      "contrast_max": "MÁXIMO (SIN LÍNEAS DE BARRIDO)"
+      "contrast_max": "MÁXIMO (SIN LÍNEAS DE BARRIDO)",
+      "shake_off": "DESACTIVADO (0%)",
+      "shake_low": "BAJO (25%)",
+      "shake_reduced": "REDUCIDO (50%)",
+      "shake_normal": "NORMAL (100%)",
+      "aim_assist_off": "DESACTIVADO",
+      "aim_assist_low": "BAJO (SOLO MAGNETISMO)",
+      "aim_assist_standard": "ESTÁNDAR (IMÁN Y FRICCIÓN)"
     },
     "aria": {
       "language_select": "Idioma del juego",
@@ -234,7 +256,9 @@
       "camera_follow": "Respuesta del seguimiento de la cámara en tercera persona",
       "aim_speed": "Velocidad de apuntado del stick derecho",
       "aim_speed_presets": "Ajustes de velocidad de apuntado del stick derecho",
-      "callsign_input": "Indicativo del operador"
+      "callsign_input": "Indicativo del operador",
+      "camera_shake": "Intensidad de vibración de cámara",
+      "aim_assist": "Asistencia de apuntado para control"
     },
     "armory": {
       "tag": "◈ ARMERÍA SUBTERRÁNEA PREMISIÓN // SECTOR CERO",
@@ -789,6 +813,15 @@
       "cost_300_tech_100_coin": "COSTE: 300 TEC / 100 MONEDAS",
       "expedition_day": "DÍA DE EXPEDICIÓN",
       "cycle_phase": "FASE DEL CICLO",
+      "campaign_state": "ESTADO DE CAMPAÑA",
+      "advance_day": "AVANZAR DÍA",
+      "advance_status_cot_available": "DISPONIBLE EN CATRE DEL BÚNKER",
+      "advance_status_camp_available": "DISPONIBLE EN CAMPAMENTO SEGURO",
+      "advance_status_blocked_contract": "BLOQUEADO — CONTRATO ACTIVO",
+      "advance_status_blocked_unsafe": "BLOQUEADO — SITIO INSEGURO",
+      "advance_status_coop_visitor": "VISITANTE COOP — CICLO LOCAL BLOQUEADO",
+      "cycle_hold": "CICLO EN PAUSA — TERMINAL ACTIVA",
+      "cycle_progress_label": "{percent}% DEL CICLO DE 24H",
       "local_light": "LUZ LOCAL",
       "next_transition": "PRÓXIMA TRANSICIÓN",
       "aria_label_objective_history": "Historial de objetivos",
@@ -1349,7 +1382,24 @@
       "alien_hives": "Colmenas alienígenas",
       "obedience": "Obediencia:",
       "seats_filled": "Asientos ocupados:",
-      "humanity": "Humanidad:"
+      "humanity": "Humanidad:",
+      "report": {
+        "title": "◈ INFORME DE EXPEDICIÓN",
+        "condition": "Condición: {condition}",
+        "bounty_met": "Recompensa cumplida — {label} (+{shells} casquillos depositados)",
+        "bounty_missed": "Recompensa fallida — {label} ({progress}/{target})",
+        "completed": "Completado: {list}",
+        "none_completed": "Ningún objetivo completado en este despliegue",
+        "next_goal_ready": "Siguiente: {goal} está a tu alcance — constrúyelo en la consola de la nave",
+        "next_goal_short": "Siguiente: a {goal} le faltan {missing}",
+        "all_goals": "Todos los objetivos de la nave construidos — la Reina espera",
+        "item_settlement": "Liquidado: {label}",
+        "item_event": "Evento: {label}",
+        "item_discovery": "Hallazgo: {label}",
+        "item_unlock": "Desbloqueado: {label}",
+        "item_faction": "Reputación: {label}",
+        "item_lead": "Pista: {label}"
+      }
     },
     "ach": {
       "unlocked_kicker": "LOGRO DESBLOQUEADO",
@@ -1507,10 +1557,10 @@
         }
       },
       "bounties": {
-        "salvage_run": "Extrae más de 120 de chatarra de pasillos profundos",
+        "salvage_run": "Recupera 8 alijos de chatarra",
         "eliminate_elite": "Elimina a un acechador mutado del sector",
-        "scout_compound": "Infiltra y cartografía un complejo remoto",
-        "clearing_breach": "Destruye 6 muros divisorios estructurales"
+        "scout_compound": "Mapea 3 salas de un complejo remoto",
+        "clearing_breach": "Derriba 6 muros divisorios estructurales"
       },
       "sites": {
         "camp_meridian": "COMPLEJO MERIDIAN",
@@ -1590,6 +1640,160 @@
         "landmark": "ESCLUSA DE EXTRACCIÓN",
         "line_objective": "OBJETIVO CUMPLIDO. ESCLUSA DE EXTRACCIÓN LISTA. REGRESA A LA NAVE.",
         "line_purged": "SECTOR PURGADO. ESCLUSA DE EXTRACCIÓN ACTIVA. REGRESA A LA NAVE."
+      },
+      "bounty_progress": "RECOMPENSA — {label} · {progress}/{target} · +{shells} casquillos",
+      "bounty_ready": "RECOMPENSA LISTA — {label} · EXTRAE PARA GUARDAR +{shells} CASQUILLOS",
+      "bounty_complete": "RECOMPENSA CUMPLIDA — {label}. {shells} CASQUILLOS DEPOSITADOS.",
+      "arrival": {
+        "glacial_gale": "MOVIMIENTO EN LA VENTISCA — CRIOCARACOLES SE ACERCAN A TU POSICIÓN.",
+        "spore_bloom": "NUBE DE ESPORAS EN MOVIMIENTO — ALGO VIENE MONTADO EN ELLA HACIA TI.",
+        "bio_resin_surge": "REPTADORES SALEN DE LA RESINA — OLIERON EL CHOQUE.",
+        "geothermal_arc": "EL ARCO LOS DESPERTÓ — HOSTILES EN CAMINO.",
+        "subzero_stillness": "DEMASIADO SILENCIO. UN CONTACTO, GRANDE, Y SABE DÓNDE ESTÁS.",
+        "tracker": "CONTACTO — ELIMINA A LOS {count} HOSTILES QUE SE ACERCAN",
+        "cleared": "CONTACTO ELIMINADO. LLEVABAN CHATARRA — REVISA LOS CUERPOS."
+      },
+      "bounty_chip": "RECOMPENSA {progress}/{target} · +{shells} casquillos",
+      "bounty_chip_ready": "RECOMPENSA LISTA · EXTRAE PARA COBRAR +{shells}"
+    },
+    "events": {
+      "kicker": "RUTA OPCIONAL",
+      "close": "Alejarse",
+      "route_signalled": "OPCIONAL · {name} · {meters} m",
+      "route_bypassing": "DERIVACIÓN · {name} · {progress}/{target} s",
+      "route_engaged": "COMBATE · {name}",
+      "response": {
+        "scan": "Escanear",
+        "open": "Abrir",
+        "leave": "Dejarlo",
+        "breach": "Forzar",
+        "bypass": "Derivar"
+      },
+      "reward_recovered": "Recuperado: {name}.",
+      "reward_lost": "El componente no sobrevivió al rescate.",
+      "report_reward": "{drop} recuperado",
+      "report_reward_lost": "Un componente perdido en el rescate",
+      "false_distress": {
+        "name": "SEÑAL DE SOCORRO",
+        "site": "Un refugio sellado, la baliza aún emite. Alguien —o algo— está adentro.",
+        "signal_clear": "Baliza de socorro, Anillo 1. Una voz humana en bucle. Fuera de la ruta de la nave: tú decides.",
+        "signal_faint": "Una baliza de socorro débil bajo la escarcha, Anillo 1. Difícil de leer. Tú decides.",
+        "signal_intermittent": "Una baliza de socorro que se corta entre el ruido del arco, Anillo 1. Tú decides.",
+        "scan_survivor": "Escaneo: un latido, ritmo humano. Hay alguien vivo ahí adentro.",
+        "scan_contaminated": "Escaneo: el latido está mal: demasiados, demasiado lentos. Es una trampa.",
+        "rescued": "Un sobreviviente sale tambaleándose y te pone chatarra en las manos.",
+        "ambush": "La puerta se abre a un nido. Era una trampa.",
+        "report_rescued": "Sobreviviente rescatado de una baliza sospechosa",
+        "report_ambush": "Sobreviviste a la emboscada de la baliza",
+        "report_left": "Dejaste la baliza de socorro sin respuesta",
+        "report_empty": "La baliza era una trampa, pero nada apareció",
+        "response_scan": "Tómate unos segundos para ver qué hay adentro.",
+        "response_open": "Abre la puerta. Un sobreviviente recompensa; un nido pelea.",
+        "response_leave": "Sigue de largo. Sin riesgo, sin recompensa."
+      },
+      "unstable_vault": {
+        "name": "BÓVEDA DE CHATARRA",
+        "site": "Una bóveda de chatarra agrietada; la energía aún parpadea en la cerradura.",
+        "signal_clear": "Bóveda de chatarra inestable, Anillo 1. Algo raro adentro y la cerradura falla. Fuera de la ruta de la nave: tú decides.",
+        "breach": "Bóveda forzada: la alarma despierta a los defensores.",
+        "bypass_start": "Derivación en curso. Quédate ahí; a tu aire no le va a gustar.",
+        "bypassed": "Derivación completa. La bóveda se abre en silencio.",
+        "report_bypassed": "Abriste la bóveda de chatarra con una derivación",
+        "report_breached": "Forzaste la bóveda de chatarra y la defendiste",
+        "report_breached_quiet": "Forzaste la bóveda de chatarra; ningún defensor respondió",
+        "report_left": "Dejaste la bóveda de chatarra sellada",
+        "response_breach": "Toma la recompensa ya; los defensores despiertan.",
+        "response_bypass": "Quédate {seconds} s en la cerradura. Sin combate, pero tu oxígeno baja más rápido.",
+        "response_leave": "Sigue de largo. Sin riesgo, sin recompensa."
+      }
+    },
+    "relics": {
+      "synergy": {
+        "cryo_shatter": "Fragmentación Criogénica",
+        "bio_predator": "Depredador Biológico"
+      },
+      "cryo_rime": {
+        "name": "Inyector de Escarcha Criogénica",
+        "description": "Los disparos congelan a los enemigos y ralentizan su movimiento."
+      },
+      "shatter_engine": {
+        "name": "Motor de Fragmentación",
+        "description": "Derrotar enemigos congelados desata una nova de metralla de hielo."
+      },
+      "caustic_payload": {
+        "name": "Carga de Esporas Cáusticas",
+        "description": "Los disparos provocan biocorrosión que causa daño con el tiempo."
+      },
+      "bio_vampirism": {
+        "name": "Membrana Biovampírica",
+        "description": "Eliminar enemigos biológicos restaura el O₂ y la batería del traje."
+      }
+    },
+    "cache": {
+      "title": "ALIJO DE RECOMPENSA DE ALTO RIESGO",
+      "preview": "CONTIENE: {dropName}",
+      "risk_cost": "COSTO OPERATIVO: {cost}",
+      "open_prompt": "FORZAR ALIJO [F]",
+      "walk_away": "RETIRARSE",
+      "cost": {
+        "escalated_wave": "OLEADA HOSTIL ESCALADA",
+        "o2_siphon": "SIFÓN DE 25% DE O₂",
+        "lockdown": "BLOQUEO DE CONTENCIÓN DE 12s"
+      },
+      "report": {
+        "opened": "Alijo de recompensa de alto riesgo forzado ({drop})"
+      }
+    },
+    "death": {
+      "cause": {
+        "enemy": "Te mató {enemy}",
+        "projectile": "Te mató el fuego hostil",
+        "boss_attack": "Te mató un ataque de jefe",
+        "o2": "Asfixia: el traje se quedó sin oxígeno",
+        "fall": "Caíste a un abismo",
+        "hazard": "Te mató el suelo tóxico",
+        "turret": "Te mató una torreta del campamento",
+        "backlash": "Te mató el rebote de la Leche de la Reina",
+        "ship": "La nave fue destruida",
+        "squad": "Cayó todo el escuadrón",
+        "abort": "Misión abortada",
+        "unknown": "No se registró la causa de muerte"
+      },
+      "enemy": {
+        "cybersnail": "Cibercaracol",
+        "cryosnail": "Criocaracol",
+        "sporesnail": "Caracol de esporas",
+        "sentinel": "Centinela",
+        "crawler": "Reptador de brecha",
+        "alien_proto_crawler": "Proto-reptador",
+        "alien_proto_spitter": "Proto-escupidor",
+        "mycelium_stalker": "Acechador de micelio",
+        "bio_charger": "Bio-embestidor",
+        "spore_mortar": "Mortero de esporas",
+        "fungal_spore_vent": "Respiradero de esporas",
+        "boss_cybersnail": "el jefe Cibercaracol",
+        "boss_cryosnail": "el jefe Criocaracol",
+        "boss_sporesnail": "el jefe Caracol de esporas",
+        "boss_corrupted_scout": "el Scout corrompido",
+        "boss_corrupted_tank": "el Tank corrompido",
+        "boss_corrupted_engineer": "el Engineer corrompido",
+        "boss_queen": "la Reina"
+      },
+      "build": {
+        "cryo_shatter": "Build: Crio-fragmentación se activó {count}× con {damage} de daño",
+        "bio_predator": "Build: Biodepredador se activó {count}×, restaurando {o2}% de O₂ y {hearts} corazones",
+        "equipped": "Build: {drops} (ninguna sinergia se activó)",
+        "none": "Build: sin mejoras de campo en este despliegue"
+      },
+      "field": {
+        "black_box": "Quedó en el campo: {missing} — Caja negra a {meters} m de la nave",
+        "black_box_empty": "No quedó nada en el campo"
+      },
+      "next": {
+        "recover_black_box": "Siguiente paso: recupera la Caja negra (a {meters} m) antes de que otra muerte la reemplace",
+        "build_goal": "Siguiente paso: construye {goal} en la consola de la nave",
+        "follow_lead": "Siguiente paso: sigue la pista — {label}",
+        "redeploy": "Siguiente paso: vuelve a desplegar"
       }
     }
   },

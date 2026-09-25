@@ -1,0 +1,16 @@
+
+Running 9 tests using 1 worker
+
+  ✓  1 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › before slice seed 31337 SCOUT (2.5m)
+  ✓  2 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › before slice seed 31337 TANK (2.7m)
+  ✓  3 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › before slice seed 31337 ENGINEER (2.3m)
+  ✓  4 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › before slice seed 99991 SCOUT (2.4m)
+  ✓  5 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › before slice seed 99991 TANK (2.8m)
+  ✓  6 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › before slice seed 99991 ENGINEER (2.5m)
+  ✓  7 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › before slice seed 5150 SCOUT (2.1m)
+  ✓  8 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › before slice seed 5150 TANK (2.1m)
+  ✓  9 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › before slice seed 5150 ENGINEER (2.2m)
+
+  Slow test file: [chromium] › tests/e2e/probes/slice.spec.js (21.5m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  9 passed (21.5m)

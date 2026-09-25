@@ -154,4 +154,17 @@ describe('buildSteamInputConfigs', () => {
             expect(required.filter((action) => !bound.has(action))).toEqual([]);
         }
     });
+
+    // GAP-GP-02: keyboard and mouse attack with Fire (left mouse) and Smash (V,
+    // the melee -- main.js routes `melee` and `ability` to triggerGameplayMelee).
+    // Right-click only orbits the camera. Every controller must carry both.
+    it('gives every controller the same two attacks keyboard and mouse have', () => {
+        const destination = fs.mkdtempSync(path.join(os.tmpdir(), 'hb-input-attacks-'));
+        tempDirs.push(destination);
+        for (const output of buildSteamInputConfigs({ destination })) {
+            const config = fs.readFileSync(output, 'utf8');
+            expect(config, `${path.basename(output)} fire`).toMatch(/game_action gameplay fire,/);
+            expect(config, `${path.basename(output)} smash`).toMatch(/game_action gameplay ability,/);
+        }
+    });
 });
