@@ -21790,9 +21790,12 @@ export class ThreeGame {
             this._hiveKinKills = 0;
             this._tankShockGuardUsed = false;
             this.cinematicLock = false;
+            // The run's map (campaignWorldStore.beginNewRun), not the campaign
+            // identity: using campaign.seed here undid the per-run map, and the
+            // layout reroll then gave TRY AGAIN a random map (run-maps probe).
             this.runEntropy = this.fixedRunEntropy
                 ? 0
-                : campaign?.seed ?? createFreshRunEntropy(this.runEntropy);
+                : campaign?.mapSeed ?? campaign?.seed ?? createFreshRunEntropy(this.runEntropy);
             this.resetMayorTinaEncounter();
             this.clearBlackBoxMarker();
             this._blackBoxState = blackBoxStore.load();
