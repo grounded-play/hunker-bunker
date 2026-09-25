@@ -9,10 +9,11 @@
 > - sizes every zone from one rule that works on Deck, 1080p and the owner's PC;
 > - lists the engineering traps this repo has already hit;
 > - turns each phase into testable acceptance;
-> - adds the **living suit console** (§4A): cockpit-style frames that crack, frost,
->   fog and age, and a DOOM-style operator face that reacts;
-> - makes that face **the operator's identity everywhere** (§4B): conversations,
->   radio, death and results screens, roster and co-op.
+> - makes the dock's **housing bespoke to each class and the reactive element** (§4A):
+>   the DOOM-face idea built for a camera looking down. No portrait; the suit hardware
+>   itself cracks, dents, sparks, frosts, fogs, flinches toward hits and ages;
+> - carries that class housing and its condition to dialogue, results, roster and
+>   co-op (§4B).
 
 ---
 
@@ -155,12 +156,13 @@ Concept references (look only, not layout authority):
   treatment. Drop the armoured bezel height.
 - Split wings: `ui_concept_split_wings_1790353615005.jpg`.
 
-**Recommended look: "slim cockpit".** Zone sizes as in §2.2. Each panel has a
-2u cyan hairline frame with 8u corner brackets, echoing the existing
-`.hud-visor-bracket` corners, so the new dock matches the diegetic visor. There is
-no armoured casing. The suit console carries the cockpit concept's hearts row and
-curved O₂ arc. The arsenal carries its orange weapon silhouette, large tabular ammo
-and reload arc.
+**Recommended look: "slim cockpit".** Zone sizes as in §2.2. The three modules
+keep the cockpit concept's structure: radar module, exosuit dashboard and weapon
+dock, joined by struts. The housing around them is the **class-bespoke,
+reactive element** (§4A), slimmed to the zone sizes, not the concept's full-height
+bezel. The instruments inside are shared across classes: the concept's hearts row,
+curved O₂ arc, hull line, orange weapon silhouette, large tabular ammo and reload arc.
+The `.hud-visor-bracket` corners stay as the screen-level frame.
 
 **Template comparison (from the draft, sizes updated to the computed spec)**
 
@@ -273,154 +275,111 @@ in 150 ms.
 
 ---
 
-## 4A. The living suit console (the "DOOM face" layer)
+## 4A. The living class housing (the DOOM-face idea, redone for a camera above)
 
-Owner, 2026-09-25: panels **in the cockpit-concept style**
-(`ui_concept_lower_dock_1790353433507.jpg`) with **custom backgrounds that change
-over time**, like DOOM's face: the suit shows the damage, the cold and the grime,
-and the operator's face reacts. The dock stays slim (§2.2); this is what fills it.
+Owner, 2026-09-25: take the cockpit concept
+(`ui_concept_lower_dock_1790353433507.jpg`: radar module, exosuit dashboard, weapon
+dock, joined by armoured struts) and make **its background, the physical housing
+itself, the reactive element, bespoke to each class.** No face. The camera looks
+down on the operator, so the operator reads as a **suit seen from above**, not a
+portrait. What reacts is the hardware the player looks through.
 
-### Three layers per panel
+### One housing per class
 
-1. **Frame**: the cockpit concept's bracketed tech bezel, redrawn slim.
-   - One 9-slice WebP per zone (D, E, G, plus a small A/C tag frame), so it
-     stretches to any `u` without blurring.
-   - One set per class, tinted like the Armory backgrounds (`public/ui/armory_bg_*.jpg`):
-     SCOUT cyan, TANK amber, ENGINEER green.
-2. **Condition overlays**: transparent WebP layers stacked on the frame, each
-   driven by one game signal (table below). They **accumulate and heal**, so the
-   suit visibly carries the run.
-3. **Operator portrait** (zone E, left of the hearts, ~72 × 72 u): a visor window.
-   The operator's face behind the glass reacts to what is happening, as DOOM's
-   does.
+The housing is the metal and glass around the three modules (D, E, G). Everything
+drawn inside it (hearts, O₂ arc, ammo, radar) stays the same readable instrument
+set for every class. Only the housing changes.
 
-### Signal → frame → face
-
-| Game signal (already in the code) | Frame / overlay change | Portrait (face behind visor) | Priority |
+| | SCOUT: recon rig | TANK: bulwark plate | ENGINEER: field bench |
 | :--- | :--- | :--- | :--- |
-| Hearts lost (`player-damaged`: `hp` / `maxHp`) | Glass cracks in 3 tiers (≤ 75 %, ≤ 50 %, ≤ 25 %); a spark flicker at the last heart. **Persist** until healed; heals play a 400 ms "seal". | Hurt 1 → 2 → 3 (bruised, bloodied, gritted); flinch frame on each hit | 2 |
-| Hit direction (**new**: add `sourceX/sourceZ` to `player-damaged`) | — | Eyes glance toward the hit, screen-relative, for 600 ms. This is the DOOM signature. | 1 while active |
-| Cold (`body.player-cold-exposed`, freeze stacks from `statusEffects.js`) | Frost creeps in from the frame corners. Coverage follows exposure time or freeze stacks (0–100). Thaws when warm. | Shivering, breath puffs, frost on the visor rim | 3 |
-| Low O₂ (`vitals-critical` < 25 %, `distress-mode`) | Condensation fogs the glass; the O₂ arc turns red and pulses | Gasping, visor fogged from inside | 2 |
-| Toxin / caustic / bio (`player-poisoned`, `STATUS_IDS.CAUSTIC/BIO`) | Green-yellow stains spread and drip | Sickly tint, squint | 3 |
-| Corrosion (`STATUS_IDS.CORROSION`) | Pitting and rust bloom on the metal bezel | — | 4 |
-| Relay blackout / grid flicker run cards (`#hud-run-cards`) | Scan-line static on the frame (CSS, no art) | Visor feed glitches | 5 |
-| Fatigue stage (`fatigue.js`: RESTED → … → EXHAUSTED) | Grime and scuffs build up across expeditions, reset by rest. The suit ages over the campaign, not just the run. | Eyes heavier per stage | background |
-| Boss fight (`#boss-status-panel` visible) | Frame accent goes red-alert | Focused and determined | 3 |
-| Kill streak (`killstreakFeedback`) | Brief amber rim pulse | DOOM grin (the "evil grin") for 1 s | 4 |
-| Night (`campaign-day-indicator` phase) | Accents dim to night-cyan; the panel glass darkens slightly | — | background |
-| Idle > 3 s with nothing happening | — | Looks left and right (idle loop) | lowest |
-| Dead | Frame goes dark; the cracks max out | Dead face, visor shattered | final |
+| Silhouette | Thin angular carbon frame; sensor fins and a small antenna mast on the radar module; the lightest struts | Thick riveted armour slabs, hazard chevrons, hydraulic pistons as struts, heavy corner bolts | Open chassis with exposed circuit boards, cable looms, clamp brackets and a tool rail along the struts |
+| Material | matte composite, stealth-dark | scuffed gunmetal, painted edges | brushed alloy, green PCB, copper |
+| Accent | cyan (radar-forward: the radar module is the largest) | amber (armour-forward: the dashboard is the largest) | green (tool-forward: the weapon/ability dock carries a turret/fabricator status strip) |
+| Signature detail | antenna sweep LED ticks with the radar scan cooldown | shield-emitter ring around the hearts glows with Bulwark | turret status lamps on the right strut (one per deployed turret) |
 
-The **face has one state at a time**, chosen by priority: hit glance, then low O₂ or
-hurt tier, then cold, toxin or boss, then kill grin, then idle. **Overlays stack**
-freely: cold and cracked and grimy at once is the point.
+Sizes stay the §2.2 zones. The housing is a 9-slice frame plus a few fixed
+decorations (fins, pistons, clamps) that sit **in the margin between modules**,
+never over numbers.
 
-### Art list (per class unless noted)
+### The housing reacts (overlays stack; they heal and accumulate)
 
-| Asset | Count | Format / size | Notes |
+| Game signal (already in the code) | SCOUT | TANK | ENGINEER | Shared |
+| :--- | :--- | :--- | :--- | :--- |
+| Hearts lost (`player-damaged` hp / maxHp), 3 tiers | glass panels **crack**, then shatter | armour **dents and gouges**, a slab hangs loose | boards **spark**, a cable arcs, one gauge dies | persists until healed; a heal plays a 400 ms repair (seal, hammer-flat, re-solder) |
+| Hit direction (**new**: `sourceX/sourceZ` on `player-damaged`) | the module on the side facing the hit flashes and jolts for 600 ms: the DOOM "glance", as the hardware flinching toward the threat | same | same | screen-relative left / centre / right from the camera |
+| Cold (`player-cold-exposed`, freeze stacks) | frost creeps from the corners in every class; coverage follows exposure / stacks | | | thaws when warm |
+| Low O₂ (< 25 %, `distress-mode`) | the dashboard glass fogs; its warning lamp strobes | | | O₂ arc red |
+| Toxin / caustic / bio (`player-poisoned`, `STATUS_IDS`) | stains spread across the housing and drip down the struts | | | |
+| Corrosion (`STATUS_IDS.CORROSION`) | pitting and rust bloom on bare metal (heaviest on TANK's plate) | | | |
+| Relay blackout / grid flicker run cards | scan-line static and a flickering backlight | | | CSS only |
+| Fatigue stage (`fatigue.js`, across expeditions) | grime, scuffs and tape repairs build up; a rest resets them | | | the suit ages over the campaign |
+| Boss fight visible | beacon lamps on the struts rotate red | | | |
+| Kill streak | accent-colour pulse runs along the struts | | | 1 s |
+| Night | backlights dim to night-cyan | | | |
+| Dead | backlights die module by module, left to right; cracks max out | | | final |
+
+**Status lamps are the new "face".** Each housing carries a short row of physical
+indicator lamps on the dashboard bezel (visible top-left of the concept's centre
+module): SUIT, O₂, HULL, THERMAL, TOX. They are the at-a-glance mood of the suit.
+- green: nominal
+- amber: warning
+- red: critical
+- blinking: getting worse
+
+It is the same one-look read DOOM's face gives, built from something that belongs on
+a suit console seen from above.
+
+### Art list
+
+| Asset | Count | Format | Notes |
 | :--- | ---: | :--- | :--- |
-| Frame 9-slice (D, E, G, tag) | 4 × 3 classes | WebP, ≤ 512 px long edge | from the cockpit concept, slimmed |
-| Crack tiers | 3 (shared) | WebP with alpha | seal animation is CSS (mask + opacity) |
-| Frost, condensation, toxin, corrosion, grime | 5 (shared) | WebP alpha, tileable edges | coverage by CSS mask position, not new art per level |
-| Portrait faces | ~12 expressions × 3 classes = 36 | WebP 144 × 144 (2× for 72 u), one atlas per class | calm, glance L/R, hurt 1–3, gasp, shiver, sick, focused, grin, dead |
-| Visor glass overlays | 4 (shared) | WebP alpha | fog, frost rim, crack, shatter; the face stays per class and the glass is shared |
+| Housing 9-slice per module (D, E, G) + strut pieces | 3 modules + 2 struts, × 3 classes | WebP, ≤ 512 px long edge | from the concept, slimmed to §2.2; class material/shape per the table |
+| Class decorations (fins, pistons, clamps, lamps) | ~4 per class | WebP alpha | margin-only placement |
+| Damage tiers | 3 × 3 classes | WebP alpha | crack (SCOUT), dent (TANK), spark/burn (ENGINEER) |
+| Shared condition overlays | frost, fog, toxin, corrosion, grime | WebP alpha, tileable edges | intensity via CSS mask position, not per-level art |
+| Status lamp sprites | 1 small sheet | WebP | 3 colours × 2 blink frames |
 
-Budget: **≤ 3 MB total**, one atlas request per class, preloaded with the HUD.
+Budget **≤ 4 MB** total, one request per class, preloaded with the HUD.
 
-**Consistency risk.** Generated 2D character art has not held a consistent identity
-in this repo before (the player sprite work, v2–v5). Two ways to manage it:
-- **Recommended:** render the 36 faces **from the existing 3D operator heads** in
-  Blender. Same helmet, same lighting, posed or shape-keyed expressions, then baked to
-  the atlas. Identity stays locked to the in-game model and any cosmetics/polish tint.
-- Alternative: one approved base face per class, with expressions painted as edits of
-  that base. Faster, but it drifts.
-
-A live 3D visor-cam (the head rendered into a small render target each frame) is
-possible. It would cost an extra render pass on a game that is already CPU-bound
-(§6.5), so it isn't recommended for now.
+**Consistency.** Model the housings in Blender and render them orthographically, one
+per class, so the metal, bolts and lighting match across modules and classes. Author
+the damage tiers as material/geometry variants of the same model (dents, cracked
+glass, burnt boards), not as separate paintings. This avoids the drift that sank the
+2D sprite pipeline.
 
 ### How it runs (no per-frame cost)
 
-- Every overlay is an absolutely positioned layer inside its panel. Its intensity
-  is a CSS custom property (`--frost: 0..1`, `--cracks: 0..3`, `--grime: 0..5`),
-  written **only when the underlying value changes** and at most **4 Hz** for
-  continuous values such as freeze stacks.
-- Transitions use `opacity` and `mask-position` only. Nothing touches layout. There
-  is no `filter` or `backdrop-filter` on panel roots (§6.1, §6.5).
-- The face is one `background-position` change into the class atlas on each state
-  change. There is no video and no per-frame JS.
-- `reduced motion` / contrast `max`: overlays drop to at most 40 % opacity and never
-  cover a number. Hearts, O₂ % and ammo always stay readable above every overlay.
-- A small `suitCondition` module (pure: signals in → `{ overlays, face }` out, with
-  unit tests) owns the priority rules. `main.js` applies classes and properties.
+- Overlay intensity uses CSS custom properties (`--frost`, `--damage-tier`, `--grime`,
+  `--toxin`), written **only when the signal changes** and at most 4 Hz for
+  continuous values.
+- The hit-direction jolt is a `transform` on one module's housing layer.
+- Lamps are class toggles.
+- Nothing touches layout. There is no `filter` or `backdrop-filter` on panel roots
+  (§6.1, §6.5).
+- Overlays never cover numbers: the instrument layer sits above the housing layer.
+- With reduced motion or contrast `max`, overlays cap at 40 % opacity and the jolt
+  becomes a lamp flash.
+- `src/suitCondition.js` (pure, unit-tested): signals in, `{ damageTier, overlays,
+  lamps, jolt }` out. `main.js` only applies classes and properties.
 
 ---
 
-## 4B. One face, everywhere (owner, 2026-09-25)
+## 4B. One suit identity everywhere
 
-The operator face is not only a HUD widget. It is **the operator's identity**, and
-every screen that shows the operator uses the same face set, the same class and the
-same condition. Frost on the visor in the console is frost on the visor in the
-conversation you open while cold.
+The class housing and its current condition are the operator's identity on other
+screens too. There is still no face.
 
-**The operator already talks.** In `src/dialogue.js`, `getDialogueSpeaker()` sends
-every unprefixed line to `SCOUT / TANK / ENGINEER OPERATOR LINK`, but it uses stand-in
-survivor portraits (`/lore_portraits/survivor_01|02|03.webp`), not the player's
-operator. Those three lines are the first integration point.
+| Surface | Today | With the class housing |
+| :--- | :--- | :--- |
+| Conversations: the `OPERATOR LINK` speaker in `src/dialogue.js` | stand-in survivor portraits `survivor_01/02/03.webp` | the speaker card is framed in the **class housing**, with its status lamps and current condition (frosted when cold, cracked when hurt); inside it, a top-down suit schematic of the class chassis rendered from the in-game model at the game camera's angle |
+| Radio replies, suit barks | text | a small housing tab with the relevant lamp lit (O₂ red on the low-O₂ bark) |
+| Death report / results | text | the housing as it ended the run: shattered and dark on a death, scarred and grimy on a narrow escape, clean on a clean extraction |
+| Expedition report, day log | text | the housing's end-of-expedition state (damage, grime, fatigue) as the header |
+| Hero select / lobby roster / co-op teammate chip | 3D preview / names | each player's class housing strip with their lamps, from replicated vitals |
 
-### Where the face appears
-
-| Surface | Today | With the face set | Expression source |
-| :--- | :--- | :--- | :--- |
-| HUD suit console (zone E) | — | live reacting face (§4A) | game signals |
-| Conversations: Mothership, cutscene dialogue, the `OPERATOR LINK` speaker | generic survivor portrait | the player's operator, class-correct, with current visor condition | line `mood` tag, else the §4A condition |
-| NPC dialogue trees (`npcDialogueTrees.js`), camp leader talks (`leaderConversation3d.js`), wanderer/snail encounters (`universalEncounter.js`) | NPC portrait only | the operator portrait on the player's side of the exchange; the face answers the choice (e.g. smirk on a bluff, worried on a threat) | choice `mood` tag |
-| Radio cards (zone N) and suit barks (`getDialogueLine('lowO2' …)`, extraction, upgrades) | text only / "> BUNKER:" | small face beside the operator's own replies and barks (gasp on the low-O₂ bark) | bark type |
-| Death report / results (`src/deathReport.js`) | text | final face: dead (visor shattered), exhausted on a bare escape, grin on a clean extraction | run outcome |
-| Expedition report, terminal day log | text | the day's face: how the operator ended that expedition | outcome + fatigue |
-| Hero select / class cards, lobby roster | 3D preview / names | face card per class and per player | calm; grin on ready-up |
-| Co-op teammate chip (decision §9.4), PvP kill feed | nameplates only | teammate's live face from their replicated vitals | teammate signals |
-| Armory / Foundry | — | reacts to equips: focused when trying gear, grin on a new unlock | UI event |
-
-### How lines pick an expression
-
-- Dialogue lines and choices get an optional `mood` (string enum, same as the face
-  set): `{ text: '…', mood: 'worried' }`, or an inline `[mood:grin]` tag for
-  prefix-parsed lines. With no tag, the line uses the current §4A condition face,
-  so the operator never looks calm while freezing.
-- While a line types out, a 2-frame **talk flap** (mouth open/closed at ~8 Hz,
-  timed by the typing loop, no audio analysis) plays on top of the expression.
-- Condition overlays (visor frost, fog, crack) always apply on top, everywhere.
-  They come from the same `suitCondition` state as the HUD.
-
-### Shared module
-
-`src/operatorFace.js` (pure, unit-tested):
-- `faceFor({ playerClass, mood, condition, talking })` returns
-  `{ atlasUrl, cell, overlays[] }`.
-- `moodForSignals(signals)` implements the §4A priority rules.
-- Every surface calls it. None of them pick art or paths themselves.
-- `getDialogueSpeaker()` returns `face: faceFor(…)` for operator lines instead of a
-  survivor path.
-
-### Art spec (replaces the §4A face row)
-
-| Asset | Count | Size | Notes |
-| :--- | ---: | :--- | :--- |
-| Expressions per class | **16** | — | calm, glance L, glance R, hurt 1–3, gasp, shiver, sick, focused, grin, dead; plus dialogue moods: worried, determined, smirk, relieved |
-| Talk flap | 2 per expression that talks (~8) | — | mouth open / closed |
-| Resolutions | 2 per face | **144 px** (HUD, 2× of 72 u) and **512 px** (dialogue, results, roster) | rendered from the same Blender camera; no separate art |
-| Visor overlays | 4 shared | both sizes | fog, frost rim, crack, shatter |
-
-With 3 classes that is ~72 faces at 2 sizes, packed as two atlases per class. Budget
-**≤ 6 MB** total. The 512 atlas loads lazily the first time a conversation or results
-screen opens.
-
-Co-op: a teammate's face comes from **their replicated vitals and status**. If the
-state event doesn't already carry O₂ and status effects, Phase 6B adds them to the
-existing vitals broadcast rather than sending face state. Nothing new is networked
-beyond signals the game already needs.
+The same `suitCondition` state feeds every surface, so condition carries over. Dialogue
+lines don't need mood tags: the suit shows the operator's state, and the writing
+carries the tone.
 
 ---
 
@@ -526,8 +485,8 @@ passes). One-click comparison, instant rollback.
 | **4. F + H** | Loot chips; prompt lane with the priority queue (interaction > loop step > tutorial). | `main.js` (small `hudPromptLane` module), css | Every `*-hud-prompt` shows in H; only one at a time; `verify_hud_shells` still passes. |
 | **5. Top band** | A, A2, B (priority queue), C drawer, N under C. Retire `.hud-mission-stack` as a column. | `main.js`, css | Boss+hazard at once shows boss, then hazard; drawer expands on map-open (Deck) and click (PC); `steam-input-action-set.spec` green. **Flip default to `dock`.** |
 | **6. Behaviour** | Combat signal (`this.inCombat`); drawer auto-collapse; loot idle-dim; critical pulses; reduced motion. | `threeGame.js` (signal), `main.js` | Unit tests for the signal (4 s window); visual states captured in the layout spec. |
-| **6A. Living console** | Frame 9-slices per class; overlays (cracks, frost, fog, toxin, corrosion, grime, static); `suitCondition` module; `player-damaged` gains `sourceX/sourceZ`; portrait atlas (placeholder art first, then the Blender-rendered faces). | `src/suitCondition.js` (+ tests), `main.js`, css, `public/ui/suit/*` | Unit tests: every signal → overlay/face; priority order; heal clears cracks. Layout spec captures Idle/Cold/Toxic/Critical/Dead. HUD style/layout still ≤ 0.3 ms per frame. Owner art sign-off per class. |
-| **6B. One face everywhere** | `src/operatorFace.js`; the dialogue `OPERATOR LINK` speaker uses it (replaces `survivor_01/02/03`); `mood` on lines/choices + talk flap; death report, results, roster and radio replies; co-op teammate faces from replicated vitals. | `src/operatorFace.js` (+ tests), `src/dialogue.js`, `src/deathReport.js`, `main.js` | Every operator line shows the class-correct face; a cold/hurt operator keeps the visor overlay in dialogue; no remaining reference to the stand-in survivor portraits for the operator; lazily loaded 512 atlas. |
+| **6A. Living class housing** | Class housings (D, E, G + struts) per class; damage tiers (crack / dent / spark); shared overlays (frost, fog, toxin, corrosion, grime, static); status lamps; hit-direction jolt (`player-damaged` gains `sourceX/sourceZ`); `suitCondition` module. | `src/suitCondition.js` (+ tests), `main.js`, css, `public/ui/suit/<class>/*` | Unit tests: every signal → overlay, lamp and tier; heal repairs; jolt picks the right module. Layout spec captures Idle / Cold / Toxic / Critical / Dead for all 3 classes. HUD style/layout still ≤ 0.3 ms per frame. Owner art sign-off per class. |
+| **6B. Suit identity everywhere** | The dialogue `OPERATOR LINK` speaker card framed in the class housing, with the top-down chassis schematic (replaces `survivor_01/02/03`); death report, results and day-log headers; roster and co-op teammate strips from replicated vitals. | `src/dialogue.js`, `src/deathReport.js`, `main.js` | No operator line uses a stand-in survivor portrait; condition carries from HUD to dialogue; results show the end-of-run housing. |
 | **7. Deck, a11y, i18n** | HUD Scale setting; contrast high/max; 7-locale pass with the longest strings; Deck hardware check. | settings UI, locales | `i18n:audit` 0; layout spec green in `de` and `ru`; owner Deck sign-off. |
 | **8. Remove classic** | Delete the old layout CSS and the flag after owner sign-off. | css, `main.js` | No dead selectors (grep); bundle CSS smaller. |
 
@@ -567,13 +526,12 @@ passes). One-click comparison, instant rollback.
    right edge in co-op? Today teammates have only in-world nameplates.
 5. **Visor frame:** keep the four corner brackets as the dock's visual language
    (**recommended**) or retire them?
-6. **Living console:** faces rendered from the in-game 3D heads (**recommended**:
-   consistent with the model and cosmetics) or painted 2D faces? And is 12
-   expressions per class the right set, or do you want more (e.g. a DOOM-style "ouch"
-   face on big hits)?
-7. **Faces beyond the HUD (§4B):** start with conversations + death/results
-   (**recommended**: biggest payoff, touches existing speakers only), then roster and
-   co-op teammates?
+6. **Class housings:** do the three directions in §4A (SCOUT recon rig, TANK bulwark
+   plate, ENGINEER field bench) match how you see each class? And should the status
+   lamps (SUIT / O₂ / HULL / THERMAL / TOX) be the at-a-glance "mood" readout?
+7. **Beyond the HUD (§4B):** frame the operator's dialogue card and the
+   results/death screens in the class housing first (**recommended**), then the roster
+   and co-op strips?
 8. **Rollout:** ship Phases 1–5 behind the flag for a week of your play before
    making it the default?
 
