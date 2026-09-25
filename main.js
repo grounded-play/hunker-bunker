@@ -2043,13 +2043,20 @@ function isPresentationLayerActive() {
 // while a presentation layer is up. Mutation records are already batched
 // per task, so the check runs straight from the observer: waiting for a
 // frame let the pointer flash over the first frames of a movie.
+// This runs from a MutationObserver on body class changes, so it must only
+// write on a transition: clearing the cursor and reticle on every call wrote
+// classes, which re-queued the observer forever and froze the page at the
+// title screen (found by bisecting a hang to 05c4300, 2026-09-24).
+let presentationCursorWasActive = false;
 function syncPresentationCursor() {
     const active = isPresentationLayerActive();
     const root = document.documentElement;
     if (root.classList.contains('presentation-cursor-hidden') !== active) {
         root.classList.toggle('presentation-cursor-hidden', active);
     }
-    if (active) {
+    const becameActive = active && !presentationCursorWasActive;
+    presentationCursorWasActive = active;
+    if (becameActive) {
         root.classList.remove('custom-cursor-enabled');
         window.game?.setCursorInspectState?.(null);
         document.getElementById('tactical-telemeter-box')?.classList.add('hidden');
