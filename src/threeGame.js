@@ -1073,6 +1073,12 @@ const ADAPTIVE_GAMEPLAY_RECOVERY_FPS = 52;
 const ADAPTIVE_GAMEPLAY_TRIGGER_SECONDS = 1.5;
 const ADAPTIVE_GAMEPLAY_MAX_SAMPLE_SECONDS = 0.25;
 const ADAPTIVE_GAMEPLAY_PIXEL_RATIO_CAP = 0.85;
+// Lowering resolution only buys frames when the GPU is what is slow. Both
+// 2026-09 QA logs were main-thread bound (PC: 8.4 ms GPU in ~48 ms frames;
+// Deck: GPU well under 1 ms), so a blurrier picture bought nothing there.
+// With GPU timing available, the drop needs the GPU to fill most of the frame.
+const ADAPTIVE_GAMEPLAY_GPU_BOUND_SHARE = 0.6;
+const ADAPTIVE_GAMEPLAY_GPU_MIN_SAMPLES = 30;
 // docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #3 --
 // updateWallDamageColor used to clone this.wallMaterial into a brand new
 // MeshStandardMaterial for every non-instanced wall the first time it took
@@ -3924,8 +3930,10 @@ export class ThreeGame {
         const directionalLight = new THREE.DirectionalLight(0xd6e7ff, 2.5);
         directionalLight.position.set(10, 18, 8);
         directionalLight.castShadow = true;
-        directionalLight.shadow.mapSize.width = 1024;
-        directionalLight.shadow.mapSize.height = 1024;
+        // 2048 as before fbf260f halved it: 1024 over a 32 m frustum gave
+        // blocky, swimming shadow edges.
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
         directionalLight.shadow.camera.near = 0.5;
         directionalLight.shadow.camera.far = 50;
         directionalLight.shadow.camera.left = -16;
@@ -6873,7 +6881,15 @@ export class ThreeGame {
         );
         this.playerForwardSpotLight.position.set(0, SUIT_LIGHT_EMITTER_HEIGHT, 0);
         this.playerForwardSpotLight.target = this.playerForwardLightTarget;
-        this.playerForwardSpotLight.castShadow = false;
+        // The suit light casts shadows again (removed for FPS in fbf260f,
+        // 2026-08-21; owner 2026-09-25: full quality first). Walls and enemies
+        // throw shadows through the beam. Set once at creation, so the light
+        // set -- and every shader program -- stays stable for the run.
+        this.playerForwardSpotLight.castShadow = true;
+        this.playerForwardSpotLight.shadow.mapSize.set(1024, 1024);
+        this.playerForwardSpotLight.shadow.camera.near = 0.1;
+        this.playerForwardSpotLight.shadow.camera.far = SUIT_CONE_LIGHT_DISTANCE + 3;
+        this.playerForwardSpotLight.shadow.bias = -0.0008;
         this.scene.add(this.playerForwardSpotLight);
     }
 
@@ -8923,8 +8939,10 @@ export class ThreeGame {
             width,
             height,
             devicePixelRatio: window.devicePixelRatio || 1,
-            maxPixelRatio: 1.15,
-            maxFramebufferPixels: 2_200_000
+            // Back to the pre-Sprint-28 budget (fbf260f cut it to 1.15 /
+            // 2.2 MP): a 2304x1440 @125% PC rendered at 0.81, ~65% of native.
+            maxPixelRatio: 1.35,
+            maxFramebufferPixels: 3_600_000
         });
         const targetPixelRatio = this.performanceProfile === 'gameplay'
             ? (this.adaptiveGameplayPerformanceMode
@@ -9321,16 +9339,16 @@ export class ThreeGame {
     updateAdaptiveGameplayQuality(frameDeltaSeconds = 0) {
         if (this.performanceProfile !== 'gameplay' || this.adaptiveGameplayPerformanceMode) return;
 
-        const steamDeck = typeof window !== 'undefined'
-            && Boolean(window.__hbSteamStatus?.isSteamDeck);
-        if (steamDeck) {
-            this.setAdaptiveGameplayPerformanceMode(true, { reason: 'steam-deck' });
-            return;
-        }
-
+        // The Steam Deck is no longer dropped to a lower resolution on its
+        // first frame (owner, 2026-09-25: full quality first); it is measured
+        // like any other machine.
         if (!Number.isFinite(frameDeltaSeconds) || frameDeltaSeconds <= 0) return;
         const fps = 1 / frameDeltaSeconds;
         this._adaptiveLastFps = fps;
+        const frameMs = Math.min(frameDeltaSeconds, ADAPTIVE_GAMEPLAY_MAX_SAMPLE_SECONDS) * 1000;
+        this._adaptiveFrameMsAverage = this._adaptiveFrameMsAverage == null
+            ? frameMs
+            : this._adaptiveFrameMsAverage + (frameMs - this._adaptiveFrameMsAverage) * 0.1;
         if (fps < ADAPTIVE_GAMEPLAY_FPS_FLOOR) {
             // A debugger pause, tab switch, shader compile, or single long task
             // must not instantly degrade desktop rendering. Cap how much one
@@ -9342,6 +9360,24 @@ export class ThreeGame {
         }
 
         if ((this._adaptiveLowFpsSeconds ?? 0) >= ADAPTIVE_GAMEPLAY_TRIGGER_SECONDS) {
+            const gpu = this.gpuFrameTimer?.snapshot?.();
+            if (gpu?.supported
+                && (gpu.samples ?? 0) >= ADAPTIVE_GAMEPLAY_GPU_MIN_SAMPLES
+                && Number.isFinite(gpu.averageMs)
+                && gpu.averageMs < this._adaptiveFrameMsAverage * ADAPTIVE_GAMEPLAY_GPU_BOUND_SHARE) {
+                // Main-thread bound: keep full resolution, start measuring again.
+                this._adaptiveLowFpsSeconds = 0;
+                const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+                if (!(now - (this._adaptiveCpuBoundLoggedAt ?? -Infinity) < 30_000)) {
+                    this._adaptiveCpuBoundLoggedAt = now;
+                    debugLog.info('PERF', 'adaptive-resolution-kept-cpu-bound', {
+                        fps: Math.round(fps * 10) / 10,
+                        frameMs: Math.round(this._adaptiveFrameMsAverage * 10) / 10,
+                        gpuMs: gpu.averageMs
+                    });
+                }
+                return;
+            }
             this.setAdaptiveGameplayPerformanceMode(true, {
                 reason: 'sustained-low-fps',
                 fps

@@ -30,6 +30,31 @@ took ~20 ms. The frame was being lost on the main thread in game logic;
 removing GPU work (post-processing, shadows, 3D) cost the look and bought
 back almost nothing.
 
+## Older cuts, same kind (Sprint 28, `fbf260f`, 2026-08-21)
+
+The owner's second pass ("make it cool looking first") found the rest. That
+commit had also, for FPS:
+
+- cut the gameplay render budget from 1.35× / 3.6 MP to 1.15× / 2.2 MP. The
+  owner's 2304×1440 @125% PC rendered at pixel ratio **0.81**, about 65 % of
+  native, from the first frame;
+- switched the suit light's shadows off entirely;
+- halved the sun's shadow map (2048 → 1024).
+
+And the adaptive tier forced every Steam Deck to 0.85 resolution on frame one.
+The logs show resolution was never the limit: PC 8.4 ms GPU in ~48 ms frames;
+Deck GPU under 1 ms with 11,106 long tasks.
+
+Restored: the 1.35× / 3.6 MP budget, suit-light shadows (set once at creation
+so no shader recompiles mid-run), and the 2048 sun shadow map. The Deck is no
+longer forced down. Adaptive resolution now engages only when slow frames are
+GPU-bound (measured GPU time ≥ 60 % of the frame); a CPU-bound slowdown keeps
+full resolution and logs `adaptive-resolution-kept-cpu-bound`. With no GPU
+timer it falls back to the FPS rule. Headless cost of the restored shadows:
+~1.5 ms CPU per frame (`WebGLShadowMap.render` 17 → 42 ms over the profile),
+well inside what the CPU fixes below freed. Screenshot:
+`assets/perf-2026-09-25/gameplay-quality-restored.png`.
+
 ## What changed instead
 
 All of 05c4300's quality cuts are reverted; the adaptive tier is back to

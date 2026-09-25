@@ -62,6 +62,9 @@ test('gameplay main-thread profile', async ({ page }) => {
         chunks: window.game.chunkMeshes?.size,
         adaptive: window.game.adaptiveGameplayPerformanceMode,
         post: window.game.gameplayPostProcessingEnabled,
+        pixelRatio: window.game.renderer?.getPixelRatio?.(),
+        spotShadow: Boolean(window.game.playerForwardSpotLight?.castShadow),
+        sunShadowMap: window.game.scene?.children?.find?.((o) => o.isDirectionalLight && o.castShadow)?.shadow?.mapSize?.x ?? null,
         // What the draw calls are: visible renderable objects by owner tag.
         census: (() => {
             const g = window.game;
@@ -84,4 +87,5 @@ test('gameplay main-thread profile', async ({ page }) => {
     const result = { label: LABEL, seconds: elapsed, fps: game.rafFrames / elapsed, ...game, cpu };
     fs.writeFileSync(`${OUT}/gameplay-cpu-${LABEL}.json`, JSON.stringify(result, null, 1));
     fs.writeFileSync(`${OUT}/gameplay-cpu-${LABEL}.cpuprofile`, JSON.stringify(profile));
+    await page.screenshot({ path: `${OUT}/gameplay-cpu-${LABEL}.png` });
 });
