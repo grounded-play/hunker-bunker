@@ -15,7 +15,18 @@ test('B closes the map and does nothing else', async ({ page }) => {
         const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
         window.__pad = { id: 'Steam Deck (fake)', index: 0, connected: true, buttons, axes: [0, 0, 0, 0], timestamp: 0 };
         navigator.getGamepads = () => [window.__pad];
-        window.electronAPI = { onSteamInputState: (callback) => { window.__steamInputCallback = callback; } };
+        // A bare { onSteamInputState } object failed boot ("SYSTEM
+        // INITIALIZATION ERROR — RETRYING"): the shell expects the rest of
+        // the preload API. Same offline Proxy as helpers.stubOfflineElectronAPI,
+        // with the native Steam Input subscription captured.
+        window.electronAPI = new Proxy({}, {
+            get(_target, prop) {
+                if (prop === 'onSteamInputState') return (callback) => { window.__steamInputCallback = callback; };
+                if (typeof prop === 'string' && prop.startsWith('on')) return () => {};
+                if (prop === 'setStat' || prop === 'setSteamInputPhase') return () => {};
+                return () => Promise.reject(new Error(`stubbed offline: ${String(prop)}`));
+            }
+        });
     });
     await bootToOperatorMenu(page);
     await startRunAndSkipIntro(page);
@@ -30,6 +41,34 @@ test('B closes the map and does nothing else', async ({ page }) => {
         return el && !el.classList.contains('hidden') && el.getClientRects().length > 0;
     }), [...MENU_FOCUS_ROOT_IDS]);
 
+    // Record who opens the settings popup, and when.
+    const surfacesAtStart = await visibleRoots();
+    await page.evaluate(() => {
+        window.__settingsOpens = [];
+        const el = document.getElementById('settings-popup');
+        if (!el) return;
+        new MutationObserver(() => {
+            if (!el.classList.contains('hidden')) {
+                window.__settingsOpens.push({ at: performance.now(), stack: new Error().stack.split('\n').slice(1, 8).join(' | ') });
+            }
+        }).observe(el, { attributes: true, attributeFilter: ['class'] });
+        window.__inputTimeline = [];
+        const t0 = performance.now();
+        const note = (what) => window.__inputTimeline.push(`${Math.round(performance.now() - t0)}ms ${what}`);
+        window.__noteInput = note;
+        document.addEventListener('keydown', (e) => note(`keydown ${e.key} trusted=${e.isTrusted} stack=${new Error().stack.split('\n').slice(2, 7).map((l) => l.trim().replace(/https?:\/\/[^/]+\/assets\//, '')).join(' < ')}`), true);
+        const map = document.getElementById('tactical-map-modal');
+        if (map) new MutationObserver(() => note(`map ${map.classList.contains('hidden') ? 'closed' : 'open'}`)).observe(map, { attributes: true, attributeFilter: ['class'] });
+        new MutationObserver(() => note(`settings ${el.classList.contains('hidden') ? 'closed' : 'open'}`)).observe(el, { attributes: true, attributeFilter: ['class'] });
+        const remove = DOMTokenList.prototype.remove;
+        DOMTokenList.prototype.remove = function (...tokens) {
+            if (tokens.includes('hidden') && this === el.classList) {
+                window.__settingsOpens.push({ at: performance.now(), stack: new Error().stack.split('\n').slice(1, 10).map((l) => l.trim()).join(' | ') });
+            }
+            return remove.apply(this, tokens);
+        };
+    });
+
     // Native idle in gameplay, then open the map with the keyboard.
     await page.evaluate((s) => window.__steamInputCallback?.(s), snapshot('gameplay'));
     await page.keyboard.press('KeyM');
@@ -38,9 +77,9 @@ test('B closes the map and does nothing else', async ({ page }) => {
     await page.evaluate((s) => window.__steamInputCallback?.(s), snapshot('menu'));
 
     // B: the browser pad sees it first, native reports it 100 ms later.
-    await page.evaluate(() => { window.__pad.buttons[1] = { pressed: true, value: 1 }; window.__pad.timestamp += 1; });
+    await page.evaluate(() => { window.__noteInput?.('pad B down'); window.__pad.buttons[1] = { pressed: true, value: 1 }; window.__pad.timestamp += 1; });
     await page.waitForTimeout(100);
-    await page.evaluate((s) => window.__steamInputCallback?.(s), snapshot('menu', { menuBack: true, dash: true }));
+    await page.evaluate((s) => { window.__noteInput?.('native B (menu)'); window.__steamInputCallback?.(s); }, snapshot('menu', { menuBack: true, dash: true }));
     await page.waitForTimeout(250);
     await page.evaluate((s) => window.__steamInputCallback?.(s), snapshot('gameplay', { menuBack: true, dash: true }));
     await page.waitForTimeout(250);
@@ -53,7 +92,15 @@ test('B closes the map and does nothing else', async ({ page }) => {
         dashing: Boolean(window.game?.isDashing),
         phase: window.__hbAppPhase
     }));
-    const result = { label: process.env.HB_PROBE_LABEL || 'probe', mapOpenBefore: mapOpen, ...after, openSurfaces: await visibleRoots() };
+    const result = {
+        label: process.env.HB_PROBE_LABEL || 'probe',
+        mapOpenBefore: mapOpen,
+        ...after,
+        surfacesAtStart,
+        openSurfaces: await visibleRoots(),
+        settingsOpens: await page.evaluate(() => window.__settingsOpens ?? []),
+        timeline: await page.evaluate(() => window.__inputTimeline ?? [])
+    };
     fs.appendFileSync(`${OUT}/deck-double-press.jsonl`, `${JSON.stringify(result)}\n`);
     await page.screenshot({ path: `${OUT}/deck-double-press-${result.label}.png` });
 });

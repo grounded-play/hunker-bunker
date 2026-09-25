@@ -2605,6 +2605,9 @@ function clearBrowserGamepadGameplayInput() {
 function handleBrowserGamepadFallbackFrame() {
     const controllers = getBrowserGamepadControllers();
     if (!shouldUseBrowserGamepadFallback(controllers)) {
+        // Not routed, but the gate must still see this pad let go of a press
+        // the tactical map consumed from it (see pollTacticalMapGamepadInput).
+        for (const controller of controllers) controllerPressGate.observe(controller);
         browserGamepadFallbackEngaged = false;
         clearBrowserGamepadGameplayInput();
         browserGamepadPollRaf = window.requestAnimationFrame(handleBrowserGamepadFallbackFrame);
@@ -11622,6 +11625,15 @@ function pollTacticalMapGamepadInput() {
             tacticalMapState.prevCloseButtonPressed = true;
             if (performance.now() - lastTacticalMapToggleTimestamp >= 250) {
                 lastModalCloseTimestamp = performance.now();
+                // This poll reads the Gamepad API directly, outside the press
+                // gate. Tell the gate, or native Steam Input's copy of the
+                // same press arrives ~0.1 s later as a fresh B/Start and opens
+                // the pause menu behind the closing map (2026-09-24 Deck QA).
+                controllerPressGate.claim([
+                    ...(pad.buttons?.[1]?.pressed ? ['menuBack', 'dash'] : []),
+                    ...(pad.buttons?.[8]?.pressed ? ['toggleMap'] : []),
+                    ...(pad.buttons?.[9]?.pressed ? ['pause'] : [])
+                ], `browser-gamepad:${pad.index ?? 0}`);
                 toggleTacticalMapModal(false);
                 return;
             }

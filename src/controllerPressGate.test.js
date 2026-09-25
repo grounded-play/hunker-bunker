@@ -67,3 +67,74 @@ describe('one physical press, one action', () => {
         expect(g.filter(native({ interact: true }), 'gameplay').interact).toBe(true);
     });
 });
+
+describe('presses consumed outside the router', () => {
+    it('masks the other source’s copy of a press a direct poll already used', () => {
+        const { g, tick } = gate();
+        // The tactical map's own Gamepad API poll closes the map on B…
+        g.claim(['menuBack', 'dash'], 'browser-gamepad:0');
+        tick(100);
+        // …and native Steam Input's copy must not then open the pause menu.
+        const copy = g.filter(native({ menuBack: true, dash: true }), 'gameplay');
+        expect(copy.menuBack).toBe(false);
+        expect(copy.dash).toBe(false);
+        g.filter(native({}), 'gameplay');
+        g.observe(browser({})); // the pad lets go too
+        tick(600);
+        expect(g.filter(native({ menuBack: true }), 'menu').menuBack).toBe(true);
+    });
+});
+
+describe('a hitch longer than the window', () => {
+    it('still treats the second source’s copy as the same press while the first holds it', () => {
+        const { g, tick } = gate();
+        expect(g.filter(native({ menuBack: true }), 'menu').menuBack).toBe(true);
+        tick(900); // a long frame: the browser copy arrives late
+        expect(g.filter(browser({ menuBack: true }), 'gameplay').menuBack).toBe(false);
+        g.filter(native({ menuBack: false }), 'gameplay');
+        g.filter(browser({ menuBack: false }), 'gameplay');
+        tick(900);
+        expect(g.filter(browser({ menuBack: true }), 'gameplay').menuBack).toBe(true);
+    });
+});
+
+describe('a source that goes quiet', () => {
+    it('does not block the button on other sources forever', () => {
+        const { g, tick } = gate();
+        // The browser fallback routes a held B, then stops reporting (native took over).
+        g.filter(browser({ menuBack: true }), 'menu');
+        tick(2500);
+        expect(g.filter(native({ menuBack: true }), 'menu').menuBack).toBe(true);
+    });
+});
+
+describe('a press the tactical map consumed', () => {
+    it('masks the native copy for as long as the pad still holds it, however late', () => {
+        const { g, tick } = gate();
+        g.claim(['menuBack', 'dash'], 'browser-gamepad:0');
+        tick(300);
+        g.observe(browser({ menuBack: true, dash: true }));
+        tick(1300); // a 1.6 s hitch before native reports
+        g.observe(browser({ menuBack: true, dash: true }));
+        const copy = g.filter(native({ menuBack: true, dash: true }), 'gameplay');
+        expect(copy.menuBack).toBe(false);
+        expect(copy.dash).toBe(false);
+    });
+
+    it('lets the next real press through once the pad lets go', () => {
+        const { g, tick } = gate();
+        g.claim(['menuBack'], 'browser-gamepad:0');
+        tick(50);
+        g.observe(browser({ menuBack: false }));
+        g.filter(native({ menuBack: false }), 'gameplay');
+        tick(1000);
+        expect(g.filter(native({ menuBack: true }), 'gameplay').menuBack).toBe(true);
+    });
+
+    it('an observed (un-routed) pad never blocks native input by itself', () => {
+        const { g, tick } = gate();
+        g.observe(browser({ menuBack: true }));
+        tick(10);
+        expect(g.filter(native({ menuBack: true }), 'menu').menuBack).toBe(true);
+    });
+});
