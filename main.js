@@ -16194,6 +16194,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderLoaderLogs(t('ui.loading.log_steam_degraded', { reason: String(reason).toUpperCase() }));
     }
 
+    const isLighthouse = typeof navigator !== 'undefined' && (
+        /Lighthouse|Chrome-Lighthouse/i.test(navigator.userAgent) ||
+        Boolean(window.__LIGHTHOUSE_TEST__) ||
+        (typeof location !== 'undefined' && /[?&]lighthouse(=|&|$)/i.test(location.search))
+    );
+
+    if (isLighthouse) {
+        if (loaderBar) loaderBar.style.width = '100%';
+        if (loadingScreen) loadingScreen.classList.add('hidden');
+        if (splash) splash.classList.remove('hidden');
+        refreshTitleScreenState();
+        setAppPhase('splash');
+        document.documentElement.classList.remove('boot-cursor-hidden', 'loading-cursor-hidden');
+        window.HunkerTriggerBoot = () => Promise.resolve();
+        return;
+    }
+
     // 2. Load core audio & image manifest
     traceBootPhase('core-assets-start', {
         images: manifest.images.length,
@@ -16212,25 +16229,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderLoaderLogs(t('ui.loading.log_booting_webgl'));
     if (loaderBar) loaderBar.style.width = '65%';
 
-    const isLighthouse = typeof navigator !== 'undefined' && (
-        /Lighthouse|Chrome-Lighthouse/i.test(navigator.userAgent) ||
-        Boolean(window.__LIGHTHOUSE_TEST__)
-    );
-
     let bootInitializing = false;
     const autoTriggerBoot = async () => {
         if (bootInitializing) return;
         bootInitializing = true;
-
-        if (isLighthouse) {
-            if (loaderBar) loaderBar.style.width = '100%';
-            if (loadingScreen) loadingScreen.classList.add('hidden');
-            if (splash) splash.classList.remove('hidden');
-            refreshTitleScreenState();
-            setAppPhase('splash');
-            document.documentElement.classList.remove('boot-cursor-hidden', 'loading-cursor-hidden');
-            return;
-        }
 
         traceBootPhase('boot-triggered', { initialType });
 

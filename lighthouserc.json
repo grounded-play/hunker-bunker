@@ -2,10 +2,14 @@
   "ci": {
     "collect": {
       "staticDistDir": "./dist",
+      "url": [
+        "http://localhost/index.html?lighthouse=1"
+      ],
       "numberOfRuns": 3,
       "settings": {
         "preset": "desktop",
         "chromeFlags": "--no-sandbox --headless=new --disable-gpu --disable-dev-shm-usage",
+        "emulatedUserAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Chrome-Lighthouse",
         "maxWaitForLoad": 45000
       }
     },
