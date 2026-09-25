@@ -572,6 +572,9 @@ export function createArmoryUi({
                             <button type="button" class="class-tab ${cls === 'tank' ? 'active' : ''}" data-class="tank" data-i18n="ui.armory.tab_tank">▰ TANK</button>
                             <button type="button" class="class-tab ${cls === 'engineer' ? 'active' : ''}" data-class="engineer" data-i18n="ui.armory.tab_engineer">◆ ENGINEER</button>
                         </div>
+                        <button type="button" class="armory-debug-skins-btn ${((typeof document !== 'undefined' && document.documentElement?.dataset?.hudLayout) || (typeof localStorage !== 'undefined' && localStorage.getItem('hb_hud_layout')) || 'classic') === 'dock' ? 'active' : ''}" id="armory-debug-hud-layout-btn" title="Toggle HUD Layout: Classic vs Lower Dock (hb_hud_layout)">
+                            ${((typeof document !== 'undefined' && document.documentElement?.dataset?.hudLayout) || (typeof localStorage !== 'undefined' && localStorage.getItem('hb_hud_layout')) || 'classic') === 'dock' ? '✓ HUD: DOCK' : 'HUD: CLASSIC'}
+                        </button>
                         ${qaToolsEnabled ? `<button type="button" class="armory-debug-skins-btn ${ownership.isUnlockAll() ? 'active' : ''}" id="armory-debug-unlock-skins-btn" title="Synthetic QA override for every catalogued equippable; does not create Steam inventory">
                             ${ownership.isUnlockAll() ? `✓ QA UNLOCK ${qaAudit.available}/${qaAudit.total}` : `[QA] UNLOCK ALL ${qaAudit.available}/${qaAudit.total}`}
                         </button><button type="button" class="armory-debug-skins-btn" id="armory-debug-grant-kit-btn" title="Grant non-tradable synthetic marketplace items and test keys; never initiates a purchase">[QA] GRANT TEST KIT</button>` : ''}
@@ -873,6 +876,24 @@ export function createArmoryUi({
         container.querySelector?.('#armory-polish-btn')?.addEventListener?.('click', () => {
             playSound('ui_click_confirm1');
             document.getElementById('hero-polish-btn')?.click?.();
+        });
+
+        container.querySelector?.('#armory-debug-hud-layout-btn')?.addEventListener?.('click', () => {
+            const current = (typeof document !== 'undefined' && document.documentElement?.dataset?.hudLayout)
+                || (typeof localStorage !== 'undefined' && localStorage.getItem('hb_hud_layout'))
+                || 'classic';
+            const next = current === 'dock' ? 'classic' : 'dock';
+            if (typeof localStorage !== 'undefined') {
+                localStorage.setItem('hb_hud_layout', next);
+            }
+            if (typeof document !== 'undefined' && document.documentElement) {
+                document.documentElement.dataset.hudLayout = next;
+            }
+            if (typeof window !== 'undefined' && window.state?.settings) {
+                window.state.settings.hudLayout = next;
+            }
+            playSound('ui_click_confirm1');
+            render();
         });
 
         container.querySelector?.('#armory-debug-unlock-skins-btn')?.addEventListener?.('click', () => {
