@@ -10,7 +10,9 @@
 > - lists the engineering traps this repo has already hit;
 > - turns each phase into testable acceptance;
 > - adds the **living suit console** (§4A): cockpit-style frames that crack, frost,
->   fog and age, and a DOOM-style operator face that reacts.
+>   fog and age, and a DOOM-style operator face that reacts;
+> - makes that face **the operator's identity everywhere** (§4B): conversations,
+>   radio, death and results screens, roster and co-op.
 
 ---
 
@@ -355,6 +357,73 @@ possible. It would cost an extra render pass on a game that is already CPU-bound
 
 ---
 
+## 4B. One face, everywhere (owner, 2026-09-25)
+
+The operator face is not only a HUD widget. It is **the operator's identity**, and
+every screen that shows the operator uses the same face set, the same class and the
+same condition. Frost on the visor in the console is frost on the visor in the
+conversation you open while cold.
+
+**The operator already talks.** In `src/dialogue.js`, `getDialogueSpeaker()` sends
+every unprefixed line to `SCOUT / TANK / ENGINEER OPERATOR LINK`, but it uses stand-in
+survivor portraits (`/lore_portraits/survivor_01|02|03.webp`), not the player's
+operator. Those three lines are the first integration point.
+
+### Where the face appears
+
+| Surface | Today | With the face set | Expression source |
+| :--- | :--- | :--- | :--- |
+| HUD suit console (zone E) | — | live reacting face (§4A) | game signals |
+| Conversations: Mothership, cutscene dialogue, the `OPERATOR LINK` speaker | generic survivor portrait | the player's operator, class-correct, with current visor condition | line `mood` tag, else the §4A condition |
+| NPC dialogue trees (`npcDialogueTrees.js`), camp leader talks (`leaderConversation3d.js`), wanderer/snail encounters (`universalEncounter.js`) | NPC portrait only | the operator portrait on the player's side of the exchange; the face answers the choice (e.g. smirk on a bluff, worried on a threat) | choice `mood` tag |
+| Radio cards (zone N) and suit barks (`getDialogueLine('lowO2' …)`, extraction, upgrades) | text only / "> BUNKER:" | small face beside the operator's own replies and barks (gasp on the low-O₂ bark) | bark type |
+| Death report / results (`src/deathReport.js`) | text | final face: dead (visor shattered), exhausted on a bare escape, grin on a clean extraction | run outcome |
+| Expedition report, terminal day log | text | the day's face: how the operator ended that expedition | outcome + fatigue |
+| Hero select / class cards, lobby roster | 3D preview / names | face card per class and per player | calm; grin on ready-up |
+| Co-op teammate chip (decision §9.4), PvP kill feed | nameplates only | teammate's live face from their replicated vitals | teammate signals |
+| Armory / Foundry | — | reacts to equips: focused when trying gear, grin on a new unlock | UI event |
+
+### How lines pick an expression
+
+- Dialogue lines and choices get an optional `mood` (string enum, same as the face
+  set): `{ text: '…', mood: 'worried' }`, or an inline `[mood:grin]` tag for
+  prefix-parsed lines. With no tag, the line uses the current §4A condition face,
+  so the operator never looks calm while freezing.
+- While a line types out, a 2-frame **talk flap** (mouth open/closed at ~8 Hz,
+  timed by the typing loop, no audio analysis) plays on top of the expression.
+- Condition overlays (visor frost, fog, crack) always apply on top, everywhere.
+  They come from the same `suitCondition` state as the HUD.
+
+### Shared module
+
+`src/operatorFace.js` (pure, unit-tested):
+- `faceFor({ playerClass, mood, condition, talking })` returns
+  `{ atlasUrl, cell, overlays[] }`.
+- `moodForSignals(signals)` implements the §4A priority rules.
+- Every surface calls it. None of them pick art or paths themselves.
+- `getDialogueSpeaker()` returns `face: faceFor(…)` for operator lines instead of a
+  survivor path.
+
+### Art spec (replaces the §4A face row)
+
+| Asset | Count | Size | Notes |
+| :--- | ---: | :--- | :--- |
+| Expressions per class | **16** | — | calm, glance L, glance R, hurt 1–3, gasp, shiver, sick, focused, grin, dead; plus dialogue moods: worried, determined, smirk, relieved |
+| Talk flap | 2 per expression that talks (~8) | — | mouth open / closed |
+| Resolutions | 2 per face | **144 px** (HUD, 2× of 72 u) and **512 px** (dialogue, results, roster) | rendered from the same Blender camera; no separate art |
+| Visor overlays | 4 shared | both sizes | fog, frost rim, crack, shatter |
+
+With 3 classes that is ~72 faces at 2 sizes, packed as two atlases per class. Budget
+**≤ 6 MB** total. The 512 atlas loads lazily the first time a conversation or results
+screen opens.
+
+Co-op: a teammate's face comes from **their replicated vitals and status**. If the
+state event doesn't already carry O₂ and status effects, Phase 6B adds them to the
+existing vitals broadcast rather than sending face state. Nothing new is networked
+beyond signals the game already needs.
+
+---
+
 ## 5. Complete migration matrix
 
 | Current element(s) | Today | New zone | Change |
@@ -458,6 +527,7 @@ passes). One-click comparison, instant rollback.
 | **5. Top band** | A, A2, B (priority queue), C drawer, N under C. Retire `.hud-mission-stack` as a column. | `main.js`, css | Boss+hazard at once shows boss, then hazard; drawer expands on map-open (Deck) and click (PC); `steam-input-action-set.spec` green. **Flip default to `dock`.** |
 | **6. Behaviour** | Combat signal (`this.inCombat`); drawer auto-collapse; loot idle-dim; critical pulses; reduced motion. | `threeGame.js` (signal), `main.js` | Unit tests for the signal (4 s window); visual states captured in the layout spec. |
 | **6A. Living console** | Frame 9-slices per class; overlays (cracks, frost, fog, toxin, corrosion, grime, static); `suitCondition` module; `player-damaged` gains `sourceX/sourceZ`; portrait atlas (placeholder art first, then the Blender-rendered faces). | `src/suitCondition.js` (+ tests), `main.js`, css, `public/ui/suit/*` | Unit tests: every signal → overlay/face; priority order; heal clears cracks. Layout spec captures Idle/Cold/Toxic/Critical/Dead. HUD style/layout still ≤ 0.3 ms per frame. Owner art sign-off per class. |
+| **6B. One face everywhere** | `src/operatorFace.js`; the dialogue `OPERATOR LINK` speaker uses it (replaces `survivor_01/02/03`); `mood` on lines/choices + talk flap; death report, results, roster and radio replies; co-op teammate faces from replicated vitals. | `src/operatorFace.js` (+ tests), `src/dialogue.js`, `src/deathReport.js`, `main.js` | Every operator line shows the class-correct face; a cold/hurt operator keeps the visor overlay in dialogue; no remaining reference to the stand-in survivor portraits for the operator; lazily loaded 512 atlas. |
 | **7. Deck, a11y, i18n** | HUD Scale setting; contrast high/max; 7-locale pass with the longest strings; Deck hardware check. | settings UI, locales | `i18n:audit` 0; layout spec green in `de` and `ru`; owner Deck sign-off. |
 | **8. Remove classic** | Delete the old layout CSS and the flag after owner sign-off. | css, `main.js` | No dead selectors (grep); bundle CSS smaller. |
 
@@ -501,7 +571,10 @@ passes). One-click comparison, instant rollback.
    consistent with the model and cosmetics) or painted 2D faces? And is 12
    expressions per class the right set, or do you want more (e.g. a DOOM-style "ouch"
    face on big hits)?
-7. **Rollout:** ship Phases 1–5 behind the flag for a week of your play before
+7. **Faces beyond the HUD (§4B):** start with conversations + death/results
+   (**recommended**: biggest payoff, touches existing speakers only), then roster and
+   co-op teammates?
+8. **Rollout:** ship Phases 1–5 behind the flag for a week of your play before
    making it the default?
 
 ---
