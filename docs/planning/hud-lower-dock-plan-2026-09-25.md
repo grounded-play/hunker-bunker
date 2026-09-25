@@ -19,11 +19,12 @@
 > - makes the band's **housing the class flavour and the reactive element** (§4A):
 >   cracks, dents, sparks, blood splats that dry after a fight, a console that freezes
 >   up, frost, fog, and wear over time;
-> - adds **StarCraft-style talking portraits** for the operators and NPCs: 2D, in Mucha
->   halo frames, animated as layered cut-outs over shared background plates (§4B);
-> - sets the art direction to **Cathedral Biomech** (Art Nouveau / Jugendstil meets
->   Giger, the sacred architecture of dead corporate space gods;
->   `docs/design/art-style-bible.md`). The band becomes a **triptych altarpiece** (§4D);
+> - adds **StarCraft-style talking portraits** for the operators and NPCs: 2D, in
+>   arched stone frames, animated as layered cut-outs over shared background plates (§4B);
+> - sets the art direction to **Nordic Cathedral Biomech**: Nordic Jugendstil /
+>   National Romanticism meets Giger, decayed, with biology taking form within
+>   (`docs/design/art-style-bible.md`). The band becomes an iron-bound **triptych**
+>   that goes Order → Decay → Synthesis (§4D);
 > - adds **event housings** for transformations such as the Act 2 infection track and
 >   for other characters (§4C).
 
@@ -361,12 +362,12 @@ The housing is the metal and glass around the three modules (D, E, G). Everythin
 drawn inside it (hearts, O₂ arc, ammo, radar) stays the same readable instrument
 set for every class. Only the housing changes.
 
-| | SCOUT: glass reliquary (was "recon rig") | TANK: armoured shrine (was "bulwark plate") | ENGINEER: organ console (was "field bench") |
+| | SCOUT: frost lantern (was "recon rig") | TANK: granite bastion (was "bulwark plate") | ENGINEER: forge altar (was "field bench") |
 | :--- | :--- | :--- | :--- |
-| Silhouette | Thin angular carbon frame; sensor fins and a small antenna mast on the radar module; the lightest struts | Thick riveted armour slabs, hazard chevrons, hydraulic pistons as struts, heavy corner bolts | Open chassis with exposed circuit boards, cable looms, clamp brackets and a tool rail along the struts |
-| Material | matte composite, stealth-dark | scuffed gunmetal, painted edges | brushed alloy, green PCB, copper |
-| Accent | cyan (radar-forward: the radar module is the largest) | amber (armour-forward: the dashboard is the largest) | green (tool-forward: the weapon/ability dock carries a turret/fabricator status strip) |
-| Signature detail | antenna sweep LED ticks with the radar scan cooldown | shield-emitter ring around the hearts glows with Bulwark | turret status lamps on the right strut (one per deployed turret) |
+| Silhouette (same geometry for all; §2.2) | slender blackened-iron frame, small frost-etched leaded panes, thin bone ribs, a carved bone finial like an antler tine | massive stepped granite blocks, heavy iron straps and bolts, deep keystone arches, hazard chevrons re-cut as carved banding | bronze forge-altar: stacked bronze pipes behind the modules, iron-bound tool rail, interlace-carved conduits, heat-fin crown |
+| Material | blackened iron, frosted glass, bone | granite, iron, rust bleed | bronze and iron, verdigris |
+| Accent light | teal #71cddf (cold lantern) | amber #f99415 | orange #f2780c with teal glass lamp-cups |
+| Signature detail | the finial's lantern ticks with the radar-scan cooldown | the iron ring around the hearts glows with Bulwark | lamp-cups on the right strut light per deployed turret |
 
 Sizes stay the §2.2 zones. The housing is a 9-slice frame plus a few fixed
 decorations (fins, pistons, clamps) that sit **in the margin between modules**,
@@ -480,9 +481,9 @@ sheet per class, with every state painted onto that same image.
 Owner, 2026-09-25: faces **do** belong in conversations and transmissions: lit with a
 fixed portrait light setup, keyed onto backgrounds that characters share, and
 **idle-animated like StarCraft unit portraits**, talking when they speak. This covers
-the operators and every NPC. Portraits are **2D in the Cathedral Biomech style**
-(`docs/design/art-style-bible.md`) and sit in **Mucha frames**: an arched window, a
-halo disc behind the head, and an ornamental border that differs per faction
+the operators and every NPC. Portraits are **2D in the Nordic Cathedral Biomech
+style** (`docs/design/art-style-bible.md`) and sit in **arched stone frames**: an
+iron-ring disc behind the head, and a carved border that differs per faction
 (corporate / camp / alien).
 
 ### Who gets one
@@ -589,12 +590,13 @@ so all the §7 layout tests still hold.
 
 ---
 
-## 4D. Art direction: 2D, Cathedral Biomech
+## 4D. Art direction: 2D, Nordic Cathedral Biomech
 
-Owner, 2026-09-25:
-- the housings, states and portraits are **2D images in the key-art style**;
-- that style gets more **Art Nouveau / Jugendstil**, **meeting Giger**: sensual
-  cathedrals of dead corporate space gods.
+Owner direction (2026-09-25):
+- The housings, wear states, and portraits are **2D images in the key-art style**.
+- That style is **Giger meets Northern Scandinavian design (Nordic Jugendstil / National Romanticism)**:
+  not too literal, but transposed and decayed, where biologicals take form *within* the console.
+  This creates the central juxtaposition: **austere, hardline Nordic beauty vs. glistening organic biomechanical form**, synthesized in **decoratively dark decay**.
 
 The game-wide rules (form language, palette, rendering, the shared prompt block, the
 content guardrails) live in **`docs/design/art-style-bible.md`**. This section only
@@ -603,16 +605,18 @@ applies them to the HUD.
 ### The band is a triptych altarpiece
 
 The three panels are the three wings of an altarpiece, hinged at the struts:
-- **Left wing (map):** the radar disc is a **rose window** with lead-line tracery.
+- **Left wing (map):** the radar disc is an **iron-ringed sun-disc** set in frost-etched
+  leaded glass.
   Base and node readouts sit in a small scripture plaque beside it.
 - **Centre panel (health & status):** the widest, like an altarpiece's centre.
-  - Hearts are **sacred-heart glyphs**: a simple flame-topped heart, readable at
+  - Hearts are simple **carved heart glyphs** in iron rings, readable at
     small size.
-  - The 5 status lamps are **votive lamps / stained-glass jewels** in the top crest.
-  - The infection gauge is a slim reliquary vial.
-- **Right wing (gun & ammo):** the weapon window is a **reliquary niche**. Ammo sits
+  - The 5 status lamps are small **iron lanterns** in the top crest.
+  - The infection gauge is a slim bronze-bound glass vial.
+- **Right wing (gun & ammo):** the weapon window is a **deep arched niche**. Ammo sits
   in a brass-framed plaque, and the ability tiles are small arched shrines.
-- **Hinges / struts:** vertebrae with Guimard-style iron tendrils.
+- **Hinges / struts:** blackened-iron strap hinges. In Synthesis they become
+  vertebrae and tendons.
 - **Height:** ornament stays inside the 64 u band, except a crest of at most 10 u
   above the centre panel (the lamp row already lives there).
 
@@ -710,7 +714,7 @@ to WebP with alpha around the outer silhouette.
 Game UI hardware asset, flat-on orthographic, no perspective, no scene, isolated on
 pure black. A single wide {MODULE} housing for the {CLASS} class of "Hunker Bunker",
 one wing of a narrow triptych altarpiece: arched top with a small keystone ornament,
-whiplash-curve ironwork along the edges, stained-glass lead-line tracery framing the
+blackened-iron strap bindings along the edges, frost-etched leaded panes framing the
 glass, bone-vertebra hinges, built with the density of the game's riveted bunker door
 panels.
 Housing: {CLASS_MATERIAL}.
@@ -728,11 +732,11 @@ maps, radar content, gameplay, characters, faces, vehicles, tank treads, perspec
 field, cockpit windshield, background environment, extra hues outside
 black/amber/orange/teal/rust.
 
-| Variable | SCOUT: recon rig | TANK: bulwark plate | ENGINEER: field bench |
+| Variable | SCOUT: frost lantern | TANK: granite bastion | ENGINEER: forge altar |
 | :--- | :--- | :--- | :--- |
-| `{CLASS_MATERIAL}` | slender Guimard-style black ironwork and thin bone ribs around **dragonfly-wing leaded glass** panes, a small antenna finial like a spire, minimal rust; light and airy | heavy cast-iron **buttresses** and riveted plate chased with ornamental ironwork, vertebra struts, hazard chevrons re-drawn as ornamental banding, rust in the seams | copper **organ pipes** rising behind the modules, whiplash copper conduit vines, brass organ-stop knobs as switches, exposed circuit filigree like engraved scripture, heat-sink fins as a pipe crown |
+| `{CLASS_MATERIAL}` | slender blackened-iron frame with small **frost-etched leaded panes**, thin bone ribs, a carved bone finial like an antler tine or spire, light and cold, minimal rust | massive **stepped granite blocks** bound in heavy iron straps and bolts, deep keystone arches, hazard chevrons re-cut as carved banding, rust bleeding from the bindings | **bronze and iron forge-altar**: stacked bronze pipes rising behind the modules like organ pipes, iron-bound tool rail, conduits carved with abstract interlace, heat-fin crown, verdigris on the bronze |
 | `{ACCENT}` | teal #71cddf | amber #f99415 | orange #f2780c + brass #947047, tiny teal LEDs |
-| Lamp row (centre, 5 unlit) | five teardrop stained-glass jewels | five caged votive beacons + 2 toggle switches | five brass organ-stop lamps with teal jewel caps |
+| Lamp row (centre, 5 unlit) | five tiny frost-glass lanterns | five caged iron lanterns + 2 toggle switches | five bronze lamp-cups with teal glass |
 
 ### State layers: painted onto the master sheet, then cut to alpha
 
@@ -746,8 +750,8 @@ to a transparent overlay, so it lines up exactly and stacks per the wear model:
 | Scuffs | "fine ink scratch marks and paint scuffs on the metal edges only" | this life |
 | Cracks 1–3 | Cracks **follow the lead-line tracery**. SCOUT: "a crack running along the leaded glass from one impact" → two impacts → a shattered pane. TANK: dents and gouges in the armour. ENGINEER: burnt board edge, then sparks, then a dead gauge | repairable |
 | Repair scratch | "a single deep scratch where a crack was sealed" | this life |
-| Frost / ice lock | "frost growing like Gothic window tracery from the corners, small icicles on bolts and finials" (the cryo door's treatment) | while it lasts |
-| Toxin / squish | "glossy sickly yellow-green Giger biomass swallowing the Art Nouveau ornament: vertebral growths and membranes creeping over the ironwork" (#97996e / #cdcf8f) | fades |
+| Frost / ice lock | "frost growing along the leaded panes and iron bindings from the corners, small icicles on bolts and finials" (the cryo door's treatment) | while it lasts |
+| Toxin / squish | "glossy sickly yellow-green Giger biomass growing from the joints and bindings, following the carved interlace: vertebral growths and membranes creeping over stone and iron" (#97996e / #cdcf8f) | fades |
 | Infection scars | "burn-etched vein tracks and pitted metal where growth was removed" | this campaign |
 | Grime | "soot, grease smears, strips of tape repair" | fatigue |
 | Alarm | "beacon lamps lit red, hazard glow" | moment / boss |
@@ -905,8 +909,8 @@ passes). One-click comparison, instant rollback.
    right edge in co-op? Today teammates have only in-world nameplates.
 5. **Visor frame:** keep the four corner brackets as the dock's visual language
    (**recommended**) or retire them?
-6. **Class housings:** do the directions in §4A (SCOUT recon rig, TANK bulwark plate,
-   ENGINEER field bench) match each class? And are the status lamps the right
+6. **Class housings:** do the directions in §4A/§4D (SCOUT frost lantern, TANK granite
+   bastion, ENGINEER forge altar) match each class? And are the status lamps the right
    at-a-glance readout during play?
 7. **Blood:** wipe it at the bunker and at heal stations (**recommended**), or keep it
    for the whole run as a badge?
