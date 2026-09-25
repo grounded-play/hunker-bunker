@@ -19,8 +19,11 @@
 > - makes the band's **housing the class flavour and the reactive element** (§4A):
 >   cracks, dents, sparks, blood splats that dry after a fight, a console that freezes
 >   up, frost, fog, and wear over time;
-> - adds **StarCraft-style talking portraits** for the operators and NPCs, rendered in
->   Blender with one portrait light rig and composited on shared backgrounds (§4B);
+> - adds **StarCraft-style talking portraits** for the operators and NPCs: 2D, in Mucha
+>   halo frames, animated as layered cut-outs over shared background plates (§4B);
+> - sets the art direction to **Cathedral Biomech** (Art Nouveau / Jugendstil meets
+>   Giger, the sacred architecture of dead corporate space gods;
+>   `docs/design/art-style-bible.md`). The band becomes a **triptych altarpiece** (§4D);
 > - adds **event housings** for transformations such as the Act 2 infection track and
 >   for other characters (§4C).
 
@@ -358,7 +361,7 @@ The housing is the metal and glass around the three modules (D, E, G). Everythin
 drawn inside it (hearts, O₂ arc, ammo, radar) stays the same readable instrument
 set for every class. Only the housing changes.
 
-| | SCOUT: recon rig | TANK: bulwark plate | ENGINEER: field bench |
+| | SCOUT: glass reliquary (was "recon rig") | TANK: armoured shrine (was "bulwark plate") | ENGINEER: organ console (was "field bench") |
 | :--- | :--- | :--- | :--- |
 | Silhouette | Thin angular carbon frame; sensor fins and a small antenna mast on the radar module; the lightest struts | Thick riveted armour slabs, hazard chevrons, hydraulic pistons as struts, heavy corner bolts | Open chassis with exposed circuit boards, cable looms, clamp brackets and a tool rail along the struts |
 | Material | matte composite, stealth-dark | scuffed gunmetal, painted edges | brushed alloy, green PCB, copper |
@@ -451,11 +454,9 @@ narrow band doesn't need a portrait slot.
 
 Budget **≤ 4 MB** total, one request per class, preloaded with the HUD.
 
-**Consistency.** Model the housings in Blender and render them orthographically, one
-per class, so the metal, bolts and lighting match across modules and classes. Author
-the damage tiers as material/geometry variants of the same model (dents, cracked
-glass, burnt boards), not as separate paintings. This avoids the drift that sank the
-2D sprite pipeline.
+**Consistency.** The housings are **2D images in the game's key-art style**. §4D
+covers the style, palette and the method that keeps them consistent: one master
+sheet per class, with every state painted onto that same image.
 
 ### How it runs (no per-frame cost)
 
@@ -474,12 +475,15 @@ glass, burnt boards), not as separate paintings. This avoids the drift that sank
 
 ---
 
-## 4B. Talking portraits for everyone: StarCraft-style, rendered in Blender
+## 4B. Talking portraits for everyone: StarCraft-style, 2D in the key-art style
 
-Owner, 2026-09-25: faces **do** belong in conversations and transmissions: rendered in
-Blender with a portrait light setup, keyed onto backgrounds each character shares
-with others, and **idle-animated like StarCraft unit portraits**, talking when they
-speak. This covers the operators and every NPC.
+Owner, 2026-09-25: faces **do** belong in conversations and transmissions: lit with a
+fixed portrait light setup, keyed onto backgrounds that characters share, and
+**idle-animated like StarCraft unit portraits**, talking when they speak. This covers
+the operators and every NPC. Portraits are **2D in the Cathedral Biomech style**
+(`docs/design/art-style-bible.md`) and sit in **Mucha frames**: an arched window, a
+halo disc behind the head, and an ornamental border that differs per faction
+(corporate / camp / alien).
 
 ### Who gets one
 
@@ -490,42 +494,58 @@ speak. This covers the operators and every NPC.
 | Boss / transformed forms | `runtime/queen.glb`, `new3ds/boss_corrupted_martha.glb` | static |
 | Characters without a model (Mayor Tina, announcer, AURA, Briggs, …) | none | keep the painted portrait with a slow parallax + scan-line idle until a model exists |
 
-### The Blender portrait rig (one rig for every character)
+### How portraits are made: 2D, key-art style, animated as layered cut-outs
 
-- **Camera:** head-and-shoulders framing, 85 mm equivalent, eye line at the upper
-  third, 3/4 turn toward camera-left, fixed for everyone so portraits line up.
-- **Light:** 3-point portrait setup.
-  - Key: soft box 45° up-left, warm-neutral.
-  - Fill: low, cool, ~½ stop under the key.
-  - **Rim/accent:** from behind, tinted with the character's colour (SCOUT cyan, TANK
-    amber, ENGINEER green; NPC accents set per character).
-  - A faint visor/eye emissive where the model has one.
-- **Background:** render on a **transparent film** (Blender's clean equivalent of a
-  greenscreen: no spill or keying edges). If a render must be keyed, use a
-  #00FF00 world with the rim light gelled to stop green spill. Composite in the
-  browser over shared **background sets**: mothership bridge, bunker ops, camp
-  shanty, hive cavern, cockpit/visor interior, comms static. Characters share sets;
-  each has a default.
-- **Scripted:** `tools/blender/render_portraits.py` loads a GLB, applies the rig and
-  renders every clip. Adding a character is one config entry. It can be driven
-  through the Blender MCP bridge used elsewhere in this project.
+Portraits are **2D paintings in the game's key-art style** (§4D): heavy ink outlines,
+limited amber / teal / black palette, grime texture. They are not 3D renders.
 
-### Animation clips (StarCraft portrait behaviour)
+**Lighting spec (every portrait, so they read as one cast):**
+- head-and-shoulders, 3/4 turn toward camera-left, eye line on the upper third;
+- key light warm amber (#f99415) from top-left;
+- a cool teal (#71cddf) rim from behind;
+- deep black fill on the shadow side;
+- the character's own accent in the rim or visor glow.
 
-| Clip | Length | Content |
-| :--- | :--- | :--- |
-| `idle` (loop) | 4–6 s | breathing, blinks where there are eyes, small head drift, occasional glance or visor flicker; different each loop through 2–3 variants |
-| `talk` (loop) | 2 s | jaw/mouth open–close (a shape key added in Blender where the GLB has none), head emphasis; helmeted operators pulse visor voice-bars instead |
-| `react` (one-shot) | 0.6–1 s | a flinch for hurt, a look-over for surprise; optional per character |
-| operator variants | as needed | `idle` / `talk` re-rendered with frost, damage and infection looks for the §4C stages |
+A Blender render of the character's GLB in that light is allowed **as a pose and
+light reference** for the painter or img2img pass, never as the final image.
 
-The talk clip plays while a line types out (driven by the existing typing loop, no
-audio analysis), then returns to idle.
+**Backgrounds:** the character is painted on a flat **#00FF00 green** (or with
+alpha), then keyed and composited over shared **2D background plates** in the same
+style: Mothership bridge, bunker ops, camp shanty, hive cavern, cockpit/visor
+interior, comms static. Characters share plates; each has a default. Keying rules:
+- no green in the costume;
+- a thin dark ink outline around the figure (it's the style anyway), so keying stays
+  clean.
 
-**Format:** WebM VP9 **with alpha** (Electron/Chromium plays it natively), 256 px for
-the HUD window T and 512 px for conversations, ~150–400 KB per clip. Only one or two
-portraits play at once. Clips load lazily per conversation and cache after. A
-WebP sprite-strip fallback covers any build without VP9 alpha.
+**Idle and talk animation, StarCraft-style, from a single painting.** Each portrait is
+split into **layers**:
+- body / shoulders;
+- head;
+- eyes (open, half, closed);
+- mouth (closed, open, wide, "oo");
+- visor glow;
+- hair / antenna / cable details that sway.
+
+A small layered-2D animator (CSS transforms on stacked WebP layers, or Spine/Live2D
+if the budget allows) plays:
+
+| Clip | Behaviour |
+| :--- | :--- |
+| `idle` (loop) | breathing (1–2 % scale on the torso), blinks every 3–6 s, slow head drift, visor flicker, occasional glance (eyes shift) |
+| `talk` (loop while a line types) | mouth frames cycled from the typed text's vowels/consonants (cheap lip-flap), head emphasis on punctuation, visor voice-bars for helmeted operators |
+| `react` | hurt flinch, surprise, grin: one extra head/eyes/mouth frame each |
+
+Operator condition variants (frost, blood, cracked visor, infection bands) are
+**extra overlay layers on the same painting**, and they match the console's wear
+tiers. There is no separate portrait per state.
+
+**Per character:** 1 base painting, then cut into ~10–14 layer frames. 3 operators
++ 10 NPCs with models + the painted-only cast (Mayor Tina, the announcer, AURA, Briggs, …)
+all use the same method. The existing `lore_portraits/*` repaint cleanly into it.
+
+**Why 2D cut-out instead of rendered video:** it's in the key-art style, it's a few
+hundred KB per character instead of MB of video, and it animates forever from one
+painting without frame-to-frame flicker.
 
 ### Where portraits play
 
@@ -569,91 +589,174 @@ so all the §7 layout tests still hold.
 
 ---
 
-## 4D. Art direction: from Gemini's renders to production panel backgrounds
+## 4D. Art direction: 2D, Cathedral Biomech
 
-### What the eight concept renders teach
+Owner, 2026-09-25:
+- the housings, states and portraits are **2D images in the key-art style**;
+- that style gets more **Art Nouveau / Jugendstil**, **meeting Giger**: sensual
+  cathedrals of dead corporate space gods.
 
-Sources in the Antigravity brain folder: `ui_class_chassis_{tank,scout,engineer}_*`,
-`ui_chassis_tank_frozen_*`, `hud_state_freezing_*`, `hud_state_damaged_*`,
-`operator_doom_face_states_*`.
+The game-wide rules (form language, palette, rendering, the shared prompt block, the
+content guardrails) live in **`docs/design/art-style-bible.md`**. This section only
+applies them to the HUD.
 
-| Keep (material and mood) | Drop (why) |
+### The band is a triptych altarpiece
+
+The three panels are the three wings of an altarpiece, hinged at the struts:
+- **Left wing (map):** the radar disc is a **rose window** with lead-line tracery.
+  Base and node readouts sit in a small scripture plaque beside it.
+- **Centre panel (health & status):** the widest, like an altarpiece's centre.
+  - Hearts are **sacred-heart glyphs**: a simple flame-topped heart, readable at
+    small size.
+  - The 5 status lamps are **votive lamps / stained-glass jewels** in the top crest.
+  - The infection gauge is a slim reliquary vial.
+- **Right wing (gun & ammo):** the weapon window is a **reliquary niche**. Ammo sits
+  in a brass-framed plaque, and the ability tiles are small arched shrines.
+- **Hinges / struts:** vertebrae with Guimard-style iron tendrils.
+- **Height:** ornament stays inside the 64 u band, except a crest of at most 10 u
+  above the centre panel (the lamp row already lives there).
+
+The game already has the base style; the bible adds the Nouveau and Giger layer:
+
+![Style board v2](assets/hud-lower-dock/style-board.jpg)
+
+The board covers the key art, in-game screenshots, **28 of the game's 3D models**
+(rendered headless from their GLBs by `render_glbs_blender.py` into
+`model-renders/`), the lore portraits, door and Armory art, item icons, schematics,
+cutscene posters and the UI. The palette at the bottom is sampled from all of it.
+Rebuild it with `python3 docs/planning/assets/hud-lower-dock/hud_style_board.py`.
+
+| Source | What it sets |
 | :--- | :--- |
-| TANK: round armoured radar bezel, amber glass, heavy bolts, hazard chevrons, **beacon lamps + toggle row** (= status lamps), riveted weapon dock | **Size:** every render's dock is 35–45 % of the screen height. Ours is 6–8 %. |
-| SCOUT: slim angular dark bezels, cyan glass, side light-bars, minimal struts | **Invented systems:** squads/unit tiles, turns/AP, MOVE/ATTACK/DEFEND buttons, fuel, shields, energy, thrusters, heat maps, inventory/skills tabs. None exist in the game. |
-| ENGINEER: copper conduits, heat-sink fins, **diagnostic LED column** (= status lamps), gauge bezels, conduit-wrapped dock | **Baked text and numbers:** unusable. The live UI draws every number and label, localised into 7 languages. |
-| FREEZE: icicles on bolts, frost crust, ice-web over glass, frosted bar lips | **Wrong camera/genre:** a first-person windshield (damaged), tank vehicles and treads (frozen tank), vehicle convoys (scout). |
-| DAMAGE: crack webs, sparks, red beacons, a "REPAIR REQUIRED" plate | **Screens as pictures:** fabrication schematics and maps painted into glass. Glass must be empty and dark. |
-| PORTRAITS: the nominal → strained → critical → frozen progression | Portraits don't go in the band; they're for dialogue and transmissions (§4B). |
+| Store key art (`steam/store/game-v2/steam_main_capsule_v2_en.png`) and its written style block (`docs/steam-store-placeholder-assets-and-prompts.md`, "Shared style block") | ink linework over grime, deep black, amber as the light, teal only as accent, sickly yellow-green only for alien growth |
+| In-game door art (`public/door_*_keyart_v2.webp`) | **the template for housings**: flat-on orthographic hardware panels, dense riveted mechanics, rust, hazard stripes, glowing beacon lamps, one light colour per variant (red alarm, cyan frost, …) |
+| In-game UI chrome (`public/hunker_bunker_select.png`) | near-black panel fills, amber titles and buttons, teal-grey secondary text, conduit frames with amber/teal light slits |
+| Key art v1 (`public/title_key_art.png`) | heavy black outlines and flat colour blocking: the line language |
 
-![Reference board](assets/hud-lower-dock/reference-board.jpg)
+### Style bible for HUD art
 
-### What to generate: blank housings, one module at a time
+**Palette** (sampled from the sources; `hud_style_board.py`):
 
-The deliverable is **empty hardware**: the metal/composite frame around **flat, dark,
-empty glass** in the exact slot shapes of §3A. The live UI renders into the glass.
-Generate each module separately at its real aspect ratio, never as a full gameplay
-screenshot:
+| Role | Colours |
+| :--- | :--- |
+| Base (95 % of every housing) | #000000 · #070808 · #161210 · #2c2826 (warm charcoal) · #4e4945 (worn steel) · #848980 (lit edge steel) |
+| Rust / metal warmth | #af5425 · #92532b · #947047 (brass) |
+| Lights (one dominant per class) | amber #f99415 · orange #f2780c · teal #71cddf |
+| **Alien / bio only** | olive #97996e · sickly yellow-green #cdcf8f; nothing human-made uses these |
+| Alarm only | beacon red (the rust door's lamps) for critical lamps and the boss state |
 
-| Module | Aspect | Generate at | Glass window(s) to leave empty |
+**Class accents inside that palette:**
+- SCOUT: **teal** light.
+- TANK: **amber** light.
+- ENGINEER: **orange/brass copper** light with small teal diagnostic LEDs.
+
+The earlier "ENGINEER green" is dropped: in this game green means alien.
+
+**Rendering rules:**
+- Flat-on orthographic, no perspective.
+- Heavy black ink contour on every silhouette edge; fine ink hatching for grime.
+- Flat-to-soft cel shading. Painted grime, rust streaks and scuffs are allowed; no
+  photoreal materials, no lens effects, no depth of field.
+- One strong light source: the class accent bleeding from bezel seams, plus
+  beacon/lamp glows.
+- Glass is **flat, near-black (#070808), empty**, with at most a faint diagonal
+  reflection streak.
+- Detail density like the door art. It must still read at 51 px tall on the Deck, so
+  big shapes carry the design and small rivets are texture, not structure.
+
+**The Gemini concept renders** (reference board, §4D below) are **off-style**:
+- near-photoreal painted materials instead of ink and cel;
+- too big (35–45 % of the screen instead of 6–8 %);
+- invented game systems;
+- text baked into the art.
+
+Keep only the ideas listed in the reference board (bezel shapes, lamp rows, conduits,
+ice on bolts, crack webs), redrawn in this style.
+
+![Reference board (ideas only; style is off)](assets/hud-lower-dock/reference-board.jpg)
+
+### What to make: blank 2D housings, one master sheet per class
+
+The deliverable is **empty hardware**: the metal/composite frame around **flat,
+dark, empty glass** in the exact slot shapes of §3A. The live UI draws into the
+glass.
+
+**One master sheet per class** keeps a class consistent. All three modules plus the
+struts go on one wide canvas in a single generation, so the metal, rust, lamps and
+line weight match; then they're cut apart. The sheet layout is fixed:
+
+| Module | Aspect | Size on the sheet | Glass window(s) left empty |
 | :--- | :--- | :--- | :--- |
-| LEFT: map | 220 : 64 (3.44 : 1) | 1760 × 512 | one circle (disc, left) + one rectangle (readouts, right) |
-| CENTRE: health & status | 520 : 64 (8.1 : 1) | 2080 × 256, or 2 halves stitched | one wide rectangle (left 2/3) + one small rectangle (loot, right) + a lamp row on the top bezel (5 unlit lamps) |
-| RIGHT: gun & ammo | 380 : 64 (5.9 : 1) | 1900 × 320 | one rectangle (weapon window) + one rectangle (ammo) + two square tile sockets |
-| Struts | 1 : 1 | 512 × 512 | none: the connector between modules, tileable left/right |
+| LEFT: map | 220 : 64 | 880 × 256 | one circle (disc, left) + one rectangle (readouts, right) |
+| strut | — | 96 × 256 | none (connector) |
+| CENTRE: health & status | 520 : 64 | 2080 × 256 | one wide rectangle (left 2/3), one small rectangle (loot, right), a thin vertical slot (infection gauge), 5 unlit lamps on the top bezel |
+| strut | — | 96 × 256 | none |
+| RIGHT: gun & ammo | 380 : 64 | 1520 × 256 | one rectangle (weapon window), one rectangle (ammo), two square tile sockets |
 
-Image models fail at extreme aspect ratios and at empty space. If they won't hold 8 : 1,
-generate the centre at 4 : 1 and 9-slice-stretch the middle. Always check that the
-glass came back empty; regenerate if text appears.
+Sheet: **4672 × 256** (18 : 1). Few image models hold that aspect. If they won't,
+generate each module at its aspect with **the previous module attached as an image
+reference** (same seed / style reference), or generate the centre at 4 : 1 and
+9-slice-stretch its middle. Always check that the glass came back empty and
+regenerate if any text or UI appears.
 
-### Prompt template
+Deliver at 2× the in-game size (the sheet above is already ~4× the 1080p band), cut
+to WebP with alpha around the outer silhouette.
+
+### Prompt template (prepend the game's shared style block)
 
 ```
-Orthographic front view of a single empty sci-fi hardware panel for a video game HUD,
-flat-on, no perspective, no scene, isolated on a pure black background.
-Panel: {MODULE} module of the {CLASS} class console for "Hunker Bunker", a gritty
-retro-futuristic subterranean survival game.
-Housing: {CLASS_MATERIAL}. Accent lighting: {ACCENT} backlight bleeding from the bezel edges.
-Glass: {GLASS_WINDOWS}. The glass is completely EMPTY — flat, very dark, faintly
-reflective, no text, no numbers, no icons, no graphs, no maps, no UI, nothing displayed.
-Style: tactile, physically built, worn metal, screws and seams, soft studio light from
-top-left, subtle ambient occlusion, high detail, crisp edges for 9-slice scaling.
-Aspect ratio {ASPECT}. Panel fills the frame edge to edge.
+[SHARED STYLE BLOCK — verbatim from docs/design/art-style-bible.md §5]
+
+Game UI hardware asset, flat-on orthographic, no perspective, no scene, isolated on
+pure black. A single wide {MODULE} housing for the {CLASS} class of "Hunker Bunker",
+one wing of a narrow triptych altarpiece: arched top with a small keystone ornament,
+whiplash-curve ironwork along the edges, stained-glass lead-line tracery framing the
+glass, bone-vertebra hinges, built with the density of the game's riveted bunker door
+panels.
+Housing: {CLASS_MATERIAL}.
+Light: {ACCENT} glow bleeding from the bezel seams and lamp sockets; no other light colours.
+Glass: {GLASS_WINDOWS}. The glass is EMPTY — flat near-black, one faint reflection
+streak, no text, no numbers, no icons, no graphs, no maps, nothing displayed.
+Bold readable silhouette that still reads when scaled down to 51 pixels tall.
+Aspect ratio {ASPECT}; the housing fills the frame edge to edge.
 ```
 
-**Negative prompt / "avoid":** text, letters, numbers, labels, logos, watermark,
-UI elements, buttons with words, icons, charts, maps, radar content, gameplay,
-characters, faces, vehicles, tank treads, perspective, 3D scene, cockpit windshield,
-background environment.
+**Negative / avoid** (the store exclusion list plus HUD specifics): text, letters,
+numbers, labels, logos, watermark, readable UI, buttons with words, icons, charts,
+maps, radar content, gameplay, characters, faces, vehicles, tank treads, perspective,
+3D render look, photorealistic materials, painterly oil texture, lens flare, depth of
+field, cockpit windshield, background environment, extra hues outside
+black/amber/orange/teal/rust.
 
-| Variable | SCOUT (recon rig) | TANK (bulwark plate) | ENGINEER (field bench) |
+| Variable | SCOUT: recon rig | TANK: bulwark plate | ENGINEER: field bench |
 | :--- | :--- | :--- | :--- |
-| `{CLASS_MATERIAL}` | thin angular matte-black carbon composite, knife-edge bevels, small sensor fins and a slim antenna mast on the map module, minimal hex screws | thick riveted gunmetal armour slabs, heavy hex bolts, yellow-black hazard chevrons on the lower lip, small hydraulic pistons on the struts | brushed alloy chassis with exposed green circuit boards at the edges, copper conduit loops, heat-sink fins on top of the map module, clamp brackets, a small tool rail on the struts |
-| `{ACCENT}` | cool cyan | warm amber | emerald green with amber secondary |
-| Lamp row (centre) | 5 slim flush LED slits | 5 caged dome beacon lamps + 2 toggle switches | 5 round diagnostic LEDs in a vertical-mount strip laid horizontal |
+| `{CLASS_MATERIAL}` | slender Guimard-style black ironwork and thin bone ribs around **dragonfly-wing leaded glass** panes, a small antenna finial like a spire, minimal rust; light and airy | heavy cast-iron **buttresses** and riveted plate chased with ornamental ironwork, vertebra struts, hazard chevrons re-drawn as ornamental banding, rust in the seams | copper **organ pipes** rising behind the modules, whiplash copper conduit vines, brass organ-stop knobs as switches, exposed circuit filigree like engraved scripture, heat-sink fins as a pipe crown |
+| `{ACCENT}` | teal #71cddf | amber #f99415 | orange #f2780c + brass #947047, tiny teal LEDs |
+| Lamp row (centre, 5 unlit) | five teardrop stained-glass jewels | five caged votive beacons + 2 toggle switches | five brass organ-stop lamps with teal jewel caps |
 
-### State layers (generate as transparent overlays, not new panels)
+### State layers: painted onto the master sheet, then cut to alpha
 
-Each state is a separate transparent PNG/WebP made **on top of the same blank
-panel** (inpaint or img2img at low strength), then cut to alpha, so it stacks per the
-wear model:
+Every state is made **on top of the same master sheet** (inpaint / img2img at low
+strength with the sheet as input), then differenced against the clean sheet and cut
+to a transparent overlay, so it lines up exactly and stacks per the wear model:
 
-| Layer | Prompt addition | Notes |
+| Layer | Prompt addition (same style block) | Tier (wear model) |
 | :--- | :--- | :--- |
-| Blood (fresh / dry) | "fresh red blood spatter and drips across the bezel and glass edges, not covering the glass centre" / "dried dark-brown blood, flaking" | greyscale variant for CSS tint (alien green, snail ichor) |
-| Cracks tier 1–3 | "spiderweb crack from one impact point on the glass edge", then "two impacts", then "shattered corner with missing shards" | SCOUT glass; TANK gets **dents/gouges** in the armour, ENGINEER gets **burnt boards + sparks** |
-| Scuffs and scratches | "fine scuffs and deep scratches on the metal edges only" | the permanent life tier, randomised crops |
-| Frost / ice lock | "frost crust creeping from the corners, icicles on bolts, ice webs over glass edges" | reference: the frozen-tank crop |
-| Toxin / squish | "glossy alien biomass, veins and slime creeping over the frame" | fades |
-| Infection scars | "burn-etched vein tracks and pitted metal where growth was removed" | stays |
-| Grime | "soot, grease, tape repairs" | fatigue stages |
+| Blood, fresh / dried | "ink-outlined red blood spatter and drips across the bezel edges, never over the glass centre" / "dried dark-brown flaking blood" | wipes off; greyscale copy for CSS tint (alien #cdcf8f, snail ichor) |
+| Scuffs | "fine ink scratch marks and paint scuffs on the metal edges only" | this life |
+| Cracks 1–3 | Cracks **follow the lead-line tracery**. SCOUT: "a crack running along the leaded glass from one impact" → two impacts → a shattered pane. TANK: dents and gouges in the armour. ENGINEER: burnt board edge, then sparks, then a dead gauge | repairable |
+| Repair scratch | "a single deep scratch where a crack was sealed" | this life |
+| Frost / ice lock | "frost growing like Gothic window tracery from the corners, small icicles on bolts and finials" (the cryo door's treatment) | while it lasts |
+| Toxin / squish | "glossy sickly yellow-green Giger biomass swallowing the Art Nouveau ornament: vertebral growths and membranes creeping over the ironwork" (#97996e / #cdcf8f) | fades |
+| Infection scars | "burn-etched vein tracks and pitted metal where growth was removed" | this campaign |
+| Grime | "soot, grease smears, strips of tape repair" | fatigue |
+| Alarm | "beacon lamps lit red, hazard glow" | moment / boss |
 
-**Production path:** use these prompts to settle the look. Then build the final
-housings in **Blender** (one model per class, orthographic render, same light rig),
-with the states as material and geometry variants of that model: dents, cracked-glass
-shader, frost shader, blood decals. Rendered layers line up pixel-perfectly across
-states, and the look doesn't drift between classes. Generated images are concept
-reference, not shipping art.
+**Production path:** generate each class sheet → review against this bible and the
+§3A slot shapes → paint-over/cleanup in a 2D editor (straighten edges, clear glass,
+fix line weight) → cut modules and 9-slice → paint state layers on the same sheet →
+export WebP. If a generated sheet can't be fixed, the fallback is a painter working from
+the door art. Blender is not in the pipeline.
 
 ---
 
@@ -761,7 +864,7 @@ passes). One-click comparison, instant rollback.
 | **5. Top band** | A, A2, B (priority queue), C drawer, N under C. Retire `.hud-mission-stack` as a column. | `main.js`, css | Boss+hazard at once shows boss, then hazard; drawer expands on map-open (Deck) and click (PC); `steam-input-action-set.spec` green. **Flip default to `dock`.** |
 | **6. Behaviour** | Combat signal (`this.inCombat`); drawer auto-collapse; loot idle-dim; critical pulses; reduced motion. | `threeGame.js` (signal), `main.js` | Unit tests for the signal (4 s window); visual states captured in the layout spec. |
 | **6A. Living class housing** | Class housing skins (same geometry); damage tiers (crack / dent / spark); blood splats that dry; console freeze-lock; shared frost, fog, toxin, corrosion and grime; status lamps; hit-direction jolt (`player-damaged` gains `sourceX/sourceZ`); `suitCondition` module. | `src/suitCondition.js` (+ tests), `main.js`, css, `public/ui/suit/<class>/*` | Unit tests: signal → overlay/lamp/tier; blood dries and clears at the bunker; freeze lock lasts the freeze duration. Layout spec captures Idle / Bloodied / Frozen / Toxic / Critical / Dead for 3 classes with **identical geometry**. HUD ≤ 0.3 ms per frame. |
-| **6B. Talking portraits** | Blender rig + `render_portraits.py`; idle/talk clips (WebM alpha) for 3 operators + 10 NPC models; shared background sets; `portraitCatalog.js`; transmission window T; `dialogue.js` speaker cards. | `tools/blender/render_portraits.py`, `src/portraitCatalog.js` (+ tests), `src/dialogue.js`, `main.js` | Every speaker with a model animates (idle, then talk while typing); no operator line uses a stand-in survivor portrait; at most 2 clips decode at once; clips lazy-load. |
+| **6B. Talking portraits** | 2D key-art portraits (1 painting per character → 10–14 layers) keyed over shared 2D plates; layered-2D animator (idle / talk lip-flap / react); `portraitCatalog.js`; transmission window T; `dialogue.js` speaker cards. | `src/portraitAnimator.js`, `src/portraitCatalog.js` (+ tests), `src/dialogue.js`, `main.js`, `public/portraits/<id>/*` | Every speaker animates (idle, then talk while typing); no operator line uses a stand-in survivor portrait; operator overlays match the console's wear tiers; one portrait's layers ≤ 400 KB. |
 | **6C. Event housings** | `housingSkins.js`; Act 2 infection stages → housing + operator renders; `ascendant` alien console; temporary event skins. | `src/housingSkins.js` (+ tests), assets | Each stage renders in the layout spec with unchanged geometry; numbers legible at every stage. |
 | **7. Deck, a11y, i18n** | HUD Scale setting; contrast high/max; 7-locale pass with the longest strings; Deck hardware check. | settings UI, locales | `i18n:audit` 0; layout spec green in `de` and `ru`; owner Deck sign-off. |
 | **8. Remove classic** | Delete the old layout CSS and the flag after owner sign-off. | css, `main.js` | No dead selectors (grep); bundle CSS smaller. |
