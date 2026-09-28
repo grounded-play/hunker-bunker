@@ -12,10 +12,9 @@ Follows:
 import math
 import os
 import random
-import sys
 import cairo
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image
 
 CANVAS_W = 2048
 CANVAS_H = 1152

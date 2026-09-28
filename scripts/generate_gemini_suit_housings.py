@@ -8,12 +8,7 @@ If GEMINI_API_KEY is set in the environment, it uses the google-genai SDK
 or REST endpoint. Otherwise, it reports status and quota reset times.
 """
 
-import os
-import sys
-import json
 import argparse
-import urllib.request
-import urllib.error
 
 PROMPTS = {
     "scout_map": {
@@ -299,5 +294,5 @@ def print_manifest():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--list", action="store_true", help="List all prompt definitions")
-    args = parser.parse_args()
+    parser.parse_args()
     print_manifest()

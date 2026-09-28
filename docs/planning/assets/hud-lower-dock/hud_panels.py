@@ -42,8 +42,7 @@ PANELS = {
     ]),
 }
 
-def slot_map(scale=3, deck=False):
-    u = 0.8 if deck else 1.0
+def slot_map(scale=3):
     gap = 12
     total_w = sum(p['w'] for p in PANELS.values()) + 2 * gap
     W = int((total_w + 80) * scale)

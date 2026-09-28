@@ -1,4 +1,4 @@
-import bpy, sys, os, math, mathutils
+import bpy, sys, os, mathutils
 argv = sys.argv[sys.argv.index('--') + 1:]
 out_dir = argv[0]; files = argv[1:]
 def reset():
