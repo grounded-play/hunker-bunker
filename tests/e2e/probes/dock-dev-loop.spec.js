@@ -1,4 +1,6 @@
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { test } from '@playwright/test';
 import { bootToOperatorMenu, startRunAndSkipIntro } from '../helpers.js';
 
@@ -6,7 +8,7 @@ import { bootToOperatorMenu, startRunAndSkipIntro } from '../helpers.js';
 // dock mode; each time HB_DOCK_DIR/trigger changes, re-injects
 // HB_DOCK_DIR/dock.css, then writes screenshots + element rects at the Deck
 // and 1080p sizes. Stops when HB_DOCK_DIR/stop exists.
-const DIR = process.env.HB_DOCK_DIR || '/tmp/dockdev';
+const DIR = process.env.HB_DOCK_DIR || fs.mkdtempSync(path.join(os.tmpdir(), 'dockdev-'));
 const IDS = ['desktop-compass', 'hud-blueprint-canvas', 'desktop-compass-distance', 'hud-map-info', 'weapon-status-panel',
     'ship-status-panel', 'vitals-panel', 'hazard-status-panel', 'queens-ledger-hud', 'class-ability-panel', 'radar-scan-panel',
     'pickup-counter-panel', 'boss-status-panel', 'loop-step-hud', 'objective-tracker', 'mission-progress-hud', 'camp-quest-hud',

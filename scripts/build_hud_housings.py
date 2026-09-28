@@ -133,7 +133,6 @@ def draw_empty_glass_circle(ctx, cx, cy, radius):
 def render_scout(geom, ctx):
     x0, y0 = geom.x0, geom.y0
     w_px, h_px = geom.PANEL_W_PX if hasattr(geom, 'PANEL_W_PX') else PANEL_W_PX, geom.h_px
-    scale = geom.scale
 
     teal = (113 / 255.0, 205 / 255.0, 223 / 255.0)
     iron_dark = (20 / 255.0, 21 / 255.0, 22 / 255.0)
@@ -141,7 +140,6 @@ def render_scout(geom, ctx):
     iron_edge = (60 / 255.0, 64 / 255.0, 67 / 255.0)
     bone_hi = (205 / 255.0, 198 / 255.0, 176 / 255.0)
     bone_mid = (167 / 255.0, 159 / 255.0, 134 / 255.0)
-    bone_shadow = (86 / 255.0, 84 / 255.0, 75 / 255.0)
 
     # 1. Outer Frame Path: shallow arched top with small central keystone
     arch_rise = geom.val(3.5)
@@ -369,7 +367,6 @@ def render_scout(geom, ctx):
 def render_tank(geom, ctx):
     x0, y0 = geom.x0, geom.y0
     w_px, h_px = PANEL_W_PX, geom.h_px
-    scale = geom.scale
 
     amber = (249 / 255.0, 148 / 255.0, 21 / 255.0)
     granite_dark = (59 / 255.0, 61 / 255.0, 62 / 255.0)
@@ -609,7 +606,6 @@ def render_tank(geom, ctx):
 def render_engineer(geom, ctx):
     x0, y0 = geom.x0, geom.y0
     w_px, h_px = PANEL_W_PX, geom.h_px
-    scale = geom.scale
 
     forge_orange = (242 / 255.0, 120 / 255.0, 12 / 255.0)
     bronze_base = (148 / 255.0, 112 / 255.0, 71 / 255.0)
@@ -642,7 +638,6 @@ def render_engineer(geom, ctx):
     ctx.restore()
 
     # 2. Main chassis body
-    arch_rise = geom.val(2.5)
     ctx.save()
     ctx.rectangle(x0, y0, w_px, h_px)
     ctx.set_source_rgb(*INK_BLACK)
@@ -881,9 +876,6 @@ def apply_damage1_state(ctx, geom):
     """Add single impact crack running along the leaded glass."""
     random.seed(777)
     crack_color = (200 / 255.0, 224 / 255.0, 234 / 255.0)
-
-    x0, y0 = geom.x0, geom.y0
-    w_px, h_px = PANEL_W_PX, geom.h_px
 
     ctx.save()
     # Impact center on one window edge

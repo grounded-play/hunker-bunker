@@ -73,7 +73,6 @@ def label_regions(mask):
 
 
 def analyse(alpha):
-    h, w = alpha.shape
     opaque = alpha > 0.5
     ys, xs = np.nonzero(opaque)
     x0, x1, y0, y1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
