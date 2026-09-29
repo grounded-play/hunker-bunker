@@ -218,7 +218,8 @@ Source: [HUD overlay review](hud-overlay-review-and-recovery-plan-2026-09-28.md)
 | Six Foundry weapons | same | catalog entries; drawn as the class gun they fit (the loadout keeps the frame in hand) |
 | `schematic_00–07` retired | same | `public/schematics/` deleted; manifests regenerated |
 | Hero screen item cards | same | compact equipped strip; fits 1280×800 and 1920×1080 |
-| Hub skeleton | `cd3a376a`: `src/foundryHub.js`, behind `hb_foundry_hub=1` | probe `tests/e2e/probes/foundry-hub.spec.js` 3/3 |
+| Hub skeleton | `cd3a376a`: `src/foundryHub.js` | probe `tests/e2e/probes/foundry-hub.spec.js` |
+| Hub on by default, hardened; guns read as gameplay | `e38f65db` | foundry-hub 5/5 (Q/E and bumper focus; in a run it opens at Fabricate, holds the game, class matches the one played); vault-trade-up, steam-vault and menu-reachability through the hub |
 
 What changed that a player can see:
 - The Deck smelt bug was the browser/QA inventory path. The smelter re-read the
@@ -233,9 +234,16 @@ What changed that a player can see:
 - Achievement rewards show their authored names in the Armory (the Vault already
   did).
 
-Not done in this slice: the hub is not yet the default entry point, and its tabs
-embed the old panels without restyling them. The Store tab only appears when
-purchases are enabled.
+- The Foundry hub is the default for every Vault and Fab Bay entry point
+  (owner, 2026-09-29: "activated in game play"); `hb_foundry_hub=0` opts out.
+- The loadout's active class follows the operator being played. It used to
+  change only in the Armory, so a run started any other way could fit a Foundry
+  gun to the Scout loadout, where combat never read it.
+- Foundry weapon cards show their effect on the class gun (damage, rate, range,
+  shots) from the multipliers combat applies.
+
+Not done in this slice: the hub's tabs still embed the old panels without
+restyling them. The Store tab only appears when purchases are enabled.
 
 ### P2: companion escort (QA P1, rescoped)
 
@@ -317,8 +325,8 @@ doc's [§5](sprint-47-status-and-sprint-48-plan-2026-09-28.md) (D1–D8).
 10. **Foundry roll odds:** keep 25/15/40/17/3 (UNCOMMON added), or re-grade the recipes
     to other items so the old 40/40/17/3 table keeps a pool in every tier?
     LEGENDARY now has no recipe, so its 3% falls through to any unprinted recipe.
-11. **Default the Foundry hub on** after the hardware session? It is behind
-    `hb_foundry_hub=1`.
+11. ~~Default the Foundry hub on?~~ **Answered 2026-09-29:** on;
+    `hb_foundry_hub=0` opts out.
 
 ## 7. Risks
 
