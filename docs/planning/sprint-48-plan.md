@@ -209,6 +209,34 @@ Source: [HUD overlay review](hud-overlay-review-and-recovery-plan-2026-09-28.md)
     four surfaces;
   - a browser probe for the trade-up.
 
+**Status (2026-09-29, lane C): code done; hardware not yet seen.**
+
+| Item | Where | Evidence |
+| :--- | :--- | :--- |
+| Smelter trade-up sticks, logged | `9833cffc`: `LocalVaultLedger.exchange`, `steamVaultUi` | `src/localVaultLedger.test.js`; probe `tests/e2e/probes/vault-trade-up.spec.js` 2/2 (5 → 1, unchanged after close/reopen and reload) |
+| One item catalog, four surfaces | `d6681ad5`: `src/data/itemCatalog.js`, `src/itemCard.js` | `src/data/itemCatalog.test.js` checks every id on each surface in en, de, ja |
+| Six Foundry weapons | same | catalog entries; drawn as the class gun they fit (the loadout keeps the frame in hand) |
+| `schematic_00–07` retired | same | `public/schematics/` deleted; manifests regenerated |
+| Hero screen item cards | same | compact equipped strip; fits 1280×800 and 1920×1080 |
+| Hub skeleton | `cd3a376a`: `src/foundryHub.js`, behind `hb_foundry_hub=1` | probe `tests/e2e/probes/foundry-hub.spec.js` 3/3 |
+
+What changed that a player can see:
+- The Deck smelt bug was the browser/QA inventory path. The smelter re-read the
+  stored inventory mid-trade, so every smelt refunded its five inputs. On the Steam
+  inventory, trade-ups and redemptions are now **disabled with a reason**. The Steam
+  service has no recipe for them, so they could only revert on the next refresh.
+  See decision 9.
+- Recipe rarity is now the rarity of the item a recipe prints. Seven charm/mod
+  recipes change grade (the Sporesnail Pearl was LEGENDARY, the item is uncommon).
+  The roll gains an UNCOMMON band taken from COMMON: 25/15/40/17/3, was 40/40/17/3.
+  See decision 10.
+- Achievement rewards show their authored names in the Armory (the Vault already
+  did).
+
+Not done in this slice: the hub is not yet the default entry point, and its tabs
+embed the old panels without restyling them. The Store tab only appears when
+purchases are enabled.
+
 ### P2: companion escort (QA P1, rescoped)
 
 Pathfinding, stuck recovery and steady fire exist. Remaining:
@@ -282,6 +310,15 @@ doc's [§5](sprint-47-status-and-sprint-48-plan-2026-09-28.md) (D1–D8).
    station). An earlier draft of this file said "fades over 12 s", which contradicts
    it.
 8. **The two moderate Dependabot alerts:** fix on the release branch or on `mothership`?
+9. **Steam trade-ups:** trade-ups and redemptions need a server recipe
+   (`server/steamInventory.js`) and Steamworks exchange/generator itemdefs per tier.
+   Until then they are disabled on the Steam inventory. Add them, or hide the smelter
+   on Steam builds?
+10. **Foundry roll odds:** keep 25/15/40/17/3 (UNCOMMON added), or re-grade the recipes
+    to other items so the old 40/40/17/3 table keeps a pool in every tier?
+    LEGENDARY now has no recipe, so its 3% falls through to any unprinted recipe.
+11. **Default the Foundry hub on** after the hardware session? It is behind
+    `hb_foundry_hub=1`.
 
 ## 7. Risks
 
