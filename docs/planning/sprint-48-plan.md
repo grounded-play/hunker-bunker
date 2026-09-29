@@ -1,7 +1,8 @@
 # Sprint 48 plan
 
-**Date:** 2026-09-28 · **Branch base:** `release/v2.4.12-beta-invisible-essentials`
-(PR #93, open) · **Status:** active plan, canonical for Sprint 48.
+**Date:** 2026-09-28 · **Updated:** 2026-09-29 · **Branch:** `dev/sprint-48`
+**Released base:** `v2.4.12-beta` (`380333f6`) · **Status:** active plan,
+canonical for Sprint 48.
 
 This is the one Sprint 48 plan. It merges three drafts written the same day and checks
 their claims against the code:
@@ -18,6 +19,11 @@ For **what Sprint 47 delivered**, read the status doc. This file is the forward 
 
 ## 1. Where we start
 
+- **PR #93 is merged and the release baseline is live on Steam's beta branch.** The
+  uploaded game build is `v2.4.12-beta-380333f6ee42`, matching the Git tag exactly:
+  Game AppID `4957040`, BuildID `25596041`. Soundtrack AppID `4957680`, BuildID
+  `25596046`, is uploaded but still needs to be set live separately. Sprint 48 work
+  begins on `dev/sprint-48`; none of it is part of that released beta baseline.
 - **Nothing built since the 2026-09-24 QA session has been confirmed on hardware.**
   Co-op networking, the spawn guard, Deck input, the map rules and the full-quality
   performance work all rest on unit and browser evidence.
@@ -52,8 +58,8 @@ unified Foundry.
 The sprint is done when all of these hold:
 1. The hardware session (§3, P0) is run and every row has pass/fail and a log. Failures
    are fixed or carried with an owner.
-2. PR #93 is merged. The owner has closed the milestone tickets whose conditions were
-   shown (#78, #80, #81, #82, #85).
+2. The released Steam beta baseline is exercised on Deck and PC. The owner has closed
+   the milestone tickets whose conditions are shown (#78, #80, #81, #82, #85).
 3. A two-client diff probe passes for drops, props, deaths, TRY AGAIN, companions and
    Ring 1 events.
 4. The HUD harness (R0) fails today's dock for the right reasons. After R1–R2 it passes
@@ -67,8 +73,8 @@ The sprint is done when all of these hold:
 
 ### P0: hardware acceptance (first two days)
 
-Package PR #93's head and run the owner's Deck + PC session. Every row gets pass/fail
-and the exported session log (in `logs/`, analysed with
+Use Steam beta BuildID `25596041` and run the owner's Deck + PC session. Every row gets
+pass/fail and the exported session log (in `logs/`, analysed with
 `scripts/analyze-session-logs.mjs`).
 
 | Row | Pass when |
@@ -235,13 +241,13 @@ Ring 1 milestones to extraction or an ending. Record video plus the session log 
 
 | When | Lane: hardware and co-op | Lane: HUD | Lane: Foundry and companion |
 | :--- | :--- | :--- | :--- |
-| Days 1–2 | package; owner's Deck + PC session; triage | R0 harness | item catalog data model and unit test |
+| Days 1–2 | released beta; owner's Deck + PC session; triage | R0 harness | item catalog data model and unit test |
 | Days 3–5 | P0 fixes; co-op authority design + relay tests | R0 lands (failing baseline); R1 slot grid with plain frames | catalog wired into the four surfaces; smelter logging |
 | Week 2, first half | companions + Ring 1 events host-authoritative; diff probe | R1 art fit (templates → owner/painter); R2 prompt lane + objective drawer | hub skeleton tabs; trade-up fix; escort-to-camp |
-| Week 2, second half | pings v1; merge PR #93 after P0 passes | R2 alert lane + notifications; R3 if green | companion journey probe; Proof Run on hardware |
+| Week 2, second half | pings v1; publish/re-test any P0 fix build | R2 alert lane + notifications; R3 if green | companion journey probe; Proof Run on hardware |
 
 Dependencies:
-- **Merging PR #93** waits on the P0 session.
+- **P0 fixes** publish as a new beta BuildID and re-run only the failed hardware rows.
 - **The Proof Run** waits on the P0 fixes, not on the HUD.
 - **R1 housing art** waits on the owner's choice between cap-and-stretch and repaint.
 - **Wear and portraits** wait on R1 (Sprint 49).
