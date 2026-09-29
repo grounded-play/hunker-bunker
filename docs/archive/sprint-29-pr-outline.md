@@ -30,23 +30,23 @@ Sprint 29 advances Hunker Bunker on the `dev/sprint-29` branch, delivering `v2.3
 ## 2. Sprint 29 Living Work Checklist
 
 ### 3D Assets & Catalog Integration
-- [ ] Implement and wire the 5 missing achievement 3D models (`chassis_scout_ghost_runner.glb`, `skin_scout_chrono_drifter.glb`, `skin_tank_bunker_bastion.glb`, `skin_engineer_archival_constructor.glb`, `skin_engineer_hive_weaver.glb`).
-- [ ] Convert/generate key enemy meshes (`sentinel.glb`, `alien_proto_crawler.glb`, `bio_charger.glb`, `boss_corrupted_scout.glb`, `boss_corrupted_tank.glb`, `boss_corrupted_engineer.glb`).
-- [ ] Register new models in `world3dOverlay.js`, `enemy3dOverlay.js`, and `armoryScene.js`.
+- [x] [MIGRATED] Implement and wire the 5 missing achievement 3D models (`chassis_scout_ghost_runner.glb`, `skin_scout_chrono_drifter.glb`, `skin_tank_bunker_bastion.glb`, `skin_engineer_archival_constructor.glb`, `skin_engineer_hive_weaver.glb`). <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Convert/generate key enemy meshes (`sentinel.glb`, `alien_proto_crawler.glb`, `bio_charger.glb`, `boss_corrupted_scout.glb`, `boss_corrupted_tank.glb`, `boss_corrupted_engineer.glb`). <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Register new models in `world3dOverlay.js`, `enemy3dOverlay.js`, and `armoryScene.js`. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 
 ### Wanderers & Companions
 - [x] Expand quest objectives for all 6 Wanderer archetypes in `src/wandererSystem.js`.
-- [ ] Add distinct companion voice/SFX callouts on combat assist actions.
+- [x] [MIGRATED] Add distinct companion voice/SFX callouts on combat assist actions. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 - [x] Unit tests for multi-stage companion progression.
 
 ### Steam Deck & Performance
-- [ ] Run packaged Electron profiling for 60 FPS frame pacing.
-- [ ] Benchmark memory footprint under dense room spawns with `gpuMemoryBudget.js`.
-- [ ] Verify right stick menu navigation and twin-stick aiming ergonomics.
+- [x] [MIGRATED] Run packaged Electron profiling for 60 FPS frame pacing. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Benchmark memory footprint under dense room spawns with `gpuMemoryBudget.js`. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Verify right stick menu navigation and twin-stick aiming ergonomics. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 
 ### Multiplayer & Steam Certification
-- [ ] Perform two-account co-op expedition on production backend (`steam.tuesdaycinema.club`).
-- [ ] Verify invitation handling from desktop notifications and cold-start URLs.
+- [x] [MIGRATED] Perform two-account co-op expedition on production backend (`steam.tuesdaycinema.club`). <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Verify invitation handling from desktop notifications and cold-start URLs. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "name": "hunker-bunker",
-  "version": "2.4.11-beta",
+  "version": "2.4.12-beta",
   "description": "A biomechanical survival roguelike set beneath the frozen surface of Cocytus IV.",
   "author": "Tuesday Cinema Club",
   "private": true,
@@ -124,16 +124,16 @@
     "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.63.0",
     "@types/three": "^0.186.0",
-    "@vitest/coverage-v8": "^5.0.1",
+    "@vitest/coverage-v8": "^5.0.2",
     "concurrently": "^10.0.3",
     "cross-env": "^10.1.0",
     "electron": "^44.4.0",
     "electron-builder": "^26.15.3",
-    "eslint": "^10.10.0",
+    "eslint": "^10.11.0",
     "globals": "^17.12.0",
     "nodemon": "^3.1.14",
     "vite": "^8.1.5",
-    "vitest": "^5.0.1",
+    "vitest": "^5.0.2",
     "wait-on": "^9.1.0"
   },
   "dependencies": {
@@ -141,10 +141,10 @@
     "electron-devtools-installer": "^4.0.0",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
-    "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3",
+    "socket.io": "^4.8.4",
+    "socket.io-client": "^4.8.4",
     "steamworks.js": "^0.4.0",
-    "three": "^0.186.0"
+    "three": "^0.186.1"
   },
   "overrides": {
     "vite": "^8.1.5",

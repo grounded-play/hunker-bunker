@@ -5,6 +5,7 @@
 
 import { io as connectSocketIo } from 'socket.io-client';
 import { planMultiplayerCrashSites } from './multiplayerCrashPlanner.js';
+import { createFreshRunEntropy } from './runEntropy.js';
 import { clearMultiplayerSession, startMultiplayerRun } from './gameController.js';
 import { getSelectedPolish } from './operatorPolishes.js';
 import { t, onLocaleChange } from './i18n.js';
@@ -220,6 +221,15 @@ export function filterDiscoverableSteamLobbies(lobbies = [], localSteamId64 = nu
     const localId = String(localSteamId64 ?? '').trim();
     if (!localId) return lobbies;
     return lobbies.filter((lobby) => String(lobby?.ownerSteamId64 ?? '').trim() !== localId);
+}
+
+
+// Each deploy from the lobby is a new run with a new map (owner's rule,
+// 2026-09-24: MAIN MENU resets the run). The room code alone never changed,
+// so every co-op run in the same Steam room was the same world. TRY AGAIN
+// redeploys without the lobby and keeps the map.
+export function createDeploymentSeed(roomCode, entropy = createFreshRunEntropy()) {
+    return `${roomCode || 'SECTOR-7'}:${Number(entropy) >>> 0}`;
 }
 
 export class MultiplayerLobby {
@@ -1114,8 +1124,9 @@ export class MultiplayerLobby {
         window.AudioManager?.play?.('fx_menu_confirm', { volume: 0.4, bus: 'sfx' });
 
         const playerRoster = Array.from(this.players.values());
+        const seed = createDeploymentSeed(this.roomCode);
         const crashPlan = planMultiplayerCrashSites({
-            seed: this.roomCode,
+            seed,
             playerCount: playerRoster.length,
             mode: this.currentMode,
             playerRoster
@@ -1123,14 +1134,14 @@ export class MultiplayerLobby {
 
         if (this.usingRelay && this.socket) {
             this.socket.emit('matchDeploy', {
-                seed: this.roomCode,
+                seed,
                 mode: this.currentMode,
                 crashPlan
             });
             return;
         }
 
-        this.finalizeDeploy({ mode: this.currentMode, seed: this.roomCode, crashPlan });
+        this.finalizeDeploy({ mode: this.currentMode, seed, crashPlan });
     }
 
     handleRemoteMatchStart(data) {

@@ -1,0 +1,26 @@
+
+Running 1 test using 1 worker
+
+  ✓  1 [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 31337 TANK (3.1m)
+
+  1 passed (3.1m)
+
+Running 1 test using 1 worker
+
+  ✓  1 [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 99991 SCOUT (8.0m)
+
+  Slow test file: [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js (8.0m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  1 passed (8.0m)
+
+Running 1 test using 1 worker
+
+  ✓  1 [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 99991 TANK (3.6m)
+
+  1 passed (3.7m)
+
+Running 1 test using 1 worker
+
+  ✓  1 [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 99991 ENGINEER (3.3m)
+
+  1 passed (3.3m)

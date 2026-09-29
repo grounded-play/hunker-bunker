@@ -273,3 +273,54 @@ describe('campaign world continuity', () => {
         expect(store.getState()).toBeNull();
     });
 });
+
+describe('a new run is a new map; the story carries over', () => {
+    function memoryStorage() {
+        const items = new Map();
+        return { getItem: (k) => (items.has(k) ? items.get(k) : null), setItem: (k, v) => items.set(k, String(v)), removeItem: (k) => items.delete(k) };
+    }
+
+    it('keeps the campaign, its expedition count and world changes, and draws a new map', async () => {
+        const { createCampaignWorldStore, carryStoryToNewMap } = await import('./campaignWorld.js');
+        const store = createCampaignWorldStore({ storage: memoryStorage(), createSeed: () => 1111 });
+        const campaign = store.getOrCreate({ seed: 4242 });
+        expect(campaign.mapSeed).toBe(4242);
+        store.beginExpedition();
+        store.recordWorldTransformation('bridge', 'ring-1-gate');
+        store.recordWorldTransformation('camp_fortified', 'camp_meridian');
+        store.saveMazeState(4242, {
+            generationVersion: 2,
+            doors: [['door:3,4', { state: 'open' }]],
+            milestoneBosses: { milestones: { m1: { status: 'defeated' } } },
+            worldChanges: { destroyedWalls: ['3,4'], discoveredChunks: ['0,0', '0,-1'] },
+            authoredWorld: { enabled: true, seed: 4242, version: 2, completedMissionIds: ['ring-1'] },
+            objectivePackage: { goals: { o2Bubble: { completedSteps: ['a'] } } }
+        });
+
+        const next = store.beginNewRun({ mapSeed: 7777 });
+        expect(next.seed).toBe(4242);
+        expect(next.mapSeed).toBe(7777);
+        expect(next.expeditionIndex).toBe(1);
+        expect(next.worldTransformations.bridgesConstructed).toEqual(['ring-1-gate']);
+        expect(next.worldTransformations.campsFortified).toEqual(['camp_meridian']);
+        expect(next.mazeState.doors).toBeUndefined();
+        expect(next.mazeState.worldChanges.destroyedWalls).toEqual([]);
+        expect(next.mazeState.worldChanges.discoveredChunks).toEqual([]);
+        expect(next.mazeState.milestoneBosses).toEqual({ milestones: { m1: { status: 'defeated' } } });
+        expect(next.mazeState.objectivePackage.goals.o2Bubble.completedSteps).toEqual(['a']);
+        expect(next.mazeState.authoredWorld).toEqual({ enabled: true, seed: null, version: null, completedMissionIds: ['ring-1'] });
+        // A retry (beginExpedition) keeps the new map.
+        expect(store.beginExpedition().mapSeed).toBe(7777);
+        // Without an explicit seed the store draws one.
+        expect(store.beginNewRun().mapSeed).toBe(1111);
+        expect(carryStoryToNewMap(null)).toBeNull();
+    });
+
+    it('a save from before per-run maps keeps its map until the next run', async () => {
+        const { createCampaignWorldStore } = await import('./campaignWorld.js');
+        const storage = memoryStorage();
+        storage.setItem('hb_campaign_world_v1', JSON.stringify({ version: 1, seed: 99, expeditionIndex: 3 }));
+        const store = createCampaignWorldStore({ storage });
+        expect(store.getState().mapSeed).toBe(99);
+    });
+});

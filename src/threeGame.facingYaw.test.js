@@ -78,9 +78,31 @@ describe('updateCamera stable isometric tracking', () => {
         game.cameraRotationInput = 1;
         ThreeGame.prototype.updateCamera.call(game, 0.5);
 
-        expect(game.cameraAzimuth).toBeCloseTo(Math.PI / 4 + 1.4, 5);
+        // Right stick turns the view right: azimuth decreases (2026-09-25 Deck QA).
+        expect(game.cameraAzimuth).toBeCloseTo(Math.PI / 4 - 1.4, 5);
         expect(game.cameraPlanarForward.length()).toBeCloseTo(1, 5);
         expect(game.cameraPlanarRight.length()).toBeCloseTo(1, 5);
+    });
+
+    it('turns the view to the right when the right stick is pushed right, in both camera modes', () => {
+        for (const cameraMode of ['isometric', 'third-person']) {
+            const game = makeCameraGame(Math.PI / 4);
+            Object.assign(game, {
+                cameraMode,
+                _cameraTurnVelocity: 0,
+                _mouseEdgeTurnInput: 0,
+                cameraFollowRate: 26,
+                updateFacingYaw() {},
+                updateThirdPersonCamera() {}
+            });
+            // The view looks from the camera toward the player: -offset.
+            const viewForward = () => new THREE.Vector2(-Math.sin(game.cameraAzimuth), -Math.cos(game.cameraAzimuth));
+            const before = viewForward();
+            const rightOfBefore = new THREE.Vector2(-before.y, before.x);
+            game.cameraRotationInput = 1;
+            for (let i = 0; i < 10; i += 1) ThreeGame.prototype.updateCamera.call(game, 0.05);
+            expect(viewForward().dot(rightOfBefore), cameraMode).toBeGreaterThan(0.05);
+        }
     });
 
     it('orbits from mouse-right drag deltas', () => {
@@ -117,10 +139,10 @@ describe('updateCamera third-person steering', () => {
 
         ThreeGame.prototype.updateCamera.call(game, 0.1);
 
-        expect(game._cameraTurnVelocity).toBeGreaterThan(0);
-        expect(game._cameraTurnVelocity).toBeLessThan(2.35);
-        expect(game.cameraAzimuth).toBeGreaterThan(0);
-        expect(game.facingYaw).toBeCloseTo(game.cameraAzimuth - Math.PI, 3);
+        expect(game._cameraTurnVelocity).toBeLessThan(0);
+        expect(game._cameraTurnVelocity).toBeGreaterThan(-2.35);
+        expect(game.cameraAzimuth).toBeLessThan(0);
+        expect(game.facingYaw).toBeCloseTo(game.cameraAzimuth + Math.PI, 3);
         expect(game.cameraPlanarForward.length()).toBeCloseTo(1, 3);
         expect(game.updateThirdPersonCamera).toHaveBeenCalledWith(0.1);
     });

@@ -1,0 +1,15 @@
+{
+ "frames": 90,
+ "matChangedPerFrame": 0,
+ "texChangedPerFrame": 0,
+ "lightChanges": 0,
+ "lightSets": {
+  "{\"point\":23,\"spot\":1,\"dir\":1,\"shadow\":1,\"ambient\":1,\"hemi\":1}": 90
+ },
+ "matWho": [],
+ "texWho": [],
+ "lastInfo": {
+  "calls": 1,
+  "programs": 153
+ }
+}

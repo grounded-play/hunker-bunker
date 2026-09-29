@@ -1,0 +1,29 @@
+{
+ "first": {
+  "runEntropy": 2683617313,
+  "campaignSeed": 3820659454,
+  "mapSeed": 2683617313,
+  "expeditionIndex": 1,
+  "layout": "{\"nodes\":[[\"o2_ship\",null,null,0,0],[\"camp_meridian\",-1,-1,-49,-49],[\"camp_tallow\",1,-4,49,-196],[\"camp_vesper\",5,4,245,196],[\"hive_suture\",3,2,147,98],[\"hive_r",
+  "landforms": "-2,-2:canyon -2,-1:maze -2,0:maze -2,1:maze -2,2:canyon -1,-2:maze -1,-1:maze -1,0:canyon -1,1:maze -1,2:maze 0,-2:maze 0,-1:maze 0,0:field 0,1:canyon 0,2:maze 1,-2:maze 1,-1:maze 1,0:canyon 1,1:maze 1,2:maze 2,-2:canyon 2,-1:maze 2,0:maze 2,1:maze 2,2:maze"
+ },
+ "retry": {
+  "runEntropy": 2683617313,
+  "campaignSeed": 3820659454,
+  "mapSeed": 2683617313,
+  "expeditionIndex": 2,
+  "layout": "{\"nodes\":[[\"o2_ship\",null,null,0,0],[\"camp_meridian\",-1,-1,-49,-49],[\"camp_tallow\",1,-4,49,-196],[\"camp_vesper\",5,4,245,196],[\"hive_suture\",3,2,147,98],[\"hive_r",
+  "landforms": "-2,-2:canyon -2,-1:maze -2,0:maze -2,1:maze -2,2:canyon -1,-2:maze -1,-1:maze -1,0:canyon -1,1:maze -1,2:maze 0,-2:maze 0,-1:maze 0,0:field 0,1:canyon 0,2:maze 1,-2:maze 1,-1:maze 1,0:canyon 1,1:maze 1,2:maze 2,-2:canyon 2,-1:maze 2,0:maze 2,1:maze 2,2:maze"
+ },
+ "fresh": {
+  "runEntropy": 1097020290,
+  "campaignSeed": 3820659454,
+  "mapSeed": 1097020290,
+  "expeditionIndex": 3,
+  "layout": "{\"nodes\":[[\"o2_ship\",null,null,0,0],[\"camp_meridian\",2,1,98,49],[\"camp_tallow\",-3,3,-147,147],[\"camp_vesper\",-5,-3,-245,-147],[\"hive_suture\",0,-4,0,-196],[\"hive",
+  "landforms": "-2,-2:maze -2,-1:maze -2,0:maze -2,1:maze -2,2:canyon -1,-2:maze -1,-1:maze -1,0:canyon -1,1:maze -1,2:maze 0,-2:maze 0,-1:maze 0,0:field 0,1:canyon 0,2:maze 1,-2:maze 1,-1:maze 1,0:canyon 1,1:canyon 1,2:maze 2,-2:canyon 2,-1:maze 2,0:maze 2,1:maze 2,2:maze"
+ },
+ "retryKeptMap": true,
+ "newRunNewMap": true,
+ "sameCampaign": true
+}

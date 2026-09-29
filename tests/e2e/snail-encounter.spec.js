@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
+import { bootToOperatorMenu, startRunAndSkipIntro, isHostNetworkBlip } from './helpers.js';
 
 // Snail-diplomacy encounter (docs/superpowers/specs/2026-07-26-snail-
 // diplomacy-encounter-design.md). Vitest covers the pure state machine
@@ -12,7 +12,7 @@ import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
 test.describe('Snail diplomacy encounter', () => {
     test('opening the encounter pauses the world and renders the panel', async ({ page }) => {
         const consoleErrors = [];
-        page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
+        page.on('console', (msg) => { if (msg.type() === 'error' && !isHostNetworkBlip(msg.text())) consoleErrors.push(msg.text()); });
         page.on('pageerror', (err) => consoleErrors.push(err.message));
 
         await bootToOperatorMenu(page);
@@ -79,7 +79,6 @@ test.describe('Snail diplomacy encounter', () => {
             // 'latent' (default post-begin infectionStage) counts as
             // alien-aligned per the design doc — anything but 'cured'.
             const fakeSprite = {
-                isObject3D: true,
                 parent: null,
                 userData: { type: 'cybersnail', hp: 2, maxHp: 2 },
                 position: { x: game.player.position.x, z: game.player.position.z },
@@ -115,7 +114,6 @@ test.describe('Snail diplomacy encounter', () => {
             const startX = game.player.position.x + 5;
             const startZ = game.player.position.z + 5;
             const fakeSprite = {
-                isObject3D: true,
                 userData: { type: 'cybersnail', hp: 2, maxHp: 2 },
                 position: { x: startX, z: startZ },
                 scale: { set: () => {} },

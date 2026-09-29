@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
+import { bootToOperatorMenu, startRunAndSkipIntro, isHostNetworkBlip } from './helpers.js';
 
 // Camp Bonding Quests (docs/expanded-universe-narrative-design.md) — the
 // six named quests (CAMP_QUESTS) wired into real gameplay: a walk-up
@@ -13,7 +13,7 @@ test.describe('Camp Bonding Quests HUD', () => {
     test('accepting and completing a quest drives the sub-objective HUD and persists the reward', async ({ page }) => {
         const consoleErrors = [];
         page.on('console', (msg) => {
-            if (msg.type() === 'error') consoleErrors.push(msg.text());
+            if (msg.type() === 'error' && !isHostNetworkBlip(msg.text())) consoleErrors.push(msg.text());
         });
         page.on('pageerror', (err) => consoleErrors.push(err.message));
 

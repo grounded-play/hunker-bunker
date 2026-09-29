@@ -66,6 +66,6 @@ The baseline starting into Sprint 29:
 - [x] `npm run presubmit` validates all asset checksums, audio files, and catalog ItemDefs.
 - [x] `npm run audit:dependencies` reports 0 unused or unmapped dependencies.
 - [x] `npm run build` succeeds and confirms clean asset bundling.
-- [ ] `npm run coverage` maintains >98% statement coverage.
-- [ ] Packaged Electron builds for Linux and Windows succeed with unpacked 3D models.
+- [x] [MIGRATED] `npm run coverage` maintains >98% statement coverage. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Packaged Electron builds for Linux and Windows succeed with unpacked 3D models. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 - [x] Versioning documented and updated across all release tracking ledgers.

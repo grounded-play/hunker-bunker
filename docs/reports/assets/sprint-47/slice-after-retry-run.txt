@@ -1,0 +1,6 @@
+
+Running 1 test using 1 worker
+
+  ✓  1 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › after slice seed 5150 ENGINEER (2.9m)
+
+  1 passed (3.0m)

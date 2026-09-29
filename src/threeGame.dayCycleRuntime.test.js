@@ -212,3 +212,46 @@ describe('fatigue runtime wiring', () => {
         expect(events.find((event) => event.type === 'day-rest-open').detail.gainedScar).toBe(null);
     });
 });
+
+describe('terminal day cycle refresh and presentation safety', () => {
+    beforeEach(() => installBrowserStubs());
+
+    it('terminal refresh never mutates dayState.day or advances world simulation', () => {
+        const game = {
+            dayState: createDayState(),
+            timeOfDay: 0.42,
+            isConsoleTerminalModalVisible: () => true,
+            updateTerminalClock: vi.fn(),
+            updateTerminalCycleStatus: vi.fn(),
+            renderTerminalObjectiveJournalIfNeeded: vi.fn(),
+            updateTerminalModalRefresh: ThreeGame.prototype.updateTerminalModalRefresh
+        };
+
+        const initialDay = game.dayState.day;
+        const initialTime = game.timeOfDay;
+
+        // Simulate multiple terminal refresh calls while open
+        game.updateTerminalModalRefresh(0.016, 1000);
+        game.updateTerminalModalRefresh(0.016, 1600);
+        game.updateTerminalModalRefresh(0.016, 2200);
+
+        expect(game.dayState.day).toBe(initialDay);
+        expect(game.timeOfDay).toBe(initialTime);
+        expect(game.updateTerminalClock).toHaveBeenCalledWith(true); // held clock
+        expect(game.updateTerminalCycleStatus).toHaveBeenCalled();
+        expect(game.renderTerminalObjectiveJournalIfNeeded).toHaveBeenCalled();
+    });
+
+    it('locks advance-day status in co-op guest mode to prevent desyncing local campaign', () => {
+        const game = {
+            dayState: createDayState(),
+            isMultiplayer: true,
+            isMultiplayerHost: false,
+            getAdvanceDayStatus: ThreeGame.prototype.getAdvanceDayStatus
+        };
+
+        const status = game.getAdvanceDayStatus();
+        expect(status.id).toBe('coop_visitor');
+        expect(status.allowed).toBe(false);
+    });
+});

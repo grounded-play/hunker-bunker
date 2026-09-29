@@ -186,6 +186,28 @@ describe('AudioManager Voice Channel & Soundsets Toggle', () => {
         globalThis.window.loadout.state.voicePackId = '4149';
         expect(AudioManager.playVoiceCallout('low_health')).toBeNull();
     });
+
+    it('does not play voice_mothership_01_alive for mission_active or victory on default comms', () => {
+        AudioManager.buffers['voice_mothership_01_alive'] = { duration: 5.0 };
+        globalThis.window = globalThis.window || {};
+        globalThis.window.loadout = { state: { voicePackId: null } };
+
+        expect(AudioManager.playVoiceCallout('mission_active')).toBeNull();
+        expect(AudioManager.playVoiceCallout('victory')).toBeNull();
+    });
+
+    it('does not fall back to voice_mothership_01_alive for arbitrary Mothership lines', () => {
+        AudioManager.buffers['voice_mothership_01_alive'] = { duration: 5.0 };
+        const playSpy = vi.spyOn(AudioManager, 'playVoiceTrack');
+
+        AudioManager.playVoiceForMessage('MOTHERSHIP', 'APEX BIO-ENTITY DOWN.');
+        expect(playSpy).not.toHaveBeenCalledWith('voice_mothership_01_alive', expect.anything());
+
+        AudioManager.playVoiceForMessage('MOTHERSHIP', 'CONFIRMED. DISPLAYING OPERATIONAL BRIEFING NOW.');
+        expect(playSpy).not.toHaveBeenCalledWith('voice_mothership_01_alive', expect.anything());
+
+        playSpy.mockRestore();
+    });
 });
 
 

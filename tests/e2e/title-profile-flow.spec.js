@@ -9,7 +9,14 @@ async function seedReturningEngineer(page) {
             createdAt: Date.now()
         }));
         localStorage.setItem('hb_active_class_v1', 'ENGINEER');
-        localStorage.setItem('hb_run_stats_v1', JSON.stringify({ runCount: 2 }));
+        // Career history comes from the achievement stats; the game has never
+        // written hb_run_stats_v1, and stopped reading it on 2026-09-09.
+        localStorage.setItem('hb_achievements_v1', JSON.stringify({
+            schemaVersion: 2,
+            stats: { runCount: 2 },
+            currentRun: {},
+            unlocked: {}
+        }));
         localStorage.setItem('hb_best_score_ENGINEER', '4321');
     });
 }

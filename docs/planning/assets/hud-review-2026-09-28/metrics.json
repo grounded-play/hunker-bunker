@@ -1,0 +1,546 @@
+[
+  {
+    "path": "docs/planning/assets/hud-review-2026-09-28/classic-desktop-1920x1080.png",
+    "width": 1920,
+    "height": 1080,
+    "layout": "classic",
+    "operatorClass": "tank",
+    "minVisibleFont": 8,
+    "rows": {
+      "#game-viewport": {
+        "x": 96,
+        "y": 0,
+        "w": 1728,
+        "h": 1080,
+        "display": "block",
+        "visible": true,
+        "font": "16px"
+      },
+      ".dock-housing--map": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none",
+        "visible": false,
+        "font": "16px"
+      },
+      ".dock-housing--status": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none",
+        "visible": false,
+        "font": "16px"
+      },
+      ".dock-housing--arms": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none",
+        "visible": false,
+        "font": "16px"
+      },
+      "#desktop-compass": {
+        "x": 112,
+        "y": 734,
+        "w": 224,
+        "h": 330,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      "#vitals-panel": {
+        "x": 1186.5,
+        "y": 16.8,
+        "w": 332.5,
+        "h": 38.3,
+        "display": "flex",
+        "visible": true,
+        "font": "17px"
+      },
+      "#pickup-counter-panel": {
+        "x": 112,
+        "y": 225,
+        "w": 150,
+        "h": 142.7,
+        "display": "block",
+        "visible": true,
+        "font": "15px"
+      },
+      "#weapon-status-panel": {
+        "x": 304,
+        "y": 14,
+        "w": 288.4,
+        "h": 44,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      "#class-ability-panel": {
+        "x": 1527,
+        "y": 17,
+        "w": 103,
+        "h": 38,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      "#radar-scan-panel": {
+        "x": 1638,
+        "y": 17,
+        "w": 118,
+        "h": 38,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      ".level-indicator": {
+        "x": 112,
+        "y": 14,
+        "w": 150,
+        "h": 203,
+        "display": "flex",
+        "visible": true,
+        "font": "20.52px"
+      },
+      ".hud-header": {
+        "x": 304,
+        "y": 14,
+        "w": 1452,
+        "h": 44,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      ".hud-mission-stack": {
+        "x": 1466,
+        "y": 202,
+        "w": 340,
+        "h": 310.5,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      ".hud-notification-stack": {
+        "x": 1466,
+        "y": 74,
+        "w": 340,
+        "h": 108,
+        "display": "block",
+        "visible": true,
+        "font": "16px"
+      }
+    }
+  },
+  {
+    "path": "docs/planning/assets/hud-review-2026-09-28/classic-deck-1280x800.png",
+    "width": 1280,
+    "height": 800,
+    "layout": "classic",
+    "operatorClass": "tank",
+    "minVisibleFont": 8,
+    "rows": {
+      "#game-viewport": {
+        "x": 0,
+        "y": 0,
+        "w": 1280,
+        "h": 800,
+        "display": "block",
+        "visible": true,
+        "font": "16px"
+      },
+      ".dock-housing--map": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none",
+        "visible": false,
+        "font": "16px"
+      },
+      ".dock-housing--status": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none",
+        "visible": false,
+        "font": "16px"
+      },
+      ".dock-housing--arms": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none",
+        "visible": false,
+        "font": "16px"
+      },
+      "#desktop-compass": {
+        "x": 16,
+        "y": 485.4,
+        "w": 224,
+        "h": 298.6,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      "#vitals-panel": {
+        "x": 790.8,
+        "y": 17,
+        "w": 215.5,
+        "h": 38,
+        "display": "flex",
+        "visible": true,
+        "font": "15.2px"
+      },
+      "#pickup-counter-panel": {
+        "x": 16,
+        "y": 182,
+        "w": 150,
+        "h": 142.7,
+        "display": "block",
+        "visible": true,
+        "font": "12px"
+      },
+      "#weapon-status-panel": {
+        "x": 192,
+        "y": 14,
+        "w": 259.8,
+        "h": 44,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      "#class-ability-panel": {
+        "x": 1014.3,
+        "y": 17,
+        "w": 71.8,
+        "h": 38,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      "#radar-scan-panel": {
+        "x": 1094,
+        "y": 17,
+        "w": 118,
+        "h": 38,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      ".level-indicator": {
+        "x": 16,
+        "y": 14,
+        "w": 150,
+        "h": 159.9,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      ".hud-header": {
+        "x": 192,
+        "y": 14,
+        "w": 1020,
+        "h": 44,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      ".hud-mission-stack": {
+        "x": 922,
+        "y": 74,
+        "w": 340,
+        "h": 267.8,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      ".hud-notification-stack": {
+        "x": 922,
+        "y": 74,
+        "w": 340,
+        "h": 80,
+        "display": "block",
+        "visible": true,
+        "font": "16px"
+      }
+    }
+  },
+  {
+    "path": "docs/planning/assets/hud-review-2026-09-28/dock-desktop-1920x1080.png",
+    "width": 1920,
+    "height": 1080,
+    "layout": "dock",
+    "operatorClass": "tank",
+    "minVisibleFont": 9,
+    "rows": {
+      "#game-viewport": {
+        "x": 96,
+        "y": 0,
+        "w": 1728,
+        "h": 1080,
+        "display": "block",
+        "visible": true,
+        "font": "16px"
+      },
+      ".dock-housing--map": {
+        "x": 116,
+        "y": 910,
+        "w": 209.3,
+        "h": 150,
+        "display": "block",
+        "visible": true,
+        "font": "16px"
+      },
+      ".dock-housing--status": {
+        "x": 818.6,
+        "y": 910,
+        "w": 282.8,
+        "h": 150,
+        "display": "block",
+        "visible": true,
+        "font": "16px"
+      },
+      ".dock-housing--arms": {
+        "x": 1596.8,
+        "y": 910,
+        "w": 207.2,
+        "h": 150,
+        "display": "block",
+        "visible": true,
+        "font": "16px"
+      },
+      "#desktop-compass": {
+        "x": 116,
+        "y": 910,
+        "w": 209.3,
+        "h": 150,
+        "display": "block",
+        "visible": true,
+        "font": "16px"
+      },
+      "#vitals-panel": {
+        "x": 861.3,
+        "y": 963,
+        "w": 104.6,
+        "h": 52.9,
+        "display": "block",
+        "visible": true,
+        "font": "17px"
+      },
+      "#pickup-counter-panel": {
+        "x": 1012.1,
+        "y": 963.4,
+        "w": 48.4,
+        "h": 38,
+        "display": "grid",
+        "visible": true,
+        "font": "10px"
+      },
+      "#weapon-status-panel": {
+        "x": 1643.9,
+        "y": 969.8,
+        "w": 26.1,
+        "h": 45.6,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      "#class-ability-panel": {
+        "x": 1739.1,
+        "y": 954,
+        "w": 25.4,
+        "h": 25.4,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      "#radar-scan-panel": {
+        "x": 1739.1,
+        "y": 990.6,
+        "w": 25.8,
+        "h": 25.4,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      ".level-indicator": {
+        "x": 116,
+        "y": 20,
+        "w": 360,
+        "h": 88.7,
+        "display": "flex",
+        "visible": true,
+        "font": "20.52px"
+      },
+      ".hud-header": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "contents",
+        "visible": false,
+        "font": "16px"
+      },
+      ".hud-mission-stack": {
+        "x": 1466,
+        "y": 74,
+        "w": 340,
+        "h": 310.5,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      ".hud-notification-stack": {
+        "x": 1466,
+        "y": 74,
+        "w": 340,
+        "h": 108,
+        "display": "block",
+        "visible": true,
+        "font": "16px"
+      }
+    }
+  },
+  {
+    "path": "docs/planning/assets/hud-review-2026-09-28/dock-deck-1280x800.png",
+    "width": 1280,
+    "height": 800,
+    "layout": "dock",
+    "operatorClass": "tank",
+    "minVisibleFont": 7.2,
+    "rows": {
+      "#game-viewport": {
+        "x": 0,
+        "y": 0,
+        "w": 1280,
+        "h": 800,
+        "display": "block",
+        "visible": true,
+        "font": "16px"
+      },
+      ".dock-housing--map": {
+        "x": 16,
+        "y": 664,
+        "w": 167.4,
+        "h": 120,
+        "display": "block",
+        "visible": true,
+        "font": "16px"
+      },
+      ".dock-housing--status": {
+        "x": 526.9,
+        "y": 664,
+        "w": 226.2,
+        "h": 120,
+        "display": "block",
+        "visible": true,
+        "font": "16px"
+      },
+      ".dock-housing--arms": {
+        "x": 1098.2,
+        "y": 664,
+        "w": 165.8,
+        "h": 120,
+        "display": "block",
+        "visible": true,
+        "font": "16px"
+      },
+      "#desktop-compass": {
+        "x": 16,
+        "y": 664,
+        "w": 167.4,
+        "h": 120,
+        "display": "block",
+        "visible": true,
+        "font": "16px"
+      },
+      "#vitals-panel": {
+        "x": 561,
+        "y": 706.4,
+        "w": 83.7,
+        "h": 42.3,
+        "display": "block",
+        "visible": true,
+        "font": "15.2px"
+      },
+      "#pickup-counter-panel": {
+        "x": 681.7,
+        "y": 706.7,
+        "w": 38.7,
+        "h": 30.4,
+        "display": "grid",
+        "visible": true,
+        "font": "8px"
+      },
+      "#weapon-status-panel": {
+        "x": 1135.9,
+        "y": 711.9,
+        "w": 20.9,
+        "h": 36.5,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      "#class-ability-panel": {
+        "x": 1212.1,
+        "y": 699.2,
+        "w": 20.3,
+        "h": 20.3,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      "#radar-scan-panel": {
+        "x": 1212.1,
+        "y": 728.5,
+        "w": 20.6,
+        "h": 20.3,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      ".level-indicator": {
+        "x": 16,
+        "y": 16,
+        "w": 288,
+        "h": 76.7,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      ".hud-header": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "contents",
+        "visible": false,
+        "font": "16px"
+      },
+      ".hud-mission-stack": {
+        "x": 922,
+        "y": 74,
+        "w": 340,
+        "h": 267.8,
+        "display": "flex",
+        "visible": true,
+        "font": "16px"
+      },
+      ".hud-notification-stack": {
+        "x": 922,
+        "y": 74,
+        "w": 340,
+        "h": 80,
+        "display": "block",
+        "visible": true,
+        "font": "16px"
+      }
+    }
+  }
+]

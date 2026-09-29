@@ -1,3 +1,19 @@
+import { test } from '@playwright/test';
+
+// A spec's own timeout budgets its steps; booting the game is not one of
+// them. A cold SwiftShader boot to the title takes up to a minute and a run
+// start up to the helper's 120 s deadline, so specs that set 60-180 s timed
+// out before their first assertion. Each helper extends the running test by
+// what it may itself spend.
+function extendTestTimeout(ms) {
+    try {
+        const info = test.info();
+        info.setTimeout(info.timeout + ms);
+    } catch {
+        // Not inside a running test (ad-hoc scripts): nothing to extend.
+    }
+}
+
 // Shared boot sequence for e2e specs.
 //
 // The Vite dev server does a silent internal reload shortly after the very
@@ -9,7 +25,15 @@
 // yet or was on a node already being replaced). Every spec that needs to
 // boot the game must go through this helper rather than clicking body
 // straight after `goto`.
+// Chrome reports a host network-interface change (VPN, Docker bridge, Wi-Fi
+// roam) as failed localhost loads. It says nothing about the game, but it
+// failed every spec that asserts a clean console during a long local run.
+export function isHostNetworkBlip(text) {
+    return String(text ?? '').includes('net::ERR_NETWORK_CHANGED');
+}
+
 export async function bootToTitleSplash(page) {
+    extendTestTimeout(90_000);
     const splash = await revealTitleSplash(page);
     // The splash appears while the boot doors are still closing; they then
     // open and settle focus. A spec that starts driving menus before that saw
@@ -69,6 +93,7 @@ export async function bootToOperatorMenu(page) {
 // Keeping this in one shared helper prevents gameplay specs from silently
 // measuring a hidden 0x0 menu/Armory canvas after the flow gains a new gate.
 export async function startRunAndSkipIntro(page) {
+    extendTestTimeout(120_000);
     const oneShotActions = [
         '#title-newrun-btn',
         '#start-game',

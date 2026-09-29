@@ -1,0 +1,2130 @@
+└─ hunker-bunker
+   ├─ BUG
+   │  ├─ test_f2py2e.py
+   │  │  ├─ line 321: BUG : numpy-gh #20520
+   │  │  └─ line 367: BUG : numpy-gh #20520
+   │  ├─ _datasource.py
+   │  │  └─ line 305: : URLs require a scheme string ('http://') to be used.
+www.google.com will fail.
+Should we prepend the scheme for those that don't have it and
+test that also?  Similar to the way we append .gz and test for
+for compressed versions of files.
+   │  └─ test_format.py
+   │     └─ line 1039: BUG : assert_array_equal does not check metadata
+   ├─ HACK
+   │  ├─ _compat.py
+   │  │  └─ line 37: : This relies on importlib.metadata's private ``_path`` attribute. Not
+all distributions exist on disk, so importlib.metadata is correct to not
+expose the attribute as public. But pip's code base is old and not as clean,
+so we do this to avoid having to rewrite too many things. Hopefully we can
+eliminate this some day.
+   │  └─ provider.py
+   │     └─ line 67: : Theoretically we should check whether this identifier is a valid
+"NAME[EXTRAS]" format, and parse out the name part with packaging or
+some regular expression. But since pip's resolver only spits out three
+kinds of identifiers: normalized PEP 503 names, normalized names plus
+extras, and Requires-Python, we can cheat a bit here.
+   ├─ FIXME
+   │  ├─ client_proto.py
+   │  │  └─ line 137: FIXME : log this somehow?
+   │  ├─ client_reqrep.py
+   │  │  └─ line 889: : session is None in tests only, need to fix tests
+assert session is not None
+   │  ├─ formdata.py
+   │  │  └─ line 170: cgi.FieldStorage doesn't likes body parts with
+Content-Length which were sent via chunked transfer encoding
+   │  ├─ web_exceptions.py
+   │  │  └─ line 213: FIXME : this should include a date or etag header
+   │  ├─ __init__.pyi
+   │  │  └─ line 64: FIXME : in reality, if multiple validators are passed they must be in a list
+   │  ├─ _compat.py
+   │  │  └─ line 14: FIXME : Refactor for coverage. See #837.
+   │  ├─ ndarraytypes.h
+   │  │  └─ line 1781: : This should check for a flag on the data-type that
+states whether or not it is variable length.  Because the
+ISFLEXIBLE check is hard-coded to the built-in data-types.
+   │  ├─ test_multiarray.py
+   │  │  └─ line 7121: :
+this needs definition as there are lots places along the line
+where type casting may take place.
+   │  ├─ test_umath.py
+   │  │  ├─ line 1195: cinf not tested.
+cinf = np.array([complex(np.inf, 0)])
+   │  │  ├─ line 1934: : NAN raises FP invalid exception:
+- ceil/float16 on MSVC:32-bit
+- spacing/float16 on almost all platforms
+- spacing/float32,float64 on Windows MSVC with VS2022
+   │  │  └─ line 3085: FIXME : a not used
+   │  ├─ test_umath_complex.py
+   │  │  ├─ line 25: FIXME : this will probably change when we require full C99 compatibility
+   │  │  └─ line 342: FIXME : ugly workaround for isinf bug.
+   │  ├─ conftest.py
+   │  │  └─ line 580: FIXME : populate the dict once
+   │  ├─ _npyio_impl.py
+   │  │  └─ line 249: : This seems like it will copy strings around
+more than is strictly necessary.  The zipfile
+will read the string and then
+the format.read_array will copy the string
+to another place in memory.
+It would be better if the zipfile could read
+(or at least uncompress) the data
+directly into the array memory.
+   │  ├─ test_linalg.py
+   │  │  └─ line 1100: FIXME the 'e' dtype might work in future
+   │  ├─ core.py
+   │  │  └─ line 2914: : should we set `_data._sharedmask = True`?
+Process mask.
+Type of the mask
+   │  ├─ chebyshev.py
+   │  │  └─ line 797: FIXME : add message with details to exception
+   │  ├─ polynomial.py
+   │  │  └─ line 405: FIXME : add message with details to exception
+   │  ├─ polyutils.py
+   │  │  └─ line 536: FIXME : add message with details to exception
+   │  ├─ build_env.py
+   │  │  └─ line 201: FIXME : Consider direct URL?
+   │  ├─ base.py
+   │  │  ├─ line 15: FIXME doesn't account for venv linked to global site-packages
+   │  │  └─ line 59: FIXME : keep src in cwd for now (it is not a temporary folder)
+   │  ├─ prepare.py
+   │  │  └─ line 624: FIXME : https://github.com/pypa/pip/issues/11943
+   │  ├─ req_file.py
+   │  │  └─ line 247: : it would be nice to keep track of the source
+of the find_links: support a find-links local path
+relative to a requirements file.
+   │  ├─ req_install.py
+   │  │  └─ line 375: : Is there a better place to create the build_dir? (hg and bzr
+need this)
+   │  ├─ req_uninstall.py
+   │  │  └─ line 490: : need a test for this elif block
+occurs with --single-version-externally-managed/--record outside
+of pip
+   │  ├─ unpacking.py
+   │  │  ├─ line 248: FIXME : handle?
+   │  │  └─ line 249: FIXME : magic signatures?
+   │  ├─ subversion.py
+   │  │  └─ line 59: FIXME : should we warn?
+   │  ├─ database.py
+   │  │  └─ line 955: FIXME handle the case where zipfile is not available
+   │  ├─ metadata.py
+   │  │  └─ line 464: FIXME this rejects UNKNOWN, is that right?
+   │  ├─ __init__.py
+   │  │  ├─ line 1866: : 'ZipProvider._extract_resource' is too complex (12)
+noqa: C901
+   │  │  └─ line 2949: : 'Distribution.insert_on' is too complex (13)
+noqa: C901
+   │  ├─ pyopenssl.py
+   │  │  └─ line 371: FIXME rethrow compatible exceptions should we ever use this
+   │  ├─ response.py
+   │  │  └─ line 99: : Can we do this somehow without accessing private httplib _method?
+type: str  # type: ignore[attr-defined]
+   │  ├─ _helpers.py
+   │  │  ├─ line 337: https://github.com/pydata/sparse/issues/876
+boolean indexing is supported, but not when the index is a sparse array.
+boolean indexing by list or numpy array is not part of the Array API.
+   │  │  └─ line 349: FIXME https://github.com/data-apis/array-api/issues/945
+   │  ├─ test_differentiate.py
+   │  │  └─ line 596: FIXME https://github.com/scipy/scipy/pull/22320#discussion_r1914898175
+   │  ├─ _ode.py
+   │  │  └─ line 374: : this really should be raise an exception. Will that break
+any code?
+   │  ├─ _decomp.py
+   │  │  ├─ line 827: FIXME : implement this somewhen, for now go with builtin values
+   │  │  ├─ line 828: : calc optimal lwork by calling ?hbevd(lwork=-1)
+or by using calc_lwork.f ???
+lwork = calc_lwork.hbevd(bevd.typecode, a1.shape[0], lower)
+   │  │  └─ line 833: : implement this somewhen, for now go with builtin values
+see above
+lwork = calc_lwork.sbevd(bevd.typecode, a1.shape[0], lower)
+   │  ├─ test_blas.py
+   │  │  ├─ line 870: FIXME narrow down to _fblas.error
+   │  │  ├─ line 913: FIXME : suppress?
+   │  │  └─ line 916: FIXME narrow down to _fblas.error
+   │  ├─ test_decomp.py
+   │  │  └─ line 45: FIXME non-deterministic rng
+   │  ├─ _constraints.py
+   │  │  └─ line 539: : when bugs in VectorFunction/LinearVectorFunction are worked out,
+use pcon.fun.fun and pcon.fun.jac. Until then, get fun/jac above.
+   │  ├─ test__dual_annealing.py
+   │  │  └─ line 68: : there are some discontinuities in behaviour as a function of `qv`,
+this needs investigating - see gh-12384
+   │  ├─ test_bsplines.py
+   │  │  └─ line 114: : for complex types, the computations are done in
+single precision (reason unclear). When this is changed,
+this test needs updating.
+   │  ├─ _kdtree.py
+   │  │  └─ line 1014: FIXME : figure out the best dtype
+   │  ├─ _discrete_distns.py
+   │  │  ├─ line 896: FIXME : Fails _cdfvec
+   │  │  └─ line 1296: FIXME : problems sampling.
+   │  └─ test_distributions.py
+   │     └─ line 9181: : this is only a quick-and-dirty test of a quick-and-dirty bugfix.
+stats method with multiple shape parameters is not properly vectorized
+anyway, so some distributions may or may not fail.
+   ├─ TODO
+   │  ├─ content.js
+   │  │  └─ line 4: (b:272150598): Investigate sharing this with
+../embedded_a11y_helper/content.ts.
+   │  ├─ mask.pyx
+   │  │  └─ line 29: TODO : align in_data ptr to achieve even faster speeds
+   │  ├─ client_exceptions.py
+   │  │  └─ line 386: TODO : If we require ssl in future, this can become ssl.CertificateError
+   │  ├─ client_proto.py
+   │  │  └─ line 213: : actual types are:
+parser: WebSocketReader
+payload: WebSocketDataQueue
+but they are not generi enough
+Need an ABC for both types
+   │  ├─ client_reqrep.py
+   │  │  └─ line 347: TODO : Fix session=None in tests (see ClientRequest.__init__).
+   │  ├─ compression_utils.py
+   │  │  └─ line 28: TODO (PY314): Remove mentions of backports.zstd across codebase
+   │  ├─ helpers.py
+   │  │  ├─ line 284: (PY311): username = login or account
+Up to python 3.10, account could be None if not specified,
+and login will be empty string if not specified. From 3.11,
+login and account will be empty string if not specified.
+   │  │  └─ line 290: (PY311): Remove this, as password will be empty string
+if not specified
+   │  ├─ streams.py
+   │  │  ├─ line 283: TODO : size is ignored, remove the param later
+   │  │  ├─ line 444: : should be `if` instead of `while`
+because waiter maybe triggered on chunk end,
+without feeding any data
+   │  │  ├─ line 456: : should be `if` instead of `while`
+because waiter maybe triggered on chunk end,
+without feeding any data
+   │  │  └─ line 633: TODO add async def readuntil
+   │  ├─ web.py
+   │  │  └─ line 309: TODO (PY311): Use Unpack
+   │  ├─ web_response.py
+   │  │  ├─ line 59: TODO (py311): Convert to StrEnum for wider use
+   │  │  └─ line 292: TODO : do we need domain/path here?
+   │  ├─ web_urldispatcher.py
+   │  │  ├─ line 387: TODO : implement all abstract methods
+   │  │  ├─ line 526: TODO : impl missing abstract methods
+   │  │  └─ line 600: cache file content
+with file watcher for cache invalidation
+   │  ├─ __init__.pyi
+   │  │  ├─ line 1683: TODO : How to deal with the non-commutative nature of `==` and `!=`?
+   │  │  ├─ line 1778: TODO : Annotate kwargs with an unpacked `TypedDict`
+   │  │  ├─ line 4055: TODO : Uncomment once https://github.com/python/mypy/issues/14070 is fixed
+   │  │  ├─ line 4077: TODO : Support the "1d @ 1d -> scalar" case
+   │  │  └─ line 7650: TODO : The type of each `__next__` and `iters` return-type depends
+   │  ├─ _termui_impl.py
+   │  │  └─ line 485: TODO : This never terminates if the passed generator never terminates.
+   │  ├─ __init__.py
+   │  │  └─ line 38: TODO : Offer 'http/1.1' as well, but for testing purposes this is handy.
+   │  ├─ _add_newdocs_scalars.py
+   │  │  ├─ line 131: : These docs probably need an if to highlight the default rather than
+the C-types (and be correct).
+   │  │  └─ line 319: TODO : work out how to put this on the base class, np.floating
+   │  ├─ _dtype.py
+   │  │  ├─ line 174: TODO : this path can never be reached
+   │  │  └─ line 183: TODO : this duplicates the C metastr_to_unicode functionality
+   │  ├─ _internal.pyi
+   │  │  └─ line 21: TODO : Let the likes of `shape_as` and `strides_as` return `None`
+   │  ├─ _methods.py
+   │  │  └─ line 86: : Optimize case when `where` is broadcast along a non-reduction
+axis and full sum is more excessive than needed.
+   │  ├─ arrayprint.py
+   │  │  └─ line 1580: TODO : Custom repr for user DTypes, logic should likely move.
+   │  ├─ einsumfunc.pyi
+   │  │  ├─ line 29: TODO : Properly handle the `casting`-based combinatorics
+   │  │  └─ line 30: TODO : We need to evaluate the content `__subscripts` in order
+   │  ├─ fromnumeric.pyi
+   │  │  └─ line 74: TODO : array_bdd tests for np.put()
+   │  ├─ _public_dtype_api_table.h
+   │  │  └─ line 8: : This file should be consolidated with the API table generation
+(although not sure the current generation is worth preserving).
+   │  ├─ dtype_api.h
+   │  │  ├─ line 279: : Due to the fact that `resolve_descriptors` is also used for `can_cast`
+there is no way to "pass out" the result of this function.  This means
+it will be called twice for every ufunc call.
+(I am considering including `auxdata` as an "optional" parameter to
+`resolve_descriptors`, so that it can be filled there if not NULL.)
+   │  │  ├─ line 453: TODO : These slots probably still need some thought, and/or a way to "grow"?
+   │  │  └─ line 544: : These two functions are currently only used for experimental DType
+API support.  Their relation should be "reversed": NumPy should
+always use them internally.
+There are open points about "casting safety" though, e.g. setting
+elements is currently always unsafe.
+   │  ├─ ndarraytypes.h
+   │  │  └─ line 1477: TODO : Make this definition public in the API, as soon as its settled
+   │  ├─ libdivide.h
+   │  │  ├─ line 821: TODO : do something better than 128 bit math
+   │  │  └─ line 855: TODO : do something better than 128 bit math
+   │  ├─ numeric.py
+   │  │  └─ line 539: TODO : this works around .astype(bool) not working properly (gh-9847)
+   │  ├─ numeric.pyi
+   │  │  └─ line 860: TODO : Add overloads for bool, int, float, complex, str, bytes, and memoryview
+   │  ├─ meson.build
+   │  │  └─ line 27: TODO : This is a hack due to https://github.com/cython/cython/issues/5820,
+   │  ├─ test_array_coercion.py
+   │  │  ├─ line 464: : This discrepancy _should_ be resolved, either by relaxing the
+cast, or by deprecating the first part.
+   │  │  └─ line 918: TODO : This is arguably weird/wrong, but seems old:
+   │  ├─ test_casting_unittests.py
+   │  │  └─ line 806: : While this test is fairly thorough, right now, it does not
+really test some paths that may have nonzero offsets (they don't
+really exists).
+   │  ├─ test_datetime.py
+   │  │  ├─ line 1973: : Allowing unsafe casting by
+default in ufuncs strikes again... :(
+   │  │  └─ line 2977: TODO : add absolute (gold standard) time span limit strings
+   │  ├─ test_multiarray.py
+   │  │  └─ line 8468: TODO : test for multidimensional
+   │  ├─ test_scalarmath.py
+   │  │  ├─ line 102: TODO : It would be nice to resolve this issue.
+   │  │  └─ line 1134: TODO : Power is a bit special, but here mostly bools seem to behave oddly
+   │  ├─ test_stringdtype.py
+   │  │  └─ line 1816: TODO : generalize to more ufuncs
+   │  ├─ test_umath_complex.py
+   │  │  ├─ line 18: TODO : branch cuts (use Pauli code)
+   │  │  ├─ line 19: TODO : conj 'symmetry'
+   │  │  ├─ line 20: TODO : FPU exceptions
+   │  │  ├─ line 29: TODO : replace with a check on whether platform-provided C99 funcs are used
+   │  │  ├─ line 32: TODO This can be xfail when the generator functions are got rid of.
+   │  │  ├─ line 127: TODO This can be xfail when the generator functions are got rid of.
+   │  │  └─ line 484: TODO This can be xfail when the generator functions are got rid of.
+   │  ├─ _char_codes.py
+   │  │  └─ line 154: : add `_StringCodes` once it has a scalar type
+_StringCodes,
+   │  ├─ _dtype_like.py
+   │  │  └─ line 21: TODO : wait for support for recursive types
+   │  ├─ _ctypeslib.pyi
+   │  │  └─ line 50: TODO : Add a shape type parameter
+   │  ├─ dtypes.pyi
+   │  │  ├─ line 495: TODO : Once implemented, don't forget the`unit: L["μs"]` overload.
+   │  │  ├─ line 540: TODO : Once implemented, don't forget to overload on `unit: L["μs"]`.
+   │  │  └─ line 582: TODO (jorenham): change once we have a string scalar type:
+   │  ├─ _isocbind.py
+   │  │  └─ line 55: TODO : See gh-25229
+   │  ├─ capi_maps.py
+   │  │  ├─ line 252: TODO : support Fortran `len` function with optional kind parameter
+   │  │  └─ line 500: TODO : Evaluate intent_flags here.
+   │  ├─ cfuncs.py
+   │  │  └─ line 866: : These should be dynamically generated, too many mapped to int things,
+see note in _isocbind.py
+   │  ├─ crackfortran.py
+   │  │  ├─ line 136: :
+* Apply 'parameter' attribute (e.g. 'integer parameter :: i=2' 'real x(i)'
+-> 'real x(2)')
+The above may be solved by creating appropriate preprocessor program, for example.
+   │  │  ├─ line 2039: :
+function return values
+determine expression types if in argument list
+   │  │  ├─ line 2472: TODO : test .eq., .neq., etc replacements.
+   │  │  └─ line 2561: TODO : use symbolic from PR #19805
+   │  ├─ f2py2e.py
+   │  │  ├─ line 458: TODO : Remove all this when scaninputline is replaced
+   │  │  └─ line 650: TODO : Once distutils is dropped completely, i.e. min_ver >= 3.12, unify into --fflags
+   │  ├─ fortranobject.c
+   │  │  └─ line 1406: TODO : detect the size of buf and make sure that size(buf) >= size(localbuf).
+   │  ├─ symbolic.py
+   │  │  ├─ line 23: TODO : support logical constants (Op.BOOLEAN)
+   │  │  ├─ line 24: TODO : support logical operators (.AND., ...)
+   │  │  ├─ line 25: TODO : support defined operators (.MYOP., ...)
+   │  │  ├─ line 519: TODO : other kind not used
+   │  │  ├─ line 569: : implement a method for deciding when __call__ should
+return an INDEXING expression.
+   │  │  ├─ line 810: TODO : determine correct kind
+   │  │  ├─ line 845: TODO : determine correct kind
+   │  │  ├─ line 895: TODO : denom kind not used
+   │  │  └─ line 1107: TODO : find common divisor of coefficients
+   │  ├─ test_docs.py
+   │  │  └─ line 66: TODO : implement test methods for other example Fortran codes
+   │  ├─ test_f2py2e.py
+   │  │  ├─ line 417: TODO : Clean up to prevent passing --overwrite-signature
+   │  │  ├─ line 534: : Test to ensure this has no effect without --latex-doc
+CLI :: --latex-doc --short-latex
+   │  │  ├─ line 678: TODO : Document this in the help string
+   │  │  ├─ line 722: TODO : populate
+   │  │  ├─ line 731: TODO : populate
+   │  │  ├─ line 787: TODO : f2py2e should not call sys.exit() after printing the version
+   │  │  ├─ line 863: TODO : These should be tested separately
+   │  │  ├─ line 869: TODO : populate
+   │  │  ├─ line 877: TODO : populate
+   │  │  ├─ line 885: TODO : populate
+   │  │  ├─ line 893: TODO : populate
+   │  │  ├─ line 901: TODO : populate
+   │  │  ├─ line 909: TODO : populate
+   │  │  ├─ line 917: TODO : populate
+   │  │  ├─ line 925: TODO : populate
+   │  │  ├─ line 933: TODO : populate
+   │  │  ├─ line 941: TODO : populate
+   │  │  ├─ line 949: TODO : populate
+   │  │  ├─ line 957: TODO : populate
+   │  │  ├─ line 965: TODO : populate
+   │  │  ├─ line 973: TODO : populate
+   │  │  ├─ line 981: TODO : populate
+   │  │  ├─ line 989: TODO : populate
+   │  │  ├─ line 997: TODO : populate
+   │  │  └─ line 1005: TODO : populate
+   │  ├─ _arraypad_impl.pyi
+   │  │  └─ line 42: TODO : In practice each keyword argument is exclusive to one or more
+   │  ├─ _datasource.py
+   │  │  ├─ line 71: TODO : .zip support, .tar support?
+   │  │  ├─ line 331: TODO : Doesn't handle compressed files!
+   │  │  ├─ line 397: :  This should be more robust.  Handles case where path includes
+the destpath, but not other sub-paths. Failing case:
+path = /home/guido/datafile.txt
+destpath = /home/alex/
+upath = self.abspath(path)
+upath == '/home/alex/home/guido/datafile.txt'
+   │  │  ├─ line 511: : There is no support for opening a file for writing which
+doesn't exist yet (creating a file).  Should there be?
+   │  │  └─ line 514: : Add a ``subdir`` parameter for specifying the subdirectory
+used to store URLs in self._destpath.
+   │  ├─ _function_base_impl.py
+   │  │  └─ line 885: : This preserves the Python int, float, complex manually to get the
+right `result_type` with NEP 50.  Most likely we will grow a better
+way to spell this (and this can be replaced).
+   │  ├─ _index_tricks_impl.pyi
+   │  │  └─ line 162: TODO (jorenham): annotate this
+   │  ├─ _nanfunctions_impl.py
+   │  │  └─ line 1670: TODO : What to do when arr1d = [1, np.nan] and weights = [0, 1]?
+   │  ├─ _twodim_base_impl.pyi
+   │  │  └─ line 64: TODO : require 2d shape once shape-typing has matured
+   │  ├─ _user_array_impl.pyi
+   │  │  └─ line 133: TODO (jorenham): complete these binary ops
+   │  ├─ mixins.py
+   │  │  └─ line 166: TODO : handle the optional third argument for __pow__?
+   │  ├─ recfunctions.pyi
+   │  │  ├─ line 218: TODO (jorenham): Stop passing `void` directly once structured dtypes are implemented,
+   │  │  ├─ line 228: TODO (jorenham): Attempt shape-typing (return type has ndim == arr.ndim + 1)
+   │  │  └─ line 289: TODO (jorenham): Attempt shape-typing
+   │  ├─ test_function_base.py
+   │  │  ├─ line 3910: : Note that times have dubious rounding as of fixing NaTs!
+NaT and NaN should behave the same, do basic tests for NaT:
+   │  │  └─ line 4746: : Median does not support Datetime, due to `mean`.
+NaT and NaN should behave the same, do basic tests for NaT.
+   │  ├─ test_io.py
+   │  │  └─ line 333: TODO : specify exact message
+   │  ├─ core.py
+   │  │  ├─ line 481: : It seems better to always store a valid fill_value, the oddity
+about is that `_fill_value = None` would behave even more
+different then.
+(e.g. this allows arr_uint8.astype(int64) to have the default
+fill value again...)
+The one thing that changed in 2.0/2.1 around cast safety is that the
+default `int(99...)` is not a same-kind cast anymore, so if we
+have a uint, use the default uint.
+   │  │  ├─ line 4740: : We don't actually support K, so use A instead.  We could
+try to guess this correct by sorting strides or deprecate.
+   │  │  └─ line 7088: : For methods with a docstring "Parameters" section, that do not already
+mention `a` (see e.g. `MaskedArray.var.__doc__`), it should be inserted there.
+   │  ├─ core.pyi
+   │  │  ├─ line 976: TODO : Support non-boolean mask dtypes, such as `np.void`. This will require adding an
+   │  │  ├─ line 1042: TODO : Returns `mvoid[(), _DTypeT_co]` for masks with `np.void` dtype.
+   │  │  └─ line 1261: TODO : How to deal with the non-commutative nature of `==` and `!=`?
+   │  ├─ test_core.py
+   │  │  └─ line 5692: TODO : Test masked_object, masked_equal, ...
+   │  ├─ test_old_ma.py
+   │  │  └─ line 716: TODO FIXME: Find out what the following raises a warning in r8247
+   │  ├─ _polybase.py
+   │  │  └─ line 432: : we're stuck with disabling math formatting until we handle
+exponents in this function
+   │  ├─ test_random.py
+   │  │  └─ line 1064: : Include test for randint once it can broadcast
+Can steal the test written in PR #6938
+   │  ├─ bitwise_ops.pyi
+   │  │  └─ line 17: TODO : Certain mixes like i4 << u8 go to float and thus should fail
+   │  ├─ scalars.pyi
+   │  │  └─ line 30: TODO : protocols (can't check for non-existent protocols w/ __getattr__)
+   │  ├─ ma.pyi
+   │  │  ├─ line 486: TODO : This one could be made more precise, the return type could be `MaskedArraySubclassC`
+   │  │  └─ line 488: TODO : This one could be made more precise, the return type could be `MaskedArraySubclass[np.float32]`
+   │  ├─ cache.py
+   │  │  └─ line 279: : use DirectUrl.equivalent when
+https://github.com/pypa/pip/pull/10564 is merged.
+   │  ├─ base_command.py
+   │  │  └─ line 145: : Try to get these passing down from the command?
+without resorting to os.environ to hold these.
+This also affects isolated builds and it should.
+   │  ├─ inspect.py
+   │  │  └─ line 60: TODO tags? scheme?
+   │  ├─ collector.py
+   │  │  └─ line 356: : In the future, it would be nice if pip supported PEP 691
+style responses in the file:// URLs, however there's no
+standard file extension for application/vnd.pypi.simple.v1+json
+so we'll need to come up with something on our own.
+   │  ├─ base.py
+   │  │  ├─ line 37: TODO : Move definition here.
+   │  │  ├─ line 174: TODO : this property is relatively costly to compute, memoize it ?
+   │  │  └─ line 184: : get project location from second line of egg_link file
+(https://github.com/pypa/pip/issues/10243)
+   │  ├─ installation_report.py
+   │  │  └─ line 50: : currently, the resolver uses the default environment to evaluate
+environment markers, so that is what we report here. In the future, it
+should also take into account options such as --python-version or
+--platform, perhaps under the form of an environment_override field?
+https://github.com/pypa/pip/issues/11198
+   │  ├─ lazy_wheel.py
+   │  │  └─ line 174: TODO : Get range requests to be correctly cached
+   │  ├─ prepare.py
+   │  │  └─ line 550: : separate this part out from RequirementPreparer when the v1
+resolver can be removed!
+   │  ├─ constructors.py
+   │  │  └─ line 290: : The is_installable_dir test here might not be necessary
+now that it is done in load_pyproject_toml too.
+   │  ├─ req_file.py
+   │  │  └─ line 491: TODO : handle space after '\'.
+   │  ├─ req_install.py
+   │  │  └─ line 287: : Remove these two variants when packaging is upgraded to
+support the marker comparison logic specified in PEP 685.
+   │  ├─ req_set.py
+   │  │  └─ line 78: remove this property together with the legacy resolver, since the new
+resolver only returns requirements that need to be installed.
+   │  ├─ candidates.py
+   │  │  ├─ line 346: TODO : Supply reason based on force_reinstall and upgrade_strategy.
+   │  │  └─ line 442: : Remove this attribute when packaging is upgraded to support the
+marker comparison logic specified in PEP 685.
+   │  ├─ factory.py
+   │  │  ├─ line 196: : Check already installed candidate, and use it if the link and
+editable flag match.
+   │  │  └─ line 611: TODO : Are there more cases this needs to return True? Editable?
+   │  ├─ found_candidates.py
+   │  │  └─ line 33: TODO : Remove this block after dropping Python 3.8 support.
+   │  ├─ subprocess.py
+   │  │  └─ line 26: TODO : Remove `if TYPE_CHECKING` when dropping support for Python 3.7.
+   │  ├─ versioncontrol.py
+   │  │  └─ line 45: TODO : Remove `if TYPE_CHECKING` when dropping support for Python 3.7.
+   │  ├─ controller.py
+   │  │  └─ line 220: : There is an assumption that the result will be a
+urllib3 response object. This may not be best since we
+could probably avoid instantiating or constructing the
+response until we know we need it.
+   │  ├─ filewrapper.py
+   │  │  └─ line 67: TODO : Add some logging here...
+   │  ├─ codingstatemachinedict.py
+   │  │  └─ line 6: : Remove the else block and TYPE_CHECKING check when dropping support
+for Python 3.7.
+   │  ├─ languages.py
+   │  │  └─ line 11: TODO : Add Ukrainian (KOI8-U)
+   │  ├─ resultdict.py
+   │  │  └─ line 6: : Remove the else block and TYPE_CHECKING check when dropping support
+for Python 3.7.
+   │  ├─ sbcharsetprober.py
+   │  │  └─ line 95: TODO : Make filter_international_words keep things in self.alphabet
+   │  ├─ sbcsgroupprober.py
+   │  │  ├─ line 57: : See if using ISO-8859-8 Hebrew model works better here, since
+it's actually the visual one
+   │  │  ├─ line 63: : ORDER MATTERS HERE. I changed the order vs what was in master
+and several tests failed that did not before. Some thought
+should be put into the ordering, and we should consider making
+order not matter here, because that is very counter-intuitive.
+   │  │  └─ line 78: : Restore Hungarian encodings (iso-8859-2 and windows-1250)
+after we retrain model.
+SingleByteCharSetProber(ISO_8859_2_HUNGARIAN_MODEL),
+SingleByteCharSetProber(WINDOWS_1250_HUNGARIAN_MODEL),
+   │  ├─ universaldetector.py
+   │  │  ├─ line 194: TODO : This encoding is not supported by Python. Should remove?
+   │  │  └─ line 202: TODO : This encoding is not supported by Python. Should remove?
+   │  ├─ locators.py
+   │  │  └─ line 931: TODO SHA256 digest
+   │  ├─ metadata.py
+   │  │  ├─ line 255: TODO document the mapping API and UNKNOWN default key
+   │  │  ├─ line 585: TODO could add iter* variants
+   │  │  └─ line 1018: TODO : any other fields wanted
+   │  ├─ util.py
+   │  │  └─ line 413: TODO check k, v for valid values
+   │  ├─ version.py
+   │  │  ├─ line 267: : fill this out
+Bad:
+1           # minimum two numbers
+1.2a        # release level must have a release serial
+1.2.3b
+   │  │  └─ line 516: : unintended side-effect on, e.g., "2003.05.09"
+PyPI stats: 77 (~2%) better
+   │  ├─ wheel.py
+   │  │  └─ line 852: TODO version verification
+   │  ├─ fallback.py
+   │  │  ├─ line 554: TODO should we eliminate the recursion?
+   │  │  ├─ line 558: TODO check whether we need to call `list_hook`
+   │  │  ├─ line 566: TODO is the interaction between `list_hook` and `use_list` ok?
+   │  │  └─ line 571: TODO check whether we need to call hooks
+   │  ├─ requirements.py
+   │  │  ├─ line 95: : Can we test whether something is contained within a requirement?
+If so how do we do that? Do we need to test against the _name_ of
+the thing as well as the version? What about the markers?
+   │  │  └─ line 98: TODO : Can we normalize the name and extra name?
+   │  ├─ tags.py
+   │  │  └─ line 326: TODO : Need to care about 32-bit PPC for ppc64 through 10.2?
+   │  ├─ img.py
+   │  │  └─ line 511: : make sure tab expansion happens earlier in the chain.  It
+really ought to be done on the input, as to do it right here is
+quite complex.
+   │  ├─ latex.py
+   │  │  └─ line 337: TODO : add support for background colors
+   │  ├─ terminal256.py
+   │  │  └─ line 17: :
+- Options to map style's bold/underline/italic/border attributes
+to some ANSI attrbutes (something like 'italic=underline')
+- An option to output "style RGB to xterm RGB/index" conversion table
+- An option to indicate that we are running in "reverse background"
+xterm. This means that default colors are white-on-black, not
+black-on-while, so colors like "white background" need to be converted
+to "white background, black foreground", etc...
+   │  ├─ lexer.py
+   │  │  └─ line 843: TODO : clean up the code here.
+   │  ├─ adapters.py
+   │  │  └─ line 715: TODO : Remove this in 3.0.0: see #2811
+   │  ├─ hooks.py
+   │  │  └─ line 29: TODO : response is the only one
+   │  ├─ cells.py
+   │  │  ├─ line 122: TODO : This is inefficient
+   │  │  └─ line 123: TODO : This might not work with CWJ type characters
+   │  ├─ text.py
+   │  │  └─ line 542: TODO : This is a little inefficient, it is only used by full justify
+   │  ├─ _macos.py
+   │  │  └─ line 482: : Not sure if we need the SecTrustResultType for anything?
+We only care whether or not it's a success or failure for now.
+   │  ├─ connection.py
+   │  │  ├─ line 144: TODO SKIPPABLE_HEADERS from urllib3 are ignored.
+   │  │  ├─ line 234: TODO : Arbitrary read value.
+   │  │  ├─ line 282: this is often present from upstream.
+raise NotImplementedError("`chunked` isn't supported with HTTP/2")
+   │  │  ├─ line 325: TODO : This is a woefully incomplete response object, but works for non-streaming.
+   │  │  └─ line 332: TODO : support decoding
+   │  ├─ connectionpool.py
+   │  │  ├─ line 578: TODO : Add optional support for socket.gethostbyname checking.
+   │  │  └─ line 1108: TODO revise this, see https://github.com/urllib3/urllib3/issues/2791
+   │  ├─ securetransport.py
+   │  │  ├─ line 660: TODO : should I do clean shutdown here? Do I have to?
+   │  │  ├─ line 820: : Well, crap.
+So this is the bit of the code that is the most likely to cause us
+trouble. Essentially we need to enumerate all of the SSL options that
+users might want to use and try to see if we can sensibly translate
+them, or whether we should just ignore them.
+   │  │  └─ line 830: TODO : Update in line with above.
+   │  ├─ exceptions.py
+   │  │  └─ line 306: TODO (t-8ch): Stop inheriting from AssertionError in v2.0.
+   │  ├─ retry.py
+   │  │  ├─ line 31: TODO : In v2 we can remove this sentinel and metaclass with deprecated options.
+   │  │  ├─ line 261: TODO : Deprecated, remove in v2.0
+   │  │  ├─ line 323: : If already given in **kw we use what's given to us
+If not given we need to figure out what to pass. We decide
+based on whether our class has the 'method_whitelist' property
+and if so we pass the deprecated 'method_whitelist' otherwise
+we use 'allowed_methods'. Remove in v2.0
+   │  │  ├─ line 454: : For now favor if the Retry implementation sets its own method_whitelist
+property outside of our constructor to avoid breaking custom implementations.
+   │  │  └─ line 608: TODO : Remove this deprecated alias in v2.0
+   │  ├─ url.py
+   │  │  └─ line 454: TODO : Remove this when we break backwards compatibility.
+   │  ├─ _types.py
+   │  │  ├─ line 55: TODO : move to collections.abc when Python >= 3.12
+   │  │  └─ line 56: TODO : move to typing when Python >= 3.13
+   │  ├─ models.py
+   │  │  ├─ line 685: TODO : can be fixed by flipping the conditionals
+   │  │  └─ line 1012: : remove cast after iter_lines rewrite
+type: ignore[operator]
+   │  ├─ _aliases.py
+   │  │  ├─ line 64: TODO : respect device keyword?
+   │  │  ├─ line 95: TODO : respect device keyword?
+   │  │  ├─ line 159: TODO : respect device keyword?
+   │  │  └─ line 220: TODO : This won't handle dask unknown shapes
+   │  ├─ _helpers.py
+   │  │  ├─ line 37: TODO import from typing (requires Python >=3.12 and >=3.13)
+   │  │  └─ line 319: this helper should be eventually removed once all the special cases
+it handles are fixed in the respective backends.
+Parameters
+----------
+xp : array_namespace
+The standard-compatible namespace.
+device : Device, optional
+The device to use.
+Returns
+-------
+dict
+Capabilities of the namespace.
+   │  ├─ _info.py
+   │  │  ├─ line 181: TODO : Does this depend on device?
+   │  │  └─ line 243: TODO : Does this depend on device?
+   │  ├─ linalg.py
+   │  │  ├─ line 23: : use the QR wrapper once dask
+supports the mode keyword on QR
+https://github.com/dask/dask/issues/10388
+qr = get_xp(da)(_linalg.qr)
+type: ignore[no-redef]
+   │  │  └─ line 50: TODO : can't avoid computing U or V for dask
+   │  ├─ _at.py
+   │  │  └─ line 23: TODO import from typing (requires Python >=3.11)
+   │  ├─ _funcs.py
+   │  │  └─ line 321: : Benchmark whether this is faster on the NumPy backend:
+if is_numpy_array(x):
+out = xp.zeros((x.size, num_classes), dtype=dtype)
+out[xp.arange(x.size), xp.reshape(x, (-1,))] = 1
+return xp.reshape(out, (*x.shape, num_classes))
+   │  ├─ _compat.pyi
+   │  │  └─ line 9: TODO import from typing (requires Python >=3.13)
+   │  ├─ _typing.pyi
+   │  │  ├─ line 8: TODO import from typing (requires Python >=3.12)
+   │  │  └─ line 11: TODO : use array-api-typing once it is available
+   │  ├─ testing.py
+   │  │  └─ line 24: TODO import override from typing (requires Python >=3.12)
+   │  ├─ _array_api.py
+   │  │  ├─ line 1177: TODO this can return other backends e.g. tpu but they're unsupported in scipy
+   │  │  └─ line 1180: TODO this can return other backends e.g. tpu but they're unsupported in scipy
+   │  ├─ _hierarchy_impl.py
+   │  │  └─ line 1288: TODO ARRAY_API complex indexing not supported
+   │  ├─ _differentiate.py
+   │  │  └─ line 380: (followup):
+- investigate behavior at saddle points
+- multivariate functions?
+- relative steps?
+- show example of `np.vectorize`
+   │  ├─ basic.py
+   │  │  ├─ line 82: TODO : Optimize for hermitian and real?
+   │  │  └─ line 194: TODO : Optimize for hermitian and real?
+   │  ├─ test_basic.py
+   │  │  └─ line 2476: TODO : cannot use N itself yet; factorial uses `gamma(N+1)` resp. `(hi+lo)//2`
+   │  ├─ test_real_transforms.py
+   │  │  └─ line 110: TODO write an array-agnostic pad
+   │  ├─ bdf.py
+   │  │  └─ line 289: TODO : switch to csc_array after spmatrix is removed
+   │  ├─ radau.py
+   │  │  ├─ line 328: TODO : use I = eye_array(self.n, format="csc") after spmatrix removed
+   │  │  └─ line 379: TODO : Use csc_array after spmatrix removed
+   │  ├─ _gauss_kronrod.py
+   │  │  └─ line 83: : nodes and weights are currently hard-coded for values 15 and 21, but in
+the future it would be best to compute the Kronrod extension of the lower rule
+   │  ├─ _gauss_legendre.py
+   │  │  └─ line 56: TODO : current converting to/from numpy
+   │  ├─ _genz_malik.py
+   │  │  ├─ line 78: : Currently only support for degree 7 Genz-Malik cubature, should aim to
+support arbitrary degree
+   │  │  └─ line 134: : Currently only support for the degree 5 lower rule, in the future it
+would be worth supporting arbitrary degree
+   │  ├─ _fitpack_impl.py
+   │  │  └─ line 19: : Make interfaces to the following fitpack functions:
+For univariate splines: cocosp, concon, fourco, insert
+For bivariate splines: profil, regrid, parsur, surev
+   │  ├─ test_bsplines.py
+   │  │  ├─ line 645: TODO : convert CubicSpline
+   │  │  └─ line 661: TODO : convert CubicSpline
+   │  ├─ hb.py
+   │  │  └─ line 12: :
+- Add more support (symmetric/complex matrices, non-assembled matrices ?)
+   │  ├─ _netcdf.py
+   │  │  └─ line 20: :
+* properly implement ``_FillValue``.
+* fix character variables.
+* implement PAGESIZE for Python 2.6?
+   │  ├─ _arffread.py
+   │  │  ├─ line 21: :
+- both integer and reals are treated as numeric -> the integer info
+is lost!
+- Replace ValueError by ParseError or something
+   │  │  └─ line 862: : this is where we are spending time (~80%). I think things
+could be made more efficiently:
+- We could for example "compile" the function, because some values
+do not change here.
+- The function to convert a line to dtyped values could also be
+generated on the fly from a string and be executed instead of
+looping.
+- The regex are overkill: for comments, checking that a line starts
+by % should be enough and faster, and for empty lines, same thing
+--> this does not seem to change anything.
+   │  ├─ _matfuncs.py
+   │  │  └─ line 201: TODO use a better error approximation
+   │  ├─ _matfuncs_inv_ssq.py
+   │  │  ├─ line 38: TODO renovate or move this class when scipy operators are more mature
+   │  │  └─ line 72: TODO renovate or move this function when SciPy operators are more mature
+   │  ├─ lapack.py
+   │  │  └─ line 1134: TODO unify "normalization" functions below, see gh-24505
+   │  ├─ test_lapack.py
+   │  │  └─ line 1929: TODO : Add a test for ONB?
+   │  ├─ _direct_py.py
+   │  │  └─ line 256: TODO : fix disp argument
+   │  ├─ _linprog_ip.py
+   │  │  └─ line 92: : revert this suppress_warning once the warning bug fix in
+sksparse is merged/released
+Suppress spurious warning bug from sksparse with csc_array gh-22089
+try:
+# Will raise an exception in the first call,
+# or when the matrix changes due to a new problem
+_get_solver.cholmod_factor.cholesky_inplace(M)
+except Exception:
+_get_solver.cholmod_factor = cholmod_analyze(M)
+_get_solver.cholmod_factor.cholesky_inplace(M)
+   │  ├─ _linprog_rs.py
+   │  │  ├─ line 72: TODO : test redundant row removal better
+   │  │  ├─ line 73: TODO : make solve more efficient with BGLU? This could take a while.
+   │  │  └─ line 376: : cythonize?
+reduced cost
+   │  ├─ _linprog_util.py
+   │  │  ├─ line 862: TODO : Fast sparse rank check?
+   │  │  └─ line 876: TODO : use results of first SVD in _remove_redundancy_svd
+   │  ├─ _optimize.py
+   │  │  └─ line 2050: TODO : add hessp (callable or FD) to ScalarFunction?
+   │  ├─ _remove_redundancy.py
+   │  │  └─ line 423: : return these so user can eliminate from problem?
+rows need to be represented in significant amount
+   │  ├─ _shgo.py
+   │  │  ├─ line 477: TODO TODO
+   │  │  ├─ line 1196: TODO : Only do this if global mode
+   │  │  └─ line 1519: : Uncertain if n_prc needs to add len(self.LMC.xl_maps)
+in self.sampled_surface
+   │  ├─ _complex.py
+   │  │  ├─ line 1179: TODO : Choose another det of j instead?
+   │  │  ├─ line 1180: TODO : Unlikely to work in many cases
+   │  │  ├─ line 1187: : Note that scipy might be faster to add as an optional
+dependency
+   │  │  ├─ line 1191: : Note if sign_det_A_j0 == then the point is coplanar to the
+current simplex facet, so perhaps return True and attach?
+   │  │  ├─ line 1217: : Is checking the projection of one vertex against faces of other
+vertices sufficient? Or do we need to check more vertices in
+dimensions higher than 2?
+   │  │  ├─ line 1220: : Literature seems to suggest using proj.T, but why is this
+needed?
+   │  │  └─ line 1222: : Replace with tolerance?
+Simplex is degenerate
+   │  ├─ projections.py
+   │  │  ├─ line 61: : revert this once the warning bug fix in sksparse is merged/released
+Add suppression of spurious warning bug from sksparse with csc_array gh-22089
+factor = cholesky_AAt(A)
+   │  │  └─ line 101: : Use a symmetric indefinite factorization
+to solve the system twice as fast (because
+of the symmetry).
+   │  ├─ qp_subproblem.py
+   │  │  └─ line 54: : Use a symmetric indefinite factorization
+to solve the system twice as fast (because
+of the symmetry).
+   │  ├─ tr_interior_point.py
+   │  │  └─ line 357: : Use more advanced strategies from [2]_
+to update this parameters.
+   │  ├─ test__remove_redundancy.py
+   │  │  └─ line 5: : add tests for:
+https://github.com/scipy/scipy/issues/5400
+https://github.com/scipy/scipy/issues/6690
+   │  ├─ test__shgo.py
+   │  │  ├─ line 638: TODO : Make default n higher for faster tests
+   │  │  └─ line 772: : This test doesn't cover anything new, it is unknown what the
+original test was intended for as it was never complete. Delete or
+replace in the future.
+   │  ├─ test_optimize.py
+   │  │  └─ line 3071: this test should really be equivalent to factorized version
+above, down to res.nfev. However, testing found that when TNC is
+called with or without a callback the output is different. The two
+should be the same! This indicates that the TNC callback may be
+mutating something when it shouldn't.
+   │  ├─ _delegators.py
+   │  │  └─ line 320: : fix me - `prominence` is not necessarily an array.
+return array_namespace(x, height, threshold, prominence, width, plateau_size)
+See https://github.com/scipy/scipy/pull/22644#issuecomment-3568443768. For now:
+   │  ├─ _filter_design.py
+   │  │  ├─ line 530: TODO : review threshold acc. to benchmark?
+   │  │  ├─ line 1658: in the near future:
+1. Add SOS capability to `filtfilt`, `freqz`, etc. somehow (#3259).
+2. Make `decimate` use `sosfilt` instead of `lfilter`.
+3. Make sosfilt automatically simplify sections to first order
+when possible. Note this might make `sosfiltfilt` a bit harder (ICs).
+4. Further optimizations of the section ordering / pole-zero pairing.
+See the wiki for other potential issues.
+   │  │  └─ line 5058: TODO : Make this a real public function scipy.misc.ff
+   │  ├─ _ltisys.py
+   │  │  └─ line 2301: : This could use some more work.
+For example, what is expected when the system is unstable?
+   │  ├─ test_filter_design.py
+   │  │  ├─ line 1184: : split into multiple tests, or parameterize across filter types
+in some way.
+   │  │  ├─ line 2761: TODO : Why so inaccurate?  Is reference flawed?
+   │  │  ├─ line 2766: TODO : Why so inaccurate?  Is reference flawed?
+   │  │  ├─ line 2776: TODO : Why so inaccurate?  Is reference flawed?
+   │  │  └─ line 2781: TODO : Why so inaccurate?  Is reference flawed?
+   │  ├─ test_ltisys.py
+   │  │  ├─ line 605: TODO : add meaningful test where X0 is a list
+   │  │  └─ line 677: TODO : add meaningful test where X0 is a list
+   │  ├─ test_signaltools.py
+   │  │  └─ line 3157: TODO . Look into making tests using this work for CuPy.
+   │  ├─ _base.py
+   │  │  └─ line 757: TODO sparse broadcasting
+   │  ├─ _bsr.py
+   │  │  ├─ line 134: TODO infer shape here
+   │  │  └─ line 346: TODO eliminate zeros
+   │  ├─ _compressed.py
+   │  │  ├─ line 227: TODO check for duplicates?
+   │  │  ├─ line 706: TODO : don't fall back to fancy indexing here
+   │  │  ├─ line 941: : explore creating a native sparsetools version of:
+ui, ui_indptr = np.unique(i, return_index=True)
+These 2 lines are equiv to np.unique but avoid big memory use. See gh-24951
+   │  │  └─ line 985: TODO : only sort where necessary
+   │  ├─ _construct.py
+   │  │  ├─ line 176: TODO stop _sputils.validateaxis from returning `None` when len(axes)==ndim
+   │  │  ├─ line 670: TODO : delete next 15 lines [combine with _eye()] once spmatrix removed
+   │  │  ├─ line 816: TODO : delete this if-clause and replace _sparse with _array when spmatrix removed
+   │  │  ├─ line 960: TODO : delete this if-clause and replace _sparse with _array when spmatrix removed
+   │  │  └─ line 1035: TODO remove this if-structure when sparse matrices removed
+   │  ├─ _csr.py
+   │  │  └─ line 239: : uncomment this once it's faster:
+return self._getrow(row)._minor_slice(col)
+   │  ├─ _data.py
+   │  │  └─ line 18: implement all relevant operations
+use .data.__methods__() instead of /=, *=, etc.
+   │  ├─ _dok.py
+   │  │  └─ line 601: TODO implement resize across dimensions
+   │  ├─ _index.py
+   │  │  └─ line 338: TODO : make sparse indexing work for sparray
+   │  ├─ _matrix_io.py
+   │  │  └─ line 64: TODO : After a few releases, switch 2D case to save with coords only.
+   │  ├─ test_svds.py
+   │  │  └─ line 634: TODO : arpack crashes when v0=v0, which="SM"
+   │  ├─ _interface.py
+   │  │  ├─ line 292: : determine whether user-defined `_matvec` supports batching,
+and use it directly.
+   │  │  └─ line 320: TODO : deprecate `np.matrix` support
+   │  ├─ minres.py
+   │  │  └─ line 364: TODO check this
+   │  ├─ test_iterative.py
+   │  │  ├─ line 29: TODO check that method preserve shape and type
+   │  │  ├─ line 30: TODO test both preconditioner methods
+   │  │  ├─ line 96: TODO : pydata/sparse for sparse tests?
+   │  │  └─ line 447: : minres / tfqmr. It didn't historically use absolute tolerances, so
+fixing it is less urgent.
+   │  ├─ _svdp.py
+   │  │  └─ line 270: : once `svds` drops legacy positional `random_state` support,
+or once `_lib._util.check_random_state` is adjusted to always
+coerce `RandomState` input to a `Generator` instance
+(possible from NumPy >=2.2),
+the legacy branch can be removed here.
+   │  ├─ test_interface.py
+   │  │  └─ line 1146: ideas:
+- test lower-precision types
+- test `transpose`, `adjoint`, `__mul__`, etc.
+- test composite LinearOperators
+   │  ├─ test_onenormest.py
+   │  │  ├─ line 144: TODO this test seems to give estimates that match the table,
+   │  │  ├─ line 145: TODO even though no attempt has been made to deal with
+   │  │  └─ line 146: complex numbers in the one-norm estimation.
+This will take multiple seconds if your computer is slow like mine.
+It is stochastic, so the tolerance could be too strict.
+   │  ├─ test_base.py
+   │  │  ├─ line 304: TODO test prune
+   │  │  ├─ line 305: TODO test has_sorted_indices
+   │  │  ├─ line 4893: TODO : properly handle this assertion on ppc64le
+   │  │  └─ line 5802: TODO check that NC has duplicates (which are not explicit zeros)
+   │  ├─ test_construct.py
+   │  │  ├─ line 23: TODO check whether format=XXX is respected
+   │  │  ├─ line 1031: TODO change np.transpose to np.permute_dims when numpy 2 is min supported version
+   │  │  ├─ line 1043: TODO change np.transpose to np.permute_dims when numpy 2 is min supported version
+   │  │  └─ line 1103: TODO change np.transpose to np.permute_dims when numpy 2 is min supported version
+   │  ├─ test_spfuncs.py
+   │  │  └─ line 16: TODO expose through function
+   │  ├─ distance.pyi
+   │  │  ├─ line 20: TODO : Use a single protocol with a parameter specification variable
+   │  │  ├─ line 56: TODO : Add `metric`-specific overloads
+   │  │  ├─ line 80: TODO : Wait for dtype support; the return type is
+   │  │  ├─ line 86: TODO : Wait for dtype support; the return type is
+   │  │  └─ line 151: TODO : Add `metric`-specific overloads
+   │  ├─ _rotation.py
+   │  │  ├─ line 2146: : We defer the implementation of groups for arbitrary Array API frameworks
+to the follow-up PR that adds general Array API support for Rotations.
+   │  │  ├─ line 2220: : This special case handling is mainly a result of Array API limitations.
+Ideally we would get rid of them altogether and converge to [indexer, ...]
+indexing.
+type:ignore[union-attr]
+   │  │  ├─ line 2284: : We should move to one single way of specifying the output shape and
+deprecate `num`.
+   │  │  └─ line 2352: : We should move to one single way of specifying the output shape and
+deprecate `num`.
+   │  ├─ _rotation_xp.py
+   │  │  ├─ line 105: : Revisit this implementation if the array API supports mixed integer and
+ellipsis indexing.
+   │  │  ├─ line 614: TODO : Can we somehow avoid this?
+   │  │  ├─ line 643: TODO : Replace with .mT once numpy 2.0 is the minimum supported version
+   │  │  ├─ line 772: : We currently need to always compute the sensitivity matrix because lazy code
+needs to be non-branching. We should check if compilers can optimize the where
+statement (e.g. in jax) and check if we can have an eager version that only
+evaluates the branch that is needed.
+See xpx.apply_where, issue: https://github.com/data-apis/array-api-extra/pull/141
+   │  │  └─ line 846: : Array API does not support fancy indexing __setitem__. The code is
+equivalent to doing the following:
+r_components = xp.zeros(3)
+r_components = xpx.at(r_components)[i - 1].set(a_pri[0, i - 2])
+r_components = xpx.at(r_components)[i - 2].set(-a_pri[0, i - 1])
+   │  ├─ test_rotation.py
+   │  │  └─ line 2575: TODO : Do we want to support this for all Array API frameworks?
+   │  ├─ _lambertw.py
+   │  │  └─ line 146: : special expert should inspect this
+interception; better place to do it?
+   │  ├─ test_sf_error.py
+   │  │  └─ line 34: : special expert should correct
+the coercion at the true location?
+   │  ├─ _distribution_infrastructure.py
+   │  │  ├─ line 45: :
+Test sample dtypes
+Add dtype kwarg (especially for distributions with no parameters)
+Rewrite `test_continuous` without Hypothesis, more modular tests that are easier to
+run individually.
+Add distribution-specific tests - just enough to confirm that distribution is the
+one it is supposed to be; maybe check finite vs undefined vs infinite moments.
+`_tanhsinh` special case when there are no abscissae between the limits
+example: cdf of uniform betweeen 1.0 and np.nextafter(1.0, np.inf)
+implement symmetric distribution (take advantage of symmetry)
+implement composite distribution (for using different implementations depending on
+shape parameters - e.g. t distribution with df = np.inf delegates to normal)
+Add array API support
+Investigate use `median` information throughout, e.g. to improve integration of
+CDF or to provide initial bracket for ICDF. (Only if `_median_formula` is
+provided.)
+Document user tips for faster execution:
+- pass NumPy arrays
+- pass inputs of floating point type (not integers)
+- prefer NumPy scalars or 0d arrays over other size 1 arrays
+- pass no invalid parameters and disable invalid parameter checks (validation_policy)
+- provide a Generator if you're going to do sampling
+Add options for drawing parameters: log-spacing
+Accuracy benchmark suite. Ideally, when all code is array API compatible and mparray
+provides an array-API compatible arbitrary precision array, we can just compare
+results when using NumPy backend against mparray backend.
+Should caches be attributes so we can more easily ensure that they are not
+modified when caching is turned off?
+Make ShiftedScaledDistribution more efficient - only process underlying
+distribution parameters as necessary.
+Reconsider `all_inclusive` - see comment in `contains` method of `_interval`
+`validation_policy` needs testing
+`tol` does not offer very fine-grained control; consider improving
+report accuracy estimates? How?
+reconsider distribution mutability
+   │  │  ├─ line 3387: :
+- smart spacing of points
+- when the parameters of the distribution are an array,
+use the full range of abscissae for all curves
+   │  │  └─ line 4437: :
+- consider avoiding catastropic cancellation by using appropriate tail
+- if the mode of `_dist` is within the support, it's still the mode
+- rejection sampling might be more efficient than inverse transform
+   │  ├─ _morestats.py
+   │  │  └─ line 2989: : calculate exact distribution considering ties
+We could avoid summing over more than half the frequencies,
+but initially it doesn't seem worth the extra complexity
+   │  ├─ _page_trend_test.py
+   │  │  └─ line 324: TODO : relax this to accept 3d arrays?
+   │  ├─ _qmc.py
+   │  │  └─ line 456: consider returning both the mean and the standard deviation
+see [1] for a discussion
+   │  ├─ test_continuous.py
+   │  │  └─ line 905: TODO : add `supported` method and check here
+   │  ├─ test_continuous_basic.py
+   │  │  └─ line 139: : multiple checks in this function are not robust, tweaking the
+seed above will make different distributions fail.
+   │  ├─ test_fast_gen_inversion.py
+   │  │  └─ line 144: TODO : add more distributions
+   │  ├─ test_hypotests.py
+   │  │  └─ line 31: TODO : complete input validation tests
+   │  ├─ test_marray.py
+   │  │  ├─ line 357: TODO : add 'wilcox', 'pratt'
+   │  │  ├─ line 360: TODO : add 'exact', 'auto'
+   │  │  └─ line 376: TODO : add 'exact', 'auto'
+   │  ├─ test_morestats.py
+   │  │  ├─ line 2943: TODO : add method "pearsonr" after fix overflow issue
+   │  │  └─ line 2963: TODO : add method "pearsonr" after fix overflow issue
+   │  ├─ test_mstats_basic.py
+   │  │  └─ line 1325: TODO : for all ttest functions, add tests with masked array inputs
+   │  ├─ test_mstats_extras.py
+   │  │  └─ line 43: TODO : check that implementation is correct.
+   │  ├─ test_resampling.py
+   │  │  ├─ line 1545: TODO : change to jax_jit=False
+   │  │  ├─ line 1569: TODO : change to jax_jit=False
+   │  │  ├─ line 1677: TODO : change to jax_jit=False
+   │  │  ├─ line 1740: TODO : change to jax_jit=False
+   │  │  ├─ line 1842: : change to jax_jit=False
+only the second case is slow, really
+   │  │  ├─ line 1919: TODO : change to jax_jit=False
+   │  │  └─ line 1945: TODO : use `xp` as backend when cupy works with `rankdata`
+   │  ├─ test_stats.py
+   │  │  ├─ line 79: TODO : write these tests to handle missing values properly
+   │  │  └─ line 6251: TODO : isolate use of alt backend to ttest_ind
+   │  ├─ typing_extensions.py
+   │  │  └─ line 3457: TODO : Use inspect.VALUE here, and make the annotations lazily evaluated
+   │  ├─ _base_connection.py
+   │  │  └─ line 22: : Remove this in favor of a better
+HTTP request/response lifecycle tracking.
+   │  ├─ response.py
+   │  │  └─ line 1152: make sure to initially read enough data to get past the headers
+For example, the GZ file header takes 10 bytes, we don't want to read
+it one byte at a time
+   │  └─ _url.py
+   │     └─ line 701: TODO : add a keyword-only option for keeping user/pass maybe?
+   ├─ XXX
+   │  ├─ reader_c.py
+   │  │  ├─ line 238: : It's possible that the zlib backend (isal is known to
+do this, maybe others too?) will return max_length bytes,
+but internally buffer more data such that the payload is
+>max_length, so we return one extra byte and if we're able
+to do that, then the message is too big.
+   │  │  ├─ line 270: : The Text and Binary messages here can be a performance
+bottleneck, so we use tuple.__new__ to improve performance.
+This is not type safe, but many tests should fail in
+test_client_ws_functional.py if this is wrong.
+   │  │  └─ line 512: XXX : Cython needs slices to be bounded, so we can't omit the slice end here.
+   │  ├─ reader_py.py
+   │  │  ├─ line 238: : It's possible that the zlib backend (isal is known to
+do this, maybe others too?) will return max_length bytes,
+but internally buffer more data such that the payload is
+>max_length, so we return one extra byte and if we're able
+to do that, then the message is too big.
+   │  │  ├─ line 270: : The Text and Binary messages here can be a performance
+bottleneck, so we use tuple.__new__ to improve performance.
+This is not type safe, but many tests should fail in
+test_client_ws_functional.py if this is wrong.
+   │  │  └─ line 512: XXX : Cython needs slices to be bounded, so we can't omit the slice end here.
+   │  ├─ __init__.pyi
+   │  │  └─ line 266: XXX : somehow when defining/using enums Mypy starts looking at our own
+   │  ├─ _make.py
+   │  │  ├─ line 875: XXX : This can be confused by subclassing a slotted attrs class with
+   │  │  ├─ line 876: XXX : a non-attrs class and subclass the resulting class with an attrs
+   │  │  ├─ line 877: XXX : class.  See `test_slotted_confused` for details.  For now that's
+   │  │  ├─ line 878: XXX : OK with us.
+   │  │  └─ line 2504: XXX : unused, remove along with other cmp code.
+   │  ├─ ndarraytypes.h
+   │  │  └─ line 446: the ignore argument should be removed next time the API version
+is bumped. It used to be the separator.
+   │  ├─ npy_3kcompat.h
+   │  │  └─ line 32: : could be cute and give a different
+message for overflow == -1
+   │  ├─ npy_math.h
+   │  │  └─ line 28: XXX : I should test whether INFINITY and NAN are available on the platform
+   │  ├─ test_umath.py
+   │  │  └─ line 4924: XXX : spacing does not handle long double yet
+   │  ├─ test_umath_complex.py
+   │  │  ├─ line 130: : most implementations get it wrong here (including glibc <= 2.10)
+cexp(nan + 0i) is nan + 0i
+   │  │  ├─ line 151: : check exceptions raised
+--- raise for invalid fails.
+   │  │  └─ line 358: : check for conj(csqrt(z)) == csqrt(conj(z)) (need to fix branch
+cuts first)
+   │  ├─ cfuncs.py
+   │  │  └─ line 413: : Note that CNUMFROMARROBJ is identical with NUMFROMARROBJ
+cppmacros['CNUMFROMARROBJ']="""
+   │  ├─ crackfortran.py
+   │  │  ├─ line 712: XXX : non-zero reset values need testing
+   │  │  ├─ line 1434: : subsequent init expressions may get wrong values.
+Ignoring since data statements are irrelevant for
+wrapping.
+   │  │  ├─ line 1440: : This essentially ignores the value for generating the pyf which is fine:
+integer dimension(3) :: mytab
+common /mycom/ mytab
+Since in any case it is initialized in the Fortran code
+   │  │  ├─ line 1993: XXX : apply mapping
+   │  │  ├─ line 2142: XXX : How to catch dependence cycles correctly?
+   │  │  ├─ line 2403: XXX : return something sensible.
+   │  │  ├─ line 2414: XXX : This should be processor dependent
+   │  │  └─ line 2430: : This should be processor dependent
+This is only verified for 0 <= p <= 20, possibly good for p <= 33 and above
+   │  ├─ test_format.py
+   │  │  └─ line 115: XXX : arr is not a dict, items gets called on it
+   │  ├─ utils.py
+   │  │  ├─ line 386: XXX : catch ValueError for subclasses of ndarray where iscomplex fail
+   │  │  └─ line 589: XXX : catch ValueError for subclasses of ndarray where iscomplex fail
+   │  ├─ configuration.py
+   │  │  ├─ line 326: XXX : This is patched in the tests.
+   │  │  └─ line 376: XXX : This is patched in the tests.
+   │  ├─ _distutils.py
+   │  │  └─ line 151: : In old virtualenv versions, sys.prefix can contain '..' components,
+so we need to call normpath to eliminate them.
+   │  ├─ wheel.py
+   │  │  └─ line 98: XXX RECORD hashes will need to be updated
+   │  ├─ sbcharsetprober.py
+   │  │  └─ line 106: : This was SYMBOL_CAT_ORDER before, with a value of 250, but
+CharacterCategory.SYMBOL is actually 253, so we use CONTROL
+to make it closer to the original intent. The only difference
+is whether or not we count digits and control characters for
+_total_char purposes.
+   │  ├─ compat.py
+   │  │  └─ line 169: according to RFC 2818, the most specific Common Name
+must be used.
+   │  ├─ database.py
+   │  │  ├─ line 432: XXX compat-mode if cannot read the version
+   │  │  ├─ line 853: XXX add separator or use real relpath algo
+   │  │  └─ line 1270: XXX compat-mode if cannot read the version
+   │  ├─ locators.py
+   │  │  ├─ line 766: TODO Note: this cache is never actually cleared. It's assumed that
+the data won't get stale over the lifetime of a locator instance (not
+necessarily true for the default_locator).
+   │  │  └─ line 1126: XXX compat-mode if cannot read the version
+   │  ├─ manifest.py
+   │  │  └─ line 274: XXX docstring lying about what the special chars are?
+   │  ├─ metadata.py
+   │  │  └─ line 514: XXX should check the versions (if the file was loaded)
+   │  ├─ util.py
+   │  │  ├─ line 1962: what about the architecture? NT is Intel or Alpha,
+Mac OS is M68k or PPC, etc.
+   │  │  └─ line 1978: XXX what about Alpha, SPARC, etc?
+   │  ├─ __init__.py
+   │  │  ├─ line 433: Currently this is the same as ``distutils.util.get_platform()``, but it
+needs some hacks for Linux and macOS.
+   │  │  ├─ line 457: XXX backward compat
+   │  │  ├─ line 466: XXX Needs compatibility checks for Linux and other unixy OSes.
+   │  │  ├─ line 506: XXX Linux and other platforms' special cases should go here
+   │  │  ├─ line 698: XXX add more info
+   │  │  ├─ line 1175: XXX backward compatibility
+   │  │  └─ line 1370: XXX XXX
+   │  ├─ lexer.py
+   │  │  ├─ line 426: XXX : cache that somehow
+   │  │  └─ line 438: XXX : cache that somehow
+   │  ├─ auth.py
+   │  │  ├─ line 213: XXX not implemented yet
+   │  │  ├─ line 247: XXX handle auth-int.
+   │  │  └─ line 252: XXX should the partial digests be encoded too?
+   │  ├─ structs.py
+   │  │  ├─ line 88: XXX : Python 2.
+   │  │  ├─ line 132: XXX : Python 2.
+   │  │  └─ line 158: XXX : Python 2.
+   │  ├─ ssl_match_hostname.py
+   │  │  └─ line 143: according to RFC 2818, the most specific Common Name
+must be used.
+   │  ├─ labels.py
+   │  │  └─ line 13: Do not edit!
+This file is automatically generated by mklabels.py
+   │  ├─ mklabels.py
+   │  │  └─ line 39: Do not edit!
+This file is automatically generated by mklabels.py
+   │  ├─ _funcs.py
+   │  │  └─ line 819: XXX : `sparse` returns NumPy arrays from `unique_values`
+   │  ├─ _util.py
+   │  │  └─ line 1043: Once the deprecation expires, merge
+linalg/lapack.py::_normalize_lapack_dtype and _normalize_lapack_dtype1, and
+simplify _ensure_dtype_cdsz
+   │  ├─ test_public_api.py
+   │  │  └─ line 176: : this test does more than it says on the tin - in using `pkgutil.walk_packages`,
+it will raise if it encounters any exceptions which are not handled by `ignore_errors`
+while attempting to import each discovered package.
+For now, `ignore_errors` only ignores what is necessary, but this could be expanded -
+for example, to all errors from private modules or git subpackages - if desired.
+   │  ├─ conftest.py
+   │  │  ├─ line 637: : this matches the refguide-check behavior, but is a tad strange:
+makes sure that the seed the old-fashioned np.random* methods is
+*NOT* reproducible but the new-style `default_rng()` *IS* repoducible.
+Should these two be either both repro or both not repro?
+   │  │  └─ line 666: temp skip
+these below test things which inherit from np.ndarray
+cross-ref https://github.com/numpy/numpy/issues/28019
+   │  ├─ test_real_transforms.py
+   │  │  ├─ line 206: : we divide by np.max(y) because the tests fail otherwise. We
+should really use something like assert_array_approx_equal. The
+difference is due to fftw using a better algorithm w.r.t error
+propagation compared to the ones from fftpack.
+   │  │  ├─ line 379: : we divide by np.max(y) because the tests fail otherwise. We
+should really use something like assert_array_approx_equal. The
+difference is due to fftw using a better algorithm w.r.t error
+propagation compared to the ones from fftpack.
+   │  │  ├─ line 484: : we divide by np.max(y) because the tests fail otherwise. We
+should really use something like assert_array_approx_equal. The
+difference is due to fftw using a better algorithm w.r.t error
+propagation compared to the ones from fftpack.
+   │  │  └─ line 618: : we divide by np.max(x) because the tests fail otherwise. We
+should really use something like assert_array_approx_equal. The
+difference is due to fftw using a better algorithm w.r.t error
+propagation compared to the ones from fftpack.
+   │  ├─ _ode.py
+   │  │  ├─ line 40: : Integrators must have:
+===========================
+cvode - C version of vode and vodpk with many improvements.
+Get it from http://www.netlib.org/ode/cvode.tar.gz.
+To wrap cvode to Python, one must write the extension module by
+hand. Its interface is too much 'advanced C' that using f2py
+would be too complicated (or impossible).
+How to define a new integrator:
+===============================
+class myodeint(IntegratorBase):
+runner = <odeint function> or None
+def __init__(self,...):                           # required
+<initialize>
+def reset(self,n,has_jac):                        # optional
+# n - the size of the problem (number of equations)
+# has_jac - whether user has supplied its own routine for Jacobian
+<allocate memory,initialize further>
+def run(self,f,jac,y0,t0,t1,f_params,jac_params): # required
+# this method is called to integrate from t=t0 to t=t1
+# with initial condition y0. f and jac are user-supplied functions
+# that define the problem. f_params,jac_params are additional
+# arguments
+# to these functions.
+<calculate y1>
+if <calculation was unsuccessful>:
+self.success = 0
+return t1,y1
+# In addition, one can define step() and run_relax() methods (they
+# take the same arguments as run()) if the integrator can support
+# these features (see IntegratorBase doc strings).
+if myodeint.runner:
+IntegratorBase.integrator_classes.append(myodeint)
+   │  │  └─ line 815: XXX : __str__ method for getting visual state of the integrator
+   │  ├─ test_integrate.py
+   │  │  └─ line 601: Shouldn't set_integrator *always* accept the keyword arg
+'with_jacobian', and perhaps raise an exception if it is set
+to True if the solver can't actually use it?
+   │  ├─ _bsplines.py
+   │  │  └─ line 2665: XXX : solve_banded does not suppport batched `ab` matrices; loop manually
+   │  ├─ _interpolate.py
+   │  │  └─ line 1062: : can probably use instead the fact that
+\int_0^{1} B_{j, n}(x) \dx = 1/(n+1)
+   │  ├─ _rbfinterp.py
+   │  │  └─ line 488: XXX : this relies on KDTree, hence is numpy-only until KDTree is converted
+   │  ├─ test_bsplines.py
+   │  │  └─ line 328: : this test is flaky: fails on some reruns, with
+result[0, 1] and result[1, 1] being ~1e+224.
+   │  ├─ hb.py
+   │  │  ├─ line 15: : reading is reasonably efficient (>= 85 % is in numpy.fromstring), but
+takes a lot of memory. Being faster would require compiled code.
+write is not efficient. Although not a terribly exciting task,
+having reusable facilities to efficiently read/write fortran-formatted files
+would be useful outside this module.
+   │  │  ├─ line 259: XXX : fortran int -> dtype association ?
+   │  │  └─ line 311: XXX : look at a way to reduce memory here (big string creation)
+   │  ├─ _arffread.py
+   │  │  ├─ line 585: we match twice the same string (here and at the caller level). It is
+stupid, but it is easier for now...
+   │  │  ├─ line 600: we match twice the same string (here and at the caller level). It is
+stupid, but it is easier for now...
+   │  │  └─ line 846: The following code is not great
+Build the type descriptor descr and the list of converters to convert
+each attribute to the suitable type (which should match the one in
+descr).
+   │  ├─ _basic.py
+   │  │  ├─ line 206: XXX ; b upcasts a?
+   │  │  ├─ line 251: XXX a1.ndim > 2 ; b1.ndim > 2
+   │  │  ├─ line 252: XXX can do something if a1 C ordered & transposed==True ?
+   │  │  └─ line 1104: XXX can relax a1.ndim == 2?
+   │  ├─ _decomp.py
+   │  │  └─ line 59: XXX : find a test case to cover this
+   │  ├─ test_basic.py
+   │  │  ├─ line 1148: XXX ndim > 2
+   │  │  └─ line 1526: : shall we make this behavior configurable somehow?
+A "keep-going" option would be this:
+if some of the slices are singular and some are not,
+- singular slices are filled with nans
+- non-singular slices are inverted
+- there is no error
+   │  ├─ test_blas.py
+   │  │  ├─ line 244: XXX : need tests for rot,rotm,rotg,rotmg
+   │  │  └─ line 1127: : remove the test after the lowest supported BLAS implements
+negative incx (new in LAPACK 3.10)
+   │  ├─ test_decomp.py
+   │  │  └─ line 64: : This function should not be defined here, but somewhere in
+scipy.linalg namespace
+   │  ├─ test_matfuncs.py
+   │  │  ├─ line 68: XXX : what would be the correct result?
+   │  │  ├─ line 78: XXX : what would be the correct result?
+   │  │  ├─ line 89: XXX : what would be the correct result?
+   │  │  └─ line 104: XXX : what would be the correct result?
+   │  ├─ _delegators.py
+   │  │  ├─ line 142: XXX : no input arrays; always return numpy
+   │  │  ├─ line 149: XXX : function LowLevelCallable w/backends
+   │  │  ├─ line 162: XXX : function LowLevelCallable w/backends
+   │  │  └─ line 167: XXX : function LowLevelCallable w/backends
+   │  ├─ _support_alternative_backends.py
+   │  │  ├─ line 57: XXX : output arrays
+   │  │  └─ line 61: XXX : np.int32->np.array_0D
+   │  ├─ test_filters.py
+   │  │  └─ line 2745: : a simplified count_nonzero replacement; replace once
+https://github.com/data-apis/array-api/pull/803/ is in
+   │  ├─ test_measurements.py
+   │  │  └─ line 764: : output[[0, 2]] does not work in array-api-strict; annoying
+assert_array_almost_equal(output[[0, 2]], xp.asarray([4.0, 2.5]))
+   │  ├─ _odrpack.py
+   │  │  └─ line 811: XXX : some other FORTRAN compilers may not agree.
+   │  ├─ _nonlin.py
+   │  │  ├─ line 314: : No suitable step length found. Take the full Newton step,
+and hope for the best.
+   │  │  └─ line 1513: : some trust-region inspired ideas might be more efficient...
+See e.g., Brown & Saad. But needs to be implemented separately
+since it's not an inexact Newton method.
+   │  ├─ _optimize.py
+   │  │  └─ line 2529: In the first iteration, rat is only bound in the true case
+of this conditional. This used to cause an UnboundLocalError
+(gh-4140). It should be set before the if (but to what?).
+   │  ├─ _slsqp_py.py
+   │  │  └─ line 481: XXX : check problem size too large for LP64?
+   │  ├─ test_optimize.py
+   │  │  └─ line 1537: XXX : return initial point if they see small gradient
+   │  ├─ _filter_design.py
+   │  │  ├─ line 159: XXX True->1, False->0
+   │  │  ├─ line 3152: XXX : no xp_promote here since that breaks TestButter
+   │  │  └─ line 4166: XXX fminbound array API
+   │  ├─ _fir_filter_design.py
+   │  │  └─ line 749: XXX array-api-extra#193
+   │  ├─ _peak_finding.py
+   │  │  ├─ line 1089: These should always be all_max_cols[row]
+But the order might be different. Might be an efficiency gain
+to make sure the order is the same and avoid this iteration
+   │  │  └─ line 1117: Modifying a list while iterating over it.
+Should be safe, since we iterate backwards, but
+still tacky.
+   │  ├─ _polyutils.py
+   │  │  └─ line 103: XXX actually compute residuals, when there's a use case
+   │  ├─ _signaltools.py
+   │  │  ├─ line 4066: XXX consider using stats.quantile, which is natively Array API compatible
+   │  │  └─ line 4106: XXX : https://github.com/data-apis/array-api/issues/595
+   │  ├─ _spline_filters.py
+   │  │  └─ line 69: : note that complex-valued computations are done in single precision
+this is historic, and the root reason is unclear,
+see https://github.com/scipy/scipy/issues/9209
+Attempting to work in complex double precision leads to symiirorder1
+failing to converge for the boundary conditions.
+   │  ├─ test_filter_design.py
+   │  │  ├─ line 444: XXX : quietly remove float128 and complex256
+   │  │  └─ line 1190: XXX XXX
+   │  ├─ test_signaltools.py
+   │  │  ├─ line 1078: XXX for CuPy
+   │  │  ├─ line 2672: XXX : check 0D/scalars on backends.
+   │  │  ├─ line 4337: : restore testing on CuPy, where possible. Multiple issues in this test:
+1. _zi functions deliberately incompatible in cupy
+(https://github.com/scipy/scipy/pull/21713#issuecomment-2417494443)
+2. a CuPy issue to be fixed in 14.0 only
+(https://github.com/cupy/cupy/pull/8677)
+3. an issue with CuPy's __array__ not numpy-2.0 compatible
+   │  │  ├─ line 4360: XXX while tf2sos is numpy only
+   │  │  ├─ line 4370: XXX while tf2sos is numpy only
+   │  │  ├─ line 4401: XXX XXX
+   │  │  ├─ line 4406: XXX XXX
+   │  │  ├─ line 4422: XXX until tf2sos is array api compatible
+   │  │  ├─ line 4424: XXX XXX
+   │  │  ├─ line 4506: XXX while zpk2sos is numpy-only
+   │  │  ├─ line 4538: XXX while zpk2tf is numpy-only
+   │  │  ├─ line 4566: XXX while butter is np-only
+   │  │  └─ line 4582: XXX while butter is np-only
+   │  ├─ test_lobpcg.py
+   │  │  └─ line 140: XXX : internally, _b_orthonormalize tries to invert an ill-conditioned matrix
+   │  ├─ _expm_multiply.py
+   │  │  ├─ line 390: XXX Eventually turn this into an API function in the  _onenormest module,
+   │  │  ├─ line 391: XXX and remove its underscore,
+   │  │  └─ line 392: XXX but wait until expm_multiply goes into scipy.
+   │  ├─ distance.py
+   │  │  └─ line 290: XXX Is order='c' really necessary?
+   │  ├─ test_qhull.py
+   │  │  ├─ line 539: : These produce valid but different triangulations.
+They look OK when plotted, but how to check them?
+   │  │  └─ line 1034: XXX : compare ridge_points --- not clear exactly how to do this
+   │  ├─ test_legendre.py
+   │  │  └─ line 718: : this is outside the domain of the current implementation,
+so ensure it returns a NaN rather than a wrong answer.
+   │  ├─ _multivariate.py
+   │  │  └─ line 698: XXX : if cov.ndim == 2 and limits.ndim == 1, can avoid apply_along_axis
+   │  └─ _stats_mstats_common.py
+   │     └─ line 23: This cast was previously needed for the Fortran implementation,
+should we ditch it?
+   ├─ [ ]
+   │  ├─ terminal-day-cycle-ui-todo-2026-09-24.md
+   │  │  ├─ line 120: [ ] Call a lightweight terminal refresh before the blocking-overlay return in
+   │  │  ├─ line 122: [ ] Gate it on `#console-terminal-modal` being visible; do no terminal DOM work
+   │  │  ├─ line 124: [ ] Continue refreshing `SURVIVED` while the modal is open.
+   │  │  ├─ line 125: [ ] Do not resume enemy AI, hazards, O₂ drain, lighting simulation, combat or
+   │  │  ├─ line 127: [ ] Display `CYCLE HOLD — TERMINAL ACTIVE` when the local-light clock is paused.
+   │  │  ├─ line 137: [ ] Extract a terminal cycle-status renderer for day, campaign state, local
+   │  │  ├─ line 139: [ ] Update text/progress values at most twice per second while open.
+   │  │  ├─ line 140: [ ] Rebuild journal rows only when a bounded state signature changes; do not
+   │  │  ├─ line 142: [ ] Include mission status, active base goal, resolved deadlines and expired
+   │  │  ├─ line 144: [ ] Reset the terminal-only signature when a new expedition starts.
+   │  │  ├─ line 154: [ ] Rename or clarify `CYCLE PHASE` as `CAMPAIGN STATE` so `EXPEDITION` is not
+   │  │  ├─ line 156: [ ] Add a compact status to the Objective / Night Log tab, for example
+   │  │  ├─ line 158: [ ] Add an `ADVANCE DAY` status card with one of these truthful states:
+   │  │  ├─ line 164: [ ] Add a visible full-cycle progress track and accessible text equivalent.
+   │  │  ├─ line 165: [ ] Keep all new strings in the locale catalogs; do not add English-only UI.
+   │  │  ├─ line 176: [ ] Introduce one formatter/view-model for campaign day, local time, light
+   │  │  ├─ line 178: [ ] Use it from both the HUD event payload and terminal renderer.
+   │  │  ├─ line 179: [ ] Keep `timeOfDay` and `dayState.day` separate in storage and simulation;
+   │  │  ├─ line 181: [ ] Ensure sleeping pins local time to morning and immediately refreshes both
+   │  │  ├─ line 209: [ ] Extend [`threeGame.terminalObjectiveJournal.test.js`](../../src/threeGame.terminalObjectiveJournal.test.js)
+   │  │  ├─ line 212: [ ] Extend [`threeGame.dayCycleRuntime.test.js`](../../src/threeGame.dayCycleRuntime.test.js)
+   │  │  ├─ line 214: [ ] Add coverage proving the terminal-only tick runs from the blocking-overlay
+   │  │  ├─ line 216: [ ] Verify co-op shows the visitor-cycle explanation and cannot invoke rest.
+   │  │  ├─ line 220: [ ] Open Objective / Night Log and verify all fields have real values rather
+   │  │  ├─ line 222: [ ] Leave the terminal open for at least five seconds: `SURVIVED` changes,
+   │  │  ├─ line 224: [ ] Close the terminal: local time resumes without jumping.
+   │  │  ├─ line 225: [ ] Sleep at the bunker cot: campaign day increments once, morning time is
+   │  │  ├─ line 227: [ ] Repeat at a safe camp and with an active contract blocking rest.
+   │  │  ├─ line 228: [ ] Verify 1280×800 PC, 1280×800 Steam Deck/Gamescope and co-op visitor UI.
+   │  │  └─ line 229: [ ] Confirm the Objective / Night Log tab remains bounded without accidental
+   │  └─ todo-audit-backlog-and-conflicts-2026-09-24.md
+   │     └─ line 60: [ ] **P1 — Make the Terminal day-cycle status live and legible.** The
+   └─ [x]
+      ├─ better-todo-tree-20260924-1037.txt
+      │  ├─ line 6: [x] [DONE] Completed & verified with codebase evidence
+      │  ├─ line 7: [x] [SUPERSEDED] Architectural conflicts superseded by current design
+      │  └─ line 8: [x] [MIGRATED] Active release blockers tracked in master backlog
+      ├─ sprint-29-pr-outline.md
+      │  ├─ line 33: [x] [MIGRATED] Implement and wire the 5 missing achievement 3D models (`chassis_scout_ghost_runner.glb`, `skin_scout_chrono_drifter.glb`, `skin_tank_bunker_bastion.glb`, `skin_engineer_archival_constructor.glb`, `skin_engineer_hive_weaver.glb`). <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 34: [x] [MIGRATED] Convert/generate key enemy meshes (`sentinel.glb`, `alien_proto_crawler.glb`, `bio_charger.glb`, `boss_corrupted_scout.glb`, `boss_corrupted_tank.glb`, `boss_corrupted_engineer.glb`). <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 35: [x] [MIGRATED] Register new models in `world3dOverlay.js`, `enemy3dOverlay.js`, and `armoryScene.js`. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 38: [x] Expand quest objectives for all 6 Wanderer archetypes in `src/wandererSystem.js`.
+      │  ├─ line 39: [x] [MIGRATED] Add distinct companion voice/SFX callouts on combat assist actions. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 40: [x] Unit tests for multi-stage companion progression.
+      │  ├─ line 43: [x] [MIGRATED] Run packaged Electron profiling for 60 FPS frame pacing. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 44: [x] [MIGRATED] Benchmark memory footprint under dense room spawns with `gpuMemoryBudget.js`. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 45: [x] [MIGRATED] Verify right stick menu navigation and twin-stick aiming ergonomics. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 48: [x] [MIGRATED] Perform two-account co-op expedition on production backend (`steam.tuesdaycinema.club`). <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  └─ line 49: [x] [MIGRATED] Verify invitation handling from desktop notifications and cold-start URLs. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      ├─ asset-loading-and-season-completion-plan-2026-08-21.md
+      │  ├─ line 18: [x] Move FBX authoring sources out of `public/3d/`.
+      │  ├─ line 19: [x] Update Blender conversion scripts and documentation to use the authoring directory.
+      │  ├─ line 20: [x] Rebuild and confirm no FBX reaches `dist/`.
+      │  ├─ line 21: [x] Keep all runtime GLBs referenced by the game and flag only genuinely unused files.
+      │  ├─ line 25: [x] Add metadata for all achievement cosmetics, including the five still missing source GLBs.
+      │  ├─ line 26: [x] Make achievement cosmetics discoverable in the local catalog fallback and grant them when the achievement unlock event fires.
+      │  ├─ line 27: [x] [MIGRATED] Keep missing 3D models and missing unique 2D art visibly marked as pending, not silently substituted as complete. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 28: [x] [DONE] Recheck Season Pass, Steam Vault, loadout, and armory mappings against one item-definition source of truth. <!-- Evidence: Verified: Debug loading report surfaced in debugMuseum and debugLog without modifying release UI -->
+      │  ├─ line 32: [x] Add a shader-driven emerald tracer ribbon for the Echo-Location Transceiver.
+      │  ├─ line 33: [x] Add a readable cryogenic muzzle shockwave/shard treatment for the Symbiotic Adrenaline Pump.
+      │  ├─ line 34: [x] Expand amber CRT and emerald radar HUD themes beyond one color variable, including panel, border, grid, and warning treatments.
+      │  ├─ line 35: [x] [MIGRATED] Add focused tests for cosmetic effect selection and theme application. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 39: [x] Add development asset-load telemetry for cache hits, durations, failures, and asset groups.
+      │  ├─ line 40: [x] [MIGRATED] Surface a compact debug loading report without changing release UI. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 41: [x] Verify the debug showroom remains explicit-only and enters through the existing door transition.
+      │  ├─ line 42: [x] [MIGRATED] Verify community skin metadata, companion hooks, armory previews, and runtime GLB paths remain aligned. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 46: [x] Preserve decals as 2D and keep their debug wall layout/alignment coverage.
+      │  ├─ line 47: [x] [MIGRATED] Generate or commission unique achievement/community icons only after the visual anchor is confirmed. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 48: [x] [MIGRATED] Create the five missing achievement 3D source models and convert them to GLB. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  └─ line 49: [x] [MIGRATED] Review oversized community GLBs for production compression/LOD before shipping them broadly. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      ├─ game-audit-function-completeness-and-gaps-review.md
+      │  ├─ line 128: [x] **Full Automated Test Suite**: 196 / 196 test files passing (`1,648 / 1,648` tests).
+      │  ├─ line 129: [x] **Armory UI Test Suite**: `src/armoryUi.test.js` (6/6 passing).
+      │  ├─ line 130: [x] **Tactical Cursor Unit Tests**: `src/threeGame.tacticalCursorTelemeter.test.js` (8/8 passing).
+      │  ├─ line 131: [x] **Map System Unit Tests**: `src/mapSystem.test.js` (9/9 passing).
+      │  ├─ line 132: [x] **Debug Museum Unit Tests**: `src/debugMuseum.test.js` (3/3 passing).
+      │  └─ line 133: [x] **Git Repository State**: Clean documentation backups in `docs/archive/agent-walkthroughs/`.
+      ├─ manual-smash-and-animation-mapping-plan.md
+      │  ├─ line 92: [x] Smash gameplay (damage, arc, cooldown) confirmed class-agnostic by
+      │  ├─ line 97: [x] `melee` clip present and playing for all three classes, verified live
+      │  ├─ line 102: [x] [MIGRATED] Smash contact, damage, and animation **contact frame** agreeing with <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 109: [x] Low-health animation changes do not alter movement speed or collision
+      │  ├─ line 115: [x] [MIGRATED] Interaction one-shots remain interruptible by damage, movement, and <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 117: [x] [MIGRATED] Retargeting does not introduce planar root motion or class-specific <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  └─ line 122: [x] Steam Deck/controller glyphs describe the same Smash action as
+      ├─ alternate-radio-wave-2-recording-script-2026-09-15.md
+      │  ├─ line 178: [x] 42 new paired cues generated for Commander and AURA.
+      │  ├─ line 179: [x] Eight missing counterparts have two generated takes wired for rotation.
+      │  ├─ line 180: [x] Two clean generated takes for every missing line.
+      │  ├─ line 181: [x] Cue IDs and take numbers present in filenames.
+      │  ├─ line 182: [x] [MIGRATED] No spoken slates inside delivery files. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 183: [x] [MIGRATED] No baked music, reverb, radio static, or game sound effects. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 184: [x] [MIGRATED] Pronunciation and subtitle wording match this sheet exactly. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 185: [x] Source masters archived before the comms processing pass.
+      │  ├─ line 186: [x] Processed assets loudness-matched by the generation pipeline.
+      │  ├─ line 187: [x] [MIGRATED] Processed assets auditioned under combat mix. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  └─ line 188: [x] [MIGRATED] Armory preview and a ten-minute expedition checked for each bank. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      ├─ armory-continuation-2026-09-09.md
+      │  ├─ line 56: [x] All seven loadout controls and operator sheen remain visible without scrolling.
+      │  ├─ line 57: [x] Every selection grid fits with equal cards and matching styling.
+      │  ├─ line 58: [x] Locked items stay unknown and cannot be equipped; keyboard navigation works.
+      │  ├─ line 59: [x] Names, current weapon readout and reward categories are consistent.
+      │  ├─ line 60: [x] Weapon sheen persists, unlocks from real milestones and appears in gameplay.
+      │  ├─ line 61: [x] Late loads cannot overwrite the last weapon/charm/module selection.
+      │  ├─ line 62: [x] Missing/shared/green previews are replaced where shipped models exist.
+      │  ├─ line 63: [x] The asset inventory explicitly lists any remaining unauthored models.
+      │  └─ line 64: [x] Screenshots and automated checks support the final report.
+      ├─ armory-ui-overhaul-2026-09-09.md
+      │  ├─ line 128: [x] No `<select>` remains in the Armory — browser check reports 0, 6 slots
+      │  ├─ line 129: [x] Locked items are visibly locked, unnamed and unequippable — blurred art,
+      │  ├─ line 132: [x] The weapon picker lists weapons; nothing is labelled "finish" — frame and
+      │  ├─ line 134: [x] Charms have a first-class place in the layout — own full-width slot
+      │  ├─ line 135: [x] Existing loadouts still load and equip correctly — 2601 tests pass
+      │  ├─ line 136: [x] **A weapon sheen exists, tints the weapon, and persists** —
+      │  ├─ line 139: [x] Every picker fits its modal without scrolling
+      │  └─ line 140: [x] All picker chrome uses the game's own tokens, matching the operator sheen
+      ├─ astra-game-improvement-plan-2026-09-08.md
+      │  ├─ line 361: [x] [MIGRATED] A player can start and finish a representative expedition, explain the main loop and recover from a failed run without coaching. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 362: [x] [MIGRATED] Mandatory routes remain reachable across the seed portfolio, and relevant objectives/doors/rewards resolve exactly once. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 363: [x] [MIGRATED] The major deployment stall is causally understood and removed or reduced to the agreed budget on the declared package/hardware route. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 364: [x] [MIGRATED] Performance comparisons use equivalent scenes/settings and include frame-time tails, not menu-only snapshots or GPU averages alone. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 365: [x] [MIGRATED] Release asset and generated-data gates pass with real headroom, valid media, and a complete status classification for shipped asset families. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 366: [x] [MIGRATED] Existing incomplete depth/quest promises are connected through gameplay or removed from player-facing claims until ready. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 367: [x] [MIGRATED] All three classes have readable, viable reference encounters and multiple meaningful build choices. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 368: [x] [MIGRATED] Supported save/recovery semantics are clear, idempotent and verified through interruption; external Cloud tests are recorded separately. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 369: [x] [MIGRATED] Two-account co-op completes the declared expedition/reconnect/end-state route on the candidate build; experimental PvP remains accurately labeled. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 370: [x] [MIGRATED] Controller navigation, accessibility and physical Deck acceptance match the actual product claims. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 371: [x] [MIGRATED] The ending/result flow produces the right consequences and returns safely. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 372: [x] [MIGRATED] Every P0/P1 has either an accepted fix or is explicitly blocking promotion, with a named owner. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  └─ line 373: [x] [MIGRATED] Product State, active sprint, roadmap and release claims all reference the same current evidence. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      ├─ cinematic-framing-and-lighting-spec-2026-09-13.md
+      │  ├─ line 139: [x] [MIGRATED] Camera has the set in frustum, and the faces it sees are lit from its side <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 140: [x] [MIGRATED] Three lighting layers present: environment, practical key, separation rim <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 141: [x] [MIGRATED] Subject on a third — or deliberately centred for a one-point composition <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 142: [x] [MIGRATED] Foreground, midground and background all occupied <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 143: [x] [MIGRATED] Leading lines converge on the subject <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 144: [x] [MIGRATED] Negative space is toned, never pure black <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 145: [x] [MIGRATED] Composition holds across the entire camera move, not just frame one <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  └─ line 146: [x] [MIGRATED] Test frame rendered **and looked at** — never trusted from exit code <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      ├─ depth-01-elite-and-relic-lane-2026-09-09.md
+      │  ├─ line 247: [x] Every field of `DEPTH_CONTRACT` has a tested live consumer, or is removed
+      │  ├─ line 249: [x] Ordinary wounded enemies no longer roll on the elite loot table; the drop-rate
+      │  ├─ line 251: [x] A fixed seed reproduces the identical elite set across two runs.
+      │  ├─ line 252: [x] Ring I and tutorial/scripted content produce no promoted elites.
+      │  ├─ line 253: [x] Repeated ring boundary crossings do not compound any modifier.
+      │  ├─ line 254: [x] Host and peer agree on elite status for a fixed seed, by a documented mechanism
+      │  └─ line 256: [x] The relic matrix exists and names every relic without a runtime consumer
+      ├─ sprint-30.md
+      │  ├─ line 42: [x] Add a documentation map and lifecycle/ownership system.
+      │  ├─ line 43: [x] Reconcile README, Product State, branch, version, and release roadmap for
+      │  ├─ line 45: [x] Record every major carryover from Sprints 24–29 in an ordered roadmap.
+      │  ├─ line 46: [x] Add a repeatable canonical-document audit.
+      │  ├─ line 50: [x] [MIGRATED] Install a production package and record one 35–45 minute expedition on <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 53: [x] [MIGRATED] Use a player who has not read the design docs; capture confusion at 5, <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 55: [x] [MIGRATED] Confirm the player understands O₂ pressure, the Depth Contract choice, <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 58: [x] [MIGRATED] Reproduce or clear the remaining Sprint 29 visual route at desktop 16:9 <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 66: [x] [MIGRATED] Complete one expedition with two real Steam accounts through the <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 69: [x] [MIGRATED] Test accounts in different regions. If public discovery remains blocked, <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 71: [x] [MIGRATED] Verify no duplicate grants, divergent objective/boss state, or lost host <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 78: [x] [MIGRATED] Physical Steam Deck pass: 60 FPS pacing sample in dense rooms, controller <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 80: [x] [MIGRATED] Two-machine Steam Cloud round-trip: online, offline, conflict, corruption <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 82: [x] [MIGRATED] Re-run production backend health/session/leaderboard smoke checks and <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 84: [x] [MIGRATED] Exercise packaged crash/restart recovery from a mid-run checkpoint. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 90: [x] [MIGRATED] Rank observed defects by run-blocking severity and player frequency. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 91: [x] [MIGRATED] Fix P0/P1 failures with regression coverage and rerun the route that found <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 93: [x] [MIGRATED] Convert repeated E2E startup/navigation flakiness into a deterministic <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 95: [x] [MIGRATED] Update Product State and store-claim checklists from results. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 99: [x] Cover the Season Pass claim → reveal → dismiss DOM lifecycle using the
+      │  ├─ line 101: [x] [MIGRATED] Add focused wiring coverage for `rewardPreview.js` where lifecycle and <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 103: [x] Remove the four permanently enabled feature flags and simplify their live
+      │  ├─ line 105: [x] Keep tests colocated with their modules. Do not move 193 test files into
+      │  ├─ line 107: [x] Remove the verified duplicate root favicon and zero-byte `node` artifact;
+      │  └─ line 109: [x] Retire fully merged/duplicate local sprint branches after verifying ancestry. Remote
+      ├─ sprint-41-audit-and-roadmap.md
+      │  ├─ line 118: [x] **Sprint 41.1**: Fix Architecture Kit GLB routing in `threeGame.js` (`arch_*`, `state_*`, `fixture_*`) and add placement regression test.
+      │  ├─ line 119: [x] **Sprint 41.2**: Wire faction dressing models to room builders and close the 4 theme-matrix holes (`bio/medical`, `bio/security`, `bio/engineering`, `active/storage`).
+      │  ├─ line 120: [x] **Sprint 41.3**: Implement Visual Overhaul Phase B (derived normal maps and roughness variation break-up) and Phase D (analog film grade).
+      │  ├─ line 121: [x] **Sprint 41.4**: Integrate multi-chunk setpiece allocator into the world generator.
+      │  ├─ line 122: [x] **Sprint 41.5**: Code-split debug tools into isolated bundle chunk (`debug-tools`), reducing player index bundle from 1,874 kB to 847 kB.
+      │  └─ line 123: [x] [MIGRATED] **Sprint 41.6**: Execute physical hardware and two-account Steam acceptance testing. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      ├─ vo-voice-banks-2026-09-13.md
+      │  ├─ line 176: [x] Label and install the twelve delivered cue slots (§4).
+      │  ├─ line 177: [x] Remap the two runtime aliases that lack dedicated recordings (§3).
+      │  └─ line 178: [x] [MIGRATED] Replace the temporary `--comms` treatment if the artist delivers a final <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      ├─ post-level-crash-site-wanderer-companion-system.md
+      │  ├─ line 140: [x] **3D Assets & Animations Ready:** All 30 models converted and mapped in `src/data/communitySkins.js`.
+      │  ├─ line 141: [x] **State Machine & Storage:** Implement `src/wandererSystem.js` with persistence.
+      │  ├─ line 142: [x] **3D Follow AI Integration:** Upgrade `threeGame.js` companion pipeline from 2D sprites to 3D GLBs.
+      │  ├─ line 143: [x] **Intermission Encounter Modal:** Build Befriend / Chase Off UI (shipped as `src/wandererModal.js`).
+      │  └─ line 144: [x] [MIGRATED] **Quest & Unlock Pipeline:** Wire quest completion callbacks to grant permanent skin access in `src/loadout.js`. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      ├─ pr-body-v2.4.12-beta.md
+      │  ├─ line 85: [x] **Designed** — Specifications and architecture documented in `docs/planning/invisible-essentials-2026-09-24.md` and feature worklogs.
+      │  ├─ line 86: [x] **Coded** — All modules and integrations implemented with no dead code.
+      │  ├─ line 87: [x] **Connected** — Live runtime hooks wired into `ThreeGame`, `MapSystem`, `LoadoutManager`, and Homebase UI.
+      │  ├─ line 88: [x] **Tested** — **4,202 tests across 469 files pass (100% green)**.
+      │  └─ line 89: [x] **Live-verified** — Verified in local runtime development build.
+      ├─ season-rewards-skins-and-achievement-unlocks.md
+      │  ├─ line 476: [x] **Catalog Audit:** Verified all 71 existing items across 2D icons, 3D GLBs, and runtime wiring.
+      │  ├─ line 477: [x] **Missing Asset Prompts:** Engineered 2D/3D prompts for missing chassis (`4115, 4119`), weapons (`4102, 4104, 4105, 4106, 4108`), mods (`4145, 4146`), FX shaders (`4152, 4153`), and synthesized audio (`4148, 4149`).
+      │  ├─ line 478: [x] **Achievement Class Skins:** Designed 12 brand new unique class skins (4 Scout, 4 Tank, 4 Engineer) mapped to core and secret narrative achievements.
+      │  └─ line 479: [x] **Wiring Blueprint:** Fully defined data structures, loadout assignments, and GLB mappings across `loadout.js`, `steamItemCatalog.js`, `player3dOverlay.js`, and `armoryScene.js`.
+      ├─ sprint-29-visual-feedback-and-presentation-fix-plan-2026-08-24.md
+      │  ├─ line 474: [x] [MIGRATED] Reticle is visible and reactive in live gameplay. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 475: [x] [MIGRATED] NIO/menu surfaces are visible, correctly layered, and isolate world input. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 476: [x] [MIGRATED] Lighting remains stable through the defined movement route and scene transitions. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 477: [x] [MIGRATED] Season animations use distinct reward-family endings. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 478: [x] [MIGRATED] Burst effects render in front of the reward object and behind the readable card. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 479: [x] Chroma-green artifacts are removed from runtime 2D presentation assets.
+      │  ├─ line 480: [x] [MIGRATED] XP feedback is hidden at rest, event-driven, styled, and audible. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 481: [x] [MIGRATED] Season-pass collection shows the item, confirmation, audio, and correct 3D/2D preview. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 482: [x] [MIGRATED] Weapon scale is calibrated for gameplay and preview contexts. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 483: [x] [MIGRATED] Charms use correct per-weapon attachment transforms. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 484: [x] [MIGRATED] Walking is grounded at walk, strafe, stop, and sprint speeds. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 485: [x] [MIGRATED] Desktop and Steam Deck-sized visual checks pass. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  └─ line 486: [x] Tests and audits pass, with unrelated failures documented.
+      ├─ sprint26-master-plan-2026-08-19.md
+      │  ├─ line 210: [x] [MIGRATED] Two real clients (ideally two different classes, e.g. TANK + SCOUT), <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 213: [x] [MIGRATED] Confirm the PvP red tint still reads clearly as "hostile" even with a <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 216: [x] [MIGRATED] Confirm walk-cycle animation actually plays for the remote player <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 220: [x] [MIGRATED] Confirm two remote players of the *same* class don't visually <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 226: [x] [MIGRATED] Live PvP match, force one client to actually reconnect mid-match <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 231: [x] [MIGRATED] Confirm a *fresh* room (no prior `matchDeploy`) still correctly <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 237: [x] [MIGRATED] Two clients, confirm: clicking deploy before readying does nothing <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 243: [x] [MIGRATED] Un-ready mid-countdown (either player) — confirm the launch cancels <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 245: [x] [MIGRATED] Disconnect one player mid-countdown — confirm the remaining player(s) <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 248: [x] [MIGRATED] Solo/offline fallback path (no relay reachable) — confirm deploy is <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 252: [x] [MIGRATED] No automated E2E/Playwright coverage exists for this flow yet — only <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 259: [x] [MIGRATED] During any real gameplay session with observable stutter, export the <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 264: [x] [MIGRATED] If a multi-second freeze recurs, use that `lastPhase` tag to actually <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 270: [x] [MIGRATED] Blocked on GitHub Actions secrets (`HB_STEAM_PUBLISHER_KEY`, <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 275: [x] [MIGRATED] Re-run `steam-backend-deploy.yml` (`workflow_dispatch` against <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 279: [x] [MIGRATED] Confirm `POST /steam/session` returns `502` (or succeeds) instead of <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  └─ line 281: [x] [MIGRATED] With real Steam publisher credentials in place, retest the <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      ├─ sprint29plan.md
+      │  ├─ line 65: [x] `npm run lint` passes with 0 errors / 0 warnings.
+      │  ├─ line 66: [x] `npm run presubmit` validates all asset checksums, audio files, and catalog ItemDefs.
+      │  ├─ line 67: [x] `npm run audit:dependencies` reports 0 unused or unmapped dependencies.
+      │  ├─ line 68: [x] `npm run build` succeeds and confirms clean asset bundling.
+      │  ├─ line 69: [x] [MIGRATED] `npm run coverage` maintains >98% statement coverage. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 70: [x] [MIGRATED] Packaged Electron builds for Linux and Windows succeed with unpacked 3D models. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  └─ line 71: [x] Versioning documented and updated across all release tracking ledgers.
+      ├─ steam-achievement-audit-checklist.md
+      │  ├─ line 9: [x] [MIGRATED] **API Name (Key):** Matches the `key` string in `src/achievements.js` exactly. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 10: [x] [MIGRATED] **Display Name:** Matches the `title` string. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 11: [x] [MIGRATED] **Description:** Matches the `blurb` string. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 12: [x] [MIGRATED] **Hidden (Secret) Status:** If `secret: true` in the codebase, the achievement MUST be marked as "Hidden" in Steamworks. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 13: [x] [MIGRATED] **Icons:** Both unlocked and locked icon assets uploaded to Steamworks match the game's internal `icon` keys/assets. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 19: [x] [MIGRATED] Verify that any achievement marked `comingSoon: true` in `src/achievements.js` is **NOT** published as an active achievement in Steamworks.  <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 20: [x] [MIGRATED] If it must be in Steamworks for testing, ensure it is strictly confined to the internal development branch and invisible to public users. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 21: [x] [MIGRATED] Confirm the UI denominator properly excludes these `comingSoon` achievements. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 27: [x] [MIGRATED] Existing users who have already unlocked the achievement locally will retain it, and Steamworks will not revoke it. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 28: [x] [MIGRATED] For progress-based achievements (e.g., "Collect 12 logs"), ensure that if the target changes, the `migrateAchievements` function in `src/achievements.js` smoothly maps legacy progress to the new threshold. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 29: [x] [MIGRATED] If an achievement is entirely removed, ensure the local storage loader safely drops it without crashing the UI, and mark it as "Archived" or remove it from Steamworks. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 34: [x] [MIGRATED] `quick_study` <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 35: [x] [MIGRATED] `hunkered` <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 36: [x] [MIGRATED] `scouts_honor` <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 37: [x] [MIGRATED] `tank_commander` <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 38: [x] [MIGRATED] `chief_engineer` <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 39: [x] [MIGRATED] `ending_full_brood` (Secret) <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 40: [x] [MIGRATED] `ending_clean_escape` (Secret) <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 41: [x] [MIGRATED] `ending_mixed_crew` (Secret) <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 42: [x] [MIGRATED] `ending_carriers_bargain` (Secret) <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 43: [x] [MIGRATED] `ending_scorched_sky` (Secret) <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 44: [x] [MIGRATED] `ending_mothership_infection` (Secret) <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 45: [x] [MIGRATED] `ending_alien_exodus` (Secret) <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 46: [x] [MIGRATED] `ending_outed_escape` (Secret) <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 47: [x] [MIGRATED] `ending_failed_carrier` (Secret) <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 48: [x] [MIGRATED] `ending_empty_husk` (Secret) <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 49: [x] [MIGRATED] `cartographer` <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 50: [x] [MIGRATED] `archivist` <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 51: [x] [MIGRATED] `kin` <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 52: [x] [MIGRATED] `ghost` (Secret) <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 53: [x] [MIGRATED] `gentle_drill` (Secret) <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 54: [x] [MIGRATED] `chen_thirteenth` (Secret) <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 55: [x] [MIGRATED] `reyes_courier` (Secret) <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 56: [x] [MIGRATED] `hardened` <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  └─ line 57: [x] [MIGRATED] `slay_the_queen` (Secret, Coming Soon) <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      ├─ steam-dashboard-handoff.md
+      │  ├─ line 228: [x] [MIGRATED] Leaderboards created and `HB_STEAM_LEADERBOARD_IDS` filled with real IDs. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 229: [x] [MIGRATED] Achievements and stats published in Steamworks. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 230: [x] [MIGRATED] Steam Cloud Auto-Cloud paths saved and published. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 231: [x] [MIGRATED] Inventory schema uploaded and accepted. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 232: [x] [MIGRATED] Steam Input template set to bundled config with manifest path `steam_input_manifest.vdf`. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 233: [x] [MIGRATED] Beta package includes app `4957040` and depot `4957041`. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 234: [x] [MIGRATED] Installed Steam beta launches both platform payloads through the configured launch options. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  └─ line 235: [x] [MIGRATED] Installed Steam beta reaches deployed `/health`, reads inventory, submits a trusted score, and syncs `save.json`. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      ├─ steam-deck-migration-status.md
+      │  ├─ line 8: [x] `src/stage.js`: pure `computeStageTransform`/`toStagePoint`/
+      │  ├─ line 10: [x] `#game-viewport` contain box converted from 177:100 to 160:100
+      │  ├─ line 14: [x] Three.js sizing already reads `this.container.clientWidth/Height`
+      │  ├─ line 19: [x] [MIGRATED] Visual regression captures at 1280×800, 1920×1080, 2560×1440, and an <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 26: [x] `steam/steam_input_manifest.vdf`: added the `archive` action set
+      │  ├─ line 30: [x] `src/inputActions.js`: `createActionRouter()` derives semantic
+      │  ├─ line 33: [x] Electron initializes and activates the native `menu`, `gameplay`, and
+      │  ├─ line 36: [x] `main.js` routes both native Steam Input snapshots and browser Gamepad
+      │  ├─ line 39: [x] RGB consumes the main shell's semantic archive-action event. Its former
+      │  ├─ line 41: [x] [MIGRATED] Real Steam Input glyph queries still require the Steamworks/Deck <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 47: [x] Touch markup removed from `index.html`: virtual movement joystick,
+      │  ├─ line 50: [x] Touch state, listeners, settings, prompts, and persistence removed
+      │  ├─ line 56: [x] Touch/portrait CSS and mobile-only breakpoints removed from
+      │  ├─ line 60: [x] Compass behavior migrated: `#desktop-compass` was already a complete,
+      │  ├─ line 65: [x] `src/dialogue.js` tutorial sequence: dropped the touch-branch prompt
+      │  ├─ line 68: [x] [MIGRATED] No mobile/touch acceptance tests existed in `tests/e2e/` to remove; <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 73: [x] Safe-frame and type-floor tokens added to `style.css` `:root`:
+      │  ├─ line 76: [x] [MIGRATED] Per-screen audit for duplicated/overlapping/low-value overlays not <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 82: [x] [MIGRATED] Text-speed/text-size option clipping test pass not done. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 88: [x] [MIGRATED] Full run using only built-in Deck controls. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 89: [x] [MIGRATED] All menu/codex/settings/ending/RGB paths without touchscreen or mouse <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 91: [x] [MIGRATED] Suspend/resume repeatedly, reconnect an external controller. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 92: [x] [MIGRATED] Docked 1080p and 4K output preserving 16:10 composition. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 93: [x] [MIGRATED] Keyboard/mouse parity verification on 16:9 desktop (informally <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 99: [x] One semantic router is authoritative for native Steam Input and browser
+      │  ├─ line 101: [x] Menu actions are edge-triggered centrally; field actions retain
+      │  ├─ line 103: [x] Editable controller-focused fields invoke the Steam on-screen keyboard
+      │  ├─ line 105: [x] Semantic actions have controller-family fallback labels for prompts;
+      │  └─ line 107: [x] Visible modal roots trap keyboard/controller focus, choose a
+      ├─ steam-review-resubmission-status-2026-09-11.md
+      │  ├─ line 188: [x] [MIGRATED] Open **App Admin → Application → Steam Cloud**. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 189: [x] [MIGRATED] Uncheck **Cloud support for developers only**. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 190: [x] [MIGRATED] Confirm the Auto-Cloud path and `save.json` pattern match the packaged app. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 191: [x] [MIGRATED] Save and publish. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 192: [x] [MIGRATED] On Machine A, create a recognizable save and exit cleanly. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 193: [x] [MIGRATED] On a clean Machine B install/account environment, download and verify it. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 194: [x] [MIGRATED] Modify the save on B, exit, return to A, and verify the updated state. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 195: [x] [MIGRATED] Record conflict/offline behavior and the exact Steam build ID. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 199: [x] Upload the English Library Capsule.
+      │  ├─ line 200: [x] Upload the English Library Header.
+      │  ├─ line 201: [x] Upload the title-only English Library Logo.
+      │  ├─ line 202: [x] Confirm the Hero has no overlay text/logo.
+      │  ├─ line 203: [x] Save and publish all store changes.
+      │  ├─ line 204: [x] Check the public/preview page after publishing.
+      │  ├─ line 208: [x] Reconcile AI-generated/AI-assisted content against the submitted asset set.
+      │  ├─ line 209: [x] Replace the AI description with factual AI-use-only copy.
+      │  ├─ line 210: [x] Re-answer every mature-content checkbox against actual shipped content.
+      │  ├─ line 211: [x] Make the customer-facing mature-content description match those answers.
+      │  ├─ line 212: [x] Save and publish.
+      │  ├─ line 267: [x] [MIGRATED] Exact English library replacements are published, not merely present in the repo. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 268: [x] [MIGRATED] AI disclosure matches every AI-assisted/generated family in the actual build and store art. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 269: [x] [MIGRATED] Unsupported mature-content selections are removed; retained ones have tested direct routes. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 270: [x] [MIGRATED] Every retained online tag passed with real accounts in the uploaded build. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 271: [x] [MIGRATED] Steam Cloud developer-only is off and a two-machine round trip passed. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 272: [x] [MIGRATED] IAP is removed, or real Steam Wallet—not a mock—passed end to end. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 273: [x] [MIGRATED] Full Controller Support passed the complete controller-only route. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 274: [x] [MIGRATED] Any offered Linux/SteamOS build passed a fresh Steam install. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 275: [x] [MIGRATED] Reviewer notes contain the exact build ID, branch, menu paths, and only verified claims. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  └─ line 276: [x] [MIGRATED] Store page and build are saved, published, and then marked ready for re-review. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      ├─ story-world-asset-gap-priorities-2026-09-11.md
+      │  ├─ line 76: [x] **Camp choice modal pre-confirmation warning**: Built dedicated `#camp-choice-confirm` panel displaying the leader arc name, projected resolution, humanity and bond deltas, candidate ending locks, and back/confirm decision controls.
+      │  ├─ line 77: [x] **Ending archive in Field Codex**: Structured `.ending-archive-section` displaying all ten historical outcomes, locked silhouettes (`*_locked.jpg`), discovery badges, and explicit Codex linchpin attribution with narrative reasoning.
+      │  └─ line 78: [x] **Inter-leader radio commentary**: Authored characterful radio reaction lines across all four leaders (`TANK`, `SCOUT`, `ENGINEER`, and allied `MAYOR_TINA`) acknowledging each other's fates and hive choices without audio/text clobbering.
+      ├─ 2026-07-24-steam-deck-stage-input-and-rgb.md
+      │  ├─ line 40: [x] Write failing tests: 16:10 host maps scale exactly; 16:9 host (1920×1080) letterboxes horizontally with `offsetX = (1920 - 1080/800*1280)/2`; ultrawide mattes sides; pointer round-trip; degenerate host returns identity.
+      │  ├─ line 41: [x] Run `npx vitest run src/stage.test.js` — expect FAIL (module missing).
+      │  ├─ line 42: [x] Implement `src/stage.js` (pure functions, no DOM).
+      │  ├─ line 43: [x] `npx vitest run src/stage.test.js` — PASS.
+      │  ├─ line 44: [x] Commit `feat: add 1280x800 logical stage transform module`.
+      │  ├─ line 59: [x] Add the wrapper + CSS + refreshGameLayout wiring.
+      │  ├─ line 60: [x] Verify: `npm run build` clean; boot dev server, screenshot at 1280×800, 1920×1080, ultrawide — 16:10 composition centered with matte, HUD scaled uniformly (Playwright viewport captures).
+      │  ├─ line 61: [x] Run existing e2e smoke (`npx playwright test tests/e2e/bunker-tree*` or fastest suite) to confirm no boot regression.
+      │  ├─ line 62: [x] Commit `feat: route world and overlay UI through canonical 16:10 stage`.
+      │  ├─ line 89: [x] Edit manifest; validate VDF braces by eye + any existing steam audit script (`npm run steam:audit-depot` if applicable).
+      │  ├─ line 90: [x] Commit `feat: add archive action set and missing semantic actions to Steam Input manifest`.
+      │  ├─ line 102: [x] Failing tests: set switching; archive mapping (confirm=A/`interact`, back=B/`menuBack`, inventory=Y/`ability`, reveal=X/`reload` hold, focus from move stick + dpad); edge triggering (held button fires once).
+      │  ├─ line 103: [x] Implement; tests PASS; lint clean.
+      │  ├─ line 104: [x] Commit `feat: add semantic action router with archive action set`.
+      │  ├─ line 116: [x] Delete in the order index.html → main.js → style.css, keeping the app booting between edits (`npm run build` after each file).
+      │  ├─ line 117: [x] Grep for stragglers: `grep -rn "touch\|Touch" main.js index.html | grep -v pointerType` and review each survivor (allowed: ordinary pointer-event plumbing).
+      │  ├─ line 118: [x] `npm run lint && npm test && npm run build`; boot + screenshot to confirm HUD intact and compass alive.
+      │  ├─ line 119: [x] Commit `feat!: remove touch/mobile input targets per Steam Deck-first spec`.
+      │  ├─ line 127: [x] Add tokens; point stage-root padding of HUD anchors at them where trivially applicable (HUD top/bottom bars).
+      │  ├─ line 128: [x] Write status doc.
+      │  ├─ line 129: [x] Commit `docs: record steam-deck migration status; add safe-frame/type tokens`.
+      │  ├─ line 142: [x] Author data from `scene-flow.md`/`narrative-script.md` (beats, optional choices, carry-forward flags exactly as specced).
+      │  ├─ line 143: [x] Commit with Task 8 (content is exercised by state tests).
+      │  ├─ line 157: [x] Failing tests covering: each ending trigger, both game overs, expose evidence math incl. Marisol substitution both ways, timeBand gating (band 3 blocks billing agent but not endings), rescue assist by calibration tier.
+      │  ├─ line 158: [x] Implement minimal `state.js`; tests PASS.
+      │  ├─ line 159: [x] Commit `feat: add RGB archive-sim pure state machine with tested ending predicates`.
+      │  ├─ line 169: [x] Failing tests: fresh default; round-trip; corrupt string recovery; unknown version reset preserving nothing; endings dedupe.
+      │  ├─ line 170: [x] Implement; PASS; commit `feat: add RGB save record with migration and corrupt-save recovery`.
+      │  ├─ line 178: [x] Wire + test; unlock persists across reload (storage-backed).
+      │  ├─ line 179: [x] Commit `feat: unlock RGB archive sim from Specimen 0047 codex completion`.
+      │  ├─ line 193: [x] Build runtime chapter-generic (data-driven), not six bespoke scenes.
+      │  ├─ line 194: [x] Verify keyboard-only full path to each ending manually via dev server.
+      │  ├─ line 195: [x] `npm run lint && npm test && npm run build`.
+      │  ├─ line 196: [x] Commit `feat: add RGB gray-box DOM runtime on the shared 16:10 stage`.
+      │  ├─ line 204: [x] Wire; verify active-run save untouched after enter/exit (compare `hb_profile_v1`/run keys before/after).
+      │  ├─ line 205: [x] Commit `feat: add ARCHIVE SIMS title menu with RGB launch routing`.
+      │  ├─ line 212: [x] Playwright: seed localStorage with unlocked RGB save → boot title → ARCHIVE SIMS visible → launch → keyboard-drive chapter 1 required beats → assert checkpoint advances and persists.
+      │  ├─ line 213: [x] Full gates: `npm run lint && npm test && npm run build && npx playwright test tests/e2e/rgb-archive-sim.spec.js`.
+      │  └─ line 214: [x] Commit `test: add RGB unlock/launch/chapter-1 e2e smoke`.
+      ├─ 2026-07-25-survivable-falls-and-pockets.md
+      │  ├─ line 30: [x] **Step 1: Write the failing test**
+      │  ├─ line 69: [x] **Step 2: Run test to verify it fails**
+      │  ├─ line 74: [x] **Step 3: Write minimal implementation**
+      │  ├─ line 107: [x] **Step 4: Run test to verify it passes**
+      │  ├─ line 112: [x] **Step 5: Commit**
+      │  ├─ line 130: [x] **Step 1: Write the failing test**
+      │  ├─ line 151: [x] **Step 2: Run test to verify it fails**
+      │  ├─ line 156: [x] **Step 3: Write minimal implementation**
+      │  ├─ line 183: [x] **Step 4: Run test to verify it passes**
+      │  ├─ line 191: [x] **Step 5: Commit**
+      │  ├─ line 210: [x] **Step 1: Write the failing test**
+      │  ├─ line 271: [x] **Step 2: Run test to verify it fails**
+      │  ├─ line 279: [x] **Step 3: Write minimal implementation**
+      │  ├─ line 320: [x] **Step 4: Run test to verify it passes**
+      │  ├─ line 325: [x] **Step 5: Commit**
+      │  ├─ line 344: [x] **Step 1: Write the failing test**
+      │  ├─ line 406: [x] **Step 2: Run test to verify it fails**
+      │  ├─ line 411: [x] **Step 3: Write minimal implementation**
+      │  ├─ line 477: [x] **Step 4: Run test to verify it passes**
+      │  ├─ line 482: [x] **Step 5: Commit**
+      │  ├─ line 501: [x] **Step 1: Write the failing test**
+      │  ├─ line 552: [x] **Step 2: Run test to verify it fails**
+      │  ├─ line 557: [x] **Step 3: Write minimal implementation**
+      │  ├─ line 661: [x] **Step 4: Run test to verify it passes**
+      │  ├─ line 669: [x] **Step 5: Commit**
+      │  ├─ line 688: [x] **Step 1: Write the failing test**
+      │  ├─ line 796: [x] **Step 2: Run test to verify it fails**
+      │  ├─ line 804: [x] **Step 3: Write minimal implementation**
+      │  ├─ line 937: [x] **Step 4: Run test to verify it passes**
+      │  ├─ line 945: [x] **Step 5: Commit**
+      │  ├─ line 964: [x] **Step 1: Write the failing test**
+      │  ├─ line 1022: [x] **Step 2: Run test to verify it fails**
+      │  ├─ line 1027: [x] **Step 3: Write minimal implementation**
+      │  ├─ line 1135: [x] **Step 4: Run test to verify it passes**
+      │  ├─ line 1143: [x] **Step 5: Commit**
+      │  ├─ line 1159: [x] **Step 1: Start the dev server if not already running**
+      │  ├─ line 1164: [x] **Step 2: Write a throwaway Playwright script to force a fall and observe the result**
+      │  ├─ line 1238: [x] **Step 3: Run it**
+      │  ├─ line 1243: [x] **Step 4: Take a screenshot for a manual visual sanity check**
+      │  ├─ line 1252: [x] **Step 5: Delete the throwaway spec and confirm the full suite is still green**
+      │  └─ line 1263: [x] **Step 6: Commit** (only if Step 4 surfaced a real bug that needed a code fix — otherwise this task produces no commit, since it's verification-only)
+      ├─ 2026-07-26-snail-diplomacy-encounter.md
+      │  ├─ line 81: [x] **Step 1: Reproduce the bug in isolation**
+      │  ├─ line 113: [x] **Step 2: Run it to confirm the helper itself is sound**
+      │  ├─ line 120: [x] **Step 3: Fix the real call site**
+      │  ├─ line 149: [x] **Step 4: Run the full suite to confirm nothing else called the old names**
+      │  ├─ line 155: [x] **Step 5: Commit**
+      │  ├─ line 188: [x] **Step 1: Write the failing tests**
+      │  ├─ line 309: [x] **Step 2: Run to verify failure**
+      │  ├─ line 314: [x] **Step 3: Implement**
+      │  ├─ line 398: [x] **Step 4: Run to verify all pass**
+      │  ├─ line 403: [x] **Step 5: Commit**
+      │  ├─ line 435: [x] **Step 1: Write the failing test**
+      │  ├─ line 485: [x] **Step 2: Run to verify failure**
+      │  ├─ line 490: [x] **Step 3: Implement**
+      │  ├─ line 520: [x] **Step 4: Run to verify pass**
+      │  ├─ line 525: [x] **Step 5: Commit**
+      │  ├─ line 559: [x] **Step 1: Write the failing tests**
+      │  ├─ line 613: [x] **Step 2: Run to verify failure**
+      │  ├─ line 618: [x] **Step 3: Implement — `normalizeAct2State`**
+      │  ├─ line 651: [x] **Step 4: Implement — `_findSpeaker` and `completeScientistQuest`**
+      │  ├─ line 678: [x] **Step 5: Run to verify pass**
+      │  ├─ line 683: [x] **Step 6: Run the full suite**
+      │  ├─ line 689: [x] **Step 7: Commit**
+      │  ├─ line 721: [x] **Step 1: Write the failing test**
+      │  ├─ line 770: [x] **Step 2: Run to verify failure**
+      │  ├─ line 775: [x] **Step 3: Implement**
+      │  ├─ line 822: [x] **Step 4: Run to verify pass**
+      │  ├─ line 827: [x] **Step 5: Commit**
+      │  ├─ line 854: [x] **Step 1: Add the modal markup**
+      │  ├─ line 885: [x] **Step 2: Add minimal styling**
+      │  ├─ line 978: [x] **Step 3: Register the modal in `hasBlockingGameplayOverlay`**
+      │  ├─ line 1019: [x] **Step 4: Manual verification (no automated test for this step — it's pure DOM wiring)**
+      │  ├─ line 1026: [x] **Step 5: Run the full suite and build to confirm nothing broke**
+      │  ├─ line 1031: [x] **Step 6: Commit**
+      │  ├─ line 1062: [x] **Step 1: Write the failing test**
+      │  ├─ line 1095: [x] **Step 2: Run to verify failure**
+      │  ├─ line 1100: [x] **Step 3: Implement the pure helper**
+      │  ├─ line 1119: [x] **Step 4: Run to verify pass**
+      │  ├─ line 1124: [x] **Step 5: Wire `updateCompanions` into `threeGame.js`**
+      │  ├─ line 1209: [x] **Step 6: Run the full suite, lint, and build**
+      │  ├─ line 1215: [x] **Step 7: Commit**
+      │  ├─ line 1247: [x] **Step 1: Replace the snail contact-damage branch**
+      │  ├─ line 1300: [x] **Step 2: Implement `openSnailEncounter`, `closeSnailEncounter`, and button wiring**
+      │  ├─ line 1416: [x] **Step 3: Wire the buttons and imports**
+      │  ├─ line 1449: [x] **Step 4: Wire quest-objective resolution**
+      │  ├─ line 1466: [x] **Step 5: Manual verification**
+      │  ├─ line 1481: [x] **Step 6: Run the full suite, lint, and build**
+      │  ├─ line 1486: [x] **Step 7: Commit**
+      │  ├─ line 1523: [x] **Step 1: Extend `leaderKeyFor` and `talkToLeader`**
+      │  ├─ line 1568: [x] **Step 2: Add placement and the interact method**
+      │  ├─ line 1609: [x] **Step 3: Add the HUD prompt element**
+      │  ├─ line 1625: [x] **Step 4: Test the pure parts**
+      │  ├─ line 1636: [x] **Step 5: Manual verification**
+      │  ├─ line 1643: [x] **Step 6: Run lint and build**
+      │  └─ line 1648: [x] **Step 7: Commit**
+      ├─ 2026-07-27-wfc-tile-maze-generation-phase1.md
+      │  ├─ line 50: [x] **Step 1: Write the failing tests for the rotation helpers and socket/pattern consistency**
+      │  ├─ line 122: [x] **Step 2: Run the tests to verify they fail (module doesn't exist yet)**
+      │  ├─ line 127: [x] **Step 3: Write `src/tileCatalog.js`**
+      │  ├─ line 336: [x] **Step 4: Run the tests to verify they pass**
+      │  ├─ line 341: [x] **Step 5: Commit**
+      │  ├─ line 362: [x] **Step 1: Write the failing tests**
+      │  ├─ line 428: [x] **Step 2: Run the tests to verify they fail**
+      │  ├─ line 433: [x] **Step 3: Write `src/wfcGenerator.js` (collapse only, no stamping/reachability yet)**
+      │  ├─ line 552: [x] **Step 4: Run the tests to verify they pass**
+      │  ├─ line 560: [x] **Step 5: Commit**
+      │  ├─ line 580: [x] **Step 1: Write the failing test**
+      │  ├─ line 642: [x] **Step 2: Run the tests to verify they fail**
+      │  ├─ line 647: [x] **Step 3: Add `stampLattice` to `src/wfcGenerator.js`**
+      │  ├─ line 673: [x] **Step 4: Run the tests to verify they pass**
+      │  ├─ line 681: [x] **Step 5: Commit**
+      │  ├─ line 707: [x] **Step 1: Write the failing test**
+      │  ├─ line 780: [x] **Step 2: Run the test to verify it fails**
+      │  ├─ line 787: [x] **Step 3: Modify `buildChunk` in `src/threeGame.js`**
+      │  ├─ line 925: [x] **Step 4: Run the tests to verify they pass**
+      │  ├─ line 930: [x] **Step 5: Run the full existing test suite to check for regressions**
+      │  ├─ line 940: [x] **Step 6: Commit**
+      │  ├─ line 962: [x] **Step 1: Write the failing test**
+      │  ├─ line 999: [x] **Step 2: Run the test to verify it fails**
+      │  ├─ line 1005: [x] **Step 3: Modify `clearSpawnArea` in `src/threeGame.js`**
+      │  ├─ line 1066: [x] **Step 4: Run the test to verify it passes**
+      │  ├─ line 1071: [x] **Step 5: Run the full test suite**
+      │  ├─ line 1079: [x] **Step 6: Commit**
+      │  ├─ line 1100: [x] **Step 1: Write the failing tests**
+      │  ├─ line 1141: [x] **Step 2: Run the tests to verify they fail**
+      │  ├─ line 1147: [x] **Step 3: Add the `tutorialOnly` option to `collapseChunkLattice`**
+      │  ├─ line 1241: [x] **Step 4: Wire the tutorial ring into `buildChunk`/`getChunkLandform`**
+      │  ├─ line 1262: [x] **Step 5: Run the tests to verify they pass**
+      │  ├─ line 1267: [x] **Step 6: Run the full test suite**
+      │  ├─ line 1272: [x] **Step 7: Commit**
+      │  ├─ line 1294: [x] **Step 1: Write the failing test for protected-cell support**
+      │  ├─ line 1310: [x] **Step 2: Run the test to verify it fails**
+      │  ├─ line 1316: [x] **Step 3: Add `protectedCells` support to `src/generator.js`**
+      │  ├─ line 1367: [x] **Step 4: Run the test to verify it passes**
+      │  ├─ line 1376: [x] **Step 5: Write the failing test for the maze detail pass**
+      │  ├─ line 1409: [x] **Step 6: Run the test to verify it fails**
+      │  ├─ line 1414: [x] **Step 7: Add `runMazeDetailPass` to `src/threeGame.js`**
+      │  ├─ line 1457: [x] **Step 8: Run the tests to verify they pass**
+      │  ├─ line 1462: [x] **Step 9: Run the full test suite**
+      │  ├─ line 1467: [x] **Step 10: Run lint**
+      │  └─ line 1473: [x] **Step 11: Commit**
+      ├─ 2026-07-28-passive-class-abilities-and-universal-sprint.md
+      │  ├─ line 33: [x] **Step 1: Write the failing test**
+      │  ├─ line 109: [x] **Step 2: Run test to verify it fails**
+      │  ├─ line 114: [x] **Step 3: Replace CLASS_STATS**
+      │  ├─ line 126: [x] **Step 4: Add `resolveClassPassiveStats()`**
+      │  ├─ line 166: [x] **Step 5: Run test to verify it passes**
+      │  ├─ line 171: [x] **Step 6: Commit**
+      │  ├─ line 190: [x] **Step 1: Write the failing sprint test**
+      │  ├─ line 272: [x] **Step 2: Run test to verify it fails**
+      │  ├─ line 277: [x] **Step 3: Add sprint state fields to the constructor**
+      │  ├─ line 288: [x] **Step 4: Add `updateSprintState(delta)`**
+      │  ├─ line 304: [x] **Step 5: Run test to verify it passes (sprint state + key handling only so far)**
+      │  ├─ line 309: [x] **Step 6: Rewrite `setKeyState` and `setVirtualInputSprint`, delete `triggerSprintBurst`**
+      │  ├─ line 339: [x] **Step 7: Run test to verify it passes**
+      │  ├─ line 344: [x] **Step 8: Remove the F-key/gamepad ability trigger and the old classAbility system**
+      │  ├─ line 506: [x] **Step 9: Remove the `classAbility.active`-gated dead bonuses**
+      │  ├─ line 555: [x] **Step 10: Rewire movement/O2 to the renamed sprint multipliers, remove `fortifyActive`**
+      │  ├─ line 621: [x] **Step 11: Run the full test suite**
+      │  ├─ line 626: [x] **Step 12: Lint**
+      │  ├─ line 631: [x] **Step 13: Commit**
+      │  ├─ line 650: [x] **Step 1: Write the failing tests**
+      │  ├─ line 715: [x] **Step 2: Run test to verify it fails**
+      │  ├─ line 720: [x] **Step 3: Add `applyPlayerSlow()` and use it at all three slow-inflicting call sites**
+      │  ├─ line 738: [x] **Step 4: Add `weaponReloadDuration` field and use it in `startReload`/`emitWeaponClipState`**
+      │  ├─ line 777: [x] **Step 5: Run test to verify it passes**
+      │  ├─ line 782: [x] **Step 6: Run full suite + lint**
+      │  ├─ line 787: [x] **Step 7: Commit**
+      │  ├─ line 806: [x] **Step 1: Write the failing tests**
+      │  ├─ line 908: [x] **Step 2: Run test to verify it fails**
+      │  ├─ line 913: [x] **Step 3: Add the block-chance check to `takeDamage()`**
+      │  ├─ line 925: [x] **Step 4: Add `updateTankRegen(delta)`**
+      │  ├─ line 953: [x] **Step 5: Run test to verify it passes**
+      │  ├─ line 958: [x] **Step 6: Run full suite + lint**
+      │  ├─ line 963: [x] **Step 7: Commit**
+      │  ├─ line 982: [x] **Step 1: Write the failing tests**
+      │  ├─ line 1106: [x] **Step 2: Run test to verify it fails**
+      │  ├─ line 1111: [x] **Step 3: Add the turret constants and runtime fields**
+      │  ├─ line 1127: [x] **Step 4: Add `findNearestEnemyWithinRange`, `deployEngineerTurret`, `despawnEngineerTurret`, `fireEngineerTurret`, `updateEngineerTurret`**
+      │  ├─ line 1248: [x] **Step 5: Run test to verify it passes**
+      │  ├─ line 1253: [x] **Step 6: Run full suite + lint**
+      │  ├─ line 1258: [x] **Step 7: Commit**
+      │  ├─ line 1275: [x] **Step 1: Update SCOUT nodes**
+      │  ├─ line 1295: [x] **Step 2: Update TANK nodes**
+      │  ├─ line 1313: [x] **Step 3: Update ENGINEER nodes**
+      │  ├─ line 1331: [x] **Step 4: Run the skill tree nav test**
+      │  ├─ line 1336: [x] **Step 5: Lint**
+      │  ├─ line 1341: [x] **Step 6: Commit**
+      │  ├─ line 1360: [x] **Step 1: Fix gamepad sprint to be hold-based, remove the dead ability trigger**
+      │  ├─ line 1393: [x] **Step 2: Remove the old ability HUD event listeners and pointerdown trigger**
+      │  ├─ line 1406: [x] **Step 3: Add the `engineer-turret-tick` listener**
+      │  ├─ line 1431: [x] **Step 4: Rewrite `syncAbilityPanelLabel` for the static passive readout**
+      │  ├─ line 1454: [x] **Step 5: Update index.html default markup**
+      │  ├─ line 1470: [x] **Step 6: CSS — static-passive bar hiding, remove dead ability-active-* rules**
+      │  ├─ line 1482: [x] **Step 7: Manual smoke test**
+      │  ├─ line 1486: [x] **Step 8: Run full suite + lint**
+      │  ├─ line 1491: [x] **Step 9: Commit**
+      │  ├─ line 1504: [x] **Step 1: Run the full test suite**
+      │  ├─ line 1509: [x] **Step 2: Run lint across all touched files**
+      │  ├─ line 1514: [x] **Step 3: Grep-verify no dangling references to the removed system**
+      │  └─ line 1519: [x] **Step 4: Report results to the user**
+      ├─ 2026-08-02-line-director-overhaul.md
+      │  ├─ line 45: [x] **Step 1: Write the failing tests**
+      │  ├─ line 161: [x] **Step 2: Run the tests to verify they fail**
+      │  ├─ line 166: [x] **Step 3: Implement `src/lineDirector.js`**
+      │  ├─ line 289: [x] **Step 4: Run the tests to verify they pass**
+      │  ├─ line 294: [x] **Step 5: Commit**
+      │  ├─ line 313: [x] **Step 1: Write the failing tests**
+      │  ├─ line 382: [x] **Step 2: Run the tests to verify they fail**
+      │  ├─ line 387: [x] **Step 3: Implement `src/data/lineDirectorPools.js`**
+      │  ├─ line 457: [x] **Step 4: Run the tests to verify they pass**
+      │  ├─ line 462: [x] **Step 5: Commit**
+      │  ├─ line 480: [x] **Step 1: Add imports**
+      │  ├─ line 501: [x] **Step 2: Instantiate the arbiter in the constructor**
+      │  ├─ line 510: [x] **Step 3: Add `buildLineDirectorContext()`**
+      │  ├─ line 532: [x] **Step 4: Tick the arbiter's clock each frame**
+      │  ├─ line 545: [x] **Step 5: Rewire the `patrol` and `taunt` cases**
+      │  ├─ line 611: [x] **Step 6: Reset the arbiter alongside the Director on respawn**
+      │  ├─ line 619: [x] **Step 7: Run the full test suite**
+      │  ├─ line 624: [x] **Step 8: Manual smoke check**
+      │  ├─ line 629: [x] **Step 9: Commit**
+      │  ├─ line 647: [x] **Step 1: Add the import**
+      │  ├─ line 655: [x] **Step 2: Remove the now-redundant module-level state**
+      │  ├─ line 668: [x] **Step 3: Remove the dead no-op listener**
+      │  ├─ line 682: [x] **Step 4: Rewrite `fireMothershipReactiveLine`**
+      │  ├─ line 728: [x] **Step 5: Remove the redundant run-reset lines**
+      │  ├─ line 737: [x] **Step 6: Run the full test suite**
+      │  ├─ line 742: [x] **Step 7: Manual smoke check**
+      │  └─ line 747: [x] **Step 8: Commit**
+      ├─ 2026-08-02-wall-door-instancing.md
+      │  ├─ line 42: [x] **Step 1: Write the failing tests**
+      │  ├─ line 90: [x] **Step 2: Run the tests to verify they fail**
+      │  ├─ line 95: [x] **Step 3: Add the constructor init**
+      │  ├─ line 113: [x] **Step 4: Add `createWallInstanceRecord`**
+      │  ├─ line 167: [x] **Step 5: Run the tests to verify they pass**
+      │  ├─ line 172: [x] **Step 6: Run the full suite and check syntax**
+      │  ├─ line 177: [x] **Step 7: Commit**
+      │  ├─ line 196: [x] **Step 1: Write the failing tests**
+      │  ├─ line 232: [x] **Step 2: Run the tests to verify they fail**
+      │  ├─ line 237: [x] **Step 3: Extract the helper and use it in `configureWallMesh`**
+      │  ├─ line 284: [x] **Step 4: Run the tests to verify they pass**
+      │  ├─ line 289: [x] **Step 5: Run the full suite**
+      │  ├─ line 294: [x] **Step 6: Commit**
+      │  ├─ line 312: [x] **Step 1: Replace the hazard/damaged/standard wall branches**
+      │  ├─ line 666: [x] **Step 2: Add the bucket-building locals and `pushWallInstanceMatrix`, build pools after the loop**
+      │  ├─ line 756: [x] **Step 3: Stub the not-yet-implemented decoration hook**
+      │  ├─ line 765: [x] **Step 4: Run the full suite**
+      │  ├─ line 772: [x] **Step 5: Commit**
+      │  ├─ line 790: [x] **Step 1: Replace the stub with the real implementation**
+      │  ├─ line 827: [x] **Step 2: Build the four decoration pools after the wall-pool-building pass**
+      │  ├─ line 902: [x] **Step 2: Run the full suite**
+      │  ├─ line 908: [x] **Step 3: Commit**
+      │  ├─ line 926: [x] **Step 1: Replace the rib/panel creation with matrix collection**
+      │  ├─ line 1012: [x] **Step 2: Declare the matrix arrays and build the two pools**
+      │  ├─ line 1048: [x] **Step 3: Run the full suite**
+      │  ├─ line 1054: [x] **Step 4: Commit**
+      │  ├─ line 1073: [x] **Step 1: Write the failing tests**
+      │  ├─ line 1188: [x] **Step 2: Run the tests to verify they fail**
+      │  ├─ line 1193: [x] **Step 3: Update `findWallMeshAt`**
+      │  ├─ line 1215: [x] **Step 4: Branch `updateWallDamageColor` on `isInstancedWall`**
+      │  ├─ line 1294: [x] **Step 5: Branch `markWallTileDestroyed` and `destroyWall` on `isInstancedWall`**
+      │  ├─ line 1371: [x] **Step 6: Clean up `_wallInstanceIndex` on chunk unmount**
+      │  ├─ line 1396: [x] **Step 7: Write the failing chunk-unmount test**
+      │  ├─ line 1433: [x] **Step 8: Run the tests to verify they pass**
+      │  ├─ line 1438: [x] **Step 9: Run the full suite**
+      │  ├─ line 1443: [x] **Step 10: Commit**
+      │  ├─ line 1462: [x] **Step 1: Write the failing test**
+      │  ├─ line 1497: [x] **Step 2: Run the test to verify it fails**
+      │  ├─ line 1502: [x] **Step 3: Add `findWallByPoolInstance` and use it in `checkProjectileWallHit`**
+      │  ├─ line 1563: [x] **Step 4: Run the tests to verify they pass**
+      │  ├─ line 1568: [x] **Step 5: Run the full suite**
+      │  └─ line 1573: [x] **Step 6: Commit**
+      ├─ 2026-08-14-camera-behind-head.md
+      │  ├─ line 74: [x] **Step 1: Write the failing tests**
+      │  ├─ line 143: [x] **Step 2: Run tests to verify they fail**
+      │  ├─ line 148: [x] **Step 3: Write the implementation**
+      │  ├─ line 179: [x] **Step 4: Run tests to verify they pass**
+      │  ├─ line 184: [x] **Step 5: Commit**
+      │  ├─ line 203: [x] **Step 1: Write the failing test**
+      │  ├─ line 246: [x] **Step 2: Run test to verify it fails**
+      │  ├─ line 251: [x] **Step 3: Implement**
+      │  ├─ line 313: [x] **Step 4: Run test to verify it passes**
+      │  ├─ line 318: [x] **Step 5: Run the full unit suite to check nothing else broke**
+      │  ├─ line 323: [x] **Step 6: Commit**
+      │  ├─ line 342: [x] **Step 1: Write the failing test**
+      │  ├─ line 425: [x] **Step 2: Run tests to verify they fail**
+      │  ├─ line 430: [x] **Step 3: Implement**
+      │  ├─ line 482: [x] **Step 4: Run tests to verify they pass**
+      │  ├─ line 487: [x] **Step 5: Run the full unit suite**
+      │  ├─ line 492: [x] **Step 6: Commit**
+      │  ├─ line 511: [x] **Step 1: Write the failing tests**
+      │  ├─ line 565: [x] **Step 2: Run tests to verify they fail**
+      │  ├─ line 570: [x] **Step 3: Implement**
+      │  ├─ line 639: [x] **Step 4: Run tests to verify they pass**
+      │  ├─ line 644: [x] **Step 5: Run the full unit suite**
+      │  ├─ line 649: [x] **Step 6: Commit**
+      │  ├─ line 672: [x] **Step 1: Add pointer-lock state and the prompt element**
+      │  ├─ line 685: [x] **Step 2: Wire pointer-lock request into pointerdown, remove old absolute-cursor aim calls**
+      │  ├─ line 739: [x] **Step 3: Add pointer-lock lifecycle methods and listeners**
+      │  ├─ line 789: [x] **Step 4: Release pointer lock when a blocking overlay opens**
+      │  ├─ line 799: [x] **Step 5: Manual smoke test**
+      │  ├─ line 804: [x] **Step 6: Commit**
+      │  ├─ line 824: [x] **Step 1: Add the crosshair element**
+      │  ├─ line 834: [x] **Step 2: Show it during gameplay, hide it otherwise**
+      │  ├─ line 857: [x] **Step 3: Freeze the legacy tactical cursor while pointer-locked**
+      │  ├─ line 865: [x] **Step 4: Manual smoke test**
+      │  ├─ line 870: [x] **Step 5: Commit**
+      │  ├─ line 892: [x] **Step 1: Add the yaw sensitivity constant**
+      │  ├─ line 900: [x] **Step 2: Repoint the trackpad/gyro delta path**
+      │  ├─ line 919: [x] **Step 3: Repoint the absolute right-stick path**
+      │  ├─ line 934: [x] **Step 4: Manual smoke test**
+      │  ├─ line 939: [x] **Step 5: Commit**
+      │  ├─ line 969: [x] **Step 1: Replace the spec**
+      │  ├─ line 1068: [x] **Step 2: Run the rewritten spec**
+      │  ├─ line 1073: [x] **Step 3: Run the full e2e suite for regressions**
+      │  ├─ line 1081: [x] **Step 4: Run the full unit suite one more time**
+      │  └─ line 1086: [x] **Step 5: Commit**
+      ├─ tickets-acceptance-testing-plan.md
+      │  ├─ line 161: [x] [MIGRATED] #51 paired packaged PvP certification, if PvP remains in scope for release. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 162: [x] [MIGRATED] #52 fixed-route packaged performance acceptance on its declared target devices. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 163: [x] [MIGRATED] #53 physical Deck controller-only route and lifecycle acceptance. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 164: [x] [MIGRATED] #85 paired two-account co-op PvE expedition. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 165: [x] [MIGRATED] two-machine Steam Cloud/save round trip, including conflict/offline handling. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  ├─ line 166: [x] [MIGRATED] packaged desktop visual/performance acceptance and a human first-hour proof run. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      │  └─ line 167: [x] [MIGRATED] current Steam review/compliance claims, controller support claims, and Linux/SteamOS claims tied to matching evidence. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+      └─ projections.py
+         └─ line 168: [x] [x]

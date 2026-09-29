@@ -1,0 +1,142 @@
+
+Running 9 tests using 1 worker
+
+  ✓  1 [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 31337 SCOUT (5.2m)
+  ✘  2 [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 31337 TANK (3.2m)
+  ✓  3 [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 31337 ENGINEER (5.0m)
+  ✘  4 [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 99991 SCOUT (3.2m)
+  ✘  5 [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 99991 TANK (2.9m)
+  ✘  6 [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 99991 ENGINEER (31.9s)
+  ✓  7 [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 5150 SCOUT (4.1m)
+  ✓  8 [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 5150 TANK (3.4m)
+  ✓  9 [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 5150 ENGINEER (3.8m)
+
+
+  1) [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 31337 TANK 
+
+    Error: run-start flow did not reach gameplay: {"appPhase":"gameplay","isGameplayPhase":true,"isGameplayHudActive":{"uiVisible":true,"menuHidden":true,"gameOverHidden":true,"splashHidden":true},"gameplayReady":false,"profile":"gameplay","inputEnabled":false,"loadingPaused":true,"blockingOverlay":true,"container":{"width":1150,"height":718},"armoryVisible":false,"deploymentVisible":false}
+
+       at helpers.js:191
+
+      189 |             deploymentVisible: !document.getElementById('multiplayer-modal')?.classList.contains('hidden')
+      190 |         })).catch(() => null);
+    > 191 |         throw new Error(`run-start flow did not reach gameplay: ${JSON.stringify(state)}`);
+          |               ^
+      192 |     }
+      193 |     await page.evaluate(() => {
+      194 |         const settings = document.getElementById('settings-popup');
+        at startRunAndSkipIntro (/home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/helpers.js:191:15)
+        at /home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:51:13
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results-int/probes-slice-integrated-slice-seed-31337-TANK-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results-int/probes-slice-integrated-slice-seed-31337-TANK-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../test-results-int/probes-slice-integrated-slice-seed-31337-TANK-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../test-results-int/probes-slice-integrated-slice-seed-31337-TANK-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 99991 SCOUT 
+
+    Error: run-start flow did not reach gameplay: {"appPhase":"armory","isGameplayPhase":false,"isGameplayHudActive":{"uiVisible":false,"menuHidden":true,"gameOverHidden":true,"splashHidden":true},"gameplayReady":false,"profile":"menu","inputEnabled":false,"loadingPaused":false,"blockingOverlay":false,"container":{"width":0,"height":0},"armoryVisible":true,"deploymentVisible":false}
+
+       at helpers.js:191
+
+      189 |             deploymentVisible: !document.getElementById('multiplayer-modal')?.classList.contains('hidden')
+      190 |         })).catch(() => null);
+    > 191 |         throw new Error(`run-start flow did not reach gameplay: ${JSON.stringify(state)}`);
+          |               ^
+      192 |     }
+      193 |     await page.evaluate(() => {
+      194 |         const settings = document.getElementById('settings-popup');
+        at startRunAndSkipIntro (/home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/helpers.js:191:15)
+        at /home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:51:13
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results-int/probes-slice-integrated-slice-seed-99991-SCOUT-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results-int/probes-slice-integrated-slice-seed-99991-SCOUT-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../test-results-int/probes-slice-integrated-slice-seed-99991-SCOUT-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../test-results-int/probes-slice-integrated-slice-seed-99991-SCOUT-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 99991 TANK 
+
+    Error: run-start flow did not reach gameplay: {"appPhase":"armory","isGameplayPhase":false,"isGameplayHudActive":{"uiVisible":false,"menuHidden":true,"gameOverHidden":true,"splashHidden":true},"gameplayReady":false,"profile":"menu","inputEnabled":false,"loadingPaused":false,"blockingOverlay":false,"container":{"width":0,"height":0},"armoryVisible":true,"deploymentVisible":false}
+
+       at helpers.js:191
+
+      189 |             deploymentVisible: !document.getElementById('multiplayer-modal')?.classList.contains('hidden')
+      190 |         })).catch(() => null);
+    > 191 |         throw new Error(`run-start flow did not reach gameplay: ${JSON.stringify(state)}`);
+          |               ^
+      192 |     }
+      193 |     await page.evaluate(() => {
+      194 |         const settings = document.getElementById('settings-popup');
+        at startRunAndSkipIntro (/home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/helpers.js:191:15)
+        at /home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:51:13
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results-int/probes-slice-integrated-slice-seed-99991-TANK-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results-int/probes-slice-integrated-slice-seed-99991-TANK-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../test-results-int/probes-slice-integrated-slice-seed-99991-TANK-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../test-results-int/probes-slice-integrated-slice-seed-99991-TANK-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 99991 ENGINEER 
+
+    TimeoutError: page.waitForFunction: Timeout 30000ms exceeded.
+
+       at helpers.js:53
+
+      51 |     await page.goto('/');
+      52 |     await page.waitForLoadState('domcontentloaded');
+    > 53 |     await page.waitForFunction(() => typeof window.HunkerTriggerBoot === 'function', null, { timeout: 30_000 });
+         |                ^
+      54 |
+      55 |     const splash = page.locator('#splash');
+      56 |     const menu = page.locator('#menu');
+        at revealTitleSplash (/home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/helpers.js:53:16)
+        at bootToTitleSplash (/home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/helpers.js:37:20)
+        at bootToOperatorMenu (/home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/helpers.js:78:5)
+        at /home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:47:13
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results-int/probes-slice-integrated-slice-seed-99991-ENGINEER-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results-int/probes-slice-integrated-slice-seed-99991-ENGINEER-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../test-results-int/probes-slice-integrated-slice-seed-99991-ENGINEER-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../test-results-int/probes-slice-integrated-slice-seed-99991-ENGINEER-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4 failed
+    [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 31337 TANK 
+    [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 99991 SCOUT 
+    [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 99991 TANK 
+    [chromium] › ../../../../../../home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:35:9 › integrated slice seed 99991 ENGINEER 
+  5 passed (32.9m)

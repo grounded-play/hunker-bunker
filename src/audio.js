@@ -698,9 +698,6 @@ export class AudioManager {
         if (cueType === 'operator_down') {
             defaultKey = 'voice_system_02_uplink_severed';
             defaultSubtitle = 'UPLINK SEVERED. TELEMETRY LOST.';
-        } else if (cueType === 'victory' || cueType === 'mission_active') {
-            defaultKey = 'voice_mothership_01_alive';
-            defaultSubtitle = "AGENT. YOU'RE ALIVE.";
         } else if (cueType === 'boss_spotted' || cueType === 'threat_high') {
             defaultKey = 'voice_mothership_02_warning_bio';
             defaultSubtitle = 'UNAUTHORIZED BIOLOGICAL SIGNATURES DETECTED.';
@@ -797,7 +794,6 @@ export class AudioManager {
             if (textLower.includes('unauthorized biological') || textLower.includes('do not answer') || textLower.includes('extraction window')) targetKey = 'voice_mothership_02_warning_bio';
             else if (textLower.includes('abandoned') || textLower.includes('extermination') || textLower.includes('remain where you are')) targetKey = 'voice_mothership_03_orbital_purge';
             else if (textLower.includes("you're alive") || textLower.includes("you are alive") || textLower.includes("alive.")) targetKey = 'voice_mothership_01_alive';
-            else targetKey = 'voice_mothership_01_alive';
         }
         // System / Exosuit
         else if (speakerName.includes('EXOSUIT') || speakerName.includes('SYSTEM')) {

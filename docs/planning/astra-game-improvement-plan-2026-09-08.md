@@ -358,18 +358,18 @@ Before merging a gameplay batch run the relevant focused checks, then the reposi
 
 ## 23. Completion criteria for the broader improvement effort
 
-- [ ] A player can start and finish a representative expedition, explain the main loop and recover from a failed run without coaching.
-- [ ] Mandatory routes remain reachable across the seed portfolio, and relevant objectives/doors/rewards resolve exactly once.
-- [ ] The major deployment stall is causally understood and removed or reduced to the agreed budget on the declared package/hardware route.
-- [ ] Performance comparisons use equivalent scenes/settings and include frame-time tails, not menu-only snapshots or GPU averages alone.
-- [ ] Release asset and generated-data gates pass with real headroom, valid media, and a complete status classification for shipped asset families.
-- [ ] Existing incomplete depth/quest promises are connected through gameplay or removed from player-facing claims until ready.
-- [ ] All three classes have readable, viable reference encounters and multiple meaningful build choices.
-- [ ] Supported save/recovery semantics are clear, idempotent and verified through interruption; external Cloud tests are recorded separately.
-- [ ] Two-account co-op completes the declared expedition/reconnect/end-state route on the candidate build; experimental PvP remains accurately labeled.
-- [ ] Controller navigation, accessibility and physical Deck acceptance match the actual product claims.
-- [ ] The ending/result flow produces the right consequences and returns safely.
-- [ ] Every P0/P1 has either an accepted fix or is explicitly blocking promotion, with a named owner.
-- [ ] Product State, active sprint, roadmap and release claims all reference the same current evidence.
+- [x] [MIGRATED] A player can start and finish a representative expedition, explain the main loop and recover from a failed run without coaching. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Mandatory routes remain reachable across the seed portfolio, and relevant objectives/doors/rewards resolve exactly once. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] The major deployment stall is causally understood and removed or reduced to the agreed budget on the declared package/hardware route. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Performance comparisons use equivalent scenes/settings and include frame-time tails, not menu-only snapshots or GPU averages alone. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Release asset and generated-data gates pass with real headroom, valid media, and a complete status classification for shipped asset families. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Existing incomplete depth/quest promises are connected through gameplay or removed from player-facing claims until ready. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] All three classes have readable, viable reference encounters and multiple meaningful build choices. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Supported save/recovery semantics are clear, idempotent and verified through interruption; external Cloud tests are recorded separately. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Two-account co-op completes the declared expedition/reconnect/end-state route on the candidate build; experimental PvP remains accurately labeled. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Controller navigation, accessibility and physical Deck acceptance match the actual product claims. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] The ending/result flow produces the right consequences and returns safely. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Every P0/P1 has either an accepted fix or is explicitly blocking promotion, with a named owner. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Product State, active sprint, roadmap and release claims all reference the same current evidence. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 
 This plan is complete as a review artifact when it is saved and linked into the planning index. The game-improvement effort is complete only when the unchecked outcomes above have the appropriate evidence.

@@ -36,6 +36,9 @@ export function createBossFight(def) {
         addTimer: def.phases[0].addWave?.every ?? Infinity,
         weakpointTimer: def.phases[0].weakpoint?.every ?? Infinity,
         weakpointOpenFor: 0,
+        pendingAttack: null,
+        attacksInPhase: 0,
+        phaseMechanic: def.phases[0].mechanic ?? null,
         defeated: false
     };
 }
@@ -57,7 +60,10 @@ export function isWeakpointOpen(fight) {
 // deals at least 1 — armor chips the boss, it doesn't zero the hit out.
 export function applyBossDamage(fight, amount = 0) {
     if (fight.defeated || amount <= 0) return 0;
-    const mult = isWeakpointOpen(fight) ? 1 : (fight.def.armoredDamageMult ?? 1);
+    const phase = currentPhase(fight);
+    const mult = isWeakpointOpen(fight)
+        ? 1
+        : (phase.armoredDamageMult ?? fight.def.armoredDamageMult ?? 1);
     const raw = amount * mult;
     const dealt = raw > 0 ? Math.max(1, Math.round(raw)) : 0;
     fight.hp = Math.max(0, fight.hp - dealt);
@@ -100,12 +106,15 @@ export function tickBossFight(fight, delta, { activeAdds = 0 } = {}) {
         fight.attackTimer = phase.attackCooldown ?? 4;
         fight.addTimer = phase.addWave?.every ?? Infinity;
         fight.weakpointTimer = phase.weakpoint?.every ?? Infinity;
+        fight.pendingAttack = null;
+        fight.attacksInPhase = 0;
+        fight.phaseMechanic = phase.mechanic ?? null;
         // A phase change slams any open window shut: new stance, new armor.
         if (fight.weakpointOpenFor > 0) {
             fight.weakpointOpenFor = 0;
             events.push({ type: 'weakpoint-close', phase: phase.key });
         }
-        events.push({ type: 'phase', phase: phase.key });
+        events.push({ type: 'phase', phase: phase.key, mechanic: phase.mechanic ?? null });
     }
 
     const phase = currentPhase(fight);
@@ -116,7 +125,7 @@ export function tickBossFight(fight, delta, { activeAdds = 0 } = {}) {
             fight.weakpointOpenFor = 0;
             events.push({ type: 'weakpoint-close', phase: phase.key });
         }
-    } else if (phase.weakpoint) {
+    } else if (phase.weakpoint && !phase.weakpoint.afterAttacks) {
         fight.weakpointTimer -= delta;
         if (fight.weakpointTimer <= 0) {
             fight.weakpointTimer = phase.weakpoint.every;
@@ -125,10 +134,43 @@ export function tickBossFight(fight, delta, { activeAdds = 0 } = {}) {
         }
     }
 
-    fight.attackTimer -= delta;
-    if (fight.attackTimer <= 0) {
-        fight.attackTimer = phase.attackCooldown ?? 4;
-        events.push({ type: 'attack', attack: phase.attack, phase: phase.key });
+    if (fight.pendingAttack) {
+        fight.pendingAttack.remaining -= delta;
+        if (fight.pendingAttack.remaining <= 0) {
+            const attack = fight.pendingAttack.attack;
+            fight.pendingAttack = null;
+            fight.attacksInPhase += 1;
+            events.push({ type: 'attack', attack, phase: phase.key });
+            if (phase.weakpoint?.afterAttacks
+                && fight.attacksInPhase % phase.weakpoint.afterAttacks === 0
+                && fight.weakpointOpenFor <= 0) {
+                fight.weakpointOpenFor = phase.weakpoint.duration;
+                events.push({ type: 'weakpoint-open', duration: phase.weakpoint.duration, phase: phase.key });
+            }
+        }
+    } else {
+        fight.attackTimer -= delta;
+        if (fight.attackTimer <= 0) {
+            fight.attackTimer = phase.attackCooldown ?? 4;
+            if ((phase.attackWindup ?? 0) > 0) {
+                fight.pendingAttack = { attack: phase.attack, remaining: phase.attackWindup };
+                events.push({
+                    type: 'attack-telegraph',
+                    attack: phase.attack,
+                    phase: phase.key,
+                    duration: phase.attackWindup
+                });
+            } else {
+                fight.attacksInPhase += 1;
+                events.push({ type: 'attack', attack: phase.attack, phase: phase.key });
+                if (phase.weakpoint?.afterAttacks
+                    && fight.attacksInPhase % phase.weakpoint.afterAttacks === 0
+                    && fight.weakpointOpenFor <= 0) {
+                    fight.weakpointOpenFor = phase.weakpoint.duration;
+                    events.push({ type: 'weakpoint-open', duration: phase.weakpoint.duration, phase: phase.key });
+                }
+            }
+        }
     }
 
     if (phase.addWave) {
@@ -234,6 +276,73 @@ export const SPORESNAIL_FIGHT_DEF = Object.freeze({
             weakpoint: Object.freeze({ every: 9, duration: 3.5 })
         })
     ]
+});
+
+// Ring 1 Cybersnail: the armored mortar phase rewards timing shots into the
+// cooling vent that opens after every third volley. Below half health the
+// carapace breaks, changing the fight into a faster EMP pursuit with adds.
+export const CYBERSNAIL_FIGHT_DEF = Object.freeze({
+    key: 'cybersnail',
+    maxHp: 15,
+    armoredDamageMult: 0.2,
+    phases: [
+        Object.freeze({
+            key: 'ballistic-carapace',
+            until: 0.5,
+            attackCooldown: 4.5,
+            attackWindup: 0.8,
+            attack: 'mortar_volley',
+            weakpoint: Object.freeze({ afterAttacks: 3, duration: 3.5 }),
+            mechanic: Object.freeze({ kind: 'cooling-vent', opensAfterVolleys: 3 })
+        }),
+        Object.freeze({
+            key: 'overdrive',
+            until: 0,
+            armoredDamageMult: 0.65,
+            attackCooldown: 3.0,
+            attackWindup: 0.65,
+            attack: 'radial_emp',
+            addWave: Object.freeze({ every: 8, type: 'crawler', count: 2, max: 4 }),
+            mechanic: Object.freeze({ kind: 'carapace-shattered', speedMultiplier: 1.4 })
+        })
+    ]
+});
+
+// Cryosnail: phase one pressures a lane with needle barrages. Deep Freeze
+// changes the arena rule: the boss leaves persistent slowing pathway patches,
+// forcing the player to rotate instead of continuing the same kite circle.
+export const CRYO_BOSS_FIGHT_DEF = Object.freeze({
+    key: 'cryosnail',
+    maxHp: 40,
+    armoredDamageMult: 0.55,
+    phases: [
+        Object.freeze({
+            key: 'glacial-aura',
+            until: 0.6,
+            attackCooldown: 4.6,
+            attackWindup: 0.8,
+            attack: 'ice_needle_barrage',
+            weakpoint: Object.freeze({ every: 10, duration: 3 }),
+            mechanic: Object.freeze({ kind: 'glacial-aura' })
+        }),
+        Object.freeze({
+            key: 'deep-freeze',
+            until: 0,
+            armoredDamageMult: 0.75,
+            attackCooldown: 3.8,
+            attackWindup: 1.0,
+            attack: 'deep_freeze_wave',
+            weakpoint: Object.freeze({ every: 8, duration: 3.5 }),
+            mechanic: Object.freeze({ kind: 'frozen-pathways', patchEvery: 1.25, patchDuration: 8, slowDuration: 1.2 })
+        })
+    ]
+});
+
+export const BOSS_PHASE_DEFS = Object.freeze({
+    queen: QUEEN_FIGHT_DEF,
+    boss_cybersnail: CYBERSNAIL_FIGHT_DEF,
+    boss_cryosnail: CRYO_BOSS_FIGHT_DEF,
+    boss_sporesnail: SPORESNAIL_FIGHT_DEF
 });
 
 // ── Ordinary enemy stagger/armor/weakpoint grammar (Sprint 28 Lane C) ─

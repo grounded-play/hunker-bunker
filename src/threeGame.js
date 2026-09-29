@@ -9,6 +9,8 @@ import { BiomeAtmosphereSystem } from './ambientDrift.js';
 import { KillstreakFeedbackSystem } from './gameplayTactileVfx.js';
 import { CHUNK_SIZE, TILE_SIZE } from './tileCatalog.js';
 import { getControllerGlyphLabel } from './inputGlyphs.js';
+import { loadAccessibilitySettings } from './accessibilitySettings.js';
+import { hasVisibleTacticalRepresentation, tacticalNameForObject } from './tacticalTargetLabels.js';
 
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -135,6 +137,7 @@ import {
 import {
     isCellInSafeZone,
     shouldBlockAttackPath,
+    createAttackPathBlocker,
     canHostileAggroTarget,
     isDoorClosed,
     translateContainmentZone,
@@ -187,8 +190,17 @@ import { HiveSite } from './hiveSite.js';
 import { describeDialogueProgress, leaderKeyFromName, nextDialogueBeat, isFinalStage } from './data/campDialogue.js';
 import { blackBoxStore } from './blackBox.js';
 import { runCheckpointStore } from './runCheckpoint.js';
+import { expeditionSuspendStore, normalizeExpeditionSuspendSnapshot } from './expeditionSuspend.js';
 import { CHASSIS_SKIN_MODELS, createPlayer3dOverlay, ENGINEER_GESTURES, excludePlayerSelfLights } from './player3dOverlay.js';
 import { remoteEquipmentSignature, resolveRemoteEquipmentVisuals } from './remoteLoadout.js';
+import {
+    createTransitNetwork,
+    unlockTransitTerminal,
+    canUseTransit,
+    executeTransit,
+    formatTransitLabel,
+    TRANSIT_INTERACT_RADIUS
+} from './pneumaticTransit.js';
 
 export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
     modelUrl: '/3d/runtime/secrets/mayor-tina-rigged.glb',
@@ -220,6 +232,9 @@ import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinch
 import { resolveSafeSpawn } from './safeSpawn.js';
 import { WORLD_3D_FACING_YAW, WORLD_3D_SWAP_PREFETCH_DISTANCE, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
+import { intersectWallMeshes } from './wallRaycastIndex.js';
+import { createFlatMaterialSweeper, useSinglePassForFlatMaterials } from './singlePassFlatMaterials.js';
+import { COMPANION_PATH_LIMITS, findCompanionPath, nextWaypoint } from './companionPath.js';
 import { SNAIL_ENCOUNTER_CONSTANTS } from './snailEncounter.js';
 import { createUniversalEncounter, resolveEncounterAction } from './universalEncounter.js';
 import { startEncounterTransition } from './snailEncounterTransition.js';
@@ -276,6 +291,8 @@ import {
     completeRest,
     createDayState,
     deadlinesClosingTonight,
+    formatDayCycleViewModel,
+    getDayFactorFromTimeOfDay,
     normalizeDayState,
     resolveDeadline,
     threatScaleForDay
@@ -327,10 +344,16 @@ import { ExplorationTracker } from './mapSystem.js';
 
 export const EXTERIOR_CANYON_TILE = 'X';
 export const CLIFF_TILE = 'C';
+// Tiles around the spawn where lethal edges block movement instead of killing.
+export const SPAWN_SAFE_EDGE_RADIUS = 24;
 export const LEDGE_TILE = 'O';
 import {
     rollEnemyLootDrop,
     computeActiveSynergies,
+    resolveCryoShatterNova,
+    resolveBioVampirismKill,
+    getTurretElementalInheritance,
+    isBioEnemy,
     WEAPON_OVERCLOCKS,
     SUIT_RELICS,
     applyLastBreathDamage,
@@ -349,11 +372,14 @@ import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound, LORE_DROPS } from './loreDrops.js';
 import {
     createBossFight,
+    currentPhase,
     tickBossFight,
     applyBossDamage,
     QUEEN_FIGHT_DEF,
     QUEEN_PHASE_LINES,
     SPORESNAIL_FIGHT_DEF,
+    CYBERSNAIL_FIGHT_DEF,
+    CRYO_BOSS_FIGHT_DEF,
     createEnemyStaggerState,
     applyStaggerDamage,
     tickStaggerState,
@@ -417,6 +443,43 @@ import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugWorldLayout.js';
 import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
 import { summarizeSceneLights, diffLightCounts } from './lightingReport.js';
 import { t } from './i18n.js';
+import {
+    bountyReceiptId,
+    bountyShellReward,
+    createBountyProgress,
+    isCampaignBountyProfile,
+    recordBountyEvent
+} from './expeditionBounties.js';
+import { planArrivalIncident, planCrashSiteDebris } from './arrivalIncident.js';
+import { chooseNextAction, describeDeathCause, describeFieldLoss, summarizeBuild } from './deathReport.js';
+import { GOAL_NAME_KEYS } from './expeditionReport.js';
+import { EVENT_ROUTE_KEYS, EVENT_TEXT_KEYS, EVENT_TUNING, applyEventAction, createEventState, planDeploymentEvent, selectDeploymentEvent } from './expeditionEvents.js';
+import { callSliceContract } from './sliceContracts.js';
+import { registerStoryManager } from './storyScope.js';
+import './encounterRecipes.js';
+import {
+    COOP_ROLE,
+    COOP_TRANSITION_EVENTS,
+    announcesBossEvent,
+    bossAddScatterKey,
+    coopRole,
+    coopTransitionDedupeKey,
+    descentSeedOffset,
+    runsBossEventLocally,
+    shouldApplyEncounterFormationState,
+    shouldApplyDescent
+} from './coopTransitions.js';
+import {
+    applyStatus,
+    getStatus,
+    clearStatus,
+    tickStatusEffects
+} from './statusEffects.js';
+import {
+    planRewardCache,
+    claimRewardCache,
+    REWARD_CACHE_I18N_KEYS
+} from './rewardCache.js';
 
 /**
  * Boss display names by spawn type. Was an eight-branch if/else assigning
@@ -475,6 +538,13 @@ const SUIT_LIGHT_WALL_PADDING = 0.35;
 const HB_DIRECT_SPECULAR_MIN_ROUGHNESS = 0.6;
 
 const DAMAGE_PIP_TEXTURE_CACHE_MAX = 48;
+// Literal keys so the i18n audit credits them.
+const EXPEDITION_BOUNTY_LABEL_KEYS = Object.freeze({
+    salvage_run: 'ui.expedition.bounties.salvage_run',
+    eliminate_elite: 'ui.expedition.bounties.eliminate_elite',
+    scout_compound: 'ui.expedition.bounties.scout_compound',
+    clearing_breach: 'ui.expedition.bounties.clearing_breach'
+});
 // Impact and frost rings grow by scale, so every ring can share one geometry
 // per shape instead of building and disposing one per effect.
 export const SHARED_GROUND_SHOCKWAVE_GEOMETRY = new THREE.RingGeometry(0.08, 0.16, 24);
@@ -604,9 +674,9 @@ const PICKUP_TYPES = [
     { type: 'coin', weight: 0.09 }
 ];
 export const CLASS_STATS = {
-    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, passiveName: 'EVASIVE', passiveDescription: 'Reduced duration from enemy slow/freeze effects. Faster reload.' },
-    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, passiveName: 'BULWARK', passiveDescription: 'Chance to fully block incoming damage.' },
-    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, passiveName: 'TURRET PROTOCOL', passiveDescription: 'Unlock the automated field turret deep in the Engineer skill tree.' }
+    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, passiveName: 'EVASIVE', passiveDescription: 'Reduced duration from enemy slow/freeze effects. Faster reload. Slipstream Strike grants +35% move speed on hit.' },
+    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, passiveName: 'BULWARK', passiveDescription: 'Chance to fully block incoming damage. Heavy Seismic Slam breaches walls and deals 8 damage.' },
+    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, passiveName: 'TURRET PROTOCOL', passiveDescription: 'Automated field turret. Overcharge Pulse EMP stuns hostiles and vacuums nearby salvage.' }
 };
 
 export const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
@@ -615,6 +685,10 @@ const O2_DRAIN_RATE_DANGER_MULT = 1.5;
 const O2_HEALTH_DRAIN_INTERVAL = 1;
 const BASE_HEARTS = 3;
 const UPGRADED_HEARTS = 4;
+// PvP is a duel between equals: every operator gets the same hearts, with no
+// campaign hull, class plating, equipment or fatigue. The first Steam Deck PvP
+// session entered at 2 hearts after two solo deaths.
+const PVP_HEARTS = UPGRADED_HEARTS;
 // DEPTH_TIER_NAMES / DEPTH_TIER_LOOT_CONFIG / getDepthLootConfig now live in
 // src/data/loot.js (imported above).
 
@@ -999,6 +1073,12 @@ const ADAPTIVE_GAMEPLAY_RECOVERY_FPS = 52;
 const ADAPTIVE_GAMEPLAY_TRIGGER_SECONDS = 1.5;
 const ADAPTIVE_GAMEPLAY_MAX_SAMPLE_SECONDS = 0.25;
 const ADAPTIVE_GAMEPLAY_PIXEL_RATIO_CAP = 0.85;
+// Lowering resolution only buys frames when the GPU is what is slow. Both
+// 2026-09 QA logs were main-thread bound (PC: 8.4 ms GPU in ~48 ms frames;
+// Deck: GPU well under 1 ms), so a blurrier picture bought nothing there.
+// With GPU timing available, the drop needs the GPU to fill most of the frame.
+const ADAPTIVE_GAMEPLAY_GPU_BOUND_SHARE = 0.6;
+const ADAPTIVE_GAMEPLAY_GPU_MIN_SAMPLES = 30;
 // docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #3 --
 // updateWallDamageColor used to clone this.wallMaterial into a brand new
 // MeshStandardMaterial for every non-instanced wall the first time it took
@@ -1144,6 +1224,60 @@ const MELEE_REACH = 1.8;
 const MELEE_HALF_ANGLE = THREE.MathUtils.degToRad(35);
 const MELEE_DAMAGE = 4;
 const MELEE_COOLDOWN = 0.55;
+
+export const CLASS_MELEE_PROFILES = Object.freeze({
+    SCOUT: Object.freeze({
+        name: 'Slipstream Strike',
+        reach: 1.9,
+        halfAngle: THREE.MathUtils.degToRad(35),
+        damage: 4,
+        cooldown: 0.38,
+        knockbackForce: 4.2,
+        knockbackDuration: 0.16,
+        onHitSpeedBoost: Object.freeze({ duration: 0.85, multiplier: 1.35 }),
+        shatterFrozen: true,
+        shakeIntensity: 0.10,
+        shakeDuration: 0.14,
+        burstColor: 0x44d8ff,
+        burstCount: 8,
+        soundVolume: 0.35,
+        playbackRate: 1.8
+    }),
+    TANK: Object.freeze({
+        name: 'Seismic Slam',
+        reach: 2.4,
+        halfAngle: THREE.MathUtils.degToRad(55),
+        damage: 8,
+        cooldown: 0.75,
+        knockbackForce: 9.5,
+        knockbackDuration: 0.50,
+        wallBreach: true,
+        corrosionPull: true,
+        shakeIntensity: 0.28,
+        shakeDuration: 0.30,
+        burstColor: 0xffaa33,
+        burstCount: 16,
+        soundVolume: 0.65,
+        playbackRate: 0.75
+    }),
+    ENGINEER: Object.freeze({
+        name: 'Overcharge Pulse',
+        reach: 2.1,
+        halfAngle: THREE.MathUtils.degToRad(45),
+        damage: 5,
+        cooldown: 0.50,
+        knockbackForce: 2.5,
+        knockbackDuration: 0.65,
+        magneticPullRadius: 8.0,
+        inheritsCarrierElement: true,
+        shakeIntensity: 0.14,
+        shakeDuration: 0.20,
+        burstColor: 0x55ffaa,
+        burstCount: 10,
+        soundVolume: 0.45,
+        playbackRate: 1.3
+    })
+});
 const INJURED_HP_RATIO = 0.4;
 
 const SNAIL_ATTACK_RADIUS = 1.1;
@@ -1649,6 +1783,8 @@ export class ThreeGame {
         this.chunkGroups = new THREE.Group();
         this._chunkTemplateCache = new Map();
         this.globalSeedOffset = 0;
+        this._descentIndex = 0;
+        this._descentBaseOffset = null;
         // Geography belongs to the campaign; expedition challenges get their
         // own seed. Fixed daily/multiplayer worlds bypass this local save.
         this.fixedRunEntropy = false;
@@ -1689,6 +1825,8 @@ export class ThreeGame {
         // radius as the player travels can't dispose of one mid-follow.
         this.companions = [];
         this.wandererManager = new WandererManager();
+        // Recruited companions are story: fresh in co-op/PvP (src/storyScope.js).
+        registerStoryManager(this.wandererManager);
         this.activeWanderer = null;
         this.activeWanderer3d = null;
         this._wandererPromptLabel = null;
@@ -1826,6 +1964,10 @@ export class ThreeGame {
         this._threatAudioTimer = 0;
         this._cameraShakeTimer = 0;
         this._cameraShakeIntensity = 0;
+        const accessibility = loadAccessibilitySettings();
+        this.cameraShakeScale = accessibility?.cameraShakeScale ?? 1.0;
+        this.aimAssistSetting = accessibility?.aimAssist ?? 'standard';
+        this.reducedPressure = Boolean(accessibility?.reducedPressure);
         this.traumaManager = new TraumaManager();
         this.killstreakFeedback = new KillstreakFeedbackSystem();
         this.pickupMagnet = new PickupMagnet();
@@ -1862,6 +2004,7 @@ export class ThreeGame {
         this.playerPoisonTickTimer = 0;
         this.killedBosses = new Set();
         this.defeatedMilestoneBosses = new Set();
+        this.transitNetwork = createTransitNetwork();
         const builtGoalKeys = new Set(Object.entries(this.bank?.getState?.()?.unlocks ?? {})
             .filter(([, built]) => Boolean(built))
             .map(([goalKey]) => goalKey));
@@ -1937,6 +2080,8 @@ export class ThreeGame {
         this._terminalEvent = null;
         this._terminalEventResolvedIds = new Set();
         this._terminalObjectiveHistory = [];
+        this._lastJournalDomSignature = null;
+        this._lastTerminalModalRefresh = 0;
         this._terminalEventIsMimic = false;   // forged terminal — punishes unverified trust
         this._terminalMimicDisarmed = false;  // Engineer verify neutralizes the trap
         this._compassCorruptUntil = 0;
@@ -3785,8 +3930,10 @@ export class ThreeGame {
         const directionalLight = new THREE.DirectionalLight(0xd6e7ff, 2.5);
         directionalLight.position.set(10, 18, 8);
         directionalLight.castShadow = true;
-        directionalLight.shadow.mapSize.width = 1024;
-        directionalLight.shadow.mapSize.height = 1024;
+        // 2048 as before fbf260f halved it: 1024 over a 32 m frustum gave
+        // blocky, swimming shadow edges.
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
         directionalLight.shadow.camera.near = 0.5;
         directionalLight.shadow.camera.far = 50;
         directionalLight.shadow.camera.left = -16;
@@ -5152,6 +5299,19 @@ export class ThreeGame {
 
         this.isMultiplayer = true;
         this.multiplayerMode = session.mode || MULTIPLAYER_SPAWN_MODES.COOP;
+        if (this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP) {
+            this.currentRunModifier = null;
+            if (this.bunkerDirector?.setRunCards) {
+                this.bunkerDirector.setRunCards({ seed: 'default', cards: [], effects: {} });
+            }
+            this.clearMission?.();
+            if (this.bank) this.syncPersistentUpgrades?.();
+            if (this.playerVitals) {
+                this.playerVitals.maxHp = PVP_HEARTS;
+                this.playerVitals.hp = PVP_HEARTS;
+                this.emitVitalsState?.();
+            }
+        }
         this.multiplayerRoomCode = session.roomCode || 'SECTOR-7';
         this.multiplayerCrashPlan = session.crashPlan || null;
         this.remotePlayers = new Map();
@@ -5196,6 +5356,8 @@ export class ThreeGame {
         if (session.seed != null) {
             this.fixedRunEntropy = true;
             this.globalSeedOffset = hashSeed(session.seed) | 0;
+            this._descentIndex = 0;
+            this._descentBaseOffset = null;
         }
 
         const crashParticipants = partitionCrashPlanPlayers(
@@ -5303,8 +5465,10 @@ export class ThreeGame {
             this.netSocket.off('hostChanged');
             this.netSocket = null;
         }
+        const leavingPvp = this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP;
         this.isMultiplayer = false;
         this.multiplayerMode = null;
+        if (leavingPvp && this.bank) this.syncPersistentUpgrades?.();
         // Shared world beats are deduped per session. Without clearing, a
         // second co-op run would treat a beat it already saw (the O2 build,
         // say) as a replay and silently skip it.
@@ -5323,6 +5487,8 @@ export class ThreeGame {
         // of multiplayer flags.
         this.fixedRunEntropy = false;
         this.globalSeedOffset = 0;
+        this._descentIndex = 0;
+        this._descentBaseOffset = null;
     }
 
     getOrCreateRemotePlayer(playerData) {
@@ -5428,8 +5594,8 @@ export class ThreeGame {
             facingRow: PLAYER_DEFAULT_DIRECTION_INDEX,
             animationTimer: 0,
             lastAnimationColumn: -1,
-            hp: isPvP ? 3 : 100,
-            maxHp: isPvP ? 3 : 100,
+            hp: isPvP ? PVP_HEARTS : 100,
+            maxHp: isPvP ? PVP_HEARTS : 100,
             isDown: false,
             lastUpdate: Date.now()
         };
@@ -5641,6 +5807,14 @@ export class ThreeGame {
             const remote = this.remotePlayers.get(data.targetId);
             const remoteDamage = Number.isFinite(data.damage) ? data.damage : 1;
             remote.hp = Math.max(0, remote.hp - remoteDamage);
+            if (data.attackerId === this.netSocket?.id || !data.attackerId) {
+                debugLog.info('WEAPON', 'pvp-hit-confirmed', {
+                    targetId: data.targetId,
+                    damage: remoteDamage,
+                    remainingHp: remote.hp
+                });
+                window.AudioManager?.play?.('ui_scan_ping', { volume: 0.35, playbackRate: 1.6, bus: 'sfx' });
+            }
             if (remote.hp === 0) {
                 remote.isDown = true;
                 remote.overlay?.setDowned?.(true);
@@ -5688,7 +5862,7 @@ export class ThreeGame {
         this.resolveCoopSquadWipe?.();
     }
 
-    showRemotePlayerDeathMarker(remote) {
+    showRemotePlayerDeathMarker(remote, { keepBody = false } = {}) {
         if (!remote?.mesh?.position || remote.deathMarker) return remote?.deathMarker ?? null;
         const { x, z } = remote.mesh.position;
         if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
@@ -5698,7 +5872,8 @@ export class ThreeGame {
         marker.userData.remotePlayerId = remote.id;
         this.scene?.add?.(marker);
         remote.deathMarker = marker;
-        remote.mesh.visible = false;
+        // PvP removes the rival; co-op keeps the downed body beside the box.
+        if (!keepBody) remote.mesh.visible = false;
         return marker;
     }
 
@@ -5899,6 +6074,11 @@ export class ThreeGame {
 
     reportProjectileRivalHit(rival, projectile) {
         if (!rival?.id || !this.netSocket) return false;
+        debugLog.info('WEAPON', 'pvp-hit-dealt', {
+            targetId: rival.id,
+            originX: projectile?.mesh?.position?.x ?? 0,
+            originZ: projectile?.mesh?.position?.z ?? 0
+        });
         this.netSocket.emit('weaponHit', {
             targetId: rival.id,
             originX: projectile.mesh.position.x,
@@ -5973,8 +6153,10 @@ export class ThreeGame {
 
         this._appliedWorldEvents = this._appliedWorldEvents ?? new Set();
 
-        let dedupeKey = null;
-        if (event === 'wall-destroyed') {
+        let dedupeKey = coopTransitionDedupeKey(event, detail);
+        if (dedupeKey) {
+            // Irreversible co-op transitions carry their own keys.
+        } else if (event === 'wall-destroyed') {
             dedupeKey = `${event}:${detail.wallKey ?? `${detail.worldX},${detail.worldZ}`}`;
         } else if (event === 'bunker-door-toggled' || event === 'procedural-door-toggled' || event === 'bunker-line' || event === 'enemy-projectile-spawned') {
             // Door toggles are stateful transitions guarded by their respective states below;
@@ -5984,7 +6166,13 @@ export class ThreeGame {
         } else if (event === 'maze-access-granted') {
             dedupeKey = `${event}:${detail.sourceId ?? detail.requirement?.id ?? detail.requirement?.type ?? ''}`;
         } else if (event === 'black-box-recovered') {
-            dedupeKey = `${event}:${detail.recovered?.recoveredAt ?? 'active'}`;
+            dedupeKey = `${event}:${detail.ownerId ?? ''}:${detail.recovered?.timestamp ?? detail.recovered?.recoveredAt ?? 'active'}`;
+        } else if (event === 'player-died' || event === 'player-redeployed') {
+            dedupeKey = `${event}:${detail.playerId}:${detail.seq}`;
+        } else if (event === 'loot-drop-spawned' || event === 'loot-drop-collected') {
+            dedupeKey = `${event}:${detail.dropId}`;
+        } else if (event === 'prop-broken') {
+            dedupeKey = `${event}:${detail.scatterKey ?? `${Math.round(detail.x)},${Math.round(detail.z)}`}`;
         } else if (event === 'lore-terminal-read') {
             dedupeKey = `${event}:${detail.loreKey}`;
         } else {
@@ -6001,6 +6189,11 @@ export class ThreeGame {
         if (isEcho) return false;
 
         if (event === 'bunker-door-toggled') {
+            const seq = Number(detail.seq);
+            if (Number.isFinite(seq)) {
+                if (seq <= (this._bunkerBlastDoorSequence ?? 0)) return false;
+                this._bunkerBlastDoorSequence = seq;
+            }
             if (this.bunkerBlastDoorState && typeof detail.open === 'boolean') {
                 if (this.bunkerBlastDoorState.open !== detail.open) {
                     this.toggleBunkerBlastDoor({ fromRemote: true });
@@ -6074,10 +6267,36 @@ export class ThreeGame {
                 }
             }
         } else if (event === 'black-box-recovered') {
-            this.clearBlackBoxMarker?.();
-            this._blackBoxState = null;
+            // Every operator has their own black box. A squadmate recovering
+            // theirs must not wipe ours (the 2026-09-24 Deck + PC session: the
+            // guest's recovery cleared the host's box).
+            if (detail.ownerId && detail.ownerId === this.multiplayerLocalPlayerId) {
+                this.clearBlackBoxMarker?.();
+                this._blackBoxState = null;
+            }
+            this.clearRemotePlayerDeathMarker?.(this.remotePlayers?.get(detail.ownerId));
             this.arcManager?.recordSignal?.({ blackBoxesRecovered: 1 });
             this.arcManager?.evaluate?.();
+        } else if (event === 'player-died') {
+            this.applyRemotePlayerDeath(detail);
+        } else if (event === 'player-redeployed') {
+            this.applyRemotePlayerRedeploy(detail);
+        } else if (event === 'loot-drop-spawned') {
+            this.applyRemoteLootDrop(detail);
+        } else if (event === 'loot-drop-collected') {
+            this.removeLootDrop(detail.dropId);
+        } else if (event === 'prop-broken') {
+            this.applyRemotePropBroken(detail);
+        } else if (event === COOP_TRANSITION_EVENTS.MILESTONE_DEFEATED) {
+            this.applyRemoteMilestoneDefeat(detail);
+        } else if (event === COOP_TRANSITION_EVENTS.ELEVATOR_DESCENDED) {
+            if (shouldApplyDescent(this._descentIndex, detail)) this.applyDescent(detail, { fromRemote: true });
+        } else if (event === COOP_TRANSITION_EVENTS.BOSS_FIGHT_EVENT) {
+            this.applyRemoteBossFightEvent(detail);
+        } else if (event === COOP_TRANSITION_EVENTS.BOSS_ADDS) {
+            this.applyRemoteBossAdds(detail);
+        } else if (event === COOP_TRANSITION_EVENTS.ENCOUNTER_FORMATION_STATE) {
+            this.applyRemoteEncounterFormationState(detail);
         } else if (event === 'lore-terminal-read') {
             if (detail.loreKey) {
                 this._readLoreKeys = this._readLoreKeys ?? new Set();
@@ -6095,6 +6314,12 @@ export class ThreeGame {
             }));
         }
         return true;
+    }
+
+    applyRemoteEncounterFormationState(detail) {
+        const handle = this.coordinatedEncounters?.get?.(detail?.encounterId);
+        if (!handle || !shouldApplyEncounterFormationState(handle.state?.sequence, detail)) return false;
+        return handle.applyRemoteFormation?.(detail) === true;
     }
 
     materializeRemoteBoss(state) {
@@ -6165,6 +6390,89 @@ export class ThreeGame {
             applied += 1;
         }
         return applied > 0;
+    }
+
+    // In co-op only the host rolls: each client rolling its own dice gave the
+    // two players different power-ups (2026-09-24 QA). The host announces the
+    // drop and the guest renders that one (applyRemoteLootDrop).
+    dropLootForKill(sprite, { isElite = false, isBoss = false } = {}) {
+        const role = coopRole(this);
+        if (role === COOP_ROLE.GUEST) return null;
+        const drop = rollEnemyLootDrop(Math.random, {
+            isElite,
+            isBoss,
+            ring: (this.currentDepthTier ?? 0) + 1 + Math.max(0, this.loadoutMods?.relicRarityTierBonus ?? 0),
+            excludedIds: [
+                ...(this.loadoutMods?.duplicateRelicsToShards ? [] : [...(this.runOverclocks ?? []), ...(this.runRelics ?? [])]),
+                ...(this.inRunLootDrops ?? []).map((pickup) => pickup.userData.item)
+            ].map((item) => item.id)
+        });
+        if (!drop) return null;
+        const x = sprite.position?.x ?? 0;
+        const z = sprite.position?.z ?? 0;
+        const mesh = this.spawnPhysicalLootDrop?.(x, z, drop);
+        if (role === COOP_ROLE.HOST) {
+            this._lootDropSeq = (this._lootDropSeq ?? 0) + 1;
+            const dropId = `${this.multiplayerLocalPlayerId ?? 'host'}:${this._lootDropSeq}`;
+            if (mesh?.userData) mesh.userData.lootDropId = dropId;
+            this.broadcastSharedWorldEvent?.('loot-drop-spawned', { dropId, itemId: drop.id, x, z });
+        }
+        return drop;
+    }
+
+    // A co-op TRY AGAIN in the same room continues the run's map and changes.
+    shouldCarryCoopRun() {
+        const carry = this._coopRunCarry;
+        return Boolean(carry?.maze) && coopRole(this) !== COOP_ROLE.SOLO
+            && carry.roomCode === (this.multiplayerRoomCode ?? null);
+    }
+
+    // A squadmate died (any cause): their body goes down where it fell and
+    // their black box shows there, instead of a standing operator.
+    applyRemotePlayerDeath(detail = {}) {
+        const remote = this.remotePlayers?.get(detail.playerId);
+        if (!remote) return false;
+        remote.isDown = true;
+        remote.hp = 0;
+        if (remote.mesh?.position && Number.isFinite(detail.x) && Number.isFinite(detail.z)) {
+            remote.mesh.position.x = detail.x;
+            remote.mesh.position.z = detail.z;
+        }
+        remote.overlay?.setDowned?.(true);
+        this.showRemotePlayerDeathMarker?.(remote, { keepBody: true });
+        window.showToastNotification?.(`SQUADMATE LOST: ${remote.callsign ?? ''}`.trim());
+        window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+        debugLog.info('MULTIPLAYER', 'remote-player-died', { playerId: detail.playerId, reason: detail.reason ?? null, x: detail.x, z: detail.z });
+        return true;
+    }
+
+    applyRemotePlayerRedeploy(detail = {}) {
+        const remote = this.remotePlayers?.get(detail.playerId);
+        if (!remote) return false;
+        remote.isDown = false;
+        remote.hp = remote.maxHp ?? remote.hp;
+        remote.overlay?.setDowned?.(false);
+        this.clearRemotePlayerDeathMarker?.(remote);
+        debugLog.info('MULTIPLAYER', 'remote-player-redeployed', { playerId: detail.playerId });
+        return true;
+    }
+
+    // The host's drop, rendered here; nothing is rolled on a guest.
+    applyRemoteLootDrop(detail = {}) {
+        const item = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS].find((entry) => entry.id === detail.itemId);
+        if (!item || !Number.isFinite(detail.x) || !Number.isFinite(detail.z)) return false;
+        if ((this.inRunLootDrops ?? []).some((mesh) => mesh.userData?.lootDropId === detail.dropId)) return false;
+        const mesh = this.spawnPhysicalLootDrop?.(detail.x, detail.z, item);
+        if (mesh?.userData) mesh.userData.lootDropId = detail.dropId;
+        return Boolean(mesh);
+    }
+
+    removeLootDrop(dropId) {
+        const index = (this.inRunLootDrops ?? []).findIndex((mesh) => mesh.userData?.lootDropId === dropId);
+        if (index < 0) return false;
+        const [mesh] = this.inRunLootDrops.splice(index, 1);
+        disposeExpeditionEffect(mesh);
+        return true;
     }
 
     removeRemotePlayer(id) {
@@ -6573,7 +6881,15 @@ export class ThreeGame {
         );
         this.playerForwardSpotLight.position.set(0, SUIT_LIGHT_EMITTER_HEIGHT, 0);
         this.playerForwardSpotLight.target = this.playerForwardLightTarget;
-        this.playerForwardSpotLight.castShadow = false;
+        // The suit light casts shadows again (removed for FPS in fbf260f,
+        // 2026-08-21; owner 2026-09-25: full quality first). Walls and enemies
+        // throw shadows through the beam. Set once at creation, so the light
+        // set -- and every shader program -- stays stable for the run.
+        this.playerForwardSpotLight.castShadow = true;
+        this.playerForwardSpotLight.shadow.mapSize.set(1024, 1024);
+        this.playerForwardSpotLight.shadow.camera.near = 0.1;
+        this.playerForwardSpotLight.shadow.camera.far = SUIT_CONE_LIGHT_DISTANCE + 3;
+        this.playerForwardSpotLight.shadow.bias = -0.0008;
         this.scene.add(this.playerForwardSpotLight);
     }
 
@@ -7136,8 +7452,91 @@ export class ThreeGame {
                 });
             }
         }
+        if (this.activeRewardCache && this.activeRewardCache.state === 'sealed' && this.activeRewardCache.coords) {
+            const distance = Math.hypot(px - this.activeRewardCache.coords.x, pz - this.activeRewardCache.coords.z);
+            if (distance <= 2.8) {
+                candidates.push({
+                    id: 'reward-cache',
+                    // Name what is inside and what opening it costs.
+                    label: `${t(REWARD_CACHE_I18N_KEYS.preview, { dropName: t(this.activeRewardCache.dropNameKey) })} · ${t(REWARD_CACHE_I18N_KEYS.riskCost, { cost: t(this.activeRewardCache.costConfig?.labelKey) })}`,
+                    distance,
+                    interact: () => this.interactWithRewardCache()
+                });
+            }
+        }
+        if (this.playerType === 'ENGINEER' && (this.currentDepthTier ?? 0) === 0) {
+            const dirLen = Math.hypot(this.aimDirX, this.aimDirZ) || 1;
+            const hx = Math.round(px + (this.aimDirX / dirLen) * 1.5);
+            const hz = Math.round(pz + (this.aimDirZ / dirLen) * 1.5);
+            if (this.getHoleVisualInfo?.(hx, hz) && !this.isHoleBridged?.(hx, hz)) {
+                const distance = Math.hypot(px - hx, pz - hz);
+                candidates.push({
+                    id: 'nanite-bridge',
+                    label: 'DEPLOY NANITE BRIDGE (3 SALVAGE)',
+                    distance,
+                    interact: () => this.deployNaniteBridgeAt(hx, hz)
+                });
+            }
+        }
+        if (this.transitNetwork) {
+            for (const terminal of this.transitNetwork.terminals.values()) {
+                if (!terminal.unlocked) continue;
+                const distance = Math.hypot(px - terminal.position.x, pz - terminal.position.z);
+                if (distance <= TRANSIT_INTERACT_RADIUS) {
+                    const inCombat = Boolean(this.inCombat ?? false);
+                    const check = canUseTransit(terminal, {
+                        inCombat,
+                        nearbyHostiles: this.enemies ?? [],
+                        playerPosition: { x: px, z: pz }
+                    });
+                    candidates.push({
+                        id: terminal.id,
+                        label: formatTransitLabel(terminal, {
+                            inCombat: !check.allowed && check.reason === 'in_combat',
+                            hostilesNearby: !check.allowed && check.reason === 'hostiles_nearby'
+                        }),
+                        distance,
+                        interact: () => this.interactWithTransitTerminal(terminal.id)
+                    });
+                }
+            }
+        }
         candidates.sort((a, b) => Number(Boolean(a.secondary)) - Number(Boolean(b.secondary)) || a.distance - b.distance);
         return candidates;
+    }
+
+    interactWithTransitTerminal(terminalId) {
+        if (!this.transitNetwork || !this.player) return false;
+        const terminal = this.transitNetwork.terminals.get(terminalId);
+        if (!terminal) return false;
+        const px = this.player.position.x;
+        const pz = this.player.position.z;
+        const inCombat = Boolean(this.inCombat ?? false);
+        const check = canUseTransit(terminal, {
+            inCombat,
+            nearbyHostiles: this.enemies ?? [],
+            playerPosition: { x: px, z: pz }
+        });
+        if (!check.allowed) {
+            const reasonMsg = check.reason === 'hostiles_nearby' || check.reason === 'in_combat'
+                ? 'TRANSIT LOCKDOWN: CLEAR THREATS BEFORE ACTIVATING RETURN'
+                : 'PNEUMATIC TRANSIT UNAVAILABLE';
+            this.showBunkerLine?.(reasonMsg);
+            this.playThrottledUiError?.();
+            return false;
+        }
+
+        const result = executeTransit(this.transitNetwork, terminalId, {
+            inCombat: false,
+            nearbyHostiles: [],
+            playerPosition: { x: px, z: pz }
+        });
+        if (!result.ok) return false;
+
+        this.player.position.set(result.destination.x, result.destination.y ?? 0, result.destination.z);
+        this.showBunkerLine?.('PNEUMATIC TRANSIT: RETURNED TO CRASHED SHIP SANCTUARY');
+        window.dispatchEvent(new CustomEvent('transit-executed', { detail: result }));
+        return true;
     }
 
     cycleInteractionTarget(direction = 1) {
@@ -7407,6 +7806,7 @@ export class ThreeGame {
 
         presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_ACCEPTED, {
             weaponType: this.currentWeaponType || 'plasma_carbine',
+            source,
             clipRemaining: this.weaponClipAmmo,
             reserveRemaining: this.getAvailableAmmo()
         });
@@ -7434,14 +7834,36 @@ export class ThreeGame {
         return true;
     }
 
-    triggerControllerFire() {
-        return this.fireWeaponAtCurrentAim();
+    triggerControllerFire({ source = 'controller' } = {}) {
+        if (this.aimAssistSetting !== 'off' && this.player) {
+            const maxAngle = this.aimAssistSetting === 'low' ? (8 * Math.PI / 180) : (15 * Math.PI / 180);
+            const candidate = this.getAimAssistTarget({
+                originX: this.player.position.x,
+                originZ: this.player.position.z,
+                aimDirX: this.aimDirX,
+                aimDirZ: this.aimDirZ,
+                maxDistance: 9.0,
+                maxAngle
+            });
+            if (candidate) {
+                this.aimDirX = candidate.dirX;
+                this.aimDirZ = candidate.dirZ;
+                this.facingYaw = Math.atan2(candidate.dirX, candidate.dirZ);
+            }
+        }
+        return this.fireWeaponAtCurrentAim({ source });
     }
 
     triggerGameplayMelee({ source = 'manual' } = {}) {
         if (!this.isGameplayInputActive() || !this.player || this.isPlayerDead) return false;
         if ((this.meleeCooldownTimer ?? 0) > 0) return false;
         if (this.isInsideNoFireZone()) return false;
+
+        const profile = CLASS_MELEE_PROFILES[this.playerType] ?? CLASS_MELEE_PROFILES.ENGINEER;
+        const reach = profile.reach ?? MELEE_REACH;
+        const halfAngle = profile.halfAngle ?? MELEE_HALF_ANGLE;
+        const damage = profile.damage ?? MELEE_DAMAGE;
+        const cooldown = profile.cooldown ?? MELEE_COOLDOWN;
 
         const directionLength = Math.hypot(this.aimDirX, this.aimDirZ) || 1;
         const aimX = this.aimDirX / directionLength;
@@ -7454,33 +7876,89 @@ export class ThreeGame {
             const dx = sprite.position.x - this.player.position.x;
             const dz = sprite.position.z - this.player.position.z;
             const distance = Math.hypot(dx, dz);
-            if (distance > MELEE_REACH || distance < 0.001) continue;
+            if (distance > reach || distance < 0.001) continue;
             const angle = Math.acos(THREE.MathUtils.clamp(((dx / distance) * aimX) + ((dz / distance) * aimZ), -1, 1));
-            if (angle > MELEE_HALF_ANGLE) continue;
+            if (angle > halfAngle) continue;
             targets.push({ sprite, dx, dz, distance });
         }
 
-        this.meleeCooldownTimer = MELEE_COOLDOWN;
+        this.meleeCooldownTimer = cooldown;
         this.player3dOverlay?.trigger('melee');
         this.spawnPhysicalBurst(
             this.player.position.x + aimX * 0.9,
             this.player.position.z + aimZ * 0.9,
-            { color: PLAYER_COLORS[this.playerType] ?? 0xffffff, count: 9, upward: 0.22 }
+            { color: profile.burstColor ?? (PLAYER_COLORS[this.playerType] ?? 0xffffff), count: profile.burstCount ?? 9, upward: 0.22 }
         );
-        this.triggerCameraShake?.(0.12, 0.18);
-        window.AudioManager?.playMetalStress?.({ volume: 0.42, playbackRate: 1.45, force: true });
+        this.triggerCameraShake?.(profile.shakeIntensity ?? 0.12, profile.shakeDuration ?? 0.18);
+        if (typeof window !== 'undefined') {
+            window.AudioManager?.playMetalStress?.({
+                volume: profile.soundVolume ?? 0.42,
+                playbackRate: profile.playbackRate ?? 1.45,
+                force: true
+            });
+        }
 
         for (const target of targets) {
-            this.applyPlayerDamageToEnemy(target.sprite, MELEE_DAMAGE);
+            this.applyPlayerDamageToEnemy(target.sprite, damage);
             if (this.isEnemyType(target.sprite.userData?.type) && !target.sprite.userData?.burstTriggered) {
-                target.sprite.userData.knockbackVx = (target.dx / target.distance) * 4.5;
-                target.sprite.userData.knockbackVz = (target.dz / target.distance) * 4.5;
-                target.sprite.userData.knockbackTimer = Math.max(target.sprite.userData.knockbackTimer ?? 0, 0.16);
+                target.sprite.userData.knockbackVx = (target.dx / target.distance) * (profile.knockbackForce ?? 4.5);
+                target.sprite.userData.knockbackVz = (target.dz / target.distance) * (profile.knockbackForce ?? 4.5);
+                target.sprite.userData.knockbackTimer = Math.max(target.sprite.userData.knockbackTimer ?? 0, profile.knockbackDuration ?? 0.16);
             }
         }
-        window.dispatchEvent(new CustomEvent('player-melee-attack', {
-            detail: { source, targetsHit: targets.length, damage: MELEE_DAMAGE, reach: MELEE_REACH }
-        }));
+
+        // Scout: Slipstream Surge on hit (+35% move speed)
+        if (profile.onHitSpeedBoost && targets.length > 0) {
+            this._scoutSlipstreamTimer = profile.onHitSpeedBoost.duration;
+        }
+
+        // Scout: Slipstream Strike shatters frozen targets into an ice shrapnel nova
+        if (profile.shatterFrozen || this.playerType === 'SCOUT') {
+            for (const target of targets) {
+                const fStatus = getStatus?.(target.sprite, 'freeze') ?? {};
+                if (fStatus.isFrozen || target.sprite?.userData?.frozen || (target.sprite?.userData?.frozenTimer ?? 0) > 0) {
+                    this.triggerCryoShatter?.(target.sprite);
+                }
+            }
+        }
+
+        // Tank: Seismic Slam breaches walls in the frontal cone
+        if (profile.wallBreach) {
+            const checkDistances = [1.2, 1.8, 2.4];
+            for (const d of checkDistances) {
+                const wx = this.player.position.x + aimX * d;
+                const wz = this.player.position.z + aimZ * d;
+                const wall = this.findWallMeshAt?.(wx, wz);
+                if (wall && !wall.userData?.destroyed && !wall.userData?.indestructible) {
+                    this.damageWall?.(wall, 4, { source: 'player' });
+                }
+            }
+        }
+
+        // Tank: Seismic Slam pulls corroded targets together toward the slam center
+        if (profile.corrosionPull || this.playerType === 'TANK') {
+            const slamX = this.player.position.x + aimX * (reach * 0.75);
+            const slamZ = this.player.position.z + aimZ * (reach * 0.75);
+            this.handleTankCorrosionPull?.(slamX, slamZ, 7.0);
+        }
+
+        // Engineer: Overcharge Pulse EMP magnetic pull on nearby pickups
+        if (profile.magneticPullRadius && Array.isArray(this.pickups)) {
+            for (const p of this.pickups) {
+                if (!p || p.userData?.destroyed || p.userData?.collected) continue;
+                const pdx = p.position.x - this.player.position.x;
+                const pdz = p.position.z - this.player.position.z;
+                if (Math.hypot(pdx, pdz) <= profile.magneticPullRadius) {
+                    p.userData.state = 'magnetized';
+                }
+            }
+        }
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('player-melee-attack', {
+                detail: { source, targetsHit: targets.length, damage, reach, classMelee: profile.name }
+            }));
+        }
         return true;
     }
 
@@ -7509,7 +7987,7 @@ export class ThreeGame {
             this.tryFireWeapon(this.heldFireClientX, this.heldFireClientY);
             return;
         }
-        this.fireWeaponAtCurrentAim();
+        this.fireWeaponAtCurrentAim({ source: this._canvasPointerType || 'pointer' });
     }
 
     setKeyState(code, pressed) {
@@ -7619,6 +8097,10 @@ export class ThreeGame {
     }
 
     hasBlockingGameplayOverlay() {
+        if (this._cacheBlockingOverlayForCurrentFrame
+            && typeof this._frameBlockingOverlayState === 'boolean') {
+            return this._frameBlockingOverlayState;
+        }
         const isVisible = (id) => {
             const el = document.getElementById(id);
             return Boolean(el && !el.classList.contains('hidden'));
@@ -7633,7 +8115,7 @@ export class ThreeGame {
             }
             return false;
         };
-        return document.body.classList.contains('mission-intro-active')
+        const blocked = document.body.classList.contains('mission-intro-active')
             || hasActiveClass('modal', 'hidden')
             || hasActiveClass('class-intro-overlay', 'is-closing')
             || hasActiveClass('cinematic-still-overlay', 'is-closing')
@@ -7659,6 +8141,10 @@ export class ThreeGame {
             || isVisible('operator-polish-modal')
             || isVisible('wanderer-encounter-modal')
             || isVisible('snail-encounter-modal');
+        if (this._cacheBlockingOverlayForCurrentFrame) {
+            this._frameBlockingOverlayState = blocked;
+        }
+        return blocked;
     }
 
     clearGameplayInputState() {
@@ -7903,7 +8389,10 @@ export class ThreeGame {
         ) ?? null;
         // Fatigue rides the same bus as equipment, so every downstream
         // `loadoutMods.X` read picks it up without a second code path.
-        this.loadoutMods = composeFatigueIntoLoadoutMods(this.loadoutMods, this.fatigueState);
+        // GAP-PV-01: fatigue does not apply to PvP duels.
+        if (!(this.isMultiplayer && this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP)) {
+            this.loadoutMods = composeFatigueIntoLoadoutMods(this.loadoutMods, this.fatigueState);
+        }
         // The expedition's condition rides the same bus, but the pre-expedition
         // mods are kept so the next deployment can swap conditions without
         // rebuilding the whole operator (see applyExpeditionPlayerEffects).
@@ -8450,8 +8939,10 @@ export class ThreeGame {
             width,
             height,
             devicePixelRatio: window.devicePixelRatio || 1,
-            maxPixelRatio: 1.15,
-            maxFramebufferPixels: 2_200_000
+            // Back to the pre-Sprint-28 budget (fbf260f cut it to 1.15 /
+            // 2.2 MP): a 2304x1440 @125% PC rendered at 0.81, ~65% of native.
+            maxPixelRatio: 1.35,
+            maxFramebufferPixels: 3_600_000
         });
         const targetPixelRatio = this.performanceProfile === 'gameplay'
             ? (this.adaptiveGameplayPerformanceMode
@@ -8622,6 +9113,8 @@ export class ThreeGame {
                 this.snapCameraToPlayer();
             }
             this.clearLoadedChunksForRunReset();
+            // MAIN MENU resets the run: a co-op retry no longer continues it.
+            this._coopRunCarry = null;
             this.resetAct2World();
             window.AudioManager?.stopAmbience?.();
             if (typeof window.transitionToMenuMusic === 'function') {
@@ -8655,7 +9148,12 @@ export class ThreeGame {
         if (Math.abs(this.renderer.getPixelRatio() - targetPixelRatio) > 0.001) {
             this.renderer.setPixelRatio(targetPixelRatio);
         }
-        this.renderer.shadowMap.enabled = nextProfile === 'gameplay';
+        // shadowMap.enabled is a shader cache key. Flipping it with the profile
+        // recompiled every material on each death, results screen and
+        // redeploy -- the worst Steam Deck stalls (up to 2.7 s). Once gameplay
+        // turns shadows on they stay on; menus only stop updating the map.
+        if (nextProfile === 'gameplay') this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.autoUpdate = nextProfile === 'gameplay';
         this.resize();
         if (nextProfile === 'gameplay') {
             // Hardware status is known before deployment in packaged builds;
@@ -8698,6 +9196,97 @@ export class ThreeGame {
         return { distance: this.cameraDistancePreset, follow: this.cameraFollowPreset };
     }
 
+    setCameraShakeScale(scale) {
+        const numeric = Number(scale);
+        this.cameraShakeScale = Number.isFinite(numeric) ? Math.max(0, Math.min(2.0, numeric)) : 1.0;
+        return this.cameraShakeScale;
+    }
+
+    setAimAssist(mode) {
+        this.aimAssistSetting = ['off', 'low', 'standard'].includes(mode) ? mode : 'standard';
+        return this.aimAssistSetting;
+    }
+
+    setReducedPressure(enabled) {
+        this.reducedPressure = Boolean(enabled);
+        return this.reducedPressure;
+    }
+
+    getAimAssistTarget({ originX, originZ, aimDirX, aimDirZ, maxDistance = 9.0, maxAngle = 15 * (Math.PI / 180) } = {}) {
+        if (!Number.isFinite(originX) || !Number.isFinite(originZ)) return null;
+        const len = Math.hypot(aimDirX, aimDirZ);
+        if (len <= 0.0001) return null;
+        const normAimX = aimDirX / len;
+        const normAimZ = aimDirZ / len;
+
+        let bestCandidate = null;
+        let bestScore = Infinity;
+
+        for (const sprite of (this.scatterSprites ?? [])) {
+            if (!sprite?.parent || sprite.userData?.burstTriggered || sprite.userData?.isCompanion) continue;
+            if (!sprite.userData?.isDestructibleProp && !this.isEnemyType(sprite.userData?.type)) continue;
+
+            const dx = sprite.position.x - originX;
+            const dz = sprite.position.z - originZ;
+            const dist = Math.hypot(dx, dz);
+            if (dist > maxDistance || dist < 0.1) continue;
+
+            const dirX = dx / dist;
+            const dirZ = dz / dist;
+            const dot = THREE.MathUtils.clamp(dirX * normAimX + dirZ * normAimZ, -1, 1);
+            const angle = Math.acos(dot);
+            if (angle > maxAngle) continue;
+
+            const score = angle * 2.0 + (dist / maxDistance);
+            if (score < bestScore) {
+                bestScore = score;
+                bestCandidate = {
+                    sprite,
+                    distance: dist,
+                    angle,
+                    dirX,
+                    dirZ
+                };
+            }
+        }
+        return bestCandidate;
+    }
+
+    getControllerAimFriction(clientX, clientY) {
+        if (this.aimAssistSetting === 'off') return 1.0;
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) return 1.0;
+
+        for (const sprite of (this.scatterSprites ?? [])) {
+            if (!sprite?.parent || sprite.userData?.burstTriggered || sprite.userData?.isCompanion) continue;
+            if (!sprite.userData?.isDestructibleProp && !this.isEnemyType(sprite.userData?.type)) continue;
+
+            const dx = sprite.position.x - worldPoint.x;
+            const dz = sprite.position.z - worldPoint.z;
+            const dist = Math.hypot(dx, dz);
+            // Sticky friction: 35% sensitivity reduction (0.65x multiplier) within enemy hit-box
+            if (dist <= 1.25) {
+                return 0.65;
+            }
+        }
+        return 1.0;
+    }
+
+    // The dock HUD's painted housing follows the operator class
+    // (src/styles/hudDockHousings.css keys off <html data-operator-class>).
+    // An accessor so every assignment — constructor, class select, co-op —
+    // keeps the DOM in step without hunting down each call site.
+    get playerType() {
+        return this._playerType;
+    }
+
+    set playerType(value) {
+        this._playerType = value;
+        if (typeof document !== 'undefined' && document.documentElement?.dataset) {
+            document.documentElement.dataset.operatorClass = String(value ?? '').toLowerCase();
+        }
+    }
+
     setAdaptiveGameplayPerformanceMode(enabled = true, {
         reason = 'sustained-low-fps',
         fps = null
@@ -8707,14 +9296,18 @@ export class ThreeGame {
 
         this.adaptiveGameplayPerformanceMode = nextEnabled;
         // Adaptive quality may lower the render resolution, but it must not
-        // remove the authored DOF/tilt-shift treatment. Bypassing the composer
-        // made the start-of-run handoff look like lighting and fog had unloaded.
+        // remove the authored DOF/tilt-shift treatment, shadows, 3D models or
+        // animation (owner, 2026-08-26 and again 2026-09-25: bypassing the
+        // composer, freezing shadows and swapping enemies to sprites made the
+        // game look unloaded, and the QA logs showed the frame time was
+        // main-thread CPU, not GPU, so none of it bought the frames back).
         this.gameplayPostProcessingEnabled = true;
         if (this.renderer?.shadowMap) {
             // Keep the shadow variant stable while adaptive mode lowers pixel
             // cost. Toggling shadowMap at runtime caused a
             // visible lighting drop and texture/shader shimmer on some drivers.
-            this.renderer.shadowMap.enabled = this.performanceProfile === 'gameplay';
+            if (this.performanceProfile === 'gameplay') this.renderer.shadowMap.enabled = true;
+            this.renderer.shadowMap.autoUpdate = true;
         }
         this.tiltShiftOverlay?.classList?.toggle?.(
             'is-active',
@@ -8761,16 +9354,16 @@ export class ThreeGame {
     updateAdaptiveGameplayQuality(frameDeltaSeconds = 0) {
         if (this.performanceProfile !== 'gameplay' || this.adaptiveGameplayPerformanceMode) return;
 
-        const steamDeck = typeof window !== 'undefined'
-            && Boolean(window.__hbSteamStatus?.isSteamDeck);
-        if (steamDeck) {
-            this.setAdaptiveGameplayPerformanceMode(true, { reason: 'steam-deck' });
-            return;
-        }
-
+        // The Steam Deck is no longer dropped to a lower resolution on its
+        // first frame (owner, 2026-09-25: full quality first); it is measured
+        // like any other machine.
         if (!Number.isFinite(frameDeltaSeconds) || frameDeltaSeconds <= 0) return;
         const fps = 1 / frameDeltaSeconds;
         this._adaptiveLastFps = fps;
+        const frameMs = Math.min(frameDeltaSeconds, ADAPTIVE_GAMEPLAY_MAX_SAMPLE_SECONDS) * 1000;
+        this._adaptiveFrameMsAverage = this._adaptiveFrameMsAverage == null
+            ? frameMs
+            : this._adaptiveFrameMsAverage + (frameMs - this._adaptiveFrameMsAverage) * 0.1;
         if (fps < ADAPTIVE_GAMEPLAY_FPS_FLOOR) {
             // A debugger pause, tab switch, shader compile, or single long task
             // must not instantly degrade desktop rendering. Cap how much one
@@ -8782,6 +9375,24 @@ export class ThreeGame {
         }
 
         if ((this._adaptiveLowFpsSeconds ?? 0) >= ADAPTIVE_GAMEPLAY_TRIGGER_SECONDS) {
+            const gpu = this.gpuFrameTimer?.snapshot?.();
+            if (gpu?.supported
+                && (gpu.samples ?? 0) >= ADAPTIVE_GAMEPLAY_GPU_MIN_SAMPLES
+                && Number.isFinite(gpu.averageMs)
+                && gpu.averageMs < this._adaptiveFrameMsAverage * ADAPTIVE_GAMEPLAY_GPU_BOUND_SHARE) {
+                // Main-thread bound: keep full resolution, start measuring again.
+                this._adaptiveLowFpsSeconds = 0;
+                const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+                if (!(now - (this._adaptiveCpuBoundLoggedAt ?? -Infinity) < 30_000)) {
+                    this._adaptiveCpuBoundLoggedAt = now;
+                    debugLog.info('PERF', 'adaptive-resolution-kept-cpu-bound', {
+                        fps: Math.round(fps * 10) / 10,
+                        frameMs: Math.round(this._adaptiveFrameMsAverage * 10) / 10,
+                        gpuMs: gpu.averageMs
+                    });
+                }
+                return;
+            }
             this.setAdaptiveGameplayPerformanceMode(true, {
                 reason: 'sustained-low-fps',
                 fps
@@ -8840,12 +9451,20 @@ export class ThreeGame {
         return this._hardwareCapabilities;
     }
 
+    setWorldRenderSuspended(suspended) {
+        this.worldRenderSuspended = Boolean(suspended);
+    }
+
     renderWithPerf(label = 'frame:render') {
         // A full diagnostics snapshot traverses the scene and sorts frame
         // samples. Doing that before every render amplified low FPS into a
         // permanent lockup on Steam Deck. Detailed snapshots are captured by
         // the throttled long-task reporter instead.
         const span = beginPerfPhase(label, { profile: this.performanceProfile });
+        // Flat double-sided effects added at runtime draw in one pass, not two
+        // (src/singlePassFlatMaterials.js); chunks and GLBs are done on mount.
+        this._flatMaterialSweep ??= createFlatMaterialSweeper();
+        this._flatMaterialSweep(this.scene);
         const gpuQueryStarted = this.gpuFrameTimer?.beginFrame?.() ?? false;
         try {
             if (this.composer && usesGameplayFocusEffects(this)) {
@@ -8971,6 +9590,16 @@ export class ThreeGame {
     }
 
     renderFrameBody() {
+        // Dozens of gameplay systems ask the same DOM-derived overlay question
+        // during one synchronous frame. Cache that answer until the microtask
+        // checkpoint after this frame; input handlers between frames still see
+        // fresh modal state.
+        this._cacheBlockingOverlayForCurrentFrame = true;
+        this._frameBlockingOverlayState = undefined;
+        queueMicrotask(() => {
+            this._cacheBlockingOverlayForCurrentFrame = false;
+            this._frameBlockingOverlayState = undefined;
+        });
         // docs/perf-chunk-mount-plan-2026-08-20.md Track D: live-observed the
         // menu-showcase's #game-container collapsed to 0x0 (reparented into a
         // hidden/closed '.map-box' preview slot) while this method kept
@@ -8986,6 +9615,11 @@ export class ThreeGame {
         // one boolean test per call in a shipping frame.
         const fp = this.frameProfiler ?? (this.frameProfiler = createFrameProfiler());
         const renderFrame = () => {
+            // Behind the results screen the world was still drawn in full --
+            // 28 chunks at 0.5-1.7 s a frame on Steam Deck for half a minute.
+            // The canvas keeps its last frame, which is all the dimmed
+            // backdrop shows; simulation above keeps running.
+            if (this.worldRenderSuspended) return;
             const frameIntervals = this.frameIntervalTracker
                 ?? (this.frameIntervalTracker = createFrameIntervalTracker());
             frameIntervals.record(this.performanceProfile, performance.now());
@@ -9014,9 +9648,13 @@ export class ThreeGame {
         if (this.cliffPathMaterial) {
             this.cliffPathMaterial.opacity = 0.32 + Math.sin(now * 0.0024) * 0.12;
         }
+        // 30 fps menu cap. On a 60 Hz display two frames arrive a hair under
+        // 33.3 ms apart, so an exact comparison skipped a third frame and the
+        // menu ran at 20 fps (2026-09-25 log: menu p50 49 ms at 0.9 ms GPU).
+        // Allow a quarter-interval of vsync jitter.
         if (this.performanceProfile === 'menu'
             && this._lastMenuRenderAt > 0
-            && now - this._lastMenuRenderAt < this.menuFrameIntervalMs) {
+            && now - this._lastMenuRenderAt < this.menuFrameIntervalMs * 0.75) {
             return;
         }
         if (this.performanceProfile === 'menu') {
@@ -9084,6 +9722,9 @@ export class ThreeGame {
             this.clearGameplayInputState();
             this.updateCamera(delta);
             this.updateHiddenPlayerMarker(now);
+            if (this.isConsoleTerminalModalVisible?.()) {
+                this.updateTerminalModalRefresh(delta, now);
+            }
             renderFrame();
             return;
         }
@@ -9298,7 +9939,16 @@ export class ThreeGame {
 
     syncRunModifierCards() {
         const modifier = this.currentRunModifier;
-        if (!modifier || this._syncedRunModifier === modifier) return;
+        if (!modifier) {
+            if (this._syncedRunModifier !== null) {
+                this._syncedRunModifier = null;
+                if (this.bunkerDirector?.setRunCards) {
+                    this.bunkerDirector.setRunCards({ seed: 'default', cards: [], effects: {} });
+                }
+            }
+            return;
+        }
+        if (this._syncedRunModifier === modifier) return;
         this._syncedRunModifier = modifier;
         if (modifier.cards?.length && this.bunkerDirector?.setRunCards) {
             this.bunkerDirector.setRunCards({
@@ -9634,6 +10284,10 @@ export class ThreeGame {
     }
 
     ensureBlackBoxMarker() {
+        if (this.isMultiplayer && this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP) {
+            this.clearBlackBoxMarker();
+            return;
+        }
         const state = blackBoxStore.load();
         this._blackBoxState = state;
         const shouldShow = Boolean(state.active);
@@ -9810,7 +10464,7 @@ export class ThreeGame {
         this.arcManager?.recordSignal?.({ blackBoxesRecovered: 1 });
         this.arcManager?.evaluate?.();
         if (this.isMultiplayer) {
-            this.broadcastSharedWorldEvent?.('black-box-recovered', { recovered });
+            this.broadcastSharedWorldEvent?.('black-box-recovered', { recovered, ownerId: this.multiplayerLocalPlayerId ?? null });
         }
         window.dispatchEvent(new CustomEvent('black-box-recovered', { detail: recovered }));
         return true;
@@ -10157,6 +10811,12 @@ export class ThreeGame {
 
     toggleBunkerBlastDoor({ fromRemote = false } = {}) {
         if (!this.bunkerBlastDoorState || this.bunkerBlastDoorState.destroyed) return;
+        const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        if (!fromRemote && this._lastBunkerBlastDoorToggleAt && now - this._lastBunkerBlastDoorToggleAt < 400) return;
+        if (!fromRemote) {
+            this._lastBunkerBlastDoorToggleAt = now;
+            this._bunkerBlastDoorSequence = (this._bunkerBlastDoorSequence ?? 0) + 1;
+        }
         const state = this.bunkerBlastDoorState;
         state.open = !state.open;
         state.targetY = state.open ? -2.4 : 1.4;
@@ -10177,11 +10837,14 @@ export class ThreeGame {
         });
 
         window.dispatchEvent(new CustomEvent('bunker-door-toggled', {
-            detail: { open: state.open, fromRemote }
+            detail: { open: state.open, fromRemote, seq: this._bunkerBlastDoorSequence }
         }));
 
         if (!fromRemote && this.isMultiplayer) {
-            this.broadcastSharedWorldEvent('bunker-door-toggled', { open: state.open });
+            this.broadcastSharedWorldEvent('bunker-door-toggled', {
+                open: state.open,
+                seq: this._bunkerBlastDoorSequence
+            });
         }
     }
 
@@ -10191,6 +10854,8 @@ export class ThreeGame {
     }
 
     resetBunkerBlastDoor() {
+        this._bunkerBlastDoorSequence = 0;
+        this._lastBunkerBlastDoorToggleAt = 0;
         const state = this.bunkerBlastDoorState;
         if (!state) return;
         state.open = false;
@@ -10760,10 +11425,11 @@ export class ThreeGame {
                 if (!sprite?.parent || sprite.userData?.burstTriggered) continue;
                 const type = sprite.userData?.type;
                 if (!this.isEnemyType(type) && !sprite.userData?.isEnemy) continue;
+                if (!hasVisibleTacticalRepresentation(sprite)) continue;
                 const dist = Math.hypot(worldPoint.x - sprite.position.x, worldPoint.z - sprite.position.z);
                 const hoverRadius = sprite.userData?.isBoss ? 3.0 : (sprite.scale?.x ? Math.max(1.2, sprite.scale.x * 0.9) : 1.6);
                 if (dist <= hoverRadius) {
-                    const cleanName = (type ? type.replace(/^boss_/, '').replace(/_/g, ' ') : 'HOSTILE').toUpperCase();
+                    const cleanName = tacticalNameForObject(sprite);
                     const hp = sprite.userData?.hp ?? 100;
                     const maxHp = sprite.userData?.maxHp ?? 100;
                     const integrity = Math.max(0, Math.min(100, Math.round((hp / maxHp) * 100)));
@@ -10971,17 +11637,20 @@ export class ThreeGame {
         // silently dropping its aim response.
         for (const prop of this.scatterSprites ?? []) {
             if (!prop?.parent || !prop.userData?.isDestructibleProp || prop.userData.burstTriggered) continue;
+            if (!hasVisibleTacticalRepresentation(prop)) continue;
             const dist = Math.hypot(worldPoint.x - prop.position.x, worldPoint.z - prop.position.z);
             const radius = Math.max(0.8, (prop.userData.collisionRadius ?? 0.38) + 0.55);
             if (dist > radius) continue;
             const hp = Math.max(0, prop.userData.propHp ?? 1);
             const maxHp = Math.max(1, prop.userData.maxPropHp ?? hp);
+            const propName = tacticalNameForObject(prop);
             return {
                 type: 'enemy',
+                typeLabel: 'SALVAGE',
                 targetId: 'destructible_prop',
-                badgeLabel: 'SALVAGEABLE PROP',
-                kicker: 'WORLD OBJECT // DESTRUCTIBLE',
-                title: String(prop.userData.type ?? 'FIELD PROP').replaceAll('_', ' ').toUpperCase(),
+                badgeLabel: propName,
+                kicker: `${propName} // SALVAGEABLE`,
+                title: propName,
                 subtitle: 'BREAK TO CLEAR THE ROUTE OR RECOVER MATERIAL',
                 coords: { x: tileX, z: tileZ },
                 distance: Math.hypot(prop.position.x - this.player.position.x, prop.position.z - this.player.position.z),
@@ -11328,7 +11997,7 @@ export class ThreeGame {
 
         if (kicker) kicker.textContent = target.kicker;
         if (typeTag) {
-            typeTag.textContent = target.type.toUpperCase();
+            typeTag.textContent = (target.typeLabel ?? target.type).toUpperCase();
             typeTag.className = `telemeter-type-tag telemeter-tag--${target.type}`;
         }
         if (title) title.textContent = target.title;
@@ -11399,7 +12068,7 @@ export class ThreeGame {
     // reached a graceful end (crash/force-quit/tab-close) -- main.js's
     // boot sequence converts it into a normal black-box death-stain entry.
     updateRunCheckpoint(delta) {
-        if (this.isPlayerDead || !this.player) return;
+        if (this.isPlayerDead || !this.player || this.isMultiplayer || this.fixedRunEntropy) return;
         this._runCheckpointTimer = (this._runCheckpointTimer ?? 0) - delta;
         if (this._runCheckpointTimer > 0) return;
         this._runCheckpointTimer = RUN_CHECKPOINT_INTERVAL_SECONDS;
@@ -11417,6 +12086,179 @@ export class ThreeGame {
                 med: inventory.health ?? 0
             }
         });
+        this.saveExpeditionSuspend?.();
+    }
+
+    createExpeditionSuspendSnapshot() {
+        if (this.isPlayerDead || !this.player || this.isMultiplayer || this.fixedRunEntropy) return null;
+        const campaign = campaignWorldStore.getState?.();
+        const profile = this.activeExpedition;
+        if (!campaign || !profile || campaign.seed !== this._campaignWorldSeed
+            || profile.expeditionSeed !== campaign.expeditionSeed) return null;
+        const inventory = this.getSessionInventory();
+        const enemies = (this.scatterSprites ?? [])
+            .filter((sprite) => sprite?.parent && sprite.userData?.isEnemy
+                && !sprite.userData?.burstTriggered && sprite.userData?.scatterKey)
+            .map((sprite) => ({
+                scatterKey: sprite.userData.scatterKey,
+                type: sprite.userData.type,
+                x: sprite.position.x,
+                z: sprite.position.z,
+                hp: sprite.userData.hp,
+                maxHp: sprite.userData.maxHp,
+                speed: sprite.userData.speed,
+                enraged: sprite.userData.enraged,
+                isBoss: sprite.userData.isBoss,
+                isElite: sprite.userData.isElite,
+                aiMode: sprite.userData.aiMode,
+                targetType: sprite.userData.targetType,
+                dynamic: !/^-?\d+,-?\d+:/.test(sprite.userData.scatterKey),
+                statusEffects: sprite.userData.statusEffects ?? null
+            }));
+        return normalizeExpeditionSuspendSnapshot({
+            version: 1,
+            mode: 'solo',
+            resumeId: this._expeditionResumeId
+                ?? globalThis.crypto?.randomUUID?.()
+                ?? `resume-${campaign.seed}-${profile.expeditionSeed}-${Date.now()}`,
+            expedition: {
+                campaignSeed: campaign.seed,
+                expeditionSeed: profile.expeditionSeed,
+                expeditionIndex: profile.expeditionIndex,
+                profile
+            },
+            player: {
+                classType: this.playerType,
+                x: this.player.position.x,
+                z: this.player.position.z,
+                facingYaw: this.facingYaw,
+                vitals: this.playerVitals,
+                inventory,
+                weapon: { clipAmmo: this.weaponClipAmmo, clipSize: this.weaponClipSize }
+            },
+            run: {
+                startedAt: this.runStartTime,
+                elapsedMs: Math.max(0, Date.now() - (this.runStartTime ?? Date.now())),
+                missionState: this.missionState,
+                modifier: this.currentRunModifier,
+                overclockIds: (this.runOverclocks ?? []).map((drop) => drop.id),
+                relicIds: (this.runRelics ?? []).map((drop) => drop.id),
+                shardCount: this.runShardCount,
+                depositedResources: {
+                    health: this.runDepositedResources?.med,
+                    weapon: this.runDepositedResources?.tech,
+                    coin: this.runDepositedResources?.coin
+                },
+                kills: this.snailsKilledThisRun,
+                maxDepthTierReached: this.maxDepthTierReached,
+                currentDepthTier: this.currentDepthTier,
+                totalDistanceTravelled: this.totalDistanceTravelled
+            },
+            world: {
+                maze: this.getMazePersistenceState(),
+                killedEnemyScatterKeys: [...(this.killedEnemyScatterKeys ?? [])],
+                depletedGearPileKeys: [...(this.depletedGearPileKeys ?? [])],
+                killedBosses: [...(this.killedBosses ?? [])],
+                visitedChunks: [...(this.visitedChunks ?? [])],
+                enemies
+            }
+        });
+    }
+
+    saveExpeditionSuspend() {
+        const snapshot = this.createExpeditionSuspendSnapshot();
+        if (!snapshot) return null;
+        const saved = expeditionSuspendStore.save(snapshot);
+        if (saved) this._expeditionResumeId = saved.resumeId;
+        return saved;
+    }
+
+    prepareExpeditionResume(raw) {
+        const snapshot = normalizeExpeditionSuspendSnapshot(raw);
+        const campaign = campaignWorldStore.getState?.();
+        if (!snapshot || this.isMultiplayer || this.fixedRunEntropy || !campaign
+            || campaign.seed !== snapshot.expedition.campaignSeed
+            || campaign.expeditionSeed !== snapshot.expedition.expeditionSeed
+            || campaign.expeditionIndex !== snapshot.expedition.expeditionIndex) return false;
+        this._pendingExpeditionResume = snapshot;
+        this._expeditionResumeId = snapshot.resumeId;
+        return true;
+    }
+
+    restoreExpeditionSuspend(raw = this._pendingExpeditionResume) {
+        const snapshot = normalizeExpeditionSuspendSnapshot(raw);
+        if (!snapshot || !this.player || !this._pendingExpeditionResume) return false;
+        this.clearLoadedChunksForRunReset();
+        this.restoreMazePersistenceState(snapshot.world.maze);
+        this.killedEnemyScatterKeys = new Set(snapshot.world.killedEnemyScatterKeys);
+        this.depletedGearPileKeys = new Set(snapshot.world.depletedGearPileKeys);
+        this.killedBosses = new Set(snapshot.world.killedBosses);
+        this.visitedChunks = new Set(snapshot.world.visitedChunks);
+        this._suspendedEnemyStateByKey = new Map(snapshot.world.enemies.map((enemy) => [enemy.scatterKey, enemy]));
+
+        this.player.position.set(snapshot.player.x, 0, snapshot.player.z);
+        this.playerGlow?.position?.set?.(snapshot.player.x, 1.6, snapshot.player.z);
+        this.playerMarker?.position?.set?.(snapshot.player.x, this.playerMarkerHeight, snapshot.player.z);
+        this.updateFacingYaw?.(snapshot.player.facingYaw);
+        Object.assign(this.playerVitals, snapshot.player.vitals, { o2HealthTimer: 0 });
+        this.weaponClipSize = snapshot.player.weapon.clipSize;
+        this.weaponClipAmmo = Math.min(snapshot.player.weapon.clipAmmo, this.weaponClipSize);
+        window.restorePickupCounterState?.(snapshot.player.inventory, snapshot.player.classType);
+
+        this.missionState = snapshot.run.missionState ?? this.missionState;
+        this.currentRunModifier = snapshot.run.modifier;
+        this.runStartTime = Date.now() - snapshot.run.elapsedMs;
+        const overclocks = new Map(WEAPON_OVERCLOCKS.map((drop) => [drop.id, drop]));
+        const relics = new Map(SUIT_RELICS.map((drop) => [drop.id, drop]));
+        this.runOverclocks = snapshot.run.overclockIds.map((id) => overclocks.get(id)).filter(Boolean);
+        this.runRelics = snapshot.run.relicIds.map((id) => relics.get(id)).filter(Boolean);
+        this.activeSynergies = computeActiveSynergies([...this.runOverclocks, ...this.runRelics]);
+        this.runShardCount = snapshot.run.shardCount;
+        this.runDepositedResources = {
+            tech: snapshot.run.depositedResources.weapon,
+            med: snapshot.run.depositedResources.health,
+            coin: snapshot.run.depositedResources.coin
+        };
+        this.snailsKilledThisRun = snapshot.run.kills;
+        this.maxDepthTierReached = snapshot.run.maxDepthTierReached;
+        this.currentDepthTier = snapshot.run.currentDepthTier;
+        this.totalDistanceTravelled = snapshot.run.totalDistanceTravelled;
+
+        this.syncVisibleChunks(true);
+        for (const sprite of this.scatterSprites ?? []) this.applySuspendedEnemyState(sprite);
+        const restoredKeys = new Set((this.scatterSprites ?? []).map((sprite) => sprite?.userData?.scatterKey));
+        for (const enemy of snapshot.world.enemies) {
+            if (!enemy.dynamic || restoredKeys.has(enemy.scatterKey)) continue;
+            const sprite = this.spawnEnemyInstance?.(enemy.type, enemy.x, enemy.z);
+            if (!sprite) continue;
+            sprite.userData.scatterKey = enemy.scatterKey;
+            this.applySuspendedEnemyState(sprite);
+        }
+        this.emitHealthState?.();
+        this.emitO2State?.();
+        this.emitWeaponClipState?.();
+        this._pendingExpeditionResume = null;
+        const committed = this.saveExpeditionSuspend();
+        window.dispatchEvent?.(new CustomEvent('expedition-resumed', {
+            detail: { resumeId: snapshot.resumeId, generation: committed?.generation ?? snapshot.generation }
+        }));
+        return true;
+    }
+
+    applySuspendedEnemyState(sprite) {
+        const saved = this._suspendedEnemyStateByKey?.get?.(sprite?.userData?.scatterKey);
+        if (!saved || saved.type !== sprite.userData.type) return false;
+        sprite.position.x = saved.x;
+        sprite.position.z = saved.z;
+        sprite.userData.maxHp = saved.maxHp;
+        sprite.userData.hp = Math.min(saved.hp, saved.maxHp);
+        sprite.userData.speed = saved.speed;
+        sprite.userData.enraged = saved.enraged;
+        sprite.userData.isElite = saved.isElite;
+        sprite.userData.aiMode = saved.aiMode;
+        sprite.userData.targetType = saved.targetType;
+        if (saved.statusEffects) sprite.userData.statusEffects = structuredClone(saved.statusEffects);
+        return true;
     }
 
     showBunkerLine(text, { fromRemote = false } = {}) {
@@ -12163,31 +13005,17 @@ export class ThreeGame {
     }
 
     renderTerminalObjectiveJournal(bankState, activeGoal) {
+        this.updateTerminalCycleStatus?.();
+
         const day = this.dayState?.day ?? 1;
         const phase = String(this.dayState?.phase ?? REST_PHASES.EXPEDITION).replace(/_/g, ' ').toUpperCase();
-        const lightIsDay = this.getDayFactor() >= 0.5;
-        const nextPoint = lightIsDay ? 0.75 : 0.25;
-        const cycleFraction = (nextPoint - this.timeOfDay + 1) % 1;
-        const transitionSeconds = Math.max(0, Math.round(cycleFraction * this.dayCycleSeconds));
-        const setText = (id, text) => {
-            const element = document.getElementById(id);
-            if (element) element.textContent = text;
-        };
-        setText('terminal-log-day', t('ui.console.day_n', { day }));
-        setText('terminal-log-phase', phase);
-        setText('terminal-log-light', lightIsDay ? t('ui.console.daylight') : t('ui.console.night_ops'));
-        setText('terminal-log-route', this.describeRingRouteProgress?.() ?? '--');
-        setText('terminal-log-transition', t('ui.console.transition_in', {
-            phase: lightIsDay ? t('ui.console.dusk') : t('ui.console.dawn'),
-            time: `${String(Math.floor(transitionSeconds / 60)).padStart(2, '0')}:${String(transitionSeconds % 60).padStart(2, '0')}`
-        }));
-
         const mission = this.missionState;
         const missionLabel = mission?.label || 'EXPLORE · BANK SALVAGE';
         const missionStatus = String(mission?.status || 'active').replace(/_/g, ' ').toUpperCase();
         const goalLabel = activeGoal?.title ?? 'BASE SYSTEMS MAXIMUM';
-        const goalStatus = activeGoal ? (this.bank.canAfford(activeGoal.cost) ? 'READY' : 'RESOURCE DEFICIT') : 'COMPLETE';
+        const goalStatus = activeGoal ? (this.bank?.canAfford?.(activeGoal.cost) ? 'READY' : 'RESOURCE DEFICIT') : 'COMPLETE';
         const snapshot = `${day}|${phase}|${missionLabel}|${missionStatus}|${goalLabel}|${goalStatus}`;
+
         this._terminalObjectiveHistory ??= [];
         if (this._terminalObjectiveHistory.at(-1)?.snapshot !== snapshot) {
             const elapsed = Math.max(0, Math.floor((Date.now() - (this.runStartTime || Date.now())) / 1000));
@@ -12197,6 +13025,17 @@ export class ThreeGame {
 
         const list = document.getElementById('terminal-objective-journal-list');
         if (!list) return;
+
+        const resolvedList = [...(this.dayState?.resolved ?? [])].sort().join(',');
+        const expiredList = [...(this.dayState?.expired ?? [])].sort().join(',');
+        const affordStatus = activeGoal ? (this.bank?.canAfford?.(activeGoal.cost) ? 'afford' : 'deficit') : 'complete';
+        const journalDomSignature = `${snapshot}|${resolvedList}|${expiredList}|${this._terminalObjectiveHistory.length}|${affordStatus}`;
+
+        if (this._lastJournalDomSignature === journalDomSignature && list.children?.length > 0) {
+            return;
+        }
+        this._lastJournalDomSignature = journalDomSignature;
+
         list.replaceChildren();
         const rows = [...this._terminalObjectiveHistory].reverse();
         for (const entry of rows) {
@@ -12204,9 +13043,12 @@ export class ThreeGame {
             const minute = String(Math.floor(entry.elapsed / 60)).padStart(2, '0');
             const second = String(entry.elapsed % 60).padStart(2, '0');
             item.innerHTML = `<span class="terminal-objective-journal-time"></span><span class="terminal-objective-journal-copy"></span><strong class="terminal-objective-journal-state"></strong>`;
-            item.querySelector('.terminal-objective-journal-time').textContent = t('ui.journal.day_time', { day: entry.day, minute, second });
-            item.querySelector('.terminal-objective-journal-copy').textContent = t('ui.journal.mission_next', { mission: entry.missionLabel, goal: entry.goalLabel });
-            item.querySelector('.terminal-objective-journal-state').textContent = `${entry.missionStatus} · ${entry.goalStatus}`;
+            const timeEl = item.querySelector('.terminal-objective-journal-time');
+            if (timeEl) timeEl.textContent = typeof t === 'function' ? t('ui.journal.day_time', { day: entry.day, minute, second }) : `D${entry.day} ${minute}:${second}`;
+            const copyEl = item.querySelector('.terminal-objective-journal-copy');
+            if (copyEl) copyEl.textContent = typeof t === 'function' ? t('ui.journal.mission_next', { mission: entry.missionLabel, goal: entry.goalLabel }) : `${entry.missionLabel} → ${entry.goalLabel}`;
+            const stateEl = item.querySelector('.terminal-objective-journal-state');
+            if (stateEl) stateEl.textContent = `${entry.missionStatus} · ${entry.goalStatus}`;
             list.append(item);
         }
 
@@ -12216,10 +13058,15 @@ export class ThreeGame {
             if (!resolved.has(deadline.id) && !expired.has(deadline.id) && day + 1 < deadline.closesOnDay) continue;
             const item = document.createElement('li');
             item.className = expired.has(deadline.id) ? 'is-expired' : resolved.has(deadline.id) ? 'is-complete' : 'is-warning';
-            item.innerHTML = `<span class="terminal-objective-journal-time">${t('ui.journal.story')}</span><span class="terminal-objective-journal-copy"></span><strong class="terminal-objective-journal-state"></strong>`;
-            item.querySelector('.terminal-objective-journal-copy').textContent = deadline.label;
-            item.querySelector('.terminal-objective-journal-state').textContent = resolved.has(deadline.id)
-                ? 'RESOLVED' : expired.has(deadline.id) ? 'EXPIRED' : `CLOSES DAY ${deadline.closesOnDay}`;
+            const storyLabel = typeof t === 'function' ? t('ui.journal.story') : 'STORY';
+            item.innerHTML = `<span class="terminal-objective-journal-time">${storyLabel}</span><span class="terminal-objective-journal-copy"></span><strong class="terminal-objective-journal-state"></strong>`;
+            const copyEl = item.querySelector('.terminal-objective-journal-copy');
+            if (copyEl) copyEl.textContent = deadline.label;
+            const stateEl = item.querySelector('.terminal-objective-journal-state');
+            if (stateEl) {
+                stateEl.textContent = resolved.has(deadline.id)
+                    ? 'RESOLVED' : expired.has(deadline.id) ? 'EXPIRED' : `CLOSES DAY ${deadline.closesOnDay}`;
+            }
             list.append(item);
         }
     }
@@ -13520,6 +14367,7 @@ export class ThreeGame {
         // hearts. Floored at one: exhaustion can hollow an operator out, but it
         // must never be the thing that kills them outright.
         maxHp = Math.max(1, maxHp + fatigueMaxHealthPenalty(this.fatigueState));
+        if (this.isMultiplayer && this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP) maxHp = PVP_HEARTS;
         this.playerVitals.maxHp = maxHp;
         this.playerVitals.hp = Math.min(this.playerVitals.hp, this.playerVitals.maxHp);
         this.applyWeaponUpgrades();
@@ -14105,8 +14953,11 @@ export class ThreeGame {
         for (const event of events) this.handleQueenFightEvent(event, sprite);
     }
 
-    handleQueenFightEvent(event, sprite) {
+    handleQueenFightEvent(event, sprite, { fromRemote = false } = {}) {
         const data = sprite.userData;
+        const role = coopRole(this);
+        if (!fromRemote && !runsBossEventLocally(role, event.type)) return;
+        if (!fromRemote && announcesBossEvent(role, event.type)) this.announceBossFightEvent(sprite, 'queen', event);
         switch (event.type) {
             case 'phase': {
                 const line = QUEEN_PHASE_LINES[event.phase];
@@ -14172,41 +15023,108 @@ export class ThreeGame {
 
     spawnQueenAdds(sprite, addType, count) {
         const parent = sprite.parent;
-        if (!parent) return;
+        if (!parent) return 0;
+        // Adds are the host's to spawn in co-op; guests take its placements.
+        if (coopRole(this) === COOP_ROLE.GUEST) return 0;
         const offsets = [[1.4, 1.4], [-1.4, -1.4], [1.4, -1.4], [-1.4, 1.4], [2.2, 0], [-2.2, 0]];
-        let spawned = 0;
+        const placements = [];
         for (const [dx, dz] of offsets) {
-            if (spawned >= count) break;
+            if (placements.length >= count) break;
             const tx = sprite.position.x + dx;
             const tz = sprite.position.z + dz;
             if (!this.isSnailTileWalkable(Math.round(tx), Math.round(tz))) continue;
-            const placement = {
-                x: tx,
-                z: tz,
-                type: addType,
-                scatterKey: `${sprite.userData.scatterKey}:add:${Date.now()}:${spawned}`,
-                scale: 1.0,
+            placements.push({ x: tx, z: tz, type: addType, scale: 1.0, elevation: 0.1 });
+        }
+        return this.spawnBossAdds(sprite, 'queenAdd', placements);
+    }
+
+    // Spawns a boss's adds with keys every client shares, then (as host)
+    // announces the exact placements so guests spawn the same ones.
+    spawnBossAdds(sprite, flag, placements, { fromRemote = false } = {}) {
+        const parent = sprite?.parent;
+        if (!parent || !placements.length) return 0;
+        const data = sprite.userData;
+        const bossKey = data.scatterKey ?? 'boss';
+        const keyed = placements.map((placement) => ({
+            ...placement,
+            scatterKey: placement.scatterKey ?? bossAddScatterKey(bossKey, (data.addSequence = (data.addSequence ?? 0) + 1))
+        }));
+        let spawned = 0;
+        for (const placement of keyed) {
+            if (this.scatterSprites.some((other) => other.userData?.scatterKey === placement.scatterKey)) continue;
+            const add = this.createScatterInstance({
                 rotation: 0,
                 tiltX: 0,
                 tiltZ: 0,
-                elevation: 0.1,
                 groupType: 'minion',
                 phase: Math.random() * Math.PI * 2,
                 opacity: 1,
-                biomeTint: 0x88ff88
-            };
-            const add = this.createScatterInstance(placement);
+                biomeTint: 0x88ff88,
+                ...placement
+            });
             if (!add) continue;
-            add.userData.queenAdd = true;
+            add.userData[flag] = true;
             parent.add(add);
             this.scatterSprites.push(add);
-            this.spawnGearPoofEffect(tx, tz, 'bio_spores');
+            this.spawnGearPoofEffect(placement.x, placement.z, 'bio_spores');
             spawned += 1;
         }
         if (spawned) window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 0.5, force: true });
+        if (!fromRemote && spawned && coopRole(this) === COOP_ROLE.HOST) {
+            data.addAnnouncements = (data.addAnnouncements ?? 0) + 1;
+            this.broadcastSharedWorldEvent?.(COOP_TRANSITION_EVENTS.BOSS_ADDS, {
+                bossKey,
+                sequence: data.addAnnouncements,
+                flag,
+                placements: keyed.map(({ x, z, type, scale, elevation, scatterKey }) => ({ x, z, type, scale, elevation, scatterKey }))
+            });
+        }
+        return spawned;
     }
 
-    applyPlayerDamageToEnemy(sprite, amount, { fromNetwork = false, reporterId = null } = {}) {
+    announceBossFightEvent(sprite, kind, event) {
+        const data = sprite.userData;
+        data.fightAnnouncements = (data.fightAnnouncements ?? 0) + 1;
+        this.broadcastSharedWorldEvent?.(COOP_TRANSITION_EVENTS.BOSS_FIGHT_EVENT, {
+            bossKey: data.scatterKey,
+            sequence: data.fightAnnouncements,
+            kind,
+            type: event.type,
+            phase: event.phase ?? null,
+            attack: event.attack ?? null,
+            duration: event.duration ?? null,
+            mechanic: event.mechanic ?? null
+        });
+    }
+
+    applyRemoteBossFightEvent(detail) {
+        const sprite = (this.scatterSprites ?? []).find((entry) => entry.userData?.scatterKey === detail.bossKey);
+        if (!sprite || sprite.userData?.burstTriggered) return false;
+        const event = {
+            type: detail.type,
+            phase: detail.phase ?? undefined,
+            attack: detail.attack ?? undefined,
+            duration: detail.duration ?? undefined,
+            mechanic: detail.mechanic ?? undefined
+        };
+        if (detail.kind === 'queen') this.handleQueenFightEvent(event, sprite, { fromRemote: true });
+        else if (detail.kind === 'sporesnail') this.handleSporesnailFightEvent(event, sprite, { fromRemote: true });
+        else this.handleBiomeBossFightEvent(event, sprite, { fromRemote: true });
+        return true;
+    }
+
+    applyRemoteBossAdds(detail) {
+        const placements = Array.isArray(detail.placements) ? detail.placements.slice(0, 8) : [];
+        const valid = placements.filter((placement) => Number.isFinite(placement?.x) && Number.isFinite(placement?.z)
+            && typeof placement.type === 'string' && this.scatterMaterials?.[placement.type] && typeof placement.scatterKey === 'string');
+        const sprite = (this.scatterSprites ?? []).find((entry) => entry.userData?.scatterKey === detail.bossKey);
+        if (!sprite || !valid.length) return 0;
+        const flag = detail.flag === 'sporesnailAdd' ? 'sporesnailAdd'
+            : detail.flag === 'biomeBossAdd' ? 'biomeBossAdd' : 'queenAdd';
+        return this.spawnBossAdds(sprite, flag, valid, { fromRemote: true });
+    }
+
+    applyPlayerDamageToEnemy(sprite, amount, { fromNetwork = false, reporterId = null, element = null, statusOptions = null } = {}) {
         if (sprite?.userData?.isDestructibleProp) {
             this.damageScatterProp(sprite, amount);
             return;
@@ -14216,7 +15134,8 @@ export class ThreeGame {
         // loadout. Scaling it again here multiplied it by the receiver's.
         const localHit = !fromNetwork && reporterId == null;
         if (localHit) {
-            const bossTarget = Boolean(sprite?.userData?.isBoss || sprite?.userData?.queenFight || sprite?.userData?.sporesnailFight);
+            const bossTarget = Boolean(sprite?.userData?.isBoss || sprite?.userData?.queenFight
+                || sprite?.userData?.sporesnailFight || sprite?.userData?.biomeBossFight);
             amount *= bossTarget
                 ? (this.loadoutMods?.bossDamageMultiplier ?? 1)
                 : (this.loadoutMods?.nonBossDamageMultiplier ?? 1);
@@ -14226,6 +15145,16 @@ export class ThreeGame {
             const cryoMult = this.loadoutMods?.cryoDurationMultiplier ?? 1.0;
             if (sprite?.userData && cryoMult > 1.0 && Math.random() < 0.18) {
                 sprite.userData.frozenTimer = Math.max(sprite.userData.frozenTimer ?? 0, 1.0 * cryoMult);
+            }
+
+            // Sprint 47 Lane 3 Status Procs (Cryo Rime & Caustic Payload)
+            const activeElement = element || (this.hasActiveOverclock?.('cryo_rime') ? 'cryo' : (this.hasActiveOverclock?.('caustic_payload') ? 'bio' : null));
+            if (activeElement === 'cryo') {
+                const freezeAmount = statusOptions?.freezePerHit ?? 34;
+                applyStatus(sprite, 'freeze', freezeAmount);
+            } else if (activeElement === 'bio') {
+                const poisonDuration = statusOptions?.poisonDuration ?? 3.0;
+                applyStatus(sprite, 'corrosion', poisonDuration);
             }
         }
         // Sprint 24 Milestone A co-op enemy hit-sync, now host-authoritative
@@ -14283,6 +15212,12 @@ export class ThreeGame {
             this.damageSnail(sprite, dealt);
             return;
         }
+        const biomeBossFight = sprite?.userData?.biomeBossFight;
+        if (biomeBossFight) {
+            const dealt = applyBossDamage(biomeBossFight, amount);
+            this.damageSnail(sprite, dealt);
+            return;
+        }
         const stagger = sprite?.userData?.staggerState;
         if (stagger) {
             const result = applyStaggerDamage(stagger, amount);
@@ -14324,8 +15259,11 @@ export class ThreeGame {
         for (const event of events) this.handleSporesnailFightEvent(event, sprite);
     }
 
-    handleSporesnailFightEvent(event, sprite) {
+    handleSporesnailFightEvent(event, sprite, { fromRemote = false } = {}) {
         const data = sprite.userData;
+        const role = coopRole(this);
+        if (!fromRemote && !runsBossEventLocally(role, event.type)) return;
+        if (!fromRemote && announcesBossEvent(role, event.type)) this.announceBossFightEvent(sprite, 'sporesnail', event);
         switch (event.type) {
             case 'weakpoint-open':
                 data.weakpointOpen = true;
@@ -14352,6 +15290,157 @@ export class ThreeGame {
         }
     }
 
+    updateBiomeBossFightTick(sprite, delta, distanceToTarget) {
+        const data = sprite.userData;
+        const fight = data.biomeBossFight;
+        if (!fight || fight.defeated) return;
+        // Existing trail patches must keep expiring even after the operator
+        // leaves the boss's aggro radius; otherwise they become permanent.
+        this.updateFrozenPathwayMechanic(sprite, delta);
+        if (distanceToTarget > 14) return;
+        let activeAdds = 0;
+        for (const other of this.scatterSprites) {
+            if (other !== sprite && other.userData?.biomeBossAdd && !other.userData?.burstTriggered) activeAdds += 1;
+        }
+        const events = tickBossFight(fight, delta, { activeAdds });
+        for (const event of events) this.handleBiomeBossFightEvent(event, sprite);
+    }
+
+    handleBiomeBossFightEvent(event, sprite, { fromRemote = false } = {}) {
+        const data = sprite.userData;
+        const role = coopRole(this);
+        if (!fromRemote && !runsBossEventLocally(role, event.type)) return;
+        if (!fromRemote && announcesBossEvent(role, event.type)) this.announceBossFightEvent(sprite, data.type, event);
+        switch (event.type) {
+            case 'phase': {
+                const phase = data.biomeBossFight ? currentPhase(data.biomeBossFight) : null;
+                const mechanic = event.mechanic ?? phase?.mechanic;
+                data.frozenPathwaysActive = mechanic?.kind === 'frozen-pathways';
+                data.frozenPathwayTimer = 0;
+                if (mechanic?.kind === 'carapace-shattered') {
+                    data.speed = (data.baseBossSpeed ?? data.speed) * (mechanic.speedMultiplier ?? 1.4);
+                    sprite.material?.color?.setHex?.(0xff9f43);
+                }
+                this.triggerCameraShake?.(0.2, 0.35);
+                window.AudioManager?.playMetalStress?.({ volume: 0.62, playbackRate: 0.58, force: true });
+                window.dispatchEvent(new CustomEvent('boss-phase-changed', {
+                    detail: { boss: data.type, phase: event.phase, mechanic: mechanic?.kind ?? null }
+                }));
+                break;
+            }
+            case 'attack-telegraph':
+                this.telegraphBiomeBossAttack(sprite, event);
+                break;
+            case 'attack':
+                this.fireBiomeBossAttack(sprite, event.attack);
+                break;
+            case 'weakpoint-open':
+                data.weakpointOpen = true;
+                sprite.material?.color?.setHex?.(0xffe066);
+                window.AudioManager?.play?.('ui_scan_ping', { volume: 0.42, playbackRate: 0.5 });
+                break;
+            case 'weakpoint-close':
+                data.weakpointOpen = false;
+                sprite.material?.color?.setHex?.(data.biomeTint ?? 0xffffff);
+                break;
+            case 'adds':
+                this.spawnBiomeBossAdds(sprite, event.addType, event.count);
+                break;
+            default:
+                break;
+        }
+    }
+
+    telegraphBiomeBossAttack(sprite, event) {
+        const radius = event.attack === 'radial_emp' ? 5.2
+            : event.attack === 'deep_freeze_wave' ? 5.8 : 4.5;
+        this.spawnFrostShockwaveEffect?.(sprite.position.x, sprite.position.z, radius);
+        window.AudioManager?.play?.('ui_scan_ping', {
+            volume: 0.48,
+            playbackRate: event.attack === 'mortar_volley' ? 1.35 : 0.38
+        });
+        window.dispatchEvent(new CustomEvent('boss-attack-telegraph', {
+            detail: {
+                boss: sprite.userData.type,
+                attack: event.attack,
+                radius,
+                windupMs: Math.round((event.duration ?? 0) * 1000 * (this.reducedPressure ? 1.20 : 1.0))
+            }
+        }));
+    }
+
+    fireBiomeBossAttack(sprite, attackKey) {
+        if (!this.player || this.isPlayerDead) return;
+        const dx = this.player.position.x - sprite.position.x;
+        const dz = this.player.position.z - sprite.position.z;
+        const distance = Math.hypot(dx, dz);
+        const angle = Math.atan2(dz, dx);
+        if (attackKey === 'mortar_volley' || attackKey === 'ice_needle_barrage') {
+            const speed = attackKey === 'ice_needle_barrage' ? 8.5 : 7.5;
+            for (const step of [-1, 0, 1]) {
+                const shotAngle = angle + step * (attackKey === 'ice_needle_barrage' ? 0.14 : 0.22);
+                this.spawnProjectile({
+                    x: sprite.position.x,
+                    z: sprite.position.z,
+                    vx: Math.cos(shotAngle) * speed,
+                    vz: Math.sin(shotAngle) * speed,
+                    ttl: 2,
+                    damage: 1,
+                    radius: 0.22,
+                    isEnemy: true
+                });
+            }
+        } else if (attackKey === 'radial_emp' || attackKey === 'deep_freeze_wave') {
+            const radius = attackKey === 'radial_emp' ? 5.2 : 5.8;
+            this.spawnFrostShockwaveEffect?.(sprite.position.x, sprite.position.z, radius);
+            if (distance <= radius) {
+                this.takeDamage?.(attackKey === 'radial_emp' ? 2 : 1, attackKey, sprite.position.x, sprite.position.z);
+                this.applyPlayerSlow?.(attackKey === 'deep_freeze_wave' ? 3 : 1.5);
+            }
+        }
+    }
+
+    spawnBiomeBossAdds(sprite, addType, count) {
+        if (coopRole(this) === COOP_ROLE.GUEST || !sprite.parent) return 0;
+        const offsets = [[1.5, 1.5], [-1.5, -1.5], [1.5, -1.5], [-1.5, 1.5]];
+        const placements = offsets.slice(0, count).map(([dx, dz]) => ({
+            x: sprite.position.x + dx,
+            z: sprite.position.z + dz,
+            type: addType,
+            scale: 0.95,
+            elevation: 0.1
+        })).filter(({ x, z }) => this.isSnailTileWalkable(Math.round(x), Math.round(z)));
+        return this.spawnBossAdds(sprite, 'biomeBossAdd', placements);
+    }
+
+    updateFrozenPathwayMechanic(sprite, delta) {
+        const data = sprite.userData;
+        data.frozenPathwayPatches ??= [];
+        data.frozenPathwayPatches = data.frozenPathwayPatches
+            .map((patch) => ({ ...patch, remaining: patch.remaining - delta }))
+            .filter((patch) => patch.remaining > 0);
+        if (!data.frozenPathwaysActive) return;
+        const mechanic = currentPhase(data.biomeBossFight)?.mechanic ?? {};
+        data.frozenPathwayTimer = (data.frozenPathwayTimer ?? 0) - delta;
+        if (data.frozenPathwayTimer <= 0) {
+            data.frozenPathwayTimer = mechanic.patchEvery ?? 1.25;
+            data.frozenPathwayPatches.push({
+                x: sprite.position.x,
+                z: sprite.position.z,
+                remaining: mechanic.patchDuration ?? 8
+            });
+            this.spawnTextureBurstEffect?.(sprite.position.x, sprite.position.z, {
+                textureKey: 'fx_steam_puff', color: 0x88ccff, count: 3,
+                baseScale: 0.7, duration: 0.8, speed: 0.08, rise: 0.05, opacity: 0.7
+            });
+        }
+        if (this.player && data.frozenPathwayPatches.some((patch) => (
+            Math.hypot(this.player.position.x - patch.x, this.player.position.z - patch.z) <= 1.2
+        ))) {
+            this.applyPlayerSlow?.(mechanic.slowDuration ?? 1.2);
+        }
+    }
+
     // Shared by the flat per-type cooldown (hive-harvest/easy-tier
     // sporesnails, which never get a fight object attached) and the
     // phase-driven full-hp world encounter, so both spawn identical minions
@@ -14359,42 +15448,19 @@ export class ThreeGame {
     spawnSporesnailAdds(sprite, count = 2) {
         const parent = sprite.parent;
         if (!parent) return 0;
+        if (coopRole(this) === COOP_ROLE.GUEST) return 0;
         const spawnOffset = [
             [1.2, 1.2], [-1.2, -1.2], [1.2, -1.2], [-1.2, 1.2]
         ];
-        let spawnedCount = 0;
+        const placements = [];
         for (const [dx, dz] of spawnOffset) {
+            if (placements.length >= count) break;
             const tx = sprite.position.x + dx;
             const tz = sprite.position.z + dz;
-            if (this.isSnailTileWalkable(Math.round(tx), Math.round(tz))) {
-                const placement = {
-                    x: tx,
-                    z: tz,
-                    type: 'sporesnail',
-                    scatterKey: `${sprite.userData.scatterKey}:minion:${Date.now()}:${spawnedCount}`,
-                    scale: 0.9 + Math.random() * 0.2,
-                    rotation: 0,
-                    tiltX: 0,
-                    tiltZ: 0,
-                    elevation: 0.09,
-                    groupType: 'minion',
-                    phase: Math.random() * Math.PI,
-                    opacity: 1,
-                    biomeTint: 0x88ff88
-                };
-                const minion = this.createScatterInstance(placement);
-                if (minion) {
-                    minion.userData.sporesnailAdd = true;
-                    parent.add(minion);
-                    this.scatterSprites.push(minion);
-                    this.spawnGearPoofEffect(tx, tz, 'bio_spores');
-                    spawnedCount += 1;
-                    if (spawnedCount >= count) break;
-                }
-            }
+            if (!this.isSnailTileWalkable(Math.round(tx), Math.round(tz))) continue;
+            placements.push({ x: tx, z: tz, type: 'sporesnail', scale: 0.9 + Math.random() * 0.2, elevation: 0.09 });
         }
-        window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 0.5, force: true });
-        return spawnedCount;
+        return this.spawnBossAdds(sprite, 'sporesnailAdd', placements);
     }
 
     // ── Act 2: the PregAlien loop (src/act2.js drives the ladder) ──────────
@@ -14749,6 +15815,29 @@ export class ThreeGame {
         return true;
     }
 
+    // Everything a session export needs to replay or compare a route: which
+    // campaign and expedition, which generator, and who else was in the room.
+    getSessionRouteIdentifiers() {
+        return {
+            campaignSeed: this._campaignWorldSeed ?? null,
+            runEntropy: Number.isFinite(this.runEntropy) ? this.runEntropy : null,
+            expeditionIndex: Number.isInteger(this.expeditionIndex) ? this.expeditionIndex : null,
+            expeditionSeed: this.expeditionSeed ?? null,
+            expeditionCondition: this.activeExpedition?.condition?.id ?? null,
+            routeLayoutVersion: this.getRouteLayoutVersion?.() ?? null,
+            globalSeedOffset: this.globalSeedOffset ?? 0,
+            descentIndex: this._descentIndex ?? 0,
+            missionType: this.missionState?.type ?? null,
+            multiplayer: this.isMultiplayer ? {
+                mode: this.multiplayerMode ?? null,
+                roomCode: this.multiplayerRoomCode ?? null,
+                role: this.isMultiplayerHost ? 'host' : 'guest',
+                localPlayerId: this.multiplayerLocalPlayerId ?? null,
+                peers: this.remotePlayers?.size ?? 0
+            } : null
+        };
+    }
+
     // A campaign keeps the route generation it was created with; see
     // ROUTE_LAYOUT_VERSION. Everything unsaved uses the current generator.
     getRouteLayoutVersion() {
@@ -14767,7 +15856,7 @@ export class ThreeGame {
                     layoutVersion: this.getRouteLayoutVersion?.() ?? ROUTE_LAYOUT_VERSION
                 });
                 signature = this.getRadialLayoutSignature(candidate);
-                if (this.fixedRunEntropy || this._campaignWorldSeed === this.runEntropy
+                if (this.fixedRunEntropy || this.isCampaignMap?.()
                     || signature !== this._previousRadialLayoutSignature) break;
                 this.runEntropy = createFreshRunEntropy(this.runEntropy);
             }
@@ -16497,6 +17586,7 @@ export class ThreeGame {
         this._terminalEvent = null;
         this._terminalEventResolvedIds?.clear?.();
         this._terminalObjectiveHistory = [];
+        this._lastJournalDomSignature = null;
         this._meridianCompassLock = null;
         this.clearCompanions?.();
         this.clearCorpses?.();
@@ -17338,6 +18428,10 @@ export class ThreeGame {
 
     checkWandererSpawning() {
         if (this.performanceProfile !== 'gameplay' || this.loadingPaused || !this.player || this.isPlayerDead) return;
+        // A co-op run starts fresh (owner, 2026-09-24): the solo profile's
+        // recruited companion followed the host into co-op and only the host
+        // could see it. Companions and wanderers stay solo until networked.
+        if (coopRole(this) !== COOP_ROLE.SOLO) return;
         if (this._wandererLoad || this._companionLoad || this.activeWanderer) return;
         const companion = this.wandererManager?.getActiveCompanion?.();
         if (companion) {
@@ -19249,6 +20343,7 @@ export class ThreeGame {
         const firstVisit = !this._visitedTerritoryLocations.has(key);
         this._visitedTerritoryLocations.add(key);
         window.dispatchEvent(new CustomEvent('location-discovered', { detail: { ...location, firstVisit } }));
+        this.recordExpeditionBountyEvent?.({ metric: 'compoundRoom', siteId: location.siteId, roomKey: location.beatKey });
         return true;
     }
 
@@ -19412,6 +20507,11 @@ export class ThreeGame {
             }
         }
         for (const [key, metadata] of this.wfcMetadataCache?.entries() ?? []) {
+            // Metadata is retained for every explored chunk for deterministic
+            // revisits. Combat actors only exist in mounted chunks, so scanning
+            // the entire run history here every frame made containment cost grow
+            // without bound during long sessions.
+            if (this.chunkMeshes?.size > 0 && !this.chunkMeshes.has(key)) continue;
             const [cx, cy] = String(key).split(',').map(Number);
             const chunkWorldX = Number.isFinite(cx) ? cx * this.chunkSize : 0;
             const chunkWorldZ = Number.isFinite(cy) ? cy * this.chunkSize : 0;
@@ -19477,6 +20577,8 @@ export class ThreeGame {
     getActiveDoors() {
         const doors = [];
         for (const door of this.proceduralDoorStates?.values() ?? []) {
+            if (door?.chunkKey && this.chunkMeshes?.size > 0
+                && !this.chunkMeshes.has(String(door.chunkKey))) continue;
             const [chunkX, chunkY] = String(door.chunkKey ?? '0,0').split(',').map(Number);
             const translated = translateContainmentDoor(door, {
                 x: Number.isFinite(chunkX) ? chunkX * this.chunkSize : 0,
@@ -19535,6 +20637,16 @@ export class ThreeGame {
             if (effect.type === 'milestone_defeated') {
                 const definition = getMilestoneById(effect.milestoneId);
                 if (definition) this.defeatedMilestoneBosses?.add(definition.goalKey);
+                if (this.transitNetwork) {
+                    const bossKey = definition?.goalKey || effect.milestoneId;
+                    const arenaPos = event?.position
+                        || (this.player?.position ? { x: this.player.position.x, y: this.player.position.y, z: this.player.position.z } : null);
+                    const unlocked = unlockTransitTerminal(this.transitNetwork, bossKey, { position: arenaPos });
+                    if (unlocked) {
+                        this.showBunkerLine?.('PNEUMATIC TRANSIT UNLOCKED: RETURN CHUTE ACTIVE AT ARENA');
+                        window.dispatchEvent(new CustomEvent('transit-terminal-unlocked', { detail: { terminal: unlocked } }));
+                    }
+                }
             }
         }
         if (result.changed) this.persistCampaignWorld?.();
@@ -20275,6 +21387,8 @@ export class ThreeGame {
         if (this.cinematicLock) return false; // untouchable during scripted sequences
         if (this.isInPocket) return false; // untouchable while resolving a fall inside a pocket
         if (this.iFrameTimer > 0 && reason !== 'abyss') return false;
+        // GAP-PV-02: spawn protection prevents instant spawn-camping on respawn.
+        if (this.spawnInvulnerabilityTimer > 0 && reason !== 'abyss') return false;
         if (sourceX != null && sourceZ != null && this.player?.position) {
             const containmentClamped = shouldBlockAttackPath(
                 { x: sourceX, z: sourceZ },
@@ -20288,12 +21402,12 @@ export class ThreeGame {
                 return false; // Damage absorbed by safe haven or closed containment barrier
             }
         }
-        if (this.playerType === 'TANK' && Math.random() < (this.blockChance ?? 0)) {
+        if (reason !== 'abyss' && this.playerType === 'TANK' && Math.random() < (this.blockChance ?? 0)) {
             window.AudioManager?.play('fx_tank_shockwave', { volume: 0.4, bus: 'sfx' });
             window.dispatchEvent(new CustomEvent('player-blocked', { detail: { reason } }));
             return false;
         }
-        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_bio_cloaking') && Math.random() < 0.15) {
+        if (reason !== 'abyss' && typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_bio_cloaking') && Math.random() < 0.15) {
             window.dispatchEvent(new CustomEvent('player-evaded', { detail: { reason } }));
             return false;
         }
@@ -20485,6 +21599,8 @@ export class ThreeGame {
         if (this.isPlayerDead) return;
         if (this.performanceProfile && this.performanceProfile !== 'gameplay') return;
         this.isPlayerDead = true;
+        // The results screen names the cause (src/deathReport.js).
+        this._lastDeathReason = reason;
         this.recordExpeditionEnded?.();
         this.cancelGoalModuleRise?.();
         this.clearCinematicCameraFocus?.();
@@ -20499,6 +21615,7 @@ export class ThreeGame {
         // A real death is now gracefully recorded via blackBoxStore.recordDeath
         // below -- the crash-only checkpoint has nothing left to add.
         runCheckpointStore.clear();
+        expeditionSuspendStore.clear();
         this.applyMilestoneBossRuntimeEvent?.({
             type: MILESTONE_BOSS_EVENT_TYPES.PLAYER_DEATH
         });
@@ -20517,17 +21634,39 @@ export class ThreeGame {
             `Depth tier: ${this.getDepthTierName(this.maxDepthTierReached)}.`,
             `Recoverable salvage: ${salvage.tech} TECH / ${salvage.coin} COIN / ${salvage.med} MED.`
         ].join(' ');
+        const isPvp = this.isMultiplayer && this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP;
         this.clearBlackBoxMarker?.();
-        const blackBoxState = blackBoxStore.recordDeath({
-            x: this.player?.position?.x ?? 0,
-            z: this.player?.position?.z ?? 0,
-            depth: this.maxDepthTierReached,
-            classType: this.playerType,
-            salvage,
-            cause: reason,
-            log: deathLog
-        });
-        this._blackBoxState = blackBoxState;
+        let blackBoxState = null;
+        if (!isPvp) {
+            blackBoxState = blackBoxStore.recordDeath({
+                x: this.player?.position?.x ?? 0,
+                z: this.player?.position?.z ?? 0,
+                depth: this.maxDepthTierReached,
+                classType: this.playerType,
+                salvage,
+                cause: reason,
+                log: deathLog
+            });
+            this._blackBoxState = blackBoxState;
+        }
+        // Every co-op death, not only being downed, reaches the squad: a
+        // pit-fall comes straight here, and the partner used to keep seeing a
+        // standing operator.
+        if (coopRole(this) !== COOP_ROLE.SOLO) {
+            // TRY AGAIN continues this map with its changes (owner's rule,
+            // 2026-09-24): keep this run's world changes for the retry. Both
+            // clients hold the same changes because each one is networked.
+            this._coopRunCarry = { roomCode: this.multiplayerRoomCode ?? null, maze: this.getMazePersistenceState?.() ?? null };
+            this._coopLifeSeq = (this._coopLifeSeq ?? 0) + 1;
+            this.broadcastSharedWorldEvent?.('player-died', {
+                playerId: this.multiplayerLocalPlayerId ?? null,
+                seq: this._coopLifeSeq,
+                x: this.player?.position?.x ?? 0,
+                z: this.player?.position?.z ?? 0,
+                reason,
+                classType: this.playerType
+            });
+        }
         this.showBunkerLine(
             getDialogueLine('death', Math.random, this.buildLineDirectorContext().register)
             ?? 'SUIT FAILURE LOGGED. BLACK BOX ARMED.'
@@ -20660,6 +21799,9 @@ export class ThreeGame {
         this.playerGlow.position.set(spawn.x, 1.6, spawn.z);
         this.playerMarker.position.set(spawn.x, this.playerMarkerHeight, spawn.z);
         this.updatePlayerForwardLight(1, { immediate: true });
+        if (this.isMultiplayer && this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP) {
+            this.spawnInvulnerabilityTimer = 3.0;
+        }
 
         if (resetRunState) {
             this.resetBunkerBlastDoor();
@@ -20706,9 +21848,12 @@ export class ThreeGame {
             this._hiveKinKills = 0;
             this._tankShockGuardUsed = false;
             this.cinematicLock = false;
+            // The run's map (campaignWorldStore.beginNewRun), not the campaign
+            // identity: using campaign.seed here undid the per-run map, and the
+            // layout reroll then gave TRY AGAIN a random map (run-maps probe).
             this.runEntropy = this.fixedRunEntropy
                 ? 0
-                : campaign?.seed ?? createFreshRunEntropy(this.runEntropy);
+                : campaign?.mapSeed ?? campaign?.seed ?? createFreshRunEntropy(this.runEntropy);
             this.resetMayorTinaEncounter();
             this.clearBlackBoxMarker();
             this._blackBoxState = blackBoxStore.load();
@@ -20733,7 +21878,11 @@ export class ThreeGame {
             this.clearLoadedChunksForRunReset();
             this.completedRingCrossingMissionIds = new Set();
             this.defeatedMilestoneBosses?.clear?.();
-            if (campaign?.mazeState) this.restoreMazePersistenceState(campaign.mazeState);
+            if (campaign?.mazeState) {
+                this.restoreMazePersistenceState(campaign.mazeState);
+            } else if (this.shouldCarryCoopRun?.()) {
+                this.restoreMazePersistenceState(this._coopRunCarry.maze);
+            }
             this._campaignProgressRestored = Boolean(campaign);
             this.syncVisibleChunks(true, { processLimit: deferChunkMount ? 0 : null });
             this.applyMilestoneBossRuntimeEvent?.({
@@ -20798,6 +21947,13 @@ export class ThreeGame {
                     detail: { goalKey, packageId: this.objectivePackageState.goals[goalKey].packageId, stepId: pending.id }
                 }));
             }
+        }
+        // A redeployed squadmate stands up again on the partner's screen.
+        if (coopRole(this) !== COOP_ROLE.SOLO && (this._coopLifeSeq ?? 0) > 0) {
+            this.broadcastSharedWorldEvent?.('player-redeployed', {
+                playerId: this.multiplayerLocalPlayerId ?? null,
+                seq: this._coopLifeSeq
+            });
         }
         window.dispatchEvent(new CustomEvent('player-respawned', {
             detail: {
@@ -20909,6 +22065,7 @@ export class ThreeGame {
         // A clean extraction is a graceful run end -- nothing left to
         // crash-recover, and the salvage below is being deposited for real.
         runCheckpointStore.clear();
+        expeditionSuspendStore.clear();
 
         const inventory = this.getSessionInventory();
         const depositPayload = {
@@ -20923,6 +22080,10 @@ export class ThreeGame {
             this.runDepositedResources.coin += depositPayload.coin;
             window.consumeSessionInventoryForDeposit?.(depositPayload);
         }
+        // A bounty is cargo, not a death-farmable score source: only a clean
+        // extraction can secure it. This happens after normal cargo deposit
+        // so a failed deposit never mints a bounty payment by itself.
+        this.settleExpeditionBountyOnExtraction?.();
 
         // Sprint 26: match-completion/extraction sync -- previously this
         // was entirely local; squadmates had no way to know a player had
@@ -21323,7 +22484,16 @@ export class ThreeGame {
                     const rooms = roomsReachedByScan(this.wfcMetadataCache?.get(key)?.roomInstances, {
                         chunkX, chunkY, chunkSize: this.chunkSize, x: px, z: pz, radius
                     });
-                    for (const room of rooms) this.discoveredMapRoomKeys.add(`${key}:${room.id}`);
+                    for (const room of rooms) {
+                        const roomKey = `${key}:${room.id}`;
+                        if (!this.discoveredMapRoomKeys.has(roomKey)) {
+                            const rCells = room.footprint?.length ? room.footprint : (room.interior ?? []);
+                            for (const c of rCells) {
+                                freshCells.add(`${chunkMinX + c.x},${chunkMinZ + c.y}`);
+                            }
+                        }
+                        this.discoveredMapRoomKeys.add(roomKey);
+                    }
 
                     for (let y = 0; y < grid.length; y++) {
                         for (let x = 0; x < (grid[y]?.length ?? 0); x++) {
@@ -21351,6 +22521,7 @@ export class ThreeGame {
             radius,
             at: performance.now(),
             duration: 1200,
+            dissipationDuration: 400,
             freshCells
         };
         this.checkMappingMissionComplete();
@@ -21450,12 +22621,22 @@ export class ThreeGame {
         registerTransientEffect(this, {
             mesh: scanGroup,
             age: 0,
-            duration: 1.2,
+            duration: 1.6,
             update: (dt, age) => {
-                const t = age / 1.2;
-                const currentRadius = t * maxRadius;
-                ringMesh.scale.set(currentRadius, currentRadius, 1);
-                ringMat.opacity = 0.8 * (1 - t * t);
+                const scanDur = 1.2;
+                const totalDur = 1.6;
+                let currentRadius;
+                if (age <= scanDur) {
+                    const t = age / scanDur;
+                    currentRadius = t * maxRadius;
+                    ringMesh.scale.set(currentRadius, currentRadius, 1);
+                    ringMat.opacity = 0.85 * (1 - 0.25 * t);
+                } else {
+                    const fadeT = (age - scanDur) / (totalDur - scanDur);
+                    currentRadius = (1 + fadeT * 0.08) * maxRadius;
+                    ringMesh.scale.set(currentRadius, currentRadius, 1);
+                    ringMat.opacity = 0.64 * (1 - fadeT) * (1 - fadeT);
+                }
 
                 for (const sprite of this.scatterSprites) {
                     if (!sprite || !sprite.userData || pingedIds.has(sprite.uuid)) continue;
@@ -21642,6 +22823,7 @@ export class ThreeGame {
         const dx = target.position.x - tx;
         const dz = target.position.z - tz;
         const len = Math.hypot(dx, dz) || 1;
+        const elementalMod = getTurretElementalInheritance([...(this.runOverclocks ?? []), ...(this.runRelics ?? [])]);
         this.spawnProjectile({
             x: tx,
             z: tz,
@@ -21649,7 +22831,12 @@ export class ThreeGame {
             vz: (dz / len) * PROJECTILE_SPEED,
             ttl: PROJECTILE_TTL,
             damage: TURRET_DAMAGE,
-            radius: PROJECTILE_RADIUS
+            radius: PROJECTILE_RADIUS,
+            ...(elementalMod ? {
+                element: elementalMod.element,
+                statusOptions: elementalMod,
+                color: elementalMod.bulletColor
+            } : {})
         });
     }
 
@@ -21786,7 +22973,9 @@ export class ThreeGame {
                 // Overnight hive creep: spore-thick air.
                 * (this._creepHere?.o2DrainMultiplier ?? 1.0)
                 // A stripped O2 room (regulator recovery) never breathes right again.
-                * (this.getThinAirMultiplier?.() ?? 1.0);
+                * (this.getThinAirMultiplier?.() ?? 1.0)
+                // Working an unstable vault's bypass (src/expeditionEvents.js).
+                * (this._expeditionEventO2DrainMult ?? 1.0);
             if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('tallows_seductive_warmth')) {
                 drainRate *= 0.80; // Seductive warmth protects against freezing drain
             }
@@ -21821,6 +23010,9 @@ export class ThreeGame {
             }
             if (t2Unlocks.deconFilters && this.currentBiomeKey === BIOME_KEYS.BIO) {
                 drainRate *= 0.5;
+            }
+            if (this.reducedPressure) {
+                drainRate *= 0.8; // Pacing / reduced pressure: 20% lower atmospheric O2 drain
             }
             this._currentO2DrainRate = drainRate;
             this.playerVitals.o2 = Math.max(0, this.playerVitals.o2 - drainRate * delta);
@@ -21950,7 +23142,12 @@ export class ThreeGame {
         // Update kinetic control timers
         this.dashCooldownTimer = Math.max(0, (this.dashCooldownTimer ?? 0) - delta);
         this.meleeCooldownTimer = Math.max(0, (this.meleeCooldownTimer ?? 0) - delta);
+        this._scoutSlipstreamTimer = Math.max(0, (this._scoutSlipstreamTimer ?? 0) - delta);
         this.iFrameTimer = Math.max(0, (this.iFrameTimer ?? 0) - delta);
+        this.spawnInvulnerabilityTimer = Math.max(0, (this.spawnInvulnerabilityTimer ?? 0) - delta);
+        this.updateArrivalIncident?.(delta);
+        this.updateExpeditionEvent?.(delta);
+        this.updateCoordinatedEncounters?.(delta);
         this.perfectReloadBuffTimer = Math.max(0, (this.perfectReloadBuffTimer ?? 0) - delta);
         this.recoilBloom = Math.max(0, (this.recoilBloom ?? 0) - 1.2 * delta);
 
@@ -21970,7 +23167,10 @@ export class ThreeGame {
             }
         }
 
-        if (this.player) {
+        // Pockets (the Foundry interior, sub-level voids) are flat at
+        // POCKET_WORLD_Y; the surface heightmap under the same x/z pulled the
+        // player up out of the Foundry floor.
+        if (this.player && !this.isInPocket) {
             const targetHeight = this.getTerrainHeightAt(this.player.position.x, this.player.position.z);
             this.player.position.y = THREE.MathUtils.lerp(
                 this.player.position.y,
@@ -21989,6 +23189,10 @@ export class ThreeGame {
                     disposeExpeditionEffect(dropMesh);
                     this.inRunLootDrops.splice(i, 1);
                     this.equipRunDrop(dropMesh.userData.item);
+                    // Taken: it disappears for the squadmate too.
+                    if (dropMesh.userData?.lootDropId) {
+                        this.broadcastSharedWorldEvent?.('loot-drop-collected', { dropId: dropMesh.userData.lootDropId });
+                    }
                 }
             }
         }
@@ -22047,6 +23251,9 @@ export class ThreeGame {
             const prevZ = this.player.position.z;
 
             let speed = this.moveSpeed * (this._sprintMoveSpeedMult ?? 1.0);
+            if ((this._scoutSlipstreamTimer ?? 0) > 0) {
+                speed *= 1.35;
+            }
             if (this.noclip) {
                 const sprintBoost = (this._sprintMoveSpeedMult > 1 ? 1.7 : 1.0);
                 speed *= (this.noclipSpeedMult || 3.5) * sprintBoost;
@@ -22333,16 +23540,51 @@ export class ThreeGame {
     resolveElevatorChoice(choice = 'extract') {
         if (this.missionState?.status !== 'elevator_ready') return;
         if (choice === 'descend') {
-            this.missionState.status = 'active';
-            this.missionState.extractionTimer = 0;
-            this.missionState.targetDepth = Math.max(this.missionState.targetDepth ?? 0, this.getActiveO2GeneratorDistance() + 90);
-            this.globalSeedOffset = (this.globalSeedOffset + 7919) | 0;
-            this.syncVisibleChunks(true);
-            this.showBunkerLine('DESCENT CONFIRMED. DEEPER SECTOR INDEX LOADED. THIS WAS A CHOICE.');
-            window.dispatchEvent(new CustomEvent('elevator-descended'));
+            this._descentBaseOffset ??= this.globalSeedOffset | 0;
+            const descentIndex = (this._descentIndex ?? 0) + 1;
+            const detail = {
+                descentIndex,
+                seedOffset: descentSeedOffset(this._descentBaseOffset, descentIndex),
+                targetDepth: Math.max(this.missionState.targetDepth ?? 0, this.getActiveO2GeneratorDistance() + 90)
+            };
+            this.applyDescent(detail);
+            // The seed offset travels absolute, so both clients load the same
+            // deeper sector no matter who chose it or how often it arrives.
+            this.broadcastSharedWorldEvent?.(COOP_TRANSITION_EVENTS.ELEVATOR_DESCENDED, detail);
             return;
         }
         this.handleExtraction({ skipElevator: true });
+    }
+
+    applyDescent({ descentIndex, seedOffset, targetDepth }, { fromRemote = false } = {}) {
+        this._descentBaseOffset ??= this.globalSeedOffset | 0;
+        this._descentIndex = descentIndex;
+        if (this.missionState) {
+            this.missionState.status = 'active';
+            this.missionState.extractionTimer = 0;
+            if (Number.isFinite(targetDepth)) this.missionState.targetDepth = Math.max(this.missionState.targetDepth ?? 0, targetDepth);
+        }
+        this.globalSeedOffset = seedOffset | 0;
+        this.syncVisibleChunks?.(true);
+        this.showBunkerLine?.('DESCENT CONFIRMED. DEEPER SECTOR INDEX LOADED. THIS WAS A CHOICE.', { fromRemote });
+        // handleSharedWorldEvent re-dispatches remote beats itself.
+        if (!fromRemote) window.dispatchEvent(new CustomEvent('elevator-descended', { detail: { descentIndex } }));
+    }
+
+    // A guest's copy of a milestone boss can be a snapshot replica with no
+    // milestone identity, and its lifecycle never saw the fight go active --
+    // so the host's announcement is how the defeat, and the crossing it
+    // opens, reaches that guest.
+    applyRemoteMilestoneDefeat(detail) {
+        const definition = getMilestoneById(detail?.milestoneId);
+        if (!definition || this.defeatedMilestoneBosses?.has(definition.goalKey)) return false;
+        this.defeatedMilestoneBosses?.add(definition.goalKey);
+        this.reconcileMilestoneBossLifecycle?.();
+        this.reconcileAuthoredWorldProgression?.();
+        const defeatedCount = Math.max(this.killedBosses?.size ?? 0, this.defeatedMilestoneBosses?.size ?? 0);
+        if (defeatedCount >= 3) this.activateExtractionGuidance?.('sector_purged');
+        this.persistCampaignWorld?.();
+        return true;
     }
 
     onNewChunkDiscovered(chunkX, chunkY) {
@@ -22618,17 +23860,22 @@ export class ThreeGame {
     // identity is preserved. Advances only while gameplay input is enabled, so
     // menus/cutscenes/terminals effectively pause the clock (ask A6).
     getDayFactor() {
-        // 0 at midnight, 1 at noon, smooth cosine.
-        return 0.5 - 0.5 * Math.cos(this.timeOfDay * Math.PI * 2);
+        return getDayFactorFromTimeOfDay(this.timeOfDay);
+    }
+
+    getDayCycleViewModel(options = {}) {
+        return formatDayCycleViewModel({
+            dayState: this.dayState,
+            timeOfDay: this.timeOfDay,
+            dayCycleSeconds: this.dayCycleSeconds,
+            difficulty: threatScaleForDay(this.dayState?.day ?? 1, { hp: 1, speed: 1 }).hp,
+            ...options
+        });
     }
 
     // "HH:MM · DAY|NIGHT" string for the terminal clock readout (Note 8 display).
-    getTimeOfDayLabel() {
-        const totalMinutes = Math.floor((this.timeOfDay % 1) * 24 * 60);
-        const hh = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
-        const mm = String(totalMinutes % 60).padStart(2, '0');
-        const phase = this.getDayFactor() >= 0.5 ? 'DAY' : 'NIGHT';
-        return `${hh}:${mm} · ${phase}`;
+    getTimeOfDayLabel(options = {}) {
+        return this.getDayCycleViewModel(options).clockLabel;
     }
 
     // Seconds survived this run (since the last run reset).
@@ -22636,20 +23883,161 @@ export class ThreeGame {
         return Math.max(0, Math.floor((Date.now() - (this.runStartTime ?? Date.now())) / 1000));
     }
 
+    isConsoleTerminalModalVisible() {
+        const modal = document.getElementById('console-terminal-modal');
+        return Boolean(modal && !modal.classList.contains('hidden'));
+    }
+
+    getAdvanceDayStatus() {
+        if (this.isMultiplayer && !this.isMultiplayerHost) {
+            return {
+                id: 'coop_visitor',
+                label: 'CO-OP VISITOR — LOCAL CAMPAIGN CYCLE LOCKED',
+                allowed: false
+            };
+        }
+        if (this._activeCampQuest) {
+            return {
+                id: 'blocked_contract',
+                label: 'BLOCKED — ACTIVE CONTRACT',
+                allowed: false
+            };
+        }
+        if (Array.isArray(this.camps) && this.player?.position) {
+            const px = this.player.position.x;
+            const pz = this.player.position.z;
+            for (const camp of this.camps) {
+                if (camp && typeof camp.isWithinInteractRange === 'function' && camp.isWithinInteractRange(px, pz)) {
+                    const status = this.getCampRecord?.(camp.id)?.status ?? camp.status ?? 'alive';
+                    const check = this.canRestAt?.(camp, { status, safeSpace: true });
+                    if (check?.allowed) {
+                        return {
+                            id: 'camp_available',
+                            label: 'AVAILABLE AT SAFE CAMP',
+                            allowed: true,
+                            nextDay: check.nextDay ?? ((this.dayState?.day ?? 1) + 1)
+                        };
+                    }
+                    return {
+                        id: 'blocked_unsafe',
+                        label: 'BLOCKED — SITE UNSAFE',
+                        allowed: false
+                    };
+                }
+            }
+        }
+        const cot = this.getBunkerRestPoint?.();
+        const check = cot && this.canRestAt ? this.canRestAt(cot, { status: 'alive', safeSpace: true }) : { allowed: true };
+        if (check && !check.allowed) {
+            if (check.reason === 'active_quest') {
+                return {
+                    id: 'blocked_contract',
+                    label: 'BLOCKED — ACTIVE CONTRACT',
+                    allowed: false
+                };
+            }
+            return {
+                id: 'blocked_unsafe',
+                label: 'BLOCKED — SITE UNSAFE',
+                allowed: false
+            };
+        }
+        return {
+            id: 'cot_available',
+            label: 'AVAILABLE AT BUNKER COT',
+            allowed: true,
+            nextDay: check?.nextDay ?? ((this.dayState?.day ?? 1) + 1)
+        };
+    }
+
+    updateTerminalCycleStatus() {
+        const vm = this.getDayCycleViewModel();
+        const setText = (id, text) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = text;
+        };
+        const dayText = typeof t === 'function' ? t('ui.console.day_n', { day: vm.campaignDay }) : `DAY ${vm.campaignDay}`;
+        setText('terminal-log-day', dayText);
+        setText('terminal-log-phase', vm.campaignState);
+        const lightText = vm.isDaylight
+            ? (typeof t === 'function' ? t('ui.console.daylight') : 'DAYLIGHT')
+            : (typeof t === 'function' ? t('ui.console.night_ops') : 'NIGHT OPS');
+        setText('terminal-log-light', lightText);
+        setText('terminal-log-route', this.describeRingRouteProgress?.() ?? '--');
+        const nextPhaseText = vm.isDaylight
+            ? (typeof t === 'function' ? t('ui.console.dusk') : 'DUSK')
+            : (typeof t === 'function' ? t('ui.console.dawn') : 'DAWN');
+        setText('terminal-log-transition', typeof t === 'function'
+            ? t('ui.console.transition_in', { phase: nextPhaseText, time: vm.transitionCountdown })
+            : `${nextPhaseText} IN ${vm.transitionCountdown}`);
+
+        const ADVANCE_STATUS_I18N = {
+            cot_available: 'ui.console_terminal.advance_status_cot_available',
+            camp_available: 'ui.console_terminal.advance_status_camp_available',
+            blocked_contract: 'ui.console_terminal.advance_status_blocked_contract',
+            blocked_unsafe: 'ui.console_terminal.advance_status_blocked_unsafe',
+            coop_visitor: 'ui.console_terminal.advance_status_coop_visitor',
+            legacy_phase: 'ui.console_terminal.cycle_phase'
+        };
+        const advanceStatus = this.getAdvanceDayStatus();
+        const advanceEl = document.getElementById('terminal-log-advance-day');
+        if (advanceEl) {
+            const key = ADVANCE_STATUS_I18N[advanceStatus.id] ?? ADVANCE_STATUS_I18N.cot_available;
+            const localized = typeof t === 'function' ? t(key) : advanceStatus.label;
+            advanceEl.textContent = (localized && localized !== key) ? localized : advanceStatus.label;
+            advanceEl.dataset.advanceStatus = advanceStatus.id;
+            advanceEl.dataset.allowed = advanceStatus.allowed ? 'true' : 'false';
+        }
+
+        const compactEl = document.getElementById('terminal-cycle-compact-text');
+        if (compactEl) {
+            compactEl.textContent = `${dayText} · ${vm.solarTime} · ${lightText}`;
+        }
+        const cycleFill = document.getElementById('terminal-cycle-fill');
+        const percent = Math.round(vm.cycleProgress * 100);
+        if (cycleFill) {
+            cycleFill.style.width = `${percent}%`;
+        }
+        const progressWrap = document.getElementById('terminal-cycle-progress-wrap');
+        if (progressWrap) {
+            progressWrap.setAttribute('aria-valuenow', String(percent));
+            const cycleLabelKey = 'ui.console_terminal.cycle_progress_label';
+            const localizedLabel = typeof t === 'function' ? t(cycleLabelKey, { percent }) : `${percent}% OF 24H CYCLE`;
+            const progressLabel = (localizedLabel && localizedLabel !== cycleLabelKey) ? localizedLabel : `${percent}% OF 24H CYCLE`;
+            progressWrap.setAttribute('aria-valuetext', progressLabel);
+            const textEl = document.getElementById('terminal-cycle-progress-text');
+            if (textEl) textEl.textContent = progressLabel;
+        }
+    }
+
+    updateTerminalModalRefresh(delta, now = performance.now()) {
+        if (!this.isConsoleTerminalModalVisible()) return;
+        if (now - (this._lastTerminalModalRefresh ?? 0) < 500) return;
+        this._lastTerminalModalRefresh = now;
+        this.updateTerminalClock(true);
+        this.updateTerminalCycleStatus();
+        this.renderTerminalObjectiveJournalIfNeeded();
+    }
+
     // Live-tick the terminal clock (~1/sec) while the terminal modal is open.
     updateTerminalClockTick(now = performance.now()) {
-        const modal = document.getElementById('console-terminal-modal');
-        if (!modal || modal.classList.contains('hidden')) return;
-        if (now - (this._lastTerminalClockTick ?? 0) < 500) return;
-        this._lastTerminalClockTick = now;
-        this.updateTerminalClock();
+        if (!this.isConsoleTerminalModalVisible()) return;
+        this.updateTerminalModalRefresh(0, now);
     }
 
     // Refresh the terminal's TIME OF DAY / SURVIVED readouts. Called on terminal
     // render and, while the terminal is open, ticked live from the render loop.
-    updateTerminalClock() {
+    updateTerminalClock(isHeld = false) {
         const todEl = document.getElementById('terminal-time-of-day');
         if (todEl) todEl.textContent = this.getTimeOfDayLabel();
+        const statusEl = document.getElementById('terminal-clock-status');
+        if (statusEl) {
+            const cycleHoldKey = 'ui.console_terminal.cycle_hold';
+            const localizedHold = typeof t === 'function' ? t(cycleHoldKey) : 'CYCLE HOLD — TERMINAL ACTIVE';
+            const cycleHoldText = (localizedHold && localizedHold !== cycleHoldKey) ? localizedHold : 'CYCLE HOLD — TERMINAL ACTIVE';
+            statusEl.textContent = isHeld ? cycleHoldText : '';
+            statusEl.classList.toggle('hidden', !isHeld);
+        }
         const survEl = document.getElementById('terminal-time-survived');
         if (survEl) {
             const secs = this.getRunElapsedSeconds();
@@ -22657,6 +24045,12 @@ export class ThreeGame {
             const ss = String(secs % 60).padStart(2, '0');
             survEl.textContent = `${mm}:${ss}`;
         }
+    }
+
+    renderTerminalObjectiveJournalIfNeeded() {
+        const bankState = this.bank?.getState?.() ?? {};
+        const activeGoal = this.getActiveBaseGoal?.(bankState) ?? null;
+        this.renderTerminalObjectiveJournal(bankState, activeGoal);
     }
 
     // ── Sky (docs/sky-layer-and-weather-asset-catalog-2026-08-25.md) ──
@@ -23007,7 +24401,7 @@ export class ThreeGame {
             const worldAngle = facingAngle + angle;
             this._coneRayDir.set(Math.sin(worldAngle), 0, Math.cos(worldAngle));
             raycaster.set(this._coneRayOrigin, this._coneRayDir);
-            const hit = raycaster.intersectObjects(this.wallMeshes, false)[0];
+            const hit = intersectWallMeshes(raycaster, this.wallMeshes)[0];
             if (hit && hit.distance < minHitDist) {
                 minHitDist = hit.distance;
             }
@@ -23197,7 +24591,7 @@ export class ThreeGame {
         this._lightOcclusionRaycaster.set(this._hasWallOrigin, this._hasWallDir);
         this._lightOcclusionRaycaster.far = distance;
 
-        const hits = this._lightOcclusionRaycaster.intersectObjects(this.wallMeshes, false);
+        const hits = intersectWallMeshes(this._lightOcclusionRaycaster, this.wallMeshes);
         return hits.length > 0;
     }
 
@@ -23728,25 +25122,28 @@ export class ThreeGame {
                 this._o2GaspTimer = 2.0;
             }
 
-            this.player3dOverlay.update(delta, {
-                isFalling: this.isPlayerFalling,
-                isReloading: this.weaponReloading,
-                isMoving: visualMoving,
-                isSprinting,
-                idleActionName: 'idle',
-                // Sprint 29 §10: the walk cadence has to know how fast the
-                // player is actually travelling, or the same clip plays for a
-                // 2.6-speed TANK and a 4.8-speed SCOUT and at least one of them
-                // slides. Sprint cadence is applied inside the overlay, so this
-                // is the pre-sprint ground speed.
-                groundSpeed: this.moveSpeed,
-                isInjured: this.isPlayerInjured(),
-                hasAim: this.hasActiveAim,
-                moveX: visualMoveX,
-                moveZ: visualMoveZ,
-                aimX: this.aimDirX,
-                aimZ: this.aimDirZ
-            });
+            this.player3dOverlay.update(
+                delta,
+                {
+                    isFalling: this.isPlayerFalling,
+                    isReloading: this.weaponReloading,
+                    isMoving: visualMoving,
+                    isSprinting,
+                    idleActionName: 'idle',
+                    // Sprint 29 §10: the walk cadence has to know how fast the
+                    // player is actually travelling, or the same clip plays for a
+                    // 2.6-speed TANK and a 4.8-speed SCOUT and at least one of them
+                    // slides. Sprint cadence is applied inside the overlay, so this
+                    // is the pre-sprint ground speed.
+                    groundSpeed: this.moveSpeed,
+                    isInjured: this.isPlayerInjured(),
+                    hasAim: this.hasActiveAim,
+                    moveX: visualMoveX,
+                    moveZ: visualMoveZ,
+                    aimX: this.aimDirX,
+                    aimZ: this.aimDirZ
+                }
+            );
         }
         const aiming = this.hasActiveAim;
         // Upper body tracks the aim whenever the player is aiming.
@@ -24054,7 +25451,7 @@ export class ThreeGame {
             this.hasActiveAim = true;
         }
 
-        return this.fireWeaponAtCurrentAim();
+        return this.fireWeaponAtCurrentAim({ source: this._canvasPointerType || 'pointer' });
     }
 
     spawnPlayerShot(normX, normZ) {
@@ -24126,7 +25523,7 @@ export class ThreeGame {
                     new THREE.Vector3(dx, 0, dz)
                 );
                 this._projRaycaster.far = desiredOffset + 0.05;
-                const hits = this._projRaycaster.intersectObjects(this.wallMeshes, false);
+                const hits = intersectWallMeshes(this._projRaycaster, this.wallMeshes);
                 if (hits.length > 0) {
                     const hit = hits[0];
                     const wall = (hit.object?.userData?.isInstancedWallPool && Number.isInteger(hit.instanceId))
@@ -24374,7 +25771,7 @@ export class ThreeGame {
             new THREE.Vector3(projectile.vx / speed, 0, projectile.vz / speed)
         );
         this._projRaycaster.far = Math.max(0.08, rayFar);
-        const hits = this._projRaycaster.intersectObjects(this.wallMeshes, false);
+        const hits = intersectWallMeshes(this._projRaycaster, this.wallMeshes);
         if (!hits.length) return null;
         const hit = hits[0];
         // World-space face normal (geometry normals are in local space).
@@ -25010,7 +26407,10 @@ export class ThreeGame {
 
                 const snail = this.checkProjectileSnailHit(projectile);
                 if (snail) {
-                    this.applyPlayerDamageToEnemy(snail, projectile.damage);
+                    this.applyPlayerDamageToEnemy(snail, projectile.damage, {
+                        element: projectile.element,
+                        statusOptions: projectile.statusOptions
+                    });
                     if (projectile.pierceRemaining && projectile.pierceRemaining > 0) {
                         projectile.pierceRemaining -= 1;
                         this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
@@ -25123,7 +26523,11 @@ export class ThreeGame {
     updateCamera(delta) {
         const pointerOrbitDelta = this._cameraOrbitPointerDelta ?? 0;
         this._cameraOrbitPointerDelta = 0;
-        const stickOrbit = this.cameraRotationInput ?? 0;
+        // Camera azimuth grows counter to screen direction (see
+        // computeMouseEdgeTurn), so the stick is inverted here like the mouse
+        // edge turn: right stick turns the view right (2026-09-25 Deck QA:
+        // it turned left).
+        const stickOrbit = -(this.cameraRotationInput ?? 0);
         if (this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person') {
             const turnSensitivity = THREE.MathUtils.clamp(
                 Number(globalThis.window?.state?.settings?.aimSensitivity) || 1,
@@ -25258,7 +26662,7 @@ export class ThreeGame {
             this._thirdPersonCameraRaycaster.set(pose.focus, ray.normalize());
             this._thirdPersonCameraRaycaster.near = 0;
             this._thirdPersonCameraRaycaster.far = rayLength;
-            const hit = this._thirdPersonCameraRaycaster.intersectObjects(this.wallMeshes, false)[0];
+            const hit = intersectWallMeshes(this._thirdPersonCameraRaycaster, this.wallMeshes)[0];
             if (hit) resolvedPosition = clampCameraPositionToHit(pose.focus, pose.position, hit.distance);
         }
         const blend = immediate ? 1 : 1 - Math.exp(-delta * this.cameraFollowRate);
@@ -25357,9 +26761,13 @@ export class ThreeGame {
     }
 
     triggerCameraShake(intensity = 0.18, duration = 0.35) {
-        this._cameraShakeIntensity = Math.max(this._cameraShakeIntensity, intensity);
-        this._cameraShakeTimer = Math.max(this._cameraShakeTimer, duration);
-        this.traumaManager?.addTrauma(Math.min(1.0, intensity * 2.2));
+        const scale = this.cameraShakeScale ?? this.settings?.cameraShakeScale ?? 1.0;
+        const scaledIntensity = intensity * scale;
+        if (scaledIntensity > 0.001) {
+            this._cameraShakeIntensity = Math.max(this._cameraShakeIntensity, scaledIntensity);
+            this._cameraShakeTimer = Math.max(this._cameraShakeTimer, duration);
+            this.traumaManager?.addTrauma(Math.min(1.0, scaledIntensity * 2.2));
+        }
     }
 
     syncVisibleChunks(force = false, { prefetch = !force, processLimit = null } = {}) {
@@ -26358,6 +27766,7 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('wall-destroyed', {
             detail: { source, x: coord.tileX, z: coord.tileZ, fromRemote }
         }));
+        if (source === 'player' && !fromRemote) this.recordExpeditionBountyEvent?.({ metric: 'wallSmashed' });
         if (!fromRemote && this.isMultiplayer) {
             this.broadcastSharedWorldEvent('wall-destroyed', {
                 worldX: coord.tileX,
@@ -27909,6 +29318,7 @@ export class ThreeGame {
             }
         }
 
+        useSinglePassForFlatMaterials(group);
         this.chunkGroups.add(group);
         this.chunkMeshes.set(`${chunkX},${chunkY}`, group);
     }
@@ -29392,6 +30802,7 @@ export class ThreeGame {
                 chargeDirZ: 0,
                 attackCooldown: 0
             };
+            this.applySuspendedEnemyState?.(sprite);
             this.setupEnemy3dCosmeticOverlay(sprite);
             return sprite;
         }
@@ -29433,6 +30844,7 @@ export class ThreeGame {
                 biomeTint: 0xffdd44,
                 staggerState: createEnemyStaggerState(ENEMY_STAGGER_DEFS.sentinel)
             };
+            this.applySuspendedEnemyState?.(sprite);
             this.setupEnemy3dCosmeticOverlay(sprite);
             return sprite;
         }
@@ -29507,6 +30919,11 @@ export class ThreeGame {
             const sporesnailFight = (placement.type === 'boss_sporesnail' && !hadExplicitMaxHp)
                 ? createBossFight(SPORESNAIL_FIGHT_DEF)
                 : null;
+            const biomeBossDef = placement.type === 'boss_cybersnail' ? CYBERSNAIL_FIGHT_DEF
+                : placement.type === 'boss_cryosnail' ? CRYO_BOSS_FIGHT_DEF : null;
+            const biomeBossFight = biomeBossDef
+                ? createBossFight({ ...biomeBossDef, maxHp })
+                : null;
             if (!isBoss) {
                 const anchor = this.getBiomeAnchorPosition();
                 const depth = Math.hypot(placement.x - anchor.x, placement.z - anchor.z);
@@ -29551,6 +30968,7 @@ export class ThreeGame {
                 hp: maxHp,
                 maxHp: maxHp,
                 speed: speed,
+                baseBossSpeed: speed,
                 enraged: isPreEnraged,
                 isElite,
                 facingSign: 1,
@@ -29566,11 +30984,13 @@ export class ThreeGame {
                 sporeEmitTimer: 0,
                 biomeTint: isElite ? ELITE_IDENTITY.tint : tintColor,
                 sporesnailFight,
+                biomeBossFight,
                 staggerState
             };
             if (isPreEnraged && !isBoss) {
                 clonedMat.color.setHex(SNAIL_ENRAGED_TINT);
             }
+            this.applySuspendedEnemyState?.(sprite);
             this.setupEnemy3dCosmeticOverlay(sprite);
             return sprite;
         }
@@ -30232,6 +31652,9 @@ export class ThreeGame {
                         if (pickupType === 'health' && this.playerVitals.hp < this.playerVitals.maxHp) {
                             this.healPlayer(1);
                         }
+                        if (pickupType === 'health' || pickupType === 'weapon' || pickupType === 'coin') {
+                            this.recordExpeditionBountyEvent?.({ metric: 'salvage' });
+                        }
                         window.dispatchEvent(new CustomEvent('pickup-collected', {
                             detail: {
                                 type: pickupType,
@@ -30398,56 +31821,98 @@ export class ThreeGame {
         }
         window.AudioManager?.play('enemy_hit_soft', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.35 }) ?? { volume: 0.35 }));
 
-        if (sprite.userData.propHp <= 0) {
-            sprite.userData.burstTriggered = true;
-            const isBio = sprite.userData.type?.includes?.('spore') || sprite.userData.type?.includes?.('specimen');
-            // Props with a 3D model come apart into physical chunks; the poof
-            // remains the fallback for flat-sprite props that have nothing to
-            // fracture. spawnPropDebris reports which happened, so a prop never
-            // gets both a debris field and a puff of smoke standing in for one.
-            const brokeApart = spawnPropDebris(this, sprite, {
-                direction: this.player ? {
-                    x: sprite.position.x - this.player.position.x,
-                    z: sprite.position.z - this.player.position.z
-                } : null
-            });
-            if (!brokeApart) {
-                this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, isBio ? 'bio_spores' : 'bunker_junk');
-            }
-            if (isBio) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
-            window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 1.85, force: true });
-
-            this.spawnDestructiblePropDrops(sprite);
-
-            const idx = this.scatterSprites.indexOf(sprite);
-            if (idx !== -1) this.scatterSprites.splice(idx, 1);
-            sprite.userData.world3dRoot?.removeFromParent();
-            if (sprite.parent) sprite.parent.remove(sprite);
-            return true;
-        }
+        if (sprite.userData.propHp <= 0) return this.breakScatterProp(sprite);
         return false;
     }
 
-    spawnDestructiblePropDrops(sprite) {
+    // Break a prop: debris, drops, removal. The client that broke it rolls the
+    // drops once and tells the squad, which breaks the same prop with the same
+    // drops (2026-09-24 QA: nothing in co-op may differ between screens).
+    breakScatterProp(sprite, { plannedDrops = null, fromRemote = false } = {}) {
+        sprite.userData.burstTriggered = true;
+        const isBio = sprite.userData.type?.includes?.('spore') || sprite.userData.type?.includes?.('specimen');
+        // Props with a 3D model come apart into physical chunks; the poof
+        // remains the fallback for flat-sprite props that have nothing to
+        // fracture. spawnPropDebris reports which happened, so a prop never
+        // gets both a debris field and a puff of smoke standing in for one.
+        const brokeApart = spawnPropDebris(this, sprite, {
+            direction: this.player ? {
+                x: sprite.position.x - this.player.position.x,
+                z: sprite.position.z - this.player.position.z
+            } : null
+        });
+        if (!brokeApart) {
+            this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, isBio ? 'bio_spores' : 'bunker_junk');
+        }
+        if (isBio) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
+        window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 1.85, force: true });
+
+        this.spawnDestructiblePropDrops(sprite, plannedDrops);
+        if (!fromRemote && coopRole(this) !== COOP_ROLE.SOLO) {
+            this.broadcastSharedWorldEvent?.('prop-broken', {
+                scatterKey: sprite.userData.scatterKey ?? null,
+                x: sprite.position.x,
+                z: sprite.position.z,
+                drops: sprite.userData.dropPlan ?? []
+            });
+        }
+
+        const idx = this.scatterSprites.indexOf(sprite);
+        if (idx !== -1) this.scatterSprites.splice(idx, 1);
+        sprite.userData.world3dRoot?.removeFromParent();
+        if (sprite.parent) sprite.parent.remove(sprite);
+        return true;
+    }
+
+    // The prop a squadmate broke: same key, else the nearest prop at that spot.
+    applyRemotePropBroken(detail = {}) {
+        const sprite = (this.scatterSprites ?? []).find((candidate) => (
+            detail.scatterKey && candidate.userData?.scatterKey === detail.scatterKey && !candidate.userData?.burstTriggered
+        )) ?? (this.scatterSprites ?? []).find((candidate) => (
+            candidate.userData?.propHp !== undefined && !candidate.userData?.burstTriggered
+            && Math.hypot(candidate.position.x - detail.x, candidate.position.z - detail.z) <= 0.6
+        ));
+        if (!sprite) return false;
+        sprite.userData.propHp = 0;
+        return this.breakScatterProp(sprite, { plannedDrops: Array.isArray(detail.drops) ? detail.drops : [], fromRemote: true });
+    }
+
+    spawnDestructiblePropDrops(sprite, plannedDrops = null) {
         const parent = sprite?.parent;
         if (!parent) return 0;
-        const ammoCount = sprite.userData?.isAmmoLocker ? 3 : 1;
-        const dropTypes = Array.from({ length: ammoCount }, () => 'ammo');
-        if (!sprite.userData?.isAmmoLocker && Math.random() < 0.2) dropTypes.push('health');
-        if (this.loadoutMods?.propsDropSalvage) dropTypes.push('coin');
+        // A squadmate's break arrives with its drops already rolled.
+        const plan = Array.isArray(plannedDrops) ? plannedDrops : (() => {
+            const ammoCount = sprite.userData?.isAmmoLocker ? 3 : 1;
+            const types = Array.from({ length: ammoCount }, () => 'ammo');
+            if (!sprite.userData?.isAmmoLocker && Math.random() < 0.2) types.push('health');
+            if (this.loadoutMods?.propsDropSalvage) types.push('coin');
+            return types.map((type, index) => {
+                const angle = (index / Math.max(types.length, 1)) * Math.PI * 2 + Math.random() * 0.35;
+                const radius = 0.4 + Math.random() * 0.25;
+                return {
+                    type,
+                    x: sprite.position.x + Math.cos(angle) * radius,
+                    z: sprite.position.z + Math.sin(angle) * radius
+                };
+            });
+        })();
+        sprite.userData.dropPlan = plan;
+        const dropTypes = plan.map((drop) => drop.type);
         let spawned = 0;
-        for (let index = 0; index < dropTypes.length; index += 1) {
-            const angle = (index / Math.max(dropTypes.length, 1)) * Math.PI * 2 + Math.random() * 0.35;
-            const radius = 0.4 + Math.random() * 0.25;
+        for (let index = 0; index < plan.length; index += 1) {
+            const drop = plan[index];
+            if (!Number.isFinite(drop?.x) || !Number.isFinite(drop?.z) || typeof drop?.type !== 'string') continue;
             const placement = this.createSnailDropPlacement(
                 sprite.position.x,
                 sprite.position.z,
-                sprite.position.x + Math.cos(angle) * radius,
-                sprite.position.z + Math.sin(angle) * radius,
-                dropTypes[index]
+                drop.x,
+                drop.z,
+                drop.type
             );
             const pickup = this.createPickupInstance(placement);
             if (!pickup) continue;
+            // The same id on every screen, so taking it removes it for both.
+            if (pickup.userData && sprite.userData?.scatterKey) pickup.userData.pickupId = `prop:${sprite.userData.scatterKey}:${index}`;
             parent.add(pickup);
             this.pickupMeshes.push(pickup);
             spawned += 1;
@@ -30569,6 +32034,10 @@ export class ThreeGame {
             this.spawnPhysicalBurst(sprite.position.x, sprite.position.z, { color: 0x88ccff, count: 12, upward: 0.15 });
         }
 
+        // Sprint 47 Lane 3 Synergy On-Death Triggers
+        this.checkCryoShatterOnDeath?.(sprite);
+        this.checkBioVampirismOnDeath?.(sprite);
+
         // Season 0 Zero-Point Flux Overdrive overclock (itemdef 4147): 5 kills in 3s refunds 1 dash charge
         const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
         this._recentKillTimestamps = (this._recentKillTimestamps || []).filter((t) => (now - t) <= 3000);
@@ -30604,18 +32073,7 @@ export class ThreeGame {
         // docs/design/one-more-ring-design-pillars.md item 1 (Sprint 28):
         // deeper rings bias this roll toward relics (see runDrops.js's
         // rollEnemyLootDrop / rollsRareRelic).
-        const drop = rollEnemyLootDrop(Math.random, {
-            isElite,
-            isBoss: isBossEnemy,
-            ring: (this.currentDepthTier ?? 0) + 1 + Math.max(0, this.loadoutMods?.relicRarityTierBonus ?? 0),
-            excludedIds: [
-                ...(this.loadoutMods?.duplicateRelicsToShards ? [] : [...(this.runOverclocks ?? []), ...(this.runRelics ?? [])]),
-                ...(this.inRunLootDrops ?? []).map((pickup) => pickup.userData.item)
-            ].map((item) => item.id)
-        });
-        if (drop) {
-            this.spawnPhysicalLootDrop?.(sprite.position?.x ?? 0, sprite.position?.z ?? 0, drop);
-        }
+        this.dropLootForKill?.(sprite, { isElite, isBoss: isBossEnemy });
 
         if (this.missionState?.type === 'elimination' && this.missionState.status === 'active') {
             this.missionState.killCount = (this.missionState.killCount ?? 0) + 1;
@@ -30638,6 +32096,10 @@ export class ThreeGame {
             }
         }
 
+        if (sprite.userData.isElite && !sprite.userData.isRemoteReplica) {
+            this.recordExpeditionBountyEvent?.({ metric: 'eliteKill' });
+        }
+
         if (isBoss) {
             this.killedBosses.add(sprite.userData.biome);
             if (sprite.userData.corruptedOperator) {
@@ -30650,12 +32112,19 @@ export class ThreeGame {
                 const transition = this.applyMilestoneBossRuntimeEvent({
                     type: MILESTONE_BOSS_EVENT_TYPES.ENEMY_KILLED,
                     milestoneId: sprite.userData.milestoneId,
-                    encounterId: sprite.userData.milestoneEncounterId
+                    encounterId: sprite.userData.milestoneEncounterId,
+                    position: sprite.position ? { x: sprite.position.x, y: sprite.position.y, z: sprite.position.z } : null
                 });
                 if (transition.effects?.some((effect) => effect.type === 'milestone_defeated')) {
                     const milestoneDef = getMilestoneById(sprite.userData.milestoneId);
                     if (milestoneDef) this.defeatedMilestoneBosses.add(milestoneDef.goalKey);
                     this.reconcileAuthoredWorldProgression?.();
+                    if (coopRole(this) === COOP_ROLE.HOST) {
+                        this.broadcastSharedWorldEvent?.(COOP_TRANSITION_EVENTS.MILESTONE_DEFEATED, {
+                            milestoneId: sprite.userData.milestoneId,
+                            encounterId: sprite.userData.milestoneEncounterId ?? null
+                        });
+                    }
                     const defeatedCount = Math.max(this.killedBosses?.size ?? 0, this.defeatedMilestoneBosses?.size ?? 0);
                     if (defeatedCount >= 3) {
                         this.activateExtractionGuidance('sector_purged');
@@ -31090,6 +32559,7 @@ export class ThreeGame {
             boss.userData.easyTier = true;
             boss.userData.maxHp = 5;
             boss.userData.hp = 5;
+            boss.userData.biomeBossFight = createBossFight({ ...CYBERSNAIL_FIGHT_DEF, maxHp: 5 });
         }
 
         // Parent to the player's (loaded) chunk group so the boss persists in
@@ -31477,6 +32947,7 @@ export class ThreeGame {
             containmentZones: this.getActiveContainmentZones?.() ?? [],
             doors: this.getActiveDoors?.() ?? []
         };
+        const blocksAttackPath = createAttackPathBlocker(containmentOptions);
 
         if (!this.isSnailTileWalkable(startTileX, startTileZ)) {
             return [{ x: startTileX, z: startTileZ }];
@@ -31550,10 +33021,9 @@ export class ThreeGame {
                 const nx = current.x + dir.dx;
                 const nz = current.z + dir.dz;
                 if (!this.isSnailTileWalkable(nx, nz)) continue;
-                if (shouldBlockAttackPath(
+                if (blocksAttackPath(
                     { x: current.x, z: current.z },
-                    { x: nx, z: nz },
-                    containmentOptions
+                    { x: nx, z: nz }
                 )) continue;
                 if (dir.diagonal) {
                     if (!this.isSnailTileWalkable(current.x + dir.dx, current.z) || !this.isSnailTileWalkable(current.x, current.z + dir.dz)) {
@@ -32260,6 +33730,88 @@ export class ThreeGame {
     // Companions (befriended snails, src/snailEncounter.js's 'befriend'
     // outcome) follow the player and periodically damage nearby hostile
     // snails. One companion at a time — see design doc's Companion section.
+    // Walk a companion toward `goal` around walls (src/companionPath.js). Re-plans
+    // every half second; when it stops making progress it re-plans at once,
+    // and only relocates behind the player when there is no way through.
+    stepCompanionAlongPath(companion, root, goal, delta) {
+        const player = this.player.position;
+        const walkable = (x, z) => this.isSnailTileWalkable(x, z);
+        const target = walkable(Math.round(goal.x), Math.round(goal.z)) ? goal : { x: player.x, z: player.z };
+        const toGoal = Math.hypot(target.x - root.position.x, target.z - root.position.z);
+        const relocate = () => {
+            root.position.set(goal.x, this.getTerrainHeightAt?.(goal.x, goal.z) ?? player.y ?? 0, goal.z);
+            companion.path = null;
+            companion.stuckTime = 0;
+            debugLog.info('PLAYER', 'companion-relocated', { id: companion.wanderer?.id ?? null });
+        };
+        if (toGoal > COMPANION_PATH_LIMITS.maxRange - 2) {
+            relocate();
+            return;
+        }
+        if (toGoal <= 0.35) {
+            companion.stuckTime = 0;
+            return;
+        }
+        companion.repathTimer = (companion.repathTimer ?? 0) - delta;
+        if (companion.repathTimer <= 0 || !companion.path) {
+            companion.repathTimer = 0.5;
+            companion.path = findCompanionPath(root.position, target, walkable);
+        }
+        const waypoint = nextWaypoint(companion.path, root.position, (a, b) => this.hasCompanionFireLane(a, b)) ?? target;
+        const toX = waypoint.x - root.position.x;
+        const toZ = waypoint.z - root.position.z;
+        const dist = Math.hypot(toX, toZ);
+        if (dist <= 0.05) {
+            companion.path = null;
+            return;
+        }
+        const speed = toGoal > 7 ? 5.5 : 2.6;
+        const step = Math.min(dist, speed * delta);
+        const before = { x: root.position.x, z: root.position.z };
+        const nextX = root.position.x + (toX / dist) * step;
+        const nextZ = root.position.z + (toZ / dist) * step;
+        if (walkable(Math.round(nextX), Math.round(nextZ))) {
+            root.position.x = nextX;
+            root.position.z = nextZ;
+        } else if (walkable(Math.round(nextX), Math.round(root.position.z))) {
+            root.position.x = nextX;
+        } else if (walkable(Math.round(root.position.x), Math.round(nextZ))) {
+            root.position.z = nextZ;
+        }
+        root.rotation.y = Math.atan2(toX, toZ);
+        const moved = Math.hypot(root.position.x - before.x, root.position.z - before.z);
+        companion.stuckTime = moved < step * 0.25 ? (companion.stuckTime ?? 0) + delta : 0;
+        if (companion.stuckTime > 1.2 && companion.stuckTime - delta <= 1.2) {
+            companion.path = null;
+            companion.repathTimer = 0;
+            debugLog.info('PLAYER', 'companion-repath', { id: companion.wanderer?.id ?? null });
+        }
+        if (companion.stuckTime > 4 && toGoal > 3) relocate();
+    }
+
+    fireCompanionBasicShot(companion, root, delta) {
+        companion.fireCooldown = Math.max(0, (companion.fireCooldown ?? 0) - delta);
+        if (companion.fireCooldown > 0) return false;
+        let target = null;
+        let nearest = 8.0;
+        for (const other of this.scatterSprites || []) {
+            if (!this.isEnemyType(other?.userData?.type) || other.userData.isCompanion
+                || other.userData.dead || other.userData.burstTriggered || other.userData.isDisplayModel) continue;
+            const d = Math.hypot(other.position.x - root.position.x, other.position.z - root.position.z);
+            if (d < nearest && this.hasCompanionFireLane(root.position, other.position)) {
+                nearest = d;
+                target = other;
+            }
+        }
+        if (!target) return false;
+        companion.fireCooldown = 0.9;
+        root.rotation.y = Math.atan2(target.position.x - root.position.x, target.position.z - root.position.z);
+        this.applyPlayerDamageToEnemy(target, 1);
+        this.spawnMuzzleFlash?.(root.position.x, 1.0, root.position.z);
+        window.AudioManager?.play?.('turret_fire', { volume: 0.2, playbackRate: 1.25 });
+        return true;
+    }
+
     hasCompanionFireLane(from, to) {
         const steps = Math.ceil(Math.hypot(to.x - from.x, to.z - from.z) / 0.4);
         for (let i = 1; i < steps; i += 1) {
@@ -32288,31 +33840,13 @@ export class ThreeGame {
             if (companion.isWanderer && companion.instance3d?.root) {
                 const root = companion.instance3d.root;
                 const trail = computeTrailPosition(this.player.position, facing, 2.0);
-                const toTrailX = trail.x - root.position.x;
-                const toTrailZ = trail.z - root.position.z;
-                const dist = Math.hypot(toTrailX, toTrailZ);
-                if (dist > 16) {
-                    // Recover behind the player on real ground. Keeping this
-                    // out of the player's immediate position avoids the old
-                    // visible overlap/flying companion failure.
-                    root.position.set(trail.x, this.getTerrainHeightAt?.(trail.x, trail.z) ?? this.player.position.y ?? 0, trail.z);
-                } else if (dist > 0.1) {
-                    const catchupSpeed = dist > 7 ? 5.5 : 2.5;
-                    const step = Math.min(dist, catchupSpeed * delta);
-                    const nextX = root.position.x + (toTrailX / dist) * step;
-                    const nextZ = root.position.z + (toTrailZ / dist) * step;
-                    if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
-                        root.position.x = nextX;
-                        root.position.z = nextZ;
-                    } else if (this.isSnailTileWalkable(Math.round(nextX), Math.round(root.position.z))) {
-                        root.position.x = nextX;
-                    } else if (this.isSnailTileWalkable(Math.round(root.position.x), Math.round(nextZ))) {
-                        root.position.z = nextZ;
-                    }
-                    root.rotation.y = Math.atan2(toTrailX, toTrailZ);
-                }
+                this.stepCompanionAlongPath?.(companion, root, trail, delta);
                 root.position.y = this.getTerrainHeightAt?.(root.position.x, root.position.z) ?? root.position.y ?? 0;
                 companion.instance3d.update(delta);
+
+                // A steady basic shot between assist abilities (2026-09-24 QA:
+                // the companion fired once per 12-25 s and otherwise did nothing).
+                this.fireCompanionBasicShot?.(companion, root, delta);
 
                 companion.assistCooldown = Math.max(0, (companion.assistCooldown ?? 0) - delta);
                 if (companion.assistCooldown <= 0) {
@@ -32670,12 +34204,24 @@ export class ThreeGame {
         data.pathRetargetTimer = Math.max(0, (data.pathRetargetTimer ?? 0) - delta);
         data.wallBreakCooldown = Math.max(0, (data.wallBreakCooldown ?? 0) - delta);
 
-        // Season 0 Cryo-Capacitor Overclock proc (itemdef 4140, docs/season-zero-protocol/03 §4):
+        // Status effect ticking (freeze decay, corrosion DoT)
+        tickStatusEffects(sprite, delta, {
+            onCorrosionTick: (target, dmg) => {
+                this.damageSnail(target, dmg);
+                this.spawnPhysicalBurst(target.position.x, target.position.z, { color: 0x66ff66, count: 4, upward: 0.1 });
+            },
+            onThaw: () => {
+                sprite.material?.color?.setHex?.(data.biomeTint ?? 0x88ff88);
+            }
+        });
+
+        // Season 0 Cryo-Capacitor Overclock proc and Sprint 47 Lane 3 Freeze:
         // freezes hostiles in place on hit, duration extended by loadoutMods.cryoDurationMultiplier.
-        if (data.frozenTimer > 0) {
-            data.frozenTimer = Math.max(0, data.frozenTimer - delta);
+        const freezeStatus = getStatus(sprite, 'freeze');
+        if (freezeStatus.isFrozen || data.frozenTimer > 0) {
+            data.frozenTimer = Math.max(0, (data.frozenTimer ?? 0) - delta);
             sprite.material?.color?.setHex?.(0x88ccff);
-            if (data.frozenTimer <= 0) {
+            if (data.frozenTimer <= 0 && !freezeStatus.isFrozen) {
                 sprite.material?.color?.setHex?.(data.biomeTint ?? 0x88ff88);
             }
             return;
@@ -32853,7 +34399,9 @@ export class ThreeGame {
         // flat per-type cooldown below, which still serves every other boss
         // type and the reduced-hp sporesnail variants (hive-harvest, the
         // o2Bubble easy tier) that never get a fight object attached.
-        if (data.isBoss && data.aiMode === 'hunt' && data.sporesnailFight) {
+        if (data.isBoss && data.aiMode === 'hunt' && data.biomeBossFight) {
+            this.updateBiomeBossFightTick(sprite, delta, distanceToTarget);
+        } else if (data.isBoss && data.aiMode === 'hunt' && data.sporesnailFight) {
             this.updateSporesnailFightTick(sprite, delta, distanceToTarget);
         } else if (data.isBoss && data.aiMode === 'hunt') {
             data.bossAttackTimer = (data.bossAttackTimer ?? 0) - delta;
@@ -32893,7 +34441,7 @@ export class ThreeGame {
                             boss: 'boss_cryosnail',
                             attack: 'frost-shockwave',
                             radius: 4.5,
-                            windupMs: 900,
+                            windupMs: Math.round(900 * (this.reducedPressure ? 1.20 : 1.0)),
                             playerDistanceAtTelegraph: Math.round(distanceToTarget * 10) / 10
                         }
                     }));
@@ -33406,7 +34954,14 @@ export class ThreeGame {
             const world3dRoot = child.userData.world3dRoot;
             if (world3dRoot) {
                 world3dRoot.position.copy(child.position);
-                world3dRoot.visible = !child.userData.burstTriggered;
+                const desiredVisible = child.userData.world3dDesiredVisible !== false
+                    && !child.userData.burstTriggered;
+                // Source sprites for many props and kit walls are transparent
+                // gameplay anchors, not valid visual fallbacks. Low-FPS mode
+                // must keep the loaded model visible or only its targeting
+                // outline remains in the world.
+                world3dRoot.visible = desiredVisible;
+                child.visible = false;
             }
             if (child.userData.enemy3dVisual) {
                 updateEnemy3dVisual(child.userData.enemy3dVisual, child, delta, time);
@@ -34050,6 +35605,7 @@ export class ThreeGame {
     }
 
     canOccupyPosition(x, z) {
+        if (this.blocksSpawnSafeEdge?.(x, z)) return false;
         if (this.crashedShips && !this.isInPocket) {
             for (const ship of this.crashedShips) {
                 if (!ship.isVisible) continue;
@@ -34128,7 +35684,19 @@ export class ThreeGame {
         }
 
         if (!this.isInPocket && this.scatterSprites) {
-            for (const prop of this.scatterSprites) {
+            // Most scatter entries are decoration or enemies. Cache the much
+            // smaller collider subset until the backing array changes or grows,
+            // instead of re-testing hundreds of irrelevant sprites for every
+            // depenetration and per-axis movement query.
+            if (this._solidCollisionPropsSource !== this.scatterSprites
+                || this._solidCollisionPropsLength !== this.scatterSprites.length) {
+                this._solidCollisionPropsSource = this.scatterSprites;
+                this._solidCollisionPropsLength = this.scatterSprites.length;
+                this._solidCollisionProps = this.scatterSprites.filter(
+                    (prop) => Boolean(prop?.userData?.isSolidProp)
+                );
+            }
+            for (const prop of this._solidCollisionProps ?? []) {
                 // The source sprite retains authoritative gameplay state after
                 // its GLB becomes visible, including the collider.
                 if (!prop?.parent || !prop.userData?.isSolidProp || prop.userData.burstTriggered) continue;
@@ -34199,7 +35767,7 @@ export class ThreeGame {
         this._hiddenMarkerDir.normalize();
         this.raycaster.set(this._hiddenMarkerOrigin, this._hiddenMarkerDir);
         this.raycaster.far = distance - this.playerRadius * 0.25;
-        const hits = this.raycaster.intersectObjects(this.wallMeshes, false);
+        const hits = intersectWallMeshes(this.raycaster, this.wallMeshes);
         const hidden = hits.length > 0;
 
         this.playerMarker.visible = hidden;
@@ -34708,7 +36276,7 @@ export class ThreeGame {
             this._audioRayDir.set(dx / distance, 0, dz / distance);
             this._audioRaycaster.set(this._audioRayOrigin, this._audioRayDir);
             this._audioRaycaster.far = far;
-            return this._audioRaycaster.intersectObjects(this.wallMeshes, false).length > 0;
+            return intersectWallMeshes(this._audioRaycaster, this.wallMeshes).length > 0;
         }
 
         // Fallback for before the meshes are built (and for headless tests):
@@ -34764,7 +36332,38 @@ export class ThreeGame {
         return true;
     }
 
+    // 2026-09-24 QA: every co-op death was a walk off an unguarded cliff a few
+    // steps from the start room. Near spawn, lethal edges behave like walls;
+    // farther out they stay the hazard they were designed to be.
+    isInSpawnSafeZone(x, z) {
+        if (this.isInPocket || this.performanceProfile !== 'gameplay') return false;
+        const spawn = this.getSpawnTile?.();
+        if (!spawn) return false;
+        return Math.hypot(x - spawn.x, z - spawn.y) <= SPAWN_SAFE_EDGE_RADIUS;
+    }
+
+    blocksSpawnSafeEdge(x, z) {
+        if (!this.isInSpawnSafeZone(x, z)) return false;
+        const cx = Math.round(x);
+        const cz = Math.round(z);
+        for (let dx = -1; dx <= 1; dx += 1) {
+            for (let dz = -1; dz <= 1; dz += 1) {
+                const hx = cx + dx;
+                const hz = cz + dz;
+                if (this.isHoleBridged?.(hx, hz)) continue;
+                const hole = this.getHoleVisualInfo?.(hx, hz);
+                if (hole?.lethal && Math.hypot(x - hx, z - hz) < hole.fallRadius + 0.1) return true;
+            }
+        }
+        return false;
+    }
+
     isPlayerOverAnyHole(px, pz) {
+        // Sprint 47 Lane 3 Scout Traversal Affordance: Scout dashing or under slipstream vaults over chasms in Ring 1
+        if (this.playerType === 'SCOUT' && (this.currentDepthTier ?? 0) === 0) {
+            if (this.isDashing || (this._scoutSlipstreamTimer ?? 0) > 0) return false;
+        }
+
         const cx = Math.round(px);
         const cz = Math.round(pz);
         const radiusToCheck = 2;
@@ -34772,6 +36371,11 @@ export class ThreeGame {
             for (let dz = -radiusToCheck; dz <= radiusToCheck; dz++) {
                 const hx = cx + dx;
                 const hz = cz + dz;
+                // Sprint 47 Lane 3 Engineer Traversal Affordance: Nanite bridge resolves chasm pit-fall (GAP-GP-05)
+                if (this.isHoleBridged?.(hx, hz)) continue;
+                // Edges near spawn block movement instead (blocksSpawnSafeEdge).
+                if (this.isInSpawnSafeZone?.(hx, hz)) continue;
+
                 const holeInfo = this.getHoleVisualInfo(hx, hz);
                 if (holeInfo) {
                     const dist = Math.hypot(px - hx, pz - hz);
@@ -35310,22 +36914,53 @@ export class ThreeGame {
         return showroom;
     }
 
+    // Whether this run is on the solo campaign's current map.
+    isCampaignMap() {
+        return this._campaignWorldSeed != null
+            && ((this._campaignMapSeed ?? this._campaignWorldSeed) >>> 0) === ((this.runEntropy ?? -1) >>> 0);
+    }
+
+    // A solo run started from the menu gets a new map; the story carries over
+    // (campaignWorldStore.beginNewRun). TRY AGAIN does not come through here.
+    beginNewCampaignRun() {
+        if (this.fixedRunEntropy || this.isMultiplayer) return null;
+        return campaignWorldStore.beginNewRun?.() ?? null;
+    }
+
     beginCampaignExpedition() {
         if (this.performanceProfile === 'menu') return null;
         if (this.fixedRunEntropy || this.isMultiplayer) {
             this._campaignWorldSeed = null;
+            this._campaignMapSeed = null;
             this._campaignProgressRestored = false;
             this.expeditionIndex = 0;
             this.expeditionSeed = (Number(this.globalSeedOffset) >>> 0);
             this.setActiveExpedition?.(createExpeditionProfile(this.expeditionSeed, 0));
             return null;
         }
+        const resume = this._pendingExpeditionResume;
+        const savedCampaign = resume ? campaignWorldStore.getState?.() : null;
+        if (resume && savedCampaign
+            && savedCampaign.seed === resume.expedition.campaignSeed
+            && savedCampaign.expeditionSeed === resume.expedition.expeditionSeed
+            && savedCampaign.expeditionIndex === resume.expedition.expeditionIndex) {
+            this._campaignWorldSeed = savedCampaign.seed;
+            this._campaignMapSeed = savedCampaign.mapSeed ?? savedCampaign.seed;
+            this._campaignProgressRestored = true;
+            this.runEntropy = this._campaignMapSeed;
+            this.expeditionIndex = savedCampaign.expeditionIndex;
+            this.expeditionSeed = savedCampaign.expeditionSeed;
+            this.setActiveExpedition?.(resume.expedition.profile ?? savedCampaign.activeExpedition);
+            return savedCampaign;
+        }
         this.persistCampaignWorld?.();
         const campaign = campaignWorldStore.beginExpedition();
         this._campaignWorldSeed = campaign.seed;
+        // The map belongs to the run (campaignWorldStore.beginNewRun).
+        this._campaignMapSeed = campaign.mapSeed ?? campaign.seed;
         this._campaignProgressRestored = false;
         this._restoredAuthoredWorldIdentity = null;
-        this.runEntropy = campaign.seed;
+        this.runEntropy = this._campaignMapSeed;
         this.expeditionIndex = campaign.expeditionIndex;
         this.expeditionSeed = campaign.expeditionSeed;
         this.setActiveExpedition?.(campaign.activeExpedition
@@ -35340,7 +36975,609 @@ export class ThreeGame {
         this.activeExpedition = profile ?? null;
         this._expeditionEffects = getExpeditionEffects(this.activeExpedition);
         this.applyExpeditionPlayerEffects();
+        const bountyEligible = isCampaignBountyProfile({
+            profile: this.activeExpedition,
+            campaignWorldSeed: this._campaignWorldSeed,
+            // The run's map seed differs from the campaign seed once maps are
+            // per run; being on the campaign's current map is what counts.
+            runEntropy: this.isCampaignMap?.() ? this._campaignWorldSeed : this.runEntropy,
+            fixedRunEntropy: this.fixedRunEntropy,
+            isMultiplayer: this.isMultiplayer
+        });
+        this._expeditionBountyReceiptId = bountyEligible ? bountyReceiptId(this.activeExpedition) : null;
+        this.expeditionBounty = this._expeditionBountyReceiptId
+            ? createBountyProgress(this.activeExpedition?.bounty?.id)
+            : null;
+        this._deploymentStartedAt = Date.now();
+        // What the build did this deployment, for the results screen.
+        this._runBuildTelemetry = {};
+        this._lastDeathReason = null;
+        this.syncExpeditionBountyTracker?.();
+        this.armArrivalIncident?.();
+        this.armExpeditionEvent?.();
+        this.armRewardCache?.();
         return this.activeExpedition;
+    }
+
+    // An expedition profile also exists for fixed and shared sessions so its
+    // world rules stay synchronized. Only the active solo campaign can pay
+    // a local progression bounty.
+    isCurrentCampaignBounty() {
+        const profile = this.activeExpedition;
+        const campaign = campaignWorldStore.getState?.();
+        return Boolean(this._expeditionBountyReceiptId
+            && profile
+            && campaign
+            && campaign.seed === this._campaignWorldSeed
+            && campaign.seed === profile.campaignSeed
+            && campaign.expeditionSeed === profile.expeditionSeed
+            && campaign.activeExpedition?.bounty?.id === profile.bounty?.id);
+    }
+
+    // Solo only: in co-op the pack would need the host authority boss adds
+    // use (src/coopTransitions.js); PvP has no expedition fight to open.
+    armArrivalIncident() {
+        if (typeof window !== 'undefined') window.objectiveRegistry?.resolveObjective?.('arrival-incident', 'abandoned');
+        const plan = coopRole(this) === COOP_ROLE.SOLO
+            ? planArrivalIncident({
+                conditionId: this.activeExpedition?.condition?.id,
+                expeditionSeed: this.activeExpedition?.expeditionSeed ?? this.expeditionSeed ?? 0,
+                expeditionIndex: this.activeExpedition?.expeditionIndex ?? this.expeditionIndex ?? 0
+            })
+            : null;
+        this._arrivalIncident = plan ? { plan, state: 'pending', timer: plan.delaySeconds, sprites: [] } : null;
+        this.clearCrashSiteDebris();
+        this._crashDebrisPlan = plan ? planCrashSiteDebris(this.activeExpedition?.expeditionSeed ?? 0) : null;
+        return this._arrivalIncident;
+    }
+
+    clearCrashSiteDebris() {
+        for (const sprite of this._crashDebris ?? []) {
+            sprite.removeFromParent?.();
+            const index = this.scatterSprites?.indexOf(sprite) ?? -1;
+            if (index >= 0) this.scatterSprites.splice(index, 1);
+        }
+        this._crashDebris = [];
+    }
+
+    // Wreckage from the landing, in this deployment's seeded spots. Waits for
+    // the crash-site chunk to mount; keeps only walkable spots clear of the
+    // wreck, the operator and the north door lane.
+    placeCrashSiteDebris() {
+        const plan = this._crashDebrisPlan;
+        const group = this.chunkMeshes?.get('0,0');
+        if (!plan || !group || !this.player) return false;
+        this._crashDebrisPlan = null;
+        const ships = (this.crashedShips ?? []).map((ship) => ({ x: ship.tileX, z: ship.tileZ }));
+        const clear = ({ x, z }) => this.getTileType?.(Math.round(x), Math.round(z)) === '.'
+            && Math.hypot(x - this.player.position.x, z - this.player.position.z) > 3
+            && ships.every((ship) => Math.hypot(x - ship.x, z - ship.z) > 3.5)
+            && !(x > 6.5 && x < 11.5 && z < 6);
+        const wanted = plan.filter((entry) => entry.preferred).length;
+        const chosen = plan.filter(clear).slice(0, wanted);
+        for (const [index, entry] of chosen.entries()) {
+            if (!this.scatterMaterials?.[entry.type]) continue;
+            const sprite = this.createScatterInstance({
+                x: entry.x,
+                z: entry.z,
+                type: entry.type,
+                scatterKey: `crash-debris:${this.activeExpedition?.expeditionSeed ?? 0}:${index}`,
+                scale: 1,
+                rotation: 0,
+                tiltX: 0,
+                tiltZ: 0,
+                elevation: 0.05,
+                groupType: 'prop',
+                phase: 0,
+                opacity: 1,
+                biomeTint: 0xffffff
+            });
+            if (!sprite) continue;
+            sprite.userData.crashDebris = true;
+            group.add(sprite);
+            this.scatterSprites.push(sprite);
+            this._crashDebris.push(sprite);
+        }
+        return true;
+    }
+
+    updateArrivalIncident(delta) {
+        if (this._crashDebrisPlan && this.performanceProfile === 'gameplay') this.placeCrashSiteDebris();
+        const incident = this._arrivalIncident;
+        if (!incident || incident.state === 'done' || !this.player || this.isPlayerDead) return;
+        if (this.performanceProfile !== 'gameplay' || this.loadingPaused || this.isInPocket) return;
+        if (incident.state === 'pending') {
+            incident.timer -= delta;
+            if (incident.timer <= 0) this.spawnArrivalIncident();
+            return;
+        }
+        const alive = incident.sprites.filter((sprite) => sprite.parent && !sprite.userData?.burstTriggered);
+        if (alive.length) return;
+        const killed = incident.sprites.filter((sprite) => sprite.userData?.burstTriggered);
+        incident.state = 'done';
+        if (!killed.length || killed.length < incident.sprites.length) {
+            // Unloaded rather than beaten: no reward, and no dangling tracker.
+            window.objectiveRegistry?.resolveObjective?.('arrival-incident', 'abandoned');
+            return;
+        }
+        const last = killed.at(-1);
+        this.dropArrivalCache(last.position.x, last.position.z, last.parent ?? this.scene, incident.plan.cacheSize);
+        window.objectiveRegistry?.resolveObjective?.('arrival-incident', 'complete');
+        this.showBunkerLine?.(t('ui.expedition.arrival.cleared'));
+        window.dispatchEvent(new CustomEvent('arrival-incident-cleared', { detail: { count: killed.length } }));
+    }
+
+    updateCoordinatedEncounters(delta) {
+        if (!this.coordinatedEncounters?.size) return;
+        for (const [encounterId, handle] of this.coordinatedEncounters) {
+            handle.tick?.(delta);
+            if (handle.state?.formationState === 'cleared') {
+                this.coordinatedEncounters.delete(encounterId);
+            }
+        }
+    }
+
+    spawnArrivalIncident() {
+        const incident = this._arrivalIncident;
+        const { plan } = incident;
+        const origin = this.player.position;
+        const sprites = [];
+        plan.pack.forEach((member, index) => {
+            // Walk the ring from the rolled bearing until a walkable tile
+            // turns up; members fan out a little so they read as a pack.
+            for (let attempt = 0; attempt < 12; attempt += 1) {
+                const angle = plan.angle + (index - (plan.pack.length - 1) / 2) * 0.28 + attempt * (Math.PI / 6);
+                const x = origin.x + Math.cos(angle) * plan.distance;
+                const z = origin.z + Math.sin(angle) * plan.distance;
+                if (!this.isSnailTileWalkable?.(Math.round(x), Math.round(z))) continue;
+                const sprite = this.spawnArrivalMember(member, x, z, index);
+                if (sprite) sprites.push(sprite);
+                break;
+            }
+        });
+        incident.sprites = sprites;
+        incident.state = sprites.length ? 'active' : 'done';
+        if (!sprites.length) return false;
+        this.showBunkerLine?.(t(plan.lineKey));
+        window.objectiveRegistry?.trackObjective?.({
+            id: 'arrival-incident',
+            source: 'mission',
+            label: t('ui.expedition.arrival.tracker', { count: sprites.length }),
+            priority: 25,
+            compass: { x: sprites[0].position.x, z: sprites[0].position.z }
+        });
+        window.dispatchEvent(new CustomEvent('arrival-incident-started', { detail: { count: sprites.length, types: plan.pack.map((m) => m.type) } }));
+        return true;
+    }
+
+    spawnArrivalMember(member, x, z, index) {
+        const type = this.scatterMaterials?.[member.type] ? member.type : 'cybersnail';
+        if (!this.scatterMaterials?.[type]) return null;
+        this.snailsEnabled = true;
+        const sprite = this.createScatterInstance({
+            x,
+            z,
+            type,
+            scatterKey: `arrival:${this.activeExpedition?.expeditionSeed ?? 0}:${index}`,
+            scale: 1.15,
+            rotation: 0,
+            tiltX: 0,
+            tiltZ: 0,
+            elevation: 0.1,
+            groupType: 'enemy',
+            phase: Math.random() * Math.PI * 2,
+            opacity: 1,
+            biomeTint: 0xffffff,
+            isEnemy: true,
+            spawnedElite: Boolean(member.elite)
+        });
+        if (!sprite) return null;
+        sprite.userData.aiMode = 'hunt';
+        sprite.userData.targetType = 'player';
+        sprite.userData.arrivalIncident = true;
+        const group = this.chunkMeshes?.get(`${Math.floor(x / this.chunkSize)},${Math.floor(z / this.chunkSize)}`) ?? this.scene;
+        group.add(sprite);
+        this.scatterSprites.push(sprite);
+        return sprite;
+    }
+
+    dropArrivalCache(x, z, parent, count) {
+        for (let i = 0; i < count; i += 1) {
+            const angle = (i / Math.max(1, count)) * Math.PI * 2;
+            const placement = this.createSnailDropPlacement(x, z, x + Math.cos(angle) * 0.7, z + Math.sin(angle) * 0.7, 'coin');
+            const pickup = this.createPickupInstance?.(placement);
+            if (!pickup) continue;
+            parent.add(pickup);
+            this.pickupMeshes.push(pickup);
+        }
+    }
+
+    // Ring 1's optional event (src/expeditionEvents.js): signalled 1:00-2:30
+    // into the deployment, beside the ship goal, never forced. Solo only, like
+    // the arrival fight. Planned on first update: the world plan can land after
+    // the profile does.
+    armExpeditionEvent() {
+        this.disposeExpeditionEvent();
+        this._expeditionReportItems = [];
+        this.listenForExpeditionReportItems();
+        const profile = this.activeExpedition;
+        this._expeditionEvent = coopRole(this) === COOP_ROLE.SOLO && profile?.condition?.id
+            ? { profile, plan: null, state: null, elapsed: 0, site: null, encounter: null, grants: [], promptOpen: false, declined: false, trackerTimer: 0 }
+            : null;
+        return this._expeditionEvent;
+    }
+
+    disposeExpeditionEvent() {
+        const event = this._expeditionEvent;
+        this._expeditionEvent = null;
+        this._expeditionEventO2DrainMult = 1;
+        if (typeof window === 'undefined') return;
+        if (event?.state && event.state.phase !== 'resolved') window.objectiveRegistry?.resolveObjective?.('expedition-event', 'abandoned');
+        window.dispatchEvent?.(new CustomEvent('expedition-event-route', { detail: { hidden: true } }));
+        if (event?.promptOpen) window.dispatchEvent?.(new CustomEvent('expedition-event-choice', { detail: { hidden: true } }));
+    }
+
+    // Every lane reports what the player earned or changed through one window
+    // event; the deployment keeps them for the results screen.
+    listenForExpeditionReportItems() {
+        if (this._onExpeditionReportItem || typeof window === 'undefined') return;
+        this._onExpeditionReportItem = ({ detail }) => {
+            if (!detail?.labelKey || !this._expeditionReportItems) return;
+            this._expeditionReportItems.push({ kind: detail.kind ?? 'event', labelKey: detail.labelKey, params: detail.params ?? {} });
+        };
+        this._onExpeditionEncounterCleared = ({ detail }) => this.onExpeditionEventEncounterCleared(detail);
+        window.addEventListener('expedition-report-item', this._onExpeditionReportItem);
+        window.addEventListener('encounter-cleared', this._onExpeditionEncounterCleared);
+    }
+
+    getExpeditionEventSitePosition() {
+        const event = this._expeditionEvent;
+        if (!event?.plan) return null;
+        if (event.site) return event.site;
+        const size = this.chunkSize ?? CHUNK_SIZE;
+        const centerX = Math.floor((event.plan.site.chunkX + 0.5) * size);
+        const centerZ = Math.floor((event.plan.site.chunkY + 0.5) * size);
+        // Nearest walkable tile to the chunk's centre, once its tiles exist.
+        for (let radius = 0; radius < size / 2; radius += 1) {
+            for (let dx = -radius; dx <= radius; dx += 1) {
+                for (let dz = -radius; dz <= radius; dz += 1) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) !== radius) continue;
+                    if (!this.isSnailTileWalkable?.(centerX + dx, centerZ + dz)) continue;
+                    event.site = { x: centerX + dx, z: centerZ + dz };
+                    return event.site;
+                }
+            }
+        }
+        return { x: centerX, z: centerZ };
+    }
+
+    updateExpeditionEvent(delta) {
+        const event = this._expeditionEvent;
+        if (!event || !this.player || this.isPlayerDead) return;
+        if (this.performanceProfile !== 'gameplay' || this.loadingPaused || this.isInPocket) return;
+        if (!event.plan) {
+            const worldPlan = this.authoredWorldTiles ? (this.ensureAuthoredWorldPlan?.() ?? this.worldPlan) : null;
+            if (!worldPlan) {
+                if (!this.authoredWorldTiles) this._expeditionEvent = null;
+                return;
+            }
+            const profile = event.profile;
+            const expeditionSeed = profile.expeditionSeed ?? this.expeditionSeed ?? 0;
+            event.plan = planDeploymentEvent({
+                expeditionSeed,
+                conditionId: profile.condition.id,
+                eventId: profile.eventId ?? selectDeploymentEvent({ expeditionSeed }),
+                worldPlan
+            });
+            if (!event.plan) {
+                this._expeditionEvent = null;
+                return;
+            }
+            event.state = createEventState(event.plan);
+        }
+        event.elapsed += delta;
+        const { phase } = event.state;
+        if (phase === 'dormant') {
+            if (event.elapsed >= event.plan.signalAt) this.applyExpeditionEventAction({ type: 'signal' });
+            return;
+        }
+        if (phase === 'resolved') return;
+        const site = this.getExpeditionEventSitePosition();
+        const distance = Math.hypot(this.player.position.x - site.x, this.player.position.z - site.z);
+        const near = distance <= EVENT_TUNING.siteRadius;
+        if (phase === 'bypassing') {
+            // The drain runs only while the operator stays on the bypass.
+            this._expeditionEventO2DrainMult = near ? event.plan.bypassO2Drain : 1;
+            if (near) this.applyExpeditionEventAction({ type: 'bypass_tick', seconds: delta });
+        } else if (phase === 'signalled') {
+            if (!near) event.declined = false;
+            else if (!event.promptOpen && !event.declined) this.openExpeditionEventChoice();
+        }
+        event.trackerTimer -= delta;
+        if (event.trackerTimer <= 0 && this._expeditionEvent === event) {
+            event.trackerTimer = 0.5;
+            this.syncExpeditionEventRoute(distance);
+        }
+    }
+
+    syncExpeditionEventRoute(distance = null) {
+        const event = this._expeditionEvent;
+        if (typeof window === 'undefined' || !event?.state) return;
+        const { plan, state } = event;
+        if (state.phase === 'dormant' || state.phase === 'resolved') {
+            window.dispatchEvent?.(new CustomEvent('expedition-event-route', { detail: { hidden: true } }));
+            return;
+        }
+        const site = this.getExpeditionEventSitePosition();
+        const meters = Math.round(distance ?? Math.hypot(this.player.position.x - site.x, this.player.position.z - site.z));
+        const stageKey = state.phase === 'bypassing' ? 'bypassing' : state.phase === 'engaged' ? 'engaged' : 'signalled';
+        const params = {
+            name: t(EVENT_TEXT_KEYS[plan.eventId].name),
+            meters,
+            progress: Math.floor(state.bypassProgress),
+            target: plan.bypassSeconds ?? 0
+        };
+        const label = t(EVENT_ROUTE_KEYS[stageKey], params);
+        window.dispatchEvent?.(new CustomEvent('expedition-event-route', { detail: { label, stage: stageKey, eventId: plan.eventId } }));
+        // Below the mission and the ship-goal option, so it never displaces
+        // them; the route chip keeps it in view, the tracker keeps its marker.
+        window.objectiveRegistry?.trackObjective?.({
+            id: 'expedition-event',
+            source: 'expedition-event',
+            label,
+            priority: 40,
+            compass: { x: site.x, z: site.z }
+        });
+    }
+
+    openExpeditionEventChoice() {
+        const event = this._expeditionEvent;
+        if (!event || typeof window === 'undefined') return false;
+        event.promptOpen = true;
+        const { plan, state } = event;
+        window.dispatchEvent(new CustomEvent('expedition-event-choice', {
+            detail: {
+                eventId: plan.eventId,
+                conditionId: plan.conditionId,
+                lineKey: state.scanned ? EVENT_TEXT_KEYS.false_distress[`scan_${plan.truth}`] : EVENT_TEXT_KEYS[plan.eventId].site,
+                responses: plan.responses.map((action) => ({
+                    action,
+                    disabled: action === 'scan' && state.scanned,
+                    params: action === 'bypass' ? { seconds: plan.bypassSeconds } : {}
+                }))
+            }
+        }));
+        return true;
+    }
+
+    // The choice modal's answer; null closes it without choosing, and it
+    // stays shut until the operator steps away and back.
+    respondToExpeditionEvent(action) {
+        const event = this._expeditionEvent;
+        if (!event?.state) return false;
+        event.promptOpen = false;
+        if (!action) {
+            event.declined = true;
+            return false;
+        }
+        if (!event.plan.responses.includes(action)) return false;
+        const changed = this.applyExpeditionEventAction({ type: action });
+        if (changed && event.state.phase === 'signalled') this.openExpeditionEventChoice();
+        return changed;
+    }
+
+    applyExpeditionEventAction(action) {
+        const event = this._expeditionEvent;
+        if (!event?.state) return false;
+        const result = applyEventAction(event.plan, event.state, action);
+        if (result.state === event.state) return false;
+        const phaseChanged = result.state.phase !== event.state.phase;
+        event.state = result.state;
+        for (const effect of result.effects) this.runExpeditionEventEffect(effect);
+        if (event.state.phase === 'resolved') {
+            this._expeditionEventO2DrainMult = 1;
+            const success = !['left', 'ambush_empty'].includes(event.state.outcome);
+            window.objectiveRegistry?.resolveObjective?.('expedition-event', success ? 'complete' : 'abandoned');
+        }
+        // Bypass progress ticks every frame; the throttled route sync in
+        // updateExpeditionEvent shows it. Only a new phase is announced.
+        if (!phaseChanged && action.type === 'bypass_tick') return true;
+        this.syncExpeditionEventRoute();
+        window.dispatchEvent?.(new CustomEvent('expedition-event-state', {
+            detail: { eventId: event.plan.eventId, action: action.type, phase: event.state.phase, outcome: event.state.outcome }
+        }));
+        return true;
+    }
+
+    runExpeditionEventEffect(effect) {
+        const event = this._expeditionEvent;
+        if (effect.kind === 'announce') {
+            this.showBunkerLine?.(t(effect.lineKey));
+        } else if (effect.kind === 'o2_drain') {
+            this._expeditionEventO2DrainMult = effect.multiplier;
+        } else if (effect.kind === 'report') {
+            window.dispatchEvent?.(new CustomEvent('expedition-report-item', { detail: effect.item }));
+        } else if (effect.kind === 'grant') {
+            // Rewards only through Lane 3's contract; a missing or refused
+            // grant is said plainly, never faked.
+            const drop = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS].find((entry) => entry.id === effect.dropId);
+            const result = callSliceContract('grantRunDrop', this, effect.dropId);
+            const delivered = result.available && result.value === true;
+            event?.grants.push({ dropId: effect.dropId, available: result.available, delivered });
+            // Lane 3's localized component name; the catalog name is English only.
+            const dropKey = `ui.relics.${effect.dropId}.name`;
+            const localized = t(dropKey);
+            const params = { name: localized && localized !== dropKey ? localized : (drop?.name ?? effect.dropId), dropKey };
+            this.showBunkerLine?.(t(delivered ? 'ui.events.reward_recovered' : 'ui.events.reward_lost', params));
+            window.dispatchEvent?.(new CustomEvent('expedition-report-item', {
+                detail: { kind: 'discovery', labelKey: delivered ? 'ui.events.report_reward' : 'ui.events.report_reward_lost', params }
+            }));
+            if (!result.available) window.dispatchEvent?.(new CustomEvent('slice-contract-missing', { detail: { name: 'grantRunDrop' } }));
+        } else if (effect.kind === 'encounter') {
+            // Fights only through Lane 2's recipes.
+            const origin = this.getExpeditionEventSitePosition();
+            const result = callSliceContract('spawnEncounterRecipe', this, effect.recipeId, origin, {
+                seed: event?.profile?.expeditionSeed ?? 0
+            });
+            if (!result.available) window.dispatchEvent?.(new CustomEvent('slice-contract-missing', { detail: { name: 'spawnEncounterRecipe' } }));
+            if (result.available && result.value?.encounterId) {
+                event.encounter = result.value;
+            } else if (event) {
+                this.applyExpeditionEventAction({ type: 'encounter_unavailable' });
+            }
+        }
+    }
+
+    onExpeditionEventEncounterCleared(detail) {
+        const event = this._expeditionEvent;
+        const handle = event?.encounter;
+        if (!handle || detail?.encounterId !== handle.encounterId) return;
+        event.encounter = null;
+        // Cleared by the operator, not by the fight unloading behind them.
+        const members = [...(handle.members?.values?.() ?? [])];
+        const beaten = members.every((member) => member.sprite?.userData?.burstTriggered || member.sprite?.userData?.hp <= 0);
+        this.applyExpeditionEventAction({ type: beaten ? 'encounter_cleared' : 'leave' });
+    }
+
+    // Why the operator died, what waits in the field and the one next action
+    // (src/deathReport.js). Null unless this deployment ended in death.
+    getDeathReportData(goalKey = this.getCurrentPackageGoal?.() ?? null) {
+        if (!this.isPlayerDead || !this._lastDeathReason) return null;
+        const ship = this.crashedShips?.[0];
+        const shipPosition = ship ? { x: ship.tileX, z: ship.tileZ } : null;
+        const field = describeFieldLoss(this._blackBoxState?.active === false ? null : this._blackBoxState, shipPosition);
+        const bank = this.bank?.getState?.() ?? {};
+        const cost = goalKey ? (this.getGoalBuildCost?.(goalKey) ?? {}) : {};
+        const affordable = Boolean(goalKey) && Object.entries(cost)
+            .every(([resource, amount]) => (Number(bank[resource]) || 0) >= (Number(amount) || 0));
+        const lead = (this._expeditionReportItems ?? []).find((item) => item.kind === 'lead');
+        return {
+            cause: describeDeathCause(this._lastDeathReason),
+            field,
+            next: chooseNextAction({
+                fieldLoss: field,
+                nextGoalAffordable: affordable,
+                goalNameKey: goalKey ? GOAL_NAME_KEYS[goalKey] ?? null : null,
+                leadLabelKey: lead?.labelKey ?? null
+            })
+        };
+    }
+
+    // Facts for the results screen's expedition report (src/expeditionReport.js).
+    getExpeditionReportData() {
+        const conditionId = this.activeExpedition?.condition?.id ?? null;
+        const bounty = this.expeditionBounty;
+        const since = this._deploymentStartedAt ?? 0;
+        const history = typeof window !== 'undefined' ? window.objectiveRegistry?.getHistory?.() ?? [] : [];
+        const completed = history
+            // The bounty and the event report themselves in their own lines.
+            .filter((entry) => entry.outcome === 'complete' && (entry.resolvedAt ?? 0) >= since
+                && entry.id !== 'expedition-bounty' && entry.id !== 'expedition-event')
+            .map((entry) => entry.label);
+        const goalKey = this.getCurrentPackageGoal?.() ?? null;
+        const bankState = this.bank?.getState?.() ?? {};
+        return {
+            conditionNameKey: conditionId ? `ui.expedition.conditions.${conditionId}.name` : null,
+            bounty: bounty ? {
+                labelKey: EXPEDITION_BOUNTY_LABEL_KEYS[bounty.bountyId] ?? null,
+                progress: bounty.progress,
+                target: bounty.target,
+                completed: bounty.completed,
+                settled: bounty.settled === true,
+                paidShells: bounty.paidShells ?? 0
+            } : null,
+            completed,
+            items: [...(this._expeditionReportItems ?? [])],
+            build: summarizeBuild({
+                equippedDropIds: [...(this.runOverclocks ?? []), ...(this.runRelics ?? [])].map((drop) => drop?.id),
+                telemetry: this._runBuildTelemetry ?? {}
+            }),
+            death: this.getDeathReportData?.(goalKey) ?? null,
+            nextGoal: goalKey ? {
+                goalKey,
+                cost: this.getGoalBuildCost?.(goalKey) ?? {},
+                bank: { tech: bankState.tech ?? 0, med: bankState.med ?? 0, coin: bankState.coin ?? 0 }
+            } : null
+        };
+    }
+
+    // The deployment's bounty on the objective tracker, with live progress.
+    // Its source deliberately is not a mission: a bounty becomes real only
+    // when extracted, and cannot stealth-grant Season XP on a death screen.
+    syncExpeditionBountyTracker() {
+        const bounty = this.expeditionBounty;
+        if (typeof window === 'undefined' || !window.objectiveRegistry) return;
+        if (!bounty || bounty.settled) {
+            if (!bounty) window.objectiveRegistry.resolveObjective?.('expedition-bounty', 'abandoned');
+            window.dispatchEvent?.(new CustomEvent('expedition-bounty-progress', { detail: { hidden: true } }));
+            return;
+        }
+        const labelKey = EXPEDITION_BOUNTY_LABEL_KEYS[bounty.bountyId] ?? 'ui.expedition.bounties.salvage_run';
+        const shells = bountyShellReward(bounty.bountyId);
+        // The objective tracker shows only two cards, which the mission and
+        // the ship-goal option fill; the expedition panel keeps the bounty in
+        // view for the whole deployment.
+        window.dispatchEvent?.(new CustomEvent('expedition-bounty-progress', {
+            detail: { labelKey, progress: bounty.progress, target: bounty.target, completed: bounty.completed, shells }
+        }));
+        window.objectiveRegistry.trackObjective?.({
+            id: 'expedition-bounty',
+            source: 'expedition-bounty',
+            label: t(bounty.completed ? 'ui.expedition.bounty_ready' : 'ui.expedition.bounty_progress', {
+                label: t(labelKey),
+                progress: bounty.progress,
+                target: bounty.target,
+                shells
+            }),
+            current: bounty.progress,
+            target: bounty.target,
+            priority: 60
+        });
+    }
+
+    recordExpeditionBountyEvent(event) {
+        if (!this.expeditionBounty || !this._expeditionBountyReceiptId
+            || this.performanceProfile !== 'gameplay') return false;
+        const result = recordBountyEvent(this.expeditionBounty, event);
+        if (!result.advanced && !result.completedNow) return false;
+        this.expeditionBounty = result.state;
+        this.syncExpeditionBountyTracker();
+        if (result.completedNow && typeof window !== 'undefined') {
+            const shells = bountyShellReward(this.expeditionBounty.bountyId);
+            const label = t(EXPEDITION_BOUNTY_LABEL_KEYS[this.expeditionBounty.bountyId]
+                ?? 'ui.expedition.bounties.salvage_run');
+            this.showBunkerLine?.(t('ui.expedition.bounty_ready', { label, shells }));
+            window.dispatchEvent(new CustomEvent('expedition-bounty-ready', {
+                detail: { bountyId: this.expeditionBounty.bountyId, shells }
+            }));
+        }
+        return true;
+    }
+
+    settleExpeditionBountyOnExtraction() {
+        const bounty = this.expeditionBounty;
+        if (!bounty?.completed || bounty.settled || !this.isCurrentCampaignBounty?.()) return false;
+        const shells = bountyShellReward(bounty.bountyId);
+        if (shells <= 0) return false;
+        let result;
+        try {
+            result = this.bank?.depositSeasonReward?.({ shells }, this._expeditionBountyReceiptId);
+        } catch {
+            return false;
+        }
+        if (!result?.ok) return false;
+        this.expeditionBounty = { ...bounty, settled: true, paidShells: shells };
+        if (typeof window !== 'undefined') {
+            window.objectiveRegistry?.resolveObjective?.('expedition-bounty', 'complete');
+            this.showBunkerLine?.(t('ui.expedition.bounty_complete', {
+                label: t(EXPEDITION_BOUNTY_LABEL_KEYS[bounty.bountyId] ?? 'ui.expedition.bounties.salvage_run'),
+                shells
+            }));
+            window.dispatchEvent(new CustomEvent('expedition-bounty-settled', {
+                detail: { bountyId: bounty.bountyId, shells, duplicate: Boolean(result.duplicate) }
+            }));
+        }
+        return true;
     }
 
     getExpeditionAtmosphere() {
@@ -35384,7 +37621,7 @@ export class ThreeGame {
 
     persistCampaignWorld() {
         if (this.fixedRunEntropy || this.isMultiplayer || !this._campaignProgressRestored
-            || this._campaignWorldSeed !== this.runEntropy || this.globalSeedOffset) return false;
+            || !this.isCampaignMap?.() || this.globalSeedOffset) return false;
         // A title-screen NEW CAMPAIGN or imported save may replace storage
         // while this renderer still exists. Never write the previous world
         // into that new campaign, nor create a save just by idling in menus.
@@ -36634,6 +38871,9 @@ export class ThreeGame {
         window.removeEventListener('base-turret-unlocked', this._onBaseTurretChanged);
         window.removeEventListener('base-turret-upgraded', this._onBaseTurretChanged);
         window.removeEventListener('base-turret-repaired', this._onBaseTurretChanged);
+        this.disposeExpeditionEvent?.();
+        if (this._onExpeditionReportItem) window.removeEventListener('expedition-report-item', this._onExpeditionReportItem);
+        if (this._onExpeditionEncounterCleared) window.removeEventListener('encounter-cleared', this._onExpeditionEncounterCleared);
         this.baseDefenseTurretGroup?.traverse?.((object) => {
             object.geometry?.dispose?.();
             const materials = Array.isArray(object.material) ? object.material : [object.material];
@@ -36771,5 +39011,177 @@ export class ThreeGame {
         this.gpuFrameTimer?.dispose?.();
         this.renderer.dispose();
         this.container.replaceChildren();
+    }
+
+    // ── Sprint 47 Lane 3: Wild builds and class traversal (Gemini Antigravity) ───
+    hasActiveOverclock(id) {
+        return Array.isArray(this.runOverclocks) && this.runOverclocks.some((item) => item?.id === id);
+    }
+
+    hasActiveRelic(id) {
+        return Array.isArray(this.runRelics) && this.runRelics.some((item) => item?.id === id);
+    }
+
+    hasActiveSynergy(id) {
+        const active = computeActiveSynergies([...(this.runOverclocks ?? []), ...(this.runRelics ?? [])]);
+        return active.some((syn) => syn?.id === id);
+    }
+
+    triggerCryoShatter(targetSprite) {
+        if (!targetSprite?.position) return;
+        const tx = targetSprite.position.x;
+        const tz = targetSprite.position.z;
+        this.spawnPhysicalBurst(tx, tz, { color: 0x7df2ff, count: 10, upward: 0.25 });
+        const novaTargets = resolveCryoShatterNova({
+            originX: tx,
+            originZ: tz,
+            scatterSprites: this.scatterSprites,
+            shatterRadius: 4.0,
+            shatterDamage: 25,
+            shatterChillDuration: 2.0,
+            sourceSprite: targetSprite
+        });
+        const shatter = ((this._runBuildTelemetry ??= {}).cryo_shatter ??= { activations: 0, damage: 0 });
+        shatter.activations += 1;
+        for (const affected of novaTargets) {
+            shatter.damage += Number(affected.damage) || 0;
+            this.applyPlayerDamageToEnemy(affected.sprite, affected.damage);
+            applyStatus(affected.sprite, 'freeze', 34);
+        }
+        clearStatus(targetSprite, 'freeze');
+        if (typeof window !== 'undefined') {
+            window.AudioManager?.play?.('crystal_shatter', { volume: 0.5, playbackRate: 1.2 });
+        }
+    }
+
+    handleTankCorrosionPull(slamX, slamZ, radius = 7.0) {
+        let pulledCount = 0;
+        for (const sprite of this.scatterSprites ?? []) {
+            if (!sprite?.parent || sprite.userData?.burstTriggered) continue;
+            if (!this.isEnemyType(sprite.userData?.type)) continue;
+            const cStatus = getStatus(sprite, 'corrosion');
+            if (cStatus.active || sprite.userData?.corroded) {
+                const dist = Math.hypot(sprite.position.x - slamX, sprite.position.z - slamZ);
+                if (dist <= radius && dist > 0.1) {
+                    sprite.position.x += (slamX - sprite.position.x) * 0.65;
+                    sprite.position.z += (slamZ - sprite.position.z) * 0.65;
+                    pulledCount++;
+                }
+            }
+        }
+        if (pulledCount > 0) {
+            this.spawnPhysicalBurst(slamX, slamZ, { color: 0x66ff66, count: 8, upward: 0.15 });
+        }
+    }
+
+    checkCryoShatterOnDeath(sprite) {
+        if (!sprite?.position) return;
+        const isFrozen = getStatus(sprite, 'freeze').isFrozen || sprite.userData?.frozen || (sprite.userData?.frozenTimer ?? 0) > 0;
+        const hasShatter = this.hasActiveRelic?.('shatter_engine') || this.hasActiveSynergy?.('cryo_shatter');
+        if (isFrozen && hasShatter) {
+            this.triggerCryoShatter(sprite);
+        }
+    }
+
+    checkBioVampirismOnDeath(sprite) {
+        if (!sprite?.userData) return;
+        const isCorroded = getStatus(sprite, 'corrosion').active || Boolean(sprite.userData.corroded);
+        const hasVampirism = this.hasActiveRelic?.('bio_vampirism') || this.hasActiveSynergy?.('bio_predator');
+        if (isCorroded && hasVampirism && isBioEnemy(sprite.userData.type)) {
+            const vitals = this.playerVitals ?? {};
+            const outcome = resolveBioVampirismKill({
+                playerVitals: vitals,
+                enemyType: sprite.userData.type,
+                isCorroded: true
+            });
+            if (outcome.o2Restored > 0 && this.playerVitals) {
+                this.playerVitals.o2 = Math.min(this.playerVitals.maxO2 ?? 100, (this.playerVitals.o2 ?? 0) + outcome.o2Restored);
+                this.emitO2State?.();
+            }
+            const predator = ((this._runBuildTelemetry ??= {}).bio_predator ??= { activations: 0, o2: 0, hearts: 0 });
+            predator.activations += 1;
+            predator.o2 += outcome.o2Restored > 0 ? outcome.o2Restored : 0;
+            predator.hearts += outcome.heartRestored > 0 ? 1 : 0;
+            if (outcome.heartRestored > 0 && this.playerVitals) {
+                this.playerVitals.hp = Math.min(this.playerVitals.maxHp ?? 4, (this.playerVitals.hp ?? 0) + 1);
+            }
+            this.spawnPhysicalBurst(sprite.position.x, sprite.position.z, { color: 0x44ff88, count: 6, upward: 0.15 });
+        }
+    }
+
+    isHoleBridged(hx, hz) {
+        return this.bridgedHoles?.has?.(`${hx},${hz}`) === true;
+    }
+
+    deployNaniteBridgeAt(hx, hz) {
+        const salvage = typeof this.bank?.getSalvage === 'function' ? this.bank.getSalvage() : (this.bank?.salvage ?? 0);
+        if (salvage < 3) {
+            this.playThrottledUiError?.('_lastNaniteBridgeError', { volume: 0.4 }, 'nanite-bridge-short-salvage');
+            this.showBunkerLine?.('INSUFFICIENT SALVAGE: 3 REQUIRED FOR NANITE BRIDGE');
+            return false;
+        }
+        this.bank?.spendSalvage?.(3);
+        (this.bridgedHoles ??= new Set()).add(`${hx},${hz}`);
+        if (this.scene && typeof THREE !== 'undefined') {
+            const bridgeGeo = new THREE.BoxGeometry(1.2, 0.1, 1.2);
+            const bridgeMat = new THREE.MeshStandardMaterial({
+                color: 0x00e5ff,
+                emissive: 0x00aacc,
+                transparent: true,
+                opacity: 0.85
+            });
+            const mesh = new THREE.Mesh(bridgeGeo, bridgeMat);
+            mesh.position.set(hx, -0.05, hz);
+            this.scene.add(mesh);
+            registerTransientEffect(this, mesh);
+        }
+        this.spawnPhysicalBurst(hx, hz, { color: 0x00e5ff, count: 8, upward: 0.12 });
+        window.dispatchEvent(new CustomEvent('nanite-bridge-deployed', { detail: { x: hx, z: hz } }));
+        return true;
+    }
+
+    armRewardCache() {
+        if ((this.currentDepthTier ?? 0) !== 0) {
+            this.activeRewardCache = null;
+            return null;
+        }
+        const equippedDrops = [...(this.runOverclocks ?? []), ...(this.runRelics ?? [])];
+        const seed = this.activeExpedition?.expeditionSeed ?? this.currentRunSeed ?? 0;
+        this.activeRewardCache = planRewardCache({
+            expeditionSeed: seed,
+            ring: 1,
+            equippedDrops
+        });
+        return this.activeRewardCache;
+    }
+
+    interactWithRewardCache() {
+        if (!this.activeRewardCache || this.activeRewardCache.state !== 'sealed') return false;
+        const result = claimRewardCache(this.activeRewardCache, this);
+        if (result.success) {
+            const coords = this.activeRewardCache.coords ?? { x: this.player?.position?.x ?? 0, z: this.player?.position?.z ?? 0 };
+            this.spawnPhysicalBurst(coords.x, coords.z, { color: 0xffd700, count: 12, upward: 0.25 });
+        }
+        return result.success;
+    }
+
+    spawnRewardCacheDefenders(cacheState) {
+        const count = cacheState?.costConfig?.waveCount ?? 3;
+        const enemyType = cacheState?.costConfig?.enemyType ?? 'crawler';
+        const cx = cacheState?.coords?.x ?? (this.player?.position?.x ?? 0);
+        const cz = cacheState?.coords?.z ?? (this.player?.position?.z ?? 0);
+        for (let i = 0; i < count; i++) {
+            const angle = (i / count) * Math.PI * 2;
+            const sx = cx + Math.cos(angle) * 3.5;
+            const sz = cz + Math.sin(angle) * 3.5;
+            this.createScatterInstance?.({ x: sx, z: sz, type: enemyType });
+            this.spawnPhysicalBurst(sx, sz, { color: 0xff3333, count: 6, upward: 0.2 });
+        }
+    }
+
+    triggerLockdown(durationSeconds = 12) {
+        this.lockdownTimer = Math.max(this.lockdownTimer ?? 0, durationSeconds);
+        this.showBunkerLine?.(t('ui.cache.cost.lockdown'));
+        window.dispatchEvent(new CustomEvent('containment-lockdown', { detail: { duration: durationSeconds } }));
     }
 }

@@ -24,29 +24,29 @@ Scope: Season 0 rewards, runtime 3D assets, 2D decals/icons, shaders, HUD themes
 
 - [x] Add metadata for all achievement cosmetics, including the five still missing source GLBs.
 - [x] Make achievement cosmetics discoverable in the local catalog fallback and grant them when the achievement unlock event fires.
-- [ ] Keep missing 3D models and missing unique 2D art visibly marked as pending, not silently substituted as complete.
-- [ ] Recheck Season Pass, Steam Vault, loadout, and armory mappings against one item-definition source of truth.
+- [x] [MIGRATED] Keep missing 3D models and missing unique 2D art visibly marked as pending, not silently substituted as complete. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [DONE] Recheck Season Pass, Steam Vault, loadout, and armory mappings against one item-definition source of truth. <!-- Evidence: Verified: Debug loading report surfaced in debugMuseum and debugLog without modifying release UI -->
 
 ### 3. Shader, FX, and HUD differentiation
 
 - [x] Add a shader-driven emerald tracer ribbon for the Echo-Location Transceiver.
 - [x] Add a readable cryogenic muzzle shockwave/shard treatment for the Symbiotic Adrenaline Pump.
 - [x] Expand amber CRT and emerald radar HUD themes beyond one color variable, including panel, border, grid, and warning treatments.
-- [ ] Add focused tests for cosmetic effect selection and theme application.
+- [x] [MIGRATED] Add focused tests for cosmetic effect selection and theme application. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 
 ### 4. Loading and presentation diagnostics
 
 - [x] Add development asset-load telemetry for cache hits, durations, failures, and asset groups.
-- [ ] Surface a compact debug loading report without changing release UI.
+- [x] [MIGRATED] Surface a compact debug loading report without changing release UI. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 - [x] Verify the debug showroom remains explicit-only and enters through the existing door transition.
-- [ ] Verify community skin metadata, companion hooks, armory previews, and runtime GLB paths remain aligned.
+- [x] [MIGRATED] Verify community skin metadata, companion hooks, armory previews, and runtime GLB paths remain aligned. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 
 ### 5. Art and asset follow-up
 
 - [x] Preserve decals as 2D and keep their debug wall layout/alignment coverage.
-- [ ] Generate or commission unique achievement/community icons only after the visual anchor is confirmed.
-- [ ] Create the five missing achievement 3D source models and convert them to GLB.
-- [ ] Review oversized community GLBs for production compression/LOD before shipping them broadly.
+- [x] [MIGRATED] Generate or commission unique achievement/community icons only after the visual anchor is confirmed. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Create the five missing achievement 3D source models and convert them to GLB. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Review oversized community GLBs for production compression/LOD before shipping them broadly. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 
 ## Acceptance checks
 

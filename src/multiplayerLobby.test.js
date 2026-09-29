@@ -810,3 +810,15 @@ describe('MultiplayerLobby', () => {
         // other test in this file exercises connect()'s internal handlers).
     });
 });
+
+describe('each lobby deploy is a new map', () => {
+    it('adds fresh entropy to the room code, so the same room gets a different world each run', async () => {
+        const { createDeploymentSeed } = await import('./multiplayerLobby.js');
+        expect(createDeploymentSeed('STEAM-1097', 42)).toBe('STEAM-1097:42');
+        expect(createDeploymentSeed('STEAM-1097', 43)).not.toBe(createDeploymentSeed('STEAM-1097', 42));
+        const a = createDeploymentSeed('STEAM-1097');
+        const b = createDeploymentSeed('STEAM-1097');
+        expect(a).toMatch(/^STEAM-1097:\d+$/);
+        expect(a).not.toBe(b);
+    });
+});

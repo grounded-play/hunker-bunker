@@ -44,8 +44,20 @@
     "elite_contact": "ANZUG: Elite-Kontakt. Verstärkter Feind — Rückzugsweg freihalten."
   },
   "ui": {
+    "encounters": {
+      "locked_crossfire": {
+        "name": "Kreuzfeuer-Sperre"
+      },
+      "bloom_push": {
+        "name": "Blütenvorstoß"
+      },
+      "cold_pincer": {
+        "name": "Kältezange"
+      }
+    },
     "menu": {
       "continue": "FORTSETZEN",
+      "resume_expedition": "EXPEDITION FORTSETZEN",
       "switch_class": "KLASSE WECHSELN",
       "new_run": "NEUER DURCHLAUF",
       "achievements": "ERFOLGE",
@@ -152,6 +164,9 @@
       "subtitle_size": "UNTERTITELGRÖSSE",
       "subtitle_backdrop": "UNTERTITEL-HINTERGRUND",
       "contrast": "HUD-KONTRAST",
+      "camera_shake": "KAMERAWACKELN",
+      "aim_assist": "CONTROLLER-ZIELHILFE",
+      "reduced_pressure": "REDUZIERTER DRUCK-MODUS",
       "aria_label_settings_categories": "Einstellungskategorien",
       "session": "SITZUNG",
       "audio": "AUDIO",
@@ -214,7 +229,14 @@
       "backdrop_solid": "DECKEND",
       "contrast_normal": "NORMAL (STANDARD)",
       "contrast_high": "HOCH",
-      "contrast_max": "MAXIMUM (OHNE SCANLINES)"
+      "contrast_max": "MAXIMUM (OHNE SCANLINES)",
+      "shake_off": "AUS (0%)",
+      "shake_low": "NIEDRIG (25%)",
+      "shake_reduced": "REDUZIERT (50%)",
+      "shake_normal": "NORMAL (100%)",
+      "aim_assist_off": "AUS",
+      "aim_assist_low": "NIEDRIG (NUR MAGNETISMUS)",
+      "aim_assist_standard": "STANDARD (FANGEN + REIBUNG)"
     },
     "aria": {
       "language_select": "Spielsprache",
@@ -234,7 +256,9 @@
       "camera_follow": "Reaktionsfreudigkeit der Kameraverfolgung",
       "aim_speed": "Zielgeschwindigkeit rechter Stick",
       "aim_speed_presets": "Vorgaben für Zielgeschwindigkeit rechter Stick",
-      "callsign_input": "Operator-Rufzeichen"
+      "callsign_input": "Operator-Rufzeichen",
+      "camera_shake": "Kamerawackeln-Intensität",
+      "aim_assist": "Controller-Zielhilfe"
     },
     "armory": {
       "tag": "◈ SUBTERRANES EINSATZARSENAL // SEKTOR NULL",
@@ -789,6 +813,15 @@
       "cost_300_tech_100_coin": "KOSTEN: 300 TECH / 100 MÜNZEN",
       "expedition_day": "EXPEDITIONSTAG",
       "cycle_phase": "ZYKLUSPHASE",
+      "campaign_state": "KAMPAGNENSTATUS",
+      "advance_day": "TAG VORRÜCKEN",
+      "advance_status_cot_available": "VERFÜGBAR AN BUNKERPRITSCHE",
+      "advance_status_camp_available": "VERFÜGBAR IM SICHEREN LAGER",
+      "advance_status_blocked_contract": "BLOCKIERT — AKTIVER VERTRAG",
+      "advance_status_blocked_unsafe": "BLOCKIERT — STANDORT UNSICHER",
+      "advance_status_coop_visitor": "KOOP-BESUCHER — LOKALER ZYKLUS GESPERRT",
+      "cycle_hold": "ZYKLUS GEHALTEN — TERMINAL AKTIV",
+      "cycle_progress_label": "{percent}% DES 24H-ZYKLUS",
       "local_light": "LOKALES LICHT",
       "next_transition": "NÄCHSTER ÜBERGANG",
       "aria_label_objective_history": "Zielverlauf",
@@ -1349,7 +1382,24 @@
       "alien_hives": "Alien-Nester",
       "obedience": "Gehorsam:",
       "seats_filled": "Besetzte Sitze:",
-      "humanity": "Menschlichkeit:"
+      "humanity": "Menschlichkeit:",
+      "report": {
+        "title": "◈ EXPEDITIONSBERICHT",
+        "condition": "Bedingung: {condition}",
+        "bounty_met": "Kopfgeld erfüllt — {label} (+{shells} Hülsen verbucht)",
+        "bounty_missed": "Kopfgeld verfehlt — {label} ({progress}/{target})",
+        "completed": "Erledigt: {list}",
+        "none_completed": "In diesem Einsatz kein Ziel erledigt",
+        "next_goal_ready": "Als Nächstes: {goal} ist bezahlbar — an der Schiffskonsole bauen",
+        "next_goal_short": "Als Nächstes: {goal} braucht noch {missing}",
+        "all_goals": "Alle Schiffsziele gebaut — die Königin wartet",
+        "item_settlement": "Abgerechnet: {label}",
+        "item_event": "Ereignis: {label}",
+        "item_discovery": "Gefunden: {label}",
+        "item_unlock": "Freigeschaltet: {label}",
+        "item_faction": "Ansehen: {label}",
+        "item_lead": "Spur: {label}"
+      }
     },
     "ach": {
       "unlocked_kicker": "ERFOLG FREIGESCHALTET",
@@ -1507,10 +1557,10 @@
         }
       },
       "bounties": {
-        "salvage_run": "Birg 120+ Schrott aus tiefen Korridoren",
-        "eliminate_elite": "Erledige einen mutierten Sektor-Jäger",
-        "scout_compound": "Unterwandere und kartiere einen Außenposten",
-        "clearing_breach": "Zerschlage 6 tragende Trennwände"
+        "salvage_run": "8 Bergungsfunde sichern",
+        "eliminate_elite": "Einen mutierten Sektorjäger ausschalten",
+        "scout_compound": "3 Räume eines abgelegenen Komplexes erkunden",
+        "clearing_breach": "6 tragende Trennwände zerschlagen"
       },
       "sites": {
         "camp_meridian": "MERIDIAN-GEHÖFT",
@@ -1590,6 +1640,160 @@
         "landmark": "EXTRAKTIONSSCHLEUSE",
         "line_objective": "ZIEL ERFÜLLT. EXTRAKTIONSSCHLEUSE BEREIT. KEHR ZUM SCHIFF ZURÜCK.",
         "line_purged": "SEKTOR GESÄUBERT. EXTRAKTIONSSCHLEUSE AKTIV. KEHR ZUM SCHIFF ZURÜCK."
+      },
+      "bounty_progress": "KOPFGELD — {label} · {progress}/{target} · +{shells} Hülsen",
+      "bounty_ready": "KOPFGELD BEREIT — {label} · EVAKUIEREN ZUM VERBUCHEN VON +{shells} HÜLSEN",
+      "bounty_complete": "KOPFGELD ERFÜLLT — {label}. {shells} HÜLSEN VERBUCHT.",
+      "arrival": {
+        "glacial_gale": "BEWEGUNG IM STURM — KRYOSCHNECKEN RÜCKEN AUF DEINE POSITION VOR.",
+        "spore_bloom": "SPORENWOLKE IN BEWEGUNG — ETWAS REITET AUF IHR AUF DICH ZU.",
+        "bio_resin_surge": "KRABBLER AUS DEM HARZ — SIE HABEN DEN ABSTURZ GEROCHEN.",
+        "geothermal_arc": "DER BOGEN HAT SIE GEWECKT — FEINDE IM ANMARSCH.",
+        "subzero_stillness": "ZU STILL. EIN KONTAKT, GROSS, UND ER WEISS, WO DU BIST.",
+        "tracker": "KONTAKT — SCHALTE DIE {count} ANRÜCKENDEN FEINDE AUS",
+        "cleared": "KONTAKT ERLEDIGT. SIE TRUGEN BERGUNGSGUT — DURCHSUCH DIE KÖRPER."
+      },
+      "bounty_chip": "KOPFGELD {progress}/{target} · +{shells} Hülsen",
+      "bounty_chip_ready": "KOPFGELD ERFÜLLT · EXTRAHIEREN FÜR +{shells}"
+    },
+    "events": {
+      "kicker": "OPTIONALE ROUTE",
+      "close": "Zurücktreten",
+      "route_signalled": "OPTIONAL · {name} · {meters} m",
+      "route_bypassing": "UMGEHUNG · {name} · {progress}/{target} s",
+      "route_engaged": "KAMPF · {name}",
+      "response": {
+        "scan": "Scannen",
+        "open": "Öffnen",
+        "leave": "Liegen lassen",
+        "breach": "Aufbrechen",
+        "bypass": "Umgehen"
+      },
+      "reward_recovered": "Geborgen: {name}.",
+      "reward_lost": "Die Komponente hat die Bergung nicht überstanden.",
+      "report_reward": "{drop} geborgen",
+      "report_reward_lost": "Eine Komponente bei der Bergung verloren",
+      "false_distress": {
+        "name": "NOTSIGNAL",
+        "site": "Ein versiegelter Unterschlupf, das Signal pingt noch. Jemand – oder etwas – ist drin.",
+        "signal_clear": "Notsignal, Ring 1. Eine menschliche Stimme in Schleife. Abseits der Schiffsroute – deine Entscheidung.",
+        "signal_faint": "Ein schwaches Notsignal unter dem Frost, Ring 1. Schwer zu lesen. Deine Entscheidung.",
+        "signal_intermittent": "Ein Notsignal, das im Lichtbogenrauschen abreißt, Ring 1. Deine Entscheidung.",
+        "scan_survivor": "Scan: ein Herzschlag, menschlicher Rhythmus. Da drin lebt jemand.",
+        "scan_contaminated": "Scan: Der Herzschlag stimmt nicht – zu viele, zu langsam. Das ist ein Köder.",
+        "rescued": "Ein Überlebender taumelt heraus und drückt dir Bergungsgut in die Hand.",
+        "ambush": "Hinter der Tür liegt ein Nest. Es war ein Köder.",
+        "report_rescued": "Einen Überlebenden aus einem verdächtigen Notsignal geholt",
+        "report_ambush": "Den Hinterhalt am Notsignal überlebt",
+        "report_left": "Das Notsignal unbeantwortet gelassen",
+        "report_empty": "Das Signal war ein Köder, aber nichts kam",
+        "response_scan": "Nimm dir ein paar Sekunden, um zu prüfen, was drin ist.",
+        "response_open": "Öffne die Tür. Ein Überlebender lohnt sich; ein Nest kämpft.",
+        "response_leave": "Geh weiter. Kein Risiko, keine Belohnung."
+      },
+      "unstable_vault": {
+        "name": "BERGUNGSTRESOR",
+        "site": "Ein geborstener Bergungstresor, im Schloss flackert noch Strom.",
+        "signal_clear": "Instabiler Bergungstresor, Ring 1. Etwas Seltenes drin, und das Schloss versagt. Abseits der Schiffsroute – deine Entscheidung.",
+        "breach": "Tresor aufgebrochen – der Alarm weckt die Verteidiger.",
+        "bypass_start": "Umgehung läuft. Bleib dran; deine Luft wird es merken.",
+        "bypassed": "Umgehung abgeschlossen. Der Tresor öffnet sich leise.",
+        "report_bypassed": "Den Bergungstresor per Umgehung geöffnet",
+        "report_breached": "Den Bergungstresor aufgebrochen und gehalten",
+        "report_breached_quiet": "Den Bergungstresor aufgebrochen; keine Verteidiger kamen",
+        "report_left": "Den Bergungstresor verschlossen gelassen",
+        "response_breach": "Nimm die Belohnung sofort; die Verteidiger erwachen.",
+        "response_bypass": "Bleib {seconds} s am Schloss. Kein Kampf, aber dein Sauerstoff sinkt schneller.",
+        "response_leave": "Geh weiter. Kein Risiko, keine Belohnung."
+      }
+    },
+    "relics": {
+      "synergy": {
+        "cryo_shatter": "Kryo-Zersplitterung",
+        "bio_predator": "Bio-Raubtier"
+      },
+      "cryo_rime": {
+        "name": "Kryo-Raureif-Injektor",
+        "description": "Schüsse frieren Feinde ein und verlangsamen ihr Bewegungstempo."
+      },
+      "shatter_engine": {
+        "name": "Zersplitterungs-Motor",
+        "description": "Das Besiegen eingefrorener Feinde löst eine Eissplitter-Nova aus."
+      },
+      "caustic_payload": {
+        "name": "Ätzende Sporennutzlast",
+        "description": "Schüsse verursachen Biokorrosion mit Schaden über Zeit."
+      },
+      "bio_vampirism": {
+        "name": "Bio-Vampirische Membran",
+        "description": "Das Töten von Bio-Feinden stellt O₂-Werte und Anzugbatterie wieder her."
+      }
+    },
+    "cache": {
+      "title": "HOCHRISIKO-BELOHNUNGSCACHE",
+      "preview": "ENTHÄLT: {dropName}",
+      "risk_cost": "EINSATZKOSTEN: {cost}",
+      "open_prompt": "CACHE AUFBRECHEN [F]",
+      "walk_away": "WEGGEHEN",
+      "cost": {
+        "escalated_wave": "ESKALIERTE FEINDWELLE",
+        "o2_siphon": "25% O₂-ENTZUG",
+        "lockdown": "12s ABRIEGELUNG"
+      },
+      "report": {
+        "opened": "Hochrisiko-Belohnungscache aufgebrochen ({drop})"
+      }
+    },
+    "death": {
+      "cause": {
+        "enemy": "Getötet durch {enemy}",
+        "projectile": "Durch feindliches Feuer getötet",
+        "boss_attack": "Durch einen Boss-Angriff getötet",
+        "o2": "Erstickt – dem Anzug ging der Sauerstoff aus",
+        "fall": "In eine Schlucht gestürzt",
+        "hazard": "Durch giftigen Boden getötet",
+        "turret": "Durch ein Lagergeschütz getötet",
+        "backlash": "Durch den Rückschlag der Königinnenmilch getötet",
+        "ship": "Das Schiff wurde zerstört",
+        "squad": "Der ganze Trupp ist gefallen",
+        "abort": "Mission abgebrochen",
+        "unknown": "Todesursache nicht erfasst"
+      },
+      "enemy": {
+        "cybersnail": "Cyberschnecke",
+        "cryosnail": "Kryoschnecke",
+        "sporesnail": "Sporenschnecke",
+        "sentinel": "Wächter",
+        "crawler": "Bruchkriecher",
+        "alien_proto_crawler": "Proto-Kriecher",
+        "alien_proto_spitter": "Proto-Spucker",
+        "mycelium_stalker": "Myzel-Pirscher",
+        "bio_charger": "Bio-Stürmer",
+        "spore_mortar": "Sporenmörser",
+        "fungal_spore_vent": "Sporenschlot",
+        "boss_cybersnail": "den Cyberschnecken-Boss",
+        "boss_cryosnail": "den Kryoschnecken-Boss",
+        "boss_sporesnail": "den Sporenschnecken-Boss",
+        "boss_corrupted_scout": "den verderbten Scout",
+        "boss_corrupted_tank": "den verderbten Tank",
+        "boss_corrupted_engineer": "den verderbten Engineer",
+        "boss_queen": "die Königin"
+      },
+      "build": {
+        "cryo_shatter": "Build: Kryo-Splitter {count}× ausgelöst, {damage} Schaden",
+        "bio_predator": "Build: Bio-Räuber {count}× ausgelöst, {o2}% O₂ und {hearts} Herzen wiederhergestellt",
+        "equipped": "Build: {drops} (keine Synergie ausgelöst)",
+        "none": "Build: keine Feld-Upgrades in diesem Einsatz"
+      },
+      "field": {
+        "black_box": "Im Feld zurückgelassen: {missing} – Black Box {meters} m vom Schiff entfernt",
+        "black_box_empty": "Im Feld wurde nichts zurückgelassen"
+      },
+      "next": {
+        "recover_black_box": "Nächster Schritt: Hol die Black Box ({meters} m entfernt), bevor ein weiterer Tod sie ersetzt",
+        "build_goal": "Nächster Schritt: Baue {goal} an der Schiffskonsole",
+        "follow_lead": "Nächster Schritt: Folge der Spur – {label}",
+        "redeploy": "Nächster Schritt: erneut einsetzen"
       }
     }
   },

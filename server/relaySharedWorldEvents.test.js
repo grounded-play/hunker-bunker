@@ -87,7 +87,8 @@ describe('shared world events', () => {
         for (let i = 0; i < 40; i += 1) host.emit('worldEvent', { event: `spam-${i}` });
         await new Promise((r) => setTimeout(r, 500));
         expect(seen.length).toBeGreaterThan(0);
-        expect(seen.length).toBeLessThanOrEqual(8);
+        // 20 state beats per second (raised from 8: a Tank slam breaks several walls at once).
+        expect(seen.length).toBeLessThanOrEqual(20);
     });
 });
 
@@ -119,5 +120,28 @@ describe('friendly-fire nudge', () => {
         const noDir = waitForEvent(guest, 'playerNudged', 400);
         host.emit('playerNudge', { targetId: guest.id });
         expect(await noDir).toBeNull();
+    });
+});
+
+describe('world event budgets', () => {
+    // 2026-09-24 QA: the host streams every enemy projectile through the same
+    // channel. With one shared 8/s budget a busy fight could make the relay
+    // silently drop a death or a power-up drop.
+    it('still relays a death after a burst of projectiles', async () => {
+        const seen = [];
+        guest.on('worldEventBroadcast', (payload) => seen.push(payload.event));
+        for (let i = 0; i < 20; i += 1) host.emit('worldEvent', { event: 'enemy-projectile-spawned', detail: { x: i } });
+        host.emit('worldEvent', { event: 'player-died', detail: { playerId: host.id, seq: 1 } });
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        expect(seen.filter((event) => event === 'enemy-projectile-spawned')).toHaveLength(20);
+        expect(seen).toContain('player-died');
+    });
+
+    it('keeps the state budget for state events', async () => {
+        const seen = [];
+        guest.on('worldEventBroadcast', (payload) => seen.push(payload.event));
+        for (let i = 0; i < 30; i += 1) host.emit('worldEvent', { event: 'wall-destroyed', detail: { worldX: i, worldZ: 0 } });
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        expect(seen).toHaveLength(20);
     });
 });

@@ -1,3 +1,4 @@
+import { EXPEDITION_EVENT_IDS, selectDeploymentEvent } from './expeditionEvents.js';
 import { mixRunEntropy } from './runEntropy.js';
 
 export const EXPEDITION_CONDITIONS = Object.freeze([
@@ -221,8 +222,33 @@ export function createExpeditionProfile(campaignSeed, expeditionIndex = 0) {
         bounty,
         threatIndex,
         obstacleKey,
+        eventId: selectDeploymentEvent({ expeditionSeed: seed }),
         title: `EXPEDITION ${normIndex + 1} — ${condition.name.toUpperCase()}`,
         briefing: `${condition.tagline} · THREAT LEVEL ${threatIndex}`
+    };
+}
+
+/**
+ * The next deployment's profile, given the one before it. The seed still
+ * decides, but a condition that would repeat the previous deployment's is
+ * moved on (the Sprint 46 probe saw the same weather twice running in two of
+ * three campaigns), and the event never repeats. Saved profiles keep what was
+ * chosen (normalizeExpeditionProfile).
+ */
+export function continueExpeditionProfile(campaignSeed, expeditionIndex, previous = null) {
+    const profile = createExpeditionProfile(campaignSeed, expeditionIndex);
+    let condition = profile.condition;
+    if (previous?.condition?.id && previous.condition.id === condition.id) {
+        const index = EXPEDITION_CONDITIONS.indexOf(condition);
+        const shift = 1 + (profile.expeditionSeed % (EXPEDITION_CONDITIONS.length - 1));
+        condition = EXPEDITION_CONDITIONS[(index + shift) % EXPEDITION_CONDITIONS.length];
+    }
+    return {
+        ...profile,
+        condition,
+        eventId: selectDeploymentEvent({ expeditionSeed: profile.expeditionSeed, previousEventId: previous?.eventId ?? null }),
+        title: `EXPEDITION ${profile.expeditionIndex + 1} — ${condition.name.toUpperCase()}`,
+        briefing: `${condition.tagline} · THREAT LEVEL ${profile.threatIndex}`
     };
 }
 
@@ -240,6 +266,7 @@ export function normalizeExpeditionProfile(raw, campaignSeed, expeditionIndex) {
         ...generated,
         condition,
         bounty,
+        eventId: EXPEDITION_EVENT_IDS.includes(raw.eventId) ? raw.eventId : generated.eventId,
         title: `EXPEDITION ${generated.expeditionIndex + 1} — ${condition.name.toUpperCase()}`,
         briefing: `${condition.tagline} · THREAT LEVEL ${generated.threatIndex}`
     };

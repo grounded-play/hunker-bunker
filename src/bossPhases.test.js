@@ -8,6 +8,9 @@ import {
     QUEEN_FIGHT_DEF,
     QUEEN_PHASE_LINES,
     SPORESNAIL_FIGHT_DEF,
+    CYBERSNAIL_FIGHT_DEF,
+    CRYO_BOSS_FIGHT_DEF,
+    BOSS_PHASE_DEFS,
     createEnemyStaggerState,
     isStaggered,
     applyStaggerDamage,
@@ -242,6 +245,52 @@ describe('the sporesnail def (Sprint 22 B1)', () => {
             expect(fight.defeated, `damagePerShot=${damagePerShot} finalHp=${fight.hp}`).toBe(true);
             expect(elapsed).toBeLessThanOrEqual(300);
         }
+    });
+});
+
+describe('Sprint 47 milestone boss conversions', () => {
+    it('registers both legacy flat bosses in the phase catalog', () => {
+        expect(BOSS_PHASE_DEFS.boss_cybersnail).toBe(CYBERSNAIL_FIGHT_DEF);
+        expect(BOSS_PHASE_DEFS.boss_cryosnail).toBe(CRYO_BOSS_FIGHT_DEF);
+    });
+
+    it('telegraphs Cybersnail volleys and opens its vent after every third volley', () => {
+        const fight = createBossFight(CYBERSNAIL_FIGHT_DEF);
+        const events = drain(fight, 17, 0.05);
+        const telegraphs = events.filter((event) => event.type === 'attack-telegraph');
+        const attacks = events.filter((event) => event.type === 'attack');
+        expect(telegraphs.length).toBeGreaterThanOrEqual(3);
+        expect(attacks.length).toBeGreaterThanOrEqual(3);
+        expect(events.some((event) => event.type === 'weakpoint-open')).toBe(true);
+        expect(events.indexOf(telegraphs[0])).toBeLessThan(events.indexOf(attacks[0]));
+    });
+
+    it('shatters the Cybersnail carapace into a faster EMP/add phase', () => {
+        const fight = createBossFight(CYBERSNAIL_FIGHT_DEF);
+        fight.hp = 7;
+        const events = tickBossFight(fight, 0.1);
+        expect(currentPhase(fight)).toMatchObject({
+            key: 'overdrive',
+            attack: 'radial_emp',
+            mechanic: { kind: 'carapace-shattered', speedMultiplier: 1.4 }
+        });
+        expect(events).toContainEqual(expect.objectContaining({ type: 'phase', phase: 'overdrive' }));
+        expect(applyBossDamage(fight, 4)).toBe(3);
+    });
+
+    it('changes Cryosnail arena rules to frozen pathways in deep freeze', () => {
+        const fight = createBossFight(CRYO_BOSS_FIGHT_DEF);
+        fight.hp = 23;
+        const events = tickBossFight(fight, 0.1);
+        expect(currentPhase(fight)).toMatchObject({
+            key: 'deep-freeze',
+            mechanic: { kind: 'frozen-pathways', patchEvery: 1.25 }
+        });
+        expect(events).toContainEqual(expect.objectContaining({
+            type: 'phase',
+            phase: 'deep-freeze',
+            mechanic: expect.objectContaining({ kind: 'frozen-pathways' })
+        }));
     });
 });
 

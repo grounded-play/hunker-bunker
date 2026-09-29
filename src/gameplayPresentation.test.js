@@ -25,8 +25,7 @@ describe('gameplay focus policy', () => {
 
     it.each([
         { performanceProfile: 'gameplay', cameraMode: 'isometric' },
-        { performanceProfile: 'gameplay', cameraMode: 'third-person' },
-        { performanceProfile: 'gameplay', cameraMode: 'third-person', adaptiveGameplayPerformanceMode: true }
+        { performanceProfile: 'gameplay', cameraMode: 'third-person' }
     ])('renders through the composer when %j', (state) => {
         const game = { ...state, renderer: { render: vi.fn() }, composer: { render: vi.fn() }, getPerformanceDiagnosticsSnapshot: () => ({}) };
         ThreeGame.prototype.renderWithPerf.call(game);

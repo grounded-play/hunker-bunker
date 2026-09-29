@@ -1,0 +1,51 @@
+
+Running 9 tests using 1 worker
+
+  ✓  1 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › after slice seed 31337 SCOUT (4.6m)
+  ✓  2 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › after slice seed 31337 TANK (3.1m)
+  ✓  3 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › after slice seed 31337 ENGINEER (2.9m)
+  ✓  4 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › after slice seed 99991 SCOUT (3.5m)
+  ✓  5 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › after slice seed 99991 TANK (3.5m)
+  ✓  6 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › after slice seed 99991 ENGINEER (3.4m)
+  ✓  7 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › after slice seed 5150 SCOUT (3.3m)
+  ✓  8 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › after slice seed 5150 TANK (3.1m)
+  ✘  9 [chromium] › tests/e2e/probes/slice.spec.js:35:9 › after slice seed 5150 ENGINEER (26.8m)
+
+
+  1) [chromium] › tests/e2e/probes/slice.spec.js:35:9 › after slice seed 5150 ENGINEER ─────────────
+
+    Test timeout of 1590000ms exceeded.
+
+    Error: locator.waitFor: Target page, context or browser has been closed
+
+       at helpers.js:87
+
+      85 |         await newRunBtn.click().catch(() => {});
+      86 |     }
+    > 87 |     await page.locator('#start-game').waitFor({ state: 'visible', timeout: 15_000 });
+         |                                       ^
+      88 | }
+      89 |
+      90 | // Drive the current production run-start flow all the way to a visible,
+        at bootToOperatorMenu (/home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/helpers.js:87:39)
+        at /home/caveman/Desktop/icecave/hunker-bunker/tests/e2e/probes/slice.spec.js:47:13
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../../../../tmp/claude-1001/-home-caveman-Desktop-icecave-hunker-bunker/528f809a-a246-4358-b2ca-86835c191e9d/scratchpad/test-results-after/probes-slice-after-slice-seed-5150-ENGINEER-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../../../../tmp/claude-1001/-home-caveman-Desktop-icecave-hunker-bunker/528f809a-a246-4358-b2ca-86835c191e9d/scratchpad/test-results-after/probes-slice-after-slice-seed-5150-ENGINEER-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../../../../tmp/claude-1001/-home-caveman-Desktop-icecave-hunker-bunker/528f809a-a246-4358-b2ca-86835c191e9d/scratchpad/test-results-after/probes-slice-after-slice-seed-5150-ENGINEER-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../../../../tmp/claude-1001/-home-caveman-Desktop-icecave-hunker-bunker/528f809a-a246-4358-b2ca-86835c191e9d/scratchpad/test-results-after/probes-slice-after-slice-seed-5150-ENGINEER-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Slow test file: [chromium] › tests/e2e/probes/slice.spec.js (54.0m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  1 failed
+    [chromium] › tests/e2e/probes/slice.spec.js:35:9 › after slice seed 5150 ENGINEER ──────────────
+  8 passed (54.3m)

@@ -1,0 +1,65 @@
+{
+ "frames": 90,
+ "matChangedPerFrame": 60.144444444444446,
+ "texChangedPerFrame": 0.022222222222222223,
+ "lightChanges": 0,
+ "lightSets": {
+  "{\"point\":23,\"spot\":1,\"dir\":1,\"shadow\":1,\"ambient\":1,\"hemi\":1}": 90
+ },
+ "matWho": [
+  [
+   "MeshBasicMaterial:?",
+   1511
+  ],
+  [
+   "MeshBasicMaterial:scatter_coolant_puddle",
+   1354
+  ],
+  [
+   "MeshBasicMaterial:decal_footprints_mud",
+   1095
+  ],
+  [
+   "MeshBasicMaterial:decal_oil_spill_patch",
+   828
+  ],
+  [
+   "MeshBasicMaterial:scatter_bolts",
+   178
+  ],
+  [
+   "MeshStandardMaterial:decal_bullet_holes",
+   89
+  ],
+  [
+   "MeshStandardMaterial:decal_biohazard_stencil",
+   89
+  ],
+  [
+   "MeshBasicMaterial:scatter_cable_coil",
+   89
+  ],
+  [
+   "MeshStandardMaterial:decal_claw_scratches",
+   83
+  ],
+  [
+   "MeshBasicMaterial:prop_camp_bedrolls",
+   82
+  ],
+  [
+   "MeshBasicMaterial:ammo",
+   15
+  ]
+ ],
+ "texWho": [
+  [
+   "map:Texture:1024x1024:cryosnail",
+   2
+  ]
+ ],
+ "lastInfo": {
+  "calls": 1,
+  "programs": 129
+ }
+}

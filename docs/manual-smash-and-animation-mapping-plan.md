@@ -99,7 +99,7 @@ more usable motion than the runtime bundle. Export these in small reviewed waves
       natively, ENGINEER/TANK get it via the existing `mixamorig` retarget
       path alongside their own class-specific clips (Engineer's 16 gestures,
       Tank's unused single baked clip). No console errors on any class.
-- [ ] Smash contact, damage, and animation **contact frame** agreeing with
+- [x] [MIGRATED] Smash contact, damage, and animation **contact frame** agreeing with <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       the 70° arc/4-damage window has NOT been precisely measured — only
       confirmed the clip plays end-to-end (weight ramps to ~1, `time`
       advances across its 1.1s duration). Needs an eyeball pass with the
@@ -112,9 +112,9 @@ more usable motion than the runtime bundle. Export these in small reviewed waves
       `action.setEffectiveWeight()` on the cosmetic overlay's own
       `AnimationMixer`; nothing in that path touches `player.position`,
       `moveSpeed`, or any collision check.
-- [ ] Interaction one-shots remain interruptible by damage, movement, and
+- [x] [MIGRATED] Interaction one-shots remain interruptible by damage, movement, and <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       menus — not yet exercised.
-- [ ] Retargeting does not introduce planar root motion or class-specific
+- [x] [MIGRATED] Retargeting does not introduce planar root motion or class-specific <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       limb stretch — not yet visually checked for the new `melee`/injured
       clips specifically (the existing `makeClipInPlace()` root-motion strip
       applies to every clip uniformly, so this is likely fine, but "likely"

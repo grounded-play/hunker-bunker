@@ -90,4 +90,11 @@ describe('leaderboard scoring', () => {
             { name: 'fastest_extraction_ms', score: 2000, scoreMethod: 'KeepBest' }
         ]);
     });
+
+    it('rejects PvP matches, which are not ranked expeditions', () => {
+        const pvp = validateRunScorePayload(basePayload({ multiplayer: { isMultiplayer: true, mode: 'pvp' } }));
+        expect(pvp.ok).toBe(false);
+        expect(pvp.errors).toContain('pvp_run_not_ranked');
+        expect(validateRunScorePayload(basePayload({ multiplayer: { isMultiplayer: true, mode: 'coop' } })).errors).not.toContain('pvp_run_not_ranked');
+    });
 });

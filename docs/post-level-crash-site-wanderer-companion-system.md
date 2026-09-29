@@ -141,4 +141,4 @@ To wire this complete system into the existing codebase, the following component
 - [x] **State Machine & Storage:** Implement `src/wandererSystem.js` with persistence.
 - [x] **3D Follow AI Integration:** Upgrade `threeGame.js` companion pipeline from 2D sprites to 3D GLBs.
 - [x] **Intermission Encounter Modal:** Build Befriend / Chase Off UI (shipped as `src/wandererModal.js`).
-- [ ] **Quest & Unlock Pipeline:** Wire quest completion callbacks to grant permanent skin access in `src/loadout.js`.
+- [x] [MIGRATED] **Quest & Unlock Pipeline:** Wire quest completion callbacks to grant permanent skin access in `src/loadout.js`. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->

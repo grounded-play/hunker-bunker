@@ -44,8 +44,20 @@
     "elite_contact": "SUIT: ELITE CONTACT. REINFORCED HOSTILE — KEEP AN ESCAPE ROUTE."
   },
   "ui": {
+    "encounters": {
+      "locked_crossfire": {
+        "name": "Locked Crossfire"
+      },
+      "bloom_push": {
+        "name": "Bloom Push"
+      },
+      "cold_pincer": {
+        "name": "Cold Pincer"
+      }
+    },
     "menu": {
       "continue": "CONTINUE",
+      "resume_expedition": "RESUME EXPEDITION",
       "switch_class": "SWITCH CLASS",
       "new_run": "NEW RUN",
       "achievements": "ACHIEVEMENTS",
@@ -152,6 +164,9 @@
       "subtitle_size": "SUBTITLE SIZE",
       "subtitle_backdrop": "SUBTITLE BACKGROUND",
       "contrast": "HUD CONTRAST",
+      "camera_shake": "CAMERA SHAKE",
+      "aim_assist": "CONTROLLER AIM ASSIST",
+      "reduced_pressure": "REDUCED PRESSURE MODE",
       "aria_label_settings_categories": "Settings categories",
       "session": "SESSION",
       "audio": "AUDIO",
@@ -214,7 +229,14 @@
       "backdrop_solid": "SOLID",
       "contrast_normal": "NORMAL (DEFAULT)",
       "contrast_high": "HIGH",
-      "contrast_max": "MAXIMUM (NO SCANLINES)"
+      "contrast_max": "MAXIMUM (NO SCANLINES)",
+      "shake_off": "OFF (0%)",
+      "shake_low": "LOW (25%)",
+      "shake_reduced": "REDUCED (50%)",
+      "shake_normal": "NORMAL (100%)",
+      "aim_assist_off": "OFF",
+      "aim_assist_low": "LOW (MAGNETISM ONLY)",
+      "aim_assist_standard": "STANDARD (SNAP + FRICTION)"
     },
     "aria": {
       "language_select": "Game language",
@@ -234,7 +256,9 @@
       "camera_follow": "Third-person camera follow responsiveness",
       "aim_speed": "Right stick aim speed",
       "aim_speed_presets": "Right stick aim speed presets",
-      "callsign_input": "Operator callsign"
+      "callsign_input": "Operator callsign",
+      "camera_shake": "Camera shake intensity",
+      "aim_assist": "Controller aim assistance"
     },
     "armory": {
       "tag": "◈ SUB-TERRAN PRE-MISSION ARMORY // SECTOR ZERO",
@@ -789,6 +813,15 @@
       "cost_300_tech_100_coin": "COST: 300 TECH / 100 COIN",
       "expedition_day": "EXPEDITION DAY",
       "cycle_phase": "CYCLE PHASE",
+      "campaign_state": "CAMPAIGN STATE",
+      "advance_day": "ADVANCE DAY",
+      "advance_status_cot_available": "AVAILABLE AT BUNKER COT",
+      "advance_status_camp_available": "AVAILABLE AT SAFE CAMP",
+      "advance_status_blocked_contract": "BLOCKED — ACTIVE CONTRACT",
+      "advance_status_blocked_unsafe": "BLOCKED — SITE UNSAFE",
+      "advance_status_coop_visitor": "CO-OP VISITOR — LOCAL CAMPAIGN CYCLE LOCKED",
+      "cycle_hold": "CYCLE HOLD — TERMINAL ACTIVE",
+      "cycle_progress_label": "{percent}% OF 24H CYCLE",
       "local_light": "LOCAL LIGHT",
       "next_transition": "NEXT TRANSITION",
       "aria_label_objective_history": "Objective history",
@@ -1349,7 +1382,24 @@
       "alien_hives": "Alien Hives",
       "obedience": "Obedience:",
       "seats_filled": "Seats Filled:",
-      "humanity": "Humanity:"
+      "humanity": "Humanity:",
+      "report": {
+        "title": "◈ EXPEDITION REPORT",
+        "condition": "Condition: {condition}",
+        "bounty_met": "Bounty met — {label} (+{shells} shells banked)",
+        "bounty_missed": "Bounty missed — {label} ({progress}/{target})",
+        "completed": "Completed: {list}",
+        "none_completed": "No objectives completed this deployment",
+        "next_goal_ready": "Next: {goal} is affordable — build it at the ship console",
+        "next_goal_short": "Next: {goal} needs {missing} more",
+        "all_goals": "Every ship goal is built — the Queen waits",
+        "item_settlement": "Settled: {label}",
+        "item_event": "Event: {label}",
+        "item_discovery": "Found: {label}",
+        "item_unlock": "Unlocked: {label}",
+        "item_faction": "Standing: {label}",
+        "item_lead": "Lead: {label}"
+      }
     },
     "ach": {
       "unlocked_kicker": "ACHIEVEMENT UNLOCKED",
@@ -1507,9 +1557,9 @@
         }
       },
       "bounties": {
-        "salvage_run": "Extract 120+ scrap from deep corridors",
+        "salvage_run": "Recover 8 salvage caches",
         "eliminate_elite": "Eliminate a mutated sector stalker",
-        "scout_compound": "Infiltrate and map an outlying compound",
+        "scout_compound": "Map 3 rooms of one outlying compound",
         "clearing_breach": "Smash 6 structural wall dividers"
       },
       "sites": {
@@ -1590,6 +1640,160 @@
         "landmark": "EXTRACTION AIRLOCK",
         "line_objective": "OBJECTIVE COMPLETE. EXTRACTION AIRLOCK ARMED. RETURN TO SHIP.",
         "line_purged": "SECTOR PURGED. EXTRACTION AIRLOCK ACTIVE. RETURN TO SHIP."
+      },
+      "bounty_progress": "BOUNTY — {label} · {progress}/{target} · +{shells} shells",
+      "bounty_ready": "BOUNTY READY — {label} · EXTRACT TO BANK +{shells} SHELLS",
+      "bounty_complete": "BOUNTY MET — {label}. {shells} SHELLS BANKED.",
+      "arrival": {
+        "glacial_gale": "MOVEMENT ON THE GALE — CRYOSNAILS CLOSING ON YOUR POSITION.",
+        "spore_bloom": "SPORE CLOUD MOVING — SOMETHING IS RIDING IT TOWARD YOU.",
+        "bio_resin_surge": "CRAWLERS OUT OF THE RESIN — THEY SMELLED THE CRASH.",
+        "geothermal_arc": "THE ARC WOKE THEM — HOSTILES INBOUND.",
+        "subzero_stillness": "TOO QUIET. ONE CONTACT, BIG, AND IT KNOWS WHERE YOU ARE.",
+        "tracker": "CONTACT — CLEAR THE {count} HOSTILES CLOSING IN",
+        "cleared": "CONTACT CLEARED. THEY WERE CARRYING SALVAGE — CHECK THE BODIES."
+      },
+      "bounty_chip": "BOUNTY {progress}/{target} · +{shells} shells",
+      "bounty_chip_ready": "BOUNTY MET · EXTRACT TO BANK +{shells}"
+    },
+    "events": {
+      "kicker": "OPTIONAL ROUTE",
+      "close": "Step away",
+      "route_signalled": "OPTIONAL · {name} · {meters}m",
+      "route_bypassing": "BYPASS · {name} · {progress}/{target}s",
+      "route_engaged": "FIGHT · {name}",
+      "response": {
+        "scan": "Scan",
+        "open": "Open",
+        "leave": "Leave it",
+        "breach": "Breach",
+        "bypass": "Bypass"
+      },
+      "reward_recovered": "Recovered: {name}.",
+      "reward_lost": "The component did not survive the salvage.",
+      "report_reward": "{drop} recovered",
+      "report_reward_lost": "A component lost in salvage",
+      "false_distress": {
+        "name": "DISTRESS SIGNAL",
+        "site": "A sealed shelter, beacon still pinging. Someone — or something — is inside.",
+        "signal_clear": "Distress beacon, Ring 1. A human voice on loop. Off the ship route — your call.",
+        "signal_faint": "A faint distress beacon under the frost, Ring 1. Hard to read. Your call.",
+        "signal_intermittent": "A distress beacon cutting in and out through the arc noise, Ring 1. Your call.",
+        "scan_survivor": "Scan: one heartbeat, human rhythm. Someone is alive in there.",
+        "scan_contaminated": "Scan: the heartbeat is wrong — too many, too slow. It is bait.",
+        "rescued": "A survivor stumbles out and presses salvage into your hands.",
+        "ambush": "The door opens on a nest. It was bait.",
+        "report_rescued": "Survivor pulled from a false-looking beacon",
+        "report_ambush": "Survived the distress-beacon ambush",
+        "report_left": "Left the distress beacon unanswered",
+        "report_empty": "The beacon was bait, but nothing came",
+        "response_scan": "Take a few seconds to read what is inside.",
+        "response_open": "Open the door. A survivor pays; a nest fights.",
+        "response_leave": "Walk away. No risk, no reward."
+      },
+      "unstable_vault": {
+        "name": "SALVAGE VAULT",
+        "site": "A cracked salvage vault, power still flickering in the lock.",
+        "signal_clear": "Unstable salvage vault, Ring 1. Something rare inside, and the lock is failing. Off the ship route — your call.",
+        "breach": "Vault breached — the alarm wakes the defenders.",
+        "bypass_start": "Bypass running. Stay on it; your air will not like it.",
+        "bypassed": "Bypass complete. The vault opens quietly.",
+        "report_bypassed": "Opened the salvage vault by bypass",
+        "report_breached": "Breached the salvage vault and held it",
+        "report_breached_quiet": "Breached the salvage vault; no defenders answered",
+        "report_left": "Left the salvage vault sealed",
+        "response_breach": "Take the reward now; the defenders wake.",
+        "response_bypass": "Stay {seconds}s at the lock. No fight, but your oxygen drains faster.",
+        "response_leave": "Walk away. No risk, no reward."
+      }
+    },
+    "relics": {
+      "synergy": {
+        "cryo_shatter": "Cryo Shatter",
+        "bio_predator": "Bio Predator"
+      },
+      "cryo_rime": {
+        "name": "Cryo Rime Injector",
+        "description": "Shots freeze enemies and slow their movement speed."
+      },
+      "shatter_engine": {
+        "name": "Shatter Engine",
+        "description": "Defeating frozen hostiles triggers an ice shrapnel nova."
+      },
+      "caustic_payload": {
+        "name": "Caustic Spore Payload",
+        "description": "Shots cause bio-corrosion that ticks damage over time."
+      },
+      "bio_vampirism": {
+        "name": "Bio-Vampiric Membrane",
+        "description": "Slaying bio enemies restores O2 vitals and suit battery."
+      }
+    },
+    "cache": {
+      "title": "HIGH-STAKES REWARD CACHE",
+      "preview": "CONTAINS: {dropName}",
+      "risk_cost": "OPERATIONAL COST: {cost}",
+      "open_prompt": "BREACH CACHE [F]",
+      "walk_away": "WALK AWAY",
+      "cost": {
+        "escalated_wave": "ESCALATED HOSTILE WAVE",
+        "o2_siphon": "25% O₂ SIPHON",
+        "lockdown": "12s CONTAINMENT LOCKDOWN"
+      },
+      "report": {
+        "opened": "Breached High-Stakes Reward Cache ({drop})"
+      }
+    },
+    "death": {
+      "cause": {
+        "enemy": "Killed by {enemy}",
+        "projectile": "Killed by hostile fire",
+        "boss_attack": "Killed by a boss attack",
+        "o2": "Suffocated — the suit ran out of oxygen",
+        "fall": "Fell into a chasm",
+        "hazard": "Killed by toxic ground",
+        "turret": "Killed by a camp turret",
+        "backlash": "Killed by Queen's Milk backlash",
+        "ship": "The ship was destroyed",
+        "squad": "The whole squad went down",
+        "abort": "Mission aborted",
+        "unknown": "Cause of death was not recorded"
+      },
+      "enemy": {
+        "cybersnail": "Cybersnail",
+        "cryosnail": "Cryosnail",
+        "sporesnail": "Sporesnail",
+        "sentinel": "Sentinel",
+        "crawler": "Breach Crawler",
+        "alien_proto_crawler": "Proto-Crawler",
+        "alien_proto_spitter": "Proto-Spitter",
+        "mycelium_stalker": "Mycelium Stalker",
+        "bio_charger": "Bio-Charger",
+        "spore_mortar": "Spore Mortar",
+        "fungal_spore_vent": "Spore Vent",
+        "boss_cybersnail": "the Cybersnail boss",
+        "boss_cryosnail": "the Cryosnail boss",
+        "boss_sporesnail": "the Sporesnail boss",
+        "boss_corrupted_scout": "the corrupted Scout",
+        "boss_corrupted_tank": "the corrupted Tank",
+        "boss_corrupted_engineer": "the corrupted Engineer",
+        "boss_queen": "the Queen"
+      },
+      "build": {
+        "cryo_shatter": "Build: Cryo Shatter fired {count}× for {damage} damage",
+        "bio_predator": "Build: Bio Predator fired {count}×, restoring {o2}% O₂ and {hearts} hearts",
+        "equipped": "Build: {drops} (no synergy fired)",
+        "none": "Build: no field upgrades this deployment"
+      },
+      "field": {
+        "black_box": "Left in the field: {missing} — Black Box {meters} m from the ship",
+        "black_box_empty": "Nothing was left in the field"
+      },
+      "next": {
+        "recover_black_box": "Next action: recover the Black Box ({meters} m out) before another death replaces it",
+        "build_goal": "Next action: build {goal} at the ship console",
+        "follow_lead": "Next action: follow the lead — {label}",
+        "redeploy": "Next action: redeploy"
       }
     }
   },

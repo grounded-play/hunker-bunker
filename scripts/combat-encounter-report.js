@@ -16,7 +16,8 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ENEMY_STATS } from '../src/data/enemies.js';
-import { applyBossDamage, createBossFight, QUEEN_FIGHT_DEF, SPORESNAIL_FIGHT_DEF, tickBossFight } from '../src/bossPhases.js';
+import { applyBossDamage, BOSS_PHASE_DEFS, createBossFight, QUEEN_FIGHT_DEF, tickBossFight } from '../src/bossPhases.js';
+import { ENCOUNTER_RECIPES, encounterRoleCoverage, simulateEncounterPriority } from '../src/encounterRecipes.js';
 import { CLASS_STATS, O2_DRAIN_RATE_PCT_PER_SEC, WEAPON_AMMO_REFILL_INTERVAL, WEAPON_FIRE_COOLDOWN } from '../src/threeGame.js';
 import { CLASS_AMMO_CAPACITY, STARTING_RUN_AMMO } from '../src/data/ammoEconomy.js';
 
@@ -60,7 +61,7 @@ export function worstCaseAmmoExhaustionRecoverySeconds(encounterId, className) {
     return deficit * WEAPON_AMMO_REFILL_INTERVAL;
 }
 
-const PHASE_DEFS = { queen: QUEEN_FIGHT_DEF, boss_sporesnail: SPORESNAIL_FIGHT_DEF };
+const PHASE_DEFS = BOSS_PHASE_DEFS;
 
 /** True for ids with a real entry in bossPhases.js. */
 export function hasPhaseMechanic(encounterId) {
@@ -142,13 +143,34 @@ export function gatedBossPhaseExtensionCandidates() {
     const phaselessBosses = BOSS_IDS.filter((id) => !hasPhaseMechanic(id));
     return {
         gateMet: true,
-        convertedThisPass: ['boss_sporesnail'],
-        reason: 'boss_sporesnail converted onto the phase framework based on HP/TTK/no-direct-damage data '
-            + '(see SPORESNAIL_FIGHT_DEF in src/bossPhases.js). Remaining phase-less bosses show no comparably '
-            + 'extreme profile -- extending any of them further would be an arbitrary pick without the human '
-            + 'combat-feel pass this table is instrumentation for, not a replacement for.',
+        convertedThisPass: ['boss_sporesnail', 'boss_cybersnail', 'boss_cryosnail'],
+        reason: 'boss_sporesnail retains its measured Sprint 22 conversion; Sprint 47 adds boss_cybersnail '
+            + '(vent-window carapace -> EMP overdrive) and boss_cryosnail (glacial aura -> frozen pathways). '
+            + 'The remaining corrupted-operator bosses stay phase-less pending a separate combat-feel case.',
         phaselessBosses
     };
+}
+
+export function buildRoleCoverageReport() {
+    const coverage = encounterRoleCoverage();
+    return Object.entries(coverage).map(([role, recipeIds]) => ({
+        role,
+        recipeIds,
+        covered: recipeIds.length > 0
+    }));
+}
+
+export function buildFormationPriorityTable() {
+    const rows = [];
+    for (const recipe of Object.values(ENCOUNTER_RECIPES)) {
+        const roles = [...new Set(recipe.members.map((member) => member.role))];
+        for (const className of CLASS_NAMES) {
+            for (const priorityRole of roles) {
+                rows.push(simulateEncounterPriority(recipe.id, priorityRole, { playerClass: className }));
+            }
+        }
+    }
+    return rows;
 }
 
 function formatRow(row) {
@@ -175,6 +197,16 @@ function main() {
     console.log(`[combat-encounter-report] converted this pass: ${gate.convertedThisPass?.join(', ') ?? 'none'}`);
     console.log(`[combat-encounter-report] ${gate.reason}`);
     console.log(`[combat-encounter-report] remaining phase-less bosses: ${gate.phaselessBosses.join(', ')}`);
+
+    console.log('\n[combat-encounter-report] coordinated-role coverage:');
+    for (const row of buildRoleCoverageReport()) {
+        console.log(`[combat-encounter-report] ${row.role.padEnd(10)} ${row.covered ? 'COVERED' : 'MISSING'} recipes=${row.recipeIds.join(',') || 'none'}`);
+    }
+
+    console.log('\n[combat-encounter-report] formation-priority probe (fixed aim/cadence; modeled, not playtest data):');
+    for (const row of buildFormationPriorityTable()) {
+        console.log(`[combat-encounter-report] ${row.recipeId.padEnd(18)} ${row.playerClass.padEnd(9)} priority=${row.priorityRole.padEnd(10)} shots=${String(row.shots).padStart(3)} clear=${row.clearTimeSeconds.toFixed(2)}s`);
+    }
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();

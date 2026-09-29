@@ -5,6 +5,7 @@ import {
     EXPEDITION_CONDITION_EFFECTS,
     deriveExpeditionSeed,
     createExpeditionProfile,
+    continueExpeditionProfile,
     normalizeExpeditionProfile,
     getExpeditionEffects,
     composeExpeditionIntoLoadoutMods,
@@ -287,5 +288,38 @@ describe('expeditionSystem', () => {
         expect(dimmest).toBeLessThan(0.8);
         expect(expeditionAtmosphere('geothermal_arc', 3.3)).toEqual(expeditionAtmosphere('geothermal_arc', 3.3));
         expect(expeditionAtmosphere(undefined, 0)).toBeNull();
+    });
+});
+
+describe('continueExpeditionProfile — repetition guard', () => {
+    it('never repeats the previous condition or event across a campaign', () => {
+        for (const campaignSeed of [1, 7, 42, 1001, 99991, 31337]) {
+            let previous = null;
+            for (let index = 1; index <= 12; index += 1) {
+                const profile = continueExpeditionProfile(campaignSeed, index, previous);
+                if (previous) {
+                    expect(profile.condition.id).not.toBe(previous.condition.id);
+                    expect(profile.eventId).not.toBe(previous.eventId);
+                }
+                expect(EXPEDITION_CONDITIONS).toContain(profile.condition);
+                previous = profile;
+            }
+        }
+    });
+
+    it('is deterministic and leaves a non-repeating roll untouched', () => {
+        const base = createExpeditionProfile(42, 3);
+        expect(continueExpeditionProfile(42, 3, null).condition.id).toBe(base.condition.id);
+        expect(continueExpeditionProfile(42, 3, { condition: { id: 'other' } })).toEqual(continueExpeditionProfile(42, 3, { condition: { id: 'other' } }));
+        const forced = continueExpeditionProfile(42, 3, { condition: base.condition });
+        expect(forced.condition.id).not.toBe(base.condition.id);
+        expect(forced.title).toContain(forced.condition.name.toUpperCase());
+    });
+
+    it('keeps a saved event through normalization', () => {
+        const profile = continueExpeditionProfile(42, 3, { eventId: 'false_distress' });
+        expect(profile.eventId).toBe('unstable_vault');
+        expect(normalizeExpeditionProfile(profile, 42, 3).eventId).toBe('unstable_vault');
+        expect(['false_distress', 'unstable_vault']).toContain(normalizeExpeditionProfile({ ...profile, eventId: 'bogus' }, 42, 3).eventId);
     });
 });

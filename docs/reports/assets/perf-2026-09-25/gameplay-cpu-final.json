@@ -1,0 +1,633 @@
+{
+ "label": "final",
+ "seconds": 21.51,
+ "fps": 0.6973500697350069,
+ "rafFrames": 15,
+ "profiler": {
+  "frames": 15,
+  "totalMs": 577.8,
+  "sections": [
+   {
+    "name": "renderFrame",
+    "calls": 15,
+    "totalMs": 370.7,
+    "maxMs": 77.4,
+    "avgMsPerFrame": 24.71
+   },
+   {
+    "name": "syncVisibleChunks",
+    "calls": 9,
+    "totalMs": 66.4,
+    "maxMs": 62.1,
+    "avgMsPerFrame": 4.43
+   },
+   {
+    "name": "updateScatter",
+    "calls": 9,
+    "totalMs": 50.5,
+    "maxMs": 15.4,
+    "avgMsPerFrame": 3.37
+   },
+   {
+    "name": "updatePlayer",
+    "calls": 9,
+    "totalMs": 33.2,
+    "maxMs": 8.5,
+    "avgMsPerFrame": 2.21
+   },
+   {
+    "name": "updateDayNightCycle",
+    "calls": 9,
+    "totalMs": 13.3,
+    "maxMs": 2,
+    "avgMsPerFrame": 0.89
+   },
+   {
+    "name": "updatePickups",
+    "calls": 9,
+    "totalMs": 11.9,
+    "maxMs": 1.8,
+    "avgMsPerFrame": 0.79
+   },
+   {
+    "name": "updateCamera",
+    "calls": 9,
+    "totalMs": 5.6,
+    "maxMs": 3.1,
+    "avgMsPerFrame": 0.37
+   },
+   {
+    "name": "updateWeather",
+    "calls": 9,
+    "totalMs": 5.1,
+    "maxMs": 0.8,
+    "avgMsPerFrame": 0.34
+   },
+   {
+    "name": "updateTransientEffects",
+    "calls": 9,
+    "totalMs": 1.8,
+    "maxMs": 0.5,
+    "avgMsPerFrame": 0.12
+   },
+   {
+    "name": "updateConsoles",
+    "calls": 9,
+    "totalMs": 1.6,
+    "maxMs": 0.3,
+    "avgMsPerFrame": 0.11
+   },
+   {
+    "name": "updateCamps",
+    "calls": 9,
+    "totalMs": 1.5,
+    "maxMs": 0.3,
+    "avgMsPerFrame": 0.1
+   },
+   {
+    "name": "updateSky",
+    "calls": 9,
+    "totalMs": 1.4,
+    "maxMs": 0.4,
+    "avgMsPerFrame": 0.09
+   },
+   {
+    "name": "updateObjectivePackage",
+    "calls": 9,
+    "totalMs": 1.3,
+    "maxMs": 0.3,
+    "avgMsPerFrame": 0.09
+   },
+   {
+    "name": "updateVitals",
+    "calls": 9,
+    "totalMs": 1.1,
+    "maxMs": 0.2,
+    "avgMsPerFrame": 0.07
+   },
+   {
+    "name": "updateLoreTerminals",
+    "calls": 9,
+    "totalMs": 0.8,
+    "maxMs": 0.3,
+    "avgMsPerFrame": 0.05
+   },
+   {
+    "name": "updateHiddenPlayerMarker",
+    "calls": 9,
+    "totalMs": 0.7,
+    "maxMs": 0.2,
+    "avgMsPerFrame": 0.05
+   },
+   {
+    "name": "updateHiveSites",
+    "calls": 9,
+    "totalMs": 0.6,
+    "maxMs": 0.1,
+    "avgMsPerFrame": 0.04
+   },
+   {
+    "name": "updateLoopStep",
+    "calls": 9,
+    "totalMs": 0.6,
+    "maxMs": 0.1,
+    "avgMsPerFrame": 0.04
+   },
+   {
+    "name": "updateProceduralDoors",
+    "calls": 9,
+    "totalMs": 0.6,
+    "maxMs": 0.2,
+    "avgMsPerFrame": 0.04
+   },
+   {
+    "name": "updateBiomeEnvironment",
+    "calls": 9,
+    "totalMs": 0.3,
+    "maxMs": 0.1,
+    "avgMsPerFrame": 0.02
+   },
+   {
+    "name": "updateTacticalMapDiscovery",
+    "calls": 9,
+    "totalMs": 0.2,
+    "maxMs": 0.1,
+    "avgMsPerFrame": 0.01
+   },
+   {
+    "name": "updateAct2",
+    "calls": 9,
+    "totalMs": 0.2,
+    "maxMs": 0.2,
+    "avgMsPerFrame": 0.01
+   },
+   {
+    "name": "updateHazardZoneDamage",
+    "calls": 9,
+    "totalMs": 0.2,
+    "maxMs": 0.1,
+    "avgMsPerFrame": 0.01
+   },
+   {
+    "name": "updateBiomeAtmosphere",
+    "calls": 9,
+    "totalMs": 0.2,
+    "maxMs": 0.1,
+    "avgMsPerFrame": 0.01
+   },
+   {
+    "name": "updateProjectiles",
+    "calls": 9,
+    "totalMs": 0.1,
+    "maxMs": 0.1,
+    "avgMsPerFrame": 0.01
+   },
+   {
+    "name": "updateCorpses",
+    "calls": 9,
+    "totalMs": 0.1,
+    "maxMs": 0.1,
+    "avgMsPerFrame": 0.01
+   },
+   {
+    "name": "updateLoreDrops",
+    "calls": 9,
+    "totalMs": 0.1,
+    "maxMs": 0.1,
+    "avgMsPerFrame": 0.01
+   },
+   {
+    "name": "updateMayorTinaEncounter",
+    "calls": 9,
+    "totalMs": 0.1,
+    "maxMs": 0.1,
+    "avgMsPerFrame": 0.01
+   },
+   {
+    "name": "updateOvernightCreep",
+    "calls": 9,
+    "totalMs": 0.1,
+    "maxMs": 0.1,
+    "avgMsPerFrame": 0.01
+   },
+   {
+    "name": "updateShipVisualState",
+    "calls": 9,
+    "totalMs": 0.1,
+    "maxMs": 0.1,
+    "avgMsPerFrame": 0.01
+   },
+   {
+    "name": "updateRadarScans",
+    "calls": 9,
+    "totalMs": 0.1,
+    "maxMs": 0.1,
+    "avgMsPerFrame": 0.01
+   },
+   {
+    "name": "updateBunkerBlastDoor",
+    "calls": 9,
+    "totalMs": 0.1,
+    "maxMs": 0.1,
+    "avgMsPerFrame": 0.01
+   },
+   {
+    "name": "updateBaseDefenseTurret",
+    "calls": 9,
+    "totalMs": 0.1,
+    "maxMs": 0.1,
+    "avgMsPerFrame": 0.01
+   },
+   {
+    "name": "updateSprintState",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updateTankRegen",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updateEngineerTurret",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updateMultiplayer",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updateWeaponState",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updatePortalPlanePresentation",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updateCompanions",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updateEnvLightBudget",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updateO2StartupSequence",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updateGoalModuleRise",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updateRunCheckpoint",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updateTerminalClockTick",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updateBuildSiteBeacon",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "baseLights.update",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "foundry.update",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updateFoundryPrompt",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updateCaveEntrance",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updateInfectionPressure",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updateCampQuest",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updateBlackBoxMarker",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updateRunModifierEffects",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   },
+   {
+    "name": "updateBunkerDirector",
+    "calls": 9,
+    "totalMs": 0,
+    "maxMs": 0,
+    "avgMsPerFrame": 0
+   }
+  ]
+ },
+ "drawCalls": 1,
+ "scatter": 884,
+ "chunks": 13,
+ "adaptive": true,
+ "post": true,
+ "census": {
+  "shadowCasters": 238,
+  "total": 3473,
+  "top": [
+   [
+    "mesh:?",
+    945
+   ],
+   [
+    "mesh:ammo",
+    497
+   ],
+   [
+    "mesh:wall",
+    463
+   ],
+   [
+    "mesh:health",
+    222
+   ],
+   [
+    "instanced:?",
+    178
+   ],
+   [
+    "sprite:prop_specimen_tank",
+    132
+   ],
+   [
+    "mesh:weapon",
+    126
+   ],
+   [
+    "sprite:prop_conduit_hub",
+    111
+   ],
+   [
+    "sprite:prop_bunker_supplies",
+    100
+   ],
+   [
+    "sprite:prop_cave_bones",
+    89
+   ],
+   [
+    "sprite:prop_cave_lichen",
+    75
+   ],
+   [
+    "mesh:node_0",
+    67
+   ],
+   [
+    "mesh:coin",
+    54
+   ],
+   [
+    "sprite:?",
+    45
+   ],
+   [
+    "sprite:prop_cyber_junction",
+    40
+   ],
+   [
+    "sprite:prop_biomech_pillar_left",
+    36
+   ],
+   [
+    "sprite:prop_biomech_pillar_right",
+    36
+   ],
+   [
+    "sprite:prop_camp_crates",
+    31
+   ],
+   [
+    "sprite:prop_camp_sandbags",
+    27
+   ],
+   [
+    "mesh:decal_hazard_stripes",
+    17
+   ],
+   [
+    "mesh:decal_footprints_mud",
+    16
+   ],
+   [
+    "mesh:scatter_coolant_puddle",
+    16
+   ],
+   [
+    "instanced:wall",
+    13
+   ],
+   [
+    "mesh:decal_oil_spill_patch",
+    12
+   ],
+   [
+    "mesh:decal_claw_scratches",
+    10
+   ],
+   [
+    "sprite:scatter_ice_stalagmite",
+    10
+   ],
+   [
+    "mesh:skyRig",
+    8
+   ],
+   [
+    "sprite:scatter_cryo_icicle",
+    8
+   ],
+   [
+    "sprite:bio_spores_amber",
+    7
+   ],
+   [
+    "sprite:scatter_cryo_shards",
+    5
+   ],
+   [
+    "sprite:prop_cave_spores",
+    5
+   ],
+   [
+    "mesh:skyBillboards",
+    4
+   ],
+   [
+    "sprite:bunker_junk",
+    4
+   ],
+   [
+    "sprite:bio_spores",
+    4
+   ],
+   [
+    "sprite:body_human_frozen_suit",
+    4
+   ],
+   [
+    "sprite:prop_cave_webs",
+    4
+   ],
+   [
+    "skinned:node_0",
+    4
+   ],
+   [
+    "mesh:scatter_cable_coil",
+    3
+   ],
+   [
+    "sprite:scatter_gravel",
+    3
+   ],
+   [
+    "sprite:body_empty_exosuit",
+    3
+   ]
+  ]
+ },
+ "cpu": {
+  "totalMs": 21710,
+  "top": [
+   " 20734ms  95.5% (program) :0",
+   "   129ms   0.6% visitNode :274",
+   "    90ms   0.4% (garbage collector) :0",
+   "    66ms   0.3% texSubImage2D :0",
+   "    43ms   0.2% getClientRects :0",
+   "    32ms   0.1% querySelector :0",
+   "    31ms   0.1% updateMatrixWorld debug-tools-Fznm5WZc.js:16911",
+   "    27ms   0.1% getImageData :0",
+   "    27ms   0.1% visitChild :329",
+   "    23ms   0.1% multiplyMatrices debug-tools-Fznm5WZc.js:15117",
+   "    19ms   0.1% getBoundingClientRect :0",
+   "    18ms   0.1% setValueM4 debug-tools-Fznm5WZc.js:52314",
+   "    18ms   0.1% traverse debug-tools-Fznm5WZc.js:16851",
+   "    17ms   0.1% elementFromPoint :0",
+   "    12ms   0.1% projectObject debug-tools-Fznm5WZc.js:59391",
+   "    12ms   0.1% checkAndReturn :303",
+   "    12ms   0.1% setProgram debug-tools-Fznm5WZc.js:59639",
+   "     9ms   0.0% (idle) :0",
+   "     9ms   0.0% get clientWidth :0",
+   "     9ms   0.0% WebGLRenderer.renderBufferDirect debug-tools-Fznm5WZc.js:59097",
+   "     9ms   0.0% hasActiveClass threeGame-CMeYMZIX.js:29989",
+   "     8ms   0.0% raycastInstanced threeGame-CMeYMZIX.js:15429",
+   "     8ms   0.0% getFogOfWarVisibility threeGame-CMeYMZIX.js:43715",
+   "     8ms   0.0% (anon) threeGame-CMeYMZIX.js:1255",
+   "     7ms   0.0% intersectWallMeshes threeGame-CMeYMZIX.js:15461",
+   "     7ms   0.0% intersectsFrustum debug-tools-Fznm5WZc.js:24555",
+   "     6ms   0.0% drawImage :0",
+   "     5ms   0.0% getParameters debug-tools-Fznm5WZc.js:53396",
+   "     5ms   0.0% updateScatter threeGame-CMeYMZIX.js:52167",
+   "     5ms   0.0% refreshUniformsSprites debug-tools-Fznm5WZc.js:57483",
+   "     5ms   0.0% (anon) debug-tools-Fznm5WZc.js:72348",
+   "     5ms   0.0% expectValue :299",
+   "     5ms   0.0% upload debug-tools-Fznm5WZc.js:52725",
+   "     5ms   0.0% isFlatCached debug-tools-Fznm5WZc.js:72322",
+   "     5ms   0.0% textureValuesFromMaterial threeGame-CMeYMZIX.js:1197",
+   "     5ms   0.0% getNormalMatrix debug-tools-Fznm5WZc.js:12100",
+   "     4ms   0.0% renderObject debug-tools-Fznm5WZc.js:54683",
+   "     4ms   0.0% arraysEqual debug-tools-Fznm5WZc.js:52211",
+   "     4ms   0.0% findSnailPath threeGame-CMeYMZIX.js:50410",
+   "     4ms   0.0% (anon) threeGame-CMeYMZIX.js:31156",
+   "     4ms   0.0% (anon) threeGame-CMeYMZIX.js:47822",
+   "     4ms   0.0% (anon) threeGame-CMeYMZIX.js:5198",
+   "     4ms   0.0% renderObjects debug-tools-Fznm5WZc.js:59511",
+   "     4ms   0.0% copyArray debug-tools-Fznm5WZc.js:52216",
+   "     4ms   0.0% applyMatrix4 debug-tools-Fznm5WZc.js:20521",
+   "     3ms   0.0% renderScene debug-tools-Fznm5WZc.js:59436",
+   "     3ms   0.0% setValueV3f debug-tools-Fznm5WZc.js:52248",
+   "     3ms   0.0% alphaAt index-ZUyE0rxL.js:13598",
+   "     3ms   0.0% getTileType threeGame-CMeYMZIX.js:52781",
+   "     3ms   0.0% walkable threeGame-CMeYMZIX.js:3376",
+   "     3ms   0.0% setup debug-tools-Fznm5WZc.js:50198",
+   "     3ms   0.0% refreshFogUniforms debug-tools-Fznm5WZc.js:57352",
+   "     3ms   0.0% setValue debug-tools-Fznm5WZc.js:52668",
+   "     3ms   0.0% uniformMatrix4fv :0",
+   "     3ms   0.0% hasWalkableWithin threeGame-CMeYMZIX.js:3394",
+   "     3ms   0.0% (anon) threeGame-CMeYMZIX.js:55339",
+   "     3ms   0.0% (anon) threeGame-CMeYMZIX.js:40228",
+   "     3ms   0.0% addCanyonVoidAroundWalkable threeGame-CMeYMZIX.js:3371",
+   "     3ms   0.0% (anon) threeGame-CMeYMZIX.js:47843",
+   "     3ms   0.0% canOccupyPosition threeGame-CMeYMZIX.js:52669"
+  ]
+ }
+}

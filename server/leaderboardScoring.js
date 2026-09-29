@@ -155,6 +155,11 @@ export function validateRunScorePayload(payload = {}) {
         errors.push('score_mismatch');
     }
 
+    // Leaderboards rank expeditions; PvP matches are not expeditions.
+    if (payload.multiplayer?.isMultiplayer && payload.multiplayer?.mode === 'pvp') {
+        errors.push('pvp_run_not_ranked');
+    }
+
     if (payload.outcome === 'death' && payload.mission?.status === 'extracted') {
         errors.push('death_marked_extracted');
     }

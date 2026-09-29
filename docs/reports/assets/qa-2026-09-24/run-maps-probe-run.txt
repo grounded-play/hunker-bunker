@@ -1,0 +1,6 @@
+
+Running 1 test using 1 worker
+
+  ✓  1 [chromium] › tests/e2e/probes/run-maps.spec.js:41:1 › TRY AGAIN keeps the map; MAIN MENU gets a new one (4.4m)
+
+  1 passed (4.4m)

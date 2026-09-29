@@ -368,4 +368,87 @@ export class ExplorationTracker {
             gridLength: 0
         };
     }
+
+    /**
+     * Phase 4: Registers a pneumatic transit terminal landmark for the return network.
+     */
+    registerTransitTerminalLandmark(terminal) {
+        if (!terminal || !terminal.id) return null;
+        const pos = terminal.position || { x: 0, z: 0 };
+        return this.registerLandmark(terminal.id, {
+            x: pos.x,
+            z: pos.z,
+            label: terminal.name || 'Pneumatic Transit Terminal',
+            type: 'transit_terminal',
+            icon: 'transit',
+            priority: 500,
+            discovered: true,
+            active: true
+        });
+    }
+
+    /**
+     * Phase 4: Registers an engineered nanite bridge crossing.
+     */
+    registerNaniteBridgeLandmark(bridge) {
+        if (!bridge || !bridge.id) return null;
+        const pos = bridge.position || { x: 0, z: 0 };
+        return this.registerLandmark(bridge.id, {
+            x: pos.x,
+            z: pos.z,
+            label: bridge.label || 'Nanite Chasm Bridge',
+            type: 'nanite_bridge',
+            icon: 'bridge',
+            priority: 300,
+            discovered: true,
+            active: true
+        });
+    }
+
+    /**
+     * Phase 4: Registers a milestone gate boundary.
+     */
+    registerMilestoneGateLandmark(gate) {
+        if (!gate || !gate.id) return null;
+        const pos = gate.position || { x: 0, z: 0 };
+        return this.registerLandmark(gate.id, {
+            x: pos.x,
+            z: pos.z,
+            label: gate.label || 'Milestone Ring Gate',
+            type: 'milestone_gate',
+            icon: 'gate',
+            priority: 400,
+            discovered: true,
+            active: true
+        });
+    }
+
+    /**
+     * Phase 4: Generates subtle floor breadcrumb waypoints along the computed scanned path.
+     */
+    getObjectiveBreadcrumbs(startPos, targetPos, stepDistance = 4.0) {
+        const pathResult = this.computeScannedPath(startPos, targetPos);
+        if (!pathResult.found || pathResult.path.length <= 1) {
+            return [];
+        }
+
+        const waypoints = [];
+        for (let i = 0; i < pathResult.path.length - 1; i++) {
+            const p1 = pathResult.path[i];
+            const p2 = pathResult.path[i + 1];
+            const segmentDist = Math.hypot(p2.x - p1.x, p2.z - p1.z);
+            const steps = Math.max(1, Math.floor(segmentDist / stepDistance));
+            for (let s = 1; s <= steps; s++) {
+                const t = s / (steps + 1);
+                waypoints.push({
+                    x: p1.x + t * (p2.x - p1.x),
+                    z: p1.z + t * (p2.z - p1.z),
+                    index: waypoints.length,
+                    active: true
+                });
+            }
+        }
+        return waypoints;
+    }
 }
+

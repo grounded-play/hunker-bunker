@@ -26,13 +26,15 @@ export const WEAPON_OVERCLOCKS = Object.freeze([
         stats: { extraBullets: 2, spreadAngle: 0.22, damageMult: 0.75 }
     },
     {
-        id: 'cryo_rime', implemented: false,
+        id: 'cryo_rime', implemented: true,
         type: DROP_TYPES.OVERCLOCK,
         name: 'Cryo Rime Injector',
+        nameKey: 'ui.relics.cryo_rime.name',
+        descriptionKey: 'ui.relics.cryo_rime.description',
         rarity: DROP_RARITIES.RARE,
         description: 'Shots freeze enemies and slow their movement speed.',
         element: 'cryo',
-        stats: { slowDuration: 2.5, slowMult: 0.5 }
+        stats: { slowDuration: 2.5, slowMult: 0.5, freezePerHit: 34, maxStacks: 100 }
     },
     {
         id: 'plasma_bounce', implemented: false,
@@ -44,13 +46,15 @@ export const WEAPON_OVERCLOCKS = Object.freeze([
         stats: { maxBounces: 2 }
     },
     {
-        id: 'caustic_payload', implemented: false,
+        id: 'caustic_payload', implemented: true,
         type: DROP_TYPES.OVERCLOCK,
         name: 'Caustic Spore Payload',
+        nameKey: 'ui.relics.caustic_payload.name',
+        descriptionKey: 'ui.relics.caustic_payload.description',
         rarity: DROP_RARITIES.MYTHIC,
         description: 'Shots cause bio-corrosion that ticks damage over time.',
         element: 'bio',
-        stats: { poisonDuration: 3.0, tickDamage: 2 }
+        stats: { poisonDuration: 3.0, tickDamage: 2, tickInterval: 0.5 }
     },
     {
         id: 'glass_cannon_core',
@@ -80,20 +84,26 @@ export const TRANSFORMATIVE_RELIC_IDS = Object.freeze([
 
 export const SUIT_RELICS = Object.freeze([
     {
-        id: 'shatter_engine', implemented: false,
+        id: 'shatter_engine', implemented: true,
         type: DROP_TYPES.RELIC,
         name: 'Shatter Engine',
+        nameKey: 'ui.relics.shatter_engine.name',
+        descriptionKey: 'ui.relics.shatter_engine.description',
         rarity: DROP_RARITIES.RARE,
         description: 'Defeating frozen hostiles triggers an ice shrapnel nova.',
-        element: 'cryo'
+        element: 'cryo',
+        stats: { shatterRadius: 4.0, shatterDamage: 25, shatterChillDuration: 2.0 }
     },
     {
-        id: 'bio_vampirism', implemented: false,
+        id: 'bio_vampirism', implemented: true,
         type: DROP_TYPES.RELIC,
         name: 'Bio-Vampiric Membrane',
+        nameKey: 'ui.relics.bio_vampirism.name',
+        descriptionKey: 'ui.relics.bio_vampirism.description',
         rarity: DROP_RARITIES.MYTHIC,
         description: 'Slaying bio enemies restores O2 vitals and suit battery.',
-        element: 'bio'
+        element: 'bio',
+        stats: { o2Restore: 8, batteryRestore: 15, heartRestore: 1 }
     },
     {
         id: 'tesla_thrusters', implemented: false,
@@ -433,9 +443,124 @@ export function getQueensMilkHumanHealPenalty(healAmount, equippedRelics = []) {
 // and the tests pass it) so that wiring synergies up later is a body change
 // rather than a signature change. Declaring it also stops every caller reading
 // as passing a superfluous argument to a zero-arity function.
+export const SYNERGY_DEFINITIONS = Object.freeze({
+    cryo_shatter: Object.freeze({
+        id: 'cryo_shatter',
+        name: 'Cryo Shatter',
+        nameKey: 'ui.relics.synergy.cryo_shatter',
+        description: 'Frozen enemies shatter on defeat or melee strike, triggering an ice shrapnel nova.',
+        element: 'cryo',
+        components: Object.freeze(['cryo_rime', 'shatter_engine'])
+    }),
+    bio_predator: Object.freeze({
+        id: 'bio_predator',
+        name: 'Bio Predator',
+        nameKey: 'ui.relics.synergy.bio_predator',
+        description: 'Corroding bio enemies restores suit O2 vitals and bio-battery on defeat.',
+        element: 'bio',
+        components: Object.freeze(['caustic_payload', 'bio_vampirism'])
+    })
+});
+
 export function computeActiveSynergies(equippedItems = []) {
-    void equippedItems;
-    return [];
+    const itemIds = new Set((equippedItems ?? []).map((item) => (typeof item === 'string' ? item : item?.id)).filter(Boolean));
+    const active = [];
+    if (itemIds.has('cryo_rime') && itemIds.has('shatter_engine')) {
+        active.push(SYNERGY_DEFINITIONS.cryo_shatter);
+    }
+    if (itemIds.has('caustic_payload') && itemIds.has('bio_vampirism')) {
+        active.push(SYNERGY_DEFINITIONS.bio_predator);
+    }
+    return active;
+}
+
+export const BIO_ENEMY_TYPES = Object.freeze(new Set([
+    'crawler',
+    'alien_proto_crawler_A',
+    'alien_proto_spitter',
+    'sporesnail',
+    'boss_sporesnail',
+    'mycelium_stalker',
+    'bio_charger',
+    'spore_mortar',
+    'fungal_spore_vent'
+]));
+
+export function isBioEnemy(type) {
+    return BIO_ENEMY_TYPES.has(String(type || ''));
+}
+
+export function resolveCryoShatterNova({
+    originX = 0,
+    originZ = 0,
+    scatterSprites = [],
+    shatterRadius = 4.0,
+    shatterDamage = 25,
+    shatterChillDuration = 2.0,
+    sourceSprite = null
+} = {}) {
+    const affected = [];
+    for (const other of scatterSprites) {
+        if (!other?.parent || other === sourceSprite || other.userData?.burstTriggered) continue;
+        const dx = other.position.x - originX;
+        const dz = other.position.z - originZ;
+        const distance = Math.hypot(dx, dz);
+        if (distance > shatterRadius) continue;
+        affected.push({
+            sprite: other,
+            distance,
+            damage: shatterDamage,
+            chillDuration: shatterChillDuration
+        });
+    }
+    return affected;
+}
+
+export function resolveBioVampirismKill({
+    playerVitals = {},
+    enemyType = '',
+    isCorroded = false,
+    stats = { o2Restore: 8, batteryRestore: 15, heartRestore: 1 }
+} = {}) {
+    if (!isCorroded || !isBioEnemy(enemyType)) {
+        return { o2Restored: 0, heartRestored: 0, batteryRestored: 0 };
+    }
+    const currentO2 = playerVitals.o2 ?? 0;
+    const maxO2 = playerVitals.maxO2 ?? 100;
+    const o2Restored = Math.min(stats.o2Restore ?? 8, Math.max(0, maxO2 - currentO2));
+
+    const currentHp = playerVitals.hp ?? 0;
+    const maxHp = playerVitals.maxHp ?? 4;
+    const heartRestored = (currentHp < maxHp && (stats.heartRestore ?? 1) > 0) ? 1 : 0;
+
+    return {
+        o2Restored,
+        heartRestored,
+        batteryRestored: stats.batteryRestore ?? 15
+    };
+}
+
+export function getTurretElementalInheritance(equippedItems = []) {
+    const itemIds = new Set((equippedItems ?? []).map((item) => (typeof item === 'string' ? item : item?.id)).filter(Boolean));
+    if (itemIds.has('cryo_rime')) {
+        return {
+            element: 'cryo',
+            potency: 0.5,
+            freezePerHit: 17,
+            slowDuration: 1.5,
+            bulletColor: 0x7df2ff
+        };
+    }
+    if (itemIds.has('caustic_payload')) {
+        return {
+            element: 'bio',
+            potency: 0.5,
+            tickDamage: 1,
+            poisonDuration: 2.0,
+            bulletColor: 0x66ff66
+        };
+    }
+    return null;
 }
 
 export function applyIncomingDamageModifiers(baseDamage = 0, runOverclocks = [], runRelics = []) {

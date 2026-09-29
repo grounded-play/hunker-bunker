@@ -14,15 +14,30 @@
 export const SUBTITLE_SIZES = Object.freeze(['small', 'medium', 'large', 'xlarge']);
 export const SUBTITLE_BACKDROPS = Object.freeze(['off', 'dim', 'solid']);
 export const CONTRAST_LEVELS = Object.freeze(['normal', 'high', 'max']);
+export const CAMERA_SHAKE_LEVELS = Object.freeze(['off', 'low', 'reduced', 'normal']);
+export const CAMERA_SHAKE_FACTORS = Object.freeze({
+    off: 0.0,
+    low: 0.25,
+    reduced: 0.5,
+    normal: 1.0
+});
+export const AIM_ASSIST_MODES = Object.freeze(['off', 'low', 'standard']);
+export const REDUCED_PRESSURE_MODES = Object.freeze(['off', 'on']);
 
 export const SUBTITLE_SIZE_KEY = 'hb_subtitle_size';
 export const SUBTITLE_BACKDROP_KEY = 'hb_subtitle_backdrop';
 export const CONTRAST_KEY = 'hb_contrast';
+export const CAMERA_SHAKE_KEY = 'hb_camera_shake';
+export const AIM_ASSIST_KEY = 'hb_aim_assist';
+export const REDUCED_PRESSURE_KEY = 'hb_reduced_pressure';
 
 const DEFAULTS = Object.freeze({
     subtitleSize: 'medium',
     subtitleBackdrop: 'dim',
-    contrast: 'normal'
+    contrast: 'normal',
+    cameraShake: 'normal',
+    aimAssist: 'standard',
+    reducedPressure: false
 });
 
 // Dialogue text multiplies its base size by this. Small stays legible rather
@@ -68,27 +83,53 @@ function normalize(value, allowed, fallback) {
 }
 
 export function loadAccessibilitySettings() {
+    const rawPressure = readStorage(REDUCED_PRESSURE_KEY);
+    const reducedPressure = rawPressure === 'true' || rawPressure === 'on';
+    const cameraShake = normalize(readStorage(CAMERA_SHAKE_KEY), CAMERA_SHAKE_LEVELS, DEFAULTS.cameraShake);
     return {
         subtitleSize: normalize(readStorage(SUBTITLE_SIZE_KEY), SUBTITLE_SIZES, DEFAULTS.subtitleSize),
         subtitleBackdrop: normalize(readStorage(SUBTITLE_BACKDROP_KEY), SUBTITLE_BACKDROPS, DEFAULTS.subtitleBackdrop),
-        contrast: normalize(readStorage(CONTRAST_KEY), CONTRAST_LEVELS, DEFAULTS.contrast)
+        contrast: normalize(readStorage(CONTRAST_KEY), CONTRAST_LEVELS, DEFAULTS.contrast),
+        cameraShake,
+        cameraShakeScale: CAMERA_SHAKE_FACTORS[cameraShake] ?? 1.0,
+        aimAssist: normalize(readStorage(AIM_ASSIST_KEY), AIM_ASSIST_MODES, DEFAULTS.aimAssist),
+        reducedPressure
     };
 }
 
 export function applyAccessibilitySettings(settings, doc = (typeof document !== 'undefined' ? document : null)) {
-    if (!doc?.documentElement?.style || !doc.body?.classList) return false;
-
     const size = normalize(settings?.subtitleSize, SUBTITLE_SIZES, DEFAULTS.subtitleSize);
     const backdrop = normalize(settings?.subtitleBackdrop, SUBTITLE_BACKDROPS, DEFAULTS.subtitleBackdrop);
     const contrast = normalize(settings?.contrast, CONTRAST_LEVELS, DEFAULTS.contrast);
+    const cameraShake = normalize(settings?.cameraShake, CAMERA_SHAKE_LEVELS, DEFAULTS.cameraShake);
+    const cameraShakeScale = typeof settings?.cameraShakeScale === 'number'
+        ? settings.cameraShakeScale
+        : (CAMERA_SHAKE_FACTORS[cameraShake] ?? 1.0);
+    const aimAssist = normalize(settings?.aimAssist, AIM_ASSIST_MODES, DEFAULTS.aimAssist);
+    const reducedPressure = Boolean(settings?.reducedPressure);
 
-    doc.documentElement.style.setProperty('--hb-subtitle-scale', String(SUBTITLE_SCALE[size]));
-    doc.documentElement.style.setProperty('--hb-subtitle-backdrop', SUBTITLE_BACKDROP_COLOR[backdrop]);
+    if (doc?.documentElement?.style && doc.body?.classList) {
+        doc.documentElement.style.setProperty('--hb-subtitle-scale', String(SUBTITLE_SCALE[size]));
+        doc.documentElement.style.setProperty('--hb-subtitle-backdrop', SUBTITLE_BACKDROP_COLOR[backdrop]);
+        doc.documentElement.style.setProperty('--hb-camera-shake-scale', String(cameraShakeScale));
 
-    // Exactly one level at a time -- stacking them would compound the filters.
-    doc.body.classList.remove('contrast-high', 'contrast-max');
-    if (contrast === 'high') doc.body.classList.add('contrast-high');
-    if (contrast === 'max') doc.body.classList.add('contrast-max');
+        // Exactly one level at a time -- stacking them would compound the filters.
+        doc.body.classList.remove('contrast-high', 'contrast-max');
+        if (contrast === 'high') doc.body.classList.add('contrast-high');
+        if (contrast === 'max') doc.body.classList.add('contrast-max');
+    }
+
+    if (typeof window !== 'undefined') {
+        window.game?.setCameraShakeScale?.(cameraShakeScale);
+        window.game?.setAimAssist?.(aimAssist);
+        window.game?.setReducedPressure?.(reducedPressure);
+        if (window.state?.settings) {
+            window.state.settings.cameraShake = cameraShake;
+            window.state.settings.cameraShakeScale = cameraShakeScale;
+            window.state.settings.aimAssist = aimAssist;
+            window.state.settings.reducedPressure = reducedPressure;
+        }
+    }
 
     return true;
 }
@@ -121,21 +162,36 @@ export function setContrast(value, doc) {
     );
 }
 
-// Playtest/audit 2026-09-12: everything below the surface already existed --
-// the three <select> controls in index.html, the --hb-subtitle-scale /
-// --hb-subtitle-backdrop custom properties consumed by style.css, and the
-// .contrast-high / .contrast-max rules -- but nothing imported this module, so
-// none of it ran. The Steam store page already claims these accessibility
-// features, which makes wiring them a correctness issue rather than a nicety.
-//
-// Binds the three controls to the setters and applies the stored values once at
-// boot, so a returning player sees their choice honoured before any subtitle
-// is drawn.
+export function setCameraShake(value, doc) {
+    return persistAndApply(
+        CAMERA_SHAKE_KEY, value, CAMERA_SHAKE_LEVELS, DEFAULTS.cameraShake,
+        (v) => ({ cameraShake: v, cameraShakeScale: CAMERA_SHAKE_FACTORS[v] ?? 1.0 }), doc
+    );
+}
 
-const CONTROL_BINDINGS = Object.freeze([
+export function setAimAssist(value, doc) {
+    return persistAndApply(
+        AIM_ASSIST_KEY, value, AIM_ASSIST_MODES, DEFAULTS.aimAssist,
+        (v) => ({ aimAssist: v }), doc
+    );
+}
+
+export function setReducedPressure(value, doc) {
+    const isBool = typeof value === 'boolean';
+    const enabled = isBool ? value : (value === 'true' || value === 'on');
+    const storedStr = enabled ? 'true' : 'false';
+    writeStorage(REDUCED_PRESSURE_KEY, storedStr);
+    applyAccessibilitySettings({ ...loadAccessibilitySettings(), reducedPressure: enabled }, doc);
+    return enabled;
+}
+
+export const CONTROL_BINDINGS = Object.freeze([
     Object.freeze({ id: 'setting-subtitle-size', key: 'subtitleSize', apply: setSubtitleSize }),
     Object.freeze({ id: 'setting-subtitle-backdrop', key: 'subtitleBackdrop', apply: setSubtitleBackdrop }),
-    Object.freeze({ id: 'setting-contrast', key: 'contrast', apply: setContrast })
+    Object.freeze({ id: 'setting-contrast', key: 'contrast', apply: setContrast }),
+    Object.freeze({ id: 'setting-camera-shake', key: 'cameraShake', apply: setCameraShake }),
+    Object.freeze({ id: 'setting-aim-assist', key: 'aimAssist', apply: setAimAssist }),
+    Object.freeze({ id: 'setting-reduced-pressure', key: 'reducedPressure', apply: setReducedPressure })
 ]);
 
 export function installAccessibilitySettings(doc = (typeof document !== 'undefined' ? document : null)) {
@@ -148,10 +204,13 @@ export function installAccessibilitySettings(doc = (typeof document !== 'undefin
     for (const binding of CONTROL_BINDINGS) {
         const el = doc.getElementById(binding.id);
         if (!el) continue;
-        // Reflect the stored value so the control never disagrees with the
-        // screen -- the select's own default is not the source of truth.
-        el.value = stored[binding.key];
-        el.addEventListener('change', (event) => binding.apply(event.target.value, doc));
+        if (el.type === 'checkbox') {
+            el.checked = Boolean(stored[binding.key]);
+            el.addEventListener('change', (event) => binding.apply(event.target.checked, doc));
+        } else {
+            el.value = String(stored[binding.key]);
+            el.addEventListener('change', (event) => binding.apply(event.target.value, doc));
+        }
         bound += 1;
     }
     return { applied, bound };

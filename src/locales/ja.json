@@ -44,8 +44,20 @@
     "elite_contact": "スーツ：エリート敵と接触。重装甲目標――退路を確保せよ。"
   },
   "ui": {
+    "encounters": {
+      "locked_crossfire": {
+        "name": "封鎖十字砲火"
+      },
+      "bloom_push": {
+        "name": "開花前進"
+      },
+      "cold_pincer": {
+        "name": "氷結挟撃"
+      }
+    },
     "menu": {
       "continue": "つづきから",
+      "resume_expedition": "遠征を再開",
       "switch_class": "クラス変更",
       "new_run": "ニューラン",
       "achievements": "実績",
@@ -152,6 +164,9 @@
       "subtitle_size": "字幕サイズ",
       "subtitle_backdrop": "字幕の背景",
       "contrast": "HUDコントラスト",
+      "camera_shake": "カメラの揺れ",
+      "aim_assist": "コントローラー照準アシスト",
+      "reduced_pressure": "プレッシャー軽減モード",
       "aria_label_settings_categories": "設定カテゴリ",
       "session": "セッション",
       "audio": "オーディオ",
@@ -214,7 +229,14 @@
       "backdrop_solid": "不透明",
       "contrast_normal": "標準（既定）",
       "contrast_high": "高",
-      "contrast_max": "最大（走査線なし）"
+      "contrast_max": "最大（走査線なし）",
+      "shake_off": "オフ (0%)",
+      "shake_low": "弱 (25%)",
+      "shake_reduced": "中 (50%)",
+      "shake_normal": "通常 (100%)",
+      "aim_assist_off": "オフ",
+      "aim_assist_low": "低 (吸着のみ)",
+      "aim_assist_standard": "標準 (吸着＋減速)"
     },
     "aria": {
       "language_select": "ゲーム言語",
@@ -234,7 +256,9 @@
       "camera_follow": "三人称カメラ追従の応答性",
       "aim_speed": "右スティックのエイム速度",
       "aim_speed_presets": "右スティックのエイム速度プリセット",
-      "callsign_input": "オペレーターコールサイン"
+      "callsign_input": "オペレーターコールサイン",
+      "camera_shake": "カメラの揺れ強度",
+      "aim_assist": "コントローラー照準アシスト設定"
     },
     "armory": {
       "tag": "◈ 地下プレミッション兵器庫 // セクターゼロ",
@@ -789,6 +813,15 @@
       "cost_300_tech_100_coin": "コスト：テック 300 / コイン 100",
       "expedition_day": "遠征日数",
       "cycle_phase": "サイクル段階",
+      "campaign_state": "キャンペーン状態",
+      "advance_day": "日付を進める",
+      "advance_status_cot_available": "バンカー簡易ベッドで利用可能",
+      "advance_status_camp_available": "安全キャンプで利用可能",
+      "advance_status_blocked_contract": "利用不可 — 契約進行中",
+      "advance_status_blocked_unsafe": "利用不可 — 危険地域",
+      "advance_status_coop_visitor": "CO-OPゲスト — ローカル進行固定",
+      "cycle_hold": "周期停止中 — 端末稼働中",
+      "cycle_progress_label": "24時間サイクルの{percent}%",
       "local_light": "現地の明るさ",
       "next_transition": "次の遷移",
       "aria_label_objective_history": "目標履歴",
@@ -1349,7 +1382,24 @@
       "alien_hives": "エイリアンの巣",
       "obedience": "服従度：",
       "seats_filled": "議席充足：",
-      "humanity": "人間性："
+      "humanity": "人間性：",
+      "report": {
+        "title": "◈ 遠征報告",
+        "condition": "状況: {condition}",
+        "bounty_met": "報奨達成 — {label}(+{shells} シェル預け入れ)",
+        "bounty_missed": "報奨未達 — {label}({progress}/{target})",
+        "completed": "達成: {list}",
+        "none_completed": "今回の出撃で達成した目標はなし",
+        "next_goal_ready": "次: {goal} は建造可能 — 船のコンソールで建造",
+        "next_goal_short": "次: {goal} にはあと {missing} 必要",
+        "all_goals": "船の目標はすべて完成 — 女王が待つ",
+        "item_settlement": "精算：{label}",
+        "item_event": "イベント：{label}",
+        "item_discovery": "発見：{label}",
+        "item_unlock": "解放：{label}",
+        "item_faction": "評判：{label}",
+        "item_lead": "手がかり：{label}"
+      }
     },
     "ach": {
       "unlocked_kicker": "実績解除",
@@ -1507,9 +1557,9 @@
         }
       },
       "bounties": {
-        "salvage_run": "深部通路からスクラップを120以上回収",
-        "eliminate_elite": "変異したセクターの追跡者を排除",
-        "scout_compound": "外縁の拠点に潜入して地図化",
+        "salvage_run": "サルベージを8個回収",
+        "eliminate_elite": "変異したセクター・ストーカーを排除",
+        "scout_compound": "辺境の拠点で3部屋を踏査",
         "clearing_breach": "構造隔壁を6枚破壊"
       },
       "sites": {
@@ -1590,6 +1640,160 @@
         "landmark": "脱出エアロック",
         "line_objective": "目標達成。脱出エアロック起動。船に戻れ。",
         "line_purged": "セクター制圧完了。脱出エアロック稼働中。船に戻れ。"
+      },
+      "bounty_progress": "報奨 — {label} · {progress}/{target} · +{shells} シェル",
+      "bounty_ready": "報奨準備完了 — {label} · 生還して +{shells} シェルを獲得",
+      "bounty_complete": "報奨達成 — {label}。{shells} シェルを預け入れ。",
+      "arrival": {
+        "glacial_gale": "吹雪に動きあり — クライオスネイルが接近中。",
+        "spore_bloom": "胞子雲が移動中 — 何かがそれに乗ってこちらへ来る。",
+        "bio_resin_surge": "樹脂からクローラーが出てきた — 墜落の匂いを嗅ぎつけた。",
+        "geothermal_arc": "アークが奴らを起こした — 敵が接近中。",
+        "subzero_stillness": "静かすぎる。接触1、大型、こちらの位置を把握している。",
+        "tracker": "接敵 — 接近する敵 {count} 体を排除",
+        "cleared": "接敵排除。奴らはサルベージを持っていた — 死骸を調べろ。"
+      },
+      "bounty_chip": "報奨 {progress}/{target} · +{shells} シェル",
+      "bounty_chip_ready": "報奨達成 · 脱出で +{shells} を預け入れ"
+    },
+    "events": {
+      "kicker": "任意ルート",
+      "close": "離れる",
+      "route_signalled": "任意 · {name} · {meters}m",
+      "route_bypassing": "バイパス · {name} · {progress}/{target}秒",
+      "route_engaged": "交戦 · {name}",
+      "response": {
+        "scan": "スキャン",
+        "open": "開ける",
+        "leave": "立ち去る",
+        "breach": "突破",
+        "bypass": "バイパス"
+      },
+      "reward_recovered": "回収：{name}。",
+      "reward_lost": "コンポーネントは回収中に壊れた。",
+      "report_reward": "{drop}を回収",
+      "report_reward_lost": "回収中にコンポーネントを失った",
+      "false_distress": {
+        "name": "救難信号",
+        "site": "封鎖されたシェルター。ビーコンはまだ鳴っている。中に誰か——あるいは何か——がいる。",
+        "signal_clear": "リング1で救難ビーコン。人の声がループしている。船のルートから外れる——判断は任せる。",
+        "signal_faint": "リング1、霜の下からかすかな救難ビーコン。読み取りにくい。判断は任せる。",
+        "signal_intermittent": "リング1、アークのノイズで途切れ途切れの救難ビーコン。判断は任せる。",
+        "scan_survivor": "スキャン：鼓動はひとつ、人間のリズム。中に生存者がいる。",
+        "scan_contaminated": "スキャン：鼓動がおかしい——多すぎて、遅すぎる。罠だ。",
+        "rescued": "生存者がよろめき出て、サルベージを手渡してきた。",
+        "ambush": "扉の向こうは巣だった。罠だ。",
+        "report_rescued": "怪しいビーコンから生存者を救出",
+        "report_ambush": "救難ビーコンの待ち伏せを生き延びた",
+        "report_left": "救難ビーコンに応答しなかった",
+        "report_empty": "ビーコンは罠だったが、何も来なかった",
+        "response_scan": "数秒かけて中を確かめる。",
+        "response_open": "扉を開ける。生存者なら報酬、巣なら戦闘。",
+        "response_leave": "立ち去る。リスクなし、報酬なし。"
+      },
+      "unstable_vault": {
+        "name": "サルベージ金庫",
+        "site": "ひび割れたサルベージ金庫。ロックにはまだ電力が瞬いている。",
+        "signal_clear": "リング1に不安定なサルベージ金庫。中に希少品、ロックは壊れかけ。船のルートから外れる——判断は任せる。",
+        "breach": "金庫を突破——警報で守護者が目覚める。",
+        "bypass_start": "バイパス作動中。離れるな。空気がもたなくなる。",
+        "bypassed": "バイパス完了。金庫が静かに開く。",
+        "report_bypassed": "バイパスでサルベージ金庫を開けた",
+        "report_breached": "サルベージ金庫を突破し、守り抜いた",
+        "report_breached_quiet": "サルベージ金庫を突破した。守護者は現れなかった",
+        "report_left": "サルベージ金庫を封鎖したまま残した",
+        "response_breach": "今すぐ報酬を取る。守護者が目覚める。",
+        "response_bypass": "ロックに{seconds}秒とどまる。戦闘なし、ただし酸素の減りが速い。",
+        "response_leave": "立ち去る。リスクなし、報酬なし。"
+      }
+    },
+    "relics": {
+      "synergy": {
+        "cryo_shatter": "クライオシャッター",
+        "bio_predator": "バイオプレデター"
+      },
+      "cryo_rime": {
+        "name": "クライオライムインジェクター",
+        "description": "弾丸が敵を凍結させ、移動速度を低下させる。"
+      },
+      "shatter_engine": {
+        "name": "シャッターエンジン",
+        "description": "凍結した敵を倒すと氷破片のノヴァが発生する。"
+      },
+      "caustic_payload": {
+        "name": "腐食性胞子弾頭",
+        "description": "弾丸が生物腐食を引き起こし、継続ダメージを与える。"
+      },
+      "bio_vampirism": {
+        "name": "生体吸血膜",
+        "description": "生体エネミーを倒すとO₂バイタルとスーツバッテリーが回復する。"
+      }
+    },
+    "cache": {
+      "title": "高リスク報酬キャッシュ",
+      "preview": "格納アイテム: {dropName}",
+      "risk_cost": "作戦コスト: {cost}",
+      "open_prompt": "キャッシュを強行開放 [F]",
+      "walk_away": "立ち去る",
+      "cost": {
+        "escalated_wave": "激化した敵ウェーブ",
+        "o2_siphon": "O₂を25%吸い出し",
+        "lockdown": "12秒の封鎖"
+      },
+      "report": {
+        "opened": "高リスク報酬キャッシュを開放 ({drop})"
+      }
+    },
+    "death": {
+      "cause": {
+        "enemy": "死因：{enemy}",
+        "projectile": "死因：敵の射撃",
+        "boss_attack": "死因：ボスの攻撃",
+        "o2": "窒息——スーツの酸素が尽きた",
+        "fall": "死因：裂け目への転落",
+        "hazard": "死因：有毒な地面",
+        "turret": "死因：キャンプのタレット",
+        "backlash": "死因：女王の乳の反動",
+        "ship": "船が破壊された",
+        "squad": "分隊が全滅した",
+        "abort": "ミッション中止",
+        "unknown": "死因は記録されていない"
+      },
+      "enemy": {
+        "cybersnail": "サイバースネイル",
+        "cryosnail": "クライオスネイル",
+        "sporesnail": "スポアスネイル",
+        "sentinel": "セントリネル",
+        "crawler": "ブリーチクローラー",
+        "alien_proto_crawler": "プロトクローラー",
+        "alien_proto_spitter": "プロトスピッター",
+        "mycelium_stalker": "菌糸ストーカー",
+        "bio_charger": "バイオチャージャー",
+        "spore_mortar": "胞子迫撃砲",
+        "fungal_spore_vent": "胞子噴出口",
+        "boss_cybersnail": "ボス・サイバースネイル",
+        "boss_cryosnail": "ボス・クライオスネイル",
+        "boss_sporesnail": "ボス・スポアスネイル",
+        "boss_corrupted_scout": "堕ちたスカウト",
+        "boss_corrupted_tank": "堕ちたタンク",
+        "boss_corrupted_engineer": "堕ちたエンジニア",
+        "boss_queen": "女王"
+      },
+      "build": {
+        "cryo_shatter": "ビルド：クライオシャッターが{count}回発動、{damage}ダメージ",
+        "bio_predator": "ビルド：バイオプレデターが{count}回発動、O₂を{o2}%とハート{hearts}個回復",
+        "equipped": "ビルド：{drops}（シナジー未発動）",
+        "none": "ビルド：今回の出撃ではフィールド強化なし"
+      },
+      "field": {
+        "black_box": "フィールドに残した物：{missing}——ブラックボックスは船から{meters}m",
+        "black_box_empty": "フィールドに残した物はない"
+      },
+      "next": {
+        "recover_black_box": "次の行動：次の死で上書きされる前にブラックボックス（{meters}m先）を回収",
+        "build_goal": "次の行動：船のコンソールで{goal}を建造",
+        "follow_lead": "次の行動：手がかりを追う——{label}",
+        "redeploy": "次の行動：再出撃"
       }
     }
   },

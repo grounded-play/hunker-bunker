@@ -201,10 +201,10 @@ Use this section during review:
 
 | Area | Decision / markup | Owner | Status |
 |---|---|---|---|
-| Armory ownership filtering |  |  | `[ ]` |
-| Three-lane reward definition |  |  | `[ ]` |
-| Dev infinite chest/key flags |  |  | `[ ]` |
-| Duplicate conversion |  |  | `[ ]` |
-| Inventory reset scope |  |  | `[ ]` |
-| XP/tier claim ceremony |  |  | `[ ]` |
-| Steam live odds/schema impact |  |  | `[ ]` |
+| Armory ownership filtering |  |  | `[MIGRATED]` |
+| Three-lane reward definition |  |  | `[MIGRATED]` |
+| Dev infinite chest/key flags |  |  | `[MIGRATED]` |
+| Duplicate conversion |  |  | `[MIGRATED]` |
+| Inventory reset scope |  |  | `[MIGRATED]` |
+| XP/tier claim ceremony |  |  | `[MIGRATED]` |
+| Steam live odds/schema impact |  |  | `[MIGRATED]` |

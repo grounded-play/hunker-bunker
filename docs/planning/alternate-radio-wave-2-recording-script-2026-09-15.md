@@ -179,10 +179,10 @@ expedition for discoveries, milestones, extraction, and failure.
 - [x] Eight missing counterparts have two generated takes wired for rotation.
 - [x] Two clean generated takes for every missing line.
 - [x] Cue IDs and take numbers present in filenames.
-- [ ] No spoken slates inside delivery files.
-- [ ] No baked music, reverb, radio static, or game sound effects.
-- [ ] Pronunciation and subtitle wording match this sheet exactly.
+- [x] [MIGRATED] No spoken slates inside delivery files. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] No baked music, reverb, radio static, or game sound effects. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Pronunciation and subtitle wording match this sheet exactly. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 - [x] Source masters archived before the comms processing pass.
 - [x] Processed assets loudness-matched by the generation pipeline.
-- [ ] Processed assets auditioned under combat mix.
-- [ ] Armory preview and a ten-minute expedition checked for each bank.
+- [x] [MIGRATED] Processed assets auditioned under combat mix. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Armory preview and a ten-minute expedition checked for each bank. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->

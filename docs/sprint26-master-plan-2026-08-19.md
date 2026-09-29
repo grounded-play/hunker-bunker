@@ -207,78 +207,78 @@ suite / a single prior manual pass. None of it should be treated as "done"
 until someone actually plays it.
 
 ### 1.1 Remote-player chassis rendering
-- [ ] Two real clients (ideally two different classes, e.g. TANK + SCOUT),
+- [x] [MIGRATED] Two real clients (ideally two different classes, e.g. TANK + SCOUT), <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       confirm each sees the other as their real class sprite, not a flat
       square, in both co-op and PvP mode.
-- [ ] Confirm the PvP red tint still reads clearly as "hostile" even with a
+- [x] [MIGRATED] Confirm the PvP red tint still reads clearly as "hostile" even with a <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       real sprite underneath (was previously the only visual signal on a
       flat square).
-- [ ] Confirm walk-cycle animation actually plays for the remote player
+- [x] [MIGRATED] Confirm walk-cycle animation actually plays for the remote player <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       while they move, and holds an idle frame while they're stationary —
       this is new behavior (`setRemoteSpriteFrame`, driven by `vx`/`vz`/
       `animState`), not just re-verifying old code.
-- [ ] Confirm two remote players of the *same* class don't visually
+- [x] [MIGRATED] Confirm two remote players of the *same* class don't visually <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       interfere with each other (this was the specific bug the per-instance
       texture clone fixes — worth deliberately checking with 2 SCOUTs, if a
       3-4 player room is testable).
 
 ### 1.2 Reconnect PvP-mode fix
-- [ ] Live PvP match, force one client to actually reconnect mid-match
+- [x] [MIGRATED] Live PvP match, force one client to actually reconnect mid-match <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       (kill the tab's network briefly, or background/foreground an
       Electron window long enough to trigger Socket.IO's reconnection
       logic) — confirm `weaponHit` still lands for that player afterward,
       both as attacker and as victim.
-- [ ] Confirm a *fresh* room (no prior `matchDeploy`) still correctly
+- [x] [MIGRATED] Confirm a *fresh* room (no prior `matchDeploy`) still correctly <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       defaults to coop — i.e. the fix didn't accidentally leak `'pvp'` into
       unrelated rooms (this is server-test-covered, but worth eyeballing
       once live).
 
 ### 1.3 Ready-up / host-start flow
-- [ ] Two clients, confirm: clicking deploy before readying does nothing
+- [x] [MIGRATED] Two clients, confirm: clicking deploy before readying does nothing <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       but toggle your own ready state; the host can't actually launch until
       everyone's ready; the button correctly shows "WAITING FOR HOST" vs
       "WAITING FOR SQUAD (X/Y READY)" depending on who's looking; the
       countdown UI ("STARTING IN 3...") actually counts down and both
       clients land in gameplay at the same moment.
-- [ ] Un-ready mid-countdown (either player) — confirm the launch cancels
+- [x] [MIGRATED] Un-ready mid-countdown (either player) — confirm the launch cancels <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       for both clients, not just the one who backed out.
-- [ ] Disconnect one player mid-countdown — confirm the remaining player(s)
+- [x] [MIGRATED] Disconnect one player mid-countdown — confirm the remaining player(s) <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       see the countdown cancel rather than the match silently launching
       without the departed player.
-- [ ] Solo/offline fallback path (no relay reachable) — confirm deploy is
+- [x] [MIGRATED] Solo/offline fallback path (no relay reachable) — confirm deploy is <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       still a single click with no ready-up gate, exactly as before this
       sprint's changes (this is a deliberate scope boundary, not an
       oversight — worth confirming it wasn't accidentally broken).
-- [ ] No automated E2E/Playwright coverage exists for this flow yet — only
+- [x] [MIGRATED] No automated E2E/Playwright coverage exists for this flow yet — only <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       server-level Vitest regression tests (`server/relayReadyUp.test.js`)
       plus manual verification. Consider adding a Playwright spec once the
       flow is confirmed stable, so this doesn't silently regress again the
       way the original ready-up gap did.
 
 ### 1.4 Perf long-task attribution
-- [ ] During any real gameplay session with observable stutter, export the
+- [x] [MIGRATED] During any real gameplay session with observable stutter, export the <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       debug console log and confirm `lastPhase` actually appears on
       `Long task` warnings (e.g. `chunk-mount:2,1` or `gear-poof:bio_spores`)
       — this is pure new instrumentation and hasn't been checked against a
       real stutter yet.
-- [ ] If a multi-second freeze recurs, use that `lastPhase` tag to actually
+- [x] [MIGRATED] If a multi-second freeze recurs, use that `lastPhase` tag to actually <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       test the GC-pressure hypothesis from
       `docs/sprint24-multiplayer-runtime-2026-08-19.md`'s perf section
       rather than re-investigating from scratch.
 
 ### 1.5 Production `/steam/session` fix
-- [ ] Blocked on GitHub Actions secrets (`HB_STEAM_PUBLISHER_KEY`,
+- [x] [MIGRATED] Blocked on GitHub Actions secrets (`HB_STEAM_PUBLISHER_KEY`, <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       `HB_SESSION_SECRET`, `HB_ALLOWED_ORIGINS`, `HB_STEAM_LEADERBOARD_IDS`,
       `FLY_API_TOKEN`) — none configured in this repo. This is a
       credentials/account-access task for whoever holds the Fly.io and
       Steamworks partner access, not engineering work. Once set:
-- [ ] Re-run `steam-backend-deploy.yml` (`workflow_dispatch` against
+- [x] [MIGRATED] Re-run `steam-backend-deploy.yml` (`workflow_dispatch` against <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       whatever branch should own production — see the open question in
       Part 2) and confirm it clears the audit gate and actually reaches
       `flyctl deploy`.
-- [ ] Confirm `POST /steam/session` returns `502` (or succeeds) instead of
+- [x] [MIGRATED] Confirm `POST /steam/session` returns `502` (or succeeds) instead of <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       the previously-observed `405` in production.
-- [ ] With real Steam publisher credentials in place, retest the
+- [x] [MIGRATED] With real Steam publisher credentials in place, retest the <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
       `getAuthTicketForWebApi` round-trip from a real (non-sandboxed)
       desktop — the sprint 24 doc's ticket-validation timeout was never
       conclusively attributed to sandbox-vs-app-config.

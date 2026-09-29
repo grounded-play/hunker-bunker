@@ -4,12 +4,17 @@
 // accepts cheat & diagnostic commands, and offers level/category filtering.
 
 import { describeDevice, exportSessionLog, uploadSessionLog } from './sessionLogSink.js';
+import { createSessionLogSampler, SAMPLED_SUMMARY_CATEGORY } from './sessionLogSampler.js';
+import { createSessionPerformanceTimeline } from './sessionPerformanceTimeline.js';
 
 export class DebugLogger {
     constructor() {
         this.logs = [];
         this.sessionLogs = [];
+        this.sessionLogSampler = createSessionLogSampler();
         this.sessionStartedAt = new Date();
+        this.performanceTimeline = createSessionPerformanceTimeline();
+        this.performanceTimelineTimer = null;
         this.demoStartedAt = null;
         this.demoMarkers = [];
         this.sequence = 0;
@@ -199,8 +204,37 @@ export class DebugLogger {
         for (const eventName of eventNames) {
             window.addEventListener(eventName, (event) => {
                 this.info('EVENT', eventName, event?.detail ?? null);
+                if (this.performanceTimelineTimer) {
+                    this.capturePerformanceTimelineSample(`event:${eventName}`);
+                }
             });
         }
+    }
+
+    capturePerformanceTimelineSample(reason = 'periodic', { force = false } = {}) {
+        if (!this.performanceTimeline?.capture) return null;
+        const game = typeof window !== 'undefined' ? (window.game ?? window.threeGame) : null;
+        return this.performanceTimeline.capture({
+            game,
+            phase: typeof window !== 'undefined' ? window.__hbAppPhase ?? null : null,
+            reason,
+            force
+        });
+    }
+
+    startPerformanceTimeline(reason = 'gameplay-start') {
+        this.capturePerformanceTimelineSample(reason, { force: true });
+        if (this.performanceTimelineTimer || typeof setInterval !== 'function') return;
+        this.performanceTimelineTimer = setInterval(() => {
+            this.capturePerformanceTimelineSample('periodic');
+        }, 30_000);
+    }
+
+    stopPerformanceTimeline(reason = 'gameplay-stop') {
+        if (!this.performanceTimelineTimer) return;
+        this.capturePerformanceTimelineSample(reason, { force: true });
+        clearInterval(this.performanceTimelineTimer);
+        this.performanceTimelineTimer = null;
     }
 
     formatArgs(args) {
@@ -237,7 +271,8 @@ export class DebugLogger {
         };
 
         this.logs.push(entry);
-        this.sessionLogs.push(entry);
+        if (this.sessionLogSampler.retain(entry, now.getTime())) this.sessionLogs.push(entry);
+        if (category !== SAMPLED_SUMMARY_CATEGORY) this.flushSampledSessionEvents(now.getTime());
         if (this.sessionLogs.length > this.maxSessionLogs) {
             const overflow = this.sessionLogs.length - this.maxSessionLogs;
             this.sessionLogs.splice(0, overflow);
@@ -248,6 +283,12 @@ export class DebugLogger {
         }
 
         this.notifySubscribers(entry);
+    }
+
+    // Writes the sampler's per-window counts as one session entry.
+    flushSampledSessionEvents(nowMs, { force = false } = {}) {
+        const summary = this.sessionLogSampler?.flush(nowMs, { force });
+        if (summary) this.pushLog('info', SAMPLED_SUMMARY_CATEGORY, ['sampled-events', summary]);
     }
 
     debug(category, message, ...details) {
@@ -381,7 +422,7 @@ export class DebugLogger {
                 <button id="hb-main-ach-all" class="hb-cmd-btn">ACH ALL</button>
                 <button id="hb-main-codex-all" class="hb-cmd-btn">CODEX ALL</button>
                 <button id="hb-main-polish-all" class="hb-cmd-btn">POLISH ALL</button>
-                <button id="hb-main-skins-all" class="hb-cmd-btn">SKINS ALL</button>
+                <button id="hb-main-skins-all" class="hb-cmd-btn" title="Unlock all Armory equipment, operator polishes, and weapon sheens">ARMORY ALL</button>
                 <select id="hb-main-rgb-chapter" class="hb-cmd-btn" title="RGB chapter">
                     <option value="parking_lot">RGB CH 1</option><option value="warehouse">RGB CH 2</option>
                     <option value="incident_review">RGB CH 3</option><option value="medi_kiosk">RGB CH 4</option>
@@ -527,7 +568,7 @@ export class DebugLogger {
         overlay.querySelector('#hb-main-ach-all').onclick = () => runMainCommand('unlock_all');
         overlay.querySelector('#hb-main-codex-all').onclick = () => runMainCommand('codex_all');
         overlay.querySelector('#hb-main-polish-all').onclick = () => runMainCommand('polish_all');
-        overlay.querySelector('#hb-main-skins-all').onclick = () => runMainCommand('skins_all');
+        overlay.querySelector('#hb-main-skins-all').onclick = () => runMainCommand('armory_all 1');
         overlay.querySelector('#hb-main-rgb-chapter-run').onclick = () => runMainCommand(`rgb ${overlay.querySelector('#hb-main-rgb-chapter').value}`);
         overlay.querySelector('#hb-main-teleport').onchange = (event) => {
             if (event.target.value) runMainCommand(`tp ${event.target.value}`);
@@ -785,6 +826,16 @@ export class DebugLogger {
     }
 
     buildSessionCapture() {
+        this.flushSampledSessionEvents?.(Date.now(), { force: true });
+        this.capturePerformanceTimelineSample?.('export', { force: true });
+        const performanceTimeline = this.performanceTimeline?.snapshot?.() ?? {
+            sampleIntervalMs: 30_000,
+            eventMinIntervalMs: 10_000,
+            deepIntervalMs: 120_000,
+            maxSamples: 360,
+            droppedSamples: 0,
+            samples: []
+        };
         const game = typeof window !== 'undefined' ? (window.game ?? window.threeGame) : null;
         const inputState = typeof window !== 'undefined'
             ? window.HunkerInputState?.getState?.() ?? null
@@ -792,7 +843,7 @@ export class DebugLogger {
         const activePlaneId = game?.planeState?.stack?.at?.(-1)?.id ?? null;
         return {
             format: 'hunker-bunker-session-log',
-            schemaVersion: 2,
+            schemaVersion: 3,
             session: {
                 startedAt: this.sessionStartedAt.toISOString(),
                 exportedAt: new Date().toISOString(),
@@ -810,7 +861,15 @@ export class DebugLogger {
                 maxMessageChars: 12000,
                 identifiers: {
                     build: globalThis.__HB_BUILD_INFO__ ?? null,
-                    seed: game?.seed ?? game?.worldSeed ?? game?.missionState?.seed ?? null,
+                    seed: game?.seed ?? game?.worldSeed ?? game?.missionState?.seed ?? game?._campaignWorldSeed ?? game?.runEntropy ?? null,
+                    route: game?.getSessionRouteIdentifiers?.() ?? null,
+                    input: typeof window !== 'undefined' ? {
+                        requestedActionSet: window.__hbSteamInputPhaseRequest ?? null,
+                        activeActionSet: window.HunkerInputState?.getActiveActionSet?.() ?? null,
+                        lastInputMode: inputState?.lastInputMode ?? null,
+                        primaryControllerType: inputState?.primaryControllerType ?? null,
+                        isSteamDeck: inputState?.isSteamDeck ?? false
+                    } : null,
                     encounterId: game?.activeBossEncounterId ?? null,
                     entityId: game?.activeInteractiveConsole?.userData?.entityId ?? null,
                     plane: activePlaneId === 'foundry-interior'
@@ -821,9 +880,11 @@ export class DebugLogger {
                 measurementCoverage: {
                     gpuTimingSupported: Boolean(game?.gpuFrameTimer?.supported),
                     gpuSamples: game?.gpuFrameTimer?.snapshot?.()?.samples ?? 0,
-                    frameProfilerEnabled: Boolean(game?.frameProfiler?.enabled)
+                    frameProfilerEnabled: Boolean(game?.frameProfiler?.enabled),
+                    performanceTimelineSamples: performanceTimeline.samples.length
                 }
             },
+            performanceTimeline,
             state: {
                 appPhase: typeof window !== 'undefined' ? window.__hbAppPhase ?? null : null,
                 playerType: game?.playerType ?? null,
@@ -868,7 +929,12 @@ export class DebugLogger {
                 `Entries: ${capture.entries.length}`,
                 ''
             ];
-            return header.concat(capture.entries.map((entry) => (
+            const timeline = [
+                `PERFORMANCE TIMELINE (${capture.performanceTimeline.samples.length} samples)`,
+                ...capture.performanceTimeline.samples.map((sample) => JSON.stringify(sample)),
+                ''
+            ];
+            return header.concat(timeline, capture.entries.map((entry) => (
                 `[${entry.isoTime}] [+${entry.elapsedMs}ms] [${entry.level.toUpperCase()}] [${entry.category}] ${entry.message}`
             ))).join('\n');
         }

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
+import { bootToOperatorMenu, startRunAndSkipIntro, isHostNetworkBlip } from './helpers.js';
 
 // Phase 13: "Keyboard controls" (docs/steam-launch-readiness-master-plan.md).
 // Drives the real input paths a keyboard/mouse player uses — WASD movement
@@ -13,7 +13,7 @@ test.describe('Keyboard and mouse controls', () => {
     test('WASD moves the player and a mouse click fires a shot', async ({ page }) => {
         const consoleErrors = [];
         page.on('console', (msg) => {
-            if (msg.type() === 'error') consoleErrors.push(msg.text());
+            if (msg.type() === 'error' && !isHostNetworkBlip(msg.text())) consoleErrors.push(msg.text());
         });
         page.on('pageerror', (err) => consoleErrors.push(err.message));
 

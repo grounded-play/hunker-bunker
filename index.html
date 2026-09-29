@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="/src/styles/expeditionHud.css">
+  <link rel="stylesheet" href="/src/styles/hudDockHousings.css">
   <link rel="stylesheet" href="/src/styles/armory.css">
   <link rel="icon" type="image/png" href="/favicon.png" />
   <title data-i18n="ui.misc.hunker_bunker_tactical_command">HUNKER BUNKER | TACTICAL COMMAND</title>
@@ -181,7 +182,7 @@
       <button id="debug-unlock-all-ach" class="dev-btn dev-btn--warn" title="Unlock All Achievements">★ ACH ALL</button>
       <button id="debug-unlock-all-codex" class="dev-btn dev-btn--accent" title="Unlock All Codex Entries">❑ CODEX ALL</button>
       <button id="debug-unlock-all-polishes" class="dev-btn dev-btn--accent" title="Unlock All Operator Polishes">◆ POLISH ALL</button>
-      <button id="debug-unlock-all-skins" class="dev-btn dev-btn--accent" title="Unlock All Weapon &amp; Chassis Skins">⚡ SKINS ALL</button>
+      <button id="debug-unlock-all-skins" class="dev-btn dev-btn--accent" title="Unlock all Armory equipment, operator polishes, and weapon sheens">⚡ ARMORY ALL</button>
     </div>
     <div id="cabinet-bezel"></div>
 
@@ -341,7 +342,7 @@
 
         <div class="credits-footer">
           <span data-i18n="ui.about.thank_you_for_deploying" class="credits-footer-thankyou">THANK YOU FOR DEPLOYING</span>
-          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.11-BETA // ACTIVE</span>
+          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.12-BETA // ACTIVE</span>
         </div>
       </div>
     </div>
@@ -1252,6 +1253,8 @@
         <span class="level-indicator__cycle-track" aria-hidden="true"><span id="campaign-cycle-progress"></span></span>
         <span id="hud-run-seed" class="level-indicator__seed hidden">SEED: —</span>
         <div data-i18n-aria-label="ui.hud_run_cards.aria_label_active_run_pressure" id="hud-run-cards" class="run-card-strip hidden" aria-label="Active run pressure"></div>
+        <div id="hud-bounty-chip" class="hud-bounty-chip hidden" role="status" aria-live="polite"></div>
+        <div id="hud-event-chip" class="hud-bounty-chip hud-event-chip hidden" role="status" aria-live="polite"></div>
       </div>
 
       <!-- Desktop Compass HUD (shown only on PC) -->
@@ -1286,6 +1289,15 @@
         </div>
         <div id="hud-map-info" class="map-inspection-slot"></div>
       </div>
+      <!-- Lower-dock class housings (dock mode only; hidden otherwise). Glass sits
+           under the live HUD, the painted frame over it. Generated placement:
+           src/styles/hudDockHousings.css -->
+      <div class="dock-glass dock-glass--map" aria-hidden="true"></div>
+      <div class="dock-glass dock-glass--status" aria-hidden="true"></div>
+      <div class="dock-glass dock-glass--arms" aria-hidden="true"></div>
+      <div class="dock-housing dock-housing--map" aria-hidden="true"></div>
+      <div class="dock-housing dock-housing--status" aria-hidden="true"></div>
+      <div class="dock-housing dock-housing--arms" aria-hidden="true"></div>
       <div class="header-bar hud-header">
         <div class="hud-header__center">
           <div id="weapon-status-panel" class="weapon-status-panel" aria-live="polite">
@@ -1411,6 +1423,12 @@
           <div data-i18n="ui.game_over.exosuit_failure" class="game-over-title">EXOSUIT FAILURE</div>
           <div data-i18n="ui.game_over.agent_lost_in_sector_9" class="game-over-subtitle">&gt; AGENT LOST IN SECTOR 9. TELEMETRY RECOVERED.</div>
         </div>
+        <!-- What this deployment achieved and what the next one is for; first,
+             so the sticky actions never cover it -->
+        <section id="go-expedition-report" class="go-expedition-report hidden" aria-labelledby="go-expedition-report-title">
+          <div id="go-expedition-report-title" data-i18n="ui.go.report.title" class="go-expedition-report__title">◈ EXPEDITION REPORT</div>
+          <ul id="go-expedition-report-lines" class="go-expedition-report__lines"></ul>
+        </section>
         <div class="game-over-report">
           <div data-i18n="ui.game_over.mission_report" class="game-over-section-label">MISSION REPORT</div>
 
@@ -1705,7 +1723,7 @@
             <button id="dev-btn-unlock-ach" class="dev-btn">UNLOCK ACH</button>
             <button id="dev-btn-unlock-all-ach" class="dev-btn dev-btn--warn">UNLOCK ALL ACH</button>
             <button id="dev-btn-unlock-all-codex" class="dev-btn dev-btn--accent">UNLOCK ALL CODEX</button>
-            <button id="dev-btn-unlock-all-skins" class="dev-btn dev-btn--accent">UNLOCK ALL SKINS</button>
+            <button id="dev-btn-unlock-all-skins" class="dev-btn dev-btn--accent" title="Unlock all Armory equipment, operator polishes, and weapon sheens">UNLOCK ALL ARMORY</button>
             <button id="dev-btn-reset-save" class="dev-btn dev-btn--danger">RESET SAVE</button>
           </div>
           <div class="dev-quick-group">
@@ -1797,6 +1815,7 @@
           <div class="terminal-clock-row">
             <span class="terminal-clock-chip"><span data-i18n="ui.console_terminal.time_of_day" class="terminal-clock-label">TIME OF DAY</span><span class="terminal-clock-value" id="terminal-time-of-day">--:--</span></span>
             <span class="terminal-clock-chip"><span data-i18n="ui.console_terminal.survived" class="terminal-clock-label">SURVIVED</span><span class="terminal-clock-value" id="terminal-time-survived">00:00</span></span>
+            <span class="terminal-clock-status hidden" id="terminal-clock-status" data-i18n="ui.console_terminal.cycle_hold">CYCLE HOLD — TERMINAL ACTIVE</span>
           </div>
           <div class="terminal-class-badge" id="terminal-class-badge">SCOUT BASE STATUS</div>
         </div>
@@ -1967,12 +1986,23 @@
         </div><!-- /#terminal-tab-base-content -->
 
         <div id="terminal-tab-objectives-content" class="terminal-tab-content hidden">
+          <div class="terminal-objective-compact-banner">
+            <span class="terminal-objective-compact-icon">◈</span>
+            <span class="terminal-objective-compact-text" id="terminal-cycle-compact-text">DAY 1 · 12:00 · DAYLIGHT</span>
+          </div>
           <div class="terminal-objective-log-summary">
             <div><span data-i18n="ui.console_terminal.expedition_day">EXPEDITION DAY</span><strong id="terminal-log-day">DAY 1</strong></div>
-            <div><span data-i18n="ui.console_terminal.cycle_phase">CYCLE PHASE</span><strong id="terminal-log-phase">EXPEDITION</strong></div>
+            <div><span data-i18n="ui.console_terminal.campaign_state">CAMPAIGN STATE</span><strong id="terminal-log-phase">EXPEDITION</strong></div>
             <div><span data-i18n="ui.console_terminal.local_light">LOCAL LIGHT</span><strong id="terminal-log-light">DAYLIGHT</strong></div>
             <div><span data-i18n="ui.console_terminal.next_transition">NEXT TRANSITION</span><strong id="terminal-log-transition">--:--</strong></div>
             <div><span data-i18n="ui.console_terminal.ring_route">RING ROUTE</span><strong id="terminal-log-route">--</strong></div>
+            <div class="terminal-summary-card--advance"><span data-i18n="ui.console_terminal.advance_day">ADVANCE DAY</span><strong id="terminal-log-advance-day" data-advance-status="cot_available" data-allowed="true">AVAILABLE AT BUNKER COT</strong></div>
+          </div>
+          <div class="terminal-cycle-progress-wrap" id="terminal-cycle-progress-wrap" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" aria-valuetext="50% OF 24H CYCLE">
+            <div class="terminal-cycle-track">
+              <div class="terminal-cycle-fill" id="terminal-cycle-fill" style="width: 50%;"></div>
+            </div>
+            <span class="terminal-cycle-progress-text" id="terminal-cycle-progress-text">50% OF 24H CYCLE</span>
           </div>
           <div id="terminal-objectives-grid" class="terminal-objectives-grid">
             <section data-i18n-aria-label="ui.console_terminal.aria_label_objective_history" class="terminal-section terminal-objective-journal" aria-label="Objective history">
@@ -2170,6 +2200,15 @@
       </div>
     </div>
 
+    <div id="expedition-event-modal" class="modal camp-choice-modal expedition-event-modal hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="expedition-event-title">
+      <div class="modal-content camp-choice-panel">
+        <button data-i18n-aria-label="ui.events.close" class="close-modal camp-choice-close" id="close-expedition-event" aria-label="Step away">×</button>
+        <div data-i18n="ui.events.kicker" class="camp-choice-kicker" id="expedition-event-kicker">OPTIONAL ROUTE</div>
+        <h2 class="modal-title camp-choice-title" id="expedition-event-title"></h2>
+        <p class="camp-choice-copy" id="expedition-event-copy"></p>
+        <div class="camp-choice-options expedition-event-options" id="expedition-event-options"></div>
+      </div>
+    </div>
     <div id="camp-choice-modal" class="modal camp-choice-modal hidden" aria-hidden="true">
       <div class="modal-content camp-choice-panel">
         <button data-i18n-aria-label="ui.camp_choice.aria_label_close_camp_decision" class="close-modal camp-choice-close" id="close-camp-choice" aria-label="Close camp decision">×</button>
@@ -2464,6 +2503,27 @@
 
         <div class="settings-category-group hidden" data-settings-panel="accessibility">
           <div data-i18n="ui.settings.accessibility" class="settings-category-header">ACCESSIBILITY</div>
+          <div class="setting-item">
+            <span data-i18n="ui.settings.camera_shake">CAMERA SHAKE</span>
+            <select id="setting-camera-shake" data-i18n-aria-label="ui.aria.camera_shake" class="settings-select" aria-label="Camera shake intensity">
+              <option value="off" data-i18n="ui.opt.shake_off">OFF (0%)</option>
+              <option value="low" data-i18n="ui.opt.shake_low">LOW (25%)</option>
+              <option value="reduced" data-i18n="ui.opt.shake_reduced">REDUCED (50%)</option>
+              <option value="normal" selected data-i18n="ui.opt.shake_normal">NORMAL (100%)</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span data-i18n="ui.settings.aim_assist">CONTROLLER AIM ASSIST</span>
+            <select id="setting-aim-assist" data-i18n-aria-label="ui.aria.aim_assist" class="settings-select" aria-label="Controller aim assistance">
+              <option value="off" data-i18n="ui.opt.aim_assist_off">OFF</option>
+              <option value="low" data-i18n="ui.opt.aim_assist_low">LOW (MAGNETISM ONLY)</option>
+              <option value="standard" selected data-i18n="ui.opt.aim_assist_standard">STANDARD (SNAP + FRICTION)</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span data-i18n="ui.settings.reduced_pressure">REDUCED PRESSURE MODE</span>
+            <label class="toggle"><input type="checkbox" id="setting-reduced-pressure"> <span class="slider"></span></label>
+          </div>
         </div>
 
         <!-- Section 4: Operator & System Data -->

@@ -512,4 +512,39 @@ describe('createArmoryUi ownership gating', () => {
 
         globalThis.window = previousWindow;
     });
+
+    it('toggles HUD layout between classic and dock on debug button click', () => {
+        const prevDoc = globalThis.document;
+        const prevStorage = globalThis.localStorage;
+        const mockStorage = makeStorage();
+        globalThis.localStorage = mockStorage;
+        globalThis.document = {
+            documentElement: {
+                dataset: {}
+            },
+            getElementById: () => null
+        };
+
+        try {
+            mount();
+            const button = container.querySelector('#armory-debug-hud-layout-btn');
+            expect(button).not.toBeNull();
+            expect(container.innerHTML).toContain('HUD: CLASSIC');
+
+            button.click();
+            expect(mockStorage.getItem('hb_hud_layout')).toBe('dock');
+            expect(globalThis.document.documentElement.dataset.hudLayout).toBe('dock');
+            expect(container.innerHTML).toContain('✓ HUD: DOCK');
+
+            const updatedBtn = container.querySelector('#armory-debug-hud-layout-btn');
+            updatedBtn.click();
+            expect(mockStorage.getItem('hb_hud_layout')).toBe('classic');
+            expect(globalThis.document.documentElement.dataset.hudLayout).toBe('classic');
+            expect(container.innerHTML).toContain('HUD: CLASSIC');
+        } finally {
+            globalThis.document = prevDoc;
+            globalThis.localStorage = prevStorage;
+        }
+    });
 });
+

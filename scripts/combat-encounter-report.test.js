@@ -3,6 +3,8 @@ import { ENEMY_STATS } from '../src/data/enemies.js';
 import { CLASS_STATS } from '../src/threeGame.js';
 import {
     buildEncounterTable,
+    buildFormationPriorityTable,
+    buildRoleCoverageReport,
     gatedBossPhaseExtensionCandidates,
     hasPhaseMechanic,
     idealizedTimeToKillSeconds,
@@ -66,20 +68,22 @@ describe('idealizedTimeToKillSeconds', () => {
 });
 
 describe('hasPhaseMechanic / gatedBossPhaseExtensionCandidates (B1)', () => {
-    it('the queen and the converted boss_sporesnail have a phase mechanic; every other enemy does not', () => {
+    it('the queen and three converted biome bosses have phase mechanics', () => {
         expect(hasPhaseMechanic('queen')).toBe(true);
         expect(hasPhaseMechanic('boss_sporesnail')).toBe(true);
+        expect(hasPhaseMechanic('boss_cybersnail')).toBe(true);
+        expect(hasPhaseMechanic('boss_cryosnail')).toBe(true);
         for (const enemyId of Object.keys(ENEMY_STATS)) {
-            if (enemyId === 'boss_sporesnail') continue;
+            if (['boss_sporesnail', 'boss_cybersnail', 'boss_cryosnail'].includes(enemyId)) continue;
             expect(hasPhaseMechanic(enemyId)).toBe(false);
         }
     });
 
-    it('reports the B1 gate as met, with boss_sporesnail as the only conversion this pass', () => {
+    it('reports all three biome-boss conversions and leaves corrupted operators open', () => {
         const gate = gatedBossPhaseExtensionCandidates();
         expect(gate.gateMet).toBe(true);
-        expect(gate.convertedThisPass).toEqual(['boss_sporesnail']);
-        expect(gate.phaselessBosses).not.toContain('boss_sporesnail');
+        expect(gate.convertedThisPass).toEqual(['boss_sporesnail', 'boss_cybersnail', 'boss_cryosnail']);
+        for (const id of gate.convertedThisPass) expect(gate.phaselessBosses).not.toContain(id);
         expect(gate.phaselessBosses.length).toBeGreaterThan(0);
         expect(gate.phaselessBosses.every((id) => id.startsWith('boss_'))).toBe(true);
     });
@@ -87,7 +91,7 @@ describe('hasPhaseMechanic / gatedBossPhaseExtensionCandidates (B1)', () => {
 
 describe('phasedTimeToKillSeconds', () => {
     it('returns null for ids with no bossPhases.js entry', () => {
-        expect(phasedTimeToKillSeconds('boss_cybersnail', 'SCOUT')).toBeNull();
+        expect(phasedTimeToKillSeconds('boss_corrupted_scout', 'SCOUT')).toBeNull();
     });
 
     it("TANK's phased fight takes meaningfully longer than the unarmored idealized baseline (armor has real bite at 2 damage/shot)", () => {
@@ -106,6 +110,23 @@ describe('phasedTimeToKillSeconds', () => {
         for (const className of CLASS_NAMES) {
             const phased = phasedTimeToKillSeconds('boss_sporesnail', className, { maxSeconds: 300 });
             expect(phased, `${className} did not defeat boss_sporesnail within 300s`).not.toBeNull();
+        }
+    });
+});
+
+describe('Sprint 47 coordinated encounter audit', () => {
+    it('reports every tactical role as covered by a real recipe', () => {
+        const coverage = buildRoleCoverageReport();
+        expect(coverage.map((row) => row.role).sort()).toEqual(['anchor', 'controller', 'flanker', 'support', 'suppressor']);
+        expect(coverage.every((row) => row.covered && row.recipeIds.length > 0)).toBe(true);
+    });
+
+    it('reports measurable priority differences for all classes in Locked Crossfire', () => {
+        const rows = buildFormationPriorityTable().filter((row) => row.recipeId === 'locked_crossfire');
+        for (const className of CLASS_NAMES) {
+            const anchor = rows.find((row) => row.playerClass === className && row.priorityRole === 'anchor');
+            const suppressor = rows.find((row) => row.playerClass === className && row.priorityRole === 'suppressor');
+            expect(anchor.clearTimeSeconds).toBeLessThan(suppressor.clearTimeSeconds);
         }
     });
 });

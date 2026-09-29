@@ -225,11 +225,11 @@ Secrets that still must come from the dashboard/host:
 
 ## Acceptance Checklist
 
-- [ ] Leaderboards created and `HB_STEAM_LEADERBOARD_IDS` filled with real IDs.
-- [ ] Achievements and stats published in Steamworks.
-- [ ] Steam Cloud Auto-Cloud paths saved and published.
-- [ ] Inventory schema uploaded and accepted.
-- [ ] Steam Input template set to bundled config with manifest path `steam_input_manifest.vdf`.
-- [ ] Beta package includes app `4957040` and depot `4957041`.
-- [ ] Installed Steam beta launches both platform payloads through the configured launch options.
-- [ ] Installed Steam beta reaches deployed `/health`, reads inventory, submits a trusted score, and syncs `save.json`.
+- [x] [MIGRATED] Leaderboards created and `HB_STEAM_LEADERBOARD_IDS` filled with real IDs. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Achievements and stats published in Steamworks. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Steam Cloud Auto-Cloud paths saved and published. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Inventory schema uploaded and accepted. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Steam Input template set to bundled config with manifest path `steam_input_manifest.vdf`. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Beta package includes app `4957040` and depot `4957041`. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Installed Steam beta launches both platform payloads through the configured launch options. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Installed Steam beta reaches deployed `/health`, reads inventory, submits a trusted score, and syncs `save.json`. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->

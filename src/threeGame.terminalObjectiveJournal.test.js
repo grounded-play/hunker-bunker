@@ -8,7 +8,9 @@ describe('terminal objective/night journal', () => {
     function fakeElement() {
         const childrenByClass = new Map();
         return {
-            textContent: '', className: '', children: [],
+            textContent: '', className: '', children: [], dataset: {}, style: {},
+            setAttribute(name, val) { this[name] = val; },
+            getAttribute(name) { return this[name] ?? null; },
             replaceChildren() { this.children = []; },
             append(child) { this.children.push(child); },
             querySelector(selector) { return childrenByClass.get(selector.slice(1)) ?? null; },
@@ -23,7 +25,10 @@ describe('terminal objective/night journal', () => {
     beforeEach(() => {
         elements = new Map([
             'terminal-log-day', 'terminal-log-phase', 'terminal-log-light',
-            'terminal-log-transition', 'terminal-objective-journal-list'
+            'terminal-log-transition', 'terminal-log-route', 'terminal-log-advance-day',
+            'terminal-cycle-compact-text', 'terminal-cycle-fill',
+            'terminal-cycle-progress-wrap', 'terminal-cycle-progress-text',
+            'terminal-objective-journal-list'
         ].map((id) => [id, fakeElement()]));
         vi.stubGlobal('document', {
             getElementById: (id) => elements.get(id) ?? null,
@@ -31,6 +36,9 @@ describe('terminal objective/night journal', () => {
         });
         game = {
             renderTerminalObjectiveJournal: ThreeGame.prototype.renderTerminalObjectiveJournal,
+            updateTerminalCycleStatus: ThreeGame.prototype.updateTerminalCycleStatus,
+            getDayCycleViewModel: ThreeGame.prototype.getDayCycleViewModel,
+            getAdvanceDayStatus: ThreeGame.prototype.getAdvanceDayStatus,
             dayState: { day: 3, phase: 'expedition', resolved: [], expired: [] },
             timeOfDay: 0.5,
             dayCycleSeconds: 600,
@@ -38,7 +46,8 @@ describe('terminal objective/night journal', () => {
             missionState: { label: 'RECOVER BLACK BOX', status: 'active' },
             runStartTime: Date.now() - 65_000,
             bank: { canAfford: () => false },
-            _terminalObjectiveHistory: []
+            _terminalObjectiveHistory: [],
+            _lastJournalDomSignature: null
         };
     });
 
@@ -56,11 +65,35 @@ describe('terminal objective/night journal', () => {
         const list = elements.get('terminal-objective-journal-list');
         expect(list.children.some((row) => row.querySelector('.terminal-objective-journal-copy')?.textContent === 'MERIDIAN FIRST CONTACT')).toBe(true);
 
+        expect(elements.get('terminal-log-advance-day').textContent).toBe('AVAILABLE AT BUNKER COT');
+        expect(elements.get('terminal-log-advance-day').dataset.advanceStatus).toBe('cot_available');
+        expect(elements.get('terminal-cycle-progress-wrap')['aria-valuenow']).toBe('50');
+
         game.missionState.status = 'objective_complete';
         game.bank.canAfford = () => true;
         game.renderTerminalObjectiveJournal({}, goal);
         expect(game._terminalObjectiveHistory).toHaveLength(2);
         expect(list.children[0].querySelector('.terminal-objective-journal-state').textContent)
             .toBe('OBJECTIVE COMPLETE · READY');
+
+        // Verify DOM caching: identical state does not rebuild list children
+        const childrenSnapshot = list.children;
+        game.renderTerminalObjectiveJournal({}, goal);
+        expect(list.children).toBe(childrenSnapshot);
+    });
+
+    it('reports advance day blocked when contract is active or in co-op guest mode', () => {
+        const goal = { title: 'REPAIR O2', cost: { tech: 10 } };
+        game._activeCampQuest = { id: 'contract_1' };
+        game.renderTerminalObjectiveJournal({}, goal);
+        expect(elements.get('terminal-log-advance-day').textContent).toBe('BLOCKED — ACTIVE CONTRACT');
+        expect(elements.get('terminal-log-advance-day').dataset.advanceStatus).toBe('blocked_contract');
+
+        game._activeCampQuest = null;
+        game.isMultiplayer = true;
+        game.isMultiplayerHost = false;
+        game.renderTerminalObjectiveJournal({}, goal);
+        expect(elements.get('terminal-log-advance-day').textContent).toBe('CO-OP VISITOR — LOCAL CAMPAIGN CYCLE LOCKED');
+        expect(elements.get('terminal-log-advance-day').dataset.advanceStatus).toBe('coop_visitor');
     });
 });

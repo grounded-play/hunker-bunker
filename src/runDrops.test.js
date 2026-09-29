@@ -16,7 +16,10 @@ import {
     getVesperDoctrineReloadEffect,
     getQueensMilkAlienContactHeal,
     getQueensMilkHumanHealPenalty,
-    applyIncomingDamageModifiers
+    applyIncomingDamageModifiers,
+    resolveCryoShatterNova,
+    resolveBioVampirismKill,
+    getTurretElementalInheritance
 } from './runDrops.js';
 
 describe('runDrops', () => {
@@ -280,18 +283,108 @@ describe('runDrops', () => {
             .filter((item) => item.implemented === false)
             .map((item) => item.id)
             .sort();
+        // Sprint 47 Lane 3: cryo_rime, caustic_payload, shatter_engine, bio_vampirism flipped to implemented: true
         expect(inert).toEqual([
-            'bio_vampirism', 'caustic_payload', 'cryo_rime',
-            'pheromone_aura', 'plasma_bounce', 'shatter_engine', 'synapse_pulse',
-            'tesla_thrusters'
+            'pheromone_aura', 'plasma_bounce', 'synapse_pulse', 'tesla_thrusters'
         ]);
     });
 
     it('still leaves a usable reward pool at every rarity it can roll', () => {
         const live = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS].filter((i) => i.implemented !== false);
-        expect(live.length).toBe(11);
+        expect(live.length).toBe(15);
         for (const rarity of ['common', 'rare', 'mythic', 'corrupted']) {
             expect(live.some((i) => i.rarity === rarity), `no live ${rarity} reward`).toBe(true);
         }
+    });
+
+    it('computes active synergies for Cryo Shatter and Bio Predator', () => {
+        expect(computeActiveSynergies([])).toEqual([]);
+        expect(computeActiveSynergies([{ id: 'cryo_rime' }])).toEqual([]);
+
+        const cryoShatter = computeActiveSynergies([{ id: 'cryo_rime' }, { id: 'shatter_engine' }]);
+        expect(cryoShatter).toHaveLength(1);
+        expect(cryoShatter[0].id).toBe('cryo_shatter');
+        expect(cryoShatter[0].element).toBe('cryo');
+
+        const bioPredator = computeActiveSynergies([{ id: 'caustic_payload' }, { id: 'bio_vampirism' }]);
+        expect(bioPredator).toHaveLength(1);
+        expect(bioPredator[0].id).toBe('bio_predator');
+        expect(bioPredator[0].element).toBe('bio');
+
+        const both = computeActiveSynergies([
+            { id: 'cryo_rime' },
+            { id: 'shatter_engine' },
+            { id: 'caustic_payload' },
+            { id: 'bio_vampirism' }
+        ]);
+        expect(both).toHaveLength(2);
+    });
+
+    it('resolves Cryo Shatter nova within radius and damages adjacent hostiles', () => {
+        const sprites = [
+            { parent: {}, position: { x: 1, z: 0 }, userData: { hp: 10 } },
+            { parent: {}, position: { x: 3, z: 0 }, userData: { hp: 10 } },
+            { parent: {}, position: { x: 10, z: 0 }, userData: { hp: 10 } } // out of range
+        ];
+
+        const affected = resolveCryoShatterNova({
+            originX: 0,
+            originZ: 0,
+            scatterSprites: sprites,
+            shatterRadius: 4.0,
+            shatterDamage: 25
+        });
+
+        expect(affected).toHaveLength(2);
+        expect(affected[0].damage).toBe(25);
+        expect(affected[0].distance).toBe(1);
+        expect(affected[1].distance).toBe(3);
+    });
+
+    it('resolves Bio Vampirism kill rewards on corroded bio enemies only', () => {
+        const vitals = { hp: 2, maxHp: 4, o2: 50, maxO2: 100 };
+
+        // Non-corroded bio enemy -> no refund
+        const nonCorroded = resolveBioVampirismKill({
+            playerVitals: vitals,
+            enemyType: 'crawler',
+            isCorroded: false
+        });
+        expect(nonCorroded.o2Restored).toBe(0);
+        expect(nonCorroded.heartRestored).toBe(0);
+
+        // Corroded non-bio enemy (e.g. cybersnail) -> no refund
+        const nonBio = resolveBioVampirismKill({
+            playerVitals: vitals,
+            enemyType: 'cybersnail',
+            isCorroded: true
+        });
+        expect(nonBio.o2Restored).toBe(0);
+
+        // Corroded bio enemy (crawler) -> restores 8 O2 and 1 heart
+        const bioKill = resolveBioVampirismKill({
+            playerVitals: vitals,
+            enemyType: 'crawler',
+            isCorroded: true
+        });
+        expect(bioKill.o2Restored).toBe(8);
+        expect(bioKill.heartRestored).toBe(1);
+        expect(bioKill.batteryRestored).toBe(15);
+    });
+
+    it('resolves turret elemental inheritance at 50% potency', () => {
+        expect(getTurretElementalInheritance([])).toBeNull();
+
+        const cryoTurret = getTurretElementalInheritance([{ id: 'cryo_rime' }]);
+        expect(cryoTurret).not.toBeNull();
+        expect(cryoTurret.element).toBe('cryo');
+        expect(cryoTurret.potency).toBe(0.5);
+        expect(cryoTurret.freezePerHit).toBe(17);
+
+        const bioTurret = getTurretElementalInheritance([{ id: 'caustic_payload' }]);
+        expect(bioTurret).not.toBeNull();
+        expect(bioTurret.element).toBe('bio');
+        expect(bioTurret.potency).toBe(0.5);
+        expect(bioTurret.tickDamage).toBe(1);
     });
 });

@@ -124,4 +124,48 @@ describe('ExplorationTracker & Map Helpers', () => {
         expect(exploredState.explored).toBe(true);
         expect(exploredState.key).toBe('0,0');
     });
+
+    it('registers Phase 4 transit, bridge, and gate landmarks with distinct types and icons', () => {
+        const transitLandmark = tracker.registerTransitTerminalLandmark({
+            id: 'transit_cybersnail_arena',
+            name: 'Cybersnail Arena Transit',
+            position: { x: 38, z: -14 }
+        });
+        expect(transitLandmark.type).toBe('transit_terminal');
+        expect(transitLandmark.icon).toBe('transit');
+        expect(transitLandmark.priority).toBe(500);
+
+        const bridgeLandmark = tracker.registerNaniteBridgeLandmark({
+            id: 'bridge_canyon_01',
+            label: 'Scout Canyon Crossing',
+            position: { x: 45, z: 12 }
+        });
+        expect(bridgeLandmark.type).toBe('nanite_bridge');
+        expect(bridgeLandmark.icon).toBe('bridge');
+
+        const gateLandmark = tracker.registerMilestoneGateLandmark({
+            id: 'gate_ring1_exit',
+            label: 'Ring 1 Blast Gate',
+            position: { x: 60, z: 0 }
+        });
+        expect(gateLandmark.type).toBe('milestone_gate');
+        expect(gateLandmark.icon).toBe('gate');
+
+        const allLandmarks = tracker.getLandmarks();
+        expect(allLandmarks.some((l) => l.type === 'transit_terminal')).toBe(true);
+        expect(allLandmarks.some((l) => l.type === 'nanite_bridge')).toBe(true);
+        expect(allLandmarks.some((l) => l.type === 'milestone_gate')).toBe(true);
+    });
+
+    it('generates subtle objective floor breadcrumb waypoints along a valid route', () => {
+        tracker.recordPlayerPosition(0, 0);
+        tracker.recordPlayerPosition(15, 0);
+        tracker.recordPlayerPosition(30, 0);
+
+        const breadcrumbs = tracker.getObjectiveBreadcrumbs({ x: 0, z: 0 }, { x: 30, z: 0 }, 5.0);
+        expect(breadcrumbs.length).toBeGreaterThan(0);
+        expect(breadcrumbs[0].active).toBe(true);
+        expect(Number.isFinite(breadcrumbs[0].x)).toBe(true);
+    });
 });
+

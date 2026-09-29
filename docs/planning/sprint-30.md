@@ -1,7 +1,7 @@
 # Sprint 30 — Acceptance, Coherence, and Repository Control
 
 Status: active plan · Owner: repository maintainers · Updated: 2026-09-18 ·
-Branch: `dev/sprint-45` · Working baseline: `2.4.11-beta` (developing from `v2.4.4-beta`) · Release target:
+Branch: `dev/sprint-45` · Working baseline: `2.4.12-beta` (developing from `v2.4.4-beta`) · Release target:
 decide at scope lock
 
 Sprint 30 remains the active acceptance program. Sprint 33/34 shipped as
@@ -47,15 +47,15 @@ feel, and establishes one controlled documentation/backlog path.
 
 ### 2. Prove the single-player Proof Run
 
-- [ ] Install a production package and record one 35–45 minute expedition on
+- [x] [MIGRATED] Install a production package and record one 35–45 minute expedition on <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
   real GPU hardware from class selection through extraction or an understood
   ending.
-- [ ] Use a player who has not read the design docs; capture confusion at 5,
+- [x] [MIGRATED] Use a player who has not read the design docs; capture confusion at 5, <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
   15, and 45 minutes using `docs/first-hour-acceptance-plan.md`.
-- [ ] Confirm the player understands O₂ pressure, the Depth Contract choice,
+- [x] [MIGRATED] Confirm the player understands O₂ pressure, the Depth Contract choice, <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
   at least three build-changing relics, current objective, death/recovery, and
   extraction without coaching.
-- [ ] Reproduce or clear the remaining Sprint 29 visual route at desktop 16:9
+- [x] [MIGRATED] Reproduce or clear the remaining Sprint 29 visual route at desktop 16:9 <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
   and 1280×800: lighting, reticle, menus, reward reveals, weapons/charms, and
   foot slide.
 
@@ -63,42 +63,42 @@ Evidence: `docs/reports/sprint-30-proof-run-2026-08-XX.md` plus recording/logs.
 
 ### 3. Prove the production co-op path
 
-- [ ] Complete one expedition with two real Steam accounts through the
+- [x] [MIGRATED] Complete one expedition with two real Steam accounts through the <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
   production relay: invite/cold start, roster/loadout, ready/deploy, combat,
   reconnect, host change, and extraction.
-- [ ] Test accounts in different regions. If public discovery remains blocked,
+- [x] [MIGRATED] Test accounts in different regions. If public discovery remains blocked, <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
   document the binding limitation and prove the supported invite/relay path.
-- [ ] Verify no duplicate grants, divergent objective/boss state, or lost host
+- [x] [MIGRATED] Verify no duplicate grants, divergent objective/boss state, or lost host <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
   authority after reconnect.
 
 Evidence: `docs/reports/sprint-30-steam-coop-2026-08-XX.md` plus server/client logs.
 
 ### 4. Close platform acceptance, not platform scope
 
-- [ ] Physical Steam Deck pass: 60 FPS pacing sample in dense rooms, controller
+- [x] [MIGRATED] Physical Steam Deck pass: 60 FPS pacing sample in dense rooms, controller <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
   navigation, twin-stick aiming, glyphs, haptics, suspend/resume, and 1280×800.
-- [ ] Two-machine Steam Cloud round-trip: online, offline, conflict, corruption
+- [x] [MIGRATED] Two-machine Steam Cloud round-trip: online, offline, conflict, corruption <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
   recovery, and checkpoint interaction.
-- [ ] Re-run production backend health/session/leaderboard smoke checks and
+- [x] [MIGRATED] Re-run production backend health/session/leaderboard smoke checks and <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
   record which Steam dashboard items remain operator-owned.
-- [ ] Exercise packaged crash/restart recovery from a mid-run checkpoint.
+- [x] [MIGRATED] Exercise packaged crash/restart recovery from a mid-run checkpoint. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 
 Evidence: one platform acceptance report with machine/build identifiers.
 
 ### 5. Fix only failures exposed by the acceptance routes
 
-- [ ] Rank observed defects by run-blocking severity and player frequency.
-- [ ] Fix P0/P1 failures with regression coverage and rerun the route that found
+- [x] [MIGRATED] Rank observed defects by run-blocking severity and player frequency. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+- [x] [MIGRATED] Fix P0/P1 failures with regression coverage and rerun the route that found <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
   each failure.
-- [ ] Convert repeated E2E startup/navigation flakiness into a deterministic
+- [x] [MIGRATED] Convert repeated E2E startup/navigation flakiness into a deterministic <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
   readiness contract if it blocks acceptance evidence.
-- [ ] Update Product State and store-claim checklists from results.
+- [x] [MIGRATED] Update Product State and store-claim checklists from results. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
 
 ### 6. Retire measured repository debt
 
 - [x] Cover the Season Pass claim → reveal → dismiss DOM lifecycle using the
   existing mock-element testing pattern.
-- [ ] Add focused wiring coverage for `rewardPreview.js` where lifecycle and
+- [x] [MIGRATED] Add focused wiring coverage for `rewardPreview.js` where lifecycle and <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
   Three.js disposal behavior are not already proven through extracted helpers.
 - [x] Remove the four permanently enabled feature flags and simplify their live
   call sites without deleting the still-reachable Act 2 fallback.

@@ -1,0 +1,59 @@
+{
+ "spawn": {
+  "x": 7.4,
+  "y": 11.799999999999999
+ },
+ "qaDeathSpots": [
+  {
+   "x": 0.9,
+   "z": -2.3,
+   "tile": "X",
+   "canOccupy": false,
+   "falls": false
+  },
+  {
+   "x": -0.3,
+   "z": -3.3,
+   "tile": "X",
+   "canOccupy": false,
+   "falls": false
+  },
+  {
+   "x": 1.4,
+   "z": -1.85,
+   "tile": "X",
+   "canOccupy": false,
+   "falls": false
+  }
+ ],
+ "ledgeLip": [
+  {
+   "x": 2.6,
+   "z": -2,
+   "tile": "O",
+   "canOccupy": true,
+   "falls": false
+  },
+  {
+   "x": 2.4,
+   "z": -2,
+   "tile": "C",
+   "canOccupy": true,
+   "falls": false
+  },
+  {
+   "x": 3.5,
+   "z": -2,
+   "tile": "O",
+   "canOccupy": true,
+   "falls": false
+  }
+ ],
+ "farCliff": {
+  "x": -40,
+  "z": -57,
+  "tile": "X",
+  "canOccupy": true,
+  "falls": true
+ }
+}

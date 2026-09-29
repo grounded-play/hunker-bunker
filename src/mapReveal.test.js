@@ -71,7 +71,8 @@ describe('radar scan updates the map', () => {
         expect(w.discoveredMapCellKeys.has('24,36')).toBe(true);
         expect(w.discoveredMapCellKeys.has('24,40')).toBe(false);
         expect([...w.discoveredMapRoomKeys]).toEqual(['0,0:close']);
-        expect(w.lastRadarScan).toMatchObject({ x: 24, z: 24, radius: 10 });
+        expect(w.lastRadarScan).toMatchObject({ x: 24, z: 24, radius: 10, dissipationDuration: 400 });
+        expect(w.lastRadarScan.freshCells.has('22,24')).toBe(true);
         const firstFresh = w.lastRadarScan.freshCells.size;
         expect(firstFresh).toBeGreaterThan(300);
         w.recordRadarScanDiscovery(24, 24, 10);
