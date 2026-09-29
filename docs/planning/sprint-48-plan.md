@@ -155,6 +155,15 @@ Source: [HUD overlay review](hud-overlay-review-and-recovery-plan-2026-09-28.md)
 
   **Exit:** all three classes pass one geometry snapshot, Deck critical text is
   ≥ 11 px, and the core combat state still reads with the frame art switched off.
+
+  **Status (2026-09-29): R0 and the shared-geometry portion of R1 are complete.**
+  `tests/e2e/hud-readability.spec.js` is now a green release gate across all 12
+  class/viewport combinations. The generator emits one 220/520/380×64 u grid;
+  class paintings are border-only nine-slice skins and can no longer move or shrink
+  instruments. The matrix passes the 11 px Deck floor, clipping, class-rectangle and
+  opaque-area assertions. Remaining R1 work is the scan-ring move, dash/melee slot,
+  accessible loot-label audit and painter window templates. The owner can still choose
+  a repaint later without blocking layout work.
 - **R2: one information architecture above the dock.**
   - One prompt-lane controller: interaction > urgent tutorial > loop guidance, one at a
     time, and every PRESS-E surface moves into it.
@@ -285,7 +294,8 @@ Ring 1 milestones to extraction or an ending. Record video plus the session log 
 Dependencies:
 - **P0 fixes** publish as a new beta BuildID and re-run only the failed hardware rows.
 - **The Proof Run** waits on the P0 fixes, not on the HUD.
-- **R1 housing art** waits on the owner's choice between cap-and-stretch and repaint.
+- **R1 housing art** uses cap-and-stretch as the working decision. A repaint remains a
+  polish option, not a blocker, because art no longer defines content geometry.
 - **Wear and portraits** wait on R1 (Sprint 49).
 
 ## 5. Lanes (claim before starting)
@@ -305,28 +315,19 @@ files into your commits.
 The options and a recommendation for most of these are written out in the status
 doc's [§5](sprint-47-status-and-sprint-48-plan-2026-09-28.md) (D1–D8).
 
-1. **Housing art for the slim band:** slice the current painted housings into caps and a
-   stretchable middle, or repaint at slim proportions from exported window templates?
-2. **The reward cache in co-op:** per-player rolls or one shared, split cache?
-3. **Deck frame target:** is a 30 fps floor with 60 as a stretch acceptable for
-   Sprint 48 sign-off?
-4. **Is "trade in / trade up" the smelter?**
-5. **Invisible models:** which objects, in which rooms?
-6. **Remove `public/ui/suit/`** (4.1 MB of superseded procedural panels and edge-check
-   images, unused but shipped)?
-7. **Blood on the HUD:** keep the wear model (dries, wiped at the bunker or a heal
-   station). An earlier draft of this file said "fades over 12 s", which contradicts
-   it.
-8. **The two moderate Dependabot alerts:** fix on the release branch or on `mothership`?
-9. **Steam trade-ups:** trade-ups and redemptions need a server recipe
-   (`server/steamInventory.js`) and Steamworks exchange/generator itemdefs per tier.
-   Until then they are disabled on the Steam inventory. Add them, or hide the smelter
-   on Steam builds?
-10. **Foundry roll odds:** keep 25/15/40/17/3 (UNCOMMON added), or re-grade the recipes
-    to other items so the old 40/40/17/3 table keeps a pool in every tier?
-    LEGENDARY now has no recipe, so its 3% falls through to any unprinted recipe.
-11. ~~Default the Foundry hub on?~~ **Answered 2026-09-29:** on;
-    `hb_foundry_hub=0` opts out.
+| # | Decision and recommendation | What the choice changes / safe default |
+| :--- | :--- | :--- |
+| 1 | **Housing art:** use cap-and-stretch now; repaint only if hardware review rejects it. | Implemented as the R1 working decision. The fixed grid survives either choice, so repainting is polish rather than a dependency. |
+| 2 | **Co-op reward cache:** use per-player deterministic rolls derived from the host seed. | Each player gets feedback and reconnects can reproduce the award. A shared split needs ownership, contention and disconnect rules; do not network the cache until this is chosen. |
+| 3 | **Deck target:** accept a stable 30 fps floor for Sprint 48, with 60 fps as the optimization target. | Sign-off still fails on pacing spikes: p50 ≤ 33 ms is not permission for ≥ 500 ms long tasks. Requiring 60 makes performance the sprint blocker. |
+| 4 | **“Trade in / trade up”:** treat both as the Foundry smelter. | This keeps one recipe, one inventory mutation and one player-facing term. If they are separate, specify another economy and hub surface first. |
+| 5 | **Invisible models:** name the object and room from hardware QA before assigning fixes. | Capture seed, room, object, platform and screenshot. Until then this is a QA intake row, not a broad implementation ticket. |
+| 6 | **Unused `public/ui/suit/`:** delete after one packaged-build reference audit. | Saves about 4.1 MB and removes misleading art. Keep only files with a real runtime or marketing consumer; Git history is the archive. |
+| 7 | **Blood wear:** persistent-but-cleanable; it dries, then clears at the bunker or heal station. | Do not use the contradictory 12-second fade. Accessibility gets reduced intensity, and overlays may not cover instruments. |
+| 8 | **Moderate dependency alerts:** fix on `dev/sprint-48`, then flow through the normal release path. | Avoid release-only divergence. If an upgrade is breaking, record the package/CVE and isolate it as a hardening PR before the next beta. |
+| 9 | **Steam trade-ups:** hide/disable them until server recipes and Steamworks itemdefs exist. | The local ledger stays testable, but a control that cannot transact against Steam inventory is misleading. Enable only with atomic exchange and rollback evidence. |
+| 10 | **Foundry odds:** re-grade recipes so every advertised tier has a pool; never silently fall through. | Until content is ready, give an empty tier zero weight, normalize the remaining weights and log the reason. |
+| 11 | **Foundry default:** **answered 2026-09-29 — on**, with `hb_foundry_hub=0` as opt-out. | Keep the opt-out through Deck/PC QA and remove it only after the controller and hub probes pass on hardware. |
 
 ## 7. Risks
 
