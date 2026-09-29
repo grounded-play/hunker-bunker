@@ -18,7 +18,8 @@ import { ObjectiveRegistry } from './src/objectiveRegistry.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { ExpeditionReceipt } from './src/economyReceipt.js';
 import { renderReturnManifest } from './src/returnManifest.js';
-import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, getFabricatedOutputIds } from './src/fabricator.js';
+import { renderLoadoutStrip } from './src/itemCard.js';
+import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, describeRecipe, getFabricatedOutputIds } from './src/fabricator.js';
 import { ProfileManager, exportSaveCode, importSaveCode, resetAllDataFactory, startNewCampaign } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
@@ -3158,14 +3159,18 @@ function getDeploymentBriefingStatus() {
     try { storedDay = JSON.parse(localStorage.getItem('hb_day_cycle') ?? 'null')?.day ?? 1; } catch { /* default day */ }
     const day = window.game?.dayState?.day ?? storedDay;
     const blackBox = blackBoxStore.load();
-    const daily = getDailyOpsBriefingStatus();
+    const daily = {
+        ...getDailyOpsBriefingStatus(),
+        scope: 'personal'
+    };
     const seasonObjectives = window.seasonPass?.getActiveWeeklies?.()
         ?.filter((objective) => !objective.completed)
         .slice(0, 3)
         .map((objective) => ({
             title: objective.title,
             progress: objective.progress,
-            target: objective.target
+            target: objective.target,
+            scope: 'personal'
         })) ?? [];
     const campaignDepth = Math.max(campaign.deepestDepthTier, Number(arc.signals?.deepestDepthTier) || 0);
     const storyProgress = act2.phase && act2.phase !== 'dormant'
@@ -12691,6 +12696,28 @@ function fabMissingResourceText(cost, bank = bankManager.getState()) {
     return missing.length ? `NEED ${missing.join(' / ')}` : '';
 }
 
+// What a recipe prints, as the shared item catalog shows it. A fabricated
+// weapon is a firing profile fitted to the active class's gun, so it wears
+// that gun's picture.
+function fabItemOptions() {
+    const classId = loadout.activeClassId;
+    return { classId, frameId: `frame:${loadout.getClassLoadout(classId)?.archetypeId ?? ''}` };
+}
+
+function fabItemView(recipe) {
+    const view = describeRecipe(recipe, fabItemOptions());
+    return { id: view?.id ?? null, name: view?.name ?? recipe?.name ?? '', icon: view?.icon ?? '/favicon.png' };
+}
+
+function logFoundry(event, recipe, extra = {}) {
+    const view = recipe ? fabItemView(recipe) : null;
+    debugLog.info('FOUNDRY', event, { recipeId: recipe?.id ?? null, item: view?.id ?? null, itemName: view?.name ?? null, rarity: recipe?.rarity ?? null, icon: view?.icon ?? null, classId: loadout.activeClassId, ...extra });
+}
+
+window.addEventListener('fabrication-started', (event) => logFoundry('print-started', event.detail?.recipe));
+window.addEventListener('fabrication-complete', (event) => logFoundry('print-complete', event.detail?.recipe));
+window.addEventListener('fabrication-rolled', (event) => logFoundry('roll-revealed', event.detail?.recipe, { duplicate: Boolean(event.detail?.duplicate), objectiveHit: Boolean(event.detail?.objectiveHit), broken: Boolean(event.detail?.broken) }));
+
 function renderFieldPrint(grid, bank) {
     const recipe = FAB_RECIPES.find(entry => entry.id === 'scatter_rep');
     const cost = fabricator.getEffectiveCost(recipe);
@@ -12802,7 +12829,8 @@ function renderFabricationModal() {
         const art = document.createElement('div');
         art.className = 'fab-card__art';
         const img = document.createElement('img');
-        img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = assetUrl(recipe.art);
+        const view = fabItemView(recipe);
+        img.loading = 'lazy'; img.decoding = 'async'; img.alt = view.name; img.src = assetUrl(view.icon);
         img.addEventListener('error', () => { img.src = assetUrl('/bunker_junk_rare.png'); }, { once: true });
         art.appendChild(img);
         const rarityTag = document.createElement('span');
@@ -12813,7 +12841,7 @@ function renderFabricationModal() {
 
         const name = document.createElement('div');
         name.className = 'fab-card__name';
-        name.innerHTML = `<span class="fab-card__klass">${recipe.klass}</span>${recipe.name}`;
+        name.innerHTML = `<span class="fab-card__klass">${recipe.klass}</span>${view.name}`;
         card.appendChild(name);
 
         const description = document.createElement('div');
@@ -12841,6 +12869,7 @@ function renderFabricationModal() {
                     classId: loadout.activeClassId,
                     replaceSlot
                 });
+                logFoundry(result.ok ? 'output-applied' : 'output-rejected', recipe, { granted: result.id ?? result.itemdefid ?? null, slot: result.slot ?? null, reason: result.reason ?? null });
                 if (result.ok) {
                     window.AudioManager?.play?.('class_lock', { volume: 0.55 });
                     syncEquippedWeaponLabel();
@@ -12891,7 +12920,7 @@ function renderFabricationModal() {
         grid.appendChild(card);
     }
     const objective = fabricator.getObjectiveState();
-    const targetName = objective.targetRecipe?.name ?? 'ALL TARGETS COMPLETE';
+    const targetName = objective.targetRecipe ? fabItemView(objective.targetRecipe).name : 'ALL TARGETS COMPLETE';
     const pct = Math.round((objective.chance ?? 1) * 100);
     setTxt('fab-summary', objective.complete
         ? `SCHEMATICS FABRICATED: ${fabricator.getFabricatedCount()} / ${FAB_RECIPES.length}`
@@ -12910,7 +12939,7 @@ function startFabTicker() {
 function stopFabTicker() { if (fabTicker) { clearInterval(fabTicker); fabTicker = null; } }
 
 // ── Fabricator gamba reveal (T7) ──────────────────────────────
-const RARITY_TILES = ['COMMON', 'COMMON', 'RARE', 'COMMON', 'RARE', 'EPIC', 'RARE', 'COMMON', 'EPIC', 'LEGENDARY'];
+const RARITY_TILES = ['COMMON', 'UNCOMMON', 'RARE', 'COMMON', 'RARE', 'EPIC', 'RARE', 'UNCOMMON', 'EPIC', 'LEGENDARY'];
 let fabRollSpinning = false;
 
 function runFabricatorRoll() {
@@ -12961,17 +12990,18 @@ function runFabricatorRoll() {
     setTimeout(() => {
         const r = result.rarity;
         const rec = result.recipe;
+        const view = fabItemView(rec);
         if (reveal) reveal.dataset.state = 'revealed';
         if (cardEl) {
             cardEl.className = `fab-reveal__card fab-reveal__card--${r.toLowerCase()}`;
             cardEl.innerHTML =
-                `<img class="fab-reveal__art" src="${rec.art}" alt="${rec.name}" onerror="this.src='/bunker_junk_rare.png'">` +
+                `<img class="fab-reveal__art" src="${assetUrl(view.icon)}" alt="${view.name}" onerror="this.src='/bunker_junk_rare.png'">` +
                 `<div class="fab-reveal__rarity">${r}${result.duplicate ? ' · DUPLICATE' : ''}</div>` +
-                `<div class="fab-reveal__name">${rec.name}</div>` +
+                `<div class="fab-reveal__name">${view.name}</div>` +
                 `<div class="fab-reveal__klass">${rec.klass}${result.objectiveHit ? ' · OBJECTIVE FABRICATED' : result.duplicate ? ' · ALREADY OWNED' : ' · SCHEMATIC UNLOCKED'}${result.broken ? ' · FABRICATOR BROKE' : ''}</div>`;
         }
         window.AudioManager?.playProceduralLoot?.('weapon', r.toLowerCase());
-        if (result.objectiveHit) showBiomePrompt(`> FABRICATOR: ${rec.name} OBJECTIVE PRINT COMPLETE.`);
+        if (result.objectiveHit) showBiomePrompt(`> FABRICATOR: ${view.name} OBJECTIVE PRINT COMPLETE.`);
         if (result.broken) {
             showBiomePrompt('> FABRICATOR: PRINT HEAD FAILURE. PARTIAL REFUND ISSUED. FOLLOW NEW SIGNAL.');
             window.game?.revealFoundry?.({ randomEdge: true });
@@ -14554,6 +14584,17 @@ document.getElementById('import-save')?.addEventListener('click', () => {
 // ── Operator roster / loadout console (doc 01.C) ──────────────
 // Equip a fabricated weapon as the active sidearm; the choice surfaces on the
 // in-game weapon panel and persists.
+// The hero screen's equipped strip: the selected class's items as the same
+// cards the Armory, Foundry and Vault show (src/itemCard.js).
+function renderHeroLoadoutStrip(type = activePreviewType) {
+    const classId = String(type ?? loadout.activeClassId ?? 'scout').toLowerCase();
+    const chassisId = loadout.getEquippedChassisSkinId();
+    renderLoadoutStrip(document.getElementById('hero-loadout-strip'), loadout.getClassLoadout(classId), {
+        classId,
+        chassisId: loadout.isChassisSupportedForClass(classId, chassisId) ? chassisId : null
+    });
+}
+
 function syncEquippedWeaponLabel() {
     const titleEl = document.querySelector('#weapon-status-panel .weapon-status-panel__title');
     if (titleEl) titleEl.textContent = loadout.getEquippedLabel(fabricator);
@@ -14650,6 +14691,7 @@ function renderHomebaseConsole({ initializeCallsign = false } = {}) {
             ? `${t('ui.menu.recon_frame')} · ${t('ui.menu.spec_scout_armor')}`
             : `${t('ui.menu.utility_frame')} · ${t('ui.menu.spec_eng_armor')}`);
     setTxt('homebase-loadout-summary', `${t('ui.hero_detail.chassis_spec')} // ${activeChassisSpec}`);
+    renderHeroLoadoutStrip(activePreviewType);
 
     // Profile identity and career totals survive NEW RUN. Never source these
     // tiles from ThreeGame.getRunStats(): that object is the active expedition
@@ -15095,6 +15137,7 @@ async function syncHeroPreview(type) {
             : `${t('ui.menu.utility_frame')} · ${t('ui.menu.spec_eng_armor')}`);
     const summaryEl = document.getElementById('homebase-loadout-summary');
     if (summaryEl) summaryEl.textContent = `${t('ui.hero_detail.chassis_spec')} // ${activeChassisSpec}`;
+    renderHeroLoadoutStrip(type);
 
     if (scoutHeroPreview) {
         const loaded = await Promise.race([

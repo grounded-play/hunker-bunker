@@ -112,8 +112,6 @@ export const CHROMA_GREEN_ALLOWLIST = new Set([
     'public/Tank.full_v2.png',
     'public/Eng.Full_v2.png',
     'public/Scout.full_v2.png',
-    'public/schematics/schematic_05.webp',
-    'public/schematics/schematic_06.webp',
     'public/lore_portraits/queen_00.webp',
     'public/ui/suit/scout/map.png',
     'public/ui/suit/scout/map_blood.png',

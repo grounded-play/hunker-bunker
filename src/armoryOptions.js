@@ -6,6 +6,7 @@
 // are testable without a DOM, and so Vault rendering can reuse the same
 // labelling instead of growing a third opinion about it.
 import { getCatalogEntry } from './itemOwnership.js';
+import { getItemName } from './data/itemCatalog.js';
 
 const LOCKED_SUFFIX = '🔒 LOCKED';
 const DEV_SUFFIX = '🔓 DEV UNLOCK';
@@ -40,7 +41,8 @@ export function buildEquipOptions({
         const isSelected = selected !== null && selected === id;
 
         const rarity = entry.rarity ? entry.rarity.toUpperCase() : '';
-        let label = rarity ? `${entry.name} (${rarity})` : entry.name;
+        const name = getItemName(id) ?? entry.name;
+        let label = rarity ? `${name} (${rarity})` : name;
         if (!owned) {
             // Distinguish "you don't have this" from "you don't have this but
             // dev mode is letting you wear it anyway", so a dev session can
@@ -50,7 +52,7 @@ export function buildEquipOptions({
 
         options.push({
             id,
-            name: entry.name,
+            name,
             rarity: entry.rarity ?? null,
             type: entry.type ?? null,
             label,

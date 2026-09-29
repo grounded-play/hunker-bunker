@@ -1796,6 +1796,15 @@
         "follow_lead": "Nächster Schritt: Folge der Spur – {label}",
         "redeploy": "Nächster Schritt: erneut einsetzen"
       }
+    },
+    "item_card": {
+      "slot_weapon": "WAFFE",
+      "slot_charm": "ANHÄNGER",
+      "slot_bay_a": "SCHACHT A",
+      "slot_bay_b": "SCHACHT B",
+      "slot_chassis": "CHASSIS",
+      "empty": "LEER",
+      "equipped": "AUSGERÜSTET"
     }
   },
   "narrative": {
@@ -3462,6 +3471,22 @@
       "4241": {
         "name": "Großmarschall HUD-Design",
         "desc": "Königliche imperiale Kommandoschnittstelle in warmem Bernsteingold, gerahmt von archivarischen Lorbeerblattklammern."
+      }
+    },
+    "items": {
+      "frame": {
+        "talon": "Vector-9 Talon MP",
+        "talon_c": "Talon-C Karabiner",
+        "siege_breaker": "Belagerungsbrecher-50 Maschinenkanone",
+        "tesla_lock": "Tesla-Lock MK-IV Bogentreiber"
+      },
+      "weaponProfile": {
+        "mk1_sidearm": "Mark-I Seitenwaffe",
+        "pulse_carbine": "Pulskarabiner",
+        "scatter_rep": "Streu-Repetierer",
+        "rail_marksman": "Schienen-Präzisionsgewehr",
+        "neon_smg": "Neon-MP",
+        "cryo_lance": "Kryolanze"
       }
     }
   }

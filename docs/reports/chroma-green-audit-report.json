@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-09-25T19:38:04.027Z",
-  "scannedCount": 82,
+  "timestamp": "2026-09-29T07:13:11.278Z",
+  "scannedCount": 80,
   "unallowedCount": 0,
-  "allowlistCount": 123,
+  "allowlistCount": 121,
   "unallowed": [],
   "findings": [
     {
@@ -478,18 +478,6 @@
       "ratio": 0.7541,
       "width": 1024,
       "height": 559
-    },
-    {
-      "file": "public/schematics/schematic_06.webp",
-      "ratio": 0.025,
-      "width": 256,
-      "height": 256
-    },
-    {
-      "file": "public/schematics/schematic_05.webp",
-      "ratio": 0.0256,
-      "width": 256,
-      "height": 256
     },
     {
       "file": "public/lore_portraits/queen_00.webp",

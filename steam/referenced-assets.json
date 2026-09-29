@@ -1181,14 +1181,6 @@
     "scatter_horizon_black_box.png",
     "scatter_ice_stalagmite.png",
     "scatter_slime_puddle.png",
-    "schematics/schematic_00.webp",
-    "schematics/schematic_01.webp",
-    "schematics/schematic_02.webp",
-    "schematics/schematic_03.webp",
-    "schematics/schematic_04.webp",
-    "schematics/schematic_05.webp",
-    "schematics/schematic_06.webp",
-    "schematics/schematic_07.webp",
     "scout_ship.png",
     "scout_ship_broken.png",
     "scout_ship_healed.png",
@@ -10580,46 +10572,6 @@
     {
       "path": "scatter_slime_puddle.png",
       "bytes": 2638,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "schematics/schematic_00.webp",
-      "bytes": 7706,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "schematics/schematic_01.webp",
-      "bytes": 9192,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "schematics/schematic_02.webp",
-      "bytes": 8392,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "schematics/schematic_03.webp",
-      "bytes": 7622,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "schematics/schematic_04.webp",
-      "bytes": 8796,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "schematics/schematic_05.webp",
-      "bytes": 8870,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "schematics/schematic_06.webp",
-      "bytes": 8462,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "schematics/schematic_07.webp",
-      "bytes": 7668,
       "classification": "runtime-required"
     },
     {

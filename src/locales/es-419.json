@@ -1796,6 +1796,15 @@
         "follow_lead": "Siguiente paso: sigue la pista — {label}",
         "redeploy": "Siguiente paso: vuelve a desplegar"
       }
+    },
+    "item_card": {
+      "slot_weapon": "ARMA",
+      "slot_charm": "AMULETO",
+      "slot_bay_a": "BAHÍA A",
+      "slot_bay_b": "BAHÍA B",
+      "slot_chassis": "CHASIS",
+      "empty": "VACÍO",
+      "equipped": "EQUIPADO"
     }
   },
   "narrative": {
@@ -3462,6 +3471,22 @@
       "4241": {
         "name": "Tema de HUD Gran Mariscal",
         "desc": "Interfaz de mando imperial regia en dorado ámbar cálido enmarcada con soportes de hojas de laurel de archivo."
+      }
+    },
+    "items": {
+      "frame": {
+        "talon": "Subfusil Vector-9 Talon",
+        "talon_c": "Carabina Talon-C",
+        "siege_breaker": "Autocañón Rompeasedios 50",
+        "tesla_lock": "Impulsor de arco Tesla-Lock MK-IV"
+      },
+      "weaponProfile": {
+        "mk1_sidearm": "Arma corta Mark-I",
+        "pulse_carbine": "Carabina de pulsos",
+        "scatter_rep": "Repetidora de dispersión",
+        "rail_marksman": "Tirador de riel",
+        "neon_smg": "Subfusil de neón",
+        "cryo_lance": "Lanza criogénica"
       }
     }
   }

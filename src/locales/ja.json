@@ -1796,6 +1796,15 @@
         "follow_lead": "次の行動：手がかりを追う——{label}",
         "redeploy": "次の行動：再出撃"
       }
+    },
+    "item_card": {
+      "slot_weapon": "武器",
+      "slot_charm": "チャーム",
+      "slot_bay_a": "ベイA",
+      "slot_bay_b": "ベイB",
+      "slot_chassis": "シャーシ",
+      "empty": "空き",
+      "equipped": "装備中"
     }
   },
   "narrative": {
@@ -3462,6 +3471,22 @@
       "4241": {
         "name": "グランドマーシャル HUD テーマ",
         "desc": "温かな琥珀金の威厳ある帝国指揮インターフェース。記録用の月桂葉の括弧で縁取られる。"
+      }
+    },
+    "items": {
+      "frame": {
+        "talon": "ベクター9 タロンSMG",
+        "talon_c": "タロンC カービン",
+        "siege_breaker": "シージブレイカー50 オートキャノン",
+        "tesla_lock": "テスラロックMK-IV アークドライバー"
+      },
+      "weaponProfile": {
+        "mk1_sidearm": "マークI サイドアーム",
+        "pulse_carbine": "パルスカービン",
+        "scatter_rep": "スキャッターリピーター",
+        "rail_marksman": "レールマークスマン",
+        "neon_smg": "ネオンSMG",
+        "cryo_lance": "クライオランス"
       }
     }
   }

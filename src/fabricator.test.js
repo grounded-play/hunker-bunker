@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { FabricatorManager, FAB_RECIPES, getRecipe, rollRarity, FAB_SPIN_COST, getRecipesByRarity, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, getFabricatedOutputIds } from './fabricator.js';
+import { getItem } from './data/itemCatalog.js';
 
 function makeStorage() {
     const map = new Map();
@@ -38,10 +39,15 @@ describe('FabricatorManager', () => {
         bank = makeBank();
     });
 
-    it('exposes recipes each with art and a cost', () => {
+    it('exposes recipes each printing a catalog item, with a cost', () => {
         expect(FAB_RECIPES.length).toBe(13);
         for (const r of FAB_RECIPES) {
-            expect(r.art).toMatch(/^\/schematics\/schematic_\d\d\.webp$/);
+            const item = getItem(r.item, { classId: 'scout' });
+            expect(item, r.id).not.toBeNull();
+            expect(r.name).toBe(item.name);
+            expect(r.rarity).toBe(item.rarity.toUpperCase());
+            expect(item.iconUrl, r.id).toMatch(/^\/(economy|ach_)/);
+            expect(r).not.toHaveProperty('art');
             expect(r.printSeconds).toBeGreaterThan(0);
             expect(typeof r.cost.tech).toBe('number');
             expect(['weapon', 'mod', 'charm']).toContain(r.output.kind);
@@ -140,16 +146,17 @@ describe('FabricatorManager', () => {
     });
 
     it('every recipe has a valid rarity tier', () => {
-        const tiers = new Set(['COMMON', 'RARE', 'EPIC', 'LEGENDARY']);
+        const tiers = new Set(['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY']);
         for (const r of FAB_RECIPES) expect(tiers.has(r.rarity)).toBe(true);
         // At least one of each of the lower tiers exists so rolls have a pool.
         expect(getRecipesByRarity('COMMON').length).toBeGreaterThan(0);
         expect(getRecipesByRarity('RARE').length).toBeGreaterThan(0);
     });
 
-    it('rollRarity maps the weighted bands deterministically (40/40/17/3)', () => {
-        expect(rollRarity(() => 0.0)).toBe('COMMON');     // 0.00 < 0.40
-        expect(rollRarity(() => 0.39)).toBe('COMMON');
+    it('rollRarity maps the weighted bands deterministically (25/15/40/17/3)', () => {
+        expect(rollRarity(() => 0.0)).toBe('COMMON');     // 0.00 < 0.25
+        expect(rollRarity(() => 0.24)).toBe('COMMON');
+        expect(rollRarity(() => 0.30)).toBe('UNCOMMON');  // 0.25..0.40
         expect(rollRarity(() => 0.50)).toBe('RARE');      // 0.40..0.80
         expect(rollRarity(() => 0.79)).toBe('RARE');
         expect(rollRarity(() => 0.90)).toBe('EPIC');      // 0.80..0.97

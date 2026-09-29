@@ -1796,6 +1796,15 @@
         "follow_lead": "Next action: follow the lead — {label}",
         "redeploy": "Next action: redeploy"
       }
+    },
+    "item_card": {
+      "slot_weapon": "WEAPON",
+      "slot_charm": "CHARM",
+      "slot_bay_a": "BAY A",
+      "slot_bay_b": "BAY B",
+      "slot_chassis": "CHASSIS",
+      "empty": "EMPTY",
+      "equipped": "EQUIPPED"
     }
   },
   "narrative": {
@@ -3462,6 +3471,22 @@
       "4241": {
         "desc": "Regal imperial command interface in warm amber gold framed with archival laurel leaf brackets.",
         "name": "Grand Marshal HUD Theme"
+      }
+    },
+    "items": {
+      "frame": {
+        "talon": "Vector-9 Talon SMG",
+        "talon_c": "Talon-C Carbine",
+        "siege_breaker": "Siege-Breaker 50 Autocannon",
+        "tesla_lock": "Tesla-Lock MK-IV Arc Driver"
+      },
+      "weaponProfile": {
+        "mk1_sidearm": "Mark-I Sidearm",
+        "pulse_carbine": "Pulse Carbine",
+        "scatter_rep": "Scatter Repeater",
+        "rail_marksman": "Rail Marksman",
+        "neon_smg": "Neon SMG",
+        "cryo_lance": "Cryo Lance"
       }
     }
   }

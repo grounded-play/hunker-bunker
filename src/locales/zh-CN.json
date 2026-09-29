@@ -1796,6 +1796,15 @@
         "follow_lead": "下一步：追踪线索——{label}",
         "redeploy": "下一步：重新部署"
       }
+    },
+    "item_card": {
+      "slot_weapon": "武器",
+      "slot_charm": "挂饰",
+      "slot_bay_a": "插槽 A",
+      "slot_bay_b": "插槽 B",
+      "slot_chassis": "机体",
+      "empty": "空",
+      "equipped": "已装备"
     }
   },
   "narrative": {
@@ -3462,6 +3471,22 @@
       "4241": {
         "name": "大元帅 HUD 主题",
         "desc": "暖琥珀金的王室帝国指挥界面，以档案式月桂叶托架为框。"
+      }
+    },
+    "items": {
+      "frame": {
+        "talon": "矢量-9 爪击冲锋枪",
+        "talon_c": "爪击-C 卡宾枪",
+        "siege_breaker": "破城者-50 自动炮",
+        "tesla_lock": "特斯拉锁 MK-IV 电弧驱动器"
+      },
+      "weaponProfile": {
+        "mk1_sidearm": "马克-I 随身武器",
+        "pulse_carbine": "脉冲卡宾枪",
+        "scatter_rep": "散射连发枪",
+        "rail_marksman": "轨道神射手",
+        "neon_smg": "霓虹冲锋枪",
+        "cryo_lance": "冷冻长枪"
       }
     }
   }

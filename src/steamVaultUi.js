@@ -4,6 +4,7 @@ import { LocalVaultLedger } from './localVaultLedger.js';
  * Extracted from main.js for modular UI architecture.
  */
 import { STEAM_ITEM_CATALOG } from './data/steamItemCatalog.js';
+import { getItemView } from './data/itemCatalog.js';
 import { CATALOG_ITEMS } from './armoryUi.js';
 import {
     DISPENSARY_COST_BY_RARITY,
@@ -29,8 +30,23 @@ import { t, onLocaleChange } from './i18n.js';
 
 export { STEAM_ITEM_CATALOG };
 
+// The Vault's view of an item: the Steam/legacy record (description, trade
+// flags, the economy art that decals and the Steam side use) with the name,
+// rarity and icon every other surface shows (src/data/itemCatalog.js).
 export function getItemCatalogEntry(itemdefid) {
     if (!itemdefid) return null;
+    const legacy = legacyCatalogEntry(itemdefid);
+    const view = getItemView(itemdefid);
+    if (!view) return legacy;
+    return {
+        ...(legacy ?? { itemdefid: view.id, desc: view.name, tradable: false, marketable: false }),
+        name: view.name,
+        rarity: view.rarity,
+        icon: view.icon ?? legacy?.localImg ?? null
+    };
+}
+
+function legacyCatalogEntry(itemdefid) {
     const strId = String(itemdefid);
     const comm = COMMUNITY_SKINS.find((s) => s.id === strId);
     if (comm) {
@@ -78,20 +94,21 @@ export function getItemCatalogEntry(itemdefid) {
 
 export function applyCatalogImage(image, catalog) {
     if (!image || !catalog) return;
-    // Remote CDN -> local economy PNG -> generic placeholder. The current visible Season 0
-    // catalog (itemdefs 4100-4159) has complete 2D economy coverage; retain the fallback for
-    // legacy/achievement/community entries so a future art gap never becomes a broken-image
-    // icon.
+    // Shared catalog icon (the model render the Armory and Foundry show) ->
+    // remote CDN -> local economy PNG -> generic placeholder, skipping repeats,
+    // so an art gap never becomes a broken-image icon.
+    const sources = [...new Set([catalog.icon, catalog.img, catalog.localImg].filter(Boolean))];
+    let next = 1;
     image.onerror = () => {
-        if (!image.dataset.localFallback) {
+        if (next < sources.length) {
             image.dataset.localFallback = 'true';
-            image.src = assetUrl(catalog.localImg);
+            image.src = assetUrl(sources[next++]);
             return;
         }
         image.onerror = null;
         image.src = assetUrl('/favicon.png');
     };
-    image.src = assetUrl(catalog.img);
+    image.src = assetUrl(sources[0] ?? '/favicon.png');
 }
 
 let storeCatalog = null;

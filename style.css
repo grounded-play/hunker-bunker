@@ -10493,6 +10493,7 @@ body.hud-hidden .compound-location-title {
 /* ── Fabricator gamba reveal (T7) ──────────────────────────────
    Rarity palette: common slate, rare cyan, epic violet, legendary amber. */
 .fab-tile--common,    .fab-card--common,    .fab-reveal__card--common    { --rar: 148, 163, 184; }
+.fab-tile--uncommon,  .fab-card--uncommon,  .fab-reveal__card--uncommon  { --rar: 34, 197, 94; }
 .fab-tile--rare,      .fab-card--rare,      .fab-reveal__card--rare      { --rar: 0, 200, 255; }
 .fab-tile--epic,      .fab-card--epic,      .fab-reveal__card--epic      { --rar: 180, 120, 255; }
 .fab-tile--legendary, .fab-card--legendary, .fab-reveal__card--legendary { --rar: 255, 184, 64; }

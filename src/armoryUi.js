@@ -13,6 +13,7 @@ import {
 } from './weaponSheens.js';
 import { ITEM_TYPE, getCatalogIdsByType, getCatalogEntry } from './itemOwnership.js';
 import { getVoiceBank } from './data/voiceBanks.js';
+import { getItemName, getItemView } from './data/itemCatalog.js';
 import { hudThemeInlineStyle, resolveHudTheme } from './hudThemes.js';
 import { getSelectedPolish, unlockAllPolishes } from './operatorPolishes.js';
 import { getEquipmentStatus } from './data/equipmentDefinitions.js';
@@ -99,7 +100,19 @@ export const CATALOG_ITEMS = Object.freeze({
     '4159': { name: 'Deep Core Shard (Token)', rarity: 'uncommon', type: 'shard', icon: '/economy/relic_common.png' }
 });
 
-const ARCHETYPE_NAMES = ARMORY_WEAPON_NAMES;
+/**
+ * How the Armory presents an item: the shared catalog's card (name, rarity,
+ * icon), with the Armory's own icon lookup for an id the catalog lacks art for.
+ */
+export function armoryItemView(id) {
+    const view = getItemView(id);
+    const icon = view?.icon ?? getArmoryIcon(id, CATALOG_ITEMS[id]?.icon);
+    return view ? { ...view, icon } : null;
+}
+
+// Frame names come from the shared item catalog (localized); the English table
+// stays as the fallback for an archetype the catalog does not know.
+const frameName = (arch) => getItemName(`frame:${arch}`) ?? ARMORY_WEAPON_NAMES[arch] ?? null;
 
 export function createArmoryUi({
     container,
@@ -144,19 +157,19 @@ export function createArmoryUi({
     // frame via ARCHETYPE_SKINS).
     const FRAME_PREFIX = 'frame:';
 
-    // The slot buttons used to read names straight out of this file's local
-    // CATALOG_ITEMS, which covers skins/charms/mods/chassis but no decals -- so
-    // a fitted decal rendered as a bare itemdef id ("2003"). The shared
-    // itemOwnership catalog knows them all, so it is the fallback.
+    // Names, icons and rarity come from the shared item catalog
+    // (src/data/itemCatalog.js), the same one the Foundry, hero screen and
+    // Vault read. This file's CATALOG_ITEMS used to name 13 items by a
+    // shortened form nothing else used.
     function nameForItem(id, fallback) {
         if (!id) return fallback;
-        return CATALOG_ITEMS[id]?.name
+        return armoryItemView(id)?.name
             ?? getCatalogEntry(id)?.name
             ?? 'UNKNOWN EQUIPMENT';
     }
 
     function iconForItem(id) {
-        return getArmoryIcon(id, CATALOG_ITEMS[id]?.icon);
+        return armoryItemView(id)?.icon ?? getArmoryIcon(id, CATALOG_ITEMS[id]?.icon);
     }
 
     // Art that 404s must degrade to the initials fallback, not to the browser's
@@ -186,7 +199,7 @@ export function createArmoryUi({
         for (const arch of allowedArchetypes) {
             options.push({
                 id: `${FRAME_PREFIX}${arch}`,
-                name: `${ARCHETYPE_NAMES[arch] || arch.replace(/_/g, ' ').toUpperCase()} — FACTORY ISSUE`,
+                name: `${frameName(arch) || arch.replace(/_/g, ' ').toUpperCase()} — FACTORY ISSUE`,
                 owned: true,
                 disabled: false,
                 selected: loadout.archetypeId === arch && !loadout.weaponSkinId
@@ -217,7 +230,7 @@ export function createArmoryUi({
                     : `${FRAME_PREFIX}${loadout.archetypeId}`),
                 currentName: () => (loadout.weaponSkinId
                     ? nameForItem(loadout.weaponSkinId, '')
-                    : `${ARCHETYPE_NAMES[loadout.archetypeId] || String(loadout.archetypeId).toUpperCase()} — FACTORY ISSUE`),
+                    : `${frameName(loadout.archetypeId) || String(loadout.archetypeId).toUpperCase()} — FACTORY ISSUE`),
                 apply: (value) => {
                     if (value.startsWith(FRAME_PREFIX)) {
                         if (!allowedArchetypes.includes(value.slice(FRAME_PREFIX.length))) return false;
@@ -418,7 +431,7 @@ export function createArmoryUi({
                </button>`
             : '';
         const body = tiles.map((tile) => {
-            const rarity = CATALOG_ITEMS[tile.id]?.rarity ?? 'common';
+            const rarity = armoryItemView(tile.id)?.rarity ?? 'common';
             const swatch = swatchById.get(tile.id);
             const initials = tile.locked ? '' : (tile.realName.match(/[A-Z0-9]/g)?.slice(0, 3).join('') || '');
             const art = swatch
@@ -592,7 +605,7 @@ export function createArmoryUi({
                         <aside class="armory-stage-readout" aria-label="Live Armory Preview">
                             <div class="armory-stage-readout__info">
                                 <div class="armory-stage-readout__eyebrow" data-i18n="ui.armory.stage_eyebrow">◈ LIVE STAGE PREVIEW // DEPLOYMENT LOADOUT</div>
-                                <div class="armory-stage-readout__title">${activeClass.toUpperCase()} // ${ARCHETYPE_NAMES[archetype] || archetype}</div>
+                                <div class="armory-stage-readout__title">${activeClass.toUpperCase()} // ${frameName(archetype) || archetype}</div>
                                 <div class="armory-stage-readout__details">
                                     <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.weapon_label">WEAPON:</b> ${selectedWeapon}</span>
                                     <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_sheen">WEAPON SHEEN:</b> ${selectedSheen}</span>

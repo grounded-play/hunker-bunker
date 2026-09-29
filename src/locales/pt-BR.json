@@ -1796,6 +1796,15 @@
         "follow_lead": "Próximo passo: siga a pista — {label}",
         "redeploy": "Próximo passo: reimplantar"
       }
+    },
+    "item_card": {
+      "slot_weapon": "ARMA",
+      "slot_charm": "AMULETO",
+      "slot_bay_a": "BAIA A",
+      "slot_bay_b": "BAIA B",
+      "slot_chassis": "CHASSI",
+      "empty": "VAZIO",
+      "equipped": "EQUIPADO"
     }
   },
   "narrative": {
@@ -3462,6 +3471,22 @@
       "4241": {
         "name": "Tema de HUD Grão-Marechal",
         "desc": "Interface de comando imperial régia em dourado âmbar quente emoldurada por suportes de folhas de louro de arquivo."
+      }
+    },
+    "items": {
+      "frame": {
+        "talon": "Submetralhadora Vector-9 Talon",
+        "talon_c": "Carabina Talon-C",
+        "siege_breaker": "Autocanhão Quebra-Cerco 50",
+        "tesla_lock": "Propulsor de Arco Tesla-Lock MK-IV"
+      },
+      "weaponProfile": {
+        "mk1_sidearm": "Arma Secundária Mark-I",
+        "pulse_carbine": "Carabina de Pulso",
+        "scatter_rep": "Repetidora de Dispersão",
+        "rail_marksman": "Atirador de Trilho",
+        "neon_smg": "Submetralhadora Neon",
+        "cryo_lance": "Lança Criogênica"
       }
     }
   }
