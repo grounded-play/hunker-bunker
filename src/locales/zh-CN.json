@@ -1460,7 +1460,11 @@
       "print_output": "打印此产物",
       "fabricating": "制造中…",
       "bay_button": "◇ 制造舱",
-      "open_bay": "+ 打开制造舱"
+      "open_bay": "+ 打开制造舱",
+      "stat_damage": "伤害 ×{value}",
+      "stat_rate": "射速 ×{value}",
+      "stat_range": "射程 ×{value}",
+      "stat_shots": "{count} 发"
     },
     "camp": {
       "sleep_warning": "在 {camp} 休息将推进到第 {day} 天。以下未解决的信号将关闭。",

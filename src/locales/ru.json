@@ -1460,7 +1460,11 @@
       "print_output": "НАПЕЧАТАТЬ",
       "fabricating": "СБОРКА…",
       "bay_button": "◇ ЦЕХ СБОРКИ",
-      "open_bay": "+ ОТКРЫТЬ ЦЕХ СБОРКИ"
+      "open_bay": "+ ОТКРЫТЬ ЦЕХ СБОРКИ",
+      "stat_damage": "УРОН ×{value}",
+      "stat_rate": "ТЕМП ×{value}",
+      "stat_range": "ДАЛЬН ×{value}",
+      "stat_shots": "{count} ВЫСТР."
     },
     "camp": {
       "sleep_warning": "Сон в {camp} переносит на день {day}. Эти нерешённые сигналы закроются.",

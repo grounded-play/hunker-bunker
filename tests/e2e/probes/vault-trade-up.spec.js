@@ -35,10 +35,11 @@ function seedVault(page, items) {
     }, items);
 }
 
+// The Vault opens inside the Foundry hub; the smelter is its Trade-up tab.
 async function openSmelter(page) {
     await page.locator('#steam-vault-btn').click({ force: true });
-    await expect(page.locator('#steam-vault-modal')).toBeVisible();
-    await page.locator('#vault-tab-smelter').click();
+    await expect(page.locator('#foundry-hub-modal')).toBeVisible();
+    await page.locator('#foundry-hub-tabs [data-tab="tradeup"]').click();
     await expect(page.locator('#vault-smelter-grid .vault-smelter-card')).toHaveCount(3);
 }
 
@@ -65,8 +66,8 @@ test('a trade-up spends five, grants one, and survives close and reopen', async 
     await expect(card(page, 'epic')).toContainText('1 / 5');
     await expect(card(page, 'rare').locator('button')).toBeDisabled();
 
-    await page.locator('#close-steam-vault-modal').click();
-    await expect(page.locator('#steam-vault-modal')).toBeHidden();
+    await page.locator('#close-foundry-hub').click();
+    await expect(page.locator('#foundry-hub-modal')).toBeHidden();
     await openSmelter(page);
     await expect(card(page, 'rare')).toContainText('0 / 5');
     await expect(card(page, 'epic')).toContainText('1 / 5');
@@ -93,4 +94,5 @@ test('on a Steam build the trade-up is disabled with a reason instead of reverti
         await expect(card(page, rarity).locator('button')).toBeDisabled();
     }
     await expect(page.locator('#vault-smelter-status')).toContainText(/Steam item service/i);
+    await expect(page.locator('#foundry-hub-tabs [data-tab="tradeup"]')).toHaveClass(/is-locked/);
 });

@@ -1460,7 +1460,11 @@
       "print_output": "DIESE AUSGABE DRUCKEN",
       "fabricating": "FERTIGE…",
       "bay_button": "◇ FERTIGUNGSBUCHT",
-      "open_bay": "+ FERTIGUNGSBUCHT ÖFFNEN"
+      "open_bay": "+ FERTIGUNGSBUCHT ÖFFNEN",
+      "stat_damage": "SCH ×{value}",
+      "stat_rate": "KADENZ ×{value}",
+      "stat_range": "REICHW ×{value}",
+      "stat_shots": "{count} SCHÜSSE"
     },
     "camp": {
       "sleep_warning": "Schlaf in {camp} bringt dich zu Tag {day}. Diese offenen Signale werden geschlossen.",

@@ -9286,6 +9286,10 @@ export class ThreeGame {
         if (typeof document !== 'undefined' && document.documentElement?.dataset) {
             document.documentElement.dataset.operatorClass = String(value ?? '').toLowerCase();
         }
+        // The class being played is the one the Fab Bay equips and combat
+        // reads (applyWeaponUpgrades): a run started without passing through
+        // the Armory used to leave the loadout on its Scout default.
+        if (value && typeof window !== 'undefined') window.loadout?.setActiveClass?.(value);
     }
 
     setAdaptiveGameplayPerformanceMode(enabled = true, {

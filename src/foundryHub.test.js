@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FOUNDRY_HUB_FLAG, HUB_TAB_IDS, HUB_TAB_PANELS, hubClassTheme, isFoundryHubEnabled, normalizeHubTab, resolveHubTabs } from './foundryHub.js';
+import { FOUNDRY_HUB_FLAG, HUB_TAB_IDS, HUB_TAB_PANELS, cycleHubTab, hubClassTheme, isFoundryHubEnabled, normalizeHubTab, resolveHubTabs } from './foundryHub.js';
 
 const storage = (value) => ({ getItem: (key) => (key === FOUNDRY_HUB_FLAG ? value : null) });
 
@@ -36,10 +36,24 @@ describe('Foundry hub tabs', () => {
         expect(hubClassTheme(undefined)).toBe('scout');
     });
 
-    it('stays off unless the flag is set in storage or the URL', () => {
-        expect(isFoundryHubEnabled(storage(null), '')).toBe(false);
-        expect(isFoundryHubEnabled(storage('1'), '')).toBe(true);
-        expect(isFoundryHubEnabled(storage(null), `?${FOUNDRY_HUB_FLAG}=1`)).toBe(true);
-        expect(isFoundryHubEnabled({ getItem: () => { throw new Error('blocked'); } }, '')).toBe(false);
+    it('is on unless opted out in storage or the URL; the URL wins', () => {
+        expect(isFoundryHubEnabled(storage(null), '')).toBe(true);
+        expect(isFoundryHubEnabled(storage('0'), '')).toBe(false);
+        expect(isFoundryHubEnabled(storage('0'), `?${FOUNDRY_HUB_FLAG}=1`)).toBe(true);
+        expect(isFoundryHubEnabled(storage(null), `?${FOUNDRY_HUB_FLAG}=0`)).toBe(false);
+        expect(isFoundryHubEnabled({ getItem: () => { throw new Error('blocked'); } }, '')).toBe(true);
+    });
+
+    it('locks Trade-up where trades cannot run, but keeps it visible to explain why', () => {
+        const tradeup = resolveHubTabs({ tradeUpAvailable: false }).find((tab) => tab.id === 'tradeup');
+        expect(tradeup).toMatchObject({ locked: true, hidden: false });
+    });
+
+    it('steps through visible tabs and wraps, skipping a hidden Store', () => {
+        const tabs = resolveHubTabs({ storeAvailable: false });
+        expect(cycleHubTab('stash', 1, tabs)).toBe('loadout');
+        expect(cycleHubTab('tradeup', 1, tabs)).toBe('stash');
+        expect(cycleHubTab('stash', -1, tabs)).toBe('tradeup');
+        expect(cycleHubTab(null, 1, tabs)).toBe('loadout');
     });
 });

@@ -33,8 +33,11 @@ test.describe('Steam Vault (offline/mock state)', () => {
         // keep. Either way this must never read as ONLINE/a real persona.
         await expect(page.locator('#vault-command-status')).toHaveText(/DEV MODE/i);
 
+        // The Vault now opens inside the Foundry hub, at Stash
+        // (src/foundryHub.js), showing the Vault's own inventory panel.
         await page.locator('#steam-vault-btn').click({ force: true });
-        await expect(page.locator('#steam-vault-modal')).toBeVisible();
+        await expect(page.locator('#foundry-hub-modal')).toBeVisible();
+        await expect(page.locator('#foundry-hub-panel #vault-inventory-layout')).toBeVisible();
 
         expect(consoleErrors, `unexpected console errors opening the Vault: ${consoleErrors.join('\n')}`).toEqual([]);
     });
@@ -43,8 +46,9 @@ test.describe('Steam Vault (offline/mock state)', () => {
         await stubOfflineElectronAPI(page);
         await bootToOperatorMenu(page);
         await page.locator('#steam-vault-btn').click({ force: true });
-        await expect(page.locator('#steam-vault-modal')).toBeVisible();
+        await expect(page.locator('#foundry-hub-modal')).toBeVisible();
 
+        await expect(page.locator('#foundry-hub-tabs [data-tab="store"]')).toBeHidden();
         await expect(page.locator('#vault-tab-store')).toBeHidden();
         await expect(page.locator('#vault-store-layout')).toBeHidden();
 

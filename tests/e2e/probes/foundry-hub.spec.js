@@ -1,15 +1,15 @@
 import { test, expect } from '@playwright/test';
-import { bootToOperatorMenu } from '../helpers.js';
+import { bootToOperatorMenu, startRunAndSkipIntro } from '../helpers.js';
 
-// Sprint 48 P2: the Foundry hub skeleton (src/foundryHub.js) behind
-// hb_foundry_hub=1. One window, five tabs over the Vault's and Fab Bay's own
+// Sprint 48 P2: the Foundry hub (src/foundryHub.js), on unless
+// hb_foundry_hub=0. One window, five tabs over the Vault's and Fab Bay's own
 // panels; resources always in the header; Fabricate locked until the Foundry
 // is activated; closing puts every borrowed panel back.
 
 async function enableHub(page, enabled = true) {
     await page.addInitScript((on) => {
-        if (on) localStorage.setItem('hb_foundry_hub', '1');
-        else localStorage.removeItem('hb_foundry_hub');
+        if (on) localStorage.removeItem('hb_foundry_hub');
+        else localStorage.setItem('hb_foundry_hub', '0');
     }, enabled);
 }
 
@@ -74,10 +74,52 @@ test('the Fab Bay button opens the hub at Fabricate', async ({ page }) => {
     await expect(hub(page)).toBeHidden();
 });
 
-test('with the flag off, the Fab Bay opens as before', async ({ page }) => {
+test('opted out, the Fab Bay opens as before', async ({ page }) => {
     await enableHub(page, false);
     await bootToOperatorMenu(page);
     await page.locator('#fabrication-btn').click({ force: true });
     await expect(page.locator('#fabrication-modal')).toBeVisible();
     await expect(hub(page)).toBeHidden();
+});
+
+test('Q/E and the controller bumpers step tabs and keep focus on the tab bar', async ({ page }) => {
+    await enableHub(page);
+    await bootToOperatorMenu(page);
+    await page.locator('#steam-vault-btn').click({ force: true });
+    await expect(tab(page, 'stash')).toHaveClass(/is-active/);
+    await expect(tab(page, 'stash')).toBeFocused();
+
+    await page.keyboard.press('e');
+    await expect(tab(page, 'loadout')).toHaveClass(/is-active/);
+    await expect(tab(page, 'loadout')).toBeFocused();
+    await page.keyboard.press('q');
+    await page.keyboard.press('q');
+    await expect(tab(page, 'tradeup')).toHaveClass(/is-active/);
+
+    // The bumpers click the next [role=tab] and then focus it; the button must
+    // still be in the document after the hub re-renders its tab bar.
+    const sameNode = await page.evaluate(() => {
+        const before = document.querySelector('#foundry-hub-tabs [data-tab="stash"]');
+        before.click();
+        return before.isConnected && document.querySelector('#foundry-hub-tabs [data-tab="stash"]') === before;
+    });
+    expect(sameNode).toBe(true);
+});
+
+test('in a run, the Foundry opens the hub at Fabricate and holds the game', async ({ page }) => {
+    await enableHub(page);
+    await bootToOperatorMenu(page);
+    await startRunAndSkipIntro(page);
+    const playerType = await page.evaluate(() => window.game?.playerType);
+    expect(await page.evaluate(() => window.loadout.activeClassId)).toBe(String(playerType).toLowerCase());
+
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('open-fabrication-bay')));
+    await expect(hub(page)).toBeVisible();
+    await expect(tab(page, 'fabricate')).toHaveClass(/is-active/);
+    expect(await page.evaluate(() => window.game.hasBlockingGameplayOverlay())).toBe(true);
+    await expect(hub(page)).toHaveAttribute('data-hub-class', String(playerType).toLowerCase());
+
+    await page.keyboard.press('Escape');
+    await expect(hub(page)).toBeHidden();
+    await expect.poll(() => page.evaluate(() => window.game.hasBlockingGameplayOverlay())).toBe(false);
 });

@@ -19,6 +19,7 @@ import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { ExpeditionReceipt } from './src/economyReceipt.js';
 import { renderReturnManifest } from './src/returnManifest.js';
 import { renderLoadoutStrip } from './src/itemCard.js';
+import { describeFieldWeapon } from './src/fieldWeapon.js';
 import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, describeRecipe, getFabricatedOutputIds } from './src/fabricator.js';
 import { ProfileManager, exportSaveCode, importSaveCode, resetAllDataFactory, startNewCampaign } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
@@ -80,7 +81,7 @@ import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { createArmoryScene } from './src/armoryScene.js';
 import { createArmoryUi } from './src/armoryUi.js';
-import { initSteamVaultUI, loadVaultData, openSteamVaultModal, renderSmelterPanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
+import { initSteamVaultUI, isVaultExchangeAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
 import { createFoundryHub, isFoundryHubEnabled } from './src/foundryHub.js';
 import { initSeasonPassUI, cancelXpFeedback, beginSeasonRun, getSeasonRunSummary, openSeasonPassModal, seasonPass } from './src/seasonPassUi.js';
 import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
@@ -246,6 +247,7 @@ function getSavedHeroType() {
 function saveHeroType(type) {
     if (!PLAYABLE_CLASSES.includes(type)) return;
     try { localStorage.setItem(ACTIVE_CLASS_KEY, type); } catch { /* storage unavailable */ }
+    window.loadout?.setActiveClass?.(type);
 }
 
 const buildInfo = typeof __HB_BUILD_INFO__ === 'object'
@@ -3069,6 +3071,9 @@ syncFabricatorOutputOwnership();
 
 const loadout = new LoadoutManager();
 window.loadout = loadout;
+// The loadout's active class decides where the Fab Bay equips and what the
+// hero strip shows; start it on the saved operator, not the Scout default.
+loadout.setActiveClass(getSavedHeroType());
 
 function applyHudThemeFromLoadout() {
     const gameContainer = document.getElementById('game-container');
@@ -12717,6 +12722,23 @@ function fabItemView(recipe) {
     return { id: view?.id ?? null, name: view?.name ?? recipe?.name ?? '', icon: view?.icon ?? '/favicon.png' };
 }
 
+// A Foundry weapon's effect on the class gun, as chips: the multipliers
+// combat applies (src/fieldWeapon.js), so every weapon card reads differently
+// even though they all fit the same gun.
+function fabWeaponStatsMarkup(recipe) {
+    const stats = recipe?.output?.kind === 'weapon' ? describeFieldWeapon(recipe.id) : null;
+    if (!stats) return '';
+    const mult = (value) => (Math.round(value * 100) / 100).toFixed(2).replace(/0$/, '');
+    const tone = (value) => (value > 1.001 ? 'up' : value < 0.999 ? 'down' : 'flat');
+    const chip = (key, value, vars) => `<span class="fab-stat fab-stat--${tone(value)}">${t(key, vars)}</span>`;
+    return `<div class="fab-stats">${[
+        chip('ui.fab.stat_damage', stats.damage, { value: mult(stats.damage) }),
+        chip('ui.fab.stat_rate', stats.fireRate, { value: mult(stats.fireRate) }),
+        chip('ui.fab.stat_range', stats.range, { value: mult(stats.range) }),
+        stats.projectiles > 1 ? chip('ui.fab.stat_shots', 2, { count: stats.projectiles }) : ''
+    ].join('')}</div>`;
+}
+
 function logFoundry(event, recipe, extra = {}) {
     const view = recipe ? fabItemView(recipe) : null;
     debugLog.info('FOUNDRY', event, { recipeId: recipe?.id ?? null, item: view?.id ?? null, itemName: view?.name ?? null, rarity: recipe?.rarity ?? null, icon: view?.icon ?? null, classId: loadout.activeClassId, ...extra });
@@ -12856,6 +12878,8 @@ function renderFabricationModal() {
         description.className = 'fab-card__description';
         description.textContent = recipe.blurb;
         card.appendChild(description);
+        const stats = fabWeaponStatsMarkup(recipe);
+        if (stats) card.insertAdjacentHTML('beforeend', stats);
 
         const status = document.createElement('div');
         status.className = 'fab-card__status';
@@ -13006,6 +13030,7 @@ function runFabricatorRoll() {
                 `<img class="fab-reveal__art" src="${assetUrl(view.icon)}" alt="${view.name}" onerror="this.src='/bunker_junk_rare.png'">` +
                 `<div class="fab-reveal__rarity">${r}${result.duplicate ? ' · DUPLICATE' : ''}</div>` +
                 `<div class="fab-reveal__name">${view.name}</div>` +
+                fabWeaponStatsMarkup(rec) +
                 `<div class="fab-reveal__klass">${rec.klass}${result.objectiveHit ? ' · OBJECTIVE FABRICATED' : result.duplicate ? ' · ALREADY OWNED' : ' · SCHEMATIC UNLOCKED'}${result.broken ? ' · FABRICATOR BROKE' : ''}</div>`;
         }
         window.AudioManager?.playProceduralLoot?.('weapon', r.toLowerCase());
@@ -13051,12 +13076,16 @@ function closeFabricationModal() {
     finishFabricationSession();
 }
 
-// ── Foundry hub (src/foundryHub.js; hb_foundry_hub=1) ─────────
+// ── Foundry hub (src/foundryHub.js; on unless hb_foundry_hub=0) ─
 // Stash, Trade-up and Store show the Vault's panels; Fabricate shows the Fab
-// Bay's. Each tab's renderer is the one those windows already use.
+// Bay's. Each tab's renderer is the one those windows already use. The
+// inventory loads asynchronously, and it decides whether Store and Trade-up
+// are available, so the tab bar is refreshed once it lands.
 function showVaultPanels(after = null) {
     initSteamVaultUI();
-    loadVaultData().then(() => after?.()).catch(() => null);
+    loadVaultData()
+        .then(() => { after?.(); foundryHub.refresh(); })
+        .catch((error) => debugLog.warn('FOUNDRY', 'hub-inventory-load-failed', { message: String(error?.message ?? error) }));
 }
 
 const foundryHub = createFoundryHub({
@@ -13064,6 +13093,8 @@ const foundryHub = createFoundryHub({
     getClassId: () => loadout.activeClassId,
     isFoundryActivated: () => bankManager.isFoundryActivated(),
     isStoreAvailable: () => !document.getElementById('vault-tab-store')?.classList.contains('hidden'),
+    isTradeUpAvailable: () => isVaultExchangeAvailable(),
+    focus: (element) => { if (element) focusControllerTarget(element); },
     onTabShown: {
         stash: () => showVaultPanels(),
         fabricate: () => {

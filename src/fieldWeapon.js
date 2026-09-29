@@ -13,3 +13,17 @@ export function getFieldWeaponProfile(id, fabricated = false) {
     const profile = FIELD_WEAPON_PROFILES[id];
     return fabricated && profile ? { id, ...profile } : null;
 }
+
+// What a fabricated weapon does to the class gun, as multipliers a card can
+// show: the same numbers spawnPlayerShot reads, so the Foundry never promises
+// more than the run delivers. Fire rate is the inverse of the cooldown.
+export function describeFieldWeapon(id) {
+    const profile = FIELD_WEAPON_PROFILES[id];
+    if (!profile) return null;
+    return Object.freeze({
+        damage: profile.damageMultiplier,
+        fireRate: 1 / profile.cooldownMultiplier,
+        range: profile.lifetimeMultiplier,
+        projectiles: profile.spreads.length
+    });
+}

@@ -1217,6 +1217,11 @@ function localExchangeAvailable() {
     return isBrowserSandbox() && vaultSource === 'local';
 }
 
+/** Whether trade-ups and redemptions can run on the inventory the Vault shows. */
+export function isVaultExchangeAvailable() {
+    return localExchangeAvailable();
+}
+
 function logExchange(level, message, detail) {
     if (typeof window !== 'undefined' && window.hbLog) window.hbLog('VAULT', level, message, detail);
 }

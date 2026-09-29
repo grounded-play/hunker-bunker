@@ -1460,7 +1460,11 @@
       "print_output": "この出力を印刷",
       "fabricating": "製造中…",
       "bay_button": "◇ 製造ベイ",
-      "open_bay": "+ 製造ベイを開く"
+      "open_bay": "+ 製造ベイを開く",
+      "stat_damage": "威力 ×{value}",
+      "stat_rate": "連射 ×{value}",
+      "stat_range": "射程 ×{value}",
+      "stat_shots": "{count}発"
     },
     "camp": {
       "sleep_warning": "{camp} で眠ると {day} 日目へ進む。未解決の信号は閉ざされる。",

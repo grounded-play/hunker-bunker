@@ -1460,7 +1460,11 @@
       "print_output": "IMPRIMIR ESTA SAÍDA",
       "fabricating": "FABRICANDO…",
       "bay_button": "◇ BAIA DE FAB.",
-      "open_bay": "+ ABRIR BAIA DE FAB."
+      "open_bay": "+ ABRIR BAIA DE FAB.",
+      "stat_damage": "DANO ×{value}",
+      "stat_rate": "CADÊNCIA ×{value}",
+      "stat_range": "ALCANCE ×{value}",
+      "stat_shots": "{count} DISPAROS"
     },
     "camp": {
       "sleep_warning": "Dormir em {camp} avança para o dia {day}. Estes sinais pendentes serão fechados.",

@@ -1460,7 +1460,11 @@
       "print_output": "PRINT THIS OUTPUT",
       "fabricating": "FABRICATING…",
       "bay_button": "◇ FAB BAY",
-      "open_bay": "+ OPEN FAB BAY"
+      "open_bay": "+ OPEN FAB BAY",
+      "stat_damage": "DMG ×{value}",
+      "stat_rate": "RATE ×{value}",
+      "stat_range": "RANGE ×{value}",
+      "stat_shots": "{count} SHOTS"
     },
     "camp": {
       "sleep_warning": "Sleeping at {camp} advances to day {day}. These unresolved signals will close.",

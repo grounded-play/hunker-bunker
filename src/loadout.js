@@ -3,6 +3,7 @@
 // weapon skins, tactical charms, rig overclock modules, and exosuit cosmetics.
 
 import { getRecipe } from './fabricator.js';
+import { getItemName } from './data/itemCatalog.js';
 import { ARCHETYPE_SKINS, CLASS_ARCHETYPES, CLASS_CHASSIS_SKINS, DEFAULT_ARCHETYPES } from './data/classArsenal.js';
 import { EQUIPMENT_SCHEMA_VERSION, composeEquipmentModifiers, getEquipmentDefinition, getEquipmentStatus } from './data/equipmentDefinitions.js';
 
@@ -427,7 +428,7 @@ export class LoadoutManager {
         const recipe = getRecipe(id);
         if (!recipe) return DEFAULT_WEAPON_LABEL;
         if (fabricator && !fabricator.isFabricated(id)) return DEFAULT_WEAPON_LABEL;
-        return recipe.name;
+        return getItemName(recipe.item ?? id) ?? recipe.name;
     }
 
     /**
