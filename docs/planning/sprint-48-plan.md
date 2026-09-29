@@ -256,7 +256,7 @@ files into your commits.
 | :--- | :--- | :--- | :--- |
 | A | P0 hardware support + co-op authority + pings | — | — |
 | B | HUD recovery R0–R3 | Codex | 2026-09-28 |
-| C | Foundry catalog/hub + smelter + companion escort | — | — |
+| C | Foundry catalog/hub + smelter (companion escort not started) | Claude | 2026-09-28 |
 
 ## 6. Decisions needed from the owner
 
