@@ -1,19 +1,19 @@
 # Planning
 
 Status: canonical process index · Owner: repository maintainers · Updated:
-2026-09-09 · Review: every sprint open and close
+2026-09-28 · Review: every sprint open and close
 
-- [Sprint 30](sprint-30.md) is the only active sprint plan.
+- [Sprint 48](sprint-48-plan.md) is the active sprint plan: hardware acceptance first, then co-op authority, HUD dock readability recovery (R0–R2), the unified Foundry's first slice, companion escort and the Proof Run.
+- [Sprint 47 status](sprint-47-status-and-sprint-48-plan-2026-09-28.md) records what shipped, how each item is verified, the open backlog and the owner decisions (D1–D8).
+- [HUD overlay review](hud-overlay-review-and-recovery-plan-2026-09-28.md) (2026-09-28) measures the dock's readability failures and sets the R0–R4 recovery order.
+- [The Invisible Essentials](invisible-essentials-2026-09-24.md) is the multi-phase product reliability and comprehension strategy (Phases 1–4 completed in v2.4.12-beta; Phases 5–8 in active development).
+- [HUD Lower Dock Layout Plan](hud-lower-dock-plan-2026-09-25.md) defines the Nordic Cathedral Biomech 3-panel lower dock, painted suit housings, wear model, and talking portraits.
+- [QA Deck + PC Session Game Plan](qa-2026-09-24-deck-pc-coop-game-plan.md) tracks all findings, resolutions, and claims from the 2026-09-24 hardware playtest session.
+- [Minimap Radar Scan & Fog Overhaul](minimap-radar-scan-fog-overhaul-2026-09-24.md) documents the progressive wavefront reveal, edge dissipation tail, and CRT fog-of-war implementation.
 - [Repository roadmap](repository-roadmap.md) is the ordered work beyond the
   sprint and the disposition record for work left behind.
 - [Documentation system](../documentation-system.md) defines how plans open,
   change, close, and archive.
-- [Astra game improvement plan](astra-game-improvement-plan-2026-09-08.md) is
-  the proposed implementation supplement from the September 8 source/browser
-  review; it does not replace the active sprint.
-- [DEPTH-01 elite and relic lane](depth-01-elite-and-relic-lane-2026-09-09.md) is
-  the bounded implementation lane for the Astra plan's Depth Contract package,
-  running in parallel with the in-flight performance/HUD/quest work.
 
 - [Armory UI overhaul](armory-ui-overhaul-2026-09-09.md) continues the
   antigravity Armory plan and covers the weapon-identity, tile-menu and

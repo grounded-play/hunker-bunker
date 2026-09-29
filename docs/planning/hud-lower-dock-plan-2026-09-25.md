@@ -857,6 +857,15 @@ input mode changes (`refreshInteractivePromptKeys` already exists).
 Ship behind `hb_hud_layout = 'dock' | 'classic'` (default `classic` until Phase 5
 passes). One-click comparison, instant rollback.
 
+**Review 2026-09-28:** the painted housings went in at 150 u with per-class window
+geometry. The [HUD overlay review](hud-overlay-review-and-recovery-plan-2026-09-28.md)
+measured Deck text down to 7.2 px (target 11 px), a 20.9 px Tank weapon window, and the
+old objective column still covering a third of the Deck screen. The direction stands,
+but the geometry regressed from §2.2. Sprint 48 runs its recovery order (R0 harness →
+R1 one shared 64 u slot grid, with art fitted around fixed window templates → R2
+prompt/objective/alert consolidation) before any wear layers or portraits
+([sprint-48-plan.md](sprint-48-plan.md)). Keep `classic` the default.
+
 **Status 2026-09-25 (late afternoon): Phases 1–4 + Painted Housings landed:**
 - **Band:** map (compact radar disc + BASE/NODE) left; hearts, O₂ and hull with the
   2 × 2 loot chips in the centre; SIDEARM ammo + class-ability and radar-scan tiles

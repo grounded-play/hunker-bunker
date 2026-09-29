@@ -3,7 +3,9 @@
 Branch `release/v2.4.12-beta-invisible-essentials` → PR #93 (open, mergeable;
 v2.4.12-beta). Sources: the branch history (`git log origin/mothership..`), the
 2026-09-24 Deck + PC QA session (`qa-2026-09-24-deck-pc-coop-game-plan.md`), the
-2026-09-25 PC log, and the plan documents linked below.
+2026-09-25 PC log, the 2026-09-28 live HUD comparison
+(`hud-overlay-review-and-recovery-plan-2026-09-28.md`), and the plan documents linked
+below.
 
 **Verification levels:**
 - **Unit**: vitest.
@@ -14,7 +16,8 @@ Almost everything below has only unit or browser evidence. **Nothing done since 
 2026-09-24 QA session has been confirmed on hardware yet.** That session is the
 first job of Sprint 48.
 
-Checks at the head of the branch (`ffbd480e`):
+Checks at the reviewed code head (`ffbd480e`; documentation consolidation at
+`8be6b7cd`):
 - `npm run lint`: clean;
 - vitest: **4,285 tests / 483 files**, green;
 - `vite build`: passes;
@@ -109,8 +112,10 @@ Plan: `hud-lower-dock-plan-2026-09-25.md`.
   Nordic Jugendstil / National Romantic hard-line design, decayed, with Giger biology
   growing from within. It has a palette sampled from the whole game and a shared
   prompt block.
-- **Layout:** one narrow band of three panels, with the same layout for every class:
-  map left, health and status centre, gun and ammo right (`1c3223d`, `a0e0c5d`).
+- **Layout skeleton:** three lower regions—map left, health and status centre, gun and
+  ammo right—landed behind the flag (`1c3223d`, `a0e0c5d`). This is the intended
+  information order, but the live painted implementation does not yet preserve the
+  plan's common slim geometry; see the 09-28 review below.
 - **Painted housings:** the owner's painted class housings (Tank, Scout, Engineer ×
   map / status / arms) are in the game. `scripts/build_hud_dock_housings.py` keys
   them, finds every window, and generates per-class placement, so new art drops in by
@@ -122,6 +127,35 @@ Plan: `hud-lower-dock-plan-2026-09-25.md`.
 - **Turning it on:** `hb_hud_layout = 'dock'` (default `classic`). The Armory debug
   button toggles it (`fb538ce`). Browser-tested at 1080p and Deck size; **not seen on
   hardware**.
+
+#### 09-28 live HUD review: useful direction, incomplete implementation
+
+The classic and dock layouts were booted into the same Tank run and captured at
+1920×1080 and 1280×800. The evidence and rect dump are in
+[`hud-overlay-review-and-recovery-plan-2026-09-28.md`](hud-overlay-review-and-recovery-plan-2026-09-28.md).
+
+- The dock has the stronger game-specific silhouette and clears the upper combat view.
+  Keep the direction.
+- The plan specifies common 220×64 / 520×64 / 380×64 u panels. The live Tank panels
+  are approximately 209×150 / 283×150 / 207×150 u: three tall islands rather than one
+  slim command band.
+- The Tank weapon content window is 26.1 px wide at 1080p and 20.9 px on Deck. Critical
+  information has been made subordinate to the frame art.
+- The smallest visible dock text is 9 px at 1080p and 7.2 px on Deck; the plan's Deck
+  floor is 11 px.
+- The unchanged mission/notification column is about 268 px tall on Deck—roughly one
+  third of the screen—and remains the dominant HUD mass.
+- The three housing rectangles meet the approximate opaque-area budget (about 5.6% of
+  the 1080p stage and 6.6% on Deck), but the occupied lower band is 150 u tall rather
+  than 64 u.
+- `hud-layout.spec.js` remains 4/4 green because it checks flagging, containment,
+  non-overlap, keep-out and gear position. It does not yet check readable type,
+  clipping, common class geometry, state priority, localization, or visual hierarchy.
+
+**Consequence for Sprint 48:** do not promote the dock or couple more state art to its
+current dimensions. First restore one shared slim geometry, make the core combat data
+readable with the housing art disabled, and retire the legacy objective/prompt stack.
+Then add the first wear layers. Talking portraits remain outside Sprint 48.
 
 ### Release and repository hygiene
 
@@ -178,6 +212,12 @@ Grouped by area. The source document for each group is in its heading.
 
 ### HUD dock (`hud-lower-dock-plan-2026-09-25.md`)
 
+- **Readability recovery gate (new from the 09-28 live review):** one semantic content
+  grid for all classes; planned 64 u lower band; ≥11 px critical Deck text; ammo,
+  weapon identity and reload state readable without relying on unlabeled glyphs.
+- **Housing correction:** use 9-slice or cap-and-stretch frames so art no longer
+  dictates content geometry. Class identity changes material, accents and decoration,
+  not the positions of health, ammo or ability state.
 - **C, objective drawer:** the right-hand mission stack is still the old stacked cards.
   This is the gate for making dock the default.
 - **H:** PRESS-E and world prompts into the prompt lane.
@@ -199,6 +239,10 @@ Grouped by area. The source document for each group is in its heading.
   characters; boss/EMP.
 - **HUD Scale in settings:** the `hb_hud_scale` setting exists; the menu item does not.
 - **i18n and accessibility:** a 7-locale pass on the dock, and contrast high/max.
+- **Acceptance harness:** all three classes at Deck, 1080p, 2304×1440 and ultrawide;
+  Idle / Engaged / Critical / boss+hazard / reload / prompt / multi-objective states;
+  German, Russian and controller glyphs; assertions for text clipping, minimum type,
+  common class content rectangles and occupied vertical bands.
 - **Cleanup decision:** `public/ui/suit/` (4.1 MB of superseded procedural panels and
   edge-check images) ships but is unused.
 
@@ -262,6 +306,16 @@ Grouped by area. The source document for each group is in its heading.
 
 ## 4. Sprint 48: proposed plan
 
+> **The canonical Sprint 48 plan is [sprint-48-plan.md](sprint-48-plan.md).** It merges
+> this section, the HUD review's R0–R4 order and the Gemini track draft, and checks them
+> against the code. Where they differ, it wins:
+> - flipping the dock default and the wear layers for all classes move to Sprint 49;
+> - wear v1 for one class is a Sprint 48 stretch after R1–R2;
+> - the companion track is rescoped to escort + networking, since pathfinding already
+>   exists (`05c4300`).
+>
+> The table below is kept as the original draft.
+
 **Goal:** confirm on hardware what Sprint 47 built, finish "the host decides, everyone
 sees it" for co-op, and make the dock HUD the default.
 
@@ -271,26 +325,124 @@ sees it" for co-op, and make the dock HUD the default.
 | **P0** | Fix what that session finds | a re-run of the failing rows passes |
 | **P0** | Merge PR #93 once the session passes; owner closes #78/#80/#81/#82 as their conditions are shown | PR merged; tickets updated |
 | **P1** | Co-op authority: companions networked; Ring 1 events, arrival fight, reward cache and bounty host-authoritative | relay test per event type; two-client diff probe green |
-| **P1** | Dock HUD to default: objective drawer (C), prompts into H, scan ring, HUD Scale menu item, 7-locale pass | layout spec extended to C/H; Deck hardware check; flip `hb_hud_layout` default to `dock` |
-| **P1** | Dock wear model v1: `suitCondition` + first state art (blood, frost, damage tier 1) for one class, then all three | unit tests per signal; screenshots per state |
+| **P1** | Dock recovery gate: authoritative screenshot/rect harness; one shared 64 u content grid for all classes; ≥11 px critical Deck text; objective drawer (C), prompts into H, scan ring, HUD Scale menu item and 7-locale pass | harness fails on today's known defects, then passes at all four target sizes; core combat data reads correctly with housing art disabled; Deck hardware check |
+| **P1** | Promote the dock only after the recovery gate | no permanent legacy mission column; no clipped critical text; owner Deck + PC sign-off; then flip `hb_hud_layout` default to `dock` |
+| **P2** | Dock wear model v1 after geometry freezes: `suitCondition` + blood, frost and damage tier 1 for one class, then all three | unit tests per signal; screenshots per state; overlays never cover instruments; ≤0.3 ms HUD layout/style cost |
 | **P2** | Gameplay Phase 4: boss phase conversion (cyber/cryo snail), expedition report expansion; decide Lane 2's formation rule | unit + slice probe |
 | **P2** | Foundry: one item catalog + card, hub skeleton with tabs; smelter trade-up logging and fix | the same item looks identical on all four screens; trade-up sticks across reload |
 | **P3** | Performance: chunk-mount spikes, pickup/prop instancing | frame profiler before/after; no visual diff |
 | **P3** | Invisible Essentials Phase 6 (claimed by Claude) | phase acceptance in its doc |
 
 **Not in Sprint 48:** talking portraits, event housings, store capsule regeneration,
-Phases 7–8, and the architecture debt (GAP-AR-*). They wait for P0/P1.
+Phases 7–8, and the architecture debt (GAP-AR-*). They wait for P0/P1. If hardware QA
+or the dock recovery gate expands, wear v1 slips before any readability work does.
 
 ---
 
 ## 5. Decisions waiting on the owner
 
-1. Is "trade in / trade up" the smelter?
-2. Invisible models: which objects, which rooms?
-3. Remove `public/ui/suit/` (superseded placeholder art, 4.1 MB)?
-4. Blood on the HUD: wipe at the bunker and heal stations (proposed), or keep it for
-   the run?
-5. Portraits: start with the three operators plus the Mothership and camp NPCs?
-6. The canon names of the dead corporate space gods.
-7. Store capsules in the new style now or after the HUD?
-8. The two moderate Dependabot alerts: fix on the release branch or on `mothership`?
+These are product or release choices, not questions engineering should answer silently.
+The recommendation is the planning default only; no destructive cleanup, canon change,
+or release-branch dependency work happens without the owner's answer.
+
+### D1. Does “trade in / trade up” mean the Smelter?
+
+- **Option A — yes, one system (recommended):** name the tab **SMELTER / TRADE UP** and
+  define the verb as consuming five lower-rarity items for one higher-rarity item.
+  This gives the QA complaint, UI, telemetry and persistence test one shared identity.
+- **Option B — separate verbs:** “trade in” sells or exchanges items while “trade up”
+  is the 5→1 Smelter. This requires separate currencies, receipts, UI copy and tests.
+- **Why it matters now:** the Foundry workstream cannot fix the reported “trade-up
+  does not stick” until the action and expected inventory transaction are unambiguous.
+- **Planning default if deferred:** implement and test only the existing 5→1 Smelter;
+  do not invent a second economy action.
+
+### D2. Which models disappear, and in which large rooms?
+
+- Needed evidence: room/biome name, object description, whether it is missing on Deck,
+  PC or both, and ideally a screenshot or a map coordinate from the telemeter.
+- **Recommended capture:** when it happens, open the tactical map, take one wide shot
+  and one aimed shot, then export the session log before leaving the room.
+- **Why it matters:** successful HTTP asset loads point toward culling bounds, placement,
+  LOD or room/chunk ownership—not missing files. Without a room/object pair, a global
+  renderer change risks hiding the real defect.
+- **Planning default if deferred:** add a debug capture for visible-room meshes and
+  wait for a reproducible room; do not disable frustum culling globally.
+
+### D3. Delete the unused `public/ui/suit/` panel art (4.1 MB)?
+
+- **Option A — remove it from the retail build (recommended):** first prove no runtime,
+  CSS, manifest, prompt or documentation path references it; preserve source art in
+  version history or a non-shipping art archive.
+- **Option B — keep shipping it:** zero short-term migration risk, but every build and
+  depot continues carrying superseded panels and edge-check images.
+- **Acceptance before removal:** `rg` reference audit, production build, retail-asset
+  audit, and a full class/HUD screenshot pass.
+- **Planning default if deferred:** exclude it from packaging once the reference audit
+  is green; do not delete source files merely to save depot size.
+
+### D4. How long should blood remain on the HUD housing?
+
+- **Option A — dries after combat; wipes at bunker/heal station (recommended):** damage
+  leaves a visible history during the expedition without permanently muddying critical
+  instruments. Death/new life starts clean.
+- **Option B — lasts the whole run:** stronger “battle record,” but higher cumulative
+  visual noise and more risk to Deck readability.
+- In both cases blood belongs behind text, avoids instrument centres, follows reduced
+  visual-pressure settings, and never communicates health by itself.
+- **Planning default if deferred:** momentary hit splat → darken over ~30 seconds → wipe
+  at bunker/heal station; cap decal density.
+
+### D5. Who receives talking portraits first?
+
+- **Recommended first pack:** the three operators, the Mothership/AURA voice, Mayor
+  Tina, and the two most frequent camp radio speakers. This covers class identity,
+  mission control and recurring story conversations before rare NPCs.
+- **Smaller option:** three operators plus Mothership only, reducing art cost but leaving
+  common camp dialogue in the old presentation.
+- **Acceptance:** no operator uses the generic survivor stand-in; idle/talk/react states
+  work; subtitle timing remains authoritative; each layered portrait stays within its
+  memory budget.
+- **Scheduling consequence:** portraits remain after the Sprint 48 dock recovery gate
+  and first wear slice; they must not delay the default-HUD decision.
+
+### D6. What are the canon names of the dead corporate space gods?
+
+- Decide whether they are **literal former corporate AIs/executives treated as gods**
+  (recommended for the setting), corporate brands mythologized after collapse, or
+  genuinely supernatural entities appropriated by corporations.
+- For each approved figure, provide a public name, former corporate function/domain,
+  symbol, taboo or ritual, and whether the truth is known or only implied.
+- The names gate iconography on doors, menus, relics and store capsules. Temporary
+  descriptive IDs should remain internal until canon is approved.
+- **Planning default if deferred:** no invented public-facing names or pseudo-runes;
+  continue abstract interlace and corporate devotional imagery.
+
+### D7. Restyle store capsules now or after the HUD?
+
+- **Option A — after the HUD (recommended):** freeze the Nordic UI grammar, palette,
+  line weight and material treatment on the high-frequency gameplay surface first,
+  then reuse it in commerce art.
+- **Option B — now:** improves store cohesion sooner, but risks regenerating capsules
+  again if the dock geometry or style changes during recovery.
+- **Planning default if deferred:** audit and prepare prompts now; do not produce final
+  capsule assets until the dock passes hardware readability review.
+
+### D8. Where should the two moderate dependency alerts be fixed?
+
+- **Option A — default branch first, then bring the exact lockfile change into the
+  release branch (recommended):** keeps the durable fix on `mothership` and avoids a
+  release-only dependency history.
+- **Option B — release branch first:** appropriate only if an alert affects shipped
+  runtime code and the release cannot wait; requires backport/forward-port verification.
+- Before choosing, record affected packages, runtime versus development reachability,
+  available patched versions, lockfile diff, build/test result and any Electron impact.
+- **Planning default if deferred:** triage immediately; do not merge a blind major
+  upgrade into PR #93. Fix reachable runtime exposure before release, otherwise land the
+  tested update on the default branch and sync it deliberately.
+
+### Decision reply format
+
+The owner can answer compactly, for example:
+`D1 A, D3 A, D4 A, D5 first pack, D6 deferred, D7 A, D8 A`, plus the room/object
+details for D2. Record each answer here with its date before the dependent work starts.
