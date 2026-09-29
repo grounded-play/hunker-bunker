@@ -102,6 +102,9 @@ let storeDisabledReason = 'catalog_unavailable';
 let storeHostedItemStore = null;
 
 let vaultItems = [];
+// Which inventory `vaultItems` holds: 'steam' (the service's response) or
+// 'local' (the browser/QA sandbox ledger). Local trades only run on 'local'.
+let vaultSource = 'local';
 let vaultSteamAccount = null;
 let selectedVaultItem = null;
 let marketEligibility = 'unknown';
@@ -485,12 +488,21 @@ export async function loadVaultData() {
         // Fetch Inventory
         const result = await window.electronAPI.refreshSteamInventory().catch(() => null);
         if (result?.ok && Array.isArray(result.inventory)) {
+            vaultSource = 'steam';
             vaultItems = result.inventory;
             // Feed the unified ownership store (src/itemOwnership.js) so the
             // Armory gates on the same entitlements the Vault renders. Only the
             // real service response is pushed here -- the sandbox fallback below
             // is not an entitlement and must not read as one.
             window.itemOwnership?.setSteamInventory(result.inventory);
+        } else if (isBrowserSandbox()) {
+            // QA tools on and no service inventory: show the sandbox ledger
+            // that QA grants and trades write to, not a stale in-memory copy.
+            vaultSource = 'local';
+            vaultItems = readDevVaultInventory() ?? vaultItems;
+            syncDevOwnership();
+        } else {
+            vaultSource = 'steam';
         }
         reconcileCosmeticsOwnership(vaultItems);
         renderInventoryGrid();
@@ -500,6 +512,7 @@ export async function loadVaultData() {
         if (playerEl) playerEl.textContent = t('ui.vault.local_operator');
         if (statusEl) statusEl.textContent = t('ui.vault.local_beta');
         if (commandStatus) commandStatus.textContent = t('ui.vault.local');
+        vaultSource = 'local';
         vaultItems = readDevVaultInventory() ?? [];
         reconcileCosmeticsOwnership(vaultItems);
         syncDevOwnership();
@@ -1089,6 +1102,10 @@ export function renderSmelterPanel() {
     const shardBalanceEl = document.getElementById('vault-shard-balance');
     if (shardBalanceEl) shardBalanceEl.textContent = String(getShardBalance(vaultItems));
 
+    const exchangeAvailable = localExchangeAvailable();
+    const exchangeNote = document.getElementById('vault-smelter-status');
+    if (!exchangeAvailable && exchangeNote) exchangeNote.textContent = t('ui.vault.exchange_needs_service');
+
     const SMELT_TIERS = ['uncommon', 'rare', 'epic'];
     const NEXT_TIER_LABEL = { uncommon: 'RARE', rare: 'EPIC', epic: 'LEGENDARY' };
 
@@ -1099,7 +1116,7 @@ export function renderSmelterPanel() {
                 const cat = getItemCatalogEntry(i.itemdefid);
                 return cat?.rarity === rarity ? sum + Number(i.quantity || 0) : sum;
             }, 0);
-            const eligible = canSmelt(vaultItems, rarity, getItemCatalogEntry);
+            const eligible = exchangeAvailable && canSmelt(vaultItems, rarity, getItemCatalogEntry);
 
             const card = document.createElement('div');
             card.className = 'vault-smelter-card';
@@ -1139,7 +1156,7 @@ export function renderSmelterPanel() {
             const cat = getItemCatalogEntry(itemdefid);
             if (!cat) continue;
             const cost = DISPENSARY_COST_BY_RARITY[cat.rarity];
-            const affordable = shardBalance >= cost;
+            const affordable = exchangeAvailable && shardBalance >= cost;
 
             const card = document.createElement('div');
             card.className = 'vault-smelter-card';
@@ -1174,22 +1191,72 @@ function handleIngotPackPurchase() {
     renderSmelterPanel();
 }
 
+// Trade-ups and dispensary redemptions exist only in the local inventory: the
+// Steam service (server/steamInventory.js) has no recipe for them yet. On a
+// Steam build they used to edit this window's copy of the inventory and
+// silently revert on the next refresh, so while the Vault shows the Steam
+// inventory they stay disabled with a reason instead.
+function localExchangeAvailable() {
+    return isBrowserSandbox() && vaultSource === 'local';
+}
+
+function logExchange(level, message, detail) {
+    if (typeof window !== 'undefined' && window.hbLog) window.hbLog('VAULT', level, message, detail);
+}
+
+function rarityCounts(items) {
+    const counts = {};
+    for (const item of items) {
+        const rarity = getItemCatalogEntry(item.itemdefid)?.rarity;
+        if (rarity) counts[rarity] = (counts[rarity] || 0) + (Number(item.quantity) || 0);
+    }
+    return counts;
+}
+
+// One trade: plan it against the stored inventory (the source of truth, so
+// a stale in-memory copy cannot restore spent inputs), commit consumption and
+// output in one ledger write, then show the committed inventory.
+function commitLocalExchange(kind, plan, granted) {
+    const ledger = new LocalVaultLedger(window.localStorage);
+    const before = ledger.read().items;
+    const receiptId = `${kind}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+    const result = ledger.exchange({ consumed: plan.consumed, granted, receiptId });
+    logExchange(result.ok ? 'info' : 'warn', `${kind} ${result.ok ? 'committed' : 'rejected'}`, {
+        receiptId,
+        consumed: plan.consumed,
+        granted,
+        reason: result.reason ?? null,
+        before: rarityCounts(before),
+        after: result.ok ? rarityCounts(result.items) : null
+    });
+    if (result.ok) applyLocalSeasonInventory(result.items);
+    return result;
+}
+
+function storedVaultItems() {
+    return readDevVaultInventory() ?? vaultItems;
+}
+
 function handleSmeltClick(rarity) {
-    const outputPool = Object.keys(STEAM_ITEM_CATALOG).map(Number);
-    const plan = planSmelt({ vaultItems, rarity, catalogLookup: getItemCatalogEntry, outputPool });
     const statusEl = document.getElementById('vault-smelter-status');
+    if (!localExchangeAvailable()) {
+        logExchange('warn', 'smelt unavailable on this build', { rarity });
+        if (statusEl) statusEl.textContent = t('ui.vault.exchange_needs_service');
+        return;
+    }
+    const outputPool = Object.keys(STEAM_ITEM_CATALOG).map(Number);
+    const plan = planSmelt({ vaultItems: storedVaultItems(), rarity, catalogLookup: getItemCatalogEntry, outputPool });
     if (!plan.ok) {
+        logExchange('warn', 'smelt refused', { rarity, reason: plan.reason });
         if (statusEl) statusEl.textContent = t('ui.vault.smelt_failed', { reason: plan.reason.replace(/_/g, ' ') });
         return;
     }
-
-    for (const { itemdefid, quantity } of plan.consumed) {
-        const stack = vaultItems.find((i) => i.itemdefid === itemdefid);
-        if (!stack) continue;
-        stack.quantity -= quantity;
+    const result = commitLocalExchange('smelt', plan, [{ itemdefid: plan.outputItemdefid, quantity: 1 }]);
+    if (!result.ok) {
+        if (statusEl) statusEl.textContent = t('ui.vault.smelt_failed', { reason: String(result.reason ?? 'storage').replace(/_/g, ' ') });
+        renderSmelterPanel();
+        return;
     }
-    vaultItems = vaultItems.filter((i) => i.quantity > 0);
-    grantVaultItem(plan.outputItemdefid, 1);
 
     if (statusEl) {
         const reward = getItemCatalogEntry(plan.outputItemdefid);
@@ -1201,17 +1268,25 @@ function handleSmeltClick(rarity) {
 }
 
 function handleDispensaryRedeem(targetItemdefid) {
-    const plan = planDispensaryRedeem(vaultItems, targetItemdefid, getItemCatalogEntry);
     const statusEl = document.getElementById('vault-smelter-status');
+    if (!localExchangeAvailable()) {
+        logExchange('warn', 'redeem unavailable on this build', { targetItemdefid });
+        if (statusEl) statusEl.textContent = t('ui.vault.exchange_needs_service');
+        return;
+    }
+    const plan = planDispensaryRedeem(storedVaultItems(), targetItemdefid, getItemCatalogEntry);
     if (!plan.ok) {
+        logExchange('warn', 'redeem refused', { targetItemdefid, reason: plan.reason });
         if (statusEl) statusEl.textContent = t('ui.vault.redeem_failed', { reason: plan.reason.replace(/_/g, ' ') });
         return;
     }
-
-    const shardStack = vaultItems.find((i) => i.itemdefid === SHARD_ITEMDEFID);
-    if (shardStack) shardStack.quantity -= plan.cost;
-    vaultItems = vaultItems.filter((i) => i.quantity > 0);
-    grantVaultItem(plan.targetItemdefid, 1);
+    const consumed = [{ itemdefid: SHARD_ITEMDEFID, quantity: plan.cost }];
+    const result = commitLocalExchange('redeem', { consumed }, [{ itemdefid: plan.targetItemdefid, quantity: 1 }]);
+    if (!result.ok) {
+        if (statusEl) statusEl.textContent = t('ui.vault.redeem_failed', { reason: String(result.reason ?? 'storage').replace(/_/g, ' ') });
+        renderSmelterPanel();
+        return;
+    }
 
     if (statusEl) {
         const reward = getItemCatalogEntry(plan.targetItemdefid);

@@ -1136,6 +1136,7 @@
       "smelted": "已熔炼 5x {rarity} → {reward}！",
       "redeem_failed": "兑换失败：{reason}。",
       "redeemed": "已用 {cost} 碎片兑换 {reward}！",
+      "exchange_needs_service": "升级和兑换需要 Steam 物品服务，此版本尚未提供。",
       "cache_unlocked": "宝箱已开启：获得 {count} 项奖励。",
       "cache_opened": "宝箱礼包已开启。",
       "cache_partial": "宝箱兑换已完成，但 Steam 仅部分发放。",

@@ -1136,6 +1136,7 @@
       "smelted": "Fundidos 5x {rarity} → {reward}!",
       "redeem_failed": "Falha no resgate: {reason}.",
       "redeemed": "Resgatados {cost} fragmentos por {reward}!",
+      "exchange_needs_service": "Melhorias e resgates precisam do serviço de itens da Steam, que esta versão ainda não tem.",
       "cache_unlocked": "Cache desbloqueado: {count} recompensas garantidas.",
       "cache_opened": "Pacote de cache aberto.",
       "cache_partial": "Troca de cache concluída com concessão parcial da Steam.",

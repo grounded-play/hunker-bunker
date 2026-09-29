@@ -1136,6 +1136,7 @@
       "smelted": "¡Fundidos 5x {rarity} → {reward}!",
       "redeem_failed": "Canje fallido: {reason}.",
       "redeemed": "¡Canjeados {cost} fragmentos por {reward}!",
+      "exchange_needs_service": "Las mejoras y los canjes necesitan el servicio de objetos de Steam, que esta versión aún no tiene.",
       "cache_unlocked": "Alijo desbloqueado: {count} recompensas aseguradas.",
       "cache_opened": "Paquete de alijo abierto.",
       "cache_partial": "Intercambio de alijo completado con una concesión parcial de Steam.",

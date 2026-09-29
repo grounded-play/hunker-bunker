@@ -1136,6 +1136,7 @@
       "smelted": "5x {rarity} → {reward} geschmolzen!",
       "redeem_failed": "Einlösen fehlgeschlagen: {reason}.",
       "redeemed": "{cost} Splitter gegen {reward} eingelöst!",
+      "exchange_needs_service": "Aufwertungen und Einlösungen benötigen den Steam-Item-Dienst, den dieser Build noch nicht hat.",
       "cache_unlocked": "Cache geöffnet: {count} Belohnungen gesichert.",
       "cache_opened": "Cache-Paket geöffnet.",
       "cache_partial": "Cache-Tausch mit teilweiser Steam-Vergabe abgeschlossen.",

@@ -1136,6 +1136,7 @@
       "smelted": "Переплавлено 5x {rarity} → {reward}!",
       "redeem_failed": "Обмен не удался: {reason}.",
       "redeemed": "Обменяно {cost} осколков на {reward}!",
+      "exchange_needs_service": "Для улучшения и обмена нужен сервис предметов Steam, которого в этой сборке пока нет.",
       "cache_unlocked": "Тайник открыт: получено наград — {count}.",
       "cache_opened": "Набор тайника открыт.",
       "cache_partial": "Обмен тайника завершён с частичной выдачей в Steam.",

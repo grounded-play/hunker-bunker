@@ -1136,6 +1136,7 @@
       "smelted": "5x {rarity} を精錬 → {reward}！",
       "redeem_failed": "引き換え失敗：{reason}。",
       "redeemed": "破片 {cost} を {reward} と引き換えました！",
+      "exchange_needs_service": "トレードアップと交換にはSteamアイテムサービスが必要ですが、このビルドにはまだありません。",
       "cache_unlocked": "キャッシュ解放：報酬 {count} 件を確保。",
       "cache_opened": "キャッシュ・バンドルを開封しました。",
       "cache_partial": "キャッシュ交換は完了しましたが、Steam の付与は一部のみです。",

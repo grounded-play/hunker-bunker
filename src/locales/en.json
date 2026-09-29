@@ -1136,6 +1136,7 @@
       "smelted": "Smelted 5x {rarity} → {reward}!",
       "redeem_failed": "Redeem failed: {reason}.",
       "redeemed": "Redeemed {cost} Shards for {reward}!",
+      "exchange_needs_service": "Trade-ups and redemptions need the Steam item service, which this build doesn't have yet.",
       "cache_unlocked": "Cache unlocked: {count} rewards secured.",
       "cache_opened": "Cache bundle opened.",
       "cache_partial": "Cache exchange completed with a partial Steam grant.",
