@@ -3,10 +3,7 @@ import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
 
 // Sprint 48 HUD recovery R0.
 //
-// This is an executable audit of the known-bad painted dock, not a release gate yet.
-// test.fail() keeps the suite green only while at least one documented R0 defect is
-// present. Once R1 fixes the geometry/readability failures, Playwright will report an
-// "unexpected pass" and this annotation must be removed.
+// This is the release gate for the class-invariant painted dock geometry.
 // Set HB_HUD_SCREENSHOTS=1 for the named 12-image matrix; normal CI records metrics
 // without forcing twelve large WebGL readbacks through SwiftShader.
 
@@ -72,7 +69,7 @@ async function ensureHudAuditSession(page) {
 test.describe('HUD dock readability audit', () => {
     test.describe.configure({ timeout: 300_000 });
 
-    test('captures the R0 matrix and exposes the known geometry/readability failures', async ({ page }, testInfo) => {
+    test('keeps the painted dock readable across classes and target viewports', async ({ page }, testInfo) => {
         await page.addInitScript(() => localStorage.setItem('hb_hud_layout', 'dock'));
         await page.setViewportSize({ width: 1920, height: 1080 });
         await bootToOperatorMenu(page);
@@ -85,10 +82,6 @@ test.describe('HUD dock readability audit', () => {
         await ensureHudAuditSession(page);
 
         const originalClass = await page.evaluate(() => document.documentElement.dataset.operatorClass || 'scout');
-        // Apply expected-failure semantics only after a real gameplay HUD exists.
-        // Boot/infrastructure failures must remain ordinary failures rather than being
-        // mistaken for proof that the known dock defects were reproduced.
-        test.fail(true, 'R0 baseline: the current painted dock is intentionally expected to miss the Sprint 48 targets');
         const matrix = {};
         const screenshots = [];
 
