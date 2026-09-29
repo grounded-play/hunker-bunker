@@ -255,7 +255,7 @@ files into your commits.
 | Lane | Scope | Owner | Since |
 | :--- | :--- | :--- | :--- |
 | A | P0 hardware support + co-op authority + pings | — | — |
-| B | HUD recovery R0–R3 | — | — |
+| B | HUD recovery R0–R3 | Codex | 2026-09-28 |
 | C | Foundry catalog/hub + smelter + companion escort | — | — |
 
 ## 6. Decisions needed from the owner
