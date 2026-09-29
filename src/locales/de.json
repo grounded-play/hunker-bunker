@@ -1805,6 +1805,17 @@
       "slot_chassis": "CHASSIS",
       "empty": "LEER",
       "equipped": "AUSGERÜSTET"
+    },
+    "foundry_hub": {
+      "title": "◇ GIESSEREI",
+      "resources": "Ressourcen",
+      "close": "Gießerei schließen",
+      "tab_stash": "LAGER",
+      "tab_loadout": "AUSRÜSTUNG",
+      "tab_fabricate": "FERTIGEN",
+      "tab_tradeup": "AUFWERTEN",
+      "tab_store": "LADEN",
+      "loadout_hint": "Was jede Klasse trägt, änderst du in der Waffenkammer."
     }
   },
   "narrative": {

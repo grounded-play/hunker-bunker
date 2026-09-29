@@ -1805,6 +1805,17 @@
       "slot_chassis": "CHASSI",
       "empty": "VAZIO",
       "equipped": "EQUIPADO"
+    },
+    "foundry_hub": {
+      "title": "◇ FUNDIÇÃO",
+      "resources": "Recursos",
+      "close": "Fechar a fundição",
+      "tab_stash": "ESTOQUE",
+      "tab_loadout": "EQUIPAMENTO",
+      "tab_fabricate": "FABRICAR",
+      "tab_tradeup": "MELHORAR",
+      "tab_store": "LOJA",
+      "loadout_hint": "Mude o que cada classe carrega no Arsenal."
     }
   },
   "narrative": {

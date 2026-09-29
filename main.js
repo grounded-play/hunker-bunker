@@ -80,7 +80,8 @@ import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { createArmoryScene } from './src/armoryScene.js';
 import { createArmoryUi } from './src/armoryUi.js';
-import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
+import { initSteamVaultUI, loadVaultData, openSteamVaultModal, renderSmelterPanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
+import { createFoundryHub, isFoundryHubEnabled } from './src/foundryHub.js';
 import { initSeasonPassUI, cancelXpFeedback, beginSeasonRun, getSeasonRunSummary, openSeasonPassModal, seasonPass } from './src/seasonPassUi.js';
 import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
@@ -1249,6 +1250,7 @@ function moveControllerFocus(delta) {
 
 const SPATIAL_FOCUS_ROOT_IDS = new Set([
     'armory-screen',
+    'foundry-hub-modal',
     'fabrication-modal',
     'archive-modal',
     'codex-modal',
@@ -9134,7 +9136,7 @@ function ensureArmoryInitialized() {
                 armoryScene: armorySceneInstance,
                 onEmbark: () => closeArmoryScreen({ embark: true }),
                 onBack: () => closeArmoryScreen({ embark: false }),
-                onOpenVault: () => openSteamVaultModal(),
+                onOpenVault: () => (isFoundryHubEnabled() ? foundryHub.open('stash') : openSteamVaultModal()),
                 onOpenSettings: () => openSettingsModal(),
                 onClassChange: (cls) => {
                     saveHeroType(cls);
@@ -12502,6 +12504,12 @@ document.addEventListener('keydown', (event) => {
             return;
         }
 
+        if (foundryHub.isOpen()) {
+            foundryHub.close();
+            event.preventDefault();
+            return;
+        }
+
         const fabricationModal = document.getElementById('fabrication-modal');
         if (fabricationModal && !fabricationModal.classList.contains('hidden')) {
             closeFabricationModal();
@@ -13014,6 +13022,10 @@ function runFabricatorRoll() {
 document.getElementById('fab-roll-btn')?.addEventListener('click', runFabricatorRoll);
 
 function openFabricationModal() {
+    if (isFoundryHubEnabled()) {
+        foundryHub.open('fabricate');
+        return;
+    }
     fabricator.tickPrints();
     renderFabricationModal();
     const modal = document.getElementById('fabrication-modal');
@@ -13025,15 +13037,70 @@ function openFabricationModal() {
     if (FAB_RECIPES.some((r) => fabricator.isPrinting(r.id))) startFabTicker();
 }
 let campRestSessionOpen = false;
-function closeFabricationModal() {
-    const modal = document.getElementById('fabrication-modal');
-    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+// Leaving the Fab Bay, or the Foundry hub that shows it, ends a camp rest.
+function finishFabricationSession() {
     stopFabTicker();
     if (campRestSessionOpen) {
         campRestSessionOpen = false;
         window.game?.finishCampRest?.();
     }
 }
+function closeFabricationModal() {
+    const modal = document.getElementById('fabrication-modal');
+    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+    finishFabricationSession();
+}
+
+// ── Foundry hub (src/foundryHub.js; hb_foundry_hub=1) ─────────
+// Stash, Trade-up and Store show the Vault's panels; Fabricate shows the Fab
+// Bay's. Each tab's renderer is the one those windows already use.
+function showVaultPanels(after = null) {
+    initSteamVaultUI();
+    loadVaultData().then(() => after?.()).catch(() => null);
+}
+
+const foundryHub = createFoundryHub({
+    getBank: () => bankManager.getState(),
+    getClassId: () => loadout.activeClassId,
+    isFoundryActivated: () => bankManager.isFoundryActivated(),
+    isStoreAvailable: () => !document.getElementById('vault-tab-store')?.classList.contains('hidden'),
+    onTabShown: {
+        stash: () => showVaultPanels(),
+        fabricate: () => {
+            fabricator.tickPrints();
+            renderFabricationModal();
+            if (FAB_RECIPES.some((r) => fabricator.isPrinting(r.id))) startFabTicker();
+        },
+        tradeup: () => {
+            renderSmelterPanel();
+            showVaultPanels(renderSmelterPanel);
+        },
+        store: () => showVaultPanels()
+    },
+    renderLoadout: (container) => {
+        if (!container) return;
+        container.innerHTML = `<div class="item-card-strip" id="foundry-hub-loadout-strip"></div><p class="foundry-hub__hint">${t('ui.foundry_hub.loadout_hint')}</p>`;
+        const classId = loadout.activeClassId;
+        const chassisId = loadout.getEquippedChassisSkinId();
+        renderLoadoutStrip(container.querySelector('#foundry-hub-loadout-strip'), loadout.getClassLoadout(classId), {
+            classId,
+            chassisId: loadout.isChassisSupportedForClass(classId, chassisId) ? chassisId : null
+        });
+    },
+    onClose: () => finishFabricationSession(),
+    log: (event, detail) => debugLog.info('FOUNDRY', `hub-${event}`, detail)
+});
+window.foundryHub = foundryHub;
+
+document.getElementById('close-foundry-hub')?.addEventListener('click', () => foundryHub.close());
+setupClickOutside('foundry-hub-modal', () => foundryHub.close());
+// The main menu's Vault opens the hub at Stash when the hub is on.
+document.getElementById('steam-vault-btn')?.addEventListener('click', (event) => {
+    if (!isFoundryHubEnabled()) return;
+    event.stopImmediatePropagation();
+    event.preventDefault();
+    foundryHub.open('stash');
+}, { capture: true });
 
 function refreshFabAccess() {
     const fabCmd = document.getElementById('fabrication-command');

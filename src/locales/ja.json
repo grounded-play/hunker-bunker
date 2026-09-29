@@ -1805,6 +1805,17 @@
       "slot_chassis": "シャーシ",
       "empty": "空き",
       "equipped": "装備中"
+    },
+    "foundry_hub": {
+      "title": "◇ ファウンドリー",
+      "resources": "資源",
+      "close": "ファウンドリーを閉じる",
+      "tab_stash": "保管庫",
+      "tab_loadout": "ロードアウト",
+      "tab_fabricate": "製造",
+      "tab_tradeup": "トレードアップ",
+      "tab_store": "ストア",
+      "loadout_hint": "各クラスの装備は武器庫で変更できます。"
     }
   },
   "narrative": {

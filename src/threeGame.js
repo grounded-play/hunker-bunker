@@ -8130,6 +8130,7 @@ export class ThreeGame {
             || isVisible('tactical-map-modal')
             || isVisible('codex-modal')
             || isVisible('fabrication-modal')
+            || isVisible('foundry-hub-modal')
             || isVisible('about-modal')
             || isVisible('dev-console-modal')
             || isVisible('base-turret-modal')

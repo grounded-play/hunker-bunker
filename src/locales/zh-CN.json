@@ -1805,6 +1805,17 @@
       "slot_chassis": "机体",
       "empty": "空",
       "equipped": "已装备"
+    },
+    "foundry_hub": {
+      "title": "◇ 铸造厂",
+      "resources": "资源",
+      "close": "关闭铸造厂",
+      "tab_stash": "储藏",
+      "tab_loadout": "配装",
+      "tab_fabricate": "制造",
+      "tab_tradeup": "升级",
+      "tab_store": "商店",
+      "loadout_hint": "在军械库中更改各职业的装备。"
     }
   },
   "narrative": {

@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/src/styles/hudDockHousings.css">
   <link rel="stylesheet" href="/src/styles/armory.css">
   <link rel="stylesheet" href="/src/styles/itemCard.css">
+  <link rel="stylesheet" href="/src/styles/foundryHub.css">
   <link rel="icon" type="image/png" href="/favicon.png" />
   <title data-i18n="ui.misc.hunker_bunker_tactical_command">HUNKER BUNKER | TACTICAL COMMAND</title>
 
@@ -1202,6 +1203,27 @@
     </div>
 
     <!-- Fabrication Bay Modal -->
+    <!-- Foundry hub (src/foundryHub.js): Stash / Loadout / Fabricate / Trade-up /
+         Store in one window. Behind hb_foundry_hub=1 until seen on hardware. -->
+    <div id="foundry-hub-modal" class="modal hidden foundry-hub" aria-hidden="true" data-hub-class="scout">
+      <div class="modal-content foundry-hub__content" role="dialog" aria-labelledby="foundry-hub-title">
+        <div class="foundry-hub__header">
+          <div class="foundry-hub__title" id="foundry-hub-title" data-i18n="ui.foundry_hub.title">◇ FOUNDRY</div>
+          <div class="foundry-hub__resources" role="group" aria-label="Resources" data-i18n-aria-label="ui.foundry_hub.resources">
+            <span class="fab-bank-chip"><span class="fab-bank-icon">⬢</span><span data-i18n="ui.fabrication.tech">TECH</span> <b id="foundry-hub-tech">0</b></span>
+            <span class="fab-bank-chip"><span class="fab-bank-icon">◎</span><span data-i18n="ui.fabrication.coin">COIN</span> <b id="foundry-hub-coin">0</b></span>
+            <span class="fab-bank-chip"><span class="fab-bank-icon">✚</span><span data-i18n="ui.fabrication.med">MED</span> <b id="foundry-hub-med">0</b></span>
+            <span class="fab-bank-chip"><span class="fab-bank-icon">◈</span><span data-i18n="ui.fabrication.shells">SHELLS</span> <b id="foundry-hub-shells">0</b></span>
+          </div>
+          <button class="close-modal" id="close-foundry-hub" aria-label="Close" data-i18n-aria-label="ui.foundry_hub.close">×</button>
+        </div>
+        <div class="foundry-hub__tabs" id="foundry-hub-tabs" role="tablist"></div>
+        <div class="foundry-hub__panel" id="foundry-hub-panel" role="tabpanel">
+          <div class="foundry-hub__loadout hidden" id="foundry-hub-loadout"></div>
+        </div>
+      </div>
+    </div>
+
     <div id="fabrication-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content fab-modal-content">
         <div class="terminal-scanline"></div>

@@ -1805,6 +1805,17 @@
       "slot_chassis": "CHASIS",
       "empty": "VACÍO",
       "equipped": "EQUIPADO"
+    },
+    "foundry_hub": {
+      "title": "◇ FUNDICIÓN",
+      "resources": "Recursos",
+      "close": "Cerrar la fundición",
+      "tab_stash": "ALIJO",
+      "tab_loadout": "EQUIPO",
+      "tab_fabricate": "FABRICAR",
+      "tab_tradeup": "MEJORAR",
+      "tab_store": "TIENDA",
+      "loadout_hint": "Cambia lo que lleva cada clase en la Armería."
     }
   },
   "narrative": {

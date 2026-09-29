@@ -1,0 +1,135 @@
+/* Foundry hub (src/foundryHub.js). The Armory's bench look (dark plate,
+   Space Mono labels) themed by the active class. Accents follow the style
+   bible: Scout teal, Tank amber, Engineer orange/brass; green stays
+   reserved for alien biology. The Fab Bay's own glow variable is set here,
+   so its cards take the class colour while they are shown in the hub. */
+
+.foundry-hub {
+  --hub-accent-rgb: 0, 229, 255;
+}
+
+.foundry-hub[data-hub-class="tank"] { --hub-accent-rgb: 255, 159, 28; }
+.foundry-hub[data-hub-class="engineer"] { --hub-accent-rgb: 214, 138, 58; }
+
+.foundry-hub__content {
+  --fab-glow-rgb: var(--hub-accent-rgb);
+  display: flex;
+  flex-direction: column;
+  width: min(96vw, calc(var(--vu) * 152));
+  max-width: min(96vw, calc(var(--vu) * 152));
+  height: min(90vh, calc(var(--vu) * 96));
+  padding: 0;
+  overflow: hidden;
+  background: rgba(8, 12, 15, 0.97);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1.5px solid rgba(var(--hub-accent-rgb), 0.5);
+  border-radius: 8px;
+  box-shadow: 0 0 40px rgba(var(--hub-accent-rgb), 0.18), 0 0 80px rgba(0, 0, 0, 0.9);
+}
+
+.foundry-hub__header {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 1.2);
+  padding: calc(var(--vu) * 1) calc(var(--vu) * 1.6);
+  border-bottom: 1px solid rgba(var(--hub-accent-rgb), 0.25);
+}
+
+.foundry-hub__title {
+  font: 800 calc(var(--font-xs) * 1.3) / 1 'Space Mono', monospace;
+  letter-spacing: 0.12em;
+  color: rgb(var(--hub-accent-rgb));
+  white-space: nowrap;
+}
+
+.foundry-hub__resources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--vu) * 0.6);
+  margin-left: auto;
+}
+
+.foundry-hub__header .close-modal {
+  position: static;
+  flex: 0 0 auto;
+}
+
+.foundry-hub__tabs {
+  display: flex;
+  gap: calc(var(--vu) * 0.4);
+  padding: calc(var(--vu) * 0.6) calc(var(--vu) * 1.6) 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.foundry-hub__tab {
+  padding: calc(var(--vu) * 0.7) calc(var(--vu) * 1.4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: none;
+  border-radius: 5px 5px 0 0;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.7);
+  font: 800 max(11px, calc(var(--font-xs) * 0.85)) / 1 'Space Mono', monospace;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.foundry-hub__tab:hover,
+.foundry-hub__tab:focus-visible {
+  color: #fff;
+  border-color: rgba(var(--hub-accent-rgb), 0.55);
+  outline: none;
+}
+
+.foundry-hub__tab.is-active {
+  color: rgb(var(--hub-accent-rgb));
+  background: rgba(var(--hub-accent-rgb), 0.12);
+  border-color: rgba(var(--hub-accent-rgb), 0.6);
+}
+
+.foundry-hub__tab.is-locked {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.foundry-hub__panel {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.8);
+  min-height: 0;
+  padding: calc(var(--vu) * 1.2) calc(var(--vu) * 1.6);
+  overflow: auto;
+}
+
+/* Borrowed panels were sized for their own windows: the inventory and the
+   recipe grid fill this one, packed to the top; the store and smelter keep
+   their natural height. */
+.foundry-hub__panel > .vault-main-layout,
+.foundry-hub__panel > .fab-recipe-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.foundry-hub__panel > .fab-recipe-grid {
+  align-content: start;
+}
+
+.foundry-hub__panel > .vault-store-layout {
+  flex: 0 0 auto;
+}
+
+.foundry-hub__loadout {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1);
+}
+
+.foundry-hub__loadout .item-card-strip {
+  max-width: calc(var(--vu) * 80);
+}
+
+.foundry-hub__hint {
+  margin: 0;
+  font-size: max(11px, calc(var(--font-xs) * 0.8));
+  color: rgba(255, 255, 255, 0.6);
+}

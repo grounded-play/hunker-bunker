@@ -1805,6 +1805,17 @@
       "slot_chassis": "CHASSIS",
       "empty": "EMPTY",
       "equipped": "EQUIPPED"
+    },
+    "foundry_hub": {
+      "title": "◇ FOUNDRY",
+      "resources": "Resources",
+      "close": "Close the Foundry",
+      "tab_stash": "STASH",
+      "tab_loadout": "LOADOUT",
+      "tab_fabricate": "FABRICATE",
+      "tab_tradeup": "TRADE-UP",
+      "tab_store": "STORE",
+      "loadout_hint": "Change what each class carries in the Armory."
     }
   },
   "narrative": {

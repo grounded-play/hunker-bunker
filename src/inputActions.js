@@ -41,6 +41,7 @@ export const MENU_FOCUS_ROOT_IDS = Object.freeze([
     'codex-detail-modal',
     'codex-modal',
     'achievements-modal',
+    'foundry-hub-modal',
     'fabrication-modal',
     'elevator-choice-modal',
     'archive-sims-modal',

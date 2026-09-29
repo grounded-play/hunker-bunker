@@ -1805,6 +1805,17 @@
       "slot_chassis": "ШАССИ",
       "empty": "ПУСТО",
       "equipped": "ЭКИПИРОВКА"
+    },
+    "foundry_hub": {
+      "title": "◇ ЛИТЕЙНАЯ",
+      "resources": "Ресурсы",
+      "close": "Закрыть литейную",
+      "tab_stash": "СХРОН",
+      "tab_loadout": "СНАРЯЖЕНИЕ",
+      "tab_fabricate": "ИЗГОТОВИТЬ",
+      "tab_tradeup": "УЛУЧШИТЬ",
+      "tab_store": "МАГАЗИН",
+      "loadout_hint": "Снаряжение каждого класса меняется в Арсенале."
     }
   },
   "narrative": {
