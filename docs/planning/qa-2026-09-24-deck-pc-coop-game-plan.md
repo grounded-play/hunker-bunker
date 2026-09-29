@@ -19,6 +19,11 @@ The `logs/` directory is git-ignored; the numbers below are quoted from the logs
 
 **What the session proves:** two separate Steam accounts joined one relay room, readied, deployed together, saw each other's 3D avatars and redeployed after death on packaged builds — the first real evidence for the two-account co-op gate. No errors were logged on either machine. The leaderboard accepted the co-op run payload.
 
+> **Status 2026-09-28:** what shipped from this plan, what is still open, and the
+> Sprint 48 plan are in [sprint-47-status-and-sprint-48-plan-2026-09-28.md](sprint-47-status-and-sprint-48-plan-2026-09-28.md).
+> Nothing below has been re-checked on hardware since this session; the next Deck + PC
+> session is Sprint 48's first item.
+
 ## Claims
 
 Several agents work this plan at once. Claim an item here, in a commit, before editing its files; `git status` before every edit.
