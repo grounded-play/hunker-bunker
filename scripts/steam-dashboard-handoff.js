@@ -162,7 +162,7 @@ export function buildDashboardHandoff({ generatedAt = new Date() } = {}) {
     const heldAchievements = achievements.filter((achievement) => !achievement.publishNow);
     const leaderboards = buildLeaderboardRows();
     const leaderboardEnvTemplate = leaderboards
-        .map((leaderboard) => `${leaderboard.apiName}:<${leaderboard.apiName}_id>`)
+        .map((leaderboard) => `${leaderboard.apiName}:${leaderboard.dashboardId}`)
         .join(',');
 
     return {
@@ -267,10 +267,10 @@ ${table(
 
 Future download-size improvement: ${handoff.depots.optionalFutureSplit}
 
-## Leaderboards To Create
+## Leaderboards
 
-Create these in Steamworks, then copy the generated leaderboard IDs back into
-\`HB_STEAM_LEADERBOARD_IDS\`.
+These Steamworks leaderboards have assigned production IDs. Keep
+\`HB_STEAM_LEADERBOARD_IDS\` synchronized with this table.
 
 ${table(
     ['API Name', 'Sort Method', 'Display Type', 'Upload Method', 'Dashboard ID'],
@@ -283,7 +283,7 @@ ${table(
     ])
 )}
 
-Backend env template after IDs exist:
+Backend env value:
 
 \`\`\`bash
 HB_STEAM_LEADERBOARD_IDS='${handoff.leaderboardEnvTemplate}'
@@ -441,14 +441,9 @@ Secrets that still must come from the dashboard/host:
 
 ## Acceptance Checklist
 
-- [ ] Leaderboards created and \`HB_STEAM_LEADERBOARD_IDS\` filled with real IDs.
-- [ ] Achievements and stats published in Steamworks.
-- [ ] Steam Cloud Auto-Cloud paths saved and published.
-- [ ] Inventory schema uploaded and accepted.
-- [ ] Steam Input template set to bundled config with manifest path \`${handoff.steamInput.manifestInstallPath}\`.
-- [ ] Beta package includes app \`${handoff.app.appId}\` and depot \`${handoff.depots.contentDepotId}\`.
-- [ ] Installed Steam beta launches both platform payloads through the configured launch options.
-- [ ] Installed Steam beta reaches deployed \`/health\`, reads inventory, submits a trusted score, and syncs \`save.json\`.
+The portal and installed-build gates are tracked once in the canonical
+[todo audit backlog](planning/todo-audit-backlog-and-conflicts-2026-09-24.md#domain-steamworks-dashboard).
+They are intentionally not duplicated as open checkboxes in this generated packet.
 `;
 }
 

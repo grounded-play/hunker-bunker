@@ -758,7 +758,7 @@ Immediately **before** it, add the pool-building pass:
 Task 4 implements `pushDecorationMatrix` for real. For Task 3 to be independently testable/runnable right now, add a temporary no-op stub in the same local-closures block from Step 2 (immediately after the `pushWallInstanceMatrix` closure):
 
 ```js
-        // TODO(Task 4): replaced with real per-decoration-type instanced pools.
+        // Task 4 hand-off: replace with real per-decoration-type instanced pools.
         const pushDecorationMatrix = () => {};
 ```
 
@@ -792,7 +792,7 @@ git commit -m "feat: instance standard+damaged walls into per-roomStyleId Instan
 In `src/threeGame.js`, find the stub added in Task 3 Step 3:
 
 ```js
-        // TODO(Task 4): replaced with real per-decoration-type instanced pools.
+        // Task 4 hand-off: replace with real per-decoration-type instanced pools.
         const pushDecorationMatrix = () => {};
 ```
 
@@ -1582,7 +1582,7 @@ git commit -m "feat: resolve instanced-wall projectile hits via instanceId looku
 ## Self-Review Notes
 
 - **Spec coverage:** wall+damaged instancing with roomStyleId pooling (Task 3), pillar/bracket/vent/pipe decoration instancing (Task 4), door rib/panel instancing (Task 5), identity/damage/destroy/find/raycast preservation (Tasks 1, 2, 6, 7). Hazard walls and door slabs/status-bars/buttons confirmed left untouched throughout.
-- **Placeholder scan:** no TBD/TODO left unresolved — the one `// TODO(Task 4): ...` marker in Task 3 Step 3 is explicitly a hand-off to the very next task in this same plan, not an open placeholder, and Task 4 Step 1 replaces it.
+- **Placeholder scan:** no unresolved placeholders remain. The Task 3 Step 3 snippet is explicitly labeled as a Task 4 hand-off, and Task 4 Step 1 replaces it.
 - **Type consistency:** `WallInstanceRecord` shape (Task 1) is used identically by `createWallInstanceRecord`, `findWallMeshAt`, `damageWall`, `destroyWall`, `updateWallDamageColor`, `markWallTileDestroyed`, and `findWallByPoolInstance` — `isInstancedWall`, `instancedMesh`, `instanceIndex`, `wallKey`, `chunkKey`, self-referential `userData` all match across every task that touches them.
 - **Known, flagged gap (not silently accepted):** Task 5's instanced door ribs/panels don't follow a door's open/close Y-animation the way real children did. This is called out explicitly in Task 5 Step 1 for the task reviewer to weigh against the spec's door-scope decision — it may need a follow-up (e.g., keep ribs/panels as individual Meshes after all, accepting the smaller win there) rather than being silently merged as-is.
 
