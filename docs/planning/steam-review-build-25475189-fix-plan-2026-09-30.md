@@ -21,13 +21,13 @@ passes 4/4 in a browser:
 - commentary shows on enable, and READ ALL lists every entry above Settings;
 - the Content Guide transcript opens from the title screen, above the gallery.
 
-The Inventory schema file has the prices removed.
+The key prices are kept (in-app purchases are intended). The Vault sells through both the Item Store and Microtransactions, and `GetReport` reconciliation is built.
 
 | Item | Code | Still needed |
 | :--- | :--- | :--- |
 | 1 Online | Done | Two-account tests of co-op and PvP on the uploaded build; drop any tag that fails |
 | 2 Commentary | Done | Check on the uploaded build, or remove the category |
-| 3–4 IAP | Schema file done | Upload the schema in Steamworks; make sure IAP isn't declared; use the reviewer note |
+| 3–4 IAP | Done: Item Store + MicroTxn in the Vault, `GetReport` reconciliation (`a001b823`) | Turn on production flags; real test purchase; run the `GetReport` CLI and send the output; declare IAP |
 | 5 Controller | Done | Deck + PC pad pass with the keyboard unplugged |
 | 6 Mature | Done | Survey: keep non-explicit sexual content only, untick nudity; paste the access text |
 | 7 Chat | — | Survey: untick in-game chat |
@@ -41,8 +41,8 @@ The Settings button covers controller access instead.
 | :--- | :--- | :--- | :--- | :--- |
 | 1 | Online PvP / Co-op not found | Multiplayer exists, but only at the end of New Run → hero → Armory → Embark, labelled "deploy". Nothing on the title menu says multiplayer. PvP has no two-account test yet. | A **MULTIPLAYER** title-menu entry that opens the Tactical Net console (CO-OP / PVP, Steam lobbies, invite). Two-account tests of both modes. Notes state the variant: **Online** (Steam lobbies + relay). | Code: Claude. Test: publisher + a second account. |
 | 2 | "Commentary available" found nothing | Commentary only shows during active gameplay: the run-start entry fires during the intro (not yet "gameplay"), and the Vault and Armory entries fire in menus, so all are skipped. There are 11 short text entries in total. | Show commentary in menus too; fire run-start once gameplay is live; add a **Developer Commentary** list under Settings / About with every entry. Or remove the category. | Code: Claude. Category: publisher. |
-| 3 | `GetReport` for MicroTxn | Three itemdefs carry prices (Relic Decryption Key $1, 5-key pack $4, 15-key pack $10). No MicroTxn purchase is live (`HB_STEAM_MICROTXN_ENABLED=0`). | **Remove the prices** (recommended, below). Tell Valve there are no in-app purchases; `GetReport` doesn't apply. | Publisher (schema + store page). |
-| 4 | Steam Wallet not verifiable | Same prices, while the Vault's Store tab is hidden, so there is nothing to buy. | Same as 3. | Publisher. |
+| 3 | `GetReport` for MicroTxn | Microtransactions were off in production, and no `GetReport` reconciliation existed. | `GetReport` reconciliation + CLI; a real test purchase; send the output. | Code: Claude (done). Test: publisher. |
+| 4 | Steam Wallet not verifiable | Purchases were off in production, so the Vault hid its Store tab. | Store tab with Item Store + MicroTxn checkout; production flags on. | Code: Claude (done). Flags: publisher. |
 | 5 | Achievements can't be scrolled by controller | Achievement cards are non-focusable `div`s; the controller can only reach Close and Copy Save. The Vault's inventory cards have the same flaw. | Make cards focusable; D-pad up/down scrolls any panel with nothing focusable in it; a controller probe for Achievements. | Code: Claude. Hardware pass: publisher. |
 | 6 | "Some nudity or sexual content" not found | The sexual content is real: Sister Val's dialogue at Camp Tallow (`[SENSUAL / EMBRACE]`, `[DEEPEN INTIMACY]`). But the reviewer shortcut can't show it: the F9 gallery's romance buttons call `openNpcDialogueTree`, which refuses outside gameplay. Two gallery items (the veiled-nudity log and the Tallow ledger) exist **only** in the gallery, not in the game. | The gallery opens dialogue in a reader mode from any screen; gallery-only items removed; the survey answers only what's in the game; notes give F9 and the in-game route. | Code: Claude. Survey: publisher. |
 | 7 | "Filtered in-game chat" not found | There is no in-game chat. | Remove it from the Content Survey. | Publisher. |
@@ -98,38 +98,47 @@ The Settings button covers controller access instead.
 
 ## 3–4. In-app purchases, Steam Wallet and GetReport
 
-- **Cause:** itemdefs 4001, 4005 and 4015 have prices, so Valve treats the app as
-  selling items. The Vault's Store tab is hidden because purchases are off
-  (`HB_STEAM_STORE_ENABLED=0`, `HB_STEAM_MICROTXN_ENABLED=0`), so the reviewer finds
-  nothing to buy.
-- **Recommended decision: no in-app purchases at launch; remove the prices.**
-  - Paid keys that open random caches are paid loot boxes. They carry player backlash
-    and legal risk (odds disclosure; Belgium and the Netherlands).
-  - They need Wallet and `GetReport` verification, which blocks this review.
-  - They contradict the 2026-09-11 decision to keep the IAP claim removed.
-  - Keys stay earnable in play (boss-kill milestone grant), so no feature is lost.
-  - Monetization can come back later as direct-purchase cosmetics with no randomness.
-- **Steamworks (publisher):**
-  1. Inventory Service schema: remove `price` / `price_category` from 4001, 4005 and
-     4015, and mark 4005 and 4015 `store_hidden: true`.
-  2. Upload and publish the schema.
-  3. Store page: make sure **In-App Purchases** is not declared.
-- **Repo:** update `steam/inventory_schema_hunker_bunker.json` to match, and keep the
-  `purchases` claim unaccepted. The Vault already hides purchasing when the backend
-  reports purchases off.
+**Owner decision (2026-09-30): in-app purchases stay, through both the Steam Item Store
+and Microtransactions.** An earlier draft of this plan recommended removing the prices;
+that was reverted in `20b7162e`. The economy direction is in the
+[economy master plan](economy-master-plan-2026-09-30.md).
+
+- **Cause:** the priced keys (4001, 4005, 4015) exist, but production had purchases off
+  (`HB_STEAM_STORE_ENABLED`, `HB_STEAM_MICROTXN_ENABLED` and `HB_STEAM_ITEM_STORE_ENABLED`
+  all off). So the Vault hid its Store tab, and the reviewer found nothing to buy. No
+  `GetReport` reconciliation existed.
+- **Game change (done, `a001b823`):**
+  - the Vault's Store tab appears whenever either path is on;
+  - with the Item Store on, each key card opens its own Item Store page in the Steam
+    overlay, and the inventory refreshes afterwards;
+  - buying no longer requires Community Market eligibility;
+  - `server/steamMicroTxnReport.js` reconciles `GetReport` against recorded purchases
+    every 6 h. `server/scripts/microtxn-report.js` prints and saves the report for
+    Valve.
+- **Publisher steps:**
+  1. Steamworks → Inventory Service: make sure the Item Store is enabled and the three
+     priced items are published. Confirm the `VLV` price categories match the Vault's
+     $0.99 / $3.99 / $9.99 (see the economy plan, P3).
+  2. Steamworks → Microtransactions: make sure the app is enabled for the
+     Microtransactions API with the publisher key.
+  3. Production `~/server/backend.env`: set `HB_STEAM_STORE_ENABLED=1`,
+     `HB_STEAM_MICROTXN_ENABLED=1`, `HB_STEAM_ITEM_STORE_ENABLED=1`, then redeploy the
+     backend.
+  4. On a real (non-sandbox) account, buy one key through the in-game Store
+     (Microtransactions) and one through the Item Store.
+  5. Run
+     `docker exec hunker-bunker-backend node server/scripts/microtxn-report.js --since <time before the test>`
+     and send Valve the output plus the test account name. If it's too long, reply to
+     the review ticket with it.
+  6. Store page: declare in-app purchases.
 - **Reviewer note:**
 
   ```text
   IN-APP PURCHASES
-  This build has no in-app purchases. We removed the prices from the three Steam Inventory item definitions that had them (4001, 4005, 4015); those items can only be earned in play. We do not use the Microtransactions API, so GetReport does not apply.
+  Purchases use both Steam Inventory items sold in the Steam Item Store and the Microtransactions API.
+  Route: Title menu → NEW RUN → ◈ STEAM VAULT → STORE tab. Each key card has BUY VIA STEAM (Microtransactions checkout in the Steam overlay, paid from the Steam Wallet). OPEN IN STEAM ↗ on the same tab opens our Steam Item Store.
+  GetReport: we reconcile our in-game economy against settled transactions with ISteamMicroTxn/GetReport automatically every 6 hours. The response for our test transaction is attached (test account: [ACCOUNT NAME]).
   ```
-
-- **If you'd rather sell keys now:** it is a separate, longer path, and not ASAP:
-  - enable the Steam-hosted item store and link it from the Vault;
-  - answer that only Steam Inventory items are sold, so `GetReport` doesn't apply to
-    MicroTxn;
-  - add a purchasable-item route to the notes;
-  - disclose cache odds.
 
 ## 5. Full Controller Support
 
@@ -194,10 +203,10 @@ The Settings button covers controller access instead.
 
 | When | Work | Owner |
 | :--- | :--- | :--- |
-| Today | Steamworks: remove prices from 4001/4005/4015 and publish the schema; untick in-game chat; fix the nudity sub-answers; make sure IAP isn't declared. | Publisher |
+| Today | Steamworks: Item Store and Microtransactions enabled; untick in-game chat; fix the nudity sub-answers; declare IAP. | Publisher |
 | Today | Code: achievement and Vault cards focusable; right-stick scrolling; controller-only probe. | Claude |
 | Today | Code: commentary in menus, run-start re-fire, the Developer Commentary screen, confirmation on enable. | Claude |
-| Today | Code: MULTIPLAYER title entry; mature gallery reader mode; gallery-only items removed; Content Review button; schema file prices removed. | Claude |
+| Today | Code: MULTIPLAYER title entry; mature gallery reader mode; gallery-only items removed; Content Review button; Item Store + MicroTxn Vault; `GetReport`. | Claude |
 | Day 2 | Build from a clean worktree, bump the version, upload to `beta`. | Publisher (steamcmd) |
 | Day 2 | Two-account co-op and PvP test on the uploaded build; controller-only hardware pass on the Deck and PC. | Publisher + second account |
 | Day 2 | Set the tested build live on default, paste the reviewer notes (only the verified sections), mark ready for review. | Publisher |
