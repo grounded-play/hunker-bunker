@@ -5718,7 +5718,10 @@ function resetRunToStartingState({
 
         runStartTime = Date.now();
         expeditionReceipt.begin(runStartTime, bankManager.getState());
-        const runUuid = globalThis.crypto?.randomUUID?.() ?? `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+        // randomUUID needs a secure context (not LAN http); getRandomValues
+        // doesn't, and is still a cryptographic source.
+        const randomSuffix = Array.from(globalThis.crypto?.getRandomValues?.(new Uint8Array(6)) ?? [], (byte) => byte.toString(16).padStart(2, '0')).join('');
+        const runUuid = globalThis.crypto?.randomUUID?.() ?? `run-${Date.now().toString(36)}-${randomSuffix}`;
         void beginSeasonRun(`local:${runUuid}`, 0);
         resetCommentaryRunState();
         showDeveloperCommentaryWhenPlaying('run_start');
@@ -16207,18 +16210,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
     if (titleNewRunBtn) {
-        titleNewRunBtn.addEventListener('click', (event) => {
+        titleNewRunBtn.addEventListener('click', () => {
             multiplayerIntent = false;
-            startNewTacticalRunFlow(event);
+            startNewTacticalRunFlow();
         });
     }
     // MULTIPLAYER (Valve review 2026-09: online play couldn't be found; the
     // only route was NEW RUN > Armory > EMBARK). Same hero and Armory steps,
     // then the deployment console opens with focus on the online modes.
     if (titleMultiplayerBtn) {
-        titleMultiplayerBtn.addEventListener('click', (event) => {
+        titleMultiplayerBtn.addEventListener('click', () => {
             multiplayerIntent = true;
-            startNewTacticalRunFlow(event);
+            startNewTacticalRunFlow();
         });
     }
     if (titleContinueBtn) {
