@@ -57,13 +57,31 @@ The layout has been meticulously captured across multiple viewports and orientat
 
 ---
 
-## 🛠️ Codebase Highlights & Diagnostic Comments
+## Later roadmap disposition (audited 2026-09-30)
 
-To maintain strict alignment with the future feature roadmap, the following checklist items have been fully scaffolded:
+This archived Phase 1 walkthrough originally listed four future-stage notes. They
+are no longer open work:
 
-* **Stage 2 HUD Binding**: Added `// TODO(stage-2): bind HUD stat fields to live player/system state`
-* **Stage 4 Action Mapping**: Added `// TODO(stage-4): wire bottom-right action zone to contextual interaction`
-* **Stage 13 Portrait Policy**: Added `// TODO(stage-13): finalize portrait layout policy after QA matrix`
-* **Stage 14 Mobile FX**: Added `// TODO(stage-14): expose "reduced FX" mode for low-end mobile`
+* **Stage 2 HUD binding — complete.** The current HUD binds bunker level and
+  biome, weapon clip/reserve/reload state, ship integrity, vitals, pickups, and
+  other run telemetry to live runtime state in `main.js` and `src/vitals.js`.
+  Event-driven coverage includes `weapon-clip-updated` and
+  `ship-health-changed`.
+* **Stage 4 mobile action zone — retired by product decision.** The later
+  Steam Deck-first display/input specification removed virtual joysticks,
+  touch action buttons, and touch-only interaction from the supported product.
+  Contextual interaction remains available through semantic keyboard,
+  controller, and Steam Input actions.
+* **Stage 13 portrait layout — retired by product decision.** Portrait and
+  mobile reflow are no longer targets. The supported layout is one canonical
+  1280×800 (16:10) stage, uniformly contained and letterboxed when host aspect
+  ratios differ.
+* **Stage 14 low-end-mobile FX mode — retired by product decision.** Low-end
+  mobile is no longer a release target. The accessibility intent survives in
+  the supported desktop/Deck experience through reduced camera shake, reduced
+  pressure, and `prefers-reduced-motion` presentation fallbacks.
 
-All structural layout adjustments were completed under strict local styling and code standards. Linter diagnostics passed with zero errors.
+The current policy and acceptance contract live in
+`docs/steam-deck-first-display-and-input-spec.md`; the dated audit and todo-tree
+classification live in
+`docs/planning/todo-tree-resolution-2026-09-30.md`.
