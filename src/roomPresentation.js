@@ -4,6 +4,21 @@ const ROOM_LIGHT_PALETTES = Object.freeze({
     bio: Object.freeze({ color: 0x63e6a7, intensity: 1.2, distance: 6.5 })
 });
 
+const ROOM_ROLE_DISPLAY_PROFILES = Object.freeze({
+    generic: Object.freeze({ family: 'operations', color: 0x71cddf, width: 1.0, height: 0.42, segments: 1 }),
+    utility: Object.freeze({ family: 'engineering', color: 0xffb347, width: 1.16, height: 0.38, segments: 2 }),
+    engineering: Object.freeze({ family: 'engineering', color: 0xffb347, width: 1.16, height: 0.38, segments: 2 }),
+    objective: Object.freeze({ family: 'engineering', color: 0xffb347, width: 1.16, height: 0.38, segments: 2 }),
+    medical: Object.freeze({ family: 'medical', color: 0x7de6ff, width: 1.28, height: 0.34, segments: 3 }),
+    'cryo-lab': Object.freeze({ family: 'cryo', color: 0xbbefff, width: 1.34, height: 0.3, segments: 3 }),
+    security: Object.freeze({ family: 'security', color: 0xff5147, width: 0.94, height: 0.5, segments: 2 }),
+    storage: Object.freeze({ family: 'logistics', color: 0xffd27a, width: 0.84, height: 0.34, segments: 1 }),
+    reward: Object.freeze({ family: 'logistics', color: 0xffd27a, width: 0.84, height: 0.34, segments: 1 }),
+    camp: Object.freeze({ family: 'logistics', color: 0xffd27a, width: 0.84, height: 0.34, segments: 1 }),
+    nest: Object.freeze({ family: 'bio', color: 0x63e6a7, width: 0.62, height: 0.74, segments: 1 }),
+    hive: Object.freeze({ family: 'bio', color: 0x63e6a7, width: 0.62, height: 0.74, segments: 1 })
+});
+
 function boundsForCells(cells) {
     if (!cells?.length) return null;
     let minX = Infinity;
@@ -74,6 +89,52 @@ export function planRoomPracticalLights(room, { biome = 'active' } = {}) {
             intensity: palette.intensity,
             distance: palette.distance
         }
+    };
+}
+
+/**
+ * Plan a compact role-identification console against a room's north or west
+ * back wall. Profile proportions and screen segmentation supplement colour so
+ * the room grammar remains readable under colour-vision filters.
+ */
+export function planRoomRoleDisplay(room, { biome = 'active' } = {}) {
+    const cells = room?.interior ?? [];
+    const bounds = boundsForCells(cells);
+    if (!bounds) return null;
+
+    const fallbackRole = biome === 'cryo' ? 'cryo-lab' : biome === 'bio' ? 'hive' : 'generic';
+    const role = ROOM_ROLE_DISPLAY_PROFILES[room?.role] ? room.role : fallbackRole;
+    const profile = ROOM_ROLE_DISPLAY_PROFILES[role];
+    const width = bounds.maxX - bounds.minX + 1;
+    const depth = bounds.maxY - bounds.minY + 1;
+    const wall = width >= depth ? 'north' : 'west';
+    const centerX = (bounds.minX + bounds.maxX) / 2;
+    const centerY = (bounds.minY + bounds.maxY) / 2;
+    const anchorCell = closestCell(
+        cells,
+        wall === 'north' ? centerX : bounds.minX,
+        wall === 'north' ? bounds.minY : centerY
+    );
+    const gap = 0.055;
+    const segmentWidth = (profile.width - gap * (profile.segments - 1)) / profile.segments;
+    const startOffset = -((profile.segments - 1) * (segmentWidth + gap)) / 2;
+    const screens = Array.from({ length: profile.segments }, (_, index) => ({
+        offset: startOffset + index * (segmentWidth + gap),
+        width: segmentWidth,
+        height: profile.height,
+        color: profile.color
+    }));
+
+    return {
+        role,
+        family: profile.family,
+        wall,
+        x: wall === 'west' ? bounds.minX - 0.46 : anchorCell.x,
+        z: wall === 'north' ? bounds.minY - 0.46 : anchorCell.y,
+        rotationY: wall === 'west' ? Math.PI / 2 : 0,
+        width: profile.width + 0.16,
+        height: profile.height + 0.16,
+        screens
     };
 }
 

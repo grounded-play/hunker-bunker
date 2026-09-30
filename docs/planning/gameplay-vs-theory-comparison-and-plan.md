@@ -85,6 +85,8 @@ Acceptance: a player can distinguish ordinary room light, a route portal and a l
 
 Instance a limited kit: hazard sill, cable run, ceiling rib, wall monitor and occasional drip. Select pieces deterministically from room role/theme so medical, utility, security, cryo and bio spaces read differently.
 
+Status: **Phase 6A implemented.** Every authored room now receives a deterministic back-wall display. Medical uses a three-segment cyan diagnostic strip, engineering a two-segment amber console, security a compact paired red panel, logistics a warm single screen, cryo a pale-blue triple strip and bio a tall green organic readout. Proportions and segmentation carry the distinction when colour alone cannot. Housings and screens are two instanced pools per chunk, with no new dynamic lights. The remaining Phase 6B work is the sparse hazard-sill/cable/rib/drip rhythm and should reuse the same role plan rather than create free-scattered props.
+
 Acceptance: a screenshot without HUD identifies at least three room roles, while the normal gameplay view remains below the existing draw-call budget.
 
 ## Verification matrix
@@ -96,6 +98,7 @@ Acceptance: a screenshot without HUD identifies at least three room roles, while
 | Cutaway selection | Unit tests cover all four quadrants, the 0.82 m contract, restoration and destroyed-wall persistence | Controller-driven rotation on Deck and PC |
 | Wet floors | Shader-source regression verifies world-space mask, darkening and roughness response; browser test compiles the material on WebGL | Reflection/readability check on Deck and PC panels |
 | Integrated world | Browser test requires fixtures, caps, portal headers and pooled sources in real generated chunks; it rotates 180° and proves cut/restore with stable instance counts | Packaged-build capture and controller playthrough |
+| Role displays | Unit tests cover role palette, proportions, segmentation, wall choice and deterministic fallback; browser test requires housing and screen pools in generated rooms | Confirm at least three room families remain recognizable on Deck at gameplay scale |
 
 ## Explicit non-goals for this pass
 

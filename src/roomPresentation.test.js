@@ -6,6 +6,7 @@ import {
     planRoomBoundaryCells,
     planRoomCutawayCells,
     planRoomPracticalLights,
+    planRoomRoleDisplay,
     ROOM_CUTAWAY_HEIGHT
 } from './roomPresentation.js';
 import { collapseChunkLattice, extractChunkWfcMetadata } from './wfcGenerator.js';
@@ -32,6 +33,34 @@ describe('room presentation planning', () => {
         expect(plan.fixtures).toHaveLength(1);
         expect(plan.fixtures[0].color).toBe(0x63e6a7);
         expect(plan.proxy.color).toBe(0x63e6a7);
+    });
+
+    it('mounts deterministic role displays on a room back wall', () => {
+        const sample = { ...room(6, 3), role: 'medical' };
+        const first = planRoomRoleDisplay(sample);
+        const second = planRoomRoleDisplay(sample);
+        expect(first).toEqual(second);
+        expect(first).toMatchObject({ role: 'medical', family: 'medical', wall: 'north', z: 0.54 });
+        expect(first.screens).toHaveLength(3);
+        expect(first.screens.every((screen) => screen.color === 0x7de6ff)).toBe(true);
+    });
+
+    it('uses proportions and segmentation as well as colour to identify room roles', () => {
+        const security = planRoomRoleDisplay({ ...room(3, 6), role: 'security' });
+        const bio = planRoomRoleDisplay({ ...room(3, 6), role: 'hive' });
+        expect(security).toMatchObject({ family: 'security', wall: 'west', x: 0.54, rotationY: Math.PI / 2 });
+        expect(security.screens).toHaveLength(2);
+        expect(bio.family).toBe('bio');
+        expect(bio.screens).toHaveLength(1);
+        expect(bio.height).toBeGreaterThan(security.height);
+    });
+
+    it('falls back to biome-specific displays for unknown generated roles', () => {
+        expect(planRoomRoleDisplay({ ...room(3, 3), role: 'unknown' }, { biome: 'cryo' })).toMatchObject({
+            role: 'cryo-lab',
+            family: 'cryo'
+        });
+        expect(planRoomRoleDisplay(null)).toBeNull();
     });
 
     it('identifies only the east and south foreground walls for the default camera', () => {

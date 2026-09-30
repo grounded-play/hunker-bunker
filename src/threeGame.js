@@ -17,6 +17,7 @@ import {
     planRoomBoundaryCells,
     planRoomCutawayCells,
     planRoomPracticalLights,
+    planRoomRoleDisplay,
     ROOM_CUTAWAY_HEIGHT
 } from './roomPresentation.js';
 
@@ -1745,6 +1746,18 @@ export class ThreeGame {
             emissiveIntensity: 0.08,
             metalness: 0.7,
             roughness: 0.34
+        });
+        this.roomRoleDisplayGeometry = new THREE.BoxGeometry(1, 1, 1);
+        this.roomRoleDisplayHousingMaterial = new THREE.MeshStandardMaterial({
+            color: 0x070b0f,
+            emissive: 0x010305,
+            emissiveIntensity: 0.08,
+            metalness: 0.88,
+            roughness: 0.3
+        });
+        this.roomRoleDisplayScreenMaterial = new THREE.MeshBasicMaterial({
+            color: new THREE.Color().setRGB(1.65, 1.65, 1.65),
+            toneMapped: false
         });
 
         this.ventMaterial = new THREE.MeshBasicMaterial({ color: 0x1a1d20 });
@@ -27552,6 +27565,81 @@ export class ThreeGame {
         }
     }
 
+    addRoomRoleDisplays(group, chunkX, chunkY, metadata) {
+        const rooms = metadata?.roomInstances ?? [];
+        if (!group || rooms.length === 0 || !this.roomRoleDisplayGeometry) return;
+        const centerX = chunkX * this.chunkSize + this.chunkSize * 0.5;
+        const centerZ = chunkY * this.chunkSize + this.chunkSize * 0.5;
+        const biome = this.getBiomeKeyForWorldPosition(centerX, centerZ);
+        const housings = [];
+        const screens = [];
+        const displayFamilies = new Set();
+        const rotation = new THREE.Quaternion();
+
+        for (const room of rooms) {
+            const plan = planRoomRoleDisplay(room, { biome });
+            if (!plan) continue;
+            displayFamilies.add(plan.family);
+            rotation.setFromEuler(new THREE.Euler(0, plan.rotationY, 0));
+            const worldX = chunkX * this.chunkSize + plan.x;
+            const worldZ = chunkY * this.chunkSize + plan.z;
+            housings.push(new THREE.Matrix4().compose(
+                new THREE.Vector3(worldX, 1.42, worldZ),
+                rotation,
+                new THREE.Vector3(plan.width, plan.height, 0.11)
+            ));
+            for (const screen of plan.screens) {
+                const screenX = worldX + (plan.wall === 'north' ? screen.offset : 0.065);
+                const screenZ = worldZ + (plan.wall === 'west' ? screen.offset : 0.065);
+                screens.push({
+                    color: screen.color,
+                    matrix: new THREE.Matrix4().compose(
+                        new THREE.Vector3(screenX, 1.42, screenZ),
+                        rotation,
+                        new THREE.Vector3(screen.width, screen.height, 0.035)
+                    )
+                });
+            }
+        }
+
+        if (housings.length > 0) {
+            const housingPool = new THREE.InstancedMesh(
+                this.roomRoleDisplayGeometry,
+                this.roomRoleDisplayHousingMaterial,
+                housings.length
+            );
+            housings.forEach((matrix, index) => housingPool.setMatrixAt(index, matrix));
+            housingPool.instanceMatrix.needsUpdate = true;
+            housingPool.receiveShadow = true;
+            housingPool.userData = {
+                isRoomRoleDisplayHousingPool: true,
+                housingCount: housings.length,
+                displayFamilies: [...displayFamilies]
+            };
+            group.add(housingPool);
+        }
+
+        if (screens.length > 0) {
+            const screenPool = new THREE.InstancedMesh(
+                this.roomRoleDisplayGeometry,
+                this.roomRoleDisplayScreenMaterial,
+                screens.length
+            );
+            screens.forEach((screen, index) => {
+                screenPool.setMatrixAt(index, screen.matrix);
+                screenPool.setColorAt(index, new THREE.Color(screen.color));
+            });
+            screenPool.instanceMatrix.needsUpdate = true;
+            screenPool.instanceColor.needsUpdate = true;
+            screenPool.userData = {
+                isRoomRoleDisplayScreenPool: true,
+                screenCount: screens.length,
+                displayFamilies: [...displayFamilies]
+            };
+            group.add(screenPool);
+        }
+    }
+
     addRoomSurfaceOverlays(group, chunkX, chunkY, metadata) {
         const rooms = metadata?.roomInstances ?? [];
         if (rooms.length === 0) return;
@@ -28879,6 +28967,12 @@ export class ThreeGame {
             this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
         );
         this.addRoomPracticalLighting(
+            group,
+            chunkX,
+            chunkY,
+            this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
+        );
+        this.addRoomRoleDisplays(
             group,
             chunkX,
             chunkY,
@@ -39432,6 +39526,9 @@ export class ThreeGame {
         for (const material of this.roomLightFixtureMaterials?.values?.() ?? []) material.dispose?.();
         this.roomCutawayCapGeometry?.dispose();
         this.roomCutawayCapMaterial?.dispose();
+        this.roomRoleDisplayGeometry?.dispose();
+        this.roomRoleDisplayHousingMaterial?.dispose();
+        this.roomRoleDisplayScreenMaterial?.dispose();
         this.doorPanelGeometry?.dispose();
         this.doorPanelMaterial?.dispose();
         this.doorPortalHeaderGeometry?.dispose();

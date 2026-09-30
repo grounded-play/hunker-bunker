@@ -29,6 +29,13 @@ describe('Visual Overhaul Phase B & D (Surface Depth & Grade)', () => {
             expect(threeGameSource).toContain('roughnessFactor = mix(roughnessFactor, 0.1, hbRoomWetRoughness)');
         });
 
+        it('batches architectural role displays into housing and emissive screen pools', () => {
+            expect(threeGameSource).toContain('isRoomRoleDisplayHousingPool: true');
+            expect(threeGameSource).toContain('isRoomRoleDisplayScreenPool: true');
+            expect(threeGameSource).toContain('screenPool.setColorAt(index, new THREE.Color(screen.color))');
+            expect(threeGameSource).toContain('displayFamilies: [...displayFamilies]');
+        });
+
         it('injects vascular pulsation into floor emissive radiance', () => {
             expect(threeGameSource).toContain('vec3 bioVeinColor = vec3(1.0, 0.44, 0.08)');
             expect(threeGameSource).toContain('totalEmissiveRadiance += vec3(0.0, 0.7, 0.85) * glowIntensity * 1.35 + bioVeinColor');

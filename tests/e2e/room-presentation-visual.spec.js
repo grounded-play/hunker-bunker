@@ -53,8 +53,13 @@ test('procedural bunker rooms mount practical lights and foreground cutaways', a
         let capCount = 0;
         let portalHeaderCount = 0;
         let sourceCount = 0;
+        let roleDisplayHousingCount = 0;
+        let roleDisplayScreenCount = 0;
+        let maxRoleDisplayPoolsPerChunk = 0;
+        const roleDisplayFamilies = new Set();
         for (const group of game.chunkMeshes.values()) {
             if (!group.visible) continue;
+            let roleDisplayPoolsInChunk = 0;
             group.traverse((object) => {
                 if (object.userData?.isRoomPracticalLightFixturePool) {
                     fixtureCount += object.userData.fixtureCount ?? object.count ?? 0;
@@ -69,7 +74,17 @@ test('procedural bunker rooms mount practical lights and foreground cutaways', a
                     portalHeaderCount += object.userData.headerCount ?? object.count ?? 0;
                 }
                 if (object.userData?.isRoomPracticalLightSource) sourceCount += 1;
+                if (object.userData?.isRoomRoleDisplayHousingPool) {
+                    roleDisplayHousingCount += object.userData.housingCount ?? object.count ?? 0;
+                    roleDisplayPoolsInChunk += 1;
+                    for (const family of object.userData.displayFamilies ?? []) roleDisplayFamilies.add(family);
+                }
+                if (object.userData?.isRoomRoleDisplayScreenPool) {
+                    roleDisplayScreenCount += object.userData.screenCount ?? object.count ?? 0;
+                    roleDisplayPoolsInChunk += 1;
+                }
             });
+            maxRoleDisplayPoolsPerChunk = Math.max(maxRoleDisplayPoolsPerChunk, roleDisplayPoolsInChunk);
         }
         const directVisibleRoomSources = game.envDynamicLights.filter((light) => (
             (light.userData?.isRoomPracticalLightSource || light.userData?.isPortalPracticalLightSource)
@@ -93,6 +108,10 @@ test('procedural bunker rooms mount practical lights and foreground cutaways', a
             capCount,
             portalHeaderCount,
             sourceCount,
+            roleDisplayHousingCount,
+            roleDisplayScreenCount,
+            maxRoleDisplayPoolsPerChunk,
+            roleDisplayFamilies: [...roleDisplayFamilies],
             directVisibleRoomSources
         };
     });
@@ -102,6 +121,10 @@ test('procedural bunker rooms mount practical lights and foreground cutaways', a
     expect(presentation.capCount).toBeGreaterThan(0);
     expect(presentation.portalHeaderCount).toBeGreaterThan(0);
     expect(presentation.sourceCount).toBeGreaterThan(0);
+    expect(presentation.roleDisplayHousingCount).toBeGreaterThan(0);
+    expect(presentation.roleDisplayScreenCount).toBeGreaterThanOrEqual(presentation.roleDisplayHousingCount);
+    expect(presentation.maxRoleDisplayPoolsPerChunk).toBeLessThanOrEqual(2);
+    expect(presentation.roleDisplayFamilies.length).toBeGreaterThan(0);
     expect(presentation.directVisibleRoomSources).toBe(0);
     await page.screenshot({
         path: 'docs/reports/assets/gameplay-room-presentation-default-2026-09-30.png'
