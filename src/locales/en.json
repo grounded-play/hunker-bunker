@@ -3053,7 +3053,7 @@
         "name": "Deep Relic Cache"
       },
       "4001": {
-        "desc": "Opens a single Deep Relic Cache. Earned by defeating bosses in play; not sold.",
+        "desc": "Opens a single Deep Relic Cache. Purchased through the Steam Item Store; never drops for free.",
         "name": "Relic Decryption Key"
       },
       "4100": {

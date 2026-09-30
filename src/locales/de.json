@@ -3053,7 +3053,7 @@
         "name": "Tiefen-Relikt-Cache"
       },
       "4001": {
-        "desc": "Öffnet einen einzelnen Tiefen-Relikt-Cache. Wird im Spiel durch das Besiegen von Bossen verdient; nicht käuflich.",
+        "desc": "Öffnet einen einzelnen Tiefen-Relikt-Cache. Im Steam-Item-Shop gekauft; fällt nie kostenlos.",
         "name": "Relikt-Entschlüsselungsschlüssel"
       },
       "4100": {

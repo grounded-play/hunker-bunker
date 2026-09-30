@@ -180,8 +180,8 @@
       "type": "item",
       "name": "Relic Decryption Key",
       "name_english": "Relic Decryption Key",
-      "description": "Opens a single Deep Relic Cache. Earned by defeating bosses in play; not sold.",
-      "description_english": "Opens a single Deep Relic Cache. Earned by defeating bosses in play; not sold.",
+      "description": "Opens a single Deep Relic Cache. Purchased through the Steam Item Store; never drops for free.",
+      "description_english": "Opens a single Deep Relic Cache. Purchased through the Steam Item Store; never drops for free.",
       "icon_url": "https://hunkerbunker.netlify.app/economy/cache_key.png",
       "icon_url_large": "https://hunkerbunker.netlify.app/economy/cache_key_large.png",
       "background_color": "292524",
@@ -190,7 +190,8 @@
       "marketable": true,
       "item_slot": "Key",
       "tags": "rarity:key;class:all;slot:cache_key",
-      "store_tags": ""
+      "store_tags": "featured;keys;cache_key",
+      "price_category": "1;VLV100"
     },
     {
       "itemdefid": 4005,
@@ -207,9 +208,10 @@
       "marketable": true,
       "item_slot": "Bundle",
       "tags": "rarity:rare;class:all;slot:reagent",
-      "store_tags": "",
+      "store_tags": "featured;keys;bundles",
       "bundle": "4001x5",
-      "store_hidden": true
+      "use_bundle_price": true,
+      "price_category": "1;VLV400"
     },
     {
       "itemdefid": 4015,
@@ -226,9 +228,10 @@
       "marketable": true,
       "item_slot": "Bundle",
       "tags": "rarity:epic;class:all;slot:reagent",
-      "store_tags": "",
+      "store_tags": "featured;keys;bundles;best_value",
       "bundle": "4001x15",
-      "store_hidden": true
+      "use_bundle_price": true,
+      "price_category": "1;VLV1000"
     },
     {
       "itemdefid": 4002,
