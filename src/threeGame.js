@@ -4,6 +4,7 @@ import { getFieldWeaponProfile } from './fieldWeapon.js';
 import { buildRunResourceTelemetry } from './runTelemetry.js';
 import { createRelicPickup, animateRelicPickup, createImpactBurst, disposeExpeditionEffect } from './expeditionVfx.js';
 import { TraumaManager, create3DMuzzleFlash, WEAPON_TRAUMA_TABLE } from './combatJuice.js';
+import { CombatSignal } from './combatSignal.js';
 import { PickupMagnet, PickupComboTracker } from './lootJuice.js';
 import { BiomeAtmosphereSystem } from './ambientDrift.js';
 import { KillstreakFeedbackSystem } from './gameplayTactileVfx.js';
@@ -1944,6 +1945,8 @@ export class ThreeGame {
         this.weaponAmmoRefillTimer = 0;
         this.weaponFireCooldown = 0;
         this.isPlayerDead = false;
+        this.combatSignal = new CombatSignal();
+        this.inCombat = false;
         this.o2DispatchTimer = 0;
         this.footstepTimer = 0;
         this.isDashing = false;
@@ -9668,6 +9671,7 @@ export class ThreeGame {
         const rawFrameDelta = Math.max(0, (now - this.lastTime) / 1000);
         const delta = Math.min(rawFrameDelta, 0.05);
         this.lastTime = now;
+        this.updateCombatSignal(delta);
 
         // The asset museum is an isolated validation profile, not another
         // coordinate in the active expedition. Keep camera/player inspection
@@ -15139,6 +15143,7 @@ export class ThreeGame {
         // loadout. Scaling it again here multiplied it by the receiver's.
         const localHit = !fromNetwork && reporterId == null;
         if (localHit) {
+            this.markCombatActivity('hostile-hit');
             const bossTarget = Boolean(sprite?.userData?.isBoss || sprite?.userData?.queenFight
                 || sprite?.userData?.sporesnailFight || sprite?.userData?.biomeBossFight);
             amount *= bossTarget
@@ -19627,6 +19632,8 @@ export class ThreeGame {
         this.playerVitals.o2HealthTimer = 0;
         this.isPlayerDead = false;
         this.isPlayerDowned = false;
+        this.combatSignal?.reset();
+        this.inCombat = false;
         this.player3dOverlay?.setDowned?.(false);
         this.o2DispatchTimer = 0;
         this._lastLoopStepKey = null;
@@ -19682,6 +19689,29 @@ export class ThreeGame {
                 sprite.material?.color?.setHex?.(restoreHex);
             }, 350);
         }
+    }
+
+    syncCombatSignal(result) {
+        this.inCombat = Boolean(result?.active);
+        if (!result?.changed || typeof window === 'undefined') return this.inCombat;
+        window.dispatchEvent(new CustomEvent('combat-state-changed', {
+            detail: {
+                active: this.inCombat,
+                source: result.source ?? null,
+                quietWindowSeconds: this.combatSignal?.windowSeconds ?? 0
+            }
+        }));
+        return this.inCombat;
+    }
+
+    markCombatActivity(source) {
+        if (!this.combatSignal) this.combatSignal = new CombatSignal();
+        return this.syncCombatSignal(this.combatSignal.mark(source));
+    }
+
+    updateCombatSignal(delta) {
+        if (!this.combatSignal) this.combatSignal = new CombatSignal();
+        return this.syncCombatSignal(this.combatSignal.update(delta));
     }
 
     isPlayerInjured() {
@@ -21495,6 +21525,7 @@ export class ThreeGame {
             )
         );
         this.player3dOverlay?.trigger('hit');
+        this.markCombatActivity('player-damaged');
 
         if (sourceX != null && sourceZ != null) {
             this.showDirectionalHitIndicator(sourceX, sourceZ);
@@ -34270,6 +34301,9 @@ export class ThreeGame {
 
         const target = this.selectSnailTarget(sprite, activeShip);
         if (!target) return;
+        if (target.type === 'player' && target.id === 'local' && target.mode === 'hunt') {
+            this.markCombatActivity('enemy-targeted-player');
+        }
         const startTileX = Math.round(sprite.position.x);
         const startTileZ = Math.round(sprite.position.z);
         const goalTileX = Math.round(target.goalX);

@@ -188,6 +188,70 @@ html[data-hud-layout="dock"] #game-viewport #objective-drawer .objective-tracker
   padding: calc(9 * var(--u)) calc(10 * var(--u));
 }
 
+/* R3 gameplay states: the resolver exposes exactly one primary state. Feedback
+   pulses stay on the instrument that changed, never over its text. */
+html[data-hud-layout="dock"] #pickup-counter-panel,
+html[data-hud-layout="dock"] #weapon-status-panel,
+html[data-hud-layout="dock"] :is(#class-ability-panel, #radar-scan-panel) {
+  transition: opacity 180ms ease, filter 180ms ease, transform 180ms ease;
+}
+
+html[data-hud-layout="dock"][data-hud-gameplay-state="engaged"] #pickup-counter-panel {
+  opacity: .46;
+}
+
+html[data-hud-layout="dock"][data-hud-gameplay-state="engaged"] #pickup-counter-panel:hover,
+html[data-hud-layout="dock"] #pickup-counter-panel[data-hud-feedback="pickup"] {
+  opacity: 1;
+}
+
+html[data-hud-layout="dock"][data-hud-gameplay-state="critical"] :is(#vitals-panel, #ship-status-panel) {
+  filter: drop-shadow(0 0 calc(5 * var(--u)) rgba(255, 65, 65, .82));
+  animation: hud-critical-instrument 900ms ease-in-out infinite alternate;
+}
+
+html[data-hud-layout="dock"][data-hud-gameplay-state="frozen"] .dock-housing {
+  filter: drop-shadow(0 0 calc(6 * var(--u)) rgba(113, 205, 223, .72));
+}
+
+html[data-hud-layout="dock"][data-hud-gameplay-state="toxic"] .dock-housing {
+  filter: drop-shadow(0 0 calc(6 * var(--u)) rgba(133, 220, 96, .68));
+}
+
+html[data-hud-layout="dock"][data-hud-gameplay-state="boss"] .dock-housing {
+  filter: drop-shadow(0 0 calc(7 * var(--u)) rgba(255, 72, 72, .62));
+}
+
+html[data-hud-layout="dock"][data-hud-gameplay-state="dead"] .dock-housing {
+  filter: grayscale(.88) brightness(.42);
+}
+
+html[data-hud-layout="dock"] [data-hud-feedback="reload-complete"],
+html[data-hud-layout="dock"] [data-hud-feedback="ability-ready"] {
+  animation: hud-instrument-ready 520ms ease-out 1;
+}
+
+html[data-hud-layout="dock"] [data-hud-feedback="pickup"] {
+  animation: hud-pickup-confirm 420ms ease-out 1;
+}
+
+@keyframes hud-critical-instrument {
+  from { opacity: .72; }
+  to { opacity: 1; }
+}
+
+@keyframes hud-instrument-ready {
+  0% { filter: brightness(1); transform: translateY(0); }
+  35% { filter: brightness(1.75) drop-shadow(0 0 calc(7 * var(--u)) rgba(103, 227, 225, .9)); transform: translateY(calc(-2 * var(--u))); }
+  100% { filter: brightness(1); transform: translateY(0); }
+}
+
+@keyframes hud-pickup-confirm {
+  0% { filter: brightness(1); }
+  45% { filter: brightness(1.7); }
+  100% { filter: brightness(1); }
+}
+
 /* While the tactical map is open, the same drawer becomes the objective section
    in its sidebar instead of remaining hidden behind the modal. */
 .tactical-map-sidebar > .objective-drawer--map {
@@ -203,4 +267,9 @@ html[data-hud-layout="dock"] #game-viewport #objective-drawer .objective-tracker
 
 @media (prefers-reduced-motion: reduce) {
   .objective-drawer__chevron { transition: none; }
+  html[data-hud-layout="dock"] #pickup-counter-panel,
+  html[data-hud-layout="dock"] #weapon-status-panel,
+  html[data-hud-layout="dock"] :is(#class-ability-panel, #radar-scan-panel) { transition: none; }
+  html[data-hud-layout="dock"][data-hud-gameplay-state="critical"] :is(#vitals-panel, #ship-status-panel),
+  html[data-hud-layout="dock"] [data-hud-feedback] { animation: none; }
 }

@@ -194,6 +194,16 @@ Source: [HUD overlay review](hud-overlay-review-and-recovery-plan-2026-09-28.md)
     Frozen / Toxic / Boss / Dead;
   - distinct feedback for damage, low O₂, reload completion, ability ready and pickups,
     respecting reduced motion.
+
+  **Status (2026-09-29): core behavior is active; wear remains next.** A tested
+  four-second `CombatSignal` now drives `ThreeGame.inCombat` from local hostile hits,
+  real player damage and enemies hunting the local operator. Combat collapses an open
+  objective drawer and quiets loot. `hudGameplayState.js` resolves Idle / Engaged /
+  Critical / Reloading / Ability Ready / Frozen / Toxic / Boss / Dead through one pure
+  priority function, with instrument-local reload, ability and pickup confirmation and
+  reduced-motion fallbacks. Unit tests cover the timing and all nine states; the browser
+  probe covers combat collapse, reload completion, critical health, pickup feedback and
+  death. The damage/wear overlay model remains the next R3 slice.
 - **Sprint 48 stretch, only after R1 and R2 pass:** wear model v1 (`suitCondition` +
   blood, frost and damage tier 1 for one class). Overlays never cover instruments; HUD
   style/layout ≤ 0.3 ms per frame.

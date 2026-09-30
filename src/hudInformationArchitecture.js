@@ -66,11 +66,17 @@ export class HudInformationArchitecture {
             this.userExpanded = !this.userExpanded;
             this.refreshObjectives();
         };
+        this.onCombatStateChange = (event) => {
+            if (!event?.detail?.active || !this.isDock()) return;
+            this.userExpanded = false;
+            this.refreshObjectives();
+        };
     }
 
     start() {
         if (!this.drawer || !this.drawerToggle || !this.tracker) return this;
         this.drawerToggle.addEventListener('click', this.onToggle);
+        this.document.defaultView?.addEventListener('combat-state-changed', this.onCombatStateChange);
         this.observer = new MutationObserver(() => this.refresh());
         this.observer.observe(this.tracker, {
             attributes: true,
@@ -95,6 +101,7 @@ export class HudInformationArchitecture {
 
     stop() {
         this.drawerToggle?.removeEventListener('click', this.onToggle);
+        this.document.defaultView?.removeEventListener('combat-state-changed', this.onCombatStateChange);
         this.observer?.disconnect();
         this.observer = null;
     }

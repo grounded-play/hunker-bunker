@@ -120,4 +120,42 @@ test.describe('dock HUD information architecture', () => {
         const notificationHeight = await rail.locator(':scope > .hud-notification-stack').evaluate((element) => element.getBoundingClientRect().height);
         expect(notificationHeight).toBeLessThanOrEqual(136.5); // 170 u at the Deck/CI 0.8 u floor
     });
+
+    test('resolves gameplay state, collapses objectives in combat, and scopes feedback', async ({ page }) => {
+        await page.evaluate(() => {
+            const tracker = document.getElementById('objective-tracker');
+            tracker.innerHTML = '<div class="objective-tracker__item"><span class="objective-tracker__label">SURVIVE</span><span class="objective-tracker__progress">ACTIVE</span></div>';
+            tracker.classList.remove('hidden');
+            document.getElementById('objective-drawer-toggle').click();
+        });
+        await expect(page.locator('#objective-drawer')).toHaveAttribute('data-expanded', 'true');
+
+        await page.evaluate(() => window.dispatchEvent(new CustomEvent('combat-state-changed', {
+            detail: { active: true, source: 'enemy-targeted-player', quietWindowSeconds: 4 }
+        })));
+        await expect(page.locator('#objective-drawer')).toHaveAttribute('data-expanded', 'false');
+        await expect(page.locator('html')).toHaveAttribute('data-hud-gameplay-state', 'engaged');
+
+        await page.evaluate(() => window.dispatchEvent(new CustomEvent('weapon-clip-updated', {
+            detail: { reloading: true, clip: 1, maxClip: 6 }
+        })));
+        await expect(page.locator('html')).toHaveAttribute('data-hud-gameplay-state', 'reloading');
+        await page.evaluate(() => window.dispatchEvent(new CustomEvent('weapon-clip-updated', {
+            detail: { reloading: false, clip: 6, maxClip: 6 }
+        })));
+        await expect(page.locator('#weapon-status-panel')).toHaveAttribute('data-hud-feedback', 'reload-complete');
+
+        await page.evaluate(() => window.dispatchEvent(new CustomEvent('player-health-changed', {
+            detail: { hp: 1, maxHp: 4 }
+        })));
+        await expect(page.locator('html')).toHaveAttribute('data-hud-gameplay-state', 'critical');
+
+        await page.evaluate(() => window.dispatchEvent(new CustomEvent('pickup-collected')));
+        await expect(page.locator('#pickup-counter-panel')).toHaveAttribute('data-hud-feedback', 'pickup');
+        await page.waitForTimeout(650);
+        await expect(page.locator('#pickup-counter-panel')).not.toHaveAttribute('data-hud-feedback', 'pickup');
+
+        await page.evaluate(() => window.dispatchEvent(new CustomEvent('player-death')));
+        await expect(page.locator('html')).toHaveAttribute('data-hud-gameplay-state', 'dead');
+    });
 });
