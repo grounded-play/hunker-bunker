@@ -1305,6 +1305,28 @@ export const CLASS_MELEE_PROFILES = Object.freeze({
         playbackRate: 1.3
     })
 });
+
+export function computeFormationCombatMultiplier(playerPosition, companionPositions = [], targetPosition) {
+    if (!companionPositions.length || !targetPosition || !playerPosition) return 1.0;
+    for (const companionPos of companionPositions) {
+        if (!companionPos) continue;
+        const playerToTargetX = targetPosition.x - playerPosition.x;
+        const playerToTargetZ = targetPosition.z - playerPosition.z;
+        const companionToTargetX = targetPosition.x - companionPos.x;
+        const companionToTargetZ = targetPosition.z - companionPos.z;
+        const dot = (playerToTargetX * companionToTargetX) + (playerToTargetZ * companionToTargetZ);
+        const lenP = Math.hypot(playerToTargetX, playerToTargetZ);
+        const lenC = Math.hypot(companionToTargetX, companionToTargetZ);
+        if (lenP > 0.01 && lenC > 0.01) {
+            const cosTheta = dot / (lenP * lenC);
+            if (cosTheta < 0.707) {
+                return 1.25;
+            }
+        }
+    }
+    return 1.0;
+}
+
 const INJURED_HP_RATIO = 0.4;
 
 const SNAIL_ATTACK_RADIUS = 1.1;
@@ -15637,6 +15659,12 @@ export class ThreeGame {
             amount *= bossTarget
                 ? (this.loadoutMods?.bossDamageMultiplier ?? 1)
                 : (this.loadoutMods?.nonBossDamageMultiplier ?? 1);
+
+            if (this.player && sprite?.position) {
+                const companionPositions = (this.companions ?? []).map((c) => c.instance3d?.root?.position || c.sprite?.position).filter(Boolean);
+                const formationMult = computeFormationCombatMultiplier(this.player.position, companionPositions, sprite.position);
+                amount *= formationMult;
+            }
             // Season 0 Cryo-Capacitor Overclock proc (itemdef 4140): 18% chance per hit to
             // freeze the target in place. cryoDurationMultiplier (default 1.0, +0.08 when
             // equipped) scales the freeze duration off a 1.0s base.
@@ -18782,6 +18810,15 @@ export class ThreeGame {
             if (!camp.isWithinInteractRange(x, z)) continue;
             const record = this.getCampRecord(camp.id);
             const status = record?.status ?? camp.status ?? 'alive';
+
+            const hasCompanion = (this.companions ?? []).some((c) => c.isWanderer || c.wanderer);
+            if (hasCompanion && ['alive', 'robbed'].includes(status)) {
+                return {
+                    camp,
+                    action: 'settle-companion',
+                    label: `SETTLE SURVIVOR AT ${camp.label?.toUpperCase() || 'SAFE HAVEN'}`
+                };
+            }
             // Suspicion >= 50 locks the camp down: gates shut, barter and aid
             // refused, strobes running. Culls and breaches stay possible —
             // the lockdown is social, not physical. Dormant-phase camps never
@@ -19341,12 +19378,59 @@ export class ThreeGame {
         }
     }
 
+    settleCompanionAtCamp(camp) {
+        if (!camp || !this.companions?.length) return false;
+        const companionIndex = this.companions.findIndex((c) => c.isWanderer || c.wanderer);
+        if (companionIndex < 0) return false;
+
+        const companion = this.companions[companionIndex];
+        const wandererName = companion.wanderer?.name || companion.wanderer?.title || 'SURVIVOR';
+
+        companion.instance3d?.root?.removeFromParent?.();
+        companion.instance3d?.dispose?.();
+        this.companions.splice(companionIndex, 1);
+
+        this.act2?.adjustCampBond?.(camp.id, 1);
+        this.healPlayer?.(50);
+        this.addSalvageReward?.({ med: 25, coin: 15 });
+
+        const record = this.getCampRecord?.(camp.id);
+        if (record) {
+            record.settlers = record.settlers ?? [];
+            record.settlers.push({
+                name: wandererName,
+                settledAt: Date.now()
+            });
+        }
+
+        this.showBunkerLine?.(`${wandererName.toUpperCase()} SAFELY SETTLED AT ${camp.label?.toUpperCase() || 'SAFE HAVEN'}. CAMP BOND STRENGTHENED.`);
+        window.AudioManager?.play?.('fx_level_up', { volume: 0.5, playbackRate: 1.1 });
+
+        window.dispatchEvent(new CustomEvent('camp-settler-delivered', {
+            detail: {
+                campId: camp.id,
+                campLabel: camp.label,
+                wandererName
+            }
+        }));
+
+        if (this.isMultiplayer) {
+            this.broadcastSharedWorldEvent?.('camp-settler-delivered', {
+                campId: camp.id,
+                wandererName
+            });
+        }
+
+        return true;
+    }
+
     interactWithAct2Camp() {
         if (!this.isGameplayInputActive() || !this.player || !this.act2) return false;
         const actionable = this.getActionableCampAt(this.player.position.x, this.player.position.z);
         if (!actionable) return false;
         const { camp, action } = actionable;
 
+        if (action === 'settle-companion') return this.settleCompanionAtCamp(camp);
         if (action === 'treat-scar') return this.treatScarAtCamp(camp, actionable.scarId);
         if (action === 'shore-up') return this.shoreUpCamp(camp);
         if (action === 'package-deal') return this.negotiatePackageDeal(camp, actionable.step);
