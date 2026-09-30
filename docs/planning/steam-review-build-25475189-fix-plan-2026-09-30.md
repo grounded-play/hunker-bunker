@@ -12,6 +12,29 @@ Steamworks, and what the reviewer note says.
 reachable by a reviewer in minutes, with directions in the notes. Anything we can't
 make reachable this week comes off the page and goes back on when it is.
 
+## Status (2026-09-30)
+
+**Code: done in `ddff1018`.** The probe `tests/e2e/probes/steam-review-2026-09.spec.js`
+passes 4/4 in a browser:
+- MULTIPLAYER on the title menu leads to the co-op / PvP console;
+- a controller reaches the last achievement, with the list scrolling;
+- commentary shows on enable, and READ ALL lists every entry above Settings;
+- the Content Guide transcript opens from the title screen, above the gallery.
+
+The Inventory schema file has the prices removed.
+
+| Item | Code | Still needed |
+| :--- | :--- | :--- |
+| 1 Online | Done | Two-account tests of co-op and PvP on the uploaded build; drop any tag that fails |
+| 2 Commentary | Done | Check on the uploaded build, or remove the category |
+| 3–4 IAP | Schema file done | Upload the schema in Steamworks; make sure IAP isn't declared; use the reviewer note |
+| 5 Controller | Done | Deck + PC pad pass with the keyboard unplugged |
+| 6 Mature | Done | Survey: keep non-explicit sexual content only, untick nudity; paste the access text |
+| 7 Chat | — | Survey: untick in-game chat |
+
+Not changed: the LB+RB+R3 gallery shortcut still reads only the browser gamepad API.
+The Settings button covers controller access instead.
+
 ## Summary
 
 | # | Failure | Root cause | Fix | Who |
@@ -44,7 +67,7 @@ make reachable this week comes off the page and goes back on when it is.
 
   ```text
   ONLINE MULTIPLAYER (Online co-op and online PvP, 2 players, via Steam lobbies and our relay server)
-  Title menu → MULTIPLAYER → pick an operator → EMBARK → choose CO-OP or PVP.
+  Title menu → MULTIPLAYER → ENTER ARMORY → EMBARK → the deployment console opens on CO-OP (PVP is beside it).
   Host: choose HOST, then INVITE FRIEND (Steam overlay) or leave the lobby public.
   Join: the second account opens the same screen and selects the lobby from PUBLIC STEAM LOBBIES, or accepts the Steam invite.
   Both players press READY; the host presses DEPLOY SQUAD.
@@ -69,8 +92,8 @@ make reachable this week comes off the page and goes back on when it is.
 
   ```text
   DEVELOPER COMMENTARY
-  Settings → Commentary: ON. A commentary card appears immediately, and more appear during play (run start, first black box, special rooms, Queen fight).
-  All commentary can also be read at any time from Settings → Developer Commentary.
+  Settings → COMMENTARY MODE: ON. A commentary card appears immediately, and more appear during play (run start, first black box, special rooms, Queen fight, the Vault).
+  All commentary can also be read at any time from Settings → DEVELOPER COMMENTARY → READ ALL.
   ```
 
 ## 3–4. In-app purchases, Steam Wallet and GetReport
@@ -140,13 +163,12 @@ make reachable this week comes off the page and goes back on when it is.
 - **Gallery-only (not in the game):** "Maintenance Log 04 — Bio-Incubation Wing"
   (veiled nudity) and "Unofficial Ledger — Camp Tallow".
 - **Game change:**
-  1. The F9 / LB+RB+R3 gallery opens NPC dialogue in a reader mode from any screen,
-     including the title menu.
+  1. The F9 / LB+RB+R3 gallery shows NPC dialogue as a read-only transcript from
+     any screen, including the title menu.
   2. The two gallery-only items are removed, and each gallery entry names where the
      same content is found in play.
-  3. The gallery gets a visible **Content Review** button in Settings → About, so
-     reviewers don't rely on a hotkey. The LB+RB+R3 combo also listens to native
-     Steam Input.
+  3. The gallery gets a visible button, **Settings → Content Guide (Mature Themes) →
+     OPEN**, so reviewers don't rely on a hotkey.
 - **Survey (publisher):**
   - Keep **Some Nudity or Sexual Content** only as *non-explicit sexual content*
     (dialogue).
@@ -155,7 +177,7 @@ make reachable this week comes off the page and goes back on when it is.
 - **"How do we access the mature content?" text:**
 
   ```text
-  Fastest: at the title menu press F9 (keyboard), or LB+RB+R3 (controller), or open Settings → About → Content Review. Select "Sensual Storylines" → SISTER VAL, then choose [INTIMATE TOUCH] and [DEEPEN INTIMACY]. The same dialogue is reached in play at Camp Tallow by talking to Sister Val.
+  Fastest: open Settings → CONTENT GUIDE (MATURE THEMES) → OPEN (works with keyboard, mouse or controller; F9 also opens it). Under "Sensual Storylines", select SISTER VAL to read the full dialogue, including the [INTIMATE TOUCH], [SENSUAL / EMBRACE] and [DEEPEN INTIMACY] branches. In play, the same dialogue is reached at Camp Tallow by talking to Sister Val.
   Self-sacrifice/suicide themes: in the same screen, select EMPTY HUSK or SCORCHED SKY, or the Reyes C11 / Chen B03 logs (found in play as recoverable logs).
   Content is text dialogue and still artwork; there is no depicted nudity or sexual act.
   ```
