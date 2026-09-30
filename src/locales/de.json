@@ -1464,7 +1464,8 @@
       "stat_damage": "SCH ×{value}",
       "stat_rate": "KADENZ ×{value}",
       "stat_range": "REICHW ×{value}",
-      "stat_shots": "{count} SCHÜSSE"
+      "stat_shots": "{count} SCHÜSSE",
+      "odds": "CHANCEN"
     },
     "camp": {
       "sleep_warning": "Schlaf in {camp} bringt dich zu Tag {day}. Diese offenen Signale werden geschlossen.",

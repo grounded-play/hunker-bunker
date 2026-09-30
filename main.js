@@ -20,7 +20,7 @@ import { ExpeditionReceipt } from './src/economyReceipt.js';
 import { renderReturnManifest } from './src/returnManifest.js';
 import { renderLoadoutStrip } from './src/itemCard.js';
 import { describeFieldWeapon } from './src/fieldWeapon.js';
-import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, describeRecipe, getFabricatedOutputIds } from './src/fabricator.js';
+import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, describeRecipe, getFabricatedOutputIds, getFabricationOdds } from './src/fabricator.js';
 import { ProfileManager, exportSaveCode, importSaveCode, resetAllDataFactory, startNewCampaign } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
@@ -12846,6 +12846,13 @@ function renderFabricationModal() {
             : objective.siteUsesRemaining <= 0
                 ? 'FABRICATOR BROKEN — FOLLOW NEXT SIGNAL'
                 : `INSUFFICIENT SALVAGE &nbsp;·&nbsp; ${fabCostText(FAB_SPIN_COST, bank, { showHaveNeed: true })}`;
+    }
+
+    // The odds the roll uses, shown before the player spends (decision 10).
+    const oddsEl = document.getElementById('fab-odds');
+    if (oddsEl) {
+        oddsEl.innerHTML = `<span class="fab-odds__label">${t('ui.fab.odds')}</span>`
+            + getFabricationOdds().map(({ rarity, chance }) => `<span class="fab-odds__tier fab-odds__tier--${rarity.toLowerCase()}">${t(`rarity.${rarity.toLowerCase()}`)} ${Math.round(chance * 100)}%</span>`).join('');
     }
 
     for (const recipe of FAB_RECIPES) {

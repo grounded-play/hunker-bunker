@@ -1464,7 +1464,8 @@
       "stat_damage": "DMG ×{value}",
       "stat_rate": "RATE ×{value}",
       "stat_range": "RANGE ×{value}",
-      "stat_shots": "{count} SHOTS"
+      "stat_shots": "{count} SHOTS",
+      "odds": "ODDS"
     },
     "camp": {
       "sleep_warning": "Sleeping at {camp} advances to day {day}. These unresolved signals will close.",

@@ -1464,7 +1464,8 @@
       "stat_damage": "УРОН ×{value}",
       "stat_rate": "ТЕМП ×{value}",
       "stat_range": "ДАЛЬН ×{value}",
-      "stat_shots": "{count} ВЫСТР."
+      "stat_shots": "{count} ВЫСТР.",
+      "odds": "ШАНСЫ"
     },
     "camp": {
       "sleep_warning": "Сон в {camp} переносит на день {day}. Эти нерешённые сигналы закроются.",

@@ -1464,7 +1464,8 @@
       "stat_damage": "威力 ×{value}",
       "stat_rate": "連射 ×{value}",
       "stat_range": "射程 ×{value}",
-      "stat_shots": "{count}発"
+      "stat_shots": "{count}発",
+      "odds": "確率"
     },
     "camp": {
       "sleep_warning": "{camp} で眠ると {day} 日目へ進む。未解決の信号は閉ざされる。",

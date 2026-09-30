@@ -89,25 +89,43 @@ export const FABRICATOR_OBJECTIVE_BASE_CHANCE = 0.25;
 export const FABRICATOR_OBJECTIVE_CHANCE_STEP = 0.18;
 export const FABRICATOR_OBJECTIVE_TARGETS = Object.freeze(['mk1_sidearm', 'pulse_carbine', 'exo_plating']);
 
-// Rarity weights began as mothership's gamba table (api/gamba rollRarity,
-// 40/40/17/3). Recipes now take the rarity of the item they print, and two
-// of those items are uncommon, so UNCOMMON takes 15 of COMMON's 40.
+// Rarity weights (decision 10, Sprint 48). Recipes take the rarity of the
+// item they print. The table is shaped so each individual recipe gets rarer
+// as its tier rises (common 2 recipes, uncommon 2, rare 6, epic 3), and a
+// tier with no recipe gets no weight rather than silently falling through to
+// another tier: the odds the Fab Bay shows are the odds the roll uses.
+// Began as mothership's gamba table (api/gamba rollRarity, 40/40/17/3).
 export const RARITY_WEIGHTS = Object.freeze([
-    { rarity: 'COMMON',    weight: 0.25 },
-    { rarity: 'UNCOMMON',  weight: 0.15 },
-    { rarity: 'RARE',      weight: 0.40 },
-    { rarity: 'EPIC',      weight: 0.17 },
+    { rarity: 'COMMON',    weight: 0.30 },
+    { rarity: 'UNCOMMON',  weight: 0.24 },
+    { rarity: 'RARE',      weight: 0.32 },
+    { rarity: 'EPIC',      weight: 0.11 },
     { rarity: 'LEGENDARY', weight: 0.03 }
 ]);
 
-// Roll a rarity tier from the weighted table. `random` is injectable for tests.
+/**
+ * The live odds: the weights of tiers that have at least one recipe,
+ * normalized to 1. `perRecipe` is one recipe's chance of being the rolled
+ * tier's pick when the player owns none of that tier.
+ */
+export function getFabricationOdds(recipes = FAB_RECIPES) {
+    const live = RARITY_WEIGHTS.filter(({ rarity }) => recipes.some((r) => r.rarity === rarity));
+    const total = live.reduce((sum, { weight }) => sum + weight, 0) || 1;
+    return live.map(({ rarity, weight }) => {
+        const count = recipes.filter((r) => r.rarity === rarity).length;
+        return Object.freeze({ rarity, chance: weight / total, recipes: count, perRecipe: weight / total / count });
+    });
+}
+
+// Roll a rarity tier from the live odds. `random` is injectable for tests.
 export function rollRarity(random = Math.random) {
-    let roll = random() * RARITY_WEIGHTS.reduce((s, r) => s + r.weight, 0);
-    for (const { rarity, weight } of RARITY_WEIGHTS) {
-        if (roll < weight) return rarity;
-        roll -= weight;
+    const odds = getFabricationOdds();
+    let roll = random();
+    for (const { rarity, chance } of odds) {
+        if (roll < chance) return rarity;
+        roll -= chance;
     }
-    return RARITY_WEIGHTS[RARITY_WEIGHTS.length - 1].rarity;
+    return odds[odds.length - 1].rarity;
 }
 
 export function getRecipesByRarity(rarity) {

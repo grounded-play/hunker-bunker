@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { FabricatorManager, FAB_RECIPES, getRecipe, rollRarity, FAB_SPIN_COST, getRecipesByRarity, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, getFabricatedOutputIds } from './fabricator.js';
+import { FabricatorManager, FAB_RECIPES, RARITY_WEIGHTS, getRecipe, rollRarity, getFabricationOdds, FAB_SPIN_COST, getRecipesByRarity, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, getFabricatedOutputIds } from './fabricator.js';
 import { getItem } from './data/itemCatalog.js';
 
 function makeStorage() {
@@ -153,14 +153,36 @@ describe('FabricatorManager', () => {
         expect(getRecipesByRarity('RARE').length).toBeGreaterThan(0);
     });
 
-    it('rollRarity maps the weighted bands deterministically (25/15/40/17/3)', () => {
-        expect(rollRarity(() => 0.0)).toBe('COMMON');     // 0.00 < 0.25
-        expect(rollRarity(() => 0.24)).toBe('COMMON');
-        expect(rollRarity(() => 0.30)).toBe('UNCOMMON');  // 0.25..0.40
-        expect(rollRarity(() => 0.50)).toBe('RARE');      // 0.40..0.80
-        expect(rollRarity(() => 0.79)).toBe('RARE');
-        expect(rollRarity(() => 0.90)).toBe('EPIC');      // 0.80..0.97
-        expect(rollRarity(() => 0.99)).toBe('LEGENDARY'); // 0.97..1.00
+    it('rollRarity uses the live odds: 30/24/32/11 over the tiers that have recipes', () => {
+        // LEGENDARY has no recipe, so its 3% is not rolled; the rest normalize
+        // over 0.97: COMMON < .309, UNCOMMON < .557, RARE < .887, EPIC < 1.
+        expect(RARITY_WEIGHTS.reduce((sum, r) => sum + r.weight, 0)).toBeCloseTo(1, 10);
+        expect(rollRarity(() => 0.0)).toBe('COMMON');
+        expect(rollRarity(() => 0.30)).toBe('COMMON');
+        expect(rollRarity(() => 0.32)).toBe('UNCOMMON');
+        expect(rollRarity(() => 0.55)).toBe('UNCOMMON');
+        expect(rollRarity(() => 0.60)).toBe('RARE');
+        expect(rollRarity(() => 0.88)).toBe('RARE');
+        expect(rollRarity(() => 0.95)).toBe('EPIC');
+        expect(rollRarity(() => 0.9999)).toBe('EPIC');
+    });
+
+    it('never gives weight to a tier with no recipe, and the odds sum to 1', () => {
+        const odds = getFabricationOdds();
+        expect(odds.map((o) => o.rarity)).not.toContain('LEGENDARY');
+        for (const tier of odds) expect(getRecipesByRarity(tier.rarity).length).toBeGreaterThan(0);
+        expect(odds.reduce((sum, o) => sum + o.chance, 0)).toBeCloseTo(1, 10);
+    });
+
+    it('makes each recipe rarer as its tier rises', () => {
+        const perRecipe = getFabricationOdds().map((o) => o.perRecipe);
+        for (let i = 1; i < perRecipe.length; i += 1) expect(perRecipe[i]).toBeLessThan(perRecipe[i - 1]);
+    });
+
+    it('a legendary recipe, once one exists, gets its tier back', () => {
+        const withLegendary = [...FAB_RECIPES, { id: 'x', rarity: 'LEGENDARY' }];
+        const legendary = getFabricationOdds(withLegendary).find((o) => o.rarity === 'LEGENDARY');
+        expect(legendary.chance).toBeCloseTo(0.03, 10);
     });
 
     it('rollFabrication spends the spin cost and reveals an owned schematic', () => {

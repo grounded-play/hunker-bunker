@@ -1464,7 +1464,8 @@
       "stat_damage": "伤害 ×{value}",
       "stat_rate": "射速 ×{value}",
       "stat_range": "射程 ×{value}",
-      "stat_shots": "{count} 发"
+      "stat_shots": "{count} 发",
+      "odds": "概率"
     },
     "camp": {
       "sleep_warning": "在 {camp} 休息将推进到第 {day} 天。以下未解决的信号将关闭。",

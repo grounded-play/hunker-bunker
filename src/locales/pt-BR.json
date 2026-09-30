@@ -1464,7 +1464,8 @@
       "stat_damage": "DANO ×{value}",
       "stat_rate": "CADÊNCIA ×{value}",
       "stat_range": "ALCANCE ×{value}",
-      "stat_shots": "{count} DISPAROS"
+      "stat_shots": "{count} DISPAROS",
+      "odds": "CHANCES"
     },
     "camp": {
       "sleep_warning": "Dormir em {camp} avança para o dia {day}. Estes sinais pendentes serão fechados.",

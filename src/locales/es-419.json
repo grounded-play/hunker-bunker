@@ -1464,7 +1464,8 @@
       "stat_damage": "DAÑO ×{value}",
       "stat_rate": "CADENCIA ×{value}",
       "stat_range": "ALCANCE ×{value}",
-      "stat_shots": "{count} DISPAROS"
+      "stat_shots": "{count} DISPAROS",
+      "odds": "PROBABILIDADES"
     },
     "camp": {
       "sleep_warning": "Dormir en {camp} avanza al día {day}. Estas señales sin resolver se cerrarán.",
