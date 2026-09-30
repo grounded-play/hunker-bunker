@@ -1244,6 +1244,7 @@ const DEFAULT_KEY_BINDINGS = Object.freeze({
     ability: ['KeyF', null],
     dash: ['Space', 'ShiftLeft'],
     scan: ['KeyQ', null],
+    ping: ['KeyT', null],
     sprint: ['ShiftLeft', 'ShiftRight']
 });
 const MELEE_REACH = 1.8;
@@ -6503,6 +6504,11 @@ export class ThreeGame {
                     id: `terminal:${detail.loreKey}`
                 });
             }
+        } else if (event === 'tactical-ping') {
+            this.spawnTacticalPingMarker?.(detail);
+            if (typeof window !== 'undefined' && window.AudioManager) {
+                window.AudioManager.play?.('ui_scan_ping', { volume: 0.4, playbackRate: detail.kind === 'enemy' ? 1.3 : 1.0 });
+            }
         }
 
         if (typeof window !== 'undefined') {
@@ -7308,6 +7314,11 @@ export class ThreeGame {
                 debugLog.debug('INPUT', 'Action: SMASH');
                 this.triggerGameplayMelee();
             }
+            if (this.codeMatchesAction(event.code, 'ping') || event.code === 'KeyT') {
+                event.preventDefault();
+                debugLog.debug('INPUT', 'Action: TACTICAL PING (T)');
+                this.triggerTacticalPing();
+            }
             this.setKeyState(event.code, true);
         };
         this.handleKeyUp = (event) => this.setKeyState(event.code, false);
@@ -7336,6 +7347,11 @@ export class ThreeGame {
                 } catch {
                     // Best effort only.
                 }
+                return;
+            }
+            if (pointerType === 'mouse' && event.button === 1) {
+                event.preventDefault();
+                this.triggerTacticalPing();
                 return;
             }
             if (pointerType === 'mouse' && event.button !== 0) return;
@@ -7856,6 +7872,154 @@ export class ThreeGame {
         debugLog.info('GAME', 'Triggered radar scan');
         this.triggerRadarScan();
         return true;
+    }
+
+    triggerTacticalPing() {
+        if (!this.player || !this.isGameplayInputActive()) return false;
+        let kind = 'point';
+        let targetId = null;
+        let label = 'TACTICAL PING';
+
+        let point = null;
+        if (Number.isFinite(this.lastMouseClientX) && Number.isFinite(this.lastMouseClientY)) {
+            point = this.getWorldAimPoint?.(this.lastMouseClientX, this.lastMouseClientY);
+        }
+        if (!point && this.aimWorldPoint) {
+            point = this.aimWorldPoint;
+        }
+        if (!point) {
+            const facingX = this.aimDirX ?? 0;
+            const facingZ = this.aimDirZ ?? 1;
+            point = {
+                x: this.player.position.x + facingX * 5.0,
+                z: this.player.position.z + facingZ * 5.0
+            };
+        }
+        let targetX = point.x;
+        let targetZ = point.z;
+
+        for (const sprite of this.scatterSprites ?? []) {
+            if (!this.isEnemyType(sprite.userData?.type) || sprite.userData?.dead || sprite.userData?.burstTriggered || sprite.userData?.isDisplayModel) continue;
+            const dist = Math.hypot(sprite.position.x - targetX, sprite.position.z - targetZ);
+            if (dist <= 2.0) {
+                kind = 'enemy';
+                targetId = sprite.userData.scatterKey;
+                targetX = sprite.position.x;
+                targetZ = sprite.position.z;
+                label = sprite.userData.isBoss ? 'TARGET: BOSS' : `TARGET: ${String(sprite.userData.type || 'HOSTILE').toUpperCase()}`;
+                break;
+            }
+        }
+
+        if (kind === 'point') {
+            for (const pickup of this.pickupMeshes ?? []) {
+                const dist = Math.hypot(pickup.position.x - targetX, pickup.position.z - targetZ);
+                if (dist <= 1.4) {
+                    kind = 'item';
+                    targetX = pickup.position.x;
+                    targetZ = pickup.position.z;
+                    const itemName = pickup.userData?.item?.name || pickup.userData?.type || 'SUPPLIES';
+                    label = `SUPPLIES: ${String(itemName).toUpperCase()}`;
+                    break;
+                }
+            }
+        }
+
+        const pingData = { x: targetX, z: targetZ, kind, label, targetId, peerId: this.multiplayerLocalPlayerId ?? null };
+        this.spawnTacticalPingMarker(pingData);
+
+        if (this.isMultiplayer) {
+            this.broadcastSharedWorldEvent?.('tactical-ping', pingData);
+        }
+
+        if (typeof window !== 'undefined' && window.AudioManager) {
+            window.AudioManager.play?.('ui_scan_ping', { volume: 0.45, playbackRate: kind === 'enemy' ? 1.3 : 1.0 });
+        }
+        return true;
+    }
+
+    spawnTacticalPingMarker({ x = 0, z = 0, kind = 'point', label = 'TACTICAL PING', targetId = null } = {}) {
+        if (!this.scene) return null;
+        const color = kind === 'enemy' ? 0xff3344 : (kind === 'item' ? 0x10b981 : 0x38bdf8);
+        const y = this.getTerrainHeightAt?.(x, z) ?? 0;
+
+        const group = new THREE.Group();
+        group.position.set(x, y, z);
+
+        const ringGeo = new THREE.RingGeometry(0.3, 0.7, 24);
+        ringGeo.rotateX(-Math.PI / 2);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color,
+            transparent: true,
+            opacity: 0.85,
+            side: THREE.DoubleSide
+        });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.position.y = 0.05;
+        group.add(ring);
+
+        const beamGeo = new THREE.CylinderGeometry(0.04, 0.1, 4.0, 8);
+        beamGeo.translate(0, 2.0, 0);
+        const beamMat = new THREE.MeshBasicMaterial({
+            color,
+            transparent: true,
+            opacity: 0.5,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const beam = new THREE.Mesh(beamGeo, beamMat);
+        group.add(beam);
+
+        this.scene.add(group);
+
+        const duration = 6.0;
+        let age = 0;
+
+        const pingEffect = {
+            mesh: group,
+            duration,
+            age: 0,
+            update: (delta) => {
+                age += delta;
+                const progress = age / duration;
+                const pulse = 1.0 + Math.sin(age * 8) * 0.25;
+                ring.scale.set(pulse, 1, pulse);
+                beam.rotation.y += delta * 2;
+                if (progress > 0.75) {
+                    const fade = 1 - (progress - 0.75) / 0.25;
+                    ringMat.opacity = 0.85 * fade;
+                    beamMat.opacity = 0.5 * fade;
+                }
+            },
+            dispose: () => {
+                if (group.parent) group.parent.remove(group);
+                ringGeo.dispose();
+                ringMat.dispose();
+                beamGeo.dispose();
+                beamMat.dispose();
+            }
+        };
+
+        this.addTransientEffect?.(pingEffect);
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('tactical-ping-alert', {
+                detail: { x, z, kind, label, targetId }
+            }));
+            const pingId = `ping-${Math.round(x)},${Math.round(z)}`;
+            window.objectiveRegistry?.trackObjective?.({
+                id: pingId,
+                source: 'tactical-ping',
+                label,
+                priority: 35,
+                compass: { x, z }
+            });
+            setTimeout(() => {
+                window.objectiveRegistry?.resolveObjective?.(pingId, 'expired');
+            }, 6000);
+        }
+
+        return group;
     }
 
     triggerGameplayDash() {
