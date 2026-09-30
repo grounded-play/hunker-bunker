@@ -43,7 +43,7 @@ The Settings button covers controller access instead.
 | 2 | "Commentary available" found nothing | Commentary only shows during active gameplay: the run-start entry fires during the intro (not yet "gameplay"), and the Vault and Armory entries fire in menus, so all are skipped. There are 11 short text entries in total. | Show commentary in menus too; fire run-start once gameplay is live; add a **Developer Commentary** list under Settings / About with every entry. Or remove the category. | Code: Claude. Category: publisher. |
 | 3 | `GetReport` for MicroTxn | Three itemdefs carry prices (Relic Decryption Key $1, 5-key pack $4, 15-key pack $10). No MicroTxn purchase is live (`HB_STEAM_MICROTXN_ENABLED=0`). | **Remove the prices** (recommended, below). Tell Valve there are no in-app purchases; `GetReport` doesn't apply. | Publisher (schema + store page). |
 | 4 | Steam Wallet not verifiable | Same prices, while the Vault's Store tab is hidden, so there is nothing to buy. | Same as 3. | Publisher. |
-| 5 | Achievements can't be scrolled by controller | Achievement cards are non-focusable `div`s; the controller can only reach Close and Copy Save. The Vault's inventory cards have the same flaw. | Make cards focusable; right stick scrolls any scrollable panel; a controller-only probe over every menu. | Code: Claude. Hardware pass: publisher. |
+| 5 | Achievements can't be scrolled by controller | Achievement cards are non-focusable `div`s; the controller can only reach Close and Copy Save. The Vault's inventory cards have the same flaw. | Make cards focusable; D-pad up/down scrolls any panel with nothing focusable in it; a controller probe for Achievements. | Code: Claude. Hardware pass: publisher. |
 | 6 | "Some nudity or sexual content" not found | The sexual content is real: Sister Val's dialogue at Camp Tallow (`[SENSUAL / EMBRACE]`, `[DEEPEN INTIMACY]`). But the reviewer shortcut can't show it: the F9 gallery's romance buttons call `openNpcDialogueTree`, which refuses outside gameplay. Two gallery items (the veiled-nudity log and the Tallow ledger) exist **only** in the gallery, not in the game. | The gallery opens dialogue in a reader mode from any screen; gallery-only items removed; the survey answers only what's in the game; notes give F9 and the in-game route. | Code: Claude. Survey: publisher. |
 | 7 | "Filtered in-game chat" not found | There is no in-game chat. | Remove it from the Content Survey. | Publisher. |
 
@@ -141,12 +141,13 @@ The Settings button covers controller access instead.
   1. Achievement cards become focusable list items (with an accessible label). Moving
      focus scrolls them into view.
   2. Vault item cards become focusable buttons.
-  3. The right stick scrolls the nearest scrollable panel in any menu: achievements,
-     codex, archive logs, settings, lore text, store odds.
-  4. A controller-only probe walks every title-menu screen and every modal from first
-     to last item with gamepad input alone, and fails on any control it can't reach.
-     This covers the 9-11 route: resolution, UI scale, text speed, callsign keyboard,
-     achievements, pause/settings/quit, multiplayer, Vault/Foundry.
+  3. **Done instead:** D-pad up/down scrolls any panel that has nothing focusable
+     in it (lore, logs, transcripts, the commentary list). The right stick stays the
+     menu cursor.
+  4. **Done:** the probe drives Achievements by D-pad to the last card.
+     **Not done:** a probe that walks every menu. The 9-11 route (resolution, UI
+     scale, text speed, callsign keyboard, achievements, pause/settings/quit,
+     multiplayer, Vault/Foundry) is covered by the hardware pass below.
 - **Hardware:** the owner runs the same route on the Deck and a pad on PC with the
   keyboard unplugged.
 - **Steamworks:** keep **Full Controller Support** only after the hardware pass.
