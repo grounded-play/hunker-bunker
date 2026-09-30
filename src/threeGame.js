@@ -6488,6 +6488,12 @@ export class ThreeGame {
             this.applyRemoteBossAdds(detail);
         } else if (event === COOP_TRANSITION_EVENTS.ENCOUNTER_FORMATION_STATE) {
             this.applyRemoteEncounterFormationState(detail);
+        } else if (event === COOP_TRANSITION_EVENTS.WORLD_EVENT_TRIGGER) {
+            if (coopRole(this) === COOP_ROLE.HOST && detail.action) {
+                this.respondToExpeditionEvent(detail.action);
+            }
+        } else if (event === COOP_TRANSITION_EVENTS.WORLD_EVENT_RESOLVED) {
+            this.applyRemoteWorldEventResolved(detail);
         } else if (event === 'lore-terminal-read') {
             if (detail.loreKey) {
                 this._readLoreKeys = this._readLoreKeys ?? new Set();
@@ -6504,6 +6510,28 @@ export class ThreeGame {
                 detail: { ...detail, fromRemote: true }
             }));
         }
+        return true;
+    }
+
+    applyRemoteWorldEventResolved(detail = {}) {
+        const expEvent = this._expeditionEvent;
+        if (!expEvent?.state) return false;
+        if (detail.phase) expEvent.state.phase = detail.phase;
+        if (detail.outcome) expEvent.state.outcome = detail.outcome;
+        if (typeof detail.scanned === 'boolean') expEvent.state.scanned = detail.scanned;
+        if (Number.isFinite(detail.bypassProgress)) expEvent.state.bypassProgress = detail.bypassProgress;
+        if (Array.isArray(detail.effects)) {
+            for (const effect of detail.effects) this.runExpeditionEventEffect(effect);
+        }
+        if (expEvent.state.phase === 'resolved') {
+            this._expeditionEventO2DrainMult = 1;
+            const success = !['left', 'ambush_empty'].includes(expEvent.state.outcome);
+            window.objectiveRegistry?.resolveObjective?.('expedition-event', success ? 'complete' : 'abandoned');
+        }
+        this.syncExpeditionEventRoute();
+        window.dispatchEvent?.(new CustomEvent('expedition-event-state', {
+            detail: { eventId: detail.eventId, action: detail.action, phase: expEvent.state.phase, outcome: expEvent.state.outcome, fromRemote: true }
+        }));
         return true;
     }
 
@@ -38053,7 +38081,7 @@ export class ThreeGame {
     // use (src/coopTransitions.js); PvP has no expedition fight to open.
     armArrivalIncident() {
         if (typeof window !== 'undefined') window.objectiveRegistry?.resolveObjective?.('arrival-incident', 'abandoned');
-        const plan = coopRole(this) === COOP_ROLE.SOLO
+        const plan = coopRole(this) !== COOP_ROLE.GUEST && this.multiplayerMode !== 'pvp'
             ? planArrivalIncident({
                 conditionId: this.activeExpedition?.condition?.id,
                 expeditionSeed: this.activeExpedition?.expeditionSeed ?? this.expeditionSeed ?? 0,
@@ -38236,7 +38264,7 @@ export class ThreeGame {
         this._expeditionReportItems = [];
         this.listenForExpeditionReportItems();
         const profile = this.activeExpedition;
-        this._expeditionEvent = coopRole(this) === COOP_ROLE.SOLO && profile?.condition?.id
+        this._expeditionEvent = profile?.condition?.id && this.multiplayerMode !== 'pvp'
             ? { profile, plan: null, state: null, elapsed: 0, site: null, encounter: null, grants: [], promptOpen: false, declined: false, trackerTimer: 0 }
             : null;
         return this._expeditionEvent;
@@ -38310,10 +38338,14 @@ export class ThreeGame {
             }
             event.state = createEventState(event.plan);
         }
-        event.elapsed += delta;
+        if (coopRole(this) !== COOP_ROLE.GUEST) {
+            event.elapsed += delta;
+        }
         const { phase } = event.state;
         if (phase === 'dormant') {
-            if (event.elapsed >= event.plan.signalAt) this.applyExpeditionEventAction({ type: 'signal' });
+            if (coopRole(this) !== COOP_ROLE.GUEST && event.elapsed >= event.plan.signalAt) {
+                this.applyExpeditionEventAction({ type: 'signal' });
+            }
             return;
         }
         if (phase === 'resolved') return;
@@ -38323,7 +38355,7 @@ export class ThreeGame {
         if (phase === 'bypassing') {
             // The drain runs only while the operator stays on the bypass.
             this._expeditionEventO2DrainMult = near ? event.plan.bypassO2Drain : 1;
-            if (near) this.applyExpeditionEventAction({ type: 'bypass_tick', seconds: delta });
+            if (near && coopRole(this) !== COOP_ROLE.GUEST) this.applyExpeditionEventAction({ type: 'bypass_tick', seconds: delta });
         } else if (phase === 'signalled') {
             if (!near) event.declined = false;
             else if (!event.promptOpen && !event.declined) this.openExpeditionEventChoice();
@@ -38396,8 +38428,15 @@ export class ThreeGame {
             return false;
         }
         if (!event.plan.responses.includes(action)) return false;
+        if (coopRole(this) === COOP_ROLE.GUEST) {
+            this.broadcastSharedWorldEvent(COOP_TRANSITION_EVENTS.WORLD_EVENT_TRIGGER, {
+                action,
+                eventId: event.plan.eventId
+            });
+            return true;
+        }
         const changed = this.applyExpeditionEventAction({ type: action });
-        if (changed && event.state.phase === 'signalled') this.openExpeditionEventChoice();
+        if (changed && event.state.phase === 'signalled') this.openExpeditionEventChoice?.();
         return changed;
     }
 
@@ -38413,6 +38452,17 @@ export class ThreeGame {
             this._expeditionEventO2DrainMult = 1;
             const success = !['left', 'ambush_empty'].includes(event.state.outcome);
             window.objectiveRegistry?.resolveObjective?.('expedition-event', success ? 'complete' : 'abandoned');
+        }
+        if (coopRole(this) === COOP_ROLE.HOST) {
+            this.broadcastSharedWorldEvent?.(COOP_TRANSITION_EVENTS.WORLD_EVENT_RESOLVED, {
+                eventId: event.plan.eventId,
+                action: action.type,
+                phase: event.state.phase,
+                outcome: event.state.outcome,
+                scanned: Boolean(event.state.scanned),
+                bypassProgress: event.state.bypassProgress,
+                effects: result.effects
+            });
         }
         // Bypass progress ticks every frame; the throttled route sync in
         // updateExpeditionEvent shows it. Only a new phase is announced.
