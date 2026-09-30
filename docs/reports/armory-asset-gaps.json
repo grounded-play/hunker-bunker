@@ -1,32 +1,11 @@
 {
-  "timestamp": "2026-09-23T17:07:35.130Z",
-  "total": 123,
+  "timestamp": "2026-09-30T17:28:33.830Z",
+  "total": 128,
   "missingName": 0,
   "missingIcon": 0,
   "missingModel": 0,
   "unriggedChassis": 0,
-  "pendingHiddenWeapons": [
-    {
-      "id": "5002",
-      "name": "Chrono-Drifter Talon-C",
-      "modelStatus": "pending"
-    },
-    {
-      "id": "5006",
-      "name": "Bunker Bastion Siege-Breaker",
-      "modelStatus": "pending"
-    },
-    {
-      "id": "5009",
-      "name": "Archival Constructor Arc Driver",
-      "modelStatus": "pending"
-    },
-    {
-      "id": "5010",
-      "name": "Hive-Weaver Bio-Plasma Emitter",
-      "modelStatus": "pending"
-    }
-  ],
+  "pendingHiddenWeapons": [],
   "needsModelRedo": 1,
   "greenSuspect": 0,
   "rows": [
@@ -279,6 +258,25 @@
     },
     {
       "group": "weapon",
+      "id": "5002",
+      "name": "Chrono-Drifter Talon-C",
+      "missingName": false,
+      "icon": "/ach_quick_study.png",
+      "iconExists": true,
+      "missingIcon": false,
+      "model": "/3d/runtime/new3ds/skin_scout_chrono_drifter.glb",
+      "missingModel": false,
+      "modelRequired": true,
+      "rig": null,
+      "rigReady": true,
+      "needsModelRedo": false,
+      "previewSource": "achievement-emblem",
+      "greenRatio": 0,
+      "greenSuspect": false,
+      "allowlistedGreen": false
+    },
+    {
+      "group": "weapon",
       "id": "4102",
       "name": "Tectonic Driller",
       "missingName": false,
@@ -374,6 +372,25 @@
     },
     {
       "group": "weapon",
+      "id": "5006",
+      "name": "Bunker Bastion Siege-Breaker",
+      "missingName": false,
+      "icon": "/ach_hunkered.png",
+      "iconExists": true,
+      "missingIcon": false,
+      "model": "/3d/runtime/new3ds/skin_tank_bunker_bastion.glb",
+      "missingModel": false,
+      "modelRequired": true,
+      "rig": null,
+      "rigReady": true,
+      "needsModelRedo": false,
+      "previewSource": "achievement-emblem",
+      "greenRatio": 0,
+      "greenSuspect": false,
+      "allowlistedGreen": false
+    },
+    {
+      "group": "weapon",
       "id": "4103",
       "name": "Cryo-Plasma Arc",
       "missingName": false,
@@ -463,6 +480,44 @@
       "rigReady": true,
       "needsModelRedo": false,
       "previewSource": "catalog-art",
+      "greenRatio": 0,
+      "greenSuspect": false,
+      "allowlistedGreen": false
+    },
+    {
+      "group": "weapon",
+      "id": "5009",
+      "name": "Archival Constructor Arc Driver",
+      "missingName": false,
+      "icon": "/ach_archivist.png",
+      "iconExists": true,
+      "missingIcon": false,
+      "model": "/3d/runtime/new3ds/skin_engineer_archival_constructor.glb",
+      "missingModel": false,
+      "modelRequired": true,
+      "rig": null,
+      "rigReady": true,
+      "needsModelRedo": false,
+      "previewSource": "achievement-emblem",
+      "greenRatio": 0,
+      "greenSuspect": false,
+      "allowlistedGreen": false
+    },
+    {
+      "group": "weapon",
+      "id": "5010",
+      "name": "Hive-Weaver Bio-Plasma Emitter",
+      "missingName": false,
+      "icon": "/ach_kin.png",
+      "iconExists": true,
+      "missingIcon": false,
+      "model": "/3d/runtime/new3ds/skin_engineer_hive_weaver.glb",
+      "missingModel": false,
+      "modelRequired": true,
+      "rig": null,
+      "rigReady": true,
+      "needsModelRedo": false,
+      "previewSource": "achievement-emblem",
       "greenRatio": 0,
       "greenSuspect": false,
       "allowlistedGreen": false
@@ -565,8 +620,32 @@
     },
     {
       "group": "chassis",
+      "id": "5001",
+      "name": "Ghost Runner Recon Rig",
+      "missingName": false,
+      "icon": "/ach_ghost.png",
+      "iconExists": true,
+      "missingIcon": false,
+      "model": "/3d/runtime/new3ds/chassis_scout_ghost_runner.glb",
+      "missingModel": false,
+      "modelRequired": true,
+      "rig": {
+        "skinCount": 1,
+        "jointCount": 65,
+        "embeddedAnimationCount": 1,
+        "rigReady": true
+      },
+      "rigReady": true,
+      "needsModelRedo": false,
+      "previewSource": "achievement-emblem",
+      "greenRatio": 0,
+      "greenSuspect": false,
+      "allowlistedGreen": false
+    },
+    {
+      "group": "chassis",
       "id": "5003",
-      "name": "CARTOGRAPHER Chassis",
+      "name": "Subterranean Cartographer Suit",
       "missingName": false,
       "icon": "/economy/armory/5003.png",
       "iconExists": true,
@@ -590,7 +669,7 @@
     {
       "group": "chassis",
       "id": "5004",
-      "name": "REYES COURIER Chassis",
+      "name": "Pioneer Courier Scout Frame",
       "missingName": false,
       "icon": "/economy/armory/5004.png",
       "iconExists": true,
@@ -902,7 +981,7 @@
     {
       "group": "chassis",
       "id": "5005",
-      "name": "HARDENED Chassis",
+      "name": "Old Iron Dreadnought Chassis",
       "missingName": false,
       "icon": "/economy/armory/5005.png",
       "iconExists": true,
@@ -926,7 +1005,7 @@
     {
       "group": "chassis",
       "id": "5007",
-      "name": "FULL BROOD Chassis",
+      "name": "Colossus of the Hive Carapace",
       "missingName": false,
       "icon": "/economy/armory/5007.png",
       "iconExists": true,
@@ -950,7 +1029,7 @@
     {
       "group": "chassis",
       "id": "5008",
-      "name": "GENTLE DRILL Chassis",
+      "name": "Gentle Titan Hazard Frame",
       "missingName": false,
       "icon": "/economy/armory/5008.png",
       "iconExists": true,
@@ -1286,7 +1365,7 @@
     {
       "group": "chassis",
       "id": "5011",
-      "name": "CHEN'S THIRTEENTH Chassis",
+      "name": "Chen's Undying Prototype Rig",
       "missingName": false,
       "icon": "/economy/armory/5011.png",
       "iconExists": true,
@@ -1310,7 +1389,7 @@
     {
       "group": "chassis",
       "id": "5012",
-      "name": "ALIEN EXODUS Chassis",
+      "name": "Exodus Vanguard Engineer Suit",
       "missingName": false,
       "icon": "/economy/armory/5012.png",
       "iconExists": true,
