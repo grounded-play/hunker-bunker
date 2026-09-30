@@ -52,11 +52,14 @@ test('procedural bunker rooms mount practical lights and foreground cutaways', a
         let housingCount = 0;
         let capCount = 0;
         let portalHeaderCount = 0;
+        const portalHeaderKinds = new Set();
         let sourceCount = 0;
         let roleDisplayHousingCount = 0;
         let roleDisplayScreenCount = 0;
         let maxRoleDisplayPoolsPerChunk = 0;
         const roleDisplayFamilies = new Set();
+        let thresholdMarkingCount = 0;
+        let environmentalDripCount = 0;
         for (const group of game.chunkMeshes.values()) {
             if (!group.visible) continue;
             let roleDisplayPoolsInChunk = 0;
@@ -72,6 +75,7 @@ test('procedural bunker rooms mount practical lights and foreground cutaways', a
                 }
                 if (object.userData?.isDoorPortalHeaderPool) {
                     portalHeaderCount += object.userData.headerCount ?? object.count ?? 0;
+                    portalHeaderKinds.add(object.userData.importance);
                 }
                 if (object.userData?.isRoomPracticalLightSource) sourceCount += 1;
                 if (object.userData?.isRoomRoleDisplayHousingPool) {
@@ -82,6 +86,12 @@ test('procedural bunker rooms mount practical lights and foreground cutaways', a
                 if (object.userData?.isRoomRoleDisplayScreenPool) {
                     roleDisplayScreenCount += object.userData.screenCount ?? object.count ?? 0;
                     roleDisplayPoolsInChunk += 1;
+                }
+                if (object.userData?.isRoomThresholdMarkingPool) {
+                    thresholdMarkingCount += object.userData.markingCount ?? object.count ?? 0;
+                }
+                if (object.userData?.isRoomEnvironmentalDripPool) {
+                    environmentalDripCount += object.userData.dripCount ?? object.count ?? 0;
                 }
             });
             maxRoleDisplayPoolsPerChunk = Math.max(maxRoleDisplayPoolsPerChunk, roleDisplayPoolsInChunk);
@@ -107,11 +117,14 @@ test('procedural bunker rooms mount practical lights and foreground cutaways', a
             housingCount,
             capCount,
             portalHeaderCount,
+            portalHeaderKinds: [...portalHeaderKinds],
             sourceCount,
             roleDisplayHousingCount,
             roleDisplayScreenCount,
             maxRoleDisplayPoolsPerChunk,
             roleDisplayFamilies: [...roleDisplayFamilies],
+            thresholdMarkingCount,
+            environmentalDripCount,
             directVisibleRoomSources
         };
     });
@@ -120,12 +133,19 @@ test('procedural bunker rooms mount practical lights and foreground cutaways', a
     expect(presentation.housingCount).toBe(presentation.fixtureCount);
     expect(presentation.capCount).toBeGreaterThan(0);
     expect(presentation.portalHeaderCount).toBeGreaterThan(0);
+    expect(presentation.portalHeaderKinds.every((kind) => ['ordinary', 'route', 'locked'].includes(kind))).toBe(true);
     expect(presentation.sourceCount).toBeGreaterThan(0);
     expect(presentation.roleDisplayHousingCount).toBeGreaterThan(0);
     expect(presentation.roleDisplayScreenCount).toBeGreaterThanOrEqual(presentation.roleDisplayHousingCount);
     expect(presentation.maxRoleDisplayPoolsPerChunk).toBeLessThanOrEqual(2);
     expect(presentation.roleDisplayFamilies.length).toBeGreaterThan(0);
+    expect(presentation.thresholdMarkingCount).toBeGreaterThan(0);
+    expect(presentation.environmentalDripCount).toBeGreaterThan(0);
     expect(presentation.directVisibleRoomSources).toBe(0);
+    const dripTimeBefore = await page.evaluate(() => window.game.environmentDripMaterial.uniforms.uTime.value);
+    await page.waitForTimeout(120);
+    const dripTimeAfter = await page.evaluate(() => window.game.environmentDripMaterial.uniforms.uTime.value);
+    expect(dripTimeAfter).toBeGreaterThan(dripTimeBefore);
     await page.screenshot({
         path: 'docs/reports/assets/gameplay-room-presentation-default-2026-09-30.png'
     });

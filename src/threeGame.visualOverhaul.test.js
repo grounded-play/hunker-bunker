@@ -44,6 +44,21 @@ describe('Visual Overhaul Phase B & D (Surface Depth & Grade)', () => {
             expect(threeGameSource).toContain('lightingRhythms: [...new Set(plans.map((plan) => plan.lightingRhythm))]');
         });
 
+        it('renders role thresholds and animated environmental drips in bounded pools', () => {
+            expect(threeGameSource).toContain('isRoomThresholdMarkingPool: true');
+            expect(threeGameSource).toContain('isRoomEnvironmentalDripPool: true');
+            expect(threeGameSource).toContain('uFallDistance: { value: 2.18 }');
+            expect(threeGameSource).toContain('this.environmentDripMaterial.uniforms.uTime.value = now * 0.001');
+        });
+
+        it('gives ordinary, route and locked door headers distinct intensity and shape', () => {
+            expect(threeGameSource).toContain("['ordinary', []]");
+            expect(threeGameSource).toContain("['route', []]");
+            expect(threeGameSource).toContain("['locked', []]");
+            expect(threeGameSource).toContain("portalImportance === 'ordinary' ? 0.07");
+            expect(threeGameSource).toContain('importance\n            };');
+        });
+
         it('injects vascular pulsation into floor emissive radiance', () => {
             expect(threeGameSource).toContain('vec3 bioVeinColor = vec3(1.0, 0.44, 0.08)');
             expect(threeGameSource).toContain('totalEmissiveRadiance += vec3(0.0, 0.7, 0.85) * glowIntensity * 1.35 + bioVeinColor');

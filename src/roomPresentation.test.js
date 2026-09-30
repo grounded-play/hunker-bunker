@@ -5,8 +5,10 @@ import {
     planDefaultRoomCutawayCells,
     planRoomBoundaryCells,
     planRoomCutawayCells,
+    planRoomEnvironmentalDrips,
     planRoomPracticalLights,
     planRoomRoleDisplay,
+    planRoomThresholdMarkings,
     ROOM_CUTAWAY_HEIGHT
 } from './roomPresentation.js';
 import { collapseChunkLattice, extractChunkWfcMetadata } from './wfcGenerator.js';
@@ -61,6 +63,32 @@ describe('room presentation planning', () => {
             family: 'cryo'
         });
         expect(planRoomRoleDisplay(null)).toBeNull();
+    });
+
+    it('marks authored thresholds with the room role palette and sill orientation', () => {
+        const northDoor = {
+            ...room(5, 3),
+            role: 'security',
+            doors: [{ side: 'n', cells: [{ x: 2, y: 0 }, { x: 3, y: 0 }, { x: 4, y: 0 }] }]
+        };
+        const westDoor = {
+            ...room(3, 5),
+            role: 'medical',
+            doors: [{ side: 'w', cells: [{ x: 0, y: 2 }, { x: 0, y: 3 }, { x: 0, y: 4 }] }]
+        };
+        const security = planRoomThresholdMarkings(northDoor);
+        const medical = planRoomThresholdMarkings(westDoor);
+        expect(security).toHaveLength(5);
+        expect(security.every((marking) => marking.color === 0xff5147 && marking.rotationY === Math.PI / 4)).toBe(true);
+        expect(medical.every((marking) => marking.color === 0x7de6ff && marking.rotationY === -Math.PI / 4)).toBe(true);
+    });
+
+    it('plans deterministic biome drips without flooding generic active rooms', () => {
+        const serviceRoom = { ...room(4, 3), id: 'service-a', role: 'engineering' };
+        expect(planRoomEnvironmentalDrips(serviceRoom)).toEqual(planRoomEnvironmentalDrips(serviceRoom));
+        expect(planRoomEnvironmentalDrips(serviceRoom)).toHaveLength(1);
+        expect(planRoomEnvironmentalDrips(serviceRoom, { biome: 'bio' })[0].color).toBe(0x63e6a7);
+        expect(planRoomEnvironmentalDrips(null)).toEqual([]);
     });
 
     it('identifies only the east and south foreground walls for the default camera', () => {

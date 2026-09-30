@@ -41,6 +41,21 @@ function closestCell(cells, targetX, targetY) {
     }, null)?.cell ?? null;
 }
 
+function stableStringHash(value) {
+    let hash = 2166136261;
+    for (const character of String(value ?? '')) {
+        hash ^= character.charCodeAt(0);
+        hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+}
+
+function displayProfileFor(room, biome) {
+    const fallbackRole = biome === 'cryo' ? 'cryo-lab' : biome === 'bio' ? 'hive' : 'generic';
+    const role = ROOM_ROLE_DISPLAY_PROFILES[room?.role] ? room.role : fallbackRole;
+    return { role, profile: ROOM_ROLE_DISPLAY_PROFILES[role] };
+}
+
 /**
  * Produce a small, deterministic practical-light plan from authored room cells.
  * The returned fixtures are emissive geometry; one proxy per room feeds the
@@ -102,9 +117,7 @@ export function planRoomRoleDisplay(room, { biome = 'active' } = {}) {
     const bounds = boundsForCells(cells);
     if (!bounds) return null;
 
-    const fallbackRole = biome === 'cryo' ? 'cryo-lab' : biome === 'bio' ? 'hive' : 'generic';
-    const role = ROOM_ROLE_DISPLAY_PROFILES[room?.role] ? room.role : fallbackRole;
-    const profile = ROOM_ROLE_DISPLAY_PROFILES[role];
+    const { role, profile } = displayProfileFor(room, biome);
     const width = bounds.maxX - bounds.minX + 1;
     const depth = bounds.maxY - bounds.minY + 1;
     const wall = width >= depth ? 'north' : 'west';
@@ -136,6 +149,46 @@ export function planRoomRoleDisplay(room, { biome = 'active' } = {}) {
         height: profile.height + 0.16,
         screens
     };
+}
+
+/** Paint short diagonal role-coloured bars across every authored room sill. */
+export function planRoomThresholdMarkings(room, { biome = 'active' } = {}) {
+    const { role, profile } = displayProfileFor(room, biome);
+    const markings = [];
+    for (const door of room?.doors ?? []) {
+        const cells = door?.cells ?? [];
+        if (cells.length === 0) continue;
+        const centerX = cells.reduce((sum, cell) => sum + cell.x, 0) / cells.length;
+        const centerZ = cells.reduce((sum, cell) => sum + cell.y, 0) / cells.length;
+        const alongX = door.side === 'n' || door.side === 's';
+        const span = Math.max(1, cells.length - 0.3);
+        const count = Math.max(3, Math.min(7, cells.length * 2 - 1));
+        for (let index = 0; index < count; index += 1) {
+            const offset = count === 1 ? 0 : -span / 2 + (span * index) / (count - 1);
+            markings.push({
+                x: centerX + (alongX ? offset : 0),
+                z: centerZ + (alongX ? 0 : offset),
+                rotationY: alongX ? Math.PI / 4 : -Math.PI / 4,
+                color: profile.color,
+                role
+            });
+        }
+    }
+    return markings;
+}
+
+/** Select at most one deterministic condensation/leak anchor per room. */
+export function planRoomEnvironmentalDrips(room, { biome = 'active' } = {}) {
+    const cells = room?.interior ?? [];
+    const bounds = boundsForCells(cells);
+    if (!bounds) return [];
+    const hash = stableStringHash(room?.id ?? `${bounds.minX},${bounds.minY}:${room?.role ?? 'generic'}`);
+    const wetRoles = new Set(['utility', 'engineering', 'medical', 'cryo-lab', 'nest', 'hive']);
+    if (biome === 'active' && !wetRoles.has(room?.role) && hash % 3 !== 0) return [];
+    const edgeCells = cells.filter((cell) => cell.x === bounds.minX || cell.y === bounds.minY);
+    const anchor = edgeCells[hash % edgeCells.length] ?? cells[hash % cells.length];
+    const color = biome === 'bio' ? 0x63e6a7 : biome === 'cryo' ? 0x9ddcff : 0x71cddf;
+    return [{ x: anchor.x, z: anchor.y, color }];
 }
 
 /**

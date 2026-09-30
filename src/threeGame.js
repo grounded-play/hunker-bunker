@@ -16,8 +16,10 @@ import {
     cameraCutawayQuadrant,
     planRoomBoundaryCells,
     planRoomCutawayCells,
+    planRoomEnvironmentalDrips,
     planRoomPracticalLights,
     planRoomRoleDisplay,
+    planRoomThresholdMarkings,
     ROOM_CUTAWAY_HEIGHT
 } from './roomPresentation.js';
 import { planHallwayRouteDressing } from './hallwayPresentation.js';
@@ -1777,6 +1779,45 @@ export class ThreeGame {
             color: new THREE.Color().setRGB(1.55, 1.55, 1.55),
             toneMapped: false
         });
+        this.roomThresholdMarkingGeometry = new THREE.BoxGeometry(1, 1, 1);
+        this.roomThresholdMarkingMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            metalness: 0.18,
+            roughness: 0.48
+        });
+        this.environmentDripGeometry = new THREE.BoxGeometry(0.035, 0.16, 0.035);
+        this.environmentDripMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uFallDistance: { value: 2.18 }
+            },
+            vertexShader: `
+                uniform float uTime;
+                uniform float uFallDistance;
+                varying vec3 vDripColor;
+                varying float vDripAlpha;
+                void main() {
+                    float seed = fract(sin(dot(instanceMatrix[3].xz, vec2(12.9898, 78.233))) * 43758.5453);
+                    float cycle = fract(uTime * (0.22 + seed * 0.11) + seed);
+                    vec4 instancePosition = instanceMatrix * vec4(position, 1.0);
+                    instancePosition.y -= cycle * uFallDistance;
+                    vDripColor = instanceColor;
+                    vDripAlpha = sin(cycle * 3.14159265) * smoothstep(0.0, 0.08, cycle);
+                    gl_Position = projectionMatrix * modelViewMatrix * instancePosition;
+                }
+            `,
+            fragmentShader: `
+                varying vec3 vDripColor;
+                varying float vDripAlpha;
+                void main() {
+                    gl_FragColor = vec4(vDripColor * 1.35, vDripAlpha * 0.72);
+                }
+            `,
+            transparent: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+            toneMapped: false
+        });
 
         this.ventMaterial = new THREE.MeshBasicMaterial({ color: 0x1a1d20 });
         this.pipeMaterial = new THREE.MeshBasicMaterial({ color: 0x24282c });
@@ -1785,13 +1826,29 @@ export class ThreeGame {
         this.doorPanelGeometry = new THREE.BoxGeometry(0.38, 0.58, 0.24);
         this.doorPanelMaterial = new THREE.MeshStandardMaterial({ color: 0x12191f, emissive: 0x07141a, metalness: 0.78, roughness: 0.38 });
         this.doorPortalHeaderGeometry = new THREE.BoxGeometry(1, 1, 1);
-        this.doorPortalHeaderMaterial = new THREE.MeshStandardMaterial({
-            color: 0xffd18a,
-            emissive: 0xff9d32,
-            emissiveIntensity: 1.85,
-            metalness: 0.48,
-            roughness: 0.24
-        });
+        this.doorPortalHeaderMaterials = {
+            ordinary: new THREE.MeshStandardMaterial({
+                color: 0x31545b,
+                emissive: 0x143d46,
+                emissiveIntensity: 0.42,
+                metalness: 0.58,
+                roughness: 0.34
+            }),
+            route: new THREE.MeshStandardMaterial({
+                color: 0xc78331,
+                emissive: 0xff9d32,
+                emissiveIntensity: 0.92,
+                metalness: 0.48,
+                roughness: 0.28
+            }),
+            locked: new THREE.MeshStandardMaterial({
+                color: 0x9d2a20,
+                emissive: 0xff493d,
+                emissiveIntensity: 1.18,
+                metalness: 0.42,
+                roughness: 0.3
+            })
+        };
         this.doorRibGeometry = new THREE.BoxGeometry(0.08, 1.02, 1.1);
         this.doorRibMaterial = new THREE.MeshStandardMaterial({
             color: 0x11161b,
@@ -9763,6 +9820,9 @@ export class ThreeGame {
         }
         for (const uniforms of this.cliffShaderUniforms ?? []) {
             if (uniforms.uCliffTime) uniforms.uCliffTime.value = now * 0.001;
+        }
+        if (this.environmentDripMaterial?.uniforms?.uTime) {
+            this.environmentDripMaterial.uniforms.uTime.value = now * 0.001;
         }
         if (this.cliffPathMaterial) {
             this.cliffPathMaterial.opacity = 0.32 + Math.sin(now * 0.0024) * 0.12;
@@ -27746,6 +27806,73 @@ export class ThreeGame {
         if (signalPool?.instanceColor) signalPool.instanceColor.needsUpdate = true;
     }
 
+    addRoomThresholdMarkings(group, chunkX, chunkY, metadata) {
+        const rooms = metadata?.roomInstances ?? [];
+        if (!group || rooms.length === 0 || !this.roomThresholdMarkingGeometry) return;
+        const centerX = chunkX * this.chunkSize + this.chunkSize * 0.5;
+        const centerZ = chunkY * this.chunkSize + this.chunkSize * 0.5;
+        const biome = this.getBiomeKeyForWorldPosition(centerX, centerZ);
+        const markings = rooms.flatMap((room) => planRoomThresholdMarkings(room, { biome }));
+        if (markings.length === 0) return;
+        const pool = new THREE.InstancedMesh(
+            this.roomThresholdMarkingGeometry,
+            this.roomThresholdMarkingMaterial,
+            markings.length
+        );
+        markings.forEach((marking, index) => {
+            pool.setMatrixAt(index, new THREE.Matrix4().compose(
+                new THREE.Vector3(
+                    chunkX * this.chunkSize + marking.x,
+                    0.025,
+                    chunkY * this.chunkSize + marking.z
+                ),
+                new THREE.Quaternion().setFromEuler(new THREE.Euler(0, marking.rotationY, 0)),
+                new THREE.Vector3(0.42, 0.025, 0.075)
+            ));
+            pool.setColorAt(index, new THREE.Color(marking.color));
+        });
+        pool.instanceMatrix.needsUpdate = true;
+        pool.instanceColor.needsUpdate = true;
+        pool.userData = {
+            isRoomThresholdMarkingPool: true,
+            markingCount: markings.length,
+            roles: [...new Set(markings.map((marking) => marking.role))]
+        };
+        group.add(pool);
+    }
+
+    addRoomEnvironmentalDrips(group, chunkX, chunkY, metadata) {
+        const rooms = metadata?.roomInstances ?? [];
+        if (!group || rooms.length === 0 || !this.environmentDripGeometry) return;
+        const centerX = chunkX * this.chunkSize + this.chunkSize * 0.5;
+        const centerZ = chunkY * this.chunkSize + this.chunkSize * 0.5;
+        const biome = this.getBiomeKeyForWorldPosition(centerX, centerZ);
+        const drips = rooms.flatMap((room) => planRoomEnvironmentalDrips(room, { biome }));
+        if (drips.length === 0) return;
+        const pool = new THREE.InstancedMesh(
+            this.environmentDripGeometry,
+            this.environmentDripMaterial,
+            drips.length
+        );
+        drips.forEach((drip, index) => {
+            pool.setMatrixAt(index, new THREE.Matrix4().makeTranslation(
+                chunkX * this.chunkSize + drip.x,
+                this.wallHeight - 0.34,
+                chunkY * this.chunkSize + drip.z
+            ));
+            pool.setColorAt(index, new THREE.Color(drip.color));
+        });
+        pool.instanceMatrix.needsUpdate = true;
+        pool.instanceColor.needsUpdate = true;
+        pool.frustumCulled = false;
+        pool.userData = {
+            isRoomEnvironmentalDripPool: true,
+            dripCount: drips.length,
+            biome
+        };
+        group.add(pool);
+    }
+
     addRoomSurfaceOverlays(group, chunkX, chunkY, metadata) {
         const rooms = metadata?.roomInstances ?? [];
         if (rooms.length === 0) return;
@@ -29084,6 +29211,18 @@ export class ThreeGame {
             chunkY,
             this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
         );
+        this.addRoomThresholdMarkings(
+            group,
+            chunkX,
+            chunkY,
+            this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
+        );
+        this.addRoomEnvironmentalDrips(
+            group,
+            chunkX,
+            chunkY,
+            this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
+        );
         this.addHallwayRouteDressing(
             group,
             chunkX,
@@ -29189,7 +29328,11 @@ export class ThreeGame {
         const ventMatrices = [];
         const pipeMatrices = [];
         const doorPanelMatrices = [];
-        const doorPortalHeaderMatrices = [];
+        const doorPortalHeaderMatrices = new Map([
+            ['ordinary', []],
+            ['route', []],
+            ['locked', []]
+        ]);
         let chunkPortalLightPlanned = false;
         const cutawayCapMatrices = [];
         const cutawayCapEntries = [];
@@ -29383,13 +29526,17 @@ export class ThreeGame {
                     doorMesh.userData.proceduralDoorButtons = doorButtons;
                     this.attachProceduralDoorRibs(doorMesh, horizontal);
 
-                    doorPortalHeaderMatrices.push(new THREE.Matrix4().compose(
-                        new THREE.Vector3(worldX, this.wallHeight + 0.18, worldZ),
+                    const portalImportance = persistedDoor?.lock
+                        ? 'locked'
+                        : (persistedDoor?.ringCrossingId || persistedDoor?.gateId ? 'route' : 'ordinary');
+                    const portalThickness = portalImportance === 'ordinary' ? 0.07 : portalImportance === 'route' ? 0.1 : 0.14;
+                    doorPortalHeaderMatrices.get(portalImportance).push(new THREE.Matrix4().compose(
+                        new THREE.Vector3(worldX, this.wallHeight + 0.12 + portalThickness * 0.5, worldZ),
                         new THREE.Quaternion(),
                         new THREE.Vector3(
-                            horizontal ? 3.2 : 0.16,
-                            0.1,
-                            horizontal ? 0.16 : 3.2
+                            horizontal ? 3.2 : portalThickness,
+                            portalThickness,
+                            horizontal ? portalThickness : 3.2
                         )
                     ));
                     if (!chunkPortalLightPlanned && persistedDoor?.lock) {
@@ -29910,19 +30057,21 @@ export class ThreeGame {
             group.add(panelPool);
         }
 
-        if (doorPortalHeaderMatrices.length > 0) {
+        for (const [importance, matrices] of doorPortalHeaderMatrices) {
+            if (matrices.length === 0) continue;
             const headerPool = new THREE.InstancedMesh(
                 this.doorPortalHeaderGeometry,
-                this.doorPortalHeaderMaterial,
-                doorPortalHeaderMatrices.length
+                this.doorPortalHeaderMaterials[importance],
+                matrices.length
             );
-            doorPortalHeaderMatrices.forEach((matrix, index) => headerPool.setMatrixAt(index, matrix));
+            matrices.forEach((matrix, index) => headerPool.setMatrixAt(index, matrix));
             headerPool.instanceMatrix.needsUpdate = true;
             headerPool.castShadow = false;
             headerPool.receiveShadow = false;
             headerPool.userData = {
                 isDoorPortalHeaderPool: true,
-                headerCount: doorPortalHeaderMatrices.length
+                headerCount: matrices.length,
+                importance
             };
             group.add(headerPool);
         }
@@ -39646,10 +39795,14 @@ export class ThreeGame {
         this.hallwayDressingMaterial?.dispose();
         this.hallwayCableMaterial?.dispose();
         this.hallwaySignalMaterial?.dispose();
+        this.roomThresholdMarkingGeometry?.dispose();
+        this.roomThresholdMarkingMaterial?.dispose();
+        this.environmentDripGeometry?.dispose();
+        this.environmentDripMaterial?.dispose();
         this.doorPanelGeometry?.dispose();
         this.doorPanelMaterial?.dispose();
         this.doorPortalHeaderGeometry?.dispose();
-        this.doorPortalHeaderMaterial?.dispose();
+        Object.values(this.doorPortalHeaderMaterials ?? {}).forEach((material) => material?.dispose?.());
         this.doorRibGeometry?.dispose();
         this.doorRibMaterial?.dispose();
         this.doorStatusBarGeometry?.dispose();
