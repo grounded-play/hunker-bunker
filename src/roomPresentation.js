@@ -46,8 +46,14 @@ export function planRoomPracticalLights(room, { biome = 'active' } = {}) {
     const centerY = (bounds.minY + bounds.maxY) / 2;
     const offsets = fixtureCount === 2 ? [-0.24, 0.24] : [0];
     const fixtures = offsets.map((offset) => {
-        const targetX = longAxis === 'x' ? centerX + (width - 1) * offset : centerX;
-        const targetY = longAxis === 'y' ? centerY + (depth - 1) * offset : centerY;
+        // Keep the luminous strips against a consistent architectural edge,
+        // not floating over the room centre where the generator has no ceiling.
+        const targetX = longAxis === 'x'
+            ? centerX + (width - 1) * offset
+            : bounds.minX;
+        const targetY = longAxis === 'y'
+            ? centerY + (depth - 1) * offset
+            : bounds.minY;
         const cell = closestCell(cells, targetX, targetY);
         return {
             x: cell.x,
@@ -83,13 +89,25 @@ export function isDefaultCameraFacingRoomWall(cell, room) {
         || interior.has(`${cell.x},${cell.y - 1}`);
 }
 
-export function planDefaultRoomCutawayCells(room, grid) {
+export function cameraCutawayQuadrant(azimuth = Math.PI / 4, previous = null, hysteresis = 0.08) {
+    const x = Math.sin(azimuth);
+    const z = Math.cos(azimuth);
+    let zSide = z >= 0 ? 's' : 'n';
+    let xSide = x >= 0 ? 'e' : 'w';
+    if (previous && Math.abs(z) < hysteresis) zSide = previous[0];
+    if (previous && Math.abs(x) < hysteresis) xSide = previous[1];
+    return `${zSide}${xSide}`;
+}
+
+export function planRoomCutawayCells(room, grid, quadrant = 'se') {
     if (!room?.interior?.length || !grid) return [];
     const cells = new Map();
+    const xStep = quadrant.includes('e') ? 1 : -1;
+    const yStep = quadrant.includes('s') ? 1 : -1;
     for (const interior of room.interior) {
         for (const candidate of [
-            { x: interior.x + 1, y: interior.y },
-            { x: interior.x, y: interior.y + 1 }
+            { x: interior.x + xStep, y: interior.y },
+            { x: interior.x, y: interior.y + yStep }
         ]) {
             if (grid[candidate.y]?.[candidate.x] === '#') {
                 cells.set(`${candidate.x},${candidate.y}`, candidate);
@@ -97,6 +115,21 @@ export function planDefaultRoomCutawayCells(room, grid) {
         }
     }
     return [...cells.values()];
+}
+
+export function planRoomBoundaryCells(room, grid) {
+    if (!room?.interior?.length || !grid) return [];
+    const cells = new Map();
+    for (const quadrant of ['se', 'sw', 'ne', 'nw']) {
+        for (const cell of planRoomCutawayCells(room, grid, quadrant)) {
+            cells.set(`${cell.x},${cell.y}`, cell);
+        }
+    }
+    return [...cells.values()];
+}
+
+export function planDefaultRoomCutawayCells(room, grid) {
+    return planRoomCutawayCells(room, grid, 'se');
 }
 
 export const ROOM_CUTAWAY_HEIGHT = 0.82;

@@ -23,6 +23,12 @@ describe('Visual Overhaul Phase B & D (Surface Depth & Grade)', () => {
             expect(threeGameSource).toContain('normal = normalize(normal + hbFloorNormalPerturb)');
         });
 
+        it('adds deterministic wet patches to authored room floors without overlay meshes', () => {
+            expect(threeGameSource).toContain('float hbRoomWetMask(vec2 worldXZ)');
+            expect(threeGameSource).toContain('diffuseColor.rgb *= mix(1.0, 0.78, hbRoomWet)');
+            expect(threeGameSource).toContain('roughnessFactor = mix(roughnessFactor, 0.1, hbRoomWetRoughness)');
+        });
+
         it('injects vascular pulsation into floor emissive radiance', () => {
             expect(threeGameSource).toContain('vec3 bioVeinColor = vec3(1.0, 0.44, 0.08)');
             expect(threeGameSource).toContain('totalEmissiveRadiance += vec3(0.0, 0.7, 0.85) * glowIntensity * 1.35 + bioVeinColor');

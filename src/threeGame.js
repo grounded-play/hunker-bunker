@@ -13,7 +13,9 @@ import { getControllerGlyphLabel } from './inputGlyphs.js';
 import { loadAccessibilitySettings } from './accessibilitySettings.js';
 import { hasVisibleTacticalRepresentation, tacticalNameForObject } from './tacticalTargetLabels.js';
 import {
-    planDefaultRoomCutawayCells,
+    cameraCutawayQuadrant,
+    planRoomBoundaryCells,
+    planRoomCutawayCells,
     planRoomPracticalLights,
     ROOM_CUTAWAY_HEIGHT
 } from './roomPresentation.js';
@@ -847,6 +849,20 @@ const ROOM_FLOOR_MATERIAL_FAMILY = Object.freeze({
     'bio-hive': 'site:hive',
     camp: 'site:camp',
     storage: 'utility'
+});
+const ROOM_FLOOR_WETNESS = Object.freeze({
+    hallway: 0.38,
+    'bunker-standard': 0.52,
+    'bunker-utility': 0.68,
+    'bunker-medical': 0.24,
+    'bunker-security': 0.42,
+    'bunker-storage': 0.46,
+    'cryo-rough': 0.34,
+    'cryo-tile': 0.28,
+    'bio-resin': 0.72,
+    'bio-hive': 0.78,
+    camp: 0.2,
+    storage: 0.44
 });
 const GENERATED_ROOM_PROP_PATHS = Object.freeze({
     prop_medical_bed: '/prop_medical_bed.png',
@@ -1691,6 +1707,14 @@ export class ThreeGame {
         this.ventGeometry = new THREE.BoxGeometry(0.48, 0.48, 0.06);
         this.pipeGeometry = new THREE.CylinderGeometry(0.06, 0.06, this.wallHeight, 6);
         this.roomLightFixtureGeometry = new THREE.BoxGeometry(1.05, 0.06, 0.12);
+        this.roomLightHousingGeometry = new THREE.BoxGeometry(1.18, 0.12, 0.2);
+        this.roomLightHousingMaterial = new THREE.MeshStandardMaterial({
+            color: 0x090e12,
+            emissive: 0x010305,
+            emissiveIntensity: 0.08,
+            metalness: 0.82,
+            roughness: 0.34
+        });
         this.roomLightFixtureMaterials = new Map([
             ['active', new THREE.MeshStandardMaterial({
                 color: 0xbfefff,
@@ -1729,6 +1753,14 @@ export class ThreeGame {
         // Pre-allocated geometries/materials to optimize runtime chunk loading (avoid stutters)
         this.doorPanelGeometry = new THREE.BoxGeometry(0.38, 0.58, 0.24);
         this.doorPanelMaterial = new THREE.MeshStandardMaterial({ color: 0x12191f, emissive: 0x07141a, metalness: 0.78, roughness: 0.38 });
+        this.doorPortalHeaderGeometry = new THREE.BoxGeometry(1, 1, 1);
+        this.doorPortalHeaderMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffd18a,
+            emissive: 0xff9d32,
+            emissiveIntensity: 1.85,
+            metalness: 0.48,
+            roughness: 0.24
+        });
         this.doorRibGeometry = new THREE.BoxGeometry(0.08, 1.02, 1.1);
         this.doorRibMaterial = new THREE.MeshStandardMaterial({
             color: 0x11161b,
@@ -1739,23 +1771,23 @@ export class ThreeGame {
         this.doorButtonGeometry = new THREE.CircleGeometry(0.11, 16);
         this.doorStatusMaterials = {
             open: new THREE.MeshStandardMaterial({
-                color: 0x00e5ff,
+                color: 0x0a6570,
                 emissive: 0x00e5ff,
-                emissiveIntensity: 2.4,
+                emissiveIntensity: 1.45,
                 metalness: 0.35,
                 roughness: 0.28
             }),
             closed: new THREE.MeshStandardMaterial({
-                color: 0xff2a00,
+                color: 0x6f1608,
                 emissive: 0xff2a00,
-                emissiveIntensity: 2.4,
+                emissiveIntensity: 1.45,
                 metalness: 0.35,
                 roughness: 0.28
             }),
             locked: new THREE.MeshStandardMaterial({
-                color: 0xffaa00,
+                color: 0x704a00,
                 emissive: 0xffaa00,
-                emissiveIntensity: 2.4,
+                emissiveIntensity: 1.45,
                 metalness: 0.35,
                 roughness: 0.28
             })
@@ -1785,6 +1817,7 @@ export class ThreeGame {
         this.cameraLift = 12.5;
         this.cameraOrbitRadius = Math.hypot(8, 8);
         this.cameraAzimuth = Math.atan2(8, 8);
+        this._roomCutawayQuadrant = cameraCutawayQuadrant(this.cameraAzimuth);
         this.cameraRotationInput = 0;
         this._cameraOrbitPointerDelta = 0;
         this.cameraMode = 'third-person';
@@ -26611,6 +26644,75 @@ export class ThreeGame {
         if (this.handleMenuPointerMove) window.removeEventListener('pointermove', this.handleMenuPointerMove);
     }
 
+    updateRoomCutawaysForCamera({ force = false } = {}) {
+        const quadrant = cameraCutawayQuadrant(
+            this.cameraAzimuth,
+            this._roomCutawayQuadrant
+        );
+        if (!force && quadrant === this._roomCutawayQuadrant) return 0;
+        this._roomCutawayQuadrant = quadrant;
+        const wallQuaternion = new THREE.Quaternion();
+        const changedWallPools = new Set();
+        let changed = 0;
+
+        for (const group of this.chunkMeshes?.values?.() ?? []) {
+            const presentation = group.userData?.roomCutawayPresentation;
+            if (!presentation || (!force && presentation.quadrant === quadrant)) continue;
+            const cutawayKeys = presentation.cutawayWallKeysByQuadrant?.[quadrant] ?? new Set();
+
+            for (const record of presentation.wallRecords ?? []) {
+                const state = record.roomWallPresentation;
+                if (!state || !record.instancedMesh || record.instanceIndex < 0) continue;
+                const isCutaway = !record.destroyed && cutawayKeys.has(record.wallKey);
+                const visualHeightScale = isCutaway
+                    ? ROOM_CUTAWAY_HEIGHT / this.wallHeight
+                    : state.fullHeightScale;
+                const wallMatrix = record.destroyed
+                    ? new THREE.Matrix4().makeScale(0, 0, 0)
+                    : new THREE.Matrix4().compose(
+                        new THREE.Vector3(
+                            record.worldX + state.offsetX,
+                            (this.wallHeight * visualHeightScale) / 2,
+                            record.worldZ + state.offsetZ
+                        ),
+                        wallQuaternion.setFromEuler(new THREE.Euler(0, state.rotationY, 0)),
+                        new THREE.Vector3(1, visualHeightScale, 1)
+                    );
+                record.instancedMesh.setMatrixAt(record.instanceIndex, wallMatrix);
+                changedWallPools.add(record.instancedMesh);
+
+                const capIndex = presentation.capIndexByWallKey?.get(record.wallKey);
+                if (Number.isInteger(capIndex)) {
+                    const capMatrix = isCutaway
+                        ? new THREE.Matrix4().compose(
+                            new THREE.Vector3(
+                                record.worldX + state.offsetX,
+                                ROOM_CUTAWAY_HEIGHT + 0.04,
+                                record.worldZ + state.offsetZ
+                            ),
+                            wallQuaternion.setFromEuler(new THREE.Euler(0, state.rotationY, 0)),
+                            new THREE.Vector3(1, 1, 1)
+                        )
+                        : new THREE.Matrix4().makeScale(0, 0, 0);
+                    presentation.capPool.setMatrixAt(capIndex, capMatrix);
+                }
+                changed += 1;
+            }
+
+            presentation.capPool.instanceMatrix.needsUpdate = true;
+            presentation.capPool.computeBoundingBox?.();
+            presentation.capPool.computeBoundingSphere?.();
+            presentation.quadrant = quadrant;
+        }
+
+        for (const pool of changedWallPools) {
+            pool.instanceMatrix.needsUpdate = true;
+            pool.computeBoundingBox?.();
+            pool.computeBoundingSphere?.();
+        }
+        return changed;
+    }
+
     updateCamera(delta) {
         const pointerOrbitDelta = this._cameraOrbitPointerDelta ?? 0;
         this._cameraOrbitPointerDelta = 0;
@@ -26662,6 +26764,7 @@ export class ThreeGame {
             this.cameraLift,
             this.cameraOrbitRadius * Math.cos(this.cameraAzimuth)
         );
+        this.updateRoomCutawaysForCamera?.();
 
         const cinematicFocus = this._cinematicCameraFocus;
         if (this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person') {
@@ -27272,10 +27375,12 @@ export class ThreeGame {
         });
         if (family) {
             const atlasOffset = atlasSlot;
+            const wetness = ROOM_FLOOR_WETNESS[style] ?? 0.45;
             material.onBeforeCompile = (shader) => {
                 shader.uniforms.uRoomAtlasOffset = {
                     value: new THREE.Vector2(atlasOffset.x, atlasOffset.y)
                 };
+                shader.uniforms.uRoomWetness = { value: wetness };
                 shader.vertexShader = shader.vertexShader.replace(
                     'void main() {',
                     `
@@ -27297,6 +27402,25 @@ export class ThreeGame {
                 shader.fragmentShader = `
                     varying vec3 vRoomFloorWorldPos;
                     uniform vec2 uRoomAtlasOffset;
+                    uniform float uRoomWetness;
+                    float hbRoomWetHash(vec2 point) {
+                        return fract(sin(dot(point, vec2(127.1, 311.7))) * 43758.5453123);
+                    }
+                    float hbRoomWetNoise(vec2 point) {
+                        vec2 cell = floor(point);
+                        vec2 blend = fract(point);
+                        blend = blend * blend * (3.0 - 2.0 * blend);
+                        return mix(
+                            mix(hbRoomWetHash(cell), hbRoomWetHash(cell + vec2(1.0, 0.0)), blend.x),
+                            mix(hbRoomWetHash(cell + vec2(0.0, 1.0)), hbRoomWetHash(cell + vec2(1.0, 1.0)), blend.x),
+                            blend.y
+                        );
+                    }
+                    float hbRoomWetMask(vec2 worldXZ) {
+                        float broad = hbRoomWetNoise(worldXZ * 0.32);
+                        float breakup = hbRoomWetNoise(worldXZ * 0.91 + vec2(17.0, 31.0));
+                        return smoothstep(0.57, 0.78, broad * 0.78 + breakup * 0.22);
+                    }
                     ${shader.fragmentShader}
                 `;
                 shader.fragmentShader = shader.fragmentShader.replace(
@@ -27314,11 +27438,22 @@ export class ThreeGame {
                             sampledDiffuseColor = sRGBTransferEOTF(sampledDiffuseColor);
                         #endif
                         diffuseColor *= sampledDiffuseColor;
+                        float hbRoomWet = hbRoomWetMask(vRoomFloorWorldPos.xz) * uRoomWetness;
+                        diffuseColor.rgb *= mix(1.0, 0.78, hbRoomWet);
                     #endif
+                    `
+                );
+                shader.fragmentShader = shader.fragmentShader.replace(
+                    '#include <roughnessmap_fragment>',
+                    `
+                    #include <roughnessmap_fragment>
+                    float hbRoomWetRoughness = hbRoomWetMask(vRoomFloorWorldPos.xz) * uRoomWetness;
+                    roughnessFactor = mix(roughnessFactor, 0.1, hbRoomWetRoughness);
                     `
                 );
             };
             material.customProgramCacheKey = () => `room-floor-world-uv:${family}`;
+            material.userData.roomWetness = wetness;
         }
         material.userData.ownsRoomAtlasTexture = Boolean(family);
         this.roomFloorMaterials.set(key, material);
@@ -27332,6 +27467,7 @@ export class ThreeGame {
         const centerZ = chunkY * this.chunkSize + this.chunkSize * 0.5;
         const biome = this.getBiomeKeyForWorldPosition(centerX, centerZ);
         const matricesByPalette = new Map();
+        const housingMatrices = [];
         const rotation = new THREE.Quaternion();
         const scale = new THREE.Vector3(1, 1, 1);
 
@@ -27340,10 +27476,19 @@ export class ThreeGame {
             for (const fixture of plan.fixtures) {
                 if (!matricesByPalette.has(fixture.paletteKey)) matricesByPalette.set(fixture.paletteKey, []);
                 rotation.setFromEuler(new THREE.Euler(0, fixture.rotationY, 0));
+                housingMatrices.push(new THREE.Matrix4().compose(
+                    new THREE.Vector3(
+                        chunkX * this.chunkSize + fixture.x,
+                        this.wallHeight - 0.38,
+                        chunkY * this.chunkSize + fixture.z
+                    ),
+                    rotation,
+                    scale
+                ));
                 matricesByPalette.get(fixture.paletteKey).push(new THREE.Matrix4().compose(
                     new THREE.Vector3(
                         chunkX * this.chunkSize + fixture.x,
-                        this.wallHeight - 0.24,
+                        this.wallHeight - 0.31,
                         chunkY * this.chunkSize + fixture.z
                     ),
                     rotation,
@@ -27366,6 +27511,23 @@ export class ThreeGame {
                 group.add(source);
                 this.registerEnvLight?.(source);
             }
+        }
+
+        if (housingMatrices.length > 0) {
+            const housings = new THREE.InstancedMesh(
+                this.roomLightHousingGeometry,
+                this.roomLightHousingMaterial,
+                housingMatrices.length
+            );
+            housingMatrices.forEach((matrix, index) => housings.setMatrixAt(index, matrix));
+            housings.instanceMatrix.needsUpdate = true;
+            housings.castShadow = false;
+            housings.receiveShadow = true;
+            housings.userData = {
+                isRoomPracticalLightHousingPool: true,
+                housingCount: housingMatrices.length
+            };
+            group.add(housings);
         }
 
         for (const [paletteKey, matrices] of matricesByPalette) {
@@ -27598,7 +27760,9 @@ export class ThreeGame {
         variant = 'standard',
         heightScale = 1,
         roomId = null,
-        roomWallStyle = null
+        roomWallStyle = null,
+        roomBoundary = false,
+        roomWallPresentation = null
     } = {}) {
         const maxHp = this.getWallMaxHp({ landform, variant, heightScale });
         const record = {
@@ -27618,6 +27782,8 @@ export class ThreeGame {
             chunkKey: `${chunkX},${chunkY}`,
             roomId,
             roomWallStyle,
+            roomBoundary,
+            roomWallPresentation,
             destroyed: false,
             instancedMesh: null,
             instanceIndex: -1
@@ -27849,6 +28015,16 @@ export class ThreeGame {
             if (this.wallMeshes) {
                 this.wallMeshes = this.wallMeshes.filter((candidate) => candidate !== wallMesh);
             }
+        }
+        const cutawayPresentation = this.chunkMeshes?.get?.(coord.key)
+            ?.userData?.roomCutawayPresentation;
+        const capIndex = cutawayPresentation?.capIndexByWallKey?.get?.(wallKey);
+        if (Number.isInteger(capIndex)) {
+            cutawayPresentation.capPool.setMatrixAt(
+                capIndex,
+                new THREE.Matrix4().makeScale(0, 0, 0)
+            );
+            cutawayPresentation.capPool.instanceMatrix.needsUpdate = true;
         }
         this._chunkRoomTypeCache?.delete(coord.key);
         this._chunkTemplateCache?.delete(coord.key);
@@ -28550,11 +28726,30 @@ export class ThreeGame {
         // tall and unbroken. Same shared geometries, different mix.
         const landform = this.getChunkLandform(chunkX, chunkY);
         const chunkRoomMetadata = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
-        const foregroundRoomWallCells = new Set(
+        const cutawayQuadrant = this._roomCutawayQuadrant
+            ?? cameraCutawayQuadrant(this.cameraAzimuth);
+        const roomBoundaryWallCells = new Set(
             (chunkRoomMetadata?.roomInstances ?? []).flatMap((room) => (
-                planDefaultRoomCutawayCells(room, grid)
+                planRoomBoundaryCells(room, grid)
                     .map((cell) => `${cell.x},${cell.y}`)
             ))
+        );
+        const cutawayWallKeysByQuadrant = Object.fromEntries(
+            ['se', 'sw', 'ne', 'nw'].map((quadrant) => [
+                quadrant,
+                new Set((chunkRoomMetadata?.roomInstances ?? []).flatMap((room) => (
+                    planRoomCutawayCells(room, grid, quadrant).map((cell) => this.getWallKey(
+                        chunkX * this.chunkSize + cell.x,
+                        chunkY * this.chunkSize + cell.y
+                    ))
+                )))
+            ])
+        );
+        const foregroundRoomWallCells = new Set(
+            [...(cutawayWallKeysByQuadrant[cutawayQuadrant] ?? [])].map((wallKey) => {
+                const [worldX, worldZ] = wallKey.split(',').map(Number);
+                return `${worldX - chunkX * this.chunkSize},${worldZ - chunkY * this.chunkSize}`;
+            })
         );
         this.maybeSpawnChunkLoreDrop(chunkX, chunkY, grid, landform);
         // holeCut is derived from the shared getHoleCutForLandform helper so
@@ -28787,7 +28982,10 @@ export class ThreeGame {
         const ventMatrices = [];
         const pipeMatrices = [];
         const doorPanelMatrices = [];
+        const doorPortalHeaderMatrices = [];
+        let chunkPortalLightPlanned = false;
         const cutawayCapMatrices = [];
+        const cutawayCapEntries = [];
         const decorationScratch = new THREE.Matrix4();
 
         const pushDecorationMatrix = (type, wallMatrix, roomInfo, localMatrix) => {
@@ -28978,6 +29176,27 @@ export class ThreeGame {
                     doorMesh.userData.proceduralDoorButtons = doorButtons;
                     this.attachProceduralDoorRibs(doorMesh, horizontal);
 
+                    doorPortalHeaderMatrices.push(new THREE.Matrix4().compose(
+                        new THREE.Vector3(worldX, this.wallHeight + 0.18, worldZ),
+                        new THREE.Quaternion(),
+                        new THREE.Vector3(
+                            horizontal ? 3.2 : 0.16,
+                            0.1,
+                            horizontal ? 0.16 : 3.2
+                        )
+                    ));
+                    if (!chunkPortalLightPlanned && persistedDoor?.lock) {
+                        const portalLight = new THREE.PointLight(0xffa648, 1.15, 5.5, 2);
+                        portalLight.position.set(worldX, 2.25, worldZ);
+                        portalLight.userData = {
+                            isPortalPracticalLightSource: true,
+                            proceduralDoorId: persistedDoor.id ?? null
+                        };
+                        group.add(portalLight);
+                        this.registerEnvLight?.(portalLight);
+                        chunkPortalLightPlanned = true;
+                    }
+
                     for (const side of [-1, 1]) {
                         const panelWorldX = worldX + (horizontal ? -1.72 : side * 0.78);
                         const panelWorldZ = worldZ + (horizontal ? side * 0.78 : -1.72);
@@ -29031,9 +29250,11 @@ export class ThreeGame {
 
                 const wallTypeRng = this.createSeededRandom(this.hashTile(worldX, worldZ) + 999);
                 const wallTypeRoll = wallTypeRng();
-                const isForegroundRoomWall = foregroundRoomWallCells.has(`${localX},${localY}`);
+                const localWallKey = `${localX},${localY}`;
+                const isRoomBoundaryWall = roomBoundaryWallCells.has(localWallKey);
+                const isForegroundRoomWall = foregroundRoomWallCells.has(localWallKey);
 
-                if (!isForegroundRoomWall && wallTypeRoll < holeCut) {
+                if (!isRoomBoundaryWall && wallTypeRoll < holeCut) {
                     if (this.filledHoleKeys?.has(this.getWallKey(worldX, worldZ))) {
                         flatOverlayMatrices.push(new THREE.Matrix4().compose(
                             new THREE.Vector3(worldX, 0.005, worldZ),
@@ -29075,7 +29296,7 @@ export class ThreeGame {
                             this.scatterSprites.push(vent);
                         }
                     }
-                } else if (!isForegroundRoomWall && wallTypeRoll < hazardCut) {
+                } else if (!isRoomBoundaryWall && wallTypeRoll < hazardCut) {
                     // Hazard Wall (pulsing warning siren) — stays an individual
                     // Mesh: rare, and carries a live-animated child (siren dome).
                     const wall = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
@@ -29106,7 +29327,7 @@ export class ThreeGame {
                     const sirenDome = new THREE.Mesh(this.sirenDomeGeometry, this.sirenDomeMaterial);
                     sirenDome.position.y = this.wallHeight / 2 + 0.14;
                     wall.add(sirenDome);
-                } else if (!isForegroundRoomWall && wallTypeRoll < damagedCut) {
+                } else if (!isRoomBoundaryWall && wallTypeRoll < damagedCut) {
                     // Damaged Wall (ruins with rubble debris) — instanced.
                     const shortHeightMult = 0.45 + wallTypeRng() * 0.25;
                     const damagedHeight = this.wallHeight * shortHeightMult;
@@ -29164,19 +29385,35 @@ export class ThreeGame {
                     } else if (landform === LANDFORMS.CRATER) {
                         heightScale = 0.88 + wallTypeRng() * 0.40;
                     }
-                    if (isForegroundRoomWall) heightScale = ROOM_CUTAWAY_HEIGHT / this.wallHeight;
+                    if (isRoomBoundaryWall) heightScale = Math.max(1, heightScale);
+                    const visualHeightScale = isForegroundRoomWall
+                        ? ROOM_CUTAWAY_HEIGHT / this.wallHeight
+                        : heightScale;
                     const jitter = this.computeExteriorWallJitter(worldX, worldZ);
                     const standardMatrix = new THREE.Matrix4().compose(
-                        new THREE.Vector3(worldX + jitter.offsetX, (this.wallHeight * heightScale) / 2, worldZ + jitter.offsetZ),
+                        new THREE.Vector3(
+                            worldX + jitter.offsetX,
+                            (this.wallHeight * visualHeightScale) / 2,
+                            worldZ + jitter.offsetZ
+                        ),
                         new THREE.Quaternion().setFromEuler(new THREE.Euler(0, jitter.rotationY, 0)),
-                        new THREE.Vector3(1, heightScale, 1)
+                        new THREE.Vector3(1, visualHeightScale, 1)
                     );
                     pushWallInstanceMatrix(standardMatrix, {
                         chunkX, chunkY, localX, localY, worldX, worldZ, landform,
-                        variant: 'standard', heightScale
+                        variant: 'standard',
+                        heightScale,
+                        roomBoundary: isRoomBoundaryWall,
+                        roomWallPresentation: isRoomBoundaryWall ? {
+                            offsetX: jitter.offsetX,
+                            offsetZ: jitter.offsetZ,
+                            rotationY: jitter.rotationY,
+                            fullHeightScale: heightScale
+                        } : null
                     });
-                    if (isForegroundRoomWall) {
-                        cutawayCapMatrices.push(new THREE.Matrix4().compose(
+                    if (isRoomBoundaryWall) {
+                        const capMatrix = isForegroundRoomWall
+                            ? new THREE.Matrix4().compose(
                             new THREE.Vector3(
                                 worldX + jitter.offsetX,
                                 ROOM_CUTAWAY_HEIGHT + 0.04,
@@ -29184,17 +29421,27 @@ export class ThreeGame {
                             ),
                             new THREE.Quaternion().setFromEuler(new THREE.Euler(0, jitter.rotationY, 0)),
                             new THREE.Vector3(1, 1, 1)
-                        ));
+                        )
+                            : new THREE.Matrix4().makeScale(0, 0, 0);
+                        cutawayCapMatrices.push(capMatrix);
+                        cutawayCapEntries.push({
+                            wallKey: this.getWallKey(worldX, worldZ),
+                            worldX,
+                            worldZ,
+                            offsetX: jitter.offsetX,
+                            offsetZ: jitter.offsetZ,
+                            rotationY: jitter.rotationY
+                        });
                     }
 
                     const rng = this.createSeededRandom(this.hashTile(worldX, worldZ));
                     const roll = rng();
-                    if (!isForegroundRoomWall && roll < 0.12) {
+                    if (!isRoomBoundaryWall && roll < 0.12) {
                         const cx = (rng() < 0.5 ? -0.5 : 0.5);
                         const cz = (rng() < 0.5 ? -0.5 : 0.5);
                         pushDecorationMatrix('pillar', standardMatrix, roomStyleIdFor(chunkX, chunkY, localX, localY),
                             new THREE.Matrix4().makeTranslation(cx, 0, cz));
-                    } else if (!isForegroundRoomWall && roll < 0.24) {
+                    } else if (!isRoomBoundaryWall && roll < 0.24) {
                         const faceRoll = Math.floor(rng() * 4);
                         const bracketLocal = new THREE.Matrix4();
                         if (faceRoll === 0) {
@@ -29215,7 +29462,7 @@ export class ThreeGame {
                             bracketLocal.makeTranslation(0, (rng() - 0.5) * 1.5, -0.5);
                         }
                         pushDecorationMatrix('bracket', standardMatrix, roomStyleIdFor(chunkX, chunkY, localX, localY), bracketLocal);
-                    } else if (!isForegroundRoomWall && roll < 0.32) {
+                    } else if (!isRoomBoundaryWall && roll < 0.32) {
                         const faceRoll = Math.floor(rng() * 4);
                         const vy = 0.4 + rng() * 0.6;
                         const ventLocal = new THREE.Matrix4();
@@ -29237,7 +29484,7 @@ export class ThreeGame {
                             ventLocal.makeTranslation(0, vy, -0.501);
                         }
                         pushDecorationMatrix('vent', standardMatrix, null, ventLocal);
-                    } else if (!isForegroundRoomWall && roll < 0.38) {
+                    } else if (!isRoomBoundaryWall && roll < 0.38) {
                         const faceRoll = Math.floor(rng() * 4);
                         const pipeLocal = new THREE.Matrix4();
                         if (faceRoll === 0) {
@@ -29329,6 +29576,7 @@ export class ThreeGame {
         }
 
         const landformShaderId = LANDFORM_SHADER_ID[landform] ?? 0;
+        const roomBoundaryRecords = [];
         for (const [roomStyleId, matrices] of wallMatricesByRoomStyle.entries()) {
             const metaList = wallMetaByRoomStyle.get(roomStyleId);
             const pool = new THREE.InstancedMesh(this.wallGeometry, this.wallMaterial, matrices.length);
@@ -29356,10 +29604,12 @@ export class ThreeGame {
                 record.instancedMesh = pool;
                 record.instanceIndex = idx;
                 this._wallInstanceIndex.set(record.wallKey, record);
+                if (record.roomBoundary) roomBoundaryRecords.push(record);
             });
             group.add(pool);
         }
 
+        let cutawayCapPool = null;
         if (cutawayCapMatrices.length > 0) {
             const caps = new THREE.InstancedMesh(
                 this.roomCutawayCapGeometry,
@@ -29375,6 +29625,20 @@ export class ThreeGame {
                 capCount: cutawayCapMatrices.length
             };
             group.add(caps);
+            cutawayCapPool = caps;
+        }
+
+        if (roomBoundaryRecords.length > 0 && cutawayCapPool) {
+            group.userData.roomCutawayPresentation = {
+                quadrant: cutawayQuadrant,
+                wallRecords: roomBoundaryRecords,
+                capPool: cutawayCapPool,
+                capEntries: cutawayCapEntries,
+                capIndexByWallKey: new Map(
+                    cutawayCapEntries.map((entry, index) => [entry.wallKey, index])
+                ),
+                cutawayWallKeysByQuadrant
+            };
         }
 
         for (const [roomStyleId, matrices] of pillarMatricesByRoomStyle.entries()) {
@@ -29437,6 +29701,23 @@ export class ThreeGame {
             panelPool.instanceMatrix.needsUpdate = true;
             panelPool.userData = { isDoorDecoration: true, decorationType: 'panel' };
             group.add(panelPool);
+        }
+
+        if (doorPortalHeaderMatrices.length > 0) {
+            const headerPool = new THREE.InstancedMesh(
+                this.doorPortalHeaderGeometry,
+                this.doorPortalHeaderMaterial,
+                doorPortalHeaderMatrices.length
+            );
+            doorPortalHeaderMatrices.forEach((matrix, index) => headerPool.setMatrixAt(index, matrix));
+            headerPool.instanceMatrix.needsUpdate = true;
+            headerPool.castShadow = false;
+            headerPool.receiveShadow = false;
+            headerPool.userData = {
+                isDoorPortalHeaderPool: true,
+                headerCount: doorPortalHeaderMatrices.length
+            };
+            group.add(headerPool);
         }
 
         if (this.rubbleGeometry && this.wallMaterial && rubbleMatrices.length > 0) {
@@ -39146,9 +39427,20 @@ export class ThreeGame {
         this.ventGeometry?.dispose();
         this.pipeGeometry?.dispose();
         this.roomLightFixtureGeometry?.dispose();
+        this.roomLightHousingGeometry?.dispose();
+        this.roomLightHousingMaterial?.dispose();
         for (const material of this.roomLightFixtureMaterials?.values?.() ?? []) material.dispose?.();
         this.roomCutawayCapGeometry?.dispose();
         this.roomCutawayCapMaterial?.dispose();
+        this.doorPanelGeometry?.dispose();
+        this.doorPanelMaterial?.dispose();
+        this.doorPortalHeaderGeometry?.dispose();
+        this.doorPortalHeaderMaterial?.dispose();
+        this.doorRibGeometry?.dispose();
+        this.doorRibMaterial?.dispose();
+        this.doorStatusBarGeometry?.dispose();
+        this.doorButtonGeometry?.dispose();
+        Object.values(this.doorStatusMaterials ?? {}).forEach((material) => material?.dispose?.());
         this.ventMaterial?.dispose();
         this.pipeMaterial?.dispose();
         this.sirenBaseGeometry?.dispose();

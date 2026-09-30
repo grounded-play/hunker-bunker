@@ -1,6 +1,6 @@
 # Gameplay world: current build versus visual target
 
-**Date:** 2026-09-29  
+**Date:** 2026-09-29 · **Updated:** 2026-09-30
 **Branch:** `dev/sprint-48`  
 **Scope:** the rendered play space behind the HUD. HUD layout is deliberately out of scope for this pass.
 
@@ -9,6 +9,8 @@
 The comparison uses the supplied annotated gameplay capture (`gameplay_ui_blueprint_annotated.png`) and the supplied slim-dock concept (`ui_concept_slim_dock_1790353835137.jpg`). The second image is treated as an environment target, not as a request to copy its HUD.
 
 The target fantasy is a readable isometric bunker: deep negative space around rooms, lit interiors, visible door thresholds, low foreground walls, wet metal surfaces and localized cyan, amber and phosphor-green light. The pre-pass game had the correct general camera but presented the world as a uniformly fogged outdoor field with full-height walls and mostly global lighting.
+
+Automated current-build captures: [default camera](../reports/assets/gameplay-room-presentation-default-2026-09-30.png) and [camera rotated 180°](../reports/assets/gameplay-room-presentation-rotated-2026-09-30.png). These are diagnostic captures, not final marketing frames.
 
 ## Gap analysis
 
@@ -37,12 +39,27 @@ The target fantasy is a readable isometric bunker: deep negative space around ro
 - Each room contributes one hidden point-light proxy. The existing eight-slot environmental light pool selects the nearest sources, so chunk streaming never changes the renderer's visible point-light count.
 - The crash-console light now uses that same pool and belongs to the ship's visibility/cleanup collection. It no longer creates an extra renderer light or survives a class presentation change.
 
-### Phase 3A — default-isometric room cutaway
+### Phase 3 — camera-aware room cutaway
 
-- East and south walls that directly border an authored room interior are treated as foreground walls for the default `+X/+Z` camera.
+- The two authored room edges nearest the camera are selected from its current world quadrant.
 - Those walls render at `0.82 m`, keep their original collision footprint, and receive a batched dark cap.
-- The room silhouette takes precedence over random holes, hazard walls and rubble on this edge. Random wall variants remain active on back walls and non-room terrain.
+- Crossing a 90-degree camera quadrant updates existing wall and cap instance matrices in place. It does not remount chunks or change instance counts.
+- Every room boundary remains a full-strength gameplay wall. Visual cutaway height no longer changes wall HP, and rotating the camera cannot resurrect a destroyed wall or cap.
+- The room silhouette takes precedence over random holes, hazard walls and rubble on room boundaries. Random wall variants remain active on non-room terrain.
 - Cutaway caps add one batched draw for a chunk, not one mesh per wall.
+
+### Phase 4A — portal light grammar
+
+- Procedural doorways receive a batched warm-amber header, visually separate from their red/green/amber lock-state lamps.
+- A chunk can contribute at most one amber point-light proxy for an important locked portal. It uses the same fixed environmental-light pool as room and terminal lights.
+- Ordinary doors add emissive geometry only; they do not add renderer-visible point lights.
+
+### Phase 5A — wet room-floor response
+
+- Authored room and hallway materials now derive broad, deterministic wet patches from world position.
+- Wet areas darken the base plate slightly and blend roughness toward `0.1`, allowing existing practical lights and the environment map to produce tighter reflections.
+- Utility and bio spaces receive more wetness than medical, cryo and camp floors.
+- The effect is part of the existing room-floor shader: no transparent puddle meshes, texture fetches or added draw calls.
 
 ## Next work, in priority order
 
@@ -58,23 +75,11 @@ Acceptance:
 - default Deck settings hold the agreed 30 fps floor with even pacing;
 - cutaway walls do not expose voids, detach caps, change collision or hide door controls.
 
-### P1 — camera-quadrant-aware cutaways
+### P1 — finish threshold light grammar
 
-Phase 3A matches the default camera. Camera rotation can make a different pair of walls foreground. Update only when the camera crosses a 90-degree quadrant, and update the existing instance matrices in place. Do not remount chunks or change draw-call count while the camera turns.
-
-Acceptance: each quadrant cuts the two near room edges, restores the two far edges, and produces no visible wall pop while the camera remains inside a quadrant.
-
-### P1 — threshold light grammar
-
-Add warm amber emissive headers to important portals and keep red/green state lamps for lock state. Use emissive batches for the visible hardware and at most one pooled proxy at a major portal. Ordinary doors must not each become a live Three.js light.
+Connect header emphasis to route importance and door state so an ordinary threshold, route portal and locked gate have distinct intensity without allocating new materials or lights.
 
 Acceptance: a player can distinguish ordinary room light, a route portal and a locked door by color and shape without reading text.
-
-### P2 — wet floor response
-
-Add a world-space roughness mask to room floor materials. Keep the base floor opaque and vary roughness/metalness in the shader; avoid layered transparent puddle planes across whole rooms.
-
-Acceptance: practical lights produce narrow reflected highlights, dry routes remain readable, and the effect can be reduced by the adaptive performance profile without changing collision or gameplay state.
 
 ### P2 — corridor kit and authored rhythm
 
@@ -88,8 +93,9 @@ Acceptance: a screenshot without HUD identifies at least three room roles, while
 | --- | --- | --- |
 | Fixture planning | Unit tests cover compact/large rooms, axis and biome palette | Bloom/readability on PC and Deck panels |
 | Light safety | Existing fixed-light-budget tests plus runtime assertion that room sources stay hidden | Frame-time and shader-program telemetry across chunk boundaries |
-| Cutaway selection | Unit tests cover near/far edges and the 0.82 m contract | Four camera quadrants after P1 implementation |
-| Integrated world | Browser test requires fixtures, caps and sources in real generated visible chunks and captures a HUD-free frame | Packaged-build capture and controller playthrough |
+| Cutaway selection | Unit tests cover all four quadrants, the 0.82 m contract, restoration and destroyed-wall persistence | Controller-driven rotation on Deck and PC |
+| Wet floors | Shader-source regression verifies world-space mask, darkening and roughness response; browser test compiles the material on WebGL | Reflection/readability check on Deck and PC panels |
+| Integrated world | Browser test requires fixtures, caps, portal headers and pooled sources in real generated chunks; it rotates 180° and proves cut/restore with stable instance counts | Packaged-build capture and controller playthrough |
 
 ## Explicit non-goals for this pass
 
