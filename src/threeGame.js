@@ -6193,8 +6193,28 @@ export class ThreeGame {
             });
             if (enemies.length >= 256) break;
         }
-        if (!enemies.length) return false;
-        this.netSocket.emit('enemyState', { enemies });
+        const companions = (this.companions ?? []).map((c) => {
+            const root = c.instance3d?.root;
+            const x = root ? root.position.x : (c.sprite ? c.sprite.position.x : 0);
+            const z = root ? root.position.z : (c.sprite ? c.sprite.position.z : 0);
+            const yaw = root ? root.rotation.y : (c.sprite ? c.sprite.rotation.y : 0);
+            return {
+                id: c.id || c.wanderer?.id || c.sprite?.userData?.scatterKey || 'companion_0',
+                wandererId: c.wanderer?.id,
+                actionKey: c.wanderer?.actionKey,
+                glbUrl: c.wanderer?.glbUrl,
+                name: c.wanderer?.name,
+                isWanderer: Boolean(c.isWanderer),
+                x,
+                z,
+                yaw,
+                anim: c.instance3d?.currentClipName ?? (c.isMoving ? 'run' : 'idle'),
+                isFiring: Boolean(c.isFiring),
+                targetId: c.targetId ?? null
+            };
+        });
+        if (!enemies.length && !companions.length) return false;
+        this.netSocket.emit('enemyState', { enemies, companions });
         return true;
     }
 
@@ -6529,40 +6549,114 @@ export class ThreeGame {
     }
 
     handleEnemyStateSnapshot(data) {
-        if (this.isMultiplayerHost || this.multiplayerMode === 'pvp' || !Array.isArray(data?.enemies)) return false;
+        if (this.isMultiplayerHost || this.multiplayerMode === 'pvp') return false;
+        if (!Array.isArray(data?.enemies) && !Array.isArray(data?.companions)) return false;
         let applied = 0;
-        for (const state of data.enemies) {
-            if (!state?.scatterKey) continue;
-            let sprite = (this.scatterSprites ?? []).find((candidate) => candidate.userData?.scatterKey === state.scatterKey);
-            if (!sprite?.userData && state.isBoss && !state.burstTriggered) {
-                sprite = this.materializeRemoteBoss?.(state) ?? null;
-            }
-            if (!sprite?.userData) continue;
-            if (Number.isFinite(state.x) && Number.isFinite(state.z)) {
-                sprite.userData.netTargetX = state.x;
-                sprite.userData.netTargetZ = state.z;
-                const currentDist = Math.hypot(sprite.position.x - state.x, sprite.position.z - state.z);
-                if (currentDist > 6.0 || typeof sprite.userData.lastNetUpdate !== 'number') {
-                    sprite.position.x = state.x;
-                    sprite.position.z = state.z;
+        if (Array.isArray(data?.enemies)) {
+            for (const state of data.enemies) {
+                if (!state?.scatterKey) continue;
+                let sprite = (this.scatterSprites ?? []).find((candidate) => candidate.userData?.scatterKey === state.scatterKey);
+                if (!sprite?.userData && state.isBoss && !state.burstTriggered) {
+                    sprite = this.materializeRemoteBoss?.(state) ?? null;
                 }
-                sprite.userData.lastNetUpdate = Date.now();
+                if (!sprite?.userData) continue;
+                if (Number.isFinite(state.x) && Number.isFinite(state.z)) {
+                    sprite.userData.netTargetX = state.x;
+                    sprite.userData.netTargetZ = state.z;
+                    const currentDist = Math.hypot(sprite.position.x - state.x, sprite.position.z - state.z);
+                    if (currentDist > 6.0 || typeof sprite.userData.lastNetUpdate !== 'number') {
+                        sprite.position.x = state.x;
+                        sprite.position.z = state.z;
+                    }
+                    sprite.userData.lastNetUpdate = Date.now();
+                }
+                if (state.burstTriggered && !sprite.userData.burstTriggered) {
+                    const remainingHp = Math.max(1, sprite.userData.hp || 1);
+                    this.damageSnail(sprite, remainingHp);
+                } else if (Number.isFinite(state.hp) && state.hp >= 0) {
+                    sprite.userData.hp = state.hp;
+                    // A boss fight's phases follow its HP, so the host's HP moves
+                    // this peer's fight into the same phase.
+                    const fight = sprite.userData.queenFight
+                        ?? sprite.userData.sporesnailFight
+                        ?? sprite.userData.biomeBossFight;
+                    if (fight && !fight.defeated) fight.hp = Math.min(fight.maxHp, state.hp);
+                }
+                applied += 1;
             }
-            if (state.burstTriggered && !sprite.userData.burstTriggered) {
-                const remainingHp = Math.max(1, sprite.userData.hp || 1);
-                this.damageSnail(sprite, remainingHp);
-            } else if (Number.isFinite(state.hp) && state.hp >= 0) {
-                sprite.userData.hp = state.hp;
-                // A boss fight's phases follow its HP, so the host's HP moves
-                // this peer's fight into the same phase.
-                const fight = sprite.userData.queenFight
-                    ?? sprite.userData.sporesnailFight
-                    ?? sprite.userData.biomeBossFight;
-                if (fight && !fight.defeated) fight.hp = Math.min(fight.maxHp, state.hp);
-            }
-            applied += 1;
+        }
+        if (Array.isArray(data?.companions)) {
+            this.handleRemoteCompanionsSnapshot?.(data.companions);
+            applied += data.companions.length;
         }
         return applied > 0;
+    }
+
+    handleRemoteCompanionsSnapshot(remoteCompanions) {
+        if (!Array.isArray(remoteCompanions)) return;
+        this.companions = this.companions || [];
+        for (const remote of remoteCompanions) {
+            if (!remote || !remote.id) continue;
+            let companion = this.companions.find((c) => c.id === remote.id || (remote.wandererId && c.wanderer?.id === remote.wandererId));
+            if (!companion) {
+                companion = {
+                    id: remote.id,
+                    isWanderer: Boolean(remote.isWanderer),
+                    isRemote: true,
+                    wanderer: remote.wandererId ? {
+                        id: remote.wandererId,
+                        name: remote.name || 'Wanderer',
+                        glbUrl: remote.glbUrl,
+                        actionKey: remote.actionKey
+                    } : null,
+                    netTargetX: remote.x,
+                    netTargetZ: remote.z,
+                    netTargetYaw: remote.yaw,
+                    lastNetUpdate: Date.now(),
+                    assistCooldown: 0,
+                    currentHp: 100,
+                    maxHp: 100
+                };
+                this.companions.push(companion);
+                if (remote.isWanderer && typeof createWanderer3dInstance === 'function' && this.scene) {
+                    createWanderer3dInstance({
+                        glbUrl: remote.glbUrl,
+                        actionKey: remote.actionKey,
+                        scale: 0.85
+                    }).then((instance3d) => {
+                        if (!instance3d?.root) return;
+                        companion.instance3d = instance3d;
+                        instance3d.root.position.set(remote.x, 0, remote.z);
+                        instance3d.root.rotation.y = remote.yaw || 0;
+                        this.scene?.add?.(instance3d.root);
+                    }).catch(() => {});
+                }
+            } else {
+                companion.netTargetX = remote.x;
+                companion.netTargetZ = remote.z;
+                companion.netTargetYaw = remote.yaw;
+                companion.lastNetUpdate = Date.now();
+                if (companion.instance3d?.root) {
+                    const currentDist = Math.hypot(companion.instance3d.root.position.x - remote.x, companion.instance3d.root.position.z - remote.z);
+                    if (currentDist > 6.0) {
+                        companion.instance3d.root.position.x = remote.x;
+                        companion.instance3d.root.position.z = remote.z;
+                    }
+                }
+            }
+
+            if (remote.isFiring && !companion._lastWasFiring) {
+                this.spawnMuzzleFlash?.(remote.x, 1.0, remote.z);
+                if (typeof window !== 'undefined' && window.AudioManager) {
+                    window.AudioManager.play?.('turret_fire', { volume: 0.35, playbackRate: 1.1 });
+                }
+            }
+            companion._lastWasFiring = Boolean(remote.isFiring);
+
+            if (remote.anim && companion.instance3d?.playAction && companion.instance3d?.currentClipName !== remote.anim) {
+                companion.instance3d.playAction(remote.anim);
+            }
+        }
     }
 
     // In co-op only the host rolls: each client rolling its own dice gave the
@@ -18662,13 +18756,14 @@ export class ThreeGame {
 
     checkWandererSpawning() {
         if (this.performanceProfile !== 'gameplay' || this.loadingPaused || !this.player || this.isPlayerDead) return;
-        // A co-op run starts fresh (owner, 2026-09-24): the solo profile's
-        // recruited companion followed the host into co-op and only the host
-        // could see it. Companions and wanderers stay solo until networked.
-        if (coopRole(this) !== COOP_ROLE.SOLO) return;
+        // In multiplayer, guests do not simulate wanderer recruitment or arrivals;
+        // they receive networked companion state from the host.
+        if (coopRole(this) === COOP_ROLE.GUEST || this.multiplayerMode === 'pvp') return;
         if (this._wandererLoad || this._companionLoad || this.activeWanderer) return;
         const companion = this.wandererManager?.getActiveCompanion?.();
-        if (companion) {
+        // A fresh co-op session does not carry the host's solo profile companion.
+        // In co-op, crash site wanderers can spawn and be recruited in-session by the host.
+        if (companion && coopRole(this) === COOP_ROLE.SOLO) {
             if (!(this.companions ?? []).some((entry) => entry.isWanderer)) void this.addHumanoidCompanion(companion);
             return;
         }
@@ -34722,6 +34817,41 @@ export class ThreeGame {
     updateCompanions(delta) {
         if (!this.player || this.isPlayerDead || !Array.isArray(this.companions) || this.companions.length === 0) return;
 
+        if (coopRole(this) === COOP_ROLE.GUEST) {
+            for (const companion of this.companions) {
+                if (companion.instance3d?.root) {
+                    const root = companion.instance3d.root;
+                    if (Number.isFinite(companion.netTargetX) && Number.isFinite(companion.netTargetZ)) {
+                        const curX = root.position.x;
+                        const curZ = root.position.z;
+                        const dist = Math.hypot(companion.netTargetX - curX, companion.netTargetZ - curZ);
+                        if (dist > 6.0) {
+                            root.position.x = companion.netTargetX;
+                            root.position.z = companion.netTargetZ;
+                        } else {
+                            const lerpFactor = Math.min(1.0, delta * 10);
+                            root.position.x += (companion.netTargetX - curX) * lerpFactor;
+                            root.position.z += (companion.netTargetZ - curZ) * lerpFactor;
+                        }
+                        if (Number.isFinite(companion.netTargetYaw)) {
+                            root.rotation.y = companion.netTargetYaw;
+                        }
+                    }
+                    root.position.y = this.getTerrainHeightAt?.(root.position.x, root.position.z) ?? root.position.y ?? 0;
+                    companion.instance3d.update?.(delta);
+                } else if (companion.sprite) {
+                    if (Number.isFinite(companion.netTargetX) && Number.isFinite(companion.netTargetZ)) {
+                        const curX = companion.sprite.position.x;
+                        const curZ = companion.sprite.position.z;
+                        const lerpFactor = Math.min(1.0, delta * 10);
+                        companion.sprite.position.x += (companion.netTargetX - curX) * lerpFactor;
+                        companion.sprite.position.z += (companion.netTargetZ - curZ) * lerpFactor;
+                    }
+                }
+            }
+            return;
+        }
+
         const TRAIL_DISTANCE = 1.6;
         const MOVE_SPEED = 1.6;
         const ASSIST_RADIUS = 2.2;
@@ -34735,6 +34865,7 @@ export class ThreeGame {
 
         for (const companion of this.companions) {
             if (companion.isWanderer && companion.instance3d?.root) {
+                companion.isFiring = false;
                 const root = companion.instance3d.root;
                 const trail = computeTrailPosition(this.player.position, facing, 2.0);
                 this.stepCompanionAlongPath?.(companion, root, trail, delta);
@@ -34743,7 +34874,9 @@ export class ThreeGame {
 
                 // A steady basic shot between assist abilities (2026-09-24 QA:
                 // the companion fired once per 12-25 s and otherwise did nothing).
-                this.fireCompanionBasicShot?.(companion, root, delta);
+                if (this.fireCompanionBasicShot?.(companion, root, delta)) {
+                    companion.isFiring = true;
+                }
 
                 companion.assistCooldown = Math.max(0, (companion.assistCooldown ?? 0) - delta);
                 if (companion.assistCooldown <= 0) {
@@ -34760,6 +34893,8 @@ export class ThreeGame {
                         }
                     }
                     if (nearestHostile) {
+                        companion.isFiring = true;
+                        companion.targetId = nearestHostile.userData?.scatterKey || null;
                         this.applyPlayerDamageToEnemy(nearestHostile, 2);
                         this.spawnMuzzleFlash?.(root.position.x, 1.0, root.position.z);
                         if (typeof window !== 'undefined' && window.AudioManager) {

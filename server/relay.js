@@ -863,7 +863,26 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
                     scale: Number.isFinite(state.scale) ? Math.max(0.1, Math.min(12, state.scale)) : null
                 }];
             });
-            socket.to(player.roomCode).emit('enemyStateSnapshot', { enemies, timestamp: now });
+            const companions = Array.isArray(data.companions) ? data.companions.slice(0, 16).flatMap((state) => {
+                if (!state || typeof state !== 'object') return [];
+                const id = sanitizeString(state.id, 64, '');
+                const wandererId = sanitizeString(state.wandererId, 64, '');
+                const actionKey = sanitizeString(state.actionKey, 64, '');
+                const glbUrl = sanitizeString(state.glbUrl, 128, '');
+                const name = sanitizeString(state.name, 64, '');
+                const isWanderer = Boolean(state.isWanderer);
+                const x = sanitizeCoord(state.x);
+                const z = sanitizeCoord(state.z);
+                const yaw = Number.isFinite(state.yaw) ? state.yaw : 0;
+                const anim = sanitizeString(state.anim, 32, 'idle');
+                const isFiring = Boolean(state.isFiring);
+                const targetId = sanitizeString(state.targetId, 64, '');
+                if (!id || x === null || z === null) return [];
+                return [{ id, wandererId, actionKey, glbUrl, name, isWanderer, x, z, yaw, anim, isFiring, targetId }];
+            }) : undefined;
+            const payload = { enemies, timestamp: now };
+            if (companions && companions.length > 0) payload.companions = companions;
+            socket.to(player.roomCode).emit('enemyStateSnapshot', payload);
         });
 
         // Sprint 24 Milestone A item 5: a non-host client's candidate enemy
