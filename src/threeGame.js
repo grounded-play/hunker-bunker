@@ -35141,6 +35141,85 @@ export class ThreeGame {
         return true;
     }
 
+    executeCompanionAssistAbility(companion, target, root) {
+        if (!companion || !target) return false;
+        companion.isFiring = true;
+        companion.targetId = target.userData?.scatterKey || null;
+
+        const familyId = companion.wanderer?.familyId;
+        const ability = companion.wanderer?.assistAbility;
+        const abilityName = ability?.name || 'Tactical Strike';
+        const cd = ability?.cooldown || 15;
+        companion.assistCooldown = cd;
+
+        if (root?.position) {
+            this.spawnMuzzleFlash?.(root.position.x, 1.0, root.position.z);
+        }
+
+        if (familyId === 'manic_hacker') {
+            this.applyPlayerDamageToEnemy(target, 3);
+            target.userData.frozenTimer = Math.max(target.userData.frozenTimer ?? 0, 4.0);
+            let chained = 0;
+            for (const other of this.scatterSprites || []) {
+                if (other === target || !this.isEnemyType(other?.userData?.type) || other.userData?.dead) continue;
+                if (Math.hypot(other.position.x - target.position.x, other.position.z - target.position.z) <= 5.0) {
+                    this.applyPlayerDamageToEnemy(other, 2);
+                    other.userData.frozenTimer = Math.max(other.userData.frozenTimer ?? 0, 3.0);
+                    chained += 1;
+                    if (chained >= 2) break;
+                }
+            }
+            this.spawnPhysicalBurst?.(target.position.x, target.position.z, { color: 0x00f3ff, count: 6, upward: 0.2, spread: 0.5 });
+            window.AudioManager?.play?.('ui_scan_ping', { volume: 0.5, playbackRate: 1.4 });
+        } else if (familyId === 'corpo_runner') {
+            this.applyPlayerDamageToEnemy(target, 5);
+            target.userData.markedMultiplier = 1.35;
+            target.userData.markedTimer = 6.0;
+            this.spawnPhysicalBurst?.(target.position.x, target.position.z, { color: 0xffaa00, count: 5, upward: 0.2, spread: 0.4 });
+            window.AudioManager?.play?.('turret_fire', { volume: 0.45, playbackRate: 1.3 });
+        } else if (familyId === 'foxhole_buddy') {
+            this.applyPlayerDamageToEnemy(target, 3);
+            this.spawnPhysicalBurst?.(target.position.x, target.position.z, { color: 0xff4422, count: 6, upward: 0.15, spread: 0.6 });
+            window.AudioManager?.play?.('turret_fire', { volume: 0.45, playbackRate: 0.9 });
+        } else if (familyId === 'crash_queen') {
+            this.applyPlayerDamageToEnemy(target, 3);
+            if (this.playerShieldMax > 0) {
+                this.playerShieldHp = Math.min(this.playerShieldMax, (this.playerShieldHp ?? 0) + 20);
+                this.emitHealthState?.();
+            }
+            if (root?.position) {
+                this.spawnPhysicalBurst?.(root.position.x, root.position.z, { color: 0xf59e0b, count: 8, upward: 0.3, spread: 0.7 });
+            }
+            window.AudioManager?.play?.('fx_level_up', { volume: 0.4, playbackRate: 1.2 });
+        } else if (familyId === 'abg_tripper') {
+            this.applyPlayerDamageToEnemy(target, 3);
+            target.userData.slowTimer = Math.max(target.userData.slowTimer ?? 0, 5.0);
+            this.spawnPhysicalBurst?.(target.position.x, target.position.z, { color: 0xff00ff, count: 8, upward: 0.25, spread: 0.8 });
+            window.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 1.6 });
+        } else if (familyId === 'species_hybrid') {
+            this.applyPlayerDamageToEnemy(target, 4, { element: 'bio' });
+            target.userData.frozenTimer = Math.max(target.userData.frozenTimer ?? 0, 4.0);
+            this.spawnPhysicalBurst?.(target.position.x, target.position.z, { color: 0x10b981, count: 6, upward: 0.1, spread: 0.4 });
+            window.AudioManager?.play?.('turret_fire', { volume: 0.35, playbackRate: 0.8 });
+        } else {
+            this.applyPlayerDamageToEnemy(target, 3);
+            this.spawnPhysicalBurst?.(target.position.x, target.position.z, { color: 0x67e3e1, count: 4, upward: 0.1, spread: 0.3 });
+            window.AudioManager?.play?.('turret_fire', { volume: 0.35, playbackRate: 1.1 });
+        }
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('companion-assist-triggered', {
+                detail: {
+                    familyId,
+                    abilityName,
+                    targetId: target.userData?.scatterKey || null
+                }
+            }));
+        }
+
+        return true;
+    }
+
     updateCompanions(delta) {
         if (!this.player || this.isPlayerDead || !Array.isArray(this.companions) || this.companions.length === 0) return;
 
@@ -35220,18 +35299,7 @@ export class ThreeGame {
                         }
                     }
                     if (nearestHostile) {
-                        companion.isFiring = true;
-                        companion.targetId = nearestHostile.userData?.scatterKey || null;
-                        this.applyPlayerDamageToEnemy(nearestHostile, 2);
-                        this.spawnMuzzleFlash?.(root.position.x, 1.0, root.position.z);
-                        if (typeof window !== 'undefined' && window.AudioManager) {
-                            window.AudioManager.play?.('turret_fire', { volume: 0.35, playbackRate: 1.1 });
-                        }
-                        const cd = companion.wanderer?.assistAbility?.cooldown || 12;
-                        companion.assistCooldown = cd;
-                        this.spawnPhysicalBurst?.(nearestHostile.position.x, nearestHostile.position.z, {
-                            color: 0x67e3e1, count: 3, upward: 0.1, spread: 0.3
-                        });
+                        this.executeCompanionAssistAbility(companion, nearestHostile, root);
                     }
                 }
                 continue;
