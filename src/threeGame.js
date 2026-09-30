@@ -19632,8 +19632,11 @@ export class ThreeGame {
         this.playerVitals.o2HealthTimer = 0;
         this.isPlayerDead = false;
         this.isPlayerDowned = false;
-        this.combatSignal?.reset();
-        this.inCombat = false;
+        this.syncCombatSignal(this.combatSignal?.reset() ?? {
+            active: false,
+            changed: Boolean(this.inCombat),
+            source: null
+        });
         this.player3dOverlay?.setDowned?.(false);
         this.o2DispatchTimer = 0;
         this._lastLoopStepKey = null;
@@ -19737,6 +19740,7 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('player-o2-changed', {
             detail: {
                 o2: this.playerVitals.o2,
+                maxO2: this.playerVitals.maxO2,
                 bubbleActive: generatorState.isOnline,
                 safe: Boolean(this._wasInBubble),
                 drainRate: Math.max(0, Number(this._currentO2DrainRate) || 0),

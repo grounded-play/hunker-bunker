@@ -12,7 +12,6 @@ const STATE_PRIORITY = Object.freeze([
 
 export function resolveHudGameplayState(input = {}) {
     const hp = Number(input.hp);
-    const maxHp = Math.max(1, Number(input.maxHp) || 1);
     const o2 = Number(input.o2);
     const maxO2 = Math.max(1, Number(input.maxO2) || 100);
     const hull = Number(input.hull);
@@ -20,7 +19,7 @@ export function resolveHudGameplayState(input = {}) {
     const state = {
         dead: Boolean(input.dead) || (Number.isFinite(hp) && hp <= 0),
         critical: Boolean(input.hazardActive)
-            || (Number.isFinite(hp) && hp / maxHp <= 0.25)
+            || (Number.isFinite(hp) && hp <= 1)
             || (Number.isFinite(o2) && o2 / maxO2 <= 0.25)
             || (Number.isFinite(hull) && hull / maxHull <= 0.25),
         frozen: Boolean(input.frozen),
