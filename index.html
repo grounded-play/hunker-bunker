@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="/src/styles/expeditionHud.css">
   <link rel="stylesheet" href="/src/styles/hudDockHousings.css">
+  <link rel="stylesheet" href="/src/styles/hudInformationArchitecture.css">
   <link rel="stylesheet" href="/src/styles/armory.css">
   <link rel="stylesheet" href="/src/styles/itemCard.css">
   <link rel="stylesheet" href="/src/styles/foundryHub.css">
@@ -1687,9 +1688,20 @@
         <span id="camp-quest-text" class="mission-progress-hud__text">QUEST ACTIVE</span>
       </div>
 
-      <!-- Unified Objective Tracker HUD -->
-      <div id="objective-tracker" class="objective-tracker hidden" aria-live="polite"></div>
     </div>
+
+    <!-- Dock objective drawer. main.js still owns #objective-tracker contents;
+         the controller owns only disclosure, summary, and tactical-map placement. -->
+    <section id="objective-drawer" class="objective-drawer hidden" data-expanded="false">
+      <button id="objective-drawer-toggle" class="objective-drawer__toggle" type="button" aria-expanded="false" aria-controls="objective-tracker">
+        <span class="objective-drawer__kicker" data-i18n="ui.objective.next">NEXT OBJECTIVE</span>
+        <span id="objective-drawer-label" class="objective-drawer__label">OBJECTIVE</span>
+        <span id="objective-drawer-progress" class="objective-drawer__progress">ACTIVE</span>
+        <span id="objective-drawer-count" class="objective-drawer__count hidden"></span>
+        <span class="objective-drawer__chevron" aria-hidden="true">⌄</span>
+      </button>
+      <div id="objective-tracker" class="objective-tracker hidden" aria-live="polite"></div>
+    </section>
 
 
     <!-- Persistent loop-state cue: always shows the next thing to do -->
@@ -3397,6 +3409,7 @@
 
   </div>
 
+  <script type="module" src="/src/hudInformationArchitecture.js"></script>
   <script type="module" src="/main.js?v=1243"></script>
 </body>
 

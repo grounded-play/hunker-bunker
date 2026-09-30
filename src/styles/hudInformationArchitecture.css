@@ -1,0 +1,158 @@
+/* Sprint 48 R2: one prompt lane and one collapsible objective drawer.
+   Classic HUD remains unchanged; these rules activate only for the dock. */
+
+html[data-hud-layout="dock"] [data-hud-suppressed="true"] {
+  display: none !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport .hud-mission-stack {
+  top: auto !important;
+  right: auto !important;
+  bottom: calc(var(--hud-margin) + var(--dock-band-h, calc(64 * var(--u))) + 10 * var(--u)) !important;
+  left: 50% !important;
+  width: min(calc(560 * var(--u)), calc(100% - 40 * var(--u))) !important;
+  transform: translateX(-50%) !important;
+  display: block !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport .hud-mission-stack > * {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #tutorial-prompt,
+html[data-hud-layout="dock"] #game-viewport #loop-step-hud {
+  top: auto !important;
+  right: auto !important;
+  bottom: calc(var(--hud-margin) + var(--dock-band-h, calc(64 * var(--u))) + 10 * var(--u)) !important;
+  left: 50% !important;
+  width: min(calc(560 * var(--u)), calc(100% - 40 * var(--u))) !important;
+  transform: translateX(-50%) !important;
+  box-sizing: border-box !important;
+}
+
+.objective-drawer {
+  display: contents;
+  pointer-events: auto;
+}
+
+.objective-drawer > .objective-drawer__toggle {
+  display: none;
+}
+
+#ui .objective-drawer.hidden {
+  display: contents !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #objective-drawer {
+  display: block;
+  position: absolute;
+  top: var(--hud-margin);
+  /* Reserve the top-right 52 u for the persistent settings control. */
+  right: calc(var(--hud-margin) + 56 * var(--u));
+  width: min(calc(420 * var(--u)), calc(100% - 40 * var(--u)));
+  z-index: 16900;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui #objective-drawer.hidden {
+  display: none !important;
+}
+
+.objective-drawer__toggle {
+  width: 100%;
+  min-height: calc(40 * var(--u));
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  padding: calc(7 * var(--u)) calc(10 * var(--u));
+  color: #eff9fa;
+  background: rgba(8, 16, 23, .94);
+  border: calc(1 * var(--u)) solid rgba(103, 227, 225, .48);
+  border-left-width: calc(3 * var(--u));
+  border-radius: calc(4 * var(--u));
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+html[data-hud-layout="dock"] #game-viewport .objective-drawer__toggle,
+.tactical-map-sidebar > .objective-drawer--map .objective-drawer__toggle {
+  display: grid;
+}
+
+.objective-drawer__toggle:focus-visible {
+  outline: calc(2 * var(--u)) solid #67e3e1;
+  outline-offset: calc(2 * var(--u));
+}
+
+.objective-drawer__kicker {
+  color: #85a3af;
+  font-size: max(11px, calc(11 * var(--u)));
+  font-weight: 700;
+  letter-spacing: .12em;
+}
+
+.objective-drawer__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  font-size: max(11px, calc(14 * var(--u)));
+  font-weight: 800;
+}
+
+.objective-drawer__progress,
+.objective-drawer__count {
+  padding: calc(2 * var(--u)) calc(5 * var(--u));
+  color: #eff9fa;
+  background: #23333d;
+  border-radius: calc(3 * var(--u));
+  font: 700 max(11px, calc(11 * var(--u)))/1 'Space Mono', monospace;
+  white-space: nowrap;
+}
+
+.objective-drawer__chevron {
+  color: #67e3e1;
+  font-size: max(14px, calc(16 * var(--u)));
+  line-height: 1;
+  transition: transform 160ms ease;
+}
+
+.objective-drawer[data-expanded="true"] .objective-drawer__chevron {
+  transform: rotate(180deg);
+}
+
+html[data-hud-layout="dock"] .objective-drawer[data-expanded="false"] #objective-tracker {
+  display: none !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #objective-drawer #objective-tracker {
+  margin-top: calc(6 * var(--u));
+  max-height: min(calc(360 * var(--u)), 55vh);
+  overflow: auto;
+  gap: calc(6 * var(--u));
+}
+
+html[data-hud-layout="dock"] #game-viewport #objective-drawer .objective-tracker__item {
+  padding: calc(9 * var(--u)) calc(10 * var(--u));
+}
+
+/* While the tactical map is open, the same drawer becomes the objective section
+   in its sidebar instead of remaining hidden behind the modal. */
+.tactical-map-sidebar > .objective-drawer--map {
+  position: static;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.tactical-map-sidebar > .objective-drawer--map #objective-tracker {
+  max-height: min(330px, 44vh);
+  overflow: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .objective-drawer__chevron { transition: none; }
+}

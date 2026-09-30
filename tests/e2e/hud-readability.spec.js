@@ -127,6 +127,9 @@ test.describe('HUD dock readability audit', () => {
                             bottom: +(box.bottom - stage.y).toFixed(1)
                         };
                     };
+                    const overlaps = (a, b) => Boolean(a && b)
+                        && a.left < b.right && a.right > b.left
+                        && a.top < b.bottom && a.bottom > b.top;
 
                     const unitProbe = document.createElement('div');
                     unitProbe.style.cssText = 'position:absolute;width:calc(100 * var(--u));height:0;pointer-events:none';
@@ -176,6 +179,11 @@ test.describe('HUD dock readability audit', () => {
                     ), 0);
                     const stageArea = stage ? stage.width * stage.height : 0;
                     const bandHeight = Math.max(...Object.values(housings).map((box) => box?.height || 0));
+                    const drawerBox = rect(document.getElementById('objective-drawer'));
+                    const settingsBox = rect(document.querySelector('#ui .hud-corner-settings'));
+                    const selectedPrompt = document.querySelector(`[id="${document.documentElement.dataset.promptLaneId || ''}"]`);
+                    const promptBox = rect(selectedPrompt);
+                    const housingBoxes = panels.map((panel) => rect(document.querySelector(`.dock-housing--${panel}`)));
 
                             return {
                         hudUnit: +hudUnit.toFixed(3),
@@ -189,7 +197,9 @@ test.describe('HUD dock readability audit', () => {
                         clippedText,
                         bandHeightPx: +bandHeight.toFixed(1),
                         bandHeightU: hudUnit ? +(bandHeight / hudUnit).toFixed(1) : null,
-                        opaqueHousingCoverage: stageArea ? +(housingArea / stageArea).toFixed(4) : null
+                        opaqueHousingCoverage: stageArea ? +(housingArea / stageArea).toFixed(4) : null,
+                        drawerSettingsOverlap: overlaps(drawerBox, settingsBox),
+                        promptDockOverlap: housingBoxes.some((box) => overlaps(promptBox, box))
                             };
                         }, { panels: PANELS, contentIds: CONTENT_IDS, criticalSelectors: CRITICAL_SELECTORS });
                         if (CAPTURE_SCREENSHOTS) screenshot = await page.screenshot();
@@ -214,6 +224,10 @@ test.describe('HUD dock readability audit', () => {
                     .toBeLessThanOrEqual(64.5);
                 expect.soft(metrics.opaqueHousingCoverage, `${target.name}/${operatorClass}: opaque housing coverage`)
                     .toBeLessThanOrEqual(target.coverageBudget);
+                expect.soft(metrics.drawerSettingsOverlap, `${target.name}/${operatorClass}: objective drawer clears settings`)
+                    .toBe(false);
+                expect.soft(metrics.promptDockOverlap, `${target.name}/${operatorClass}: prompt lane clears the dock`)
+                    .toBe(false);
 
                 if (target.name === 'deck') {
                     expect.soft(metrics.minimumCriticalTextPx, `${operatorClass}: minimum critical text on Deck`)
