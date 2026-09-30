@@ -117,7 +117,7 @@ const catalog = {
         "itemdefid": 4001,
         "name": "Relic Decryption Key",
         "rarity": "key",
-        "desc": "Opens a single Deep Relic Cache. Purchased through the Steam Item Store; never drops for free.",
+        "desc": "Opens a single Deep Relic Cache. Earned by defeating bosses in play; not sold.",
         "tradable": true,
         "marketable": true,
         "img": "https://hunkerbunker.netlify.app/economy/cache_key.png",

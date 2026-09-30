@@ -113,7 +113,8 @@
       "spec_eng_utility": "UTILIDAD: MÁX",
       "spec_eng_armor": "BLINDAJE: HAZARD",
       "esc": "[ESC]",
-      "return_main": "← VOLVER AL MENÚ PRINCIPAL"
+      "return_main": "← VOLVER AL MENÚ PRINCIPAL",
+      "multiplayer": "MULTIJUGADOR"
     },
     "hub": {
       "daily_ops": "OPS DIARIAS",
@@ -182,7 +183,10 @@
       "abort_current_mission": "ABORTAR MISIÓN ACTUAL",
       "abort_mission": "ABORTAR MISIÓN",
       "title_active_crosshair_color": "Color de mira activo",
-      "placeholder_agent": "AGENTE"
+      "placeholder_agent": "AGENTE",
+      "commentary_list": "COMENTARIOS DEL DESARROLLADOR",
+      "commentary_read_all": "LEER TODO",
+      "content_guide": "GUÍA DE CONTENIDO (TEMAS MADUROS)"
     },
     "action": {
       "open": "ABRIR",
@@ -1361,7 +1365,9 @@
       "bunker_level_aria": "NIVEL DEL BÚNKER {level} ({tier}) — {biome}"
     },
     "commentary": {
-      "kicker": "COMENTARIO DEL DESARROLLADOR"
+      "kicker": "COMENTARIO DEL DESARROLLADOR",
+      "close_list": "Cerrar comentarios del desarrollador",
+      "list_intro": "Notas de los desarrolladores sobre por qué el juego funciona como funciona. Con el modo comentario activado, cada una aparece también al llegar a ese momento."
     },
     "radio": {
       "online": "EN LÍNEA",
@@ -3047,7 +3053,7 @@
         "name": "Alijo de reliquias profundas"
       },
       "4001": {
-        "desc": "Abre un único Alijo de Reliquias Profundas. Se compra en la Tienda de Objetos de Steam; nunca cae gratis.",
+        "desc": "Abre un solo Alijo de Reliquias Profundas. Se obtiene al derrotar jefes durante el juego; no se vende.",
         "name": "Llave de descifrado de reliquias"
       },
       "4100": {

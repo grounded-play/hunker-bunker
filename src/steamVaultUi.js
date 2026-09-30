@@ -565,6 +565,17 @@ export function renderInventoryGrid() {
         const isSelected = selectedVaultItem && selectedVaultItem.itemId === item.itemId;
 
         card.className = `vault-item-card ${rarityClass} ${isSelected ? 'selected' : ''}`;
+        // Focusable and pressable, so a controller can pick items (Full
+        // Controller Support: the grid was mouse-only).
+        card.tabIndex = 0;
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', `${catalog.name}${item.quantity > 1 ? ` x${item.quantity}` : ''}`);
+        card.setAttribute('aria-pressed', String(Boolean(isSelected)));
+        card.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            card.click();
+        });
 
         const img = document.createElement('img');
         img.className = 'vault-item-card__art';
@@ -580,8 +591,12 @@ export function renderInventoryGrid() {
 
         card.addEventListener('click', () => {
             selectedVaultItem = item;
-            document.querySelectorAll('.vault-item-card').forEach(c => c.classList.remove('selected'));
+            document.querySelectorAll('.vault-item-card').forEach((c) => {
+                c.classList.remove('selected');
+                c.setAttribute('aria-pressed', 'false');
+            });
             card.classList.add('selected');
+            card.setAttribute('aria-pressed', 'true');
             updateDetailsPanel(item);
         });
 

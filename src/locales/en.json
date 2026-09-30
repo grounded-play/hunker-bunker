@@ -113,7 +113,8 @@
       "spec_eng_utility": "UTILITY: MAX",
       "spec_eng_armor": "ARMOR: HAZARD",
       "esc": "[ESC]",
-      "return_main": "← RETURN TO MAIN MENU"
+      "return_main": "← RETURN TO MAIN MENU",
+      "multiplayer": "MULTIPLAYER"
     },
     "hub": {
       "daily_ops": "DAILY OPS",
@@ -182,7 +183,10 @@
       "abort_current_mission": "ABORT CURRENT MISSION",
       "abort_mission": "ABORT MISSION",
       "title_active_crosshair_color": "Active crosshair color",
-      "placeholder_agent": "AGENT"
+      "placeholder_agent": "AGENT",
+      "commentary_list": "DEVELOPER COMMENTARY",
+      "commentary_read_all": "READ ALL",
+      "content_guide": "CONTENT GUIDE (MATURE THEMES)"
     },
     "action": {
       "open": "OPEN",
@@ -1361,7 +1365,9 @@
       "bunker_level_aria": "BUNKER LEVEL {level} ({tier}) — {biome}"
     },
     "commentary": {
-      "kicker": "DEVELOPER COMMENTARY"
+      "kicker": "DEVELOPER COMMENTARY",
+      "close_list": "Close developer commentary",
+      "list_intro": "Notes from the developers on why the game works the way it does. With Commentary Mode on, each also appears in play when you reach it."
     },
     "radio": {
       "online": "ONLINE",
@@ -3047,7 +3053,7 @@
         "name": "Deep Relic Cache"
       },
       "4001": {
-        "desc": "Opens a single Deep Relic Cache. Purchased through the Steam Item Store; never drops for free.",
+        "desc": "Opens a single Deep Relic Cache. Earned by defeating bosses in play; not sold.",
         "name": "Relic Decryption Key"
       },
       "4100": {

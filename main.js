@@ -200,6 +200,8 @@ const titleNewRunBtn = document.getElementById('title-newrun-btn');
 // same flow as "NEW RUN" now that multiplayer setup lives at the end of
 // class-select -> Armory -> Deployment Briefing, not before it.
 const titleMultiplayerBtn = document.getElementById('title-multiplayer-btn');
+// Set by the title MULTIPLAYER button; read once when the deployment console opens.
+let multiplayerIntent = false;
 const titleAchievementsBtn = document.getElementById('title-achievements-btn');
 const titleSettingsBtn = document.getElementById('title-settings-btn');
 const titleAboutBtn = document.getElementById('title-about-btn');
@@ -611,6 +613,10 @@ function closeModalWithAnimation(modal, onComplete, { exitClass = '', duration =
 window.closeModalWithAnimation = closeModalWithAnimation;
 
 const COMMENTARY_ENTRIES = Object.freeze({
+    commentary_on: {
+        title: 'Developer Commentary',
+        body: 'Commentary is on. Cards like this one appear as you reach the moments they talk about: your first run, black boxes, special rooms, the Queen. Every entry can also be read from Settings > Commentary > Read All.'
+    },
     run_start: {
         title: 'The Run Loop',
         body: 'The bunker is built around short pressure cycles: deploy, read the threat, bank what matters, and decide whether one more room is worth it.'
@@ -1250,7 +1256,44 @@ function moveControllerFocus(delta) {
     return target;
 }
 
+// A scrollable region with nothing focusable inside it (lore text, a log's
+// body, codex detail) can't be reached by moving focus, so a controller could
+// never read past its first screen. Up/down scroll such a region while it has
+// room to move in that direction, then fall through to focus movement.
+function scrollFocuslessRegion(root, code) {
+    const down = code === 'ArrowDown' || code === 'KeyS';
+    const up = code === 'ArrowUp' || code === 'KeyW';
+    if (!root || (!up && !down) || typeof getComputedStyle !== 'function') return false;
+    let best = null;
+    let bestRoom = 0;
+    for (const el of root.querySelectorAll('*')) {
+        if (el.scrollHeight <= el.clientHeight + 4) continue;
+        if (!/(auto|scroll)/.test(getComputedStyle(el).overflowY)) continue;
+        if (!isElementVisible(el) || getVisibleControllerFocusables(el).length > 0) continue;
+        const room = down ? el.scrollHeight - el.clientHeight - el.scrollTop : el.scrollTop;
+        if (room > 2 && room > bestRoom) {
+            best = el;
+            bestRoom = room;
+        }
+    }
+    if (!best) return false;
+    best.scrollBy({ top: (down ? 1 : -1) * Math.max(48, best.clientHeight * 0.6), behavior: 'smooth' });
+    return true;
+}
+
+// One directional step in a menu, shared by the Steam Input poll and the
+// gamepad-menu-nav event so both behave the same.
+function moveControllerDirectional(root, code, backward) {
+    if (root?.id === 'menu') return moveMenuDirectionalFocus(code);
+    if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(code)) return true;
+    if (scrollFocuslessRegion(root, code)) return true;
+    if (moveSpatialControllerFocus(root, code)) return true;
+    return moveControllerFocus(backward ? -1 : 1);
+}
+
 const SPATIAL_FOCUS_ROOT_IDS = new Set([
+    'achievements-modal',
+    'steam-vault-modal',
     'armory-screen',
     'foundry-hub-modal',
     'fabrication-modal',
@@ -2182,9 +2225,7 @@ function handleSteamMenuInput(actions) {
                 : actions.left
                     ? 'ArrowLeft'
                     : 'ArrowRight';
-        if (root?.id === 'menu') moveMenuDirectionalFocus(code);
-        else if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(code)) return;
-        else if (!moveSpatialControllerFocus(root, code)) moveControllerFocus((actions.up || actions.left) ? -1 : 1);
+        moveControllerDirectional(root, code, actions.up || actions.left);
     }
 
     if (actions.confirm || actions.fire || actions.triggerRight) {
@@ -2224,10 +2265,7 @@ window.addEventListener('gamepad-menu-nav', (event) => {
             menu_left: 'ArrowLeft',
             menu_right: 'ArrowRight'
         };
-        const root = getControllerFocusRoot();
-        if (root?.id === 'menu') moveMenuDirectionalFocus(codeByAction[action]);
-        else if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(codeByAction[action])) return;
-        else if (!moveSpatialControllerFocus(root, codeByAction[action])) moveControllerFocus(action === 'menu_up' || action === 'menu_left' ? -1 : 1);
+        moveControllerDirectional(getControllerFocusRoot(), codeByAction[action], action === 'menu_up' || action === 'menu_left');
     } else if (action === 'menu_confirm') {
         activateControllerFocusedElement();
     } else if (action === 'menu_back') {
@@ -4384,16 +4422,31 @@ function isCommentaryModeEnabled() {
     return Boolean(state.settings.commentary);
 }
 
+// Commentary used to require the live gameplay HUD, so entries fired from
+// menus (Vault, Armory) or during the run intro were silently dropped and a
+// reviewer who switched it on saw nothing (Valve review 2026-09). Outside
+// gameplay, cards now go to a small stack over the menus.
+function getMenuCommentaryStack() {
+    let host = document.getElementById('menu-commentary-stack');
+    if (!host) {
+        host = document.createElement('div');
+        host.id = 'menu-commentary-stack';
+        host.className = 'menu-commentary-stack';
+        document.body.appendChild(host);
+    }
+    return host;
+}
+
 function showDeveloperCommentary(key, detail = {}, { once = true } = {}) {
-    if (!isGameplayPhase() || !isGameplayHudActive()) return false;
     if (!isCommentaryModeEnabled()) return false;
     const entry = COMMENTARY_ENTRIES[key];
     if (!entry) return false;
     const commentaryKey = `${key}:${detail?.template ?? detail?.id ?? ''}`;
     if (once && commentarySeenThisRun.has(commentaryKey)) return false;
 
-    const stack = document.querySelector('.hud-notification-stack');
-    if (!stack) return false;
+    const inGameplay = isGameplayPhase() && isGameplayHudActive();
+    const hudStack = inGameplay ? document.querySelector('.hud-notification-stack') : null;
+    const stack = hudStack ?? getMenuCommentaryStack();
 
     commentarySeenThisRun.add(commentaryKey);
 
@@ -4432,12 +4485,72 @@ function showDeveloperCommentary(key, detail = {}, { once = true } = {}) {
     });
 
     stack.append(card);
-    updateHudNotificationDeck();
     card.classList.remove('hidden');
-    requestAnimationFrame(() => {
-        card.classList.add('visible');
+    if (hudStack) {
         updateHudNotificationDeck();
-    });
+        requestAnimationFrame(() => {
+            card.classList.add('visible');
+            updateHudNotificationDeck();
+        });
+    } else {
+        // The menu stack has no HUD deck to time it out, so it times itself.
+        requestAnimationFrame(() => card.classList.add('visible'));
+        window.setTimeout(() => {
+            card.classList.remove('visible');
+            window.setTimeout(() => card.remove(), 320);
+        }, Number(card.dataset.autoDismissMs) || 8000);
+    }
+    return true;
+}
+
+// Run-start commentary fires while the intro is still playing; hold it until
+// the player is actually in control, then show it (gives up after 2 minutes).
+function showDeveloperCommentaryWhenPlaying(key) {
+    if (!isCommentaryModeEnabled()) return;
+    const deadline = Date.now() + 120_000;
+    const tick = () => {
+        const ready = typeof window.isGameplayReady === 'function' ? window.isGameplayReady() : (isGameplayPhase() && isGameplayHudActive());
+        if (ready) {
+            showDeveloperCommentary(key);
+            return;
+        }
+        if (Date.now() < deadline) window.setTimeout(tick, 500);
+    };
+    tick();
+}
+
+function renderCommentaryList() {
+    const list = document.getElementById('commentary-list');
+    if (!list) return;
+    list.innerHTML = '';
+    for (const entry of Object.values(COMMENTARY_ENTRIES)) {
+        const item = document.createElement('article');
+        item.className = 'commentary-list__item';
+        const title = document.createElement('h3');
+        title.className = 'commentary-list__title';
+        title.textContent = entry.title;
+        const body = document.createElement('p');
+        body.className = 'commentary-list__body';
+        body.textContent = entry.body;
+        item.append(title, body);
+        list.appendChild(item);
+    }
+}
+
+function openCommentaryList() {
+    const modal = document.getElementById('commentary-list-modal');
+    if (!modal) return;
+    renderCommentaryList();
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(() => focusControllerTarget(document.getElementById('close-commentary-list')));
+}
+
+function closeCommentaryList() {
+    const modal = document.getElementById('commentary-list-modal');
+    if (!modal || modal.classList.contains('hidden')) return false;
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
     return true;
 }
 
@@ -5608,7 +5721,7 @@ function resetRunToStartingState({
         const runUuid = globalThis.crypto?.randomUUID?.() ?? `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
         void beginSeasonRun(`local:${runUuid}`, 0);
         resetCommentaryRunState();
-        showDeveloperCommentary('run_start');
+        showDeveloperCommentaryWhenPlaying('run_start');
         recordSteamTimelineEvent('run_start', 'Run Started', `${window.game?.playerType ?? getSelectedHeroType()} deployed into the bunker.`, {
             icon: 'run',
             priority: 1,
@@ -6360,6 +6473,11 @@ function renderAchievementCards(grid, state = achievementEngine.getState()) {
             def.key === 'archivist' ? 'achievement-card--archive-linked' : ''
         ].filter(Boolean).join(' ');
         if (def.key === 'archivist') card.id = 'archive-linked-achievement';
+        // Focusable so a controller can move through, and scroll, the whole
+        // list (Valve review 2026-09: achievements couldn't be scrolled with a
+        // pad). Read as one item: title, state, description.
+        card.tabIndex = 0;
+        card.setAttribute('role', 'listitem');
 
         const icon = document.createElement('div');
         icon.className = 'achievement-card__icon';
@@ -6404,8 +6522,10 @@ function renderAchievementCards(grid, state = achievementEngine.getState()) {
         }
 
         card.append(icon, body);
+        card.setAttribute('aria-label', [title.textContent, body.querySelector('.achievement-card__meta')?.textContent, blurb.textContent].filter(Boolean).join('. '));
         grid.appendChild(card);
     }
+    grid.setAttribute('role', 'list');
 }
 
 function renderAchievementsModal() {
@@ -9402,6 +9522,10 @@ if (startBtn) {
                     );
                 }
             });
+            if (multiplayerIntent) {
+                multiplayerIntent = false;
+                requestAnimationFrame(() => focusControllerTarget(document.getElementById('net-mode-coop-btn')));
+            }
         };
         openArmoryGate(openDeploymentBriefing);
     });
@@ -11047,7 +11171,12 @@ mainCommentaryToggle?.addEventListener('change', (e) => {
     const enabled = Boolean(e.target.checked);
     state.settings.commentary = enabled;
     localStorage.setItem(COMMENTARY_STORAGE_KEY, String(enabled));
+    // Immediate proof the switch did something.
+    if (enabled) showDeveloperCommentary('commentary_on', {}, { once: false });
 });
+document.getElementById('open-commentary-list')?.addEventListener('click', openCommentaryList);
+document.getElementById('close-commentary-list')?.addEventListener('click', closeCommentaryList);
+setupClickOutside('commentary-list-modal', closeCommentaryList);
 
 // Gore keeps its own persistence (hb_gore) instead of riding on state.settings:
 // featureFlags is read from modules that never see the settings object --
@@ -12522,6 +12651,12 @@ document.addEventListener('keydown', (event) => {
 
         if (resetSaveConfirmModal && !resetSaveConfirmModal.classList.contains('hidden')) {
             setResetSaveConfirmOpen(false);
+            event.preventDefault();
+            return;
+        }
+
+        // Opened from Settings, so it closes before Settings does.
+        if (closeCommentaryList()) {
             event.preventDefault();
             return;
         }
@@ -16072,10 +16207,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
     if (titleNewRunBtn) {
-        titleNewRunBtn.addEventListener('click', startNewTacticalRunFlow);
+        titleNewRunBtn.addEventListener('click', (event) => {
+            multiplayerIntent = false;
+            startNewTacticalRunFlow(event);
+        });
     }
+    // MULTIPLAYER (Valve review 2026-09: online play couldn't be found; the
+    // only route was NEW RUN > Armory > EMBARK). Same hero and Armory steps,
+    // then the deployment console opens with focus on the online modes.
     if (titleMultiplayerBtn) {
-        titleMultiplayerBtn.addEventListener('click', startNewTacticalRunFlow);
+        titleMultiplayerBtn.addEventListener('click', (event) => {
+            multiplayerIntent = true;
+            startNewTacticalRunFlow(event);
+        });
     }
     if (titleContinueBtn) {
         titleContinueBtn.addEventListener('click', () => {

@@ -287,6 +287,7 @@
           <button class="title-menu-btn" id="title-continue-btn" data-i18n="ui.menu.continue" disabled>CONTINUE</button>
           <button class="title-menu-btn title-menu-btn--secondary hidden" id="title-switch-class-btn" data-i18n="ui.menu.switch_class">SWITCH CLASS</button>
           <button class="title-menu-btn" id="title-newrun-btn" data-i18n="ui.menu.new_run">NEW RUN</button>
+          <button class="title-menu-btn" id="title-multiplayer-btn" data-i18n="ui.menu.multiplayer">MULTIPLAYER</button>
           <button class="title-menu-btn" id="title-achievements-btn" data-i18n="ui.menu.achievements">ACHIEVEMENTS</button>
           <button class="title-menu-btn" id="title-settings-btn" data-i18n="ui.menu.settings">SETTINGS</button>
           <button class="title-menu-btn" id="title-about-btn" data-i18n="ui.menu.about">ABOUT</button>
@@ -707,6 +708,16 @@
           <button data-i18n="ui.achievements.copy_save_code" data-i18n-title="ui.achievements.title_copy_a_portable" type="button" class="settings-action-btn settings-action-btn--save" id="achievement-copy-save" title="Copy a portable save code">COPY SAVE CODE</button>
           <div class="achievements-save-status" id="achievements-save-status" role="status" aria-live="polite"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- Developer commentary: every entry, readable any time (Settings > Commentary) -->
+    <div id="commentary-list-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content commentary-list-content" role="dialog" aria-labelledby="commentary-list-title">
+        <button class="close-modal" id="close-commentary-list" aria-label="Close" data-i18n-aria-label="ui.commentary.close_list">×</button>
+        <h2 id="commentary-list-title" class="commentary-list-heading" data-i18n="ui.settings.commentary_list">DEVELOPER COMMENTARY</h2>
+        <p class="commentary-list-intro" data-i18n="ui.commentary.list_intro">Notes from the developers on why the game works the way it does. With Commentary Mode on, each also appears in play when you reach it.</p>
+        <div id="commentary-list" class="commentary-list"></div>
       </div>
     </div>
 
@@ -2400,6 +2411,10 @@
             <span data-i18n="ui.settings.commentary">COMMENTARY MODE</span>
             <label class="toggle"><input type="checkbox" id="main-commentary-toggle"> <span class="slider"></span></label>
           </div>
+          <div class="setting-item setting-item--action">
+            <span data-i18n="ui.settings.commentary_list">DEVELOPER COMMENTARY</span>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-commentary-list" data-i18n="ui.settings.commentary_read_all">READ ALL</button>
+          </div>
         </div>
 
         <!-- Section 3: Gameplay & Accessibility -->
@@ -2519,6 +2534,10 @@
           <div class="setting-item">
             <span data-i18n="ui.settings.gore">GORE EFFECTS (DISMEMBERMENT)</span>
             <label class="toggle"><input type="checkbox" id="setting-gore-toggle" checked> <span class="slider"></span></label>
+          </div>
+          <div class="setting-item setting-item--action">
+            <span data-i18n="ui.settings.content_guide">CONTENT GUIDE (MATURE THEMES)</span>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-mature-audit-btn" data-i18n="ui.action.open">OPEN</button>
           </div>
           <div class="setting-item">
             <span data-i18n="ui.settings.subtitle_size">SUBTITLE SIZE</span>

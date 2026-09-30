@@ -11831,6 +11831,82 @@ body.hud-hidden .compound-location-title {
   color: #ffffff;
 }
 
+/* Both open from Settings (z 100010), so they must stack above it. */
+#commentary-list-modal,
+#mature-content-audit-modal {
+  z-index: 100020 !important;
+}
+
+/* Commentary shown over menus (Settings, Vault, Armory): the HUD stack is
+   hidden in the menu phase, so these live in their own corner stack. */
+.menu-commentary-stack {
+  position: fixed;
+  right: max(16px, calc(var(--vu) * 2));
+  bottom: max(16px, calc(var(--vu) * 2));
+  z-index: 12000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+html.phase-menu .menu-commentary-stack .commentary-toast,
+.menu-commentary-stack .commentary-toast {
+  display: grid !important;
+  visibility: visible !important;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+.menu-commentary-stack .commentary-toast.visible {
+  opacity: 1;
+  transform: none;
+}
+.commentary-list-content {
+  width: min(92vw, calc(var(--vu) * 90));
+  max-height: min(86vh, calc(var(--vu) * 80));
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1);
+  padding: calc(var(--vu) * 2);
+}
+.commentary-list-heading {
+  margin: 0;
+  font: 800 calc(var(--font-xs) * 1.3) / 1.1 'Space Mono', monospace;
+  letter-spacing: 0.1em;
+  color: rgb(251, 191, 36);
+}
+.commentary-list-intro {
+  margin: 0;
+  font-size: max(12px, calc(var(--font-xs) * 0.9));
+  color: rgba(255, 255, 255, 0.7);
+}
+.commentary-list {
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1);
+  padding-right: 6px;
+}
+.commentary-list__item {
+  padding: calc(var(--vu) * 1) calc(var(--vu) * 1.2);
+  border-left: 3px solid rgba(251, 191, 36, 0.8);
+  background: rgba(12, 18, 24, 0.85);
+  border-radius: 4px;
+}
+.commentary-list__title {
+  margin: 0 0 4px;
+  font: 700 max(13px, calc(var(--font-xs) * 1)) / 1.2 'Space Mono', monospace;
+  color: #fff;
+}
+.commentary-list__body {
+  margin: 0;
+  font-size: max(12px, calc(var(--font-xs) * 0.9));
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.8);
+}
+
 .commentary-toast {
   display: grid;
   grid-template-columns: calc(var(--vu) * 7.2) 1fr;

@@ -1,5 +1,7 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { MatureContentAudit, MATURE_CONTENT_MANIFEST } from './matureContentAudit.js';
+import { readFileSync } from 'node:fs';
+import { MatureContentAudit, MATURE_CONTENT_MANIFEST, REVIEWER_LOG_LETTERS, buildDialogueTranscript } from './matureContentAudit.js';
+import { NPC_DIALOGUE_TREES } from './npcDialogueTrees.js';
 
 describe('MatureContentAudit', () => {
     let audit;
@@ -8,28 +10,39 @@ describe('MatureContentAudit', () => {
         audit = new MatureContentAudit();
     });
 
-    it('contains all required mature content categories in the manifest', () => {
-        expect(MATURE_CONTENT_MANIFEST.length).toBe(7);
+    it('lists only categories the game contains', () => {
         const ids = MATURE_CONTENT_MANIFEST.map((m) => m.id);
-        expect(ids).toContain('sensual_storylines_romance');
-        expect(ids).toContain('parasite_symbiosis');
-        expect(ids).toContain('queen_subjugation');
-        expect(ids).toContain('self_annihilation');
-        expect(ids).toContain('veiled_nudity');
-        expect(ids).toContain('survival_economy_eroticism');
-        expect(ids).toContain('combat_violence');
+        expect(ids).toEqual(['sensual_storylines_romance', 'parasite_symbiosis', 'queen_subjugation', 'self_annihilation', 'combat_violence']);
+        // Valve review 2026-09: these two existed only in this gallery.
+        expect(ids).not.toContain('veiled_nudity');
+        expect(ids).not.toContain('survival_economy_eroticism');
     });
 
-    it('gives the veiled nudity category a real jump-to-log scene', () => {
-        const category = MATURE_CONTENT_MANIFEST.find((m) => m.id === 'veiled_nudity');
-        expect(category.scenes.length).toBeGreaterThanOrEqual(1);
-        expect(category.scenes[0].kind).toBe('log');
+    it('says where every category is met in play', () => {
+        for (const item of MATURE_CONTENT_MANIFEST) expect(item.inPlay, item.id).toMatch(/In play:/);
     });
 
-    it('gives the non-explicit sexual content / prostitution category a real jump-to-log scene', () => {
-        const category = MATURE_CONTENT_MANIFEST.find((m) => m.id === 'survival_economy_eroticism');
-        expect(category.scenes.length).toBeGreaterThanOrEqual(1);
-        expect(category.scenes[0].kind).toBe('log');
+    it('shows only logs that exist in the game itself', () => {
+        const gameSource = readFileSync(new URL('./threeGame.js', import.meta.url), 'utf8');
+        const phraseByLog = { reyes_c11: 'making it out of here', chen_b03: 'needs a body' };
+        const logs = MATURE_CONTENT_MANIFEST.flatMap((m) => (m.scenes ?? []).filter((s) => s.kind === 'log').map((s) => s.log));
+        expect(logs.length).toBeGreaterThan(0);
+        for (const log of logs) {
+            expect(REVIEWER_LOG_LETTERS[log], log).toBeTruthy();
+            expect(gameSource, log).toContain(phraseByLog[log]);
+        }
+    });
+
+    it('reads every romance tree as a transcript, from any screen, including its sensual choices', () => {
+        const category = MATURE_CONTENT_MANIFEST.find((m) => m.id === 'sensual_storylines_romance');
+        for (const { id } of category.dialogueTrees) {
+            expect(NPC_DIALOGUE_TREES[id], id).toBeTruthy();
+            expect(buildDialogueTranscript(NPC_DIALOGUE_TREES[id]).length).toBeGreaterThan(200);
+        }
+        const val = buildDialogueTranscript(NPC_DIALOGUE_TREES.sister_val);
+        expect(val).toContain('[SENSUAL / EMBRACE]');
+        expect(val).toContain('[DEEPEN INTIMACY]');
+        expect(() => audit.playScene({ kind: 'tree', treeId: 'sister_val' })).not.toThrow();
     });
 
     it('toggles open state correctly', () => {

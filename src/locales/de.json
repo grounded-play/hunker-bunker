@@ -113,7 +113,8 @@
       "spec_eng_utility": "NUTZEN: MAX",
       "spec_eng_armor": "RÜSTUNG: HAZARD",
       "esc": "[ESC]",
-      "return_main": "← ZURÜCK ZUM HAUPTMENÜ"
+      "return_main": "← ZURÜCK ZUM HAUPTMENÜ",
+      "multiplayer": "MEHRSPIELER"
     },
     "hub": {
       "daily_ops": "TAGESEINSATZ",
@@ -182,7 +183,10 @@
       "abort_current_mission": "AKTUELLE MISSION ABBRECHEN",
       "abort_mission": "MISSION ABBRECHEN",
       "title_active_crosshair_color": "Aktive Fadenkreuzfarbe",
-      "placeholder_agent": "AGENT"
+      "placeholder_agent": "AGENT",
+      "commentary_list": "ENTWICKLERKOMMENTAR",
+      "commentary_read_all": "ALLE LESEN",
+      "content_guide": "INHALTSLEITFADEN (REIFE THEMEN)"
     },
     "action": {
       "open": "ÖFFNEN",
@@ -1361,7 +1365,9 @@
       "bunker_level_aria": "BUNKER-EBENE {level} ({tier}) – {biome}"
     },
     "commentary": {
-      "kicker": "ENTWICKLERKOMMENTAR"
+      "kicker": "ENTWICKLERKOMMENTAR",
+      "close_list": "Entwicklerkommentar schließen",
+      "list_intro": "Anmerkungen der Entwickler dazu, warum das Spiel so funktioniert, wie es funktioniert. Mit aktiviertem Kommentarmodus erscheinen sie auch im Spiel, sobald du die Stelle erreichst."
     },
     "radio": {
       "online": "ONLINE",
@@ -3047,7 +3053,7 @@
         "name": "Tiefen-Relikt-Cache"
       },
       "4001": {
-        "desc": "Öffnet einen einzelnen Tiefen-Relikt-Cache. Im Steam-Item-Shop gekauft; fällt nie kostenlos.",
+        "desc": "Öffnet einen einzelnen Tiefen-Relikt-Cache. Wird im Spiel durch das Besiegen von Bossen verdient; nicht käuflich.",
         "name": "Relikt-Entschlüsselungsschlüssel"
       },
       "4100": {

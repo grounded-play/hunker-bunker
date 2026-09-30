@@ -113,7 +113,8 @@
       "spec_eng_utility": "ユーティリティ: 最大",
       "spec_eng_armor": "装甲: 耐環境",
       "esc": "[ESC]",
-      "return_main": "← メインメニューに戻る"
+      "return_main": "← メインメニューに戻る",
+      "multiplayer": "マルチプレイ"
     },
     "hub": {
       "daily_ops": "デイリー作戦",
@@ -182,7 +183,10 @@
       "abort_current_mission": "現在の任務を中止",
       "abort_mission": "任務中止",
       "title_active_crosshair_color": "現在のクロスヘア色",
-      "placeholder_agent": "エージェント"
+      "placeholder_agent": "エージェント",
+      "commentary_list": "開発者コメンタリー",
+      "commentary_read_all": "すべて読む",
+      "content_guide": "コンテンツガイド（成人向けテーマ）"
     },
     "action": {
       "open": "開く",
@@ -1361,7 +1365,9 @@
       "bunker_level_aria": "バンカー階層 {level}（{tier}）— {biome}"
     },
     "commentary": {
-      "kicker": "開発者コメンタリー"
+      "kicker": "開発者コメンタリー",
+      "close_list": "開発者コメンタリーを閉じる",
+      "list_intro": "ゲームがなぜこう作られているのか、開発者のメモです。コメンタリーモードをオンにすると、該当する場面でも表示されます。"
     },
     "radio": {
       "online": "オンライン",
@@ -3047,7 +3053,7 @@
         "name": "ディープレリック・キャッシュ"
       },
       "4001": {
-        "desc": "ディープレリック・キャッシュを1つ開封する。Steam アイテムストアで購入。無料でドロップすることはない。",
+        "desc": "ディープレリック・キャッシュを1つ開封する。ゲーム内でボスを倒すと入手でき、販売はされない。",
         "name": "レリック復号キー"
       },
       "4100": {

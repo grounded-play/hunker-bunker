@@ -34,6 +34,7 @@ export const MENU_FOCUS_ROOT_IDS = Object.freeze([
     'crosshair-color-popup',
     'language-select-popup',
     'controls-popup',
+    'commentary-list-modal',
     'settings-popup',
     'about-modal',
     'archive-log-detail-modal',
