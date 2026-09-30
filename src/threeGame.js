@@ -22030,6 +22030,30 @@ export class ThreeGame {
             }
             return false;
         }
+
+        if (this.act2 && this.isAct2Active?.()) {
+            const hasBioFilter = (this.runRelics ?? []).some((r) => r.id === 'spore_filter' || r.id === 'relic_spore_filter');
+            const infReason = String(reason || '').toLowerCase();
+            let infectionGain = 0;
+            if (infReason.includes('queen') || infReason.includes('psychic')) {
+                infectionGain = 10;
+            } else if (infReason.includes('spore') || infReason.includes('caustic') || infReason.includes('poison') || infReason.includes('hive') || infReason.includes('crawler') || infReason.includes('spitter')) {
+                infectionGain = hasBioFilter ? 1 : 3;
+            }
+            if (infectionGain > 0) {
+                const prevStage = this.act2.getState?.()?.infectionStage;
+                this.act2.addInfection(infectionGain);
+                const nextState = this.act2.getState?.();
+                if (nextState?.infectionStage && nextState.infectionStage !== prevStage) {
+                    if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('infection-stage-changed', {
+                            detail: { stage: nextState.infectionStage, load: nextState.infectionLoad }
+                        }));
+                        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.5, playbackRate: 0.6 });
+                    }
+                }
+            }
+        }
         this.falseTelemetryTimer = Math.max(
             this.falseTelemetryTimer ?? 0,
             applyFalseTelemetryAggroDrop(
