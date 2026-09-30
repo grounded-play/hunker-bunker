@@ -19414,6 +19414,21 @@ export class ThreeGame {
             }
         }));
 
+        window.dispatchEvent(new CustomEvent('expedition-report-item', {
+            detail: {
+                kind: 'settlement',
+                labelKey: 'ui.go.report.companion_settled',
+                params: { name: wandererName, camp: camp.label || camp.id }
+            }
+        }));
+        window.dispatchEvent(new CustomEvent('expedition-report-item', {
+            detail: {
+                kind: 'faction',
+                labelKey: 'ui.go.report.faction_bond_gained',
+                params: { faction: camp.label || camp.id, delta: '+1' }
+            }
+        }));
+
         if (this.isMultiplayer) {
             this.broadcastSharedWorldEvent?.('camp-settler-delivered', {
                 campId: camp.id,
@@ -38939,7 +38954,44 @@ export class ThreeGame {
                 paidShells: bounty.paidShells ?? 0
             } : null,
             completed,
-            items: [...(this._expeditionReportItems ?? [])],
+            items: (() => {
+                const reportItems = [...(this._expeditionReportItems ?? [])];
+                if (Array.isArray(this.runRelics)) {
+                    for (const relic of this.runRelics) {
+                        if (relic?.id && !reportItems.some((it) => it.params?.id === relic.id)) {
+                            reportItems.push({
+                                kind: 'unlock',
+                                labelKey: 'ui.go.report.relic_recovered',
+                                params: { id: relic.id, name: relic.name || relic.id }
+                            });
+                        }
+                    }
+                }
+                const act2State = this.act2?.getState?.();
+                if (act2State?.camps) {
+                    for (const camp of act2State.camps) {
+                        if ((camp.bond ?? 0) > 0 && !reportItems.some((it) => it.params?.campId === camp.id)) {
+                            reportItems.push({
+                                kind: 'faction',
+                                labelKey: 'ui.go.report.camp_allied',
+                                params: { campId: camp.id, faction: camp.label || camp.id, bond: camp.bond }
+                            });
+                        }
+                    }
+                }
+                if (act2State?.linchpins) {
+                    for (const [linchpinId, resolution] of Object.entries(act2State.linchpins)) {
+                        if (!reportItems.some((it) => it.params?.linchpinId === linchpinId)) {
+                            reportItems.push({
+                                kind: 'lead',
+                                labelKey: 'ui.go.report.linchpin_consequence',
+                                params: { linchpinId, resolution: String(resolution).toUpperCase() }
+                            });
+                        }
+                    }
+                }
+                return reportItems;
+            })(),
             build: summarizeBuild({
                 equippedDropIds: [...(this.runOverclocks ?? []), ...(this.runRelics ?? [])].map((drop) => drop?.id),
                 telemetry: this._runBuildTelemetry ?? {}
