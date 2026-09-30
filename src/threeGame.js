@@ -27747,10 +27747,26 @@ export class ThreeGame {
 
         for (const group of this.chunkMeshes.values()) {
             if (!group.visible) continue;
-            for (const child of group.children) {
-                if (child.userData.isWall) this.wallMeshes.push(child);
-                if (child.userData.isPickup) this.pickupMeshes.push(child);
-                if (child.userData.isScatter) this.scatterSprites.push(child);
+            const userData = group.userData;
+            if (userData?.walls) {
+                const walls = userData.walls;
+                for (let i = 0; i < walls.length; i++) this.wallMeshes.push(walls[i]);
+                const pickups = userData.pickups;
+                for (let i = 0; i < pickups.length; i++) {
+                    const p = pickups[i];
+                    if (p.parent) this.pickupMeshes.push(p);
+                }
+                const scatters = userData.scatters;
+                for (let i = 0; i < scatters.length; i++) {
+                    const s = scatters[i];
+                    if (s.parent) this.scatterSprites.push(s);
+                }
+            } else {
+                for (const child of group.children ?? []) {
+                    if (child.userData?.isWall) this.wallMeshes.push(child);
+                    if (child.userData?.isPickup) this.pickupMeshes.push(child);
+                    if (child.userData?.isScatter) this.scatterSprites.push(child);
+                }
             }
         }
     }
@@ -29617,6 +29633,45 @@ export class ThreeGame {
     mountChunk(chunkX, chunkY) {
         const grid = this.getOrCreateChunk(chunkX, chunkY);
         const group = new THREE.Group();
+        const walls = [];
+        const pickups = [];
+        const scatters = [];
+        group.userData.walls = walls;
+        group.userData.pickups = pickups;
+        group.userData.scatters = scatters;
+
+        const origAdd = group.add.bind(group);
+        group.add = (...objects) => {
+            const res = origAdd(...objects);
+            for (let i = 0; i < objects.length; i++) {
+                const obj = objects[i];
+                if (obj?.userData?.isWall && !walls.includes(obj)) walls.push(obj);
+                if (obj?.userData?.isPickup && !pickups.includes(obj)) pickups.push(obj);
+                if (obj?.userData?.isScatter && !scatters.includes(obj)) scatters.push(obj);
+            }
+            return res;
+        };
+
+        const origRemove = group.remove.bind(group);
+        group.remove = (...objects) => {
+            const res = origRemove(...objects);
+            for (let i = 0; i < objects.length; i++) {
+                const obj = objects[i];
+                if (obj?.userData?.isWall) {
+                    const idx = walls.indexOf(obj);
+                    if (idx !== -1) walls.splice(idx, 1);
+                }
+                if (obj?.userData?.isPickup) {
+                    const idx = pickups.indexOf(obj);
+                    if (idx !== -1) pickups.splice(idx, 1);
+                }
+                if (obj?.userData?.isScatter) {
+                    const idx = scatters.indexOf(obj);
+                    if (idx !== -1) scatters.splice(idx, 1);
+                }
+            }
+            return res;
+        };
 
         // Landform-specific wall dressing: ruins are mostly toppled short
         // walls, field outcrops read as tilted rock, canyon ridges stand
@@ -30790,6 +30845,13 @@ export class ThreeGame {
                     intensity: templateCfg.lightIntensity ?? 1
                 });
             }
+        }
+
+        for (let i = 0; i < group.children.length; i++) {
+            const child = group.children[i];
+            if (child.userData?.isWall && !walls.includes(child)) walls.push(child);
+            if (child.userData?.isPickup && !pickups.includes(child)) pickups.push(child);
+            if (child.userData?.isScatter && !scatters.includes(child)) scatters.push(child);
         }
 
         useSinglePassForFlatMaterials(group);
