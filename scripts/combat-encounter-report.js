@@ -128,25 +128,27 @@ export function buildEncounterTable() {
  * discriminating signal: boss_sporesnail has by far the highest HP, the
  * longest idealizedTimeToKillSeconds, and its one mechanic (spawning
  * passive minions) deals zero direct damage, so an unusually long fight
- * never directly threatens the player. That boss has since been converted
- * (SPORESNAIL_FIGHT_DEF, src/bossPhases.js) -- two phases, gentler armor
- * than the Queen's, wired into threeGame.js's boss_sporesnail attack
- * dispatch. It's the only non-Queen boss with a phase entry now.
- *
- * The remaining phase-less bosses are NOT flagged for the same treatment:
- * none of them show a comparably extreme HP/TTK/no-direct-damage profile,
- * so picking among them would go back to being an arbitrary choice.
- * Confirming whether they need it at all still needs the human
- * side-by-side combat-feel pass (Phase F in the master plan).
+ * never directly threatens the player. That boss became the first non-Queen
+ * conversion. Sprint 47 then converted the biome bosses, and Sprint 48
+ * completed the catalog by moving the three corrupted operators onto the
+ * same machine around their already-shipped class attacks. This report now
+ * proves that no milestone boss silently falls back to a flat HP-only row.
  */
 export function gatedBossPhaseExtensionCandidates() {
     const phaselessBosses = BOSS_IDS.filter((id) => !hasPhaseMechanic(id));
     return {
         gateMet: true,
-        convertedThisPass: ['boss_sporesnail', 'boss_cybersnail', 'boss_cryosnail'],
+        convertedThisPass: [
+            'boss_sporesnail',
+            'boss_cybersnail',
+            'boss_cryosnail',
+            'boss_corrupted_scout',
+            'boss_corrupted_tank',
+            'boss_corrupted_engineer'
+        ],
         reason: 'boss_sporesnail retains its measured Sprint 22 conversion; Sprint 47 adds boss_cybersnail '
             + '(vent-window carapace -> EMP overdrive) and boss_cryosnail (glacial aura -> frozen pathways). '
-            + 'The remaining corrupted-operator bosses stay phase-less pending a separate combat-feel case.',
+            + 'Sprint 48 converts all corrupted operators around their existing class attacks, with mild armor and recurring counterplay windows.',
         phaselessBosses
     };
 }

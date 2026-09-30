@@ -307,9 +307,9 @@ Ring 1 milestones to extraction or an ending. Record video plus the session log 
   pickups and props (1,000–2,000 draw calls on the PC), with no visual change.
 - **Invisible Essentials Phase 6** (in-expedition build decisions: a field workbench at
   camps). Claimed by Claude; start only if the P1 lanes are done.
-- **Gameplay Phase 4 remnants:** boss phase conversion for `boss_cybersnail` /
-  `boss_cryosnail`; expedition report expansion; decide Lane 2's formation damage rule
-  (apply it in the runtime, or label the audit table as design intent).
+- **Gameplay Phase 4 remnants:** boss phase conversion is complete for all six
+  milestone bosses; expedition report expansion and Lane 2's formation damage rule
+  remain (apply the rule in runtime, or label the audit table as design intent).
 - **Actions raise infection** (hive verbs, bio/caustic hits, spores, eggs aboard),
   feeding `infectionLoad`.
 

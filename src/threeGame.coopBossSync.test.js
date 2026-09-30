@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
-import { createBossFight, QUEEN_FIGHT_DEF } from './bossPhases.js';
+import { createBossFight, CORRUPTED_SCOUT_FIGHT_DEF, QUEEN_FIGHT_DEF } from './bossPhases.js';
 
 // GAP-MP-01: a guest's hit on a boss used to land only on the guest's copy and
 // was erased by the host's next snapshot, so a guest could never hurt a boss.
@@ -62,5 +62,31 @@ describe('co-op boss fights are host-authoritative', () => {
         g.handleEnemyStateSnapshot({ enemies: [{ scatterKey: 'queen-fight', enemyType: 'boss_queen', x: 3, z: 4, hp: 40, isBoss: true }] });
         expect(boss.userData.hp).toBe(40);
         expect(boss.userData.queenFight.hp).toBe(40);
+    });
+
+    it('moves converted biome and corrupted fights to the host HP too', () => {
+        const { g } = peer({ host: false });
+        const fight = createBossFight(CORRUPTED_SCOUT_FIGHT_DEF);
+        const boss = {
+            position: { x: 6, z: 8 },
+            userData: {
+                type: 'boss_corrupted_scout',
+                scatterKey: 'corrupted-scout-fight',
+                isBoss: true,
+                hp: fight.maxHp,
+                biomeBossFight: fight
+            }
+        };
+        g.scatterSprites.push(boss);
+        g.handleEnemyStateSnapshot({ enemies: [{
+            scatterKey: 'corrupted-scout-fight',
+            enemyType: 'boss_corrupted_scout',
+            x: 6,
+            z: 8,
+            hp: 6,
+            isBoss: true
+        }] });
+        expect(boss.userData.hp).toBe(6);
+        expect(boss.userData.biomeBossFight.hp).toBe(6);
     });
 });

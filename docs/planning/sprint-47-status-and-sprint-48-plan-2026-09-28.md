@@ -328,7 +328,7 @@ sees it" for co-op, and make the dock HUD the default.
 | **P1** | Dock recovery gate: authoritative screenshot/rect harness; one shared 64 u content grid for all classes; ≥11 px critical Deck text; objective drawer (C), prompts into H, scan ring, HUD Scale menu item and 7-locale pass | harness fails on today's known defects, then passes at all four target sizes; core combat data reads correctly with housing art disabled; Deck hardware check |
 | **P1** | Promote the dock only after the recovery gate | no permanent legacy mission column; no clipped critical text; owner Deck + PC sign-off; then flip `hb_hud_layout` default to `dock` |
 | **P2** | Dock wear model v1 after geometry freezes: `suitCondition` + blood, frost and damage tier 1 for one class, then all three | unit tests per signal; screenshots per state; overlays never cover instruments; ≤0.3 ms HUD layout/style cost |
-| **P2** | Gameplay Phase 4: boss phase conversion (cyber/cryo snail), expedition report expansion; decide Lane 2's formation rule | unit + slice probe |
+| **P2** | Gameplay Phase 4: all six milestone boss conversions complete; expedition report expansion and Lane 2's formation rule remain | phase-machine unit tests + runtime attack/sync probes green; remaining work needs unit + slice probe |
 | **P2** | Foundry: one item catalog + card, hub skeleton with tabs; smelter trade-up logging and fix | the same item looks identical on all four screens; trade-up sticks across reload |
 | **P3** | Performance: chunk-mount spikes, pickup/prop instancing | frame profiler before/after; no visual diff |
 | **P3** | Invisible Essentials Phase 6 (claimed by Claude) | phase acceptance in its doc |

@@ -10,6 +10,9 @@ import {
     SPORESNAIL_FIGHT_DEF,
     CYBERSNAIL_FIGHT_DEF,
     CRYO_BOSS_FIGHT_DEF,
+    CORRUPTED_SCOUT_FIGHT_DEF,
+    CORRUPTED_TANK_FIGHT_DEF,
+    CORRUPTED_ENGINEER_FIGHT_DEF,
     BOSS_PHASE_DEFS,
     createEnemyStaggerState,
     isStaggered,
@@ -249,9 +252,12 @@ describe('the sporesnail def (Sprint 22 B1)', () => {
 });
 
 describe('Sprint 47 milestone boss conversions', () => {
-    it('registers both legacy flat bosses in the phase catalog', () => {
+    it('registers every former flat milestone boss in the phase catalog', () => {
         expect(BOSS_PHASE_DEFS.boss_cybersnail).toBe(CYBERSNAIL_FIGHT_DEF);
         expect(BOSS_PHASE_DEFS.boss_cryosnail).toBe(CRYO_BOSS_FIGHT_DEF);
+        expect(BOSS_PHASE_DEFS.boss_corrupted_scout).toBe(CORRUPTED_SCOUT_FIGHT_DEF);
+        expect(BOSS_PHASE_DEFS.boss_corrupted_tank).toBe(CORRUPTED_TANK_FIGHT_DEF);
+        expect(BOSS_PHASE_DEFS.boss_corrupted_engineer).toBe(CORRUPTED_ENGINEER_FIGHT_DEF);
     });
 
     it('telegraphs Cybersnail volleys and opens its vent after every third volley', () => {
@@ -291,6 +297,59 @@ describe('Sprint 47 milestone boss conversions', () => {
             phase: 'deep-freeze',
             mechanic: expect.objectContaining({ kind: 'frozen-pathways' })
         }));
+    });
+
+    it.each([
+        [CORRUPTED_SCOUT_FIGHT_DEF, 6, 'ghost-flank', 'corrupted_scout_flank', 'flanking-dash'],
+        [CORRUPTED_TANK_FIGHT_DEF, 9, 'seismic-overload', 'corrupted_tank_overload', 'seismic-overload'],
+        [CORRUPTED_ENGINEER_FIGHT_DEF, 7, 'fabricator-overclock', 'corrupted_engineer_arc_net', 'fabricator-overclock']
+    ])('converts %s into a second tactical phase', (definition, hp, phaseKey, attack, mechanicKind) => {
+        const fight = createBossFight(definition);
+        fight.hp = hp;
+        const events = tickBossFight(fight, 0.1);
+        expect(currentPhase(fight)).toMatchObject({
+            key: phaseKey,
+            attack,
+            mechanic: expect.objectContaining({ kind: mechanicKind })
+        });
+        expect(events).toContainEqual(expect.objectContaining({ type: 'phase', phase: phaseKey }));
+    });
+
+    it('keeps every corrupted duel defeatable by one-damage weapons', () => {
+        for (const definition of [
+            CORRUPTED_SCOUT_FIGHT_DEF,
+            CORRUPTED_TANK_FIGHT_DEF,
+            CORRUPTED_ENGINEER_FIGHT_DEF
+        ]) {
+            const fight = createBossFight(definition);
+            let elapsed = 0;
+            let fireTimer = 0;
+            while (!fight.defeated && elapsed < 120) {
+                tickBossFight(fight, 0.05);
+                fireTimer -= 0.05;
+                if (fireTimer <= 0) {
+                    fireTimer += 0.14;
+                    applyBossDamage(fight, 1);
+                }
+                elapsed += 0.05;
+            }
+            expect(fight.defeated, `${definition.key} hp=${fight.hp}`).toBe(true);
+        }
+    });
+
+    it('uses initial delays to guarantee combat activation during short corrupted duels', () => {
+        const scoutFight = createBossFight(CORRUPTED_SCOUT_FIGHT_DEF);
+        expect(scoutFight.attackTimer).toBe(CORRUPTED_SCOUT_FIGHT_DEF.phases[0].initialAttackDelay);
+        expect(scoutFight.weakpointTimer).toBe(CORRUPTED_SCOUT_FIGHT_DEF.phases[0].weakpoint.initialDelay);
+
+        // Transitioning into phase 2 also sets initial delay for the new phase
+        scoutFight.hp = 6;
+        tickBossFight(scoutFight, 0);
+        expect(scoutFight.attackTimer).toBe(CORRUPTED_SCOUT_FIGHT_DEF.phases[1].initialAttackDelay);
+        expect(scoutFight.weakpointTimer).toBe(CORRUPTED_SCOUT_FIGHT_DEF.phases[1].weakpoint.initialDelay);
+
+        const engFight = createBossFight(CORRUPTED_ENGINEER_FIGHT_DEF);
+        expect(engFight.addTimer).toBe(CORRUPTED_ENGINEER_FIGHT_DEF.phases[0].addWave.initialDelay);
     });
 });
 

@@ -68,30 +68,25 @@ describe('idealizedTimeToKillSeconds', () => {
 });
 
 describe('hasPhaseMechanic / gatedBossPhaseExtensionCandidates (B1)', () => {
-    it('the queen and three converted biome bosses have phase mechanics', () => {
+    it('the queen and every milestone boss have phase mechanics', () => {
         expect(hasPhaseMechanic('queen')).toBe(true);
-        expect(hasPhaseMechanic('boss_sporesnail')).toBe(true);
-        expect(hasPhaseMechanic('boss_cybersnail')).toBe(true);
-        expect(hasPhaseMechanic('boss_cryosnail')).toBe(true);
         for (const enemyId of Object.keys(ENEMY_STATS)) {
-            if (['boss_sporesnail', 'boss_cybersnail', 'boss_cryosnail'].includes(enemyId)) continue;
-            expect(hasPhaseMechanic(enemyId)).toBe(false);
+            expect(hasPhaseMechanic(enemyId)).toBe(enemyId.startsWith('boss_'));
         }
     });
 
-    it('reports all three biome-boss conversions and leaves corrupted operators open', () => {
+    it('reports all six boss conversions with no milestone boss left flat', () => {
         const gate = gatedBossPhaseExtensionCandidates();
         expect(gate.gateMet).toBe(true);
-        expect(gate.convertedThisPass).toEqual(['boss_sporesnail', 'boss_cybersnail', 'boss_cryosnail']);
+        expect(gate.convertedThisPass).toHaveLength(6);
         for (const id of gate.convertedThisPass) expect(gate.phaselessBosses).not.toContain(id);
-        expect(gate.phaselessBosses.length).toBeGreaterThan(0);
-        expect(gate.phaselessBosses.every((id) => id.startsWith('boss_'))).toBe(true);
+        expect(gate.phaselessBosses).toEqual([]);
     });
 });
 
 describe('phasedTimeToKillSeconds', () => {
-    it('returns null for ids with no bossPhases.js entry', () => {
-        expect(phasedTimeToKillSeconds('boss_corrupted_scout', 'SCOUT')).toBeNull();
+    it('simulates corrupted operators through the real phase machine', () => {
+        expect(phasedTimeToKillSeconds('boss_corrupted_scout', 'SCOUT')).not.toBeNull();
     });
 
     it("TANK's phased fight takes meaningfully longer than the unarmored idealized baseline (armor has real bite at 2 damage/shot)", () => {

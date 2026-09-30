@@ -391,7 +391,7 @@ import {
     QUEEN_PHASE_LINES,
     SPORESNAIL_FIGHT_DEF,
     CYBERSNAIL_FIGHT_DEF,
-    CRYO_BOSS_FIGHT_DEF,
+    BOSS_PHASE_DEFS,
     createEnemyStaggerState,
     applyStaggerDamage,
     tickStaggerState,
@@ -6555,7 +6555,9 @@ export class ThreeGame {
                 sprite.userData.hp = state.hp;
                 // A boss fight's phases follow its HP, so the host's HP moves
                 // this peer's fight into the same phase.
-                const fight = sprite.userData.queenFight ?? sprite.userData.sporesnailFight;
+                const fight = sprite.userData.queenFight
+                    ?? sprite.userData.sporesnailFight
+                    ?? sprite.userData.biomeBossFight;
                 if (fight && !fight.defeated) fight.hp = Math.min(fight.maxHp, state.hp);
             }
             applied += 1;
@@ -15500,10 +15502,16 @@ export class ThreeGame {
                 const mechanic = event.mechanic ?? phase?.mechanic;
                 data.frozenPathwaysActive = mechanic?.kind === 'frozen-pathways';
                 data.frozenPathwayTimer = 0;
-                if (mechanic?.kind === 'carapace-shattered') {
+                if (Number.isFinite(mechanic?.speedMultiplier)) {
                     data.speed = (data.baseBossSpeed ?? data.speed) * (mechanic.speedMultiplier ?? 1.4);
-                    sprite.material?.color?.setHex?.(0xff9f43);
                 }
+                const phaseTint = {
+                    'carapace-shattered': 0xff9f43,
+                    'flanking-dash': 0xff5a8a,
+                    'seismic-overload': 0xffb347,
+                    'fabricator-overclock': 0x4de8ff
+                }[mechanic?.kind];
+                if (phaseTint) sprite.material?.color?.setHex?.(phaseTint);
                 this.triggerCameraShake?.(0.2, 0.35);
                 window.AudioManager?.playMetalStress?.({ volume: 0.62, playbackRate: 0.58, force: true });
                 window.dispatchEvent(new CustomEvent('boss-phase-changed', {
@@ -15535,12 +15543,25 @@ export class ThreeGame {
     }
 
     telegraphBiomeBossAttack(sprite, event) {
-        const radius = event.attack === 'radial_emp' ? 5.2
-            : event.attack === 'deep_freeze_wave' ? 5.8 : 4.5;
-        this.spawnFrostShockwaveEffect?.(sprite.position.x, sprite.position.z, radius);
+        const radius = {
+            radial_emp: 5.2,
+            deep_freeze_wave: 5.8,
+            corrupted_tank_slam: 5,
+            corrupted_tank_overload: 6.2,
+            corrupted_engineer_arc_net: 5.5
+        }[event.attack] ?? 4.5;
+        if (['radial_emp', 'deep_freeze_wave', 'corrupted_tank_slam', 'corrupted_tank_overload', 'corrupted_engineer_arc_net'].includes(event.attack)) {
+            this.spawnFrostShockwaveEffect?.(sprite.position.x, sprite.position.z, radius);
+        } else {
+            this.spawnPhysicalBurst?.(sprite.position.x, sprite.position.z, {
+                color: event.attack?.includes('scout') ? 0xff5a8a : 0x4de8ff,
+                count: 6,
+                upward: 0.12
+            });
+        }
         window.AudioManager?.play?.('ui_scan_ping', {
             volume: 0.48,
-            playbackRate: event.attack === 'mortar_volley' ? 1.35 : 0.38
+            playbackRate: event.attack === 'mortar_volley' || event.attack?.includes('scout') ? 1.35 : 0.38
         });
         window.dispatchEvent(new CustomEvent('boss-attack-telegraph', {
             detail: {
@@ -15558,10 +15579,23 @@ export class ThreeGame {
         const dz = this.player.position.z - sprite.position.z;
         const distance = Math.hypot(dx, dz);
         const angle = Math.atan2(dz, dx);
-        if (attackKey === 'mortar_volley' || attackKey === 'ice_needle_barrage') {
-            const speed = attackKey === 'ice_needle_barrage' ? 8.5 : 7.5;
-            for (const step of [-1, 0, 1]) {
-                const shotAngle = angle + step * (attackKey === 'ice_needle_barrage' ? 0.14 : 0.22);
+        if (['mortar_volley', 'ice_needle_barrage', 'corrupted_scout_burst', 'corrupted_scout_flank'].includes(attackKey)) {
+            if (attackKey === 'corrupted_scout_flank') {
+                const direction = (sprite.userData?.biomeBossFight?.attacksInPhase ?? 0) % 2 === 0 ? 1 : -1;
+                const flankX = sprite.position.x + Math.cos(angle + direction * Math.PI / 2) * 2.2;
+                const flankZ = sprite.position.z + Math.sin(angle + direction * Math.PI / 2) * 2.2;
+                if (this.isSnailTileWalkable?.(Math.round(flankX), Math.round(flankZ))) {
+                    sprite.position.x = flankX;
+                    sprite.position.z = flankZ;
+                }
+            }
+            const speed = attackKey === 'ice_needle_barrage' ? 8.5
+                : attackKey?.includes('scout') ? 9 : 7.5;
+            const spreadSteps = attackKey === 'corrupted_scout_flank' ? [-2, -1, 0, 1, 2] : [-1, 0, 1];
+            for (const step of spreadSteps) {
+                const spread = attackKey === 'ice_needle_barrage' ? 0.14
+                    : attackKey?.includes('scout') ? 0.16 : 0.22;
+                const shotAngle = angle + step * spread;
                 this.spawnProjectile({
                     x: sprite.position.x,
                     z: sprite.position.z,
@@ -15573,12 +15607,29 @@ export class ThreeGame {
                     isEnemy: true
                 });
             }
-        } else if (attackKey === 'radial_emp' || attackKey === 'deep_freeze_wave') {
-            const radius = attackKey === 'radial_emp' ? 5.2 : 5.8;
+        } else if (['radial_emp', 'deep_freeze_wave', 'corrupted_tank_slam', 'corrupted_tank_overload'].includes(attackKey)) {
+            const radius = attackKey === 'radial_emp' ? 5.2
+                : attackKey === 'deep_freeze_wave' ? 5.8
+                    : attackKey === 'corrupted_tank_overload' ? 6.2 : 5;
             this.spawnFrostShockwaveEffect?.(sprite.position.x, sprite.position.z, radius);
             if (distance <= radius) {
-                this.takeDamage?.(attackKey === 'radial_emp' ? 2 : 1, attackKey, sprite.position.x, sprite.position.z);
-                this.applyPlayerSlow?.(attackKey === 'deep_freeze_wave' ? 3 : 1.5);
+                const damage = attackKey === 'radial_emp' || attackKey?.includes('tank') ? 2 : 1;
+                this.takeDamage?.(damage, attackKey, sprite.position.x, sprite.position.z);
+                if (attackKey === 'deep_freeze_wave' || attackKey === 'corrupted_tank_overload') {
+                    this.applyPlayerSlow?.(attackKey === 'deep_freeze_wave' ? 3 : 1.75);
+                }
+            }
+        } else if (attackKey === 'corrupted_engineer_jam') {
+            this.applyPlayerSlow?.(2.5);
+            window.dispatchEvent(new CustomEvent('boss-signal-jam', {
+                detail: { boss: sprite.userData.type, duration: 2.5 }
+            }));
+        } else if (attackKey === 'corrupted_engineer_arc_net') {
+            const radius = 5.5;
+            this.spawnFrostShockwaveEffect?.(sprite.position.x, sprite.position.z, radius);
+            if (distance <= radius) {
+                this.takeDamage?.(1, attackKey, sprite.position.x, sprite.position.z);
+                this.applyPlayerSlow?.(3);
             }
         }
     }
@@ -31760,8 +31811,13 @@ export class ThreeGame {
             const sporesnailFight = (placement.type === 'boss_sporesnail' && !hadExplicitMaxHp)
                 ? createBossFight(SPORESNAIL_FIGHT_DEF)
                 : null;
-            const biomeBossDef = placement.type === 'boss_cybersnail' ? CYBERSNAIL_FIGHT_DEF
-                : placement.type === 'boss_cryosnail' ? CRYO_BOSS_FIGHT_DEF : null;
+            // Sporesnail retains its dedicated add/tint handler below; giving
+            // it a second generic fight object would tick one state while
+            // damage lands on the other. Every other catalog boss uses the
+            // shared biome/milestone runtime path.
+            const biomeBossDef = placement.type === 'boss_sporesnail'
+                ? null
+                : (BOSS_PHASE_DEFS[placement.type] ?? null);
             const biomeBossFight = biomeBossDef
                 ? createBossFight({ ...biomeBossDef, maxHp })
                 : null;
