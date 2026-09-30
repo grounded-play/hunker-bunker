@@ -7935,7 +7935,7 @@ function showTimelineDivergenceBanner({ title, description, locksEndings = [] })
 
     banner.innerHTML = `
         <div class="timeline-divergence-banner__kicker">
-            <span>⚠️</span> <span>CRITICAL TIMELINE DIVERGENCE</span>
+            <span>⚠️</span> <span data-i18n="hud.timeline_divergence">CRITICAL TIMELINE DIVERGENCE</span>
         </div>
         <div class="timeline-divergence-banner__title">${title}</div>
         <div class="timeline-divergence-banner__desc">${description}</div>

@@ -7704,8 +7704,8 @@ export class ThreeGame {
 
     triggerGameplayInteract() {
         if (!this.isGameplayInputActive()) return false;
-        if (this.interactWithMayorTina()) return true;
-        if (this.interactWithQueenCommunion()) return true;
+        if (this.interactWithMayorTina?.()) return true;
+        if (this.interactWithQueenCommunion?.()) return true;
         const priorityCandidates = this.getPriorityInteractionCandidates();
         if (priorityCandidates.length > 0) {
             const index = Math.min(this._interactionTargetIndex ?? 0, priorityCandidates.length - 1);
@@ -35424,7 +35424,7 @@ export class ThreeGame {
             this.spawnPhysicalBurst?.(target.position.x, target.position.z, { color: 0x10b981, count: 6, upward: 0.1, spread: 0.4 });
             window.AudioManager?.play?.('turret_fire', { volume: 0.35, playbackRate: 0.8 });
         } else {
-            this.applyPlayerDamageToEnemy(target, 3);
+            this.applyPlayerDamageToEnemy(target, 2);
             this.spawnPhysicalBurst?.(target.position.x, target.position.z, { color: 0x67e3e1, count: 4, upward: 0.1, spread: 0.3 });
             window.AudioManager?.play?.('turret_fire', { volume: 0.35, playbackRate: 1.1 });
         }
@@ -35515,13 +35515,17 @@ export class ThreeGame {
                         if (!this.isEnemyType(other?.userData?.type) || other.userData.isCompanion
                             || other.userData.dead || other.userData.burstTriggered || other.userData.isDisplayModel) continue;
                         const d = Math.hypot(other.position.x - root.position.x, other.position.z - root.position.z);
-                        if (d < nearestDist && this.hasCompanionFireLane(root.position, other.position)) {
+                        if (d < nearestDist && (this.hasCompanionFireLane ? this.hasCompanionFireLane(root.position, other.position) : true)) {
                             nearestDist = d;
                             nearestHostile = other;
                         }
                     }
                     if (nearestHostile) {
-                        this.executeCompanionAssistAbility(companion, nearestHostile, root);
+                        if (typeof this.executeCompanionAssistAbility === 'function') {
+                            this.executeCompanionAssistAbility(companion, nearestHostile, root);
+                        } else {
+                            this.applyPlayerDamageToEnemy(nearestHostile, 2);
+                        }
                     }
                 }
                 continue;

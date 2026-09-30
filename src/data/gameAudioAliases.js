@@ -21,5 +21,6 @@ export const GAME_AUDIO_ALIASES = Object.freeze({
     terminal_deny: 'ui_error3',
     // Turret fire is a gunshot, not the Engineer ability's deployment sting.
     turret_fire: 'weapon_fire_sidearm',
+    turret_reprogram: 'ui_upgrade_weapon',
     crystal_shatter: 'prop_impact_glass'
 });

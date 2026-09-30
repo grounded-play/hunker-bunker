@@ -32,6 +32,8 @@
     "hull": "装甲",
     "ammo": "弹药",
     "dash": "冲刺",
+    "melee": "近战格斗",
+    "timeline_divergence": "关键时间线分歧",
     "overclock": "超频",
     "sector": "扇区",
     "bunker_alert": "地堡警报"

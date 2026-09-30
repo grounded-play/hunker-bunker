@@ -378,6 +378,7 @@ export function applyLinchpinResolution(manager, linchpinId, resolution) {
             const description = descriptions[linchpinId]?.[resolution] || 'Irreversible choices have closed off future evacuation timelines.';
             window.dispatchEvent(new CustomEvent('timeline-divergence', {
                 detail: {
+                    id: linchpinId,
                     linchpinId,
                     resolution,
                     title: `CRITICAL TIMELINE DIVERGENCE: ${title}`,

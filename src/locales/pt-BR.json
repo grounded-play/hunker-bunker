@@ -32,6 +32,8 @@
     "hull": "BLINDAGEM",
     "ammo": "MUNIÇÃO",
     "dash": "IMPULSO",
+    "melee": "CORPO A CORPO",
+    "timeline_divergence": "DIVERGÊNCIA CRÍTICA DA LINHA DO TEMPO",
     "overclock": "OVERCLOCK",
     "sector": "SETOR",
     "bunker_alert": "ALERTA DO BÚNKER"

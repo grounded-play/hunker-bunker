@@ -32,6 +32,8 @@
     "hull": "HULL",
     "ammo": "AMMO",
     "dash": "DASH",
+    "melee": "MELEE",
+    "timeline_divergence": "CRITICAL TIMELINE DIVERGENCE",
     "overclock": "OVERCLOCK",
     "sector": "SECTOR",
     "bunker_alert": "BUNKER ALERT"

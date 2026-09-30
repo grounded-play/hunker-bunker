@@ -32,6 +32,8 @@
     "hull": "RUMPF",
     "ammo": "MUNITION",
     "dash": "SPURT",
+    "melee": "NAHKAMPF",
+    "timeline_divergence": "KRITISCHE ZEITLINIEN-DIVERGENZ",
     "overclock": "ÜBERTAKTER",
     "sector": "SEKTOR",
     "bunker_alert": "BUNKER-ALARM"

@@ -32,6 +32,8 @@
     "hull": "装甲",
     "ammo": "弾薬",
     "dash": "ダッシュ",
+    "melee": "近接格闘",
+    "timeline_divergence": "重大なタイムライン分岐",
     "overclock": "オーバークロック",
     "sector": "セクター",
     "bunker_alert": "バンカー警戒警報"
