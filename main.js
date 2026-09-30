@@ -5711,6 +5711,7 @@ function runDeathSequence(event) {
             ...stats,
             outcome: 'death',
             deathReason,
+            depthTier: stats.depthTier ?? window.game?.maxDepthTierReached ?? 0,
             runMs: Date.now() - runStartTime,
             classType: window.game?.playerType ?? getSelectedHeroType()
         }, { delayMs: 2200 });
@@ -14580,6 +14581,7 @@ async function runAct2DepartureSequence(detail = {}) {
     recordAchievementRunEnd({
         ...(detail.runStats ?? game?.getRunStats?.() ?? {}),
         outcome: 'victory',
+        depthTier: detail.runStats?.depthTier ?? game?.maxDepthTierReached ?? 0,
         ending,
         runMs: Date.now() - runStartTime,
         classType

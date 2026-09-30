@@ -195,7 +195,7 @@ Source: [HUD overlay review](hud-overlay-review-and-recovery-plan-2026-09-28.md)
   - distinct feedback for damage, low O₂, reload completion, ability ready and pickups,
     respecting reduced motion.
 
-  **Status (2026-09-29): core behavior is active; wear remains next.** A tested
+  **Status (2026-09-29): core behavior and wear v1 are active.** A tested
   four-second `CombatSignal` now drives `ThreeGame.inCombat` from local hostile hits,
   real player damage and enemies hunting the local operator. Combat collapses an open
   objective drawer and quiets loot. `hudGameplayState.js` resolves Idle / Engaged /
@@ -203,14 +203,20 @@ Source: [HUD overlay review](hud-overlay-review-and-recovery-plan-2026-09-28.md)
   priority function, with instrument-local reload, ability and pickup confirmation and
   reduced-motion fallbacks. Unit tests cover the timing and all nine states; the browser
   probe covers combat collapse, reload completion, critical health, pickup feedback and
-  death. The damage/wear overlay model remains the next R3 slice.
+  death. `suitCondition.js` now records damage tiers, capped scuffs, combat blood that
+  dries after 30 seconds, frost, toxin, repair scratches and new-life reset. The runtime
+  clears washable wear at a full heal, Tallow treatment or bunker console, removes blood
+  immediately when gore is disabled, caps overlays for reduced pressure / maximum
+  contrast, and uses source coordinates for a bezel-only directional jolt. Eighteen
+  class/state visual probes verify identical housing geometry and unobstructed instruments.
 - **Sprint 48 stretch, only after R1 and R2 pass:** wear model v1 (`suitCondition` +
-  blood, frost and damage tier 1 for one class). Overlays never cover instruments; HUD
-  style/layout ≤ 0.3 ms per frame.
+  blood, frost and damage tiers for all three classes). **Implemented.** Overlays are
+  masked to the bezel, never cover instruments, and update on signals or at 4 Hz only
+  while blood is drying. Deck hardware still has to confirm the ≤0.3 ms style/layout gate.
 - **Moved to Sprint 49:**
   - talking portraits;
   - event housings;
-  - wear for all classes, if v1 didn't land;
+  - painted wear-asset upgrades beyond the procedural v1;
   - flipping the default to `dock`.
 
   They depend on R1's geometry. The flip also needs R0–R4 plus a one-week opt-in
@@ -347,7 +353,7 @@ standard it follows. The options behind D1–D8 remain in the status doc's
 | 4 | **"Trade in / trade up"** is the Foundry smelter: one verb, 5 → 1 up a tier. | One term, one transaction and one test beat a second invented economy. | Done: the hub tab is TRADE-UP. |
 | 5 | **Invisible models:** no global renderer change. Capture seed, room, object, platform and screenshot at the hardware session, then fix that room's culling, bounds or ownership. | Successful asset loads point at culling or placement; a blind global change risks hiding the real defect. | QA intake row for P0. |
 | 6 | **`public/ui/suit/`:** delete; git history is the archive. | Don't ship unused assets (4.1 MB, no references). | Done `a5f154d7`. |
-| 7 | **Blood wear:** persistent-but-cleanable. It darkens over about 30 s, clears at the bunker or a heal station, and resets on a new life. Density is capped, it never covers instrument centres, it follows reduced visual-pressure settings, and it never conveys health by itself. | Players read damage history without losing readability; accessibility settings apply. | Lane B, wear v1 (Sprint 49). |
+| 7 | **Blood wear:** persistent-but-cleanable. It darkens over about 30 s, clears at the bunker or a heal station, and resets on a new life. Density is capped, it never covers instrument centres, it follows reduced visual-pressure settings, and it never conveys health by itself. | Players read damage history without losing readability; accessibility settings apply. | Done in Lane B wear v1; Deck performance/sign-off remains. |
 | 8 | **Dependency alerts:** fix on `dev/sprint-48` and flow through the normal release path. | Patch where development happens; no release-only divergence. | Done `cc12ac3f`: ip-address (both Dependabot alerts), plus undici and joi; `npm audit` 0. |
 | 9 | **Steam trade-ups:** make them work, server-authoritatively: the server picks inputs, consumes, grants and refunds on failure, within one collection. | Players expect a trade-up to stick; CS2 trade-up contracts are server-decided and collection-bound. | Done `6f7c03c3`. **Needs a backend redeploy**; until then the Vault keeps them disabled with a reason. |
 | 10 | **Foundry odds:** 30/24/32/11/3, each recipe rarer as its tier rises, empty tiers weightless, odds shown in the Fab Bay. | Loot-odds disclosure norms; no advertised tier may be a dead roll. | Done `d548dc35`. |

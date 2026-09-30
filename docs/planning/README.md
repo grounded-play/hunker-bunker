@@ -1,8 +1,9 @@
 # Planning
 
 Status: canonical process index · Owner: repository maintainers · Updated:
-2026-09-28 · Review: every sprint open and close
+2026-09-29 · Review: every sprint open and close
 
+- [Sprint Backlog Remediation and Clearance Plan](sprint-backlog-remediation-and-clearance-plan-2026-09-29.md) audits all 14 open GitHub issues, maps their implementation and verification across dedicated test suites (#78, #79, #80, #81, #82, #83, #84, #66), and outlines target hardware clearance steps.
 - [Sprint 48](sprint-48-plan.md) is the active sprint plan: hardware acceptance first, then co-op authority, HUD dock readability recovery (R0–R2), the unified Foundry's first slice, companion escort and the Proof Run.
 - [Sprint 47 status](sprint-47-status-and-sprint-48-plan-2026-09-28.md) records what shipped, how each item is verified, the open backlog and the owner decisions (D1–D8).
 - [HUD overlay review](hud-overlay-review-and-recovery-plan-2026-09-28.md) (2026-09-28) measures the dock's readability failures and sets the R0–R4 recovery order.

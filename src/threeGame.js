@@ -5001,6 +5001,7 @@ export class ThreeGame {
                 targetHeight: this.playerSpriteScale * 0.98,
                 allowStatic: true,
                 requireRigged: true,
+                operatorClass: overlayType,
                 wearableOverclocks: [
                     window.loadout?.getEquippedRigModule?.(1, this.playerType) ?? null,
                     window.loadout?.getEquippedRigModule?.(2, this.playerType) ?? null
@@ -5702,6 +5703,7 @@ export class ThreeGame {
                 targetHeight: (this.playerSpriteScale || 1.6) * 0.98,
                 allowStatic: true,
                 requireRigged: true,
+                operatorClass: remote.opClass,
                 wearableOverclocks: equipment.overclockIds,
                 ...classVisuals[remote.opClass]
             });
@@ -9671,7 +9673,7 @@ export class ThreeGame {
         const rawFrameDelta = Math.max(0, (now - this.lastTime) / 1000);
         const delta = Math.min(rawFrameDelta, 0.05);
         this.lastTime = now;
-        this.updateCombatSignal(delta);
+        this.updateCombatSignal?.(delta);
 
         // The asset museum is an isolated validation profile, not another
         // coordinate in the active expedition. Keep camera/player inspection
@@ -10472,10 +10474,12 @@ export class ThreeGame {
         window.AudioManager?.play('class_lock', { volume: 0.56, playbackRate: 0.76, bus: 'sfx' });
         this.arcManager?.recordSignal?.({ blackBoxesRecovered: 1 });
         this.arcManager?.evaluate?.();
+        this.player3dOverlay?.triggerCharmImpulse?.(2.0);
         if (this.isMultiplayer) {
             this.broadcastSharedWorldEvent?.('black-box-recovered', { recovered, ownerId: this.multiplayerLocalPlayerId ?? null });
         }
         window.dispatchEvent(new CustomEvent('black-box-recovered', { detail: recovered }));
+        window.dispatchEvent(new CustomEvent('salvage-cache-opened', { detail: salvage }));
         return true;
     }
 
@@ -15143,7 +15147,7 @@ export class ThreeGame {
         // loadout. Scaling it again here multiplied it by the receiver's.
         const localHit = !fromNetwork && reporterId == null;
         if (localHit) {
-            this.markCombatActivity('hostile-hit');
+            this.markCombatActivity?.('hostile-hit');
             const bossTarget = Boolean(sprite?.userData?.isBoss || sprite?.userData?.queenFight
                 || sprite?.userData?.sporesnailFight || sprite?.userData?.biomeBossFight);
             amount *= bossTarget
@@ -21529,7 +21533,7 @@ export class ThreeGame {
             )
         );
         this.player3dOverlay?.trigger('hit');
-        this.markCombatActivity('player-damaged');
+        this.markCombatActivity?.('player-damaged');
 
         if (sourceX != null && sourceZ != null) {
             this.showDirectionalHitIndicator(sourceX, sourceZ);
@@ -21544,7 +21548,9 @@ export class ThreeGame {
                 amount: previousHp - this.playerVitals.hp,
                 hp: this.playerVitals.hp,
                 maxHp: this.playerVitals.maxHp,
-                reason
+                reason,
+                sourceX,
+                sourceZ
             }
         }));
 
@@ -34306,7 +34312,7 @@ export class ThreeGame {
         const target = this.selectSnailTarget(sprite, activeShip);
         if (!target) return;
         if (target.type === 'player' && target.id === 'local' && target.mode === 'hunt') {
-            this.markCombatActivity('enemy-targeted-player');
+            this.markCombatActivity?.('enemy-targeted-player');
         }
         const startTileX = Math.round(sprite.position.x);
         const startTileZ = Math.round(sprite.position.z);

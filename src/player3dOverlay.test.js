@@ -198,4 +198,11 @@ describe('resolveGameplayCharmSocket', () => {
         expect(Number.isFinite(socket.position[0])).toBe(true);
         expect(socket.position).toEqual([0.18, -0.05, 0.06]);
     });
+
+    it('provides calibrated cordDrop matching archetype authored geometry', () => {
+        const socket = resolveGameplayCharmSocket('siege_breaker', 1);
+        expect(socket.cordDrop).toBeCloseTo(0.055, 3);
+        expect(resolveGameplayCharmSocket('talon', 1).cordDrop).toBeCloseTo(0.040, 3);
+        expect(resolveGameplayCharmSocket('gg1', 1).cordDrop).toBeCloseTo(0.045, 3);
+    });
 });

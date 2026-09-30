@@ -6,7 +6,7 @@ import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.j
 import { assetUrl } from './assetUrl.js';
 import { recordAssetLoad } from './assetLoadTelemetry.js';
 import { getWeaponCalibration, getWeaponScaleForBounds } from './weaponCalibration.js';
-import { getCharmSocketTransform, resolveCharmModelOffset } from './charmSockets.js';
+import { getCharmSocketTransform, resolveCharmModelOffset, getCharmCordLoopPoints } from './charmSockets.js';
 import { applyWeaponSheen } from './weaponSheenMaterial.js';
 import { isMaterialFinish, applyWeaponMaterialFinish } from './weaponFinishMaterial.js';
 import { CHARM_GLB_MAP } from './charmModels.js';
@@ -229,6 +229,8 @@ export async function createClassWeapon(archetypeId, { position = null, skinId =
     charmSocket.scale.setScalar(socketTransform.scale);
     charmSocket.userData.archetype = socketTransform.archetype;
     charmSocket.userData.anchor = socketTransform.anchor;
+    charmSocket.userData.cordDrop = socketTransform.cordDrop;
+    charmSocket.userData.baseRotation = [...socketTransform.rotation];
     weapon.add(charmSocket);
     weapon.userData.charmSocket = charmSocket;
     const charmGltf = await charmTemplate;
@@ -244,7 +246,25 @@ export async function createClassWeapon(archetypeId, { position = null, skinId =
         // Independent materials keep the gun's sheen off the trophy and its template.
         applyWeaponSheen(charm, 0xffffff);
         charm.traverse((mesh) => { if (mesh.isMesh) mesh.castShadow = true; });
+
+        // Physical tactile cord loop connecting weapon receiver anchor to the charm ring
+        const cordDrop = socketTransform.cordDrop ?? 0.045;
+        const cordMat = new THREE.MeshStandardMaterial({ color: 0x24272c, roughness: 0.85, metalness: 0.2 });
+        const curve = new THREE.CatmullRomCurve3(
+            getCharmCordLoopPoints(cordDrop).map((point) => new THREE.Vector3(...point)),
+            true,
+            'centripetal'
+        );
+        const cordMesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 28, 0.0022, 6, true), cordMat);
+        cordMesh.name = 'charmTactileCord';
+        cordMesh.castShadow = true;
+        const cordGroup = new THREE.Group();
+        cordGroup.name = 'charmTactileCordLoop';
+        cordGroup.add(cordMesh);
+        charm.position.y -= cordDrop;
+
         charmSocket.add(charm);
+        charmSocket.add(cordGroup);
     }
     return weapon;
 }
@@ -264,6 +284,7 @@ export function resolveGameplayCharmSocket(archetypeId, weaponScale = 1) {
     return {
         archetype: socket.archetype,
         anchor: socket.anchor,
+        cordDrop: socket.cordDrop ?? 0.045,
         position: socket.position.map((value) => value / scale),
         rotation: [...socket.rotation],
         scale: socket.scale / scale
@@ -707,6 +728,20 @@ export async function createPlayer3dOverlay({
         mixer.update(0);
     }
 
+    const charmPhysics = {
+        angleX: 0,
+        angleZ: 0,
+        velX: 0,
+        velZ: 0,
+        stiffness: 90,
+        damping: 10,
+        timer: 0
+    };
+    function triggerCharmSpringImpulse(intensity = 1.0) {
+        charmPhysics.velX += (Math.random() - 0.5) * 2.2 * intensity;
+        charmPhysics.velZ += (Math.random() - 0.5) * 2.2 * intensity;
+    }
+
     return {
         root,
         actions,
@@ -733,11 +768,18 @@ export async function createPlayer3dOverlay({
         setWeaponVisible(visible) {
             if (weapon) weapon.visible = Boolean(visible);
         },
+        triggerCharmImpulse(intensity = 1.0) {
+            triggerCharmSpringImpulse(intensity);
+        },
         trigger(name, duration = null) {
             if (!actions.has(name)) return;
             forcedName = name;
             forcedTimer = duration ?? actions.get(name).getClip().duration;
             actions.get(name).reset().setEffectiveWeight(0).play();
+            if (name === 'fire') triggerCharmSpringImpulse(1.6);
+            else if (name === 'melee') triggerCharmSpringImpulse(2.4);
+            else if (name === 'hit') triggerCharmSpringImpulse(2.0);
+            else if (name === 'land') triggerCharmSpringImpulse(1.5);
         },
         clearTrigger(name = null) {
             if (!forcedName || (name && forcedName !== name)) return;
@@ -846,11 +888,50 @@ export async function createPlayer3dOverlay({
             upperBodyTurn = THREE.MathUtils.damp(upperBodyTurn, targetUpperBodyTurn, 12, delta);
             const turnPerBone = upperBodyTurn / Math.max(upperBodyBones.length, 1);
             for (const bone of upperBodyBones) bone.rotation.y += turnPerBone;
+
+            if (weapon?.userData?.charmSocket) {
+                const charmSocket = weapon.userData.charmSocket;
+                const isMoving = Boolean(state?.isMoving);
+                const isSprinting = Boolean(state?.isSprinting);
+                const speed = state?.groundSpeed || (isMoving ? (isSprinting ? 6.5 : 3.8) : 0);
+
+                let targetAngX = 0;
+                let targetAngZ = 0;
+                const dt = Math.min(delta, 0.1);
+                if (speed > 0.1 && isMoving) {
+                    charmPhysics.timer += dt;
+                    const bobFreq = isSprinting ? 12 : 8;
+                    const bobAmp = (isSprinting ? 0.22 : 0.12) * Math.min(speed / 4, 1.5);
+                    targetAngX = Math.sin(charmPhysics.timer * bobFreq) * bobAmp;
+                    targetAngZ = Math.cos(charmPhysics.timer * bobFreq * 0.5) * (bobAmp * 0.7);
+                }
+
+                const forceX = -charmPhysics.stiffness * (charmPhysics.angleX - targetAngX) - charmPhysics.damping * charmPhysics.velX;
+                const forceZ = -charmPhysics.stiffness * (charmPhysics.angleZ - targetAngZ) - charmPhysics.damping * charmPhysics.velZ;
+                charmPhysics.velX += forceX * dt;
+                charmPhysics.velZ += forceZ * dt;
+                charmPhysics.angleX += charmPhysics.velX * dt;
+                charmPhysics.angleZ += charmPhysics.velZ * dt;
+
+                charmPhysics.angleX = THREE.MathUtils.clamp(charmPhysics.angleX, -0.6, 0.6);
+                charmPhysics.angleZ = THREE.MathUtils.clamp(charmPhysics.angleZ, -0.6, 0.6);
+
+                const baseRot = charmSocket.userData.baseRotation || [0, 0, 0];
+                charmSocket.rotation.x = baseRot[0] + charmPhysics.angleX;
+                charmSocket.rotation.z = baseRot[2] + charmPhysics.angleZ;
+            }
         },
         dispose() {
             chestPatch.dispose();
             equipment.dispose();
             mixer.stopAllAction();
+            if (weapon?.userData?.charmSocket) {
+                weapon.userData.charmSocket.traverse((object) => {
+                    object.geometry?.dispose?.();
+                    const materials = Array.isArray(object.material) ? object.material : [object.material];
+                    for (const material of materials) material?.dispose?.();
+                });
+            }
             root.traverse((object) => {
                 object.geometry?.dispose?.();
                 const materials = Array.isArray(object.material) ? object.material : [object.material];

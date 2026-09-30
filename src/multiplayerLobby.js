@@ -1450,15 +1450,16 @@ export class MultiplayerLobby {
             ? t('ui.archive.score_grade', { score: daily.score ?? 0, grade: daily.grade ?? 'D' })
             : daily.state === 'in_progress' ? t('ui.archive.in_progress') : t('ui.archive.ready');
         const objectives = [
-            { title: t('ui.daily_ops.tag'), progress: dailyState },
+            { title: t('ui.daily_ops.tag'), progress: dailyState, scope: daily.scope || 'personal' },
             ...(snapshot.seasonObjectives ?? []).map((objective) => ({
                 title: objective.title,
-                progress: `${Math.min(Number(objective.progress) || 0, Number(objective.target) || 0)} / ${Number(objective.target) || 0}`
+                progress: `${Math.min(Number(objective.progress) || 0, Number(objective.target) || 0)} / ${Number(objective.target) || 0}`,
+                scope: objective.scope || 'personal'
             }))
         ];
         objectiveList.innerHTML = objectives.length > 0
             ? objectives.map((objective) => `
-                <div class="net-objective-row">
+                <div class="net-objective-row" data-scope="${escapeBriefingText(objective.scope || 'personal')}">
                     <span>${escapeBriefingText(objective.title)}</span>
                     <b>${escapeBriefingText(objective.progress)}</b>
                 </div>`).join('')

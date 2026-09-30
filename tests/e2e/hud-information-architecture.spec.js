@@ -158,4 +158,51 @@ test.describe('dock HUD information architecture', () => {
         await page.evaluate(() => window.dispatchEvent(new CustomEvent('player-death')));
         await expect(page.locator('html')).toHaveAttribute('data-hud-gameplay-state', 'dead');
     });
+
+    test('keeps a bounded suit-condition record through damage, drying, repair, and a new life', async ({ page }) => {
+        await page.evaluate(() => {
+            window.dispatchEvent(new CustomEvent('combat-state-changed', { detail: { active: true } }));
+            window.dispatchEvent(new CustomEvent('player-damaged', {
+                detail: { hp: 2, maxHp: 3, reason: 'boss_sporesnail', sourceX: 2, sourceZ: 2 }
+            }));
+        });
+
+        await expect(page.locator('html')).toHaveAttribute('data-suit-damage-tier', '1');
+        await expect(page.locator('html')).toHaveAttribute('data-suit-blood-state', 'fresh');
+        const damaged = await page.evaluate(() => ({
+            blood: Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--suit-blood')),
+            scuffs: Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--suit-scuffs')),
+            mask: getComputedStyle(document.querySelector('.dock-housing--status'), '::after').webkitMaskImage
+        }));
+        expect(damaged.blood).toBeGreaterThan(0);
+        expect(damaged.scuffs).toBeGreaterThan(0);
+        expect(damaged.mask).not.toBe('none');
+
+        await page.evaluate(() => {
+            window.dispatchEvent(new CustomEvent('combat-state-changed', { detail: { active: false } }));
+            window.suitCondition.apply({ type: 'tick', deltaMs: 30_000 });
+        });
+        await expect(page.locator('html')).toHaveAttribute('data-suit-blood-state', 'dried');
+
+        await page.evaluate(() => {
+            document.body.classList.add('player-cold-exposed', 'player-poisoned');
+        });
+        await expect.poll(() => page.evaluate(() => ({
+            frost: getComputedStyle(document.documentElement).getPropertyValue('--suit-frost').trim(),
+            toxin: getComputedStyle(document.documentElement).getPropertyValue('--suit-toxin').trim()
+        }))).toEqual({ frost: '1.000', toxin: '1.000' });
+
+        await page.evaluate(() => window.dispatchEvent(new CustomEvent('suit-repaired')));
+        await expect(page.locator('html')).toHaveAttribute('data-suit-damage-tier', '0');
+
+        await page.evaluate(() => {
+            window.dispatchEvent(new CustomEvent('player-death'));
+            window.dispatchEvent(new CustomEvent('player-health-changed', { detail: { hp: 3, maxHp: 3 } }));
+        });
+        await expect(page.locator('html')).toHaveAttribute('data-suit-damage-tier', '0');
+        await expect(page.locator('html')).toHaveAttribute('data-suit-blood-state', 'clean');
+        await expect.poll(() => page.evaluate(() => (
+            getComputedStyle(document.documentElement).getPropertyValue('--suit-scuffs').trim()
+        ))).toBe('0.000');
+    });
 });
