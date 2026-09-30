@@ -18,7 +18,9 @@ import { ObjectiveRegistry } from './src/objectiveRegistry.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { ExpeditionReceipt } from './src/economyReceipt.js';
 import { renderReturnManifest } from './src/returnManifest.js';
-import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, getFabricatedOutputIds } from './src/fabricator.js';
+import { renderLoadoutStrip } from './src/itemCard.js';
+import { describeFieldWeapon } from './src/fieldWeapon.js';
+import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, describeRecipe, getFabricatedOutputIds, getFabricationOdds } from './src/fabricator.js';
 import { ProfileManager, exportSaveCode, importSaveCode, resetAllDataFactory, startNewCampaign } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
@@ -79,7 +81,8 @@ import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { createArmoryScene } from './src/armoryScene.js';
 import { createArmoryUi } from './src/armoryUi.js';
-import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
+import { initSteamVaultUI, isVaultExchangeAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
+import { createFoundryHub, isFoundryHubEnabled } from './src/foundryHub.js';
 import { initSeasonPassUI, cancelXpFeedback, beginSeasonRun, getSeasonRunSummary, openSeasonPassModal, seasonPass } from './src/seasonPassUi.js';
 import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
@@ -197,6 +200,8 @@ const titleNewRunBtn = document.getElementById('title-newrun-btn');
 // same flow as "NEW RUN" now that multiplayer setup lives at the end of
 // class-select -> Armory -> Deployment Briefing, not before it.
 const titleMultiplayerBtn = document.getElementById('title-multiplayer-btn');
+// Set by the title MULTIPLAYER button; read once when the deployment console opens.
+let multiplayerIntent = false;
 const titleAchievementsBtn = document.getElementById('title-achievements-btn');
 const titleSettingsBtn = document.getElementById('title-settings-btn');
 const titleAboutBtn = document.getElementById('title-about-btn');
@@ -244,6 +249,7 @@ function getSavedHeroType() {
 function saveHeroType(type) {
     if (!PLAYABLE_CLASSES.includes(type)) return;
     try { localStorage.setItem(ACTIVE_CLASS_KEY, type); } catch { /* storage unavailable */ }
+    window.loadout?.setActiveClass?.(type);
 }
 
 const buildInfo = typeof __HB_BUILD_INFO__ === 'object'
@@ -607,6 +613,10 @@ function closeModalWithAnimation(modal, onComplete, { exitClass = '', duration =
 window.closeModalWithAnimation = closeModalWithAnimation;
 
 const COMMENTARY_ENTRIES = Object.freeze({
+    commentary_on: {
+        title: 'Developer Commentary',
+        body: 'Commentary is on. Cards like this one appear as you reach the moments they talk about: your first run, black boxes, special rooms, the Queen. Every entry can also be read from Settings > Commentary > Read All.'
+    },
     run_start: {
         title: 'The Run Loop',
         body: 'The bunker is built around short pressure cycles: deploy, read the threat, bank what matters, and decide whether one more room is worth it.'
@@ -1246,8 +1256,46 @@ function moveControllerFocus(delta) {
     return target;
 }
 
+// A scrollable region with nothing focusable inside it (lore text, a log's
+// body, codex detail) can't be reached by moving focus, so a controller could
+// never read past its first screen. Up/down scroll such a region while it has
+// room to move in that direction, then fall through to focus movement.
+function scrollFocuslessRegion(root, code) {
+    const down = code === 'ArrowDown' || code === 'KeyS';
+    const up = code === 'ArrowUp' || code === 'KeyW';
+    if (!root || (!up && !down) || typeof getComputedStyle !== 'function') return false;
+    let best = null;
+    let bestRoom = 0;
+    for (const el of root.querySelectorAll('*')) {
+        if (el.scrollHeight <= el.clientHeight + 4) continue;
+        if (!/(auto|scroll)/.test(getComputedStyle(el).overflowY)) continue;
+        if (!isElementVisible(el) || getVisibleControllerFocusables(el).length > 0) continue;
+        const room = down ? el.scrollHeight - el.clientHeight - el.scrollTop : el.scrollTop;
+        if (room > 2 && room > bestRoom) {
+            best = el;
+            bestRoom = room;
+        }
+    }
+    if (!best) return false;
+    best.scrollBy({ top: (down ? 1 : -1) * Math.max(48, best.clientHeight * 0.6), behavior: 'smooth' });
+    return true;
+}
+
+// One directional step in a menu, shared by the Steam Input poll and the
+// gamepad-menu-nav event so both behave the same.
+function moveControllerDirectional(root, code, backward) {
+    if (root?.id === 'menu') return moveMenuDirectionalFocus(code);
+    if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(code)) return true;
+    if (scrollFocuslessRegion(root, code)) return true;
+    if (moveSpatialControllerFocus(root, code)) return true;
+    return moveControllerFocus(backward ? -1 : 1);
+}
+
 const SPATIAL_FOCUS_ROOT_IDS = new Set([
+    'achievements-modal',
+    'steam-vault-modal',
     'armory-screen',
+    'foundry-hub-modal',
     'fabrication-modal',
     'archive-modal',
     'codex-modal',
@@ -2177,9 +2225,7 @@ function handleSteamMenuInput(actions) {
                 : actions.left
                     ? 'ArrowLeft'
                     : 'ArrowRight';
-        if (root?.id === 'menu') moveMenuDirectionalFocus(code);
-        else if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(code)) return;
-        else if (!moveSpatialControllerFocus(root, code)) moveControllerFocus((actions.up || actions.left) ? -1 : 1);
+        moveControllerDirectional(root, code, actions.up || actions.left);
     }
 
     if (actions.confirm || actions.fire || actions.triggerRight) {
@@ -2219,10 +2265,7 @@ window.addEventListener('gamepad-menu-nav', (event) => {
             menu_left: 'ArrowLeft',
             menu_right: 'ArrowRight'
         };
-        const root = getControllerFocusRoot();
-        if (root?.id === 'menu') moveMenuDirectionalFocus(codeByAction[action]);
-        else if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(codeByAction[action])) return;
-        else if (!moveSpatialControllerFocus(root, codeByAction[action])) moveControllerFocus(action === 'menu_up' || action === 'menu_left' ? -1 : 1);
+        moveControllerDirectional(getControllerFocusRoot(), codeByAction[action], action === 'menu_up' || action === 'menu_left');
     } else if (action === 'menu_confirm') {
         activateControllerFocusedElement();
     } else if (action === 'menu_back') {
@@ -2748,7 +2791,7 @@ const state = {
         reducedPressure: localStorage.getItem('hb_reduced_pressure') === 'true',
         hudLayout: ['dock', 'classic'].includes(localStorage.getItem('hb_hud_layout'))
             ? localStorage.getItem('hb_hud_layout')
-            : 'classic',
+            : 'dock',
         hudScale: [0.85, 1, 1.15, 1.3].includes(Number(localStorage.getItem('hb_hud_scale')))
             ? Number(localStorage.getItem('hb_hud_scale'))
             : 1,
@@ -3066,6 +3109,9 @@ syncFabricatorOutputOwnership();
 
 const loadout = new LoadoutManager();
 window.loadout = loadout;
+// The loadout's active class decides where the Fab Bay equips and what the
+// hero strip shows; start it on the saved operator, not the Scout default.
+loadout.setActiveClass(getSavedHeroType());
 
 function applyHudThemeFromLoadout() {
     const gameContainer = document.getElementById('game-container');
@@ -3158,14 +3204,18 @@ function getDeploymentBriefingStatus() {
     try { storedDay = JSON.parse(localStorage.getItem('hb_day_cycle') ?? 'null')?.day ?? 1; } catch { /* default day */ }
     const day = window.game?.dayState?.day ?? storedDay;
     const blackBox = blackBoxStore.load();
-    const daily = getDailyOpsBriefingStatus();
+    const daily = {
+        ...getDailyOpsBriefingStatus(),
+        scope: 'personal'
+    };
     const seasonObjectives = window.seasonPass?.getActiveWeeklies?.()
         ?.filter((objective) => !objective.completed)
         .slice(0, 3)
         .map((objective) => ({
             title: objective.title,
             progress: objective.progress,
-            target: objective.target
+            target: objective.target,
+            scope: 'personal'
         })) ?? [];
     const campaignDepth = Math.max(campaign.deepestDepthTier, Number(arc.signals?.deepestDepthTier) || 0);
     const storyProgress = act2.phase && act2.phase !== 'dormant'
@@ -4098,10 +4148,14 @@ function parseRadioTransmission(rawText = '') {
         sender = "MAYOR TINA (TEACUP SIREN)";
         text = clean.replace(/^(TEACUP SIREN|MAYOR TINA):\s*/i, '').trim();
         portrait = "/lore_portraits/mayor_tina.webp";
-    } else if (/^MOTHERSHIP:/i.test(clean)) {
-        sender = "MOTHERSHIP COMMAND";
-        text = clean.replace(/^MOTHERSHIP:\s*/i, '').trim();
-        portrait = "/lore_portraits/survivor_00.webp";
+    } else if (/^(AURA|SUIT AURA|AI):/i.test(clean)) {
+        sender = "AURA TACTICAL AI";
+        text = clean.replace(/^(AURA|SUIT AURA|AI):\s*/i, '').trim();
+        portrait = "/lore_portraits/voice_aura_persona.png";
+    } else if (/^(MOTHERSHIP|COMMANDER|MOTHERSHIP COMMAND):/i.test(clean)) {
+        sender = "COMMANDER (MOTHERSHIP)";
+        text = clean.replace(/^(MOTHERSHIP|COMMANDER|MOTHERSHIP COMMAND):\s*/i, '').trim();
+        portrait = "/lore_portraits/voice_commander_persona.png";
     } else if (/^SISTER MARTHA:/i.test(clean)) {
         sender = "SISTER MARTHA";
         text = clean.replace(/^SISTER MARTHA:\s*/i, '').trim();
@@ -4368,16 +4422,31 @@ function isCommentaryModeEnabled() {
     return Boolean(state.settings.commentary);
 }
 
+// Commentary used to require the live gameplay HUD, so entries fired from
+// menus (Vault, Armory) or during the run intro were silently dropped and a
+// reviewer who switched it on saw nothing (Valve review 2026-09). Outside
+// gameplay, cards now go to a small stack over the menus.
+function getMenuCommentaryStack() {
+    let host = document.getElementById('menu-commentary-stack');
+    if (!host) {
+        host = document.createElement('div');
+        host.id = 'menu-commentary-stack';
+        host.className = 'menu-commentary-stack';
+        document.body.appendChild(host);
+    }
+    return host;
+}
+
 function showDeveloperCommentary(key, detail = {}, { once = true } = {}) {
-    if (!isGameplayPhase() || !isGameplayHudActive()) return false;
     if (!isCommentaryModeEnabled()) return false;
     const entry = COMMENTARY_ENTRIES[key];
     if (!entry) return false;
     const commentaryKey = `${key}:${detail?.template ?? detail?.id ?? ''}`;
     if (once && commentarySeenThisRun.has(commentaryKey)) return false;
 
-    const stack = document.querySelector('.hud-notification-stack');
-    if (!stack) return false;
+    const inGameplay = isGameplayPhase() && isGameplayHudActive();
+    const hudStack = inGameplay ? document.querySelector('.hud-notification-stack') : null;
+    const stack = hudStack ?? getMenuCommentaryStack();
 
     commentarySeenThisRun.add(commentaryKey);
 
@@ -4416,12 +4485,72 @@ function showDeveloperCommentary(key, detail = {}, { once = true } = {}) {
     });
 
     stack.append(card);
-    updateHudNotificationDeck();
     card.classList.remove('hidden');
-    requestAnimationFrame(() => {
-        card.classList.add('visible');
+    if (hudStack) {
         updateHudNotificationDeck();
-    });
+        requestAnimationFrame(() => {
+            card.classList.add('visible');
+            updateHudNotificationDeck();
+        });
+    } else {
+        // The menu stack has no HUD deck to time it out, so it times itself.
+        requestAnimationFrame(() => card.classList.add('visible'));
+        window.setTimeout(() => {
+            card.classList.remove('visible');
+            window.setTimeout(() => card.remove(), 320);
+        }, Number(card.dataset.autoDismissMs) || 8000);
+    }
+    return true;
+}
+
+// Run-start commentary fires while the intro is still playing; hold it until
+// the player is actually in control, then show it (gives up after 2 minutes).
+function showDeveloperCommentaryWhenPlaying(key) {
+    if (!isCommentaryModeEnabled()) return;
+    const deadline = Date.now() + 120_000;
+    const tick = () => {
+        const ready = typeof window.isGameplayReady === 'function' ? window.isGameplayReady() : (isGameplayPhase() && isGameplayHudActive());
+        if (ready) {
+            showDeveloperCommentary(key);
+            return;
+        }
+        if (Date.now() < deadline) window.setTimeout(tick, 500);
+    };
+    tick();
+}
+
+function renderCommentaryList() {
+    const list = document.getElementById('commentary-list');
+    if (!list) return;
+    list.innerHTML = '';
+    for (const entry of Object.values(COMMENTARY_ENTRIES)) {
+        const item = document.createElement('article');
+        item.className = 'commentary-list__item';
+        const title = document.createElement('h3');
+        title.className = 'commentary-list__title';
+        title.textContent = entry.title;
+        const body = document.createElement('p');
+        body.className = 'commentary-list__body';
+        body.textContent = entry.body;
+        item.append(title, body);
+        list.appendChild(item);
+    }
+}
+
+function openCommentaryList() {
+    const modal = document.getElementById('commentary-list-modal');
+    if (!modal) return;
+    renderCommentaryList();
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(() => focusControllerTarget(document.getElementById('close-commentary-list')));
+}
+
+function closeCommentaryList() {
+    const modal = document.getElementById('commentary-list-modal');
+    if (!modal || modal.classList.contains('hidden')) return false;
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
     return true;
 }
 
@@ -5589,9 +5718,13 @@ function resetRunToStartingState({
 
         runStartTime = Date.now();
         expeditionReceipt.begin(runStartTime, bankManager.getState());
-        void beginSeasonRun(`local:${crypto.randomUUID()}`, 0);
+        // randomUUID needs a secure context (not LAN http); getRandomValues
+        // doesn't, and is still a cryptographic source.
+        const randomSuffix = Array.from(globalThis.crypto?.getRandomValues?.(new Uint8Array(6)) ?? [], (byte) => byte.toString(16).padStart(2, '0')).join('');
+        const runUuid = globalThis.crypto?.randomUUID?.() ?? `run-${Date.now().toString(36)}-${randomSuffix}`;
+        void beginSeasonRun(`local:${runUuid}`, 0);
         resetCommentaryRunState();
-        showDeveloperCommentary('run_start');
+        showDeveloperCommentaryWhenPlaying('run_start');
         recordSteamTimelineEvent('run_start', 'Run Started', `${window.game?.playerType ?? getSelectedHeroType()} deployed into the bunker.`, {
             icon: 'run',
             priority: 1,
@@ -5699,6 +5832,7 @@ function runDeathSequence(event) {
             ...stats,
             outcome: 'death',
             deathReason,
+            depthTier: stats.depthTier ?? window.game?.maxDepthTierReached ?? 0,
             runMs: Date.now() - runStartTime,
             classType: window.game?.playerType ?? getSelectedHeroType()
         }, { delayMs: 2200 });
@@ -6342,6 +6476,11 @@ function renderAchievementCards(grid, state = achievementEngine.getState()) {
             def.key === 'archivist' ? 'achievement-card--archive-linked' : ''
         ].filter(Boolean).join(' ');
         if (def.key === 'archivist') card.id = 'archive-linked-achievement';
+        // Focusable so a controller can move through, and scroll, the whole
+        // list (Valve review 2026-09: achievements couldn't be scrolled with a
+        // pad). Read as one item: title, state, description.
+        card.tabIndex = 0;
+        card.setAttribute('role', 'listitem');
 
         const icon = document.createElement('div');
         icon.className = 'achievement-card__icon';
@@ -6386,8 +6525,10 @@ function renderAchievementCards(grid, state = achievementEngine.getState()) {
         }
 
         card.append(icon, body);
+        card.setAttribute('aria-label', [title.textContent, body.querySelector('.achievement-card__meta')?.textContent, blurb.textContent].filter(Boolean).join('. '));
         grid.appendChild(card);
     }
+    grid.setAttribute('role', 'list');
 }
 
 function renderAchievementsModal() {
@@ -6835,7 +6976,7 @@ window.addEventListener('bunker-line', (event) => {
     const text = event?.detail?.text;
     if (!text) return;
     const trimmed = String(text).trim();
-    if (/^(TEACUP SIREN|MAYOR TINA|SURVIVOR|MOTHERSHIP|SYSTEM|FOXHOLE|CORPO|HACKER|CRASH QUEEN|ABG|HYBRID|OKONKWO|MARTHA|BRIGGS|KAELEN|QUEEN):/i.test(trimmed)) {
+    if (/^(TEACUP SIREN|MAYOR TINA|SURVIVOR|MOTHERSHIP|COMMANDER|AURA|SYSTEM|FOXHOLE|CORPO|HACKER|CRASH QUEEN|ABG|HYBRID|OKONKWO|MARTHA|BRIGGS|KAELEN|QUEEN):/i.test(trimmed)) {
         showBiomePrompt(`> ${trimmed}`);
     } else {
         showBiomePrompt(`> BUNKER: ${trimmed}`);
@@ -7196,6 +7337,34 @@ window.addEventListener('scan-cooldown-tick', (event) => {
     if (_cachedRadarPanel) {
         _cachedRadarPanel.classList.toggle('class-ability-panel--ready', remaining <= 0);
         _cachedRadarPanel.classList.toggle('class-ability-panel--active', remaining > 0);
+    }
+});
+
+let _cachedDashBar = null;
+let _cachedDashPanel = null;
+window.addEventListener('dash-cooldown-tick', (event) => {
+    const { remaining = 0, max = 1.1 } = event?.detail ?? {};
+    if (!_cachedDashBar) _cachedDashBar = document.getElementById('dash-bar');
+    if (!_cachedDashPanel) _cachedDashPanel = document.getElementById('dash-cooldown-panel');
+    const fillPct = 1 - (remaining / Math.max(0.001, max));
+    if (_cachedDashBar) _cachedDashBar.style.transform = `scaleX(${Math.max(0, Math.min(1, fillPct))})`;
+    if (_cachedDashPanel) {
+        _cachedDashPanel.classList.toggle('class-ability-panel--ready', remaining <= 0);
+        _cachedDashPanel.classList.toggle('class-ability-panel--cooling', remaining > 0);
+    }
+});
+
+let _cachedMeleeBar = null;
+let _cachedMeleePanel = null;
+window.addEventListener('melee-cooldown-tick', (event) => {
+    const { remaining = 0, max = 0.8 } = event?.detail ?? {};
+    if (!_cachedMeleeBar) _cachedMeleeBar = document.getElementById('melee-bar');
+    if (!_cachedMeleePanel) _cachedMeleePanel = document.getElementById('melee-cooldown-panel');
+    const fillPct = 1 - (remaining / Math.max(0.001, max));
+    if (_cachedMeleeBar) _cachedMeleeBar.style.transform = `scaleX(${Math.max(0, Math.min(1, fillPct))})`;
+    if (_cachedMeleePanel) {
+        _cachedMeleePanel.classList.toggle('class-ability-panel--ready', remaining <= 0);
+        _cachedMeleePanel.classList.toggle('class-ability-panel--cooling', remaining > 0);
     }
 });
 
@@ -7873,6 +8042,48 @@ function showTacticalNotificationToast({ title, status, duration = 4000 }) {
         setTimeout(() => toast.remove(), 600);
     }, duration);
 }
+
+function showTimelineDivergenceBanner({ title, description, locksEndings = [] }) {
+    let banner = document.getElementById('timeline-divergence-banner');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'timeline-divergence-banner';
+        banner.className = 'timeline-divergence-banner';
+        document.body.appendChild(banner);
+    }
+
+    const lockedText = Array.isArray(locksEndings) && locksEndings.length > 0
+        ? `<div class="timeline-divergence-banner__locked">🔒 LOCKED OUTCOMES: ${locksEndings.join(', ').toUpperCase()}</div>`
+        : '';
+
+    banner.innerHTML = `
+        <div class="timeline-divergence-banner__kicker">
+            <span>⚠️</span> <span data-i18n="hud.timeline_divergence">CRITICAL TIMELINE DIVERGENCE</span>
+        </div>
+        <div class="timeline-divergence-banner__title">${title}</div>
+        <div class="timeline-divergence-banner__desc">${description}</div>
+        ${lockedText}
+    `;
+
+    banner.classList.add('visible');
+    if (window.AudioManager) {
+        window.AudioManager.play?.('ui_scan_ping', { volume: 0.65, playbackRate: 0.5 });
+    }
+
+    if (banner._dismissTimer) clearTimeout(banner._dismissTimer);
+    banner._dismissTimer = setTimeout(() => {
+        banner.classList.remove('visible');
+    }, 7000);
+
+    banner.onclick = () => {
+        banner.classList.remove('visible');
+    };
+}
+
+window.addEventListener('timeline-divergence', (e) => {
+    const detail = e?.detail ?? {};
+    showTimelineDivergenceBanner(detail);
+});
 
 async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
     const game = window.game;
@@ -9129,7 +9340,7 @@ function ensureArmoryInitialized() {
                 armoryScene: armorySceneInstance,
                 onEmbark: () => closeArmoryScreen({ embark: true }),
                 onBack: () => closeArmoryScreen({ embark: false }),
-                onOpenVault: () => openSteamVaultModal(),
+                onOpenVault: () => (isFoundryHubEnabled() ? foundryHub.open('stash') : openSteamVaultModal()),
                 onOpenSettings: () => openSettingsModal(),
                 onClassChange: (cls) => {
                     saveHeroType(cls);
@@ -9314,6 +9525,10 @@ if (startBtn) {
                     );
                 }
             });
+            if (multiplayerIntent) {
+                multiplayerIntent = false;
+                requestAnimationFrame(() => focusControllerTarget(document.getElementById('net-mode-coop-btn')));
+            }
         };
         openArmoryGate(openDeploymentBriefing);
     });
@@ -10666,11 +10881,32 @@ const aboutBtn = document.getElementById('about-btn');
 const aboutModal = document.getElementById('about-modal');
 const closeAbout = document.getElementById('close-about');
 
+function openAboutModal() {
+    const modal = document.getElementById('about-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+    document.getElementById('close-about')?.focus();
+}
+
+function closeAboutModal() {
+    const modal = document.getElementById('about-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+    const titleBtn = document.getElementById('title-about-btn');
+    if (titleBtn && !document.getElementById('splash')?.classList.contains('hidden')) {
+        titleBtn.focus();
+    }
+}
+
 if (aboutBtn && aboutModal) {
-    aboutBtn.addEventListener('click', () => aboutModal.classList.remove('hidden'));
+    aboutBtn.addEventListener('click', openAboutModal);
 }
 if (closeAbout && aboutModal) {
-    closeAbout.addEventListener('click', () => aboutModal.classList.add('hidden'));
+    closeAbout.addEventListener('click', closeAboutModal);
 }
 
 // Typography Diagnostic Toggle (Debug Tool)
@@ -10938,7 +11174,12 @@ mainCommentaryToggle?.addEventListener('change', (e) => {
     const enabled = Boolean(e.target.checked);
     state.settings.commentary = enabled;
     localStorage.setItem(COMMENTARY_STORAGE_KEY, String(enabled));
+    // Immediate proof the switch did something.
+    if (enabled) showDeveloperCommentary('commentary_on', {}, { once: false });
 });
+document.getElementById('open-commentary-list')?.addEventListener('click', openCommentaryList);
+document.getElementById('close-commentary-list')?.addEventListener('click', closeCommentaryList);
+setupClickOutside('commentary-list-modal', closeCommentaryList);
 
 // Gore keeps its own persistence (hb_gore) instead of riding on state.settings:
 // featureFlags is read from modules that never see the settings object --
@@ -12417,6 +12658,12 @@ document.addEventListener('keydown', (event) => {
             return;
         }
 
+        // Opened from Settings, so it closes before Settings does.
+        if (closeCommentaryList()) {
+            event.preventDefault();
+            return;
+        }
+
         const controlsPopup = document.getElementById('controls-popup');
         if (controlsPopup && !controlsPopup.classList.contains('hidden')) {
             document.getElementById('close-controls')?.click();
@@ -12471,7 +12718,7 @@ document.addEventListener('keydown', (event) => {
 
         const aboutModal = document.getElementById('about-modal');
         if (aboutModal && !aboutModal.classList.contains('hidden')) {
-            aboutModal.classList.add('hidden');
+            closeAboutModal();
             event.preventDefault();
             return;
         }
@@ -12493,6 +12740,12 @@ document.addEventListener('keydown', (event) => {
         const loreModal = document.getElementById('lore-modal');
         if (loreModal && !loreModal.classList.contains('hidden')) {
             closeLoreModalAndResume();
+            event.preventDefault();
+            return;
+        }
+
+        if (foundryHub.isOpen()) {
+            foundryHub.close();
             event.preventDefault();
             return;
         }
@@ -12601,10 +12854,7 @@ function setupClickOutside(modalId, closeAction) {
 
 setupClickOutside('dev-console-modal', closeDevConsoleModal);
 
-setupClickOutside('about-modal', () => {
-    const aboutModal = document.getElementById('about-modal');
-    if (aboutModal) aboutModal.classList.add('hidden');
-});
+setupClickOutside('about-modal', closeAboutModal);
 
 // Lore readouts pause gameplay input, so clicking away must resume it too.
 setupClickOutside('lore-modal', closeLoreModalAndResume);
@@ -12690,6 +12940,45 @@ function fabMissingResourceText(cost, bank = bankManager.getState()) {
     }
     return missing.length ? `NEED ${missing.join(' / ')}` : '';
 }
+
+// What a recipe prints, as the shared item catalog shows it. A fabricated
+// weapon is a firing profile fitted to the active class's gun, so it wears
+// that gun's picture.
+function fabItemOptions() {
+    const classId = loadout.activeClassId;
+    return { classId, frameId: `frame:${loadout.getClassLoadout(classId)?.archetypeId ?? ''}` };
+}
+
+function fabItemView(recipe) {
+    const view = describeRecipe(recipe, fabItemOptions());
+    return { id: view?.id ?? null, name: view?.name ?? recipe?.name ?? '', icon: view?.icon ?? '/favicon.png' };
+}
+
+// A Foundry weapon's effect on the class gun, as chips: the multipliers
+// combat applies (src/fieldWeapon.js), so every weapon card reads differently
+// even though they all fit the same gun.
+function fabWeaponStatsMarkup(recipe) {
+    const stats = recipe?.output?.kind === 'weapon' ? describeFieldWeapon(recipe.id) : null;
+    if (!stats) return '';
+    const mult = (value) => (Math.round(value * 100) / 100).toFixed(2).replace(/0$/, '');
+    const tone = (value) => (value > 1.001 ? 'up' : value < 0.999 ? 'down' : 'flat');
+    const chip = (key, value, vars) => `<span class="fab-stat fab-stat--${tone(value)}">${t(key, vars)}</span>`;
+    return `<div class="fab-stats">${[
+        chip('ui.fab.stat_damage', stats.damage, { value: mult(stats.damage) }),
+        chip('ui.fab.stat_rate', stats.fireRate, { value: mult(stats.fireRate) }),
+        chip('ui.fab.stat_range', stats.range, { value: mult(stats.range) }),
+        stats.projectiles > 1 ? chip('ui.fab.stat_shots', 2, { count: stats.projectiles }) : ''
+    ].join('')}</div>`;
+}
+
+function logFoundry(event, recipe, extra = {}) {
+    const view = recipe ? fabItemView(recipe) : null;
+    debugLog.info('FOUNDRY', event, { recipeId: recipe?.id ?? null, item: view?.id ?? null, itemName: view?.name ?? null, rarity: recipe?.rarity ?? null, icon: view?.icon ?? null, classId: loadout.activeClassId, ...extra });
+}
+
+window.addEventListener('fabrication-started', (event) => logFoundry('print-started', event.detail?.recipe));
+window.addEventListener('fabrication-complete', (event) => logFoundry('print-complete', event.detail?.recipe));
+window.addEventListener('fabrication-rolled', (event) => logFoundry('roll-revealed', event.detail?.recipe, { duplicate: Boolean(event.detail?.duplicate), objectiveHit: Boolean(event.detail?.objectiveHit), broken: Boolean(event.detail?.broken) }));
 
 function renderFieldPrint(grid, bank) {
     const recipe = FAB_RECIPES.find(entry => entry.id === 'scatter_rep');
@@ -12791,6 +13080,13 @@ function renderFabricationModal() {
                 : `INSUFFICIENT SALVAGE &nbsp;·&nbsp; ${fabCostText(FAB_SPIN_COST, bank, { showHaveNeed: true })}`;
     }
 
+    // The odds the roll uses, shown before the player spends (decision 10).
+    const oddsEl = document.getElementById('fab-odds');
+    if (oddsEl) {
+        oddsEl.innerHTML = `<span class="fab-odds__label">${t('ui.fab.odds')}</span>`
+            + getFabricationOdds().map(({ rarity, chance }) => `<span class="fab-odds__tier fab-odds__tier--${rarity.toLowerCase()}">${t(`rarity.${rarity.toLowerCase()}`)} ${Math.round(chance * 100)}%</span>`).join('');
+    }
+
     for (const recipe of FAB_RECIPES) {
         const fabricated = fabricator.isFabricated(recipe.id);
 
@@ -12802,7 +13098,8 @@ function renderFabricationModal() {
         const art = document.createElement('div');
         art.className = 'fab-card__art';
         const img = document.createElement('img');
-        img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = assetUrl(recipe.art);
+        const view = fabItemView(recipe);
+        img.loading = 'lazy'; img.decoding = 'async'; img.alt = view.name; img.src = assetUrl(view.icon);
         img.addEventListener('error', () => { img.src = assetUrl('/bunker_junk_rare.png'); }, { once: true });
         art.appendChild(img);
         const rarityTag = document.createElement('span');
@@ -12813,13 +13110,15 @@ function renderFabricationModal() {
 
         const name = document.createElement('div');
         name.className = 'fab-card__name';
-        name.innerHTML = `<span class="fab-card__klass">${recipe.klass}</span>${recipe.name}`;
+        name.innerHTML = `<span class="fab-card__klass">${recipe.klass}</span>${view.name}`;
         card.appendChild(name);
 
         const description = document.createElement('div');
         description.className = 'fab-card__description';
         description.textContent = recipe.blurb;
         card.appendChild(description);
+        const stats = fabWeaponStatsMarkup(recipe);
+        if (stats) card.insertAdjacentHTML('beforeend', stats);
 
         const status = document.createElement('div');
         status.className = 'fab-card__status';
@@ -12841,6 +13140,7 @@ function renderFabricationModal() {
                     classId: loadout.activeClassId,
                     replaceSlot
                 });
+                logFoundry(result.ok ? 'output-applied' : 'output-rejected', recipe, { granted: result.id ?? result.itemdefid ?? null, slot: result.slot ?? null, reason: result.reason ?? null });
                 if (result.ok) {
                     window.AudioManager?.play?.('class_lock', { volume: 0.55 });
                     syncEquippedWeaponLabel();
@@ -12891,7 +13191,7 @@ function renderFabricationModal() {
         grid.appendChild(card);
     }
     const objective = fabricator.getObjectiveState();
-    const targetName = objective.targetRecipe?.name ?? 'ALL TARGETS COMPLETE';
+    const targetName = objective.targetRecipe ? fabItemView(objective.targetRecipe).name : 'ALL TARGETS COMPLETE';
     const pct = Math.round((objective.chance ?? 1) * 100);
     setTxt('fab-summary', objective.complete
         ? `SCHEMATICS FABRICATED: ${fabricator.getFabricatedCount()} / ${FAB_RECIPES.length}`
@@ -12910,7 +13210,7 @@ function startFabTicker() {
 function stopFabTicker() { if (fabTicker) { clearInterval(fabTicker); fabTicker = null; } }
 
 // ── Fabricator gamba reveal (T7) ──────────────────────────────
-const RARITY_TILES = ['COMMON', 'COMMON', 'RARE', 'COMMON', 'RARE', 'EPIC', 'RARE', 'COMMON', 'EPIC', 'LEGENDARY'];
+const RARITY_TILES = ['COMMON', 'UNCOMMON', 'RARE', 'COMMON', 'RARE', 'EPIC', 'RARE', 'UNCOMMON', 'EPIC', 'LEGENDARY'];
 let fabRollSpinning = false;
 
 function runFabricatorRoll() {
@@ -12961,17 +13261,19 @@ function runFabricatorRoll() {
     setTimeout(() => {
         const r = result.rarity;
         const rec = result.recipe;
+        const view = fabItemView(rec);
         if (reveal) reveal.dataset.state = 'revealed';
         if (cardEl) {
             cardEl.className = `fab-reveal__card fab-reveal__card--${r.toLowerCase()}`;
             cardEl.innerHTML =
-                `<img class="fab-reveal__art" src="${rec.art}" alt="${rec.name}" onerror="this.src='/bunker_junk_rare.png'">` +
+                `<img class="fab-reveal__art" src="${assetUrl(view.icon)}" alt="${view.name}" onerror="this.src='/bunker_junk_rare.png'">` +
                 `<div class="fab-reveal__rarity">${r}${result.duplicate ? ' · DUPLICATE' : ''}</div>` +
-                `<div class="fab-reveal__name">${rec.name}</div>` +
+                `<div class="fab-reveal__name">${view.name}</div>` +
+                fabWeaponStatsMarkup(rec) +
                 `<div class="fab-reveal__klass">${rec.klass}${result.objectiveHit ? ' · OBJECTIVE FABRICATED' : result.duplicate ? ' · ALREADY OWNED' : ' · SCHEMATIC UNLOCKED'}${result.broken ? ' · FABRICATOR BROKE' : ''}</div>`;
         }
         window.AudioManager?.playProceduralLoot?.('weapon', r.toLowerCase());
-        if (result.objectiveHit) showBiomePrompt(`> FABRICATOR: ${rec.name} OBJECTIVE PRINT COMPLETE.`);
+        if (result.objectiveHit) showBiomePrompt(`> FABRICATOR: ${view.name} OBJECTIVE PRINT COMPLETE.`);
         if (result.broken) {
             showBiomePrompt('> FABRICATOR: PRINT HEAD FAILURE. PARTIAL REFUND ISSUED. FOLLOW NEW SIGNAL.');
             window.game?.revealFoundry?.({ randomEdge: true });
@@ -12984,6 +13286,10 @@ function runFabricatorRoll() {
 document.getElementById('fab-roll-btn')?.addEventListener('click', runFabricatorRoll);
 
 function openFabricationModal() {
+    if (isFoundryHubEnabled()) {
+        foundryHub.open('fabricate');
+        return;
+    }
     fabricator.tickPrints();
     renderFabricationModal();
     const modal = document.getElementById('fabrication-modal');
@@ -12995,15 +13301,76 @@ function openFabricationModal() {
     if (FAB_RECIPES.some((r) => fabricator.isPrinting(r.id))) startFabTicker();
 }
 let campRestSessionOpen = false;
-function closeFabricationModal() {
-    const modal = document.getElementById('fabrication-modal');
-    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+// Leaving the Fab Bay, or the Foundry hub that shows it, ends a camp rest.
+function finishFabricationSession() {
     stopFabTicker();
     if (campRestSessionOpen) {
         campRestSessionOpen = false;
         window.game?.finishCampRest?.();
     }
 }
+function closeFabricationModal() {
+    const modal = document.getElementById('fabrication-modal');
+    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+    finishFabricationSession();
+}
+
+// ── Foundry hub (src/foundryHub.js; on unless hb_foundry_hub=0) ─
+// Stash, Trade-up and Store show the Vault's panels; Fabricate shows the Fab
+// Bay's. Each tab's renderer is the one those windows already use. The
+// inventory loads asynchronously, and it decides whether Store and Trade-up
+// are available, so the tab bar is refreshed once it lands.
+function showVaultPanels(after = null) {
+    initSteamVaultUI();
+    loadVaultData()
+        .then(() => { after?.(); foundryHub.refresh(); })
+        .catch((error) => debugLog.warn('FOUNDRY', 'hub-inventory-load-failed', { message: String(error?.message ?? error) }));
+}
+
+const foundryHub = createFoundryHub({
+    getBank: () => bankManager.getState(),
+    getClassId: () => loadout.activeClassId,
+    isFoundryActivated: () => bankManager.isFoundryActivated(),
+    isStoreAvailable: () => !document.getElementById('vault-tab-store')?.classList.contains('hidden'),
+    isTradeUpAvailable: () => isVaultExchangeAvailable(),
+    focus: (element) => { if (element) focusControllerTarget(element); },
+    onTabShown: {
+        stash: () => showVaultPanels(),
+        fabricate: () => {
+            fabricator.tickPrints();
+            renderFabricationModal();
+            if (FAB_RECIPES.some((r) => fabricator.isPrinting(r.id))) startFabTicker();
+        },
+        tradeup: () => {
+            renderSmelterPanel();
+            showVaultPanels(renderSmelterPanel);
+        },
+        store: () => showVaultPanels()
+    },
+    renderLoadout: (container) => {
+        if (!container) return;
+        container.innerHTML = `<div class="item-card-strip" id="foundry-hub-loadout-strip"></div><p class="foundry-hub__hint">${t('ui.foundry_hub.loadout_hint')}</p>`;
+        const classId = loadout.activeClassId;
+        const chassisId = loadout.getEquippedChassisSkinId();
+        renderLoadoutStrip(container.querySelector('#foundry-hub-loadout-strip'), loadout.getClassLoadout(classId), {
+            classId,
+            chassisId: loadout.isChassisSupportedForClass(classId, chassisId) ? chassisId : null
+        });
+    },
+    onClose: () => finishFabricationSession(),
+    log: (event, detail) => debugLog.info('FOUNDRY', `hub-${event}`, detail)
+});
+window.foundryHub = foundryHub;
+
+document.getElementById('close-foundry-hub')?.addEventListener('click', () => foundryHub.close());
+setupClickOutside('foundry-hub-modal', () => foundryHub.close());
+// The main menu's Vault opens the hub at Stash when the hub is on.
+document.getElementById('steam-vault-btn')?.addEventListener('click', (event) => {
+    if (!isFoundryHubEnabled()) return;
+    event.stopImmediatePropagation();
+    event.preventDefault();
+    foundryHub.open('stash');
+}, { capture: true });
 
 function refreshFabAccess() {
     const fabCmd = document.getElementById('fabrication-command');
@@ -14445,6 +14812,7 @@ async function runAct2DepartureSequence(detail = {}) {
     recordAchievementRunEnd({
         ...(detail.runStats ?? game?.getRunStats?.() ?? {}),
         outcome: 'victory',
+        depthTier: detail.runStats?.depthTier ?? game?.maxDepthTierReached ?? 0,
         ending,
         runMs: Date.now() - runStartTime,
         classType
@@ -14554,6 +14922,17 @@ document.getElementById('import-save')?.addEventListener('click', () => {
 // ── Operator roster / loadout console (doc 01.C) ──────────────
 // Equip a fabricated weapon as the active sidearm; the choice surfaces on the
 // in-game weapon panel and persists.
+// The hero screen's equipped strip: the selected class's items as the same
+// cards the Armory, Foundry and Vault show (src/itemCard.js).
+function renderHeroLoadoutStrip(type = activePreviewType) {
+    const classId = String(type ?? loadout.activeClassId ?? 'scout').toLowerCase();
+    const chassisId = loadout.getEquippedChassisSkinId();
+    renderLoadoutStrip(document.getElementById('hero-loadout-strip'), loadout.getClassLoadout(classId), {
+        classId,
+        chassisId: loadout.isChassisSupportedForClass(classId, chassisId) ? chassisId : null
+    });
+}
+
 function syncEquippedWeaponLabel() {
     const titleEl = document.querySelector('#weapon-status-panel .weapon-status-panel__title');
     if (titleEl) titleEl.textContent = loadout.getEquippedLabel(fabricator);
@@ -14650,6 +15029,7 @@ function renderHomebaseConsole({ initializeCallsign = false } = {}) {
             ? `${t('ui.menu.recon_frame')} · ${t('ui.menu.spec_scout_armor')}`
             : `${t('ui.menu.utility_frame')} · ${t('ui.menu.spec_eng_armor')}`);
     setTxt('homebase-loadout-summary', `${t('ui.hero_detail.chassis_spec')} // ${activeChassisSpec}`);
+    renderHeroLoadoutStrip(activePreviewType);
 
     // Profile identity and career totals survive NEW RUN. Never source these
     // tiles from ThreeGame.getRunStats(): that object is the active expedition
@@ -15095,6 +15475,7 @@ async function syncHeroPreview(type) {
             : `${t('ui.menu.utility_frame')} · ${t('ui.menu.spec_eng_armor')}`);
     const summaryEl = document.getElementById('homebase-loadout-summary');
     if (summaryEl) summaryEl.textContent = `${t('ui.hero_detail.chassis_spec')} // ${activeChassisSpec}`;
+    renderHeroLoadoutStrip(type);
 
     if (scoutHeroPreview) {
         const loaded = await Promise.race([
@@ -15829,10 +16210,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
     if (titleNewRunBtn) {
-        titleNewRunBtn.addEventListener('click', startNewTacticalRunFlow);
+        titleNewRunBtn.addEventListener('click', () => {
+            multiplayerIntent = false;
+            startNewTacticalRunFlow();
+        });
     }
+    // MULTIPLAYER (Valve review 2026-09: online play couldn't be found; the
+    // only route was NEW RUN > Armory > EMBARK). Same hero and Armory steps,
+    // then the deployment console opens with focus on the online modes.
     if (titleMultiplayerBtn) {
-        titleMultiplayerBtn.addEventListener('click', startNewTacticalRunFlow);
+        titleMultiplayerBtn.addEventListener('click', () => {
+            multiplayerIntent = true;
+            startNewTacticalRunFlow();
+        });
     }
     if (titleContinueBtn) {
         titleContinueBtn.addEventListener('click', () => {
@@ -15857,10 +16247,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         titleAchievementsBtn.addEventListener('click', openAchievementsModal);
     }
     if (titleAboutBtn) {
-        titleAboutBtn.addEventListener('click', () => {
-            const aboutModal = document.getElementById('about-modal');
-            if (aboutModal) aboutModal.classList.remove('hidden');
-        });
+        titleAboutBtn.addEventListener('click', openAboutModal);
     }
     if (titleSettingsBtn) {
         titleSettingsBtn.addEventListener('click', openSettingsModal);

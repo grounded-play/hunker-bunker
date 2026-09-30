@@ -1,0 +1,275 @@
+/* Sprint 48 R2: one prompt lane and one collapsible objective drawer.
+   Classic HUD remains unchanged; these rules activate only for the dock. */
+
+html[data-hud-layout="dock"] [data-hud-suppressed="true"] {
+  display: none !important;
+}
+
+html[data-hud-layout="dock"] [data-hud-alert-suppressed="true"] {
+  display: none !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport .hud-mission-stack {
+  top: auto !important;
+  right: auto !important;
+  bottom: calc(var(--hud-margin) + var(--dock-band-h, calc(64 * var(--u))) + 10 * var(--u)) !important;
+  left: 50% !important;
+  width: min(calc(560 * var(--u)), calc(100% - 40 * var(--u))) !important;
+  transform: translateX(-50%) !important;
+  display: block !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport .hud-mission-stack > * {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #tutorial-prompt,
+html[data-hud-layout="dock"] #game-viewport #loop-step-hud {
+  top: auto !important;
+  right: auto !important;
+  bottom: calc(var(--hud-margin) + var(--dock-band-h, calc(64 * var(--u))) + 10 * var(--u)) !important;
+  left: 50% !important;
+  width: min(calc(560 * var(--u)), calc(100% - 40 * var(--u))) !important;
+  transform: translateX(-50%) !important;
+  box-sizing: border-box !important;
+}
+
+.hud-right-rail {
+  display: contents;
+}
+
+html[data-hud-layout="dock"] #game-viewport .hud-right-rail {
+  position: absolute;
+  top: var(--hud-margin);
+  right: calc(var(--hud-margin) + 56 * var(--u));
+  width: min(calc(420 * var(--u)), calc(100% - 40 * var(--u)));
+  max-height: min(calc(440 * var(--u)), 62vh);
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--u));
+  z-index: 16900;
+  pointer-events: none;
+}
+
+.objective-drawer {
+  display: contents;
+  pointer-events: auto;
+}
+
+.objective-drawer > .objective-drawer__toggle {
+  display: none;
+}
+
+#ui .objective-drawer.hidden {
+  display: contents !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #objective-drawer {
+  display: block;
+  position: static;
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui #objective-drawer.hidden {
+  display: none !important;
+}
+
+.objective-drawer__toggle {
+  width: 100%;
+  min-height: calc(40 * var(--u));
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  padding: calc(7 * var(--u)) calc(10 * var(--u));
+  color: #eff9fa;
+  background: rgba(8, 16, 23, .94);
+  border: calc(1 * var(--u)) solid rgba(103, 227, 225, .48);
+  border-left-width: calc(3 * var(--u));
+  border-radius: calc(4 * var(--u));
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+html[data-hud-layout="dock"] #game-viewport .objective-drawer__toggle,
+.tactical-map-sidebar > .objective-drawer--map .objective-drawer__toggle {
+  display: grid;
+}
+
+.objective-drawer__toggle:focus-visible {
+  outline: calc(2 * var(--u)) solid #67e3e1;
+  outline-offset: calc(2 * var(--u));
+}
+
+.objective-drawer__kicker {
+  color: #85a3af;
+  font-size: max(11px, calc(11 * var(--u)));
+  font-weight: 700;
+  letter-spacing: .12em;
+}
+
+.objective-drawer__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  font-size: max(11px, calc(14 * var(--u)));
+  font-weight: 800;
+}
+
+.objective-drawer__progress,
+.objective-drawer__count {
+  padding: calc(2 * var(--u)) calc(5 * var(--u));
+  color: #eff9fa;
+  background: #23333d;
+  border-radius: calc(3 * var(--u));
+  font: 700 max(11px, calc(11 * var(--u)))/1 'Space Mono', monospace;
+  white-space: nowrap;
+}
+
+.objective-drawer__chevron {
+  color: #67e3e1;
+  font-size: max(14px, calc(16 * var(--u)));
+  line-height: 1;
+  transition: transform 160ms ease;
+}
+
+.objective-drawer[data-expanded="true"] .objective-drawer__chevron {
+  transform: rotate(180deg);
+}
+
+html[data-hud-layout="dock"] .objective-drawer[data-expanded="false"] #objective-tracker {
+  display: none !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #objective-drawer #objective-tracker {
+  margin-top: calc(6 * var(--u));
+  max-height: min(calc(360 * var(--u)), 55vh);
+  overflow: auto;
+  gap: calc(6 * var(--u));
+}
+
+html[data-hud-layout="dock"] #game-viewport .hud-right-rail > .hud-notification-stack {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  max-height: min(calc(170 * var(--u)), 24vh);
+  min-height: 0 !important;
+  overflow: hidden;
+  flex: 0 1 auto;
+  z-index: auto !important;
+  pointer-events: none;
+}
+
+html[data-hud-layout="dock"] #game-viewport .hud-right-rail > .hud-notification-stack > * {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  max-height: inherit;
+  overflow: hidden;
+}
+
+/* One alert lane: active states stay live, but only the highest priority is
+   rendered. Hiding the winner automatically reveals the next queued state. */
+html[data-hud-layout="dock"] #game-viewport #ui :is(
+  #boss-status-panel,
+  #hazard-status-panel,
+  #queens-ledger-hud
+) {
+  top: var(--hud-margin) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #objective-drawer .objective-tracker__item {
+  padding: calc(9 * var(--u)) calc(10 * var(--u));
+}
+
+/* R3 gameplay states: the resolver exposes exactly one primary state. Feedback
+   pulses stay on the instrument that changed, never over its text. */
+html[data-hud-layout="dock"] #pickup-counter-panel,
+html[data-hud-layout="dock"] #weapon-status-panel,
+html[data-hud-layout="dock"] :is(#class-ability-panel, #radar-scan-panel) {
+  transition: opacity 180ms ease, filter 180ms ease, transform 180ms ease;
+}
+
+html[data-hud-layout="dock"][data-hud-gameplay-state="engaged"] #pickup-counter-panel {
+  opacity: .46;
+}
+
+html[data-hud-layout="dock"][data-hud-gameplay-state="engaged"] #pickup-counter-panel:hover,
+html[data-hud-layout="dock"] #pickup-counter-panel[data-hud-feedback="pickup"] {
+  opacity: 1;
+}
+
+html[data-hud-layout="dock"][data-hud-gameplay-state="critical"] :is(#vitals-panel, #ship-status-panel) {
+  filter: drop-shadow(0 0 calc(5 * var(--u)) rgba(255, 65, 65, .82));
+  animation: hud-critical-instrument 900ms ease-in-out infinite alternate;
+}
+
+html[data-hud-layout="dock"][data-hud-gameplay-state="frozen"] .dock-housing {
+  filter: drop-shadow(0 0 calc(6 * var(--u)) rgba(113, 205, 223, .72));
+}
+
+html[data-hud-layout="dock"][data-hud-gameplay-state="toxic"] .dock-housing {
+  filter: drop-shadow(0 0 calc(6 * var(--u)) rgba(133, 220, 96, .68));
+}
+
+html[data-hud-layout="dock"][data-hud-gameplay-state="boss"] .dock-housing {
+  filter: drop-shadow(0 0 calc(7 * var(--u)) rgba(255, 72, 72, .62));
+}
+
+html[data-hud-layout="dock"][data-hud-gameplay-state="dead"] .dock-housing {
+  filter: grayscale(.88) brightness(.42);
+}
+
+html[data-hud-layout="dock"] [data-hud-feedback="reload-complete"],
+html[data-hud-layout="dock"] [data-hud-feedback="ability-ready"] {
+  animation: hud-instrument-ready 520ms ease-out 1;
+}
+
+html[data-hud-layout="dock"] [data-hud-feedback="pickup"] {
+  animation: hud-pickup-confirm 420ms ease-out 1;
+}
+
+@keyframes hud-critical-instrument {
+  from { opacity: .72; }
+  to { opacity: 1; }
+}
+
+@keyframes hud-instrument-ready {
+  0% { filter: brightness(1); transform: translateY(0); }
+  35% { filter: brightness(1.75) drop-shadow(0 0 calc(7 * var(--u)) rgba(103, 227, 225, .9)); transform: translateY(calc(-2 * var(--u))); }
+  100% { filter: brightness(1); transform: translateY(0); }
+}
+
+@keyframes hud-pickup-confirm {
+  0% { filter: brightness(1); }
+  45% { filter: brightness(1.7); }
+  100% { filter: brightness(1); }
+}
+
+/* While the tactical map is open, the same drawer becomes the objective section
+   in its sidebar instead of remaining hidden behind the modal. */
+.tactical-map-sidebar > .objective-drawer--map {
+  position: static;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.tactical-map-sidebar > .objective-drawer--map #objective-tracker {
+  max-height: min(330px, 44vh);
+  overflow: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .objective-drawer__chevron { transition: none; }
+  html[data-hud-layout="dock"] #pickup-counter-panel,
+  html[data-hud-layout="dock"] #weapon-status-panel,
+  html[data-hud-layout="dock"] :is(#class-ability-panel, #radar-scan-panel) { transition: none; }
+  html[data-hud-layout="dock"][data-hud-gameplay-state="critical"] :is(#vitals-panel, #ship-status-panel),
+  html[data-hud-layout="dock"] [data-hud-feedback] { animation: none; }
+}

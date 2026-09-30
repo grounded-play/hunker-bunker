@@ -132,6 +132,24 @@ export function formatReportLine(line, t) {
             .map((part) => `${part.amount} ${part.resourceKey ? t(part.resourceKey) : part.resource}`)
             .join(' · ');
     }
-    if (params.labelKey) params.label = t(params.labelKey, params);
-    return t(line.key, params);
+    if (params.labelKey) {
+        const translated = t(params.labelKey, params);
+        if (translated !== params.labelKey) {
+            params.label = translated;
+        } else if (params.name) {
+            params.label = params.name;
+        } else if (params.faction) {
+            params.label = `${params.faction} (${params.delta || params.bond || '+1'})`;
+        } else if (params.linchpinId) {
+            params.label = `${params.linchpinId}: ${params.resolution}`;
+        }
+    }
+    const result = t(line.key, params);
+    if (result === line.key) {
+        if (line.key === 'ui.go.report.item_faction') return `Faction: ${params.label || params.faction || 'Standing Shifted'}`;
+        if (line.key === 'ui.go.report.item_unlock') return `Unlocked: ${params.label || params.name || 'Blueprint'}`;
+        if (line.key === 'ui.go.report.item_lead') return `Narrative Lead: ${params.label || params.resolution || 'New Lead'}`;
+        if (line.key === 'ui.go.report.item_settlement') return `Settled: ${params.label || params.name || 'Survivor'} at ${params.camp || 'Camp'}`;
+    }
+    return result;
 }

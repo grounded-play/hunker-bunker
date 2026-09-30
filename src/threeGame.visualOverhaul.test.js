@@ -23,6 +23,42 @@ describe('Visual Overhaul Phase B & D (Surface Depth & Grade)', () => {
             expect(threeGameSource).toContain('normal = normalize(normal + hbFloorNormalPerturb)');
         });
 
+        it('adds deterministic wet patches to authored room floors without overlay meshes', () => {
+            expect(threeGameSource).toContain('float hbRoomWetMask(vec2 worldXZ)');
+            expect(threeGameSource).toContain('diffuseColor.rgb *= mix(1.0, 0.78, hbRoomWet)');
+            expect(threeGameSource).toContain('roughnessFactor = mix(roughnessFactor, 0.1, hbRoomWetRoughness)');
+        });
+
+        it('batches architectural role displays into housing and emissive screen pools', () => {
+            expect(threeGameSource).toContain('isRoomRoleDisplayHousingPool: true');
+            expect(threeGameSource).toContain('isRoomRoleDisplayScreenPool: true');
+            expect(threeGameSource).toContain('screenPool.setColorAt(index, new THREE.Color(screen.color))');
+            expect(threeGameSource).toContain('displayFamilies: [...displayFamilies]');
+        });
+
+        it('activates hallway dressing kits and lighting rhythm in bounded instance pools', () => {
+            expect(threeGameSource).toContain('planHallwayRouteDressing(metadata, grid)');
+            expect(threeGameSource).toContain('isHallwayRouteStructurePool: true');
+            expect(threeGameSource).toContain('isHallwayRouteCablePool: true');
+            expect(threeGameSource).toContain('isHallwayRouteSignalPool: true');
+            expect(threeGameSource).toContain('lightingRhythms: [...new Set(plans.map((plan) => plan.lightingRhythm))]');
+        });
+
+        it('renders role thresholds and animated environmental drips in bounded pools', () => {
+            expect(threeGameSource).toContain('isRoomThresholdMarkingPool: true');
+            expect(threeGameSource).toContain('isRoomEnvironmentalDripPool: true');
+            expect(threeGameSource).toContain('uFallDistance: { value: 2.18 }');
+            expect(threeGameSource).toContain('this.environmentDripMaterial.uniforms.uTime.value = now * 0.001');
+        });
+
+        it('gives ordinary, route and locked door headers distinct intensity and shape', () => {
+            expect(threeGameSource).toContain("['ordinary', []]");
+            expect(threeGameSource).toContain("['route', []]");
+            expect(threeGameSource).toContain("['locked', []]");
+            expect(threeGameSource).toContain("portalImportance === 'ordinary' ? 0.07");
+            expect(threeGameSource).toContain('importance\n            };');
+        });
+
         it('injects vascular pulsation into floor emissive radiance', () => {
             expect(threeGameSource).toContain('vec3 bioVeinColor = vec3(1.0, 0.44, 0.08)');
             expect(threeGameSource).toContain('totalEmissiveRadiance += vec3(0.0, 0.7, 0.85) * glowIntensity * 1.35 + bioVeinColor');

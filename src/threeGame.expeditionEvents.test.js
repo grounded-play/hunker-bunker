@@ -213,10 +213,16 @@ describe('the Ring 1 event in the runtime', () => {
         expect(of('expedition-event-state').map((d) => d.phase)).toEqual(['signalled', 'bypassing', 'resolved']);
     });
 
-    it('does not run in co-op, and a new deployment clears the old route', () => {
+    it('runs in co-op but is disabled in pvp, and a new deployment clears the old route', () => {
+        const pvp = game({ multiplayer: true });
+        pvp.multiplayerMode = 'pvp';
+        pvp.setActiveExpedition(profile('unstable_vault', 'glacial_gale', 11));
+        expect(pvp._expeditionEvent).toBeNull();
+
         const coop = game({ multiplayer: true });
+        coop.multiplayerMode = 'coop';
         coop.setActiveExpedition(profile('unstable_vault', 'glacial_gale', 11));
-        expect(coop._expeditionEvent).toBeNull();
+        expect(coop._expeditionEvent).not.toBeNull();
 
         const g = game();
         g.setActiveExpedition(profile('unstable_vault', 'glacial_gale', 11));

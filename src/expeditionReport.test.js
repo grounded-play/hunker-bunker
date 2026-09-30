@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { REPORT_ITEM_KINDS, buildExpeditionReport, missingForCost, reportItemLines } from './expeditionReport.js';
+import { REPORT_ITEM_KINDS, buildExpeditionReport, formatReportLine, missingForCost, reportItemLines } from './expeditionReport.js';
+import { t } from './i18n.js';
 
 describe('the expedition report tells the player what the run achieved and what is next', () => {
     it('reports the condition, a met bounty, what was completed and an affordable next goal', () => {
@@ -114,5 +115,31 @@ describe('formatReportLine', () => {
         expect(cache).not.toContain('{');
         const missing = formatReportLine({ key: 'ui.go.report.item_discovery', params: { labelKey: 'ui.events.report_reward', dropKey: 'ui.relics.no_such.name', name: 'Fallback' } }, t);
         expect(missing).toContain('Fallback');
+    });
+
+    it('formats unlock, faction, settlement and narrative lead lines gracefully', () => {
+        const unlockLine = formatReportLine({
+            key: 'ui.go.report.item_unlock',
+            params: { labelKey: 'ui.go.report.relic_recovered', name: 'Cryo Plating' }
+        }, t);
+        expect(unlockLine).toContain('Cryo Plating');
+
+        const factionLine = formatReportLine({
+            key: 'ui.go.report.item_faction',
+            params: { labelKey: 'ui.go.report.faction_bond_gained', faction: 'Camp Meridian', delta: '+1' }
+        }, t);
+        expect(factionLine).toContain('Camp Meridian');
+
+        const settlementLine = formatReportLine({
+            key: 'ui.go.report.item_settlement',
+            params: { labelKey: 'ui.go.report.companion_settled', name: 'Elena', camp: 'Iron Outpost' }
+        }, t);
+        expect(settlementLine).toContain('Elena');
+
+        const leadLine = formatReportLine({
+            key: 'ui.go.report.item_lead',
+            params: { labelKey: 'ui.go.report.linchpin_consequence', linchpinId: 'mayor_tina', resolution: 'JOINED' }
+        }, t);
+        expect(leadLine).toContain('mayor_tina: JOINED');
     });
 });

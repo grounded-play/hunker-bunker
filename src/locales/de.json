@@ -32,6 +32,8 @@
     "hull": "RUMPF",
     "ammo": "MUNITION",
     "dash": "SPURT",
+    "melee": "NAHKAMPF",
+    "timeline_divergence": "KRITISCHE ZEITLINIEN-DIVERGENZ",
     "overclock": "ÜBERTAKTER",
     "sector": "SEKTOR",
     "bunker_alert": "BUNKER-ALARM"
@@ -111,7 +113,8 @@
       "spec_eng_utility": "NUTZEN: MAX",
       "spec_eng_armor": "RÜSTUNG: HAZARD",
       "esc": "[ESC]",
-      "return_main": "← ZURÜCK ZUM HAUPTMENÜ"
+      "return_main": "← ZURÜCK ZUM HAUPTMENÜ",
+      "multiplayer": "MEHRSPIELER"
     },
     "hub": {
       "daily_ops": "TAGESEINSATZ",
@@ -180,7 +183,10 @@
       "abort_current_mission": "AKTUELLE MISSION ABBRECHEN",
       "abort_mission": "MISSION ABBRECHEN",
       "title_active_crosshair_color": "Aktive Fadenkreuzfarbe",
-      "placeholder_agent": "AGENT"
+      "placeholder_agent": "AGENT",
+      "commentary_list": "ENTWICKLERKOMMENTAR",
+      "commentary_read_all": "ALLE LESEN",
+      "content_guide": "INHALTSLEITFADEN (REIFE THEMEN)"
     },
     "action": {
       "open": "ÖFFNEN",
@@ -1136,10 +1142,12 @@
       "smelted": "5x {rarity} → {reward} geschmolzen!",
       "redeem_failed": "Einlösen fehlgeschlagen: {reason}.",
       "redeemed": "{cost} Splitter gegen {reward} eingelöst!",
+      "exchange_needs_service": "Aufwertungen und Einlösungen benötigen den Steam-Item-Dienst, den dieser Build noch nicht hat.",
       "cache_unlocked": "Cache geöffnet: {count} Belohnungen gesichert.",
       "cache_opened": "Cache-Paket geöffnet.",
       "cache_partial": "Cache-Tausch mit teilweiser Steam-Vergabe abgeschlossen.",
-      "cache_failed": "Cache konnte nicht geöffnet werden – Verbindung prüfen und erneut versuchen."
+      "cache_failed": "Cache konnte nicht geöffnet werden – Verbindung prüfen und erneut versuchen.",
+      "buy_on_steam": "◈ AUF STEAM KAUFEN"
     },
     "lobby": {
       "connecting": "VERBINDE...",
@@ -1358,7 +1366,9 @@
       "bunker_level_aria": "BUNKER-EBENE {level} ({tier}) – {biome}"
     },
     "commentary": {
-      "kicker": "ENTWICKLERKOMMENTAR"
+      "kicker": "ENTWICKLERKOMMENTAR",
+      "close_list": "Entwicklerkommentar schließen",
+      "list_intro": "Anmerkungen der Entwickler dazu, warum das Spiel so funktioniert, wie es funktioniert. Mit aktiviertem Kommentarmodus erscheinen sie auch im Spiel, sobald du die Stelle erreichst."
     },
     "radio": {
       "online": "ONLINE",
@@ -1459,7 +1469,12 @@
       "print_output": "DIESE AUSGABE DRUCKEN",
       "fabricating": "FERTIGE…",
       "bay_button": "◇ FERTIGUNGSBUCHT",
-      "open_bay": "+ FERTIGUNGSBUCHT ÖFFNEN"
+      "open_bay": "+ FERTIGUNGSBUCHT ÖFFNEN",
+      "stat_damage": "SCH ×{value}",
+      "stat_rate": "KADENZ ×{value}",
+      "stat_range": "REICHW ×{value}",
+      "stat_shots": "{count} SCHÜSSE",
+      "odds": "CHANCEN"
     },
     "camp": {
       "sleep_warning": "Schlaf in {camp} bringt dich zu Tag {day}. Diese offenen Signale werden geschlossen.",
@@ -1795,6 +1810,26 @@
         "follow_lead": "Nächster Schritt: Folge der Spur – {label}",
         "redeploy": "Nächster Schritt: erneut einsetzen"
       }
+    },
+    "item_card": {
+      "slot_weapon": "WAFFE",
+      "slot_charm": "ANHÄNGER",
+      "slot_bay_a": "SCHACHT A",
+      "slot_bay_b": "SCHACHT B",
+      "slot_chassis": "CHASSIS",
+      "empty": "LEER",
+      "equipped": "AUSGERÜSTET"
+    },
+    "foundry_hub": {
+      "title": "◇ GIESSEREI",
+      "resources": "Ressourcen",
+      "close": "Gießerei schließen",
+      "tab_stash": "LAGER",
+      "tab_loadout": "AUSRÜSTUNG",
+      "tab_fabricate": "FERTIGEN",
+      "tab_tradeup": "AUFWERTEN",
+      "tab_store": "LADEN",
+      "loadout_hint": "Was jede Klasse trägt, änderst du in der Waffenkammer."
     }
   },
   "narrative": {
@@ -3461,6 +3496,22 @@
       "4241": {
         "name": "Großmarschall HUD-Design",
         "desc": "Königliche imperiale Kommandoschnittstelle in warmem Bernsteingold, gerahmt von archivarischen Lorbeerblattklammern."
+      }
+    },
+    "items": {
+      "frame": {
+        "talon": "Vector-9 Talon MP",
+        "talon_c": "Talon-C Karabiner",
+        "siege_breaker": "Belagerungsbrecher-50 Maschinenkanone",
+        "tesla_lock": "Tesla-Lock MK-IV Bogentreiber"
+      },
+      "weaponProfile": {
+        "mk1_sidearm": "Mark-I Seitenwaffe",
+        "pulse_carbine": "Pulskarabiner",
+        "scatter_rep": "Streu-Repetierer",
+        "rail_marksman": "Schienen-Präzisionsgewehr",
+        "neon_smg": "Neon-MP",
+        "cryo_lance": "Kryolanze"
       }
     }
   }

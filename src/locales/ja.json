@@ -32,6 +32,8 @@
     "hull": "装甲",
     "ammo": "弾薬",
     "dash": "ダッシュ",
+    "melee": "近接格闘",
+    "timeline_divergence": "重大なタイムライン分岐",
     "overclock": "オーバークロック",
     "sector": "セクター",
     "bunker_alert": "バンカー警戒警報"
@@ -111,7 +113,8 @@
       "spec_eng_utility": "ユーティリティ: 最大",
       "spec_eng_armor": "装甲: 耐環境",
       "esc": "[ESC]",
-      "return_main": "← メインメニューに戻る"
+      "return_main": "← メインメニューに戻る",
+      "multiplayer": "マルチプレイ"
     },
     "hub": {
       "daily_ops": "デイリー作戦",
@@ -180,7 +183,10 @@
       "abort_current_mission": "現在の任務を中止",
       "abort_mission": "任務中止",
       "title_active_crosshair_color": "現在のクロスヘア色",
-      "placeholder_agent": "エージェント"
+      "placeholder_agent": "エージェント",
+      "commentary_list": "開発者コメンタリー",
+      "commentary_read_all": "すべて読む",
+      "content_guide": "コンテンツガイド（成人向けテーマ）"
     },
     "action": {
       "open": "開く",
@@ -1136,10 +1142,12 @@
       "smelted": "5x {rarity} を精錬 → {reward}！",
       "redeem_failed": "引き換え失敗：{reason}。",
       "redeemed": "破片 {cost} を {reward} と引き換えました！",
+      "exchange_needs_service": "トレードアップと交換にはSteamアイテムサービスが必要ですが、このビルドにはまだありません。",
       "cache_unlocked": "キャッシュ解放：報酬 {count} 件を確保。",
       "cache_opened": "キャッシュ・バンドルを開封しました。",
       "cache_partial": "キャッシュ交換は完了しましたが、Steam の付与は一部のみです。",
-      "cache_failed": "キャッシュを開けませんでした — 接続を確認して再試行してください。"
+      "cache_failed": "キャッシュを開けませんでした — 接続を確認して再試行してください。",
+      "buy_on_steam": "◈ STEAMで購入"
     },
     "lobby": {
       "connecting": "接続中...",
@@ -1358,7 +1366,9 @@
       "bunker_level_aria": "バンカー階層 {level}（{tier}）— {biome}"
     },
     "commentary": {
-      "kicker": "開発者コメンタリー"
+      "kicker": "開発者コメンタリー",
+      "close_list": "開発者コメンタリーを閉じる",
+      "list_intro": "ゲームがなぜこう作られているのか、開発者のメモです。コメンタリーモードをオンにすると、該当する場面でも表示されます。"
     },
     "radio": {
       "online": "オンライン",
@@ -1459,7 +1469,12 @@
       "print_output": "この出力を印刷",
       "fabricating": "製造中…",
       "bay_button": "◇ 製造ベイ",
-      "open_bay": "+ 製造ベイを開く"
+      "open_bay": "+ 製造ベイを開く",
+      "stat_damage": "威力 ×{value}",
+      "stat_rate": "連射 ×{value}",
+      "stat_range": "射程 ×{value}",
+      "stat_shots": "{count}発",
+      "odds": "確率"
     },
     "camp": {
       "sleep_warning": "{camp} で眠ると {day} 日目へ進む。未解決の信号は閉ざされる。",
@@ -1795,6 +1810,26 @@
         "follow_lead": "次の行動：手がかりを追う——{label}",
         "redeploy": "次の行動：再出撃"
       }
+    },
+    "item_card": {
+      "slot_weapon": "武器",
+      "slot_charm": "チャーム",
+      "slot_bay_a": "ベイA",
+      "slot_bay_b": "ベイB",
+      "slot_chassis": "シャーシ",
+      "empty": "空き",
+      "equipped": "装備中"
+    },
+    "foundry_hub": {
+      "title": "◇ ファウンドリー",
+      "resources": "資源",
+      "close": "ファウンドリーを閉じる",
+      "tab_stash": "保管庫",
+      "tab_loadout": "ロードアウト",
+      "tab_fabricate": "製造",
+      "tab_tradeup": "トレードアップ",
+      "tab_store": "ストア",
+      "loadout_hint": "各クラスの装備は武器庫で変更できます。"
     }
   },
   "narrative": {
@@ -3461,6 +3496,22 @@
       "4241": {
         "name": "グランドマーシャル HUD テーマ",
         "desc": "温かな琥珀金の威厳ある帝国指揮インターフェース。記録用の月桂葉の括弧で縁取られる。"
+      }
+    },
+    "items": {
+      "frame": {
+        "talon": "ベクター9 タロンSMG",
+        "talon_c": "タロンC カービン",
+        "siege_breaker": "シージブレイカー50 オートキャノン",
+        "tesla_lock": "テスラロックMK-IV アークドライバー"
+      },
+      "weaponProfile": {
+        "mk1_sidearm": "マークI サイドアーム",
+        "pulse_carbine": "パルスカービン",
+        "scatter_rep": "スキャッターリピーター",
+        "rail_marksman": "レールマークスマン",
+        "neon_smg": "ネオンSMG",
+        "cryo_lance": "クライオランス"
       }
     }
   }

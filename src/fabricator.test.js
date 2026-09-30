@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { FabricatorManager, FAB_RECIPES, getRecipe, rollRarity, FAB_SPIN_COST, getRecipesByRarity, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, getFabricatedOutputIds } from './fabricator.js';
+import { FabricatorManager, FAB_RECIPES, RARITY_WEIGHTS, getRecipe, rollRarity, getFabricationOdds, FAB_SPIN_COST, getRecipesByRarity, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, getFabricatedOutputIds } from './fabricator.js';
+import { getItem } from './data/itemCatalog.js';
 
 function makeStorage() {
     const map = new Map();
@@ -38,10 +39,15 @@ describe('FabricatorManager', () => {
         bank = makeBank();
     });
 
-    it('exposes recipes each with art and a cost', () => {
+    it('exposes recipes each printing a catalog item, with a cost', () => {
         expect(FAB_RECIPES.length).toBe(13);
         for (const r of FAB_RECIPES) {
-            expect(r.art).toMatch(/^\/schematics\/schematic_\d\d\.webp$/);
+            const item = getItem(r.item, { classId: 'scout' });
+            expect(item, r.id).not.toBeNull();
+            expect(r.name).toBe(item.name);
+            expect(r.rarity).toBe(item.rarity.toUpperCase());
+            expect(item.iconUrl, r.id).toMatch(/^\/(economy|ach_)/);
+            expect(r).not.toHaveProperty('art');
             expect(r.printSeconds).toBeGreaterThan(0);
             expect(typeof r.cost.tech).toBe('number');
             expect(['weapon', 'mod', 'charm']).toContain(r.output.kind);
@@ -140,20 +146,43 @@ describe('FabricatorManager', () => {
     });
 
     it('every recipe has a valid rarity tier', () => {
-        const tiers = new Set(['COMMON', 'RARE', 'EPIC', 'LEGENDARY']);
+        const tiers = new Set(['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY']);
         for (const r of FAB_RECIPES) expect(tiers.has(r.rarity)).toBe(true);
         // At least one of each of the lower tiers exists so rolls have a pool.
         expect(getRecipesByRarity('COMMON').length).toBeGreaterThan(0);
         expect(getRecipesByRarity('RARE').length).toBeGreaterThan(0);
     });
 
-    it('rollRarity maps the weighted bands deterministically (40/40/17/3)', () => {
-        expect(rollRarity(() => 0.0)).toBe('COMMON');     // 0.00 < 0.40
-        expect(rollRarity(() => 0.39)).toBe('COMMON');
-        expect(rollRarity(() => 0.50)).toBe('RARE');      // 0.40..0.80
-        expect(rollRarity(() => 0.79)).toBe('RARE');
-        expect(rollRarity(() => 0.90)).toBe('EPIC');      // 0.80..0.97
-        expect(rollRarity(() => 0.99)).toBe('LEGENDARY'); // 0.97..1.00
+    it('rollRarity uses the live odds: 30/24/32/11 over the tiers that have recipes', () => {
+        // LEGENDARY has no recipe, so its 3% is not rolled; the rest normalize
+        // over 0.97: COMMON < .309, UNCOMMON < .557, RARE < .887, EPIC < 1.
+        expect(RARITY_WEIGHTS.reduce((sum, r) => sum + r.weight, 0)).toBeCloseTo(1, 10);
+        expect(rollRarity(() => 0.0)).toBe('COMMON');
+        expect(rollRarity(() => 0.30)).toBe('COMMON');
+        expect(rollRarity(() => 0.32)).toBe('UNCOMMON');
+        expect(rollRarity(() => 0.55)).toBe('UNCOMMON');
+        expect(rollRarity(() => 0.60)).toBe('RARE');
+        expect(rollRarity(() => 0.88)).toBe('RARE');
+        expect(rollRarity(() => 0.95)).toBe('EPIC');
+        expect(rollRarity(() => 0.9999)).toBe('EPIC');
+    });
+
+    it('never gives weight to a tier with no recipe, and the odds sum to 1', () => {
+        const odds = getFabricationOdds();
+        expect(odds.map((o) => o.rarity)).not.toContain('LEGENDARY');
+        for (const tier of odds) expect(getRecipesByRarity(tier.rarity).length).toBeGreaterThan(0);
+        expect(odds.reduce((sum, o) => sum + o.chance, 0)).toBeCloseTo(1, 10);
+    });
+
+    it('makes each recipe rarer as its tier rises', () => {
+        const perRecipe = getFabricationOdds().map((o) => o.perRecipe);
+        for (let i = 1; i < perRecipe.length; i += 1) expect(perRecipe[i]).toBeLessThan(perRecipe[i - 1]);
+    });
+
+    it('a legendary recipe, once one exists, gets its tier back', () => {
+        const withLegendary = [...FAB_RECIPES, { id: 'x', rarity: 'LEGENDARY' }];
+        const legendary = getFabricationOdds(withLegendary).find((o) => o.rarity === 'LEGENDARY');
+        expect(legendary.chance).toBeCloseTo(0.03, 10);
     });
 
     it('rollFabrication spends the spin cost and reveals an owned schematic', () => {

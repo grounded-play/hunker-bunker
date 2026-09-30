@@ -32,6 +32,8 @@
     "hull": "BLINDAJE",
     "ammo": "MUNICIÓN",
     "dash": "IMPULSO",
+    "melee": "CUERPO A CUERPO",
+    "timeline_divergence": "DIVERGENCIA CRÍTICA DE LÍNEA TEMPORAL",
     "overclock": "SOBRECARGA",
     "sector": "SECTOR",
     "bunker_alert": "ALERTA DEL BÚNKER"
@@ -111,7 +113,8 @@
       "spec_eng_utility": "UTILIDAD: MÁX",
       "spec_eng_armor": "BLINDAJE: HAZARD",
       "esc": "[ESC]",
-      "return_main": "← VOLVER AL MENÚ PRINCIPAL"
+      "return_main": "← VOLVER AL MENÚ PRINCIPAL",
+      "multiplayer": "MULTIJUGADOR"
     },
     "hub": {
       "daily_ops": "OPS DIARIAS",
@@ -180,7 +183,10 @@
       "abort_current_mission": "ABORTAR MISIÓN ACTUAL",
       "abort_mission": "ABORTAR MISIÓN",
       "title_active_crosshair_color": "Color de mira activo",
-      "placeholder_agent": "AGENTE"
+      "placeholder_agent": "AGENTE",
+      "commentary_list": "COMENTARIOS DEL DESARROLLADOR",
+      "commentary_read_all": "LEER TODO",
+      "content_guide": "GUÍA DE CONTENIDO (TEMAS MADUROS)"
     },
     "action": {
       "open": "ABRIR",
@@ -1136,10 +1142,12 @@
       "smelted": "¡Fundidos 5x {rarity} → {reward}!",
       "redeem_failed": "Canje fallido: {reason}.",
       "redeemed": "¡Canjeados {cost} fragmentos por {reward}!",
+      "exchange_needs_service": "Las mejoras y los canjes necesitan el servicio de objetos de Steam, que esta versión aún no tiene.",
       "cache_unlocked": "Alijo desbloqueado: {count} recompensas aseguradas.",
       "cache_opened": "Paquete de alijo abierto.",
       "cache_partial": "Intercambio de alijo completado con una concesión parcial de Steam.",
-      "cache_failed": "Error al abrir el alijo: comprueba tu conexión e inténtalo de nuevo."
+      "cache_failed": "Error al abrir el alijo: comprueba tu conexión e inténtalo de nuevo.",
+      "buy_on_steam": "◈ COMPRAR EN STEAM"
     },
     "lobby": {
       "connecting": "CONECTANDO...",
@@ -1358,7 +1366,9 @@
       "bunker_level_aria": "NIVEL DEL BÚNKER {level} ({tier}) — {biome}"
     },
     "commentary": {
-      "kicker": "COMENTARIO DEL DESARROLLADOR"
+      "kicker": "COMENTARIO DEL DESARROLLADOR",
+      "close_list": "Cerrar comentarios del desarrollador",
+      "list_intro": "Notas de los desarrolladores sobre por qué el juego funciona como funciona. Con el modo comentario activado, cada una aparece también al llegar a ese momento."
     },
     "radio": {
       "online": "EN LÍNEA",
@@ -1459,7 +1469,12 @@
       "print_output": "IMPRIMIR ESTE RESULTADO",
       "fabricating": "FABRICANDO…",
       "bay_button": "◇ TALLER",
-      "open_bay": "+ ABRIR TALLER"
+      "open_bay": "+ ABRIR TALLER",
+      "stat_damage": "DAÑO ×{value}",
+      "stat_rate": "CADENCIA ×{value}",
+      "stat_range": "ALCANCE ×{value}",
+      "stat_shots": "{count} DISPAROS",
+      "odds": "PROBABILIDADES"
     },
     "camp": {
       "sleep_warning": "Dormir en {camp} avanza al día {day}. Estas señales sin resolver se cerrarán.",
@@ -1795,6 +1810,26 @@
         "follow_lead": "Siguiente paso: sigue la pista — {label}",
         "redeploy": "Siguiente paso: vuelve a desplegar"
       }
+    },
+    "item_card": {
+      "slot_weapon": "ARMA",
+      "slot_charm": "AMULETO",
+      "slot_bay_a": "BAHÍA A",
+      "slot_bay_b": "BAHÍA B",
+      "slot_chassis": "CHASIS",
+      "empty": "VACÍO",
+      "equipped": "EQUIPADO"
+    },
+    "foundry_hub": {
+      "title": "◇ FUNDICIÓN",
+      "resources": "Recursos",
+      "close": "Cerrar la fundición",
+      "tab_stash": "ALIJO",
+      "tab_loadout": "EQUIPO",
+      "tab_fabricate": "FABRICAR",
+      "tab_tradeup": "MEJORAR",
+      "tab_store": "TIENDA",
+      "loadout_hint": "Cambia lo que lleva cada clase en la Armería."
     }
   },
   "narrative": {
@@ -3461,6 +3496,22 @@
       "4241": {
         "name": "Tema de HUD Gran Mariscal",
         "desc": "Interfaz de mando imperial regia en dorado ámbar cálido enmarcada con soportes de hojas de laurel de archivo."
+      }
+    },
+    "items": {
+      "frame": {
+        "talon": "Subfusil Vector-9 Talon",
+        "talon_c": "Carabina Talon-C",
+        "siege_breaker": "Autocañón Rompeasedios 50",
+        "tesla_lock": "Impulsor de arco Tesla-Lock MK-IV"
+      },
+      "weaponProfile": {
+        "mk1_sidearm": "Arma corta Mark-I",
+        "pulse_carbine": "Carabina de pulsos",
+        "scatter_rep": "Repetidora de dispersión",
+        "rail_marksman": "Tirador de riel",
+        "neon_smg": "Subfusil de neón",
+        "cryo_lance": "Lanza criogénica"
       }
     }
   }

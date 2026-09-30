@@ -3,52 +3,20 @@
 // weapon skins, tactical charms, rig overclock modules, and exosuit cosmetics.
 
 import { getRecipe } from './fabricator.js';
-import { COMMUNITY_CLASS_MAP } from './data/communitySkins.js';
+import { getItemName } from './data/itemCatalog.js';
+import { ARCHETYPE_SKINS, CLASS_ARCHETYPES, CLASS_CHASSIS_SKINS, DEFAULT_ARCHETYPES } from './data/classArsenal.js';
 import { EQUIPMENT_SCHEMA_VERSION, composeEquipmentModifiers, getEquipmentDefinition, getEquipmentStatus } from './data/equipmentDefinitions.js';
 
 export const STORAGE_KEY_V2 = 'hb_loadout_v2';
 export const STORAGE_KEY_V1 = 'hb_loadout_v1';
 export const DEFAULT_WEAPON_LABEL = 'SIDEARM';
 
-export const DEFAULT_ARCHETYPES = Object.freeze({
-    scout: 'talon',
-    tank: 'siege_breaker',
-    engineer: 'tesla_lock'
-});
-
-export const CLASS_ARCHETYPES = Object.freeze({
-    scout: ['talon', 'talon_c'],
-    tank: ['siege_breaker'],
-    engineer: ['tesla_lock']
-});
-
-// Chassis skins with authored runtime meshes. Keep this list class-specific:
-// loading a Scout chassis as a Tank would replace the operator silhouette, not
-// merely recolor it. Additional catalog chassis can be added here when their
-// corresponding runtime GLBs land.
-export const CLASS_CHASSIS_SKINS = Object.freeze({
-    // 4200/4207/4214/4228/4235 are static meshes with no skin binding;
-    // 5001 has no GLB. Keep unsupported bodies out of the picker until the
-    // asset audit can prove they animate instead of exposing a T-pose/blank.
-    scout: ['4113', '4115', '4118', '4221', '5003', '5004', ...(COMMUNITY_CLASS_MAP?.scout || [])],
-    tank: ['4114', '4117', '4119', '5005', '5007', '5008', ...(COMMUNITY_CLASS_MAP?.tank || [])],
-    engineer: ['4112', '4116', '5011', '5012', ...(COMMUNITY_CLASS_MAP?.engineer || [])]
-});
+export { ARCHETYPE_SKINS, CLASS_ARCHETYPES, CLASS_CHASSIS_SKINS, DEFAULT_ARCHETYPES };
 
 export function isChassisSupportedForClass(classId, itemdefid) {
     if (itemdefid == null) return true;
     return (CLASS_CHASSIS_SKINS[normalizeClassId(classId)] ?? []).map(String).includes(String(itemdefid));
 }
-
-export const ARCHETYPE_SKINS = Object.freeze({
-    talon: ['2200', '4100', '4105', '4201', '4222'],
-    // Achievement weapon rewards 5002/5006/5009/5010 remain registered and
-    // unlockable, but their asset manifest is explicitly `pending`. Do not
-    // offer an emblem-backed tile that silently renders the factory gun.
-    talon_c: ['4101', '4104', '4108', '4110'],
-    siege_breaker: ['4102', '4106', '4107', '4208', '4229'],
-    tesla_lock: ['4103', '4109', '4111', '4215', '4236']
-});
 
 function normalizeClassId(classId) {
     if (!classId) return 'scout';
@@ -460,7 +428,7 @@ export class LoadoutManager {
         const recipe = getRecipe(id);
         if (!recipe) return DEFAULT_WEAPON_LABEL;
         if (fabricator && !fabricator.isFabricated(id)) return DEFAULT_WEAPON_LABEL;
-        return recipe.name;
+        return getItemName(recipe.item ?? id) ?? recipe.name;
     }
 
     /**

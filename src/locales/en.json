@@ -32,6 +32,8 @@
     "hull": "HULL",
     "ammo": "AMMO",
     "dash": "DASH",
+    "melee": "MELEE",
+    "timeline_divergence": "CRITICAL TIMELINE DIVERGENCE",
     "overclock": "OVERCLOCK",
     "sector": "SECTOR",
     "bunker_alert": "BUNKER ALERT"
@@ -111,7 +113,8 @@
       "spec_eng_utility": "UTILITY: MAX",
       "spec_eng_armor": "ARMOR: HAZARD",
       "esc": "[ESC]",
-      "return_main": "← RETURN TO MAIN MENU"
+      "return_main": "← RETURN TO MAIN MENU",
+      "multiplayer": "MULTIPLAYER"
     },
     "hub": {
       "daily_ops": "DAILY OPS",
@@ -180,7 +183,10 @@
       "abort_current_mission": "ABORT CURRENT MISSION",
       "abort_mission": "ABORT MISSION",
       "title_active_crosshair_color": "Active crosshair color",
-      "placeholder_agent": "AGENT"
+      "placeholder_agent": "AGENT",
+      "commentary_list": "DEVELOPER COMMENTARY",
+      "commentary_read_all": "READ ALL",
+      "content_guide": "CONTENT GUIDE (MATURE THEMES)"
     },
     "action": {
       "open": "OPEN",
@@ -1136,10 +1142,12 @@
       "smelted": "Smelted 5x {rarity} → {reward}!",
       "redeem_failed": "Redeem failed: {reason}.",
       "redeemed": "Redeemed {cost} Shards for {reward}!",
+      "exchange_needs_service": "Trade-ups and redemptions need the Steam item service, which this build doesn't have yet.",
       "cache_unlocked": "Cache unlocked: {count} rewards secured.",
       "cache_opened": "Cache bundle opened.",
       "cache_partial": "Cache exchange completed with a partial Steam grant.",
-      "cache_failed": "Cache open failed — check your connection and try again."
+      "cache_failed": "Cache open failed — check your connection and try again.",
+      "buy_on_steam": "◈ BUY ON STEAM"
     },
     "lobby": {
       "connecting": "CONNECTING...",
@@ -1358,7 +1366,9 @@
       "bunker_level_aria": "BUNKER LEVEL {level} ({tier}) — {biome}"
     },
     "commentary": {
-      "kicker": "DEVELOPER COMMENTARY"
+      "kicker": "DEVELOPER COMMENTARY",
+      "close_list": "Close developer commentary",
+      "list_intro": "Notes from the developers on why the game works the way it does. With Commentary Mode on, each also appears in play when you reach it."
     },
     "radio": {
       "online": "ONLINE",
@@ -1459,7 +1469,12 @@
       "print_output": "PRINT THIS OUTPUT",
       "fabricating": "FABRICATING…",
       "bay_button": "◇ FAB BAY",
-      "open_bay": "+ OPEN FAB BAY"
+      "open_bay": "+ OPEN FAB BAY",
+      "stat_damage": "DMG ×{value}",
+      "stat_rate": "RATE ×{value}",
+      "stat_range": "RANGE ×{value}",
+      "stat_shots": "{count} SHOTS",
+      "odds": "ODDS"
     },
     "camp": {
       "sleep_warning": "Sleeping at {camp} advances to day {day}. These unresolved signals will close.",
@@ -1795,6 +1810,26 @@
         "follow_lead": "Next action: follow the lead — {label}",
         "redeploy": "Next action: redeploy"
       }
+    },
+    "item_card": {
+      "slot_weapon": "WEAPON",
+      "slot_charm": "CHARM",
+      "slot_bay_a": "BAY A",
+      "slot_bay_b": "BAY B",
+      "slot_chassis": "CHASSIS",
+      "empty": "EMPTY",
+      "equipped": "EQUIPPED"
+    },
+    "foundry_hub": {
+      "title": "◇ FOUNDRY",
+      "resources": "Resources",
+      "close": "Close the Foundry",
+      "tab_stash": "STASH",
+      "tab_loadout": "LOADOUT",
+      "tab_fabricate": "FABRICATE",
+      "tab_tradeup": "TRADE-UP",
+      "tab_store": "STORE",
+      "loadout_hint": "Change what each class carries in the Armory."
     }
   },
   "narrative": {
@@ -3461,6 +3496,22 @@
       "4241": {
         "desc": "Regal imperial command interface in warm amber gold framed with archival laurel leaf brackets.",
         "name": "Grand Marshal HUD Theme"
+      }
+    },
+    "items": {
+      "frame": {
+        "talon": "Vector-9 Talon SMG",
+        "talon_c": "Talon-C Carbine",
+        "siege_breaker": "Siege-Breaker 50 Autocannon",
+        "tesla_lock": "Tesla-Lock MK-IV Arc Driver"
+      },
+      "weaponProfile": {
+        "mk1_sidearm": "Mark-I Sidearm",
+        "pulse_carbine": "Pulse Carbine",
+        "scatter_rep": "Scatter Repeater",
+        "rail_marksman": "Rail Marksman",
+        "neon_smg": "Neon SMG",
+        "cryo_lance": "Cryo Lance"
       }
     }
   }

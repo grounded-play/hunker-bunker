@@ -1,6 +1,6 @@
 # Steam Dashboard Handoff
 
-Generated: 2026-08-20.
+Generated: 2026-09-30.
 
 This is the copy/paste packet for Steamworks dashboard work that cannot be
 completed from the repo. Keep it in sync with code by running:
@@ -42,10 +42,10 @@ With the current single content depot, create one launch option per platform:
 
 Future download-size improvement: Create a second OS-specific depot in Steamworks, then update steam/app_build.vdf and .github/workflows/steam-build.yml.
 
-## Leaderboards To Create
+## Leaderboards
 
-Create these in Steamworks, then copy the generated leaderboard IDs back into
-`HB_STEAM_LEADERBOARD_IDS`.
+These Steamworks leaderboards have assigned production IDs. Keep
+`HB_STEAM_LEADERBOARD_IDS` synchronized with this table.
 
 | API Name | Sort Method | Display Type | Upload Method | Dashboard ID |
 | --- | --- | --- | --- | --- |
@@ -55,10 +55,10 @@ Create these in Steamworks, then copy the generated leaderboard IDs back into
 | `deepest_depth_score` | Descending | Numeric | KeepBest | 20504750 |
 | `survival_time_seconds` | Descending | Seconds | KeepBest | 20504754 |
 
-Backend env template after IDs exist:
+Backend env value:
 
 ```bash
-HB_STEAM_LEADERBOARD_IDS='best_run_score:<best_run_score_id>,daily_ops_score:<daily_ops_score_id>,fastest_extraction_ms:<fastest_extraction_ms_id>,deepest_depth_score:<deepest_depth_score_id>,survival_time_seconds:<survival_time_seconds_id>'
+HB_STEAM_LEADERBOARD_IDS='best_run_score:20504740,daily_ops_score:20504746,fastest_extraction_ms:20504747,deepest_depth_score:20504750,survival_time_seconds:20504754'
 ```
 
 ## Achievements To Publish
@@ -183,7 +183,7 @@ Upload `steam/inventory_schema_hunker_bunker.json` to Steam Inventory Service.
 | Field | Value |
 | --- | --- |
 | Schema appid | `4957040` |
-| ItemDefs | 73 |
+| ItemDefs | 125 |
 | Hosted Item Store URL | `https://store.steampowered.com/itemstore/4957040/` |
 | Hosted Item Store beta URL | `https://store.steampowered.com/itemstore/4957040/?beta=1` |
 
@@ -191,7 +191,9 @@ Sellable ItemDefs:
 
 | ItemDefID | Name | Price Category | Store Tags |
 | --- | --- | --- | --- |
-| `4001` | Cache Key | `1;VLV100` | `featured;keys;cache_key` |
+| `4001` | Relic Decryption Key | `1;VLV100` | `featured;keys;cache_key` |
+| `4005` | 5x Relic Key Master Pack | `1;VLV400` | `featured;keys;bundles` |
+| `4015` | 15x Relic Key Master Pack | `1;VLV1000` | `featured;keys;bundles;best_value` |
 
 Recommended top-level Item Store filters:
 
@@ -208,7 +210,7 @@ sandbox purchase tests, and live purchase reversal handling are accepted.
 ```bash
 HB_STEAM_APPID=4957040
 HB_STEAM_ITEM_STORE_APPID=4957040
-HB_STEAM_LEADERBOARD_IDS='best_run_score:<best_run_score_id>,daily_ops_score:<daily_ops_score_id>,fastest_extraction_ms:<fastest_extraction_ms_id>,deepest_depth_score:<deepest_depth_score_id>,survival_time_seconds:<survival_time_seconds_id>'
+HB_STEAM_LEADERBOARD_IDS='best_run_score:20504740,daily_ops_score:20504746,fastest_extraction_ms:20504747,deepest_depth_score:20504750,survival_time_seconds:20504754'
 
 STEAM_APPID=4957040
 STEAM_DEPOT_CONTENT=4957041
@@ -225,11 +227,6 @@ Secrets that still must come from the dashboard/host:
 
 ## Acceptance Checklist
 
-- [x] [MIGRATED] Leaderboards created and `HB_STEAM_LEADERBOARD_IDS` filled with real IDs. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
-- [x] [MIGRATED] Achievements and stats published in Steamworks. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
-- [x] [MIGRATED] Steam Cloud Auto-Cloud paths saved and published. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
-- [x] [MIGRATED] Inventory schema uploaded and accepted. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
-- [x] [MIGRATED] Steam Input template set to bundled config with manifest path `steam_input_manifest.vdf`. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
-- [x] [MIGRATED] Beta package includes app `4957040` and depot `4957041`. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
-- [x] [MIGRATED] Installed Steam beta launches both platform payloads through the configured launch options. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
-- [x] [MIGRATED] Installed Steam beta reaches deployed `/health`, reads inventory, submits a trusted score, and syncs `save.json`. <!-- Migrated to master backlog: docs/planning/todo-audit-backlog-and-conflicts-2026-09-24.md#true-todos -->
+The portal and installed-build gates are tracked once in the canonical
+[todo audit backlog](planning/todo-audit-backlog-and-conflicts-2026-09-24.md#domain-steamworks-dashboard).
+They are intentionally not duplicated as open checkboxes in this generated packet.

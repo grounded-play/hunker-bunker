@@ -1,0 +1,191 @@
+/* Foundry hub (src/foundryHub.js). The Armory's bench look (dark plate,
+   Space Mono labels) themed by the active class. Accents follow the style
+   bible: Scout teal, Tank amber, Engineer orange/brass; green stays
+   reserved for alien biology. The Fab Bay's own glow variable is set here,
+   so its cards take the class colour while they are shown in the hub. */
+
+.foundry-hub {
+  --hub-accent-rgb: 34, 211, 238; /* Scout Cyan/Teal */
+  --hub-accent-hex: #22d3ee;
+}
+
+.foundry-hub[data-hub-class="tank"] {
+  --hub-accent-rgb: 245, 158, 11; /* Tank Amber */
+  --hub-accent-hex: #f59e0b;
+}
+
+.foundry-hub[data-hub-class="engineer"] {
+  --hub-accent-rgb: 249, 115, 22; /* Engineer Brass/Orange */
+  --hub-accent-hex: #f97316;
+}
+
+.foundry-hub__content {
+  --fab-glow-rgb: var(--hub-accent-rgb);
+  display: flex;
+  flex-direction: column;
+  width: min(96vw, calc(var(--vu) * 152));
+  max-width: min(96vw, calc(var(--vu) * 152));
+  height: min(90vh, calc(var(--vu) * 96));
+  padding: 0;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 0%, rgba(var(--hub-accent-rgb), 0.08) 0%, rgba(8, 12, 16, 0.98) 70%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: rgba(255, 255, 255, 0.92);
+  border: 1.5px solid rgba(var(--hub-accent-rgb), 0.5);
+  border-radius: 12px;
+  box-shadow: 0 0 50px rgba(var(--hub-accent-rgb), 0.16), 0 0 100px rgba(0, 0, 0, 0.95);
+}
+
+.foundry-hub__header {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 1.4);
+  padding: calc(var(--vu) * 1.2) calc(var(--vu) * 2);
+  border-bottom: 1px solid rgba(var(--hub-accent-rgb), 0.25);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.foundry-hub__title {
+  font: 900 calc(var(--font-xs) * 1.35) / 1 'Space Mono', monospace;
+  letter-spacing: 0.14em;
+  color: rgb(var(--hub-accent-rgb));
+  text-shadow: 0 0 12px rgba(var(--hub-accent-rgb), 0.5);
+  white-space: nowrap;
+}
+
+.foundry-hub__resources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--vu) * 0.8);
+  margin-left: auto;
+}
+
+.foundry-hub__header .close-modal {
+  position: static;
+  flex: 0 0 auto;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.foundry-hub__header .close-modal:hover {
+  color: rgb(var(--hub-accent-rgb));
+  transform: scale(1.15);
+}
+
+.foundry-hub__tabs {
+  display: flex;
+  gap: calc(var(--vu) * 0.5);
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 2) 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.foundry-hub__tab {
+  position: relative;
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 1.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.7);
+  font: 800 max(11px, calc(var(--font-xs) * 0.88)) / 1 'Space Mono', monospace;
+  letter-spacing: 0.09em;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.foundry-hub__tab:hover,
+.foundry-hub__tab:focus-visible {
+  color: #fff;
+  border-color: rgba(var(--hub-accent-rgb), 0.55);
+  background: rgba(var(--hub-accent-rgb), 0.06);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.foundry-hub__tab.is-active {
+  color: rgb(var(--hub-accent-rgb));
+  background: rgba(var(--hub-accent-rgb), 0.14);
+  border-color: rgba(var(--hub-accent-rgb), 0.65);
+  box-shadow: inset 0 2px 0 rgb(var(--hub-accent-rgb));
+}
+
+.foundry-hub__tab.is-locked {
+  color: rgba(255, 255, 255, 0.4);
+  opacity: 0.75;
+}
+
+.foundry-hub__panel {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1);
+  min-height: 0;
+  padding: calc(var(--vu) * 1.4) calc(var(--vu) * 2);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Custom sci-fi scrollbar */
+.foundry-hub__panel::-webkit-scrollbar {
+  width: 6px;
+}
+.foundry-hub__panel::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+.foundry-hub__panel::-webkit-scrollbar-thumb {
+  background: rgba(var(--hub-accent-rgb), 0.35);
+  border-radius: 3px;
+}
+.foundry-hub__panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--hub-accent-rgb), 0.65);
+}
+
+/* Native restyling for embedded sub-layouts inside the Hub */
+.foundry-hub__panel > .vault-main-layout,
+.foundry-hub__panel > .fab-recipe-grid,
+.foundry-hub__panel > #vault-inventory-layout,
+.foundry-hub__panel > #vault-smelter-layout,
+.foundry-hub__panel > #vault-store-layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  border-radius: 8px;
+}
+
+.foundry-hub__panel .item-card,
+.foundry-hub__panel .fab-card,
+.foundry-hub__panel .vault-card {
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.foundry-hub__panel .item-card:hover,
+.foundry-hub__panel .fab-card:hover,
+.foundry-hub__panel .vault-card:hover {
+  border-color: rgba(var(--hub-accent-rgb), 0.75) !important;
+  box-shadow: 0 0 16px rgba(var(--hub-accent-rgb), 0.25) !important;
+}
+
+.foundry-hub__panel > .fab-recipe-grid {
+  align-content: start;
+}
+
+.foundry-hub__panel > .vault-store-layout {
+  flex: 0 0 auto;
+}
+
+.foundry-hub__loadout {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1.2);
+}
+
+.foundry-hub__loadout .item-card-strip {
+  max-width: calc(var(--vu) * 85);
+}
+
+.foundry-hub__hint {
+  margin: 0;
+  font: 600 max(11px, calc(var(--font-xs) * 0.82)) / 1.4 'Space Mono', monospace;
+  color: rgba(255, 255, 255, 0.65);
+}

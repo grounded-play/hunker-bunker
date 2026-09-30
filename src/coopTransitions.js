@@ -19,7 +19,9 @@ export const COOP_TRANSITION_EVENTS = Object.freeze({
     ELEVATOR_DESCENDED: 'elevator-descended',
     BOSS_FIGHT_EVENT: 'boss-fight-event',
     BOSS_ADDS: 'boss-adds',
-    ENCOUNTER_FORMATION_STATE: 'encounter-formation-state'
+    ENCOUNTER_FORMATION_STATE: 'encounter-formation-state',
+    WORLD_EVENT_TRIGGER: 'world-event-trigger',
+    WORLD_EVENT_RESOLVED: 'world-event-resolved'
 });
 
 // Boss beats that change shared state. Attacks stay local: each client's boss
@@ -95,6 +97,10 @@ export function coopTransitionDedupeKey(event, detail = {}) {
         case COOP_TRANSITION_EVENTS.ENCOUNTER_FORMATION_STATE:
             return detail.encounterId && Number.isInteger(detail.sequence)
                 ? `${event}:${detail.encounterId}:${detail.sequence}`
+                : null;
+        case COOP_TRANSITION_EVENTS.WORLD_EVENT_RESOLVED:
+            return detail.eventId && detail.action
+                ? `${event}:${detail.eventId}:${detail.action}:${detail.phase ?? ''}`
                 : null;
         default:
             return null;

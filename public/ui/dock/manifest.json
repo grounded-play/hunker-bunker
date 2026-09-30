@@ -1,10 +1,12 @@
 {
- "bandHeightU": 150,
+ "bandHeightU": 64,
  "classes": {
   "scout": {
    "map": {
     "file": "/ui/dock/scout-map.webp",
     "aspect": 1.3245,
+    "runtimeWidthU": 220,
+    "runtimeHeightU": 64,
     "holes": [
      {
       "shape": "rect",
@@ -63,6 +65,8 @@
    "status": {
     "file": "/ui/dock/scout-status.webp",
     "aspect": 2.08,
+    "runtimeWidthU": 520,
+    "runtimeHeightU": 64,
     "holes": [
      {
       "shape": "rect",
@@ -146,6 +150,8 @@
    "arms": {
     "file": "/ui/dock/scout-arms.webp",
     "aspect": 1.6396,
+    "runtimeWidthU": 380,
+    "runtimeHeightU": 64,
     "holes": [
      {
       "shape": "rect",
@@ -183,6 +189,8 @@
    "map": {
     "file": "/ui/dock/tank-map.webp",
     "aspect": 1.3954,
+    "runtimeWidthU": 220,
+    "runtimeHeightU": 64,
     "holes": [
      {
       "shape": "circle",
@@ -209,6 +217,8 @@
    "status": {
     "file": "/ui/dock/tank-status.webp",
     "aspect": 1.8856,
+    "runtimeWidthU": 520,
+    "runtimeHeightU": 64,
     "holes": [
      {
       "shape": "rect",
@@ -244,6 +254,8 @@
    "arms": {
     "file": "/ui/dock/tank-arms.webp",
     "aspect": 1.3815,
+    "runtimeWidthU": 380,
+    "runtimeHeightU": 64,
     "holes": [
      {
       "shape": "rect",
@@ -289,6 +301,8 @@
    "map": {
     "file": "/ui/dock/engineer-map.webp",
     "aspect": 1.419,
+    "runtimeWidthU": 220,
+    "runtimeHeightU": 64,
     "holes": [
      {
       "shape": "circle",
@@ -315,6 +329,8 @@
    "status": {
     "file": "/ui/dock/engineer-status.webp",
     "aspect": 1.9583,
+    "runtimeWidthU": 520,
+    "runtimeHeightU": 64,
     "holes": [
      {
       "shape": "rect",
@@ -350,6 +366,8 @@
    "arms": {
     "file": "/ui/dock/engineer-arms.webp",
     "aspect": 1.7376,
+    "runtimeWidthU": 380,
+    "runtimeHeightU": 64,
     "holes": [
      {
       "shape": "rect",

@@ -1,12 +1,12 @@
 # Hunker Bunker Versioning Strategy & Release Roadmap
 
-**Current Active Sprint:** Sprint 45
+**Current Active Sprint:** Sprint 48 (Sprint 49 planned)
 
-**Active Development Branch:** `dev/sprint-45`
+**Active Development Branch:** `dev/sprint-48`
 
-**Current Working Version:** `v2.4.12-beta` (`2.4.12-beta` in `package.json`, branch `dev/sprint-45`)
+**Current Working Version:** `v2.4.13-beta` (`2.4.13-beta` in `package.json`, branch `dev/sprint-48`)
 
-**Latest Tagged Baseline:** `v2.4.4-beta` at Sprint 40 integration on `mothership` (`e017b06`)
+**Latest Tagged Baseline:** `v2.4.12-beta` on `mothership` (`380333f6`, released 2026-09-28)
 
 **Main Branch:** `mothership`
 

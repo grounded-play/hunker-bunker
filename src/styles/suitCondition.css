@@ -1,0 +1,98 @@
+:root {
+  --suit-blood: 0;
+  --suit-blood-dry: 0;
+  --suit-scuffs: 0;
+  --suit-frost: 0;
+  --suit-toxin: 0;
+  --suit-blood-rgb: 126, 20, 25;
+}
+
+/* Condition paint lives only in a masked bezel ring. The centre cut-out keeps
+   every instrument and number completely untouched even though the painted
+   housing itself sits above the live panel layer. */
+html[data-hud-layout="dock"] #game-viewport #ui .dock-housing::before,
+html[data-hud-layout="dock"] #game-viewport #ui .dock-housing::after {
+  content: "";
+  position: absolute;
+  inset: calc(-9 * var(--u));
+  padding: calc(11 * var(--u));
+  box-sizing: border-box;
+  pointer-events: none;
+  border-radius: calc(5 * var(--u));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .dock-housing::before {
+  background:
+    radial-gradient(ellipse at 8% 15%, rgba(190, 238, 255, calc(var(--suit-frost) * .92)) 0 8%, transparent 24%),
+    radial-gradient(ellipse at 92% 82%, rgba(132, 202, 222, calc(var(--suit-frost) * .72)) 0 10%, transparent 28%),
+    radial-gradient(ellipse at 14% 80%, rgba(88, 161, 55, calc(var(--suit-toxin) * .72)) 0 7%, transparent 25%),
+    radial-gradient(ellipse at 86% 18%, rgba(144, 197, 62, calc(var(--suit-toxin) * .62)) 0 8%, transparent 26%),
+    repeating-linear-gradient(112deg, transparent 0 14%, rgba(210, 225, 228, calc(var(--suit-scuffs) * .34)) 14.3% 14.8%, transparent 15.1% 24%);
+  opacity: 1;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .dock-housing::after {
+  background:
+    radial-gradient(circle at 5% 18%, rgba(var(--suit-blood-rgb), calc(var(--suit-blood) * (1 - var(--suit-blood-dry) * .45))) 0 4%, transparent 5%),
+    radial-gradient(circle at 18% 92%, rgba(var(--suit-blood-rgb), calc(var(--suit-blood) * .72)) 0 3%, transparent 4%),
+    radial-gradient(circle at 77% 8%, rgba(var(--suit-blood-rgb), calc(var(--suit-blood) * .58)) 0 2.5%, transparent 3.5%),
+    radial-gradient(ellipse at 95% 68%, rgba(var(--suit-blood-rgb), calc(var(--suit-blood) * .82)) 0 4%, transparent 6%);
+  opacity: calc(.92 - var(--suit-blood-dry) * .28);
+}
+
+/* One class-specific material response, same geometry and tier contract. */
+html[data-hud-layout="dock"][data-operator-class="scout"][data-suit-damage-tier="1"] #game-viewport #ui .dock-housing,
+html[data-hud-layout="dock"][data-operator-class="scout"][data-suit-damage-tier="2"] #game-viewport #ui .dock-housing,
+html[data-hud-layout="dock"][data-operator-class="scout"][data-suit-damage-tier="3"] #game-viewport #ui .dock-housing {
+  box-shadow: inset 0 0 calc(7 * var(--u)) rgba(150, 224, 237, .32);
+}
+
+html[data-hud-layout="dock"][data-operator-class="tank"][data-suit-damage-tier="1"] #game-viewport #ui .dock-housing,
+html[data-hud-layout="dock"][data-operator-class="tank"][data-suit-damage-tier="2"] #game-viewport #ui .dock-housing,
+html[data-hud-layout="dock"][data-operator-class="tank"][data-suit-damage-tier="3"] #game-viewport #ui .dock-housing {
+  box-shadow: inset 0 0 calc(8 * var(--u)) rgba(249, 148, 21, .30);
+}
+
+html[data-hud-layout="dock"][data-operator-class="engineer"][data-suit-damage-tier="1"] #game-viewport #ui .dock-housing,
+html[data-hud-layout="dock"][data-operator-class="engineer"][data-suit-damage-tier="2"] #game-viewport #ui .dock-housing,
+html[data-hud-layout="dock"][data-operator-class="engineer"][data-suit-damage-tier="3"] #game-viewport #ui .dock-housing {
+  box-shadow: inset 0 0 calc(8 * var(--u)) rgba(242, 120, 12, .34);
+}
+
+html[data-hud-layout="dock"][data-suit-damage-tier="2"] #game-viewport #ui .dock-housing { opacity: .92; }
+html[data-hud-layout="dock"][data-suit-damage-tier="3"] #game-viewport #ui .dock-housing { opacity: .78; }
+
+html[data-hud-layout="dock"][data-suit-hit-direction="left"] #game-viewport #ui .dock-housing--map,
+html[data-hud-layout="dock"][data-suit-hit-direction="center"] #game-viewport #ui .dock-housing--status,
+html[data-hud-layout="dock"][data-suit-hit-direction="right"] #game-viewport #ui .dock-housing--arms {
+  animation: suit-housing-jolt 280ms ease-out 1;
+}
+
+html[data-hud-layout="dock"][data-thermal-lamp="red"] #game-viewport #ui .dock-housing--map {
+  box-shadow: inset 0 0 calc(8 * var(--u)) rgba(113, 205, 223, .58);
+}
+
+html[data-hud-layout="dock"][data-toxin-lamp="red"] #game-viewport #ui .dock-housing--status {
+  box-shadow: inset 0 0 calc(8 * var(--u)) rgba(139, 207, 71, .56);
+}
+
+@keyframes suit-housing-jolt {
+  0% { transform: translateX(0); }
+  28% { transform: translateX(calc(3 * var(--u))); }
+  58% { transform: translateX(calc(-2 * var(--u))); }
+  100% { transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-hud-layout="dock"][data-suit-hit-direction] #game-viewport #ui .dock-housing {
+    animation: none;
+  }
+}

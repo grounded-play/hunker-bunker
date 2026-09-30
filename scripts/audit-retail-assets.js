@@ -36,7 +36,11 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // and sprite fallbacks (~2.05 MB total payload).
 // Raised 2705->2725 MiB in Sprint 40 for the 208 Wave 2 alternate radio takes,
 // voice pack personas, and ending cinematic video/audio assets (~14.7 MB).
-const PUBLIC_BUDGET = 2725 * 1024 * 1024;
+// Raised 2725->2780 MiB in Sprint 48 for the wired achievement cosmetics, the
+// three phased corrupted-operator bosses and the bio charger (3482799b,
+// ~54 MiB; bio_charger.glb alone is 18.4 MiB and is queued for mesh
+// compression in Sprint 49, S49-31).
+const PUBLIC_BUDGET = 2780 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus

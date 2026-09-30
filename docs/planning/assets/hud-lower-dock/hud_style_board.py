@@ -37,7 +37,7 @@ SECTIONS = [
      'Door art is the housing template (dense riveted hardware, lamps, biome light). The Armory rooms are gritty industrial. Arches, ribs and ornament turn them into chapels.'),
     ('ITEMS, CUTSCENES & UI', 150, [
         'public/economy/armory/4100.png', 'public/economy/armory/4101.png', 'public/economy/armory/5004.png', 'public/economy/armory/frame-siege_breaker.png',
-        'public/economy/armory/comm_tank_toxic_apex_chrysalis.png', 'public/schematics/schematic_00.webp', 'public/cutscenes/poster-art/death-queen.png',
+        'public/economy/armory/comm_tank_toxic_apex_chrysalis.png', 'public/economy/armory/4107.png', 'public/cutscenes/poster-art/death-queen.png',
         'public/cutscenes/poster-art/death-biohazard.png', 'public/interstitials/int_05_the_pipes_are_singing_key_v1.webp', 'public/hunker_bunker_select.png'],
      'Icons, schematics and posters: the item language the HUD weapon window reuses. The interstitials and death posters already lean into Giger. Menus are plain dark panels.'),
 ]

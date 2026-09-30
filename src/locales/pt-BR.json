@@ -32,6 +32,8 @@
     "hull": "BLINDAGEM",
     "ammo": "MUNIÇÃO",
     "dash": "IMPULSO",
+    "melee": "CORPO A CORPO",
+    "timeline_divergence": "DIVERGÊNCIA CRÍTICA DA LINHA DO TEMPO",
     "overclock": "OVERCLOCK",
     "sector": "SETOR",
     "bunker_alert": "ALERTA DO BÚNKER"
@@ -111,7 +113,8 @@
       "spec_eng_utility": "UTILIDADE: MÁX",
       "spec_eng_armor": "ARMADURA: HAZARD",
       "esc": "[ESC]",
-      "return_main": "← VOLTAR AO MENU PRINCIPAL"
+      "return_main": "← VOLTAR AO MENU PRINCIPAL",
+      "multiplayer": "MULTIJOGADOR"
     },
     "hub": {
       "daily_ops": "OPS DIÁRIAS",
@@ -180,7 +183,10 @@
       "abort_current_mission": "ABORTAR MISSÃO ATUAL",
       "abort_mission": "ABORTAR MISSÃO",
       "title_active_crosshair_color": "Cor da mira ativa",
-      "placeholder_agent": "AGENTE"
+      "placeholder_agent": "AGENTE",
+      "commentary_list": "COMENTÁRIOS DOS DESENVOLVEDORES",
+      "commentary_read_all": "LER TUDO",
+      "content_guide": "GUIA DE CONTEÚDO (TEMAS ADULTOS)"
     },
     "action": {
       "open": "ABRIR",
@@ -1136,10 +1142,12 @@
       "smelted": "Fundidos 5x {rarity} → {reward}!",
       "redeem_failed": "Falha no resgate: {reason}.",
       "redeemed": "Resgatados {cost} fragmentos por {reward}!",
+      "exchange_needs_service": "Melhorias e resgates precisam do serviço de itens da Steam, que esta versão ainda não tem.",
       "cache_unlocked": "Cache desbloqueado: {count} recompensas garantidas.",
       "cache_opened": "Pacote de cache aberto.",
       "cache_partial": "Troca de cache concluída com concessão parcial da Steam.",
-      "cache_failed": "Falha ao abrir o cache — verifique sua conexão e tente novamente."
+      "cache_failed": "Falha ao abrir o cache — verifique sua conexão e tente novamente.",
+      "buy_on_steam": "◈ COMPRAR NA STEAM"
     },
     "lobby": {
       "connecting": "CONECTANDO...",
@@ -1358,7 +1366,9 @@
       "bunker_level_aria": "NÍVEL DO BUNKER {level} ({tier}) — {biome}"
     },
     "commentary": {
-      "kicker": "COMENTÁRIO DO DESENVOLVEDOR"
+      "kicker": "COMENTÁRIO DO DESENVOLVEDOR",
+      "close_list": "Fechar comentários dos desenvolvedores",
+      "list_intro": "Notas dos desenvolvedores sobre por que o jogo funciona como funciona. Com o modo comentário ativado, cada uma também aparece quando você chega a esse momento."
     },
     "radio": {
       "online": "ONLINE",
@@ -1459,7 +1469,12 @@
       "print_output": "IMPRIMIR ESTA SAÍDA",
       "fabricating": "FABRICANDO…",
       "bay_button": "◇ BAIA DE FAB.",
-      "open_bay": "+ ABRIR BAIA DE FAB."
+      "open_bay": "+ ABRIR BAIA DE FAB.",
+      "stat_damage": "DANO ×{value}",
+      "stat_rate": "CADÊNCIA ×{value}",
+      "stat_range": "ALCANCE ×{value}",
+      "stat_shots": "{count} DISPAROS",
+      "odds": "CHANCES"
     },
     "camp": {
       "sleep_warning": "Dormir em {camp} avança para o dia {day}. Estes sinais pendentes serão fechados.",
@@ -1795,6 +1810,26 @@
         "follow_lead": "Próximo passo: siga a pista — {label}",
         "redeploy": "Próximo passo: reimplantar"
       }
+    },
+    "item_card": {
+      "slot_weapon": "ARMA",
+      "slot_charm": "AMULETO",
+      "slot_bay_a": "BAIA A",
+      "slot_bay_b": "BAIA B",
+      "slot_chassis": "CHASSI",
+      "empty": "VAZIO",
+      "equipped": "EQUIPADO"
+    },
+    "foundry_hub": {
+      "title": "◇ FUNDIÇÃO",
+      "resources": "Recursos",
+      "close": "Fechar a fundição",
+      "tab_stash": "ESTOQUE",
+      "tab_loadout": "EQUIPAMENTO",
+      "tab_fabricate": "FABRICAR",
+      "tab_tradeup": "MELHORAR",
+      "tab_store": "LOJA",
+      "loadout_hint": "Mude o que cada classe carrega no Arsenal."
     }
   },
   "narrative": {
@@ -3461,6 +3496,22 @@
       "4241": {
         "name": "Tema de HUD Grão-Marechal",
         "desc": "Interface de comando imperial régia em dourado âmbar quente emoldurada por suportes de folhas de louro de arquivo."
+      }
+    },
+    "items": {
+      "frame": {
+        "talon": "Submetralhadora Vector-9 Talon",
+        "talon_c": "Carabina Talon-C",
+        "siege_breaker": "Autocanhão Quebra-Cerco 50",
+        "tesla_lock": "Propulsor de Arco Tesla-Lock MK-IV"
+      },
+      "weaponProfile": {
+        "mk1_sidearm": "Arma Secundária Mark-I",
+        "pulse_carbine": "Carabina de Pulso",
+        "scatter_rep": "Repetidora de Dispersão",
+        "rail_marksman": "Atirador de Trilho",
+        "neon_smg": "Submetralhadora Neon",
+        "cryo_lance": "Lança Criogênica"
       }
     }
   }

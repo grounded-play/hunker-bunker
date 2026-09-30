@@ -32,6 +32,8 @@
     "hull": "装甲",
     "ammo": "弹药",
     "dash": "冲刺",
+    "melee": "近战格斗",
+    "timeline_divergence": "关键时间线分歧",
     "overclock": "超频",
     "sector": "扇区",
     "bunker_alert": "地堡警报"
@@ -111,7 +113,8 @@
       "spec_eng_utility": "多功能: 最大",
       "spec_eng_armor": "护甲: 防化",
       "esc": "[ESC]",
-      "return_main": "← 返回主菜单"
+      "return_main": "← 返回主菜单",
+      "multiplayer": "多人游戏"
     },
     "hub": {
       "daily_ops": "每日行动",
@@ -180,7 +183,10 @@
       "abort_current_mission": "中止当前任务",
       "abort_mission": "中止任务",
       "title_active_crosshair_color": "当前准星颜色",
-      "placeholder_agent": "特工"
+      "placeholder_agent": "特工",
+      "commentary_list": "开发者评论",
+      "commentary_read_all": "全部阅读",
+      "content_guide": "内容指南（成人主题）"
     },
     "action": {
       "open": "打开",
@@ -1136,10 +1142,12 @@
       "smelted": "已熔炼 5x {rarity} → {reward}！",
       "redeem_failed": "兑换失败：{reason}。",
       "redeemed": "已用 {cost} 碎片兑换 {reward}！",
+      "exchange_needs_service": "升级和兑换需要 Steam 物品服务，此版本尚未提供。",
       "cache_unlocked": "宝箱已开启：获得 {count} 项奖励。",
       "cache_opened": "宝箱礼包已开启。",
       "cache_partial": "宝箱兑换已完成，但 Steam 仅部分发放。",
-      "cache_failed": "宝箱开启失败 — 请检查网络后重试。"
+      "cache_failed": "宝箱开启失败 — 请检查网络后重试。",
+      "buy_on_steam": "◈ 在 STEAM 上购买"
     },
     "lobby": {
       "connecting": "正在连接…",
@@ -1358,7 +1366,9 @@
       "bunker_level_aria": "地堡层级 {level}（{tier}）— {biome}"
     },
     "commentary": {
-      "kicker": "开发者评论"
+      "kicker": "开发者评论",
+      "close_list": "关闭开发者评论",
+      "list_intro": "开发者关于游戏为何如此设计的说明。开启评论模式后，到达相应时刻时也会显示。"
     },
     "radio": {
       "online": "在线",
@@ -1459,7 +1469,12 @@
       "print_output": "打印此产物",
       "fabricating": "制造中…",
       "bay_button": "◇ 制造舱",
-      "open_bay": "+ 打开制造舱"
+      "open_bay": "+ 打开制造舱",
+      "stat_damage": "伤害 ×{value}",
+      "stat_rate": "射速 ×{value}",
+      "stat_range": "射程 ×{value}",
+      "stat_shots": "{count} 发",
+      "odds": "概率"
     },
     "camp": {
       "sleep_warning": "在 {camp} 休息将推进到第 {day} 天。以下未解决的信号将关闭。",
@@ -1795,6 +1810,26 @@
         "follow_lead": "下一步：追踪线索——{label}",
         "redeploy": "下一步：重新部署"
       }
+    },
+    "item_card": {
+      "slot_weapon": "武器",
+      "slot_charm": "挂饰",
+      "slot_bay_a": "插槽 A",
+      "slot_bay_b": "插槽 B",
+      "slot_chassis": "机体",
+      "empty": "空",
+      "equipped": "已装备"
+    },
+    "foundry_hub": {
+      "title": "◇ 铸造厂",
+      "resources": "资源",
+      "close": "关闭铸造厂",
+      "tab_stash": "储藏",
+      "tab_loadout": "配装",
+      "tab_fabricate": "制造",
+      "tab_tradeup": "升级",
+      "tab_store": "商店",
+      "loadout_hint": "在军械库中更改各职业的装备。"
     }
   },
   "narrative": {
@@ -3461,6 +3496,22 @@
       "4241": {
         "name": "大元帅 HUD 主题",
         "desc": "暖琥珀金的王室帝国指挥界面，以档案式月桂叶托架为框。"
+      }
+    },
+    "items": {
+      "frame": {
+        "talon": "矢量-9 爪击冲锋枪",
+        "talon_c": "爪击-C 卡宾枪",
+        "siege_breaker": "破城者-50 自动炮",
+        "tesla_lock": "特斯拉锁 MK-IV 电弧驱动器"
+      },
+      "weaponProfile": {
+        "mk1_sidearm": "马克-I 随身武器",
+        "pulse_carbine": "脉冲卡宾枪",
+        "scatter_rep": "散射连发枪",
+        "rail_marksman": "轨道神射手",
+        "neon_smg": "霓虹冲锋枪",
+        "cryo_lance": "冷冻长枪"
       }
     }
   }

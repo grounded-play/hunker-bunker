@@ -5396,6 +5396,7 @@ input:checked+.slider:before {
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.2s;
+  z-index: 20;
 }
 
 .close-modal:hover {
@@ -9946,11 +9947,24 @@ body.hud-hidden .compound-location-title {
   position: relative;
   width: clamp(48px, 12vw, 72px);
   height: clamp(48px, 12vw, 72px);
-  border: 1px solid rgba(0, 210, 255, 0.42);
-  border-radius: 2px;
+  border: 1px solid rgba(0, 210, 255, 0.55);
+  box-shadow: 0 0 12px rgba(0, 210, 255, 0.3), inset 0 0 8px rgba(0, 210, 255, 0.2);
+  border-radius: 4px;
   overflow: hidden;
   background: #000;
   flex-shrink: 0;
+  animation: radio-avatar-glow 3s ease-in-out infinite;
+}
+
+@keyframes radio-avatar-glow {
+  0%, 100% {
+    border-color: rgba(0, 210, 255, 0.45);
+    box-shadow: 0 0 8px rgba(0, 210, 255, 0.25), inset 0 0 6px rgba(0, 210, 255, 0.15);
+  }
+  50% {
+    border-color: rgba(0, 210, 255, 0.85);
+    box-shadow: 0 0 16px rgba(0, 210, 255, 0.5), inset 0 0 10px rgba(0, 210, 255, 0.35);
+  }
 }
 
 .radio-transmission-prompt__avatar img {
@@ -10493,6 +10507,19 @@ body.hud-hidden .compound-location-title {
 /* ── Fabricator gamba reveal (T7) ──────────────────────────────
    Rarity palette: common slate, rare cyan, epic violet, legendary amber. */
 .fab-tile--common,    .fab-card--common,    .fab-reveal__card--common    { --rar: 148, 163, 184; }
+.fab-tile--uncommon,  .fab-card--uncommon,  .fab-reveal__card--uncommon  { --rar: 34, 197, 94; }
+.fab-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin: 2px 0; }
+.fab-stat { padding: 1px 5px; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 3px; font: 700 max(11px, calc(var(--font-xs) * 0.7)) / 1.3 'Space Mono', monospace; color: rgba(255, 255, 255, 0.8); }
+.fab-stat--up { color: #7dd3fc; border-color: rgba(125, 211, 252, 0.45); }
+.fab-stat--down { color: rgba(255, 255, 255, 0.5); }
+.fab-odds { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px; font: 700 max(11px, calc(var(--font-xs) * 0.72)) / 1.2 'Space Mono', monospace; letter-spacing: 0.06em; }
+.fab-odds__label { color: rgba(255, 255, 255, 0.55); }
+.fab-odds__tier { color: rgb(var(--rar)); text-transform: uppercase; }
+.fab-odds__tier--common { --rar: 148, 163, 184; }
+.fab-odds__tier--uncommon { --rar: 34, 197, 94; }
+.fab-odds__tier--rare { --rar: 0, 200, 255; }
+.fab-odds__tier--epic { --rar: 180, 120, 255; }
+.fab-odds__tier--legendary { --rar: 255, 184, 64; }
 .fab-tile--rare,      .fab-card--rare,      .fab-reveal__card--rare      { --rar: 0, 200, 255; }
 .fab-tile--epic,      .fab-card--epic,      .fab-reveal__card--epic      { --rar: 180, 120, 255; }
 .fab-tile--legendary, .fab-card--legendary, .fab-reveal__card--legendary { --rar: 255, 184, 64; }
@@ -11802,6 +11829,82 @@ body.hud-hidden .compound-location-title {
   font-weight: 900;
   letter-spacing: 0.04em;
   color: #ffffff;
+}
+
+/* Both open from Settings (z 100010), so they must stack above it. */
+#commentary-list-modal,
+#mature-content-audit-modal {
+  z-index: 100020 !important;
+}
+
+/* Commentary shown over menus (Settings, Vault, Armory): the HUD stack is
+   hidden in the menu phase, so these live in their own corner stack. */
+.menu-commentary-stack {
+  position: fixed;
+  right: max(16px, calc(var(--vu) * 2));
+  bottom: max(16px, calc(var(--vu) * 2));
+  z-index: 12000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+html.phase-menu .menu-commentary-stack .commentary-toast,
+.menu-commentary-stack .commentary-toast {
+  display: grid !important;
+  visibility: visible !important;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+.menu-commentary-stack .commentary-toast.visible {
+  opacity: 1;
+  transform: none;
+}
+.commentary-list-content {
+  width: min(92vw, calc(var(--vu) * 90));
+  max-height: min(86vh, calc(var(--vu) * 80));
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1);
+  padding: calc(var(--vu) * 2);
+}
+.commentary-list-heading {
+  margin: 0;
+  font: 800 calc(var(--font-xs) * 1.3) / 1.1 'Space Mono', monospace;
+  letter-spacing: 0.1em;
+  color: rgb(251, 191, 36);
+}
+.commentary-list-intro {
+  margin: 0;
+  font-size: max(12px, calc(var(--font-xs) * 0.9));
+  color: rgba(255, 255, 255, 0.7);
+}
+.commentary-list {
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1);
+  padding-right: 6px;
+}
+.commentary-list__item {
+  padding: calc(var(--vu) * 1) calc(var(--vu) * 1.2);
+  border-left: 3px solid rgba(251, 191, 36, 0.8);
+  background: rgba(12, 18, 24, 0.85);
+  border-radius: 4px;
+}
+.commentary-list__title {
+  margin: 0 0 4px;
+  font: 700 max(13px, calc(var(--font-xs) * 1)) / 1.2 'Space Mono', monospace;
+  color: #fff;
+}
+.commentary-list__body {
+  margin: 0;
+  font-size: max(12px, calc(var(--font-xs) * 0.9));
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .commentary-toast {
@@ -13905,30 +14008,45 @@ button.archive-log-entry:active {
   }
 }
 
-/* Boss Status Panel */
+/* Boss Status Panel - Bespoke Heavy Threat Bezel */
 .boss-status-panel {
   position: absolute;
   bottom: calc(var(--vu) * 3);
   left: 50%;
   transform: translateX(-50%);
-  width: clamp(240px, 45vw, 600px);
-  padding: calc(var(--vu) * 1.2) calc(var(--vu) * 2.2);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 74, 74, 0.58);
-  background: rgba(0, 0, 0, 0.82);
+  width: clamp(280px, 48vw, 640px);
+  padding: calc(var(--vu) * 1.4) calc(var(--vu) * 2.6);
+  border-radius: 6px;
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+  border: 1.5px solid rgba(255, 50, 50, 0.85);
+  background: linear-gradient(180deg, rgba(32, 6, 6, 0.96) 0%, rgba(12, 3, 3, 0.98) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: #fff;
   font-weight: 900;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   line-height: 1;
   pointer-events: none;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--vu) * 0.75);
+  gap: calc(var(--vu) * 0.85);
   box-shadow:
-    0 0 16px rgba(255, 74, 74, 0.35),
-    inset 0 0 0 1px rgba(255, 120, 120, 0.22);
+    0 0 28px rgba(255, 40, 40, 0.45),
+    inset 0 0 20px rgba(255, 40, 40, 0.2);
   z-index: 9000;
+  animation: boss-bezel-alarm-pulse 3s ease-in-out infinite;
   transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+@keyframes boss-bezel-alarm-pulse {
+  0%, 100% {
+    border-color: rgba(255, 50, 50, 0.75);
+    box-shadow: 0 0 22px rgba(255, 40, 40, 0.35), inset 0 0 14px rgba(255, 40, 40, 0.15);
+  }
+  50% {
+    border-color: rgba(255, 80, 80, 1);
+    box-shadow: 0 0 36px rgba(255, 40, 40, 0.65), inset 0 0 24px rgba(255, 40, 40, 0.3);
+  }
 }
 
 .boss-status-panel.hidden {
@@ -14400,7 +14518,21 @@ button.archive-log-entry:active {
   margin-bottom: calc(var(--vu) * 1.8);
   flex: 0 0 auto;
   border-bottom: 1px solid rgba(var(--credits-glow-rgb), 0.22);
-  padding-bottom: calc(var(--vu) * 1.2);
+  padding: 0 calc(var(--vu) * 6) calc(var(--vu) * 1.2);
+}
+
+.credits-modal-content .close-modal {
+  z-index: 20;
+  border-color: rgba(var(--credits-glow-rgb), 0.45);
+  color: #22d3ee;
+}
+
+.credits-modal-content .close-modal:hover,
+.credits-modal-content .close-modal:focus-visible {
+  background: rgba(var(--credits-glow-rgb), 0.15);
+  border-color: #22d3ee;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(var(--credits-glow-rgb), 0.4);
 }
 
 .credits-header-kicker {
@@ -15043,19 +15175,34 @@ body.cutscene-video-active .tactical-overlay {
 .queens-ledger-hud {
   display: inline-flex;
   align-items: center;
-  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 1.8);
-  background: rgba(11, 13, 15, 0.72);
-  border: 1px solid rgba(0, 229, 255, 0.22);
-  border-radius: 6px;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
-  font-family: 'Outfit', sans-serif;
+  padding: calc(var(--vu) * 0.9) calc(var(--vu) * 2);
+  background: linear-gradient(180deg, rgba(28, 10, 36, 0.94) 0%, rgba(10, 4, 16, 0.98) 100%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(168, 85, 247, 0.65);
+  border-radius: 8px;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.3), inset 0 0 14px rgba(168, 85, 247, 0.15);
+  font-family: 'Space Mono', monospace;
   font-size: clamp(9px, calc(var(--vu) * 1.3), 13px);
   font-weight: 800;
-  color: var(--text-main);
-  letter-spacing: 0.05em;
+  color: #f3e8ff;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   pointer-events: none;
+  animation: queen-bezel-glow 4s ease-in-out infinite;
   transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+@keyframes queen-bezel-glow {
+  0%, 100% {
+    border-color: rgba(168, 85, 247, 0.55);
+    box-shadow: 0 0 16px rgba(168, 85, 247, 0.25), inset 0 0 10px rgba(168, 85, 247, 0.1);
+  }
+  50% {
+    border-color: rgba(192, 132, 252, 0.9);
+    box-shadow: 0 0 28px rgba(168, 85, 247, 0.5), inset 0 0 18px rgba(168, 85, 247, 0.25);
+  }
 }
 
 .queens-ledger-hud.hidden {
@@ -24396,4 +24543,74 @@ html.phase-gameplay #tactical-telemeter-box {
 /* Hidden with the menu it belongs to, now that it is no longer inside it. */
 #game-viewport > #menu.hidden ~ .menu-corner-settings {
   display: none !important;
+}
+
+/* ── Timeline Divergence Warning Banner ────────────────────────────── */
+.timeline-divergence-banner {
+  position: fixed;
+  top: 14%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-24px);
+  width: min(580px, 92vw);
+  background: linear-gradient(135deg, rgba(28, 14, 6, 0.98), rgba(56, 24, 6, 0.96));
+  border: 2px solid #f59e0b;
+  border-radius: 6px;
+  box-shadow:
+    0 0 32px rgba(245, 158, 11, 0.65),
+    inset 0 0 16px rgba(245, 158, 11, 0.25);
+  display: flex;
+  flex-direction: column;
+  padding: 14px 18px;
+  gap: 6px;
+  z-index: 17500;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(10px);
+}
+
+.timeline-divergence-banner.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  animation: timeline-banner-pulse 2.2s infinite ease-in-out;
+}
+
+@keyframes timeline-banner-pulse {
+  0%, 100% { border-color: #f59e0b; box-shadow: 0 0 25px rgba(245, 158, 11, 0.5); }
+  50% { border-color: #fbbf24; box-shadow: 0 0 42px rgba(251, 191, 36, 0.85); }
+}
+
+.timeline-divergence-banner__kicker {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  color: #fbbf24;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.timeline-divergence-banner__title {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.timeline-divergence-banner__desc {
+  font-size: 11px;
+  font-weight: 600;
+  color: #fef3c7;
+  line-height: 1.35;
+}
+
+.timeline-divergence-banner__locked {
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #ef4444;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }

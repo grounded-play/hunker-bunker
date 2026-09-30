@@ -1,9 +1,14 @@
 # Planning
 
 Status: canonical process index · Owner: repository maintainers · Updated:
-2026-09-28 · Review: every sprint open and close
+2026-09-29 · Review: every sprint open and close
 
-- [Sprint 48](sprint-48-plan.md) is the active sprint plan: hardware acceptance first, then co-op authority, HUD dock readability recovery (R0–R2), the unified Foundry's first slice, companion escort and the Proof Run.
+- [Sprint Backlog Remediation and Clearance Plan](sprint-backlog-remediation-and-clearance-plan-2026-09-29.md) audits all 14 open GitHub issues, maps their implementation and verification across dedicated test suites (#78, #79, #80, #81, #82, #83, #84, #66), and outlines target hardware clearance steps.
+- [Sprint 49](sprint-49.md) is the next sprint plan: finish and demonstrate the Steam-reviewed features (chat, online, commentary, purchases, controller, mature content), then improve the whole game. It carries the owner asks deferred from Sprint 48.
+- [Economy master plan](economy-master-plan-2026-09-30.md): the free-to-play, cosmetics-only economy (drops, seasonal collections, market, Item Store + Microtransactions).
+- [Steam review 25475189 plan](steam-review-build-25475189-fix-plan-2026-09-30.md): root causes, code fixes and reviewer notes.
+- [Sprint 48](sprint-48-plan.md) is the sprint being released as `v2.4.13-beta`: hardware acceptance first, then co-op authority, HUD dock readability recovery (R0–R2), the unified Foundry's first slice, companion escort and the Proof Run.
+- [Gameplay world versus visual target](gameplay-vs-theory-comparison-and-plan.md) compares the current rendering with the supplied bunker concept and tracks the atmosphere, practical-lighting, cutaway and surface-material work. HUD layout is explicitly outside that pass.
 - [Sprint 47 status](sprint-47-status-and-sprint-48-plan-2026-09-28.md) records what shipped, how each item is verified, the open backlog and the owner decisions (D1–D8).
 - [HUD overlay review](hud-overlay-review-and-recovery-plan-2026-09-28.md) (2026-09-28) measures the dock's readability failures and sets the R0–R4 recovery order.
 - [The Invisible Essentials](invisible-essentials-2026-09-24.md) is the multi-phase product reliability and comprehension strategy (Phases 1–4 completed in v2.4.12-beta; Phases 5–8 in active development).

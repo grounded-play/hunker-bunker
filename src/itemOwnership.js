@@ -17,6 +17,7 @@
 import { STEAM_ITEM_CATALOG } from './data/steamItemCatalog.js';
 import { COMMUNITY_SKINS } from './data/communitySkins.js';
 import { ACHIEVEMENT_COSMETIC_REWARDS, ACHIEVEMENT_DEFS } from './achievements.js';
+import { ACHIEVEMENT_COSMETICS } from './data/achievementCosmetics.js';
 
 export const DEV_GRANTS_STORAGE_KEY = 'hb_dev_item_grants_v1';
 export const UNLOCK_ALL_STORAGE_KEY = 'hb_dev_unlock_all_cosmetics_v1';
@@ -96,22 +97,29 @@ for (const [key, entry] of Object.entries(STEAM_ITEM_CATALOG)) {
 }
 
 // Achievement reward cosmetics (5001-5012). They appear in
-// CLASS_CHASSIS_SKINS and so are already offered by the Armory, but exist in no
-// catalog -- today they render as the literal string "5001". Named from the
-// achievement that grants them.
+// CLASS_CHASSIS_SKINS and so are already offered by the Armory. Named and
+// graded by their authored entry in data/achievementCosmetics.js, which the
+// Vault already showed; the Armory used to show a generated "<achievement>
+// Chassis" name at a flat `rare` for the same item.
 const ACHIEVEMENT_TITLE_BY_KEY = new Map(
     (ACHIEVEMENT_DEFS ?? []).map((def) => [def.key, def.title])
+);
+const AUTHORED_ACHIEVEMENT_COSMETICS = new Map(
+    (ACHIEVEMENT_COSMETICS ?? []).map((item) => [toId(item.itemdefid), item])
 );
 for (const [achievementKey, rewardId] of Object.entries(ACHIEVEMENT_COSMETIC_REWARDS ?? {})) {
     const id = toId(rewardId);
     if (id === null || MERGED_CATALOG.has(id)) continue;
+    const authored = AUTHORED_ACHIEVEMENT_COSMETICS.get(id);
     const title = ACHIEVEMENT_TITLE_BY_KEY.get(achievementKey) ?? achievementKey.replace(/_/g, ' ').toUpperCase();
+    const isWeapon = authored ? authored.slot === 'weapon' : ['5002', '5006', '5009', '5010'].includes(String(id));
     MERGED_CATALOG.set(id, Object.freeze({
         itemdefid: id,
-        name: `${title} ${{ '5002': 'Carbine', '5006': 'Autocannon', '5009': 'Arc Driver', '5010': 'Arc Driver' }[String(id)] ?? 'Chassis'}`,
-        rarity: 'rare',
-        type: ['5002', '5006', '5009', '5010'].includes(String(id)) ? ITEM_TYPE.SKIN : ITEM_TYPE.CHASSIS,
+        name: authored?.name ?? `${title} ${isWeapon ? 'Weapon' : 'Chassis'}`,
+        rarity: authored?.rarity ?? 'rare',
+        type: isWeapon ? ITEM_TYPE.SKIN : ITEM_TYPE.CHASSIS,
         source: 'achievement',
+        classId: authored?.classId ?? null,
         achievementKey
     }));
 }
@@ -134,14 +142,14 @@ for (const skin of COMMUNITY_SKINS ?? []) {
 
 // Earned Rig Modules (4160-4167) — Track A hardware, earned in-game, never sold on Steam Market
 export const RIG_MODULE_DEFS = Object.freeze([
-    { itemdefid: 4160, name: 'Ballast Plating', rarity: 'uncommon', type: ITEM_TYPE.MOD, source: 'earned', unlockPath: 'shells', cost: '150 Shells', desc: '+2 Max HP, −15% Move Speed' },
-    { itemdefid: 4161, name: 'Scrap Furnace', rarity: 'uncommon', type: ITEM_TYPE.MOD, source: 'earned', unlockPath: 'shells', cost: '150 Shells', desc: 'Destroyed Props Drop Salvage, −10% Fire Rate' },
-    { itemdefid: 4162, name: "Queen's Bane", rarity: 'legendary', type: ITEM_TYPE.MOD, source: 'achievement', unlockPath: 'achievement:queen', achievementKey: 'act2:queenKilled', desc: '+25% Boss Damage, −10% Other Damage' },
-    { itemdefid: 4163, name: 'Archivist Lens', rarity: 'rare', type: ITEM_TYPE.MOD, source: 'achievement', unlockPath: 'achievement:lore', achievementKey: 'achievement:archivist_lore', desc: 'Lore Drops Grant Salvage, −1 Clip Size' },
-    { itemdefid: 4164, name: 'Shard Conduit', rarity: 'rare', type: ITEM_TYPE.MOD, source: 'earned', unlockPath: 'shards', cost: '25 Deep Core Shards', desc: '+1 Relic Rarity Tier, −10% Max O₂' },
-    { itemdefid: 4165, name: 'Duplicate Refiner', rarity: 'epic', type: ITEM_TYPE.MOD, source: 'earned', unlockPath: 'shards', cost: '50 Deep Core Shards', desc: 'Duplicate Relics Grant Shards, −15% Salvage' },
-    { itemdefid: 4166, name: 'Pressure Seal', rarity: 'epic', type: ITEM_TYPE.MOD, source: 'depth', unlockPath: 'depth:4', requiredDepth: 4, desc: 'O₂ Drains 25% Slower, −40% Healing' },
-    { itemdefid: 4167, name: 'Deep Anchor', rarity: 'legendary', type: ITEM_TYPE.MOD, source: 'depth', unlockPath: 'depth:6', requiredDepth: 6, desc: 'Ring Crossings Free O₂, Spawns Elite' }
+    { itemdefid: 4160, name: 'Ballast Plating', rarity: 'uncommon', type: ITEM_TYPE.MOD, source: 'earned', unlockPath: 'shells', cost: '150 Shells', desc: '+2 Max HP, −15% Move Speed', localImg: '/economy/mod_ballast_plating.png', glbUrl: '/3d/runtime/new3ds/mod_ballast_plating.glb' },
+    { itemdefid: 4161, name: 'Scrap Furnace', rarity: 'uncommon', type: ITEM_TYPE.MOD, source: 'earned', unlockPath: 'shells', cost: '150 Shells', desc: 'Destroyed Props Drop Salvage, −10% Fire Rate', localImg: '/economy/mod_scrap_furnace.png', glbUrl: '/3d/runtime/new3ds/mod_scrap_furnace.glb' },
+    { itemdefid: 4162, name: "Queen's Bane", rarity: 'legendary', type: ITEM_TYPE.MOD, source: 'achievement', unlockPath: 'achievement:queen', achievementKey: 'act2:queenKilled', desc: '+25% Boss Damage, −10% Other Damage', localImg: '/economy/mod_queens_bane.png', glbUrl: '/3d/runtime/new3ds/mod_queens_bane.glb' },
+    { itemdefid: 4163, name: 'Archivist Lens', rarity: 'rare', type: ITEM_TYPE.MOD, source: 'achievement', unlockPath: 'achievement:lore', achievementKey: 'achievement:archivist_lore', desc: 'Lore Drops Grant Salvage, −1 Clip Size', localImg: '/economy/mod_archivist_lens.png', glbUrl: '/3d/runtime/new3ds/mod_archivist_lens.glb' },
+    { itemdefid: 4164, name: 'Shard Conduit', rarity: 'rare', type: ITEM_TYPE.MOD, source: 'earned', unlockPath: 'shards', cost: '25 Deep Core Shards', desc: '+1 Relic Rarity Tier, −10% Max O₂', localImg: '/economy/mod_shard_conduit.png', glbUrl: '/3d/runtime/new3ds/mod_shard_conduit.glb' },
+    { itemdefid: 4165, name: 'Duplicate Refiner', rarity: 'epic', type: ITEM_TYPE.MOD, source: 'earned', unlockPath: 'shards', cost: '50 Deep Core Shards', desc: 'Duplicate Relics Grant Shards, −15% Salvage', localImg: '/economy/mod_duplicate_refiner.png', glbUrl: '/3d/runtime/new3ds/mod_duplicate_refiner.glb' },
+    { itemdefid: 4166, name: 'Pressure Seal', rarity: 'epic', type: ITEM_TYPE.MOD, source: 'depth', unlockPath: 'depth:4', requiredDepth: 4, desc: 'O₂ Drains 25% Slower, −40% Healing', localImg: '/economy/mod_pressure_seal.png', glbUrl: '/3d/runtime/new3ds/mod_pressure_seal.glb' },
+    { itemdefid: 4167, name: 'Deep Anchor', rarity: 'legendary', type: ITEM_TYPE.MOD, source: 'depth', unlockPath: 'depth:6', requiredDepth: 6, desc: 'Ring Crossings Free O₂, Spawns Elite', localImg: '/economy/mod_deep_anchor.png', glbUrl: '/3d/runtime/new3ds/mod_deep_anchor.glb' }
 ]);
 
 for (const mod of RIG_MODULE_DEFS) {

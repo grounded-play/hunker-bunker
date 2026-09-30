@@ -14,3 +14,20 @@ describe('fabricated field weapon profiles', () => {
         expect(getFieldWeaponProfile('concept_only', true)).toBeNull();
     });
 });
+
+describe('describeFieldWeapon', () => {
+    it('reports the multipliers combat applies, for every Foundry weapon', async () => {
+        const { describeFieldWeapon } = await import('./fieldWeapon.js');
+        const { WEAPON_PROFILES } = await import('./data/itemCatalog.js');
+        for (const id of Object.keys(WEAPON_PROFILES)) {
+            const stats = describeFieldWeapon(id);
+            const live = getFieldWeaponProfile(id, true);
+            expect(stats.damage).toBe(live.damageMultiplier);
+            expect(stats.fireRate).toBeCloseTo(1 / live.cooldownMultiplier);
+            expect(stats.range).toBe(live.lifetimeMultiplier);
+            expect(stats.projectiles).toBe(live.spreads.length);
+        }
+        expect(describeFieldWeapon('scatter_rep').projectiles).toBe(3);
+        expect(describeFieldWeapon('nope')).toBeNull();
+    });
+});

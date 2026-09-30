@@ -1,6 +1,6 @@
 # Armory Asset Gaps
 
-Status: generated | Updated: 2026-09-23
+Status: generated | Updated: 2026-09-30
 | Regenerate: `npm run audit:armory-assets`
 
 Uses the same item lists and preview resolver as the Armory. Model paths are
@@ -9,12 +9,12 @@ pictures and green-backed icons; source artwork is retained unchanged.
 
 | Check | Count |
 | --- | ---: |
-| Items offered | 123 |
+| Items offered | 128 |
 | **No name** (renders as a bare itemdef id) | **0** |
 | **No icon on disk** (tile falls back to initials) | **0** |
 | Missing required 3D model | 0 |
 | **Offered chassis without a valid skin binding** | **0** |
-| Pending achievement weapons hidden from picker | 4 |
+| Pending achievement weapons hidden from picker | 0 |
 | Existing model needs visual replacement | 1 |
 | **Icon looks like an un-keyed green screen** (≥35% green) | **0** |
 
@@ -62,12 +62,7 @@ These ownership records remain intact, but the rewards are not exposed as
 factory-gun substitutes. Add a dedicated GLB and change the achievement asset
 manifest to `ready` before restoring them to `ARCHETYPE_SKINS`.
 
-| Id | Reward | Status |
-| --- | --- | --- |
-| `5002` | Chrono-Drifter Talon-C | pending |
-| `5006` | Bunker Bastion Siege-Breaker | pending |
-| `5009` | Archival Constructor Arc Driver | pending |
-| `5010` | Hive-Weaver Bio-Plasma Emitter | pending |
+_None._
 
 
 This is a visual-review finding, separate from missing-file checks. The four

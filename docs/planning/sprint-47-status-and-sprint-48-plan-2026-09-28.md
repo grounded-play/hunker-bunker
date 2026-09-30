@@ -328,7 +328,7 @@ sees it" for co-op, and make the dock HUD the default.
 | **P1** | Dock recovery gate: authoritative screenshot/rect harness; one shared 64 u content grid for all classes; ≥11 px critical Deck text; objective drawer (C), prompts into H, scan ring, HUD Scale menu item and 7-locale pass | harness fails on today's known defects, then passes at all four target sizes; core combat data reads correctly with housing art disabled; Deck hardware check |
 | **P1** | Promote the dock only after the recovery gate | no permanent legacy mission column; no clipped critical text; owner Deck + PC sign-off; then flip `hb_hud_layout` default to `dock` |
 | **P2** | Dock wear model v1 after geometry freezes: `suitCondition` + blood, frost and damage tier 1 for one class, then all three | unit tests per signal; screenshots per state; overlays never cover instruments; ≤0.3 ms HUD layout/style cost |
-| **P2** | Gameplay Phase 4: boss phase conversion (cyber/cryo snail), expedition report expansion; decide Lane 2's formation rule | unit + slice probe |
+| **P2** | Gameplay Phase 4: all six milestone boss conversions complete; expedition report expansion and Lane 2's formation rule remain | phase-machine unit tests + runtime attack/sync probes green; remaining work needs unit + slice probe |
 | **P2** | Foundry: one item catalog + card, hub skeleton with tabs; smelter trade-up logging and fix | the same item looks identical on all four screens; trade-up sticks across reload |
 | **P3** | Performance: chunk-mount spikes, pickup/prop instancing | frame profiler before/after; no visual diff |
 | **P3** | Invisible Essentials Phase 6 (claimed by Claude) | phase acceptance in its doc |
@@ -440,6 +440,14 @@ or release-branch dependency work happens without the owner's answer.
 - **Planning default if deferred:** triage immediately; do not merge a blind major
   upgrade into PR #93. Fix reachable runtime exposure before release, otherwise land the
   tested update on the default branch and sync it deliberately.
+
+### Resolved 2026-09-29
+
+Delegated by the owner ("resolve these without my input using industry and gaming
+standards and players' wants"): D1 A, D2 capture-first (no global renderer change),
+D3 A (done `a5f154d7`), D4 A, D5 first pack, D6 framing A (names from a narrative
+pass), D7 A, D8 A (done `cc12ac3f`). Rationale and status for each are in the
+[Sprint 48 plan §6](sprint-48-plan.md).
 
 ### Decision reply format
 

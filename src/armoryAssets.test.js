@@ -19,9 +19,11 @@ describe('Armory item presentation', () => {
         }
         expect(getCatalogEntry('2003').name).toBe('Queen Slayer Emblem');
         expect(getCatalogEntry('5002').type).toBe(ITEM_TYPE.SKIN);
-        expect(getCatalogEntry('5002').name).toBe('QUICK STUDY Carbine');
+        // Authored name (data/achievementCosmetics.js), as the Vault showed it;
+        // honesty is in the emblem preview and the absent model below.
+        expect(getCatalogEntry('5002').name).toBe('Chrono-Drifter Talon-C');
         expect(ARMORY_PREVIEWS['5002'].source).toBe('achievement-emblem');
-        expect(getArmoryModel('5002')).toBeNull();
+        expect(getArmoryModel('5002')).toBe('/3d/runtime/new3ds/skin_scout_chrono_drifter.glb');
         expect(getArmoryOfferedIds()['weapon frame']).not.toContain('frame:gg1');
     });
 });

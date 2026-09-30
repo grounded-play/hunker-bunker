@@ -1,4 +1,4 @@
-# TODO: Make the Terminal Day Cycle Legible and Live
+# RESOLVED SPEC: Make the Terminal Day Cycle Legible and Live
 
 **Status:** Complete  
 **Priority:** P1 — visible feature appears inactive  
@@ -114,7 +114,7 @@ must continue refreshing on a small, bounded cadence and explicitly say that
 the local-light clock is held while the terminal is active. A paused value must
 look intentionally paused, not broken.
 
-## Implementation TODO
+## Implementation Checklist (Completed)
 
 ### A. Restore a reachable terminal-only refresh
 
@@ -203,7 +203,7 @@ Should the terminal itself offer an `END DAY / SLEEP` button?
 Whichever option is chosen, the terminal must never mutate `dayState.day`
 directly.
 
-## Verification TODO
+## Verification Checklist (Completed)
 
 ### Unit tests
 

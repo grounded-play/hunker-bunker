@@ -4,5 +4,19 @@
   },
   "console-ninja.output.showNetworkRequests": false,
   "console-ninja.showWelcomeMessageInTools": false,
-  "better-todo-tree.tree.scanMode": "workspace"
+  "better-todo-tree.tree.scanMode": "workspace",
+  "better-todo-tree.general.tags": [
+    "TODO",
+    "FIXME",
+    "BUG",
+    "[ ]"
+  ],
+  "better-todo-tree.regex.regex": "(?:(?://|#|<!--|;|/\\*\\*?|\\*)\\s*($TAGS)|^\\s*- \\[ \\])",
+  "better-todo-tree.filtering.excludeGlobs": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/dist_electron/**",
+    "**/better-todo-tree-*.txt",
+    "**/locales/*.json"
+  ]
 }

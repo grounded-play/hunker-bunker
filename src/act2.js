@@ -1107,6 +1107,10 @@ export class Act2Manager {
         });
     }
 
+    addInfection(delta = 0) {
+        return this.adjustInfectionLoad(delta);
+    }
+
     // The cure: powerful and costly. The queen link must already be broken,
     // and every alien ally you didn't independently secure dies with it.
     uninfectSelf() {

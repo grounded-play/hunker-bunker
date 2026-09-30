@@ -7,6 +7,7 @@ import {
 } from './fabricator.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './bank.js';
 import { LoadoutManager } from './loadout.js';
+import { getItem } from './data/itemCatalog.js';
 
 class MemoryStorage {
     constructor() {
@@ -45,7 +46,7 @@ describe('Ticket #80 — Fabrication Bay & 13 Recipes Verification', () => {
             expect(Number.isFinite(recipe.cost.coin)).toBe(true);
             expect(Number.isFinite(recipe.cost.med)).toBe(true);
             expect(recipe.printSeconds).toBeGreaterThan(0);
-            expect(recipe.art.startsWith('/schematics/')).toBe(true);
+            expect(getItem(recipe.item, { classId: 'tank' })?.iconUrl, recipe.id).toBeTruthy();
         }
     });
 

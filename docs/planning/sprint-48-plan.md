@@ -1,7 +1,8 @@
 # Sprint 48 plan
 
-**Date:** 2026-09-28 · **Branch base:** `release/v2.4.12-beta-invisible-essentials`
-(PR #93, open) · **Status:** active plan, canonical for Sprint 48.
+**Date:** 2026-09-28 · **Updated:** 2026-09-29 · **Branch:** `dev/sprint-48`
+**Released base:** `v2.4.12-beta` (`380333f6`) · **Status:** active plan,
+canonical for Sprint 48.
 
 This is the one Sprint 48 plan. It merges three drafts written the same day and checks
 their claims against the code:
@@ -11,6 +12,9 @@ their claims against the code:
   HUD and hardware;
 - the [HUD overlay review and recovery plan](hud-overlay-review-and-recovery-plan-2026-09-28.md):
   measured Deck readability failures and the R0–R4 recovery order.
+- the [gameplay world versus visual target plan](gameplay-vs-theory-comparison-and-plan.md):
+  the separate environment-rendering pass for atmosphere, practical lights, room
+  cutaways and wet industrial surfaces; HUD layout is not part of that pass.
 
 For **what Sprint 47 delivered**, read the status doc. This file is the forward plan.
 
@@ -18,6 +22,11 @@ For **what Sprint 47 delivered**, read the status doc. This file is the forward 
 
 ## 1. Where we start
 
+- **PR #93 is merged and the release baseline is live on Steam's beta branch.** The
+  uploaded game build is `v2.4.12-beta-380333f6ee42`, matching the Git tag exactly:
+  Game AppID `4957040`, BuildID `25596041`. Soundtrack AppID `4957680`, BuildID
+  `25596046`, is uploaded but still needs to be set live separately. Sprint 48 work
+  begins on `dev/sprint-48`; none of it is part of that released beta baseline.
 - **Nothing built since the 2026-09-24 QA session has been confirmed on hardware.**
   Co-op networking, the spawn guard, Deck input, the map rules and the full-quality
   performance work all rest on unit and browser evidence.
@@ -52,8 +61,8 @@ unified Foundry.
 The sprint is done when all of these hold:
 1. The hardware session (§3, P0) is run and every row has pass/fail and a log. Failures
    are fixed or carried with an owner.
-2. PR #93 is merged. The owner has closed the milestone tickets whose conditions were
-   shown (#78, #80, #81, #82, #85).
+2. The released Steam beta baseline is exercised on Deck and PC. The owner has closed
+   the milestone tickets whose conditions are shown (#78, #80, #81, #82, #85).
 3. A two-client diff probe passes for drops, props, deaths, TRY AGAIN, companions and
    Ring 1 events.
 4. The HUD harness (R0) fails today's dock for the right reasons. After R1–R2 it passes
@@ -67,8 +76,8 @@ The sprint is done when all of these hold:
 
 ### P0: hardware acceptance (first two days)
 
-Package PR #93's head and run the owner's Deck + PC session. Every row gets pass/fail
-and the exported session log (in `logs/`, analysed with
+Use Steam beta BuildID `25596041` and run the owner's Deck + PC session. Every row gets
+pass/fail and the exported session log (in `logs/`, analysed with
 `scripts/analyze-session-logs.mjs`).
 
 | Row | Pass when |
@@ -149,6 +158,15 @@ Source: [HUD overlay review](hud-overlay-review-and-recovery-plan-2026-09-28.md)
 
   **Exit:** all three classes pass one geometry snapshot, Deck critical text is
   ≥ 11 px, and the core combat state still reads with the frame art switched off.
+
+  **Status (2026-09-29): R0 and the shared-geometry portion of R1 are complete.**
+  `tests/e2e/hud-readability.spec.js` is now a green release gate across all 12
+  class/viewport combinations. The generator emits one 220/520/380×64 u grid;
+  class paintings are border-only nine-slice skins and can no longer move or shrink
+  instruments. The matrix passes the 11 px Deck floor, clipping, class-rectangle and
+  opaque-area assertions. Remaining R1 work is the scan-ring move, dash/melee slot,
+  accessible loot-label audit and painter window templates. The owner can still choose
+  a repaint later without blocking layout work.
 - **R2: one information architecture above the dock.**
   - One prompt-lane controller: interaction > urgent tutorial > loop guidance, one at a
     time, and every PRESS-E surface moves into it.
@@ -160,6 +178,18 @@ Source: [HUD overlay review](hud-overlay-review-and-recovery-plan-2026-09-28.md)
 
   **Exit:** no permanent right-side column in normal play; the three-objective Deck
   state stays within budget.
+
+  **Status (2026-09-29): R2 is complete.**
+  `src/hudInformationArchitecture.js` enforces interaction > urgent status/tutorial >
+  biome context > loop guidance and suppresses every lower-priority prompt without
+  changing its gameplay state. The objective registry now renders through one collapsed
+  primary line with a `+n` count, expands on click, and moves into the tactical-map
+  sidebar while the map is open. Classic mode keeps its original tracker and prompt
+  behavior. Browser probes cover disclosure, map placement, priority and classic-mode
+  isolation. Boss, hazard and Queen's Ledger now share a queued priority lane, and the
+  bounded notification rail follows the drawer without covering Settings. The 12-view
+  gameplay matrix proves the drawer clears Settings and the selected prompt clears the
+  dock across all classes and target viewports.
 - **R3 (start only once R1–R2 pass):**
   - the four-second combat signal, which assigns the `this.inCombat` field the game
     already reads but never sets;
@@ -167,13 +197,29 @@ Source: [HUD overlay review](hud-overlay-review-and-recovery-plan-2026-09-28.md)
     Frozen / Toxic / Boss / Dead;
   - distinct feedback for damage, low O₂, reload completion, ability ready and pickups,
     respecting reduced motion.
+
+  **Status (2026-09-29): core behavior and wear v1 are active.** A tested
+  four-second `CombatSignal` now drives `ThreeGame.inCombat` from local hostile hits,
+  real player damage and enemies hunting the local operator. Combat collapses an open
+  objective drawer and quiets loot. `hudGameplayState.js` resolves Idle / Engaged /
+  Critical / Reloading / Ability Ready / Frozen / Toxic / Boss / Dead through one pure
+  priority function, with instrument-local reload, ability and pickup confirmation and
+  reduced-motion fallbacks. Unit tests cover the timing and all nine states; the browser
+  probe covers combat collapse, reload completion, critical health, pickup feedback and
+  death. `suitCondition.js` now records damage tiers, capped scuffs, combat blood that
+  dries after 30 seconds, frost, toxin, repair scratches and new-life reset. The runtime
+  clears washable wear at a full heal, Tallow treatment or bunker console, removes blood
+  immediately when gore is disabled, caps overlays for reduced pressure / maximum
+  contrast, and uses source coordinates for a bezel-only directional jolt. Eighteen
+  class/state visual probes verify identical housing geometry and unobstructed instruments.
 - **Sprint 48 stretch, only after R1 and R2 pass:** wear model v1 (`suitCondition` +
-  blood, frost and damage tier 1 for one class). Overlays never cover instruments; HUD
-  style/layout ≤ 0.3 ms per frame.
+  blood, frost and damage tiers for all three classes). **Implemented.** Overlays are
+  masked to the bezel, never cover instruments, and update on signals or at 4 Hz only
+  while blood is drying. Deck hardware still has to confirm the ≤0.3 ms style/layout gate.
 - **Moved to Sprint 49:**
   - talking portraits;
   - event housings;
-  - wear for all classes, if v1 didn't land;
+  - painted wear-asset upgrades beyond the procedural v1;
   - flipping the default to `dock`.
 
   They depend on R1's geometry. The flip also needs R0–R4 plus a one-week opt-in
@@ -203,6 +249,42 @@ Source: [HUD overlay review](hud-overlay-review-and-recovery-plan-2026-09-28.md)
     four surfaces;
   - a browser probe for the trade-up.
 
+**Status (2026-09-29, lane C): code done; hardware not yet seen.**
+
+| Item | Where | Evidence |
+| :--- | :--- | :--- |
+| Smelter trade-up sticks, logged | `9833cffc`: `LocalVaultLedger.exchange`, `steamVaultUi` | `src/localVaultLedger.test.js`; probe `tests/e2e/probes/vault-trade-up.spec.js` 2/2 (5 → 1, unchanged after close/reopen and reload) |
+| One item catalog, four surfaces | `d6681ad5`: `src/data/itemCatalog.js`, `src/itemCard.js` | `src/data/itemCatalog.test.js` checks every id on each surface in en, de, ja |
+| Six Foundry weapons | same | catalog entries; drawn as the class gun they fit (the loadout keeps the frame in hand) |
+| `schematic_00–07` retired | same | `public/schematics/` deleted; manifests regenerated |
+| Hero screen item cards | same | compact equipped strip; fits 1280×800 and 1920×1080 |
+| Hub skeleton | `cd3a376a`: `src/foundryHub.js` | probe `tests/e2e/probes/foundry-hub.spec.js` |
+| Hub on by default, hardened; guns read as gameplay | `e38f65db` | foundry-hub 5/5 (Q/E and bumper focus; in a run it opens at Fabricate, holds the game, class matches the one played); vault-trade-up, steam-vault and menu-reachability through the hub |
+
+What changed that a player can see:
+- The Deck smelt bug was the browser/QA inventory path. The smelter re-read the
+  stored inventory mid-trade, so every smelt refunded its five inputs. On the Steam
+  inventory, trade-ups and redemptions are now **disabled with a reason**. The Steam
+  service has no recipe for them, so they could only revert on the next refresh.
+  See decision 9.
+- Recipe rarity is now the rarity of the item a recipe prints. Seven charm/mod
+  recipes change grade (the Sporesnail Pearl was LEGENDARY, the item is uncommon).
+  The roll gains an UNCOMMON band taken from COMMON: 25/15/40/17/3, was 40/40/17/3.
+  See decision 10.
+- Achievement rewards show their authored names in the Armory (the Vault already
+  did).
+
+- The Foundry hub is the default for every Vault and Fab Bay entry point
+  (owner, 2026-09-29: "activated in game play"); `hb_foundry_hub=0` opts out.
+- The loadout's active class follows the operator being played. It used to
+  change only in the Armory, so a run started any other way could fit a Foundry
+  gun to the Scout loadout, where combat never read it.
+- Foundry weapon cards show their effect on the class gun (damage, rate, range,
+  shots) from the multipliers combat applies.
+
+Not done in this slice: the hub's tabs still embed the old panels without
+restyling them. The Store tab only appears when purchases are enabled.
+
 ### P2: companion escort (QA P1, rescoped)
 
 Pathfinding, stuck recovery and steady fire exist. Remaining:
@@ -225,9 +307,9 @@ Ring 1 milestones to extraction or an ending. Record video plus the session log 
   pickups and props (1,000–2,000 draw calls on the PC), with no visual change.
 - **Invisible Essentials Phase 6** (in-expedition build decisions: a field workbench at
   camps). Claimed by Claude; start only if the P1 lanes are done.
-- **Gameplay Phase 4 remnants:** boss phase conversion for `boss_cybersnail` /
-  `boss_cryosnail`; expedition report expansion; decide Lane 2's formation damage rule
-  (apply it in the runtime, or label the audit table as design intent).
+- **Gameplay Phase 4 remnants:** boss phase conversion is complete for all six
+  milestone bosses; expedition report expansion and Lane 2's formation damage rule
+  remain (apply the rule in runtime, or label the audit table as design intent).
 - **Actions raise infection** (hive verbs, bio/caustic hits, spores, eggs aboard),
   feeding `infectionLoad`.
 
@@ -235,15 +317,16 @@ Ring 1 milestones to extraction or an ending. Record video plus the session log 
 
 | When | Lane: hardware and co-op | Lane: HUD | Lane: Foundry and companion |
 | :--- | :--- | :--- | :--- |
-| Days 1–2 | package; owner's Deck + PC session; triage | R0 harness | item catalog data model and unit test |
+| Days 1–2 | released beta; owner's Deck + PC session; triage | R0 harness | item catalog data model and unit test |
 | Days 3–5 | P0 fixes; co-op authority design + relay tests | R0 lands (failing baseline); R1 slot grid with plain frames | catalog wired into the four surfaces; smelter logging |
 | Week 2, first half | companions + Ring 1 events host-authoritative; diff probe | R1 art fit (templates → owner/painter); R2 prompt lane + objective drawer | hub skeleton tabs; trade-up fix; escort-to-camp |
-| Week 2, second half | pings v1; merge PR #93 after P0 passes | R2 alert lane + notifications; R3 if green | companion journey probe; Proof Run on hardware |
+| Week 2, second half | pings v1; publish/re-test any P0 fix build | R2 alert lane + notifications; R3 if green | companion journey probe; Proof Run on hardware |
 
 Dependencies:
-- **Merging PR #93** waits on the P0 session.
+- **P0 fixes** publish as a new beta BuildID and re-run only the failed hardware rows.
 - **The Proof Run** waits on the P0 fixes, not on the HUD.
-- **R1 housing art** waits on the owner's choice between cap-and-stretch and repaint.
+- **R1 housing art** uses cap-and-stretch as the working decision. A repaint remains a
+  polish option, not a blocker, because art no longer defines content geometry.
 - **Wear and portraits** wait on R1 (Sprint 49).
 
 ## 5. Lanes (claim before starting)
@@ -255,27 +338,33 @@ files into your commits.
 | Lane | Scope | Owner | Since |
 | :--- | :--- | :--- | :--- |
 | A | P0 hardware support + co-op authority + pings | — | — |
-| B | HUD recovery R0–R3 | — | — |
-| C | Foundry catalog/hub + smelter + companion escort | — | — |
+| B | HUD recovery R0–R3 | Codex | 2026-09-28 |
+| C | Foundry catalog/hub + smelter (companion escort not started) | Claude | 2026-09-28 |
 
-## 6. Decisions needed from the owner
+## 6. Decisions (resolved 2026-09-29)
 
-The options and a recommendation for most of these are written out in the status
-doc's [§5](sprint-47-status-and-sprint-48-plan-2026-09-28.md) (D1–D8).
+The owner delegated these on 2026-09-29: "resolve these without my input using
+industry and gaming standards and players' wants". Each is decided below with the
+standard it follows. The options behind D1–D8 remain in the status doc's
+[§5](sprint-47-status-and-sprint-48-plan-2026-09-28.md).
 
-1. **Housing art for the slim band:** slice the current painted housings into caps and a
-   stretchable middle, or repaint at slim proportions from exported window templates?
-2. **The reward cache in co-op:** per-player rolls or one shared, split cache?
-3. **Deck frame target:** is a 30 fps floor with 60 as a stretch acceptable for
-   Sprint 48 sign-off?
-4. **Is "trade in / trade up" the smelter?**
-5. **Invisible models:** which objects, in which rooms?
-6. **Remove `public/ui/suit/`** (4.1 MB of superseded procedural panels and edge-check
-   images, unused but shipped)?
-7. **Blood on the HUD:** keep the wear model (dries, wiped at the bunker or a heal
-   station). An earlier draft of this file said "fades over 12 s", which contradicts
-   it.
-8. **The two moderate Dependabot alerts:** fix on the release branch or on `mothership`?
+| # | Decision | Standard / player reason | Status |
+| :--- | :--- | :--- | :--- |
+| 1 | **Housing art:** cap-and-stretch (9-slice) now; repaint only where hardware review rejects a stretched middle. | 9-slice is the standard for resizable UI frames: one art set fits every aspect ratio. | Done in R1 (`eff4b899`, lane B). |
+| 2 | **Co-op reward cache:** per-player rolls, deterministic from the host seed. | Instanced loot is the co-op PvE norm (Deep Rock Galactic, Destiny, Diablo IV): nobody loses loot to a faster teammate, and reconnects reproduce the award. | Lane A builds it with the co-op authority work. |
+| 3 | **Deck target:** a stable 30 fps floor at default settings for Sprint 48 sign-off; 60 fps stays the optimization target. | Steam Deck Verified asks for playable default settings, and 30 fps with even pacing is the usual Deck target. Pacing still gates: no ≥ 500 ms long tasks. | Measured in the P0 hardware session. |
+| 4 | **"Trade in / trade up"** is the Foundry smelter: one verb, 5 → 1 up a tier. | One term, one transaction and one test beat a second invented economy. | Done: the hub tab is TRADE-UP. |
+| 5 | **Invisible models:** no global renderer change. Capture seed, room, object, platform and screenshot at the hardware session, then fix that room's culling, bounds or ownership. | Successful asset loads point at culling or placement; a blind global change risks hiding the real defect. | QA intake row for P0. |
+| 6 | **`public/ui/suit/`:** delete; git history is the archive. | Don't ship unused assets (4.1 MB, no references). | Done `a5f154d7`. |
+| 7 | **Blood wear:** persistent-but-cleanable. It darkens over about 30 s, clears at the bunker or a heal station, and resets on a new life. Density is capped, it never covers instrument centres, it follows reduced visual-pressure settings, and it never conveys health by itself. | Players read damage history without losing readability; accessibility settings apply. | Done in Lane B wear v1; Deck performance/sign-off remains. |
+| 8 | **Dependency alerts:** fix on `dev/sprint-48` and flow through the normal release path. | Patch where development happens; no release-only divergence. | Done `cc12ac3f`: ip-address (both Dependabot alerts), plus undici and joi; `npm audit` 0. |
+| 9 | **Steam trade-ups:** make them work, server-authoritatively: the server picks inputs, consumes, grants and refunds on failure, within one collection. | Players expect a trade-up to stick; CS2 trade-up contracts are server-decided and collection-bound. | Done `6f7c03c3`. **Needs a backend redeploy**; until then the Vault keeps them disabled with a reason. |
+| 10 | **Foundry odds:** 30/24/32/11/3, each recipe rarer as its tier rises, empty tiers weightless, odds shown in the Fab Bay. | Loot-odds disclosure norms; no advertised tier may be a dead roll. | Done `d548dc35`. |
+| 11 | **Foundry hub default:** on; `hb_foundry_hub=0` opts out. | Answered by the owner 2026-09-29. | Done `e38f65db`. |
+| 12 | **Proposed, needs the owner:** make the default gameplay camera isometric; keep third-person in settings. | The concept, the controls standard and the room cutaway system assume the isometric view. The 2026-08-25 third-person trial named awareness and corridor visibility as its costs, and captures show both ([review](gameplay-vs-theory-comparison-and-plan.md#2026-09-30-review-what-still-separates-the-build-from-the-concept)). | Awaiting the owner's answer. |
+| D5 | **Portraits, first pack:** the three operators, Mothership/AURA, Mayor Tina and the two most frequent camp radio speakers. | Portraits pay off where lines are most frequent. | Sprint 49, after R1. |
+| D6 | **Dead corporate gods:** literal former corporate AIs and executives, deified after the collapse. Names come from a narrative pass; until then there are no public-facing invented names. | Grounds the Giger/corporate imagery in the setting's own history. | Narrative pass before iconography. |
+| D7 | **Store capsules:** restyle after the HUD passes hardware readability. | Avoids regenerating commerce art when the UI grammar changes. | After R1–R2 sign-off. |
 
 ## 7. Risks
 

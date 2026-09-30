@@ -41,7 +41,10 @@ const MODEL_CONFIG = {
     // Heavy variant: biggest of the three, warm rust cast against _A's cold one.
     sentinel_B: { url: '/3d/runtime/new3ds/sentinel_B.glb', height: 1.32, yaw: 0, tint: 0xd8b48c },
     mycelium_stalker: { url: '/3d/runtime/community/scout_xeno_stalker.glb', height: 1.35, yaw: 0 },
-    bio_charger: { url: '/3d/runtime/community/scout_xeno_stalker.glb', height: 1.45, yaw: 0 },
+    bio_charger: { url: '/3d/runtime/new3ds/bio_charger.glb', height: 1.45, yaw: 0 },
+    boss_corrupted_scout: { url: '/3d/runtime/new3ds/boss_corrupted_scout.glb', height: 1.45, yaw: 0 },
+    boss_corrupted_tank: { url: '/3d/runtime/new3ds/boss_corrupted_tank.glb', height: 1.65, yaw: 0 },
+    boss_corrupted_engineer: { url: '/3d/runtime/new3ds/boss_corrupted_engineer.glb', height: 1.45, yaw: 0, tint: 0xa87766 },
     boss_queen: { url: '/3d/runtime/queen.glb', height: 2.35, yaw: Math.PI }
 };
 
@@ -52,7 +55,10 @@ export const ENEMY_3D_MODELS = MODEL_CONFIG;
 
 const templates = new Map();
 const LOCOMOTION_URL = '/3d/scouting-scout/Scout.game.glb';
-const RIGGED_LOCOMOTION_TYPES = new Set(['crawler', 'mycelium_stalker', 'bio_charger']);
+const RIGGED_LOCOMOTION_TYPES = new Set([
+    'crawler', 'mycelium_stalker', 'bio_charger',
+    'boss_corrupted_scout', 'boss_corrupted_tank', 'boss_corrupted_engineer'
+]);
 
 export function hasEnemy3dModel(type) {
     return Boolean(MODEL_CONFIG[type]);

@@ -35,25 +35,25 @@ test.describe('HUD layout system and lower dock spec', () => {
         expect(desktopU).toBeCloseTo(1.0, 1);
     });
 
-    test('defaults to the classic layout when no flag is stored', async ({ page }) => {
+    test('defaults to the dock layout when no flag is stored', async ({ page }) => {
         await page.setViewportSize({ width: 1920, height: 1080 });
         await bootToTitleSplash(page);
-        expect(await page.evaluate(() => document.documentElement.dataset.hudLayout)).toBe('classic');
-        expect(await page.evaluate(() => window.state?.settings?.hudLayout)).toBe('classic');
+        expect(await page.evaluate(() => document.documentElement.dataset.hudLayout)).toBe('dock');
+        expect(await page.evaluate(() => window.state?.settings?.hudLayout)).toBe('dock');
     });
 
-    test('honors hb_hud_layout toggle between classic and dock', async ({ page }) => {
+    test('honors hb_hud_layout toggle between dock and classic', async ({ page }) => {
         await page.addInitScript(() => {
-            localStorage.setItem('hb_hud_layout', 'dock');
+            localStorage.setItem('hb_hud_layout', 'classic');
         });
         await page.setViewportSize({ width: 1920, height: 1080 });
         await bootToTitleSplash(page);
 
         const datasetLayout = await page.evaluate(() => document.documentElement.dataset.hudLayout);
-        expect(datasetLayout).toBe('dock');
+        expect(datasetLayout).toBe('classic');
 
         const stateLayout = await page.evaluate(() => window.state?.settings?.hudLayout);
-        expect(stateLayout).toBe('dock');
+        expect(stateLayout).toBe('classic');
     });
 
     test('keeps the dock below the player keep-out and the gear in its slot at 1080p', async ({ page }) => {

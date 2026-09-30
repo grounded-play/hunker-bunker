@@ -48,6 +48,9 @@ describe('steam dashboard handoff', () => {
             'deepest_depth_score',
             'survival_time_seconds'
         ]);
+        expect(handoff.backendEnv.HB_STEAM_LEADERBOARD_IDS).toBe(
+            'best_run_score:20504740,daily_ops_score:20504746,fastest_extraction_ms:20504747,deepest_depth_score:20504750,survival_time_seconds:20504754'
+        );
         expect(handoff.stats.map((row) => row.apiName)).toEqual([
             'total_deaths',
             'longest_run_seconds',
@@ -76,6 +79,8 @@ describe('steam dashboard handoff', () => {
         expect(markdown).toContain('steam_input_manifest.vdf');
         expect(markdown).toContain('steam/inventory_schema_hunker_bunker.json');
         expect(markdown).toContain('HB_QA_TOOLS_ENABLED=1');
+        expect(markdown).toContain('todo-audit-backlog-and-conflicts-2026-09-24.md#domain-steamworks-dashboard');
+        expect(markdown).not.toContain('- [ ]');
     });
 
     it('fails generation when a publishable achievement asset is missing', () => {

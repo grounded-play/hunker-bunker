@@ -105,7 +105,15 @@ export function createOperatorEquipmentController(root, { classType = 'SCOUT' } 
         async set(slot, itemId) {
             const index = Number(slot) === 2 ? 1 : 0;
             const generation = ++generations[index];
-            if (mounted[index]) mounted[index].parent?.remove(mounted[index]);
+            if (mounted[index]) {
+                const oldAnchor = mounted[index];
+                oldAnchor.parent?.remove(oldAnchor);
+                oldAnchor.traverse((obj) => {
+                    obj.geometry?.dispose?.();
+                    const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+                    for (const m of mats) m?.dispose?.();
+                });
+            }
             mounted[index] = null;
             const definition = getEquipmentDefinition(itemId);
             const url = MOD_GLB_MAP[String(itemId)];
@@ -138,7 +146,18 @@ export function createOperatorEquipmentController(root, { classType = 'SCOUT' } 
         },
         dispose() {
             generations[0]++; generations[1]++;
-            for (const anchor of mounted) anchor?.parent?.remove(anchor);
+            for (const anchor of mounted) {
+                if (anchor) {
+                    anchor.parent?.remove(anchor);
+                    anchor.traverse((obj) => {
+                        obj.geometry?.dispose?.();
+                        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+                        for (const m of mats) m?.dispose?.();
+                    });
+                }
+            }
+            mounted[0] = null;
+            mounted[1] = null;
         }
     };
 }

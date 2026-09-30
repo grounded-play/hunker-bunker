@@ -10,7 +10,11 @@
   <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="/src/styles/expeditionHud.css">
   <link rel="stylesheet" href="/src/styles/hudDockHousings.css">
+  <link rel="stylesheet" href="/src/styles/hudInformationArchitecture.css">
+  <link rel="stylesheet" href="/src/styles/suitCondition.css">
   <link rel="stylesheet" href="/src/styles/armory.css">
+  <link rel="stylesheet" href="/src/styles/itemCard.css">
+  <link rel="stylesheet" href="/src/styles/foundryHub.css">
   <link rel="icon" type="image/png" href="/favicon.png" />
   <title data-i18n="ui.misc.hunker_bunker_tactical_command">HUNKER BUNKER | TACTICAL COMMAND</title>
 
@@ -283,6 +287,7 @@
           <button class="title-menu-btn" id="title-continue-btn" data-i18n="ui.menu.continue" disabled>CONTINUE</button>
           <button class="title-menu-btn title-menu-btn--secondary hidden" id="title-switch-class-btn" data-i18n="ui.menu.switch_class">SWITCH CLASS</button>
           <button class="title-menu-btn" id="title-newrun-btn" data-i18n="ui.menu.new_run">NEW RUN</button>
+          <button class="title-menu-btn" id="title-multiplayer-btn" data-i18n="ui.menu.multiplayer">MULTIPLAYER</button>
           <button class="title-menu-btn" id="title-achievements-btn" data-i18n="ui.menu.achievements">ACHIEVEMENTS</button>
           <button class="title-menu-btn" id="title-settings-btn" data-i18n="ui.menu.settings">SETTINGS</button>
           <button class="title-menu-btn" id="title-about-btn" data-i18n="ui.menu.about">ABOUT</button>
@@ -342,7 +347,7 @@
 
         <div class="credits-footer">
           <span data-i18n="ui.about.thank_you_for_deploying" class="credits-footer-thankyou">THANK YOU FOR DEPLOYING</span>
-          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.12-BETA // ACTIVE</span>
+          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.13-BETA // ACTIVE</span>
         </div>
       </div>
     </div>
@@ -461,6 +466,7 @@
                   <div data-i18n="ui.hero_detail.chassis_spec" class="hero-detail-panel__kicker">CHASSIS SPECIFICATION</div>
                   <div class="hero-detail-line1" id="hero-detail-active">—</div>
                   <div class="hero-detail-line2" id="hero-detail-passive">—</div>
+                  <div class="item-card-strip item-card-strip--compact" id="hero-loadout-strip" role="group" aria-label="EQUIPPED" data-i18n-aria-label="ui.item_card.equipped"></div>
                 </div>
                 <div class="hero-stats-compact" id="hero-stats-row">
                   <div data-i18n-aria-label="ui.menu.aria_label_s_o_u"
@@ -702,6 +708,16 @@
           <button data-i18n="ui.achievements.copy_save_code" data-i18n-title="ui.achievements.title_copy_a_portable" type="button" class="settings-action-btn settings-action-btn--save" id="achievement-copy-save" title="Copy a portable save code">COPY SAVE CODE</button>
           <div class="achievements-save-status" id="achievements-save-status" role="status" aria-live="polite"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- Developer commentary: every entry, readable any time (Settings > Commentary) -->
+    <div id="commentary-list-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content commentary-list-content" role="dialog" aria-labelledby="commentary-list-title">
+        <button class="close-modal" id="close-commentary-list" aria-label="Close" data-i18n-aria-label="ui.commentary.close_list">×</button>
+        <h2 id="commentary-list-title" class="commentary-list-heading" data-i18n="ui.settings.commentary_list">DEVELOPER COMMENTARY</h2>
+        <p class="commentary-list-intro" data-i18n="ui.commentary.list_intro">Notes from the developers on why the game works the way it does. With Commentary Mode on, each also appears in play when you reach it.</p>
+        <div id="commentary-list" class="commentary-list"></div>
       </div>
     </div>
 
@@ -1200,6 +1216,27 @@
     </div>
 
     <!-- Fabrication Bay Modal -->
+    <!-- Foundry hub (src/foundryHub.js): Stash / Loadout / Fabricate / Trade-up /
+         Store in one window. On unless hb_foundry_hub=0. -->
+    <div id="foundry-hub-modal" class="modal hidden foundry-hub" aria-hidden="true" data-hub-class="scout">
+      <div class="modal-content foundry-hub__content" role="dialog" aria-labelledby="foundry-hub-title">
+        <div class="foundry-hub__header">
+          <div class="foundry-hub__title" id="foundry-hub-title" data-i18n="ui.foundry_hub.title">◇ FOUNDRY</div>
+          <div class="foundry-hub__resources" role="group" aria-label="Resources" data-i18n-aria-label="ui.foundry_hub.resources">
+            <span class="fab-bank-chip"><span class="fab-bank-icon">⬢</span><span data-i18n="ui.fabrication.tech">TECH</span> <b id="foundry-hub-tech">0</b></span>
+            <span class="fab-bank-chip"><span class="fab-bank-icon">◎</span><span data-i18n="ui.fabrication.coin">COIN</span> <b id="foundry-hub-coin">0</b></span>
+            <span class="fab-bank-chip"><span class="fab-bank-icon">✚</span><span data-i18n="ui.fabrication.med">MED</span> <b id="foundry-hub-med">0</b></span>
+            <span class="fab-bank-chip"><span class="fab-bank-icon">◈</span><span data-i18n="ui.fabrication.shells">SHELLS</span> <b id="foundry-hub-shells">0</b></span>
+          </div>
+          <button class="close-modal" id="close-foundry-hub" aria-label="Close" data-i18n-aria-label="ui.foundry_hub.close">×</button>
+        </div>
+        <div class="foundry-hub__tabs" id="foundry-hub-tabs" role="tablist"></div>
+        <div class="foundry-hub__panel" id="foundry-hub-panel" role="tabpanel">
+          <div class="foundry-hub__loadout hidden" id="foundry-hub-loadout"></div>
+        </div>
+      </div>
+    </div>
+
     <div id="fabrication-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content fab-modal-content">
         <div class="terminal-scanline"></div>
@@ -1226,6 +1263,7 @@
             <div class="fab-reveal__card" id="fab-reveal-card"></div>
           </div>
           <button class="fab-roll-btn" id="fab-roll-btn">ROLL FABRICATOR</button>
+          <div class="fab-odds" id="fab-odds" aria-live="polite"></div>
         </div>
         <div id="fab-recipe-grid" class="fab-recipe-grid"></div>
       </div>
@@ -1371,6 +1409,20 @@
             <span data-i18n="ui.radar_scan.radar_scan" class="class-ability-panel__name" id="scan-name" style="color: #00d2ff;">RADAR SCAN</span>
             <div class="class-ability-panel__bar-track" aria-hidden="true" style="background: rgba(0, 210, 255, 0.12);">
               <div class="class-ability-panel__bar" id="scan-bar" style="background: #00d2ff; box-shadow: 0 0 5px rgba(0, 210, 255, 0.5);"></div>
+            </div>
+          </div>
+          <div id="dash-cooldown-panel" class="class-ability-panel dock-slot-kinetic" aria-live="polite" role="status">
+            <span class="class-ability-panel__key" aria-hidden="true">⚡</span>
+            <span data-i18n="hud.dash" class="class-ability-panel__name" id="dash-name">DASH</span>
+            <div class="class-ability-panel__bar-track" aria-hidden="true" style="background: rgba(34, 211, 238, 0.12);">
+              <div class="class-ability-panel__bar" id="dash-bar" style="background: #22d3ee; box-shadow: 0 0 5px rgba(34, 211, 238, 0.5);"></div>
+            </div>
+          </div>
+          <div id="melee-cooldown-panel" class="class-ability-panel dock-slot-kinetic" aria-live="polite" role="status">
+            <span class="class-ability-panel__key" aria-hidden="true">⚔</span>
+            <span data-i18n="hud.melee" class="class-ability-panel__name" id="melee-name">MELEE</span>
+            <div class="class-ability-panel__bar-track" aria-hidden="true" style="background: rgba(249, 115, 22, 0.12);">
+              <div class="class-ability-panel__bar" id="melee-bar" style="background: #f97316; box-shadow: 0 0 5px rgba(249, 115, 22, 0.5);"></div>
             </div>
           </div>
         </div>
@@ -1563,25 +1615,6 @@
       <span id="tutorial-prompt-icon" class="tutorial-prompt__icon hidden"></span>
       <span id="tutorial-prompt-text" class="tutorial-prompt__text"></span>
     </div>
-    <!-- Right-side layout container for notifications/prompts -->
-    <div class="hud-notification-stack">
-      <!-- Radio Transmission CRT Prompt -->
-      <div id="radio-transmission-prompt" class="radio-transmission-prompt hidden" aria-live="polite">
-        <div class="radio-transmission-prompt__avatar">
-          <img id="radio-avatar-img" src="/lore_portraits/survivor_08.webp" data-i18n-alt="ui.radio.alt_sender_portrait" alt="Sender Portrait" />
-          <div class="radio-transmission-prompt__scanline"></div>
-        </div>
-        <div class="radio-transmission-prompt__body">
-          <div class="radio-transmission-prompt__header">
-            <span class="radio-transmission-prompt__signal-icon">⚡</span>
-            <span data-i18n="ui.radio_sender_name.mothership_command" id="radio-sender-name" class="radio-transmission-prompt__sender">MOTHERSHIP COMMAND</span>
-            <span data-i18n="ui.radio_transmission_prompt.online" class="radio-transmission-prompt__status">ONLINE</span>
-          </div>
-          <div id="radio-message-text" class="radio-transmission-prompt__message"></div>
-        </div>
-      </div>
-    </div>
-
     <!-- Deployment conditions and compound room names: top center, clear of the
          right-hand notification deck. Filled from ui.expedition.* by main.js. -->
     <div id="expedition-briefing-card" class="expedition-briefing-card hidden" role="status" aria-live="polite">
@@ -1663,8 +1696,40 @@
         <span id="camp-quest-text" class="mission-progress-hud__text">QUEST ACTIVE</span>
       </div>
 
-      <!-- Unified Objective Tracker HUD -->
-      <div id="objective-tracker" class="objective-tracker hidden" aria-live="polite"></div>
+    </div>
+
+    <div class="hud-right-rail">
+      <!-- Dock objective drawer. main.js still owns #objective-tracker contents;
+           the controller owns only disclosure, summary, and tactical-map placement. -->
+      <section id="objective-drawer" class="objective-drawer hidden" data-expanded="false">
+        <button id="objective-drawer-toggle" class="objective-drawer__toggle" type="button" aria-expanded="false" aria-controls="objective-tracker">
+          <span class="objective-drawer__kicker" data-i18n="ui.objective.next">NEXT OBJECTIVE</span>
+          <span id="objective-drawer-label" class="objective-drawer__label">OBJECTIVE</span>
+          <span id="objective-drawer-progress" class="objective-drawer__progress">ACTIVE</span>
+          <span id="objective-drawer-count" class="objective-drawer__count hidden"></span>
+          <span class="objective-drawer__chevron" aria-hidden="true">⌄</span>
+        </button>
+        <div id="objective-tracker" class="objective-tracker hidden" aria-live="polite"></div>
+      </section>
+
+      <!-- Notifications are bounded below the drawer in dock mode. The rail uses
+           display:contents in classic mode, preserving the original placement. -->
+      <div class="hud-notification-stack">
+        <div id="radio-transmission-prompt" class="radio-transmission-prompt hidden" aria-live="polite">
+          <div class="radio-transmission-prompt__avatar">
+            <img id="radio-avatar-img" src="/lore_portraits/survivor_08.webp" data-i18n-alt="ui.radio.alt_sender_portrait" alt="Sender Portrait" />
+            <div class="radio-transmission-prompt__scanline"></div>
+          </div>
+          <div class="radio-transmission-prompt__body">
+            <div class="radio-transmission-prompt__header">
+              <span class="radio-transmission-prompt__signal-icon">⚡</span>
+              <span data-i18n="ui.radio_sender_name.mothership_command" id="radio-sender-name" class="radio-transmission-prompt__sender">MOTHERSHIP COMMAND</span>
+              <span data-i18n="ui.radio_transmission_prompt.online" class="radio-transmission-prompt__status">ONLINE</span>
+            </div>
+            <div id="radio-message-text" class="radio-transmission-prompt__message"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
 
@@ -2346,6 +2411,10 @@
             <span data-i18n="ui.settings.commentary">COMMENTARY MODE</span>
             <label class="toggle"><input type="checkbox" id="main-commentary-toggle"> <span class="slider"></span></label>
           </div>
+          <div class="setting-item setting-item--action">
+            <span data-i18n="ui.settings.commentary_list">DEVELOPER COMMENTARY</span>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-commentary-list" data-i18n="ui.settings.commentary_read_all">READ ALL</button>
+          </div>
         </div>
 
         <!-- Section 3: Gameplay & Accessibility -->
@@ -2465,6 +2534,10 @@
           <div class="setting-item">
             <span data-i18n="ui.settings.gore">GORE EFFECTS (DISMEMBERMENT)</span>
             <label class="toggle"><input type="checkbox" id="setting-gore-toggle" checked> <span class="slider"></span></label>
+          </div>
+          <div class="setting-item setting-item--action">
+            <span data-i18n="ui.settings.content_guide">CONTENT GUIDE (MATURE THEMES)</span>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-mature-audit-btn" data-i18n="ui.action.open">OPEN</button>
           </div>
           <div class="setting-item">
             <span data-i18n="ui.settings.subtitle_size">SUBTITLE SIZE</span>
@@ -3373,6 +3446,9 @@
 
   </div>
 
+  <script type="module" src="/src/hudInformationArchitecture.js"></script>
+  <script type="module" src="/src/hudGameplayState.js"></script>
+  <script type="module" src="/src/suitConditionController.js"></script>
   <script type="module" src="/main.js?v=1243"></script>
 </body>
 

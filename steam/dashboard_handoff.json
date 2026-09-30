@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-20T07:52:58.332Z",
+  "generatedAt": "2026-09-30T19:13:01.630Z",
   "app": {
     "appId": 4957040,
     "title": "Hunker Bunker",
@@ -59,7 +59,7 @@
       "dashboardId": 20504754
     }
   ],
-  "leaderboardEnvTemplate": "best_run_score:<best_run_score_id>,daily_ops_score:<daily_ops_score_id>,fastest_extraction_ms:<fastest_extraction_ms_id>,deepest_depth_score:<deepest_depth_score_id>,survival_time_seconds:<survival_time_seconds_id>",
+  "leaderboardEnvTemplate": "best_run_score:20504740,daily_ops_score:20504746,fastest_extraction_ms:20504747,deepest_depth_score:20504750,survival_time_seconds:20504754",
   "achievements": [
     {
       "apiName": "quick_study",
@@ -540,13 +540,25 @@
   },
   "inventory": {
     "appid": 4957040,
-    "itemCount": 73,
+    "itemCount": 125,
     "sellableItems": [
       {
         "itemdefid": 4001,
         "name": "Relic Decryption Key",
         "priceCategory": "1;VLV100",
         "storeTags": "featured;keys;cache_key"
+      },
+      {
+        "itemdefid": 4005,
+        "name": "5x Relic Key Master Pack",
+        "priceCategory": "1;VLV400",
+        "storeTags": "featured;keys;bundles"
+      },
+      {
+        "itemdefid": 4015,
+        "name": "15x Relic Key Master Pack",
+        "priceCategory": "1;VLV1000",
+        "storeTags": "featured;keys;bundles;best_value"
       }
     ],
     "publicStoreFilters": [
@@ -563,7 +575,7 @@
   "backendEnv": {
     "HB_STEAM_APPID": "4957040",
     "HB_STEAM_ITEM_STORE_APPID": "4957040",
-    "HB_STEAM_LEADERBOARD_IDS": "best_run_score:<best_run_score_id>,daily_ops_score:<daily_ops_score_id>,fastest_extraction_ms:<fastest_extraction_ms_id>,deepest_depth_score:<deepest_depth_score_id>,survival_time_seconds:<survival_time_seconds_id>",
+    "HB_STEAM_LEADERBOARD_IDS": "best_run_score:20504740,daily_ops_score:20504746,fastest_extraction_ms:20504747,deepest_depth_score:20504750,survival_time_seconds:20504754",
     "STEAM_APPID": "4957040",
     "STEAM_DEPOT_CONTENT": "4957041"
   },

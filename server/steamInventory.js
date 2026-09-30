@@ -13,11 +13,13 @@ import {
     rollDeepRelicCache
 } from './lootTables.js';
 import { grantItemToPlayer } from './steamGrant.js';
+import { commitExchange, planRedeem, planTradeUp, withPlayerLock } from './steamTradeUp.js';
 import { createRateLimitOptions } from './rateLimit.js';
 
 const STEAM_INVENTORY_URL = 'https://partner.steam-api.com/IInventoryService/';
 const STEAM_ECON_MARKET_URL = 'https://partner.steam-api.com/IEconMarketService/';
 const DEFAULT_PLAYTIME_DROP_COOLDOWN_MS = 60 * 1000;
+export const INVENTORY_CAPABILITIES = Object.freeze(['trade-up', 'redeem']);
 
 function getSteamPublisherKey() {
     return process.env.HB_STEAM_PUBLISHER_KEY
@@ -77,15 +79,9 @@ export { steamAuthMiddleware };
 export function attachSteamInventoryRoutes(app) {
     const steamRouteRateLimit = rateLimit(createRateLimitOptions());
 
-    // 1. Get Inventory
-    app.get('/steam/inventory', steamRouteRateLimit, steamAuthMiddleware, async (req, res) => {
-        if (req.isDevMode) {
-            return res.json({
-                ok: true,
-                inventory: getMockInventory(req.steamId)
-            });
-        }
-
+    // The player's inventory, from the mock store in dev mode or Steam.
+    async function loadInventory(req) {
+        if (req.isDevMode) return { ok: true, inventory: getMockInventory(req.steamId) };
         try {
             const params = new URLSearchParams({
                 key: getSteamPublisherKey(),
@@ -93,10 +89,7 @@ export function attachSteamInventoryRoutes(app) {
                 steamid: req.steamId
             });
             const response = await fetch(`${STEAM_INVENTORY_URL}GetInventory/v1/?${params.toString()}`);
-            if (!response.ok) {
-                return res.status(response.status).json({ ok: false, reason: 'steam_api_error' });
-            }
-
+            if (!response.ok) return { ok: false, status: response.status, reason: 'steam_api_error' };
             const data = await response.json();
             const items = (data?.response?.item_list ?? []).map((item) => ({
                 itemId: String(item.itemid),
@@ -104,12 +97,48 @@ export function attachSteamInventoryRoutes(app) {
                 quantity: Number(item.quantity) || 1,
                 acquiredAt: item.acquired ? Date.parse(item.acquired) : Date.now()
             }));
-
-            res.json({ ok: true, inventory: items });
+            return { ok: true, inventory: items };
         } catch (err) {
-            res.status(502).json({ ok: false, reason: 'steam_request_failed', message: err.message });
+            return { ok: false, status: 502, reason: 'steam_request_failed', message: err.message };
         }
+    }
+
+    // 1. Get Inventory. `capabilities` tells the client which exchanges this
+    // backend commits, so an older deployment leaves them disabled.
+    app.get('/steam/inventory', steamRouteRateLimit, steamAuthMiddleware, async (req, res) => {
+        const loaded = await loadInventory(req);
+        if (!loaded.ok) {
+            const { status, ...body } = loaded;
+            return res.status(status).json(body);
+        }
+        res.json({ ok: true, inventory: loaded.inventory, capabilities: INVENTORY_CAPABILITIES });
     });
+
+    // 1b. Smelter trade-up and Dispensary redemption (server/steamTradeUp.js).
+    // The client names only the tier or the target; the server chooses what
+    // to consume. A requestId is required so a retry never trades twice.
+    function attachExchangeRoute(route, plan, source) {
+        app.post(route, steamRouteRateLimit, steamAuthMiddleware, async (req, res) => {
+            const requestId = typeof req.body?.requestId === 'string' ? req.body.requestId : '';
+            if (!requestId) return res.status(400).json({ ok: false, reason: 'missing_request_id' });
+            const idempotencyKey = `${route}:${req.steamId}:${requestId}`;
+            const cached = checkIdempotency(idempotencyKey);
+            if (cached) return res.status(cached.status).json(cached.body);
+
+            const result = await withPlayerLock(req.steamId, async () => {
+                const loaded = await loadInventory(req);
+                if (!loaded.ok) return { status: loaded.status, body: { ok: false, reason: loaded.reason } };
+                const planned = plan(req.body ?? {}, loaded.inventory);
+                if (!planned.ok) return { status: 400, body: planned };
+                const committed = await commitExchange({ steamId: req.steamId, plan: planned, isDevMode: req.isDevMode, requestId: idempotencyKey, source });
+                return { status: committed.ok ? 200 : 502, body: committed };
+            });
+            if (result.status !== 409) await saveIdempotency(idempotencyKey, result);
+            res.status(result.status).json(result.body);
+        });
+    }
+    attachExchangeRoute('/steam/inventory/trade-up', (body, inventory) => planTradeUp({ inventory, rarity: String(body.rarity ?? '') }), 'trade_up');
+    attachExchangeRoute('/steam/inventory/redeem', (body, inventory) => planRedeem({ inventory, itemdefid: Number(body.itemdefid) }), 'dispensary');
 
     // 2. Playtime Drops (TriggerItemDrop)
     app.post('/steam/inventory/trigger-drop', steamRouteRateLimit, steamAuthMiddleware, async (req, res) => {

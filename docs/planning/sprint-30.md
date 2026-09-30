@@ -1,6 +1,6 @@
 # Sprint 30 — Acceptance, Coherence, and Repository Control
 
-Status: active plan · Owner: repository maintainers · Updated: 2026-09-18 ·
+Status: superseded by [Sprint 49](sprint-49.md) · Owner: repository maintainers · Updated: 2026-09-18 ·
 Branch: `dev/sprint-45` · Working baseline: `2.4.12-beta` (developing from `v2.4.4-beta`) · Release target:
 decide at scope lock
 

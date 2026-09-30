@@ -1,0 +1,89 @@
+/* One item card (src/itemCard.js) for the hero screen and, as they move over,
+   the Foundry hub's tabs. Rarity colours match the Vault's
+   (steamVaultUi.getRarityColor); the frame takes the class colour where the
+   surface sets one. Text never drops below 11px (Sprint 48 readability rule). */
+
+.item-card-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.item-card {
+  --rar: 148, 163, 184;
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: 2px;
+  min-width: 0;
+  padding: 4px;
+  border: 1px solid rgba(var(--rar), 0.45);
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(var(--rar), 0.12), rgba(8, 10, 12, 0.85) 70%);
+  text-align: center;
+}
+
+.item-card--uncommon  { --rar: 34, 197, 94; }
+.item-card--rare      { --rar: 0, 200, 255; }
+.item-card--epic      { --rar: 168, 85, 247; }
+.item-card--legendary { --rar: 234, 179, 8; }
+
+.item-card--empty {
+  --rar: 255, 255, 255;
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(8, 10, 12, 0.6);
+}
+
+.item-card__art {
+  display: block;
+  aspect-ratio: 1;
+  width: 100%;
+  border-radius: 3px;
+  background: radial-gradient(circle at 50% 40%, rgba(var(--rar), 0.18), transparent 70%);
+}
+
+.item-card__art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.item-card__slot {
+  font-size: 11px;
+  line-height: 1.1;
+  letter-spacing: 0.08em;
+  color: rgba(var(--rar), 0.9);
+}
+
+.item-card__name {
+  font-size: 11px;
+  line-height: 1.15;
+  color: rgba(255, 255, 255, 0.86);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+}
+
+.item-card--empty .item-card__name {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+/* Compact: art-only chips in one row, for fixed-height panels. */
+.item-card-strip--compact {
+  gap: 4px;
+  margin-top: auto;
+}
+
+.item-card--compact {
+  grid-template-rows: auto;
+  padding: 2px;
+}
+
+.item-card--compact .item-card__art {
+  max-width: 32px;
+  margin: 0 auto;
+}

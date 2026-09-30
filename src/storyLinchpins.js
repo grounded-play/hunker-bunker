@@ -347,6 +347,46 @@ export function applyLinchpinResolution(manager, linchpinId, resolution) {
         window.dispatchEvent(new CustomEvent('story-linchpin-resolved', {
             detail: { id: linchpinId, resolution, locksEndings: effect.locksEndings ?? [] }
         }));
+        if (effect.locksEndings && effect.locksEndings.length > 0) {
+            const titles = {
+                mayor_tina: {
+                    joined: 'HIVE TRANSCENDENCE',
+                    killed: 'INFILTRATOR PURGED'
+                },
+                queen_offer: {
+                    accepted: 'QUEEN COMMUNION ACCEPTED',
+                    rejected: 'BROOD MOTHER DEFIED'
+                },
+                scientist_specimen: {
+                    dismissed: 'SPECIMEN DESTROYED'
+                }
+            };
+            const title = titles[linchpinId]?.[resolution] || 'TIMELINE DIVERGENCE';
+            const descriptions = {
+                mayor_tina: {
+                    joined: 'Mayor Tina has integrated into the Hive consciousness. Clean escape and orbital purge are permanently closed.',
+                    killed: 'Mayor Tina has been exterminated. Alien exodus and brood obedience endings are permanently closed.'
+                },
+                queen_offer: {
+                    accepted: 'The Hive Queen has claimed passage aboard the mothership. Human evacuation seats are irrevocably consumed.',
+                    rejected: 'The Queen\'s pact has been severed in blood.'
+                },
+                scientist_specimen: {
+                    dismissed: 'The scientist specimen has been executed. The alien alliance has lost its human advocate.'
+                }
+            };
+            const description = descriptions[linchpinId]?.[resolution] || 'Irreversible choices have closed off future evacuation timelines.';
+            window.dispatchEvent(new CustomEvent('timeline-divergence', {
+                detail: {
+                    id: linchpinId,
+                    linchpinId,
+                    resolution,
+                    title: `CRITICAL TIMELINE DIVERGENCE: ${title}`,
+                    description,
+                    locksEndings: effect.locksEndings
+                }
+            }));
+        }
     }
     return true;
 }

@@ -72,6 +72,7 @@ export function mapBrowserGamepad(gamepad, {
         // D-pad directions mirror the official layout's gameplay bindings:
         // up Map, down Scan, left Reload, right Smash.
         scan: readButton(buttons, 4) || readButton(buttons, 13),
+        tacticalPing: readButton(buttons, 10) || readButton(buttons, 14),
         sprint: readButton(buttons, 6),
         pause: readButton(buttons, 9),
         // Right-stick click cycles overlapping in-world interaction targets.

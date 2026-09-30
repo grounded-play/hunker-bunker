@@ -5,6 +5,13 @@ import { CLASS_ARCHETYPES, CLASS_CHASSIS_SKINS, ARCHETYPE_SKINS } from './loadou
 import { deriveIconFromModelUrl } from './armoryPicker.js';
 import { ARMORY_PREVIEWS } from './data/armoryPreviews.js';
 
+export const ARMORY_WEAPON_NAME_KEYS = Object.freeze({
+    talon: 'items.frame.talon',
+    talon_c: 'items.frame.talon_c',
+    siege_breaker: 'items.frame.siege_breaker',
+    tesla_lock: 'items.frame.tesla_lock'
+});
+
 export const ARMORY_WEAPON_NAMES = Object.freeze({
     talon: 'Vector-9 Talon SMG', talon_c: 'Talon-C Carbine',
     siege_breaker: 'Siege-Breaker 50 Autocannon', tesla_lock: 'Tesla-Lock MK-IV Arc Driver'

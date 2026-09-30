@@ -4,6 +4,7 @@ import { getFieldWeaponProfile } from './fieldWeapon.js';
 import { buildRunResourceTelemetry } from './runTelemetry.js';
 import { createRelicPickup, animateRelicPickup, createImpactBurst, disposeExpeditionEffect } from './expeditionVfx.js';
 import { TraumaManager, create3DMuzzleFlash, WEAPON_TRAUMA_TABLE } from './combatJuice.js';
+import { CombatSignal } from './combatSignal.js';
 import { PickupMagnet, PickupComboTracker } from './lootJuice.js';
 import { BiomeAtmosphereSystem } from './ambientDrift.js';
 import { KillstreakFeedbackSystem } from './gameplayTactileVfx.js';
@@ -11,6 +12,17 @@ import { CHUNK_SIZE, TILE_SIZE } from './tileCatalog.js';
 import { getControllerGlyphLabel } from './inputGlyphs.js';
 import { loadAccessibilitySettings } from './accessibilitySettings.js';
 import { hasVisibleTacticalRepresentation, tacticalNameForObject } from './tacticalTargetLabels.js';
+import {
+    cameraCutawayQuadrant,
+    planRoomBoundaryCells,
+    planRoomCutawayCells,
+    planRoomEnvironmentalDrips,
+    planRoomPracticalLights,
+    planRoomRoleDisplay,
+    planRoomThresholdMarkings,
+    ROOM_CUTAWAY_HEIGHT
+} from './roomPresentation.js';
+import { planHallwayRouteDressing } from './hallwayPresentation.js';
 
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -379,7 +391,7 @@ import {
     QUEEN_PHASE_LINES,
     SPORESNAIL_FIGHT_DEF,
     CYBERSNAIL_FIGHT_DEF,
-    CRYO_BOSS_FIGHT_DEF,
+    BOSS_PHASE_DEFS,
     createEnemyStaggerState,
     applyStaggerDamage,
     tickStaggerState,
@@ -842,6 +854,20 @@ const ROOM_FLOOR_MATERIAL_FAMILY = Object.freeze({
     camp: 'site:camp',
     storage: 'utility'
 });
+const ROOM_FLOOR_WETNESS = Object.freeze({
+    hallway: 0.38,
+    'bunker-standard': 0.52,
+    'bunker-utility': 0.68,
+    'bunker-medical': 0.24,
+    'bunker-security': 0.42,
+    'bunker-storage': 0.46,
+    'cryo-rough': 0.34,
+    'cryo-tile': 0.28,
+    'bio-resin': 0.72,
+    'bio-hive': 0.78,
+    camp: 0.2,
+    storage: 0.44
+});
 const GENERATED_ROOM_PROP_PATHS = Object.freeze({
     prop_medical_bed: '/prop_medical_bed.png',
     prop_surgical_cart: '/prop_surgical_cart.png',
@@ -1218,6 +1244,7 @@ const DEFAULT_KEY_BINDINGS = Object.freeze({
     ability: ['KeyF', null],
     dash: ['Space', 'ShiftLeft'],
     scan: ['KeyQ', null],
+    ping: ['KeyT', null],
     sprint: ['ShiftLeft', 'ShiftRight']
 });
 const MELEE_REACH = 1.8;
@@ -1278,6 +1305,28 @@ export const CLASS_MELEE_PROFILES = Object.freeze({
         playbackRate: 1.3
     })
 });
+
+export function computeFormationCombatMultiplier(playerPosition, companionPositions = [], targetPosition) {
+    if (!companionPositions.length || !targetPosition || !playerPosition) return 1.0;
+    for (const companionPos of companionPositions) {
+        if (!companionPos) continue;
+        const playerToTargetX = targetPosition.x - playerPosition.x;
+        const playerToTargetZ = targetPosition.z - playerPosition.z;
+        const companionToTargetX = targetPosition.x - companionPos.x;
+        const companionToTargetZ = targetPosition.z - companionPos.z;
+        const dot = (playerToTargetX * companionToTargetX) + (playerToTargetZ * companionToTargetZ);
+        const lenP = Math.hypot(playerToTargetX, playerToTargetZ);
+        const lenC = Math.hypot(companionToTargetX, companionToTargetZ);
+        if (lenP > 0.01 && lenC > 0.01) {
+            const cosTheta = dot / (lenP * lenC);
+            if (cosTheta < 0.707) {
+                return 1.25;
+            }
+        }
+    }
+    return 1.0;
+}
+
 const INJURED_HP_RATIO = 0.4;
 
 const SNAIL_ATTACK_RADIUS = 1.1;
@@ -1684,6 +1733,114 @@ export class ThreeGame {
         this.bracketGeometry = new THREE.BoxGeometry(0.8, 0.08, 0.12);
         this.ventGeometry = new THREE.BoxGeometry(0.48, 0.48, 0.06);
         this.pipeGeometry = new THREE.CylinderGeometry(0.06, 0.06, this.wallHeight, 6);
+        this.roomLightFixtureGeometry = new THREE.BoxGeometry(1.05, 0.06, 0.12);
+        this.roomLightHousingGeometry = new THREE.BoxGeometry(1.18, 0.12, 0.2);
+        this.roomLightHousingMaterial = new THREE.MeshStandardMaterial({
+            color: 0x090e12,
+            emissive: 0x010305,
+            emissiveIntensity: 0.08,
+            metalness: 0.82,
+            roughness: 0.34
+        });
+        this.roomLightFixtureMaterials = new Map([
+            ['active', new THREE.MeshStandardMaterial({
+                color: 0xbfefff,
+                emissive: 0x71cddf,
+                emissiveIntensity: 1.75,
+                metalness: 0.22,
+                roughness: 0.2
+            })],
+            ['cryo', new THREE.MeshStandardMaterial({
+                color: 0xd9f6ff,
+                emissive: 0x9ddcff,
+                emissiveIntensity: 1.7,
+                metalness: 0.18,
+                roughness: 0.18
+            })],
+            ['bio', new THREE.MeshStandardMaterial({
+                color: 0xa7ffd3,
+                emissive: 0x63e6a7,
+                emissiveIntensity: 1.6,
+                metalness: 0.08,
+                roughness: 0.28
+            })]
+        ]);
+        this.roomCutawayCapGeometry = new THREE.BoxGeometry(1.03, 0.08, 1.03);
+        this.roomCutawayCapMaterial = new THREE.MeshStandardMaterial({
+            color: 0x05080c,
+            emissive: 0x010204,
+            emissiveIntensity: 0.08,
+            metalness: 0.7,
+            roughness: 0.34
+        });
+        this.roomRoleDisplayGeometry = new THREE.BoxGeometry(1, 1, 1);
+        this.roomRoleDisplayHousingMaterial = new THREE.MeshStandardMaterial({
+            color: 0x070b0f,
+            emissive: 0x010305,
+            emissiveIntensity: 0.08,
+            metalness: 0.88,
+            roughness: 0.3
+        });
+        this.roomRoleDisplayScreenMaterial = new THREE.MeshBasicMaterial({
+            color: new THREE.Color().setRGB(1.65, 1.65, 1.65),
+            toneMapped: false
+        });
+        this.hallwayDressingGeometry = new THREE.BoxGeometry(1, 1, 1);
+        this.hallwayDressingMaterial = new THREE.MeshStandardMaterial({
+            color: 0x0a1015,
+            emissive: 0x020508,
+            emissiveIntensity: 0.1,
+            metalness: 0.86,
+            roughness: 0.34
+        });
+        this.hallwayCableMaterial = new THREE.MeshStandardMaterial({
+            color: 0x171d20,
+            metalness: 0.42,
+            roughness: 0.56
+        });
+        this.hallwaySignalMaterial = new THREE.MeshBasicMaterial({
+            color: new THREE.Color().setRGB(1.55, 1.55, 1.55),
+            toneMapped: false
+        });
+        this.roomThresholdMarkingGeometry = new THREE.BoxGeometry(1, 1, 1);
+        this.roomThresholdMarkingMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            metalness: 0.18,
+            roughness: 0.48
+        });
+        this.environmentDripGeometry = new THREE.BoxGeometry(0.035, 0.16, 0.035);
+        this.environmentDripMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uFallDistance: { value: 2.18 }
+            },
+            vertexShader: `
+                uniform float uTime;
+                uniform float uFallDistance;
+                varying vec3 vDripColor;
+                varying float vDripAlpha;
+                void main() {
+                    float seed = fract(sin(dot(instanceMatrix[3].xz, vec2(12.9898, 78.233))) * 43758.5453);
+                    float cycle = fract(uTime * (0.22 + seed * 0.11) + seed);
+                    vec4 instancePosition = instanceMatrix * vec4(position, 1.0);
+                    instancePosition.y -= cycle * uFallDistance;
+                    vDripColor = instanceColor;
+                    vDripAlpha = sin(cycle * 3.14159265) * smoothstep(0.0, 0.08, cycle);
+                    gl_Position = projectionMatrix * modelViewMatrix * instancePosition;
+                }
+            `,
+            fragmentShader: `
+                varying vec3 vDripColor;
+                varying float vDripAlpha;
+                void main() {
+                    gl_FragColor = vec4(vDripColor * 1.35, vDripAlpha * 0.72);
+                }
+            `,
+            transparent: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+            toneMapped: false
+        });
 
         this.ventMaterial = new THREE.MeshBasicMaterial({ color: 0x1a1d20 });
         this.pipeMaterial = new THREE.MeshBasicMaterial({ color: 0x24282c });
@@ -1691,6 +1848,30 @@ export class ThreeGame {
         // Pre-allocated geometries/materials to optimize runtime chunk loading (avoid stutters)
         this.doorPanelGeometry = new THREE.BoxGeometry(0.38, 0.58, 0.24);
         this.doorPanelMaterial = new THREE.MeshStandardMaterial({ color: 0x12191f, emissive: 0x07141a, metalness: 0.78, roughness: 0.38 });
+        this.doorPortalHeaderGeometry = new THREE.BoxGeometry(1, 1, 1);
+        this.doorPortalHeaderMaterials = {
+            ordinary: new THREE.MeshStandardMaterial({
+                color: 0x31545b,
+                emissive: 0x143d46,
+                emissiveIntensity: 0.42,
+                metalness: 0.58,
+                roughness: 0.34
+            }),
+            route: new THREE.MeshStandardMaterial({
+                color: 0xc78331,
+                emissive: 0xff9d32,
+                emissiveIntensity: 0.92,
+                metalness: 0.48,
+                roughness: 0.28
+            }),
+            locked: new THREE.MeshStandardMaterial({
+                color: 0x9d2a20,
+                emissive: 0xff493d,
+                emissiveIntensity: 1.18,
+                metalness: 0.42,
+                roughness: 0.3
+            })
+        };
         this.doorRibGeometry = new THREE.BoxGeometry(0.08, 1.02, 1.1);
         this.doorRibMaterial = new THREE.MeshStandardMaterial({
             color: 0x11161b,
@@ -1701,25 +1882,25 @@ export class ThreeGame {
         this.doorButtonGeometry = new THREE.CircleGeometry(0.11, 16);
         this.doorStatusMaterials = {
             open: new THREE.MeshStandardMaterial({
-                color: 0x00e5ff,
+                color: 0x0a6570,
                 emissive: 0x00e5ff,
-                emissiveIntensity: 1.35,
+                emissiveIntensity: 1.45,
                 metalness: 0.35,
-                roughness: 0.32
+                roughness: 0.28
             }),
             closed: new THREE.MeshStandardMaterial({
-                color: 0xff2a00,
+                color: 0x6f1608,
                 emissive: 0xff2a00,
-                emissiveIntensity: 1.35,
+                emissiveIntensity: 1.45,
                 metalness: 0.35,
-                roughness: 0.32
+                roughness: 0.28
             }),
             locked: new THREE.MeshStandardMaterial({
-                color: 0xffaa00,
+                color: 0x704a00,
                 emissive: 0xffaa00,
-                emissiveIntensity: 1.35,
+                emissiveIntensity: 1.45,
                 metalness: 0.35,
-                roughness: 0.32
+                roughness: 0.28
             })
         };
 
@@ -1747,6 +1928,7 @@ export class ThreeGame {
         this.cameraLift = 12.5;
         this.cameraOrbitRadius = Math.hypot(8, 8);
         this.cameraAzimuth = Math.atan2(8, 8);
+        this._roomCutawayQuadrant = cameraCutawayQuadrant(this.cameraAzimuth);
         this.cameraRotationInput = 0;
         this._cameraOrbitPointerDelta = 0;
         this.cameraMode = 'third-person';
@@ -1944,6 +2126,8 @@ export class ThreeGame {
         this.weaponAmmoRefillTimer = 0;
         this.weaponFireCooldown = 0;
         this.isPlayerDead = false;
+        this.combatSignal = new CombatSignal();
+        this.inCombat = false;
         this.o2DispatchTimer = 0;
         this.footstepTimer = 0;
         this.isDashing = false;
@@ -2032,7 +2216,7 @@ export class ThreeGame {
 
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x0b0d0f);
-        this.scene.fog = new THREE.Fog(0x0b0d0f, 10, 28);
+        this.scene.fog = new THREE.Fog(0x0b0d0f, 18, 40);
         // Create all eight renderer-visible slots before the loading-screen
         // shader warm-up. Creating them on the first gameplay update would
         // compile the zero-light variant during staging and miss again when
@@ -2218,9 +2402,9 @@ export class ThreeGame {
                 Math.max(1, Math.floor(window.innerWidth * 0.5)),
                 Math.max(1, Math.floor(window.innerHeight * 0.5))
             ),
-            0.62,   // strength -- restrained; this sits under AgX, not over it
-            0.45,   // radius
-            0.95    // threshold: genuine emissives only
+            0.72,   // strength -- restrained; this sits under AgX, not over it
+            0.48,   // radius
+            0.92    // threshold: genuine emissives only
         );
         this.composer.addPass(this.bloomPass);
 
@@ -3919,15 +4103,15 @@ export class ThreeGame {
     }
 
     setupLighting() {
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+        const ambientLight = new THREE.AmbientLight(0xd6e4ff, 0.58);
         this.scene.add(ambientLight);
         this.ambientLight = ambientLight;
 
-        const fillLight = new THREE.HemisphereLight(0x6b8db3, 0x07090c, 0.55);
+        const fillLight = new THREE.HemisphereLight(0x6b8db3, 0x05080c, 0.45);
         this.scene.add(fillLight);
         this.fillLight = fillLight;
 
-        const directionalLight = new THREE.DirectionalLight(0xd6e7ff, 2.5);
+        const directionalLight = new THREE.DirectionalLight(0xd6e7ff, 2.3);
         directionalLight.position.set(10, 18, 8);
         directionalLight.castShadow = true;
         // 2048 as before fbf260f halved it: 1024 over a 32 m frustum gave
@@ -3964,7 +4148,7 @@ export class ThreeGame {
             fill: fillLight.intensity,
             playerGlow: playerGlow.intensity
         };
-        this.baseFogRange = { near: this.scene.fog?.near ?? 10, far: this.scene.fog?.far ?? 28 };
+        this.baseFogRange = { near: this.scene.fog?.near ?? 18, far: this.scene.fog?.far ?? 40 };
     }
 
     updateDirectionalShadowFrustum() {
@@ -4404,6 +4588,13 @@ export class ThreeGame {
             this.scene.add(consoleSprite);
             ship.consoleSprite = consoleSprite;
 
+            // Phosphor green terminal light pool (reliquary CRT console)
+            const consoleLight = new THREE.PointLight(0x38ef7d, 2.0, 3.8, 2.0);
+            consoleLight.position.set(consoleX, 0.65, consoleZ + 0.2);
+            this.scene.add(consoleLight);
+            this.registerEnvLight?.(consoleLight);
+            ship.consoleLight = consoleLight;
+
             const o2Module = createModuleSprite(ship, {
                 keyPrefix: 'o2Module',
                 offset: ship.o2ModuleOffset,
@@ -4476,6 +4667,7 @@ export class ThreeGame {
                 reactorModule.sprite,
                 ringMesh,
                 safeRing,
+                consoleLight,
                 terminalLight
             ];
 
@@ -4998,6 +5190,7 @@ export class ThreeGame {
                 targetHeight: this.playerSpriteScale * 0.98,
                 allowStatic: true,
                 requireRigged: true,
+                operatorClass: overlayType,
                 wearableOverclocks: [
                     window.loadout?.getEquippedRigModule?.(1, this.playerType) ?? null,
                     window.loadout?.getEquippedRigModule?.(2, this.playerType) ?? null
@@ -5231,6 +5424,32 @@ export class ThreeGame {
         // from a debug console. Resolved on completion rather than on the
         // interaction, so an aborted cinematic does not bank the consequence.
         applyLinchpinResolution(this.act2, 'mayor_tina', 'joined');
+        this.act2?.adjustInfectionLoad?.(50);
+        return true;
+    }
+
+    interactWithQueenCommunion() {
+        if (!this.act2 || !this.isAct2Active?.() || !this.player) return false;
+        const state = this.act2.getState?.();
+        const linchpins = state?.linchpins ?? {};
+        if (linchpins.queen_offer === 'accepted' || linchpins.queen_offer === 'rejected') return false;
+
+        const isTransformed = this.mayorTinaEncounter?.phase === 'transformed';
+        const hasHighInfection = (state?.infectionLoad ?? 0) >= 30 || ['symptomatic', 'outed', 'ascendant'].includes(state?.infectionStage);
+        if (!isTransformed && !hasHighInfection) return false;
+
+        const queenDist = this.queenFightSprite
+            ? Math.hypot(this.player.position.x - this.queenFightSprite.position.x, this.player.position.z - this.queenFightSprite.position.z)
+            : Infinity;
+        if (queenDist > 8.0 && !isTransformed) return false;
+
+        const resolved = applyLinchpinResolution(this.act2, 'queen_offer', 'accepted');
+        if (!resolved) return false;
+
+        this.act2.setQueenStatus?.('aboard');
+        this.act2.setEggsStatus?.('aboard');
+        this.showBunkerLine?.('HIVE CONSCIOUSNESS: OUR MINDS INTERTWINE. THE CYCLE TRANSCENDS.');
+        this.triggerCameraShake?.(0.35, 0.8);
         return true;
     }
 
@@ -5699,6 +5918,7 @@ export class ThreeGame {
                 targetHeight: (this.playerSpriteScale || 1.6) * 0.98,
                 allowStatic: true,
                 requireRigged: true,
+                operatorClass: remote.opClass,
                 wearableOverclocks: equipment.overclockIds,
                 ...classVisuals[remote.opClass]
             });
@@ -6022,8 +6242,28 @@ export class ThreeGame {
             });
             if (enemies.length >= 256) break;
         }
-        if (!enemies.length) return false;
-        this.netSocket.emit('enemyState', { enemies });
+        const companions = (this.companions ?? []).map((c) => {
+            const root = c.instance3d?.root;
+            const x = root ? root.position.x : (c.sprite ? c.sprite.position.x : 0);
+            const z = root ? root.position.z : (c.sprite ? c.sprite.position.z : 0);
+            const yaw = root ? root.rotation.y : (c.sprite ? c.sprite.rotation.y : 0);
+            return {
+                id: c.id || c.wanderer?.id || c.sprite?.userData?.scatterKey || 'companion_0',
+                wandererId: c.wanderer?.id,
+                actionKey: c.wanderer?.actionKey,
+                glbUrl: c.wanderer?.glbUrl,
+                name: c.wanderer?.name,
+                isWanderer: Boolean(c.isWanderer),
+                x,
+                z,
+                yaw,
+                anim: c.instance3d?.currentClipName ?? (c.isMoving ? 'run' : 'idle'),
+                isFiring: Boolean(c.isFiring),
+                targetId: c.targetId ?? null
+            };
+        });
+        if (!enemies.length && !companions.length) return false;
+        this.netSocket.emit('enemyState', { enemies, companions });
         return true;
     }
 
@@ -6297,6 +6537,12 @@ export class ThreeGame {
             this.applyRemoteBossAdds(detail);
         } else if (event === COOP_TRANSITION_EVENTS.ENCOUNTER_FORMATION_STATE) {
             this.applyRemoteEncounterFormationState(detail);
+        } else if (event === COOP_TRANSITION_EVENTS.WORLD_EVENT_TRIGGER) {
+            if (coopRole(this) === COOP_ROLE.HOST && detail.action) {
+                this.respondToExpeditionEvent(detail.action);
+            }
+        } else if (event === COOP_TRANSITION_EVENTS.WORLD_EVENT_RESOLVED) {
+            this.applyRemoteWorldEventResolved(detail);
         } else if (event === 'lore-terminal-read') {
             if (detail.loreKey) {
                 this._readLoreKeys = this._readLoreKeys ?? new Set();
@@ -6306,6 +6552,11 @@ export class ThreeGame {
                     id: `terminal:${detail.loreKey}`
                 });
             }
+        } else if (event === 'tactical-ping') {
+            this.spawnTacticalPingMarker?.(detail);
+            if (typeof window !== 'undefined' && window.AudioManager) {
+                window.AudioManager.play?.('ui_scan_ping', { volume: 0.4, playbackRate: detail.kind === 'enemy' ? 1.3 : 1.0 });
+            }
         }
 
         if (typeof window !== 'undefined') {
@@ -6313,6 +6564,28 @@ export class ThreeGame {
                 detail: { ...detail, fromRemote: true }
             }));
         }
+        return true;
+    }
+
+    applyRemoteWorldEventResolved(detail = {}) {
+        const expEvent = this._expeditionEvent;
+        if (!expEvent?.state) return false;
+        if (detail.phase) expEvent.state.phase = detail.phase;
+        if (detail.outcome) expEvent.state.outcome = detail.outcome;
+        if (typeof detail.scanned === 'boolean') expEvent.state.scanned = detail.scanned;
+        if (Number.isFinite(detail.bypassProgress)) expEvent.state.bypassProgress = detail.bypassProgress;
+        if (Array.isArray(detail.effects)) {
+            for (const effect of detail.effects) this.runExpeditionEventEffect(effect);
+        }
+        if (expEvent.state.phase === 'resolved') {
+            this._expeditionEventO2DrainMult = 1;
+            const success = !['left', 'ambush_empty'].includes(expEvent.state.outcome);
+            window.objectiveRegistry?.resolveObjective?.('expedition-event', success ? 'complete' : 'abandoned');
+        }
+        this.syncExpeditionEventRoute();
+        window.dispatchEvent?.(new CustomEvent('expedition-event-state', {
+            detail: { eventId: detail.eventId, action: detail.action, phase: expEvent.state.phase, outcome: expEvent.state.outcome, fromRemote: true }
+        }));
         return true;
     }
 
@@ -6358,38 +6631,114 @@ export class ThreeGame {
     }
 
     handleEnemyStateSnapshot(data) {
-        if (this.isMultiplayerHost || this.multiplayerMode === 'pvp' || !Array.isArray(data?.enemies)) return false;
+        if (this.isMultiplayerHost || this.multiplayerMode === 'pvp') return false;
+        if (!Array.isArray(data?.enemies) && !Array.isArray(data?.companions)) return false;
         let applied = 0;
-        for (const state of data.enemies) {
-            if (!state?.scatterKey) continue;
-            let sprite = (this.scatterSprites ?? []).find((candidate) => candidate.userData?.scatterKey === state.scatterKey);
-            if (!sprite?.userData && state.isBoss && !state.burstTriggered) {
-                sprite = this.materializeRemoteBoss?.(state) ?? null;
-            }
-            if (!sprite?.userData) continue;
-            if (Number.isFinite(state.x) && Number.isFinite(state.z)) {
-                sprite.userData.netTargetX = state.x;
-                sprite.userData.netTargetZ = state.z;
-                const currentDist = Math.hypot(sprite.position.x - state.x, sprite.position.z - state.z);
-                if (currentDist > 6.0 || typeof sprite.userData.lastNetUpdate !== 'number') {
-                    sprite.position.x = state.x;
-                    sprite.position.z = state.z;
+        if (Array.isArray(data?.enemies)) {
+            for (const state of data.enemies) {
+                if (!state?.scatterKey) continue;
+                let sprite = (this.scatterSprites ?? []).find((candidate) => candidate.userData?.scatterKey === state.scatterKey);
+                if (!sprite?.userData && state.isBoss && !state.burstTriggered) {
+                    sprite = this.materializeRemoteBoss?.(state) ?? null;
                 }
-                sprite.userData.lastNetUpdate = Date.now();
+                if (!sprite?.userData) continue;
+                if (Number.isFinite(state.x) && Number.isFinite(state.z)) {
+                    sprite.userData.netTargetX = state.x;
+                    sprite.userData.netTargetZ = state.z;
+                    const currentDist = Math.hypot(sprite.position.x - state.x, sprite.position.z - state.z);
+                    if (currentDist > 6.0 || typeof sprite.userData.lastNetUpdate !== 'number') {
+                        sprite.position.x = state.x;
+                        sprite.position.z = state.z;
+                    }
+                    sprite.userData.lastNetUpdate = Date.now();
+                }
+                if (state.burstTriggered && !sprite.userData.burstTriggered) {
+                    const remainingHp = Math.max(1, sprite.userData.hp || 1);
+                    this.damageSnail(sprite, remainingHp);
+                } else if (Number.isFinite(state.hp) && state.hp >= 0) {
+                    sprite.userData.hp = state.hp;
+                    // A boss fight's phases follow its HP, so the host's HP moves
+                    // this peer's fight into the same phase.
+                    const fight = sprite.userData.queenFight
+                        ?? sprite.userData.sporesnailFight
+                        ?? sprite.userData.biomeBossFight;
+                    if (fight && !fight.defeated) fight.hp = Math.min(fight.maxHp, state.hp);
+                }
+                applied += 1;
             }
-            if (state.burstTriggered && !sprite.userData.burstTriggered) {
-                const remainingHp = Math.max(1, sprite.userData.hp || 1);
-                this.damageSnail(sprite, remainingHp);
-            } else if (Number.isFinite(state.hp) && state.hp >= 0) {
-                sprite.userData.hp = state.hp;
-                // A boss fight's phases follow its HP, so the host's HP moves
-                // this peer's fight into the same phase.
-                const fight = sprite.userData.queenFight ?? sprite.userData.sporesnailFight;
-                if (fight && !fight.defeated) fight.hp = Math.min(fight.maxHp, state.hp);
-            }
-            applied += 1;
+        }
+        if (Array.isArray(data?.companions)) {
+            this.handleRemoteCompanionsSnapshot?.(data.companions);
+            applied += data.companions.length;
         }
         return applied > 0;
+    }
+
+    handleRemoteCompanionsSnapshot(remoteCompanions) {
+        if (!Array.isArray(remoteCompanions)) return;
+        this.companions = this.companions || [];
+        for (const remote of remoteCompanions) {
+            if (!remote || !remote.id) continue;
+            let companion = this.companions.find((c) => c.id === remote.id || (remote.wandererId && c.wanderer?.id === remote.wandererId));
+            if (!companion) {
+                companion = {
+                    id: remote.id,
+                    isWanderer: Boolean(remote.isWanderer),
+                    isRemote: true,
+                    wanderer: remote.wandererId ? {
+                        id: remote.wandererId,
+                        name: remote.name || 'Wanderer',
+                        glbUrl: remote.glbUrl,
+                        actionKey: remote.actionKey
+                    } : null,
+                    netTargetX: remote.x,
+                    netTargetZ: remote.z,
+                    netTargetYaw: remote.yaw,
+                    lastNetUpdate: Date.now(),
+                    assistCooldown: 0,
+                    currentHp: 100,
+                    maxHp: 100
+                };
+                this.companions.push(companion);
+                if (remote.isWanderer && typeof createWanderer3dInstance === 'function' && this.scene) {
+                    createWanderer3dInstance({
+                        glbUrl: remote.glbUrl,
+                        actionKey: remote.actionKey,
+                        scale: 0.85
+                    }).then((instance3d) => {
+                        if (!instance3d?.root) return;
+                        companion.instance3d = instance3d;
+                        instance3d.root.position.set(remote.x, 0, remote.z);
+                        instance3d.root.rotation.y = remote.yaw || 0;
+                        this.scene?.add?.(instance3d.root);
+                    }).catch(() => {});
+                }
+            } else {
+                companion.netTargetX = remote.x;
+                companion.netTargetZ = remote.z;
+                companion.netTargetYaw = remote.yaw;
+                companion.lastNetUpdate = Date.now();
+                if (companion.instance3d?.root) {
+                    const currentDist = Math.hypot(companion.instance3d.root.position.x - remote.x, companion.instance3d.root.position.z - remote.z);
+                    if (currentDist > 6.0) {
+                        companion.instance3d.root.position.x = remote.x;
+                        companion.instance3d.root.position.z = remote.z;
+                    }
+                }
+            }
+
+            if (remote.isFiring && !companion._lastWasFiring) {
+                this.spawnMuzzleFlash?.(remote.x, 1.0, remote.z);
+                if (typeof window !== 'undefined' && window.AudioManager) {
+                    window.AudioManager.play?.('turret_fire', { volume: 0.35, playbackRate: 1.1 });
+                }
+            }
+            companion._lastWasFiring = Boolean(remote.isFiring);
+
+            if (remote.anim && companion.instance3d?.playAction && companion.instance3d?.currentClipName !== remote.anim) {
+                companion.instance3d.playAction(remote.anim);
+            }
+        }
     }
 
     // In co-op only the host rolls: each client rolling its own dice gave the
@@ -7013,6 +7362,11 @@ export class ThreeGame {
                 debugLog.debug('INPUT', 'Action: SMASH');
                 this.triggerGameplayMelee();
             }
+            if (this.codeMatchesAction(event.code, 'ping') || event.code === 'KeyT') {
+                event.preventDefault();
+                debugLog.debug('INPUT', 'Action: TACTICAL PING (T)');
+                this.triggerTacticalPing();
+            }
             this.setKeyState(event.code, true);
         };
         this.handleKeyUp = (event) => this.setKeyState(event.code, false);
@@ -7041,6 +7395,11 @@ export class ThreeGame {
                 } catch {
                     // Best effort only.
                 }
+                return;
+            }
+            if (pointerType === 'mouse' && event.button === 1) {
+                event.preventDefault();
+                this.triggerTacticalPing();
                 return;
             }
             if (pointerType === 'mouse' && event.button !== 0) return;
@@ -7345,7 +7704,8 @@ export class ThreeGame {
 
     triggerGameplayInteract() {
         if (!this.isGameplayInputActive()) return false;
-        if (this.interactWithMayorTina()) return true;
+        if (this.interactWithMayorTina?.()) return true;
+        if (this.interactWithQueenCommunion?.()) return true;
         const priorityCandidates = this.getPriorityInteractionCandidates();
         if (priorityCandidates.length > 0) {
             const index = Math.min(this._interactionTargetIndex ?? 0, priorityCandidates.length - 1);
@@ -7561,6 +7921,154 @@ export class ThreeGame {
         debugLog.info('GAME', 'Triggered radar scan');
         this.triggerRadarScan();
         return true;
+    }
+
+    triggerTacticalPing() {
+        if (!this.player || !this.isGameplayInputActive()) return false;
+        let kind = 'point';
+        let targetId = null;
+        let label = 'TACTICAL PING';
+
+        let point = null;
+        if (Number.isFinite(this.lastMouseClientX) && Number.isFinite(this.lastMouseClientY)) {
+            point = this.getWorldAimPoint?.(this.lastMouseClientX, this.lastMouseClientY);
+        }
+        if (!point && this.aimWorldPoint) {
+            point = this.aimWorldPoint;
+        }
+        if (!point) {
+            const facingX = this.aimDirX ?? 0;
+            const facingZ = this.aimDirZ ?? 1;
+            point = {
+                x: this.player.position.x + facingX * 5.0,
+                z: this.player.position.z + facingZ * 5.0
+            };
+        }
+        let targetX = point.x;
+        let targetZ = point.z;
+
+        for (const sprite of this.scatterSprites ?? []) {
+            if (!this.isEnemyType(sprite.userData?.type) || sprite.userData?.dead || sprite.userData?.burstTriggered || sprite.userData?.isDisplayModel) continue;
+            const dist = Math.hypot(sprite.position.x - targetX, sprite.position.z - targetZ);
+            if (dist <= 2.0) {
+                kind = 'enemy';
+                targetId = sprite.userData.scatterKey;
+                targetX = sprite.position.x;
+                targetZ = sprite.position.z;
+                label = sprite.userData.isBoss ? 'TARGET: BOSS' : `TARGET: ${String(sprite.userData.type || 'HOSTILE').toUpperCase()}`;
+                break;
+            }
+        }
+
+        if (kind === 'point') {
+            for (const pickup of this.pickupMeshes ?? []) {
+                const dist = Math.hypot(pickup.position.x - targetX, pickup.position.z - targetZ);
+                if (dist <= 1.4) {
+                    kind = 'item';
+                    targetX = pickup.position.x;
+                    targetZ = pickup.position.z;
+                    const itemName = pickup.userData?.item?.name || pickup.userData?.type || 'SUPPLIES';
+                    label = `SUPPLIES: ${String(itemName).toUpperCase()}`;
+                    break;
+                }
+            }
+        }
+
+        const pingData = { x: targetX, z: targetZ, kind, label, targetId, peerId: this.multiplayerLocalPlayerId ?? null };
+        this.spawnTacticalPingMarker(pingData);
+
+        if (this.isMultiplayer) {
+            this.broadcastSharedWorldEvent?.('tactical-ping', pingData);
+        }
+
+        if (typeof window !== 'undefined' && window.AudioManager) {
+            window.AudioManager.play?.('ui_scan_ping', { volume: 0.45, playbackRate: kind === 'enemy' ? 1.3 : 1.0 });
+        }
+        return true;
+    }
+
+    spawnTacticalPingMarker({ x = 0, z = 0, kind = 'point', label = 'TACTICAL PING', targetId = null } = {}) {
+        if (!this.scene) return null;
+        const color = kind === 'enemy' ? 0xff3344 : (kind === 'item' ? 0x10b981 : 0x38bdf8);
+        const y = this.getTerrainHeightAt?.(x, z) ?? 0;
+
+        const group = new THREE.Group();
+        group.position.set(x, y, z);
+
+        const ringGeo = new THREE.RingGeometry(0.3, 0.7, 24);
+        ringGeo.rotateX(-Math.PI / 2);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color,
+            transparent: true,
+            opacity: 0.85,
+            side: THREE.DoubleSide
+        });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.position.y = 0.05;
+        group.add(ring);
+
+        const beamGeo = new THREE.CylinderGeometry(0.04, 0.1, 4.0, 8);
+        beamGeo.translate(0, 2.0, 0);
+        const beamMat = new THREE.MeshBasicMaterial({
+            color,
+            transparent: true,
+            opacity: 0.5,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const beam = new THREE.Mesh(beamGeo, beamMat);
+        group.add(beam);
+
+        this.scene.add(group);
+
+        const duration = 6.0;
+        let age = 0;
+
+        const pingEffect = {
+            mesh: group,
+            duration,
+            age: 0,
+            update: (delta) => {
+                age += delta;
+                const progress = age / duration;
+                const pulse = 1.0 + Math.sin(age * 8) * 0.25;
+                ring.scale.set(pulse, 1, pulse);
+                beam.rotation.y += delta * 2;
+                if (progress > 0.75) {
+                    const fade = 1 - (progress - 0.75) / 0.25;
+                    ringMat.opacity = 0.85 * fade;
+                    beamMat.opacity = 0.5 * fade;
+                }
+            },
+            dispose: () => {
+                if (group.parent) group.parent.remove(group);
+                ringGeo.dispose();
+                ringMat.dispose();
+                beamGeo.dispose();
+                beamMat.dispose();
+            }
+        };
+
+        this.addTransientEffect?.(pingEffect);
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('tactical-ping-alert', {
+                detail: { x, z, kind, label, targetId }
+            }));
+            const pingId = `ping-${Math.round(x)},${Math.round(z)}`;
+            window.objectiveRegistry?.trackObjective?.({
+                id: pingId,
+                source: 'tactical-ping',
+                label,
+                priority: 35,
+                compass: { x, z }
+            });
+            setTimeout(() => {
+                window.objectiveRegistry?.resolveObjective?.(pingId, 'expired');
+            }, 6000);
+        }
+
+        return group;
     }
 
     triggerGameplayDash() {
@@ -8130,6 +8638,7 @@ export class ThreeGame {
             || isVisible('tactical-map-modal')
             || isVisible('codex-modal')
             || isVisible('fabrication-modal')
+            || isVisible('foundry-hub-modal')
             || isVisible('about-modal')
             || isVisible('dev-console-modal')
             || isVisible('base-turret-modal')
@@ -9285,6 +9794,10 @@ export class ThreeGame {
         if (typeof document !== 'undefined' && document.documentElement?.dataset) {
             document.documentElement.dataset.operatorClass = String(value ?? '').toLowerCase();
         }
+        // The class being played is the one the Fab Bay equips and combat
+        // reads (applyWeaponUpgrades): a run started without passing through
+        // the Armory used to leave the loadout on its Scout default.
+        if (value && typeof window !== 'undefined') window.loadout?.setActiveClass?.(value);
     }
 
     setAdaptiveGameplayPerformanceMode(enabled = true, {
@@ -9645,6 +10158,9 @@ export class ThreeGame {
         for (const uniforms of this.cliffShaderUniforms ?? []) {
             if (uniforms.uCliffTime) uniforms.uCliffTime.value = now * 0.001;
         }
+        if (this.environmentDripMaterial?.uniforms?.uTime) {
+            this.environmentDripMaterial.uniforms.uTime.value = now * 0.001;
+        }
         if (this.cliffPathMaterial) {
             this.cliffPathMaterial.opacity = 0.32 + Math.sin(now * 0.0024) * 0.12;
         }
@@ -9663,6 +10179,7 @@ export class ThreeGame {
         const rawFrameDelta = Math.max(0, (now - this.lastTime) / 1000);
         const delta = Math.min(rawFrameDelta, 0.05);
         this.lastTime = now;
+        this.updateCombatSignal?.(delta);
 
         // The asset museum is an isolated validation profile, not another
         // coordinate in the active expedition. Keep camera/player inspection
@@ -10463,10 +10980,12 @@ export class ThreeGame {
         window.AudioManager?.play('class_lock', { volume: 0.56, playbackRate: 0.76, bus: 'sfx' });
         this.arcManager?.recordSignal?.({ blackBoxesRecovered: 1 });
         this.arcManager?.evaluate?.();
+        this.player3dOverlay?.triggerCharmImpulse?.(2.0);
         if (this.isMultiplayer) {
             this.broadcastSharedWorldEvent?.('black-box-recovered', { recovered, ownerId: this.multiplayerLocalPlayerId ?? null });
         }
         window.dispatchEvent(new CustomEvent('black-box-recovered', { detail: recovered }));
+        window.dispatchEvent(new CustomEvent('salvage-cache-opened', { detail: salvage }));
         return true;
     }
 
@@ -15134,11 +15653,18 @@ export class ThreeGame {
         // loadout. Scaling it again here multiplied it by the receiver's.
         const localHit = !fromNetwork && reporterId == null;
         if (localHit) {
+            this.markCombatActivity?.('hostile-hit');
             const bossTarget = Boolean(sprite?.userData?.isBoss || sprite?.userData?.queenFight
                 || sprite?.userData?.sporesnailFight || sprite?.userData?.biomeBossFight);
             amount *= bossTarget
                 ? (this.loadoutMods?.bossDamageMultiplier ?? 1)
                 : (this.loadoutMods?.nonBossDamageMultiplier ?? 1);
+
+            if (this.player && sprite?.position) {
+                const companionPositions = (this.companions ?? []).map((c) => c.instance3d?.root?.position || c.sprite?.position).filter(Boolean);
+                const formationMult = computeFormationCombatMultiplier(this.player.position, companionPositions, sprite.position);
+                amount *= formationMult;
+            }
             // Season 0 Cryo-Capacitor Overclock proc (itemdef 4140): 18% chance per hit to
             // freeze the target in place. cryoDurationMultiplier (default 1.0, +0.08 when
             // equipped) scales the freeze duration off a 1.0s base.
@@ -15317,10 +15843,16 @@ export class ThreeGame {
                 const mechanic = event.mechanic ?? phase?.mechanic;
                 data.frozenPathwaysActive = mechanic?.kind === 'frozen-pathways';
                 data.frozenPathwayTimer = 0;
-                if (mechanic?.kind === 'carapace-shattered') {
+                if (Number.isFinite(mechanic?.speedMultiplier)) {
                     data.speed = (data.baseBossSpeed ?? data.speed) * (mechanic.speedMultiplier ?? 1.4);
-                    sprite.material?.color?.setHex?.(0xff9f43);
                 }
+                const phaseTint = {
+                    'carapace-shattered': 0xff9f43,
+                    'flanking-dash': 0xff5a8a,
+                    'seismic-overload': 0xffb347,
+                    'fabricator-overclock': 0x4de8ff
+                }[mechanic?.kind];
+                if (phaseTint) sprite.material?.color?.setHex?.(phaseTint);
                 this.triggerCameraShake?.(0.2, 0.35);
                 window.AudioManager?.playMetalStress?.({ volume: 0.62, playbackRate: 0.58, force: true });
                 window.dispatchEvent(new CustomEvent('boss-phase-changed', {
@@ -15352,12 +15884,25 @@ export class ThreeGame {
     }
 
     telegraphBiomeBossAttack(sprite, event) {
-        const radius = event.attack === 'radial_emp' ? 5.2
-            : event.attack === 'deep_freeze_wave' ? 5.8 : 4.5;
-        this.spawnFrostShockwaveEffect?.(sprite.position.x, sprite.position.z, radius);
+        const radius = {
+            radial_emp: 5.2,
+            deep_freeze_wave: 5.8,
+            corrupted_tank_slam: 5,
+            corrupted_tank_overload: 6.2,
+            corrupted_engineer_arc_net: 5.5
+        }[event.attack] ?? 4.5;
+        if (['radial_emp', 'deep_freeze_wave', 'corrupted_tank_slam', 'corrupted_tank_overload', 'corrupted_engineer_arc_net'].includes(event.attack)) {
+            this.spawnFrostShockwaveEffect?.(sprite.position.x, sprite.position.z, radius);
+        } else {
+            this.spawnPhysicalBurst?.(sprite.position.x, sprite.position.z, {
+                color: event.attack?.includes('scout') ? 0xff5a8a : 0x4de8ff,
+                count: 6,
+                upward: 0.12
+            });
+        }
         window.AudioManager?.play?.('ui_scan_ping', {
             volume: 0.48,
-            playbackRate: event.attack === 'mortar_volley' ? 1.35 : 0.38
+            playbackRate: event.attack === 'mortar_volley' || event.attack?.includes('scout') ? 1.35 : 0.38
         });
         window.dispatchEvent(new CustomEvent('boss-attack-telegraph', {
             detail: {
@@ -15375,10 +15920,23 @@ export class ThreeGame {
         const dz = this.player.position.z - sprite.position.z;
         const distance = Math.hypot(dx, dz);
         const angle = Math.atan2(dz, dx);
-        if (attackKey === 'mortar_volley' || attackKey === 'ice_needle_barrage') {
-            const speed = attackKey === 'ice_needle_barrage' ? 8.5 : 7.5;
-            for (const step of [-1, 0, 1]) {
-                const shotAngle = angle + step * (attackKey === 'ice_needle_barrage' ? 0.14 : 0.22);
+        if (['mortar_volley', 'ice_needle_barrage', 'corrupted_scout_burst', 'corrupted_scout_flank'].includes(attackKey)) {
+            if (attackKey === 'corrupted_scout_flank') {
+                const direction = (sprite.userData?.biomeBossFight?.attacksInPhase ?? 0) % 2 === 0 ? 1 : -1;
+                const flankX = sprite.position.x + Math.cos(angle + direction * Math.PI / 2) * 2.2;
+                const flankZ = sprite.position.z + Math.sin(angle + direction * Math.PI / 2) * 2.2;
+                if (this.isSnailTileWalkable?.(Math.round(flankX), Math.round(flankZ))) {
+                    sprite.position.x = flankX;
+                    sprite.position.z = flankZ;
+                }
+            }
+            const speed = attackKey === 'ice_needle_barrage' ? 8.5
+                : attackKey?.includes('scout') ? 9 : 7.5;
+            const spreadSteps = attackKey === 'corrupted_scout_flank' ? [-2, -1, 0, 1, 2] : [-1, 0, 1];
+            for (const step of spreadSteps) {
+                const spread = attackKey === 'ice_needle_barrage' ? 0.14
+                    : attackKey?.includes('scout') ? 0.16 : 0.22;
+                const shotAngle = angle + step * spread;
                 this.spawnProjectile({
                     x: sprite.position.x,
                     z: sprite.position.z,
@@ -15390,12 +15948,29 @@ export class ThreeGame {
                     isEnemy: true
                 });
             }
-        } else if (attackKey === 'radial_emp' || attackKey === 'deep_freeze_wave') {
-            const radius = attackKey === 'radial_emp' ? 5.2 : 5.8;
+        } else if (['radial_emp', 'deep_freeze_wave', 'corrupted_tank_slam', 'corrupted_tank_overload'].includes(attackKey)) {
+            const radius = attackKey === 'radial_emp' ? 5.2
+                : attackKey === 'deep_freeze_wave' ? 5.8
+                    : attackKey === 'corrupted_tank_overload' ? 6.2 : 5;
             this.spawnFrostShockwaveEffect?.(sprite.position.x, sprite.position.z, radius);
             if (distance <= radius) {
-                this.takeDamage?.(attackKey === 'radial_emp' ? 2 : 1, attackKey, sprite.position.x, sprite.position.z);
-                this.applyPlayerSlow?.(attackKey === 'deep_freeze_wave' ? 3 : 1.5);
+                const damage = attackKey === 'radial_emp' || attackKey?.includes('tank') ? 2 : 1;
+                this.takeDamage?.(damage, attackKey, sprite.position.x, sprite.position.z);
+                if (attackKey === 'deep_freeze_wave' || attackKey === 'corrupted_tank_overload') {
+                    this.applyPlayerSlow?.(attackKey === 'deep_freeze_wave' ? 3 : 1.75);
+                }
+            }
+        } else if (attackKey === 'corrupted_engineer_jam') {
+            this.applyPlayerSlow?.(2.5);
+            window.dispatchEvent(new CustomEvent('boss-signal-jam', {
+                detail: { boss: sprite.userData.type, duration: 2.5 }
+            }));
+        } else if (attackKey === 'corrupted_engineer_arc_net') {
+            const radius = 5.5;
+            this.spawnFrostShockwaveEffect?.(sprite.position.x, sprite.position.z, radius);
+            if (distance <= radius) {
+                this.takeDamage?.(1, attackKey, sprite.position.x, sprite.position.z);
+                this.applyPlayerSlow?.(3);
             }
         }
     }
@@ -18235,6 +18810,23 @@ export class ThreeGame {
             if (!camp.isWithinInteractRange(x, z)) continue;
             const record = this.getCampRecord(camp.id);
             const status = record?.status ?? camp.status ?? 'alive';
+
+            const hasCompanion = (this.companions ?? []).some((c) => c.isWanderer || c.wanderer);
+            if (hasCompanion && ['alive', 'robbed'].includes(status)) {
+                return {
+                    camp,
+                    action: 'settle-companion',
+                    label: `SETTLE SURVIVOR AT ${camp.label?.toUpperCase() || 'SAFE HAVEN'}`
+                };
+            }
+
+            if (['alive', 'robbed'].includes(status) && (camp.isWorkbench || camp.hasWorkbench)) {
+                return {
+                    camp,
+                    action: 'field-workbench',
+                    label: `FIELD WORKBENCH — CRAFT & REPAIR (${camp.label?.toUpperCase() || 'SAFE HAVEN'})`
+                };
+            }
             // Suspicion >= 50 locks the camp down: gates shut, barter and aid
             // refused, strobes running. Culls and breaches stay possible —
             // the lockdown is social, not physical. Dormant-phase camps never
@@ -18347,6 +18939,14 @@ export class ThreeGame {
             // is dayCycle's canRestNow(), the same rule every other bed asks.
             // It used to be an inline gate that additionally required an Act 2
             // `dormant` camp, which is why this verb almost never appeared.
+            if (['alive', 'robbed'].includes(status) && (phase === 'dormant' || !this.isAct2Active())) {
+                return {
+                    camp,
+                    action: 'field-workbench',
+                    label: `FIELD WORKBENCH — CRAFT & REPAIR (${camp.label?.toUpperCase() || 'SAFE HAVEN'})`
+                };
+            }
+
             const restCheck = this.canRestAt(camp, { status });
             if (restCheck.allowed) {
                 return {
@@ -18428,13 +19028,14 @@ export class ThreeGame {
 
     checkWandererSpawning() {
         if (this.performanceProfile !== 'gameplay' || this.loadingPaused || !this.player || this.isPlayerDead) return;
-        // A co-op run starts fresh (owner, 2026-09-24): the solo profile's
-        // recruited companion followed the host into co-op and only the host
-        // could see it. Companions and wanderers stay solo until networked.
-        if (coopRole(this) !== COOP_ROLE.SOLO) return;
+        // In multiplayer, guests do not simulate wanderer recruitment or arrivals;
+        // they receive networked companion state from the host.
+        if (coopRole(this) === COOP_ROLE.GUEST || this.multiplayerMode === 'pvp') return;
         if (this._wandererLoad || this._companionLoad || this.activeWanderer) return;
         const companion = this.wandererManager?.getActiveCompanion?.();
-        if (companion) {
+        // A fresh co-op session does not carry the host's solo profile companion.
+        // In co-op, crash site wanderers can spawn and be recruited in-session by the host.
+        if (companion && coopRole(this) === COOP_ROLE.SOLO) {
             if (!(this.companions ?? []).some((entry) => entry.isWanderer)) void this.addHumanoidCompanion(companion);
             return;
         }
@@ -18793,12 +19394,138 @@ export class ThreeGame {
         }
     }
 
+    settleCompanionAtCamp(camp) {
+        if (!camp || !this.companions?.length) return false;
+        const companionIndex = this.companions.findIndex((c) => c.isWanderer || c.wanderer);
+        if (companionIndex < 0) return false;
+
+        const companion = this.companions[companionIndex];
+        const wandererName = companion.wanderer?.name || companion.wanderer?.title || 'SURVIVOR';
+
+        companion.instance3d?.root?.removeFromParent?.();
+        companion.instance3d?.dispose?.();
+        this.companions.splice(companionIndex, 1);
+
+        this.act2?.adjustCampBond?.(camp.id, 1);
+        this.healPlayer?.(50);
+        this.addSalvageReward?.({ med: 25, coin: 15 });
+
+        const record = this.getCampRecord?.(camp.id);
+        if (record) {
+            record.settlers = record.settlers ?? [];
+            record.settlers.push({
+                name: wandererName,
+                settledAt: Date.now()
+            });
+        }
+
+        this.showBunkerLine?.(`${wandererName.toUpperCase()} SAFELY SETTLED AT ${camp.label?.toUpperCase() || 'SAFE HAVEN'}. CAMP BOND STRENGTHENED.`);
+        window.AudioManager?.play?.('fx_level_up', { volume: 0.5, playbackRate: 1.1 });
+
+        window.dispatchEvent(new CustomEvent('camp-settler-delivered', {
+            detail: {
+                campId: camp.id,
+                campLabel: camp.label,
+                wandererName
+            }
+        }));
+
+        window.dispatchEvent(new CustomEvent('expedition-report-item', {
+            detail: {
+                kind: 'settlement',
+                labelKey: 'ui.go.report.companion_settled',
+                params: { name: wandererName, camp: camp.label || camp.id }
+            }
+        }));
+        window.dispatchEvent(new CustomEvent('expedition-report-item', {
+            detail: {
+                kind: 'faction',
+                labelKey: 'ui.go.report.faction_bond_gained',
+                params: { faction: camp.label || camp.id, delta: '+1' }
+            }
+        }));
+
+        if (this.isMultiplayer) {
+            this.broadcastSharedWorldEvent?.('camp-settler-delivered', {
+                campId: camp.id,
+                wandererName
+            });
+        }
+
+        return true;
+    }
+
+    openFieldWorkbench(camp) {
+        if (!camp) return false;
+        this.showBunkerLine?.(`FIELD WORKBENCH ACCESSED // SAFE HAVEN FABRICATION LINK`);
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.5, playbackRate: 1.2 });
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('open-field-workbench', {
+                detail: {
+                    campId: camp.id,
+                    campLabel: camp.label,
+                    recipes: [
+                        { id: 'ammo_pack', name: 'Standard Munitions Pack', cost: { scrap: 15 }, effect: 'Refills 30 Ammo' },
+                        { id: 'med_patch', name: 'Emergency Bio-Suture', cost: { med: 20 }, effect: 'Restores 40 HP' },
+                        { id: 'suit_armor_plate', name: 'Reinforced Suit Plating', cost: { scrap: 25, tech: 10 }, effect: 'Repairs Suit Condition & +25 Shield' }
+                    ]
+                }
+            }));
+        }
+        return true;
+    }
+
+    craftFieldRecipe(recipeId) {
+        if (!recipeId) return false;
+        const bank = this.bank?.getState?.() ?? {};
+        if (recipeId === 'ammo_pack') {
+            const cost = 15;
+            if ((bank.scrap ?? 0) < cost) {
+                this.showBunkerLine?.('WORKBENCH: INSUFFICIENT SCRAP FOR AMMO PACK');
+                return false;
+            }
+            this.bank?.spend?.({ scrap: cost });
+            this.currentClip = this.maxClip;
+            this.totalAmmo = Math.min(this.maxTotalAmmo, (this.totalAmmo ?? 0) + 30);
+            this.emitAmmoState?.();
+            this.showBunkerLine?.('WORKBENCH: MUNITIONS PACK SYNTHESIZED');
+            window.AudioManager?.play?.('weapon_reload', { volume: 0.6 });
+            return true;
+        } else if (recipeId === 'med_patch') {
+            const cost = 20;
+            if ((bank.med ?? 0) < cost) {
+                this.showBunkerLine?.('WORKBENCH: INSUFFICIENT MED SUPPLIES FOR SUTURE');
+                return false;
+            }
+            this.bank?.spend?.({ med: cost });
+            this.healPlayer?.(40);
+            this.showBunkerLine?.('WORKBENCH: EMERGENCY SUTURE APPLIED (+40 HP)');
+            window.AudioManager?.play?.('fx_level_up', { volume: 0.5, playbackRate: 1.3 });
+            return true;
+        } else if (recipeId === 'suit_armor_plate') {
+            if ((bank.scrap ?? 0) < 25 || (bank.tech ?? 0) < 10) {
+                this.showBunkerLine?.('WORKBENCH: INSUFFICIENT MATERIALS FOR ARMOR PLATING');
+                return false;
+            }
+            this.bank?.spend?.({ scrap: 25, tech: 10 });
+            this.playerShieldHp = Math.min(this.playerShieldMax || 50, (this.playerShieldHp ?? 0) + 25);
+            this.emitHealthState?.();
+            this.showBunkerLine?.('WORKBENCH: SUIT PLATING REINFORCED (+25 SHIELD)');
+            window.AudioManager?.play?.('turret_reprogram', { volume: 0.5 });
+            return true;
+        }
+        return false;
+    }
+
     interactWithAct2Camp() {
         if (!this.isGameplayInputActive() || !this.player || !this.act2) return false;
         const actionable = this.getActionableCampAt(this.player.position.x, this.player.position.z);
         if (!actionable) return false;
         const { camp, action } = actionable;
 
+        if (action === 'field-workbench') return this.openFieldWorkbench(camp);
+        if (action === 'settle-companion') return this.settleCompanionAtCamp(camp);
         if (action === 'treat-scar') return this.treatScarAtCamp(camp, actionable.scarId);
         if (action === 'shore-up') return this.shoreUpCamp(camp);
         if (action === 'package-deal') return this.negotiatePackageDeal(camp, actionable.step);
@@ -19622,6 +20349,11 @@ export class ThreeGame {
         this.playerVitals.o2HealthTimer = 0;
         this.isPlayerDead = false;
         this.isPlayerDowned = false;
+        this.syncCombatSignal(this.combatSignal?.reset() ?? {
+            active: false,
+            changed: Boolean(this.inCombat),
+            source: null
+        });
         this.player3dOverlay?.setDowned?.(false);
         this.o2DispatchTimer = 0;
         this._lastLoopStepKey = null;
@@ -19679,6 +20411,29 @@ export class ThreeGame {
         }
     }
 
+    syncCombatSignal(result) {
+        this.inCombat = Boolean(result?.active);
+        if (!result?.changed || typeof window === 'undefined') return this.inCombat;
+        window.dispatchEvent(new CustomEvent('combat-state-changed', {
+            detail: {
+                active: this.inCombat,
+                source: result.source ?? null,
+                quietWindowSeconds: this.combatSignal?.windowSeconds ?? 0
+            }
+        }));
+        return this.inCombat;
+    }
+
+    markCombatActivity(source) {
+        if (!this.combatSignal) this.combatSignal = new CombatSignal();
+        return this.syncCombatSignal(this.combatSignal.mark(source));
+    }
+
+    updateCombatSignal(delta) {
+        if (!this.combatSignal) this.combatSignal = new CombatSignal();
+        return this.syncCombatSignal(this.combatSignal.update(delta));
+    }
+
     isPlayerInjured() {
         const maxHp = this.playerVitals?.maxHp;
         if (!Number.isFinite(maxHp) || maxHp <= 0) return false;
@@ -19702,6 +20457,7 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('player-o2-changed', {
             detail: {
                 o2: this.playerVitals.o2,
+                maxO2: this.playerVitals.maxO2,
                 bubbleActive: generatorState.isOnline,
                 safe: Boolean(this._wasInBubble),
                 drainRate: Math.max(0, Number(this._currentO2DrainRate) || 0),
@@ -21480,6 +22236,30 @@ export class ThreeGame {
             }
             return false;
         }
+
+        if (this.act2 && this.isAct2Active?.()) {
+            const hasBioFilter = (this.runRelics ?? []).some((r) => r.id === 'spore_filter' || r.id === 'relic_spore_filter');
+            const infReason = String(reason || '').toLowerCase();
+            let infectionGain = 0;
+            if (infReason.includes('queen') || infReason.includes('psychic')) {
+                infectionGain = 10;
+            } else if (infReason.includes('spore') || infReason.includes('caustic') || infReason.includes('poison') || infReason.includes('hive') || infReason.includes('crawler') || infReason.includes('spitter')) {
+                infectionGain = hasBioFilter ? 1 : 3;
+            }
+            if (infectionGain > 0) {
+                const prevStage = this.act2.getState?.()?.infectionStage;
+                this.act2.addInfection(infectionGain);
+                const nextState = this.act2.getState?.();
+                if (nextState?.infectionStage && nextState.infectionStage !== prevStage) {
+                    if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('infection-stage-changed', {
+                            detail: { stage: nextState.infectionStage, load: nextState.infectionLoad }
+                        }));
+                        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.5, playbackRate: 0.6 });
+                    }
+                }
+            }
+        }
         this.falseTelemetryTimer = Math.max(
             this.falseTelemetryTimer ?? 0,
             applyFalseTelemetryAggroDrop(
@@ -21490,6 +22270,7 @@ export class ThreeGame {
             )
         );
         this.player3dOverlay?.trigger('hit');
+        this.markCombatActivity?.('player-damaged');
 
         if (sourceX != null && sourceZ != null) {
             this.showDirectionalHitIndicator(sourceX, sourceZ);
@@ -21504,7 +22285,9 @@ export class ThreeGame {
                 amount: previousHp - this.playerVitals.hp,
                 hp: this.playerVitals.hp,
                 maxHp: this.playerVitals.maxHp,
-                reason
+                reason,
+                sourceX,
+                sourceZ
             }
         }));
 
@@ -23142,6 +23925,14 @@ export class ThreeGame {
         // Update kinetic control timers
         this.dashCooldownTimer = Math.max(0, (this.dashCooldownTimer ?? 0) - delta);
         this.meleeCooldownTimer = Math.max(0, (this.meleeCooldownTimer ?? 0) - delta);
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('dash-cooldown-tick', {
+                detail: { remaining: this.dashCooldownTimer, max: 1.1 }
+            }));
+            window.dispatchEvent(new CustomEvent('melee-cooldown-tick', {
+                detail: { remaining: this.meleeCooldownTimer, max: 0.8 }
+            }));
+        }
         this._scoutSlipstreamTimer = Math.max(0, (this._scoutSlipstreamTimer ?? 0) - delta);
         this.iFrameTimer = Math.max(0, (this.iFrameTimer ?? 0) - delta);
         this.spawnInvulnerabilityTimer = Math.max(0, (this.spawnInvulnerabilityTimer ?? 0) - delta);
@@ -24238,7 +25029,7 @@ export class ThreeGame {
             this.ambientLight.intensity *= GATE_CHALLENGE_TUNING.blackoutLightMultiplier;
             this.directionalLight.intensity *= GATE_CHALLENGE_TUNING.blackoutLightMultiplier;
         }
-        const minAmbientFloor = blackout ? 0.22 : atmosphere?.sparking ? 0.3 : 0.45;
+        const minAmbientFloor = blackout ? 0.18 : atmosphere?.sparking ? 0.25 : 0.35;
         if (this.ambientLight.intensity < minAmbientFloor) {
             this.ambientLight.intensity = minAmbientFloor;
         }
@@ -26520,6 +27311,75 @@ export class ThreeGame {
         if (this.handleMenuPointerMove) window.removeEventListener('pointermove', this.handleMenuPointerMove);
     }
 
+    updateRoomCutawaysForCamera({ force = false } = {}) {
+        const quadrant = cameraCutawayQuadrant(
+            this.cameraAzimuth,
+            this._roomCutawayQuadrant
+        );
+        if (!force && quadrant === this._roomCutawayQuadrant) return 0;
+        this._roomCutawayQuadrant = quadrant;
+        const wallQuaternion = new THREE.Quaternion();
+        const changedWallPools = new Set();
+        let changed = 0;
+
+        for (const group of this.chunkMeshes?.values?.() ?? []) {
+            const presentation = group.userData?.roomCutawayPresentation;
+            if (!presentation || (!force && presentation.quadrant === quadrant)) continue;
+            const cutawayKeys = presentation.cutawayWallKeysByQuadrant?.[quadrant] ?? new Set();
+
+            for (const record of presentation.wallRecords ?? []) {
+                const state = record.roomWallPresentation;
+                if (!state || !record.instancedMesh || record.instanceIndex < 0) continue;
+                const isCutaway = !record.destroyed && cutawayKeys.has(record.wallKey);
+                const visualHeightScale = isCutaway
+                    ? ROOM_CUTAWAY_HEIGHT / this.wallHeight
+                    : state.fullHeightScale;
+                const wallMatrix = record.destroyed
+                    ? new THREE.Matrix4().makeScale(0, 0, 0)
+                    : new THREE.Matrix4().compose(
+                        new THREE.Vector3(
+                            record.worldX + state.offsetX,
+                            (this.wallHeight * visualHeightScale) / 2,
+                            record.worldZ + state.offsetZ
+                        ),
+                        wallQuaternion.setFromEuler(new THREE.Euler(0, state.rotationY, 0)),
+                        new THREE.Vector3(1, visualHeightScale, 1)
+                    );
+                record.instancedMesh.setMatrixAt(record.instanceIndex, wallMatrix);
+                changedWallPools.add(record.instancedMesh);
+
+                const capIndex = presentation.capIndexByWallKey?.get(record.wallKey);
+                if (Number.isInteger(capIndex)) {
+                    const capMatrix = isCutaway
+                        ? new THREE.Matrix4().compose(
+                            new THREE.Vector3(
+                                record.worldX + state.offsetX,
+                                ROOM_CUTAWAY_HEIGHT + 0.04,
+                                record.worldZ + state.offsetZ
+                            ),
+                            wallQuaternion.setFromEuler(new THREE.Euler(0, state.rotationY, 0)),
+                            new THREE.Vector3(1, 1, 1)
+                        )
+                        : new THREE.Matrix4().makeScale(0, 0, 0);
+                    presentation.capPool.setMatrixAt(capIndex, capMatrix);
+                }
+                changed += 1;
+            }
+
+            presentation.capPool.instanceMatrix.needsUpdate = true;
+            presentation.capPool.computeBoundingBox?.();
+            presentation.capPool.computeBoundingSphere?.();
+            presentation.quadrant = quadrant;
+        }
+
+        for (const pool of changedWallPools) {
+            pool.instanceMatrix.needsUpdate = true;
+            pool.computeBoundingBox?.();
+            pool.computeBoundingSphere?.();
+        }
+        return changed;
+    }
+
     updateCamera(delta) {
         const pointerOrbitDelta = this._cameraOrbitPointerDelta ?? 0;
         this._cameraOrbitPointerDelta = 0;
@@ -26571,6 +27431,7 @@ export class ThreeGame {
             this.cameraLift,
             this.cameraOrbitRadius * Math.cos(this.cameraAzimuth)
         );
+        this.updateRoomCutawaysForCamera?.();
 
         const cinematicFocus = this._cinematicCameraFocus;
         if (this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person') {
@@ -26886,10 +27747,26 @@ export class ThreeGame {
 
         for (const group of this.chunkMeshes.values()) {
             if (!group.visible) continue;
-            for (const child of group.children) {
-                if (child.userData.isWall) this.wallMeshes.push(child);
-                if (child.userData.isPickup) this.pickupMeshes.push(child);
-                if (child.userData.isScatter) this.scatterSprites.push(child);
+            const userData = group.userData;
+            if (userData?.walls) {
+                const walls = userData.walls;
+                for (let i = 0; i < walls.length; i++) this.wallMeshes.push(walls[i]);
+                const pickups = userData.pickups;
+                for (let i = 0; i < pickups.length; i++) {
+                    const p = pickups[i];
+                    if (p.parent) this.pickupMeshes.push(p);
+                }
+                const scatters = userData.scatters;
+                for (let i = 0; i < scatters.length; i++) {
+                    const s = scatters[i];
+                    if (s.parent) this.scatterSprites.push(s);
+                }
+            } else {
+                for (const child of group.children ?? []) {
+                    if (child.userData?.isWall) this.wallMeshes.push(child);
+                    if (child.userData?.isPickup) this.pickupMeshes.push(child);
+                    if (child.userData?.isScatter) this.scatterSprites.push(child);
+                }
             }
         }
     }
@@ -27181,10 +28058,12 @@ export class ThreeGame {
         });
         if (family) {
             const atlasOffset = atlasSlot;
+            const wetness = ROOM_FLOOR_WETNESS[style] ?? 0.45;
             material.onBeforeCompile = (shader) => {
                 shader.uniforms.uRoomAtlasOffset = {
                     value: new THREE.Vector2(atlasOffset.x, atlasOffset.y)
                 };
+                shader.uniforms.uRoomWetness = { value: wetness };
                 shader.vertexShader = shader.vertexShader.replace(
                     'void main() {',
                     `
@@ -27206,6 +28085,25 @@ export class ThreeGame {
                 shader.fragmentShader = `
                     varying vec3 vRoomFloorWorldPos;
                     uniform vec2 uRoomAtlasOffset;
+                    uniform float uRoomWetness;
+                    float hbRoomWetHash(vec2 point) {
+                        return fract(sin(dot(point, vec2(127.1, 311.7))) * 43758.5453123);
+                    }
+                    float hbRoomWetNoise(vec2 point) {
+                        vec2 cell = floor(point);
+                        vec2 blend = fract(point);
+                        blend = blend * blend * (3.0 - 2.0 * blend);
+                        return mix(
+                            mix(hbRoomWetHash(cell), hbRoomWetHash(cell + vec2(1.0, 0.0)), blend.x),
+                            mix(hbRoomWetHash(cell + vec2(0.0, 1.0)), hbRoomWetHash(cell + vec2(1.0, 1.0)), blend.x),
+                            blend.y
+                        );
+                    }
+                    float hbRoomWetMask(vec2 worldXZ) {
+                        float broad = hbRoomWetNoise(worldXZ * 0.32);
+                        float breakup = hbRoomWetNoise(worldXZ * 0.91 + vec2(17.0, 31.0));
+                        return smoothstep(0.57, 0.78, broad * 0.78 + breakup * 0.22);
+                    }
                     ${shader.fragmentShader}
                 `;
                 shader.fragmentShader = shader.fragmentShader.replace(
@@ -27223,15 +28121,348 @@ export class ThreeGame {
                             sampledDiffuseColor = sRGBTransferEOTF(sampledDiffuseColor);
                         #endif
                         diffuseColor *= sampledDiffuseColor;
+                        float hbRoomWet = hbRoomWetMask(vRoomFloorWorldPos.xz) * uRoomWetness;
+                        diffuseColor.rgb *= mix(1.0, 0.78, hbRoomWet);
                     #endif
+                    `
+                );
+                shader.fragmentShader = shader.fragmentShader.replace(
+                    '#include <roughnessmap_fragment>',
+                    `
+                    #include <roughnessmap_fragment>
+                    float hbRoomWetRoughness = hbRoomWetMask(vRoomFloorWorldPos.xz) * uRoomWetness;
+                    roughnessFactor = mix(roughnessFactor, 0.1, hbRoomWetRoughness);
                     `
                 );
             };
             material.customProgramCacheKey = () => `room-floor-world-uv:${family}`;
+            material.userData.roomWetness = wetness;
         }
         material.userData.ownsRoomAtlasTexture = Boolean(family);
         this.roomFloorMaterials.set(key, material);
         return material;
+    }
+
+    addRoomPracticalLighting(group, chunkX, chunkY, metadata) {
+        const rooms = metadata?.roomInstances ?? [];
+        if (!group || rooms.length === 0 || !this.roomLightFixtureGeometry) return;
+        const centerX = chunkX * this.chunkSize + this.chunkSize * 0.5;
+        const centerZ = chunkY * this.chunkSize + this.chunkSize * 0.5;
+        const biome = this.getBiomeKeyForWorldPosition(centerX, centerZ);
+        const matricesByPalette = new Map();
+        const housingMatrices = [];
+        const rotation = new THREE.Quaternion();
+        const scale = new THREE.Vector3(1, 1, 1);
+
+        for (const room of rooms) {
+            const plan = planRoomPracticalLights(room, { biome });
+            for (const fixture of plan.fixtures) {
+                if (!matricesByPalette.has(fixture.paletteKey)) matricesByPalette.set(fixture.paletteKey, []);
+                rotation.setFromEuler(new THREE.Euler(0, fixture.rotationY, 0));
+                housingMatrices.push(new THREE.Matrix4().compose(
+                    new THREE.Vector3(
+                        chunkX * this.chunkSize + fixture.x,
+                        this.wallHeight - 0.38,
+                        chunkY * this.chunkSize + fixture.z
+                    ),
+                    rotation,
+                    scale
+                ));
+                matricesByPalette.get(fixture.paletteKey).push(new THREE.Matrix4().compose(
+                    new THREE.Vector3(
+                        chunkX * this.chunkSize + fixture.x,
+                        this.wallHeight - 0.31,
+                        chunkY * this.chunkSize + fixture.z
+                    ),
+                    rotation,
+                    scale
+                ));
+            }
+            if (plan.proxy) {
+                const source = new THREE.PointLight(
+                    plan.proxy.color,
+                    plan.proxy.intensity,
+                    plan.proxy.distance,
+                    2
+                );
+                source.position.set(
+                    chunkX * this.chunkSize + plan.proxy.x,
+                    2.15,
+                    chunkY * this.chunkSize + plan.proxy.z
+                );
+                source.userData = { isRoomPracticalLightSource: true, roomId: room.id };
+                group.add(source);
+                this.registerEnvLight?.(source);
+            }
+        }
+
+        if (housingMatrices.length > 0) {
+            const housings = new THREE.InstancedMesh(
+                this.roomLightHousingGeometry,
+                this.roomLightHousingMaterial,
+                housingMatrices.length
+            );
+            housingMatrices.forEach((matrix, index) => housings.setMatrixAt(index, matrix));
+            housings.instanceMatrix.needsUpdate = true;
+            housings.castShadow = false;
+            housings.receiveShadow = true;
+            housings.userData = {
+                isRoomPracticalLightHousingPool: true,
+                housingCount: housingMatrices.length
+            };
+            group.add(housings);
+        }
+
+        for (const [paletteKey, matrices] of matricesByPalette) {
+            if (!matrices.length) continue;
+            const material = this.roomLightFixtureMaterials.get(paletteKey)
+                ?? this.roomLightFixtureMaterials.get('active');
+            const fixtures = new THREE.InstancedMesh(
+                this.roomLightFixtureGeometry,
+                material,
+                matrices.length
+            );
+            matrices.forEach((matrix, index) => fixtures.setMatrixAt(index, matrix));
+            fixtures.instanceMatrix.needsUpdate = true;
+            fixtures.castShadow = false;
+            fixtures.receiveShadow = false;
+            fixtures.userData = {
+                isRoomPracticalLightFixturePool: true,
+                paletteKey,
+                fixtureCount: matrices.length
+            };
+            group.add(fixtures);
+        }
+    }
+
+    addRoomRoleDisplays(group, chunkX, chunkY, metadata) {
+        const rooms = metadata?.roomInstances ?? [];
+        if (!group || rooms.length === 0 || !this.roomRoleDisplayGeometry) return;
+        const centerX = chunkX * this.chunkSize + this.chunkSize * 0.5;
+        const centerZ = chunkY * this.chunkSize + this.chunkSize * 0.5;
+        const biome = this.getBiomeKeyForWorldPosition(centerX, centerZ);
+        const housings = [];
+        const screens = [];
+        const displayFamilies = new Set();
+        const rotation = new THREE.Quaternion();
+
+        for (const room of rooms) {
+            const plan = planRoomRoleDisplay(room, { biome });
+            if (!plan) continue;
+            displayFamilies.add(plan.family);
+            rotation.setFromEuler(new THREE.Euler(0, plan.rotationY, 0));
+            const worldX = chunkX * this.chunkSize + plan.x;
+            const worldZ = chunkY * this.chunkSize + plan.z;
+            housings.push(new THREE.Matrix4().compose(
+                new THREE.Vector3(worldX, 1.42, worldZ),
+                rotation,
+                new THREE.Vector3(plan.width, plan.height, 0.11)
+            ));
+            for (const screen of plan.screens) {
+                const screenX = worldX + (plan.wall === 'north' ? screen.offset : 0.065);
+                const screenZ = worldZ + (plan.wall === 'west' ? screen.offset : 0.065);
+                screens.push({
+                    color: screen.color,
+                    matrix: new THREE.Matrix4().compose(
+                        new THREE.Vector3(screenX, 1.42, screenZ),
+                        rotation,
+                        new THREE.Vector3(screen.width, screen.height, 0.035)
+                    )
+                });
+            }
+        }
+
+        if (housings.length > 0) {
+            const housingPool = new THREE.InstancedMesh(
+                this.roomRoleDisplayGeometry,
+                this.roomRoleDisplayHousingMaterial,
+                housings.length
+            );
+            housings.forEach((matrix, index) => housingPool.setMatrixAt(index, matrix));
+            housingPool.instanceMatrix.needsUpdate = true;
+            housingPool.receiveShadow = true;
+            housingPool.userData = {
+                isRoomRoleDisplayHousingPool: true,
+                housingCount: housings.length,
+                displayFamilies: [...displayFamilies]
+            };
+            group.add(housingPool);
+        }
+
+        if (screens.length > 0) {
+            const screenPool = new THREE.InstancedMesh(
+                this.roomRoleDisplayGeometry,
+                this.roomRoleDisplayScreenMaterial,
+                screens.length
+            );
+            screens.forEach((screen, index) => {
+                screenPool.setMatrixAt(index, screen.matrix);
+                screenPool.setColorAt(index, new THREE.Color(screen.color));
+            });
+            screenPool.instanceMatrix.needsUpdate = true;
+            screenPool.instanceColor.needsUpdate = true;
+            screenPool.userData = {
+                isRoomRoleDisplayScreenPool: true,
+                screenCount: screens.length,
+                displayFamilies: [...displayFamilies]
+            };
+            group.add(screenPool);
+        }
+    }
+
+    addHallwayRouteDressing(group, chunkX, chunkY, metadata, grid) {
+        const plans = planHallwayRouteDressing(metadata, grid);
+        if (!group || plans.length === 0 || !this.hallwayDressingGeometry) return;
+        const structures = [];
+        const cables = [];
+        const signals = [];
+        const originX = chunkX * this.chunkSize;
+        const originZ = chunkY * this.chunkSize;
+        const rotation = new THREE.Quaternion();
+        const localOffset = new THREE.Vector3();
+        const worldPosition = new THREE.Vector3();
+
+        const matrixFor = (plan, offsetX, y, offsetZ, scaleX, scaleY, scaleZ) => {
+            rotation.setFromEuler(new THREE.Euler(0, plan.rotationY, 0));
+            localOffset.set(offsetX, 0, offsetZ).applyQuaternion(rotation);
+            worldPosition.set(originX + plan.x + localOffset.x, y, originZ + plan.z + localOffset.z);
+            return new THREE.Matrix4().compose(
+                worldPosition.clone(),
+                rotation.clone(),
+                new THREE.Vector3(scaleX, scaleY, scaleZ)
+            );
+        };
+
+        for (const plan of plans) {
+            const span = Math.max(1.6, plan.width + 0.34);
+            const edge = span * 0.5;
+            if (plan.structure === 'rail') {
+                structures.push(matrixFor(plan, -edge, 0.72, 0, 0.1, 1.35, 0.1));
+                structures.push(matrixFor(plan, edge, 0.72, 0, 0.1, 1.35, 0.1));
+                structures.push(matrixFor(plan, -edge, 1.18, 0, 0.08, 0.08, 2.7));
+                structures.push(matrixFor(plan, edge, 1.18, 0, 0.08, 0.08, 2.7));
+            } else {
+                structures.push(matrixFor(plan, 0, this.wallHeight - 0.22, 0, span, 0.1, 0.12));
+                structures.push(matrixFor(plan, -edge, 1.16, 0, 0.1, 2.25, 0.12));
+                structures.push(matrixFor(plan, edge, 1.16, 0, 0.1, 2.25, 0.12));
+            }
+            for (let index = 0; index < plan.cableCount; index += 1) {
+                const side = index % 2 === 0 ? -1 : 1;
+                cables.push(matrixFor(plan, side * (edge - 0.16), 2.18 - index * 0.11, 0, 0.055, 0.055, 2.8));
+            }
+            const signalSpacing = 0.23;
+            const signalStart = -((plan.signalCount - 1) * signalSpacing) / 2;
+            for (let index = 0; index < plan.signalCount; index += 1) {
+                signals.push({
+                    color: plan.signalColor,
+                    matrix: matrixFor(
+                        plan,
+                        signalStart + index * signalSpacing,
+                        plan.structure === 'rail' ? 1.2 : this.wallHeight - 0.14,
+                        0.075,
+                        0.15,
+                        0.07,
+                        0.035
+                    )
+                });
+            }
+        }
+
+        const addPool = (matrices, material, userData) => {
+            if (matrices.length === 0) return;
+            const pool = new THREE.InstancedMesh(this.hallwayDressingGeometry, material, matrices.length);
+            matrices.forEach((entry, index) => pool.setMatrixAt(index, entry.matrix ?? entry));
+            pool.instanceMatrix.needsUpdate = true;
+            pool.castShadow = false;
+            pool.receiveShadow = material !== this.hallwaySignalMaterial;
+            pool.userData = userData;
+            group.add(pool);
+            return pool;
+        };
+
+        addPool(structures, this.hallwayDressingMaterial, {
+            isHallwayRouteStructurePool: true,
+            structureCount: structures.length,
+            markerCount: plans.length
+        });
+        addPool(cables, this.hallwayCableMaterial, {
+            isHallwayRouteCablePool: true,
+            cableCount: cables.length
+        });
+        const signalPool = addPool(signals, this.hallwaySignalMaterial, {
+            isHallwayRouteSignalPool: true,
+            signalCount: signals.length,
+            lightingRhythms: [...new Set(plans.map((plan) => plan.lightingRhythm))]
+        });
+        signals.forEach((signal, index) => signalPool?.setColorAt(index, new THREE.Color(signal.color)));
+        if (signalPool?.instanceColor) signalPool.instanceColor.needsUpdate = true;
+    }
+
+    addRoomThresholdMarkings(group, chunkX, chunkY, metadata) {
+        const rooms = metadata?.roomInstances ?? [];
+        if (!group || rooms.length === 0 || !this.roomThresholdMarkingGeometry) return;
+        const centerX = chunkX * this.chunkSize + this.chunkSize * 0.5;
+        const centerZ = chunkY * this.chunkSize + this.chunkSize * 0.5;
+        const biome = this.getBiomeKeyForWorldPosition(centerX, centerZ);
+        const markings = rooms.flatMap((room) => planRoomThresholdMarkings(room, { biome }));
+        if (markings.length === 0) return;
+        const pool = new THREE.InstancedMesh(
+            this.roomThresholdMarkingGeometry,
+            this.roomThresholdMarkingMaterial,
+            markings.length
+        );
+        markings.forEach((marking, index) => {
+            pool.setMatrixAt(index, new THREE.Matrix4().compose(
+                new THREE.Vector3(
+                    chunkX * this.chunkSize + marking.x,
+                    0.025,
+                    chunkY * this.chunkSize + marking.z
+                ),
+                new THREE.Quaternion().setFromEuler(new THREE.Euler(0, marking.rotationY, 0)),
+                new THREE.Vector3(0.42, 0.025, 0.075)
+            ));
+            pool.setColorAt(index, new THREE.Color(marking.color));
+        });
+        pool.instanceMatrix.needsUpdate = true;
+        pool.instanceColor.needsUpdate = true;
+        pool.userData = {
+            isRoomThresholdMarkingPool: true,
+            markingCount: markings.length,
+            roles: [...new Set(markings.map((marking) => marking.role))]
+        };
+        group.add(pool);
+    }
+
+    addRoomEnvironmentalDrips(group, chunkX, chunkY, metadata) {
+        const rooms = metadata?.roomInstances ?? [];
+        if (!group || rooms.length === 0 || !this.environmentDripGeometry) return;
+        const centerX = chunkX * this.chunkSize + this.chunkSize * 0.5;
+        const centerZ = chunkY * this.chunkSize + this.chunkSize * 0.5;
+        const biome = this.getBiomeKeyForWorldPosition(centerX, centerZ);
+        const drips = rooms.flatMap((room) => planRoomEnvironmentalDrips(room, { biome }));
+        if (drips.length === 0) return;
+        const pool = new THREE.InstancedMesh(
+            this.environmentDripGeometry,
+            this.environmentDripMaterial,
+            drips.length
+        );
+        drips.forEach((drip, index) => {
+            pool.setMatrixAt(index, new THREE.Matrix4().makeTranslation(
+                chunkX * this.chunkSize + drip.x,
+                this.wallHeight - 0.34,
+                chunkY * this.chunkSize + drip.z
+            ));
+            pool.setColorAt(index, new THREE.Color(drip.color));
+        });
+        pool.instanceMatrix.needsUpdate = true;
+        pool.instanceColor.needsUpdate = true;
+        pool.frustumCulled = false;
+        pool.userData = {
+            isRoomEnvironmentalDripPool: true,
+            dripCount: drips.length,
+            biome
+        };
+        group.add(pool);
     }
 
     addRoomSurfaceOverlays(group, chunkX, chunkY, metadata) {
@@ -27442,7 +28673,9 @@ export class ThreeGame {
         variant = 'standard',
         heightScale = 1,
         roomId = null,
-        roomWallStyle = null
+        roomWallStyle = null,
+        roomBoundary = false,
+        roomWallPresentation = null
     } = {}) {
         const maxHp = this.getWallMaxHp({ landform, variant, heightScale });
         const record = {
@@ -27462,6 +28695,8 @@ export class ThreeGame {
             chunkKey: `${chunkX},${chunkY}`,
             roomId,
             roomWallStyle,
+            roomBoundary,
+            roomWallPresentation,
             destroyed: false,
             instancedMesh: null,
             instanceIndex: -1
@@ -27693,6 +28928,16 @@ export class ThreeGame {
             if (this.wallMeshes) {
                 this.wallMeshes = this.wallMeshes.filter((candidate) => candidate !== wallMesh);
             }
+        }
+        const cutawayPresentation = this.chunkMeshes?.get?.(coord.key)
+            ?.userData?.roomCutawayPresentation;
+        const capIndex = cutawayPresentation?.capIndexByWallKey?.get?.(wallKey);
+        if (Number.isInteger(capIndex)) {
+            cutawayPresentation.capPool.setMatrixAt(
+                capIndex,
+                new THREE.Matrix4().makeScale(0, 0, 0)
+            );
+            cutawayPresentation.capPool.instanceMatrix.needsUpdate = true;
         }
         this._chunkRoomTypeCache?.delete(coord.key);
         this._chunkTemplateCache?.delete(coord.key);
@@ -28388,11 +29633,76 @@ export class ThreeGame {
     mountChunk(chunkX, chunkY) {
         const grid = this.getOrCreateChunk(chunkX, chunkY);
         const group = new THREE.Group();
+        const walls = [];
+        const pickups = [];
+        const scatters = [];
+        group.userData.walls = walls;
+        group.userData.pickups = pickups;
+        group.userData.scatters = scatters;
+
+        const origAdd = group.add.bind(group);
+        group.add = (...objects) => {
+            const res = origAdd(...objects);
+            for (let i = 0; i < objects.length; i++) {
+                const obj = objects[i];
+                if (obj?.userData?.isWall && !walls.includes(obj)) walls.push(obj);
+                if (obj?.userData?.isPickup && !pickups.includes(obj)) pickups.push(obj);
+                if (obj?.userData?.isScatter && !scatters.includes(obj)) scatters.push(obj);
+            }
+            return res;
+        };
+
+        const origRemove = group.remove.bind(group);
+        group.remove = (...objects) => {
+            const res = origRemove(...objects);
+            for (let i = 0; i < objects.length; i++) {
+                const obj = objects[i];
+                if (obj?.userData?.isWall) {
+                    const idx = walls.indexOf(obj);
+                    if (idx !== -1) walls.splice(idx, 1);
+                }
+                if (obj?.userData?.isPickup) {
+                    const idx = pickups.indexOf(obj);
+                    if (idx !== -1) pickups.splice(idx, 1);
+                }
+                if (obj?.userData?.isScatter) {
+                    const idx = scatters.indexOf(obj);
+                    if (idx !== -1) scatters.splice(idx, 1);
+                }
+            }
+            return res;
+        };
 
         // Landform-specific wall dressing: ruins are mostly toppled short
         // walls, field outcrops read as tilted rock, canyon ridges stand
         // tall and unbroken. Same shared geometries, different mix.
         const landform = this.getChunkLandform(chunkX, chunkY);
+        const chunkRoomMetadata = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
+        const cutawayQuadrant = this._roomCutawayQuadrant
+            ?? cameraCutawayQuadrant(this.cameraAzimuth);
+        const roomBoundaryWallCells = new Set(
+            (chunkRoomMetadata?.roomInstances ?? []).flatMap((room) => (
+                planRoomBoundaryCells(room, grid)
+                    .map((cell) => `${cell.x},${cell.y}`)
+            ))
+        );
+        const cutawayWallKeysByQuadrant = Object.fromEntries(
+            ['se', 'sw', 'ne', 'nw'].map((quadrant) => [
+                quadrant,
+                new Set((chunkRoomMetadata?.roomInstances ?? []).flatMap((room) => (
+                    planRoomCutawayCells(room, grid, quadrant).map((cell) => this.getWallKey(
+                        chunkX * this.chunkSize + cell.x,
+                        chunkY * this.chunkSize + cell.y
+                    ))
+                )))
+            ])
+        );
+        const foregroundRoomWallCells = new Set(
+            [...(cutawayWallKeysByQuadrant[cutawayQuadrant] ?? [])].map((wallKey) => {
+                const [worldX, worldZ] = wallKey.split(',').map(Number);
+                return `${worldX - chunkX * this.chunkSize},${worldZ - chunkY * this.chunkSize}`;
+            })
+        );
         this.maybeSpawnChunkLoreDrop(chunkX, chunkY, grid, landform);
         // holeCut is derived from the shared getHoleCutForLandform helper so
         // this render pass can never drift from isHoleTile's collision/fall
@@ -28520,6 +29830,37 @@ export class ThreeGame {
             chunkY,
             this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
         );
+        this.addRoomPracticalLighting(
+            group,
+            chunkX,
+            chunkY,
+            this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
+        );
+        this.addRoomRoleDisplays(
+            group,
+            chunkX,
+            chunkY,
+            this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
+        );
+        this.addRoomThresholdMarkings(
+            group,
+            chunkX,
+            chunkY,
+            this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
+        );
+        this.addRoomEnvironmentalDrips(
+            group,
+            chunkX,
+            chunkY,
+            this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
+        );
+        this.addHallwayRouteDressing(
+            group,
+            chunkX,
+            chunkY,
+            this.wfcMetadataCache?.get(`${chunkX},${chunkY}`),
+            grid
+        );
         if (chunkX === 0 && chunkY === 0) this.addCrashRoomSurfaceOverlay(group, grid);
         if (landform === LANDFORMS.MAZE) this.addHallwaySurfaceOverlay(group, chunkX, chunkY, grid);
         this.addDoorThresholdSurfaceOverlay(
@@ -28594,7 +29935,11 @@ export class ThreeGame {
                 candidate.wallCells?.some((cell) => cell.x === localX && cell.y === localY)
             ));
             const roomStyleId = ROOM_WALL_STYLE_ID[room?.themeConfig?.wallStyle] ?? 0;
-            roomStyleIdCache.set(cacheKey, { roomStyleId, roomId: room?.id ?? null, roomWallStyle: room?.themeConfig?.wallStyle ?? null });
+            roomStyleIdCache.set(cacheKey, {
+                roomStyleId,
+                roomId: room?.id ?? null,
+                roomWallStyle: room?.themeConfig?.wallStyle ?? null
+            });
             return roomStyleIdCache.get(cacheKey);
         };
 
@@ -28614,6 +29959,14 @@ export class ThreeGame {
         const ventMatrices = [];
         const pipeMatrices = [];
         const doorPanelMatrices = [];
+        const doorPortalHeaderMatrices = new Map([
+            ['ordinary', []],
+            ['route', []],
+            ['locked', []]
+        ]);
+        let chunkPortalLightPlanned = false;
+        const cutawayCapMatrices = [];
+        const cutawayCapEntries = [];
         const decorationScratch = new THREE.Matrix4();
 
         const pushDecorationMatrix = (type, wallMatrix, roomInfo, localMatrix) => {
@@ -28804,6 +30157,31 @@ export class ThreeGame {
                     doorMesh.userData.proceduralDoorButtons = doorButtons;
                     this.attachProceduralDoorRibs(doorMesh, horizontal);
 
+                    const portalImportance = persistedDoor?.lock
+                        ? 'locked'
+                        : (persistedDoor?.ringCrossingId || persistedDoor?.gateId ? 'route' : 'ordinary');
+                    const portalThickness = portalImportance === 'ordinary' ? 0.07 : portalImportance === 'route' ? 0.1 : 0.14;
+                    doorPortalHeaderMatrices.get(portalImportance).push(new THREE.Matrix4().compose(
+                        new THREE.Vector3(worldX, this.wallHeight + 0.12 + portalThickness * 0.5, worldZ),
+                        new THREE.Quaternion(),
+                        new THREE.Vector3(
+                            horizontal ? 3.2 : portalThickness,
+                            portalThickness,
+                            horizontal ? portalThickness : 3.2
+                        )
+                    ));
+                    if (!chunkPortalLightPlanned && persistedDoor?.lock) {
+                        const portalLight = new THREE.PointLight(0xffa648, 1.15, 5.5, 2);
+                        portalLight.position.set(worldX, 2.25, worldZ);
+                        portalLight.userData = {
+                            isPortalPracticalLightSource: true,
+                            proceduralDoorId: persistedDoor.id ?? null
+                        };
+                        group.add(portalLight);
+                        this.registerEnvLight?.(portalLight);
+                        chunkPortalLightPlanned = true;
+                    }
+
                     for (const side of [-1, 1]) {
                         const panelWorldX = worldX + (horizontal ? -1.72 : side * 0.78);
                         const panelWorldZ = worldZ + (horizontal ? side * 0.78 : -1.72);
@@ -28857,8 +30235,11 @@ export class ThreeGame {
 
                 const wallTypeRng = this.createSeededRandom(this.hashTile(worldX, worldZ) + 999);
                 const wallTypeRoll = wallTypeRng();
+                const localWallKey = `${localX},${localY}`;
+                const isRoomBoundaryWall = roomBoundaryWallCells.has(localWallKey);
+                const isForegroundRoomWall = foregroundRoomWallCells.has(localWallKey);
 
-                if (wallTypeRoll < holeCut) {
+                if (!isRoomBoundaryWall && wallTypeRoll < holeCut) {
                     if (this.filledHoleKeys?.has(this.getWallKey(worldX, worldZ))) {
                         flatOverlayMatrices.push(new THREE.Matrix4().compose(
                             new THREE.Vector3(worldX, 0.005, worldZ),
@@ -28900,7 +30281,7 @@ export class ThreeGame {
                             this.scatterSprites.push(vent);
                         }
                     }
-                } else if (wallTypeRoll < hazardCut) {
+                } else if (!isRoomBoundaryWall && wallTypeRoll < hazardCut) {
                     // Hazard Wall (pulsing warning siren) — stays an individual
                     // Mesh: rare, and carries a live-animated child (siren dome).
                     const wall = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
@@ -28931,7 +30312,7 @@ export class ThreeGame {
                     const sirenDome = new THREE.Mesh(this.sirenDomeGeometry, this.sirenDomeMaterial);
                     sirenDome.position.y = this.wallHeight / 2 + 0.14;
                     wall.add(sirenDome);
-                } else if (wallTypeRoll < damagedCut) {
+                } else if (!isRoomBoundaryWall && wallTypeRoll < damagedCut) {
                     // Damaged Wall (ruins with rubble debris) — instanced.
                     const shortHeightMult = 0.45 + wallTypeRng() * 0.25;
                     const damagedHeight = this.wallHeight * shortHeightMult;
@@ -28989,25 +30370,63 @@ export class ThreeGame {
                     } else if (landform === LANDFORMS.CRATER) {
                         heightScale = 0.88 + wallTypeRng() * 0.40;
                     }
+                    if (isRoomBoundaryWall) heightScale = Math.max(1, heightScale);
+                    const visualHeightScale = isForegroundRoomWall
+                        ? ROOM_CUTAWAY_HEIGHT / this.wallHeight
+                        : heightScale;
                     const jitter = this.computeExteriorWallJitter(worldX, worldZ);
                     const standardMatrix = new THREE.Matrix4().compose(
-                        new THREE.Vector3(worldX + jitter.offsetX, (this.wallHeight * heightScale) / 2, worldZ + jitter.offsetZ),
+                        new THREE.Vector3(
+                            worldX + jitter.offsetX,
+                            (this.wallHeight * visualHeightScale) / 2,
+                            worldZ + jitter.offsetZ
+                        ),
                         new THREE.Quaternion().setFromEuler(new THREE.Euler(0, jitter.rotationY, 0)),
-                        new THREE.Vector3(1, heightScale, 1)
+                        new THREE.Vector3(1, visualHeightScale, 1)
                     );
                     pushWallInstanceMatrix(standardMatrix, {
                         chunkX, chunkY, localX, localY, worldX, worldZ, landform,
-                        variant: 'standard', heightScale
+                        variant: 'standard',
+                        heightScale,
+                        roomBoundary: isRoomBoundaryWall,
+                        roomWallPresentation: isRoomBoundaryWall ? {
+                            offsetX: jitter.offsetX,
+                            offsetZ: jitter.offsetZ,
+                            rotationY: jitter.rotationY,
+                            fullHeightScale: heightScale
+                        } : null
                     });
+                    if (isRoomBoundaryWall) {
+                        const capMatrix = isForegroundRoomWall
+                            ? new THREE.Matrix4().compose(
+                            new THREE.Vector3(
+                                worldX + jitter.offsetX,
+                                ROOM_CUTAWAY_HEIGHT + 0.04,
+                                worldZ + jitter.offsetZ
+                            ),
+                            new THREE.Quaternion().setFromEuler(new THREE.Euler(0, jitter.rotationY, 0)),
+                            new THREE.Vector3(1, 1, 1)
+                        )
+                            : new THREE.Matrix4().makeScale(0, 0, 0);
+                        cutawayCapMatrices.push(capMatrix);
+                        cutawayCapEntries.push({
+                            wallKey: this.getWallKey(worldX, worldZ),
+                            worldX,
+                            worldZ,
+                            offsetX: jitter.offsetX,
+                            offsetZ: jitter.offsetZ,
+                            rotationY: jitter.rotationY
+                        });
+                    }
 
                     const rng = this.createSeededRandom(this.hashTile(worldX, worldZ));
                     const roll = rng();
-                    if (roll < 0.12) {
+                    if (!isRoomBoundaryWall && roll < 0.12) {
                         const cx = (rng() < 0.5 ? -0.5 : 0.5);
                         const cz = (rng() < 0.5 ? -0.5 : 0.5);
                         pushDecorationMatrix('pillar', standardMatrix, roomStyleIdFor(chunkX, chunkY, localX, localY),
                             new THREE.Matrix4().makeTranslation(cx, 0, cz));
-                    } else if (roll < 0.24) {
+                    } else if (!isRoomBoundaryWall && roll < 0.24) {
                         const faceRoll = Math.floor(rng() * 4);
                         const bracketLocal = new THREE.Matrix4();
                         if (faceRoll === 0) {
@@ -29028,7 +30447,7 @@ export class ThreeGame {
                             bracketLocal.makeTranslation(0, (rng() - 0.5) * 1.5, -0.5);
                         }
                         pushDecorationMatrix('bracket', standardMatrix, roomStyleIdFor(chunkX, chunkY, localX, localY), bracketLocal);
-                    } else if (roll < 0.32) {
+                    } else if (!isRoomBoundaryWall && roll < 0.32) {
                         const faceRoll = Math.floor(rng() * 4);
                         const vy = 0.4 + rng() * 0.6;
                         const ventLocal = new THREE.Matrix4();
@@ -29050,7 +30469,7 @@ export class ThreeGame {
                             ventLocal.makeTranslation(0, vy, -0.501);
                         }
                         pushDecorationMatrix('vent', standardMatrix, null, ventLocal);
-                    } else if (roll < 0.38) {
+                    } else if (!isRoomBoundaryWall && roll < 0.38) {
                         const faceRoll = Math.floor(rng() * 4);
                         const pipeLocal = new THREE.Matrix4();
                         if (faceRoll === 0) {
@@ -29142,6 +30561,7 @@ export class ThreeGame {
         }
 
         const landformShaderId = LANDFORM_SHADER_ID[landform] ?? 0;
+        const roomBoundaryRecords = [];
         for (const [roomStyleId, matrices] of wallMatricesByRoomStyle.entries()) {
             const metaList = wallMetaByRoomStyle.get(roomStyleId);
             const pool = new THREE.InstancedMesh(this.wallGeometry, this.wallMaterial, matrices.length);
@@ -29169,8 +30589,41 @@ export class ThreeGame {
                 record.instancedMesh = pool;
                 record.instanceIndex = idx;
                 this._wallInstanceIndex.set(record.wallKey, record);
+                if (record.roomBoundary) roomBoundaryRecords.push(record);
             });
             group.add(pool);
+        }
+
+        let cutawayCapPool = null;
+        if (cutawayCapMatrices.length > 0) {
+            const caps = new THREE.InstancedMesh(
+                this.roomCutawayCapGeometry,
+                this.roomCutawayCapMaterial,
+                cutawayCapMatrices.length
+            );
+            cutawayCapMatrices.forEach((matrix, index) => caps.setMatrixAt(index, matrix));
+            caps.instanceMatrix.needsUpdate = true;
+            caps.castShadow = false;
+            caps.receiveShadow = true;
+            caps.userData = {
+                isRoomCutawayCapPool: true,
+                capCount: cutawayCapMatrices.length
+            };
+            group.add(caps);
+            cutawayCapPool = caps;
+        }
+
+        if (roomBoundaryRecords.length > 0 && cutawayCapPool) {
+            group.userData.roomCutawayPresentation = {
+                quadrant: cutawayQuadrant,
+                wallRecords: roomBoundaryRecords,
+                capPool: cutawayCapPool,
+                capEntries: cutawayCapEntries,
+                capIndexByWallKey: new Map(
+                    cutawayCapEntries.map((entry, index) => [entry.wallKey, index])
+                ),
+                cutawayWallKeysByQuadrant
+            };
         }
 
         for (const [roomStyleId, matrices] of pillarMatricesByRoomStyle.entries()) {
@@ -29235,6 +30688,25 @@ export class ThreeGame {
             group.add(panelPool);
         }
 
+        for (const [importance, matrices] of doorPortalHeaderMatrices) {
+            if (matrices.length === 0) continue;
+            const headerPool = new THREE.InstancedMesh(
+                this.doorPortalHeaderGeometry,
+                this.doorPortalHeaderMaterials[importance],
+                matrices.length
+            );
+            matrices.forEach((matrix, index) => headerPool.setMatrixAt(index, matrix));
+            headerPool.instanceMatrix.needsUpdate = true;
+            headerPool.castShadow = false;
+            headerPool.receiveShadow = false;
+            headerPool.userData = {
+                isDoorPortalHeaderPool: true,
+                headerCount: matrices.length,
+                importance
+            };
+            group.add(headerPool);
+        }
+
         if (this.rubbleGeometry && this.wallMaterial && rubbleMatrices.length > 0) {
             const rubbleInstanced = new THREE.InstancedMesh(this.rubbleGeometry, this.wallMaterial, rubbleMatrices.length);
             rubbleMatrices.forEach((m, idx) => rubbleInstanced.setMatrixAt(idx, m));
@@ -29246,6 +30718,14 @@ export class ThreeGame {
 
         // Spawn visual scatter sprites using the Snail Swarm Scatter algorithm
         const scatterPlacements = this.createChunkScatterPlacements(chunkX, chunkY, grid);
+        const INSTANCED_DEBRIS_TYPES = new Set([
+            'scatter_bolts', 'scatter_cable_coil', 'scatter_gravel',
+            'scatter_coolant_puddle', 'scatter_slime_puddle', 'scatter_cryo_shards', 'scatter_bio_moss'
+        ]);
+
+        const debrisByType = new Map();
+        const remainingScatterPlacements = [];
+
         for (const placement of scatterPlacements) {
             if (placement.type.startsWith('bunker_junk') && this.depletedGearPileKeys.has(placement.scatterKey)) {
                 continue;
@@ -29253,6 +30733,55 @@ export class ThreeGame {
             if (this.isEnemyType(placement.type) && this.killedEnemyScatterKeys.has(placement.scatterKey)) {
                 continue;
             }
+            if (INSTANCED_DEBRIS_TYPES.has(placement.type)) {
+                const tex = this.scatterTextures[placement.type] || this.scatterMaterials[placement.type]?.map;
+                if (tex) {
+                    if (!debrisByType.has(placement.type)) debrisByType.set(placement.type, []);
+                    debrisByType.get(placement.type).push(placement);
+                    continue;
+                }
+            }
+            remainingScatterPlacements.push(placement);
+        }
+
+        if (debrisByType.size > 0) {
+            const dummy = new THREE.Object3D();
+            for (const [type, placements] of debrisByType.entries()) {
+                if (placements.length === 0) continue;
+                const texture = this.scatterTextures[type] || this.scatterMaterials[type]?.map;
+                if (!texture) continue;
+                this._sharedDebrisMaterials ??= new Map();
+                let mat = this._sharedDebrisMaterials.get(type);
+                if (!mat) {
+                    mat = new THREE.MeshBasicMaterial({
+                        map: texture,
+                        transparent: true,
+                        alphaTest: 0.035,
+                        depthWrite: false,
+                        polygonOffset: true,
+                        polygonOffsetFactor: -2,
+                        polygonOffsetUnits: -2,
+                        side: THREE.DoubleSide
+                    });
+                    this._sharedDebrisMaterials.set(type, mat);
+                }
+                this._sharedDebrisGeo ??= new THREE.PlaneGeometry(1, 1);
+                const instanced = new THREE.InstancedMesh(this._sharedDebrisGeo, mat, placements.length);
+                for (let i = 0; i < placements.length; i++) {
+                    const p = placements[i];
+                    dummy.position.set(p.x, p.elevation ?? 0.02, p.z);
+                    dummy.rotation.set(-Math.PI / 2, 0, p.rotation ?? 0);
+                    dummy.scale.set(p.scale ?? 1, (p.scale ?? 1) * (1 + (p.tiltX ?? 0)), 1);
+                    dummy.updateMatrix();
+                    instanced.setMatrixAt(i, dummy.matrix);
+                }
+                instanced.instanceMatrix.needsUpdate = true;
+                instanced.userData = { isScatter: true, isInstancedDebris: true, type };
+                group.add(instanced);
+            }
+        }
+
+        for (const placement of remainingScatterPlacements) {
             const scatter = this.createScatterInstance(placement);
             if (scatter) {
                 group.add(scatter);
@@ -29316,6 +30845,13 @@ export class ThreeGame {
                     intensity: templateCfg.lightIntensity ?? 1
                 });
             }
+        }
+
+        for (let i = 0; i < group.children.length; i++) {
+            const child = group.children[i];
+            if (child.userData?.isWall && !walls.includes(child)) walls.push(child);
+            if (child.userData?.isPickup && !pickups.includes(child)) pickups.push(child);
+            if (child.userData?.isScatter && !scatters.includes(child)) scatters.push(child);
         }
 
         useSinglePassForFlatMaterials(group);
@@ -30919,8 +32455,13 @@ export class ThreeGame {
             const sporesnailFight = (placement.type === 'boss_sporesnail' && !hadExplicitMaxHp)
                 ? createBossFight(SPORESNAIL_FIGHT_DEF)
                 : null;
-            const biomeBossDef = placement.type === 'boss_cybersnail' ? CYBERSNAIL_FIGHT_DEF
-                : placement.type === 'boss_cryosnail' ? CRYO_BOSS_FIGHT_DEF : null;
+            // Sporesnail retains its dedicated add/tint handler below; giving
+            // it a second generic fight object would tick one state while
+            // damage lands on the other. Every other catalog boss uses the
+            // shared biome/milestone runtime path.
+            const biomeBossDef = placement.type === 'boss_sporesnail'
+                ? null
+                : (BOSS_PHASE_DEFS[placement.type] ?? null);
             const biomeBossFight = biomeBossDef
                 ? createBossFight({ ...biomeBossDef, maxHp })
                 : null;
@@ -33822,8 +35363,122 @@ export class ThreeGame {
         return true;
     }
 
+    executeCompanionAssistAbility(companion, target, root) {
+        if (!companion || !target) return false;
+        companion.isFiring = true;
+        companion.targetId = target.userData?.scatterKey || null;
+
+        const familyId = companion.wanderer?.familyId;
+        const ability = companion.wanderer?.assistAbility;
+        const abilityName = ability?.name || 'Tactical Strike';
+        const cd = ability?.cooldown || 15;
+        companion.assistCooldown = cd;
+
+        if (root?.position) {
+            this.spawnMuzzleFlash?.(root.position.x, 1.0, root.position.z);
+        }
+
+        if (familyId === 'manic_hacker') {
+            this.applyPlayerDamageToEnemy(target, 3);
+            target.userData.frozenTimer = Math.max(target.userData.frozenTimer ?? 0, 4.0);
+            let chained = 0;
+            for (const other of this.scatterSprites || []) {
+                if (other === target || !this.isEnemyType(other?.userData?.type) || other.userData?.dead) continue;
+                if (Math.hypot(other.position.x - target.position.x, other.position.z - target.position.z) <= 5.0) {
+                    this.applyPlayerDamageToEnemy(other, 2);
+                    other.userData.frozenTimer = Math.max(other.userData.frozenTimer ?? 0, 3.0);
+                    chained += 1;
+                    if (chained >= 2) break;
+                }
+            }
+            this.spawnPhysicalBurst?.(target.position.x, target.position.z, { color: 0x00f3ff, count: 6, upward: 0.2, spread: 0.5 });
+            window.AudioManager?.play?.('ui_scan_ping', { volume: 0.5, playbackRate: 1.4 });
+        } else if (familyId === 'corpo_runner') {
+            this.applyPlayerDamageToEnemy(target, 5);
+            target.userData.markedMultiplier = 1.35;
+            target.userData.markedTimer = 6.0;
+            this.spawnPhysicalBurst?.(target.position.x, target.position.z, { color: 0xffaa00, count: 5, upward: 0.2, spread: 0.4 });
+            window.AudioManager?.play?.('turret_fire', { volume: 0.45, playbackRate: 1.3 });
+        } else if (familyId === 'foxhole_buddy') {
+            this.applyPlayerDamageToEnemy(target, 3);
+            this.spawnPhysicalBurst?.(target.position.x, target.position.z, { color: 0xff4422, count: 6, upward: 0.15, spread: 0.6 });
+            window.AudioManager?.play?.('turret_fire', { volume: 0.45, playbackRate: 0.9 });
+        } else if (familyId === 'crash_queen') {
+            this.applyPlayerDamageToEnemy(target, 3);
+            if (this.playerShieldMax > 0) {
+                this.playerShieldHp = Math.min(this.playerShieldMax, (this.playerShieldHp ?? 0) + 20);
+                this.emitHealthState?.();
+            }
+            if (root?.position) {
+                this.spawnPhysicalBurst?.(root.position.x, root.position.z, { color: 0xf59e0b, count: 8, upward: 0.3, spread: 0.7 });
+            }
+            window.AudioManager?.play?.('fx_level_up', { volume: 0.4, playbackRate: 1.2 });
+        } else if (familyId === 'abg_tripper') {
+            this.applyPlayerDamageToEnemy(target, 3);
+            target.userData.slowTimer = Math.max(target.userData.slowTimer ?? 0, 5.0);
+            this.spawnPhysicalBurst?.(target.position.x, target.position.z, { color: 0xff00ff, count: 8, upward: 0.25, spread: 0.8 });
+            window.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 1.6 });
+        } else if (familyId === 'species_hybrid') {
+            this.applyPlayerDamageToEnemy(target, 4, { element: 'bio' });
+            target.userData.frozenTimer = Math.max(target.userData.frozenTimer ?? 0, 4.0);
+            this.spawnPhysicalBurst?.(target.position.x, target.position.z, { color: 0x10b981, count: 6, upward: 0.1, spread: 0.4 });
+            window.AudioManager?.play?.('turret_fire', { volume: 0.35, playbackRate: 0.8 });
+        } else {
+            this.applyPlayerDamageToEnemy(target, 2);
+            this.spawnPhysicalBurst?.(target.position.x, target.position.z, { color: 0x67e3e1, count: 4, upward: 0.1, spread: 0.3 });
+            window.AudioManager?.play?.('turret_fire', { volume: 0.35, playbackRate: 1.1 });
+        }
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('companion-assist-triggered', {
+                detail: {
+                    familyId,
+                    abilityName,
+                    targetId: target.userData?.scatterKey || null
+                }
+            }));
+        }
+
+        return true;
+    }
+
     updateCompanions(delta) {
         if (!this.player || this.isPlayerDead || !Array.isArray(this.companions) || this.companions.length === 0) return;
+
+        if (coopRole(this) === COOP_ROLE.GUEST) {
+            for (const companion of this.companions) {
+                if (companion.instance3d?.root) {
+                    const root = companion.instance3d.root;
+                    if (Number.isFinite(companion.netTargetX) && Number.isFinite(companion.netTargetZ)) {
+                        const curX = root.position.x;
+                        const curZ = root.position.z;
+                        const dist = Math.hypot(companion.netTargetX - curX, companion.netTargetZ - curZ);
+                        if (dist > 6.0) {
+                            root.position.x = companion.netTargetX;
+                            root.position.z = companion.netTargetZ;
+                        } else {
+                            const lerpFactor = Math.min(1.0, delta * 10);
+                            root.position.x += (companion.netTargetX - curX) * lerpFactor;
+                            root.position.z += (companion.netTargetZ - curZ) * lerpFactor;
+                        }
+                        if (Number.isFinite(companion.netTargetYaw)) {
+                            root.rotation.y = companion.netTargetYaw;
+                        }
+                    }
+                    root.position.y = this.getTerrainHeightAt?.(root.position.x, root.position.z) ?? root.position.y ?? 0;
+                    companion.instance3d.update?.(delta);
+                } else if (companion.sprite) {
+                    if (Number.isFinite(companion.netTargetX) && Number.isFinite(companion.netTargetZ)) {
+                        const curX = companion.sprite.position.x;
+                        const curZ = companion.sprite.position.z;
+                        const lerpFactor = Math.min(1.0, delta * 10);
+                        companion.sprite.position.x += (companion.netTargetX - curX) * lerpFactor;
+                        companion.sprite.position.z += (companion.netTargetZ - curZ) * lerpFactor;
+                    }
+                }
+            }
+            return;
+        }
 
         const TRAIL_DISTANCE = 1.6;
         const MOVE_SPEED = 1.6;
@@ -33838,6 +35493,7 @@ export class ThreeGame {
 
         for (const companion of this.companions) {
             if (companion.isWanderer && companion.instance3d?.root) {
+                companion.isFiring = false;
                 const root = companion.instance3d.root;
                 const trail = computeTrailPosition(this.player.position, facing, 2.0);
                 this.stepCompanionAlongPath?.(companion, root, trail, delta);
@@ -33846,7 +35502,9 @@ export class ThreeGame {
 
                 // A steady basic shot between assist abilities (2026-09-24 QA:
                 // the companion fired once per 12-25 s and otherwise did nothing).
-                this.fireCompanionBasicShot?.(companion, root, delta);
+                if (this.fireCompanionBasicShot?.(companion, root, delta)) {
+                    companion.isFiring = true;
+                }
 
                 companion.assistCooldown = Math.max(0, (companion.assistCooldown ?? 0) - delta);
                 if (companion.assistCooldown <= 0) {
@@ -33857,22 +35515,17 @@ export class ThreeGame {
                         if (!this.isEnemyType(other?.userData?.type) || other.userData.isCompanion
                             || other.userData.dead || other.userData.burstTriggered || other.userData.isDisplayModel) continue;
                         const d = Math.hypot(other.position.x - root.position.x, other.position.z - root.position.z);
-                        if (d < nearestDist && this.hasCompanionFireLane(root.position, other.position)) {
+                        if (d < nearestDist && (this.hasCompanionFireLane ? this.hasCompanionFireLane(root.position, other.position) : true)) {
                             nearestDist = d;
                             nearestHostile = other;
                         }
                     }
                     if (nearestHostile) {
-                        this.applyPlayerDamageToEnemy(nearestHostile, 2);
-                        this.spawnMuzzleFlash?.(root.position.x, 1.0, root.position.z);
-                        if (typeof window !== 'undefined' && window.AudioManager) {
-                            window.AudioManager.play?.('turret_fire', { volume: 0.35, playbackRate: 1.1 });
+                        if (typeof this.executeCompanionAssistAbility === 'function') {
+                            this.executeCompanionAssistAbility(companion, nearestHostile, root);
+                        } else {
+                            this.applyPlayerDamageToEnemy(nearestHostile, 2);
                         }
-                        const cd = companion.wanderer?.assistAbility?.cooldown || 12;
-                        companion.assistCooldown = cd;
-                        this.spawnPhysicalBurst?.(nearestHostile.position.x, nearestHostile.position.z, {
-                            color: 0x67e3e1, count: 3, upward: 0.1, spread: 0.3
-                        });
                     }
                 }
                 continue;
@@ -34265,6 +35918,9 @@ export class ThreeGame {
 
         const target = this.selectSnailTarget(sprite, activeShip);
         if (!target) return;
+        if (target.type === 'player' && target.id === 'local' && target.mode === 'hunt') {
+            this.markCombatActivity?.('enemy-targeted-player');
+        }
         const startTileX = Math.round(sprite.position.x);
         const startTileZ = Math.round(sprite.position.z);
         const goalTileX = Math.round(target.goalX);
@@ -37018,7 +38674,7 @@ export class ThreeGame {
     // use (src/coopTransitions.js); PvP has no expedition fight to open.
     armArrivalIncident() {
         if (typeof window !== 'undefined') window.objectiveRegistry?.resolveObjective?.('arrival-incident', 'abandoned');
-        const plan = coopRole(this) === COOP_ROLE.SOLO
+        const plan = coopRole(this) !== COOP_ROLE.GUEST && this.multiplayerMode !== 'pvp'
             ? planArrivalIncident({
                 conditionId: this.activeExpedition?.condition?.id,
                 expeditionSeed: this.activeExpedition?.expeditionSeed ?? this.expeditionSeed ?? 0,
@@ -37201,7 +38857,7 @@ export class ThreeGame {
         this._expeditionReportItems = [];
         this.listenForExpeditionReportItems();
         const profile = this.activeExpedition;
-        this._expeditionEvent = coopRole(this) === COOP_ROLE.SOLO && profile?.condition?.id
+        this._expeditionEvent = profile?.condition?.id && this.multiplayerMode !== 'pvp'
             ? { profile, plan: null, state: null, elapsed: 0, site: null, encounter: null, grants: [], promptOpen: false, declined: false, trackerTimer: 0 }
             : null;
         return this._expeditionEvent;
@@ -37275,10 +38931,14 @@ export class ThreeGame {
             }
             event.state = createEventState(event.plan);
         }
-        event.elapsed += delta;
+        if (coopRole(this) !== COOP_ROLE.GUEST) {
+            event.elapsed += delta;
+        }
         const { phase } = event.state;
         if (phase === 'dormant') {
-            if (event.elapsed >= event.plan.signalAt) this.applyExpeditionEventAction({ type: 'signal' });
+            if (coopRole(this) !== COOP_ROLE.GUEST && event.elapsed >= event.plan.signalAt) {
+                this.applyExpeditionEventAction({ type: 'signal' });
+            }
             return;
         }
         if (phase === 'resolved') return;
@@ -37288,7 +38948,7 @@ export class ThreeGame {
         if (phase === 'bypassing') {
             // The drain runs only while the operator stays on the bypass.
             this._expeditionEventO2DrainMult = near ? event.plan.bypassO2Drain : 1;
-            if (near) this.applyExpeditionEventAction({ type: 'bypass_tick', seconds: delta });
+            if (near && coopRole(this) !== COOP_ROLE.GUEST) this.applyExpeditionEventAction({ type: 'bypass_tick', seconds: delta });
         } else if (phase === 'signalled') {
             if (!near) event.declined = false;
             else if (!event.promptOpen && !event.declined) this.openExpeditionEventChoice();
@@ -37361,8 +39021,15 @@ export class ThreeGame {
             return false;
         }
         if (!event.plan.responses.includes(action)) return false;
+        if (coopRole(this) === COOP_ROLE.GUEST) {
+            this.broadcastSharedWorldEvent(COOP_TRANSITION_EVENTS.WORLD_EVENT_TRIGGER, {
+                action,
+                eventId: event.plan.eventId
+            });
+            return true;
+        }
         const changed = this.applyExpeditionEventAction({ type: action });
-        if (changed && event.state.phase === 'signalled') this.openExpeditionEventChoice();
+        if (changed && event.state.phase === 'signalled') this.openExpeditionEventChoice?.();
         return changed;
     }
 
@@ -37378,6 +39045,17 @@ export class ThreeGame {
             this._expeditionEventO2DrainMult = 1;
             const success = !['left', 'ambush_empty'].includes(event.state.outcome);
             window.objectiveRegistry?.resolveObjective?.('expedition-event', success ? 'complete' : 'abandoned');
+        }
+        if (coopRole(this) === COOP_ROLE.HOST) {
+            this.broadcastSharedWorldEvent?.(COOP_TRANSITION_EVENTS.WORLD_EVENT_RESOLVED, {
+                eventId: event.plan.eventId,
+                action: action.type,
+                phase: event.state.phase,
+                outcome: event.state.outcome,
+                scanned: Boolean(event.state.scanned),
+                bypassProgress: event.state.bypassProgress,
+                effects: result.effects
+            });
         }
         // Bypass progress ticks every frame; the throttled route sync in
         // updateExpeditionEvent shows it. Only a new phase is announced.
@@ -37487,7 +39165,44 @@ export class ThreeGame {
                 paidShells: bounty.paidShells ?? 0
             } : null,
             completed,
-            items: [...(this._expeditionReportItems ?? [])],
+            items: (() => {
+                const reportItems = [...(this._expeditionReportItems ?? [])];
+                if (Array.isArray(this.runRelics)) {
+                    for (const relic of this.runRelics) {
+                        if (relic?.id && !reportItems.some((it) => it.params?.id === relic.id)) {
+                            reportItems.push({
+                                kind: 'unlock',
+                                labelKey: 'ui.go.report.relic_recovered',
+                                params: { id: relic.id, name: relic.name || relic.id }
+                            });
+                        }
+                    }
+                }
+                const act2State = this.act2?.getState?.();
+                if (act2State?.camps) {
+                    for (const camp of act2State.camps) {
+                        if ((camp.bond ?? 0) > 0 && !reportItems.some((it) => it.params?.campId === camp.id)) {
+                            reportItems.push({
+                                kind: 'faction',
+                                labelKey: 'ui.go.report.camp_allied',
+                                params: { campId: camp.id, faction: camp.label || camp.id, bond: camp.bond }
+                            });
+                        }
+                    }
+                }
+                if (act2State?.linchpins) {
+                    for (const [linchpinId, resolution] of Object.entries(act2State.linchpins)) {
+                        if (!reportItems.some((it) => it.params?.linchpinId === linchpinId)) {
+                            reportItems.push({
+                                kind: 'lead',
+                                labelKey: 'ui.go.report.linchpin_consequence',
+                                params: { linchpinId, resolution: String(resolution).toUpperCase() }
+                            });
+                        }
+                    }
+                }
+                return reportItems;
+            })(),
             build: summarizeBuild({
                 equippedDropIds: [...(this.runOverclocks ?? []), ...(this.runRelics ?? [])].map((drop) => drop?.id),
                 telemetry: this._runBuildTelemetry ?? {}
@@ -38938,6 +40653,32 @@ export class ThreeGame {
         this.bracketGeometry?.dispose();
         this.ventGeometry?.dispose();
         this.pipeGeometry?.dispose();
+        this.roomLightFixtureGeometry?.dispose();
+        this.roomLightHousingGeometry?.dispose();
+        this.roomLightHousingMaterial?.dispose();
+        for (const material of this.roomLightFixtureMaterials?.values?.() ?? []) material.dispose?.();
+        this.roomCutawayCapGeometry?.dispose();
+        this.roomCutawayCapMaterial?.dispose();
+        this.roomRoleDisplayGeometry?.dispose();
+        this.roomRoleDisplayHousingMaterial?.dispose();
+        this.roomRoleDisplayScreenMaterial?.dispose();
+        this.hallwayDressingGeometry?.dispose();
+        this.hallwayDressingMaterial?.dispose();
+        this.hallwayCableMaterial?.dispose();
+        this.hallwaySignalMaterial?.dispose();
+        this.roomThresholdMarkingGeometry?.dispose();
+        this.roomThresholdMarkingMaterial?.dispose();
+        this.environmentDripGeometry?.dispose();
+        this.environmentDripMaterial?.dispose();
+        this.doorPanelGeometry?.dispose();
+        this.doorPanelMaterial?.dispose();
+        this.doorPortalHeaderGeometry?.dispose();
+        Object.values(this.doorPortalHeaderMaterials ?? {}).forEach((material) => material?.dispose?.());
+        this.doorRibGeometry?.dispose();
+        this.doorRibMaterial?.dispose();
+        this.doorStatusBarGeometry?.dispose();
+        this.doorButtonGeometry?.dispose();
+        Object.values(this.doorStatusMaterials ?? {}).forEach((material) => material?.dispose?.());
         this.ventMaterial?.dispose();
         this.pipeMaterial?.dispose();
         this.sirenBaseGeometry?.dispose();

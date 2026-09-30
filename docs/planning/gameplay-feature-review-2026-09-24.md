@@ -425,6 +425,7 @@ graph TD
 
 ### Phase 4 — Boss phase conversion & debrief loop (Sprint 48)
 - Convert `boss_cybersnail` and `boss_cryosnail` onto `src/bossPhases.js`.
+- **Runtime update (2026-09-30):** the phase catalog now covers all six milestone bosses. The three corrupted operators preserve their shipped class attacks but gain HP-driven second phases, telegraphed windups, recurring vulnerability windows, phase visuals and host-authoritative event/HP synchronization. The combat report now fails if any `boss_*` entry falls back to a flat HP-only simulation.
 - Expand `src/expeditionReport.js` to report unlocked blueprints, faction shifts, and next leads.
 - Wire Hive Queen communion encounter for Mayor Tina (`GAP-ST-01`) and in-run timeline divergence HUD warnings (`GAP-ST-02`).
 

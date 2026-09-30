@@ -32,9 +32,9 @@ export function createBossFight(def) {
         maxHp: def.maxHp,
         phaseIndex: 0,
         elapsed: 0,
-        attackTimer: def.phases[0].attackCooldown ?? 4,
-        addTimer: def.phases[0].addWave?.every ?? Infinity,
-        weakpointTimer: def.phases[0].weakpoint?.every ?? Infinity,
+        attackTimer: def.phases[0].initialAttackDelay ?? def.phases[0].attackCooldown ?? 4,
+        addTimer: def.phases[0].addWave?.initialDelay ?? def.phases[0].addWave?.every ?? Infinity,
+        weakpointTimer: def.phases[0].weakpoint?.initialDelay ?? def.phases[0].weakpoint?.every ?? Infinity,
         weakpointOpenFor: 0,
         pendingAttack: null,
         attacksInPhase: 0,
@@ -103,9 +103,9 @@ export function tickBossFight(fight, delta, { activeAdds = 0 } = {}) {
     if (nextIndex !== fight.phaseIndex) {
         fight.phaseIndex = nextIndex;
         const phase = currentPhase(fight);
-        fight.attackTimer = phase.attackCooldown ?? 4;
-        fight.addTimer = phase.addWave?.every ?? Infinity;
-        fight.weakpointTimer = phase.weakpoint?.every ?? Infinity;
+        fight.attackTimer = phase.initialAttackDelay ?? phase.attackCooldown ?? 4;
+        fight.addTimer = phase.addWave?.initialDelay ?? phase.addWave?.every ?? Infinity;
+        fight.weakpointTimer = phase.weakpoint?.initialDelay ?? phase.weakpoint?.every ?? Infinity;
         fight.pendingAttack = null;
         fight.attacksInPhase = 0;
         fight.phaseMechanic = phase.mechanic ?? null;
@@ -338,11 +338,106 @@ export const CRYO_BOSS_FIGHT_DEF = Object.freeze({
     ]
 });
 
+// Corrupted operators mirror the class kit they abandoned. Their armor is
+// deliberately mild: these are short human-scale duels, not another Queen HP
+// wall, and every phase exposes frequent counterplay windows.
+export const CORRUPTED_SCOUT_FIGHT_DEF = Object.freeze({
+    key: 'corrupted-scout',
+    maxHp: 14,
+    armoredDamageMult: 0.8,
+    phases: [
+        Object.freeze({
+            key: 'suppressing-fire',
+            until: 0.5,
+            attackCooldown: 4,
+            initialAttackDelay: 0.35,
+            attackWindup: 0.45,
+            attack: 'corrupted_scout_burst',
+            weakpoint: Object.freeze({ every: 8, initialDelay: 0.55, duration: 2.5 }),
+            mechanic: Object.freeze({ kind: 'spread-fire' })
+        }),
+        Object.freeze({
+            key: 'ghost-flank',
+            until: 0,
+            armoredDamageMult: 0.9,
+            attackCooldown: 2.8,
+            initialAttackDelay: 0.25,
+            attackWindup: 0.35,
+            attack: 'corrupted_scout_flank',
+            weakpoint: Object.freeze({ every: 4, initialDelay: 0.35, duration: 2.75 }),
+            mechanic: Object.freeze({ kind: 'flanking-dash', speedMultiplier: 1.35 })
+        })
+    ]
+});
+
+export const CORRUPTED_TANK_FIGHT_DEF = Object.freeze({
+    key: 'corrupted-tank',
+    maxHp: 18,
+    armoredDamageMult: 0.65,
+    phases: [
+        Object.freeze({
+            key: 'siege-stance',
+            until: 0.55,
+            attackCooldown: 5,
+            initialAttackDelay: 0.15,
+            attackWindup: 0.75,
+            attack: 'corrupted_tank_slam',
+            weakpoint: Object.freeze({ every: 10, initialDelay: 0.6, duration: 2.75 }),
+            mechanic: Object.freeze({ kind: 'ground-slam', radius: 5 })
+        }),
+        Object.freeze({
+            key: 'seismic-overload',
+            until: 0,
+            armoredDamageMult: 0.8,
+            attackCooldown: 3.8,
+            initialAttackDelay: 0.15,
+            attackWindup: 0.8,
+            attack: 'corrupted_tank_overload',
+            weakpoint: Object.freeze({ every: 7.5, initialDelay: 0.45, duration: 3 }),
+            mechanic: Object.freeze({ kind: 'seismic-overload', radius: 6.2, speedMultiplier: 1.22 })
+        })
+    ]
+});
+
+export const CORRUPTED_ENGINEER_FIGHT_DEF = Object.freeze({
+    key: 'corrupted-engineer',
+    maxHp: 16,
+    armoredDamageMult: 0.75,
+    phases: [
+        Object.freeze({
+            key: 'signal-jam',
+            until: 0.5,
+            attackCooldown: 6,
+            initialAttackDelay: 0.2,
+            attackWindup: 0.6,
+            attack: 'corrupted_engineer_jam',
+            addWave: Object.freeze({ every: 10, initialDelay: 0.5, type: 'cybersnail', count: 1, max: 2 }),
+            weakpoint: Object.freeze({ every: 9, initialDelay: 0.5, duration: 2.5 }),
+            mechanic: Object.freeze({ kind: 'signal-jam' })
+        }),
+        Object.freeze({
+            key: 'fabricator-overclock',
+            until: 0,
+            armoredDamageMult: 0.9,
+            attackCooldown: 4.2,
+            initialAttackDelay: 0.2,
+            attackWindup: 0.55,
+            attack: 'corrupted_engineer_arc_net',
+            addWave: Object.freeze({ every: 7, initialDelay: 0.45, type: 'cybersnail', count: 1, max: 3 }),
+            weakpoint: Object.freeze({ every: 5, initialDelay: 0.4, duration: 2.75 }),
+            mechanic: Object.freeze({ kind: 'fabricator-overclock', speedMultiplier: 1.15 })
+        })
+    ]
+});
+
 export const BOSS_PHASE_DEFS = Object.freeze({
     queen: QUEEN_FIGHT_DEF,
     boss_cybersnail: CYBERSNAIL_FIGHT_DEF,
     boss_cryosnail: CRYO_BOSS_FIGHT_DEF,
-    boss_sporesnail: SPORESNAIL_FIGHT_DEF
+    boss_sporesnail: SPORESNAIL_FIGHT_DEF,
+    boss_corrupted_scout: CORRUPTED_SCOUT_FIGHT_DEF,
+    boss_corrupted_tank: CORRUPTED_TANK_FIGHT_DEF,
+    boss_corrupted_engineer: CORRUPTED_ENGINEER_FIGHT_DEF
 });
 
 // ── Ordinary enemy stagger/armor/weakpoint grammar (Sprint 28 Lane C) ─
