@@ -1204,23 +1204,14 @@
     "tank_ship_broken.png",
     "tank_ship_healed.png",
     "title_key_art_v2.png",
-    "ui/dock/engineer-arms-glass.webp",
     "ui/dock/engineer-arms.webp",
-    "ui/dock/engineer-map-glass.webp",
     "ui/dock/engineer-map.webp",
-    "ui/dock/engineer-status-glass.webp",
     "ui/dock/engineer-status.webp",
-    "ui/dock/scout-arms-glass.webp",
     "ui/dock/scout-arms.webp",
-    "ui/dock/scout-map-glass.webp",
     "ui/dock/scout-map.webp",
-    "ui/dock/scout-status-glass.webp",
     "ui/dock/scout-status.webp",
-    "ui/dock/tank-arms-glass.webp",
     "ui/dock/tank-arms.webp",
-    "ui/dock/tank-map-glass.webp",
     "ui/dock/tank-map.webp",
-    "ui/dock/tank-status-glass.webp",
     "ui/dock/tank-status.webp"
   ],
   "assets": [
@@ -10992,7 +10983,7 @@
     {
       "path": "ui/dock/engineer-arms-glass.webp",
       "bytes": 1824,
-      "classification": "runtime-required"
+      "classification": "unknown"
     },
     {
       "path": "ui/dock/engineer-arms.webp",
@@ -11002,7 +10993,7 @@
     {
       "path": "ui/dock/engineer-map-glass.webp",
       "bytes": 2222,
-      "classification": "runtime-required"
+      "classification": "unknown"
     },
     {
       "path": "ui/dock/engineer-map.webp",
@@ -11012,7 +11003,7 @@
     {
       "path": "ui/dock/engineer-status-glass.webp",
       "bytes": 1598,
-      "classification": "runtime-required"
+      "classification": "unknown"
     },
     {
       "path": "ui/dock/engineer-status.webp",
@@ -11021,13 +11012,13 @@
     },
     {
       "path": "ui/dock/manifest.json",
-      "bytes": 6470,
+      "bytes": 6937,
       "classification": "unknown"
     },
     {
       "path": "ui/dock/scout-arms-glass.webp",
       "bytes": 1360,
-      "classification": "runtime-required"
+      "classification": "unknown"
     },
     {
       "path": "ui/dock/scout-arms.webp",
@@ -11037,7 +11028,7 @@
     {
       "path": "ui/dock/scout-map-glass.webp",
       "bytes": 4084,
-      "classification": "runtime-required"
+      "classification": "unknown"
     },
     {
       "path": "ui/dock/scout-map.webp",
@@ -11047,7 +11038,7 @@
     {
       "path": "ui/dock/scout-status-glass.webp",
       "bytes": 4250,
-      "classification": "runtime-required"
+      "classification": "unknown"
     },
     {
       "path": "ui/dock/scout-status.webp",
@@ -11057,7 +11048,7 @@
     {
       "path": "ui/dock/tank-arms-glass.webp",
       "bytes": 1662,
-      "classification": "runtime-required"
+      "classification": "unknown"
     },
     {
       "path": "ui/dock/tank-arms.webp",
@@ -11067,7 +11058,7 @@
     {
       "path": "ui/dock/tank-map-glass.webp",
       "bytes": 4560,
-      "classification": "runtime-required"
+      "classification": "unknown"
     },
     {
       "path": "ui/dock/tank-map.webp",
@@ -11077,282 +11068,12 @@
     {
       "path": "ui/dock/tank-status-glass.webp",
       "bytes": 2606,
-      "classification": "runtime-required"
+      "classification": "unknown"
     },
     {
       "path": "ui/dock/tank-status.webp",
       "bytes": 39424,
       "classification": "runtime-required"
-    },
-    {
-      "path": "ui/suit/edge_check/engineer_gun_on_dark.png",
-      "bytes": 134449,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/edge_check/engineer_gun_on_light.png",
-      "bytes": 135142,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/edge_check/engineer_health_on_dark.png",
-      "bytes": 119307,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/edge_check/engineer_health_on_light.png",
-      "bytes": 119804,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/edge_check/engineer_map_on_dark.png",
-      "bytes": 225950,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/edge_check/engineer_map_on_light.png",
-      "bytes": 226565,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/edge_check/scout_gun_on_dark.png",
-      "bytes": 78565,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/edge_check/scout_gun_on_light.png",
-      "bytes": 80072,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/edge_check/scout_health_on_dark.png",
-      "bytes": 40709,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/edge_check/scout_health_on_light.png",
-      "bytes": 41909,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/edge_check/scout_map_on_dark.png",
-      "bytes": 161151,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/edge_check/scout_map_on_light.png",
-      "bytes": 162712,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/edge_check/tank_gun_on_dark.png",
-      "bytes": 75566,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/edge_check/tank_gun_on_light.png",
-      "bytes": 76814,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/edge_check/tank_health_on_dark.png",
-      "bytes": 64727,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/edge_check/tank_health_on_light.png",
-      "bytes": 65862,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/edge_check/tank_map_on_dark.png",
-      "bytes": 174136,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/edge_check/tank_map_on_light.png",
-      "bytes": 175333,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/engineer/gun.png",
-      "bytes": 41955,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/engineer/gun.webp",
-      "bytes": 29902,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/engineer/health.png",
-      "bytes": 31022,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/engineer/health.webp",
-      "bytes": 27192,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/engineer/map.png",
-      "bytes": 105541,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/engineer/map.webp",
-      "bytes": 37724,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/gun.png",
-      "bytes": 35795,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/gun.webp",
-      "bytes": 13208,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/gun_blood.png",
-      "bytes": 58671,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/gun_blood.webp",
-      "bytes": 22046,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/gun_damage1.png",
-      "bytes": 49844,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/gun_damage1.webp",
-      "bytes": 17806,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/gun_frost.png",
-      "bytes": 130835,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/gun_frost.webp",
-      "bytes": 52340,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/health.png",
-      "bytes": 24689,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/health.webp",
-      "bytes": 9900,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/health_blood.png",
-      "bytes": 42636,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/health_blood.webp",
-      "bytes": 17342,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/health_damage1.png",
-      "bytes": 34171,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/health_damage1.webp",
-      "bytes": 14992,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/health_frost.png",
-      "bytes": 100960,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/health_frost.webp",
-      "bytes": 42254,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/map.png",
-      "bytes": 90134,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/map.webp",
-      "bytes": 29870,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/map_blood.png",
-      "bytes": 119124,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/map_blood.webp",
-      "bytes": 42100,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/map_damage1.png",
-      "bytes": 112778,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/map_damage1.webp",
-      "bytes": 39398,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/map_frost.png",
-      "bytes": 228428,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/scout/map_frost.webp",
-      "bytes": 83530,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/tank/gun.png",
-      "bytes": 35219,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/tank/gun.webp",
-      "bytes": 14484,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/tank/health.png",
-      "bytes": 27395,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/tank/health.webp",
-      "bytes": 13108,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/tank/map.png",
-      "bytes": 99680,
-      "classification": "unknown"
-    },
-    {
-      "path": "ui/suit/tank/map.webp",
-      "bytes": 24434,
-      "classification": "unknown"
     }
   ]
 }

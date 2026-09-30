@@ -4,7 +4,7 @@
 docs/planning/hud-housing-prompts-2026-09-25.md: housings are rendered on flat
 #00FF00; biology layers (`*_bio*`) on #FF00FF so the key can't eat bio-green.
 
-    python3 scripts/chroma_key.py public/ui/suit/            # every PNG/JPG below
+    python3 scripts/chroma_key.py art/hud/renders/           # every PNG/JPG below
     python3 scripts/chroma_key.py some_panel.png --key magenta
 
 For each image: the key colour becomes alpha (soft edge over a small tolerance
