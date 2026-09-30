@@ -20,6 +20,7 @@ import {
     planRoomRoleDisplay,
     ROOM_CUTAWAY_HEIGHT
 } from './roomPresentation.js';
+import { planHallwayRouteDressing } from './hallwayPresentation.js';
 
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -1757,6 +1758,23 @@ export class ThreeGame {
         });
         this.roomRoleDisplayScreenMaterial = new THREE.MeshBasicMaterial({
             color: new THREE.Color().setRGB(1.65, 1.65, 1.65),
+            toneMapped: false
+        });
+        this.hallwayDressingGeometry = new THREE.BoxGeometry(1, 1, 1);
+        this.hallwayDressingMaterial = new THREE.MeshStandardMaterial({
+            color: 0x0a1015,
+            emissive: 0x020508,
+            emissiveIntensity: 0.1,
+            metalness: 0.86,
+            roughness: 0.34
+        });
+        this.hallwayCableMaterial = new THREE.MeshStandardMaterial({
+            color: 0x171d20,
+            metalness: 0.42,
+            roughness: 0.56
+        });
+        this.hallwaySignalMaterial = new THREE.MeshBasicMaterial({
+            color: new THREE.Color().setRGB(1.55, 1.55, 1.55),
             toneMapped: false
         });
 
@@ -27640,6 +27658,94 @@ export class ThreeGame {
         }
     }
 
+    addHallwayRouteDressing(group, chunkX, chunkY, metadata, grid) {
+        const plans = planHallwayRouteDressing(metadata, grid);
+        if (!group || plans.length === 0 || !this.hallwayDressingGeometry) return;
+        const structures = [];
+        const cables = [];
+        const signals = [];
+        const originX = chunkX * this.chunkSize;
+        const originZ = chunkY * this.chunkSize;
+        const rotation = new THREE.Quaternion();
+        const localOffset = new THREE.Vector3();
+        const worldPosition = new THREE.Vector3();
+
+        const matrixFor = (plan, offsetX, y, offsetZ, scaleX, scaleY, scaleZ) => {
+            rotation.setFromEuler(new THREE.Euler(0, plan.rotationY, 0));
+            localOffset.set(offsetX, 0, offsetZ).applyQuaternion(rotation);
+            worldPosition.set(originX + plan.x + localOffset.x, y, originZ + plan.z + localOffset.z);
+            return new THREE.Matrix4().compose(
+                worldPosition.clone(),
+                rotation.clone(),
+                new THREE.Vector3(scaleX, scaleY, scaleZ)
+            );
+        };
+
+        for (const plan of plans) {
+            const span = Math.max(1.6, plan.width + 0.34);
+            const edge = span * 0.5;
+            if (plan.structure === 'rail') {
+                structures.push(matrixFor(plan, -edge, 0.72, 0, 0.1, 1.35, 0.1));
+                structures.push(matrixFor(plan, edge, 0.72, 0, 0.1, 1.35, 0.1));
+                structures.push(matrixFor(plan, -edge, 1.18, 0, 0.08, 0.08, 2.7));
+                structures.push(matrixFor(plan, edge, 1.18, 0, 0.08, 0.08, 2.7));
+            } else {
+                structures.push(matrixFor(plan, 0, this.wallHeight - 0.22, 0, span, 0.1, 0.12));
+                structures.push(matrixFor(plan, -edge, 1.16, 0, 0.1, 2.25, 0.12));
+                structures.push(matrixFor(plan, edge, 1.16, 0, 0.1, 2.25, 0.12));
+            }
+            for (let index = 0; index < plan.cableCount; index += 1) {
+                const side = index % 2 === 0 ? -1 : 1;
+                cables.push(matrixFor(plan, side * (edge - 0.16), 2.18 - index * 0.11, 0, 0.055, 0.055, 2.8));
+            }
+            const signalSpacing = 0.23;
+            const signalStart = -((plan.signalCount - 1) * signalSpacing) / 2;
+            for (let index = 0; index < plan.signalCount; index += 1) {
+                signals.push({
+                    color: plan.signalColor,
+                    matrix: matrixFor(
+                        plan,
+                        signalStart + index * signalSpacing,
+                        plan.structure === 'rail' ? 1.2 : this.wallHeight - 0.14,
+                        0.075,
+                        0.15,
+                        0.07,
+                        0.035
+                    )
+                });
+            }
+        }
+
+        const addPool = (matrices, material, userData) => {
+            if (matrices.length === 0) return;
+            const pool = new THREE.InstancedMesh(this.hallwayDressingGeometry, material, matrices.length);
+            matrices.forEach((entry, index) => pool.setMatrixAt(index, entry.matrix ?? entry));
+            pool.instanceMatrix.needsUpdate = true;
+            pool.castShadow = false;
+            pool.receiveShadow = material !== this.hallwaySignalMaterial;
+            pool.userData = userData;
+            group.add(pool);
+            return pool;
+        };
+
+        addPool(structures, this.hallwayDressingMaterial, {
+            isHallwayRouteStructurePool: true,
+            structureCount: structures.length,
+            markerCount: plans.length
+        });
+        addPool(cables, this.hallwayCableMaterial, {
+            isHallwayRouteCablePool: true,
+            cableCount: cables.length
+        });
+        const signalPool = addPool(signals, this.hallwaySignalMaterial, {
+            isHallwayRouteSignalPool: true,
+            signalCount: signals.length,
+            lightingRhythms: [...new Set(plans.map((plan) => plan.lightingRhythm))]
+        });
+        signals.forEach((signal, index) => signalPool?.setColorAt(index, new THREE.Color(signal.color)));
+        if (signalPool?.instanceColor) signalPool.instanceColor.needsUpdate = true;
+    }
+
     addRoomSurfaceOverlays(group, chunkX, chunkY, metadata) {
         const rooms = metadata?.roomInstances ?? [];
         if (rooms.length === 0) return;
@@ -28977,6 +29083,13 @@ export class ThreeGame {
             chunkX,
             chunkY,
             this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
+        );
+        this.addHallwayRouteDressing(
+            group,
+            chunkX,
+            chunkY,
+            this.wfcMetadataCache?.get(`${chunkX},${chunkY}`),
+            grid
         );
         if (chunkX === 0 && chunkY === 0) this.addCrashRoomSurfaceOverlay(group, grid);
         if (landform === LANDFORMS.MAZE) this.addHallwaySurfaceOverlay(group, chunkX, chunkY, grid);
@@ -39529,6 +39642,10 @@ export class ThreeGame {
         this.roomRoleDisplayGeometry?.dispose();
         this.roomRoleDisplayHousingMaterial?.dispose();
         this.roomRoleDisplayScreenMaterial?.dispose();
+        this.hallwayDressingGeometry?.dispose();
+        this.hallwayDressingMaterial?.dispose();
+        this.hallwayCableMaterial?.dispose();
+        this.hallwaySignalMaterial?.dispose();
         this.doorPanelGeometry?.dispose();
         this.doorPanelMaterial?.dispose();
         this.doorPortalHeaderGeometry?.dispose();

@@ -85,7 +85,7 @@ Acceptance: a player can distinguish ordinary room light, a route portal and a l
 
 Instance a limited kit: hazard sill, cable run, ceiling rib, wall monitor and occasional drip. Select pieces deterministically from room role/theme so medical, utility, security, cryo and bio spaces read differently.
 
-Status: **Phase 6A implemented.** Every authored room now receives a deterministic back-wall display. Medical uses a three-segment cyan diagnostic strip, engineering a two-segment amber console, security a compact paired red panel, logistics a warm single screen, cryo a pale-blue triple strip and bio a tall green organic readout. Proportions and segmentation carry the distinction when colour alone cannot. Housings and screens are two instanced pools per chunk, with no new dynamic lights. The remaining Phase 6B work is the sparse hazard-sill/cable/rib/drip rhythm and should reuse the same role plan rather than create free-scattered props.
+Status: **Phases 6A–6B implemented.** Every authored room now receives a deterministic back-wall display. Medical uses a three-segment cyan diagnostic strip, engineering a two-segment amber console, security a compact paired red panel, logistics a warm single screen, cryo a pale-blue triple strip and bio a tall green organic readout. Proportions and segmentation carry the distinction when colour alone cannot. The hallway catalog's previously passive `dressingKit` and `lightingRhythm` now drive physical frames or causeway rails, cable trays and segmented route signals. Each layer uses fixed instanced pools per chunk with no new dynamic lights or navigation colliders. Remaining polish is role-specific threshold markings and occasional environmental drips after hardware readability/performance validation.
 
 Acceptance: a screenshot without HUD identifies at least three room roles, while the normal gameplay view remains below the existing draw-call budget.
 
@@ -99,6 +99,7 @@ Acceptance: a screenshot without HUD identifies at least three room roles, while
 | Wet floors | Shader-source regression verifies world-space mask, darkening and roughness response; browser test compiles the material on WebGL | Reflection/readability check on Deck and PC panels |
 | Integrated world | Browser test requires fixtures, caps, portal headers and pooled sources in real generated chunks; it rotates 180° and proves cut/restore with stable instance counts | Packaged-build capture and controller playthrough |
 | Role displays | Unit tests cover role palette, proportions, segmentation, wall choice and deterministic fallback; browser test requires housing and screen pools in generated rooms | Confirm at least three room families remain recognizable on Deck at gameplay scale |
+| Hallway rhythm | Unit tests cover axis/width derivation, every fallback contract, rail/frame selection, cables and signal rhythm; source regression requires all three bounded instance pools | Traverse connector chunks on Deck and PC and confirm frames remain outside the navigation lane |
 
 ## Explicit non-goals for this pass
 

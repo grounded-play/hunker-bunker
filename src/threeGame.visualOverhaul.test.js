@@ -36,6 +36,14 @@ describe('Visual Overhaul Phase B & D (Surface Depth & Grade)', () => {
             expect(threeGameSource).toContain('displayFamilies: [...displayFamilies]');
         });
 
+        it('activates hallway dressing kits and lighting rhythm in bounded instance pools', () => {
+            expect(threeGameSource).toContain('planHallwayRouteDressing(metadata, grid)');
+            expect(threeGameSource).toContain('isHallwayRouteStructurePool: true');
+            expect(threeGameSource).toContain('isHallwayRouteCablePool: true');
+            expect(threeGameSource).toContain('isHallwayRouteSignalPool: true');
+            expect(threeGameSource).toContain('lightingRhythms: [...new Set(plans.map((plan) => plan.lightingRhythm))]');
+        });
+
         it('injects vascular pulsation into floor emissive radiance', () => {
             expect(threeGameSource).toContain('vec3 bioVeinColor = vec3(1.0, 0.44, 0.08)');
             expect(threeGameSource).toContain('totalEmissiveRadiance += vec3(0.0, 0.7, 0.85) * glowIntensity * 1.35 + bioVeinColor');

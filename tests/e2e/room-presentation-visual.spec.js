@@ -176,4 +176,45 @@ test('procedural bunker rooms mount practical lights and foreground cutaways', a
     await page.screenshot({
         path: 'docs/reports/assets/gameplay-room-presentation-rotated-2026-09-30.png'
     });
+
+    const hallwayDressing = await page.evaluate(({ chunkKey }) => {
+        const game = window.game;
+        const group = game.chunkMeshes.get(chunkKey);
+        if (!group) return null;
+        const [chunkX, chunkY] = chunkKey.split(',').map(Number);
+        const grid = Array.from(
+            { length: game.chunkSize },
+            () => Array(game.chunkSize).fill('#')
+        );
+        const center = Math.floor(game.chunkSize / 2);
+        for (let y = 1; y < game.chunkSize - 1; y += 1) grid[y][center] = '.';
+        game.addHallwayRouteDressing(group, chunkX, chunkY, {
+            wayfindingMarkers: [{
+                x: center,
+                y: center,
+                dressingKit: 'pipes_and_cable_trays',
+                lightingRhythm: 'warning'
+            }]
+        }, grid);
+        const pools = group.children.filter((child) => (
+            child.userData?.isHallwayRouteStructurePool
+            || child.userData?.isHallwayRouteCablePool
+            || child.userData?.isHallwayRouteSignalPool
+        ));
+        return {
+            poolCount: pools.length,
+            structureCount: pools.find((pool) => pool.userData.isHallwayRouteStructurePool)?.count ?? 0,
+            cableCount: pools.find((pool) => pool.userData.isHallwayRouteCablePool)?.count ?? 0,
+            signalCount: pools.find((pool) => pool.userData.isHallwayRouteSignalPool)?.count ?? 0,
+            hasCollisionTag: pools.some((pool) => pool.userData.isWall || pool.userData.isSolidProp)
+        };
+    }, target);
+    expect(hallwayDressing).toEqual({
+        poolCount: 3,
+        structureCount: 3,
+        cableCount: 2,
+        signalCount: 3,
+        hasCollisionTag: false
+    });
+    await page.waitForTimeout(500);
 });
