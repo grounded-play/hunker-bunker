@@ -57,13 +57,11 @@ The following items are **true pending tasks** required for full retail launch, 
 
 ### New QA finding: Terminal day-cycle UI
 
-- [ ] **P1 — Make the Terminal day-cycle status live and legible.** The
-  underlying campaign/rest simulation is active, but the terminal tick is
-  unreachable behind its own blocking-overlay return, the Objective / Night Log
-  is an open-time snapshot, and the UI does not explain that campaign day
-  advances at a cot/camp rather than through the 150-second lighting loop. See
-  the complete diagnosis, source links, implementation checklist and acceptance
-  criteria in [Terminal Day-Cycle UI TODO](terminal-day-cycle-ui-todo-2026-09-24.md).
+- [x] **P1 — Make the Terminal day-cycle status live and legible.** *(Resolved 2026-09-24 in commit `0a3caf6e`)*. The
+  underlying campaign/rest simulation is active, and the terminal modal refresh
+  runs on a bounded 500ms cadence in the blocking overlay path, displaying `CYCLE HOLD — TERMINAL ACTIVE`
+  while surviving time ticks live and the Advance Day status card clearly explains rest availability.
+  See [Terminal Day-Cycle UI SPEC](terminal-day-cycle-ui-todo-2026-09-24.md).
 
 ### Domain: 3D Art & Assets
 
