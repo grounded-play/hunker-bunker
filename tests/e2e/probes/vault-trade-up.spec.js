@@ -96,3 +96,46 @@ test('on a Steam build the trade-up is disabled with a reason instead of reverti
     await expect(page.locator('#vault-smelter-status')).toContainText(/Steam item service/i);
     await expect(page.locator('#foundry-hub-tabs [data-tab="tradeup"]')).toHaveClass(/is-locked/);
 });
+
+test('on a Steam build with an updated backend, the trade-up goes through the server and sticks', async ({ page }) => {
+    await page.addInitScript(() => {
+        // A fake backend: five rares, trade-up capability, and a trade-up
+        // route that replaces them with one epic (as server/steamTradeUp.js does).
+        let inventory = [4103, 4104, 4105, 4106, 4103].map((itemdefid, i) => ({ itemId: `r${i}`, itemdefid, quantity: 1 }));
+        window.__tradeUpCalls = [];
+        const api = {
+            getQaToolsEnabled: () => Promise.resolve(false),
+            getSteamIdentity: () => Promise.resolve({ active: true, steamId64: '76561198000000001', persona: 'Probe' }),
+            refreshSteamInventory: () => Promise.resolve({ ok: true, inventory, capabilities: ['trade-up', 'redeem'] }),
+            tradeUpSteamInventory: (rarity, requestId) => {
+                window.__tradeUpCalls.push({ rarity, requestId });
+                inventory = [{ itemId: 'e1', itemdefid: 4107, quantity: 1 }];
+                return Promise.resolve({ ok: true, consumed: [], granted: [{ itemId: 'e1', itemdefid: 4107, quantity: 1 }] });
+            }
+        };
+        window.electronAPI = new Proxy(api, {
+            get(target, prop) {
+                if (prop in target) return target[prop];
+                if (typeof prop === 'string' && prop.startsWith('on')) return () => {};
+                if (prop === 'setStat' || prop === 'setSteamInputPhase') return () => {};
+                return () => Promise.reject(new Error(`stubbed offline: ${String(prop)}`));
+            }
+        });
+    });
+    await bootToOperatorMenu(page);
+    await openSmelter(page);
+    await expect(page.locator('#foundry-hub-tabs [data-tab="tradeup"]')).not.toHaveClass(/is-locked/);
+    await expect(card(page, 'rare')).toContainText('5 / 5');
+
+    await card(page, 'rare').locator('button').click();
+    await expect(card(page, 'rare')).toContainText('0 / 5');
+    await expect(card(page, 'epic')).toContainText('1 / 5');
+    const calls = await page.evaluate(() => window.__tradeUpCalls);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].rarity).toBe('rare');
+    expect(calls[0].requestId).toMatch(/^smelt-/);
+
+    await page.locator('#close-foundry-hub').click();
+    await openSmelter(page);
+    await expect(card(page, 'epic')).toContainText('1 / 5');
+});

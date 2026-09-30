@@ -31,7 +31,7 @@
     "prerender:assemble": "node scripts/assemble-prerender-atlas.mjs",
     "prerender:validate": "node scripts/validate-prerender-atlas.mjs",
     "presubmit": "npm run presubmit:generated",
-    "presubmit:generated": "npm run steam:claims:check && npm run audio:plan-sfx:check && npm run audit:retail-assets:check && npm run steam:item-catalog:check && npm run audit:soundtrack && npm run audit:chroma-green:check && npm run audit:economy-icons",
+    "presubmit:generated": "npm run steam:claims:check && npm run audio:plan-sfx:check && npm run audit:retail-assets:check && npm run steam:item-catalog:check && npm run steam:trade-up-catalog:check && npm run audit:soundtrack && npm run audit:chroma-green:check && npm run audit:economy-icons",
     "audio:plan-sfx": "node scripts/generate-plan-sfx.js",
     "audio:plan-sfx:check": "node scripts/generate-plan-sfx.js --check",
     "audio:ending-mixes:check": "node scripts/validate-ending-audio-manifest.mjs",
@@ -74,7 +74,9 @@
     "logs:analyze": "node scripts/analyze-session-logs.mjs",
     "audit:economy-icons": "python3 scripts/fix-chroma-economy-icons.py --check",
     "electron:dev:headless": "concurrently \"vite\" \"wait-on http://localhost:5173 && xvfb-run --server-args='-screen 0 1024x768x24' cross-env ELECTRON_DEV=1 electron .\"",
-    "electron:debug:remote": "concurrently \"vite\" \"wait-on http://localhost:5173 && xvfb-run --server-args='-screen 0 1024x768x24' cross-env ELECTRON_DEV=1 electron --remote-debugging-port=9222 .\""
+    "electron:debug:remote": "concurrently \"vite\" \"wait-on http://localhost:5173 && xvfb-run --server-args='-screen 0 1024x768x24' cross-env ELECTRON_DEV=1 electron --remote-debugging-port=9222 .\"",
+    "steam:trade-up-catalog": "node scripts/build-trade-up-catalog.js",
+    "steam:trade-up-catalog:check": "node scripts/build-trade-up-catalog.js --check"
   },
   "build": {
     "appId": "com.icecave.hunkerbunker",

@@ -362,6 +362,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ),
     requestSteamMilestoneGrant: (milestone, runKey) => withSteamSession('/steam/inventory/grant-milestone', { milestone, runKey }),
     exchangeSteamInventory: (recipeId, materials) => withSteamSession('/steam/inventory/exchange', { recipeId, materials }),
+    // Server-authoritative Smelter and Dispensary (server/steamTradeUp.js):
+    // the client names the tier or target, the backend picks what to consume.
+    tradeUpSteamInventory: (rarity, requestId) => withSteamSession('/steam/inventory/trade-up', { rarity, requestId }),
+    redeemSteamItem: (itemdefid, requestId) => withSteamSession('/steam/inventory/redeem', { itemdefid, requestId }),
     getSteamMarketEligibility: () => withSteamSessionGet('/steam/market/eligibility'),
     getSteamStoreCatalog: () => requestSteamBackend('/steam/store/catalog'),
     purchaseSteamKeys: async (sku, requestId = `store-${Date.now()}-${Math.random().toString(36).slice(2)}`) => {
