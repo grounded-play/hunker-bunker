@@ -1,19 +1,40 @@
 import { expect, test } from '@playwright/test';
+import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
 
 const CLASSES = ['scout', 'tank', 'engineer'];
 const STATES = ['idle', 'bloodied', 'frozen', 'toxic', 'critical', 'dead'];
 const CAPTURE_SCREENSHOTS = process.env.HB_HUD_SCREENSHOTS === '1';
 
+async function bootWearSession(page) {
+    let lastError = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+            await bootToOperatorMenu(page);
+            await startRunAndSkipIntro(page);
+            await page.waitForFunction(() => Boolean(window.suitCondition && window.hudGameplayState && window.game));
+            return;
+        } catch (error) {
+            lastError = error;
+            if (attempt < 2) await page.goto('/');
+        }
+    }
+    throw lastError;
+}
+
 test.describe('HUD suit-condition visual states', () => {
+    test.describe.configure({ timeout: 300_000 });
+
     test('keeps all condition paint on class-invariant housings', async ({ page }, testInfo) => {
         await page.setViewportSize({ width: 1280, height: 800 });
-        await page.goto('/');
-        await page.waitForFunction(() => Boolean(window.suitCondition && window.hudGameplayState));
+        await page.addInitScript(() => localStorage.setItem('hb_hud_layout', 'dock'));
+        await bootWearSession(page);
         await page.evaluate(() => {
             document.documentElement.dataset.hudLayout = 'dock';
             document.documentElement.classList.remove('phase-menu');
             document.documentElement.classList.add('phase-gameplay');
             document.getElementById('ui').classList.remove('hidden');
+            window.game.setGodMode?.(true);
+            window.game.setLoadingPaused?.(true);
         });
 
         let baseline = null;

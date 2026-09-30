@@ -1704,23 +1704,23 @@ export class ThreeGame {
             open: new THREE.MeshStandardMaterial({
                 color: 0x00e5ff,
                 emissive: 0x00e5ff,
-                emissiveIntensity: 1.35,
+                emissiveIntensity: 2.4,
                 metalness: 0.35,
-                roughness: 0.32
+                roughness: 0.28
             }),
             closed: new THREE.MeshStandardMaterial({
                 color: 0xff2a00,
                 emissive: 0xff2a00,
-                emissiveIntensity: 1.35,
+                emissiveIntensity: 2.4,
                 metalness: 0.35,
-                roughness: 0.32
+                roughness: 0.28
             }),
             locked: new THREE.MeshStandardMaterial({
                 color: 0xffaa00,
                 emissive: 0xffaa00,
-                emissiveIntensity: 1.35,
+                emissiveIntensity: 2.4,
                 metalness: 0.35,
-                roughness: 0.32
+                roughness: 0.28
             })
         };
 
@@ -2035,7 +2035,7 @@ export class ThreeGame {
 
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x0b0d0f);
-        this.scene.fog = new THREE.Fog(0x0b0d0f, 10, 28);
+        this.scene.fog = new THREE.Fog(0x0b0d0f, 18, 40);
         // Create all eight renderer-visible slots before the loading-screen
         // shader warm-up. Creating them on the first gameplay update would
         // compile the zero-light variant during staging and miss again when
@@ -2221,9 +2221,9 @@ export class ThreeGame {
                 Math.max(1, Math.floor(window.innerWidth * 0.5)),
                 Math.max(1, Math.floor(window.innerHeight * 0.5))
             ),
-            0.62,   // strength -- restrained; this sits under AgX, not over it
-            0.45,   // radius
-            0.95    // threshold: genuine emissives only
+            0.72,   // strength -- restrained; this sits under AgX, not over it
+            0.48,   // radius
+            0.92    // threshold: genuine emissives only
         );
         this.composer.addPass(this.bloomPass);
 
@@ -3922,15 +3922,15 @@ export class ThreeGame {
     }
 
     setupLighting() {
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+        const ambientLight = new THREE.AmbientLight(0xd6e4ff, 0.58);
         this.scene.add(ambientLight);
         this.ambientLight = ambientLight;
 
-        const fillLight = new THREE.HemisphereLight(0x6b8db3, 0x07090c, 0.55);
+        const fillLight = new THREE.HemisphereLight(0x6b8db3, 0x05080c, 0.45);
         this.scene.add(fillLight);
         this.fillLight = fillLight;
 
-        const directionalLight = new THREE.DirectionalLight(0xd6e7ff, 2.5);
+        const directionalLight = new THREE.DirectionalLight(0xd6e7ff, 2.3);
         directionalLight.position.set(10, 18, 8);
         directionalLight.castShadow = true;
         // 2048 as before fbf260f halved it: 1024 over a 32 m frustum gave
@@ -3967,7 +3967,7 @@ export class ThreeGame {
             fill: fillLight.intensity,
             playerGlow: playerGlow.intensity
         };
-        this.baseFogRange = { near: this.scene.fog?.near ?? 10, far: this.scene.fog?.far ?? 28 };
+        this.baseFogRange = { near: this.scene.fog?.near ?? 18, far: this.scene.fog?.far ?? 40 };
     }
 
     updateDirectionalShadowFrustum() {
@@ -4406,6 +4406,12 @@ export class ThreeGame {
             consoleSprite.renderOrder = 4;
             this.scene.add(consoleSprite);
             ship.consoleSprite = consoleSprite;
+
+            // Phosphor green terminal light pool (reliquary CRT console)
+            const consoleLight = new THREE.PointLight(0x38ef7d, 2.0, 3.8, 2.0);
+            consoleLight.position.set(consoleX, 0.65, consoleZ + 0.2);
+            this.scene.add(consoleLight);
+            ship.consoleLight = consoleLight;
 
             const o2Module = createModuleSprite(ship, {
                 keyPrefix: 'o2Module',
@@ -24284,7 +24290,7 @@ export class ThreeGame {
             this.ambientLight.intensity *= GATE_CHALLENGE_TUNING.blackoutLightMultiplier;
             this.directionalLight.intensity *= GATE_CHALLENGE_TUNING.blackoutLightMultiplier;
         }
-        const minAmbientFloor = blackout ? 0.22 : atmosphere?.sparking ? 0.3 : 0.45;
+        const minAmbientFloor = blackout ? 0.18 : atmosphere?.sparking ? 0.25 : 0.35;
         if (this.ambientLight.intensity < minAmbientFloor) {
             this.ambientLight.intensity = minAmbientFloor;
         }
