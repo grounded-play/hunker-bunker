@@ -1249,12 +1249,40 @@ html[data-hud-layout="dock"] #game-viewport #ui #radar-scan-panel {
   border: calc(1 * var(--u)) solid rgba(249, 148, 21, 0.4) !important; border-left: 0 !important;
 }
 html[data-hud-layout="dock"] #game-viewport #ui #class-ability-panel {
-  right: calc(var(--hud-margin) + 68 * var(--u)) !important;
-  width: calc(72 * var(--u)) !important;
-  border-radius: 0 !important;
+  right: var(--hud-margin) !important;
+  width: calc(140 * var(--u)) !important;
+  border-radius: calc(6 * var(--u)) !important;
 }
-/* radar scan sits with the gun until the scan ring on the map disc lands (§3A) */
-html[data-hud-layout="dock"] #game-viewport #ui #radar-scan-panel { right: var(--hud-margin) !important; border-radius: 0 calc(6 * var(--u)) calc(6 * var(--u)) 0 !important; }
+/* Tactical map radar ring: radar scan sits directly above the map disc bezel */
+html[data-hud-layout="dock"] #game-viewport #ui #radar-scan-panel {
+  left: var(--hud-margin) !important;
+  right: auto !important;
+  bottom: calc(var(--dock-bottom) + 68 * var(--u)) !important;
+  width: calc(220 * var(--u)) !important;
+  border-radius: calc(6 * var(--u)) !important;
+  border-color: rgba(0, 210, 255, 0.45) !important;
+  background: rgba(8, 14, 21, 0.92) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(0, 210, 255, 0.1) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .desktop-compass__ring::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 210, 255, 0.45);
+  box-shadow: 0 0 8px rgba(0, 210, 255, 0.35);
+  pointer-events: none;
+  animation: radar-bezel-sweep 4s linear infinite;
+}
+
+@keyframes radar-bezel-sweep {
+  0% { transform: rotate(0deg); opacity: 0.85; }
+  50% { opacity: 0.4; }
+  100% { transform: rotate(360deg); opacity: 0.85; }
+}
+
 html[data-hud-layout="dock"] #game-viewport #ui #class-ability-panel .class-ability-panel__name,
 html[data-hud-layout="dock"] #game-viewport #ui #radar-scan-panel .class-ability-panel__name {
   font-size: calc(14 * var(--u)) !important; line-height: calc(14 * var(--u)) !important;
