@@ -18819,6 +18819,14 @@ export class ThreeGame {
                     label: `SETTLE SURVIVOR AT ${camp.label?.toUpperCase() || 'SAFE HAVEN'}`
                 };
             }
+
+            if (['alive', 'robbed'].includes(status) && (camp.isWorkbench || camp.hasWorkbench)) {
+                return {
+                    camp,
+                    action: 'field-workbench',
+                    label: `FIELD WORKBENCH — CRAFT & REPAIR (${camp.label?.toUpperCase() || 'SAFE HAVEN'})`
+                };
+            }
             // Suspicion >= 50 locks the camp down: gates shut, barter and aid
             // refused, strobes running. Culls and breaches stay possible —
             // the lockdown is social, not physical. Dormant-phase camps never
@@ -18931,6 +18939,14 @@ export class ThreeGame {
             // is dayCycle's canRestNow(), the same rule every other bed asks.
             // It used to be an inline gate that additionally required an Act 2
             // `dormant` camp, which is why this verb almost never appeared.
+            if (['alive', 'robbed'].includes(status) && (phase === 'dormant' || !this.isAct2Active())) {
+                return {
+                    camp,
+                    action: 'field-workbench',
+                    label: `FIELD WORKBENCH — CRAFT & REPAIR (${camp.label?.toUpperCase() || 'SAFE HAVEN'})`
+                };
+            }
+
             const restCheck = this.canRestAt(camp, { status });
             if (restCheck.allowed) {
                 return {
@@ -19439,12 +19455,76 @@ export class ThreeGame {
         return true;
     }
 
+    openFieldWorkbench(camp) {
+        if (!camp) return false;
+        this.showBunkerLine?.(`FIELD WORKBENCH ACCESSED // SAFE HAVEN FABRICATION LINK`);
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.5, playbackRate: 1.2 });
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('open-field-workbench', {
+                detail: {
+                    campId: camp.id,
+                    campLabel: camp.label,
+                    recipes: [
+                        { id: 'ammo_pack', name: 'Standard Munitions Pack', cost: { scrap: 15 }, effect: 'Refills 30 Ammo' },
+                        { id: 'med_patch', name: 'Emergency Bio-Suture', cost: { med: 20 }, effect: 'Restores 40 HP' },
+                        { id: 'suit_armor_plate', name: 'Reinforced Suit Plating', cost: { scrap: 25, tech: 10 }, effect: 'Repairs Suit Condition & +25 Shield' }
+                    ]
+                }
+            }));
+        }
+        return true;
+    }
+
+    craftFieldRecipe(recipeId) {
+        if (!recipeId) return false;
+        const bank = this.bank?.getState?.() ?? {};
+        if (recipeId === 'ammo_pack') {
+            const cost = 15;
+            if ((bank.scrap ?? 0) < cost) {
+                this.showBunkerLine?.('WORKBENCH: INSUFFICIENT SCRAP FOR AMMO PACK');
+                return false;
+            }
+            this.bank?.spend?.({ scrap: cost });
+            this.currentClip = this.maxClip;
+            this.totalAmmo = Math.min(this.maxTotalAmmo, (this.totalAmmo ?? 0) + 30);
+            this.emitAmmoState?.();
+            this.showBunkerLine?.('WORKBENCH: MUNITIONS PACK SYNTHESIZED');
+            window.AudioManager?.play?.('weapon_reload', { volume: 0.6 });
+            return true;
+        } else if (recipeId === 'med_patch') {
+            const cost = 20;
+            if ((bank.med ?? 0) < cost) {
+                this.showBunkerLine?.('WORKBENCH: INSUFFICIENT MED SUPPLIES FOR SUTURE');
+                return false;
+            }
+            this.bank?.spend?.({ med: cost });
+            this.healPlayer?.(40);
+            this.showBunkerLine?.('WORKBENCH: EMERGENCY SUTURE APPLIED (+40 HP)');
+            window.AudioManager?.play?.('fx_level_up', { volume: 0.5, playbackRate: 1.3 });
+            return true;
+        } else if (recipeId === 'suit_armor_plate') {
+            if ((bank.scrap ?? 0) < 25 || (bank.tech ?? 0) < 10) {
+                this.showBunkerLine?.('WORKBENCH: INSUFFICIENT MATERIALS FOR ARMOR PLATING');
+                return false;
+            }
+            this.bank?.spend?.({ scrap: 25, tech: 10 });
+            this.playerShieldHp = Math.min(this.playerShieldMax || 50, (this.playerShieldHp ?? 0) + 25);
+            this.emitHealthState?.();
+            this.showBunkerLine?.('WORKBENCH: SUIT PLATING REINFORCED (+25 SHIELD)');
+            window.AudioManager?.play?.('turret_reprogram', { volume: 0.5 });
+            return true;
+        }
+        return false;
+    }
+
     interactWithAct2Camp() {
         if (!this.isGameplayInputActive() || !this.player || !this.act2) return false;
         const actionable = this.getActionableCampAt(this.player.position.x, this.player.position.z);
         if (!actionable) return false;
         const { camp, action } = actionable;
 
+        if (action === 'field-workbench') return this.openFieldWorkbench(camp);
         if (action === 'settle-companion') return this.settleCompanionAtCamp(camp);
         if (action === 'treat-scar') return this.treatScarAtCamp(camp, actionable.scarId);
         if (action === 'shore-up') return this.shoreUpCamp(camp);
