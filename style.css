@@ -5396,6 +5396,7 @@ input:checked+.slider:before {
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.2s;
+  z-index: 20;
 }
 
 .close-modal:hover {
@@ -14413,7 +14414,21 @@ button.archive-log-entry:active {
   margin-bottom: calc(var(--vu) * 1.8);
   flex: 0 0 auto;
   border-bottom: 1px solid rgba(var(--credits-glow-rgb), 0.22);
-  padding-bottom: calc(var(--vu) * 1.2);
+  padding: 0 calc(var(--vu) * 6) calc(var(--vu) * 1.2);
+}
+
+.credits-modal-content .close-modal {
+  z-index: 20;
+  border-color: rgba(var(--credits-glow-rgb), 0.45);
+  color: #22d3ee;
+}
+
+.credits-modal-content .close-modal:hover,
+.credits-modal-content .close-modal:focus-visible {
+  background: rgba(var(--credits-glow-rgb), 0.15);
+  border-color: #22d3ee;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(var(--credits-glow-rgb), 0.4);
 }
 
 .credits-header-kicker {

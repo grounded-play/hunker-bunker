@@ -10680,11 +10680,32 @@ const aboutBtn = document.getElementById('about-btn');
 const aboutModal = document.getElementById('about-modal');
 const closeAbout = document.getElementById('close-about');
 
+function openAboutModal() {
+    const modal = document.getElementById('about-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+    document.getElementById('close-about')?.focus();
+}
+
+function closeAboutModal() {
+    const modal = document.getElementById('about-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+    const titleBtn = document.getElementById('title-about-btn');
+    if (titleBtn && !document.getElementById('splash')?.classList.contains('hidden')) {
+        titleBtn.focus();
+    }
+}
+
 if (aboutBtn && aboutModal) {
-    aboutBtn.addEventListener('click', () => aboutModal.classList.remove('hidden'));
+    aboutBtn.addEventListener('click', openAboutModal);
 }
 if (closeAbout && aboutModal) {
-    closeAbout.addEventListener('click', () => aboutModal.classList.add('hidden'));
+    closeAbout.addEventListener('click', closeAboutModal);
 }
 
 // Typography Diagnostic Toggle (Debug Tool)
@@ -12485,7 +12506,7 @@ document.addEventListener('keydown', (event) => {
 
         const aboutModal = document.getElementById('about-modal');
         if (aboutModal && !aboutModal.classList.contains('hidden')) {
-            aboutModal.classList.add('hidden');
+            closeAboutModal();
             event.preventDefault();
             return;
         }
@@ -12621,10 +12642,7 @@ function setupClickOutside(modalId, closeAction) {
 
 setupClickOutside('dev-console-modal', closeDevConsoleModal);
 
-setupClickOutside('about-modal', () => {
-    const aboutModal = document.getElementById('about-modal');
-    if (aboutModal) aboutModal.classList.add('hidden');
-});
+setupClickOutside('about-modal', closeAboutModal);
 
 // Lore readouts pause gameplay input, so clicking away must resume it too.
 setupClickOutside('lore-modal', closeLoreModalAndResume);
@@ -16008,10 +16026,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         titleAchievementsBtn.addEventListener('click', openAchievementsModal);
     }
     if (titleAboutBtn) {
-        titleAboutBtn.addEventListener('click', () => {
-            const aboutModal = document.getElementById('about-modal');
-            if (aboutModal) aboutModal.classList.remove('hidden');
-        });
+        titleAboutBtn.addEventListener('click', openAboutModal);
     }
     if (titleSettingsBtn) {
         titleSettingsBtn.addEventListener('click', openSettingsModal);

@@ -193,4 +193,15 @@ test.describe('complete menu keyboard and Steam Deck reachability', () => {
         await expect(page.locator('#about-modal')).toBeHidden();
         await expect(page.locator('#title-about-btn')).toBeFocused();
     });
+
+    test('clicking the about modal close button (X) with mouse closes the modal', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-about-btn').click();
+        await expect(page.locator('#about-modal')).toBeVisible();
+        await expect(page.locator('#close-about')).toBeVisible();
+
+        await page.locator('#close-about').click();
+        await expect(page.locator('#about-modal')).toBeHidden();
+        await expect(page.locator('#title-about-btn')).toBeFocused();
+    });
 });
