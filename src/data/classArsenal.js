@@ -22,19 +22,15 @@ export const CLASS_ARCHETYPES = Object.freeze({
 // corresponding runtime GLBs land.
 export const CLASS_CHASSIS_SKINS = Object.freeze({
     // 4200/4207/4214/4228/4235 are static meshes with no skin binding;
-    // 5001 has no GLB. Keep unsupported bodies out of the picker until the
-    // asset audit can prove they animate instead of exposing a T-pose/blank.
-    scout: ['4113', '4115', '4118', '4221', '5003', '5004', ...(COMMUNITY_CLASS_MAP?.scout || [])],
+    // 5001 Ghost Runner is fully rigged and skinned.
+    scout: ['4113', '4115', '4118', '4221', '5001', '5003', '5004', ...(COMMUNITY_CLASS_MAP?.scout || [])],
     tank: ['4114', '4117', '4119', '5005', '5007', '5008', ...(COMMUNITY_CLASS_MAP?.tank || [])],
     engineer: ['4112', '4116', '5011', '5012', ...(COMMUNITY_CLASS_MAP?.engineer || [])]
 });
 
 export const ARCHETYPE_SKINS = Object.freeze({
     talon: ['2200', '4100', '4105', '4201', '4222'],
-    // Achievement weapon rewards 5002/5006/5009/5010 remain registered and
-    // unlockable, but their asset manifest is explicitly `pending`. Do not
-    // offer an emblem-backed tile that silently renders the factory gun.
-    talon_c: ['4101', '4104', '4108', '4110'],
-    siege_breaker: ['4102', '4106', '4107', '4208', '4229'],
-    tesla_lock: ['4103', '4109', '4111', '4215', '4236']
+    talon_c: ['4101', '4104', '4108', '4110', '5002'],
+    siege_breaker: ['4102', '4106', '4107', '4208', '4229', '5006'],
+    tesla_lock: ['4103', '4109', '4111', '4215', '4236', '5009', '5010']
 });
