@@ -1,6 +1,6 @@
 # Gameplay world: current build versus visual target
 
-**Date:** 2026-09-29 · **Updated:** 2026-09-30
+**Date:** 2026-09-29 · **Updated:** 2026-09-30 (second review added)
 **Branch:** `dev/sprint-48`  
 **Scope:** the rendered play space behind the HUD. HUD layout is deliberately out of scope for this pass.
 
@@ -103,6 +103,74 @@ Acceptance: a screenshot without HUD identifies at least three room roles, while
 | Role displays | Unit tests cover role palette, proportions, segmentation, wall choice and deterministic fallback; browser test requires housing and screen pools in generated rooms | Confirm at least three room families remain recognizable on Deck at gameplay scale |
 | Hallway rhythm | Unit tests cover axis/width derivation, every fallback contract, rail/frame selection, cables and signal rhythm; source regression requires all three bounded instance pools | Traverse connector chunks on Deck and PC and confirm frames remain outside the navigation lane |
 | Thresholds and drips | Unit tests cover role palette, sill orientation, deterministic sparse selection and biome tint; browser test compiles and requires both instance pools | Confirm markings read at Deck resolution and transparent drips do not disturb frame pacing |
+
+## 2026-09-30 review: what still separates the build from the concept
+
+A second pass compared real captures of this branch (at `f175065e`, with every phase
+above in) against the concept frame. These captures used headless Chrome with
+SwiftShader at 1920×1080, Tank, day 1 around 06:30: valid for composition and relative
+brightness, not for frame time.
+
+| Frame | What it shows |
+| :--- | :--- |
+| [Default camera, spawn](assets/concept-gap/01-default-3p-spawn.jpg) | The player is hard to find; the top third is blurred; the frame is dark outside a circle. |
+| [Default camera, room](assets/concept-gap/02-default-3p-room.jpg) | The room fixtures are there, but they read as fringed smears; walls are black slabs. |
+| [Default camera, wall pull-in](assets/concept-gap/03-default-3p-room-wall-pull-in.jpg) | Near a wall, the camera pulls in until the player is a cropped shoulder. |
+| [Default camera, skyline](assets/concept-gap/04-default-3p-skyline.jpg) | Outside a door: a near-horizontal view across black wall blocks. |
+| [Isometric camera, room](assets/concept-gap/05-iso-room.jpg), [corridor](assets/concept-gap/06-iso-corridor.jpg) | The opt-in isometric camera frames like the concept. |
+| [Concept](assets/concept-gap/00-concept-slim-dock.jpg), [annotated blueprint](assets/concept-gap/00-gemini-annotated-blueprint.jpg) | The two supplied images, for side-by-side review. |
+
+This pass fixed the world itself. Three things not in it still hide that world, and
+they are the largest remaining gap:
+
+1. **The default gameplay camera is third-person, not isometric.**
+   - `main.js` defaults `cameraMode` to `'third-person'` unless
+     `hb_camera_mode=isometric`, so the isometric view the concept shows is opt-in.
+   - Third-person was made the default on 2026-08-25 as a reversible trial
+     ([doc](../third-person-over-shoulder-camera-2026-08-25.md)). That doc lists its
+     own costs: reduced situational awareness, tight corridor visibility, and camera
+     pull-in near walls. Captures 03–04 show all three.
+   - The camera-quadrant cutaway above is built for the orbiting isometric camera; the
+     shoulder camera mostly sees walls side-on.
+   - "The pre-pass game had the correct general camera" is true only for players who
+     changed the setting.
+2. **A tilt-shift blur covers gameplay.**
+   - A vertical and a horizontal `TiltShiftPassShader` pass (blur 4.2, with colour
+     fringing), plus the `.gameplay-tilt-shift` CSS layer, soften everything outside a
+     horizontal band.
+   - This is what blurs the top of every capture, and it turns the new fixtures'
+     bloom into fringed smears. The concept is sharp edge to edge.
+3. **Darkness is a screen-space vignette, not the building.**
+   - `darknessOverlay` fills the screen with the fog colour, clears a circle around the
+     player and carves the flashlight cone.
+   - It ignores walls, rooms and exploration, so a lit room outside the circle goes
+     dark while unexplored space is fog-coloured rather than the concept's black void.
+   - The room lights added in Phase 2 are partly covered by it.
+
+Smaller gaps:
+- **Characters:** they have no rim or silhouette. The player is one bright pool;
+  enemies are dark-on-dark.
+- **Walls:** faces still read as black blocks at gameplay distance. The trim-sheet
+  detail (seams, frames, hazard stripes) is not visible at this scale and lighting.
+
+### Proposed next work (not claimed)
+
+| Order | Work | Why / acceptance |
+| :--- | :--- | :--- |
+| 1 | **Comparison harness.** A probe that captures the same four frames (spawn, room, corridor, room with an enemy) from a fixed seed, in both cameras, at 1280×800 and 1920×1080, with mean luminance, lit-pixel share and a sharpness score. | Every later change is judged side by side with the concept and must not regress. |
+| 2 | **Decision 12: default camera isometric,** with third-person kept in settings. | The concept, the movement and controls standard and this pass's cutaway system all assume it. Needs the owner's yes, because it reverses the 2026-08-25 trial. |
+| 3 | **No tilt-shift in gameplay;** keep it for menus and cutscenes if wanted. | Removes the blur and the fringing on fixtures, and removes two full-screen passes: frame time goes down, not up. |
+| 4 | **World-space darkness** in place of the vignette: unexplored space black with crisp edges, explored but unseen space dimmed, line of sight full, and the flashlight cone carved inside. Built from the existing line-of-sight and explored-room data as a low-resolution mask the floor and wall shaders read. | Rooms stay readable wherever they are lit; the void matches the concept; no extra draw pass. |
+| 5 | **Character rim/fresnel** on operators and enemies. | The player and threats read at a glance, without lifting ambient light. |
+| 6 | **Wall trim sheet** tuned for gameplay distance. | Walls read as panels, doors and pipes rather than black blocks. |
+
+HUD notes for lane B (outside this plan's scope, recorded so they're not lost):
+- **Vitals:** the hearts are tiny, `SHIP INTEGRITY` overlaps the O₂ bar, and the O₂
+  and hull bars lack clear labels and percentages.
+- **Ammo:** the `SIDEARM` label is clipped at the top of its housing, and the ammo is
+  small next to the concept's large `06/18` with a reload bar.
+- **Missing:** there are no ability slots (dash, shield), and the radar lacks blips
+  and distance readouts.
 
 ## Explicit non-goals for this pass
 
