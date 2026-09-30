@@ -12,6 +12,9 @@ their claims against the code:
   HUD and hardware;
 - the [HUD overlay review and recovery plan](hud-overlay-review-and-recovery-plan-2026-09-28.md):
   measured Deck readability failures and the R0–R4 recovery order.
+- the [gameplay world versus visual target plan](gameplay-vs-theory-comparison-and-plan.md):
+  the separate environment-rendering pass for atmosphere, practical lights, room
+  cutaways and wet industrial surfaces; HUD layout is not part of that pass.
 
 For **what Sprint 47 delivered**, read the status doc. This file is the forward plan.
 
