@@ -5,6 +5,10 @@ html[data-hud-layout="dock"] [data-hud-suppressed="true"] {
   display: none !important;
 }
 
+html[data-hud-layout="dock"] [data-hud-alert-suppressed="true"] {
+  display: none !important;
+}
+
 html[data-hud-layout="dock"] #game-viewport .hud-mission-stack {
   top: auto !important;
   right: auto !important;
@@ -32,6 +36,23 @@ html[data-hud-layout="dock"] #game-viewport #loop-step-hud {
   box-sizing: border-box !important;
 }
 
+.hud-right-rail {
+  display: contents;
+}
+
+html[data-hud-layout="dock"] #game-viewport .hud-right-rail {
+  position: absolute;
+  top: var(--hud-margin);
+  right: calc(var(--hud-margin) + 56 * var(--u));
+  width: min(calc(420 * var(--u)), calc(100% - 40 * var(--u)));
+  max-height: min(calc(440 * var(--u)), 62vh);
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--u));
+  z-index: 16900;
+  pointer-events: none;
+}
+
 .objective-drawer {
   display: contents;
   pointer-events: auto;
@@ -47,12 +68,9 @@ html[data-hud-layout="dock"] #game-viewport #loop-step-hud {
 
 html[data-hud-layout="dock"] #game-viewport #objective-drawer {
   display: block;
-  position: absolute;
-  top: var(--hud-margin);
-  /* Reserve the top-right 52 u for the persistent settings control. */
-  right: calc(var(--hud-margin) + 56 * var(--u));
-  width: min(calc(420 * var(--u)), calc(100% - 40 * var(--u)));
-  z-index: 16900;
+  position: static;
+  width: 100%;
+  flex: 0 0 auto;
 }
 
 html[data-hud-layout="dock"] #game-viewport #ui #objective-drawer.hidden {
@@ -134,6 +152,36 @@ html[data-hud-layout="dock"] #game-viewport #objective-drawer #objective-tracker
   max-height: min(calc(360 * var(--u)), 55vh);
   overflow: auto;
   gap: calc(6 * var(--u));
+}
+
+html[data-hud-layout="dock"] #game-viewport .hud-right-rail > .hud-notification-stack {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  max-height: min(calc(170 * var(--u)), 24vh);
+  min-height: 0 !important;
+  overflow: hidden;
+  flex: 0 1 auto;
+  z-index: auto !important;
+  pointer-events: none;
+}
+
+html[data-hud-layout="dock"] #game-viewport .hud-right-rail > .hud-notification-stack > * {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  max-height: inherit;
+  overflow: hidden;
+}
+
+/* One alert lane: active states stay live, but only the highest priority is
+   rendered. Hiding the winner automatically reveals the next queued state. */
+html[data-hud-layout="dock"] #game-viewport #ui :is(
+  #boss-status-panel,
+  #hazard-status-panel,
+  #queens-ledger-hud
+) {
+  top: var(--hud-margin) !important;
 }
 
 html[data-hud-layout="dock"] #game-viewport #objective-drawer .objective-tracker__item {

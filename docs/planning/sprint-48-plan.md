@@ -176,16 +176,17 @@ Source: [HUD overlay review](hud-overlay-review-and-recovery-plan-2026-09-28.md)
   **Exit:** no permanent right-side column in normal play; the three-objective Deck
   state stays within budget.
 
-  **Status (2026-09-29): prompt arbitration and the objective drawer are complete.**
+  **Status (2026-09-29): R2 is complete.**
   `src/hudInformationArchitecture.js` enforces interaction > urgent status/tutorial >
   biome context > loop guidance and suppresses every lower-priority prompt without
   changing its gameplay state. The objective registry now renders through one collapsed
   primary line with a `+n` count, expands on click, and moves into the tactical-map
   sidebar while the map is open. Classic mode keeps its original tracker and prompt
   behavior. Browser probes cover disclosure, map placement, priority and classic-mode
-  isolation; the 12-view gameplay matrix also proves the drawer clears Settings and the
-  selected prompt clears the dock. Remaining R2 work is the exclusive boss/hazard/
-  Ledger alert lane and notification height cap.
+  isolation. Boss, hazard and Queen's Ledger now share a queued priority lane, and the
+  bounded notification rail follows the drawer without covering Settings. The 12-view
+  gameplay matrix proves the drawer clears Settings and the selected prompt clears the
+  dock across all classes and target viewports.
 - **R3 (start only once R1–R2 pass):**
   - the four-second combat signal, which assigns the `this.inCombat` field the game
     already reads but never sets;

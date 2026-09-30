@@ -1589,25 +1589,6 @@
       <span id="tutorial-prompt-icon" class="tutorial-prompt__icon hidden"></span>
       <span id="tutorial-prompt-text" class="tutorial-prompt__text"></span>
     </div>
-    <!-- Right-side layout container for notifications/prompts -->
-    <div class="hud-notification-stack">
-      <!-- Radio Transmission CRT Prompt -->
-      <div id="radio-transmission-prompt" class="radio-transmission-prompt hidden" aria-live="polite">
-        <div class="radio-transmission-prompt__avatar">
-          <img id="radio-avatar-img" src="/lore_portraits/survivor_08.webp" data-i18n-alt="ui.radio.alt_sender_portrait" alt="Sender Portrait" />
-          <div class="radio-transmission-prompt__scanline"></div>
-        </div>
-        <div class="radio-transmission-prompt__body">
-          <div class="radio-transmission-prompt__header">
-            <span class="radio-transmission-prompt__signal-icon">⚡</span>
-            <span data-i18n="ui.radio_sender_name.mothership_command" id="radio-sender-name" class="radio-transmission-prompt__sender">MOTHERSHIP COMMAND</span>
-            <span data-i18n="ui.radio_transmission_prompt.online" class="radio-transmission-prompt__status">ONLINE</span>
-          </div>
-          <div id="radio-message-text" class="radio-transmission-prompt__message"></div>
-        </div>
-      </div>
-    </div>
-
     <!-- Deployment conditions and compound room names: top center, clear of the
          right-hand notification deck. Filled from ui.expedition.* by main.js. -->
     <div id="expedition-briefing-card" class="expedition-briefing-card hidden" role="status" aria-live="polite">
@@ -1691,18 +1672,39 @@
 
     </div>
 
-    <!-- Dock objective drawer. main.js still owns #objective-tracker contents;
-         the controller owns only disclosure, summary, and tactical-map placement. -->
-    <section id="objective-drawer" class="objective-drawer hidden" data-expanded="false">
-      <button id="objective-drawer-toggle" class="objective-drawer__toggle" type="button" aria-expanded="false" aria-controls="objective-tracker">
-        <span class="objective-drawer__kicker" data-i18n="ui.objective.next">NEXT OBJECTIVE</span>
-        <span id="objective-drawer-label" class="objective-drawer__label">OBJECTIVE</span>
-        <span id="objective-drawer-progress" class="objective-drawer__progress">ACTIVE</span>
-        <span id="objective-drawer-count" class="objective-drawer__count hidden"></span>
-        <span class="objective-drawer__chevron" aria-hidden="true">⌄</span>
-      </button>
-      <div id="objective-tracker" class="objective-tracker hidden" aria-live="polite"></div>
-    </section>
+    <div class="hud-right-rail">
+      <!-- Dock objective drawer. main.js still owns #objective-tracker contents;
+           the controller owns only disclosure, summary, and tactical-map placement. -->
+      <section id="objective-drawer" class="objective-drawer hidden" data-expanded="false">
+        <button id="objective-drawer-toggle" class="objective-drawer__toggle" type="button" aria-expanded="false" aria-controls="objective-tracker">
+          <span class="objective-drawer__kicker" data-i18n="ui.objective.next">NEXT OBJECTIVE</span>
+          <span id="objective-drawer-label" class="objective-drawer__label">OBJECTIVE</span>
+          <span id="objective-drawer-progress" class="objective-drawer__progress">ACTIVE</span>
+          <span id="objective-drawer-count" class="objective-drawer__count hidden"></span>
+          <span class="objective-drawer__chevron" aria-hidden="true">⌄</span>
+        </button>
+        <div id="objective-tracker" class="objective-tracker hidden" aria-live="polite"></div>
+      </section>
+
+      <!-- Notifications are bounded below the drawer in dock mode. The rail uses
+           display:contents in classic mode, preserving the original placement. -->
+      <div class="hud-notification-stack">
+        <div id="radio-transmission-prompt" class="radio-transmission-prompt hidden" aria-live="polite">
+          <div class="radio-transmission-prompt__avatar">
+            <img id="radio-avatar-img" src="/lore_portraits/survivor_08.webp" data-i18n-alt="ui.radio.alt_sender_portrait" alt="Sender Portrait" />
+            <div class="radio-transmission-prompt__scanline"></div>
+          </div>
+          <div class="radio-transmission-prompt__body">
+            <div class="radio-transmission-prompt__header">
+              <span class="radio-transmission-prompt__signal-icon">⚡</span>
+              <span data-i18n="ui.radio_sender_name.mothership_command" id="radio-sender-name" class="radio-transmission-prompt__sender">MOTHERSHIP COMMAND</span>
+              <span data-i18n="ui.radio_transmission_prompt.online" class="radio-transmission-prompt__status">ONLINE</span>
+            </div>
+            <div id="radio-message-text" class="radio-transmission-prompt__message"></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
 
     <!-- Persistent loop-state cue: always shows the next thing to do -->

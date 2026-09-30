@@ -94,4 +94,30 @@ test.describe('dock HUD information architecture', () => {
             loopSuppressed: null
         });
     });
+
+    test('queues alerts and bounds notifications below the drawer', async ({ page }) => {
+        await page.evaluate(() => {
+            for (const id of ['boss-status-panel', 'hazard-status-panel', 'queens-ledger-hud']) {
+                document.getElementById(id).classList.remove('hidden');
+            }
+            const tracker = document.getElementById('objective-tracker');
+            tracker.innerHTML = '<div class="objective-tracker__item"><span class="objective-tracker__label">PRIMARY</span><span class="objective-tracker__progress">ACTIVE</span></div>';
+            tracker.classList.remove('hidden');
+            document.getElementById('radio-transmission-prompt').classList.remove('hidden');
+        });
+
+        await expect(page.locator('html')).toHaveAttribute('data-alert-lane-id', 'boss-status-panel');
+        await expect(page.locator('#hazard-status-panel')).toHaveAttribute('data-hud-alert-suppressed', 'true');
+        await expect(page.locator('#queens-ledger-hud')).toHaveAttribute('data-hud-alert-suppressed', 'true');
+
+        await page.evaluate(() => document.getElementById('boss-status-panel').classList.add('hidden'));
+        await expect(page.locator('html')).toHaveAttribute('data-alert-lane-id', 'hazard-status-panel');
+        await expect(page.locator('#hazard-status-panel')).not.toHaveAttribute('data-hud-alert-suppressed', 'true');
+
+        const rail = page.locator('.hud-right-rail');
+        await expect(rail.locator(':scope > #objective-drawer')).toBeVisible();
+        await expect(rail.locator(':scope > .hud-notification-stack')).toBeVisible();
+        const notificationHeight = await rail.locator(':scope > .hud-notification-stack').evaluate((element) => element.getBoundingClientRect().height);
+        expect(notificationHeight).toBeLessThanOrEqual(136.5); // 170 u at the Deck/CI 0.8 u floor
+    });
 });

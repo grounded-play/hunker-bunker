@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildObjectiveSummary, selectPromptCandidate } from './hudInformationArchitecture.js';
+import { buildObjectiveSummary, selectAlertCandidate, selectPromptCandidate } from './hudInformationArchitecture.js';
 
 describe('HUD information architecture', () => {
     it('selects one prompt by interaction, urgent, context, then guidance priority', () => {
@@ -31,5 +31,17 @@ describe('HUD information architecture', () => {
             additionalCount: 2,
             total: 3
         });
+    });
+
+    it('queues alerts in boss, hazard, then Ledger order', () => {
+        const alerts = [
+            { id: 'queens-ledger-hud', visible: true },
+            { id: 'hazard-status-panel', visible: true },
+            { id: 'boss-status-panel', visible: true }
+        ];
+        expect(selectAlertCandidate(alerts).id).toBe('boss-status-panel');
+        expect(selectAlertCandidate(alerts.map((alert) => (
+            alert.id === 'boss-status-panel' ? { ...alert, visible: false } : alert
+        ))).id).toBe('hazard-status-panel');
     });
 });

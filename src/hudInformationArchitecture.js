@@ -6,6 +6,7 @@ const PROMPT_PRIORITY = Object.freeze({
 });
 
 const INTERACTION_SELECTOR = '.hud-action-prompt, .black-box-hud-prompt, .hole-hud-prompt';
+const ALERT_IDS = Object.freeze(['boss-status-panel', 'hazard-status-panel', 'queens-ledger-hud']);
 
 export function selectPromptCandidate(candidates = []) {
     return candidates
@@ -27,6 +28,12 @@ export function buildObjectiveSummary(items = []) {
         additionalCount: Math.max(0, visible.length - 1),
         total: visible.length
     };
+}
+
+export function selectAlertCandidate(candidates = []) {
+    return ALERT_IDS
+        .map((id) => candidates.find((candidate) => candidate?.id === id))
+        .find((candidate) => candidate?.visible) ?? null;
 }
 
 function elementIsRequestedVisible(element) {
@@ -79,6 +86,9 @@ export class HudInformationArchitecture {
         for (const element of this.getPromptElements()) {
             this.observer.observe(element, { attributes: true, attributeFilter: ['class', 'aria-hidden'] });
         }
+        for (const element of this.getAlertElements()) {
+            this.observer.observe(element, { attributes: true, attributeFilter: ['class', 'aria-hidden'] });
+        }
         this.refresh();
         return this;
     }
@@ -97,9 +107,14 @@ export class HudInformationArchitecture {
         ].filter(Boolean);
     }
 
+    getAlertElements() {
+        return ALERT_IDS.map((id) => this.document.getElementById(id)).filter(Boolean);
+    }
+
     refresh() {
         this.refreshObjectives();
         this.refreshPromptLane();
+        this.refreshAlertLane();
     }
 
     isMapOpen() {
@@ -176,6 +191,29 @@ export class HudInformationArchitecture {
         }
         this.root.dataset.promptLane = selected?.kind ?? 'none';
         this.root.dataset.promptLaneId = selected?.id ?? '';
+    }
+
+    refreshAlertLane() {
+        const elements = this.getAlertElements();
+        if (!this.isDock()) {
+            for (const element of elements) element.removeAttribute('data-hud-alert-suppressed');
+            delete this.root.dataset.alertLaneId;
+            return;
+        }
+        const candidates = elements.map((element) => ({
+            id: element.id,
+            element,
+            visible: elementIsRequestedVisible(element)
+        }));
+        const selected = selectAlertCandidate(candidates);
+        for (const candidate of candidates) {
+            if (!candidate.visible || candidate.element === selected?.element) {
+                candidate.element.removeAttribute('data-hud-alert-suppressed');
+            } else {
+                candidate.element.dataset.hudAlertSuppressed = 'true';
+            }
+        }
+        this.root.dataset.alertLaneId = selected?.id ?? '';
     }
 }
 
