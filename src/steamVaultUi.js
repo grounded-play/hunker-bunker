@@ -128,7 +128,6 @@ let steamCapabilities = new Set();
 let vaultSteamAccount = null;
 let selectedVaultItem = null;
 let marketEligibility = 'unknown';
-let marketEligibilityReason = null;
 let hudCardSeq = 0;
 let cacheOpeningBusy = false;
 const DEV_VAULT_STORAGE_KEY = 'hb_dev_vault_inventory_v1';
@@ -403,11 +402,12 @@ export function initSteamVaultUI() {
         activeLayout?.classList.remove('hidden');
     };
 
-    // A disabled backend means this retail build does not offer purchases.
-    // Remove the priced Store surface entirely so it cannot be mistaken for an
-    // unverified in-app-purchase implementation during Steam review.
+    // The Store tab shows whenever keys can actually be bought: through
+    // Steam's hosted Item Store (Steam Inventory items; Steam runs checkout
+    // and the Wallet) or the Microtransactions checkout. With neither, it is
+    // removed, so no priced surface appears that can't complete a purchase.
     loadStoreCatalog().then(() => {
-        const storeVisible = storePurchasesEnabled;
+        const storeVisible = storePurchasesEnabled || hostedItemStoreEnabled();
         tabStore?.classList.toggle('hidden', !storeVisible);
         if (!storeVisible) {
             storeLayout?.classList.add('hidden');
@@ -438,7 +438,7 @@ export function initSteamVaultUI() {
     });
 
     document.getElementById('vault-store-open-btn')?.addEventListener('click', openDeepRelicCache);
-    document.getElementById('vault-store-hosted-btn')?.addEventListener('click', openHostedSteamItemStore);
+    document.getElementById('vault-store-hosted-btn')?.addEventListener('click', () => openHostedSteamItemStore());
     document.getElementById('vault-btn-view-market')?.addEventListener('click', () => {
         if (!window.electronAPI?.openSteamOverlayToUrl) return;
         window.electronAPI.openSteamOverlayToUrl('https://steamcommunity.com/market/search?appid=4957040');
@@ -458,18 +458,10 @@ function isMarketEligibilityAllowed(result) {
 
 function setMarketEligibilityFromResult(result) {
     marketEligibility = result?.ok && isMarketEligibilityAllowed(result) ? 'eligible' : 'ineligible';
-    marketEligibilityReason = result?.reason ?? result?.eligibility?.reason ?? null;
 }
 
 function canOpenMarketOverlay() {
     return marketEligibility === 'eligible';
-}
-
-function getMarketEligibilityStatusText() {
-    if (marketEligibility === 'unknown') return 'STEAM MARKET CHECK PENDING';
-    if (marketEligibilityReason === 'unsupported') return 'STEAM MARKET CHECK UNSUPPORTED';
-    if (marketEligibilityReason === 'error') return 'STEAM MARKET CHECK FAILED';
-    return 'STEAM MARKET ELIGIBILITY UNCONFIRMED';
 }
 
 export async function loadVaultData() {
@@ -775,9 +767,13 @@ export function renderStoreSkuGrid() {
         const card = document.createElement('div');
         card.className = 'vault-store-sku-card';
         const priceLabel = `$${(sku.priceUsdCents / 100).toFixed(2)}`;
+        // Microtransactions checkout when the backend runs it; otherwise the
+        // key's own page in Steam's hosted Item Store.
+        const viaHostedStore = !storePurchasesEnabled && hostedItemStoreEnabled();
+        const purchasable = storePurchasesEnabled || viaHostedStore;
         const buttonLabel = storePurchasesEnabled
             ? (storePurchaseMode === 'mock' ? '◈ BUY (DEV)' : '◈ BUY VIA STEAM')
-            : formatStoreDisabledReason(storeDisabledReason);
+            : viaHostedStore ? t('ui.vault.buy_on_steam') : formatStoreDisabledReason(storeDisabledReason);
         const keyCount = sku.keys || 1;
         const savingsTag = keyCount === 5
             ? '<span class="vault-sku-save-badge">SAVE 10%</span>'
@@ -793,10 +789,10 @@ export function renderStoreSkuGrid() {
             <div class="vault-store-sku-label">${sku.label}</div>
             <div class="vault-store-sku-price">${priceLabel}</div>
             <div class="vault-store-sku-sub">${t('ui.vault.wallet_direct')}</div>
-            <button class="start-btn vault-store-buy-btn" data-sku="${sku.sku}" ${storePurchasesEnabled ? '' : 'disabled'}>${buttonLabel}</button>
+            <button class="start-btn vault-store-buy-btn" data-sku="${sku.sku}" ${purchasable ? '' : 'disabled'}>${buttonLabel}</button>
         `;
         const buyBtn = card.querySelector('.vault-store-buy-btn');
-        buyBtn?.addEventListener('click', () => purchaseKeys(sku.sku));
+        buyBtn?.addEventListener('click', () => (viaHostedStore ? openHostedSteamItemStore(sku.sku) : purchaseKeys(sku.sku)));
         grid.appendChild(card);
     }
 }
@@ -807,17 +803,13 @@ export function renderHostedItemStoreCta() {
     const btn = document.getElementById('vault-store-hosted-btn');
     if (!row || !status || !btn) return;
 
-    const url = storeHostedItemStore?.url;
-    const configured = Boolean(storeHostedItemStore?.enabled && url);
-    const enabled = configured && canOpenMarketOverlay();
+    // Buying from the Item Store needs no Community Market eligibility (that
+    // gates trading only), so a new account, like a reviewer's, can buy.
+    const configured = hostedItemStoreEnabled();
     row.classList.toggle('hidden', !configured);
-    btn.disabled = !enabled;
+    btn.disabled = !configured;
     if (!configured) {
         status.textContent = t('ui.vault.store_offline');
-        return;
-    }
-    if (!enabled) {
-        status.textContent = getMarketEligibilityStatusText();
         return;
     }
 
@@ -825,11 +817,41 @@ export function renderHostedItemStoreCta() {
     status.textContent = mode;
 }
 
-export async function openHostedSteamItemStore() {
-    const url = storeHostedItemStore?.url;
-    if (!url || !canOpenMarketOverlay()) {
+// Each store SKU is its own priced item in the Steam Inventory schema.
+const HOSTED_STORE_ITEMDEF_BY_SKU = Object.freeze({ key_1: 4001, key_5: 4005, key_15: 4015 });
+
+function hostedItemStoreEnabled() {
+    return Boolean(storeHostedItemStore?.enabled && storeHostedItemStore.url);
+}
+
+/** The Item Store page for a SKU (its item's detail page), or the store front. */
+export function hostedItemStoreUrl(store, sku = null) {
+    const base = store?.url;
+    if (!base) return null;
+    const itemdefid = HOSTED_STORE_ITEMDEF_BY_SKU[sku];
+    if (!itemdefid) return base;
+    const url = new URL(base);
+    url.pathname = `${url.pathname.replace(/\/+$/, '')}/detail/${itemdefid}/`;
+    return url.toString();
+}
+
+let refreshInventoryOnReturn = false;
+
+export async function openHostedSteamItemStore(sku = null) {
+    const url = hostedItemStoreUrl(storeHostedItemStore, typeof sku === 'string' ? sku : null);
+    if (!url) {
         renderHostedItemStoreCta();
         return;
+    }
+    if (typeof window !== 'undefined' && window.hbLog) window.hbLog('STORE', 'info', 'hosted item store opened', { sku, url });
+    // Steam grants a bought key to the inventory; re-read it when the player
+    // comes back from the overlay so the key shows without reopening.
+    if (!refreshInventoryOnReturn && typeof window !== 'undefined') {
+        refreshInventoryOnReturn = true;
+        window.addEventListener('focus', () => {
+            refreshInventoryOnReturn = false;
+            loadVaultData().catch(() => null);
+        }, { once: true });
     }
     if (window.electronAPI?.openSteamOverlayToUrl) {
         await window.electronAPI.openSteamOverlayToUrl(url);

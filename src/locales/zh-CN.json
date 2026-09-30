@@ -1146,7 +1146,8 @@
       "cache_unlocked": "宝箱已开启：获得 {count} 项奖励。",
       "cache_opened": "宝箱礼包已开启。",
       "cache_partial": "宝箱兑换已完成，但 Steam 仅部分发放。",
-      "cache_failed": "宝箱开启失败 — 请检查网络后重试。"
+      "cache_failed": "宝箱开启失败 — 请检查网络后重试。",
+      "buy_on_steam": "◈ 在 STEAM 上购买"
     },
     "lobby": {
       "connecting": "正在连接…",

@@ -1146,7 +1146,8 @@
       "cache_unlocked": "Alijo desbloqueado: {count} recompensas aseguradas.",
       "cache_opened": "Paquete de alijo abierto.",
       "cache_partial": "Intercambio de alijo completado con una concesión parcial de Steam.",
-      "cache_failed": "Error al abrir el alijo: comprueba tu conexión e inténtalo de nuevo."
+      "cache_failed": "Error al abrir el alijo: comprueba tu conexión e inténtalo de nuevo.",
+      "buy_on_steam": "◈ COMPRAR EN STEAM"
     },
     "lobby": {
       "connecting": "CONECTANDO...",

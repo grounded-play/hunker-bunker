@@ -1146,7 +1146,8 @@
       "cache_unlocked": "Cache desbloqueado: {count} recompensas garantidas.",
       "cache_opened": "Pacote de cache aberto.",
       "cache_partial": "Troca de cache concluída com concessão parcial da Steam.",
-      "cache_failed": "Falha ao abrir o cache — verifique sua conexão e tente novamente."
+      "cache_failed": "Falha ao abrir o cache — verifique sua conexão e tente novamente.",
+      "buy_on_steam": "◈ COMPRAR NA STEAM"
     },
     "lobby": {
       "connecting": "CONECTANDO...",

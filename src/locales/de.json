@@ -1146,7 +1146,8 @@
       "cache_unlocked": "Cache geöffnet: {count} Belohnungen gesichert.",
       "cache_opened": "Cache-Paket geöffnet.",
       "cache_partial": "Cache-Tausch mit teilweiser Steam-Vergabe abgeschlossen.",
-      "cache_failed": "Cache konnte nicht geöffnet werden – Verbindung prüfen und erneut versuchen."
+      "cache_failed": "Cache konnte nicht geöffnet werden – Verbindung prüfen und erneut versuchen.",
+      "buy_on_steam": "◈ AUF STEAM KAUFEN"
     },
     "lobby": {
       "connecting": "VERBINDE...",

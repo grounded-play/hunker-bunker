@@ -1146,7 +1146,8 @@
       "cache_unlocked": "キャッシュ解放：報酬 {count} 件を確保。",
       "cache_opened": "キャッシュ・バンドルを開封しました。",
       "cache_partial": "キャッシュ交換は完了しましたが、Steam の付与は一部のみです。",
-      "cache_failed": "キャッシュを開けませんでした — 接続を確認して再試行してください。"
+      "cache_failed": "キャッシュを開けませんでした — 接続を確認して再試行してください。",
+      "buy_on_steam": "◈ STEAMで購入"
     },
     "lobby": {
       "connecting": "接続中...",

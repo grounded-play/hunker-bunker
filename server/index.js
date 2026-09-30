@@ -6,6 +6,7 @@ import { attachSteamAuthRoutes } from './steamAuth.js';
 import { attachSteamLeaderboardRoutes } from './steamLeaderboards.js';
 import { attachSteamInventoryRoutes } from './steamInventory.js';
 import { attachSteamStoreRoutes } from './steamStore.js';
+import { startMicroTxnReconciliation } from './steamMicroTxnReport.js';
 import { attachSessionLogRoutes } from './sessionLogs.js';
 import { auditSteamBackendEnv, formatBackendEnvIssue } from './backendEnvAudit.js';
 
@@ -83,6 +84,8 @@ app.use('/steam', (req, res, next) => {
 });
 // Initialize DB before routing
 await initDb();
+// Reconcile Microtransactions against Steam's GetReport while they are on.
+startMicroTxnReconciliation();
 
 attachSteamAuthRoutes(app);
 attachSteamLeaderboardRoutes(app);

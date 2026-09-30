@@ -1146,7 +1146,8 @@
       "cache_unlocked": "Cache unlocked: {count} rewards secured.",
       "cache_opened": "Cache bundle opened.",
       "cache_partial": "Cache exchange completed with a partial Steam grant.",
-      "cache_failed": "Cache open failed — check your connection and try again."
+      "cache_failed": "Cache open failed — check your connection and try again.",
+      "buy_on_steam": "◈ BUY ON STEAM"
     },
     "lobby": {
       "connecting": "CONNECTING...",
