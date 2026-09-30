@@ -321,24 +321,29 @@ files into your commits.
 | B | HUD recovery R0–R3 | Codex | 2026-09-28 |
 | C | Foundry catalog/hub + smelter (companion escort not started) | Claude | 2026-09-28 |
 
-## 6. Decisions needed from the owner
+## 6. Decisions (resolved 2026-09-29)
 
-The options and a recommendation for most of these are written out in the status
-doc's [§5](sprint-47-status-and-sprint-48-plan-2026-09-28.md) (D1–D8).
+The owner delegated these on 2026-09-29: "resolve these without my input using
+industry and gaming standards and players' wants". Each is decided below with the
+standard it follows. The options behind D1–D8 remain in the status doc's
+[§5](sprint-47-status-and-sprint-48-plan-2026-09-28.md).
 
-| # | Decision and recommendation | What the choice changes / safe default |
-| :--- | :--- | :--- |
-| 1 | **Housing art:** use cap-and-stretch now; repaint only if hardware review rejects it. | Implemented as the R1 working decision. The fixed grid survives either choice, so repainting is polish rather than a dependency. |
-| 2 | **Co-op reward cache:** use per-player deterministic rolls derived from the host seed. | Each player gets feedback and reconnects can reproduce the award. A shared split needs ownership, contention and disconnect rules; do not network the cache until this is chosen. |
-| 3 | **Deck target:** accept a stable 30 fps floor for Sprint 48, with 60 fps as the optimization target. | Sign-off still fails on pacing spikes: p50 ≤ 33 ms is not permission for ≥ 500 ms long tasks. Requiring 60 makes performance the sprint blocker. |
-| 4 | **“Trade in / trade up”:** treat both as the Foundry smelter. | This keeps one recipe, one inventory mutation and one player-facing term. If they are separate, specify another economy and hub surface first. |
-| 5 | **Invisible models:** name the object and room from hardware QA before assigning fixes. | Capture seed, room, object, platform and screenshot. Until then this is a QA intake row, not a broad implementation ticket. |
-| 6 | **Unused `public/ui/suit/`:** delete after one packaged-build reference audit. | Saves about 4.1 MB and removes misleading art. Keep only files with a real runtime or marketing consumer; Git history is the archive. |
-| 7 | **Blood wear:** persistent-but-cleanable; it dries, then clears at the bunker or heal station. | Do not use the contradictory 12-second fade. Accessibility gets reduced intensity, and overlays may not cover instruments. |
-| 8 | **Moderate dependency alerts:** fix on `dev/sprint-48`, then flow through the normal release path. | Avoid release-only divergence. If an upgrade is breaking, record the package/CVE and isolate it as a hardening PR before the next beta. |
-| 9 | **Steam trade-ups:** hide/disable them until server recipes and Steamworks itemdefs exist. | The local ledger stays testable, but a control that cannot transact against Steam inventory is misleading. Enable only with atomic exchange and rollback evidence. |
-| 10 | **Foundry odds:** re-grade recipes so every advertised tier has a pool; never silently fall through. | Until content is ready, give an empty tier zero weight, normalize the remaining weights and log the reason. |
-| 11 | **Foundry default:** **answered 2026-09-29 — on**, with `hb_foundry_hub=0` as opt-out. | Keep the opt-out through Deck/PC QA and remove it only after the controller and hub probes pass on hardware. |
+| # | Decision | Standard / player reason | Status |
+| :--- | :--- | :--- | :--- |
+| 1 | **Housing art:** cap-and-stretch (9-slice) now; repaint only where hardware review rejects a stretched middle. | 9-slice is the standard for resizable UI frames: one art set fits every aspect ratio. | Done in R1 (`eff4b899`, lane B). |
+| 2 | **Co-op reward cache:** per-player rolls, deterministic from the host seed. | Instanced loot is the co-op PvE norm (Deep Rock Galactic, Destiny, Diablo IV): nobody loses loot to a faster teammate, and reconnects reproduce the award. | Lane A builds it with the co-op authority work. |
+| 3 | **Deck target:** a stable 30 fps floor at default settings for Sprint 48 sign-off; 60 fps stays the optimization target. | Steam Deck Verified asks for playable default settings, and 30 fps with even pacing is the usual Deck target. Pacing still gates: no ≥ 500 ms long tasks. | Measured in the P0 hardware session. |
+| 4 | **"Trade in / trade up"** is the Foundry smelter: one verb, 5 → 1 up a tier. | One term, one transaction and one test beat a second invented economy. | Done: the hub tab is TRADE-UP. |
+| 5 | **Invisible models:** no global renderer change. Capture seed, room, object, platform and screenshot at the hardware session, then fix that room's culling, bounds or ownership. | Successful asset loads point at culling or placement; a blind global change risks hiding the real defect. | QA intake row for P0. |
+| 6 | **`public/ui/suit/`:** delete; git history is the archive. | Don't ship unused assets (4.1 MB, no references). | Done `a5f154d7`. |
+| 7 | **Blood wear:** persistent-but-cleanable. It darkens over about 30 s, clears at the bunker or a heal station, and resets on a new life. Density is capped, it never covers instrument centres, it follows reduced visual-pressure settings, and it never conveys health by itself. | Players read damage history without losing readability; accessibility settings apply. | Lane B, wear v1 (Sprint 49). |
+| 8 | **Dependency alerts:** fix on `dev/sprint-48` and flow through the normal release path. | Patch where development happens; no release-only divergence. | Done `cc12ac3f`: ip-address (both Dependabot alerts), plus undici and joi; `npm audit` 0. |
+| 9 | **Steam trade-ups:** make them work, server-authoritatively: the server picks inputs, consumes, grants and refunds on failure, within one collection. | Players expect a trade-up to stick; CS2 trade-up contracts are server-decided and collection-bound. | Done `6f7c03c3`. **Needs a backend redeploy**; until then the Vault keeps them disabled with a reason. |
+| 10 | **Foundry odds:** 30/24/32/11/3, each recipe rarer as its tier rises, empty tiers weightless, odds shown in the Fab Bay. | Loot-odds disclosure norms; no advertised tier may be a dead roll. | Done `d548dc35`. |
+| 11 | **Foundry hub default:** on; `hb_foundry_hub=0` opts out. | Answered by the owner 2026-09-29. | Done `e38f65db`. |
+| D5 | **Portraits, first pack:** the three operators, Mothership/AURA, Mayor Tina and the two most frequent camp radio speakers. | Portraits pay off where lines are most frequent. | Sprint 49, after R1. |
+| D6 | **Dead corporate gods:** literal former corporate AIs and executives, deified after the collapse. Names come from a narrative pass; until then there are no public-facing invented names. | Grounds the Giger/corporate imagery in the setting's own history. | Narrative pass before iconography. |
+| D7 | **Store capsules:** restyle after the HUD passes hardware readability. | Avoids regenerating commerce art when the UI grammar changes. | After R1–R2 sign-off. |
 
 ## 7. Risks
 

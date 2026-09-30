@@ -441,6 +441,14 @@ or release-branch dependency work happens without the owner's answer.
   upgrade into PR #93. Fix reachable runtime exposure before release, otherwise land the
   tested update on the default branch and sync it deliberately.
 
+### Resolved 2026-09-29
+
+Delegated by the owner ("resolve these without my input using industry and gaming
+standards and players' wants"): D1 A, D2 capture-first (no global renderer change),
+D3 A (done `a5f154d7`), D4 A, D5 first pack, D6 framing A (names from a narrative
+pass), D7 A, D8 A (done `cc12ac3f`). Rationale and status for each are in the
+[Sprint 48 plan §6](sprint-48-plan.md).
+
 ### Decision reply format
 
 The owner can answer compactly, for example:
