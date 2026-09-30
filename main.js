@@ -7888,6 +7888,48 @@ function showTacticalNotificationToast({ title, status, duration = 4000 }) {
     }, duration);
 }
 
+function showTimelineDivergenceBanner({ title, description, locksEndings = [] }) {
+    let banner = document.getElementById('timeline-divergence-banner');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'timeline-divergence-banner';
+        banner.className = 'timeline-divergence-banner';
+        document.body.appendChild(banner);
+    }
+
+    const lockedText = Array.isArray(locksEndings) && locksEndings.length > 0
+        ? `<div class="timeline-divergence-banner__locked">🔒 LOCKED OUTCOMES: ${locksEndings.join(', ').toUpperCase()}</div>`
+        : '';
+
+    banner.innerHTML = `
+        <div class="timeline-divergence-banner__kicker">
+            <span>⚠️</span> <span>CRITICAL TIMELINE DIVERGENCE</span>
+        </div>
+        <div class="timeline-divergence-banner__title">${title}</div>
+        <div class="timeline-divergence-banner__desc">${description}</div>
+        ${lockedText}
+    `;
+
+    banner.classList.add('visible');
+    if (window.AudioManager) {
+        window.AudioManager.play?.('ui_scan_ping', { volume: 0.65, playbackRate: 0.5 });
+    }
+
+    if (banner._dismissTimer) clearTimeout(banner._dismissTimer);
+    banner._dismissTimer = setTimeout(() => {
+        banner.classList.remove('visible');
+    }, 7000);
+
+    banner.onclick = () => {
+        banner.classList.remove('visible');
+    };
+}
+
+window.addEventListener('timeline-divergence', (e) => {
+    const detail = e?.detail ?? {};
+    showTimelineDivergenceBanner(detail);
+});
+
 async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
     const game = window.game;
     if (!game?.prepareVisibleChunksForGameplay) return;

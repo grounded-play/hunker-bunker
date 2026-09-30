@@ -24425,3 +24425,73 @@ html.phase-gameplay #tactical-telemeter-box {
 #game-viewport > #menu.hidden ~ .menu-corner-settings {
   display: none !important;
 }
+
+/* ── Timeline Divergence Warning Banner ────────────────────────────── */
+.timeline-divergence-banner {
+  position: fixed;
+  top: 14%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-24px);
+  width: min(580px, 92vw);
+  background: linear-gradient(135deg, rgba(28, 14, 6, 0.98), rgba(56, 24, 6, 0.96));
+  border: 2px solid #f59e0b;
+  border-radius: 6px;
+  box-shadow:
+    0 0 32px rgba(245, 158, 11, 0.65),
+    inset 0 0 16px rgba(245, 158, 11, 0.25);
+  display: flex;
+  flex-direction: column;
+  padding: 14px 18px;
+  gap: 6px;
+  z-index: 17500;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(10px);
+}
+
+.timeline-divergence-banner.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  animation: timeline-banner-pulse 2.2s infinite ease-in-out;
+}
+
+@keyframes timeline-banner-pulse {
+  0%, 100% { border-color: #f59e0b; box-shadow: 0 0 25px rgba(245, 158, 11, 0.5); }
+  50% { border-color: #fbbf24; box-shadow: 0 0 42px rgba(251, 191, 36, 0.85); }
+}
+
+.timeline-divergence-banner__kicker {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  color: #fbbf24;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.timeline-divergence-banner__title {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.timeline-divergence-banner__desc {
+  font-size: 11px;
+  font-weight: 600;
+  color: #fef3c7;
+  line-height: 1.35;
+}
+
+.timeline-divergence-banner__locked {
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #ef4444;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}

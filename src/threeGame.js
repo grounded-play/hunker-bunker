@@ -5402,6 +5402,32 @@ export class ThreeGame {
         // from a debug console. Resolved on completion rather than on the
         // interaction, so an aborted cinematic does not bank the consequence.
         applyLinchpinResolution(this.act2, 'mayor_tina', 'joined');
+        this.act2?.adjustInfectionLoad?.(50);
+        return true;
+    }
+
+    interactWithQueenCommunion() {
+        if (!this.act2 || !this.isAct2Active?.() || !this.player) return false;
+        const state = this.act2.getState?.();
+        const linchpins = state?.linchpins ?? {};
+        if (linchpins.queen_offer === 'accepted' || linchpins.queen_offer === 'rejected') return false;
+
+        const isTransformed = this.mayorTinaEncounter?.phase === 'transformed';
+        const hasHighInfection = (state?.infectionLoad ?? 0) >= 30 || ['symptomatic', 'outed', 'ascendant'].includes(state?.infectionStage);
+        if (!isTransformed && !hasHighInfection) return false;
+
+        const queenDist = this.queenFightSprite
+            ? Math.hypot(this.player.position.x - this.queenFightSprite.position.x, this.player.position.z - this.queenFightSprite.position.z)
+            : Infinity;
+        if (queenDist > 8.0 && !isTransformed) return false;
+
+        const resolved = applyLinchpinResolution(this.act2, 'queen_offer', 'accepted');
+        if (!resolved) return false;
+
+        this.act2.setQueenStatus?.('aboard');
+        this.act2.setEggsStatus?.('aboard');
+        this.showBunkerLine?.('HIVE CONSCIOUSNESS: OUR MINDS INTERTWINE. THE CYCLE TRANSCENDS.');
+        this.triggerCameraShake?.(0.35, 0.8);
         return true;
     }
 
@@ -7657,6 +7683,7 @@ export class ThreeGame {
     triggerGameplayInteract() {
         if (!this.isGameplayInputActive()) return false;
         if (this.interactWithMayorTina()) return true;
+        if (this.interactWithQueenCommunion()) return true;
         const priorityCandidates = this.getPriorityInteractionCandidates();
         if (priorityCandidates.length > 0) {
             const index = Math.min(this._interactionTargetIndex ?? 0, priorityCandidates.length - 1);
