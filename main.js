@@ -5601,7 +5601,8 @@ function resetRunToStartingState({
 
         runStartTime = Date.now();
         expeditionReceipt.begin(runStartTime, bankManager.getState());
-        void beginSeasonRun(`local:${crypto.randomUUID()}`, 0);
+        const runUuid = globalThis.crypto?.randomUUID?.() ?? `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+        void beginSeasonRun(`local:${runUuid}`, 0);
         resetCommentaryRunState();
         showDeveloperCommentary('run_start');
         recordSteamTimelineEvent('run_start', 'Run Started', `${window.game?.playerType ?? getSelectedHeroType()} deployed into the bunker.`, {
