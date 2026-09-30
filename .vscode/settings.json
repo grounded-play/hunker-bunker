@@ -18,19 +18,5 @@
     "**/dist_electron/**",
     "**/better-todo-tree-*.txt",
     "**/locales/*.json"
-  ],
-  "todo-tree.general.tags": [
-    "TODO",
-    "FIXME",
-    "BUG",
-    "[ ]"
-  ],
-  "todo-tree.regex.regex": "(?:(?://|#|<!--|;|/\\*\\*?|\\*)\\s*($TAGS)|^\\s*- \\[ \\])",
-  "todo-tree.filtering.excludeGlobs": [
-    "**/node_modules/**",
-    "**/dist/**",
-    "**/dist_electron/**",
-    "**/better-todo-tree-*.txt",
-    "**/locales/*.json"
   ]
 }

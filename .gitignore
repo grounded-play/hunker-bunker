@@ -54,6 +54,8 @@ tmp/
 temp/
 screenshots/
 test-artifacts/
+better-todo-tree-*.txt
+**/better-todo-tree-*.txt
 
 # Root level temporary screenshots, visual smoke captures, and debug dumps
 /*.png
