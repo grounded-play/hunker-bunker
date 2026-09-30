@@ -529,18 +529,18 @@ describe('createArmoryUi ownership gating', () => {
             mount();
             const button = container.querySelector('#armory-debug-hud-layout-btn');
             expect(button).not.toBeNull();
-            expect(container.innerHTML).toContain('HUD: CLASSIC');
-
-            button.click();
-            expect(mockStorage.getItem('hb_hud_layout')).toBe('dock');
-            expect(globalThis.document.documentElement.dataset.hudLayout).toBe('dock');
             expect(container.innerHTML).toContain('✓ HUD: DOCK');
 
-            const updatedBtn = container.querySelector('#armory-debug-hud-layout-btn');
-            updatedBtn.click();
+            button.click();
             expect(mockStorage.getItem('hb_hud_layout')).toBe('classic');
             expect(globalThis.document.documentElement.dataset.hudLayout).toBe('classic');
             expect(container.innerHTML).toContain('HUD: CLASSIC');
+
+            const updatedBtn = container.querySelector('#armory-debug-hud-layout-btn');
+            updatedBtn.click();
+            expect(mockStorage.getItem('hb_hud_layout')).toBe('dock');
+            expect(globalThis.document.documentElement.dataset.hudLayout).toBe('dock');
+            expect(container.innerHTML).toContain('✓ HUD: DOCK');
         } finally {
             globalThis.document = prevDoc;
             globalThis.localStorage = prevStorage;

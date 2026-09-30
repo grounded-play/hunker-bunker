@@ -2753,7 +2753,7 @@ const state = {
         reducedPressure: localStorage.getItem('hb_reduced_pressure') === 'true',
         hudLayout: ['dock', 'classic'].includes(localStorage.getItem('hb_hud_layout'))
             ? localStorage.getItem('hb_hud_layout')
-            : 'classic',
+            : 'dock',
         hudScale: [0.85, 1, 1.15, 1.3].includes(Number(localStorage.getItem('hb_hud_scale')))
             ? Number(localStorage.getItem('hb_hud_scale'))
             : 1,

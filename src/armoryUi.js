@@ -585,8 +585,8 @@ export function createArmoryUi({
                             <button type="button" class="class-tab ${cls === 'tank' ? 'active' : ''}" data-class="tank" data-i18n="ui.armory.tab_tank">▰ TANK</button>
                             <button type="button" class="class-tab ${cls === 'engineer' ? 'active' : ''}" data-class="engineer" data-i18n="ui.armory.tab_engineer">◆ ENGINEER</button>
                         </div>
-                        <button type="button" class="armory-debug-skins-btn ${((typeof document !== 'undefined' && document.documentElement?.dataset?.hudLayout) || (typeof localStorage !== 'undefined' && localStorage.getItem('hb_hud_layout')) || 'classic') === 'dock' ? 'active' : ''}" id="armory-debug-hud-layout-btn" title="Toggle HUD Layout: Classic vs Lower Dock (hb_hud_layout)">
-                            ${((typeof document !== 'undefined' && document.documentElement?.dataset?.hudLayout) || (typeof localStorage !== 'undefined' && localStorage.getItem('hb_hud_layout')) || 'classic') === 'dock' ? '✓ HUD: DOCK' : 'HUD: CLASSIC'}
+                        <button type="button" class="armory-debug-skins-btn ${((typeof document !== 'undefined' && document.documentElement?.dataset?.hudLayout) || (typeof localStorage !== 'undefined' && localStorage.getItem('hb_hud_layout')) || 'dock') === 'dock' ? 'active' : ''}" id="armory-debug-hud-layout-btn" title="Toggle HUD Layout: Classic vs Lower Dock (hb_hud_layout)">
+                            ${((typeof document !== 'undefined' && document.documentElement?.dataset?.hudLayout) || (typeof localStorage !== 'undefined' && localStorage.getItem('hb_hud_layout')) || 'dock') === 'dock' ? '✓ HUD: DOCK' : 'HUD: CLASSIC'}
                         </button>
                         ${qaToolsEnabled ? `<button type="button" class="armory-debug-skins-btn ${ownership.isUnlockAll() ? 'active' : ''}" id="armory-debug-unlock-skins-btn" title="Synthetic QA override for every catalogued equippable; does not create Steam inventory">
                             ${ownership.isUnlockAll() ? `✓ QA UNLOCK ${qaAudit.available}/${qaAudit.total}` : `[QA] UNLOCK ALL ${qaAudit.available}/${qaAudit.total}`}
@@ -894,7 +894,7 @@ export function createArmoryUi({
         container.querySelector?.('#armory-debug-hud-layout-btn')?.addEventListener?.('click', () => {
             const current = (typeof document !== 'undefined' && document.documentElement?.dataset?.hudLayout)
                 || (typeof localStorage !== 'undefined' && localStorage.getItem('hb_hud_layout'))
-                || 'classic';
+                || 'dock';
             const next = current === 'dock' ? 'classic' : 'dock';
             if (typeof localStorage !== 'undefined') {
                 localStorage.setItem('hb_hud_layout', next);
