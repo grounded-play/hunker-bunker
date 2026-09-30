@@ -30583,6 +30583,14 @@ export class ThreeGame {
 
         // Spawn visual scatter sprites using the Snail Swarm Scatter algorithm
         const scatterPlacements = this.createChunkScatterPlacements(chunkX, chunkY, grid);
+        const INSTANCED_DEBRIS_TYPES = new Set([
+            'scatter_bolts', 'scatter_cable_coil', 'scatter_gravel',
+            'scatter_coolant_puddle', 'scatter_slime_puddle', 'scatter_cryo_shards', 'scatter_bio_moss'
+        ]);
+
+        const debrisByType = new Map();
+        const remainingScatterPlacements = [];
+
         for (const placement of scatterPlacements) {
             if (placement.type.startsWith('bunker_junk') && this.depletedGearPileKeys.has(placement.scatterKey)) {
                 continue;
@@ -30590,6 +30598,55 @@ export class ThreeGame {
             if (this.isEnemyType(placement.type) && this.killedEnemyScatterKeys.has(placement.scatterKey)) {
                 continue;
             }
+            if (INSTANCED_DEBRIS_TYPES.has(placement.type)) {
+                const tex = this.scatterTextures[placement.type] || this.scatterMaterials[placement.type]?.map;
+                if (tex) {
+                    if (!debrisByType.has(placement.type)) debrisByType.set(placement.type, []);
+                    debrisByType.get(placement.type).push(placement);
+                    continue;
+                }
+            }
+            remainingScatterPlacements.push(placement);
+        }
+
+        if (debrisByType.size > 0) {
+            const dummy = new THREE.Object3D();
+            for (const [type, placements] of debrisByType.entries()) {
+                if (placements.length === 0) continue;
+                const texture = this.scatterTextures[type] || this.scatterMaterials[type]?.map;
+                if (!texture) continue;
+                this._sharedDebrisMaterials ??= new Map();
+                let mat = this._sharedDebrisMaterials.get(type);
+                if (!mat) {
+                    mat = new THREE.MeshBasicMaterial({
+                        map: texture,
+                        transparent: true,
+                        alphaTest: 0.035,
+                        depthWrite: false,
+                        polygonOffset: true,
+                        polygonOffsetFactor: -2,
+                        polygonOffsetUnits: -2,
+                        side: THREE.DoubleSide
+                    });
+                    this._sharedDebrisMaterials.set(type, mat);
+                }
+                this._sharedDebrisGeo ??= new THREE.PlaneGeometry(1, 1);
+                const instanced = new THREE.InstancedMesh(this._sharedDebrisGeo, mat, placements.length);
+                for (let i = 0; i < placements.length; i++) {
+                    const p = placements[i];
+                    dummy.position.set(p.x, p.elevation ?? 0.02, p.z);
+                    dummy.rotation.set(-Math.PI / 2, 0, p.rotation ?? 0);
+                    dummy.scale.set(p.scale ?? 1, (p.scale ?? 1) * (1 + (p.tiltX ?? 0)), 1);
+                    dummy.updateMatrix();
+                    instanced.setMatrixAt(i, dummy.matrix);
+                }
+                instanced.instanceMatrix.needsUpdate = true;
+                instanced.userData = { isScatter: true, isInstancedDebris: true, type };
+                group.add(instanced);
+            }
+        }
+
+        for (const placement of remainingScatterPlacements) {
             const scatter = this.createScatterInstance(placement);
             if (scatter) {
                 group.add(scatter);
