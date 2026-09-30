@@ -1232,26 +1232,57 @@ html[data-hud-layout="dock"] #game-viewport #ui #pickup-counter-panel .pickup-co
   line-height: calc(16 * var(--u)) !important;
 }
 
-/* ---------- G: GUN & AMMO (right, 380 × 64 u) ---------- */
+/* ---------- G: GUN & AMMO & KINETIC SLOTS (right, 380 × 64 u) ---------- */
 html[data-hud-layout="dock"] #game-viewport #ui #weapon-status-panel {
-  right: calc(var(--hud-margin) + 144 * var(--u)) !important; left: auto !important;
-  width: calc(236 * var(--u)) !important;
+  right: calc(var(--hud-margin) + 200 * var(--u)) !important; left: auto !important;
+  width: calc(180 * var(--u)) !important;
   border: calc(1 * var(--u)) solid rgba(249, 148, 21, 0.4) !important;
   border-radius: calc(6 * var(--u)) 0 0 calc(6 * var(--u)) !important;
 }
 html[data-hud-layout="dock"] #game-viewport #ui #class-ability-panel,
-html[data-hud-layout="dock"] #game-viewport #ui #radar-scan-panel {
+html[data-hud-layout="dock"] #game-viewport #ui #dash-cooldown-panel,
+html[data-hud-layout="dock"] #game-viewport #ui #melee-cooldown-panel {
   left: auto !important;
-  width: calc(64 * var(--u)) !important;
-  padding: calc(6 * var(--u)) calc(4 * var(--u)) !important;
   display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;
-  gap: calc(4 * var(--u)) !important; text-align: center !important;
+  gap: calc(3 * var(--u)) !important; text-align: center !important;
   border: calc(1 * var(--u)) solid rgba(249, 148, 21, 0.4) !important; border-left: 0 !important;
+  height: calc(64 * var(--u)) !important;
+  bottom: var(--dock-bottom) !important;
+  padding: calc(4 * var(--u)) !important;
+  box-sizing: border-box !important;
 }
 html[data-hud-layout="dock"] #game-viewport #ui #class-ability-panel {
+  right: calc(var(--hud-margin) + 130 * var(--u)) !important;
+  width: calc(70 * var(--u)) !important;
+}
+html[data-hud-layout="dock"] #game-viewport #ui #dash-cooldown-panel {
+  right: calc(var(--hud-margin) + 65 * var(--u)) !important;
+  width: calc(65 * var(--u)) !important;
+  border-color: rgba(34, 211, 238, 0.4) !important;
+}
+html[data-hud-layout="dock"] #game-viewport #ui #melee-cooldown-panel {
   right: var(--hud-margin) !important;
-  width: calc(140 * var(--u)) !important;
-  border-radius: calc(6 * var(--u)) !important;
+  width: calc(65 * var(--u)) !important;
+  border-radius: 0 calc(6 * var(--u)) calc(6 * var(--u)) 0 !important;
+  border-color: rgba(249, 115, 22, 0.4) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui #dash-cooldown-panel .class-ability-panel__name {
+  color: #22d3ee !important;
+  font-size: calc(11 * var(--u)) !important;
+  line-height: calc(12 * var(--u)) !important;
+  letter-spacing: 0.08em !important;
+}
+html[data-hud-layout="dock"] #game-viewport #ui #melee-cooldown-panel .class-ability-panel__name {
+  color: #f97316 !important;
+  font-size: calc(11 * var(--u)) !important;
+  line-height: calc(12 * var(--u)) !important;
+  letter-spacing: 0.08em !important;
+}
+html[data-hud-layout="dock"] #game-viewport #ui #dash-cooldown-panel .class-ability-panel__bar-track,
+html[data-hud-layout="dock"] #game-viewport #ui #melee-cooldown-panel .class-ability-panel__bar-track {
+  width: 82% !important;
+  height: calc(4 * var(--u)) !important;
 }
 /* Tactical map radar ring: radar scan sits directly above the map disc bezel */
 html[data-hud-layout="dock"] #game-viewport #ui #radar-scan-panel {

@@ -23845,6 +23845,14 @@ export class ThreeGame {
         // Update kinetic control timers
         this.dashCooldownTimer = Math.max(0, (this.dashCooldownTimer ?? 0) - delta);
         this.meleeCooldownTimer = Math.max(0, (this.meleeCooldownTimer ?? 0) - delta);
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('dash-cooldown-tick', {
+                detail: { remaining: this.dashCooldownTimer, max: 1.1 }
+            }));
+            window.dispatchEvent(new CustomEvent('melee-cooldown-tick', {
+                detail: { remaining: this.meleeCooldownTimer, max: 0.8 }
+            }));
+        }
         this._scoutSlipstreamTimer = Math.max(0, (this._scoutSlipstreamTimer ?? 0) - delta);
         this.iFrameTimer = Math.max(0, (this.iFrameTimer ?? 0) - delta);
         this.spawnInvulnerabilityTimer = Math.max(0, (this.spawnInvulnerabilityTimer ?? 0) - delta);

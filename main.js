@@ -7217,6 +7217,34 @@ window.addEventListener('scan-cooldown-tick', (event) => {
     }
 });
 
+let _cachedDashBar = null;
+let _cachedDashPanel = null;
+window.addEventListener('dash-cooldown-tick', (event) => {
+    const { remaining = 0, max = 1.1 } = event?.detail ?? {};
+    if (!_cachedDashBar) _cachedDashBar = document.getElementById('dash-bar');
+    if (!_cachedDashPanel) _cachedDashPanel = document.getElementById('dash-cooldown-panel');
+    const fillPct = 1 - (remaining / Math.max(0.001, max));
+    if (_cachedDashBar) _cachedDashBar.style.transform = `scaleX(${Math.max(0, Math.min(1, fillPct))})`;
+    if (_cachedDashPanel) {
+        _cachedDashPanel.classList.toggle('class-ability-panel--ready', remaining <= 0);
+        _cachedDashPanel.classList.toggle('class-ability-panel--cooling', remaining > 0);
+    }
+});
+
+let _cachedMeleeBar = null;
+let _cachedMeleePanel = null;
+window.addEventListener('melee-cooldown-tick', (event) => {
+    const { remaining = 0, max = 0.8 } = event?.detail ?? {};
+    if (!_cachedMeleeBar) _cachedMeleeBar = document.getElementById('melee-bar');
+    if (!_cachedMeleePanel) _cachedMeleePanel = document.getElementById('melee-cooldown-panel');
+    const fillPct = 1 - (remaining / Math.max(0.001, max));
+    if (_cachedMeleeBar) _cachedMeleeBar.style.transform = `scaleX(${Math.max(0, Math.min(1, fillPct))})`;
+    if (_cachedMeleePanel) {
+        _cachedMeleePanel.classList.toggle('class-ability-panel--ready', remaining <= 0);
+        _cachedMeleePanel.classList.toggle('class-ability-panel--cooling', remaining > 0);
+    }
+});
+
 function syncAbilityPanelLabel() {
     const info = window.game?.getClassPassiveInfo?.();
     const name = info?.name ?? 'EVASIVE';
