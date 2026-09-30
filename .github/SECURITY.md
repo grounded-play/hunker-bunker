@@ -14,7 +14,7 @@ The following versions of Hunker Bunker are currently being supported with secur
 
 If you discover a security vulnerability within this project, please open a **Private Security Advisory** on GitHub rather than opening a public issue. 
 
-1. Go to the [Security tab](../../security/advisories) in this repository.
+1. Go to the [Security tab](https://github.com/grounded-play/hunker-bunker/security/advisories) in this repository.
 2. Click **Report a vulnerability**.
 3. Provide a detailed description of the issue, steps to reproduce it, and any potential impact.
 
