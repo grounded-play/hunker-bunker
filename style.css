@@ -9947,11 +9947,24 @@ body.hud-hidden .compound-location-title {
   position: relative;
   width: clamp(48px, 12vw, 72px);
   height: clamp(48px, 12vw, 72px);
-  border: 1px solid rgba(0, 210, 255, 0.42);
-  border-radius: 2px;
+  border: 1px solid rgba(0, 210, 255, 0.55);
+  box-shadow: 0 0 12px rgba(0, 210, 255, 0.3), inset 0 0 8px rgba(0, 210, 255, 0.2);
+  border-radius: 4px;
   overflow: hidden;
   background: #000;
   flex-shrink: 0;
+  animation: radio-avatar-glow 3s ease-in-out infinite;
+}
+
+@keyframes radio-avatar-glow {
+  0%, 100% {
+    border-color: rgba(0, 210, 255, 0.45);
+    box-shadow: 0 0 8px rgba(0, 210, 255, 0.25), inset 0 0 6px rgba(0, 210, 255, 0.15);
+  }
+  50% {
+    border-color: rgba(0, 210, 255, 0.85);
+    box-shadow: 0 0 16px rgba(0, 210, 255, 0.5), inset 0 0 10px rgba(0, 210, 255, 0.35);
+  }
 }
 
 .radio-transmission-prompt__avatar img {

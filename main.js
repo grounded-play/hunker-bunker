@@ -4110,10 +4110,14 @@ function parseRadioTransmission(rawText = '') {
         sender = "MAYOR TINA (TEACUP SIREN)";
         text = clean.replace(/^(TEACUP SIREN|MAYOR TINA):\s*/i, '').trim();
         portrait = "/lore_portraits/mayor_tina.webp";
-    } else if (/^MOTHERSHIP:/i.test(clean)) {
-        sender = "MOTHERSHIP COMMAND";
-        text = clean.replace(/^MOTHERSHIP:\s*/i, '').trim();
-        portrait = "/lore_portraits/survivor_00.webp";
+    } else if (/^(AURA|SUIT AURA|AI):/i.test(clean)) {
+        sender = "AURA TACTICAL AI";
+        text = clean.replace(/^(AURA|SUIT AURA|AI):\s*/i, '').trim();
+        portrait = "/lore_portraits/voice_aura_persona.png";
+    } else if (/^(MOTHERSHIP|COMMANDER|MOTHERSHIP COMMAND):/i.test(clean)) {
+        sender = "COMMANDER (MOTHERSHIP)";
+        text = clean.replace(/^(MOTHERSHIP|COMMANDER|MOTHERSHIP COMMAND):\s*/i, '').trim();
+        portrait = "/lore_portraits/voice_commander_persona.png";
     } else if (/^SISTER MARTHA:/i.test(clean)) {
         sender = "SISTER MARTHA";
         text = clean.replace(/^SISTER MARTHA:\s*/i, '').trim();
@@ -6849,7 +6853,7 @@ window.addEventListener('bunker-line', (event) => {
     const text = event?.detail?.text;
     if (!text) return;
     const trimmed = String(text).trim();
-    if (/^(TEACUP SIREN|MAYOR TINA|SURVIVOR|MOTHERSHIP|SYSTEM|FOXHOLE|CORPO|HACKER|CRASH QUEEN|ABG|HYBRID|OKONKWO|MARTHA|BRIGGS|KAELEN|QUEEN):/i.test(trimmed)) {
+    if (/^(TEACUP SIREN|MAYOR TINA|SURVIVOR|MOTHERSHIP|COMMANDER|AURA|SYSTEM|FOXHOLE|CORPO|HACKER|CRASH QUEEN|ABG|HYBRID|OKONKWO|MARTHA|BRIGGS|KAELEN|QUEEN):/i.test(trimmed)) {
         showBiomePrompt(`> ${trimmed}`);
     } else {
         showBiomePrompt(`> BUNKER: ${trimmed}`);
