@@ -5,10 +5,18 @@ and worklogs are evidence or history; they do not override this file. Update a
 row when its implementation or acceptance state changes and link to evidence
 instead of duplicating it here.
 
-Last reconciled: 2026-09-28 · source baseline `release/v2.4.12-beta-invisible-essentials` `ffbd480e` (advancing milestone tickets #78, #80, #81, #82, #85; Sprint 47 / Invisible Essentials Phases 1–4; 2026-09-24 Deck + PC co-op remediation; CPU-driven quality restoration; HUD dock housings integration; and PR #93 cleanup).
+Last reconciled: 2026-09-30 · source baseline `dev/sprint-48` (release candidate `v2.4.13-beta`, PR into `mothership` pending). `v2.4.12-beta` is released on `mothership` (`380333f6`) and on the Steam `beta` branch (BuildID 25596041).
 
 Released in `v2.4.4-beta` and already on `mothership` (`e017b06`): the first deep localization sweep (7 languages, 0 unlocalized runtime strings), Alternate Radio Voice Banks (104 cue slots / 208 takes), all 10 rendered motion ending cinematics, Phase A AgX tone mapping & IBL reflections, and 52 playtest stability tickets (DP-01 through DP-52).
 
+Delivered in `v2.4.13-beta` on `dev/sprint-48` and **active in verification** (release notes: [`docs/releases/v2.4.13-beta.md`](docs/releases/v2.4.13-beta.md)):
+- **Steam review 25475189 remediation (code):** MULTIPLAYER title entry; developer commentary visible in menus with a READ ALL list; focusable achievement and Vault cards with D-pad scrolling; Settings → Content Guide with read-only dialogue transcripts; Vault store through the Steam Item Store and Microtransactions; `GetReport` reconciliation. Steamworks steps, production purchase flags and hardware checks are open in [Sprint 49](docs/planning/sprint-49.md).
+- **Unified Foundry:** one item catalog across the Armory, Foundry, hero screen and Vault; the Foundry hub (Stash / Loadout / Fabricate / Trade-up / Store) on by default; server-authoritative trade-ups and redemptions; fair Foundry odds shown before rolling.
+- **Co-op and companions:** host-authoritative companions and Ring 1 events, tactical pings, companion camp settlement and assist abilities.
+- **World and HUD:** lit, dressed and cut-away procedural rooms; the dock HUD is the default layout (classic toggle kept); objective drawer and alert queue.
+- **Gameplay:** field workbench at safe camps, phased corrupted-operator bosses, infection load from hazards, and an expanded debrief.
+
+Released in `v2.4.12-beta` (now on `mothership`):
 Delivered in `v2.4.12-beta` on `release/v2.4.12-beta-invisible-essentials` and **active in verification**:
 - **The Invisible Essentials (Phases 1–4)**:
   - Phase 1 Solo Continuation: atomic mid-expedition suspend/resume (`src/expeditionSuspend.js`, claim store, `#title-continue-btn` becomes `RESUME EXPEDITION`).

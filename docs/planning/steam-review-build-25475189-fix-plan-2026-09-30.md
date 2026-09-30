@@ -30,7 +30,7 @@ The key prices are kept (in-app purchases are intended). The Vault sells through
 | 3–4 IAP | Done: Item Store + MicroTxn in the Vault, `GetReport` reconciliation (`a001b823`) | Turn on production flags; real test purchase; run the `GetReport` CLI and send the output; declare IAP |
 | 5 Controller | Done | Deck + PC pad pass with the keyboard unplugged |
 | 6 Mature | Done | Survey: keep non-explicit sexual content only, untick nudity; paste the access text |
-| 7 Chat | — | Survey: untick in-game chat |
+| 7 Chat | — | **Superseded:** Sprint 49 builds real filtered text chat ([S49-02..04](sprint-49.md)); the survey answer stays |
 
 Not changed: the LB+RB+R3 gallery shortcut still reads only the browser gamepad API.
 The Settings button covers controller access instead.
@@ -193,6 +193,10 @@ that was reverted in `20b7162e`. The economy direction is in the
   ```
 
 ## 7. Filtered in-game chat
+
+> **Superseded 2026-09-30:** the owner's Sprint 49 direction is to build real filtered
+> lobby and in-game text chat ([S49-02, S49-03, S49-04](sprint-49.md)), not to untick
+> the survey answer. The analysis below still describes today's build.
 
 - **Cause:** the game has no player chat of any kind. Co-op and PvP use no text or
   voice channel.

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./steam/store/steam_header_capsule_en.png" alt="Hunker Bunker key art: a lone operator in an industrial bunker corridor" width="820">
+  <img src="./steam/store/steam_main_capsule_en.png" alt="Hunker Bunker key art: an armed operator at the mouth of a glowing hive tunnel in a frozen bunker" width="880">
 </p>
 
 # HUNKER BUNKER
@@ -20,9 +20,20 @@
 
 🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord Server](https://discord.gg/XXwwz3rauu)** • 📚 **[Documentation Map](docs/README.md)**
 
-> **Status (2026-09-24):** Sprint 47 is on `dev/sprint-47` at `v2.4.12-beta`, prepared for release PR into `mothership` pending tonight's QA session. This release completes **Invisible Essentials Phase 4** (pure pneumatic transit network, milestone boss defeat extraction terminal unlocking, sanctuary return teleportation, and tactical map breadcrumbs) and provides rigorous verification suites proving readiness for closure of 4 milestone issues: Persistence (#78), Fabrication Bay (#80), Hero Selection (#81), and Armory (#82).
+> **Status (2026-09-30):** Sprint 48 is on `dev/sprint-48` at `v2.4.13-beta`, in a release PR into `mothership`. `v2.4.12-beta` is live on the Steam `beta` branch. This release answers Steam build review 25475189 in code:
+> - **Multiplayer:** now on the title menu.
+> - **Developer commentary:** you can see it, and read all of it.
+> - **Controller:** the whole menu set works with a controller, Achievements included.
+> - **Content Guide:** in Settings.
+> - **Vault store:** sells through the Steam Item Store and Microtransactions, reconciled with `GetReport`.
 >
-> Verified locally on 2026-09-24: **4,201 passing tests across 469 files** (100% green), clean lint (`eslint .` 0 errors), `npm run audit:docs` passing, and all 19 milestone verification tests green. Hardware testing checklist for tonight covers Steam Deck 60 FPS thermal limits, two-account co-op relay transit sync, and cross-device Steam Cloud save persistence. See [`docs/releases/v2.4.12-beta.md`](docs/releases/v2.4.12-beta.md), [`docs/planning/invisible-essentials-2026-09-24.md`](docs/planning/invisible-essentials-2026-09-24.md), and [Product State](PRODUCT_STATE.md).
+> It also ships:
+> - the unified Foundry (one item catalog, the Foundry hub, server-authoritative trade-ups);
+> - host-authoritative co-op companions, Ring 1 events and pings;
+> - lit, dressed and cut-away bunker rooms;
+> - the dock HUD as the default.
+>
+> Hardware, two-account and Steamworks acceptance are tracked in [Sprint 49](docs/planning/sprint-49.md). See [`docs/releases/v2.4.13-beta.md`](docs/releases/v2.4.13-beta.md) and [Product State](PRODUCT_STATE.md).
 
 ---
 
@@ -42,6 +53,20 @@
 
 ---
 
+### 🖼️ Steam Store & Library Art
+
+<p align="center">
+  <img src="./steam/store/steam_library_hero_en.png" alt="Library hero: an operator silhouetted in a long amber-lit bunker corridor" width="880">
+</p>
+
+| Library Capsule | Vertical Capsule | Small Capsule & Logo |
+| :---: | :---: | :---: |
+| <img src="./steam/store/steam_library_capsule_en.png" alt="Hunker Bunker library capsule" width="240"> | <img src="./steam/store/steam_vertical_capsule_en.png" alt="Hunker Bunker vertical capsule" width="260"> | <img src="./steam/store/steam_small_capsule_en.png" alt="Hunker Bunker small capsule" width="280"><br><br><img src="./steam/store/steam_library_logo_en.png" alt="Hunker Bunker title logo" width="280"> |
+
+All store and library art lives in [`steam/store/`](steam/store/) (English slots; replacements use the same file names).
+
+---
+
 ## ⚡ Core Features
 
 - **Persistent Campaigns, Seeded Expeditions**: A campaign keeps one world — its rings, gates, camps and hives — while every deployment rolls its own condition (gale, spore bloom, resin surge, geothermal arc, stillness) with real gameplay effects, fresh corridor rubble and a briefing. New campaigns get their own route shape, gate challenges and an optional objective package for each ship goal, with a reward and a lasting consequence.
@@ -49,11 +74,13 @@
 - **Deep Localization (7 Languages)**: Complete localization across **English (`en`)**, **German (`de`)**, **Latin American Spanish (`es-419`)**, **Japanese (`ja`)**, **Brazilian Portuguese (`pt-BR`)**, **Russian (`ru`)**, and **Simplified Chinese (`zh-CN`)** — 0 unannotated markup, 0 unlocalized runtime strings, 1,898 keys per locale at exact parity, live in-session switching, and a coverage ratchet (`npm run i18n:audit`) that fails CI if any of those regress.
 - **Alternate Radio Voice Banks & Personas**: Equip the grizzled Soviet Sub-Commander (`4148`) or tactical AI AURA (`4149`) with 104 callout slots (208 authentic takes), intro cutscene HUD persona cards, and customized opening crash dialogue.
 - **10 Branching Motion Endings**: Survivor encounters, faction standing with the Meridian/Tallow/Vesper camps, and hive diplomacy determine which of ten fully-rendered 3D motion cinematic endings with dedicated audio beds you achieve.
-- **AgX Tone Mapping & Reflective IBL**: High-dynamic-range reflection probes, space HDRI lighting, selective bloom, and upgraded tilt-shift diorama bokeh for gritty biomechanical depth.
+- **Lit, Readable Bunkers**: Procedural rooms carry their own ceiling strips, role screens, door headers and wet floors, and walls toward the camera are cut down so you can see inside, under AgX tone mapping, IBL reflections and selective bloom.
 - **3 Exosuit Classes**: Distinct playstyles for **Scout** (Speed & Recon), **Tank** (Endurance & Armor), and **Engineer** (Systems & Terminals).
 - **Deep Progression**: Bank salvage between runs, research a full combat skill tree, craft specialized gear, and level a **50-tier Season 0 Battle Pass**.
-- **Real Multiplayer**: Socket.IO relay lobby with LAN and online play — drop in with a friend or run solo against AI.
-- **Steamworks Integration**: Code-backed support for trusted leaderboards, Steam Cloud saves, Steam lobbies, the Steam Vault economy, and 24 achievements. Production acceptance varies by feature and is tracked in [Product State](PRODUCT_STATE.md).
+- **Online Co-op & PvP**: Title menu → **MULTIPLAYER**. Steam lobbies (public list, friend invites, room codes) over our relay server; the host runs companions, Ring 1 events and drops, and tactical pings work from a controller. Solo runs stay fully offline-capable.
+- **The Foundry**: One window for your stash, loadout, fabrication, 5→1 trade-ups and the store. One item catalog means every item looks and reads the same on every screen, and trade-ups on your Steam inventory are decided by the server.
+- **Steamworks Integration**: Code-backed support for trusted leaderboards, Steam Cloud saves, Steam lobbies, 24 achievements, and a cosmetic-only Steam Vault economy. That economy covers inventory drops, trade-ups, the Steam Item Store and Microtransactions checkout with `GetReport` reconciliation. It is free to play and never pay to win ([economy plan](docs/planning/economy-master-plan-2026-09-30.md)). Production acceptance varies by feature and is tracked in [Product State](PRODUCT_STATE.md).
+- **Developer Commentary**: Settings → Commentary Mode shows designer notes as you reach the moments they discuss; Settings → Developer Commentary → Read All lists every note.
 - **In-Game Dev & QA Console (`~`)**: Real-time diagnostic telemetry, event interceptors, audio/network monitors, and QA cheat commands (`resetachievements`).
 
 ---

@@ -140,10 +140,14 @@
     "3d/runtime/new3ds/arch_rib_ceiling_vault_02.glb",
     "3d/runtime/new3ds/arch_rib_ceiling_vault_03.glb",
     "3d/runtime/new3ds/arch_window_stained.glb",
+    "3d/runtime/new3ds/bio_charger.glb",
     "3d/runtime/new3ds/body_empty_exosuit.glb",
     "3d/runtime/new3ds/body_frozen_human.glb",
     "3d/runtime/new3ds/boss_corrupted_briggs.glb",
+    "3d/runtime/new3ds/boss_corrupted_engineer.glb",
     "3d/runtime/new3ds/boss_corrupted_martha.glb",
+    "3d/runtime/new3ds/boss_corrupted_scout.glb",
+    "3d/runtime/new3ds/boss_corrupted_tank.glb",
     "3d/runtime/new3ds/bunker_junk_rare.glb",
     "3d/runtime/new3ds/bunker_junk_uncommon.glb",
     "3d/runtime/new3ds/charm_amber_bio_flask.glb",
@@ -176,6 +180,7 @@
     "3d/runtime/new3ds/chassis_horizon_corporate.glb",
     "3d/runtime/new3ds/chassis_rust_bone.glb",
     "3d/runtime/new3ds/chassis_scout_cartographer.glb",
+    "3d/runtime/new3ds/chassis_scout_ghost_runner.glb",
     "3d/runtime/new3ds/chassis_scout_pioneer_courier.glb",
     "3d/runtime/new3ds/chassis_subterran_drill_engineer.glb",
     "3d/runtime/new3ds/chassis_tank_colossus_hive.glb",
@@ -274,7 +279,9 @@
     "3d/runtime/new3ds/skin_biolume_spore_sprayer.glb",
     "3d/runtime/new3ds/skin_bunker404.glb",
     "3d/runtime/new3ds/skin_deep_frost.glb",
+    "3d/runtime/new3ds/skin_engineer_archival_constructor.glb",
     "3d/runtime/new3ds/skin_engineer_cryo_plasma.glb",
+    "3d/runtime/new3ds/skin_engineer_hive_weaver.glb",
     "3d/runtime/new3ds/skin_glitched_circuit_bolter.glb",
     "3d/runtime/new3ds/skin_grand_marshal.glb",
     "3d/runtime/new3ds/skin_hazard_stripe_smg.glb",
@@ -284,8 +291,10 @@
     "3d/runtime/new3ds/skin_queen_carapace_carbine.glb",
     "3d/runtime/new3ds/skin_rust_bone.glb",
     "3d/runtime/new3ds/skin_rust_bone_trench.glb",
+    "3d/runtime/new3ds/skin_scout_chrono_drifter.glb",
     "3d/runtime/new3ds/skin_scout_frostbite.glb",
     "3d/runtime/new3ds/skin_solar_flare_antimatter.glb",
+    "3d/runtime/new3ds/skin_tank_bunker_bastion.glb",
     "3d/runtime/new3ds/skin_tank_deep_core_melter.glb",
     "3d/runtime/new3ds/skin_tectonic_driller.glb",
     "3d/runtime/new3ds/skin_void_walker_beam.glb",
@@ -1916,6 +1925,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/bio_charger.glb",
+      "bytes": 19323352,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/body_empty_exosuit.glb",
       "bytes": 161972,
       "classification": "runtime-required"
@@ -1931,8 +1945,23 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/boss_corrupted_engineer.glb",
+      "bytes": 3682960,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/boss_corrupted_martha.glb",
       "bytes": 3025896,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/boss_corrupted_scout.glb",
+      "bytes": 3025896,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/boss_corrupted_tank.glb",
+      "bytes": 3386260,
       "classification": "runtime-required"
     },
     {
@@ -2093,6 +2122,11 @@
     {
       "path": "3d/runtime/new3ds/chassis_scout_cartographer.glb",
       "bytes": 18956524,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_scout_ghost_runner.glb",
+      "bytes": 13903192,
       "classification": "runtime-required"
     },
     {
@@ -2586,8 +2620,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/skin_engineer_archival_constructor.glb",
+      "bytes": 689520,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/skin_engineer_cryo_plasma.glb",
       "bytes": 541968,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/skin_engineer_hive_weaver.glb",
+      "bytes": 11966464,
       "classification": "runtime-required"
     },
     {
@@ -2636,6 +2680,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/skin_scout_chrono_drifter.glb",
+      "bytes": 118376,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/skin_scout_frostbite.glb",
       "bytes": 478056,
       "classification": "runtime-required"
@@ -2643,6 +2692,11 @@
     {
       "path": "3d/runtime/new3ds/skin_solar_flare_antimatter.glb",
       "bytes": 45688800,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/skin_tank_bunker_bastion.glb",
+      "bytes": 614468,
       "classification": "runtime-required"
     },
     {
