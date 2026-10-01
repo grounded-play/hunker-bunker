@@ -203,7 +203,8 @@ export class ProgressionWalkthrough {
         closeBtn.type = 'button';
         closeBtn.textContent = '× CLOSE SCENE VIEWER';
         closeBtn.className = 'close-modal';
-        closeBtn.style.cssText = 'position:absolute;top:16px;right:16px;font-size:14px;padding:8px 14px;';
+        // .close-modal is a fixed small square; this label needs its own width.
+        closeBtn.style.cssText = 'position:absolute;top:16px;right:16px;font-size:14px;padding:8px 14px;width:auto;height:auto;white-space:nowrap;';
         closeBtn.addEventListener('click', () => this.closeSceneViewer());
         overlay.appendChild(closeBtn);
 
