@@ -30,6 +30,8 @@ describe('enemy 3D rigged locomotion routing', () => {
         expect(getEnemyAssetYaw('boss_cryosnail')).toBe(0);
         expect(getEnemyAssetYaw('cybersnail')).toBe(-Math.PI / 2);
         expect(getEnemyAssetYaw('boss_cybersnail')).toBe(Math.PI / 2);
+        expect(getEnemyAssetYaw('sporesnail')).toBe(Math.PI / 2);
+        expect(getEnemyAssetYaw('boss_sporesnail')).toBe(Math.PI / 2);
     });
 });
 

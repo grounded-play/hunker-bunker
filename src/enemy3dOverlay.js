@@ -14,7 +14,7 @@ function createGltfLoader() {
 const MODEL_CONFIG = {
     cybersnail: { url: '/3d/runtime/cyber-snail.glb', height: 0.72, yaw: -Math.PI / 2 },
     cryosnail: { url: '/3d/runtime/cyber-snail.glb', height: 0.76, yaw: -Math.PI / 2, tint: 0x9bdcff },
-    sporesnail: { url: '/3d/runtime/new3ds/sporesnail.glb', height: 0.78, yaw: -Math.PI / 2 },
+    sporesnail: { url: '/3d/runtime/new3ds/sporesnail.glb', height: 0.78, yaw: Math.PI / 2 },
     fungal_spore_vent: { url: '/3d/runtime/new3ds/fungal_spore_vent.glb', height: 0.82, yaw: 0 },
     spore_mortar: { url: '/3d/runtime/new3ds/spore_mortar.glb', height: 1.05, yaw: 0 },
     // Boss exports face opposite their travel axis, so turn their model roots
