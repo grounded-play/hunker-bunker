@@ -10,17 +10,19 @@ action here before yielding so another contributor can resume without the chat.
 ## Current checkpoint
 
 Documentation reconciliation, store catalog normalization and the chat relay/filter
-are committed. This checkpoint adds the chat client/UI and local browser evidence.
+are committed. Chat client/UI and browser evidence landed in `82501e4f`. The next
+checkpoint fixes report-classification false successes (S49-08 slice 1).
 Read the [parallel contributor's log](sprint-49-claude-lane-handoff.md) before
 touching shared files. That lane owns mature-content, commentary and controller
 journey work; do not duplicate its pending changes.
 
 Next implementation commits:
 
-1. S49-08: repair settlement/grant recovery and report pagination. Audit identified
-   `finalized_pending_grant` treated as granted, missing report rows not affecting
-   `ok`, and a non-durable time window / single-page report scan. Add failure tests
-   first; no real purchase or publisher operation is authorized by this code work.
+1. S49-08: finish settlement/grant recovery and report pagination. Classification
+   false successes are fixed below. Still pending: durable cursor/evidence storage,
+   complete Steam and local-ledger pagination, idempotent grants and reversal
+   disposition. Add failure tests first; no real purchase or publisher operation
+   is authorized by this code work.
 2. S49-02/04: extend chat evidence to deployed co-op/PvP and disconnect/reconnect
    with two authenticated Steam accounts; perform the physical Deck/PC controller
    pass. These acceptance checks cannot be replaced by local test-mode sockets.
@@ -71,7 +73,7 @@ warnings and no current errors at that checkpoint. Regenerate after document edi
 
 ### Chat player experience checkpoint — 2026-10-01
 
-Implementation: [transport model](../../src/playerChat.js),
+Commit: `82501e4f`. Implementation: [transport model](../../src/playerChat.js),
 [UI](../../src/playerChatUi.js), [styles](../../src/playerChat.css), seven locale
 catalogs, lobby socket binding, HUD/lobby/Settings entry points, and controller
 focus-root registration. Keyboard overlays stack above Chat, which stacks above
@@ -116,7 +118,42 @@ Final checks: targeted suite **5 files / 144 tests passed**; full `npx vitest ru
 warning. Documentation audit passed (507 documents / 409 enforced Markdown files;
 407 historical warnings), and `git diff --check` passed. S49-01 is now checked.
 
-Next: commit explicit chat/doc paths, then S49-08 settlement recovery. Do not stage
+Next at this checkpoint: S49-08 settlement recovery. Do not stage
 another contributor's controller probe, biome changes or `src/playerChatUi.test.js`
 (a concurrent mock-DOM test, not authored by this lane). Keep S49-02/03/04 unchecked
 until their full acceptance gates pass.
+
+### S49-08 slice 1 — reconciliation must not report false success
+
+Changed [report classifier](../../server/steamMicroTxnReport.js) and
+[regression tests](../../server/steamMicroTxnReport.test.js):
+
+- A finalized payment with a pending inventory grant is now `paidNotGranted`.
+- Completed local purchases absent from the fetched report make `ok: false`.
+  Absence is an investigation signal, **not** proof of nonpayment or authority
+  to revoke anything; the current single-page scan can be incomplete.
+- Order IDs and transaction IDs have separate lookup namespaces. Conflicting
+  identifiers/account ownership, unknown Steam states, and inventory grants
+  without settled payment are surfaced as `needsReview`, never a clean match.
+- Existing grant receipts/completion events remain evidence after QueryTxn
+  changes the current ledger status, so refunds cannot hide behind `reversed`.
+  Mock purchases are excluded from real-money grant evidence.
+- Invalid comparison windows fail explicitly. Timer warnings now include missing
+  report rows and review-required discrepancies instead of omitting them.
+
+Evidence: six new regression cases failed against the prior implementation.
+After the fix, `npx vitest run server/steamMicroTxnReport.test.js
+server/steamStore.test.js server/db-sqlite.test.js` passed **3 files / 32 tests**;
+scoped ESLint passed. This slice only classifies evidence: it does not mutate
+purchase/inventory state, contact live Steam, charge, refund or grant anything.
+
+Next safe implementation: complete report enumeration with fixtures for short
+pages, overlaps, unchanged timestamps, transient errors and interrupted restarts.
+Use Steam's update `time` as the next boundary; a short page is not completion.
+See [official GetReport v5 contract](https://partner.steamgames.com/doc/webapi/ISteamMicroTxn#GetReport).
+The runtime currently requests `listPurchases({ limit: 5000 })`, but both DB
+adapters **clamp to 1,000**: the local ledger also needs explicit pagination.
+Persist cursor/evidence only after safe processing; do not skip unresolved grants.
+Then make `fulfillPurchasedKeys` idempotent across concurrent finalize calls and
+crash-after-grant/before-ledger-write. Reversal handling must retain item-level
+evidence and an explicit review/revocation disposition. S49-08 remains unchecked.

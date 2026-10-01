@@ -5,7 +5,7 @@
 //
 //   * settled on Steam but not granted here (the player paid, got nothing);
 //   * granted here but refunded or charged back on Steam (revoke or review);
-//   * completed here but absent from Steam's report (never settled).
+//   * completed here but absent from this report (requires further investigation).
 //
 // It runs on a timer while Microtransactions are enabled, and as a CLI
 // (server/scripts/microtxn-report.js) whose output is what Valve asks for.
@@ -16,7 +16,18 @@ const MICROTXN_SANDBOX_URL = 'https://partner.steam-api.com/ISteamMicroTxnSandbo
 
 export const REPORT_TYPES = Object.freeze(['GAMESALES', 'STEAMSTORESALES', 'SETTLEMENT']);
 const REVERSED_STATUSES = new Set(['Refunded', 'PartialRefund', 'Chargedback', 'RefundedSuspectedFraud', 'RefundedFriendlyFraud']);
-const GRANTED_LOCAL_STATUSES = new Set(['completed', 'finalized_pending_grant']);
+// Finalizing payment is not proof that inventory was granted successfully.
+const GRANTED_LOCAL_STATUSES = new Set(['completed']);
+const UNSETTLED_STATUSES = new Set(['Init', 'Approved', 'Denied', 'Failed']);
+
+function hasGrantEvidence(purchase) {
+    if (!purchase || purchase.status === 'mock_completed' || purchase.mode === 'mock') return false;
+    // QueryTxn can replace `completed` with `reversed` or a failure state.
+    // The existing grant receipt/event must still trigger refund review.
+    return GRANTED_LOCAL_STATUSES.has(purchase.status)
+        || (Array.isArray(purchase.granted) && purchase.granted.length > 0)
+        || (Array.isArray(purchase.events) && purchase.events.some((event) => event.status === 'completed'));
+}
 
 export function microTxnReportUrl({ sandbox = false } = {}) {
     return `${sandbox ? MICROTXN_SANDBOX_URL : MICROTXN_URL}GetReport/v5/`;
@@ -56,39 +67,56 @@ export async function fetchMicroTxnReport({
 /** Compares Steam's settled orders with this backend's purchase records. */
 export function reconcileMicroTxnReport(orders = [], purchases = [], { since = null } = {}) {
     const windowStart = since ? Date.parse(since) : -Infinity;
-    const byOrder = new Map();
+    const byOrderId = new Map();
+    const byTransId = new Map();
     for (const purchase of purchases) {
-        if (purchase.orderId) byOrder.set(String(purchase.orderId), purchase);
-        if (purchase.transId) byOrder.set(String(purchase.transId), purchase);
+        if (purchase.orderId && String(purchase.orderId) !== '0') byOrderId.set(String(purchase.orderId), purchase);
+        if (purchase.transId) byTransId.set(String(purchase.transId), purchase);
     }
     const matched = [];
     const paidNotGranted = [];
     const reversedButGranted = [];
+    const needsReview = [];
     const seen = new Set();
     for (const order of orders) {
-        const local = byOrder.get(String(order.orderid)) ?? byOrder.get(String(order.transid));
+        const byOrder = byOrderId.get(String(order?.orderid));
+        const byTransaction = byTransId.get(String(order?.transid));
+        const local = byOrder ?? byTransaction;
         if (local) seen.add(local);
-        const granted = local && GRANTED_LOCAL_STATUSES.has(local.status);
-        const summary = { orderid: String(order.orderid), transid: String(order.transid ?? ''), steamStatus: order.status, localStatus: local?.status ?? null, sku: local?.sku ?? null };
-        if (REVERSED_STATUSES.has(order.status)) {
+        const granted = hasGrantEvidence(local);
+        const summary = { orderid: String(order?.orderid ?? ''), transid: String(order?.transid ?? ''), steamStatus: order?.status ?? null, localStatus: local?.status ?? null, sku: local?.sku ?? null };
+        const identifierConflict = (byOrder && byTransaction && byOrder !== byTransaction)
+            || (byOrder?.transId && order?.transid && String(byOrder.transId) !== String(order.transid))
+            || (byTransaction?.orderId && order?.orderid && String(order.orderid) !== '0' && String(byTransaction.orderId) !== String(order.orderid));
+        if (identifierConflict) {
+            needsReview.push({ ...summary, reason: 'identifier_conflict' });
+        } else if (local?.steamId64 && order?.steamid && String(local.steamId64) !== String(order.steamid)) {
+            needsReview.push({ ...summary, reason: 'account_mismatch' });
+        } else if (!order || (!order.orderid && !order.transid)) {
+            needsReview.push({ ...summary, reason: 'invalid_order' });
+        } else if (REVERSED_STATUSES.has(order.status)) {
             if (granted) reversedButGranted.push(summary);
             else matched.push(summary);
         } else if (order.status === 'Succeeded' && !granted) {
             paidNotGranted.push(summary);
-        } else {
+        } else if (order.status === 'Succeeded' || (UNSETTLED_STATUSES.has(order.status) && !granted)) {
             matched.push(summary);
+        } else {
+            needsReview.push({ ...summary, reason: granted ? 'grant_without_settled_payment' : 'unknown_steam_status' });
         }
     }
     const notInReport = purchases
-        .filter((p) => GRANTED_LOCAL_STATUSES.has(p.status) && !seen.has(p) && (Number(p.createdAt) || 0) >= windowStart)
+        .filter((p) => hasGrantEvidence(p) && !seen.has(p) && (Number(p.createdAt) || 0) >= windowStart)
         .map((p) => ({ orderid: p.orderId, transid: p.transId, localStatus: p.status, sku: p.sku }));
     return {
-        ok: paidNotGranted.length === 0 && reversedButGranted.length === 0,
-        counts: { steamOrders: orders.length, matched: matched.length, paidNotGranted: paidNotGranted.length, reversedButGranted: reversedButGranted.length, notInReport: notInReport.length },
+        ok: !Number.isNaN(windowStart) && paidNotGranted.length === 0 && reversedButGranted.length === 0 && notInReport.length === 0 && needsReview.length === 0,
+        ...(Number.isNaN(windowStart) ? { reason: 'invalid_since' } : {}),
+        counts: { steamOrders: orders.length, matched: matched.length, paidNotGranted: paidNotGranted.length, reversedButGranted: reversedButGranted.length, notInReport: notInReport.length, needsReview: needsReview.length },
         matched,
         paidNotGranted,
         reversedButGranted,
-        notInReport
+        notInReport,
+        needsReview
     };
 }
 
@@ -125,7 +153,14 @@ export function startMicroTxnReconciliation({ intervalMs = 6 * 60 * 60 * 1000, w
         }
         const line = { since, ...reconciliation.counts };
         if (reconciliation.ok) log.info?.('[microtxn-report] reconciled', line);
-        else log.warn?.('[microtxn-report] MISMATCH', { ...line, paidNotGranted: reconciliation.paidNotGranted, reversedButGranted: reconciliation.reversedButGranted });
+        else log.warn?.('[microtxn-report] MISMATCH', {
+            ...line,
+            reason: reconciliation.reason ?? null,
+            paidNotGranted: reconciliation.paidNotGranted,
+            reversedButGranted: reconciliation.reversedButGranted,
+            notInReport: reconciliation.notInReport,
+            needsReview: reconciliation.needsReview
+        });
     };
     const timer = setInterval(() => { void tick(); }, intervalMs);
     timer.unref?.();

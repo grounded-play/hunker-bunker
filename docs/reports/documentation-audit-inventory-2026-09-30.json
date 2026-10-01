@@ -18,7 +18,7 @@
     "documents": 507,
     "trackedDocuments": 507,
     "newDocuments": 0,
-    "bytes": 6062607,
+    "bytes": 6065511,
     "byClassification": {
       "historical": 162,
       "planning": 118,
@@ -6527,8 +6527,8 @@
       "tracked": true,
       "classification": "planning",
       "classificationBasis": "planning directory",
-      "bytes": 7372,
-      "lines": 123,
+      "bytes": 9793,
+      "lines": 160,
       "markers": {
         "unchecked": 0,
         "checked": 0,
@@ -6536,7 +6536,7 @@
         "keywordLines": 0
       },
       "linkGate": "enforced",
-      "localLinkCount": 5,
+      "localLinkCount": 7,
       "linkIssues": []
     },
     {
@@ -6544,8 +6544,8 @@
       "tracked": true,
       "classification": "planning",
       "classificationBasis": "planning directory",
-      "bytes": 43469,
-      "lines": 685,
+      "bytes": 43952,
+      "lines": 692,
       "markers": {
         "unchecked": 51,
         "checked": 2,
@@ -6553,7 +6553,7 @@
         "keywordLines": 1
       },
       "linkGate": "enforced",
-      "localLinkCount": 165,
+      "localLinkCount": 166,
       "linkIssues": []
     },
     {

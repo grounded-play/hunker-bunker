@@ -197,6 +197,13 @@ hardware, deployed matches and moderation operations remain acceptance gates.
 
 ### S49-08 — settlement reconciliation that recovers and accounts for every order
 
+Implementation checkpoint (2026-10-01): report classification now flags pending
+grants, missing reported purchases, identity conflicts and unresolved reversal
+evidence instead of returning a false success. See the
+[handoff](sprint-49-implementation-handoff.md#s49-08-slice-1--reconciliation-must-not-report-false-success)
+for regression evidence and the next pagination/durable-recovery slice. No live
+purchase, automatic grant or revocation was performed; full acceptance is open.
+
 - [ ] **Owner: backend · Size: L · Type: correctness gap.** Finish the current
   GetReport worker: durable cursor/checkpoints, time-boundary deduplication, all
   report batches, restart/outage recovery, pending-grant retry, unmatched-order
