@@ -4,8 +4,9 @@ import fs from 'node:fs';
 import express from 'express';
 import { afterEach, beforeAll, afterAll, describe, expect, it, vi } from 'vitest';
 import { attachSteamInventoryRoutes } from './steamInventory.js';
-import { initDb, setMockInventory, getMockInventory } from './db.js';
+import { initDb, setMockInventory, getMockInventory, checkIdempotency } from './db.js';
 import { createSteamSessionToken } from './steamAuth.js';
+import { recipeExchangeJournalKey } from './steamRecipeExchange.js';
 
 let server;
 let baseUrl;
@@ -116,6 +117,54 @@ describe('Steam Inventory API endpoints', () => {
         const response = await fetch(`${baseUrl}/steam/inventory`, { headers });
         expect(response.status).toBe(502);
         expect(await response.json()).toEqual({ ok: false, reason: 'steam_request_failed' });
+    });
+
+    it('routes live crafting through exact quantities and persists its private request journal', async () => {
+        const { headers } = liveInventory({});
+        const external = vi.fn(async (url, options) => {
+            const items = String(url).includes('/GetInventory/')
+                ? [{ itemid: '1', itemdefid: 1000, quantity: 10 }]
+                : [{ itemid: '1', itemdefid: 1000, quantity: 5 }, { itemid: '2', itemdefid: 2100, quantity: 1 }];
+            if (String(url).includes('/ExchangeItem/')) expect(options.body.get('materialsquantity[0]')).toBe('5');
+            return new Response(JSON.stringify({ response: { item_json: JSON.stringify(items) } }));
+        });
+        globalThis.fetch = vi.fn((url, options) => String(url).startsWith(baseUrl)
+            ? ORIGINAL_FETCH(url, options) : external(url, options));
+        const requestId = `live-craft-${Date.now()}`;
+        const post = () => fetch(`${baseUrl}/steam/inventory/exchange`, {
+            method: 'POST', headers: { ...headers, 'content-type': 'application/json' },
+            body: JSON.stringify({ requestId, recipeId: 2100, materials: ['1'] })
+        });
+        const first = await post();
+        expect(first.status).toBe(200);
+        const body = await first.json();
+        expect(body.granted).toHaveLength(1);
+        expect(body.granted[0]).toMatchObject({ itemId: '2', itemdefid: 2100 });
+        expect(body.exchangeJournal).toBeUndefined();
+        const saved = checkIdempotency(recipeExchangeJournalKey({ appId: 4957040, steamId: '76561198000000000', requestId }));
+        expect(saved.body.exchangeJournal).toMatchObject({ state: 'completed', plan: { consumed: [{ quantity: 5 }] } });
+        expect(await (await post()).json()).toEqual(body);
+        expect(external).toHaveBeenCalledTimes(2);
+    });
+
+    it('persists an uncertain live craft hold that a new request ID cannot bypass', async () => {
+        const { headers } = liveInventory({});
+        const external = vi.fn(async (url) => {
+            if (String(url).includes('/GetInventory/')) return new Response(JSON.stringify({ response: { item_json: '[{"itemid":"1","itemdefid":1000,"quantity":20}]' } }));
+            throw new Error('response lost after Steam may have exchanged');
+        });
+        globalThis.fetch = vi.fn((url, options) => String(url).startsWith(baseUrl)
+            ? ORIGINAL_FETCH(url, options) : external(url, options));
+        for (const requestId of ['uncertain-craft', 'uncertain-craft', 'another-click']) {
+            const response = await fetch(`${baseUrl}/steam/inventory/exchange`, {
+                method: 'POST', headers: { ...headers, 'content-type': 'application/json' },
+                body: JSON.stringify({ requestId, recipeId: 2100, materials: ['1'] })
+            });
+            expect(response.status).toBe(409);
+            expect(await response.json()).toEqual({ ok: false, reason: 'exchange_outcome_requires_review' });
+        }
+        expect(external).toHaveBeenCalledTimes(2);
+        expect(checkIdempotency('recipe-exchange-active.4957040.76561198000000000').body.exchangeJournal.state).toBe('submitted_unknown');
     });
 
     it('GET /steam/inventory returns mock items in dev mode', async () => {

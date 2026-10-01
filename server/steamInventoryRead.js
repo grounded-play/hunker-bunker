@@ -37,11 +37,14 @@ export function decodeSteamInventory(data) {
     const seen = new Set();
     for (const item of rows) {
         if (!item || !uint64(item.itemid) || seen.has(item.itemid)) return invalid;
+        seen.add(item.itemid);
+        // ExchangeItem can describe deleted materials with only identity/state;
+        // they cannot be owned or granted, so no quantity is inferred for them.
+        if (item.state === 'removed' || item.state === 'consumed') continue;
         const itemdefid = integer(item.itemdefid, 1);
         const quantity = integer(item.quantity, 0);
         if (itemdefid === null || quantity === null) return invalid;
-        seen.add(item.itemid);
-        if (quantity === 0 || item.state === 'removed' || item.state === 'consumed') continue;
+        if (quantity === 0) continue;
         inventory.push({ itemId: item.itemid, itemdefid, quantity, acquiredAt: acquisitionTime(item.acquired) });
     }
     return { ok: true, inventory };

@@ -780,3 +780,15 @@ Resume notes and remaining work: [iteration handoff](todo-tree-2026-10-01-handof
   recoverable without duplicate refunds/rewards; then finish unattended paid-grant
   recovery and item-level reversal dispositions. This subtask does not close
   S49-08, S49-09, S49-23 or S49-32 or certify deployed/hardware acceptance.
+
+### Iteration 2 — S49-32 / S49-08 crafting boundary
+
+- [x] Live fixed/cache crafting now verifies owned material stacks and sends exact
+  required quantities. [Service](../../server/steamRecipeExchange.js) and
+  [tests](../../server/steamRecipeExchange.test.js) reject false-success output,
+  isolate account/request identities and persist an ambiguity hold before Steam.
+  Neither the same request nor a fresh nonce repeats an unresolved craft.
+- [ ] Finish the operator resolution workflow and other mutation paths; the fixed
+  recipe journal is not automatic refund recovery or a completed S49-08.
+  See [handoff](todo-tree-2026-10-01-handoff.md#iteration-2--exact-live-crafting-and-durable-ambiguity-holds)
+  for test results, stored-record locations and next steps.

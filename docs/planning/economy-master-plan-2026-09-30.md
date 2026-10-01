@@ -192,3 +192,13 @@ The original proposal and owner decisions above are not production certification
   disclosures, account restrictions, approved pricing and review purchases through
   the canonical Sprint 49 acceptance gates; repository checkbox changes alone are
   not evidence of Steamworks or regulatory completion.
+
+### P5 supporting work — live crafting journal
+
+- [x] Exact recipe consumption and reward evidence are now enforced by the
+  [live exchange service](../../server/steamRecipeExchange.js). Durable account/
+  request holds prevent repeat crafting after an uncertain response, including
+  fresh-nonce retries; confirmed retries return the saved result.
+- [ ] P5 is still open: build an explicit, audited resolution workflow for unknown
+  outcomes and consumed/traded entitlements. Do not clear holds or automatically
+  refund on missing response evidence. [Continuation and verification](todo-tree-2026-10-01-handoff.md#iteration-2--exact-live-crafting-and-durable-ambiguity-holds).

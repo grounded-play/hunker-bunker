@@ -29,6 +29,8 @@ appendices in the already-dirty plans; preserve the other contributor's edits.
 
 ## Iteration 1 — live inventory evidence
 
+Commit: `473794a1`.
+
 - [x] Reproduced 11 failing regression cases: GetInventory was decoding `item_list`
   instead of `item_json`, reporting bad evidence as an empty inventory, and
   returning transport exception strings that could contain the publisher key.
@@ -50,12 +52,56 @@ appendices in the already-dirty plans; preserve the other contributor's edits.
 
 API reference: [Steam GetInventory](https://partner.steamgames.com/doc/webapi/IInventoryService#GetInventory).
 
+## Iteration 2 — exact live crafting and durable ambiguity holds
+
+- [x] [Recipe exchange service](../../server/steamRecipeExchange.js) validates
+  server-fetched ownership, unique material IDs, known recipes and sufficient
+  stack quantities. Chrome consumes 10 common + 2 rare, decal 5 common, cache
+  opening 1 cache + 1 key, regardless of stack sizes. Only newly produced items
+  are rewards; leftover material rows never appear as grants.
+- [x] Real [inventory route](../../server/steamInventory.js) uses the service and
+  the same per-player lock as trade-up/redemption. Request identity is scoped to
+  app/account and bound to its recipe/material signature. Hash-based journal keys
+  work with both SQLite and JSON (JSON rejects colon-delimited keys).
+- [x] Persist a private immutable plan and account-level pending marker before
+  ExchangeItem. No documented Steam request-ID support exists for that call, so
+  missing/invalid/failed outcome evidence stays in manual review, never automatic
+  replay or refund. A fresh nonce cannot bypass an unresolved account hold.
+  Completed retries return their saved result without calling Steam again.
+- [x] Journal metadata lives inside the existing DB's persisted response body,
+  but is stripped from player responses. HTTP 200 alone and empty/wrong output
+  arrays are not proof of successful crafting. Requests time out after 15 seconds.
+- [x] [Service cases](../../server/steamRecipeExchange.test.js) cover exact counts,
+  lost responses, malformed/wrong/empty rewards, failed preflight/completion writes,
+  nonce/account isolation and concurrent requests. Actual authenticated route
+  tests inspect stored metadata and reject new-nonce bypasses on SQLite and JSON.
+
+Verification: backend suite **35 files / 326 tests passed** before the final
+removed-material response regression; targeted route/service run **49 tests passed**.
+Actual JSON-backed route run **31 tests passed**; scoped ESLint passed.
+Documentation audit: **516 documents / 417 enforced Markdown files**, no current
+errors; 407 preserved archive warnings. Final reader/route/recipe/trade-up
+regression rerun: **4 files / 77 tests passed**, including removed-material rows.
+No live inventory was consumed/granted and no backend was deployed.
+
+Operator caution: journal records are in the existing `idempotency` storage with
+no TTL. Look up an attempt using exported `recipeExchangeJournalKey` or its
+account marker `recipe-exchange-active.APPID.STEAMID`; inspect private
+`body.exchangeJournal`. Do not delete/reset an uncertain marker or rerun the
+mutation without resolving actual Steam inventory outcome. A staffed resolution
+workflow, audit trail and safe explicit disposition command are still TODOs.
+The hold applies to this fixed/cache recipe route, not a claim that trade-up,
+redemption or all inventory mutation paths have been journaled.
+
+API reference: [Steam ExchangeItem](https://partner.steamgames.com/doc/webapi/IInventoryService#ExchangeItem).
+
 ## Next implementation order
 
 1. **S49-08/32, economy P5:** correct remaining inventory mutation contracts in
    `server/steamTradeUp.js` and `server/steamInventory.js`. ConsumeItem currently
-   trusts HTTP 200; textual request IDs are not uint64; some ExchangeItem/drop
-   paths still read `item_list`. Add failure fixtures first. A lost response is
+   trusts HTTP 200; textual request IDs are not uint64; TriggerItemDrop still reads
+   `item_list`. Fixed/cache ExchangeItem is corrected above. Add failure fixtures
+   first. A lost response is
    ambiguous, not proof that nothing was consumed/granted: never blindly refund
    or reroll it. Persist an immutable exchange plan and outcome journal.
 2. **S49-08:** extract paid fulfillment into a shared service with the existing

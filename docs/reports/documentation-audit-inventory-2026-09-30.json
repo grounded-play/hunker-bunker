@@ -16,17 +16,17 @@
   },
   "summary": {
     "documents": 516,
-    "trackedDocuments": 514,
-    "newDocuments": 2,
-    "bytes": 6230669,
+    "trackedDocuments": 515,
+    "newDocuments": 1,
+    "bytes": 6237979,
     "byClassification": {
       "historical": 165,
       "planning": 123,
       "reference": 228
     },
     "markers": {
-      "unchecked": 176,
-      "checked": 729,
+      "unchecked": 143,
+      "checked": 770,
       "migratedCheckboxes": 164,
       "keywordLines": 435
     },
@@ -5898,16 +5898,16 @@
       "tracked": true,
       "classification": "planning",
       "classificationBasis": "planning directory",
-      "bytes": 14801,
-      "lines": 195,
+      "bytes": 15483,
+      "lines": 205,
       "markers": {
-        "unchecked": 6,
-        "checked": 4,
+        "unchecked": 7,
+        "checked": 5,
         "migratedCheckboxes": 0,
         "keywordLines": 1
       },
       "linkGate": "enforced",
-      "localLinkCount": 4,
+      "localLinkCount": 6,
       "linkIssues": []
     },
     {
@@ -6221,11 +6221,11 @@
       "tracked": false,
       "classification": "planning",
       "classificationBasis": "planning directory",
-      "bytes": 14803,
-      "lines": 211,
+      "bytes": 14941,
+      "lines": 210,
       "markers": {
-        "unchecked": 35,
-        "checked": 3,
+        "unchecked": 0,
+        "checked": 37,
         "migratedCheckboxes": 0,
         "keywordLines": 2
       },
@@ -6527,8 +6527,8 @@
       "tracked": true,
       "classification": "planning",
       "classificationBasis": "planning directory",
-      "bytes": 14292,
-      "lines": 231,
+      "bytes": 16249,
+      "lines": 247,
       "markers": {
         "unchecked": 0,
         "checked": 0,
@@ -6612,16 +6612,16 @@
       "tracked": true,
       "classification": "planning",
       "classificationBasis": "planning directory",
-      "bytes": 52219,
-      "lines": 797,
+      "bytes": 52993,
+      "lines": 809,
       "markers": {
-        "unchecked": 43,
-        "checked": 12,
+        "unchecked": 44,
+        "checked": 13,
         "migratedCheckboxes": 0,
         "keywordLines": 3
       },
       "linkGate": "enforced",
-      "localLinkCount": 179,
+      "localLinkCount": 182,
       "linkIssues": []
     },
     {
@@ -6694,19 +6694,19 @@
     },
     {
       "path": "docs/planning/todo-tree-2026-10-01-handoff.md",
-      "tracked": false,
+      "tracked": true,
       "classification": "planning",
       "classificationBasis": "planning directory",
-      "bytes": 4477,
-      "lines": 71,
+      "bytes": 7694,
+      "lines": 119,
       "markers": {
         "unchecked": 1,
-        "checked": 4,
+        "checked": 9,
         "migratedCheckboxes": 0,
         "keywordLines": 1
       },
       "linkGate": "enforced",
-      "localLinkCount": 7,
+      "localLinkCount": 10,
       "linkIssues": []
     },
     {
@@ -10828,8 +10828,8 @@
       "tracked": true,
       "classification": "planning",
       "classificationBasis": "filename heuristic",
-      "bytes": 6798,
-      "lines": 77,
+      "bytes": 7340,
+      "lines": 84,
       "markers": {
         "unchecked": 0,
         "checked": 0,

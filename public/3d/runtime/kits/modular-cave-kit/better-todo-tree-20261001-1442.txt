@@ -12,6 +12,13 @@ Original checked entries are not newly certified by this iteration.
     Files: server/steamInventoryRead.js, server/steamInventory.js,
     server/steamInventoryRead.test.js, server/steamInventory.test.js,
     server/steamTradeUp.test.js. Evidence: 4 targeted suites / 80 tests; scoped lint.
+    Commit: 473794a1. Full backend checkpoint: 34 suites / 306 tests.
+[x] Iteration 2: fixed/cache recipe exchanges use real owned stack quantities,
+    validate item_json rewards, persist request/account holds before Steam, and
+    cannot repeat an uncertain craft by retrying or changing the request nonce.
+    Files: server/steamRecipeExchange.js, server/steamRecipeExchange.test.js,
+    server/steamInventory.js, server/steamInventory.test.js. Full evidence/limits
+    and operator handoff: docs/planning/todo-tree-2026-10-01-handoff.md.
 [ ] Next S49-08/32 + economy P5: durable exchange outcomes, correct mutation API
     contracts, safe background paid recovery, and item-level reversal dispositions.
 [ ] Full source-ticket acceptance remains open; no real purchase, deployment,
