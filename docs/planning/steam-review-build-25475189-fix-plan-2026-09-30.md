@@ -1,7 +1,14 @@
 # Steam review: build 25475189 — root causes and fix plan
 
-Status: active · Owner: Claude (code), publisher (Steamworks) · Written: 2026-09-30
+Status: historical remediation plan · Owner: publisher · Written: 2026-09-30
 Reviewed build: 25475189 (older than 25596041, uploaded 2026-09-28) · App 4957040
+
+**Superseded product direction (2026-10-01):** the owner requires all reviewed
+features, including filtered player chat. Implement and verify them under
+[Sprint 49](sprint-49.md); hold resubmission until ready. The removal/downgrade
+suggestions below are preserved as historical context, not current instructions.
+The [audit](../reports/documentation-audit-2026-09-30.md) identifies remaining
+implementation gaps despite the earlier "Code: done" summary.
 
 Valve failed the build on seven points. Four repeat the 2026-09-11 review
 ([status](../steam-review-resubmission-status-2026-09-11.md)); three are new. Each

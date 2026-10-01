@@ -2,10 +2,12 @@
 
 Status: active plan | Owner: repository maintainers | Updated: 2026-09-30 | Review: every completed ticket and release candidate
 
-Baseline branch: `dev/sprint-48`
+Baseline branch: `dev/sprint-49`
 Baseline version: `2.4.13-beta`
-Source commit: `379f87e1`. Sprint 49 planning is recorded on the existing branch;
-this document does not imply that a new branch, release, or Steam upload exists.
+Implementation baseline: `95ff7285` (2026-10-01). The initial audit used `379f87e1`
+on Sprint 48. Implementation now proceeds on `dev/sprint-49`; no new Steam upload
+is implied. Read the [implementation handoff](sprint-49-implementation-handoff.md)
+before continuing work, and update it with every implementation commit.
 
 ## Product direction
 
@@ -23,9 +25,9 @@ Feature count is useful only when a player can discover and use those features.
 
 ## Evidence and how to use this TODO
 
-- Documentation and Steam review audit (`docs/reports/documentation-audit-2026-09-30.md`, not yet committed)
+- [Documentation and Steam review audit](../reports/documentation-audit-2026-09-30.md)
   records the seven failures, contradictions, and review boundaries.
-- Full documentation inventory (`docs/reports/documentation-audit-inventory-2026-09-30.json`, not yet committed)
+- [Full documentation inventory](../reports/documentation-audit-inventory-2026-09-30.json)
   records every scanned document, its lifecycle classification, markers, and links.
 - [Product State](../../PRODUCT_STATE.md) records implementation truth.
 - [Previous review remediation](steam-review-build-25475189-fix-plan-2026-09-30.md)
@@ -340,13 +342,13 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
 ### S49-19 — finish or clearly label the remaining inert drop effects
 
 - [ ] **Owner: gameplay + content · Size: M.** Implement and connect
-  `tesla_thrusters`, `pheromone_aura`, and `synapse_pulse`, or keep them outside
+  `plasma_bounce`, `tesla_thrusters`, `pheromone_aura`, and `synapse_pulse`, or keep them outside
   earnable/claimable pools until connected. Audit each effect's description,
   actual consumer, upgrade stacking and multiplayer behavior.
   **Files:** [drop catalog](../../src/runDrops.js), [runtime](../../src/threeGame.js),
   [relic matrix](../reports/relic-behavior-matrix-2026-09-09.md).
   **Accept:** every obtainable effect has an observable gameplay delta and tests
-  using real state fields; all three named gaps have an explicit disposition.
+  using real state fields; all four named gaps have an explicit disposition.
 
 ### S49-20 — world variety that preserves navigation and purpose
 
