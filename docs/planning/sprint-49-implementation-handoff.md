@@ -11,8 +11,9 @@ action here before yielding so another contributor can resume without the chat.
 
 Documentation reconciliation, store catalog normalization and the chat relay/filter
 are committed. Chat client/UI and browser evidence landed in `82501e4f`, and
-report-classification safety landed in `07f86986`. This checkpoint implements
+report-classification safety landed in `07f86986`. Commit `6d871747` implements
 S49-08 report enumeration, persisted evidence/cursors and restart recovery.
+The latest slice corrects the Steam Inventory grant API contract (below).
 Read the [parallel contributor's log](sprint-49-claude-lane-handoff.md) before
 touching shared files. That lane owns mature-content, commentary and controller
 journey work; do not duplicate its pending changes.
@@ -164,7 +165,7 @@ evidence and an explicit review/revocation disposition. S49-08 remains unchecked
 
 ### S49-08 slice 2 — complete enumeration and restart-safe evidence
 
-Implemented:
+Commit: `6d871747`. Implemented:
 
 - [Scanner](../../server/steamMicroTxnScan.js): continue after short batches;
   deduplicate by Steam transaction identity; retain the latest update and flag
@@ -211,3 +212,32 @@ Known limits and next action:
 4. Preserve concurrent edits to `src/steamVaultUi.hostedStore.test.js`,
    `src/playerChatUi.test.js`, and newly supplied audio assets; they are not this
    lane's changes. Commit only the explicit backend/report/documentation paths.
+
+### S49-08 slice 3 — real Inventory grant response contract
+
+Changed [shared grant helper](../../server/steamGrant.js) and its contract tests.
+The old implementation accepted rejected/empty HTTP-200 bodies as delivered
+inventory and read `item_list`, while Steam documents encoded `item_json`.
+It also sent an undocumented `quantity[0]`: AddItem instead requires one repeated
+itemdef entry per requested instance. The helper now validates delivery evidence,
+retains replay/current-item state (including consumed items), fails on malformed
+or rejected responses, bounds quantities/requests, and does not return exception
+strings that could reveal publisher secrets. Purchased-item cooldowns can be
+requested by the caller. See the [official contract](https://partner.steamgames.com/doc/webapi/IInventoryService#AddItem).
+
+Verification: 18 new regression cases failed before the fix. Afterward, the
+grant/store/trade-up/inventory/leaderboard suites passed **5 files / 82 tests**;
+scoped ESLint passed. Updated store/trade-up AddItem fixtures now use the actual
+response format and repeated itemdef input. No real inventory call was executed.
+
+Next commit: persist a stable uint64 paid-grant request ID before issuing AddItem,
+serialize finalize attempts, recheck Steam payment status before retries, and
+prove response-loss/crash recovery without issuing more keys. This contract slice
+alone does **not** provide paid-grant idempotency or close S49-08.
+
+Adjacent audit finding for S49-08/23: `server/steamInventory.js` still decodes
+GetInventory using old `item_list` fixtures; `server/steamTradeUp.js` sends textual
+request IDs although Steam requires uint64, and treats HTTP-200 ConsumeItem as
+success. Track and fix those contracts with failure tests before claiming live
+exchange/refund correctness. Do not exercise destructive ConsumeItem on accounts
+as part of a code test.

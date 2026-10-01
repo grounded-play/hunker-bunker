@@ -170,7 +170,10 @@ describe('POST /steam/inventory/trade-up (live Steam, faked)', () => {
             if (method === 'AddItem') {
                 const refund = String(params.requestid ?? '').includes(':refund:');
                 if (failAdd && !refund) return json({}, 500);
-                return json({ response: { item_list: [{ itemid: `new-${calls.length}`, itemdefid: params['itemdefid[0]'], quantity: params['quantity[0]'] }] } });
+                const quantity = Object.keys(params).filter((key) => key.startsWith('itemdefid[')).length;
+                return json({ response: { success: true, item_json: JSON.stringify([
+                    { itemid: String(10000 + calls.length), itemdefid: params['itemdefid[0]'], quantity }
+                ]) } });
             }
             return json({}, 404);
         });

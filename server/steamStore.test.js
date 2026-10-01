@@ -412,9 +412,10 @@ describe('Steam Store API endpoints', () => {
             if (text.includes('/IInventoryService/AddItem/v1/')) {
                 return jsonResponse({
                     response: {
-                        item_list: [
-                            { itemid: 'steam-key-stack-1', itemdefid: '4001', quantity: '5' }
-                        ]
+                        success: true,
+                        item_json: JSON.stringify([
+                            { itemid: '17209346500926339', itemdefid: '4001', quantity: '5' }
+                        ])
                     }
                 });
             }
@@ -436,7 +437,7 @@ describe('Steam Store API endpoints', () => {
             nextAction: 'refresh_inventory',
             transId,
             orderId,
-            granted: [{ itemId: 'steam-key-stack-1', itemdefid: 4001, quantity: 5 }]
+            granted: [{ itemId: '17209346500926339', itemdefid: 4001, quantity: 5 }]
         });
 
         const purchase = listPurchases({ limit: 20 }).find((row) => row.transId === transId);

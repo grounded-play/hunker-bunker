@@ -1,7 +1,7 @@
 import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
-import { afterEach, beforeAll, afterAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, afterAll, describe, expect, it, vi } from 'vitest';
 import { grantItemToPlayer } from './steamGrant.js';
 import { initDb, getMockInventory, setMockInventory } from './db.js';
 
@@ -20,10 +20,79 @@ afterAll(() => {
 });
 
 afterEach(() => {
+    vi.unstubAllGlobals();
     for (const key of Object.keys(process.env)) {
         delete process.env[key];
     }
     Object.assign(process.env, ORIGINAL_ENV);
+});
+
+describe('grantItemToPlayer (Steam contract)', () => {
+    const input = { steamId: '76561198000000000', itemdefid: 4001, quantity: 5, isDevMode: false, requestId: '18446744073709551615' };
+    const item = { itemid: '17209346500926339', itemdefid: '4001', quantity: '5' };
+    function reply(response) {
+        const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ response })));
+        vi.stubGlobal('fetch', fetch);
+        return fetch;
+    }
+
+    it('sends one itemdef per requested instance and decodes the documented item_json', async () => {
+        const fetch = reply({ success: true, item_json: JSON.stringify([item]) });
+        const result = await grantItemToPlayer({ ...input, tradeRestriction: true });
+        expect(result).toMatchObject({ ok: true, replayed: false, granted: [{ itemId: item.itemid, itemdefid: 4001, quantity: 5 }] });
+        const options = fetch.mock.calls[0][1];
+        expect([...options.body].filter(([key]) => key.startsWith('itemdefid['))).toEqual(
+            Array.from({ length: 5 }, (_, index) => [`itemdefid[${index}]`, '4001'])
+        );
+        expect(options.body.has('quantity[0]')).toBe(false);
+        expect(options.body.get('requestid')).toBe(input.requestId);
+        expect(options.body.get('trade_restriction')).toBe('1');
+        expect(options.signal).toBeInstanceOf(AbortSignal);
+    });
+
+    it('accepts the documented example with item_json and no success flag', async () => {
+        reply({ item_json: JSON.stringify([item]) });
+        expect((await grantItemToPlayer(input)).ok).toBe(true);
+    });
+
+    it.each([
+        {},
+        { success: false, item_json: JSON.stringify([item]), error: 'private publisher detail' },
+        { success: 'false', item_json: JSON.stringify([item]) },
+        { success: true, item_json: 'invalid JSON' },
+        { success: true, item_json: '{}' },
+        { success: true, item_json: '[]' },
+        { success: true, item_json: JSON.stringify([{ ...item, itemid: undefined }]) },
+        { success: true, item_json: JSON.stringify([{ ...item, quantity: -1 }]) },
+        { success: true, item_json: JSON.stringify([{ ...item, quantity: 0 }]) },
+        { success: true, item_json: JSON.stringify([{ ...item, itemdefid: 'bad' }]) }
+    ])('never mistakes invalid or rejected evidence for delivery: %j', async (response) => {
+        reply(response);
+        const result = await grantItemToPlayer(input);
+        expect(result.ok).toBe(false);
+        expect(result.granted).toBeUndefined();
+        expect(JSON.stringify(result)).not.toContain('private publisher detail');
+    });
+
+    it('preserves replay evidence even when original items have since been consumed', async () => {
+        reply({ success: true, replayed: true, item_json: JSON.stringify([{ ...item, quantity: 0, state: 'removed' }]) });
+        expect(await grantItemToPlayer(input)).toMatchObject({
+            ok: true, replayed: true, granted: [{ quantity: 0, state: 'removed' }]
+        });
+        reply({ success: true, replayed: true, item_json: '[]' });
+        expect(await grantItemToPlayer(input)).toMatchObject({ ok: true, replayed: true, granted: [] });
+    });
+
+    it.each([0, -1, 1.5, Infinity, 1001])('rejects invalid or unbounded quantity %s before calling Steam', async (quantity) => {
+        const fetch = reply({});
+        expect(await grantItemToPlayer({ ...input, quantity })).toMatchObject({ ok: false, reason: 'invalid_grant_quantity' });
+        expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it('does not expose request exception strings or publisher keys', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('https://steam.example?key=private-publisher-key')));
+        expect(await grantItemToPlayer(input)).toEqual({ ok: false, reason: 'steam_request_failed' });
+    });
 });
 
 describe('grantItemToPlayer (dev mode)', () => {

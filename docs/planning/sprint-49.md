@@ -201,7 +201,9 @@ Implementation checkpoint (2026-10-01): report classification now flags pending
 grants, missing reported purchases, identity conflicts and unresolved reversal
 evidence instead of returning a false success. Complete Steam/local-ledger paging,
 durable cursor/evidence storage, restart recovery and private multi-page CLI
-evidence are implemented with fixtures. Paid-grant idempotency and actionable
+evidence are implemented with fixtures. The shared inventory grant helper now
+uses Steam's documented `item_json` and repeated itemdef request contract, rejecting
+false-success delivery responses. Paid-grant idempotency and actionable
 reversal disposition are still open. See the
 [handoff](sprint-49-implementation-handoff.md#s49-08-slice-1--reconciliation-must-not-report-false-success)
 for regression evidence and the next paid-grant recovery slice. No live
