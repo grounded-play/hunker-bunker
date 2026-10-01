@@ -42,12 +42,35 @@ re-read the other worklog first. Both contributors share one working tree.
 - Needs a backend redeploy to take effect.
 - Verification: `npx vitest run` 517 files / 4,471 tests passing.
 
+### S49-11 slice 1: Content Guide parity and the packaged cinematic path
+
+Audit (no change needed):
+- All five intimacy trees (Val, Briggs, Kaelen, Aria, Nahl) are in the guide.
+- Choices are the only way to move between nodes, so the guide's transcript holds
+  every reachable node, built from the same data as the game.
+- All 15 side-story `dialogueNode`s exist in the trees.
+- Camp leader lines (`src/data/campDialogue.js`) are restrained, not sexual.
+- The reader never calls the dialogue manager, so it cannot change bond, perks or
+  progression.
+
+Fixed:
+- **VIEW CINEMATIC / VIEW ENDING showed text instead of the video in the Steam
+  build.** `/cutscenes/…` was set without `assetUrl()`, and under `file://` that
+  points at the drive root. The new `endingCutsceneSources()` is used by both the
+  Content Guide and the progression walkthrough.
+- **Log-letter drift guard.** The guide's C11/B03 letters are hand copies;
+  `LORE_LOGS` is now exported, and a test asserts the copies match word for word.
+
+Verification: `npx vitest run` 4,537 passed. The 2 failures are in the other
+lane's uncommitted `src/chatFilter.test.js`.
+
+Still open for S49-11: reviewer-route evidence on the installed build (publisher).
+The reader shows dialogue as text only. The in-game route also shows each node's
+`interstitial` still, so consider adding stills to the reader.
+
 ## Next
 
-1. **S49-11:** read `src/matureContentAudit.js`, the Content Guide reader and
-   `src/npcDialogueTrees.js`. Write a parity test asserting that every intimacy and
-   self-sacrifice node in the trees appears in the guide, and that every guide entry
-   names a real in-game source. Fix the gaps.
+1. **S49-11 (optional):** show each node's `interstitial` still in the reader.
 2. **S49-10:** extend `tests/e2e/probes/steam-review-2026-09.spec.js` (or a sibling
    probe) to walk title → character → Armory → Foundry → Vault → settings →
    achievements → commentary → Content Guide → multiplayer → pause → results by

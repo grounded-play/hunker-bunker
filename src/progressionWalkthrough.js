@@ -11,7 +11,8 @@
  * hook — per the plan doc's scope-discipline note, a stage with no real trigger is left as a
  * documented gap, not a button that pretends to do something.
  */
-import { ACT2_ENDINGS, ACT2_ENDING_CUTSCENES, getAct2EndingLines } from './act2.js';
+import { ACT2_ENDINGS, getAct2EndingLines } from './act2.js';
+import { endingCutsceneSources } from './matureContentAudit.js';
 
 export const PROGRESSION_MANIFEST = Object.freeze([
     {
@@ -206,10 +207,10 @@ export class ProgressionWalkthrough {
         closeBtn.addEventListener('click', () => this.closeSceneViewer());
         overlay.appendChild(closeBtn);
 
-        const cutsceneId = ACT2_ENDING_CUTSCENES[ending];
+        const sources = endingCutsceneSources(ending);
         const video = document.createElement('video');
-        video.src = `/cutscenes/${cutsceneId}.webm`;
-        video.poster = `/cutscenes/${cutsceneId}-poster.jpg`;
+        video.src = sources.video;
+        video.poster = sources.poster;
         video.controls = true;
         video.autoplay = true;
         video.style.cssText = 'max-width:90vw;max-height:70vh;';

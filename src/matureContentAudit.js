@@ -10,6 +10,7 @@
 
 import { ACT2_ENDINGS, ACT2_ENDING_CUTSCENES, getAct2EndingLines } from './act2.js';
 import { NPC_DIALOGUE_TREES } from './npcDialogueTrees.js';
+import { assetUrl } from './assetUrl.js';
 
 // Static copies of the two audio-log letters Valve's suicide/self-sacrifice
 // category maps to. Duplicated here (rather than imported from threeGame.js)
@@ -83,6 +84,16 @@ export const MATURE_CONTENT_MANIFEST = Object.freeze([
         inPlay: 'In play: every fight. Gore effects can be turned off in Settings.'
     }
 ]);
+
+// Ending cutscene video + poster, resolved for the packaged file:// build
+// (where a root-absolute path points at the drive root) as well as the web.
+export function endingCutsceneSources(ending, base = globalThis.document?.baseURI) {
+    const cutsceneId = ACT2_ENDING_CUTSCENES[ending];
+    return {
+        video: assetUrl(`/cutscenes/${cutsceneId}.webm`, base),
+        poster: assetUrl(`/cutscenes/${cutsceneId}-poster.jpg`, base)
+    };
+}
 
 /**
  * The whole tree as readable text: every node reachable from the start, with
@@ -291,10 +302,10 @@ export class MatureContentAudit {
             const tree = NPC_DIALOGUE_TREES[scene.treeId];
             overlay.appendChild(this._buildTextPanel(buildDialogueTranscript(tree), tree ? `${tree.name} — ${tree.faction ?? ''}` : scene.treeId));
         } else if (scene.kind === 'ending') {
-            const cutsceneId = ACT2_ENDING_CUTSCENES[scene.ending];
+            const sources = endingCutsceneSources(scene.ending);
             const video = document.createElement('video');
-            video.src = `/cutscenes/${cutsceneId}.webm`;
-            video.poster = `/cutscenes/${cutsceneId}-poster.jpg`;
+            video.src = sources.video;
+            video.poster = sources.poster;
             video.controls = true;
             video.autoplay = true;
             video.style.cssText = 'max-width:90vw;max-height:70vh;';
