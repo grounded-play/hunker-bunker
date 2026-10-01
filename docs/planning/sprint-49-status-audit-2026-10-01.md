@@ -46,7 +46,7 @@ This records **implementation state, not acceptance**. Most tickets still close 
 | **S49-34** Expedition choices | Not started | — |
 | **S49-35** Social loop | Not started | Depends on 02–05 and 14–15. Chat and the build gate are prerequisites now in place. |
 | **S49-36** Seasons | Not started | Depends on 07–09 and 23–24, so blocked on the same decisions. |
-| **S49-37** Art in context | Not started | — |
+| **S49-37** Art in context | Partial (audit done) | [3D asset audit](../reports/3d-asset-audit-2026-10-01.md): five achievement rewards ship as copies of other models; three enemies use another character's model; Talon-C base is a grey blockout; about 35 decimated props render as fragments. |
 | **S49-38** Integration debt | Partial | Chat landed as bounded modules (`src/playerChat.js`, `src/playerChatUi.js`, `server/chatPolicy.js`). Commentary and purchase presentation still live in `main.js`. |
 
 ## What this lane picks up next
