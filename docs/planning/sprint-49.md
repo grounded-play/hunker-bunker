@@ -203,8 +203,10 @@ evidence instead of returning a false success. Complete Steam/local-ledger pagin
 durable cursor/evidence storage, restart recovery and private multi-page CLI
 evidence are implemented with fixtures. The shared inventory grant helper now
 uses Steam's documented `item_json` and repeated itemdef request contract, rejecting
-false-success delivery responses. Paid-grant idempotency and actionable
-reversal disposition are still open. See the
+false-success delivery responses. Authenticated finalize retries now persist a
+stable grant identity, survive response/completion-write loss, block concurrent
+attempts, and quarantine ambiguous legacy/partial grants. Unattended recovery
+from the report worker and actionable reversal disposition are still open. See the
 [handoff](sprint-49-implementation-handoff.md#s49-08-slice-1--reconciliation-must-not-report-false-success)
 for regression evidence and the next paid-grant recovery slice. No live
 purchase, automatic grant or revocation was performed; full acceptance is open.

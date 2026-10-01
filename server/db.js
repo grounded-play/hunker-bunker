@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { createSqliteBackend } from './db-sqlite.js';
 import { validateMicroTxnCheckpoint } from './microTxnCheckpoint.js';
+import { mergePurchaseGrantIntent } from './purchaseGrantIntent.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -181,11 +182,15 @@ function mergePurchaseRecord(existing, input = {}, now = Date.now()) {
     }
 
     if (Array.isArray(input.granted)) {
-        next.granted = input.granted;
+        next.granted = input.granted.map((item) => ({ ...item }));
     } else if (Array.isArray(existing?.granted)) {
         next.granted = existing.granted;
     }
 
+    const grantIntent = mergePurchaseGrantIntent(existing, input, next);
+    if (grantIntent) next.grantIntent = grantIntent;
+    if (typeof input.grantReplayed === 'boolean') next.grantReplayed = input.grantReplayed;
+    if (input.grantDelivered === true) next.grantDelivered = true;
     return next;
 }
 
@@ -204,6 +209,8 @@ function clonePurchase(purchase) {
     if (!purchase) return null;
     return {
         ...purchase,
+        ...(purchase.grantIntent ? { grantIntent: { ...purchase.grantIntent } } : {}),
+        ...(Array.isArray(purchase.granted) ? { granted: purchase.granted.map((item) => ({ ...item })) } : {}),
         events: Array.isArray(purchase.events) ? purchase.events.map((event) => ({ ...event })) : []
     };
 }
@@ -544,19 +551,23 @@ export async function savePurchaseState(receipt) {
     const sqlite = getSqliteBackend();
     if (sqlite) return sqlite.savePurchaseState(receipt);
 
-    const now = Date.now();
-    const index = dbState.purchases.findIndex((purchase) => purchasesMatch(purchase, {
-        transId: receipt?.transId,
-        orderId: receipt?.orderId,
-        requestId: receipt?.requestId
-    }));
-    const merged = mergePurchaseRecord(index >= 0 ? dbState.purchases[index] : null, receipt, now);
-    if (!merged) {
-        throw new Error('purchase_state_requires_trans_id_or_order_id');
-    }
-    if (index >= 0) dbState.purchases[index] = merged;
-    else dbState.purchases.push(merged);
-    await saveToDisk();
+    let merged;
+    let purchases;
+    await saveToDisk({
+        prepare: () => {
+            const index = dbState.purchases.findIndex((purchase) => purchasesMatch(purchase, {
+                transId: receipt?.transId, orderId: receipt?.orderId, requestId: receipt?.requestId
+            }));
+            merged = mergePurchaseRecord(index >= 0 ? dbState.purchases[index] : null, receipt, Date.now());
+            if (!merged) throw new Error('purchase_state_requires_trans_id_or_order_id');
+            purchases = [...dbState.purchases];
+            if (index >= 0) purchases[index] = merged;
+            else purchases.push(merged);
+            return { ...dbState, purchases };
+        },
+        // Never publish a paid intent/completion that a failed rename did not save.
+        onCommit: () => { dbState.purchases = purchases; }
+    });
     return clonePurchase(merged);
 }
 

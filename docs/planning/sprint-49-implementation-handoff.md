@@ -13,19 +13,21 @@ Documentation reconciliation, store catalog normalization and the chat relay/fil
 are committed. Chat client/UI and browser evidence landed in `82501e4f`, and
 report-classification safety landed in `07f86986`. Commit `6d871747` implements
 S49-08 report enumeration, persisted evidence/cursors and restart recovery.
-The latest slice corrects the Steam Inventory grant API contract (below).
+Commit `063db076` corrects the Steam Inventory grant API contract. The latest slice
+adds persisted paid-grant identities and safe authenticated finalize retries.
 Read the [parallel contributor's log](sprint-49-claude-lane-handoff.md) before
 touching shared files. That lane owns mature-content, commentary and controller
 journey work; do not duplicate its pending changes.
 
 Next implementation commits:
 
-1. S49-08: finish paid-grant recovery and reversal disposition. Pagination and
-   durable evidence are implemented below. Next: stable Steam Inventory request IDs,
-   concurrent-finalize protection, crash-after-grant recovery, and item-level
-   refund/chargeback accounting. `server/steamGrant.js` already accepts `requestId`,
-   but `steamStore.js` does not pass one for purchases. Add failure tests first;
-   no real purchase or publisher operation is authorized by this code work.
+1. S49-08: extract the now-idempotent finalize/recovery service from its HTTP route
+   so the report worker can safely resume **known, identity-matched settled** orders
+   without a connected player. Share its purchase lock, recheck current Steam state,
+   and retain manual-review holds. Then add item-level refund/chargeback dispositions
+   and an operator review workflow. Never auto-grant unknown report rows, replace
+   a saved request ID, or reissue ambiguous legacy grants. No real purchase or
+   publisher operation is authorized by this code work.
 2. S49-02/04: extend chat evidence to deployed co-op/PvP and disconnect/reconnect
    with two authenticated Steam accounts; perform the physical Deck/PC controller
    pass. These acceptance checks cannot be replaced by local test-mode sockets.
@@ -215,7 +217,7 @@ Known limits and next action:
 
 ### S49-08 slice 3 — real Inventory grant response contract
 
-Changed [shared grant helper](../../server/steamGrant.js) and its contract tests.
+Commit: `063db076`. Changed [shared grant helper](../../server/steamGrant.js) and its contract tests.
 The old implementation accepted rejected/empty HTTP-200 bodies as delivered
 inventory and read `item_list`, while Steam documents encoded `item_json`.
 It also sent an undocumented `quantity[0]`: AddItem instead requires one repeated
@@ -241,3 +243,52 @@ request IDs although Steam requires uint64, and treats HTTP-200 ConsumeItem as
 success. Track and fix those contracts with failure tests before claiming live
 exchange/refund correctness. Do not exercise destructive ConsumeItem on accounts
 as part of a code test.
+
+### S49-08 slice 4 — persisted paid-grant identity and safe finalize retries
+
+Implemented in [store](../../server/steamStore.js),
+[intent contract](../../server/purchaseGrantIntent.js), both DB adapters and the
+report classifier:
+
+- Persist a stable uint64 Steam request ID and immutable account/order/SKU/app/
+  environment/item/quantity snapshot **before** AddItem. Preserve it through
+  status changes and process restarts; reject attempts to replace it. Paid grants
+  request Steam's purchased-item market/trade restrictions.
+- Block overlapping finalize calls under a canonical order lock, including the
+  transaction/order aliases. Retry reads current QueryTxn state and validates
+  account/order/transaction identities; it cannot bypass MicroTxn enablement or
+  grant after a reported refund. FinalizeTxn error 6 requires fresh query proof.
+- `payment_succeeded` is no longer prematurely stored as `completed`. Lost grant
+  responses and failed completion writes reuse the same ID. Steam replay returns
+  current item state, so consumed/zero-quantity originals are not issued again.
+  Durable `grantDelivered` survives bounded event history and empty replay receipts.
+- Wrong initial item/quantity evidence enters `grant_review_required`; ambiguous
+  pre-idempotency attempts enter the same hold with `legacy_grant_requires_review`.
+  No fresh ID or automatic replacement grant is invented. Holds keep reports
+  unhealthy, even with an item receipt or no matching report row.
+- JSON now publishes purchase changes only after a successful atomic rename.
+  Failure cannot leave an in-memory completion that was never persisted.
+
+Evidence: all **12 initial recovery regression cases failed** against the prior
+implementation. Final targeted coverage passed **11 suites / 150 tests**. Tests
+exercise response loss, failed intent/completion persistence, concurrent finalize
+aliases, refund-before-retry, legacy quarantine, wrong identities/receipts,
+environment/enablement guards, already-committed capture, and JSON/SQLite restart,
+immutability and defensive reads. Scoped ESLint and `git diff --check` passed.
+Documentation audit: 507 documents / 409 enforced Markdown files, 407 preserved
+archive warnings, no current errors; generated inventory refreshed.
+
+Full-suite attempt: **528 files passed / 1 failed; 4,656 tests passed / 1 failed**.
+The failure is in concurrent, uncommitted audio work:
+`src/threeGame.bossContactDamage.test.js` → `updateSnailBehavior` newly calls
+`window.AudioManager` without a Node/headless guard (`src/threeGame.js`, around
+line 36096 at this checkpoint). Preserve that contributor's edits and coordinate
+the guard/test repair; do not claim a green full suite. No dev server or live
+Steam request was started for this backend slice.
+
+Next commit: integrate safe worker-driven paid recovery and durable reversal
+dispositions, retaining item receipts and consumed/traded-item ambiguity. The
+GetReport worker remains read-only: authenticated player retries are implemented,
+but unattended recovery and automatic clawback are **not**. S49-08 stays open.
+Also address the adjacent GetInventory/ConsumeItem/trade-up contract findings
+listed in slice 3 before claiming production exchange correctness.

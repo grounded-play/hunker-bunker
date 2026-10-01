@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { validateMicroTxnCheckpoint } from './microTxnCheckpoint.js';
+import { mergePurchaseGrantIntent } from './purchaseGrantIntent.js';
 import path from 'node:path';
 
 const PURCHASE_EVENT_LIMIT = 50;
@@ -76,11 +77,15 @@ function mergePurchaseRecord(existing, input = {}, now = Date.now()) {
     }
 
     if (Array.isArray(input.granted)) {
-        next.granted = input.granted;
+        next.granted = input.granted.map((item) => ({ ...item }));
     } else if (Array.isArray(existing?.granted)) {
         next.granted = existing.granted;
     }
 
+    const grantIntent = mergePurchaseGrantIntent(existing, input, next);
+    if (grantIntent) next.grantIntent = grantIntent;
+    if (typeof input.grantReplayed === 'boolean') next.grantReplayed = input.grantReplayed;
+    if (input.grantDelivered === true) next.grantDelivered = true;
     return next;
 }
 
@@ -93,6 +98,8 @@ function clonePurchase(purchase) {
     if (!purchase) return null;
     return {
         ...purchase,
+        ...(purchase.grantIntent ? { grantIntent: { ...purchase.grantIntent } } : {}),
+        ...(Array.isArray(purchase.granted) ? { granted: purchase.granted.map((item) => ({ ...item })) } : {}),
         events: Array.isArray(purchase.events) ? purchase.events.map((event) => ({ ...event })) : []
     };
 }

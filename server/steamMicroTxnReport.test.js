@@ -40,6 +40,29 @@ describe('GetReport fetch', () => {
 });
 
 describe('reconciliation', () => {
+    it('never matches a partial or ambiguous grant just because an item receipt exists', () => {
+        const r = reconcileMicroTxnReport([order(1, 'Succeeded')], [{
+            ...purchase(1, 'grant_review_required'), granted: [{ itemId: '123', quantity: 1 }],
+            reason: 'steam_inventory_grant_requires_review'
+        }]);
+        expect(r.ok).toBe(false);
+        expect(r.matched).toEqual([]);
+        expect(r.needsReview[0].reason).toBe('steam_inventory_grant_requires_review');
+    });
+
+    it('keeps legacy grant review holds unhealthy even when absent from the report', () => {
+        const r = reconcileMicroTxnReport([], [{ ...purchase(1, 'grant_review_required'), reason: 'legacy_grant_requires_review' }]);
+        expect(r.ok).toBe(false);
+        expect(r.needsReview[0].reason).toBe('legacy_grant_requires_review');
+    });
+
+    it('retains replay delivery evidence after consumed items and bounded history disappear', () => {
+        const r = reconcileMicroTxnReport([order(1, 'Refunded')], [{
+            ...purchase(1, 'reversed'), grantDelivered: true, grantReplayed: true, granted: [], events: []
+        }]);
+        expect(r.ok).toBe(false);
+        expect(r.reversedButGranted).toHaveLength(1);
+    });
     it('passes when every settled order was granted', () => {
         const r = reconcileMicroTxnReport([order(1, 'Succeeded')], [purchase(1, 'completed')]);
         expect(r.ok).toBe(true);

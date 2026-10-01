@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import express from 'express';
 import { afterEach, beforeAll, afterAll, describe, expect, it, vi } from 'vitest';
 import { attachSteamStoreRoutes } from './steamStore.js';
+import * as purchaseDb from './db.js';
 import {
     initDb,
     setMockInventory,
@@ -351,7 +352,7 @@ describe('Steam Store API endpoints', () => {
             return jsonResponse({
                 response: {
                     result: 'OK',
-                    params: { orderid: `order-${transId}`, transid: transId, status: 'Init' }
+                    params: { orderid: `order-${transId}`, transid: transId, steamid: '76561198000000000', status: 'Init' }
                 }
             });
         });
@@ -397,7 +398,7 @@ describe('Steam Store API endpoints', () => {
                 return jsonResponse({
                     response: {
                         result: 'OK',
-                        params: { orderid: orderId, transid: transId, status: 'Approved' }
+                        params: { orderid: orderId, transid: transId, steamid: '76561198000000000', status: 'Approved' }
                     }
                 });
             }
@@ -472,7 +473,7 @@ describe('Steam Store API endpoints', () => {
             return jsonResponse({
                 response: {
                     result: 'OK',
-                    params: { orderid: `order-${transId}`, transid: transId, status: 'Failed' }
+                    params: { orderid: `order-${transId}`, transid: transId, steamid: '76561198000000000', status: 'Failed' }
                 }
             });
         });
@@ -513,7 +514,7 @@ describe('Steam Store API endpoints', () => {
             return jsonResponse({
                 response: {
                     result: 'OK',
-                    params: { orderid: `order-${transId}`, transid: transId, status: 'Refunded' }
+                    params: { orderid: `order-${transId}`, transid: transId, steamid: '76561198000000000', status: 'Refunded' }
                 }
             });
         });
@@ -548,5 +549,208 @@ describe('Steam Store API endpoints', () => {
         expect(cleanup.removed).toBeGreaterThanOrEqual(1);
         expect(checkIdempotency(expiringKey)).toBeNull();
         expect(checkIdempotency(permanentKey)?.body).toMatchObject({ kind: 'permanent' });
+    });
+});
+
+describe('paid grant recovery', () => {
+    let counter = 0;
+    async function seed(status = 'pending_confirmation') {
+        enableLiveStoreEnv();
+        counter += 1;
+        return savePurchaseState({ steamId64: '76561198000000000', sku: 'key_5',
+            transId: `recover-${counter}`, orderId: `recover-order-${counter}`, status, priceUsdCents: 399 });
+    }
+    async function finalize(purchase) {
+        const response = await fetch(`${baseUrl}/steam/store/purchase/finalize`, {
+            method: 'POST', headers: liveAuthHeaders(), body: JSON.stringify({ transId: purchase.transId })
+        });
+        return { status: response.status, body: await response.json() };
+    }
+    function query(purchase, status = 'Succeeded', extra = {}) {
+        return jsonResponse({ response: { result: 'OK', params: {
+            orderid: purchase.orderId, transid: purchase.transId, steamid: purchase.steamId64, status, ...extra
+        } } });
+    }
+    function delivered(replayed = false, quantity = 5, itemdefid = '4001') {
+        return jsonResponse({ response: { success: true, replayed, item_json: JSON.stringify([
+            { itemid: '17209346500926339', itemdefid, quantity }
+        ]) } });
+    }
+
+    it.each(['lost_response', 'lost_completion_write'])('reuses durable uint64 identity after %s and never grants twice', async (failure) => {
+        const purchase = await seed();
+        const ids = [];
+        const grants = new Set();
+        let queryCount = 0;
+        if (failure === 'lost_completion_write') {
+            const save = purchaseDb.savePurchaseState;
+            let fail = true;
+            vi.spyOn(purchaseDb, 'savePurchaseState').mockImplementation(async (row) => {
+                if (row.status === 'completed' && fail) { fail = false; throw new Error('disk unavailable'); }
+                return save(row);
+            });
+        }
+        mockExternalFetch(async (url, options) => {
+            if (String(url).includes('/QueryTxn/')) { queryCount += 1; return query(purchase); }
+            expect(String(url)).toContain('/AddItem/');
+            const id = options.body.get('requestid');
+            expect(id).toMatch(/^[1-9]\d{0,19}$/);
+            expect(BigInt(id)).toBeLessThanOrEqual(18446744073709551615n);
+            expect(options.body.get('trade_restriction')).toBe('1');
+            const saved = purchaseDb.findPurchaseByTransId(purchase.transId);
+            expect(saved.status).toBe('finalized_pending_grant');
+            expect(saved.grantIntent).toMatchObject({ requestId: id, quantity: 5, itemdefid: 4001 });
+            ids.push(id);
+            const replayed = grants.has(id);
+            grants.add(id);
+            if (!replayed && failure === 'lost_response') throw new Error('response lost');
+            // By retry time the original keys may already have been consumed.
+            return delivered(replayed, replayed ? 0 : 5);
+        });
+        expect((await finalize(purchase)).status).toBe(502);
+        const result = await finalize(purchase);
+        expect(result).toMatchObject({ status: 200, body: { purchaseStatus: 'completed', grantReplayed: true } });
+        expect(ids).toHaveLength(2);
+        expect(new Set(ids).size).toBe(1);
+        expect(grants.size).toBe(1);
+        expect(queryCount).toBe(2);
+        expect(purchaseDb.findPurchaseByTransId(purchase.transId)).toMatchObject({ status: 'completed', grantReplayed: true });
+    });
+
+    it('cannot issue AddItem before the grant intent is persisted', async () => {
+        const purchase = await seed();
+        const save = purchaseDb.savePurchaseState;
+        vi.spyOn(purchaseDb, 'savePurchaseState').mockImplementation(async (row) => {
+            if (row.grantIntent) throw new Error('disk unavailable');
+            return save(row);
+        });
+        mockExternalFetch(async (url) => {
+            expect(String(url)).toContain('/QueryTxn/');
+            return query(purchase);
+        });
+        expect((await finalize(purchase)).status).toBe(502);
+        expect(externalFetchCallCount()).toBe(1);
+        expect(purchaseDb.findPurchaseByTransId(purchase.transId).status).not.toBe('completed');
+    });
+
+    it('serializes simultaneous finalize attempts including the order-ID alias', async () => {
+        const purchase = await seed();
+        let entered;
+        let release;
+        const atGrant = new Promise((resolve) => { entered = resolve; });
+        const gate = new Promise((resolve) => { release = resolve; });
+        let adds = 0;
+        mockExternalFetch(async (url) => {
+            if (String(url).includes('/QueryTxn/')) return query(purchase);
+            adds += 1;
+            entered();
+            await gate;
+            return delivered();
+        });
+        const first = finalize(purchase);
+        await atGrant;
+        let second;
+        try { second = await finalize({ transId: purchase.orderId }); } finally { release(); }
+        expect((await first).status).toBe(200);
+        expect(second).toMatchObject({ status: 409, body: { reason: 'purchase_finalize_in_progress' } });
+        expect(adds).toBe(1);
+        expect((await finalize(purchase)).body.alreadyGranted).toBe(true);
+    });
+
+    it.each(['grant_failed', 'finalized_pending_grant'])('does not blindly repeat an old non-idempotent %s grant', async (status) => {
+        const purchase = await seed(status);
+        mockExternalFetch(async (url) => {
+            expect(String(url)).toContain('/QueryTxn/');
+            return query(purchase);
+        });
+        expect(await finalize(purchase)).toMatchObject({ status: 409, body: { reason: 'legacy_grant_requires_review' } });
+        expect(externalFetchCallCount()).toBe(0);
+    });
+
+    it('rechecks pending delivery against a refund before retrying inventory', async () => {
+        const purchase = await seed();
+        let adds = 0;
+        mockExternalFetch(async (url) => {
+            if (String(url).includes('/QueryTxn/')) return query(purchase, adds ? 'Refunded' : 'Succeeded');
+            adds += 1;
+            throw new Error('response lost');
+        });
+        expect((await finalize(purchase)).status).toBe(502);
+        expect(await finalize(purchase)).toMatchObject({ status: 409, body: { purchaseStatus: 'reversed' } });
+        expect(adds).toBe(1);
+    });
+
+    it.each([{ steamid: '76561198000000001' }, { orderid: 'another-order' }, { transid: undefined }])('rejects mismatched or missing Steam identity: %j', async (extra) => {
+        const purchase = await seed();
+        mockExternalFetch(async (url) => {
+            expect(String(url)).toContain('/QueryTxn/');
+            return query(purchase, 'Succeeded', extra);
+        });
+        expect(await finalize(purchase)).toMatchObject({ status: 409, body: { reason: 'steam_purchase_identity_mismatch' } });
+        expect(externalFetchCallCount()).toBe(1);
+    });
+
+    it.each([[1, '4001'], [5, '9999']])('does not complete an incorrect initial grant receipt (%s, %s)', async (quantity, itemdefid) => {
+        const purchase = await seed();
+        mockExternalFetch(async (url) => String(url).includes('/QueryTxn/') ? query(purchase) : delivered(false, quantity, itemdefid));
+        expect(await finalize(purchase)).toMatchObject({ status: 409, body: { reason: 'steam_inventory_grant_requires_review' } });
+        const calls = externalFetchCallCount();
+        expect((await finalize(purchase)).status).toBe(409);
+        expect(externalFetchCallCount()).toBe(calls);
+        expect(purchaseDb.findPurchaseByTransId(purchase.transId).status).toBe('grant_review_required');
+    });
+
+    it('cannot retry pending inventory with MicroTxn disabled or in a different environment', async () => {
+        const purchase = await seed();
+        mockExternalFetch(async (url) => {
+            if (String(url).includes('/QueryTxn/')) return query(purchase);
+            throw new Error('response lost');
+        });
+        expect((await finalize(purchase)).status).toBe(502);
+        const count = externalFetchCallCount();
+        process.env.HB_STEAM_MICROTXN_ENABLED = '0';
+        expect((await finalize(purchase)).status).toBe(503);
+        process.env.HB_STEAM_MICROTXN_ENABLED = '1';
+        process.env.HB_STEAM_MICROTXN_SANDBOX = '1';
+        expect(await finalize(purchase)).toMatchObject({ status: 409, body: { reason: 'purchase_grant_context_mismatch' } });
+        expect(externalFetchCallCount()).toBe(count);
+    });
+
+    it('requires fresh settlement proof after FinalizeTxn reports already committed', async () => {
+        const purchase = await seed();
+        let queried = 0;
+        mockExternalFetch(async (url) => {
+            if (String(url).includes('/QueryTxn/')) return query(purchase, queried++ ? 'Refunded' : 'Approved');
+            expect(String(url)).toContain('/FinalizeTxn/');
+            return jsonResponse({ response: { result: 'Failure', error: { errorcode: 6 } } });
+        });
+        expect(await finalize(purchase)).toMatchObject({ status: 409, body: { nextAction: 'retry_finalize' } });
+        expect(await finalize(purchase)).toMatchObject({ status: 409, body: { purchaseStatus: 'reversed' } });
+        expect(externalFetchCallCount()).toBe(3);
+    });
+
+    it('rejects FinalizeTxn success for a different transaction', async () => {
+        const purchase = await seed();
+        mockExternalFetch(async (url) => {
+            if (String(url).includes('/QueryTxn/')) return query(purchase, 'Approved');
+            expect(String(url)).toContain('/FinalizeTxn/');
+            return jsonResponse({ response: { result: 'OK', params: { orderid: purchase.orderId, transid: 'another-trans' } } });
+        });
+        expect(await finalize(purchase)).toMatchObject({ status: 409, body: { reason: 'steam_purchase_identity_mismatch' } });
+        expect(externalFetchCallCount()).toBe(2);
+    });
+
+    it('keeps completed inventory separate from a later unsettled payment', async () => {
+        const purchase = await seed('completed');
+        mockExternalFetch(async (url) => {
+            expect(String(url)).toContain('/QueryTxn/');
+            return query(purchase, 'Approved');
+        });
+        const response = await fetch(`${baseUrl}/steam/store/purchase/finalize`, {
+            method: 'POST', headers: liveAuthHeaders(), body: JSON.stringify({ transId: purchase.transId, reconcile: true })
+        });
+        expect(response.status).toBe(409);
+        expect(await response.json()).toMatchObject({ reason: 'grant_without_settled_payment' });
+        expect(externalFetchCallCount()).toBe(1);
     });
 });

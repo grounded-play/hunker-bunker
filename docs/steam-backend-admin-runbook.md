@@ -159,6 +159,7 @@ Common ledger statuses:
 - `pending_confirmation`: Steam order exists, user has not completed approval.
 - `approved`: Steam reports the user approved the order; backend should
   finalize.
+- `payment_succeeded`: QueryTxn confirms payment, but inventory is not yet delivered.
 - `finalized_pending_grant`: Steam capture succeeded; inventory grant is next.
 - `completed`: item grant completed. Repeated finalization returns
   `alreadyGranted`.
@@ -168,8 +169,10 @@ Common ledger statuses:
 - `query_failed`: backend could not query Steam; retry is safe.
 - `finalize_failed`: backend could not finalize; retry is safe unless Steam
   later reports a terminal status.
-- `grant_failed`: payment was finalized but inventory grant failed; retry
-  `/steam/store/purchase/finalize`.
+- `grant_failed`: delivery did not return usable evidence; retry the same purchase
+  only with its saved `grantIntent` (see recovery below).
+- `grant_review_required`: ambiguous legacy attempt or inconsistent grant/payment
+  evidence; no automatic delivery retry. Inspect `reason` and retained receipts.
 
 Client-facing response hooks:
 
@@ -253,9 +256,38 @@ Investigate `[microtxn-report] UNHEALTHY` and checkpoint `health`:
   report evidence, or inventory granted without a settled payment.
 - Fetch, persistence, malformed-page and scan-limit failures remain unhealthy.
 
-The next S49-08 implementation slice must make paid grants idempotent across
-concurrent retry and crash-after-grant, then add explicit item-level reversal
-dispositions. Do not advertise automatic recovery/clawback until those gates pass.
+### Paid-grant recovery and review holds
+
+Authenticated `/steam/store/purchase/finalize` retries persist `grantIntent`
+before issuing AddItem: immutable uint64 request ID plus account, order,
+transaction, SKU, app, sandbox/live, itemdef and quantity. Both DB adapters retain
+it across restarts; do not clear it, change its payload, or invent a new request
+ID to retry a purchase. Keep the existing one-backend-instance deployment rule.
+An in-process order lock prevents overlapping finalize calls; Steam's saved
+request ID handles ambiguous grant responses and crash-before-completion writes.
+
+Each unfinished retry rechecks QueryTxn and account/order/transaction identity.
+A refund blocks a new grant. HTTP failures and uncertain delivery stay pending;
+`completed` is reserved for a validated delivery/replay. Paid AddItem requests set
+`trade_restriction=1`. See the [Steam Inventory contract](https://partner.steamgames.com/doc/webapi/IInventoryService#AddItem).
+
+Steam replay describes **current** affected items, not original delivery amounts.
+`grantIntent.quantity` is the purchased amount; `granted` is returned item evidence;
+`grantReplayed` indicates a retry recognized by Steam; `grantDelivered` preserves
+delivery evidence even after consumption and bounded event-history expiry. Zero
+remaining items on a valid replay do not authorize replacement keys.
+
+`grant_review_required` must not be cleared by a routine retry. Reasons include
+`legacy_grant_requires_review` (older attempts with no saved idempotency identity),
+`steam_inventory_grant_requires_review` (wrong initial receipt), and
+`grant_without_settled_payment`. Preserve evidence, investigate Steam's order and
+inventory records, and obtain an explicit publisher disposition. Do not assume
+missing local receipts mean no grant occurred. These holds keep reconciliation
+unhealthy even when the report has no matching row.
+
+GetReport currently **does not invoke delivery**: player/session retries are
+implemented, unattended recovery and item-level reversal dispositions are the
+next S49-08 slice. Do not advertise automatic recovery/clawback yet.
 
 ## Market eligibility and hosted Item Store links
 
@@ -307,19 +339,23 @@ References:
 3. Read `status`, `reason`, `steamState`, `steamErrorCode`, and `events`.
 4. If the status is `pending_confirmation`, ask the player to retry or restart
    the Steam overlay flow.
-5. If the status is `approved`, `query_failed`, `finalize_failed`, or
-   `grant_failed`, retry `/steam/store/purchase/finalize` for that transaction
-   after confirming the backend is healthy.
+5. For `approved`, `payment_succeeded`, `query_failed`, `finalize_failed`, or a
+   pending/failed grant **with a saved `grantIntent`**, retry the same transaction
+   after confirming backend health. A legacy attempt without that intent is
+   quarantined for review; never mint a replacement ID to bypass the hold.
 6. If the status is `failed`, do not manually grant. Check the Steam error code.
 7. If the status is `reversed`, start entitlement review/clawback.
 8. If the status is `completed`, do not grant again. Repeated finalize requests
    should return `alreadyGranted`.
+9. For `grant_review_required`, follow the evidence/review procedure above;
+   ordinary retries return the hold without changing inventory.
 
 To refresh Steam state for a locally completed purchase, call
 `/steam/store/purchase/finalize` with `reconcile: true`. This forces a
 `QueryTxn` call and can move the ledger to `reversed` if Steam later reports a
-refund or chargeback. A completed purchase that still reports `Approved` or
-`Succeeded` remains completed and does not grant again.
+refund or chargeback. A completed purchase still reporting `Succeeded` remains
+completed without another grant; one reporting only `Approved` requires review
+because approval is not settled payment.
 
 ## Idempotency cleanup
 

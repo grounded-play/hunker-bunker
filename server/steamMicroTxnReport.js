@@ -25,7 +25,7 @@ function hasGrantEvidence(purchase) {
     if (!purchase || purchase.status === 'mock_completed' || purchase.mode === 'mock') return false;
     // QueryTxn can replace `completed` with `reversed` or a failure state.
     // The existing grant receipt/event must still trigger refund review.
-    return GRANTED_LOCAL_STATUSES.has(purchase.status)
+    return purchase.grantDelivered === true || GRANTED_LOCAL_STATUSES.has(purchase.status)
         || (Array.isArray(purchase.granted) && purchase.granted.length > 0)
         || (Array.isArray(purchase.events) && purchase.events.some((event) => event.status === 'completed'));
 }
@@ -107,6 +107,8 @@ export function reconcileMicroTxnReport(orders = [], purchases = [], { since = n
             needsReview.push({ ...summary, reason: 'account_mismatch' });
         } else if (!order || (!order.orderid && !order.transid)) {
             needsReview.push({ ...summary, reason: 'invalid_order' });
+        } else if (local?.status === 'grant_review_required') {
+            needsReview.push({ ...summary, reason: local.reason ?? 'grant_requires_review' });
         } else if (REVERSED_STATUSES.has(order.status)) {
             if (granted) reversedButGranted.push(summary);
             else matched.push(summary);
@@ -116,6 +118,14 @@ export function reconcileMicroTxnReport(orders = [], purchases = [], { since = n
             matched.push(summary);
         } else {
             needsReview.push({ ...summary, reason: granted ? 'grant_without_settled_payment' : 'unknown_steam_status' });
+        }
+    }
+    // A local review hold is unresolved even if this report contains no row for
+    // it (including older ambiguous grants with no surviving item receipt).
+    for (const local of purchases) {
+        if (!seen.has(local) && local.status === 'grant_review_required') {
+            needsReview.push({ orderid: local.orderId, transid: local.transId, steamStatus: null,
+                localStatus: local.status, sku: local.sku, reason: local.reason ?? 'grant_requires_review' });
         }
     }
     const notInReport = purchases
