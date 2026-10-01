@@ -110,6 +110,7 @@ import { SongInterstitialController, selectCampInterstitial } from './src/songIn
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
 import { LeaderConversation3d } from './src/leaderConversation3d.js';
 import { getLocale, setLocale, t, t as i18nT, getAvailableLocales } from './src/i18n.js';
+import { localizeCatalog } from './src/i18nCatalog.js';
 import {
     computeTopologyDistances,
     findConflictingChunkReservations,
@@ -613,10 +614,11 @@ function closeModalWithAnimation(modal, onComplete, { exitClass = '', duration =
 }
 window.closeModalWithAnimation = closeModalWithAnimation;
 
-const COMMENTARY_ENTRIES = Object.freeze({
+// Localized in place (narrative.commentary.<key>.title/body); English here is the source.
+const COMMENTARY_ENTRIES = localizeCatalog('narrative.commentary', Object.freeze({
     commentary_on: {
         title: 'Developer Commentary',
-        body: 'Commentary is on. Cards like this one appear as you reach the moments they talk about: your first run, black boxes, special rooms, the Queen. Every entry can also be read from Settings > Commentary > Read All.'
+        body: 'Commentary is on. Cards like this one appear as you reach the moments they talk about: your first run, black boxes, special rooms, the Queen. Every entry can also be read from Settings > Audio > Developer Commentary > Read All.'
     },
     run_start: {
         title: 'The Run Loop',
@@ -662,7 +664,7 @@ const COMMENTARY_ENTRIES = Object.freeze({
         title: 'Steam Vault',
         body: 'The Vault arrived with the Steam backend in July 2026. Tradable and marketable items live in Steam\'s inventory; the game only shows what Steam has verified you own.'
     }
-});
+}));
 
 const steamInputState = {
     available: false,

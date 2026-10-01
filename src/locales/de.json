@@ -3556,6 +3556,56 @@
         "neon_smg": "Neon-MP",
         "cryo_lance": "Kryolanze"
       }
+    },
+    "commentary": {
+      "commentary_on": {
+        "title": "Entwicklerkommentar",
+        "body": "Der Kommentar ist an. Karten wie diese erscheinen, sobald du die Momente erreichst, um die es geht: dein erster Einsatz, Blackboxen, besondere Räume, die Königin. Jeder Eintrag lässt sich auch unter Systemeinstellungen > Audio > Entwicklerkommentar > Alle lesen nachlesen."
+      },
+      "run_start": {
+        "title": "Die Einsatzschleife",
+        "body": "Sauerstoff, das Konto und die Reparaturschleife des Generators kamen gemeinsam, in einem Commit am 28. Mai 2026. Davor blieb zwischen den Einsätzen nichts erhalten. Erst die O2-Uhr macht aus „noch ein Raum“ eine Entscheidung: ausrücken, die Bedrohung lesen, sichern, was zählt, und zurück sein, bevor die Luft ausgeht."
+      },
+      "black_box_signal": {
+        "title": "Scheitern wird Kartendaten",
+        "body": "Blackboxen kamen in der ersten Juniwoche 2026 ins Spiel, und einen Tag später zeigte die Basis erstmals die Blackbox eines früheren Auftragnehmers. Ein gescheiterter Einsatz bleibt als Spur auf der Karte, samt Bergungsgut, statt von einem Neuladen gelöscht zu werden."
+      },
+      "black_box_recovered": {
+        "title": "Bergbare Folgen",
+        "body": "Wer eine Blackbox birgt, bekommt das Bergungsgut zurück, das jener Einsatz bei sich trug. Im Koop gehört jede Blackbox jemandem: Ein Playtest im September 2026 zeigte, wie die Box des einen Spielers „geborgen“ wurde, als der andere starb. Seitdem wird der Besitz mit der Box über das Netzwerk gesendet."
+      },
+      "room_armory": {
+        "title": "Waffenkammern",
+        "body": "Waffenkammern gehörten zu den ersten fünf handgebauten Raumvorlagen, eingeführt am 29. Mai 2026. Sie brechen den prozeduralen Rhythmus mit Absicht: Ein handgebauter Raum in einer generierten Karte wirkt bedeutsam, noch bevor die Oberfläche etwas sagt."
+      },
+      "room_the_nest": {
+        "title": "Nesträume",
+        "body": "Das Nest stammt aus demselben Vorlagen-Durchgang vom 29. Mai. Es ist eine gebaute Gefahrenform in generiertem Gelände und sagt damit: Hier lebt etwas, nicht bloß: Die Würfel fielen schlecht."
+      },
+      "room_agent_wreckage": {
+        "title": "Drei Wracks",
+        "body": "Die Wrackräume verbinden die drei Operatoren mit einem einzigen Absturz: Ein Schiff trug das Peilsignal, eines das Relais und eines die Waffe. Die Wrackgrafik wurde am 22. Mai 2026 neu gezeichnet, einer der ersten Grafikdurchgänge des Projekts."
+      },
+      "queen_fight": {
+        "title": "Kampf gegen die Königin",
+        "body": "Die Königin durchläuft drei Phasen, Brut, Raserei und Verzweiflung, und ihre Panzerung fällt nur in Schwachstellenfenstern ganz. Automatisierte Tests schicken jede Klasse durch den Kampf, damit keine die Eskalation überspringt und selbst die schwächste Klasse ihre Panzerung noch ankratzt."
+      },
+      "queen_killed": {
+        "title": "Die Königin kann sterben",
+        "body": "Siege im Kampf und erzählerische Ablehnung werden getrennt erfasst. Die Geschichte unterscheidet, ob du ihren Körper besiegt oder nur ihr Angebot abgelehnt hast."
+      },
+      "achievement": {
+        "title": "Steam-Errungenschaften",
+        "body": "Das Errungenschafts-Tracking kam am 29. Mai 2026, zusammen mit den persönlichen Bestwerten. Errungenschaften markieren Meilensteine der Geschichte und sollen sich wie Einsatzprotokolle lesen, nicht wie Pflichtaufgaben."
+      },
+      "leaderboard": {
+        "title": "Vertrauenswürdige Punktzahlen",
+        "body": "Punktzahlen werden auf unserem Server aus einem Einsatzbeleg neu berechnet; der Client schickt nie einfach eine Zahl. Im September 2026 verwarf genau diese Prüfung sechs Tage lang stillschweigend jede Punktzahl von Deck und PC, weil Client- und Servertests unterschiedliche Testdaten nutzten. Heute bindet ein einziger Vertragstest beide."
+      },
+      "steam_vault": {
+        "title": "Steam-Tresor",
+        "body": "Der Tresor kam im Juli 2026 mit dem Steam-Backend. Handel- und marktfähige Gegenstände liegen im Steam-Inventar; das Spiel zeigt nur, was Steam als dein Eigentum bestätigt hat."
+      }
     }
   }
 }

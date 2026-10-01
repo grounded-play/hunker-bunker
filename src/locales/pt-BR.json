@@ -3556,6 +3556,56 @@
         "neon_smg": "Submetralhadora Neon",
         "cryo_lance": "Lança Criogênica"
       }
+    },
+    "commentary": {
+      "commentary_on": {
+        "title": "Comentários dos desenvolvedores",
+        "body": "Os comentários estão ativados. Cartões como este aparecem quando você chega aos momentos de que falam: sua primeira incursão, as caixas-pretas, as salas especiais, a Rainha. Todas as entradas também podem ser lidas em Configurações do sistema > Áudio > Comentários dos desenvolvedores > Ler tudo."
+      },
+      "run_start": {
+        "title": "O ciclo da incursão",
+        "body": "Oxigênio, banco e o ciclo de reparo do gerador chegaram juntos, em um único commit em 28 de maio de 2026. Antes disso nada passava de uma incursão para outra. É o relógio de O2 que transforma \"mais uma sala\" em uma decisão: implantar, ler a ameaça, guardar o que importa e voltar antes que o ar acabe."
+      },
+      "black_box_signal": {
+        "title": "O fracasso vira mapa",
+        "body": "As caixas-pretas entraram na primeira semana de junho de 2026, e um dia depois a base passou a mostrar a caixa de um contratado anterior. Uma incursão fracassada fica no mapa como rastro, com o espólio ainda dentro, em vez de ser apagada por um recarregamento."
+      },
+      "black_box_recovered": {
+        "title": "Consequências recuperáveis",
+        "body": "Recuperar uma caixa devolve o espólio que aquela incursão carregava. No cooperativo cada caixa tem dono: um playtest de setembro de 2026 mostrou a caixa de um jogador sendo \"recuperada\" quando o outro morreu, então agora a posse viaja pela rede junto com a caixa."
+      },
+      "room_armory": {
+        "title": "Salas de arsenal",
+        "body": "Os arsenais foram um dos cinco primeiros modelos de sala feitos à mão, adicionados em 29 de maio de 2026. Eles quebram o ritmo procedural de propósito: uma sala feita à mão dentro de um mapa gerado parece importante antes de qualquer interface dizer isso."
+      },
+      "room_the_nest": {
+        "title": "Salas-ninho",
+        "body": "O ninho veio da mesma leva de modelos de 29 de maio. É uma forma de perigo desenhada dentro de um terreno gerado, então diz que algo vive aqui, e não que os dados rolaram mal."
+      },
+      "room_agent_wreckage": {
+        "title": "Três destroços",
+        "body": "As salas de destroços ligam os três operadores a uma única queda: uma nave levava o sinal de rastreio, outra o relé e outra a arma. A arte dos destroços foi redesenhada em 22 de maio de 2026, uma das primeiras passadas de arte do projeto."
+      },
+      "queen_fight": {
+        "title": "Luta contra a Rainha",
+        "body": "A Rainha passa por três fases, ninhada, fúria e desespero, e a armadura dela só cai de vez durante as janelas de ponto fraco. Testes automatizados levam cada classe pela luta, para que nenhuma pule a escalada e até a classe de menor dano ainda arranhe a armadura."
+      },
+      "queen_killed": {
+        "title": "A Rainha pode morrer",
+        "body": "Mortes em combate e rejeição narrativa são registradas separadamente. A história se importa se você derrotou o corpo dela ou apenas recusou a oferta."
+      },
+      "achievement": {
+        "title": "Conquistas da Steam",
+        "body": "O registro de conquistas foi adicionado em 29 de maio de 2026, junto com os recordes pessoais. Elas marcam marcos da história e devem soar como registros de campo, não como tarefas."
+      },
+      "leaderboard": {
+        "title": "Pontuações confiáveis",
+        "body": "As pontuações são recalculadas no nosso servidor a partir de um recibo da incursão; o cliente nunca envia só um número. Em setembro de 2026 essa verificação rejeitou em silêncio todas as pontuações do Deck e do PC por seis dias, porque os testes do cliente e do servidor usavam dados diferentes. Hoje um único teste de contrato amarra os dois."
+      },
+      "steam_vault": {
+        "title": "Cofre da Steam",
+        "body": "O Cofre chegou com o backend da Steam em julho de 2026. Itens trocáveis e comercializáveis ficam no inventário da Steam; o jogo só mostra o que a Steam confirmou que é seu."
+      }
     }
   }
 }

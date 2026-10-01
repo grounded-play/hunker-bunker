@@ -3556,6 +3556,56 @@
         "neon_smg": "Subfusil de neón",
         "cryo_lance": "Lanza criogénica"
       }
+    },
+    "commentary": {
+      "commentary_on": {
+        "title": "Comentarios del desarrollador",
+        "body": "Los comentarios están activados. Tarjetas como esta aparecen cuando llegas a los momentos de los que hablan: tu primera incursión, las cajas negras, las salas especiales, la Reina. También puedes leer cada entrada en Ajustes del sistema > Audio > Comentarios del desarrollador > Leer todo."
+      },
+      "run_start": {
+        "title": "El ciclo de incursión",
+        "body": "El oxígeno, el banco y el ciclo de reparación del generador llegaron juntos, en un solo commit el 28 de mayo de 2026. Antes de eso nada se conservaba entre incursiones. El reloj de O2 es lo que convierte \"una sala más\" en una decisión: desplegarse, leer la amenaza, guardar lo que importa y volver antes de que se acabe el aire."
+      },
+      "black_box_signal": {
+        "title": "El fracaso se vuelve mapa",
+        "body": "Las cajas negras llegaron en la primera semana de junio de 2026, y un día después la base empezó a mostrar la caja de un contratista anterior. Una incursión fallida queda en el mapa como rastro, con su botín todavía dentro, en lugar de borrarse al recargar."
+      },
+      "black_box_recovered": {
+        "title": "Consecuencias recuperables",
+        "body": "Recuperar una caja devuelve el botín que llevaba esa incursión. En cooperativo cada caja tiene dueño: una prueba de juego de septiembre de 2026 mostró la caja de un jugador \"recuperada\" cuando murió el otro, así que ahora la propiedad viaja por la red junto con la caja."
+      },
+      "room_armory": {
+        "title": "Salas de armería",
+        "body": "Las armerías fueron una de las primeras cinco plantillas de sala hechas a mano, añadidas el 29 de mayo de 2026. Rompen el ritmo procedural a propósito: una sala hecha a mano dentro de un mapa generado se siente importante antes de que lo diga la interfaz."
+      },
+      "room_the_nest": {
+        "title": "Salas nido",
+        "body": "El nido salió de la misma tanda de plantillas del 29 de mayo. Es una forma de peligro diseñada dentro de un terreno generado, así que dice que algo vive aquí, no que los dados salieron mal."
+      },
+      "room_agent_wreckage": {
+        "title": "Tres naufragios",
+        "body": "Las salas de restos atan a los tres operadores a un mismo choque: una nave llevaba la señal de rastreo, otra el relé y otra el arma. El arte de los restos se redibujó el 22 de mayo de 2026, una de las primeras pasadas de arte del proyecto."
+      },
+      "queen_fight": {
+        "title": "Combate contra la Reina",
+        "body": "La Reina pasa por tres fases, cría, furia y desesperación, y su armadura solo cae del todo durante las ventanas de punto débil. Pruebas automatizadas llevan a cada clase por el combate, para que ninguna se salte la escalada y hasta la clase de menor daño siga atravesando su armadura."
+      },
+      "queen_killed": {
+        "title": "La Reina puede morir",
+        "body": "Las muertes en combate y el rechazo narrativo se registran por separado. A la historia le importa si derrotaste su cuerpo o solo rechazaste su oferta."
+      },
+      "achievement": {
+        "title": "Logros de Steam",
+        "body": "El seguimiento de logros se añadió el 29 de mayo de 2026, junto con las mejores marcas personales. Marcan hitos de la historia y deberían leerse como registros de campo, no como tareas."
+      },
+      "leaderboard": {
+        "title": "Puntuaciones confiables",
+        "body": "Las puntuaciones se recalculan en nuestro servidor a partir de un recibo de la incursión; el cliente nunca envía solo un número. En septiembre de 2026 esa verificación rechazó en silencio todas las puntuaciones de Deck y PC durante seis días, porque las pruebas del cliente y del servidor usaban datos distintos. Ahora una sola prueba de contrato fija ambos."
+      },
+      "steam_vault": {
+        "title": "Bóveda de Steam",
+        "body": "La Bóveda llegó con el backend de Steam en julio de 2026. Los objetos intercambiables y comerciables viven en el inventario de Steam; el juego solo muestra lo que Steam confirmó que te pertenece."
+      }
     }
   }
 }
