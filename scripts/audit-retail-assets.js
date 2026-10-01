@@ -57,7 +57,9 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // rigged or decimated from a 1.5M-triangle source, WebP textures.
 // Raised 2725->2730 MiB for the Ghost Runner's male body (3.3 MiB), the
 // second body of the same 5001 item (src/chassisBodies.js).
-const PUBLIC_BUDGET = 2730 * 1024 * 1024;
+// Raised 2730->2735 MiB for the rigged Mycelium Stalker quadruped (3.7 MiB),
+// which replaces a humanoid player skin on both the stalker and the charger.
+const PUBLIC_BUDGET = 2735 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus

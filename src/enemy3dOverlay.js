@@ -42,12 +42,14 @@ const MODEL_CONFIG = {
     sentinel_A: { url: '/3d/runtime/new3ds/sentinel_A.glb', height: 1.18, yaw: 0, tint: 0x9fc4dd },
     // Heavy variant: biggest of the three, warm rust cast against _A's cold one.
     sentinel_B: { url: '/3d/runtime/new3ds/sentinel_B.glb', height: 1.32, yaw: 0, tint: 0xd8b48c },
-    mycelium_stalker: { url: '/3d/runtime/community/scout_xeno_stalker.glb', height: 1.35, yaw: 0 },
-    // Stand-ins until dedicated models exist (3D asset audit 2026-10-01):
-    // the charger shares the stalker's body, and the corrupted operators use
-    // the corrupted camp leaders they became (Briggs, Martha, Kaelen).
-    // Paths point at the originals rather than byte-identical copies.
-    bio_charger: { url: '/3d/runtime/community/scout_xeno_stalker.glb', height: 1.45, yaw: 0 },
+    // Owner-supplied Mycelium Stalker quadruped (art/raw/incoming_3d_20261001),
+    // rigged with idle/walk/run clips by scripts/blender/rig_quadruped_stalker.py.
+    // Its head points down -X, hence the quarter turn. The charger is the same
+    // beast, a size up, galloping instead of stalking.
+    mycelium_stalker: { url: '/3d/runtime/new3ds/mycelium_stalker.glb', height: 0.95, yaw: Math.PI / 2, travelClip: 'walk' },
+    // The corrupted operators use the corrupted camp leaders they became
+    // (Briggs, Martha, Kaelen); paths point at the originals, not copies.
+    bio_charger: { url: '/3d/runtime/new3ds/mycelium_stalker.glb', height: 1.05, yaw: Math.PI / 2, travelClip: 'run' },
     boss_corrupted_scout: { url: '/3d/runtime/new3ds/boss_corrupted_martha.glb', height: 1.45, yaw: 0 },
     boss_corrupted_tank: { url: '/3d/runtime/new3ds/boss_corrupted_briggs.glb', height: 1.65, yaw: 0 },
     // Owner-supplied Corrupted Engineer Kaelen (art/raw/incoming_3d_20261001), rigged onto
@@ -64,9 +66,17 @@ export const ENEMY_3D_MODELS = MODEL_CONFIG;
 const templates = new Map();
 const LOCOMOTION_URL = '/3d/scouting-scout/Scout.game.glb';
 const RIGGED_LOCOMOTION_TYPES = new Set([
-    'crawler', 'mycelium_stalker', 'bio_charger',
+    'crawler',
     'boss_corrupted_scout', 'boss_corrupted_tank', 'boss_corrupted_engineer'
 ]);
+
+// A model with its own idle and travel clips (the quadruped stalker) blends
+// them by ground speed, the same way the retargeted humanoids do.
+export function selectEmbeddedLocomotionClips(animations, travelName) {
+    const idle = animations?.find((clip) => clip.name === 'idle');
+    const travel = animations?.find((clip) => clip.name === travelName);
+    return idle && travel ? { idle, travel } : null;
+}
 
 export function hasEnemy3dModel(type) {
     return Boolean(MODEL_CONFIG[type]);
@@ -117,9 +127,8 @@ export async function preloadEnemy3dTemplates(game = null) {
         const url = MODEL_CONFIG[type]?.url;
         try {
             if (url) await loadTemplate(url);
-            // crawler and stalker monsters fall back to this shared run-cycle when their GLB
-            // has no embedded clip (see createEnemy3dVisual) -- preload it too.
-            if (type === 'crawler' || type === 'mycelium_stalker') await loadTemplate(LOCOMOTION_URL);
+            // The crawler borrows this shared run-cycle (see createEnemy3dVisual) -- preload it too.
+            if (usesRiggedEnemyLocomotion(type)) await loadTemplate(LOCOMOTION_URL);
         } catch (err) {
             console.warn(`[enemy-3d-overlay] preload failed for ${type}`, err);
         }
@@ -206,9 +215,9 @@ export async function createEnemy3dVisual(type) {
     let idleAction = null;
     let locomotionAction = null;
 
-    // The hole-spawned stalker model contains only a "hangingIdle" clip. It
-    // shares the player's Mixamo skeleton, so selecting that embedded clip as
-    // its locomotion left the legs dangling while the enemy slid at the
+    // The humanoid monsters' models carry at most a "hangingIdle" clip. They
+    // share the player's Mixamo skeleton, so selecting that embedded clip as
+    // locomotion left the legs dangling while the enemy slid at the
     // player. Retarget the same authored idle/run pack used by the player's
     // rig, and blend it from rest to travel based on actual world movement.
     if (isHumanoidMonster && locomotion) {
@@ -237,6 +246,21 @@ export async function createEnemy3dVisual(type) {
             if (idleClip) idleAction = mixer.clipAction(idleClip).setEffectiveWeight(1).play();
             if (travelClip) locomotionAction = mixer.clipAction(travelClip).setEffectiveWeight(0).play();
             if (!idleAction && !locomotionAction) mixer = null;
+        } catch {
+            mixer = null;
+            idleAction = null;
+            locomotionAction = null;
+        }
+    }
+
+    const embeddedPair = !mixer && config.travelClip
+        ? selectEmbeddedLocomotionClips(gltf.animations, config.travelClip)
+        : null;
+    if (embeddedPair) {
+        try {
+            mixer = new THREE.AnimationMixer(model);
+            idleAction = mixer.clipAction(embeddedPair.idle).setEffectiveWeight(1).play();
+            locomotionAction = mixer.clipAction(embeddedPair.travel).setEffectiveWeight(0).play();
         } catch {
             mixer = null;
             idleAction = null;

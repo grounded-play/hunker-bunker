@@ -211,6 +211,7 @@
     "3d/runtime/new3ds/mod_symbiotic_adrenaline_pump.glb",
     "3d/runtime/new3ds/mod_thermal_heat_exchanger.glb",
     "3d/runtime/new3ds/mod_zero_point_flux.glb",
+    "3d/runtime/new3ds/mycelium_stalker.glb",
     "3d/runtime/new3ds/npc_alien_rhun.glb",
     "3d/runtime/new3ds/npc_alien_vey.glb",
     "3d/runtime/new3ds/npc_aria.glb",
@@ -2290,6 +2291,11 @@
     {
       "path": "3d/runtime/new3ds/mod_zero_point_flux.glb",
       "bytes": 2099316,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/mycelium_stalker.glb",
+      "bytes": 3900252,
       "classification": "runtime-required"
     },
     {
