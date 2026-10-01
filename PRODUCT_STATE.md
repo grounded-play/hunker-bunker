@@ -5,11 +5,11 @@ and worklogs are evidence or history; they do not override this file. Update a
 row when its implementation or acceptance state changes and link to evidence
 instead of duplicating it here.
 
-Current implementation branch: `dev/sprint-49`, package `2.4.13-beta`, opened from
+Current implementation branch: `dev/sprint-49`, package `2.4.14-beta`, opened from
 `95ff7285` on 2026-10-01. [Sprint 49](docs/planning/sprint-49.md) and its
 [handoff](docs/planning/sprint-49-implementation-handoff.md) own current work.
 
-Last release reconciliation: 2026-09-30 · source baseline `dev/sprint-48` (release candidate `v2.4.13-beta`, PR into `mothership` pending). `v2.4.12-beta` is released on `mothership` (`380333f6`) and on the Steam `beta` branch (BuildID 25596041).
+Last release reconciliation: 2026-10-01 · source baseline `dev/sprint-49` (release candidate `v2.4.14-beta`, PR into `mothership` pending). `v2.4.13-beta` is released on `mothership` (`95ff7285`, PR #96) and on the Steam `beta` branch. The trusted backend runs `7783278f` (deployed 2026-10-01).
 
 The older subsystem rows below retain their stated evidence dates. Current audit
 corrections: field crafting is **partially integrated** (event with no UI consumer),
@@ -19,7 +19,13 @@ contract repairs, and the dock is already the default. See the
 
 Released in `v2.4.4-beta` and already on `mothership` (`e017b06`): the first deep localization sweep (7 languages, 0 unlocalized runtime strings), Alternate Radio Voice Banks (104 cue slots / 208 takes), all 10 rendered motion ending cinematics, Phase A AgX tone mapping & IBL reflections, and 52 playtest stability tickets (DP-01 through DP-52).
 
-Delivered in `v2.4.13-beta` on `dev/sprint-48` and **active in verification** (release notes: [`docs/releases/v2.4.13-beta.md`](docs/releases/v2.4.13-beta.md)):
+Delivered in `v2.4.14-beta` on `dev/sprint-49` and **active in verification** (release notes: [`docs/releases/v2.4.14-beta.md`](docs/releases/v2.4.14-beta.md)):
+- **Filtered player chat (S49-02/03/04):** authenticated room chat through the relay, a seven-language baseline filter, chat UI with mute/block/report and controller text entry. Human language review and moderation staffing remain open.
+- **Steam review follow-through (S49-06/10/11):** commentary rewritten as real development history in seven languages; a pad-only journey probe and the focus fixes it found; Content Guide under Settings → Accessibility, with scene stills and working packaged cinematics.
+- **Purchases (S49-07/08):** authoritative store catalog; `GetReport` reconciliation that pages completely, resumes after restarts and refuses false success; Inventory grant contract fixes and idempotent paid-grant retries. Unattended paid recovery and reversal handling remain open.
+- **Co-op (QA 2026-09-30):** enemies on a squadmate no longer damage you; the relay locks a room to its host's build.
+
+Released in `v2.4.13-beta` (now on `mothership`, `95ff7285`) (release notes: [`docs/releases/v2.4.13-beta.md`](docs/releases/v2.4.13-beta.md)):
 - **Steam review 25475189 remediation (code):** MULTIPLAYER title entry; developer commentary visible in menus with a READ ALL list; focusable achievement and Vault cards with D-pad scrolling; Settings → Content Guide with read-only dialogue transcripts; Vault store through the Steam Item Store and Microtransactions; `GetReport` reconciliation. Steamworks steps, production purchase flags and hardware checks are open in [Sprint 49](docs/planning/sprint-49.md).
 - **Unified Foundry:** one item catalog across the Armory, Foundry, hero screen and Vault; the Foundry hub (Stash / Loadout / Fabricate / Trade-up / Store) on by default; server-authoritative trade-ups and redemptions; fair Foundry odds shown before rolling.
 - **Co-op and companions:** host-authoritative companions and Ring 1 events, tactical pings, companion camp settlement and assist abilities.

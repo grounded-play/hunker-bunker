@@ -3,7 +3,7 @@
 Status: active plan | Owner: repository maintainers | Updated: 2026-09-30 | Review: every completed ticket and release candidate
 
 Baseline branch: `dev/sprint-49`
-Baseline version: `2.4.13-beta`
+Baseline version: `2.4.14-beta` (Sprint 49 opened at `2.4.13-beta`; `2.4.14-beta` is its first release slice)
 Implementation baseline: `95ff7285` (2026-10-01). The initial audit used `379f87e1`
 on Sprint 48. Implementation now proceeds on `dev/sprint-49`; no new Steam upload
 is implied. Read the [implementation handoff](sprint-49-implementation-handoff.md)
