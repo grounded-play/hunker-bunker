@@ -216,6 +216,22 @@ process these five in parallel.
 - **All five animated incoming models are now in the game.** The asset audit has a resolution table.
 
 
+### 2026-10-01 15:30: kits load and line up; museum is a full QA pass; the kit-texture lane is someone else's
+
+- **Museum** (`4b3cc5ff`, `7f4a881c`): built from `src/debugMuseumPlan.js`. A test fails if any shipped GLB is not exhibited; 54 were missing. Production sizes and facing are used, and `window.__DEBUG__.museumReport()` gives per-exhibit load, size and centre. The QA renders found:
+  - all 80 kits failing to load (Draco);
+  - five props authored front-along-X (yaw fixed);
+  - Mayor Tina chasing the player backwards (fixed).
+- **Kits** (`4b3cc5ff`, `208525b2`):
+  - Draco removed; lossless meshopt; uniform `KIT_SCALE`.
+  - Base orientations measured from the kit walls: the old grammar had straights, corners and ends wrong.
+  - Topology is now read past the carve, with wide modules and `modelScale`; the socket rotation is applied exactly (anchors used to get the billboard PI).
+- **Hand-off: the kit textures and themes belong to the other contributor** (`docs/planning/modular-kit-custom-textures-and-dynamic-spaces-plan.md`, custom textures replacing the Poly Haven ones). This lane will not touch `kitMaterials.js`, `public/3d/runtime/kits/textures`, or the kit theme mapping.
+- **Open, for whoever takes kit placement:** in-game census of one run (67 chunks): 43 `architectural-room`, 24 `authored-room`, **0 `hallway-connector`**. The only kit placement path (`createChunkSetPiecePlacements`) is therefore almost never reached, and kits need a dedicated space to be seen in normal play.
+- **Unverified:** `WORLD_3D_FACING_YAW = PI` (since `e1e601a4`) with the camera to the south-east may show some sprite-replaced props' backs in play. Museum fronts are authored +Z. Check in a live run before changing it; it affects every prop.
+- **This lane next:** `alien_proto_spitter` model, `prop_camp_cookfire` (currently the fabricator model) from the nature kit's campfire, nature/building kit subsets, and the simplified sprint-34 props.
+
+
 ## Next
 
 1. **Publisher/hardware (not code):** a Deck and pad pass with the keyboard unplugged
