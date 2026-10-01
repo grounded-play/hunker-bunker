@@ -164,13 +164,23 @@ implementation state of S49-15 to S49-38 at `ba9298df`. S49-01 to S49-14 are tra
 `sprint-49.md` by the other lane, which was editing that file at the time. This lane did
 not touch it.
 
-**Claimed now:**
-- **S49-19 close-out:** the Bio-Vampiric Membrane "suit battery" text has no consumer;
-  add a catalog test pinning the four exclusions.
-- **S49-31:** meshopt-compress `bio_charger.glb` (19.3 MB) and the oversized boss GLBs
-  with no visual change, then lower the retail budget.
-- **S49-31:** attribute the co-op deploy wait (the 13.6 s unattributed long task in the
-  QA capture).
+**Claimed, then done:**
+- `583ab298` **S49-19:** Bio-Vampiric Membrane now promises only O₂ and a heart on a
+  corroded bio kill (it said "suit battery", which doesn't exist); 7 locales; a test
+  pins the four inert drops out of rewards.
+- `2e2178c7` **S49-31:** lossless WebP textures for ten GLBs, −24.8 MiB, renders
+  pixel-identical (headless three.js compare). Retail budget 2780→2755 MiB. Meshopt was
+  rejected (it changed up to 40,788 rendered pixels). **Finding:** `bio_charger`,
+  `chassis_scout_ghost_runner` and the three corrupted bosses are byte-identical copies
+  of existing models (placeholders), now visible in the report's 12 duplicate groups.
+  That belongs to S49-37 (art).
+- `43513578` **S49-31:** each deploy stage holds a `startup:<stage>` perf phase. Locally,
+  the render (shader warm-up) stage dominates. The QA doc's "PC waited for the Deck"
+  reading is corrected: it was a main-thread block.
+
+Render-compare tool for future asset work: lives in the session scratchpad
+(`render-compare.mjs`). It renders two GLBs with the game's three.js in headless Chrome
+and diffs the pixels; recreate it from the `2e2178c7` commit message if needed.
 
 ## Next
 

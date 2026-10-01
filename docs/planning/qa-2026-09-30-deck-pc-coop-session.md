@@ -74,7 +74,7 @@ Questions: does the bunker refill O2 for a co-op guest? Did the Deck player have
 
 ### P1: Deploy load is gated by the Deck's shader compile
 
-Both machines handed over control at 00:08:01. The PC presented its first frame at 00:07:48 and then waited 13 s. Its capture records this as one 13.6 s long task with no phase attribution. The Deck spent about 12.4 s compiling shaders (direct-compile 4.4 s, direct-render 2.1 s, composer-compile 5.6 s), then a 1.5 s `frame:render` stall right after SKIP INTRO. The PC's own warmup was 4.4 s.
+Both machines handed over control at 00:08:01. The PC presented its first frame at 00:07:48, and its capture records one 13.6 s **long task** with no phase attribution. A long task means the main thread was blocked, not idle-waiting for the Deck; the earlier reading that the PC simply waited for the Deck is not supported. (Correction 2026-10-01. Deploy stages now carry `startup:<stage>` phases (`43513578`), so the next capture will name the stage.) The Deck spent about 12.4 s compiling shaders (direct-compile 4.4 s, direct-render 2.1 s, composer-compile 5.6 s), then a 1.5 s `frame:render` stall right after SKIP INTRO. The PC's own warmup was 4.4 s.
 
 On redeploy (TRY AGAIN) the PC's warmup dropped to 0.5 s total because the programs were cached. That shows the shader cache works within a session, but the first deploy costs the whole squad the Deck's cold compile. Persisting the program cache across launches, or warming during the lobby, would shorten every co-op start (S49-31).
 
