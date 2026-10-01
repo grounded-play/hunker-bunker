@@ -9980,12 +9980,23 @@ export class ThreeGame {
         this._flatMaterialSweep ??= createFlatMaterialSweeper();
         this._flatMaterialSweep(this.scene);
         const gpuQueryStarted = this.gpuFrameTimer?.beginFrame?.() ?? false;
+        // three.js resets renderer.info at the start of every render() call,
+        // and the composer makes one call per pass, so draw-call/triangle
+        // telemetry described only the last fullscreen pass (1 call, 1 tri).
+        // Reset once per frame instead so the counters cover the whole frame.
+        const info = this.renderer?.info;
+        const autoReset = info?.autoReset;
+        if (info) {
+            info.reset?.();
+            info.autoReset = false;
+        }
         try {
             if (this.composer && usesGameplayFocusEffects(this)) {
                 this.composer.render();
             }
             else this.renderer.render(this.scene, this.camera);
         } finally {
+            if (info) info.autoReset = autoReset;
             if (gpuQueryStarted) this.gpuFrameTimer?.endFrame?.();
             span.end();
         }
