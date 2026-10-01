@@ -620,31 +620,31 @@ const COMMENTARY_ENTRIES = Object.freeze({
     },
     run_start: {
         title: 'The Run Loop',
-        body: 'The bunker is built around short pressure cycles: deploy, read the threat, bank what matters, and decide whether one more room is worth it.'
+        body: 'Oxygen, banking and the generator repair loop arrived together, in one commit on 28 May 2026. Before that nothing carried over between runs. The O2 clock is what turns "one more room" into a decision: deploy, read the threat, bank what matters, and get back before the air runs out.'
     },
     black_box_signal: {
         title: 'Failure Becomes Map Data',
-        body: 'Black boxes make death persistent without making it punitive. A failed run becomes a breadcrumb, a banked lesson, and a reason to go back in.'
+        body: 'Black boxes went in during the first week of June 2026, and a day later the base began showing a previous contractor\'s box. A failed run stays on the map as a breadcrumb with its salvage still inside, rather than being wiped by a reload.'
     },
     black_box_recovered: {
         title: 'Recoverable Consequences',
-        body: 'The black box is meant to feel like contract work, not a reload button. You are collecting evidence from your own mistakes.'
+        body: 'Recovering a box returns the salvage that run was carrying. In co-op every box has an owner: a September 2026 playtest showed one player\'s box being "recovered" when the other player died, so ownership is now sent over the network with the box.'
     },
     room_armory: {
         title: 'Armory Rooms',
-        body: 'Armories are deliberately loud rewards. They break the procedural rhythm so players can spot a meaningful room before reading any UI.'
+        body: 'Armories were one of the first five authored room templates, added on 29 May 2026. They break the procedural rhythm on purpose: a hand-made room inside a generated map reads as meaningful before any UI does.'
     },
     room_the_nest: {
         title: 'Nest Rooms',
-        body: 'The nest is an authored danger shape inside a generated map. It says: this was not just rolled, something lives here.'
+        body: 'The nest came from the same 29 May template pass. It is an authored danger shape inside generated terrain, so it says that something lives here, not that the dice rolled badly.'
     },
     room_agent_wreckage: {
         title: 'Three Wrecks',
-        body: 'The class wreckage rooms connect the three operators to the larger crash mystery: tracking signal, relay, and weapon, scattered through one disaster.'
+        body: 'The wreckage rooms tie the three operators to one crash: one ship carried the tracking signal, one the relay and one the weapon. The wreck art was redrawn on 22 May 2026, one of the first art passes in the project.'
     },
     queen_fight: {
         title: 'Queen Fight',
-        body: 'The Queen fight uses vulnerability windows so the arena is about reading intent, not only pouring damage into a large health bar.'
+        body: 'The Queen moves through three phases, brood, fury and desperation, and her armor only fully drops during weakpoint windows. Automated tests run every class through the fight, so none can skip the escalation and even the lowest-damage class still chips through her armor.'
     },
     queen_killed: {
         title: 'The Queen Can Die',
@@ -652,15 +652,15 @@ const COMMENTARY_ENTRIES = Object.freeze({
     },
     achievement: {
         title: 'Steam Achievements',
-        body: 'Achievements mirror fiction-first milestones. They should read like field records, not chores.'
+        body: 'Achievement tracking was added on 29 May 2026, alongside personal bests. They mark story milestones and should read like field records, not chores.'
     },
     leaderboard: {
         title: 'Trusted Scores',
-        body: 'Leaderboard scores are recomputed server-side so the client submits a run receipt, not a number we blindly trust.'
+        body: 'Scores are recomputed on our server from a run receipt; the client never just submits a number. In September 2026 that check silently rejected every Deck and PC score for six days, because the client and server tests used separate fixtures. One contract test now pins both.'
     },
     steam_vault: {
         title: 'Steam Vault',
-        body: 'The Vault is intentionally read-heavy. Tradable and marketable value belongs in Steam systems; the game renders verified ownership.'
+        body: 'The Vault arrived with the Steam backend in July 2026. Tradable and marketable items live in Steam\'s inventory; the game only shows what Steam has verified you own.'
     }
 });
 
