@@ -123,10 +123,38 @@ purchases are available. Commentary READ ALL is under the AUDIO tab.
 Already fixed in 2.4.13 (from the QA logs): a cooldown-blocked shot no longer plays
 `ui_error`, and the reload-blocked buzz is throttled.
 
+### Round 3: last probe findings, commentary in seven languages
+
+- `ae1dd80c`: closing the Content Guide's dialogue reader left focus on nothing (it
+  had only seemed to work because stationary-mouse hover happened to refocus the
+  guide). The reader returns focus to the button that opened it. Its close button
+  no longer overflows `.close-modal`'s fixed square.
+- `3c68c914`: `COMMENTARY_ENTRIES` is a `localizeCatalog('narrative.commentary')` catalog
+  with all 12 entries in seven locales. Verified in the browser with locale `ja`.
+  The "commentary on" card now names the real route: Settings > Audio > Developer
+  Commentary > Read All.
+- `7e31a8e9`: the probe also walks Archive, Codex and Dossier.
+
+**Probe coverage now:** Vault and Foundry hub (every tab), Content Guide (reach under
+ACCESSIBILITY, reader, scroll, back ×2), commentary READ ALL, multiplayer console,
+Armory slot picker, Archive, Codex, Dossier, Title Quit confirm, and in-run pause →
+abort → results. All by `gamepad-menu-nav` only.
+
+**Known pre-existing failure, not from this lane:** `controller-focus.spec.js` "settings
+menu crosshair color is a sub-menu…" fails identically on `95ff7285`. It closes the
+popup with a mouse click, and focus then follows the pointer rather than returning to
+the trigger.
+
 ## Next
 
-1. **S49-10:** get `controller-journey.spec.js` fully green, including the new Armory
-   picker and Quit-confirm tests. Then run the full e2e controller set.
-2. **S49-06:** localize `COMMENTARY_ENTRIES` once the chat lane's locale edits land.
-3. **Publisher/hardware (not code):** Deck and pad pass with the keyboard unplugged;
-   installed-build check of commentary, the Content Guide and its cinematics.
+1. **Publisher/hardware (not code):** a Deck and pad pass with the keyboard unplugged
+   over the same route the probe walks; an installed-build check of commentary, the
+   Content Guide (Settings > Accessibility) and its cinematics; a backend redeploy so
+   the relay build gate takes effect; a two-account co-op re-test on **matched**
+   builds (down → revive, abort → TRY AGAIN → partner death).
+2. **Code, open in this lane:** the crosshair-popup mouse-close focus (above); the
+   LB+RB+R3 gallery shortcut still reads only the browser gamepad API (Settings is the
+   controller route); QA-log items still open: deploy-wait phase attribution, guest O2
+   near the bunker, the 3,250 depth XP grant.
+3. **Not this lane:** chat (S49-02/03/04), store/settlement (S49-07/08). See the other
+   worklog.
