@@ -140,10 +140,15 @@ ACCESSIBILITY, reader, scroll, back ×2), commentary READ ALL, multiplayer conso
 Armory slot picker, Archive, Codex, Dossier, Title Quit confirm, and in-run pause →
 abort → results. All by `gamepad-menu-nav` only.
 
-- `0869c05f`: a popup closing under a still mouse no longer pulls focus off its trigger.
-  A `pointerover` at the last real `pointermove` position is a layout change and is
-  ignored. This fixes `controller-focus.spec.js` "settings menu crosshair color…",
-  which also failed on the pre-session baseline `95ff7285`.
+- `0869c05f` → **reverted in `062ab937`.** It ignored a `pointerover` at the last
+  `pointermove` position, to stop a still mouse pulling focus off a closing popup's
+  trigger (`controller-focus` "settings menu crosshair color…", which also fails on
+  `95ff7285`). It broke `steam-review-2026-09` "a controller reaches and scrolls every
+  achievement": the D-pad stalls on card 20 of 23. Bisected: passes on `7e31a8e9`,
+  fails on `0869c05f`, passes with the revert. **Open:** why the hover guard affects
+  D-pad scrolling. Real `pointerover` events arrive at the still mouse position
+  (1100.8, 590.4) as the grid scrolls under it. Fix the crosshair case without
+  touching that path, and run the achievements probe before committing.
 
 **Last full verification (2026-10-01):**
 - `npx vitest run`: 525 files, 4,589 tests passing.

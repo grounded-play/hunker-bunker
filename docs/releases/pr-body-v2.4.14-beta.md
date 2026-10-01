@@ -10,7 +10,7 @@ The first Sprint 49 slice continues the Steam build review **25475189** work and
 
 - **Filtered player chat (S49-02/03/04):** authenticated room chat through the relay, a seven-language baseline filter, and a chat UI with mute, block, report and controller text entry.
 - **Developer commentary (S49-06):** entries rewritten as real, dated development history, in all seven languages.
-- **Controller (S49-10):** a pad-only journey probe walks every review screen. It found six focus bugs, all fixed.
+- **Controller (S49-10):** a pad-only journey probe walks every review screen. It found five focus bugs, all fixed (a sixth fix was reverted; see Known issues).
 - **Mature content (S49-11):** the Content Guide moves under Settings → Accessibility, shows each scene's artwork, and its cinematics play in the packaged build.
 - **Purchases (S49-07/08):**
   - an authoritative store catalog;
@@ -33,7 +33,7 @@ Refs #85, #77, #53, #51, #52, #45
 | Ticket | In this PR | Still needed |
 | :--- | :--- | :--- |
 | #85 Two-account co-op expedition | Squadmate-target damage fix and relay build gate (`1334b1e1`); playtest analysis in [`qa-2026-09-30-deck-pc-coop-session.md`](../planning/qa-2026-09-30-deck-pc-coop-session.md) | A two-account session on the **same** build (QA §2) |
-| #53 Deck controller-only acceptance | Pad-only journey probe (15 surfaces) and six focus fixes | The same route on a physical Deck (QA §1) |
+| #53 Deck controller-only acceptance | Pad-only journey probe (15 surfaces) and five focus fixes | The same route on a physical Deck (QA §1) |
 | #51 PvP certification | Chat works in PvP rooms (one channel, readable by opponents) | Two-account PvP run |
 | #52 GPU / frame pacing | Draw-call and triangle telemetry now cover the whole frame (`35cdecc5`) | Profiling with the corrected counters |
 | #45, #77 | Umbrellas | Close with the above |
@@ -56,7 +56,7 @@ Refs #85, #77, #53, #51, #52, #45
 - `f4a61dfa` fix(controller): Back from the Content Guide returns to Settings instead of closing both
 - `251c6864` feat(mature-content): the Content Guide reader shows each scene's still
 - `ae1dd80c` fix(mature-content): closing the reader returns focus to the guide; readable close button
-- `0869c05f` fix(controller): a popup closing under a still mouse no longer pulls focus off its trigger
+- `0869c05f` fix(controller): a popup closing under a still mouse no longer pulls focus off its trigger — **reverted in `062ab937`** (broke Achievements D-pad scrolling)
 - `7f0e6f1d` feat(commentary): entries tell real development history, not slogans
 - `3c68c914` feat(commentary): developer commentary in all seven languages
 - `0e7bba0c`, `82b04e7b`, `7e31a8e9` test(controller): the controller-only journey probe and its coverage
@@ -78,7 +78,8 @@ Refs #85, #77, #53, #51, #52, #45
 **Deploy and release**
 - `7783278f` fix(deploy): the backend image includes the chat filter the server imports
 - `35797620` fix(release): remove a stray OST symlink that blocked the Steam upload
-- (this PR's head) release: v2.4.14-beta
+- `585abed2` release: v2.4.14-beta
+- `062ab937` Revert `0869c05f`
 
 **Documentation**
 - `5270a90a` docs(sprint-49): complete doc audit and reconcile active sprint pointers (S49-01)
@@ -124,7 +125,15 @@ Refs #85, #77, #53, #51, #52, #45
 - `npm run audit:docs`: passing.
 - `npm run presubmit:generated`: passing (soundtrack 43 tracks; retail assets regenerated for 14 new enemy sounds).
 - `vite build`: ok.
-- Browser probes on a no-HMR dev server: `controller-journey` 15/15, `steam-review-2026-09` 4/4, `player-chat` passing.
+- Browser probes on a no-HMR dev server (release head, run stopped early): 33 of 36 completed tests passed.
+  - `controller-journey`: 10 of 10 that ran passed.
+  - `player-chat`: 3/3.
+  - `controller-focus`: 20/23. Three failures are not yet triaged: WASD operator commands, the six-settings-pages timeout, and the dropdown picker (flaky before).
+  - `steam-review-2026-09`: achievements 2/2 after the revert; the other three passed in every earlier run.
+
+### ⚠️ Known issues (draft)
+- The three `controller-focus` failures above need triage before this leaves draft.
+- The crosshair-popup mouse-close focus test (pre-existing on `95ff7285`) is unfixed after the revert of `0869c05f`.
 
 ---
 
