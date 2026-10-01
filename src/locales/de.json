@@ -1179,7 +1179,8 @@
       "black_box_clear": "KEIN AKTIVES BERGUNGSSIGNAL",
       "no_tracked_objectives": "KEINE VERFOLGTEN ZIELE",
       "surface": "OBERFLÄCHE",
-      "story_prelude": "AKT I // MENSCHLICHES VORSPIEL"
+      "story_prelude": "AKT I // MENSCHLICHES VORSPIEL",
+      "build_mismatch": "HOST NUTZT {host}, DU NUTZT {client} — AKTUALISIERE ODER WECHSLE DEINEN STEAM-BETA-ZWEIG"
     },
     "dossier": {
       "title": "TAKTISCHES DOSSIER",

@@ -1179,7 +1179,8 @@
       "black_box_clear": "SIN SEÑAL DE RECUPERACIÓN ACTIVA",
       "no_tracked_objectives": "SIN OBJETIVOS SEGUIDOS",
       "surface": "SUPERFICIE",
-      "story_prelude": "ACTO I // PRELUDIO HUMANO"
+      "story_prelude": "ACTO I // PRELUDIO HUMANO",
+      "build_mismatch": "EL ANFITRIÓN USA {host} Y TÚ USAS {client} — ACTUALIZA O CAMBIA TU RAMA BETA DE STEAM PARA COINCIDIR"
     },
     "dossier": {
       "title": "EXPEDIENTE TÁCTICO",

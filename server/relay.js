@@ -252,6 +252,13 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
     // reclaims with a different password.
     const roomPasswordHashes = new Map();
 
+    // A room is locked to its host's build. Co-op messages change between
+    // releases, and two builds in one room silently disagree about who is
+    // down, what dropped and who owns what (QA 2026-09-30: a 2.4.9 guest in a
+    // 2.4.13 host's room). Clients older than this gate send no build; they
+    // count as their own "unknown" build, so two of them can still play.
+    const roomBuildVersions = new Map();
+
     const getStableClientKey = (p) => p.steamId64 || p.profileId || null;
 
     const getPublicPlayer = (p) => ({
@@ -449,6 +456,19 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             // than what's recorded is trusted to update it -- they own the
             // room, not an attacker impersonating them, since reclaim itself
             // already required stableKey === recordedHostKey above.
+            const clientBuild = sanitizeString(data.buildVersion, 64, '') || null;
+            if (player.isHost) {
+                roomBuildVersions.set(roomCode, clientBuild);
+            } else if (roomBuildVersions.has(roomCode) && roomBuildVersions.get(roomCode) !== clientBuild) {
+                socket.emit('joinRejected', {
+                    reason: 'build_mismatch',
+                    hostBuild: roomBuildVersions.get(roomCode),
+                    clientBuild
+                });
+                player.roomCode = null;
+                return;
+            }
+
             const suppliedPasswordHash = typeof data.passwordHash === 'string' && data.passwordHash.length <= 128
                 ? data.passwordHash
                 : null;

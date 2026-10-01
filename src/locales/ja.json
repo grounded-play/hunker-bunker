@@ -1179,7 +1179,8 @@
       "black_box_clear": "回収信号なし",
       "no_tracked_objectives": "追跡中の目標なし",
       "surface": "地表",
-      "story_prelude": "第I幕 // 人類の序章"
+      "story_prelude": "第I幕 // 人類の序章",
+      "build_mismatch": "ホストは {host}、あなたは {client} です — 一致させるには更新するか Steam のベータブランチを切り替えてください"
     },
     "dossier": {
       "title": "戦術ドシエ",

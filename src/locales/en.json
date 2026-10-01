@@ -1179,7 +1179,8 @@
       "black_box_clear": "NO ACTIVE RECOVERY SIGNAL",
       "no_tracked_objectives": "NO TRACKED OBJECTIVES",
       "surface": "SURFACE",
-      "story_prelude": "ACT I // HUMAN PRELUDE"
+      "story_prelude": "ACT I // HUMAN PRELUDE",
+      "build_mismatch": "HOST IS ON {host}, YOU ARE ON {client} — UPDATE OR SWITCH YOUR STEAM BETA BRANCH TO MATCH"
     },
     "dossier": {
       "title": "TACTICAL DOSSIER",

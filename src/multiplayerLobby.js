@@ -217,6 +217,23 @@ export function getLocalCallsign() {
     return callsign || 'AGENT';
 }
 
+// The relay locks a room to its host's build (server/relay.js
+// roomBuildVersions), so every join carries this client's build.
+export function getLocalBuildVersion(buildInfo = globalThis.__HB_BUILD_INFO__) {
+    return typeof buildInfo?.version === 'string' && buildInfo.version ? buildInfo.version : null;
+}
+
+export function describeJoinRejection({ reason, hostBuild, clientBuild } = {}) {
+    if (reason === 'incorrect_password') return 'INCORRECT LOBBY PASSWORD';
+    if (reason === 'build_mismatch') {
+        return t('ui.lobby.build_mismatch', {
+            host: hostBuild || '?',
+            client: clientBuild || '?'
+        });
+    }
+    return 'COULD NOT JOIN LOBBY';
+}
+
 export function filterDiscoverableSteamLobbies(lobbies = [], localSteamId64 = null) {
     const localId = String(localSteamId64 ?? '').trim();
     if (!localId) return lobbies;
@@ -499,7 +516,8 @@ export class MultiplayerLobby {
                         // like the same anonymous peer.
                         profileId: window.profile?.getProfileId?.() || null,
                         passwordHash,
-                        loadout
+                        loadout,
+                        buildVersion: getLocalBuildVersion()
                     };
                     logMultiplayerEvent('relay-join-sent', {
                         roomCode: this.roomCode,
@@ -643,12 +661,9 @@ export class MultiplayerLobby {
                 // joinRoom before adding this socket to the room at all --
                 // there's no roster/ready state to clean up, just tell the
                 // player and let them retry.
-                this.socket.on('joinRejected', ({ reason } = {}) => {
+                this.socket.on('joinRejected', (detail = {}) => {
                     this.disconnect();
-                    const message = reason === 'incorrect_password'
-                        ? 'INCORRECT LOBBY PASSWORD'
-                        : 'COULD NOT JOIN LOBBY';
-                    window.showToastNotification?.(message);
+                    window.showToastNotification?.(describeJoinRejection(detail));
                 });
 
                 this.socket.on('connect_error', (err) => {

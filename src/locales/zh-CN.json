@@ -1179,7 +1179,8 @@
       "black_box_clear": "无活动回收信号",
       "no_tracked_objectives": "无追踪目标",
       "surface": "地表",
-      "story_prelude": "第一幕 // 人类序章"
+      "story_prelude": "第一幕 // 人类序章",
+      "build_mismatch": "主机版本为 {host}，你的版本为 {client} — 请更新或切换 Steam 测试分支以保持一致"
     },
     "dossier": {
       "title": "战术档案",

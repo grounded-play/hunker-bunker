@@ -1179,7 +1179,8 @@
       "black_box_clear": "НЕТ АКТИВНОГО СИГНАЛА",
       "no_tracked_objectives": "НЕТ ОТСЛЕЖИВАЕМЫХ ЦЕЛЕЙ",
       "surface": "ПОВЕРХНОСТЬ",
-      "story_prelude": "АКТ I // ПРОЛОГ ЛЮДЕЙ"
+      "story_prelude": "АКТ I // ПРОЛОГ ЛЮДЕЙ",
+      "build_mismatch": "У ХОСТА {host}, У ВАС {client} — ОБНОВИТЕСЬ ИЛИ СМЕНИТЕ БЕТА-ВЕТКУ STEAM, ЧТОБЫ ВЕРСИИ СОВПАДАЛИ"
     },
     "dossier": {
       "title": "ТАКТИЧЕСКОЕ ДОСЬЕ",

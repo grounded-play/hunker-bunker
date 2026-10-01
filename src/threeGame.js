@@ -34391,7 +34391,8 @@ export class ThreeGame {
         }
         if (this.isMultiplayer && this.remotePlayers) {
             for (const [peerId, remote] of this.remotePlayers.entries()) {
-                if (!remote || remote.isDead) continue;
+                // A downed or dead squadmate's body is not something to chew on.
+                if (!remote || remote.isDead || remote.isDown) continue;
                 const rx = remote.mesh?.position?.x ?? remote.x;
                 const rz = remote.mesh?.position?.z ?? remote.z;
                 if (Number.isFinite(rx) && Number.isFinite(rz)) {
@@ -36138,7 +36139,7 @@ export class ThreeGame {
                     window.AudioManager?.playMetalStress?.({ volume: 0.52, playbackRate: 0.8, force: true });
                 } else if (data.type === 'boss_corrupted_engineer' && distanceToTarget <= 12) {
                     data.bossAttackTimer = 6.0;
-                    if (target.type === 'player' && this.canEnemyTargetPlayer?.(sprite) !== false) {
+                    if (target.type === 'player' && target.id === 'local' && this.canEnemyTargetPlayer?.(sprite) !== false) {
                         this.applyPlayerSlow(2.5); // Jam and slow (SCOUT passive reduces this)
                     }
                     const parent = sprite.parent;
@@ -36215,7 +36216,11 @@ export class ThreeGame {
         if (distanceToTarget <= attackRadius && data.attackCooldown <= 0) {
             data.attackCooldown = SNAIL_ATTACK_COOLDOWN;
             const damage = data.isBoss ? 2 : 1;
-            if (target.type === 'player') {
+            if (target.type === 'player' && target.id !== 'local') {
+                // A remote squadmate's own client owns their HP; the hit is
+                // theirs to take, never ours (QA 2026-09-30: hearts lost
+                // from ~100 m away to a snail chewing on the partner).
+            } else if (target.type === 'player') {
                 data.playerContactCooldown = SNAIL_ATTACK_COOLDOWN;
                 const damageApplied = this.takeDamage(damage, data.type, sprite.position.x, sprite.position.z);
                 if (damageApplied !== false) {

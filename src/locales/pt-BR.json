@@ -1179,7 +1179,8 @@
       "black_box_clear": "SEM SINAL DE RECUPERAÇÃO ATIVO",
       "no_tracked_objectives": "SEM OBJETIVOS RASTREADOS",
       "surface": "SUPERFÍCIE",
-      "story_prelude": "ATO I // PRELÚDIO HUMANO"
+      "story_prelude": "ATO I // PRELÚDIO HUMANO",
+      "build_mismatch": "O ANFITRIÃO ESTÁ NA {host} E VOCÊ NA {client} — ATUALIZE OU TROQUE SEU BRANCH BETA DA STEAM PARA COMBINAR"
     },
     "dossier": {
       "title": "DOSSIÊ TÁTICO",
