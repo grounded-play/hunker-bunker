@@ -359,6 +359,20 @@
     "audio/cc0-derived/mechanisms/door_lock_body_01.ogg",
     "audio/cc0-derived/mechanisms/door_lock_body_02.ogg",
     "audio/cc0-derived/mechanisms/metal_lock_impact_01.ogg",
+    "audio/enemies/creak1.ogg",
+    "audio/enemies/creak2.ogg",
+    "audio/enemies/creak3.ogg",
+    "audio/enemies/impactSoft_heavy_000.ogg",
+    "audio/enemies/impactSoft_heavy_001.ogg",
+    "audio/enemies/impactSoft_heavy_002.ogg",
+    "audio/enemies/impactSoft_heavy_003.ogg",
+    "audio/enemies/impactSoft_heavy_004.ogg",
+    "audio/enemies/impactSoft_medium_000.ogg",
+    "audio/enemies/impactSoft_medium_001.ogg",
+    "audio/enemies/impactSoft_medium_002.ogg",
+    "audio/enemies/impactSoft_medium_003.ogg",
+    "audio/enemies/impactSoft_medium_004.ogg",
+    "audio/enemies/metalClick.ogg",
     "audio/foley/bunker/foley_bunker_blackout_breaker.wav",
     "audio/foley/bunker/foley_bunker_facility_room_loop.wav",
     "audio/foley/bunker/foley_bunker_nav_corruption.wav",
@@ -3482,6 +3496,76 @@
     {
       "path": "audio/cover.png",
       "bytes": 867896,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/creak1.ogg",
+      "bytes": 15761,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/creak2.ogg",
+      "bytes": 19012,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/creak3.ogg",
+      "bytes": 10408,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_heavy_000.ogg",
+      "bytes": 6570,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_heavy_001.ogg",
+      "bytes": 6689,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_heavy_002.ogg",
+      "bytes": 6749,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_heavy_003.ogg",
+      "bytes": 6665,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_heavy_004.ogg",
+      "bytes": 6478,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_medium_000.ogg",
+      "bytes": 5351,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_medium_001.ogg",
+      "bytes": 5506,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_medium_002.ogg",
+      "bytes": 5358,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_medium_003.ogg",
+      "bytes": 5392,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_medium_004.ogg",
+      "bytes": 5438,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/metalClick.ogg",
+      "bytes": 13615,
       "classification": "runtime-required"
     },
     {
