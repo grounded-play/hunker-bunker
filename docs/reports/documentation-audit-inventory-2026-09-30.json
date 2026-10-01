@@ -12,25 +12,25 @@
   "activePlan": "docs/planning/sprint-49.md",
   "baseline": {
     "branch": "dev/sprint-49",
-    "version": "2.4.13-beta"
+    "version": "2.4.14-beta"
   },
   "summary": {
-    "documents": 507,
-    "trackedDocuments": 507,
-    "newDocuments": 0,
-    "bytes": 6086761,
+    "documents": 516,
+    "trackedDocuments": 514,
+    "newDocuments": 2,
+    "bytes": 6230669,
     "byClassification": {
-      "historical": 162,
-      "planning": 118,
-      "reference": 227
+      "historical": 165,
+      "planning": 123,
+      "reference": 228
     },
     "markers": {
-      "unchecked": 149,
-      "checked": 704,
+      "unchecked": 176,
+      "checked": 729,
       "migratedCheckboxes": 164,
-      "keywordLines": 426
+      "keywordLines": 435
     },
-    "markdownFilesWithEnforcedLinks": 409,
+    "markdownFilesWithEnforcedLinks": 417,
     "linkIssues": 407,
     "historicalLinkIssues": 407,
     "currentAuditIssues": 0
@@ -144,8 +144,8 @@
       "tracked": true,
       "classification": "reference",
       "classificationBasis": "default; currency requires semantic review",
-      "bytes": 16068,
-      "lines": 97,
+      "bytes": 17173,
+      "lines": 103,
       "markers": {
         "unchecked": 0,
         "checked": 0,
@@ -153,7 +153,7 @@
         "keywordLines": 0
       },
       "linkGate": "enforced",
-      "localLinkCount": 11,
+      "localLinkCount": 12,
       "linkIssues": []
     },
     {
@@ -161,8 +161,8 @@
       "tracked": true,
       "classification": "reference",
       "classificationBasis": "default; currency requires semantic review",
-      "bytes": 14014,
-      "lines": 185,
+      "bytes": 14595,
+      "lines": 194,
       "markers": {
         "unchecked": 0,
         "checked": 0,
@@ -170,7 +170,7 @@
         "keywordLines": 0
       },
       "linkGate": "enforced",
-      "localLinkCount": 8,
+      "localLinkCount": 9,
       "linkIssues": []
     },
     {
@@ -4402,8 +4402,8 @@
       "tracked": true,
       "classification": "reference",
       "classificationBasis": "default; currency requires semantic review",
-      "bytes": 728,
-      "lines": 17,
+      "bytes": 909,
+      "lines": 19,
       "markers": {
         "unchecked": 0,
         "checked": 0,
@@ -4411,7 +4411,7 @@
         "keywordLines": 0
       },
       "linkGate": "enforced",
-      "localLinkCount": 6,
+      "localLinkCount": 7,
       "linkIssues": []
     },
     {
@@ -4531,6 +4531,23 @@
       },
       "linkGate": "enforced",
       "localLinkCount": 0,
+      "linkIssues": []
+    },
+    {
+      "path": "docs/design/missing-assets-and-2d-generation-prompts.md",
+      "tracked": true,
+      "classification": "reference",
+      "classificationBasis": "default; currency requires semantic review",
+      "bytes": 45243,
+      "lines": 363,
+      "markers": {
+        "unchecked": 0,
+        "checked": 0,
+        "migratedCheckboxes": 0,
+        "keywordLines": 0
+      },
+      "linkGate": "enforced",
+      "localLinkCount": 6,
       "linkIssues": []
     },
     {
@@ -5588,6 +5605,23 @@
       "linkIssues": []
     },
     {
+      "path": "docs/planning/3d-asset-pipeline-rigging-and-placement-plan-2026-10-01.md",
+      "tracked": true,
+      "classification": "planning",
+      "classificationBasis": "planning directory",
+      "bytes": 11978,
+      "lines": 201,
+      "markers": {
+        "unchecked": 0,
+        "checked": 0,
+        "migratedCheckboxes": 0,
+        "keywordLines": 0
+      },
+      "linkGate": "enforced",
+      "localLinkCount": 3,
+      "linkIssues": []
+    },
+    {
       "path": "docs/planning/README.md",
       "tracked": true,
       "classification": "reference",
@@ -5864,16 +5898,16 @@
       "tracked": true,
       "classification": "planning",
       "classificationBasis": "planning directory",
-      "bytes": 13261,
-      "lines": 175,
+      "bytes": 14801,
+      "lines": 195,
       "markers": {
-        "unchecked": 7,
-        "checked": 0,
+        "unchecked": 6,
+        "checked": 4,
         "migratedCheckboxes": 0,
-        "keywordLines": 0
+        "keywordLines": 1
       },
       "linkGate": "enforced",
-      "localLinkCount": 0,
+      "localLinkCount": 4,
       "linkIssues": []
     },
     {
@@ -6183,6 +6217,23 @@
       "linkIssues": []
     },
     {
+      "path": "docs/planning/modular-kit-custom-textures-and-dynamic-spaces-plan.md",
+      "tracked": false,
+      "classification": "planning",
+      "classificationBasis": "planning directory",
+      "bytes": 14803,
+      "lines": 211,
+      "markers": {
+        "unchecked": 35,
+        "checked": 3,
+        "migratedCheckboxes": 0,
+        "keywordLines": 2
+      },
+      "linkGate": "enforced",
+      "localLinkCount": 4,
+      "linkIssues": []
+    },
+    {
       "path": "docs/planning/next-steps-handoff-2026-09-12.md",
       "tracked": true,
       "classification": "planning",
@@ -6255,7 +6306,7 @@
       "tracked": true,
       "classification": "planning",
       "classificationBasis": "planning directory",
-      "bytes": 12820,
+      "bytes": 13083,
       "lines": 138,
       "markers": {
         "unchecked": 0,
@@ -6476,8 +6527,8 @@
       "tracked": true,
       "classification": "planning",
       "classificationBasis": "planning directory",
-      "bytes": 9636,
-      "lines": 167,
+      "bytes": 14292,
+      "lines": 231,
       "markers": {
         "unchecked": 0,
         "checked": 0,
@@ -6485,7 +6536,7 @@
         "keywordLines": 0
       },
       "linkGate": "enforced",
-      "localLinkCount": 3,
+      "localLinkCount": 5,
       "linkIssues": []
     },
     {
@@ -6540,20 +6591,37 @@
       "linkIssues": []
     },
     {
+      "path": "docs/planning/sprint-49-status-audit-2026-10-01.md",
+      "tracked": true,
+      "classification": "planning",
+      "classificationBasis": "planning directory",
+      "bytes": 9198,
+      "lines": 61,
+      "markers": {
+        "unchecked": 0,
+        "checked": 0,
+        "migratedCheckboxes": 0,
+        "keywordLines": 0
+      },
+      "linkGate": "enforced",
+      "localLinkCount": 8,
+      "linkIssues": []
+    },
+    {
       "path": "docs/planning/sprint-49.md",
       "tracked": true,
       "classification": "planning",
       "classificationBasis": "planning directory",
-      "bytes": 44532,
-      "lines": 699,
+      "bytes": 52219,
+      "lines": 797,
       "markers": {
-        "unchecked": 51,
-        "checked": 2,
+        "unchecked": 43,
+        "checked": 12,
         "migratedCheckboxes": 0,
-        "keywordLines": 1
+        "keywordLines": 3
       },
       "linkGate": "enforced",
-      "localLinkCount": 166,
+      "localLinkCount": 179,
       "linkIssues": []
     },
     {
@@ -6622,6 +6690,23 @@
       },
       "linkGate": "enforced",
       "localLinkCount": 8,
+      "linkIssues": []
+    },
+    {
+      "path": "docs/planning/todo-tree-2026-10-01-handoff.md",
+      "tracked": false,
+      "classification": "planning",
+      "classificationBasis": "planning directory",
+      "bytes": 4477,
+      "lines": 71,
+      "markers": {
+        "unchecked": 1,
+        "checked": 4,
+        "migratedCheckboxes": 0,
+        "keywordLines": 1
+      },
+      "linkGate": "enforced",
+      "localLinkCount": 7,
       "linkIssues": []
     },
     {
@@ -6935,8 +7020,8 @@
       "tracked": true,
       "classification": "reference",
       "classificationBasis": "default; currency requires semantic review",
-      "bytes": 1574,
-      "lines": 21,
+      "bytes": 1692,
+      "lines": 22,
       "markers": {
         "unchecked": 0,
         "checked": 0,
@@ -6944,7 +7029,7 @@
         "keywordLines": 0
       },
       "linkGate": "enforced",
-      "localLinkCount": 15,
+      "localLinkCount": 17,
       "linkIssues": []
     },
     {
@@ -6979,6 +7064,23 @@
       },
       "linkGate": "enforced",
       "localLinkCount": 7,
+      "linkIssues": []
+    },
+    {
+      "path": "docs/releases/pr-body-v2.4.14-beta.md",
+      "tracked": true,
+      "classification": "historical",
+      "classificationBasis": "evidence/release directory",
+      "bytes": 12254,
+      "lines": 179,
+      "markers": {
+        "unchecked": 0,
+        "checked": 4,
+        "migratedCheckboxes": 0,
+        "keywordLines": 0
+      },
+      "linkGate": "enforced",
+      "localLinkCount": 6,
       "linkIssues": []
     },
     {
@@ -7152,6 +7254,23 @@
       "linkIssues": []
     },
     {
+      "path": "docs/releases/v2.4.14-beta.md",
+      "tracked": true,
+      "classification": "historical",
+      "classificationBasis": "evidence/release directory",
+      "bytes": 13403,
+      "lines": 118,
+      "markers": {
+        "unchecked": 0,
+        "checked": 0,
+        "migratedCheckboxes": 0,
+        "keywordLines": 0
+      },
+      "linkGate": "enforced",
+      "localLinkCount": 6,
+      "linkIssues": []
+    },
+    {
       "path": "docs/releases/v2.4.4-beta.md",
       "tracked": true,
       "classification": "historical",
@@ -7234,6 +7353,23 @@
       },
       "linkGate": "enforced",
       "localLinkCount": 1,
+      "linkIssues": []
+    },
+    {
+      "path": "docs/reports/3d-asset-audit-2026-10-01.md",
+      "tracked": true,
+      "classification": "historical",
+      "classificationBasis": "evidence/release directory",
+      "bytes": 9623,
+      "lines": 93,
+      "markers": {
+        "unchecked": 0,
+        "checked": 0,
+        "migratedCheckboxes": 0,
+        "keywordLines": 0
+      },
+      "linkGate": "enforced",
+      "localLinkCount": 4,
       "linkIssues": []
     },
     {
@@ -10684,6 +10820,23 @@
         "keywordLines": 0
       },
       "linkGate": "enforced",
+      "localLinkCount": 0,
+      "linkIssues": []
+    },
+    {
+      "path": "public/3d/runtime/kits/modular-cave-kit/better-todo-tree-20261001-1442.txt",
+      "tracked": true,
+      "classification": "planning",
+      "classificationBasis": "filename heuristic",
+      "bytes": 6798,
+      "lines": 77,
+      "markers": {
+        "unchecked": 0,
+        "checked": 0,
+        "migratedCheckboxes": 0,
+        "keywordLines": 3
+      },
+      "linkGate": "not-markdown",
       "localLinkCount": 0,
       "linkIssues": []
     },

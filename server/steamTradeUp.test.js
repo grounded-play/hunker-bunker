@@ -161,7 +161,7 @@ describe('POST /steam/inventory/trade-up (live Steam, faked)', () => {
             calls.push({ method, params });
             const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
             if (method === 'GetInventory') {
-                return json({ response: { item_list: items.map((i) => ({ itemid: i.itemId, itemdefid: i.itemdefid, quantity: i.quantity, acquired: '2026-09-01T00:00:00Z' })) } });
+                return json({ response: { success: true, item_json: JSON.stringify(items.map((i) => ({ itemid: i.itemId, itemdefid: i.itemdefid, quantity: i.quantity, acquired: '2026-09-01T00:00:00Z' }))) } });
             }
             if (method === 'ConsumeItem') {
                 consumes += 1;
@@ -181,11 +181,11 @@ describe('POST /steam/inventory/trade-up (live Steam, faked)', () => {
     }
 
     const liveItems = [
-        { itemId: 'r1', itemdefid: 4103, quantity: 1 },
-        { itemId: 'r2', itemdefid: 4104, quantity: 1 },
-        { itemId: 'r3', itemdefid: 4105, quantity: 1 },
-        { itemId: 'r4', itemdefid: 4106, quantity: 1 },
-        { itemId: 'r5', itemdefid: 4103, quantity: 1 }
+        { itemId: '101', itemdefid: 4103, quantity: 1 },
+        { itemId: '102', itemdefid: 4104, quantity: 1 },
+        { itemId: '103', itemdefid: 4105, quantity: 1 },
+        { itemId: '104', itemdefid: 4106, quantity: 1 },
+        { itemId: '105', itemdefid: 4103, quantity: 1 }
     ];
 
     it('consumes each input with the publisher key, then grants the output', async () => {
@@ -194,7 +194,7 @@ describe('POST /steam/inventory/trade-up (live Steam, faked)', () => {
         const response = await post('/steam/inventory/trade-up', { requestId: nextId(), rarity: 'rare' }, { authorization: `Bearer ${session.token}` });
         expect(response.status).toBe(200);
         const consumes = calls.filter((c) => c.method === 'ConsumeItem');
-        expect(consumes.map((c) => c.params.itemid).sort()).toEqual(['r1', 'r2', 'r3', 'r4', 'r5']);
+        expect(consumes.map((c) => c.params.itemid).sort()).toEqual(['101', '102', '103', '104', '105']);
         expect(consumes.every((c) => c.params.key === 'publisher-key' && c.params.requestid)).toBe(true);
         const adds = calls.filter((c) => c.method === 'AddItem');
         expect(adds).toHaveLength(1);

@@ -172,3 +172,23 @@ economy work.
 5. **Random items by region:** disable key purchase in Belgium, or remove keys there
    entirely?
 6. **Season Pass price** and premium-track contents for Season 2.
+
+## 11. Implementation evidence from the 2026-10-01 14:42 TODO tree
+
+Follow the [iteration handoff](todo-tree-2026-10-01-handoff.md) and
+[requested snapshot](../../public/3d/runtime/kits/modular-cave-kit/better-todo-tree-20261001-1442.txt).
+The original proposal and owner decisions above are not production certification.
+
+- [x] **Inventory evidence prerequisite for P5:** the live inventory loader now
+  reads Steam's documented encoded item array and preserves exact item IDs and
+  quantities; rejected/malformed responses remain failures, never an empty
+  inventory or invented quantity. [Implementation](../../server/steamInventoryRead.js),
+  [route tests](../../server/steamInventory.test.js).
+  Four targeted suites / 80 tests and scoped ESLint passed.
+- [ ] **P5 remains open:** verified reads do not revoke items or resolve consumed,
+  traded or refunded entitlements. Implement and test the exchange/reversal journal
+  and explicit review dispositions before claiming refund recovery is complete.
+- [ ] **Publisher evidence remains separate:** prove live deployment, ratings/store
+  disclosures, account restrictions, approved pricing and review purchases through
+  the canonical Sprint 49 acceptance gates; repository checkbox changes alone are
+  not evidence of Steamworks or regulatory completion.

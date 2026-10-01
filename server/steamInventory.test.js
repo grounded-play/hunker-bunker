@@ -51,6 +51,73 @@ afterEach(() => {
 });
 
 describe('Steam Inventory API endpoints', () => {
+    function liveInventory(responseBody, { throws = false } = {}) {
+        process.env.HB_SESSION_SECRET = 'inventory-contract-test';
+        process.env.HB_STEAM_PUBLISHER_KEY = 'private-test-key';
+        const session = createSteamSessionToken({ steamId64: '76561198000000000', isDevMode: false });
+        const external = vi.fn(async (url) => {
+            const request = new URL(url);
+            expect(request.pathname).toBe('/IInventoryService/GetInventory/v1/');
+            expect(request.searchParams.get('steamid')).toBe('76561198000000000');
+            if (throws) throw new Error(`${url} contains a private publisher key`);
+            return new Response(JSON.stringify(responseBody));
+        });
+        globalThis.fetch = vi.fn((url, options) => String(url).startsWith(baseUrl)
+            ? ORIGINAL_FETCH(url, options) : external(url, options));
+        return { external, headers: { authorization: `Bearer ${session.token}` } };
+    }
+
+    it('GET /steam/inventory reads real item_json with exact IDs, counts and stable acquisition dates', async () => {
+        const { headers, external } = liveInventory({ response: { item_json: JSON.stringify([
+            { itemid: '18446744073709551615', itemdefid: '4001', quantity: '5', acquired: '20260930T120000Z' },
+            { itemid: '17212166272732706', itemdefid: 1100, quantity: 2, acquired: '2026-09-29T12:00:00Z' },
+            { itemid: '3', itemdefid: 1000, quantity: 0 },
+            { itemid: '4', itemdefid: 1000, quantity: 1, state: 'removed' }
+        ]) } });
+        const response = await fetch(`${baseUrl}/steam/inventory`, { headers });
+        expect(response.status).toBe(200);
+        expect((await response.json()).inventory).toEqual([
+            { itemId: '18446744073709551615', itemdefid: 4001, quantity: 5, acquiredAt: Date.parse('2026-09-30T12:00:00Z') },
+            { itemId: '17212166272732706', itemdefid: 1100, quantity: 2, acquiredAt: Date.parse('2026-09-29T12:00:00Z') }
+        ]);
+        expect(external).toHaveBeenCalledTimes(1);
+        expect(external.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
+    });
+
+    it('GET /steam/inventory distinguishes a confirmed empty inventory from failed/missing evidence', async () => {
+        const { headers } = liveInventory({ response: { success: true, item_json: '[]' } });
+        const response = await fetch(`${baseUrl}/steam/inventory`, { headers });
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({ ok: true, inventory: [] });
+    });
+
+    it.each([
+        {},
+        { response: { success: false, error: 'private publisher detail', item_json: '[]' } },
+        { response: { success: true } },
+        { response: { item_list: [] } },
+        { response: { item_json: 'not JSON' } },
+        { response: { item_json: '{}' } },
+        { response: { item_json: '[{"itemid":"1","itemdefid":4001,"quantity":-1}]' } },
+        { response: { item_json: '[{"itemid":18446744073709551615,"itemdefid":4001,"quantity":1}]' } },
+        { response: { item_json: '[{"itemid":"1","itemdefid":4001,"quantity":1},{"itemid":"1","itemdefid":4001,"quantity":1}]' } }
+    ])('fails closed instead of erasing ownership for an invalid Steam response: %j', async (payload) => {
+        const { headers } = liveInventory(payload);
+        const response = await fetch(`${baseUrl}/steam/inventory`, { headers });
+        expect(response.status).toBe(502);
+        const body = await response.json();
+        expect(body.ok).toBe(false);
+        expect(body.inventory).toBeUndefined();
+        expect(JSON.stringify(body)).not.toContain('private');
+    });
+
+    it('does not expose publisher keys from inventory transport exceptions', async () => {
+        const { headers } = liveInventory(null, { throws: true });
+        const response = await fetch(`${baseUrl}/steam/inventory`, { headers });
+        expect(response.status).toBe(502);
+        expect(await response.json()).toEqual({ ok: false, reason: 'steam_request_failed' });
+    });
+
     it('GET /steam/inventory returns mock items in dev mode', async () => {
         delete process.env.HB_STEAM_PUBLISHER_KEY;
         delete process.env.STEAM_PUBLISHER_KEY;

@@ -15,6 +15,7 @@ import {
 import { grantItemToPlayer } from './steamGrant.js';
 import { commitExchange, planRedeem, planTradeUp, withPlayerLock } from './steamTradeUp.js';
 import { createRateLimitOptions } from './rateLimit.js';
+import { fetchSteamInventory } from './steamInventoryRead.js';
 
 const STEAM_INVENTORY_URL = 'https://partner.steam-api.com/IInventoryService/';
 const STEAM_ECON_MARKET_URL = 'https://partner.steam-api.com/IEconMarketService/';
@@ -82,25 +83,7 @@ export function attachSteamInventoryRoutes(app) {
     // The player's inventory, from the mock store in dev mode or Steam.
     async function loadInventory(req) {
         if (req.isDevMode) return { ok: true, inventory: getMockInventory(req.steamId) };
-        try {
-            const params = new URLSearchParams({
-                key: getSteamPublisherKey(),
-                appid: String(getSteamAppId()),
-                steamid: req.steamId
-            });
-            const response = await fetch(`${STEAM_INVENTORY_URL}GetInventory/v1/?${params.toString()}`);
-            if (!response.ok) return { ok: false, status: response.status, reason: 'steam_api_error' };
-            const data = await response.json();
-            const items = (data?.response?.item_list ?? []).map((item) => ({
-                itemId: String(item.itemid),
-                itemdefid: Number(item.itemdefid),
-                quantity: Number(item.quantity) || 1,
-                acquiredAt: item.acquired ? Date.parse(item.acquired) : Date.now()
-            }));
-            return { ok: true, inventory: items };
-        } catch (err) {
-            return { ok: false, status: 502, reason: 'steam_request_failed', message: err.message };
-        }
+        return fetchSteamInventory({ steamId: req.steamId, key: getSteamPublisherKey(), appId: getSteamAppId() });
     }
 
     // 1. Get Inventory. `capabilities` tells the client which exchanges this

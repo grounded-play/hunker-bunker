@@ -760,3 +760,23 @@ are carried by ID with their current implementation state and owner. A feature
 does not disappear from the roadmap because an environment or reviewer gate is
 still open. No game feature, purchase, hardware result or Steam acceptance is
 claimed complete by the creation of this plan.
+
+## TODO tree 2026-10-01 14:42 — verified implementation checkpoints
+
+Source snapshot: [requested TODO tree](../../public/3d/runtime/kits/modular-cave-kit/better-todo-tree-20261001-1442.txt).
+Resume notes and remaining work: [iteration handoff](todo-tree-2026-10-01-handoff.md).
+
+- [x] **S49-32 / S49-08 prerequisite: live inventory response correctness.**
+  [Inventory reader](../../server/steamInventoryRead.js) now decodes Steam's
+  documented `item_json`, retains exact IDs/quantities, rejects invalid or rejected
+  evidence instead of returning false-empty ownership, and bounds/sanitizes failed
+  requests. Wired to inventory display and exchange planning in
+  [routes](../../server/steamInventory.js).
+  Evidence: [route regressions](../../server/steamInventory.test.js) and
+  [reader tests](../../server/steamInventoryRead.test.js); 4 focused suites /
+  80 tests passed, scoped ESLint passed. No live Steam mutation was performed.
+- [ ] **Next: exchange and reversal correctness.** Verify ConsumeItem, ExchangeItem
+  and TriggerItemDrop response contracts; make uncertain exchange outcomes
+  recoverable without duplicate refunds/rewards; then finish unattended paid-grant
+  recovery and item-level reversal dispositions. This subtask does not close
+  S49-08, S49-09, S49-23 or S49-32 or certify deployed/hardware acceptance.
