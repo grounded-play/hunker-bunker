@@ -111,6 +111,7 @@ import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } fr
 import { LeaderConversation3d } from './src/leaderConversation3d.js';
 import { getLocale, setLocale, t, t as i18nT, getAvailableLocales } from './src/i18n.js';
 import { localizeCatalog } from './src/i18nCatalog.js';
+import { trackStartupStages } from './src/perfPhases.js';
 import {
     computeTopologyDistances,
     findConflictingChunkReservations,
@@ -8117,7 +8118,9 @@ async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
     const wasLoadingPaused = Boolean(game.loadingPaused);
 
     let announcedStage = '';
+    const startupStages = trackStartupStages();
     const announceDeploymentStage = (stage, status, progress) => {
+        startupStages.enter(stage);
         showRunLoadingScreen(status, progress, { overDoor: loaderOverDoor });
         if (announcedStage !== stage) {
             announcedStage = stage;
@@ -8151,6 +8154,7 @@ async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
         announceDeploymentStage('READY', 'DEPLOYMENT READY — TRANSFERRING CONTROL', 100);
         await new Promise((resolve) => window.setTimeout(resolve, loaderOverDoor ? 220 : 120));
     } finally {
+        startupStages.end();
         game.setLoadingPaused?.(wasLoadingPaused);
         await hideRunLoadingScreen({ fade: loaderOverDoor });
     }
