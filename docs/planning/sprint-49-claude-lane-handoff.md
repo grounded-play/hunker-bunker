@@ -99,6 +99,23 @@ Fixed from its findings:
 - `35cdecc5` (S49-31 telemetry, from the QA logs): draw calls and triangles cover the
   whole frame. `b388698f`: biome hysteresis.
 
+Second round (same probe):
+- `a9c8613b`: when a modal closed, Chromium re-fired `pointerover` on whatever sat under
+  the unmoved mouse, and hover sync stole controller focus. Traced: hub close →
+  `fabrication-btn`, then hover → `char-card`. Hover-to-focus is skipped while the
+  controller is the active input; real movement already switches the mode back.
+- `f4a61dfa`: one Back from the Content Guide closed the guide **and** Settings. The
+  Escape switch fell through to "close Settings", then the fallback closed the guide.
+  The Settings branch now closes only the surface above it.
+- `controller-focus.spec.js`'s title-order test predated MULTIPLAYER; updated.
+
+S49-11 / S49-06:
+- `251c6864`: the Content Guide reader shows each dialogue scene's still above its
+  text, as the game plays it (18 stills, all present).
+- `7f0e6f1d`: commentary entries rewritten as dated, checkable development history.
+  **Still English-only:** localizing them means adding 12 strings to all 7 locale
+  files, which the chat lane is actively editing.
+
 Not bugs (probe assumptions corrected): with the hub on, Vault and Foundry both open
 `#foundry-hub-modal`, not `#steam-vault-modal`. The Store tab appears only when
 purchases are available. Commentary READ ALL is under the AUDIO tab.
@@ -108,9 +125,8 @@ Already fixed in 2.4.13 (from the QA logs): a cooldown-blocked shot no longer pl
 
 ## Next
 
-1. **S49-10:** get `controller-journey.spec.js` fully green and fix whatever else it
-   finds (multiplayer back-out focus, in-run pause/abort/results).
-2. **S49-06:** audit commentary entries (`COMMENTARY_ENTRIES` in `main.js`) for
-   concrete development insight. `main.js` is the other lane's primary file, so
-   keep the edit to that block.
-3. **S49-11 (optional):** show each node's `interstitial` still in the reader.
+1. **S49-10:** get `controller-journey.spec.js` fully green, including the new Armory
+   picker and Quit-confirm tests. Then run the full e2e controller set.
+2. **S49-06:** localize `COMMENTARY_ENTRIES` once the chat lane's locale edits land.
+3. **Publisher/hardware (not code):** Deck and pad pass with the keyboard unplugged;
+   installed-build check of commentary, the Content Guide and its cinematics.

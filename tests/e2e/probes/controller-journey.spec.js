@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { bootToOperatorMenu, startRunAndSkipIntro } from '../helpers.js';
+import { bootToOperatorMenu, bootToTitleSplash, startRunAndSkipIntro } from '../helpers.js';
 
 // S49-10 (docs/planning/sprint-49.md): the review build failed Full
 // Controller Support. The review probe proves Achievements; this walks every
@@ -247,6 +247,35 @@ test.describe('S49-10 controller journey', () => {
         const f = await focused(page);
         expect(f, 'a D-pad press after leaving the console finds focus').not.toBeNull();
         expect(f.visible && f.topmost, `focus after leaving the console is usable: ${f?.id || f?.text}`).toBe(true);
+    });
+
+    test('Armory: open a slot picker, browse it, back out to the slot', async ({ page }) => {
+        await bootToOperatorMenu(page);
+        await steerTo(page, '#start-game');
+        await pad(page, 'menu_confirm');
+        await page.locator('#armory-btn-embark').waitFor({ state: 'visible', timeout: 60_000 });
+        await steerTo(page, '#armory-slot-mod1');
+        await pad(page, 'menu_confirm');
+        await expect(page.locator('#armory-picker-modal')).toBeVisible({ timeout: 10_000 });
+        const seen = await exploreInside(page, '#armory-picker-modal', 4);
+        expect(seen.size, 'focus moves between picker tiles').toBeGreaterThan(1);
+        await page.screenshot({ path: 'playwright-report/screenshots/s49-10-armory-picker.png' });
+        await pad(page, 'menu_back');
+        await expect(page.locator('#armory-picker-modal')).toBeHidden({ timeout: 5_000 });
+        await page.waitForTimeout(400);
+        expect(await isFocusedMatch(page, '#armory-slot-mod1'), 'focus returns to the slot').toBe(true);
+    });
+
+    test('Title: Quit asks first, and Back cancels it', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await steerTo(page, '#title-quit-btn');
+        await pad(page, 'menu_confirm');
+        await expect(page.locator('#quit-confirm-modal')).toBeVisible({ timeout: 5_000 });
+        expect(await focusInside(page, '#quit-confirm-modal'), 'focus is in the quit prompt').toBe(true);
+        await pad(page, 'menu_back');
+        await expect(page.locator('#quit-confirm-modal')).toBeHidden({ timeout: 5_000 });
+        await page.waitForTimeout(400);
+        expect(await isFocusedMatch(page, '#title-quit-btn'), 'focus returns to QUIT').toBe(true);
     });
 
     test('In run: pause, settings, abort, results — all by controller', async ({ page }) => {
