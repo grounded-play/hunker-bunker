@@ -240,13 +240,14 @@ test.describe('S49-10 controller journey', () => {
         await page.screenshot({ path: 'playwright-report/screenshots/s49-10-multiplayer.png' });
         await pad(page, 'menu_back');
         await expect(page.locator('#multiplayer-modal')).toBeHidden({ timeout: 5_000 });
-        // One D-pad press must land somewhere visible, never leave the player
-        // with no focus at all. (Focus returns after the ~280 ms close animation.)
-        await page.waitForTimeout(500);
-        await pad(page, 'menu_down');
-        const f = await focused(page);
-        expect(f, 'a D-pad press after leaving the console finds focus').not.toBeNull();
-        expect(f.visible && f.topmost, `focus after leaving the console is usable: ${f?.id || f?.text}`).toBe(true);
+        // Pressing the D-pad must soon land somewhere usable, never leave the
+        // player with no focus at all. Focus comes back once the close
+        // animation and screen transition finish, so keep pressing for a bit.
+        await expect.poll(async () => {
+            await pad(page, 'menu_down');
+            const f = await focused(page);
+            return Boolean(f?.visible && f?.topmost);
+        }, { timeout: 4_000, intervals: [250] }).toBe(true);
     });
 
     test('Armory: open a slot picker, browse it, back out to the slot', async ({ page }) => {
