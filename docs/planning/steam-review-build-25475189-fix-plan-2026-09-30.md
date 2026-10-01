@@ -184,7 +184,7 @@ that was reverted in `20b7162e`. The economy direction is in the
      any screen, including the title menu.
   2. The two gallery-only items are removed, and each gallery entry names where the
      same content is found in play.
-  3. The gallery gets a visible button, **Settings → Content Guide (Mature Themes) →
+  3. The gallery gets a visible button, **Settings → Accessibility → Content Guide (Mature Themes) →
      OPEN**, so reviewers don't rely on a hotkey.
 - **Survey (publisher):**
   - Keep **Some Nudity or Sexual Content** only as *non-explicit sexual content*
@@ -194,7 +194,7 @@ that was reverted in `20b7162e`. The economy direction is in the
 - **"How do we access the mature content?" text:**
 
   ```text
-  Fastest: open Settings → CONTENT GUIDE (MATURE THEMES) → OPEN (works with keyboard, mouse or controller; F9 also opens it). Under "Sensual Storylines", select SISTER VAL to read the full dialogue, including the [INTIMATE TOUCH], [SENSUAL / EMBRACE] and [DEEPEN INTIMACY] branches. In play, the same dialogue is reached at Camp Tallow by talking to Sister Val.
+  Fastest: open Settings → ACCESSIBILITY tab → CONTENT GUIDE (MATURE THEMES) → OPEN (works with keyboard, mouse or controller; F9 also opens it). Under "Sensual Storylines", select SISTER VAL to read the full dialogue, including the [INTIMATE TOUCH], [SENSUAL / EMBRACE] and [DEEPEN INTIMACY] branches. In play, the same dialogue is reached at Camp Tallow by talking to Sister Val.
   Self-sacrifice/suicide themes: in the same screen, select EMPTY HUSK or SCORCHED SKY, or the Reyes C11 / Chen B03 logs (found in play as recoverable logs).
   Content is text dialogue and still artwork; there is no depicted nudity or sexual act.
   ```

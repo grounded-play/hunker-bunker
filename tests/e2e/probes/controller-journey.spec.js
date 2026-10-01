@@ -72,46 +72,55 @@ async function exploreInside(page, rootSelector, steps = 6) {
     return seen;
 }
 
-async function openSettingsByPad(page) {
+async function openSettingsByPad(page, tab = null) {
     await steerTo(page, '.open-settings-btn');
     await pad(page, 'menu_confirm');
     await expect(page.locator('#settings-popup')).toBeVisible({ timeout: 10_000 });
+    if (tab) {
+        await steerTo(page, `#settings-popup [data-settings-tab="${tab}"]`);
+        await pad(page, 'menu_confirm');
+        await expect(page.locator(`#settings-popup [data-settings-panel="${tab}"]`)).toBeVisible();
+    }
+}
+
+// The main menu's Vault and Foundry buttons both open the Foundry hub (Stash
+// and Fabricate tabs) while the hub is on, which is the default.
+async function walkHub(page, opener, tab) {
+    await bootToOperatorMenu(page);
+    await steerTo(page, opener);
+    await pad(page, 'menu_confirm');
+    await expect(page.locator('#foundry-hub-modal')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator(`#foundry-hub-tabs [data-tab="${tab}"]`)).toHaveAttribute('aria-selected', 'true');
+    await page.waitForTimeout(400);
+    const seen = await exploreInside(page, '#foundry-hub-modal');
+    expect(seen.size, 'focus moves between hub controls').toBeGreaterThan(1);
+    // Every visible, unlocked tab can be selected from the tab bar by pad.
+    const tabs = await page.locator('#foundry-hub-tabs [data-tab]:visible:not([disabled])').evaluateAll((els) => els.map((el) => el.dataset.tab));
+    for (const id of tabs) {
+        await steerTo(page, `#foundry-hub-tabs [data-tab="${id}"]`);
+        await pad(page, 'menu_confirm');
+        await expect(page.locator(`#foundry-hub-tabs [data-tab="${id}"]`)).toHaveAttribute('aria-selected', 'true');
+    }
+    await page.screenshot({ path: `playwright-report/screenshots/s49-10-hub-${tab}.png` });
+    await pad(page, 'menu_back');
+    await expect(page.locator('#foundry-hub-modal')).toBeHidden({ timeout: 5_000 });
+    expect(await isFocusedMatch(page, opener), `focus returns to ${opener}`).toBe(true);
 }
 
 test.describe('S49-10 controller journey', () => {
     test.describe.configure({ timeout: 300_000 });
 
-    test('Steam Vault: reach, browse, back out', async ({ page }) => {
-        await bootToOperatorMenu(page);
-        await steerTo(page, '#steam-vault-btn');
-        await pad(page, 'menu_confirm');
-        await expect(page.locator('#steam-vault-modal')).toBeVisible({ timeout: 15_000 });
-        await page.waitForTimeout(400);
-        const seen = await exploreInside(page, '#steam-vault-modal');
-        expect(seen.size, 'focus moves between vault controls').toBeGreaterThan(1);
-        await page.screenshot({ path: 'playwright-report/screenshots/s49-10-vault.png' });
-        await pad(page, 'menu_back');
-        await expect(page.locator('#steam-vault-modal')).toBeHidden({ timeout: 5_000 });
-        expect(await isFocusedMatch(page, '#steam-vault-btn'), 'focus returns to the Vault button').toBe(true);
+    test('Vault (Foundry hub at Stash): reach, browse every tab, back out', async ({ page }) => {
+        await walkHub(page, '#steam-vault-btn', 'stash');
     });
 
-    test('Foundry: reach, browse, back out', async ({ page }) => {
-        await bootToOperatorMenu(page);
-        await steerTo(page, '#fabrication-btn');
-        await pad(page, 'menu_confirm');
-        await expect(page.locator('#foundry-hub-modal')).toBeVisible({ timeout: 15_000 });
-        await page.waitForTimeout(400);
-        const seen = await exploreInside(page, '#foundry-hub-modal');
-        expect(seen.size, 'focus moves between foundry controls').toBeGreaterThan(1);
-        await page.screenshot({ path: 'playwright-report/screenshots/s49-10-foundry.png' });
-        await pad(page, 'menu_back');
-        await expect(page.locator('#foundry-hub-modal')).toBeHidden({ timeout: 5_000 });
-        expect(await isFocusedMatch(page, '#fabrication-btn'), 'focus returns to the Foundry button').toBe(true);
+    test('Foundry (hub at Fabricate): reach, browse every tab, back out', async ({ page }) => {
+        await walkHub(page, '#fabrication-btn', 'fabricate');
     });
 
     test('Content Guide: reach from Settings, read a transcript, scroll it, back out twice', async ({ page }) => {
         await bootToOperatorMenu(page);
-        await openSettingsByPad(page);
+        await openSettingsByPad(page, 'accessibility');
         await steerTo(page, '#open-mature-audit-btn');
         await pad(page, 'menu_confirm');
         await expect(page.locator('#mature-content-audit-modal')).toBeVisible();
@@ -136,7 +145,7 @@ test.describe('S49-10 controller journey', () => {
 
     test('Commentary: reach READ ALL from Settings, scroll the list, back out', async ({ page }) => {
         await bootToOperatorMenu(page);
-        await openSettingsByPad(page);
+        await openSettingsByPad(page, 'audio');
         await steerTo(page, '#open-commentary-list');
         await pad(page, 'menu_confirm');
         await expect(page.locator('#commentary-list-modal')).toBeVisible();
@@ -167,8 +176,12 @@ test.describe('S49-10 controller journey', () => {
         await page.screenshot({ path: 'playwright-report/screenshots/s49-10-multiplayer.png' });
         await pad(page, 'menu_back');
         await expect(page.locator('#multiplayer-modal')).toBeHidden({ timeout: 5_000 });
+        // One D-pad press must land somewhere visible, never leave the player
+        // with no focus at all.
+        await pad(page, 'menu_down');
         const f = await focused(page);
-        expect(f, 'focus is not lost after leaving the console').not.toBeNull();
+        expect(f, 'a D-pad press after leaving the console finds focus').not.toBeNull();
+        expect(f.visible && f.topmost, `focus after leaving the console is usable: ${f?.id || f?.text}`).toBe(true);
     });
 
     test('In run: pause, settings, abort, results — all by controller', async ({ page }) => {

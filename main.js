@@ -10948,7 +10948,10 @@ function organizeSettingsPanels() {
         ['setting-camera-shake', 'accessibility'],
         ['setting-aim-assist', 'controls'],
         ['setting-reduced-pressure', 'accessibility'],
-        ['setting-gore-toggle', 'accessibility']
+        ['setting-gore-toggle', 'accessibility'],
+        // The mature-content reader sits with the gore toggle: a reviewer told
+        // "Settings > Content Guide" found it stranded under CONTROLS (S49-10/11).
+        ['open-mature-audit-btn', 'accessibility']
     ].forEach(([id, target]) => moveControl(id, target));
 }
 organizeSettingsPanels();
