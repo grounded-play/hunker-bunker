@@ -211,7 +211,9 @@ process these five in parallel.
 - **5001 Ghost Runner, female and male** (`c7a9042f`, `eb503aab`): rigged onto the Corpo Shadow Runner and Briggs skeletons. The male is a second **body** of the same item (`src/chassisBodies.js`): a picker tile per body, `suit.chassisBody` in the loadout, and `chassisBody` in the co-op summary.
 - Tool: `scripts/blender/rig_by_weight_transfer.py <static> <rigged_ref> <out>` (Blender 5.2, headless). It needs a T-pose target facing the reference's direction.
 - Retail budget 2715 to 2730 MiB, justified in `scripts/audit-retail-assets.js`.
-- **Still this lane's:** the Mycelium Stalker quadruped (procedural rig and clips) for `mycelium_stalker` and `bio_charger`.
+- **Mycelium Stalker** (`97c5678a`): the fifth model, also landed. `scripts/blender/rig_quadruped_stalker.py` builds a 28-bone canine rig, binds it with heat weights from a voxel proxy and keys idle, walk and run clips. The stalker walks and the charger gallops.
+  - In-game probe: both enemies load the model with the right idle and travel clips, with no page errors. The headless camera never settled, so there is no in-game screenshot; the visual check comes from the Blender and three.js renders.
+- **All five animated incoming models are now in the game.** The asset audit has a resolution table.
 
 
 ## Next

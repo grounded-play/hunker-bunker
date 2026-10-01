@@ -11,6 +11,20 @@ Scope: all 320 runtime GLBs under `public/3d`, every catalog item mapped to a mo
 - **Mapping:** each catalog item's model, extracted from the data modules (`classArsenal`, `armoryPreviews`, `communitySkins`, `itemOwnership`, `player3dOverlay`, `enemy3dOverlay`).
 - **Looking at them:** every catalog, enemy, NPC and prop model was rendered with the game's own three.js and `GLTFLoader` (meshopt decoder registered) in headless Chrome. They were drawn into labelled contact sheets and inspected one by one. Evidence for the key cases: [suspects sheet](assets/3d-audit-2026-10-01-suspects.jpg).
 
+## Resolution status (updated 2026-10-01, afternoon)
+
+The owner supplied replacements in `art/raw/incoming_3d_20261001`. Where each finding stands:
+
+| Finding | Status |
+| :--- | :--- |
+| 5001 Ghost Runner was the Corpo Shadow Runner skin | **Fixed** (`c7a9042f`, `eb503aab`): its own rigged model, with a female and a male body to choose from in the armory |
+| 5002, 5006, 5009, 5010 copies; Talon-C blockout | **Fixed** by another contributor in `3039e4df` (owner models, decimated) |
+| `bio_charger`, `mycelium_stalker` wore a player skin | **Fixed** (`97c5678a`): the Mycelium Stalker quadruped, rigged with idle, walk and run clips |
+| `cryosnail` used the cybersnail | **Fixed** (`125ca366`): its own ice model |
+| `boss_corrupted_engineer` was a tinted friendly Kaelen | **Fixed** (`c7a9042f`): the corrupted Kaelen model, rigged to Kaelen's skeleton |
+| Decimated sprint-34 props (§3) | Five re-supplied in `3039e4df`; the rest are still open |
+| `alien_proto_spitter` shares the crawler model; naming items (§4); content flag (§5) | Still open |
+
 ## 1. Placeholders presented as finished items (highest priority)
 
 Commit `3482799b` (2026-09-30, "wire missing achievement 3D cosmetics and key enemy models") flipped five achievement rewards from `pending` to `ready`. It did so by **copying existing models under new names**. That removed a guard in `src/data/armoryPreviews.js` that said "Do not offer an emblem-backed tile that silently renders the factory gun". No raw source for any of the five exists in `art/source`.
