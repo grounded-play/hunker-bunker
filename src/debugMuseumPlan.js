@@ -82,15 +82,20 @@ export function buildMuseumExhibitPlan() {
     // Every registered world model, in its showroom category; anything a
     // category does not list lands in a catch-all so nothing goes unseen.
     const placed = new Set();
-    const world = (title, types, spacing = 3.4) => {
+    const world = (title, types, spacing = 3.4, { raised = true, paired = true } = {}) => {
         const entries = types.filter((type) => WORLD_3D_MODELS[type] && !placed.has(type)).map((type) => {
             placed.add(type);
             return { label: type, type, url: WORLD_3D_MODELS[type].url };
         });
-        if (entries.length) plan.push({ title, kind: 'world', spacing, paired: true, entries });
+        if (entries.length) plan.push({ title, kind: 'world', spacing, raised, paired, entries });
     };
     world('CAMP LEADERS & NPCS', Object.keys(WORLD_3D_MODELS).filter((t) => t.startsWith('npc_') || t.startsWith('secret_')).sort());
     for (const [title, key] of WORLD_CATEGORY_KEYS) world(title, (SHOWROOM_CATEGORIES[key] ?? []).map(String), 4);
+    // Modular kit pieces are architecture on the floor grid, up to 15 units
+    // across (room_large at KIT_SCALE): no plinth, and room-sized spacing.
+    for (const skin of ['cave', 'space']) {
+        world(`MODULAR KIT: ${skin.toUpperCase()}`, Object.keys(WORLD_3D_MODELS).filter((t) => t.startsWith(`kit_${skin}_`)).sort(), 18, { raised: false, paired: false });
+    }
     world('OTHER WORLD MODELS', Object.keys(WORLD_3D_MODELS).sort(), 4);
 
     plan.push({

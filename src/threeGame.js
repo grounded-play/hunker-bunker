@@ -5269,9 +5269,10 @@ export class ThreeGame {
             teacupRoot.position.set(position.x, 0, position.z);
             teacupRoot.rotation.y = Math.PI;
             mayorRoot.position.set(position.x, 0.43, position.z - 0.03);
-            // Turn the encounter toward the player's approach from the south.
-            // The child model's normalization yaw and player rig stay intact.
-            mayorRoot.rotation.y = Math.PI;
+            // The model faces +Z (south), toward the player's approach; the
+            // root carries no turn of its own, so the hostile chase's
+            // atan2(dx, dz) points her face, not her back, at the player.
+            mayorRoot.rotation.y = 0;
             mayorRoot.scale.setScalar(0.68);
             mayorRoot.visible = this.performanceProfile === 'gameplay';
             teacupRoot.visible = this.performanceProfile === 'gameplay';
@@ -5502,7 +5503,7 @@ export class ThreeGame {
         if (encounter.mayorRoot) {
             encounter.mayorRoot.removeFromParent();
             encounter.mayorRoot.position.set(position.x, 0.43, position.z - 0.03);
-            encounter.mayorRoot.rotation.set(0, Math.PI, 0);
+            encounter.mayorRoot.rotation.set(0, 0, 0);
             encounter.mayorRoot.scale.setScalar(0.68);
             encounter.mayorRoot.visible = this.performanceProfile === 'gameplay';
             this.scene.add(encounter.mayorRoot);

@@ -249,6 +249,30 @@ describe('Debug Hallway Museum', () => {
         expect(scout.yaw).toBe(0);
     });
 
+    it('turns scene fog off so large exhibits are not washed out, and restores it on close', async () => {
+        const fog = new THREE.Fog(0x888888, 5, 40);
+        scene.fog = fog;
+        await openDebugMuseum(mockGame);
+        expect(scene.fog).toBeNull();
+        closeDebugMuseum(mockGame);
+        expect(scene.fog).toBe(fog);
+    });
+
+    it('stands floor-level wings (modular kits) without a plinth', async () => {
+        mockGame.createWorld3dModel = vi.fn(async () => {
+            const g = new THREE.Group();
+            g.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()));
+            return g;
+        });
+        await openDebugMuseum(mockGame);
+        const report = scene.getObjectByName('debug-museum').userData.museumReport;
+        const kit = report.find((row) => row.type === 'kit_cave_corridor');
+        expect(kit.ok).toBe(true);
+        expect(kit.minY).toBeCloseTo(-0.5, 3);
+        const prop = report.find((row) => row.type === 'prop_camp_crate');
+        expect(prop.minY).toBeCloseTo(0.1, 3);
+    });
+
     it('catalogs every song and alternate VO take without gameplay triggers', () => {
         const buffers = {
             music_menu: {},

@@ -131,4 +131,15 @@ describe('world 3D replacement catalog', () => {
         }
         await expect(preloadWorld3dModels([])).resolves.not.toThrow();
     });
+
+    // Museum turntable QA 2026-10-01: these sources author their front along
+    // X, so at yaw 0 they stood edge-on to the viewer and, wall-backed,
+    // side-on to the room (syncWorld3dReplacement points +Z off the wall).
+    it('turns side-authored props so their front faces +Z', () => {
+        expect(WORLD_3D_MODELS.prop_flesh_steel_inhaler.yaw).toBeCloseTo(-Math.PI / 2);
+        expect(WORLD_3D_MODELS.prop_locker_bulged.yaw).toBeCloseTo(-Math.PI / 2);
+        expect(WORLD_3D_MODELS.prop_light_cluster_dripping.yaw).toBeCloseTo(-Math.PI / 2);
+        expect(WORLD_3D_MODELS.prop_biomech_respirator.yaw).toBeCloseTo(Math.PI / 2);
+        expect(WORLD_3D_MODELS.radar.yaw).toBeCloseTo(-Math.PI / 2);
+    });
 });

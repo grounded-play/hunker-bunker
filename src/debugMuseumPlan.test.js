@@ -56,6 +56,16 @@ describe('debug museum exhibit plan', () => {
         for (const entry of [...entriesOfKind('world'), ...entriesOfKind('enemy')]) expect(entry.height, entry.label).toBeUndefined();
     });
 
+    it('lays modular kit pieces on the floor in their own room-spaced wings', () => {
+        for (const title of ['MODULAR KIT: CAVE', 'MODULAR KIT: SPACE']) {
+            const wing = plan.find((c) => c.title === title);
+            expect(wing.entries).toHaveLength(40);
+            expect(wing.raised).toBe(false);
+            expect(wing.spacing).toBeGreaterThanOrEqual(16);
+        }
+        expect(plan.find((c) => c.title === 'OTHER WORLD MODELS')?.entries.some((e) => e.type.startsWith('kit_')) ?? false).toBe(false);
+    });
+
     it('gives every category room for its largest exhibit', () => {
         for (const category of plan) expect(category.spacing, category.title).toBeGreaterThanOrEqual(3);
         expect(plan.find((c) => c.kind === 'enemy').spacing).toBeGreaterThanOrEqual(4.5);

@@ -176,7 +176,8 @@ function measureExhibit(object3d) {
     });
     if (box.isEmpty()) return null;
     const size = box.getSize(new THREE.Vector3());
-    return { size: { x: size.x, y: size.y, z: size.z }, minY: box.min.y };
+    const center = box.getCenter(new THREE.Vector3());
+    return { size: { x: size.x, y: size.y, z: size.z }, minY: box.min.y, center: { x: center.x, y: center.y, z: center.z } };
 }
 
 // Wing 1 (docs/debug-gallery-and-architectural-grid-expansion-plan.md §2): every item sits on
@@ -432,6 +433,10 @@ export async function openDebugMuseum(game) {
         group.userData.restoreSkyVisible = game.skyRig.group.visible;
         game.skyRig.group.visible = false;
     }
+    // Biome fog swallows anything more than a few units off, which on a
+    // 15-unit kit room or a boss reads as a broken, washed-out model.
+    group.userData.restoreFog = game.scene.fog ?? null;
+    game.scene.fog = null;
     if (game.scene.background?.isColor) {
         group.userData.restoreBackground = game.scene.background.clone();
         game.scene.background.setHex(0x0b0d0f);
@@ -551,14 +556,13 @@ export async function openDebugMuseum(game) {
             // Every exhibit faces +Z, toward the placards. Production loaders
             // (world, enemy) carry each asset's own yaw inside this root.
             obj.rotation.y = 0;
-            const raised = category.kind !== 'structure';
+            const raised = category.kind !== 'structure' && category.raised !== false;
             if (raised) {
                 group.add(spawnPedestal(itemX, itemZ));
                 obj.position.y += PEDESTAL_HEIGHT;
             }
             if (LIFE_SIZE.has(category.kind)) group.add(spawnOperatorHeightPost(itemX + spacing * 0.42, itemZ));
-            const measured = measureExhibit(obj);
-            const triCount = countTriangles(obj);
+            const intact = obj;
             if (category.paired) {
                 let twin = null;
                 try {
@@ -573,6 +577,10 @@ export async function openDebugMuseum(game) {
             group.add(obj);
             exhibits.push({ row, object: obj });
             spawnedCount += 1;
+            // Measured on the intact specimen in its final place (the damaged
+            // twin is hidden and must not count toward size or triangles).
+            const measured = measureExhibit(intact);
+            const triCount = countTriangles(intact);
 
             Object.assign(row, { ok: true, tris: triCount, yaw: obj.rotation.y }, measured ?? {});
             const placardText = triCount > 0 ? `${entry.label} // ${triCount} TRIS` : entry.label;
@@ -601,6 +609,7 @@ export function closeDebugMuseum(game) {
     if (game.skyRig?.group) {
         game.skyRig.group.visible = group.userData.restoreSkyVisible ?? true;
     }
+    if (group.userData.restoreFog) game.scene.fog = group.userData.restoreFog;
     if (group.userData.restoreBackground && game.scene.background?.isColor) {
         game.scene.background.copy(group.userData.restoreBackground);
     }
