@@ -15922,12 +15922,23 @@ function initTacticalCursor() {
         return target;
     }
 
+    // Where the pointer last really moved. A pointerover at exactly that spot
+    // is the layout changing under a still mouse (a popup closing), not the
+    // player pointing at something, and must not pull focus off the control
+    // the popup just returned it to.
+    let lastHoverMoveX = null;
+    let lastHoverMoveY = null;
     document.addEventListener('pointerover', (e) => {
+        if (e.clientX === lastHoverMoveX && e.clientY === lastHoverMoveY) return;
         handleHoverTargetSync(e.target, { playBlip: true });
     });
 
     document.addEventListener('pointermove', (e) => {
         if (e.pointerType && e.pointerType !== 'mouse' && e.pointerType !== 'pen') return;
+        const moved = e.clientX !== lastHoverMoveX || e.clientY !== lastHoverMoveY;
+        lastHoverMoveX = e.clientX;
+        lastHoverMoveY = e.clientY;
+        if (!moved) return;
         handleHoverTargetSync(e.target, { playBlip: false });
     });
 
