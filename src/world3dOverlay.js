@@ -347,13 +347,38 @@ export function hasWorld3dModel(type) {
 }
 
 const WORLD_3D_ONLY_PREFIXES = Object.freeze(['arch_', 'state_', 'fixture_', 'kit_']);
+// Registered models with no 2D sprite of their own. Without this a `prop_`
+// placement of them found no scatter material and was silently dropped.
+const WORLD_3D_ONLY_TYPES = Object.freeze(new Set([
+    'frozen_tanker', 'prop_body_human_frozen', 'prop_body_empty_exosuit', 'body_frozen_human'
+]));
+
+// Scattered body sprites alternate between the two models of each body, by
+// position (stable for a seed). Frozen bodies used to load `frozen_tanker`,
+// an industrial tank machine (3D asset audit 2026-10-01).
+const SCATTER_BODY_VARIANTS = Object.freeze({
+    body_human_frozen_suit: Object.freeze(['prop_body_human_frozen', 'body_frozen_human']),
+    body_empty_exosuit: Object.freeze(['prop_body_empty_exosuit', 'body_empty_exosuit'])
+});
+
+export function resolveScatterWorld3dType(type, x = 0, z = 0) {
+    const variants = Object.hasOwn(SCATTER_BODY_VARIANTS, type) ? SCATTER_BODY_VARIANTS[type] : null;
+    if (variants) {
+        let hash = Math.imul(Math.round(x * 10) | 0, 73856093) ^ Math.imul(Math.round(z * 10) | 0, 19349663);
+        hash ^= hash >>> 13;
+        hash = Math.imul(hash, 0x5bd1e995);
+        hash ^= hash >>> 15;
+        return variants[(hash >>> 0) % variants.length];
+    }
+    return hasWorld3dModel(type) ? type : null;
+}
 
 // Architectural/state fixtures have no billboard fallback by design. Keep
 // this contract explicit so room dressing routes them to their GLB instead of
 // rejecting them at the generic sprite-material gate.
 export function isWorld3dOnlyPlacementType(type) {
     return typeof type === 'string'
-        && WORLD_3D_ONLY_PREFIXES.some((prefix) => type.startsWith(prefix))
+        && (WORLD_3D_ONLY_TYPES.has(type) || WORLD_3D_ONLY_PREFIXES.some((prefix) => type.startsWith(prefix)))
         && hasWorld3dModel(type);
 }
 

@@ -172,6 +172,14 @@ export class CaveEntrance {
         spriteThrone.position.set(0, 2.0, -1.2);
         spriteThrone.scale.set(2.4, 2.4, 1);
         group.add(spriteThrone);
+        // Ground-level anchor for the 3D throne (prop_cave_queen_throne). The
+        // sprite floats at y=2 to read as a backdrop; the model stands on the
+        // floor and the sprite hides once it loads (3D asset audit 2026-10-01).
+        this.throneSprite = spriteThrone;
+        this.throneAnchor = new THREE.Object3D();
+        this.throneAnchor.position.set(0, 0, -1.2);
+        this.throneAnchor.userData = { kind: 'cave-throne', world3dModelType: 'prop_cave_queen_throne' };
+        group.add(this.throneAnchor);
 
         group.visible = false;
         this.scene.add(group);
