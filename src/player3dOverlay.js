@@ -89,7 +89,7 @@ export const CHASSIS_SKIN_MODELS = Object.freeze({
     '4221': '/3d/runtime/new3ds/chassis_horizon_corporate.glb',
     '4228': '/3d/runtime/new3ds/chassis_bunker404.glb',
     '4235': '/3d/runtime/new3ds/chassis_grand_marshal.glb',
-    '5001': '/3d/runtime/community/scout_corpo_shadow_runner.glb',
+    '5001': '/3d/runtime/new3ds/chassis_scout_ghost_runner.glb',
     '5003': '/3d/runtime/new3ds/chassis_scout_cartographer.glb',
     '5004': '/3d/runtime/new3ds/chassis_scout_pioneer_courier.glb',
     '5005': '/3d/runtime/new3ds/chassis_tank_old_iron.glb',

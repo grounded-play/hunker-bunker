@@ -54,10 +54,11 @@ describe('enemy 3D rigged locomotion routing', () => {
         expect(cryosnail.emissive).toBeUndefined();
     });
 
-    it('gives boss_corrupted_engineer necrotic emissive to distinguish from friendly npc_kaelen', async () => {
+    it('gives boss_corrupted_engineer its own corrupted Kaelen model, not the friendly npc_kaelen', async () => {
         const { ENEMY_3D_MODELS } = await import('./enemy3dOverlay.js');
         const engineer = ENEMY_3D_MODELS.boss_corrupted_engineer;
-        expect(engineer.emissive).toBe(0x3d1410);
-        expect(engineer.tint).toBe(0xa87766);
+        expect(engineer.url).toBe('/3d/runtime/new3ds/boss_corrupted_engineer.glb');
+        expect(engineer.tint).toBeUndefined();
+        expect(engineer.emissive).toBeUndefined();
     });
 });

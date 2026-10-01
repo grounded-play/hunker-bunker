@@ -143,6 +143,7 @@
     "3d/runtime/new3ds/body_empty_exosuit.glb",
     "3d/runtime/new3ds/body_frozen_human.glb",
     "3d/runtime/new3ds/boss_corrupted_briggs.glb",
+    "3d/runtime/new3ds/boss_corrupted_engineer.glb",
     "3d/runtime/new3ds/boss_corrupted_martha.glb",
     "3d/runtime/new3ds/bunker_junk_rare.glb",
     "3d/runtime/new3ds/bunker_junk_uncommon.glb",
@@ -176,6 +177,7 @@
     "3d/runtime/new3ds/chassis_horizon_corporate.glb",
     "3d/runtime/new3ds/chassis_rust_bone.glb",
     "3d/runtime/new3ds/chassis_scout_cartographer.glb",
+    "3d/runtime/new3ds/chassis_scout_ghost_runner.glb",
     "3d/runtime/new3ds/chassis_scout_pioneer_courier.glb",
     "3d/runtime/new3ds/chassis_subterran_drill_engineer.glb",
     "3d/runtime/new3ds/chassis_tank_colossus_hive.glb",
@@ -1950,6 +1952,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/boss_corrupted_engineer.glb",
+      "bytes": 4123196,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/boss_corrupted_martha.glb",
       "bytes": 2490056,
       "classification": "runtime-required"
@@ -2112,6 +2119,11 @@
     {
       "path": "3d/runtime/new3ds/chassis_scout_cartographer.glb",
       "bytes": 18956524,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_scout_ghost_runner.glb",
+      "bytes": 3317280,
       "classification": "runtime-required"
     },
     {

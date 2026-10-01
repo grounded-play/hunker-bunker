@@ -51,7 +51,11 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // src/modelCatalogIntegrity.test.js now fails on any such copy. The unrigged
 // incoming 3D replacements (Talon-C base, 5002/5006/5009/5010 rewards, Queen's
 // Bane, and 5 environment props) fit cleanly under this 2715 MiB ceiling.
-const PUBLIC_BUDGET = 2715 * 1024 * 1024;
+// Raised 2715->2725 MiB the same day for the owner-supplied animated models
+// that replace the last stand-ins: the regular cryosnail (0.7 MiB), the 5001
+// Ghost Runner chassis (3.2 MiB) and the corrupted Kaelen boss (3.9 MiB), each
+// rigged or decimated from a 1.5M-triangle source, WebP textures.
+const PUBLIC_BUDGET = 2725 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus

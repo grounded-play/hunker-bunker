@@ -45,12 +45,14 @@ const MODEL_CONFIG = {
     mycelium_stalker: { url: '/3d/runtime/community/scout_xeno_stalker.glb', height: 1.35, yaw: 0 },
     // Stand-ins until dedicated models exist (3D asset audit 2026-10-01):
     // the charger shares the stalker's body, and the corrupted operators use
-    // the corrupted camp leaders they became (Briggs, Martha; Kaelen tinted).
+    // the corrupted camp leaders they became (Briggs, Martha, Kaelen).
     // Paths point at the originals rather than byte-identical copies.
     bio_charger: { url: '/3d/runtime/community/scout_xeno_stalker.glb', height: 1.45, yaw: 0 },
     boss_corrupted_scout: { url: '/3d/runtime/new3ds/boss_corrupted_martha.glb', height: 1.45, yaw: 0 },
     boss_corrupted_tank: { url: '/3d/runtime/new3ds/boss_corrupted_briggs.glb', height: 1.65, yaw: 0 },
-    boss_corrupted_engineer: { url: '/3d/runtime/new3ds/npc_kaelen.glb', height: 1.45, yaw: 0, tint: 0xa87766, emissive: 0x3d1410, roughness: 0.4 },
+    // Owner-supplied Corrupted Engineer Kaelen (art/raw/incoming_3d_20261001), rigged onto
+    // npc_kaelen's skeleton by scripts/blender/rig_by_weight_transfer.py.
+    boss_corrupted_engineer: { url: '/3d/runtime/new3ds/boss_corrupted_engineer.glb', height: 1.45, yaw: 0 },
     boss_queen: { url: '/3d/runtime/queen.glb', height: 2.35, yaw: Math.PI }
 };
 

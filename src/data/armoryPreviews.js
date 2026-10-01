@@ -193,7 +193,7 @@ export const ARMORY_PREVIEWS = Object.freeze({
     "5001": {
         "icon": "/ach_ghost.png",
         "source": "achievement-emblem",
-        "model": "/3d/runtime/community/scout_corpo_shadow_runner.glb"
+        "model": "/3d/runtime/new3ds/chassis_scout_ghost_runner.glb"
     },
     "5002": {
         "icon": "/ach_quick_study.png",
