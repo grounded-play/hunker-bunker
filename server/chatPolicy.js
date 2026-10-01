@@ -68,6 +68,7 @@ export function createChatPolicy({ now = Date.now, filter = filterChatText } = {
         identity(senderId);
         return {
             roomCode,
+            selfId: senderId,
             messages: (rooms.get(roomCode)?.messages ?? [])
                 .filter((message) => canReceive(senderId, message.senderId))
                 .map((message) => ({ ...message }))

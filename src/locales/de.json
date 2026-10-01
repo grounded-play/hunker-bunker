@@ -46,6 +46,48 @@
     "elite_contact": "ANZUG: Elite-Kontakt. Verstärkter Feind — Rückzugsweg freihalten."
   },
   "ui": {
+    "chat": {
+      "title": "RAUMCHAT",
+      "open": "CHAT",
+      "close": "SCHLIESSEN",
+      "scope": "Lobby und Mission teilen diesen Kanal. Alle im Raum können mitlesen, auch PvP-Gegner. Die Welt läuft beim Schreiben weiter.",
+      "history": "Nachrichten im Raum",
+      "empty": "Noch keine Nachrichten.",
+      "compose": "Nachricht (bis zu 400 Zeichen)",
+      "placeholder": "Nachricht eingeben… Enter sendet; Umschalt+Enter fügt eine Zeile hinzu.",
+      "send": "SENDEN",
+      "sending": "Wird gesendet…",
+      "disconnected": "Tritt einem Online-Raum bei. Warte auf eine bestätigte Relay-Verbindung.",
+      "connected": "Verbunden mit {room}. Nachricht für Moderation auswählen.",
+      "rateLimited": "Zu viele Aktionen. Warte 10 Sekunden und versuche es erneut.",
+      "filterError": "Der Text konnte nicht sicher gefiltert werden. Nutze die unterstützten Spielsprachen und entferne ungewöhnliche Steuerzeichen.",
+      "sendError": "Nicht gesendet oder nicht bestätigt. Prüfe das Limit von 400 Zeichen und die Verbindung. Unveränderte Wiederholungen werden nicht doppelt zugestellt.",
+      "notifications": "Ungelesen-Markierungen anzeigen",
+      "privacy": "Nur gefilterter Text wird zugestellt. Chat bleibt im Relay-Speicher (50 Nachrichten pro Raum), Meldungen bis zu 24 Stunden / 100 Meldungen. Neustart löscht alles. Keine automatische Antwort des Teams.",
+      "selectMessage": "Wähle eine Nachricht zum Stummschalten, Blockieren oder Melden.",
+      "mute": "STUMM",
+      "unmute": "LAUT",
+      "block": "BLOCKIEREN",
+      "unblock": "FREIGEBEN",
+      "report": "MELDEN",
+      "reportReason": "Meldegrund",
+      "reported": "Meldung in der temporären Warteschlange dieses Relays gespeichert.",
+      "player": "Spieler",
+      "quick": {
+        "help": "Brauche Hilfe!",
+        "regroup": "Hier sammeln.",
+        "follow": "Folgt mir.",
+        "thanks": "Danke!"
+      },
+      "reasons": {
+        "harassment": "Belästigung",
+        "hate": "Hass",
+        "spam": "Spam",
+        "sexual": "Sexuelle Inhalte",
+        "threat": "Drohung",
+        "other": "Sonstiges"
+      }
+    },
     "encounters": {
       "locked_crossfire": {
         "name": "Kreuzfeuer-Sperre"

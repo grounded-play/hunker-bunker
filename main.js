@@ -1,4 +1,5 @@
 import { createControllerPressGate } from './src/controllerPressGate.js';
+import { initPlayerChatUI } from './src/playerChatUi.js';
 import { crossingGuidance, expeditionDebrief } from './src/expeditionFeedback.js';
 import { runO2MilestoneChoreography } from './src/o2CinematicDoors.js';
 import { compactPerformanceSnapshot, compactPerfPhase, createLongTaskReporter } from './src/longTaskDiagnostics.js';
@@ -17332,6 +17333,7 @@ initSteamVaultUI();
 initSeasonPassUI();
 initVoiceCallouts();
 multiplayerLobby.init();
+initPlayerChatUI({ onBoundaryChange: () => syncSteamInputPhase() });
 matureContentAudit.init();
 progressionWalkthrough.init();
 initVirtualKeyboard();

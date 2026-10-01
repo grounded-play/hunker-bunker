@@ -46,6 +46,48 @@
     "elite_contact": "机甲：接触精英目标。重装敌方单位——注意保留撤退路线。"
   },
   "ui": {
+    "chat": {
+      "title": "房间聊天",
+      "open": "聊天",
+      "close": "关闭",
+      "scope": "大厅与任务共用此频道。房间内的所有人都可查看，包括PvP对手。输入期间游戏世界仍将继续运行。",
+      "history": "房间消息历史",
+      "empty": "暂无消息。",
+      "compose": "消息（最多400字）",
+      "placeholder": "输入消息… 回车发送；Shift+回车换行。",
+      "send": "发送",
+      "sending": "发送中…",
+      "disconnected": "加入在线房间即可聊天。等待中继连接接受。",
+      "connected": "已连接至 {room}。请选择一条消息进行管理。",
+      "rateLimited": "操作过于频繁。请等待10秒后再试。",
+      "filterError": "文本无法通过安全审查。请使用受支持的语言并移除特殊控制字符。",
+      "sendError": "未发送或未确认。请检查400字限制及网络连接后重试；未修改的重试不会重复提交。",
+      "notifications": "显示未读标记",
+      "privacy": "仅传递经过审查的文本。聊天信息保留于中继内存中（每个房间50条）；举报记录最多保留24小时或100条。服务重启后清空。",
+      "selectMessage": "选择一条消息以静音、屏蔽或举报该发送者。",
+      "mute": "静音",
+      "unmute": "取消静音",
+      "block": "屏蔽",
+      "unblock": "取消屏蔽",
+      "report": "举报",
+      "reportReason": "举报原因",
+      "reported": "举报已记录至当前中继的临时审查队列中。",
+      "player": "玩家",
+      "quick": {
+        "help": "需要援助！",
+        "regroup": "在此集结。",
+        "follow": "跟我来。",
+        "thanks": "多谢！"
+      },
+      "reasons": {
+        "harassment": "骚扰",
+        "hate": "仇恨言论",
+        "spam": "垃圾信息",
+        "sexual": "不良内容",
+        "threat": "威胁恐吓",
+        "other": "其他"
+      }
+    },
     "encounters": {
       "locked_crossfire": {
         "name": "封锁交叉火力"

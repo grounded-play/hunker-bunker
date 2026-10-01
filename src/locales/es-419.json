@@ -46,6 +46,48 @@
     "elite_contact": "TRAJE: Contacto de élite. Hostil blindado — mantén una ruta de escape."
   },
   "ui": {
+    "chat": {
+      "title": "CHAT DE SALA",
+      "open": "CHAT",
+      "close": "CERRAR",
+      "scope": "La sala y la misión comparten este canal. Cualquiera en la sala puede leerlo, incluidos los rivales de JcJ. El mundo continúa mientras escribes.",
+      "history": "Historial de mensajes de la sala",
+      "empty": "Aún no hay mensajes.",
+      "compose": "Mensaje (hasta 400 caracteres)",
+      "placeholder": "Escribe un mensaje… Enter envía; Shift+Enter añade una línea.",
+      "send": "ENVIAR",
+      "sending": "Enviando…",
+      "disconnected": "Únete a una sala en línea para chatear. Esperando una conexión aceptada.",
+      "connected": "Conectado a {room}. Selecciona un mensaje para moderarlo.",
+      "rateLimited": "Demasiadas acciones. Espera 10 segundos y vuelve a intentarlo.",
+      "filterError": "El texto no se pudo filtrar de forma segura. Usa idiomas compatibles y elimina caracteres de control inusuales.",
+      "sendError": "No enviado o no confirmado. Revisa el límite de 400 caracteres y la conexión. Los reintentos sin cambios no se duplican.",
+      "notifications": "Mostrar insignias de no leídos",
+      "privacy": "Solo se entrega texto filtrado. El chat permanece en la memoria del repetidor (50 mensajes por sala); los reportes duran hasta 24 horas / 100 reportes. El reinicio lo borra todo.",
+      "selectMessage": "Selecciona un mensaje para silenciar, bloquear o reportar al remitente.",
+      "mute": "SILENCIAR",
+      "unmute": "DESILENCIAR",
+      "block": "BLOQUEAR",
+      "unblock": "DESBLOQUEAR",
+      "report": "REPORTAR",
+      "reportReason": "Motivo del reporte",
+      "reported": "Reporte registrado en la cola temporal de moderación de este repetidor.",
+      "player": "Jugador",
+      "quick": {
+        "help": "¡Necesito ayuda!",
+        "regroup": "Reagruparse aquí.",
+        "follow": "Síganme.",
+        "thanks": "¡Gracias!"
+      },
+      "reasons": {
+        "harassment": "Acoso",
+        "hate": "Odio",
+        "spam": "Spam",
+        "sexual": "Contenido sexual",
+        "threat": "Amenaza",
+        "other": "Otro"
+      }
+    },
     "encounters": {
       "locked_crossfire": {
         "name": "Fuego cruzado cerrado"

@@ -9,6 +9,7 @@ import { createFreshRunEntropy } from './runEntropy.js';
 import { clearMultiplayerSession, startMultiplayerRun } from './gameController.js';
 import { getSelectedPolish } from './operatorPolishes.js';
 import { t, onLocaleChange } from './i18n.js';
+import { playerChat } from './playerChat.js';
 import { RUN_GRADE_BANDS } from './runRating.js';
 import {
     createSteamLobby,
@@ -492,6 +493,7 @@ export class MultiplayerLobby {
                     reconnectionAttempts: 2,
                     auth: { sessionToken }
                 });
+                playerChat.attachSocket(this.socket, (this.roomCode.trim().slice(0, 24) || 'SECTOR-7').toUpperCase());
 
                 this.socket.on('connect', () => {
                     this.connected = true;
@@ -955,6 +957,7 @@ export class MultiplayerLobby {
     }
 
     disconnect() {
+        playerChat.attachSocket(null);
         if (this.socket) {
             try { this.socket.disconnect(); } catch { /* ignore */ }
             this.socket = null;

@@ -32,6 +32,10 @@ describe('menu focus surface registry', () => {
         expect(MENU_FOCUS_ROOT_IDS[0]).toBe('select-picker-overlay');
         expect(MENU_FOCUS_ROOT_IDS.indexOf('select-picker-overlay'))
             .toBeLessThan(MENU_FOCUS_ROOT_IDS.indexOf('virtual-keyboard-overlay'));
+        expect(MENU_FOCUS_ROOT_IDS.indexOf('virtual-keyboard-overlay'))
+            .toBeLessThan(MENU_FOCUS_ROOT_IDS.indexOf('player-chat-modal'));
+        expect(MENU_FOCUS_ROOT_IDS.indexOf('player-chat-modal'))
+            .toBeLessThan(MENU_FOCUS_ROOT_IDS.indexOf('settings-popup'));
     });
 
     it.each([

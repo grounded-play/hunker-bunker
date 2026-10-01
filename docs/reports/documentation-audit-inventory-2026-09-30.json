@@ -15,30 +15,27 @@
     "version": "2.4.13-beta"
   },
   "summary": {
-    "documents": 506,
-    "trackedDocuments": 504,
-    "newDocuments": 2,
-    "bytes": 6051720,
+    "documents": 507,
+    "trackedDocuments": 507,
+    "newDocuments": 0,
+    "bytes": 6062607,
     "byClassification": {
       "historical": 162,
-      "planning": 117,
+      "planning": 118,
       "reference": 227
     },
     "markers": {
-      "unchecked": 150,
-      "checked": 703,
+      "unchecked": 149,
+      "checked": 704,
       "migratedCheckboxes": 164,
       "keywordLines": 426
     },
-    "markdownFilesWithEnforcedLinks": 408,
-    "linkIssues": 409,
+    "markdownFilesWithEnforcedLinks": 409,
+    "linkIssues": 407,
     "historicalLinkIssues": 407,
-    "currentAuditIssues": 2
+    "currentAuditIssues": 0
   },
-  "errors": [
-    "docs/planning/sprint-49.md:30: missing relative target: ../reports/documentation-audit-inventory-2026-09-30.json",
-    "docs/reports/documentation-audit-2026-09-30.md:12: missing relative target: documentation-audit-inventory-2026-09-30.json"
-  ],
+  "errors": [],
   "files": [
     {
       "path": ".github/CODE_OF_CONDUCT.md",
@@ -6475,6 +6472,23 @@
       "linkIssues": []
     },
     {
+      "path": "docs/planning/sprint-49-claude-lane-handoff.md",
+      "tracked": true,
+      "classification": "planning",
+      "classificationBasis": "planning directory",
+      "bytes": 5257,
+      "lines": 94,
+      "markers": {
+        "unchecked": 0,
+        "checked": 0,
+        "migratedCheckboxes": 0,
+        "keywordLines": 0
+      },
+      "linkGate": "enforced",
+      "localLinkCount": 3,
+      "linkIssues": []
+    },
+    {
       "path": "docs/planning/sprint-49-feature-backlog-and-todo.md",
       "tracked": true,
       "classification": "historical",
@@ -6510,11 +6524,11 @@
     },
     {
       "path": "docs/planning/sprint-49-implementation-handoff.md",
-      "tracked": false,
+      "tracked": true,
       "classification": "planning",
       "classificationBasis": "planning directory",
-      "bytes": 2846,
-      "lines": 54,
+      "bytes": 7372,
+      "lines": 123,
       "markers": {
         "unchecked": 0,
         "checked": 0,
@@ -6522,7 +6536,7 @@
         "keywordLines": 0
       },
       "linkGate": "enforced",
-      "localLinkCount": 1,
+      "localLinkCount": 5,
       "linkIssues": []
     },
     {
@@ -6530,23 +6544,17 @@
       "tracked": true,
       "classification": "planning",
       "classificationBasis": "planning directory",
-      "bytes": 42365,
-      "lines": 669,
+      "bytes": 43469,
+      "lines": 685,
       "markers": {
-        "unchecked": 52,
-        "checked": 1,
+        "unchecked": 51,
+        "checked": 2,
         "migratedCheckboxes": 0,
         "keywordLines": 1
       },
       "linkGate": "enforced",
-      "localLinkCount": 161,
-      "linkIssues": [
-        {
-          "line": 30,
-          "href": "../reports/documentation-audit-inventory-2026-09-30.json",
-          "reason": "missing relative target"
-        }
-      ]
+      "localLinkCount": 165,
+      "linkIssues": []
     },
     {
       "path": "docs/planning/sprint-backlog-remediation-and-clearance-plan-2026-09-29.md",
@@ -7553,7 +7561,7 @@
     },
     {
       "path": "docs/reports/documentation-audit-2026-09-30.md",
-      "tracked": false,
+      "tracked": true,
       "classification": "historical",
       "classificationBasis": "evidence/release directory",
       "bytes": 6230,
@@ -7566,13 +7574,7 @@
       },
       "linkGate": "enforced",
       "localLinkCount": 3,
-      "linkIssues": [
-        {
-          "line": 12,
-          "href": "documentation-audit-inventory-2026-09-30.json",
-          "reason": "missing relative target"
-        }
-      ]
+      "linkIssues": []
     },
     {
       "path": "docs/reports/documentation-inventory-and-migration-plan-2026-08-24.md",

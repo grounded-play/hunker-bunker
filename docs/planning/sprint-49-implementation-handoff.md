@@ -9,17 +9,25 @@ action here before yielding so another contributor can resume without the chat.
 
 ## Current checkpoint
 
-Documentation reconciliation is the first commit. It restores the missing audit
-artifacts and corrects stale active-sprint pointers. It does not certify any Steam
-review feature. The next implementation commits are:
+Documentation reconciliation, store catalog normalization and the chat relay/filter
+are committed. This checkpoint adds the chat client/UI and local browser evidence.
+Read the [parallel contributor's log](sprint-49-claude-lane-handoff.md) before
+touching shared files. That lane owns mature-content, commentary and controller
+journey work; do not duplicate its pending changes.
 
-1. S49-02/03: shared seven-language baseline filter and room-authorized relay chat,
-   with real socket integration tests.
-2. S49-04: visible lobby/field chat, controller text entry, mute/block/report and
-   localized UI; verify UI → relay → filtered peer rendering.
-3. S49-07: authoritative store quantities/prices, no fabricated fallback SKUs/odds.
-4. S49-08: inspect and repair settlement/grant recovery and report pagination.
-5. S49-13/14/21: field workbench integration, controller pings, explicit safe Queen
+Next implementation commits:
+
+1. S49-08: repair settlement/grant recovery and report pagination. Audit identified
+   `finalized_pending_grant` treated as granted, missing report rows not affecting
+   `ok`, and a non-durable time window / single-page report scan. Add failure tests
+   first; no real purchase or publisher operation is authorized by this code work.
+2. S49-02/04: extend chat evidence to deployed co-op/PvP and disconnect/reconnect
+   with two authenticated Steam accounts; perform the physical Deck/PC controller
+   pass. These acceptance checks cannot be replaced by local test-mode sockets.
+3. S49-03/32: native-speaker review of lexical coverage and false positives;
+   designate moderation ownership and implement durable report ingestion/access
+   before representing the temporary queue as a staffed reporting service.
+4. S49-13/14/21: field workbench integration, controller pings, explicit safe Queen
    communion; coordinate with any ongoing changes to `threeGame.js` first.
 
 ## File ownership during this cycle
@@ -47,7 +55,68 @@ steps; no authority for those actions is inferred from implementing code.
 
 ### Documentation checkpoint — 2026-10-01
 
-Changed: active plan/index pointers; persisted audit findings and complete mechanical
-inventory; corrected four disabled drop effects. Verification: pending the
-documentation audit immediately before commit. Next: implement the chat transport,
-filter and player-facing flow while preserving the existing combat changes.
+`5270a90a`: active plan/index pointers, audit findings and mechanical inventory;
+four disabled drop effects are tracked in the canonical plan. The inventory scan
+covered 507 documents / 409 enforced Markdown files, with 407 historical link
+warnings and no current errors at that checkpoint. Regenerate after document edits.
+
+### Parallel implementation checkpoints
+
+- `58b115d7`: authoritative catalog adapter, quantity/price formatting, Vault
+  reconciliation. S49-07 is not fully accepted until live catalog/currency proof.
+- `f940f01a`, `0b0a8d83`: mature-content guide parity and packaged cinematic URLs
+  (see the parallel contributor's log for remaining installed-build evidence).
+- `e8cc0a16`: room-authorized relay chat and seven-language lexical baseline.
+  Initial socket/filter/store verification here: 3 files / 69 tests passed.
+
+### Chat player experience checkpoint — 2026-10-01
+
+Implementation: [transport model](../../src/playerChat.js),
+[UI](../../src/playerChatUi.js), [styles](../../src/playerChat.css), seven locale
+catalogs, lobby socket binding, HUD/lobby/Settings entry points, and controller
+focus-root registration. Keyboard overlays stack above Chat, which stacks above
+Settings. Existing gameplay modal gating blocks combat input; open/close clears
+held input without overriding another overlay's input lock.
+
+- Both modes use **one room channel**, shared between lobby and mission, readable
+  by PvP opponents; the panel states this and warns that the world keeps running.
+- Plain-text recipient filtering, 50-message history, timestamps, unread preference,
+  quick-message drafts, explicit send errors, stable retry nonce, and room-change
+  draft cleanup. No conversation text is persisted locally or added to telemetry.
+- Mute (one-way), block (both ways), undo and reasoned reports use relay state.
+  Reports are currently filtered evidence in relay memory: at most 100 / 24 hours,
+  lost on restart. `io.getChatReports()` is trusted backend access, **not** a
+  publisher dashboard or staffed moderation workflow. UI makes this limitation
+  explicit. Mutes/blocks are relay-session state, bounded to 2,048 identities;
+  real Steam identities survive reconnect while the relay retains that state.
+- Filter coverage is a curated baseline, not a guarantee of catching all harmful
+  language. Unsupported letter scripts/control characters fail closed; the seven
+  game languages are supported. Human linguistic acceptance remains required.
+
+Verification before final commit:
+
+- Targeted transport/filter/relay/input suite: 4 files / 135 tests passed;
+  additional policy boundary tests added afterward (final result recorded below).
+- `npx playwright test tests/e2e/player-chat.spec.js --retries=0`: first two
+  harness tests passed (10.7 s), proving actual browser → local relay → peer,
+  filtering/HTML safety, third-room isolation, report/mute/undo, unread state,
+  IME, seven locale titles, room draft cleanup and focus restoration.
+- Full-game test run separately with `--grep 'game Settings'`: passed (25.6 s),
+  exercising the real lobby connector/singleton UI, Settings entry, send, fallback
+  controller keyboard stacking, Back and parent focus restoration.
+- Browser skill visual check: initial full-renderer session stalled after title;
+  isolated UI had no reported errors, and the subsequent full-game Playwright
+  run passed. This is not physical-controller or deployed-match certification.
+- Scoped ESLint passed; `npm run i18n:audit`: 0 unannotated static strings,
+  0 unlocalized runtime strings; orphan count improved 54 → 53.
+
+Final checks: targeted suite **5 files / 144 tests passed**; full `npx vitest run`
+**524 files / 4,566 tests passed** (includes concurrent contributor tests).
+`npm run build` and the 50-asset media audit passed; Vite retains its large-chunk
+warning. Documentation audit passed (507 documents / 409 enforced Markdown files;
+407 historical warnings), and `git diff --check` passed. S49-01 is now checked.
+
+Next: commit explicit chat/doc paths, then S49-08 settlement recovery. Do not stage
+another contributor's controller probe, biome changes or `src/playerChatUi.test.js`
+(a concurrent mock-DOM test, not authored by this lane). Keep S49-02/03/04 unchecked
+until their full acceptance gates pass.

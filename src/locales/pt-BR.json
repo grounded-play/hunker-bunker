@@ -46,6 +46,48 @@
     "elite_contact": "TRAJE: Contato de elite. Inimigo blindado — mantenha uma rota de fuga."
   },
   "ui": {
+    "chat": {
+      "title": "CHAT DA SALA",
+      "open": "CHAT",
+      "close": "FECHAR",
+      "scope": "O lobby e a missão compartilham este canal. Todos na sala podem ler, incluindo oponentes no PvP. O mundo continua rodando enquanto você digita.",
+      "history": "Histórico de mensagens da sala",
+      "empty": "Nenhuma mensagem ainda.",
+      "compose": "Mensagem (até 400 caracteres)",
+      "placeholder": "Digite uma mensagem… Enter envia; Shift+Enter adiciona uma linha.",
+      "send": "ENVIAR",
+      "sending": "Enviando…",
+      "disconnected": "Entre em uma sala online para conversar. Aguardando conexão com o servidor.",
+      "connected": "Conectado a {room}. Selecione uma mensagem para moderação.",
+      "rateLimited": "Ações excessivas. Aguarde 10 segundos e tente novamente.",
+      "filterError": "O texto não pôde ser filtrado com segurança. Use os idiomas suportados e remova caracteres de controle.",
+      "sendError": "Não enviado ou não confirmado. Verifique o limite de 400 caracteres e a conexão. Tentativas sem alteração não são duplicadas.",
+      "notifications": "Mostrar indicadores de não lidas",
+      "privacy": "Apenas textos filtrados são entregues. O chat fica na memória do servidor (50 mensagens por sala); denúncias ficam por até 24 horas / 100 registros.",
+      "selectMessage": "Selecione uma mensagem para silenciar, bloquear ou denunciar o remetente.",
+      "mute": "SILENCIAR",
+      "unmute": "REATIVAR SOM",
+      "block": "BLOQUEAR",
+      "unblock": "DESBLOQUEAR",
+      "report": "DENUNCIAR",
+      "reportReason": "Motivo da denúncia",
+      "reported": "Denúncia registrada na fila de moderação temporária deste servidor.",
+      "player": "Jogador",
+      "quick": {
+        "help": "Preciso de ajuda!",
+        "regroup": "Reagrupar aqui.",
+        "follow": "Siga-me.",
+        "thanks": "Obrigado!"
+      },
+      "reasons": {
+        "harassment": "Assédio",
+        "hate": "Discurso de ódio",
+        "spam": "Spam",
+        "sexual": "Conteúdo sexual",
+        "threat": "Ameaça",
+        "other": "Outro"
+      }
+    },
     "encounters": {
       "locked_crossfire": {
         "name": "Fogo cruzado fechado"

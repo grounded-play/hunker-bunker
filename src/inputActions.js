@@ -18,6 +18,7 @@ export const ACTION_SETS = Object.freeze({
 export const MENU_FOCUS_ROOT_IDS = Object.freeze([
     'select-picker-overlay',
     'virtual-keyboard-overlay',
+    'player-chat-modal',
     'progression-reward-overlay',
     'vault-reveal-overlay',
     'mature-audit-scene-viewer',

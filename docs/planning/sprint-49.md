@@ -74,7 +74,7 @@ commerce readiness gate; proposed random-reward changes (24) need product approv
 
 ### S49-01 — one current backlog and reliable documentation checks
 
-- [ ] **Owner: maintainers · Size: M · Type: documentation/tooling.** Reconcile the
+- [x] **Owner: maintainers · Size: M · Type: documentation/tooling.** Reconcile the
   stale Sprint 30/45/48 indexes, label the old Sprint 49 plans historical, inventory
   all documentation, repair current portable links, and remove hard-coded sprint
   assertions from the documentation checker.
@@ -85,6 +85,11 @@ commerce readiness gate; proposed random-reward changes (24) need product approv
   has source links and a verifiable outcome.
 
 ### S49-02 — real lobby and in-game text chat
+
+Implementation checkpoint (2026-10-01): relay/filter in `e8cc0a16`; client/UI and
+local browser evidence are detailed in the [implementation handoff](sprint-49-implementation-handoff.md#chat-player-experience-checkpoint--2026-10-01).
+The channel includes everyone in the room, including PvP opponents, across lobby
+and mission. Deployed two-account Steam acceptance remains open.
 
 - [ ] **Owner: backend + client · Size: L · Type: missing feature.** Implement an
   authenticated, room-scoped chat channel through the existing relay. Server assigns
@@ -100,6 +105,11 @@ commerce readiness gate; proposed random-reward changes (24) need product approv
   reconnect delivery and HTML/script strings cannot impersonate or execute.
 
 ### S49-03 — multilingual filtering with explicit failure handling
+
+Implementation checkpoint: the shared [filter](../../src/chatFilter.js) runs on
+relay delivery and recipient display. Seven dictionaries have automated fixtures;
+native-speaker review, broader evasion/false-positive coverage and installed-build
+acceptance remain open. Do not equate a lexical baseline with perfect moderation.
 
 - [ ] **Owner: platform + localization + backend · Size: L · Depends: 02.** Define
   and implement filtering for English, German, Latin American Spanish, Japanese,
@@ -121,6 +131,12 @@ also influence filtering. Treat native filtering as one layer, not proof that th
 survey's promise is met. [Steam text-filter API](https://partner.steamgames.com/doc/api/ISteamUtils#InitFilterText).
 
 ### S49-04 — usable chat, mute/report and controller text entry
+
+Implementation checkpoint: [client UI](../../src/playerChatUi.js) and
+[browser checks](../../tests/e2e/player-chat.spec.js) cover local relay delivery,
+IME, seven locale titles and the full-game fallback controller keyboard. Reports
+remain temporary relay-memory evidence, not a staffed moderation service. Physical
+hardware, deployed matches and moderation operations remain acceptance gates.
 
 - [ ] **Owner: UI + platform + localization · Size: L · Depends: 02–03.** Add a
   visible chat control in the lobby and field, unread indication, bounded scrollback,

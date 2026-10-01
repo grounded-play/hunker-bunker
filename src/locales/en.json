@@ -46,6 +46,48 @@
     "elite_contact": "SUIT: ELITE CONTACT. REINFORCED HOSTILE — KEEP AN ESCAPE ROUTE."
   },
   "ui": {
+    "chat": {
+      "title": "ROOM CHAT",
+      "open": "CHAT",
+      "close": "CLOSE",
+      "scope": "Lobby and mission share this room channel. Everyone in the room can read it, including PvP opponents. The world keeps running while you type.",
+      "history": "Room message history",
+      "empty": "No messages yet.",
+      "compose": "Message (up to 400 characters)",
+      "placeholder": "Type a message… Enter sends; Shift+Enter adds a line.",
+      "send": "SEND",
+      "sending": "Sending…",
+      "disconnected": "Join an online room to chat. Waiting for an accepted relay connection.",
+      "connected": "Connected to {room}. Select a message for moderation.",
+      "rateLimited": "Too many actions. Wait 10 seconds and try again.",
+      "filterError": "Text could not be safely filtered. Use the supported game languages and remove unusual control characters.",
+      "sendError": "Not sent or not confirmed. Check the 400-character limit and connection, then retry; unchanged retries are deduplicated.",
+      "notifications": "Show unread badges",
+      "privacy": "Only filtered text is delivered. Chat stays in relay memory (50 messages per room); reports stay up to 24 hours / 100 reports and are lost on restart. No automatic staff response.",
+      "selectMessage": "Select a message to mute, block or report its sender.",
+      "mute": "MUTE",
+      "unmute": "UNMUTE",
+      "block": "BLOCK",
+      "unblock": "UNBLOCK",
+      "report": "REPORT",
+      "reportReason": "Report reason",
+      "reported": "Report recorded in this relay's temporary moderation queue.",
+      "player": "Player",
+      "quick": {
+        "help": "Need help!",
+        "regroup": "Regroup here.",
+        "follow": "Follow me.",
+        "thanks": "Thanks!"
+      },
+      "reasons": {
+        "harassment": "Harassment",
+        "hate": "Hate",
+        "spam": "Spam",
+        "sexual": "Sexual content",
+        "threat": "Threat",
+        "other": "Other"
+      }
+    },
     "encounters": {
       "locked_crossfire": {
         "name": "Locked Crossfire"
