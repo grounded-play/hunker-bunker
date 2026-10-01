@@ -193,6 +193,17 @@ and Ghost Runner. **Not claimed:** the wall-backed placement seams
 (`roomPopulation.js`, `syncWorld3dReplacement` wallNormal), which another
 contributor has in progress.
 
+### 2026-10-01 13:35: static models landed elsewhere; this lane takes the animated five
+
+The 11 static incoming models landed in `3039e4df` (another contributor's
+decimated 1024/512 JPEG versions; this lane's full-quality 2048 WebP alternative
+was not committed, and the owner was shown a side-by-side). **This lane now owns
+the five animated/remaining models:** `Regular Cryosnail` (decimate, no rig:
+snails slide), `Corrupted Engineer Kaelen Boss` and `5001 Ghost Runner` female and
+male (Mixamo skeleton via weight transfer from rigged references), and
+`Mycelium Stalker Quadruped` (procedural quadruped rig and clips). Please don't
+process these five in parallel.
+
 ## Next
 
 1. **Publisher/hardware (not code):** a Deck and pad pass with the keyboard unplugged
