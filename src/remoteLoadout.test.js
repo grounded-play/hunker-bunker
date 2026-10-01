@@ -33,4 +33,14 @@ describe('remote equipment visuals', () => {
         expect(result.chassisSkinId).toBeNull();
         expect(remoteEquipmentSignature(result)).toContain('4160');
     });
+
+    it('keeps a body the chassis ships and drops any other', () => {
+        const male = resolveRemoteEquipmentVisuals('SCOUT', { schemaVersion: 2, chassisSkinId: '5001', chassisBody: 'male' });
+        expect(male).toMatchObject({ chassisSkinId: '5001', chassisBody: 'male' });
+        const female = resolveRemoteEquipmentVisuals('SCOUT', { schemaVersion: 2, chassisSkinId: '5001' });
+        expect(female.chassisBody).toBeNull();
+        expect(remoteEquipmentSignature(male)).not.toBe(remoteEquipmentSignature(female));
+        const bogus = resolveRemoteEquipmentVisuals('SCOUT', { schemaVersion: 2, chassisSkinId: '5003', chassisBody: '../evil' });
+        expect(bogus.chassisBody).toBeNull();
+    });
 });

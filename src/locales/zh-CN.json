@@ -346,6 +346,8 @@
       "stage_eyebrow": "◈ 实时舞台预览",
       "weapon_label": "武器：",
       "chassis_label": "机体：",
+      "body_female": "女性",
+      "body_male": "男性",
       "sheen_kicker": "操作员光泽",
       "sheen_cta": "打开装甲色调矩阵",
       "stage_hint": "拖动 3D 舞台以查看操作员与武器",

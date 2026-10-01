@@ -346,6 +346,8 @@
       "stage_eyebrow": "◈ LIVE-VORSCHAU",
       "weapon_label": "WAFFE:",
       "chassis_label": "CHASSIS:",
+      "body_female": "WEIBLICH",
+      "body_male": "MÄNNLICH",
       "sheen_kicker": "OPERATOR-GLANZ",
       "sheen_cta": "FARBMATRIX ÖFFNEN",
       "stage_hint": "3D-BÜHNE ZIEHEN, UM OPERATOR & WAFFE ZU PRÜFEN",

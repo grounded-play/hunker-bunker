@@ -379,6 +379,27 @@ describe('createArmoryUi ownership gating', () => {
         expect(html).toContain('data-value="5001"');
     });
 
+    it('offers the Ghost Runner chassis as a female and a male body', () => {
+        ownership.grantDev(5001, 1);
+        mount();
+        const html = openSlotHtml(container, 'chassis');
+        expect(html).toContain('data-value="5001"');
+        expect(html).toContain('data-value="5001:male"');
+        expect(html).not.toMatch(/data-value="5001:male"[^>]*aria-disabled/);
+
+        openSlot(container, 'chassis').dispatchEvent(tileClick('5001:male'));
+        expect(loadoutManager.getEquippedChassisSkinId()).toBe('5001');
+        expect(loadoutManager.getEquippedChassisBody()).toBe('male');
+        expect(fakeScene.setChassisSkin).toHaveBeenCalledWith('5001:male', 'scout');
+        expect(openSlotHtml(container, 'chassis')).toMatch(/is-selected"[^>]*data-value="5001:male"|data-value="5001:male"[^>]*aria-pressed="true"/);
+    });
+
+    it('refuses the male Ghost Runner body when 5001 is not owned', () => {
+        mount();
+        openSlot(container, 'chassis').dispatchEvent(tileClick('5001:male'));
+        expect(loadoutManager.getEquippedChassisSkinId()).toBeNull();
+    });
+
     it('offers earned achievement weapons to their own class only', () => {
         for (const id of [5002, 5006, 5009, 5010]) ownership.grantDev(id, 1);
         mount();

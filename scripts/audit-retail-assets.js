@@ -55,7 +55,9 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // that replace the last stand-ins: the regular cryosnail (0.7 MiB), the 5001
 // Ghost Runner chassis (3.2 MiB) and the corrupted Kaelen boss (3.9 MiB), each
 // rigged or decimated from a 1.5M-triangle source, WebP textures.
-const PUBLIC_BUDGET = 2725 * 1024 * 1024;
+// Raised 2725->2730 MiB for the Ghost Runner's male body (3.3 MiB), the
+// second body of the same 5001 item (src/chassisBodies.js).
+const PUBLIC_BUDGET = 2730 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus

@@ -178,6 +178,7 @@
     "3d/runtime/new3ds/chassis_rust_bone.glb",
     "3d/runtime/new3ds/chassis_scout_cartographer.glb",
     "3d/runtime/new3ds/chassis_scout_ghost_runner.glb",
+    "3d/runtime/new3ds/chassis_scout_ghost_runner_male.glb",
     "3d/runtime/new3ds/chassis_scout_pioneer_courier.glb",
     "3d/runtime/new3ds/chassis_subterran_drill_engineer.glb",
     "3d/runtime/new3ds/chassis_tank_colossus_hive.glb",
@@ -2124,6 +2125,11 @@
     {
       "path": "3d/runtime/new3ds/chassis_scout_ghost_runner.glb",
       "bytes": 3317280,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_scout_ghost_runner_male.glb",
+      "bytes": 3450060,
       "classification": "runtime-required"
     },
     {

@@ -165,6 +165,7 @@ export function getLocalLoadoutSummary(opClass, mode = 'deployment') {
     const classLoadout = window.loadout.getClassLoadout?.(opClass) ?? {};
     const hasCharm = Boolean(equipment?.charmId ?? window.loadout.getEquippedCharmId?.(opClass));
     const chassisSkinId = window.loadout.getEquippedChassisSkinId?.() ?? null;
+    const chassisBody = window.loadout.getEquippedChassisBody?.() ?? null;
     const polishColor = getSelectedPolish(window.localStorage).color;
     const summary = {
         weapon,
@@ -179,6 +180,7 @@ export function getLocalLoadoutSummary(opClass, mode = 'deployment') {
         )) ?? []
     };
     if (chassisSkinId) summary.chassisSkinId = chassisSkinId;
+    if (chassisSkinId && chassisBody) summary.chassisBody = chassisBody;
     if (polishColor) summary.polishColor = polishColor;
     return summary;
 }

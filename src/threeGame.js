@@ -210,6 +210,7 @@ import { blackBoxStore } from './blackBox.js';
 import { runCheckpointStore } from './runCheckpoint.js';
 import { expeditionSuspendStore, normalizeExpeditionSuspendSnapshot } from './expeditionSuspend.js';
 import { CHASSIS_SKIN_MODELS, createPlayer3dOverlay, ENGINEER_GESTURES, excludePlayerSelfLights } from './player3dOverlay.js';
+import { resolveChassisModelUrl } from './chassisBodies.js';
 import { remoteEquipmentSignature, resolveRemoteEquipmentVisuals } from './remoteLoadout.js';
 import {
     createTransitNetwork,
@@ -5183,7 +5184,9 @@ export class ThreeGame {
             };
             const chassisSkinId = window.loadout?.getEquippedChassisSkinId?.();
             const chassisSupported = window.loadout?.isChassisSupportedForClass?.(this.playerType, chassisSkinId) ?? true;
-            const chassisModelUrl = chassisSkinId && chassisSupported ? CHASSIS_SKIN_MODELS[String(chassisSkinId)] : null;
+            const chassisModelUrl = chassisSkinId && chassisSupported
+                ? resolveChassisModelUrl(chassisSkinId, window.loadout?.getEquippedChassisBody?.(), CHASSIS_SKIN_MODELS)
+                : null;
             if (chassisModelUrl && classVisuals[overlayType]) {
                 classVisuals[overlayType] = {
                     ...classVisuals[overlayType],
@@ -5909,7 +5912,7 @@ export class ThreeGame {
         };
 
         const chassisSkinId = equipment.chassisSkinId;
-        const chassisModelUrl = chassisSkinId ? CHASSIS_SKIN_MODELS[String(chassisSkinId)] : null;
+        const chassisModelUrl = resolveChassisModelUrl(chassisSkinId, equipment.chassisBody, CHASSIS_SKIN_MODELS);
         if (chassisModelUrl && classVisuals[remote.opClass]) {
             classVisuals[remote.opClass] = {
                 ...classVisuals[remote.opClass],

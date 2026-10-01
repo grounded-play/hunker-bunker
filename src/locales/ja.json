@@ -346,6 +346,8 @@
       "stage_eyebrow": "◈ ライブステージプレビュー",
       "weapon_label": "武器：",
       "chassis_label": "機体：",
+      "body_female": "女性",
+      "body_male": "男性",
       "sheen_kicker": "オペレーターシャイン",
       "sheen_cta": "スーツ色調マトリクスを開く",
       "stage_hint": "3Dステージをドラッグしてオペレーターと武器を確認",

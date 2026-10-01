@@ -346,6 +346,8 @@
       "stage_eyebrow": "◈ VISTA PREVIA EN VIVO",
       "weapon_label": "ARMA:",
       "chassis_label": "CHASIS:",
+      "body_female": "FEMENINO",
+      "body_male": "MASCULINO",
       "sheen_kicker": "BRILLO DEL OPERADOR",
       "sheen_cta": "ABRIR MATRIZ DE TINTE",
       "stage_hint": "ARRASTRA LA ESCENA 3D PARA INSPECCIONAR OPERADOR Y ARMA",

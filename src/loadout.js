@@ -6,6 +6,7 @@ import { getRecipe } from './fabricator.js';
 import { getItemName } from './data/itemCatalog.js';
 import { ARCHETYPE_SKINS, CLASS_ARCHETYPES, CLASS_CHASSIS_SKINS, DEFAULT_ARCHETYPES } from './data/classArsenal.js';
 import { EQUIPMENT_SCHEMA_VERSION, composeEquipmentModifiers, getEquipmentDefinition, getEquipmentStatus } from './data/equipmentDefinitions.js';
+import { decodeChassisChoice, encodeChassisChoice } from './chassisBodies.js';
 
 export const STORAGE_KEY_V2 = 'hb_loadout_v2';
 export const STORAGE_KEY_V1 = 'hb_loadout_v1';
@@ -49,6 +50,7 @@ function createDefaultLoadoutState() {
         },
         suit: {
             chassisSkinId: null,
+            chassisBody: null,
             decalId: null
         },
         hudThemeId: null,
@@ -94,6 +96,7 @@ export class LoadoutManager {
                     }
                     if (parsed.suit) {
                         result.suit.chassisSkinId = parsed.suit.chassisSkinId != null ? String(parsed.suit.chassisSkinId) : null;
+                        result.suit.chassisBody = decodeChassisChoice(encodeChassisChoice(result.suit.chassisSkinId, parsed.suit.chassisBody)).body;
                         result.suit.decalId = parsed.suit.decalId != null ? String(parsed.suit.decalId) : null;
                     }
                     result.hudThemeId = parsed.hudThemeId != null ? String(parsed.hudThemeId) : null;
@@ -281,8 +284,13 @@ export class LoadoutManager {
         return true;
     }
 
-    equipChassisSkin(itemdefid) {
-        this.state.suit.chassisSkinId = itemdefid != null ? String(itemdefid) : null;
+    // `itemdefid` may be a picker value with a body (`5001:male`, see
+    // src/chassisBodies.js); a body the item does not ship is dropped.
+    equipChassisSkin(itemdefid, body = null) {
+        const decoded = decodeChassisChoice(itemdefid);
+        const choice = decodeChassisChoice(encodeChassisChoice(decoded.id, body ?? decoded.body));
+        this.state.suit.chassisSkinId = choice.id;
+        this.state.suit.chassisBody = choice.body;
         this.save();
         return true;
     }
@@ -340,6 +348,14 @@ export class LoadoutManager {
 
     getEquippedChassisSkinId() {
         return this.state.suit.chassisSkinId;
+    }
+
+    getEquippedChassisBody() {
+        return this.state.suit.chassisBody ?? null;
+    }
+
+    getEquippedChassisChoice() {
+        return encodeChassisChoice(this.state.suit.chassisSkinId, this.state.suit.chassisBody);
     }
 
     isChassisSupportedForClass(classId = this.activeClassId, itemdefid = this.state.suit.chassisSkinId) {
@@ -466,7 +482,10 @@ export class LoadoutManager {
 
         // Suit-wide cosmetics.
         if (!owned(this.state.suit.decalId)) this.state.suit.decalId = null;
-        if (!owned(this.state.suit.chassisSkinId)) this.state.suit.chassisSkinId = null;
+        if (!owned(this.state.suit.chassisSkinId)) {
+            this.state.suit.chassisSkinId = null;
+            this.state.suit.chassisBody = null;
+        }
 
         // UI overlays and the alt-radio voice bank. These went unreconciled
         // before, so an unowned HUD theme, tracer or voice bank stayed equipped

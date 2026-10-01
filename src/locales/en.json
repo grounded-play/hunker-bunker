@@ -346,6 +346,8 @@
       "stage_eyebrow": "◈ LIVE STAGE PREVIEW",
       "weapon_label": "WEAPON:",
       "chassis_label": "CHASSIS:",
+      "body_female": "FEMALE",
+      "body_male": "MALE",
       "sheen_kicker": "OPERATOR SHEEN",
       "sheen_cta": "OPEN SUIT TINT MATRIX",
       "stage_hint": "DRAG 3D STAGE TO INSPECT OPERATOR & WEAPON",
