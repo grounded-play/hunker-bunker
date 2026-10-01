@@ -68,6 +68,21 @@ Still open for S49-11: reviewer-route evidence on the installed build (publisher
 The reader shows dialogue as text only. The in-game route also shows each node's
 `interstitial` still, so consider adding stills to the reader.
 
+### Note on `f940f01a`
+
+That commit (made by another contributor's sweep) contains this lane's
+`src/matureContentAudit.test.js` edits and the `LORE_LOGS` export. `0b0a8d83` holds
+the code they test. The two are correct together. Commit promptly: untracked or
+modified files in the shared tree can be swept into someone else's commit.
+
+### In progress: S49-10 controller journey probe
+
+`tests/e2e/probes/controller-journey.spec.js` drives the Vault, Foundry, Content Guide
+(transcript scroll), commentary list, multiplayer console, and in-run pause → abort →
+results using only `gamepad-menu-nav` events after boot. Run it with
+`HB_PROBES=1` against a dev server with HMR off (other contributors' edits reload a
+watched server mid-test); see the dev-server recipe in the e2e notes.
+
 ## Next
 
 1. **S49-11 (optional):** show each node's `interstitial` still in the reader.
