@@ -267,6 +267,21 @@ test.describe('S49-10 controller journey', () => {
         expect(await isFocusedMatch(page, '#armory-slot-mod1'), 'focus returns to the slot').toBe(true);
     });
 
+    for (const [opener, modal] of [['#archive-btn', '#archive-modal'], ['#codex-btn', '#codex-modal'], ['#season-pass-btn', '#season-pass-modal']]) {
+        test(`Operator menu ${opener}: reach, browse, back out to it`, async ({ page }) => {
+            await bootToOperatorMenu(page);
+            await steerTo(page, opener);
+            await pad(page, 'menu_confirm');
+            await expect(page.locator(modal)).toBeVisible({ timeout: 10_000 });
+            await page.waitForTimeout(400);
+            await exploreInside(page, modal, 4);
+            await page.screenshot({ path: `playwright-report/screenshots/s49-10-${opener.slice(1)}.png` });
+            await pad(page, 'menu_back');
+            await expect(page.locator(modal)).toBeHidden({ timeout: 5_000 });
+            await expect.poll(() => isFocusedMatch(page, opener), { timeout: 3_000 }).toBe(true);
+        });
+    }
+
     test('Title: Quit asks first, and Back cancels it', async ({ page }) => {
         await bootToTitleSplash(page);
         await steerTo(page, '#title-quit-btn');
