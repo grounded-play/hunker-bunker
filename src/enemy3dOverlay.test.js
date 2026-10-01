@@ -42,4 +42,19 @@ describe('enemy 3D rigged locomotion routing', () => {
             expect(spitter.tint, other).not.toBe(ENEMY_3D_MODELS[other].tint);
         }
     });
+
+    it('gives cryosnail ice emissive and low roughness to distinguish it from mechanical cybersnail', async () => {
+        const { ENEMY_3D_MODELS } = await import('./enemy3dOverlay.js');
+        const cryosnail = ENEMY_3D_MODELS.cryosnail;
+        expect(cryosnail.emissive).toBe(0x1e4970);
+        expect(cryosnail.roughness).toBe(0.22);
+        expect(cryosnail.metalness).toBe(0.7);
+    });
+
+    it('gives boss_corrupted_engineer necrotic emissive to distinguish from friendly npc_kaelen', async () => {
+        const { ENEMY_3D_MODELS } = await import('./enemy3dOverlay.js');
+        const engineer = ENEMY_3D_MODELS.boss_corrupted_engineer;
+        expect(engineer.emissive).toBe(0x3d1410);
+        expect(engineer.tint).toBe(0xa87766);
+    });
 });

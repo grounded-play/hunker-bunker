@@ -13,7 +13,7 @@ function createGltfLoader() {
 
 const MODEL_CONFIG = {
     cybersnail: { url: '/3d/runtime/cyber-snail.glb', height: 0.72, yaw: -Math.PI / 2 },
-    cryosnail: { url: '/3d/runtime/cyber-snail.glb', height: 0.76, yaw: -Math.PI / 2, tint: 0x9bdcff },
+    cryosnail: { url: '/3d/runtime/cyber-snail.glb', height: 0.76, yaw: -Math.PI / 2, tint: 0x9bdcff, emissive: 0x1e4970, roughness: 0.22, metalness: 0.7 },
     sporesnail: { url: '/3d/runtime/new3ds/sporesnail.glb', height: 0.78, yaw: Math.PI / 2 },
     fungal_spore_vent: { url: '/3d/runtime/new3ds/fungal_spore_vent.glb', height: 0.82, yaw: 0 },
     spore_mortar: { url: '/3d/runtime/new3ds/spore_mortar.glb', height: 1.05, yaw: 0 },
@@ -49,7 +49,7 @@ const MODEL_CONFIG = {
     bio_charger: { url: '/3d/runtime/community/scout_xeno_stalker.glb', height: 1.45, yaw: 0 },
     boss_corrupted_scout: { url: '/3d/runtime/new3ds/boss_corrupted_martha.glb', height: 1.45, yaw: 0 },
     boss_corrupted_tank: { url: '/3d/runtime/new3ds/boss_corrupted_briggs.glb', height: 1.65, yaw: 0 },
-    boss_corrupted_engineer: { url: '/3d/runtime/new3ds/npc_kaelen.glb', height: 1.45, yaw: 0, tint: 0xa87766 },
+    boss_corrupted_engineer: { url: '/3d/runtime/new3ds/npc_kaelen.glb', height: 1.45, yaw: 0, tint: 0xa87766, emissive: 0x3d1410, roughness: 0.4 },
     boss_queen: { url: '/3d/runtime/queen.glb', height: 2.35, yaw: Math.PI }
 };
 
@@ -182,9 +182,20 @@ export async function createEnemy3dVisual(type) {
         object.castShadow = true;
         object.receiveShadow = false;
         object.frustumCulled = false;
-        if (config.tint && object.material) {
+        if ((config.tint || config.emissive !== undefined || config.roughness !== undefined || config.metalness !== undefined) && object.material) {
             object.material = object.material.clone();
-            object.material.color?.multiply(new THREE.Color(config.tint));
+            if (config.tint && object.material.color) {
+                object.material.color.multiply(new THREE.Color(config.tint));
+            }
+            if (config.emissive !== undefined && object.material.emissive) {
+                object.material.emissive.setHex(config.emissive);
+            }
+            if (config.roughness !== undefined && 'roughness' in object.material) {
+                object.material.roughness = config.roughness;
+            }
+            if (config.metalness !== undefined && 'metalness' in object.material) {
+                object.material.metalness = config.metalness;
+            }
         }
     });
     root.scale.setScalar(0.05);
