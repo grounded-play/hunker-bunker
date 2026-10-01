@@ -1196,6 +1196,8 @@
       "wallet_direct": "STEAM WALLET DIRECTO",
       "store_offline": "TIENDA DE OBJETOS DE STEAM DESCONECTADA",
       "purchases_offline": "Las compras en la tienda de Steam están desconectadas en esta compilación.",
+      "purchases_region_restricted": "Las compras de llaves no están disponibles en tu región según las regulaciones locales.",
+      "region_restricted": "REGIÓN RESTRINGIDA",
       "qa_grant": "Concesión sintética de QA: +{count} llave(s) de reliquia no intercambiables. No se inició ninguna compra.",
       "purchases_disabled": "Las compras están desactivadas en esta beta. Usa QA GRANT TEST KIT en la armería para objetos de prueba no intercambiables.",
       "key_and_cache_required": "Se requieren llave y alijo para descifrar.",

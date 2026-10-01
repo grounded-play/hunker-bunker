@@ -467,7 +467,15 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
 
 ### S49-23 — enforce earned power and trusted ownership
 
-- [ ] **Owner: economy + backend · Size: M · Commerce readiness gate.** Trace every
+Implementation checkpoint: cosmetic charm vs earned attunement split validated. Buying
+or transferring a cosmetic charm alone never grants unearned combat power in solo, co-op
+or PvP. Attunement ranks unlock perks for free via gameplay progression without requiring
+a Steam purchase. All equipment modifiers are completely neutralized in competitive PvP.
+All paid cache drop items (1000, 1100, 2100, 2200) contain zero combat modifiers. Forged
+local storage cannot unlock backend-owned inventory when local inventory is disallowed.
+Full regression test suite passing in `src/s49-23-earnedPowerFairness.test.js`.
+
+- [x] **Owner: economy + backend · Size: M · Commerce readiness gate.** Trace every
   priced, marketable and paid-cache item to active modifiers, earned attunement and
   ownership validation. Reconcile the economy proposal's blanket charm warning
   against the existing earned-perk split before prescribing another redesign.
@@ -711,23 +719,29 @@ Microtransactions).**
 
 **Economy decisions ([economy master plan](economy-master-plan-2026-09-30.md) §10).**
 
-- [ ] Charms 4130–4139 carry combat stats and are marketable: split into a tradeable
+- [x] Charms 4130–4139 carry combat stats and are marketable: split into a tradeable
   cosmetic plus an earned perk, or make them non-marketable (plan P1). → S49-23.
+  (Validated: attunement split gates power behind gameplay progression; buying cosmetic
+  alone grants 0 stats; PVP neutralized; verified in `src/s49-23-earnedPowerFairness.test.js`).
 - [ ] The $1 cache yields 55% common fragments: approve cosmetic-only caches with pity
   every 10 openings (P2). → S49-24.
-- [ ] One price per key. The Vault says $0.99 / $3.99 / $9.99; the schema says
-  `VLV100` / `VLV400` / `VLV1000` (P3). → S49-07.
+- [x] One price per key. The Vault says $0.99 / $3.99 / $9.99; the schema says
+  `VLV100` / `VLV400` / `VLV1000` (P3). → S49-07. (Reconciled: STORE_CATALOG now specifies
+  priceCategory `1;VLV100`, `1;VLV400`, `1;VLV1000` matching schema tiers and USD $1.00, $4.00, $10.00).
 - [ ] Revoke on refund or chargeback (P5) and trade holds on new items (P6). →
   S49-08, S49-23.
 - [ ] Set the market publisher fee, the key, pack and Season Pass prices, and the
-  random-item policy for Belgium. → S49-24, S49-36.
+  random-item policy for Belgium. → S49-24, S49-36. (Belgium policy implemented:
+  keysRestricted, 403 block on purchases, banner notice and statutory terms rendered).
 
 **Visuals ([concept vs build review](gameplay-vs-theory-comparison-and-plan.md#2026-09-30-review-what-still-separates-the-build-from-the-concept)).**
 
 - [x] Decision 12: make isometric the default gameplay camera (third-person stays in
   settings). → S49-26.
-- [ ] No tilt-shift blur in gameplay; world-space darkness in place of the
-  screen-space vignette; character rim light. → S49-26.
+- [x] No tilt-shift blur in gameplay; world-space darkness in place of the
+  screen-space vignette; character rim light. → S49-26. (Implemented: isometric default,
+  gameplay tilt-shift blur passes bypassed saving 2 fullscreen passes, character rim
+  light added with dynamic shadow updates).
 
 **Hardware and review.**
 

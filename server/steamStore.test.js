@@ -3,7 +3,12 @@ import path from 'node:path';
 import fs from 'node:fs';
 import express from 'express';
 import { afterEach, beforeAll, afterAll, describe, expect, it, vi } from 'vitest';
-import { attachSteamStoreRoutes } from './steamStore.js';
+import {
+    attachSteamStoreRoutes,
+    isRegionRestrictedForRandomPurchases,
+    extractClientCountry,
+    getRestrictedRandomPurchaseRegions
+} from './steamStore.js';
 import * as purchaseDb from './db.js';
 import {
     initDb,
@@ -110,8 +115,12 @@ describe('Steam Store API endpoints', () => {
             publicUrl: 'https://store.steampowered.com/itemstore/4957040/',
             betaUrl: 'https://store.steampowered.com/itemstore/4957040/?beta=1'
         });
-        expect(body.catalog.length).toBeGreaterThan(0);
-        expect(body.catalog[0]).toMatchObject({ sku: expect.any(String), priceUsdCents: expect.any(Number) });
+        expect(body.catalog.length).toBe(3);
+        expect(body.catalog).toEqual([
+            { sku: 'key_1', keyCount: 1, priceCategory: '1;VLV100', priceUsdCents: 100, label: '1x Cache Key', restricted: false },
+            { sku: 'key_5', keyCount: 5, priceCategory: '1;VLV400', priceUsdCents: 400, label: '5x Cache Key', restricted: false },
+            { sku: 'key_15', keyCount: 15, priceCategory: '1;VLV1000', priceUsdCents: 1000, label: '15x Cache Key', restricted: false }
+        ]);
 
         const oddsTotal = body.deepRelicCacheOdds.reduce((sum, row) => sum + row.percent, 0);
         expect(oddsTotal).toBeCloseTo(100, 1);
@@ -761,5 +770,94 @@ describe('paid grant recovery', () => {
         expect(result.status).toBe(409);
         expect(result.body).toMatchObject({ reason: 'grant_without_settled_payment' });
         expect(externalFetchCallCount()).toBe(1);
+    });
+
+    describe('Region restriction for paid random items (Belgium)', () => {
+        it('identifies restricted regions correctly with default Belgium (BE/BEL)', () => {
+            expect(getRestrictedRandomPurchaseRegions().has('BE')).toBe(true);
+            expect(getRestrictedRandomPurchaseRegions().has('BEL')).toBe(true);
+            expect(isRegionRestrictedForRandomPurchases('BE')).toBe(true);
+            expect(isRegionRestrictedForRandomPurchases('be')).toBe(true);
+            expect(isRegionRestrictedForRandomPurchases('BEL')).toBe(true);
+            expect(isRegionRestrictedForRandomPurchases('US')).toBe(false);
+            expect(isRegionRestrictedForRandomPurchases('DE')).toBe(false);
+            expect(isRegionRestrictedForRandomPurchases(null)).toBe(false);
+        });
+
+        it('extracts client country from request body, query, or headers', () => {
+            expect(extractClientCountry({ body: { country: 'be' } })).toBe('BE');
+            expect(extractClientCountry({ query: { country: 'bel' } })).toBe('BEL');
+            expect(extractClientCountry({ headers: { 'cf-ipcountry': 'us' } })).toBe('US');
+            expect(extractClientCountry({ headers: { 'x-country-code': 'de' } })).toBe('DE');
+            expect(extractClientCountry({})).toBeNull();
+        });
+
+        it('discloses statutory terms in GET /steam/store/catalog', async () => {
+            const res = await fetch(`${baseUrl}/steam/store/catalog`);
+            expect(res.status).toBe(200);
+            const body = await res.json();
+            expect(body.legalTerms).toContain('Virtual items have no cash value');
+            expect(body.legalTerms).toContain('Steam Subscriber Agreement');
+            expect(body.legalTerms).toContain('Includes Random Items');
+        });
+
+        it('flags keysRestricted and restrictedRegionNotice when requested from Belgium', async () => {
+            const res = await fetch(`${baseUrl}/steam/store/catalog?country=BE`);
+            expect(res.status).toBe(200);
+            const body = await res.json();
+            expect(body.keysRestricted).toBe(true);
+            expect(body.country).toBe('BE');
+            expect(body.restrictedRegionReason).toBe('region_compliance_belgium');
+            expect(body.restrictedRegionNotice).toBeTruthy();
+            expect(body.catalog.every((sku) => sku.restricted === true)).toBe(true);
+        });
+
+        it('leaves keys enabled for non-restricted regions (e.g. US)', async () => {
+            const res = await fetch(`${baseUrl}/steam/store/catalog?country=US`);
+            expect(res.status).toBe(200);
+            const body = await res.json();
+            expect(body.keysRestricted).toBe(false);
+            expect(body.country).toBe('US');
+            expect(body.restrictedRegionNotice).toBeNull();
+            expect(body.catalog.every((sku) => !sku.restricted)).toBe(true);
+        });
+
+        it('rejects POST /steam/store/purchase/init with 403 region_restricted from Belgium', async () => {
+            enableLiveStoreEnv();
+            const res = await fetch(`${baseUrl}/steam/store/purchase/init`, {
+                method: 'POST',
+                headers: liveAuthHeaders(),
+                body: JSON.stringify({
+                    sku: 'key_1',
+                    requestId: `test-belgium-${Date.now()}`,
+                    country: 'BE'
+                })
+            });
+            expect(res.status).toBe(403);
+            const body = await res.json();
+            expect(body.ok).toBe(false);
+            expect(body.reason).toBe('region_restricted');
+            expect(body.purchaseStatus).toBe('disabled');
+            expect(body.message).toContain('Belgium');
+        });
+
+        it('rejects POST /steam/store/purchase/init via cf-ipcountry header', async () => {
+            enableLiveStoreEnv();
+            const headers = {
+                ...liveAuthHeaders(),
+                'cf-ipcountry': 'BE'
+            };
+            const res = await fetch(`${baseUrl}/steam/store/purchase/init`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    sku: 'key_1',
+                    requestId: `test-belgium-header-${Date.now()}`
+                })
+            });
+            expect(res.status).toBe(403);
+            const body = await res.json();
+            expect(body.reason).toBe('region_restricted');
+        });
     });
 });

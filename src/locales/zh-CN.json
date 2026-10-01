@@ -1196,6 +1196,8 @@
       "wallet_direct": "Steam 钱包直购",
       "store_offline": "Steam 物品商店离线",
       "purchases_offline": "本版本的 Steam 商店购买功能已离线。",
+      "purchases_region_restricted": "根据当地法规，您所在的地区无法购买付费钥匙。",
+      "region_restricted": "区域限制",
       "qa_grant": "合成 QA 发放：+{count} 个不可交易的遗物钥匙。未发起任何购买。",
       "purchases_disabled": "本测试版已禁用购买。请使用军械库的 QA GRANT TEST KIT 获取不可交易的测试物品。",
       "key_and_cache_required": "解密需要钥匙与宝箱。",

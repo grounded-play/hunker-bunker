@@ -220,6 +220,7 @@ import {
     formatTransitLabel,
     TRANSIT_INTERACT_RADIUS
 } from './pneumaticTransit.js';
+import { updateKitMaterials } from './kitMaterials.js';
 
 export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
     modelUrl: '/3d/runtime/secrets/mayor-tina-rigged.glb',
@@ -1688,7 +1689,7 @@ function isChunkTraversalConnected(grid) {
 const keyedSpriteTextureCache = new Map();
 
 export class ThreeGame {
-    constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null } = {}) {
+    constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null, cameraMode = 'isometric', gameplayTiltShiftBlurEnabled = false } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
         if (!this.container) {
             throw new Error('ThreeGame requires a valid parent container.');
@@ -1939,7 +1940,7 @@ export class ThreeGame {
         this._roomCutawayQuadrant = cameraCutawayQuadrant(this.cameraAzimuth);
         this.cameraRotationInput = 0;
         this._cameraOrbitPointerDelta = 0;
-        this.cameraMode = 'third-person';
+        this.cameraMode = cameraMode === 'third-person' ? 'third-person' : 'isometric';
         this._thirdPersonCameraRaycaster = new THREE.Raycaster();
         this.cameraDistancePreset = 'close';
         this.cameraFollowPreset = 'tight';
@@ -2422,6 +2423,12 @@ export class ThreeGame {
 
         this.composer.addPass(this.tiltShiftPassV);
         this.composer.addPass(this.tiltShiftPassH);
+
+        // Tilt-shift blur in gameplay is disabled by default to eliminate fullscreen
+        // blur/fringing and save two fullscreen passes per frame (S49-26 / Decision 12).
+        this.gameplayTiltShiftBlurEnabled = Boolean(gameplayTiltShiftBlurEnabled);
+        this.tiltShiftPassV.enabled = this.gameplayTiltShiftBlurEnabled;
+        this.tiltShiftPassH.enabled = this.gameplayTiltShiftBlurEnabled;
 
         this.darknessOverlay = document.createElement('canvas');
         Object.assign(this.darknessOverlay.style, {
@@ -4148,13 +4155,23 @@ export class ThreeGame {
         this.playerGlow = playerGlow;
         this.scene.add(playerGlow);
 
+        // Character rim light: backlight edge definition for operator and enemy silhouettes
+        // against dark cavern geometry without lifting ambient floor/wall light (S49-26).
+        const characterRimLight = new THREE.DirectionalLight(0x7bc5ff, 1.8);
+        characterRimLight.position.set(-10, 14, -10);
+        characterRimLight.castShadow = false;
+        characterRimLight.target = this.directionalLightTarget;
+        this.characterRimLight = characterRimLight;
+        this.scene.add(characterRimLight);
+
         // Base intensities/fog distances captured so the day/night cycle (Note 8)
         // can modulate them multiplicatively without clobbering biome color work.
         this.baseLightIntensity = {
             ambient: ambientLight.intensity,
             directional: directionalLight.intensity,
             fill: fillLight.intensity,
-            playerGlow: playerGlow.intensity
+            playerGlow: playerGlow.intensity,
+            characterRimLight: characterRimLight.intensity
         };
         this.baseFogRange = { near: this.scene.fog?.near ?? 18, far: this.scene.fog?.far ?? 40 };
     }
@@ -4173,6 +4190,13 @@ export class ThreeGame {
             targetY + offset.y,
             targetZ + offset.z
         );
+        if (this.characterRimLight) {
+            this.characterRimLight.position.set(
+                targetX - 10,
+                targetY + 14,
+                targetZ - 10
+            );
+        }
     }
 
     // Seamless tiling grid. One canvas tile covers MENU_GRID_CELL_WORLD world
@@ -9766,11 +9790,17 @@ export class ThreeGame {
         this.snapCameraToPlayer();
     }
 
-    setCameraMode(mode = 'third-person') {
-        this.cameraMode = mode === 'isometric' ? 'isometric' : 'third-person';
+    setCameraMode(mode = 'isometric') {
+        this.cameraMode = mode === 'third-person' ? 'third-person' : 'isometric';
         this.selectActiveCamera();
         this.resize();
         return this.cameraMode;
+    }
+
+    setGameplayTiltShiftBlur(enabled) {
+        this.gameplayTiltShiftBlurEnabled = Boolean(enabled);
+        if (this.tiltShiftPassV) this.tiltShiftPassV.enabled = this.gameplayTiltShiftBlurEnabled;
+        if (this.tiltShiftPassH) this.tiltShiftPassH.enabled = this.gameplayTiltShiftBlurEnabled;
     }
 
     setCameraTuning({ distance = this.cameraDistancePreset, follow = this.cameraFollowPreset } = {}) {
@@ -10061,6 +10091,7 @@ export class ThreeGame {
         // (src/singlePassFlatMaterials.js); chunks and GLBs are done on mount.
         this._flatMaterialSweep ??= createFlatMaterialSweeper();
         this._flatMaterialSweep(this.scene);
+        updateKitMaterials(performance.now() / 1000);
         const gpuQueryStarted = this.gpuFrameTimer?.beginFrame?.() ?? false;
         // three.js resets renderer.info at the start of every render() call,
         // and the composer makes one call per pass, so draw-call/triangle
@@ -25162,6 +25193,9 @@ export class ThreeGame {
         this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.72, 1.0, dayBlend);
         this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.55, 1.0, dayBlend);
         this.fillLight.intensity = this.baseLightIntensity.fill * lerp(0.72, 1.05, dayBlend);
+        if (this.characterRimLight && this.baseLightIntensity?.characterRimLight) {
+            this.characterRimLight.intensity = this.baseLightIntensity.characterRimLight * lerp(0.85, 1.0, dayBlend);
+        }
         const weatherLightMult = this.nightVision ? 1.0 : (this.weather?.lightMult ?? 1);
         if (weatherLightMult !== 1) {
             this.ambientLight.intensity *= weatherLightMult;
@@ -27742,7 +27776,10 @@ export class ThreeGame {
         if (!overlay || !this.player || !this.camera) return;
 
         const isGameplay = usesGameplayFocusEffects(this);
-        overlay.classList.toggle('is-active', isGameplay);
+        overlay.classList.toggle('is-active', isGameplay && this.gameplayTiltShiftBlurEnabled !== false);
+
+        if (this.tiltShiftPassV) this.tiltShiftPassV.enabled = Boolean(this.gameplayTiltShiftBlurEnabled);
+        if (this.tiltShiftPassH) this.tiltShiftPassH.enabled = Boolean(this.gameplayTiltShiftBlurEnabled);
 
         if (!isGameplay) return;
 

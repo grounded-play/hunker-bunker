@@ -133,11 +133,37 @@ function getStoreAvailability() {
 
 // Cache Keys are the only real-money SKU. Deep Relic Caches themselves drop
 // for free via playtime/promo grants — this mirrors Valve's own crate+key model.
+// Pricing categories match Steamworks inventory schema (1;VLV100, 1;VLV400, 1;VLV1000).
 export const STORE_CATALOG = Object.freeze([
-    { sku: 'key_1', itemdefid: CACHE_KEY_ITEMDEFID, keyCount: 1, priceUsdCents: 99, label: '1x Cache Key' },
-    { sku: 'key_5', itemdefid: CACHE_KEY_ITEMDEFID, keyCount: 5, priceUsdCents: 399, label: '5x Cache Key' },
-    { sku: 'key_15', itemdefid: CACHE_KEY_ITEMDEFID, keyCount: 15, priceUsdCents: 999, label: '15x Cache Key' }
+    { sku: 'key_1', itemdefid: CACHE_KEY_ITEMDEFID, keyCount: 1, priceCategory: '1;VLV100', priceUsdCents: 100, label: '1x Cache Key' },
+    { sku: 'key_5', itemdefid: CACHE_KEY_ITEMDEFID, keyCount: 5, priceCategory: '1;VLV400', priceUsdCents: 400, label: '5x Cache Key' },
+    { sku: 'key_15', itemdefid: CACHE_KEY_ITEMDEFID, keyCount: 15, priceCategory: '1;VLV1000', priceUsdCents: 1000, label: '15x Cache Key' }
 ]);
+
+export function getRestrictedRandomPurchaseRegions() {
+    const fromEnv = process.env.HB_RANDOM_PURCHASE_RESTRICTED_REGIONS;
+    if (fromEnv) {
+        return new Set(fromEnv.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean));
+    }
+    return new Set(['BE', 'BEL']);
+}
+
+export function isRegionRestrictedForRandomPurchases(countryCode) {
+    if (!countryCode || typeof countryCode !== 'string') return false;
+    const normalized = countryCode.trim().toUpperCase();
+    return getRestrictedRandomPurchaseRegions().has(normalized);
+}
+
+export function extractClientCountry(req) {
+    const raw = req?.body?.country
+        || req?.query?.country
+        || req?.headers?.['cf-ipcountry']
+        || req?.headers?.['x-country-code']
+        || req?.headers?.['x-client-country']
+        || null;
+    if (typeof raw !== 'string') return null;
+    return raw.trim().toUpperCase().slice(0, 3) || null;
+}
 
 function findSku(sku) {
     return STORE_CATALOG.find((row) => row.sku === sku) ?? null;
@@ -418,14 +444,24 @@ export function attachSteamStoreRoutes(app) {
     // Public: catalog + disclosed odds must be visible before purchase
     // (Steamworks policy requires published probabilities for any
     // real-money item involving randomized rewards).
-    app.get('/steam/store/catalog', steamRouteRateLimit, (_req, res) => {
+    app.get('/steam/store/catalog', steamRouteRateLimit, (req, res) => {
         const availability = getStoreAvailability();
+        const country = extractClientCountry(req);
+        const keysRestricted = isRegionRestrictedForRandomPurchases(country);
         res.json({
             ok: true,
             ...availability,
+            country: country ?? null,
+            keysRestricted,
+            restrictedRegionReason: keysRestricted ? 'region_compliance_belgium' : null,
+            restrictedRegionNotice: keysRestricted
+                ? 'Paid random item keys are unavailable in your region in accordance with local regulations. Direct collection purchases and in-game crafting remain available.'
+                : null,
+            legalTerms: 'Virtual items have no cash value. Steam Subscriber Agreement governs Steam Wallet and Community Market transactions. In-Game Purchases (Includes Random Items).',
             hostedItemStore: getHostedItemStoreConfig(),
-            catalog: STORE_CATALOG.map(({ sku, keyCount, priceUsdCents, label }) => ({
-                sku, keyCount, priceUsdCents, label
+            catalog: STORE_CATALOG.map(({ sku, keyCount, priceUsdCents, priceCategory, label }) => ({
+                sku, keyCount, priceUsdCents, priceCategory, label,
+                restricted: keysRestricted
             })),
             deepRelicCacheOdds: getDisclosedOdds()
         });
@@ -445,6 +481,18 @@ export function attachSteamStoreRoutes(app) {
                 reason: 'invalid_sku',
                 purchaseStatus: 'failed',
                 nextAction: 'show_error'
+            });
+        }
+
+        const country = extractClientCountry(req);
+        if (isRegionRestrictedForRandomPurchases(country)) {
+            return res.status(403).json({
+                ok: false,
+                reason: 'region_restricted',
+                message: 'Paid random item keys are unavailable in your region (Belgium) in compliance with local regulations. Direct collection purchases and in-game crafting remain available.',
+                purchaseStatus: 'disabled',
+                nextAction: 'show_error',
+                country
             });
         }
 

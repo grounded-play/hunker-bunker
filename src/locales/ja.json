@@ -1196,6 +1196,8 @@
       "wallet_direct": "Steam ウォレット直接",
       "store_offline": "Steam アイテムストア オフライン",
       "purchases_offline": "このビルドでは Steam ストアの購入はオフラインです。",
+      "purchases_region_restricted": "現地の規制により、この地域では有料キーの購入をご利用いただけません。",
+      "region_restricted": "地域制限",
       "qa_grant": "QA 合成付与：取引不可のレリックキー +{count} 個。購入は行われていません。",
       "purchases_disabled": "このベータでは購入は無効です。取引不可のテストアイテムはアーモリーの QA GRANT TEST KIT を使用してください。",
       "key_and_cache_required": "復号にはキーとキャッシュが必要です。",

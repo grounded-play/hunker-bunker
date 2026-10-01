@@ -15980,6 +15980,31 @@ body.cutscene-video-active .tactical-overlay {
   gap: calc(var(--vu) * 0.9);
 }
 
+.vault-store-region-notice {
+  grid-column: 1 / -1;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  border-radius: 6px;
+  color: #fbbf24;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+}
+
+.vault-store-legal-terms {
+  grid-column: 1 / -1;
+  color: rgba(148, 163, 184, 0.7);
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  line-height: 1.35;
+  text-align: center;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 6px;
+}
+
 .vault-store-sku-card {
   background: rgba(14, 24, 40, 0.85);
   border: 1.5px solid rgba(var(--vault-glow-rgb), 0.25);

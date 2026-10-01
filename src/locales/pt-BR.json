@@ -1196,6 +1196,8 @@
       "wallet_direct": "STEAM WALLET DIRETO",
       "store_offline": "LOJA DE ITENS STEAM OFFLINE",
       "purchases_offline": "As compras na loja Steam estão offline nesta build.",
+      "purchases_region_restricted": "A compra de chaves não está disponível na sua região de acordo com os regulamentos locais.",
+      "region_restricted": "REGIÃO RESTRITA",
       "qa_grant": "Concessão sintética de QA: +{count} chave(s) de relíquia não negociáveis. Nenhuma compra foi iniciada.",
       "purchases_disabled": "As compras estão desativadas nesta beta. Use QA GRANT TEST KIT no arsenal para itens de teste não negociáveis.",
       "key_and_cache_required": "Chave e cache são necessários para descriptografar.",

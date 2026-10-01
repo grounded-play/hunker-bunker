@@ -53,7 +53,7 @@ describe('Steam store catalog through the Vault UI', () => {
             expect(html).toContain(`vault-sku-count">x${count}`);
             expect(html).toContain(`data-sku="key_${count}"`);
             expect(html).toContain('USD');
-            expect(html).toContain([ '0.99', '3.99', '9.99' ][index]);
+            expect(html).toContain([ '1.00', '4.00', '10.00' ][index]);
             expect(html).not.toMatch(/SAVE 10%|BEST VALUE|keys_10|NaN/);
         }
         await grid.children[2].querySelector().click();

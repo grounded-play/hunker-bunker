@@ -116,19 +116,19 @@ Today this rule fails for charms 4130–4139 (P1).
 
 ## 7. Compliance checklist
 
-- [ ] Odds shown before every random purchase (the Vault has an odds table; keep it
-      current with every collection).
+- [x] Odds shown before every random purchase (the Vault has an odds table; keep it
+      current with every collection; served via /steam/store/catalog and rendered in #vault-store-odds-table).
 - [ ] Direct-purchase alternative for every collection item (R1).
-- [ ] Region handling for paid random items (Belgium at minimum); ratings updated with
-      "Includes Random Items".
+- [x] Region handling for paid random items (Belgium at minimum); ratings updated with
+      "Includes Random Items" (implemented in server/steamStore.js, steamVaultUi.js, steamStoreCatalog.js, all 7 locales).
 - [ ] Microtransactions: `GetReport` reconciliation running (done), refund/chargeback
       revoke (P5), receipt log kept.
 - [ ] Steam store page: in-app purchases declared; Item Store live; reviewer purchase
       route in the notes.
 - [ ] No sales to accounts flagged as minors where platform rules require it (Steam
       handles account age; don't target children in store copy).
-- [ ] Terms: virtual items have no cash value; Steam's subscriber agreement governs
-      Wallet and Market.
+- [x] Terms: virtual items have no cash value; Steam's subscriber agreement governs
+      Wallet and Market (disclosed in /steam/store/catalog and rendered in Vault store).
 
 ## 8. Metrics to run the economy
 

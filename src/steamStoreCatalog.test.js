@@ -74,4 +74,35 @@ describe('steamStoreCatalog', () => {
         const formattedFive = formatStorePrice({ priceMinor: 449, currency: 'USD' }, 'en');
         expect(formattedFive).toContain('4.49');
     });
+
+    it('adapts region restriction metadata and statutory legal terms', () => {
+        const restrictedResponse = {
+            ...validResponse,
+            keysRestricted: true,
+            restrictedRegionReason: 'region_compliance_belgium',
+            restrictedRegionNotice: 'Paid keys unavailable in Belgium',
+            legalTerms: 'Virtual items have no cash value. Steam Subscriber Agreement governs.'
+        };
+        const adapted = adaptStoreCatalogResponse(restrictedResponse);
+        expect(adapted.keysRestricted).toBe(true);
+        expect(adapted.restrictedRegionReason).toBe('region_compliance_belgium');
+        expect(adapted.restrictedRegionNotice).toBe('Paid keys unavailable in Belgium');
+        expect(adapted.legalTerms).toBe('Virtual items have no cash value. Steam Subscriber Agreement governs.');
+        expect(adapted.catalog.every((sku) => sku.restricted === true)).toBe(true);
+    });
+
+    it('passes through priceCategory matching schema price tier when present', () => {
+        const schemaResponse = {
+            ...validResponse,
+            catalog: [
+                { sku: 'key_1', label: '1x Cache Key', keyCount: 1, priceCategory: '1;VLV100', priceUsdCents: 100, currency: 'USD' },
+                { sku: 'key_5', label: '5x Cache Key', keyCount: 5, priceCategory: '1;VLV400', priceUsdCents: 400, currency: 'USD' }
+            ]
+        };
+        const adapted = adaptStoreCatalogResponse(schemaResponse);
+        expect(adapted.catalog[0].priceCategory).toBe('1;VLV100');
+        expect(adapted.catalog[0].priceMinor).toBe(100);
+        expect(adapted.catalog[1].priceCategory).toBe('1;VLV400');
+        expect(adapted.catalog[1].priceMinor).toBe(400);
+    });
 });

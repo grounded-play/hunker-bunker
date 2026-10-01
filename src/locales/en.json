@@ -1196,6 +1196,8 @@
       "wallet_direct": "STEAM WALLET DIRECT",
       "store_offline": "STEAM ITEM STORE OFFLINE",
       "purchases_offline": "Steam Store purchases are offline for this build.",
+      "purchases_region_restricted": "Paid key purchases are unavailable in your region in accordance with local regulations.",
+      "region_restricted": "REGION RESTRICTED",
       "qa_grant": "Synthetic QA grant: +{count} non-tradable Relic Key(s). No purchase was initiated.",
       "purchases_disabled": "Purchases are disabled in this beta. Use Armory QA GRANT TEST KIT for non-tradable test items.",
       "key_and_cache_required": "Key & Cache required for decryption.",

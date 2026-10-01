@@ -361,7 +361,10 @@ function prepareUniformScaleModel(model, type, config) {
     });
     useSinglePassForFlatMaterials(model);
     // After the flat-material pass: shared materials must not be mutated per piece.
-    applyKitMaterials(model, type);
+    applyKitMaterials(model, type, null, {
+        skinOverride: config.skin || config.theme,
+        dynamicVariations: config.dynamicVariations ?? false
+    });
     const root = new THREE.Group();
     root.name = `World3d:${type}`;
     root.add(model);

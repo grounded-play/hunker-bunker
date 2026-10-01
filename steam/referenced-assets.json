@@ -1460,7 +1460,7 @@
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/better-todo-tree-20261001-1442.txt",
-      "bytes": 5662,
+      "bytes": 7340,
       "classification": "unknown"
     },
     {
@@ -1864,6 +1864,106 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/kits/textures/biomech_floor_color.webp",
+      "bytes": 211924,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/biomech_floor_emissive.webp",
+      "bytes": 48212,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/biomech_floor_normal.webp",
+      "bytes": 210950,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/biomech_floor_rough.webp",
+      "bytes": 70836,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/biomech_wall_color.webp",
+      "bytes": 331944,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/biomech_wall_emissive.webp",
+      "bytes": 38708,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/biomech_wall_normal.webp",
+      "bytes": 320638,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/biomech_wall_rough.webp",
+      "bytes": 109062,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/bunker_floor_color.webp",
+      "bytes": 260574,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/bunker_floor_normal.webp",
+      "bytes": 267780,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/bunker_floor_rough.webp",
+      "bytes": 57830,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/bunker_wall_color.webp",
+      "bytes": 162760,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/bunker_wall_normal.webp",
+      "bytes": 167868,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/bunker_wall_rough.webp",
+      "bytes": 25392,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cathedral_floor_color.webp",
+      "bytes": 313316,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cathedral_floor_normal.webp",
+      "bytes": 270508,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cathedral_floor_rough.webp",
+      "bytes": 37342,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cathedral_wall_color.webp",
+      "bytes": 309764,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cathedral_wall_normal.webp",
+      "bytes": 293512,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cathedral_wall_rough.webp",
+      "bytes": 29110,
+      "classification": "unknown"
+    },
+    {
       "path": "3d/runtime/kits/textures/cave_floor_color.webp",
       "bytes": 332476,
       "classification": "unknown"
@@ -1935,72 +2035,72 @@
     },
     {
       "path": "3d/runtime/new3ds/arch_bulkhead_frame.glb",
-      "bytes": 97432,
+      "bytes": 937180,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_deco_archway_grand_01.glb",
-      "bytes": 91684,
+      "bytes": 610768,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_deco_archway_grand_02.glb",
-      "bytes": 112332,
+      "bytes": 1312864,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_deco_archway_grand_03.glb",
-      "bytes": 91768,
+      "bytes": 609880,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_deco_archway_grand_04.glb",
-      "bytes": 96400,
+      "bytes": 674656,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_niche_shrine.glb",
-      "bytes": 92316,
+      "bytes": 678192,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_pillar_buttress_01.glb",
-      "bytes": 110852,
+      "bytes": 872992,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_pillar_buttress_02.glb",
-      "bytes": 106720,
+      "bytes": 943880,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_pillar_buttress_03.glb",
-      "bytes": 94808,
+      "bytes": 806756,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_pillar_buttress_04.glb",
-      "bytes": 112356,
+      "bytes": 1153348,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_rib_ceiling_vault_01.glb",
-      "bytes": 91312,
+      "bytes": 776576,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_rib_ceiling_vault_02.glb",
-      "bytes": 88704,
+      "bytes": 799192,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_rib_ceiling_vault_03.glb",
-      "bytes": 95896,
+      "bytes": 756376,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_window_stained.glb",
-      "bytes": 119088,
+      "bytes": 1044396,
       "classification": "runtime-required"
     },
     {
@@ -2245,7 +2345,7 @@
     },
     {
       "path": "3d/runtime/new3ds/fixture_clock_dead.glb",
-      "bytes": 103540,
+      "bytes": 901992,
       "classification": "runtime-required"
     },
     {
@@ -2500,7 +2600,7 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_chair_operator_wrecked.glb",
-      "bytes": 103216,
+      "bytes": 866704,
       "classification": "runtime-required"
     },
     {
@@ -2525,7 +2625,7 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_flesh_steel_coffin.glb",
-      "bytes": 104828,
+      "bytes": 992684,
       "classification": "runtime-required"
     },
     {
@@ -2535,22 +2635,22 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_flesh_steel_inhaler.glb",
-      "bytes": 93996,
+      "bytes": 742808,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_fungal_mycelium_loom.glb",
-      "bytes": 90048,
+      "bytes": 877076,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_fungal_resin_basin.glb",
-      "bytes": 89576,
+      "bytes": 524088,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_fungal_spore_dispenser.glb",
-      "bytes": 84796,
+      "bytes": 609832,
       "classification": "runtime-required"
     },
     {
@@ -2565,17 +2665,17 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_icey_frost_manifold.glb",
-      "bytes": 95952,
+      "bytes": 917464,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_icey_frost_vent.glb",
-      "bytes": 84368,
+      "bytes": 792340,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_icey_thermal_pod.glb",
-      "bytes": 90592,
+      "bytes": 823956,
       "classification": "runtime-required"
     },
     {
@@ -2585,12 +2685,12 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_light_cluster_dripping.glb",
-      "bytes": 99468,
+      "bytes": 678604,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_locker_bulged.glb",
-      "bytes": 98916,
+      "bytes": 991136,
       "classification": "runtime-required"
     },
     {
@@ -2615,7 +2715,7 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_shrine_plinth_broken.glb",
-      "bytes": 84244,
+      "bytes": 855848,
       "classification": "runtime-required"
     },
     {
@@ -2625,7 +2725,7 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_storage_drum_dented.glb",
-      "bytes": 90124,
+      "bytes": 756520,
       "classification": "runtime-required"
     },
     {
@@ -2635,7 +2735,7 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_terminal_ruptured.glb",
-      "bytes": 96540,
+      "bytes": 767796,
       "classification": "runtime-required"
     },
     {
@@ -2645,12 +2745,12 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_valve_wheel_fused.glb",
-      "bytes": 91620,
+      "bytes": 681208,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_vent_grate_exploded.glb",
-      "bytes": 90804,
+      "bytes": 646600,
       "classification": "runtime-required"
     },
     {
@@ -2815,7 +2915,7 @@
     },
     {
       "path": "3d/runtime/new3ds/state_column_shattered.glb",
-      "bytes": 98912,
+      "bytes": 781076,
       "classification": "runtime-required"
     },
     {
@@ -2830,17 +2930,17 @@
     },
     {
       "path": "3d/runtime/new3ds/state_wall_breached_01.glb",
-      "bytes": 92560,
+      "bytes": 793044,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/state_wall_breached_02.glb",
-      "bytes": 109708,
+      "bytes": 1046708,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/state_wall_breached_03.glb",
-      "bytes": 103752,
+      "bytes": 1311380,
       "classification": "runtime-required"
     },
     {

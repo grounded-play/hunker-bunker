@@ -1196,6 +1196,8 @@
       "wallet_direct": "STEAM-GUTHABEN DIREKT",
       "store_offline": "STEAM-ITEM-SHOP OFFLINE",
       "purchases_offline": "Steam-Shop-Käufe sind in diesem Build offline.",
+      "purchases_region_restricted": "Käufe von Schlüsseln sind in Ihrer Region aufgrund lokaler Vorschriften nicht verfügbar.",
+      "region_restricted": "REGION EINGESCHRÄNKT",
       "qa_grant": "Synthetische QA-Vergabe: +{count} nicht handelbare Relikt-Schlüssel. Es wurde kein Kauf ausgelöst.",
       "purchases_disabled": "Käufe sind in dieser Beta deaktiviert. Nutze QA GRANT TEST KIT in der Waffenkammer für nicht handelbare Testgegenstände.",
       "key_and_cache_required": "Für die Entschlüsselung werden Schlüssel und Cache benötigt.",

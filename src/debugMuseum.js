@@ -14,6 +14,7 @@ import { createDebugWallDecalDisplay } from './debugShowroom.js';
 import { createWorld3dModel, createWorld3dStructure } from './world3dOverlay.js';
 import { createEnemy3dVisual } from './enemy3dOverlay.js';
 import { MUSEUM_OPERATOR_HEIGHT, buildMuseumExhibitPlan } from './debugMuseumPlan.js';
+import { updateKitMaterials } from './kitMaterials.js';
 import { AudioManager } from './audio.js';
 import { getVoiceScriptRows } from './data/voiceBanks.js';
 import { SONG_INTERSTITIALS } from './songInterstitials.js';
@@ -77,6 +78,7 @@ function startMuseumAnimationLoop(group) {
             for (const item of rotatingItems) {
                 item.rotation.y += delta * 0.75;
             }
+            updateKitMaterials(now / 1000);
             _museumAnimFrame = requestAnimationFrame(tick);
         }
     }

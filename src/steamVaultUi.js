@@ -119,6 +119,9 @@ let storePurchasesEnabled = false;
 let storePurchaseMode = 'disabled';
 let storeDisabledReason = 'catalog_unavailable';
 let storeHostedItemStore = null;
+let storeKeysRestricted = false;
+let storeRestrictedNotice = null;
+let storeLegalTerms = null;
 
 let vaultItems = [];
 // Which inventory `vaultItems` holds: 'steam' (the service's response) or
@@ -739,9 +742,16 @@ export async function loadStoreCatalog() {
             storePurchaseMode = result.purchaseMode ?? (storePurchasesEnabled ? 'live' : 'disabled');
             storeDisabledReason = result.disabledReason ?? null;
             storeHostedItemStore = result.hostedItemStore ?? null;
+            storeKeysRestricted = Boolean(adapted.keysRestricted);
+            storeRestrictedNotice = adapted.restrictedRegionNotice ?? null;
+            storeLegalTerms = adapted.legalTerms ?? null;
         }
     }
 }
+
+export function getStoreKeysRestricted() { return storeKeysRestricted; }
+export function getStoreRestrictedNotice() { return storeRestrictedNotice; }
+export function getStoreLegalTerms() { return storeLegalTerms; }
 
 function escapeStoreText(value) {
     return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
@@ -763,19 +773,40 @@ export function renderStoreSkuGrid() {
         return;
     }
 
+    let noticeEl = document.getElementById('vault-store-region-notice');
+    if (storeKeysRestricted) {
+        if (!noticeEl && grid.parentElement) {
+            noticeEl = document.createElement('div');
+            noticeEl.id = 'vault-store-region-notice';
+            noticeEl.className = 'vault-store-region-notice';
+            noticeEl.setAttribute('role', 'alert');
+            grid.parentElement.insertBefore(noticeEl, grid);
+        }
+        if (noticeEl) {
+            noticeEl.textContent = storeRestrictedNotice
+                || 'Paid random item keys are unavailable in your region in accordance with local regulations. Direct collection purchases and in-game crafting remain available.';
+            noticeEl.style.display = '';
+        }
+    } else if (noticeEl) {
+        noticeEl.style.display = 'none';
+    }
+
     for (const sku of storeCatalog) {
         const card = document.createElement('div');
         card.className = 'vault-store-sku-card';
         // Microtransactions checkout when the backend runs it; otherwise the
         // key's own page in Steam's hosted Item Store.
         const viaHostedStore = !storePurchasesEnabled && hostedItemStoreEnabled();
-        const purchasable = storePurchasesEnabled || (viaHostedStore && Boolean(HOSTED_STORE_ITEMDEF_BY_SKU[sku.sku]));
+        const isRestricted = storeKeysRestricted || Boolean(sku.restricted);
+        const purchasable = !isRestricted && (storePurchasesEnabled || (viaHostedStore && Boolean(HOSTED_STORE_ITEMDEF_BY_SKU[sku.sku])));
         // The public USD MicroTxn catalog is not a quote for Steam's hosted
         // Item Store. Steam shows its own account-currency total at checkout.
         const priceLabel = viaHostedStore ? 'PRICE SHOWN ON STEAM' : formatStorePrice(sku, getLocale());
-        const buttonLabel = storePurchasesEnabled
-            ? (storePurchaseMode === 'mock' ? '◈ BUY (DEV)' : '◈ BUY VIA STEAM')
-            : viaHostedStore ? t('ui.vault.buy_on_steam') : formatStoreDisabledReason(storeDisabledReason);
+        const buttonLabel = isRestricted
+            ? t('ui.vault.region_restricted')
+            : (storePurchasesEnabled
+                ? (storePurchaseMode === 'mock' ? '◈ BUY (DEV)' : '◈ BUY VIA STEAM')
+                : viaHostedStore ? t('ui.vault.buy_on_steam') : formatStoreDisabledReason(storeDisabledReason));
         const keyCount = sku.keyCount;
         card.innerHTML = `
             <div class="vault-store-sku-top">
@@ -792,6 +823,18 @@ export function renderStoreSkuGrid() {
         const buyBtn = card.querySelector('.vault-store-buy-btn');
         buyBtn?.addEventListener('click', () => (viaHostedStore ? openHostedSteamItemStore(sku.sku) : purchaseKeys(sku.sku)));
         grid.appendChild(card);
+    }
+
+    let legalEl = document.getElementById('vault-store-legal-terms');
+    if (!legalEl && grid.parentElement) {
+        legalEl = document.createElement('div');
+        legalEl.id = 'vault-store-legal-terms';
+        legalEl.className = 'vault-store-legal-terms';
+        grid.parentElement.appendChild(legalEl);
+    }
+    if (legalEl) {
+        legalEl.textContent = storeLegalTerms
+            || 'Virtual items have no cash value. Steam Subscriber Agreement governs Steam Wallet and Community Market transactions. In-Game Purchases (Includes Random Items).';
     }
 }
 
@@ -899,6 +942,15 @@ export async function purchaseKeys(sku) {
             statusEl.textContent = t('ui.vault.purchases_offline');
         }
         return;
+    }
+
+    if (storeKeysRestricted || skuInfo.restricted) {
+        const statusEl = document.getElementById('vault-store-open-status');
+        if (statusEl) {
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = t('ui.vault.purchases_region_restricted');
+        }
+        return { ok: false, reason: 'region_restricted' };
     }
 
     if (!window.electronAPI?.purchaseSteamKeys) {

@@ -63,7 +63,12 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // compressed (1.5 MB) and no game loader can decode Draco, so none ever
 // loaded. Re-exported with tiling-texture UVs and lossless meshopt (8.1 MB)
 // plus four shared CC0 surface texture sets (3.1 MB).
-const PUBLIC_BUDGET = 2745 * 1024 * 1024;
+// Raised 2745->2770 MiB to restore 35 sprint-34 environment props (arches,
+// buttresses, vaults, fixtures, fungal/cryo/industrial props, breached-wall
+// states) from their ~50k-triangle sources at 12k triangles and 1024 WebP
+// (~0.85 MB each). The shipped 1k-triangle copies read as fragments and dark
+// slabs (3D asset audit 2026-10-01 section 3); +25 MB.
+const PUBLIC_BUDGET = 2770 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus
