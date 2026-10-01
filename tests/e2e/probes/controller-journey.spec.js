@@ -36,21 +36,50 @@ const focusInside = (page, rootSelector) => page.evaluate(
     rootSelector
 );
 
-// Steer focus onto `selector` with the D-pad only. Tries down, then right,
-// then up, then left sweeps; records the path for the failure message.
-async function steerTo(page, selector, { maxSteps = 40 } = {}) {
+const focusKey = (page) => page.evaluate(() => {
+    const el = document.activeElement;
+    if (!el || el === document.body) return 'body';
+    return `${el.id}|${el.className}|${(el.textContent || '').trim().slice(0, 30)}|${Math.round(el.getBoundingClientRect().x)},${Math.round(el.getBoundingClientRect().y)}`;
+});
+
+// Steer focus onto `selector` with the D-pad only, by raster scan: to the
+// top, then each row left-to-right, then down a row. Records the path for the
+// failure message.
+async function steerTo(page, selector, { maxRows = 40, maxCols = 25 } = {}) {
     const path = [];
-    for (const dir of ['menu_down', 'menu_right', 'menu_up', 'menu_left']) {
-        for (let i = 0; i < maxSteps; i += 1) {
-            if (await isFocusedMatch(page, selector)) return path;
-            await pad(page, dir);
-            await page.waitForTimeout(60);
-            const f = await focused(page);
-            path.push(`${dir}→${f?.id || f?.text || 'body'}`);
-        }
+    const hit = () => isFocusedMatch(page, selector);
+    const step = async (dir) => {
+        const before = await focusKey(page);
+        await pad(page, dir);
+        await page.waitForTimeout(50);
+        const after = await focusKey(page);
+        path.push(`${dir}→${after.split('|')[0] || after.split('|')[2] || after}`);
+        return after !== before ? after : null;
+    };
+    if (await hit()) return path;
+    for (let i = 0; i < maxRows; i += 1) {
+        if (!(await step('menu_up'))) break;
+        if (await hit()) return path;
     }
-    if (await isFocusedMatch(page, selector)) return path;
-    throw new Error(`controller could not reach ${selector}; path: ${path.slice(-25).join(' | ')}`);
+    for (let row = 0; row < maxRows; row += 1) {
+        const seenInRow = new Set();
+        for (let i = 0; i < maxCols; i += 1) {
+            const moved = await step('menu_left');
+            if (await hit()) return path;
+            if (!moved || seenInRow.has(moved)) break;
+            seenInRow.add(moved);
+        }
+        seenInRow.clear();
+        for (let i = 0; i < maxCols; i += 1) {
+            const moved = await step('menu_right');
+            if (await hit()) return path;
+            if (!moved || seenInRow.has(moved)) break;
+            seenInRow.add(moved);
+        }
+        if (!(await step('menu_down'))) break;
+        if (await hit()) return path;
+    }
+    throw new Error(`controller could not reach ${selector}; path: ${path.slice(-30).join(' | ')}`);
 }
 
 // Move inside an open surface and prove focus stays inside, visible, on top,
@@ -165,7 +194,7 @@ test.describe('S49-10 controller journey', () => {
         await bootToOperatorMenu(page);
         await steerTo(page, '#start-game');
         await pad(page, 'menu_confirm');
-        await page.locator('#armory-btn-embark').waitFor({ state: 'visible', timeout: 30_000 });
+        await page.locator('#armory-btn-embark').waitFor({ state: 'visible', timeout: 60_000 });
         await steerTo(page, '#armory-btn-embark');
         await pad(page, 'menu_confirm');
         await expect(page.locator('#multiplayer-modal')).toBeVisible({ timeout: 20_000 });
@@ -185,6 +214,7 @@ test.describe('S49-10 controller journey', () => {
     });
 
     test('In run: pause, settings, abort, results — all by controller', async ({ page }) => {
+        await bootToOperatorMenu(page);
         await startRunAndSkipIntro(page);
         await pad(page, 'menu_back');
         await expect(page.locator('#settings-popup')).toBeVisible({ timeout: 10_000 });

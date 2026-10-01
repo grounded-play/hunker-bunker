@@ -75,19 +75,42 @@ That commit (made by another contributor's sweep) contains this lane's
 the code they test. The two are correct together. Commit promptly: untracked or
 modified files in the shared tree can be swept into someone else's commit.
 
-### In progress: S49-10 controller journey probe
+### S49-10: controller journey probe and what it found
 
-`tests/e2e/probes/controller-journey.spec.js` drives the Vault, Foundry, Content Guide
-(transcript scroll), commentary list, multiplayer console, and in-run pause → abort →
-results using only `gamepad-menu-nav` events after boot. Run it with
-`HB_PROBES=1` against a dev server with HMR off (other contributors' edits reload a
-watched server mid-test); see the dev-server recipe in the e2e notes.
+`tests/e2e/probes/controller-journey.spec.js` drives the Vault/Foundry hub, Content
+Guide (transcript scroll), commentary list, multiplayer console, and in-run pause →
+abort → results using only `gamepad-menu-nav` events after boot. It reaches targets by
+raster scan, so a failure means the D-pad truly cannot get there. Run with
+`HB_PROBES=1` against a dev server with HMR **and** file watching off (other
+contributors' edits otherwise reload the page mid-test). Restart that server after
+every source edit, or it serves stale modules. Kill it by port PID, never `pkill -f`
+(the pattern matches your own shell).
+
+Fixed from its findings:
+- `a73f5a06`: the Content Guide row was stranded under the CONTROLS tab (the Gore toggle
+  beside it had moved to ACCESSIBILITY). It now sits under ACCESSIBILITY, and the
+  reviewer access text names the tab.
+- `228936b8`: the Content Guide opened from Settings drew on top, but the D-pad drove
+  Settings behind it. `getControllerFocusRoot` takes the first open root in
+  `MENU_FOCUS_ROOT_IDS`, and `settings-popup` came first. A test pins every
+  Settings-launched surface ahead of it.
+- `e12b4beb`: closing the Foundry hub left focus on a bare `<div>`; the hub now returns
+  focus to its opener.
+- `35cdecc5` (S49-31 telemetry, from the QA logs): draw calls and triangles cover the
+  whole frame. `b388698f`: biome hysteresis.
+
+Not bugs (probe assumptions corrected): with the hub on, Vault and Foundry both open
+`#foundry-hub-modal`, not `#steam-vault-modal`. The Store tab appears only when
+purchases are available. Commentary READ ALL is under the AUDIO tab.
+
+Already fixed in 2.4.13 (from the QA logs): a cooldown-blocked shot no longer plays
+`ui_error`, and the reload-blocked buzz is throttled.
 
 ## Next
 
-1. **S49-11 (optional):** show each node's `interstitial` still in the reader.
-2. **S49-10:** extend `tests/e2e/probes/steam-review-2026-09.spec.js` (or a sibling
-   probe) to walk title → character → Armory → Foundry → Vault → settings →
-   achievements → commentary → Content Guide → multiplayer → pause → results by
-   controller only. Record each failure here before fixing it.
-3. **S49-06:** audit commentary entries for concrete development insight.
+1. **S49-10:** get `controller-journey.spec.js` fully green and fix whatever else it
+   finds (multiplayer back-out focus, in-run pause/abort/results).
+2. **S49-06:** audit commentary entries (`COMMENTARY_ENTRIES` in `main.js`) for
+   concrete development insight. `main.js` is the other lane's primary file, so
+   keep the edit to that block.
+3. **S49-11 (optional):** show each node's `interstitial` still in the reader.
