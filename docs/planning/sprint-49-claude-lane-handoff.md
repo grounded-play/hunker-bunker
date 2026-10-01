@@ -140,10 +140,17 @@ ACCESSIBILITY, reader, scroll, back ×2), commentary READ ALL, multiplayer conso
 Armory slot picker, Archive, Codex, Dossier, Title Quit confirm, and in-run pause →
 abort → results. All by `gamepad-menu-nav` only.
 
-**Known pre-existing failure, not from this lane:** `controller-focus.spec.js` "settings
-menu crosshair color is a sub-menu…" fails identically on `95ff7285`. It closes the
-popup with a mouse click, and focus then follows the pointer rather than returning to
-the trigger.
+- `0869c05f`: a popup closing under a still mouse no longer pulls focus off its trigger.
+  A `pointerover` at the last real `pointermove` position is a layout change and is
+  ignored. This fixes `controller-focus.spec.js` "settings menu crosshair color…",
+  which also failed on the pre-session baseline `95ff7285`.
+
+**Last full verification (2026-10-01):**
+- `npx vitest run`: 525 files, 4,589 tests passing.
+- `controller-journey.spec.js` (all 15) + `steam-review-2026-09.spec.js` (4/4) +
+  `controller-focus.spec.js`: 37/38 in one run. The one miss was a dropdown-picker
+  test that is flaky under load; it and the other settings-popup tests then passed
+  12/12 in a repeat run.
 
 ## Next
 
@@ -152,8 +159,7 @@ the trigger.
    Content Guide (Settings > Accessibility) and its cinematics; a backend redeploy so
    the relay build gate takes effect; a two-account co-op re-test on **matched**
    builds (down → revive, abort → TRY AGAIN → partner death).
-2. **Code, open in this lane:** the crosshair-popup mouse-close focus (above); the
-   LB+RB+R3 gallery shortcut still reads only the browser gamepad API (Settings is the
+2. **Code, open in this lane:** the LB+RB+R3 gallery shortcut still reads only the browser gamepad API (Settings is the
    controller route); QA-log items still open: deploy-wait phase attribution, guest O2
    near the bunker, the 3,250 depth XP grant.
 3. **Not this lane:** chat (S49-02/03/04), store/settlement (S49-07/08). See the other
