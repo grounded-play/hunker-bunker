@@ -36,6 +36,9 @@ export const MENU_FOCUS_ROOT_IDS = Object.freeze([
     'language-select-popup',
     'controls-popup',
     'commentary-list-modal',
+    // Opened from Settings and drawn above it, so they must win focus over it.
+    'mature-content-audit-modal',
+    'progression-walkthrough-modal',
     'settings-popup',
     'about-modal',
     'archive-log-detail-modal',
@@ -52,8 +55,6 @@ export const MENU_FOCUS_ROOT_IDS = Object.freeze([
     'steam-vault-modal',
     'player-trade-modal',
     'multiplayer-modal',
-    'mature-content-audit-modal',
-    'progression-walkthrough-modal',
     'armory-picker-modal',
     'operator-polish-modal',
     'tactical-map-modal',

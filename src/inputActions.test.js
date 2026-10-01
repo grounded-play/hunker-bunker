@@ -14,6 +14,22 @@ import {
 } from './inputActions.js';
 
 describe('menu focus surface registry', () => {
+    it('lets every surface Settings opens own the controller over Settings', () => {
+        // QA 2026-10-01 (S49-10): the Content Guide opened from Settings drew
+        // on top, but the D-pad kept moving focus through Settings behind it,
+        // because the first open root in this list wins.
+        const openedFromSettings = [
+            'audio-mixer-popup', 'commentary-list-modal', 'controls-popup',
+            'crosshair-color-popup', 'language-select-popup', 'mature-content-audit-modal',
+            'progression-walkthrough-modal', 'quit-confirm-modal', 'reset-save-confirm-modal',
+            'save-data-popup'
+        ];
+        for (const id of openedFromSettings) {
+            expect(MENU_FOCUS_ROOT_IDS.indexOf(id), id).toBeGreaterThanOrEqual(0);
+            expect(MENU_FOCUS_ROOT_IDS.indexOf(id), id).toBeLessThan(MENU_FOCUS_ROOT_IDS.indexOf('settings-popup'));
+        }
+    });
+
     it('has unique roots ordered with transient reveals before parent menus', () => {
         expect(new Set(MENU_FOCUS_ROOT_IDS).size).toBe(MENU_FOCUS_ROOT_IDS.length);
         expect(MENU_FOCUS_ROOT_IDS.indexOf('progression-reward-overlay'))
