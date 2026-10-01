@@ -1,18 +1,18 @@
 {
   "version": 1,
   "budgets": {
-    "publicBytes": 2888826880,
+    "publicBytes": 2846883840,
     "appAsarBytes": 996147200,
     "unknownAssets": 160,
     "codecMismatches": 140,
     "duplicateGroups": 15
   },
   "measured": {
-    "publicBytes": 2883397717,
-    "publicFileCount": 1995
+    "publicBytes": 2839692049,
+    "publicFileCount": 1986
   },
   "classifications": {
-    "runtime-required": 1726,
+    "runtime-required": 1717,
     "source-reference": 0,
     "generated-intermediate": 208,
     "unknown": 61
@@ -612,69 +612,6 @@
     }
   ],
   "duplicateChecksums": [
-    {
-      "sha256": "b6ed03d75f5e2ce597f34f2b8c2bffa2c61cf04f099c60f9f880d27ec96f0d6b",
-      "files": [
-        "3d/runtime/community/scout_corpo_shadow_runner.glb",
-        "3d/runtime/new3ds/chassis_scout_ghost_runner.glb"
-      ]
-    },
-    {
-      "sha256": "4ab2d4597347b6d9bc95c458e148480287c6f40a618e845044c72e2bba57318f",
-      "files": [
-        "3d/runtime/community/scout_xeno_stalker.glb",
-        "3d/runtime/new3ds/bio_charger.glb"
-      ]
-    },
-    {
-      "sha256": "f109ebb66a99b441281a5601dafec80ab973b4517aabce0e44e4b229ec9654d7",
-      "files": [
-        "3d/runtime/new3ds/boss_corrupted_briggs.glb",
-        "3d/runtime/new3ds/boss_corrupted_tank.glb"
-      ]
-    },
-    {
-      "sha256": "0dd97d2e8e11ff4ff8c4d7c7e04c86ec0c190d20fa3d8e0ade02a9b765a740e0",
-      "files": [
-        "3d/runtime/new3ds/boss_corrupted_engineer.glb",
-        "3d/runtime/new3ds/npc_kaelen.glb"
-      ]
-    },
-    {
-      "sha256": "b2cba513ee003432dfb75f74505a488652a501a8ad54f4c9e9b49fdb8f06118d",
-      "files": [
-        "3d/runtime/new3ds/boss_corrupted_martha.glb",
-        "3d/runtime/new3ds/boss_corrupted_scout.glb"
-      ]
-    },
-    {
-      "sha256": "d44944dfaa479177c24e973597c2277ab4e9fd06de963d73b5a53b287eb70d75",
-      "files": [
-        "3d/runtime/new3ds/gun_engineer_tesla_lock.glb",
-        "3d/runtime/new3ds/skin_engineer_archival_constructor.glb"
-      ]
-    },
-    {
-      "sha256": "563fa11eae7ea8542897e2f0b2685ffc3135baa74c23db99b2dfc2f6a1ecefff",
-      "files": [
-        "3d/runtime/new3ds/gun_scout_talon_c.glb",
-        "3d/runtime/new3ds/skin_scout_chrono_drifter.glb"
-      ]
-    },
-    {
-      "sha256": "cc4bdf89d4ffdf9e92b129b67afe9941bb98c126c903e79db86a68543d0db610",
-      "files": [
-        "3d/runtime/new3ds/gun_tank_siege_breaker50.glb",
-        "3d/runtime/new3ds/skin_tank_bunker_bastion.glb"
-      ]
-    },
-    {
-      "sha256": "6d8234c4f7dffb4cb53679d5d076e81c4f5e8da21cd94e8e4e2e0a0eea2f6a2d",
-      "files": [
-        "3d/runtime/new3ds/skin_engineer_hive_weaver.glb",
-        "3d/runtime/new3ds/skin_queen_carapace_carbine.glb"
-      ]
-    },
     {
       "sha256": "cc9655c87efbfeb86e0aa6856b7d0f55790964c990b1073f2378205dc6ee409a",
       "files": [

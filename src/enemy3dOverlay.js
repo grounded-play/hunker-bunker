@@ -33,7 +33,8 @@ const MODEL_CONFIG = {
     // without touching it (the same trick cryosnail plays on the cybersnail
     // mesh). Shape differences live in the GLB, colour differences live here.
     alien_proto_crawler_A: { url: '/3d/runtime/new3ds/alien_proto_crawler_A.glb', height: 0.98, yaw: 0, tint: 0xc2a887 },
-    alien_proto_spitter: { url: '/3d/runtime/new3ds/alien_proto_crawler_A.glb', height: 0.95, yaw: 0 },
+    // Shares the crawler's body; an acid-green cast marks the ranged threat.
+    alien_proto_spitter: { url: '/3d/runtime/new3ds/alien_proto_crawler_A.glb', height: 0.95, yaw: 0, tint: 0x9fe07a },
     sentinel: { url: '/3d/runtime/new3ds/sentinel.glb', height: 1.25, yaw: 0 },
     // Lighter, faster scout variant (4 HP vs sentinel_B's 5) -- rendered a
     // touch shorter as well, so the weight difference reads before it is shot.
@@ -41,10 +42,14 @@ const MODEL_CONFIG = {
     // Heavy variant: biggest of the three, warm rust cast against _A's cold one.
     sentinel_B: { url: '/3d/runtime/new3ds/sentinel_B.glb', height: 1.32, yaw: 0, tint: 0xd8b48c },
     mycelium_stalker: { url: '/3d/runtime/community/scout_xeno_stalker.glb', height: 1.35, yaw: 0 },
-    bio_charger: { url: '/3d/runtime/new3ds/bio_charger.glb', height: 1.45, yaw: 0 },
-    boss_corrupted_scout: { url: '/3d/runtime/new3ds/boss_corrupted_scout.glb', height: 1.45, yaw: 0 },
-    boss_corrupted_tank: { url: '/3d/runtime/new3ds/boss_corrupted_tank.glb', height: 1.65, yaw: 0 },
-    boss_corrupted_engineer: { url: '/3d/runtime/new3ds/boss_corrupted_engineer.glb', height: 1.45, yaw: 0, tint: 0xa87766 },
+    // Stand-ins until dedicated models exist (3D asset audit 2026-10-01):
+    // the charger shares the stalker's body, and the corrupted operators use
+    // the corrupted camp leaders they became (Briggs, Martha; Kaelen tinted).
+    // Paths point at the originals rather than byte-identical copies.
+    bio_charger: { url: '/3d/runtime/community/scout_xeno_stalker.glb', height: 1.45, yaw: 0 },
+    boss_corrupted_scout: { url: '/3d/runtime/new3ds/boss_corrupted_martha.glb', height: 1.45, yaw: 0 },
+    boss_corrupted_tank: { url: '/3d/runtime/new3ds/boss_corrupted_briggs.glb', height: 1.65, yaw: 0 },
+    boss_corrupted_engineer: { url: '/3d/runtime/new3ds/npc_kaelen.glb', height: 1.45, yaw: 0, tint: 0xa87766 },
     boss_queen: { url: '/3d/runtime/queen.glb', height: 2.35, yaw: Math.PI }
 };
 

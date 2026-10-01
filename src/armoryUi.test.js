@@ -372,35 +372,23 @@ describe('createArmoryUi ownership gating', () => {
         expect(html).not.toMatch(/data-value="comm_scout_foxhole_shadow"[^>]*aria-disabled/);
     });
 
-    it('shows the GHOST chassis now that its rigged model exists', () => {
+    it('hides the GHOST chassis until its missing rigged model exists', () => {
         ownership.grantDev(5001, 1);
         mount();
         const html = openSlotHtml(container, 'chassis');
-        expect(html).toContain('data-value="5001"');
+        expect(html).not.toContain('data-value="5001"');
     });
 
-    it('shows achievement weapons for their respective classes now that their authored GLBs exist', () => {
+    it('hides pending achievement weapons until their authored GLBs exist', () => {
         for (const id of [5002, 5006, 5009, 5010]) ownership.grantDev(id, 1);
         mount();
-
-        const scoutTab = container.querySelectorAll('.class-tab').find((tab) => tab.dataset.class === 'scout');
-        scoutTab?.click();
-        const scoutHtml = openSlotHtml(container, 'weapon');
-        expect(scoutHtml).toContain('data-value="5002"');
-        expect(scoutHtml).not.toContain('data-value="5006"');
-
-        const tankTab = container.querySelectorAll('.class-tab').find((tab) => tab.dataset.class === 'tank');
-        tankTab?.click();
-        const tankHtml = openSlotHtml(container, 'weapon');
-        expect(tankHtml).toContain('data-value="5006"');
-        expect(tankHtml).not.toContain('data-value="5002"');
-
-        const engTab = container.querySelectorAll('.class-tab').find((tab) => tab.dataset.class === 'engineer');
-        engTab?.click();
-        const engHtml = openSlotHtml(container, 'weapon');
-        expect(engHtml).toContain('data-value="5009"');
-        expect(engHtml).toContain('data-value="5010"');
-        expect(engHtml).not.toContain('data-value="5002"');
+        for (const classButton of ['scout', 'tank', 'engineer']) {
+            container.querySelector(`[data-armory-class="${classButton}"]`)?.click();
+            const html = openSlotHtml(container, 'weapon');
+            for (const id of ['5002', '5006', '5009', '5010']) {
+                expect(html).not.toContain(`data-value="${id}"`);
+            }
+        }
     });
 
     it('renders an owned item enabled and without a locked label', () => {

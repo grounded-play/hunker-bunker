@@ -40,17 +40,16 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // three phased corrupted-operator bosses and the bio charger (3482799b,
 // ~54 MiB; bio_charger.glb alone is 18.4 MiB and is queued for mesh
 // compression in Sprint 49, S49-31).
-// Lowered 2780->2755 MiB in Sprint 49 (S49-31). The five largest of those
-// models are byte-identical copies of existing GLBs (bio_charger =
-// community/scout_xeno_stalker, chassis_scout_ghost_runner =
-// community/scout_corpo_shadow_runner, boss_corrupted_tank/engineer/scout =
-// boss_corrupted_briggs / npc_kaelen / boss_corrupted_martha; see the
-// duplicate groups). Both files of each pair had their PNG textures
-// re-encoded as lossless WebP (EXT_texture_webp, already used by 14 shipped
-// GLBs), saving 24.8 MiB with renders verified pixel-identical; each pair is
-// still byte-identical, so the duplicates stay visible here. Meshopt was
-// tried and rejected: its quantization changed up to 40,788 rendered pixels.
-const PUBLIC_BUDGET = 2755 * 1024 * 1024;
+// Lowered 2780->2755 MiB in Sprint 49 (S49-31): PNG textures re-encoded as
+// lossless WebP, renders verified pixel-identical (meshopt was rejected: it
+// changed the render).
+// Lowered 2755->2715 MiB in Sprint 49 (3D asset audit 2026-10-01): nine of
+// the 3482799b "models" were byte-identical copies of existing GLBs under new
+// names (achievement rewards 5001/5002/5006/5009/5010, bio_charger and the
+// three corrupted bosses). The rewards went back to `pending`, the enemies
+// point at the originals, and the copies were deleted;
+// src/modelCatalogIntegrity.test.js now fails on any such copy.
+const PUBLIC_BUDGET = 2715 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus

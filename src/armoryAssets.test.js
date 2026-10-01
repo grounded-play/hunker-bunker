@@ -23,7 +23,7 @@ describe('Armory item presentation', () => {
         // honesty is in the emblem preview and the absent model below.
         expect(getCatalogEntry('5002').name).toBe('Chrono-Drifter Talon-C');
         expect(ARMORY_PREVIEWS['5002'].source).toBe('achievement-emblem');
-        expect(getArmoryModel('5002')).toBe('/3d/runtime/new3ds/skin_scout_chrono_drifter.glb');
+        expect(getArmoryModel('5002')).toBeNull();
         expect(getArmoryOfferedIds()['weapon frame']).not.toContain('frame:gg1');
     });
 });

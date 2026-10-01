@@ -33,5 +33,13 @@ describe('enemy 3D rigged locomotion routing', () => {
         expect(getEnemyAssetYaw('sporesnail')).toBe(Math.PI / 2);
         expect(getEnemyAssetYaw('boss_sporesnail')).toBe(Math.PI / 2);
     });
-});
 
+    it('tints the spitter so a ranged threat never reads as the crawler it shares a model with', async () => {
+        const { ENEMY_3D_MODELS } = await import('./enemy3dOverlay.js');
+        const spitter = ENEMY_3D_MODELS.alien_proto_spitter;
+        expect(spitter.tint).toBeTruthy();
+        for (const other of ['alien_proto_crawler', 'alien_proto_crawler_A']) {
+            expect(spitter.tint, other).not.toBe(ENEMY_3D_MODELS[other].tint);
+        }
+    });
+});
