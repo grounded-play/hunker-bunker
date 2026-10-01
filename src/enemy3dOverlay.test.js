@@ -43,12 +43,15 @@ describe('enemy 3D rigged locomotion routing', () => {
         }
     });
 
-    it('gives cryosnail ice emissive and low roughness to distinguish it from mechanical cybersnail', async () => {
+    it('gives cryosnail its own ice model instead of a recoloured cybersnail', async () => {
+        // Owner-supplied Regular Cryosnail (2026-10-01) replaces the tinted,
+        // emissive cybersnail stand-in.
         const { ENEMY_3D_MODELS } = await import('./enemy3dOverlay.js');
         const cryosnail = ENEMY_3D_MODELS.cryosnail;
-        expect(cryosnail.emissive).toBe(0x1e4970);
-        expect(cryosnail.roughness).toBe(0.22);
-        expect(cryosnail.metalness).toBe(0.7);
+        expect(cryosnail.url).toBe('/3d/runtime/new3ds/cryosnail.glb');
+        expect(cryosnail.url).not.toBe(ENEMY_3D_MODELS.cybersnail.url);
+        expect(cryosnail.tint).toBeUndefined();
+        expect(cryosnail.emissive).toBeUndefined();
     });
 
     it('gives boss_corrupted_engineer necrotic emissive to distinguish from friendly npc_kaelen', async () => {

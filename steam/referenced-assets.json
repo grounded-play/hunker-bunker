@@ -183,6 +183,7 @@
     "3d/runtime/new3ds/chassis_tank_old_iron.glb",
     "3d/runtime/new3ds/chassis_trench_warden_heavy.glb",
     "3d/runtime/new3ds/chassis_void_commando_recon.glb",
+    "3d/runtime/new3ds/cryosnail.glb",
     "3d/runtime/new3ds/cybersnail_dead.glb",
     "3d/runtime/new3ds/fixture_clock_dead.glb",
     "3d/runtime/new3ds/fixture_sconce_vine.glb",
@@ -2146,6 +2147,11 @@
     {
       "path": "3d/runtime/new3ds/chassis_void_commando_recon.glb",
       "bytes": 6367676,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/cryosnail.glb",
+      "bytes": 1634308,
       "classification": "runtime-required"
     },
     {

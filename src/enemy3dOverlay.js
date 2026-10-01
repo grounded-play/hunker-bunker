@@ -13,7 +13,8 @@ function createGltfLoader() {
 
 const MODEL_CONFIG = {
     cybersnail: { url: '/3d/runtime/cyber-snail.glb', height: 0.72, yaw: -Math.PI / 2 },
-    cryosnail: { url: '/3d/runtime/cyber-snail.glb', height: 0.76, yaw: -Math.PI / 2, tint: 0x9bdcff, emissive: 0x1e4970, roughness: 0.22, metalness: 0.7 },
+    // Owner-supplied Regular Cryosnail (art/raw/incoming_3d_20261001), 1.5M -> 25k tris.
+    cryosnail: { url: '/3d/runtime/new3ds/cryosnail.glb', height: 0.76, yaw: -Math.PI / 2 },
     sporesnail: { url: '/3d/runtime/new3ds/sporesnail.glb', height: 0.78, yaw: Math.PI / 2 },
     fungal_spore_vent: { url: '/3d/runtime/new3ds/fungal_spore_vent.glb', height: 0.82, yaw: 0 },
     spore_mortar: { url: '/3d/runtime/new3ds/spore_mortar.glb', height: 1.05, yaw: 0 },
