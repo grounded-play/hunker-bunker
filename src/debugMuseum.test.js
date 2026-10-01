@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { openDebugMuseum, closeDebugMuseum, buildMuseumAudioCatalog, setMuseumSpecimenState } from './debugMuseum.js';
 import { SHOWROOM_CATEGORIES, createDebugWallDecalDisplay } from './debugShowroom.js';
+import { MUSEUM_OPERATOR_HEIGHT, buildMuseumExhibitPlan } from './debugMuseumPlan.js';
 
 describe('Debug Hallway Museum', () => {
     let mockGame;
@@ -217,6 +218,35 @@ describe('Debug Hallway Museum', () => {
         expect(damaged.every((child) => child.visible)).toBe(true);
         expect(setMuseumSpecimenState(mockGame, 'intact')).toBe(true);
         expect(damaged.every((child) => !child.visible)).toBe(true);
+    });
+
+    it('reports a load result for every planned exhibit, failures included', async () => {
+        GLTFLoader.prototype.loadAsync.mockImplementation(async (url) => {
+            if (String(url).includes('tank-rigged')) throw new Error('404');
+            return { scene: new THREE.Group() };
+        });
+        await openDebugMuseum(mockGame);
+        const report = scene.getObjectByName('debug-museum').userData.museumReport;
+        const planned = buildMuseumExhibitPlan().reduce((n, c) => n + c.entries.length, 0);
+        expect(report).toHaveLength(planned);
+        const tank = report.find((row) => row.url === '/3d/runtime/tank-rigged.glb');
+        expect(tank).toMatchObject({ ok: false, category: 'OPERATOR BODIES' });
+        expect(tank.error).toBeTruthy();
+    });
+
+    it('stands operator bodies at the in-game player height on the pedestal, facing +Z', async () => {
+        GLTFLoader.prototype.loadAsync.mockImplementation(async () => {
+            const sceneRoot = new THREE.Group();
+            sceneRoot.add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 3, 0.4), new THREE.MeshBasicMaterial()));
+            return { scene: sceneRoot, animations: [] };
+        });
+        await openDebugMuseum(mockGame);
+        const report = scene.getObjectByName('debug-museum').userData.museumReport;
+        const scout = report.find((row) => row.url === '/3d/scouting-scout/Scout.game.glb');
+        expect(scout.ok).toBe(true);
+        expect(scout.size.y).toBeCloseTo(MUSEUM_OPERATOR_HEIGHT, 3);
+        expect(scout.minY).toBeCloseTo(0.6, 3);
+        expect(scout.yaw).toBe(0);
     });
 
     it('catalogs every song and alternate VO take without gameplay triggers', () => {

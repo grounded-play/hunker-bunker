@@ -1459,404 +1459,469 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/kits/modular-cave-kit/better-todo-tree-20261001-1442.txt",
+      "bytes": 5662,
+      "classification": "unknown"
+    },
+    {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-corner.glb",
-      "bytes": 10180,
+      "bytes": 45404,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-end.glb",
-      "bytes": 15524,
+      "bytes": 83260,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-intersection.glb",
-      "bytes": 3432,
+      "bytes": 17952,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-junction.glb",
-      "bytes": 7748,
+      "bytes": 37452,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-transition.glb",
-      "bytes": 24556,
+      "bytes": 137540,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-wide-corner.glb",
-      "bytes": 19672,
+      "bytes": 97056,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-wide-end.glb",
-      "bytes": 25180,
+      "bytes": 144616,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-wide-intersection.glb",
-      "bytes": 3516,
+      "bytes": 18000,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-wide-junction.glb",
-      "bytes": 11408,
+      "bytes": 57904,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-wide.glb",
-      "bytes": 17632,
+      "bytes": 97640,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor.glb",
-      "bytes": 11280,
+      "bytes": 57092,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/gate-metal-bars.glb",
-      "bytes": 9552,
+      "bytes": 42904,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/gate-overhang.glb",
-      "bytes": 2328,
+      "bytes": 8276,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/gate-rock.glb",
-      "bytes": 5400,
+      "bytes": 22292,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/gate.glb",
-      "bytes": 7544,
+      "bytes": 34124,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/ladder.glb",
-      "bytes": 2228,
+      "bytes": 10172,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/room-corner.glb",
-      "bytes": 41936,
+      "bytes": 225656,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/room-large-variation.glb",
-      "bytes": 87984,
+      "bytes": 488612,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/room-large.glb",
-      "bytes": 89008,
+      "bytes": 494232,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/room-small-variation.glb",
-      "bytes": 44500,
+      "bytes": 241864,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/room-small.glb",
-      "bytes": 40292,
+      "bytes": 217616,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/room-wide-variation.glb",
-      "bytes": 73244,
+      "bytes": 411120,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/room-wide.glb",
-      "bytes": 61540,
+      "bytes": 341880,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/stairs-wide.glb",
-      "bytes": 26100,
+      "bytes": 142860,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/stairs.glb",
-      "bytes": 25196,
+      "bytes": 139640,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-corner.glb",
-      "bytes": 9584,
+      "bytes": 42256,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-detail.glb",
-      "bytes": 6096,
+      "bytes": 25068,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-floor-big.glb",
-      "bytes": 10300,
+      "bytes": 45540,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-floor-detail-a.glb",
-      "bytes": 4240,
+      "bytes": 18272,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-floor-detail.glb",
-      "bytes": 4224,
+      "bytes": 18200,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-floor-layer-hole.glb",
-      "bytes": 4888,
+      "bytes": 24172,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-floor-layer-raised.glb",
-      "bytes": 3540,
+      "bytes": 19596,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-floor-layer.glb",
-      "bytes": 2500,
+      "bytes": 12744,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-floor.glb",
-      "bytes": 1184,
+      "bytes": 4348,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-wall-corner.glb",
-      "bytes": 2136,
+      "bytes": 7916,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-wall-detail-a.glb",
-      "bytes": 6524,
+      "bytes": 29208,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-wall-half.glb",
-      "bytes": 3720,
+      "bytes": 15648,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-wall-stairs.glb",
-      "bytes": 2636,
+      "bytes": 9928,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-wall-top.glb",
-      "bytes": 2768,
+      "bytes": 12156,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-wall.glb",
-      "bytes": 6568,
+      "bytes": 30824,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/cables.glb",
-      "bytes": 7444,
+      "bytes": 32688,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-corner.glb",
-      "bytes": 9764,
+      "bytes": 56504,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-end.glb",
-      "bytes": 7468,
+      "bytes": 55260,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-intersection.glb",
-      "bytes": 2876,
+      "bytes": 16056,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-junction.glb",
-      "bytes": 4496,
+      "bytes": 27344,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-transition.glb",
-      "bytes": 11124,
+      "bytes": 84992,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-wide-corner.glb",
-      "bytes": 14272,
+      "bytes": 90824,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-wide-end.glb",
-      "bytes": 23256,
+      "bytes": 161184,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-wide-intersection.glb",
-      "bytes": 2992,
+      "bytes": 16152,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-wide-junction.glb",
-      "bytes": 10084,
+      "bytes": 62412,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-wide.glb",
-      "bytes": 16200,
+      "bytes": 108720,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor.glb",
-      "bytes": 5652,
+      "bytes": 38304,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/gate-door-window.glb",
-      "bytes": 14304,
+      "bytes": 78772,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/gate-door.glb",
-      "bytes": 13676,
+      "bytes": 76012,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/gate-lasers.glb",
-      "bytes": 32584,
+      "bytes": 138024,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/gate.glb",
-      "bytes": 5132,
+      "bytes": 30664,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/room-corner.glb",
-      "bytes": 42468,
+      "bytes": 280892,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/room-large-variation.glb",
-      "bytes": 64612,
+      "bytes": 431216,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/room-large.glb",
-      "bytes": 72940,
+      "bytes": 482812,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/room-small-variation.glb",
-      "bytes": 27412,
+      "bytes": 188640,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/room-small.glb",
-      "bytes": 33516,
+      "bytes": 223260,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/room-wide-variation.glb",
-      "bytes": 66152,
+      "bytes": 443508,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/room-wide.glb",
-      "bytes": 59884,
+      "bytes": 395280,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/stairs-wide.glb",
-      "bytes": 16936,
+      "bytes": 124400,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/stairs.glb",
-      "bytes": 16780,
+      "bytes": 124452,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-corner.glb",
-      "bytes": 9340,
+      "bytes": 53736,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-detail.glb",
-      "bytes": 4768,
+      "bytes": 24644,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-floor-big.glb",
-      "bytes": 4680,
+      "bytes": 25004,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-floor-detail-a.glb",
-      "bytes": 1392,
+      "bytes": 4372,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-floor-detail.glb",
-      "bytes": 1720,
+      "bytes": 5648,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-floor-layer-hole.glb",
-      "bytes": 22360,
+      "bytes": 142276,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-floor-layer-raised.glb",
-      "bytes": 21664,
+      "bytes": 139024,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-floor-layer.glb",
-      "bytes": 4520,
+      "bytes": 26332,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-floor.glb",
-      "bytes": 1224,
+      "bytes": 4440,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-wall-corner.glb",
-      "bytes": 1992,
+      "bytes": 7388,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-wall-detail-a.glb",
-      "bytes": 8488,
+      "bytes": 50056,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-wall-half.glb",
-      "bytes": 1988,
+      "bytes": 8036,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-wall-stairs.glb",
-      "bytes": 2980,
+      "bytes": 14736,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-wall-top.glb",
-      "bytes": 3484,
+      "bytes": 18560,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-wall.glb",
-      "bytes": 3688,
+      "bytes": 21748,
       "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cave_floor_color.webp",
+      "bytes": 332476,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cave_floor_normal.webp",
+      "bytes": 618304,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cave_floor_rough.webp",
+      "bytes": 468370,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cave_wall_color.webp",
+      "bytes": 138038,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cave_wall_normal.webp",
+      "bytes": 474130,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cave_wall_rough.webp",
+      "bytes": 157520,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/space_floor_color.webp",
+      "bytes": 59032,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/space_floor_normal.webp",
+      "bytes": 223238,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/space_floor_rough.webp",
+      "bytes": 240142,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/space_wall_color.webp",
+      "bytes": 64764,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/space_wall_normal.webp",
+      "bytes": 25700,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/space_wall_rough.webp",
+      "bytes": 347484,
+      "classification": "unknown"
     },
     {
       "path": "3d/runtime/new3ds/alien_proto_crawler.glb",

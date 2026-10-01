@@ -19,10 +19,12 @@ describe('world 3D replacement catalog', () => {
         expect(WORLD_3D_MODELS.frozen_tanker.url).toBe('/3d/runtime/frozen-tanker.glb');
     });
 
-    it('keeps every model normalized to a positive gameplay height', () => {
-        for (const config of Object.values(WORLD_3D_MODELS)) {
-            expect(config.url.endsWith('.glb')).toBe(true);
-            expect(config.height).toBeGreaterThan(0);
+    // Modular kit pieces take one uniform scale instead (src/kitMaterials.js):
+    // per-piece height normalization broke their shared socket grid.
+    it('sizes every model by a positive gameplay height or a uniform kit scale', () => {
+        for (const [type, config] of Object.entries(WORLD_3D_MODELS)) {
+            expect(config.url.endsWith('.glb'), type).toBe(true);
+            expect(config.height ?? config.scale, type).toBeGreaterThan(0);
         }
     });
 

@@ -59,7 +59,11 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // second body of the same 5001 item (src/chassisBodies.js).
 // Raised 2730->2735 MiB for the rigged Mycelium Stalker quadruped (3.7 MiB),
 // which replaces a humanoid player skin on both the stalker and the charger.
-const PUBLIC_BUDGET = 2735 * 1024 * 1024;
+// Raised 2735->2745 MiB for the 80 modular kit pieces: they shipped Draco-
+// compressed (1.5 MB) and no game loader can decode Draco, so none ever
+// loaded. Re-exported with tiling-texture UVs and lossless meshopt (8.1 MB)
+// plus four shared CC0 surface texture sets (3.1 MB).
+const PUBLIC_BUDGET = 2745 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus
