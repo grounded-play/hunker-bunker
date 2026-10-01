@@ -23,9 +23,87 @@ function isButtonKey(key, value) {
     return typeof value === 'boolean' && !NON_BUTTON_FLAGS.has(key);
 }
 
+export const EQUIVALENT_ACTION_GROUPS = [
+    new Set(['menuBack', 'dash', 'archiveBack']),
+    new Set(['menuConfirm', 'interact', 'archiveConfirm']),
+    new Set(['menuTabLeft', 'sprint']),
+    new Set(['toggleMap', 'menuTabRight']),
+    new Set(['pause'])
+];
+
+export function getEquivalentGroup(key) {
+    for (const group of EQUIVALENT_ACTION_GROUPS) {
+        if (group.has(key)) return group;
+    }
+    return null;
+}
+
+function hasEquivalentPressed(controller, key) {
+    const group = getEquivalentGroup(key);
+    if (!group) return false;
+    for (const k of group) {
+        if (controller[k] === true) return true;
+    }
+    return false;
+}
+
+function findHeldEntry(state, key) {
+    if (state.held.has(key)) return { key, ...state.held.get(key) };
+    const group = getEquivalentGroup(key);
+    if (group) {
+        for (const k of group) {
+            if (state.held.has(k)) return { key: k, ...state.held.get(k) };
+        }
+    }
+    return null;
+}
+
+function isMaskedInState(state, key) {
+    if (state.masked.has(key)) return true;
+    const group = getEquivalentGroup(key);
+    if (group) {
+        for (const k of group) {
+            if (state.masked.has(k)) return true;
+        }
+    }
+    return false;
+}
+
+function isKeyHeldOrMasked(state, key) {
+    if (state.held.has(key) || state.masked.has(key)) return true;
+    const group = getEquivalentGroup(key);
+    if (group) {
+        for (const k of group) {
+            if (state.held.has(k) || state.masked.has(k)) return true;
+        }
+    }
+    return false;
+}
+
+function maskKeyAndEquivalents(state, key) {
+    state.masked.add(key);
+    const group = getEquivalentGroup(key);
+    if (group) {
+        for (const k of group) {
+            state.masked.add(k);
+        }
+    }
+}
+
 export function createControllerPressGate({ windowMs = 350, staleMs = 2000, now = () => Date.now() } = {}) {
     const handles = new Map();
     const lastEdgeByKey = new Map();
+
+    function recordEdge(key, handle, at) {
+        const group = getEquivalentGroup(key);
+        if (group) {
+            for (const k of group) {
+                lastEdgeByKey.set(k, { handle, at });
+            }
+        } else {
+            lastEdgeByKey.set(key, { handle, at });
+        }
+    }
 
     function stateFor(handle) {
         if (!handles.has(handle)) handles.set(handle, { held: new Map(), masked: new Set(), seenAt: 0 });
@@ -45,43 +123,59 @@ export function createControllerPressGate({ windowMs = 350, staleMs = 2000, now 
             state.seenAt = at;
             const out = { ...controller };
             // A button a source stops reporting is released, not still held.
-            for (const key of state.held.keys()) if (controller[key] !== true) state.held.delete(key);
-            for (const key of state.masked) if (controller[key] !== true) state.masked.delete(key);
+            // If the action name changed across an action-set transition (e.g.
+            // menuBack -> dash), don't release while its equivalent counterpart
+            // is still held down.
+            for (const key of [...state.held.keys()]) {
+                if (controller[key] !== true && !hasEquivalentPressed(controller, key)) {
+                    state.held.delete(key);
+                }
+            }
+            for (const key of [...state.masked]) {
+                if (controller[key] !== true && !hasEquivalentPressed(controller, key)) {
+                    state.masked.delete(key);
+                }
+            }
             for (const [key, value] of Object.entries(controller)) {
                 if (!isButtonKey(key, value)) continue;
                 if (!value) {
-                    state.held.delete(key);
-                    state.masked.delete(key);
+                    if (!hasEquivalentPressed(controller, key)) {
+                        state.held.delete(key);
+                        state.masked.delete(key);
+                    }
                     continue;
                 }
-                if (state.masked.has(key)) {
+                if (isMaskedInState(state, key)) {
+                    state.masked.add(key);
                     out[key] = false;
                     continue;
                 }
-                const heldSince = state.held.get(key);
-                if (!heldSince) {
+                const heldEntry = findHeldEntry(state, key);
+                if (!heldEntry) {
                     // A new press from this source.
                     const previous = lastEdgeByKey.get(key);
                     // A source that stopped reporting (fallback handed back to
                     // native, controller unplugged) is not holding anything.
                     const heldElsewhere = [...handles].some(([other, otherState]) => other !== handle
                         && at - otherState.seenAt < staleMs
-                        && (otherState.held.has(key) || otherState.masked.has(key)));
+                        && isKeyHeldOrMasked(otherState, key));
                     if (heldElsewhere
                         || (previous && previous.handle !== handle && at - previous.at < windowMs)) {
-                        state.masked.add(key);
+                        maskKeyAndEquivalents(state, key);
                         out[key] = false;
                         continue;
                     }
-                    lastEdgeByKey.set(key, { handle, at });
+                    recordEdge(key, handle, at);
                     state.held.set(key, { actionSet });
                     continue;
                 }
-                if (heldSince.actionSet !== actionSet) {
+                if (heldEntry.actionSet !== actionSet) {
                     // Carried across a menu/gameplay switch: ignore until let go.
-                    state.masked.add(key);
+                    maskKeyAndEquivalents(state, key);
                     out[key] = false;
+                    continue;
                 }
+                state.held.set(key, { actionSet: heldEntry.actionSet });
             }
             return out;
         },
@@ -95,9 +189,15 @@ export function createControllerPressGate({ windowMs = 350, staleMs = 2000, now 
             const state = stateFor(handle);
             state.seenAt = at;
             for (const key of keys ?? []) {
-                lastEdgeByKey.set(key, { handle, at });
+                recordEdge(key, handle, at);
                 // Held until `observe` (or `filter`) sees this source let go.
                 state.held.set(key, { actionSet: 'claimed' });
+                const group = getEquivalentGroup(key);
+                if (group) {
+                    for (const k of group) {
+                        state.held.set(k, { actionSet: 'claimed' });
+                    }
+                }
             }
         },
         /**
@@ -110,8 +210,16 @@ export function createControllerPressGate({ windowMs = 350, staleMs = 2000, now 
             if (!controller || typeof controller !== 'object') return;
             const state = stateFor(controller.handle ?? 'default');
             state.seenAt = now();
-            for (const key of state.held.keys()) if (controller[key] !== true) state.held.delete(key);
-            for (const key of state.masked) if (controller[key] !== true) state.masked.delete(key);
+            for (const key of [...state.held.keys()]) {
+                if (controller[key] !== true && !hasEquivalentPressed(controller, key)) {
+                    state.held.delete(key);
+                }
+            }
+            for (const key of [...state.masked]) {
+                if (controller[key] !== true && !hasEquivalentPressed(controller, key)) {
+                    state.masked.delete(key);
+                }
+            }
         },
         reset() {
             handles.clear();

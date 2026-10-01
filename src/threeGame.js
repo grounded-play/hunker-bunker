@@ -8769,6 +8769,7 @@ export class ThreeGame {
         this.keys.left = false;
         this.keys.right = false;
         this.keys.shift = false;
+        this.sprinting = false;
         this.virtualInput.x = 0;
         this.virtualInput.z = 0;
         this.isMoving = false;

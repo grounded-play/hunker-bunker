@@ -1870,6 +1870,7 @@ function dispatchControllerEscape() {
         bubbles: true,
         cancelable: true
     });
+    escapeEvent.isControllerBack = true;
     document.dispatchEvent(escapeEvent);
 
     // Some newer and developer-only overlays predate the centralized Escape
@@ -1909,17 +1910,22 @@ function getControllerBackTarget(root) {
 let lastModalCloseTimestamp = 0;
 let lastTacticalMapToggleTimestamp = 0;
 
+function noteModalClosed(_source = 'general') {
+    lastModalCloseTimestamp = performance.now();
+    controllerPressGate.claim(['menuBack', 'dash', 'toggleMap', 'pause', 'sprint']);
+    window.game?.clearGameplayInputState?.();
+    window.game?.setVirtualInputSprint?.(false);
+}
+
 function triggerControllerPauseAction() {
     const settingsPopup = document.getElementById('settings-popup');
     if (settingsPopup && !settingsPopup.classList.contains('hidden')) {
-        dispatchControllerEscape();
-        lastModalCloseTimestamp = performance.now();
+        closeSettingsModal();
         return true;
     }
     const tacticalMapModal = document.getElementById('tactical-map-modal');
     if (tacticalMapModal && !tacticalMapModal.classList.contains('hidden')) {
         toggleTacticalMapModal(false);
-        lastModalCloseTimestamp = performance.now();
         return true;
     }
     const activeModal = STEAM_INPUT_FOCUS_ROOT_IDS
@@ -1928,7 +1934,7 @@ function triggerControllerPauseAction() {
         .find((element) => element && !element.classList.contains('hidden') && element !== settingsPopup);
     if (activeModal) {
         dispatchControllerEscape();
-        lastModalCloseTimestamp = performance.now();
+        noteModalClosed('pause-active-modal');
         return true;
     }
     if (performance.now() - lastModalCloseTimestamp < 350) {
@@ -2657,9 +2663,11 @@ function markBrowserGamepadInput(controller) {
 }
 
 function clearBrowserGamepadGameplayInput() {
-    if (!browserGamepadOwnedVirtualInput) return;
-    window.game?.setVirtualInput?.(0, 0);
-    browserGamepadOwnedVirtualInput = false;
+    if (browserGamepadOwnedVirtualInput) {
+        window.game?.setVirtualInput?.(0, 0);
+        browserGamepadOwnedVirtualInput = false;
+    }
+    window.game?.setVirtualInputSprint?.(false);
 }
 
 function handleBrowserGamepadFallbackFrame() {
@@ -11437,17 +11445,23 @@ if (confirmYes) {
         }
     });
 }
+function closeSettingsModal() {
+    if (!settingsPopup) return;
+    settingsPopup.classList.add('hidden');
+    noteModalClosed('settings');
+    syncSteamInputPhase();
+    draftAudioMix = cloneAudioMix(state.settings.audioMix);
+    AudioManager.setMix(state.settings.audioMix);
+    setAudioMixerOpen(false);
+    setSaveDataOpen(false);
+    setResetSaveConfirmOpen(false);
+    setCrosshairColorOpen(false);
+    setLanguageSelectOpen(false);
+}
+
 if (closeSettings && settingsPopup) {
     closeSettings.addEventListener('click', () => {
-        settingsPopup.classList.add('hidden');
-        syncSteamInputPhase();
-        draftAudioMix = cloneAudioMix(state.settings.audioMix);
-        AudioManager.setMix(state.settings.audioMix);
-        setAudioMixerOpen(false);
-        setSaveDataOpen(false);
-        setResetSaveConfirmOpen(false);
-        setCrosshairColorOpen(false);
-        setLanguageSelectOpen(false);
+        closeSettingsModal();
     });
 }
 
@@ -11938,7 +11952,8 @@ function pollTacticalMapGamepadInput() {
                 controllerPressGate.claim([
                     ...(pad.buttons?.[1]?.pressed ? ['menuBack', 'dash'] : []),
                     ...(pad.buttons?.[8]?.pressed ? ['toggleMap'] : []),
-                    ...(pad.buttons?.[9]?.pressed ? ['pause'] : [])
+                    ...(pad.buttons?.[9]?.pressed ? ['pause'] : []),
+                    'sprint'
                 ], `browser-gamepad:${pad.index ?? 0}`);
                 toggleTacticalMapModal(false);
                 return;
@@ -12547,6 +12562,7 @@ function toggleTacticalMapModal(forceState) {
     } else {
         modal.classList.add('hidden');
         modal.setAttribute('aria-hidden', 'true');
+        noteModalClosed('tactical-map');
         if (tacticalMapAnimFrame) {
             cancelAnimationFrame(tacticalMapAnimFrame);
             tacticalMapAnimFrame = null;
@@ -12768,18 +12784,12 @@ document.addEventListener('keydown', (event) => {
                 const back = getControllerBackTarget(surfaceAbove);
                 if (back) {
                     back.click();
+                    noteModalClosed('settings-subsurface');
                     event.preventDefault();
                     return;
                 }
             }
-            settingsPopup.classList.add('hidden');
-            draftAudioMix = cloneAudioMix(state.settings.audioMix);
-            AudioManager.setMix(state.settings.audioMix);
-            setAudioMixerOpen(false);
-            setSaveDataOpen(false);
-            setResetSaveConfirmOpen(false);
-            setCrosshairColorOpen(false);
-            setLanguageSelectOpen(false);
+            closeSettingsModal();
             event.preventDefault();
             return;
         }
@@ -12787,6 +12797,7 @@ document.addEventListener('keydown', (event) => {
         const aboutModal = document.getElementById('about-modal');
         if (aboutModal && !aboutModal.classList.contains('hidden')) {
             closeAboutModal();
+            noteModalClosed('about');
             event.preventDefault();
             return;
         }
@@ -12794,6 +12805,7 @@ document.addEventListener('keydown', (event) => {
         const consoleModal = document.getElementById('console-terminal-modal');
         if (consoleModal && !consoleModal.classList.contains('hidden')) {
             window.game?.closeConsoleModal?.();
+            noteModalClosed('console');
             event.preventDefault();
             return;
         }
@@ -12801,6 +12813,7 @@ document.addEventListener('keydown', (event) => {
         const o2GeneratorModal = document.getElementById('o2-generator-modal');
         if (o2GeneratorModal && !o2GeneratorModal.classList.contains('hidden')) {
             window.game?.closeO2GeneratorModal?.();
+            noteModalClosed('o2');
             event.preventDefault();
             return;
         }
@@ -12808,12 +12821,14 @@ document.addEventListener('keydown', (event) => {
         const loreModal = document.getElementById('lore-modal');
         if (loreModal && !loreModal.classList.contains('hidden')) {
             closeLoreModalAndResume();
+            noteModalClosed('lore');
             event.preventDefault();
             return;
         }
 
         if (foundryHub.isOpen()) {
             foundryHub.close();
+            noteModalClosed('foundry');
             event.preventDefault();
             return;
         }
@@ -12821,6 +12836,7 @@ document.addEventListener('keydown', (event) => {
         const fabricationModal = document.getElementById('fabrication-modal');
         if (fabricationModal && !fabricationModal.classList.contains('hidden')) {
             closeFabricationModal();
+            noteModalClosed('fabrication');
             event.preventDefault();
             return;
         }
@@ -12828,6 +12844,7 @@ document.addEventListener('keydown', (event) => {
         const archiveLogDetail = document.getElementById('archive-log-detail-modal');
         if (archiveLogDetail && !archiveLogDetail.classList.contains('hidden')) {
             closeArchiveLogDetail();
+            noteModalClosed('archive-detail');
             event.preventDefault();
             return;
         }
@@ -12837,6 +12854,7 @@ document.addEventListener('keydown', (event) => {
             closeArchiveLogDetail();
             archiveModal.classList.add('hidden');
             archiveModal.setAttribute('aria-hidden', 'true');
+            noteModalClosed('archive');
             event.preventDefault();
             return;
         }
@@ -12844,6 +12862,7 @@ document.addEventListener('keydown', (event) => {
         const codexDetailModal = document.getElementById('codex-detail-modal');
         if (codexDetailModal && !codexDetailModal.classList.contains('hidden')) {
             closeCodexDetailModal();
+            noteModalClosed('codex-detail');
             event.preventDefault();
             return;
         }
@@ -12851,6 +12870,7 @@ document.addEventListener('keydown', (event) => {
         const codexModal = document.getElementById('codex-modal');
         if (codexModal && !codexModal.classList.contains('hidden')) {
             closeCodexModal();
+            noteModalClosed('codex');
             event.preventDefault();
             return;
         }
@@ -12858,6 +12878,7 @@ document.addEventListener('keydown', (event) => {
         const achievementsModal = document.getElementById('achievements-modal');
         if (achievementsModal && !achievementsModal.classList.contains('hidden')) {
             document.getElementById('close-achievements-modal')?.click();
+            noteModalClosed('achievements');
             event.preventDefault();
             return;
         }
@@ -12865,6 +12886,7 @@ document.addEventListener('keydown', (event) => {
         const seasonPassModal = document.getElementById('season-pass-modal');
         if (seasonPassModal && !seasonPassModal.classList.contains('hidden')) {
             document.getElementById('close-season-pass-modal')?.click();
+            noteModalClosed('season-pass');
             event.preventDefault();
             return;
         }
@@ -12872,6 +12894,7 @@ document.addEventListener('keydown', (event) => {
         const steamVaultModal = document.getElementById('steam-vault-modal');
         if (steamVaultModal && !steamVaultModal.classList.contains('hidden')) {
             document.getElementById('close-steam-vault-modal')?.click();
+            noteModalClosed('steam-vault');
             event.preventDefault();
             return;
         }
@@ -12879,6 +12902,7 @@ document.addEventListener('keydown', (event) => {
         const operatorPolishModal = document.getElementById('operator-polish-modal');
         if (operatorPolishModal && !operatorPolishModal.classList.contains('hidden')) {
             setOperatorPolishModalOpen(false);
+            noteModalClosed('operator-polish');
             event.preventDefault();
             return;
         }
@@ -12886,6 +12910,7 @@ document.addEventListener('keydown', (event) => {
         const armoryScreen = document.getElementById('armory-screen');
         if (armoryScreen && !armoryScreen.classList.contains('hidden')) {
             document.getElementById('armory-btn-back')?.click();
+            noteModalClosed('armory');
             event.preventDefault();
             return;
         }
@@ -12896,11 +12921,16 @@ document.addEventListener('keydown', (event) => {
             : null;
         if (fallbackBackTarget) {
             fallbackBackTarget.click();
+            noteModalClosed('fallback-back');
             event.preventDefault();
             return;
         }
 
         if (isGameplayPhase()) {
+            if (event.isControllerBack || (performance.now() - lastModalCloseTimestamp < 350)) {
+                event.preventDefault();
+                return;
+            }
             openSettingsModal();
             event.preventDefault();
             return;
