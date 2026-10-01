@@ -11,6 +11,7 @@
 import { ACT2_ENDINGS, ACT2_ENDING_CUTSCENES, getAct2EndingLines } from './act2.js';
 import { NPC_DIALOGUE_TREES } from './npcDialogueTrees.js';
 import { assetUrl } from './assetUrl.js';
+import { getSideStoryInterstitial } from './songInterstitials.js';
 
 // Static copies of the two audio-log letters Valve's suicide/self-sacrifice
 // category maps to. Duplicated here (rather than imported from threeGame.js)
@@ -96,29 +97,42 @@ export function endingCutsceneSources(ending, base = globalThis.document?.baseUR
 }
 
 /**
- * The whole tree as readable text: every node reachable from the start, with
- * its narration, line and choices. Built from the same data the game uses.
+ * The whole tree as reader blocks: every node reachable from the start, in
+ * play order, with its narration, line and choices, and the still the game
+ * plays at that node (its interstitial). Built from the same data the game uses.
  */
-export function buildDialogueTranscript(tree) {
-    if (!tree?.nodes) return 'Dialogue not found.';
+export function buildDialogueReaderBlocks(tree, base = globalThis.document?.baseURI) {
+    if (!tree?.nodes) return [];
     const seen = new Set();
     const queue = [tree.initialNode];
-    const lines = [];
+    const blocks = [];
     while (queue.length) {
         const id = queue.shift();
         if (!id || seen.has(id) || !tree.nodes[id]) continue;
         seen.add(id);
         const node = tree.nodes[id];
-        lines.push(`— ${node.speaker ?? tree.name} —`);
+        const lines = [`— ${node.speaker ?? tree.name} —`];
         if (node.narration) lines.push(node.narration);
         if (node.dialogue) lines.push(`"${node.dialogue}"`);
         for (const choice of node.choices ?? []) {
             lines.push(`   ${choice.tone ?? ''} ${choice.text ?? ''}`.trimEnd());
             if (choice.nextNode) queue.push(choice.nextNode);
         }
-        lines.push('');
+        const still = node.interstitial ? getSideStoryInterstitial(node.interstitial) : null;
+        blocks.push({
+            nodeId: id,
+            text: lines.join('\n'),
+            image: still?.image ? assetUrl(still.image, base) : null,
+            alt: still?.alt ?? null
+        });
     }
-    return lines.join('\n');
+    return blocks;
+}
+
+/** The whole tree as readable text (the reader blocks without their stills). */
+export function buildDialogueTranscript(tree) {
+    if (!tree?.nodes) return 'Dialogue not found.';
+    return `${buildDialogueReaderBlocks(tree).map((block) => block.text).join('\n\n')}\n`;
 }
 
 export class MatureContentAudit {
@@ -300,7 +314,11 @@ export class MatureContentAudit {
 
         if (scene.kind === 'tree') {
             const tree = NPC_DIALOGUE_TREES[scene.treeId];
-            overlay.appendChild(this._buildTextPanel(buildDialogueTranscript(tree), tree ? `${tree.name} — ${tree.faction ?? ''}` : scene.treeId));
+            const label = tree ? `${tree.name} — ${tree.faction ?? ''}` : scene.treeId;
+            const blocks = buildDialogueReaderBlocks(tree);
+            overlay.appendChild(blocks.length
+                ? this._buildReaderPanel(blocks, label)
+                : this._buildTextPanel(buildDialogueTranscript(tree), label));
         } else if (scene.kind === 'ending') {
             const sources = endingCutsceneSources(scene.ending);
             const video = document.createElement('video');
@@ -331,6 +349,36 @@ export class MatureContentAudit {
         panel.style.cssText = 'max-width:70ch;max-height:78vh;overflow-y:auto;white-space:pre-wrap;color:#e8e8e8;font-family:inherit;'
             + 'font-size:15px;line-height:1.6;background:rgba(255,255,255,0.05);padding:24px;border-radius:6px;';
         panel.textContent = label ? `${label}\n\n${text}` : text;
+        return panel;
+    }
+
+    // Same scroll panel as _buildTextPanel, with each scene's still above its
+    // text, as the game plays it.
+    _buildReaderPanel(blocks, label) {
+        const panel = document.createElement('div');
+        panel.className = 'mature-audit-scene-text';
+        panel.style.cssText = 'max-width:70ch;max-height:78vh;overflow-y:auto;color:#e8e8e8;font-family:inherit;'
+            + 'font-size:15px;line-height:1.6;background:rgba(255,255,255,0.05);padding:24px;border-radius:6px;';
+        if (label) {
+            const heading = document.createElement('div');
+            heading.textContent = label;
+            heading.style.cssText = 'margin-bottom:16px;';
+            panel.appendChild(heading);
+        }
+        for (const block of blocks) {
+            if (block.image) {
+                const img = document.createElement('img');
+                img.src = block.image;
+                img.alt = block.alt ?? '';
+                img.loading = 'lazy';
+                img.style.cssText = 'display:block;width:100%;height:auto;margin:8px 0 12px;border-radius:4px;';
+                panel.appendChild(img);
+            }
+            const text = document.createElement('div');
+            text.textContent = block.text;
+            text.style.cssText = 'white-space:pre-wrap;margin-bottom:20px;';
+            panel.appendChild(text);
+        }
         return panel;
     }
 

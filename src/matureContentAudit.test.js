@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { MatureContentAudit, MATURE_CONTENT_MANIFEST, REVIEWER_LOG_LETTERS, buildDialogueTranscript, endingCutsceneSources } from './matureContentAudit.js';
+import { MatureContentAudit, MATURE_CONTENT_MANIFEST, REVIEWER_LOG_LETTERS, buildDialogueTranscript, buildDialogueReaderBlocks, endingCutsceneSources } from './matureContentAudit.js';
 import { NPC_DIALOGUE_TREES } from './npcDialogueTrees.js';
 
 describe('MatureContentAudit', () => {
@@ -91,6 +91,21 @@ describe('MatureContentAudit', () => {
         const { video, poster } = endingCutsceneSources('full_brood', base);
         expect(video).toBe('file:///C:/Steam/steamapps/common/Hunker%20Bunker/resources/app.asar.unpacked/dist/cutscenes/ending-fullbrood.webm');
         expect(poster).toBe('file:///C:/Steam/steamapps/common/Hunker%20Bunker/resources/app.asar/dist/cutscenes/ending-fullbrood-poster.jpg');
+    });
+
+    it('shows each scene with the still the game shows at that moment', () => {
+        // S49-11: the reader and the in-game route must show the same scene;
+        // in play each node with an interstitial plays its artwork first.
+        const base = 'file:///C:/Steam/Hunker%20Bunker/resources/app.asar/dist/index.html';
+        const blocks = buildDialogueReaderBlocks(NPC_DIALOGUE_TREES.sister_val, base);
+        const greeting = blocks.find((b) => b.nodeId === 'val_greeting');
+        expect(greeting.image).toBe('file:///C:/Steam/Hunker%20Bunker/resources/app.asar/dist/interstitials/int_val_hearth_warmth_key_v1.webp');
+        expect(greeting.alt).toMatch(/Sister Val/);
+        expect(greeting.text).toContain(NPC_DIALOGUE_TREES.sister_val.nodes.val_greeting.dialogue);
+        const climax = blocks.find((b) => b.nodeId === 'val_intimate_climax');
+        expect(climax.image).toContain('/interstitials/');
+        // Same reachable nodes, same text, as the plain transcript.
+        expect(blocks.map((b) => b.text).join('\n\n')).toBe(buildDialogueTranscript(NPC_DIALOGUE_TREES.sister_val).trimEnd());
     });
 
     it('bindGamepadShortcut does not throw when gamepad API is unavailable', () => {
