@@ -1416,6 +1416,7 @@ const BIOME_ORDER = Object.freeze([
 const BIOME_THRESHOLD_CRYO = 60;
 const BIOME_THRESHOLD_BIO = 140;
 const BIOME_BLEND_HALF_WIDTH = 10;
+const BIOME_SWITCH_HYSTERESIS = 4;
 const BIOME_O2_DRAIN_MULTIPLIERS = Object.freeze({
     [BIOME_KEYS.ACTIVE]: 1.0,
     [BIOME_KEYS.CRYO]: 1.15,
@@ -24504,6 +24505,19 @@ export class ThreeGame {
         return BIOME_KEYS.ACTIVE;
     }
 
+    // The player's biome (toast, O2 drain, atmosphere) only changes once they
+    // are clearly across a threshold, so walking along a boundary does not
+    // flicker between sectors. World generation keeps the raw thresholds.
+    getPlayerBiomeKey(distanceFromAnchor, currentKey = null) {
+        const raw = this.getBiomeKeyFromDistance(distanceFromAnchor);
+        if (!currentKey || raw === currentKey) return raw;
+        const outward = BIOME_ORDER.indexOf(raw) > BIOME_ORDER.indexOf(currentKey);
+        const settled = this.getBiomeKeyFromDistance(
+            distanceFromAnchor + (outward ? -BIOME_SWITCH_HYSTERESIS : BIOME_SWITCH_HYSTERESIS)
+        );
+        return settled === raw ? raw : currentKey;
+    }
+
     getBiomeKeyForWorldPosition(worldX, worldZ) {
         const anchor = this.getBiomeAnchorPosition();
         const distance = Math.hypot(worldX - anchor.x, worldZ - anchor.z);
@@ -24636,7 +24650,9 @@ export class ThreeGame {
 
         this.updateBiomeLighting(cryoMix, bioMix, delta, immediate);
 
-        const nextBiomeKey = this.getBiomeKeyFromDistance(distanceFromAnchor);
+        const nextBiomeKey = forceEvent
+            ? this.getBiomeKeyFromDistance(distanceFromAnchor)
+            : this.getPlayerBiomeKey(distanceFromAnchor, this.currentBiomeKey);
         this.currentBiomeO2DrainMult = BIOME_O2_DRAIN_MULTIPLIERS[nextBiomeKey] ?? 1;
         if (nextBiomeKey !== this.currentBiomeKey || forceEvent) {
             this.currentBiomeKey = nextBiomeKey;
