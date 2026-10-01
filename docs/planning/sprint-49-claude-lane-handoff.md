@@ -182,6 +182,17 @@ Render-compare tool for future asset work: lives in the session scratchpad
 (`render-compare.mjs`). It renders two GLBs with the game's three.js in headless Chrome
 and diffs the pixels; recreate it from the `2e2178c7` commit message if needed.
 
+### 2026-10-01 afternoon: claim, ingest the 19 incoming models
+
+**Claimed by this lane:** turning the 19 owner-supplied models in
+`art/raw/incoming_3d_20261001/` into runtime GLBs and wiring them in (see the
+[rigging and placement plan](3d-asset-pipeline-rigging-and-placement-plan-2026-10-01.md)).
+That covers Y-up and pivot normalization, texture budget, the weapon and reward
+mappings, prop replacements, and rigs for the stalker, cryosnail, corrupted Kaelen
+and Ghost Runner. **Not claimed:** the wall-backed placement seams
+(`roomPopulation.js`, `syncWorld3dReplacement` wallNormal), which another
+contributor has in progress.
+
 ## Next
 
 1. **Publisher/hardware (not code):** a Deck and pad pass with the keyboard unplugged
