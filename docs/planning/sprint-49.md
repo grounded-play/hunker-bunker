@@ -199,9 +199,12 @@ hardware, deployed matches and moderation operations remain acceptance gates.
 
 Implementation checkpoint (2026-10-01): report classification now flags pending
 grants, missing reported purchases, identity conflicts and unresolved reversal
-evidence instead of returning a false success. See the
+evidence instead of returning a false success. Complete Steam/local-ledger paging,
+durable cursor/evidence storage, restart recovery and private multi-page CLI
+evidence are implemented with fixtures. Paid-grant idempotency and actionable
+reversal disposition are still open. See the
 [handoff](sprint-49-implementation-handoff.md#s49-08-slice-1--reconciliation-must-not-report-false-success)
-for regression evidence and the next pagination/durable-recovery slice. No live
+for regression evidence and the next paid-grant recovery slice. No live
 purchase, automatic grant or revocation was performed; full acceptance is open.
 
 - [ ] **Owner: backend · Size: L · Type: correctness gap.** Finish the current

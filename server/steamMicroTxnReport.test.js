@@ -20,9 +20,22 @@ describe('GetReport fetch', () => {
     it('uses the sandbox endpoint when asked, and reports Steam failures', async () => {
         expect(microTxnReportUrl({ sandbox: true })).toContain('ISteamMicroTxnSandbox/GetReport');
         const fetchImpl = vi.fn(async () => new Response(JSON.stringify({ response: { result: 'Failure', error: { errorcode: 7 } } }), { status: 200 }));
-        const result = await fetchMicroTxnReport({ key: 'k', appId: 1, time: 'x', fetchImpl });
+        const result = await fetchMicroTxnReport({ key: 'k', appId: 1, time: '2026-09-30T00:00:00Z', fetchImpl });
         expect(result).toMatchObject({ ok: false, reason: 'steam_api_error' });
         expect(await fetchMicroTxnReport({ key: '', appId: 1, time: 'x' })).toMatchObject({ reason: 'missing_publisher_key' });
+    });
+
+    it('does not misinterpret malformed OK responses as an empty report', async () => {
+        const fetchImpl = async () => new Response(JSON.stringify({ response: { result: 'OK', params: { count: 1 } } }));
+        expect(await fetchMicroTxnReport({ key: 'k', appId: 1, time: '2026-09-30T00:00:00Z', fetchImpl }))
+            .toMatchObject({ ok: false, reason: 'invalid_report_response' });
+    });
+
+    it('does not expose publisher keys embedded in thrown transport errors', async () => {
+        const fetchImpl = async (url) => { throw new Error(`Failed request ${url}`); };
+        const result = await fetchMicroTxnReport({ key: 'private-publisher-key', appId: 1, time: '2026-09-30T00:00:00Z', fetchImpl });
+        expect(result.ok).toBe(false);
+        expect(JSON.stringify(result)).not.toContain('private-publisher-key');
     });
 });
 

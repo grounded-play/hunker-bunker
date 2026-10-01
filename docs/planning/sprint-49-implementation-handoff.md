@@ -10,19 +10,21 @@ action here before yielding so another contributor can resume without the chat.
 ## Current checkpoint
 
 Documentation reconciliation, store catalog normalization and the chat relay/filter
-are committed. Chat client/UI and browser evidence landed in `82501e4f`. The next
-checkpoint fixes report-classification false successes (S49-08 slice 1).
+are committed. Chat client/UI and browser evidence landed in `82501e4f`, and
+report-classification safety landed in `07f86986`. This checkpoint implements
+S49-08 report enumeration, persisted evidence/cursors and restart recovery.
 Read the [parallel contributor's log](sprint-49-claude-lane-handoff.md) before
 touching shared files. That lane owns mature-content, commentary and controller
 journey work; do not duplicate its pending changes.
 
 Next implementation commits:
 
-1. S49-08: finish settlement/grant recovery and report pagination. Classification
-   false successes are fixed below. Still pending: durable cursor/evidence storage,
-   complete Steam and local-ledger pagination, idempotent grants and reversal
-   disposition. Add failure tests first; no real purchase or publisher operation
-   is authorized by this code work.
+1. S49-08: finish paid-grant recovery and reversal disposition. Pagination and
+   durable evidence are implemented below. Next: stable Steam Inventory request IDs,
+   concurrent-finalize protection, crash-after-grant recovery, and item-level
+   refund/chargeback accounting. `server/steamGrant.js` already accepts `requestId`,
+   but `steamStore.js` does not pass one for purchases. Add failure tests first;
+   no real purchase or publisher operation is authorized by this code work.
 2. S49-02/04: extend chat evidence to deployed co-op/PvP and disconnect/reconnect
    with two authenticated Steam accounts; perform the physical Deck/PC controller
    pass. These acceptance checks cannot be replaced by local test-mode sockets.
@@ -125,6 +127,8 @@ until their full acceptance gates pass.
 
 ### S49-08 slice 1 — reconciliation must not report false success
 
+Commit: `07f86986`.
+
 Changed [report classifier](../../server/steamMicroTxnReport.js) and
 [regression tests](../../server/steamMicroTxnReport.test.js):
 
@@ -157,3 +161,53 @@ Persist cursor/evidence only after safe processing; do not skip unresolved grant
 Then make `fulfillPurchasedKeys` idempotent across concurrent finalize calls and
 crash-after-grant/before-ledger-write. Reversal handling must retain item-level
 evidence and an explicit review/revocation disposition. S49-08 remains unchecked.
+
+### S49-08 slice 2 — complete enumeration and restart-safe evidence
+
+Implemented:
+
+- [Scanner](../../server/steamMicroTxnScan.js): continue after short batches;
+  deduplicate by Steam transaction identity; retain the latest update and flag
+  conflicting same-time states. Stop only at an empty batch. Unchanged boundaries
+  and budget/malformed-page failures are explicit errors, never timestamp skips.
+- [Worker](../../server/steamMicroTxnReport.js): persist each batch's cursor and
+  accumulated latest-order evidence together, before fetching the next batch.
+  Re-evaluate old unresolved orders on every run. Separate app/live/sandbox/type
+  scopes, serialize overlapping jobs, bound requests to 15 seconds, and contain
+  background errors without logging exception strings that could include keys.
+- [JSON](../../server/db.js) and [SQLite](../../server/db-sqlite.js): stable offset
+  pagination beyond 1,000 purchases; atomic checkpoint storage with stale-writer
+  revision checks. JSON publishes a new in-memory cursor only after rename succeeds.
+- [CLI](../../server/scripts/microtxn-report.js): preserve every page of reviewer
+  evidence, return unhealthy when either scan or reconciliation fails, save new
+  private evidence files mode 0600, and offer explicit `--resume` of the worker
+  stream. Ordinary `--since` reports do not change the worker checkpoint.
+- [Operator runbook](../steam-backend-admin-runbook.md#durable-getreport-reconciliation):
+  `HB_STEAM_REPORT_START_TIME` is required to initialize a missing stream, chosen
+  before the first possible purchase. No silent rolling-48-hour bootstrap. Once
+  initialized, a changed environment boundary does not overwrite the saved cursor.
+
+Verification: `npx vitest run` passed **528 files / 4,612 tests**. The six targeted
+DB/report/store suites passed **55 tests**. Coverage includes 1,005 real adapter
+rows, JSON and SQLite restart persistence, failed JSON writes, stale checkpoint
+writers, short/duplicate/shared-time pages, a month-long outage with SQLite reopen,
+old unresolved paid orders, sandbox separation, page-budget continuation and
+non-overlapping/error-contained timer ticks. Scoped ESLint, `git diff --check`
+and documentation audit passed (507 documents / 409 enforced Markdown files;
+407 archived warnings). No live Steam call or purchase/entitlement mutation ran.
+
+Known limits and next action:
+
+1. Paid inventory retries and reversal dispositions are **not implemented by this
+   read-only worker**. Do not mark S49-08 complete. Next code owners should start
+   in `fulfillPurchasedKeys` and `grantCacheKeys` in `server/steamStore.js`, and
+   the existing `requestId` support in `server/steamGrant.js`.
+2. The beta evidence/local-read budget is 100,000 orders. It fails visibly rather
+   than dropping records. Move evidence to streamed per-order storage/archival
+   before approaching that volume. Per-run 100-page limits are resumable.
+3. Operators must select the initial history boundary, keep the same durable DB
+   volume, and verify real GetReport behavior against the candidate backend. No
+   production flags, deployment, DB migration or publisher operation was executed.
+4. Preserve concurrent edits to `src/steamVaultUi.hostedStore.test.js`,
+   `src/playerChatUi.test.js`, and newly supplied audio assets; they are not this
+   lane's changes. Commit only the explicit backend/report/documentation paths.

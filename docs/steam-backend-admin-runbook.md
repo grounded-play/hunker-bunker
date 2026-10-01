@@ -1,6 +1,6 @@
 # Steam Backend Admin Runbook
 
-Last updated: 2026-07-28
+Last updated: 2026-10-01
 
 This runbook covers the trusted backend rail for Hunker Bunker's Steam
 leaderboards, inventory grants, and Store purchases. It is for operators and
@@ -46,8 +46,9 @@ HB_DB_SQLITE_PATH=/app/server/data/hunker-bunker.sqlite
 
 If `HB_DB_BACKEND=sqlite` is set and `HB_DB_SQLITE_PATH` is omitted, the
 backend stores SQLite data beside `HB_DB_STORAGE_PATH` when that path exists,
-or at `server/data/hunker-bunker.sqlite` by default. JSON remains the default
-storage backend for local development and old deploys.
+or at `server/data/hunker-bunker.sqlite` by default. Runtimes with `node:sqlite`
+available select SQLite by default; use `HB_DB_BACKEND=json` explicitly for the
+legacy JSON store. Check `getDbStatus()` before choosing which file to back up.
 
 Live Store additions:
 
@@ -55,6 +56,9 @@ Live Store additions:
 HB_STEAM_STORE_ENABLED=1
 HB_STEAM_MICROTXN_ENABLED=1
 HB_STEAM_STORE_MOCK_PURCHASES=0
+# Choose a UTC time before the application's first possible real purchase.
+# Required only to initialize a missing reconciliation stream checkpoint.
+HB_STEAM_REPORT_START_TIME=<RFC3339 UTC first-sale boundary>
 ```
 
 Optional:
@@ -179,6 +183,80 @@ Client-facing response hooks:
   means do not grant and show a recoverable error state.
 - `purchaseStatus: "disabled"` means hide or disable purchase controls.
 
+## Durable GetReport reconciliation
+
+The [worker](../server/steamMicroTxnReport.js) runs at startup and every six hours
+when MicroTxn and a publisher key are configured. It is **read-only against
+Steam entitlements**: it does not charge, grant, refund or revoke. Do not interpret
+its presence as completion of paid-grant recovery or reversal processing.
+
+Before first deployment, set `HB_STEAM_REPORT_START_TIME` to a known UTC boundary
+before the first possible purchase (for example, the application commerce testing
+start). An absent checkpoint without that setting reports
+`initial_report_time_required`; it never silently limits history to 48 hours.
+After initialization, restarts use the saved cursor, even after a multi-day outage.
+Changing the environment boundary does **not** rewind an existing checkpoint.
+
+Storage is part of the same backed-up purchase database:
+
+- JSON: `microTxnCheckpoints` in `HB_DB_STORAGE_PATH`.
+- SQLite: `microtxn_checkpoints(scope, revision, body_json)`.
+- Scope is `<appid>.<live|sandbox>.<report type>`. Sandbox evidence never advances
+  a production cursor. A compare-and-swap revision rejects stale writers.
+- Each successful batch persists its cursor **with** accumulated latest-order
+  evidence before the next request. Earlier unresolved orders remain in subsequent
+  comparisons even after newer transactions move the cursor forward.
+- Complete local-ledger pages are read synchronously; both database adapters
+  support stable 1,000-row pages. Continue using one backend writer per database.
+
+Enumeration follows update timestamps through short pages and overlap duplicates;
+only an empty page finishes a scan. It does not increment a stuck timestamp to
+skip ahead. This follows the [GetReport contract](https://partner.steamgames.com/doc/webapi/ISteamMicroTxn#GetReport).
+Contradictory same-time statuses require review, rather than choosing a clean sale.
+
+The default scan budget is 100 API pages per run. `report_page_limit` is unhealthy,
+but already-persisted batches allow the next run to resume. A repeated unchanged
+boundary reports `report_cursor_stalled`; preserve evidence and investigate the API
+response before changing any cursor. Each request has a 15-second timeout.
+
+The beta ledger has an explicit 100,000-order evidence/local-read safety limit;
+it fails unhealthy at that limit and never discards old unsettled orders. Plan a
+streamed per-order database/archival migration before approaching that volume.
+Raw evidence includes account and purchase data: restrict database and backup
+access. There is no public endpoint exposing the ledger or publisher key.
+
+Trusted operator commands (run only with the intended backend environment):
+
+```bash
+# Independent report window: does not alter the worker checkpoint.
+node server/scripts/microtxn-report.js --since 2026-09-30T00:00:00Z
+
+# Resume the worker stream; initialize from the configured boundary if absent.
+node server/scripts/microtxn-report.js --resume
+```
+
+Stop/coordinate the background worker before running `--resume` from another
+process, especially with JSON storage. The CLI saves every request descriptor
+(without the key) and raw response under `server/data/microtxn-reports/`, with
+new evidence files mode 0600. Output `ok` and exit status cover both enumeration
+and reconciliation; a successful API fetch alone cannot produce a healthy result.
+The final raw response is usually the empty terminator; use `pages` for the actual
+transaction evidence. Share reviewer evidence privately, never in a public issue.
+
+Investigate `[microtxn-report] UNHEALTHY` and checkpoint `health`:
+
+- `paidNotGranted`: settled payment without confirmed inventory delivery.
+- `notInReport`: local grant absent from this report history; investigate, do not
+  assume nonpayment or automatically revoke.
+- `reversedButGranted`: refund/chargeback with current or historical grant evidence.
+- `needsReview`: ownership/identifier conflict, unknown status, contradictory
+  report evidence, or inventory granted without a settled payment.
+- Fetch, persistence, malformed-page and scan-limit failures remain unhealthy.
+
+The next S49-08 implementation slice must make paid grants idempotent across
+concurrent retry and crash-after-grant, then add explicit item-level reversal
+dispositions. Do not advertise automatic recovery/clawback until those gates pass.
+
 ## Market eligibility and hosted Item Store links
 
 `GET /steam/market/eligibility` returns a top-level `allowed` boolean derived
@@ -275,7 +353,7 @@ For JSON-on-volume beta:
    ```
 
 4. Confirm it has `inventories`, `leaderboards`, `idempotency`, `receipts`, and
-   `purchases`.
+   `purchases`, and (after the worker initializes) `microTxnCheckpoints`.
 5. Restart one backend instance only.
 
 Do not run multiple writers against the same JSON file. Atomic file replacement
@@ -306,7 +384,7 @@ For SQLite-on-volume beta:
 5. Confirm `getDbStatus()` / health output reports `storageBackend: "sqlite"`.
 
 SQLite uses WAL mode and schema tables for inventories, leaderboard mirrors,
-idempotency, run receipts, purchase state, and purchase events. It is a better
+idempotency, run receipts, purchase state/events, and reconciliation checkpoints. It is a better
 single-machine beta store than JSON, but it is still not a multi-region or
 multi-writer production database.
 

@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { validateMicroTxnCheckpoint } from './microTxnCheckpoint.js';
 import path from 'node:path';
 
 const PURCHASE_EVENT_LIMIT = 50;
@@ -237,6 +238,12 @@ export function createSqliteBackend({ DatabaseSync, dbFilePath, logger = console
             CREATE INDEX IF NOT EXISTS idx_purchases_request ON purchases (request_id);
             CREATE INDEX IF NOT EXISTS idx_purchases_steam ON purchases (steam_id64);
             CREATE INDEX IF NOT EXISTS idx_purchases_status ON purchases (status);
+
+            CREATE TABLE IF NOT EXISTS microtxn_checkpoints (
+                scope TEXT PRIMARY KEY,
+                revision INTEGER NOT NULL,
+                body_json TEXT NOT NULL
+            );
 
             CREATE TABLE IF NOT EXISTS purchase_events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -590,7 +597,7 @@ export function createSqliteBackend({ DatabaseSync, dbFilePath, logger = console
         return findPurchaseWhere('SELECT * FROM purchases WHERE request_id = ?', requestId);
     }
 
-    function listPurchases({ steamId64 = null, status = null, limit = 100 } = {}) {
+    function listPurchases({ steamId64 = null, status = null, limit = 100, offset = 0 } = {}) {
         ensureInitialized();
         const filters = [];
         const values = [];
@@ -602,15 +609,35 @@ export function createSqliteBackend({ DatabaseSync, dbFilePath, logger = console
             filters.push('status = ?');
             values.push(String(status));
         }
-        const max = Math.min(1000, Math.max(1, Number(limit) || 100));
+        const max = Math.min(1000, Math.max(1, Math.trunc(Number(limit)) || 100));
+        const start = Number.isSafeInteger(offset) && offset > 0 ? offset : 0;
         const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
         const rows = ensureOpen().prepare(`
             SELECT * FROM purchases
             ${where}
-            ORDER BY updated_at DESC
-            LIMIT ${max}
-        `).all(...values);
+            ORDER BY updated_at DESC, trans_id DESC
+            LIMIT ? OFFSET ?
+        `).all(...values, max, start);
         return rows.map((row) => clonePurchase(rowToPurchase(row)));
+    }
+
+    function getMicroTxnCheckpoint(scope) {
+        ensureInitialized();
+        const row = ensureOpen().prepare('SELECT revision, body_json FROM microtxn_checkpoints WHERE scope = ?').get(scope);
+        return row ? { ...JSON.parse(row.body_json), revision: row.revision } : null;
+    }
+
+    async function saveMicroTxnCheckpoint(scope, value, { expectedRevision } = {}) {
+        ensureInitialized();
+        const clone = validateMicroTxnCheckpoint(scope, value, expectedRevision);
+        const body = JSON.stringify(clone);
+        transaction((handle) => {
+            const result = expectedRevision === 0
+                ? handle.prepare('INSERT INTO microtxn_checkpoints (scope, revision, body_json) VALUES (?, 1, ?) ON CONFLICT(scope) DO NOTHING').run(scope, body)
+                : handle.prepare('UPDATE microtxn_checkpoints SET revision = revision + 1, body_json = ? WHERE scope = ? AND revision = ?').run(body, scope, expectedRevision);
+            if (Number(result.changes) !== 1) throw new Error('report_checkpoint_conflict');
+        });
+        return { ...clone, revision: expectedRevision + 1 };
     }
 
     async function savePurchaseState(receipt) {
@@ -702,6 +729,8 @@ export function createSqliteBackend({ DatabaseSync, dbFilePath, logger = console
         findPurchaseByTransId,
         findPurchaseByRequestId,
         listPurchases,
+        getMicroTxnCheckpoint,
+        saveMicroTxnCheckpoint,
         savePurchaseState,
         savePurchaseReceipt,
         close

@@ -18,7 +18,7 @@
     "documents": 507,
     "trackedDocuments": 507,
     "newDocuments": 0,
-    "bytes": 6065511,
+    "bytes": 6078523,
     "byClassification": {
       "historical": 162,
       "planning": 118,
@@ -6476,8 +6476,8 @@
       "tracked": true,
       "classification": "planning",
       "classificationBasis": "planning directory",
-      "bytes": 5257,
-      "lines": 94,
+      "bytes": 9636,
+      "lines": 167,
       "markers": {
         "unchecked": 0,
         "checked": 0,
@@ -6527,8 +6527,8 @@
       "tracked": true,
       "classification": "planning",
       "classificationBasis": "planning directory",
-      "bytes": 9793,
-      "lines": 160,
+      "bytes": 13415,
+      "lines": 214,
       "markers": {
         "unchecked": 0,
         "checked": 0,
@@ -6536,7 +6536,7 @@
         "keywordLines": 0
       },
       "linkGate": "enforced",
-      "localLinkCount": 7,
+      "localLinkCount": 13,
       "linkIssues": []
     },
     {
@@ -6544,8 +6544,8 @@
       "tracked": true,
       "classification": "planning",
       "classificationBasis": "planning directory",
-      "bytes": 43952,
-      "lines": 692,
+      "bytes": 44172,
+      "lines": 695,
       "markers": {
         "unchecked": 51,
         "checked": 2,
@@ -6578,7 +6578,7 @@
       "tracked": true,
       "classification": "historical",
       "classificationBasis": "explicit status",
-      "bytes": 15753,
+      "bytes": 15793,
       "lines": 231,
       "markers": {
         "unchecked": 0,
@@ -9485,8 +9485,8 @@
       "tracked": true,
       "classification": "reference",
       "classificationBasis": "default; currency requires semantic review",
-      "bytes": 16949,
-      "lines": 426,
+      "bytes": 21700,
+      "lines": 504,
       "markers": {
         "unchecked": 0,
         "checked": 0,
@@ -9494,7 +9494,7 @@
         "keywordLines": 0
       },
       "linkGate": "enforced",
-      "localLinkCount": 0,
+      "localLinkCount": 1,
       "linkIssues": []
     },
     {
