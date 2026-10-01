@@ -20,12 +20,15 @@ describe('game soundset selection', () => {
         // and saying where the audio came from.
         //
         //   door_slide_horiz, hive_webs_sticky  - CC0 intake (opengameart)
-        //   footstep_*, prop_impact_*           - Kenney Impact Sounds, CC0,
+        //   footstep_*, prop_impact_*, enemy_crawl_* - Kenney Impact Sounds, CC0,
+        //   enemy_idle_*                        - Kenney RPG Audio, CC0,
         //     licence retained at art/source/audio/cinematic-source/kenney/
         expect(Object.keys(GAME_SOUNDSETS)).toEqual([
             'door_slide_horiz', 'hive_webs_sticky',
             'footstep_concrete', 'footstep_snow',
-            'prop_impact_metal', 'prop_impact_glass'
+            'prop_impact_metal', 'prop_impact_glass',
+            'enemy_crawl_snail', 'enemy_crawl_boss',
+            'enemy_idle_snail', 'enemy_idle_crawler'
         ]);
         expect(Object.values(GAME_SOUNDSETS).every(validateSoundset)).toBe(true);
         expect(Object.isFrozen(GAME_SOUNDSETS)).toBe(true);

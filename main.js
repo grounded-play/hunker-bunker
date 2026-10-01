@@ -27,7 +27,7 @@ import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
 import { DEPTH_TIER_NAMES } from './src/data/loot.js';
 import { getVoiceAudioManifest } from './src/data/voiceBanks.js';
-import { GAMEPLAY_FOLEY_MANIFEST } from './src/data/gameSoundsets.js';
+import { GAMEPLAY_FOLEY_MANIFEST, GAMEPLAY_ENEMY_MANIFEST } from './src/data/gameSoundsets.js';
 import { getDeathCinematicSpec, getEventCinematicSpec, normalizeCinematicStillSpec, shouldPlayAuthoredEventCinematic } from './src/cinematicFallback.js';
 import { DialogueManager, resolveEffectiveVoicePackId } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
@@ -7462,7 +7462,26 @@ function updateMusicTension() {
 
     // ── Track context (drives which stem plays) ──
     let nextContext;
-    if (bossActive || _distressModeActive) {
+    if (bossActive) {
+        const bossType = window.game?.activeBoss?.userData?.type ?? window.game?.activeBossType;
+        if (bossType === 'boss_cybersnail') {
+            nextContext = 'boss_cybersnail';
+        } else if (bossType === 'boss_cryosnail') {
+            nextContext = 'boss_cryosnail';
+        } else if (bossType === 'boss_sporesnail') {
+            nextContext = 'boss_sporesnail';
+        } else if (bossType === 'boss_queen') {
+            nextContext = 'boss_queen';
+        } else if (bossType === 'boss_corrupted_scout') {
+            nextContext = 'boss_scout';
+        } else if (bossType === 'boss_corrupted_tank') {
+            nextContext = 'boss_tank';
+        } else if (bossType === 'boss_corrupted_engineer') {
+            nextContext = 'boss_engineer';
+        } else {
+            nextContext = 'combat';
+        }
+    } else if (_distressModeActive) {
         nextContext = 'combat';
     } else if (nextTension === 'safe') {
         nextContext = 'safe_ship';
@@ -9039,10 +9058,18 @@ window.addEventListener('foundry-discovered', (event) => {
     });
 });
 window.addEventListener('black-box-recovered', () => {
+    window.AudioManager?.playOST?.(32, { volume: 0.58, loop: false });
     playAuthoredEventOnce('black_box_recovered', { videoBase: 'event-black-box-recovered' });
 });
 window.addEventListener('queen-fight-started', () => {
+    window.AudioManager?.playOST?.(31, { volume: 0.65, loop: true });
     playAuthoredEventOnce('queen_encounter', { videoBase: 'event-queen-encounter' });
+});
+window.addEventListener('enemy-first-spotted', (event) => {
+    const trackNum = event?.detail?.trackNum;
+    if (trackNum) {
+        window.AudioManager?.playOST?.(trackNum, { volume: 0.50, loop: false });
+    }
 });
 
 // ── Act 2 run intro: the queen replaces the Mothership handshake ──
@@ -9085,6 +9112,9 @@ async function runAct2IntroSequence(game, playerType) {
     document.body.classList.remove('hud-hidden');
 
     const lines = alreadyBegun ? ACT2_LINES.resume : ACT2_LINES.intro;
+    if (!alreadyBegun) {
+        window.AudioManager?.playOST?.(33, { volume: 0.55, loop: true });
+    }
     await dialogueManager?.openBriefTransmission({ playerType, lines: [...lines] });
     // Post-reveal HUD: the cover meter joins the vitals panel.
     const infectedState = act2Manager.getState();
@@ -14851,6 +14881,20 @@ async function runAct2DepartureSequence(detail = {}) {
         playerType: classType,
         lines: [...getAct2EndingLines(ending)]
     });
+    const endingSongMap = {
+        empty_husk: 34,
+        scorched_sky: 34,
+        failed_carrier: 34,
+        carriers_bargain: 35,
+        mixed_crew: 36,
+        full_brood: 36,
+        mothership_infection: 36,
+        alien_exodus: 36,
+        clean_escape: 37,
+        outed_escape: 37
+    };
+    const endingTrackId = endingSongMap[ending] ?? 38;
+    AudioManager?.playOST?.(endingTrackId, { loop: false, volume: 0.65 });
     await playCinematicBeat({
         videoBase,
         fallback: {
@@ -16377,6 +16421,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ],
                 audio: [
                     ...GAMEPLAY_FOLEY_MANIFEST,
+                    ...GAMEPLAY_ENEMY_MANIFEST,
+                    { key: 'impactSoft_medium_000', url: '/audio/enemies/impactSoft_medium_000.ogg' },
+                    { key: 'impactSoft_medium_001', url: '/audio/enemies/impactSoft_medium_001.ogg' },
+                    { key: 'impactSoft_medium_002', url: '/audio/enemies/impactSoft_medium_002.ogg' },
+                    { key: 'impactSoft_medium_003', url: '/audio/enemies/impactSoft_medium_003.ogg' },
+                    { key: 'impactSoft_medium_004', url: '/audio/enemies/impactSoft_medium_004.ogg' },
+                    { key: 'impactSoft_heavy_000', url: '/audio/enemies/impactSoft_heavy_000.ogg' },
+                    { key: 'impactSoft_heavy_001', url: '/audio/enemies/impactSoft_heavy_001.ogg' },
+                    { key: 'impactSoft_heavy_002', url: '/audio/enemies/impactSoft_heavy_002.ogg' },
+                    { key: 'impactSoft_heavy_003', url: '/audio/enemies/impactSoft_heavy_003.ogg' },
+                    { key: 'impactSoft_heavy_004', url: '/audio/enemies/impactSoft_heavy_004.ogg' },
+                    { key: 'creak1', url: '/audio/enemies/creak1.ogg' },
+                    { key: 'creak2', url: '/audio/enemies/creak2.ogg' },
+                    { key: 'creak3', url: '/audio/enemies/creak3.ogg' },
+                    { key: 'metalClick', url: '/audio/enemies/metalClick.ogg' },
                     { key: 'music_safe_ship', url: '/audio/ost/Safe Haven (Ship Sanctuary).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },
                     { key: 'music_cryo_explore', url: '/audio/ost/Glacial Depths (Cryo Biome).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },
                     { key: 'music_bio_explore', url: '/audio/ost/Overgrown Bio-Sphere (Bio Biome).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },

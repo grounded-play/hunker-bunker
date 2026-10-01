@@ -56,6 +56,34 @@ export const GAME_SOUNDSETS = Object.freeze({
         variants: Object.freeze(['impactGlass_light_000', 'impactGlass_light_001']),
         fallback: 'impactGlass_light_000', bus: 'sfx', gain: 0.5,
         pitch: Object.freeze([0.9, 1.12]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    // Kenney Impact Sounds CC0: soft squelching impact variants for snail and creature crawl cycles
+    enemy_crawl_snail: Object.freeze({
+        variants: Object.freeze([
+            'impactSoft_medium_000', 'impactSoft_medium_001', 'impactSoft_medium_002',
+            'impactSoft_medium_003', 'impactSoft_medium_004'
+        ]),
+        fallback: 'impactSoft_medium_000', bus: 'sfx', gain: 0.35,
+        pitch: Object.freeze([0.88, 1.12]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    enemy_crawl_boss: Object.freeze({
+        variants: Object.freeze([
+            'impactSoft_heavy_000', 'impactSoft_heavy_001', 'impactSoft_heavy_002',
+            'impactSoft_heavy_003', 'impactSoft_heavy_004'
+        ]),
+        fallback: 'impactSoft_heavy_000', bus: 'sfx', gain: 0.55,
+        pitch: Object.freeze([0.72, 0.95]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    // Kenney RPG Audio CC0: shell creak and mandible click variants for creature idle noise triggers
+    enemy_idle_snail: Object.freeze({
+        variants: Object.freeze(['creak1', 'creak2', 'creak3']),
+        fallback: 'creak1', bus: 'sfx', gain: 0.28,
+        pitch: Object.freeze([0.90, 1.10]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    enemy_idle_crawler: Object.freeze({
+        variants: Object.freeze(['metalClick']),
+        fallback: 'metalClick', bus: 'sfx', gain: 0.25,
+        pitch: Object.freeze([1.2, 1.7]), noImmediateRepeat: false, retrigger: 'replace-oldest'
     })
 });
 
@@ -68,6 +96,13 @@ export const GAMEPLAY_FOLEY_MANIFEST = Object.freeze([
     ...['prop_impact_metal', 'prop_impact_glass'].flatMap((key) => (
         GAME_SOUNDSETS[key].variants.map((variant) => Object.freeze({ key: variant, url: `/audio/impacts/${variant}.ogg` }))
     ))
+]);
+
+export const GAMEPLAY_ENEMY_MANIFEST = Object.freeze([
+    ...['impactSoft_medium_000', 'impactSoft_medium_001', 'impactSoft_medium_002', 'impactSoft_medium_003', 'impactSoft_medium_004'].map((variant) => Object.freeze({ key: variant, url: `/audio/enemies/${variant}.ogg` })),
+    ...['impactSoft_heavy_000', 'impactSoft_heavy_001', 'impactSoft_heavy_002', 'impactSoft_heavy_003', 'impactSoft_heavy_004'].map((variant) => Object.freeze({ key: variant, url: `/audio/enemies/${variant}.ogg` })),
+    ...['creak1', 'creak2', 'creak3'].map((variant) => Object.freeze({ key: variant, url: `/audio/enemies/${variant}.ogg` })),
+    Object.freeze({ key: 'metalClick', url: '/audio/enemies/metalClick.ogg' })
 ]);
 
 export function validateSoundset(soundset) {

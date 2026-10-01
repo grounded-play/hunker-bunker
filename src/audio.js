@@ -1681,6 +1681,134 @@ export class AudioManager {
         popOsc.stop(now + popDuration + 0.01);
     }
 
+    /**
+     * Procedural creature alert sound (chitter / insectoid screech / bio groan / boss roar).
+     */
+    static playProceduralCreatureAlert(creatureType = 'crawler', options = {}) {
+        if (this.globalMuted || !this.isUnlocked) return null;
+        const spatial = this.resolveSpatial(options);
+        if (spatial && !spatial.audible) return null;
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        const filter = typeof audioCtx.createBiquadFilter === 'function' ? audioCtx.createBiquadFilter() : null;
+
+        const baseVol = Number(options.volume ?? 0.20) * (spatial ? spatial.gain : 1);
+        const pitchMod = Number(options.playbackRate ?? 1) * (0.92 + Math.random() * 0.16);
+
+        if (creatureType === 'crawler') {
+            osc.type = 'sawtooth';
+            if (filter) {
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(1600 * pitchMod, now);
+                filter.frequency.exponentialRampToValueAtTime(450 * pitchMod, now + 0.18);
+                filter.Q.setValueAtTime(8, now);
+            }
+            osc.frequency.setValueAtTime(1800 * pitchMod, now);
+            osc.frequency.exponentialRampToValueAtTime(400 * pitchMod, now + 0.18);
+
+            gainNode.gain.setValueAtTime(0.001, now);
+            gainNode.gain.linearRampToValueAtTime(baseVol * 0.3, now + 0.02);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+            osc.start(now);
+            osc.stop(now + 0.2);
+        } else if (creatureType === 'boss') {
+            osc.type = 'triangle';
+            if (filter) {
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(280 * pitchMod, now);
+                filter.frequency.exponentialRampToValueAtTime(80 * pitchMod, now + 0.45);
+            }
+            osc.frequency.setValueAtTime(95 * pitchMod, now);
+            osc.frequency.exponentialRampToValueAtTime(32 * pitchMod, now + 0.45);
+
+            gainNode.gain.setValueAtTime(0.001, now);
+            gainNode.gain.linearRampToValueAtTime(baseVol * 0.45, now + 0.06);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+            osc.start(now);
+            osc.stop(now + 0.48);
+        } else {
+            osc.type = 'sine';
+            if (filter) {
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(380 * pitchMod, now);
+                filter.frequency.exponentialRampToValueAtTime(110 * pitchMod, now + 0.28);
+            }
+            osc.frequency.setValueAtTime(140 * pitchMod, now);
+            osc.frequency.exponentialRampToValueAtTime(50 * pitchMod, now + 0.28);
+
+            gainNode.gain.setValueAtTime(0.001, now);
+            gainNode.gain.linearRampToValueAtTime(baseVol * 0.32, now + 0.04);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        }
+
+        if (filter) {
+            osc.connect(filter);
+            filter.connect(gainNode);
+        } else {
+            osc.connect(gainNode);
+        }
+
+        let lastNode = gainNode;
+        const panValue = spatial ? spatial.pan : options.pan;
+        if (panValue !== undefined && Number.isFinite(panValue) && typeof audioCtx.createStereoPanner === 'function') {
+            const panner = audioCtx.createStereoPanner();
+            panner.pan.value = Math.max(-1, Math.min(1, panValue));
+            lastNode.connect(panner);
+            lastNode = panner;
+        }
+        lastNode.connect(this.sfxGain);
+        return { source: osc, gainNode };
+    }
+
+    static playProceduralCrawlerSkitter(options = {}) {
+        if (this.globalMuted || !this.isUnlocked) return null;
+        const spatial = this.resolveSpatial(options);
+        if (spatial && !spatial.audible) return null;
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        const baseVol = Number(options.volume ?? 0.14) * (spatial ? spatial.gain : 1);
+        const pitchMod = Number(options.playbackRate ?? 1) * (0.88 + Math.random() * 0.25);
+
+        osc.type = 'triangle';
+        const startFreq = (1400 + Math.random() * 600) * pitchMod;
+        const duration = 0.035;
+
+        osc.frequency.setValueAtTime(startFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(300 * pitchMod, now + duration);
+
+        gainNode.gain.setValueAtTime(baseVol * 0.15, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        osc.connect(gainNode);
+        let lastNode = gainNode;
+        const panValue = spatial ? spatial.pan : options.pan;
+        if (panValue !== undefined && Number.isFinite(panValue) && typeof audioCtx.createStereoPanner === 'function') {
+            const panner = audioCtx.createStereoPanner();
+            panner.pan.value = Math.max(-1, Math.min(1, panValue));
+            lastNode.connect(panner);
+            lastNode = panner;
+        }
+        lastNode.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + duration + 0.01);
+        return { source: osc, gainNode };
+    }
+
+    static playProceduralSnailSlither(options = {}) {
+        return this.playProceduralScrape({
+            ...options,
+            volume: (options.volume ?? 0.12),
+            duration: (options.duration ?? 0.24)
+        });
+    }
+
     static setMusicTension(level = 'exploring') {
         if (!this.isUnlocked) return;
         // Tension is a 0..1 multiplier on the music bus; the user music slider
@@ -1699,14 +1827,165 @@ export class AudioManager {
         this.worldGain.gain.linearRampToValueAtTime(cfg.world, t);
     }
 
-    // Map a gameplay context to a track key; falls back to the legacy single
-    // track when the contextual stems are not present in the loaded buffers.
+    static CORE_OST_TRACKS = Object.freeze({
+        music_safe_ship: Object.freeze({ key: 'music_safe_ship', title: 'Safe Haven (Ship Sanctuary)', url: '/audio/ost/Safe Haven (Ship Sanctuary).mp3' }),
+        music_cryo_explore: Object.freeze({ key: 'music_cryo_explore', title: 'Glacial Depths (Cryo Biome)', url: '/audio/ost/Glacial Depths (Cryo Biome).mp3' }),
+        music_bio_explore: Object.freeze({ key: 'music_bio_explore', title: 'Overgrown Bio-Sphere (Bio Biome)', url: '/audio/ost/Overgrown Bio-Sphere (Bio Biome).mp3' }),
+        music_combat_threatened: Object.freeze({ key: 'music_combat_threatened', title: 'Under Siege (Combat Alert)', url: '/audio/ost/Under Siege (Combat Alert).mp3' }),
+        mainbg_music: Object.freeze({ key: 'mainbg_music', title: 'Hunker Bunker Main Theme', url: '/audio/ost/Hunker Bunker Main Theme.mp3' })
+    });
+
+    // Map a gameplay context to a track key; supports biome exploration, combat,
+    // and dedicated boss soundtracks (Tracks 25-31).
     static MUSIC_CONTEXT_TRACKS = {
-        safe_ship:    'music_safe_ship',
-        cryo_explore: 'music_cryo_explore',
-        bio_explore:  'music_bio_explore',
-        combat:       'music_combat_threatened'
+        safe_ship:       'music_safe_ship',
+        cryo_explore:    'music_cryo_explore',
+        bio_explore:     'music_bio_explore',
+        combat:          'music_combat_threatened',
+        // Boss fight contexts
+        boss_cybersnail: 'music_interstitial_25', // Gigawatt Goliath
+        boss_cryosnail:  'music_interstitial_26', // Absolute Zero Has a Shell
+        boss_sporesnail: 'music_interstitial_27', // The Bloom That Hunts
+        boss_queen:      'music_interstitial_31', // Mother of the Last World
+        boss_scout:      'music_interstitial_28', // Martha Runs Faster Now
+        boss_tank:       'music_interstitial_29', // Briggs Became the Barricade
+        boss_engineer:   'music_interstitial_30'  // Kaelen Is the Grid
     };
+
+    static getAvailableOSTTracks() {
+        const list = [];
+        for (const [key, item] of Object.entries(this.CORE_OST_TRACKS)) {
+            list.push({
+                id: key,
+                key,
+                title: item.title,
+                url: item.url,
+                type: 'core',
+                category: key === 'mainbg_music' ? 'theme' : key.includes('explore') ? 'biome' : 'combat'
+            });
+        }
+        if (typeof SONG_INTERSTITIALS === 'object' && SONG_INTERSTITIALS) {
+            for (const [id, song] of Object.entries(SONG_INTERSTITIALS)) {
+                list.push({
+                    id,
+                    trackNumber: Number(id),
+                    key: song.musicKey,
+                    title: song.title,
+                    url: song.audio,
+                    type: 'interstitial_ost',
+                    category: 'soundtrack'
+                });
+            }
+        }
+        return list;
+    }
+
+    static resolveOSTTrackSpec(identifier) {
+        if (!identifier) return null;
+        const raw = String(identifier).trim();
+        const idNum = Number(raw);
+        const formatSong = (spec) => spec ? { ...spec, trackNumber: Number(spec.id), type: 'interstitial_ost' } : null;
+        const formatCore = (spec) => spec ? { ...spec, type: 'core' } : null;
+
+        if (Number.isFinite(idNum) && idNum >= 1 && idNum <= 38 && typeof SONG_INTERSTITIALS === 'object' && SONG_INTERSTITIALS) {
+            const pad = String(idNum).padStart(2, '0');
+            return formatSong(SONG_INTERSTITIALS[pad]);
+        }
+        if (raw.startsWith('music_interstitial_') && typeof SONG_INTERSTITIALS === 'object' && SONG_INTERSTITIALS) {
+            const pad = raw.replace('music_interstitial_', '');
+            return formatSong(SONG_INTERSTITIALS[pad]);
+        }
+        if (this.MUSIC_CONTEXT_TRACKS[raw]) {
+            const targetKey = this.MUSIC_CONTEXT_TRACKS[raw];
+            if (targetKey.startsWith('music_interstitial_') && typeof SONG_INTERSTITIALS === 'object' && SONG_INTERSTITIALS) {
+                const pad = targetKey.replace('music_interstitial_', '');
+                return formatSong(SONG_INTERSTITIALS[pad]);
+            }
+            return formatCore(this.CORE_OST_TRACKS[targetKey]);
+        }
+        if (this.CORE_OST_TRACKS[raw]) {
+            return formatCore(this.CORE_OST_TRACKS[raw]);
+        }
+        const lower = raw.toLowerCase();
+        if (typeof SONG_INTERSTITIALS === 'object' && SONG_INTERSTITIALS) {
+            for (const spec of Object.values(SONG_INTERSTITIALS)) {
+                if (spec.title.toLowerCase() === lower || spec.title.toLowerCase().includes(lower)) {
+                    return formatSong(spec);
+                }
+            }
+        }
+        for (const [key, spec] of Object.entries(this.CORE_OST_TRACKS)) {
+            if (spec.title.toLowerCase() === lower || key.toLowerCase() === lower) {
+                return formatCore(spec);
+            }
+        }
+        return null;
+    }
+
+    static async playOST(identifier, options = {}) {
+        if (this.globalMuted) return null;
+        const spec = this.resolveOSTTrackSpec(identifier);
+        if (!spec) return null;
+
+        const bufferKey = spec.musicKey ?? spec.key;
+        const audioUrl = spec.audio ?? spec.url;
+
+        if (!this.buffers[bufferKey] && audioUrl && typeof this.decodeAudioAsset === 'function') {
+            try {
+                this.buffers[bufferKey] = await this.decodeAudioAsset(audioUrl);
+            } catch (err) {
+                console.warn(`[playOST] Failed to decode ${audioUrl}:`, err);
+                if (spec.fallbackUrl) {
+                    try {
+                        this.buffers[bufferKey] = await this.decodeAudioAsset(spec.fallbackUrl);
+                    } catch {
+                        return null;
+                    }
+                } else {
+                    return null;
+                }
+            }
+        }
+
+        if (!this.buffers[bufferKey]) return null;
+
+        const fade = Math.max(0, Number(options.fadeSeconds ?? this._musicFadeSeconds) || 0);
+        const now = audioCtx.currentTime;
+
+        if (options.stopPrevious !== false && this.activeMusic?.gainNode && this.activeMusic?.source) {
+            const g = this.activeMusic.gainNode.gain;
+            g.cancelScheduledValues(now);
+            g.setValueAtTime(g.value, now);
+            g.linearRampToValueAtTime(0.0001, now + fade);
+            try { this.activeMusic.source.stop(now + fade + 0.05); } catch { /* ignore */ }
+        }
+
+        const targetVolume = Number.isFinite(options.volume) ? options.volume : 0.62;
+        const started = this.play(bufferKey, {
+            volume: fade > 0 ? 0.0001 : targetVolume,
+            loop: options.loop ?? true,
+            bus: 'music',
+            varyPitch: false
+        });
+        if (!started) return null;
+
+        if (fade > 0) {
+            const ng = started.gainNode.gain;
+            ng.cancelScheduledValues(now);
+            ng.setValueAtTime(0.0001, now);
+            ng.linearRampToValueAtTime(targetVolume, now + fade);
+        }
+
+        const context = options.context ?? `ost:${spec.id ?? bufferKey}`;
+        this.activeMusic = {
+            source: started.source,
+            gainNode: started.gainNode,
+            bufferKey,
+            context
+        };
+        this.musicSource = started.source;
+        return started;
+    }
 
     static resolveMusicTrackKey(context) {
         const mapped = this.MUSIC_CONTEXT_TRACKS[context];
@@ -1722,7 +2001,12 @@ export class AudioManager {
             return;
         }
         const bufferKey = this.resolveMusicTrackKey(context);
-        if (!bufferKey || !this.buffers[bufferKey]) return;
+        if (!bufferKey) return;
+        if (!this.buffers[bufferKey]) {
+            // Trigger asynchronous on-demand decode so contextual boss/exploration tracks load smoothly
+            this.playOST(context, { loop: true, context, volume: 0.62 }).catch(() => {});
+            return;
+        }
 
         // Already on the right context, or two contexts share the fallback track.
         if (this.activeMusic && this.activeMusic.context === context) return;
@@ -1838,3 +2122,4 @@ import { GAME_SOUNDSETS, selectSoundsetVariant } from './data/gameSoundsets.js';
 import { GAME_AUDIO_ALIASES } from './data/gameAudioAliases.js';
 import { getVoiceTakeKeys, resolveVoiceBankSlot } from './data/voiceBanks.js';
 import { calculateScreenSpaceAudio } from './audioSpatial.js';
+import { SONG_INTERSTITIALS } from './songInterstitials.js';

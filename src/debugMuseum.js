@@ -214,7 +214,7 @@ export function buildMuseumAudioCatalog(buffers = AudioManager.buffers) {
             key: song.musicKey,
             label: `${song.id} // ${song.title}`,
             source: song.audio,
-            available: Boolean(buffers?.[song.musicKey]),
+            available: Boolean(buffers?.[song.musicKey] || song.audio),
             bus: 'music'
         })),
         voice: voiceRows.flatMap((row) => row.takes.map((key, index) => ({
@@ -268,8 +268,19 @@ function mountMuseumJukebox(game, group) {
             button.className = `museum-track${row.available ? '' : ' unavailable'}`;
             button.disabled = !row.available;
             button.innerHTML = `<span>${row.label}</span><b>${row.available ? 'PLAY' : 'MISSING'}</b>${row.subtitle ? `<small>${row.subtitle} // ${row.semanticId}</small>` : ''}`;
-            button.addEventListener?.('click', () => {
+            button.addEventListener?.('click', async () => {
                 stopMuseumAudition(group);
+                if (row.source && !AudioManager.buffers?.[row.key] && typeof AudioManager.decodeAudioAsset === 'function') {
+                    try {
+                        const buffer = await AudioManager.decodeAudioAsset(row.source);
+                        if (buffer) {
+                            if (!AudioManager.buffers) AudioManager.buffers = {};
+                            AudioManager.buffers[row.key] = buffer;
+                        }
+                    } catch (err) {
+                        console.warn('[museum] failed to load audio', row.source, err);
+                    }
+                }
                 group.userData.museumAudition = AudioManager.play(row.key, {
                     bus: row.bus,
                     volume: Number(gain?.value ?? 0.8),

@@ -29171,7 +29171,8 @@ export class ThreeGame {
                 });
             }
         }
-        globalThis.window?.AudioManager?.playMetalStress?.({ volume: 0.48, playbackRate: 0.65, force: true });
+        globalThis.window?.AudioManager?.playMetalStress?.({ volume: 0.32, playbackRate: 0.65, force: true });
+        globalThis.window?.AudioManager?.play?.('enemy_break_wall', (this.audioAt?.(tileX, tileZ, { volume: 0.42, playbackRate: 0.75 }) ?? { volume: 0.42, playbackRate: 0.75 }));
         data.wallBreakCooldown = BOSS_WALL_BREAK_COOLDOWN;
         data.pathNodes = null;
         data.pathRetargetTimer = 0;
@@ -34731,8 +34732,10 @@ export class ThreeGame {
                 data.crawlerState = 'alert';
                 data.windupTimer = 0;
                 sprite.material.color.setHex(0xffffff);
-                window.AudioManager?.play('ui_scan_ping', { volume: 0.38, playbackRate: 2.2, bus: 'sfx' });
-                window.dispatchEvent(new CustomEvent('crawler-detected', {}));
+                globalThis.window?.AudioManager?.play?.('enemy_alert_crawler', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.28, playbackRate: 1.15 }) ?? { volume: 0.28 }));
+                globalThis.window?.AudioManager?.playProceduralCreatureAlert?.('crawler', { volume: 0.15 });
+                globalThis.window?.AudioManager?.play?.('ui_scan_ping', { volume: 0.18, playbackRate: 2.2, bus: 'sfx' });
+                globalThis.window?.dispatchEvent?.(new CustomEvent('crawler-detected', {}));
             }
         } else if (data.crawlerState === 'alert') {
             data.windupTimer += delta;
@@ -34751,10 +34754,15 @@ export class ThreeGame {
                 data.chargeTimer = 0;
                 data.crawlerState = 'charging';
                 sprite.material.color.setHex(CRAWLER_TINT);
-                window.AudioManager?.playMetalStress?.({ volume: 0.45, playbackRate: 2.6, force: true });
+                globalThis.window?.AudioManager?.playMetalStress?.({ volume: 0.26, playbackRate: 2.6, force: true });
             }
         } else if (data.crawlerState === 'charging') {
             data.chargeTimer += delta;
+            data.skitterAudioTimer = (data.skitterAudioTimer ?? 0) + delta;
+            if (data.skitterAudioTimer >= 0.14) {
+                data.skitterAudioTimer = 0;
+                globalThis.window?.AudioManager?.play?.('enemy_skitter_crawler', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.18, playbackRate: 1.25 + (Math.random() * 0.3 - 0.15) }) ?? { volume: 0.18 }));
+            }
 
             const moveX = data.chargeDirX * CRAWLER_CHARGE_SPEED * delta;
             const moveZ = data.chargeDirZ * CRAWLER_CHARGE_SPEED * delta;
@@ -35971,7 +35979,22 @@ export class ThreeGame {
             data.targetType = target.type;
             if (previousMode !== 'hunt' && target.mode === 'hunt' && target.type === 'player') {
                 if (typeof window !== 'undefined') {
-                    window.AudioManager?.play('ui_scan_ping', { volume: 0.2, playbackRate: 0.55, bus: 'sfx' });
+                    const alertKey = data.isBoss ? 'enemy_alert_boss' : 'enemy_alert_snail';
+                    const alertVol = data.isBoss ? 0.36 : 0.22;
+                    window.AudioManager?.play?.(alertKey, (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: alertVol, playbackRate: data.isBoss ? 0.7 : 1.05 }) ?? { volume: alertVol }));
+                    window.AudioManager?.playProceduralCreatureAlert?.(data.type, { volume: 0.14 });
+                    window.AudioManager?.play('ui_scan_ping', { volume: 0.15, playbackRate: 0.55, bus: 'sfx' });
+                }
+                if (!this._firstEncounterSpotted) this._firstEncounterSpotted = new Set();
+                if (!this._firstEncounterSpotted.has(data.type)) {
+                    this._firstEncounterSpotted.add(data.type);
+                    let trackNum = null;
+                    if (data.type === 'cybersnail' || data.type === 'boss_cybersnail') trackNum = 13;
+                    else if (data.type === 'cryosnail' || data.type === 'boss_cryosnail') trackNum = 14;
+                    else if (data.type === 'sporesnail' || data.type === 'boss_sporesnail') trackNum = 15;
+                    if (trackNum && typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('enemy-first-spotted', { detail: { type: data.type, trackNum } }));
+                    }
                 }
             }
             data.pathRetargetTimer = target.mode === 'hunt'
@@ -36062,7 +36085,17 @@ export class ThreeGame {
                 }
             }
 
-            if (!moved) {
+            if (moved) {
+                data.crawlAudioTimer = (data.crawlAudioTimer ?? (Math.random() * 0.4)) + delta;
+                const crawlInterval = data.isBoss ? 0.95 : 0.7;
+                if (data.crawlAudioTimer >= crawlInterval) {
+                    data.crawlAudioTimer = 0;
+                    const soundKey = data.isBoss ? 'enemy_crawl_boss' : 'enemy_crawl_snail';
+                    const vol = data.isBoss ? 0.28 : 0.16;
+                    const rate = (data.isBoss ? 0.75 : 1.0) + (Math.random() * 0.2 - 0.1);
+                    globalThis.window?.AudioManager?.play?.(soundKey, (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: vol, playbackRate: rate }) ?? { volume: vol, playbackRate: rate }));
+                }
+            } else {
                 data.pathRetargetTimer = 0;
                 data.pathNodes = null;
             }
@@ -36280,6 +36313,7 @@ export class ThreeGame {
 
     resolveCryosnailShockwave(sprite) {
         if (!sprite || !this.player || this.isPlayerDead) return false;
+        globalThis.window?.AudioManager?.play?.('enemy_shockwave_cryosnail', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.42, playbackRate: 0.85 }) ?? { volume: 0.42, playbackRate: 0.85 }));
         const distance = Math.hypot(
             this.player.position.x - sprite.position.x,
             this.player.position.z - sprite.position.z
@@ -36355,6 +36389,7 @@ export class ThreeGame {
         const damageRadius = isLarge ? 1.1 : 0.45;
         const footprintZone = { x, z, radius: damageRadius, active: true };
         this.dynamicPuddles.push(footprintZone);
+        globalThis.window?.AudioManager?.play?.('enemy_attack_sporesnail', (this.audioAt?.(x, z, { volume: isLarge ? 0.26 : 0.16, playbackRate: isLarge ? 0.8 : 1.1 }) ?? { volume: isLarge ? 0.26 : 0.16 }));
         
         const sprite = new THREE.Sprite(mat);
         sprite.center.set(0.5, 0.5);
@@ -36698,6 +36733,13 @@ export class ThreeGame {
                 child.position.y = baseY + Math.sin(time * 6 + child.userData.phase) * 0.03;
                 child.material.opacity = child.userData.baseOpacity;
                 if (!child.userData.burstTriggered) {
+                    child.userData.idleNoiseTimer = (child.userData.idleNoiseTimer ?? (2 + Math.random() * 5)) - delta;
+                    if (child.userData.idleNoiseTimer <= 0) {
+                        child.userData.idleNoiseTimer = 4.5 + Math.random() * 5.0;
+                        if (this.player && Math.hypot(child.position.x - this.player.position.x, child.position.z - this.player.position.z) <= 13) {
+                            globalThis.window?.AudioManager?.play?.('enemy_idle_crawler', (this.audioAt?.(child.position.x, child.position.z, { volume: 0.14, playbackRate: 0.95 + Math.random() * 0.2 }) ?? { volume: 0.14 }));
+                        }
+                    }
                     this.updateCrawlerBehavior(child, delta);
                 }
             } else if (this.isSentinel(child.userData.type)) {
@@ -36727,6 +36769,15 @@ export class ThreeGame {
                 } else if (child.userData.type === 'mycelium_stalker' || child.userData.type === 'bio_charger') {
                     this.updateChargerOrStalkerBehavior(child, delta, { isStalker: child.userData.type === 'mycelium_stalker' });
                 } else {
+                    child.userData.idleNoiseTimer = (child.userData.idleNoiseTimer ?? (3 + Math.random() * 6)) - delta;
+                    if (child.userData.idleNoiseTimer <= 0) {
+                        child.userData.idleNoiseTimer = 5.0 + Math.random() * 6.0;
+                        if (this.player && Math.hypot(child.position.x - this.player.position.x, child.position.z - this.player.position.z) <= 13) {
+                            const isBoss = Boolean(child.userData.isBoss);
+                            const idleKey = isBoss ? 'enemy_idle_boss' : 'enemy_idle_snail';
+                            globalThis.window?.AudioManager?.play?.(idleKey, (this.audioAt?.(child.position.x, child.position.z, { volume: isBoss ? 0.22 : 0.13, playbackRate: isBoss ? 0.8 : 1.0 }) ?? { volume: 0.13 }));
+                        }
+                    }
                     this.updateSnailBehavior(child, delta, activeShip);
                 }
 
