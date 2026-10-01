@@ -241,7 +241,8 @@ test.describe('S49-10 controller journey', () => {
         await pad(page, 'menu_back');
         await expect(page.locator('#multiplayer-modal')).toBeHidden({ timeout: 5_000 });
         // One D-pad press must land somewhere visible, never leave the player
-        // with no focus at all.
+        // with no focus at all. (Focus returns after the ~280 ms close animation.)
+        await page.waitForTimeout(500);
         await pad(page, 'menu_down');
         const f = await focused(page);
         expect(f, 'a D-pad press after leaving the console finds focus').not.toBeNull();

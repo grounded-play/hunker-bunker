@@ -12708,6 +12708,19 @@ document.addEventListener('keydown', (event) => {
 
         const settingsPopup = document.getElementById('settings-popup');
         if (settingsPopup && !settingsPopup.classList.contains('hidden')) {
+            // A surface opened from Settings and drawn above it (the Content
+            // Guide, the walkthrough) closes on its own; one Back press used to
+            // close it AND Settings behind it, dropping the reviewer out of
+            // Settings entirely (S49-10/11).
+            const surfaceAbove = getControllerFocusRoot();
+            if (surfaceAbove && surfaceAbove !== settingsPopup && isModalFocusRoot(surfaceAbove)) {
+                const back = getControllerBackTarget(surfaceAbove);
+                if (back) {
+                    back.click();
+                    event.preventDefault();
+                    return;
+                }
+            }
             settingsPopup.classList.add('hidden');
             draftAudioMix = cloneAudioMix(state.settings.audioMix);
             AudioManager.setMix(state.settings.audioMix);
