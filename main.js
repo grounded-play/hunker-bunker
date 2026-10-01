@@ -15884,6 +15884,12 @@ function initTacticalCursor() {
             cursor.classList.remove('cursor-hovering');
             return null;
         }
+        // A pointer that has not moved since the controller took over is not
+        // the player's: closing a modal re-fires pointerover on whatever now
+        // sits under it, and that stole controller focus from the button the
+        // modal had just returned it to (S49-10). Real movement switches the
+        // input mode back first (capture-phase pointermove), so hover still works.
+        if (isSteamControllerInputActive()) return null;
         const target = resolveInteractiveFocusTarget(rawTarget);
         if (!target) return null;
         if (currentHoverTarget !== target || document.activeElement !== target) {

@@ -42,11 +42,46 @@ const focusKey = (page) => page.evaluate(() => {
     return `${el.id}|${el.className}|${(el.textContent || '').trim().slice(0, 30)}|${Math.round(el.getBoundingClientRect().x)},${Math.round(el.getBoundingClientRect().y)}`;
 });
 
-// Steer focus onto `selector` with the D-pad only, by raster scan: to the
-// top, then each row left-to-right, then down a row. Records the path for the
-// failure message.
-async function steerTo(page, selector, { maxRows = 40, maxCols = 25 } = {}) {
+// Where the target sits relative to the focused element, as a player sees it.
+const offsetToTarget = (page, selector) => page.evaluate((sel) => {
+    const target = [...document.querySelectorAll(sel)].find((el) => el.getClientRects().length);
+    const active = document.activeElement;
+    if (!target || !active || active === document.body) return null;
+    const a = active.getBoundingClientRect();
+    const b = target.getBoundingClientRect();
+    return { dx: (b.x + b.width / 2) - (a.x + a.width / 2), dy: (b.y + b.height / 2) - (a.y + a.height / 2) };
+}, selector);
+
+// Steer focus onto `selector` with the D-pad only. First the way a player
+// would, pressing toward the target on screen; if that stalls, a raster scan:
+// to the top, then each row left-to-right, then down a row.
+async function steerTo(page, selector, opts = {}) {
     const path = [];
+    for (let i = 0, stalls = 0; i < 40 && stalls < 4; i += 1) {
+        if (await isFocusedMatch(page, selector)) { await page.waitForTimeout(200); return path; }
+        const off = await offsetToTarget(page, selector);
+        if (!off) break;
+        const horizontal = Math.abs(off.dx) > Math.abs(off.dy);
+        const order = horizontal
+            ? [off.dx > 0 ? 'menu_right' : 'menu_left', off.dy > 0 ? 'menu_down' : 'menu_up']
+            : [off.dy > 0 ? 'menu_down' : 'menu_up', off.dx > 0 ? 'menu_right' : 'menu_left'];
+        const dir = order[stalls % 2];
+        const before = await focusKey(page);
+        await pad(page, dir);
+        await page.waitForTimeout(50);
+        const after = await focusKey(page);
+        path.push(`${dir}→${after.split('|')[0] || after.split('|')[2]}`);
+        const next = await offsetToTarget(page, selector);
+        const closer = next && Math.hypot(next.dx, next.dy) < Math.hypot(off.dx, off.dy) - 1;
+        stalls = after !== before && closer ? 0 : stalls + 1;
+    }
+    if (await isFocusedMatch(page, selector)) { await page.waitForTimeout(200); return path; }
+    const result = await rasterTo(page, selector, path, opts);
+    await page.waitForTimeout(200);
+    return result;
+}
+
+async function rasterTo(page, selector, path, { maxRows = 40, maxCols = 25 } = {}) {
     const hit = () => isFocusedMatch(page, selector);
     const step = async (dir) => {
         const before = await focusKey(page);
