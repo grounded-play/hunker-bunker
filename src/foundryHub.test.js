@@ -57,3 +57,53 @@ describe('Foundry hub tabs', () => {
         expect(cycleHubTab(null, 1, tabs)).toBe('loadout');
     });
 });
+
+// QA 2026-10-01 (S49-10): closing the hub left the controller focused on a
+// bare <div>, so the player had to hunt for focus on the main menu. The hub
+// hands focus back to whatever opened it.
+describe('Foundry hub focus', () => {
+    function fakeElement(id = null) {
+        const classes = new Set(id === 'foundry-hub-modal' ? ['hidden'] : []);
+        return {
+            id, dataset: {}, hidden: false, textContent: '', isConnected: true,
+            classList: {
+                add: (c) => classes.add(c), remove: (c) => classes.delete(c),
+                contains: (c) => classes.has(c),
+                toggle: (c, on) => (on ? classes.add(c) : classes.delete(c))
+            },
+            setAttribute() {}, addEventListener() {}, appendChild() {}, insertBefore() {}, closest: () => null
+        };
+    }
+    function fakeDocument(opener) {
+        const els = new Map(['foundry-hub-modal', 'foundry-hub-tabs', 'foundry-hub-panel', 'foundry-hub-loadout'].map((id) => [id, fakeElement(id)]));
+        return {
+            activeElement: opener,
+            getElementById: (id) => els.get(id) ?? null,
+            createElement: () => fakeElement(),
+            createComment: () => fakeElement()
+        };
+    }
+
+    it('returns focus to the button that opened it', async () => {
+        const { createFoundryHub } = await import('./foundryHub.js');
+        const opener = fakeElement('steam-vault-btn');
+        const doc = fakeDocument(opener);
+        const focused = [];
+        const hub = createFoundryHub({ document: doc, focus: (el) => focused.push(el) });
+        hub.open('stash');
+        hub.close();
+        expect(focused.at(-1)).toBe(opener);
+    });
+
+    it('does not focus an opener that has left the page', async () => {
+        const { createFoundryHub } = await import('./foundryHub.js');
+        const opener = fakeElement('steam-vault-btn');
+        const doc = fakeDocument(opener);
+        const focused = [];
+        const hub = createFoundryHub({ document: doc, focus: (el) => focused.push(el) });
+        hub.open('stash');
+        opener.isConnected = false;
+        hub.close();
+        expect(focused).not.toContain(opener);
+    });
+});
