@@ -9,6 +9,15 @@ const ALIEN_SPRITESHEETS = {
     'hive_carapace': '/alien_rhun_walk.png'
 };
 
+// Each hive's leader as a 3D model (world3dOverlay types). Nahl tends the
+// suture; Vey and Rhun lead the relay and the carapace. The 2D walk sprite is
+// kept as the fallback and drives the model's position.
+export const HIVE_LEADER_3D_MODELS = Object.freeze({
+    hive_suture: 'npc_nahl',
+    hive_relay: 'npc_alien_vey',
+    hive_carapace: 'npc_alien_rhun'
+});
+
 const ALIEN_COLORS = {
     'hive_suture': 0x8cff96,  // Green-white
     'hive_relay': 0x00ffcc,   // Synapse cyan
@@ -290,7 +299,8 @@ export class HiveSite {
         this.npcSprite.userData = {
             kind: 'alien-ally',
             hiveId: this.id,
-            characterId: this.characterId
+            characterId: this.characterId,
+            world3dModelType: HIVE_LEADER_3D_MODELS[this.id] ?? null
         };
         group.add(this.npcSprite);
 

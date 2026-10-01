@@ -16537,6 +16537,9 @@ export class ThreeGame {
             }
             hive.reveal(x, z);
             hive.syncFromRecord(record);
+            // Leader in 3D (Nahl / Vey / Rhun); the walk sprite stays as fallback.
+            const leaderModel = hive.npcSprite?.userData?.world3dModelType;
+            if (leaderModel) this.setupWorld3dReplacement(hive.npcSprite, leaderModel, { owner: hive, ownerKey: 'npc3d' });
             return hive;
         });
         this._hiveSitesReady = true;
