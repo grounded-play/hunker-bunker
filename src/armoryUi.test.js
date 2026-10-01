@@ -372,21 +372,23 @@ describe('createArmoryUi ownership gating', () => {
         expect(html).not.toMatch(/data-value="comm_scout_foxhole_shadow"[^>]*aria-disabled/);
     });
 
-    it('hides the GHOST chassis until its missing rigged model exists', () => {
+    it('offers the earned GHOST chassis', () => {
         ownership.grantDev(5001, 1);
         mount();
         const html = openSlotHtml(container, 'chassis');
-        expect(html).not.toContain('data-value="5001"');
+        expect(html).toContain('data-value="5001"');
     });
 
-    it('hides pending achievement weapons until their authored GLBs exist', () => {
+    it('offers earned achievement weapons to their own class only', () => {
         for (const id of [5002, 5006, 5009, 5010]) ownership.grantDev(id, 1);
         mount();
-        for (const classButton of ['scout', 'tank', 'engineer']) {
-            container.querySelector(`[data-armory-class="${classButton}"]`)?.click();
+        const expected = { scout: ['5002'], tank: ['5006'], engineer: ['5009', '5010'] };
+        for (const [cls, ids] of Object.entries(expected)) {
+            container.querySelectorAll('.class-tab').find((tab) => tab.dataset.class === cls)?.click();
             const html = openSlotHtml(container, 'weapon');
             for (const id of ['5002', '5006', '5009', '5010']) {
-                expect(html).not.toContain(`data-value="${id}"`);
+                if (ids.includes(id)) expect(html, `${cls} ${id}`).toContain(`data-value="${id}"`);
+                else expect(html, `${cls} ${id}`).not.toContain(`data-value="${id}"`);
             }
         }
     });
