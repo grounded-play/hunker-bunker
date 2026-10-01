@@ -1784,7 +1784,7 @@
       },
       "bio_vampirism": {
         "name": "Membrana Biovampírica",
-        "description": "Abater inimigos biológicos recupera sinais vitais de O₂ e a bateria do traje."
+        "description": "Matar um inimigo bio corroído restaura até 8% de O₂ e, se você estiver ferido, um coração."
       }
     },
     "cache": {

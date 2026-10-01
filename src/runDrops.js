@@ -101,9 +101,9 @@ export const SUIT_RELICS = Object.freeze([
         nameKey: 'ui.relics.bio_vampirism.name',
         descriptionKey: 'ui.relics.bio_vampirism.description',
         rarity: DROP_RARITIES.MYTHIC,
-        description: 'Slaying bio enemies restores O2 vitals and suit battery.',
+        description: 'Slaying a corroded bio enemy restores up to 8% O2 and, if you are hurt, one heart.',
         element: 'bio',
-        stats: { o2Restore: 8, batteryRestore: 15, heartRestore: 1 }
+        stats: { o2Restore: 8, heartRestore: 1 }
     },
     {
         id: 'tesla_thrusters', implemented: false,
@@ -456,7 +456,7 @@ export const SYNERGY_DEFINITIONS = Object.freeze({
         id: 'bio_predator',
         name: 'Bio Predator',
         nameKey: 'ui.relics.synergy.bio_predator',
-        description: 'Corroding bio enemies restores suit O2 vitals and bio-battery on defeat.',
+        description: 'Bio enemies you corrode restore O2 and a heart when they die.',
         element: 'bio',
         components: Object.freeze(['caustic_payload', 'bio_vampirism'])
     })
@@ -520,10 +520,10 @@ export function resolveBioVampirismKill({
     playerVitals = {},
     enemyType = '',
     isCorroded = false,
-    stats = { o2Restore: 8, batteryRestore: 15, heartRestore: 1 }
+    stats = { o2Restore: 8, heartRestore: 1 }
 } = {}) {
     if (!isCorroded || !isBioEnemy(enemyType)) {
-        return { o2Restored: 0, heartRestored: 0, batteryRestored: 0 };
+        return { o2Restored: 0, heartRestored: 0 };
     }
     const currentO2 = playerVitals.o2 ?? 0;
     const maxO2 = playerVitals.maxO2 ?? 100;
@@ -533,11 +533,7 @@ export function resolveBioVampirismKill({
     const maxHp = playerVitals.maxHp ?? 4;
     const heartRestored = (currentHp < maxHp && (stats.heartRestore ?? 1) > 0) ? 1 : 0;
 
-    return {
-        o2Restored,
-        heartRestored,
-        batteryRestored: stats.batteryRestore ?? 15
-    };
+    return { o2Restored, heartRestored };
 }
 
 export function getTurretElementalInheritance(equippedItems = []) {

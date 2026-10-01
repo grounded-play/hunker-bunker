@@ -1784,7 +1784,7 @@
       },
       "bio_vampirism": {
         "name": "Bio-Vampiric Membrane",
-        "description": "Slaying bio enemies restores O2 vitals and suit battery."
+        "description": "Slaying a corroded bio enemy restores up to 8% O₂ and, if you are hurt, one heart."
       }
     },
     "cache": {

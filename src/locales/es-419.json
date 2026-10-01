@@ -1784,7 +1784,7 @@
       },
       "bio_vampirism": {
         "name": "Membrana Biovampírica",
-        "description": "Eliminar enemigos biológicos restaura el O₂ y la batería del traje."
+        "description": "Matar a un enemigo bio corroído restaura hasta un 8 % de O₂ y, si estás herido, un corazón."
       }
     },
     "cache": {

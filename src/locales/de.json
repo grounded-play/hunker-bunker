@@ -1784,7 +1784,7 @@
       },
       "bio_vampirism": {
         "name": "Bio-Vampirische Membran",
-        "description": "Das Töten von Bio-Feinden stellt O₂-Werte und Anzugbatterie wieder her."
+        "description": "Ein korrodierter Bio-Feind stellt beim Tod bis zu 8 % O₂ und, wenn du verletzt bist, ein Herz wieder her."
       }
     },
     "cache": {
