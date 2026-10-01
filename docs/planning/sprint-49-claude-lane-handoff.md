@@ -157,6 +157,21 @@ abort → results. All by `gamepad-menu-nav` only.
   test that is flaky under load; it and the other settings-popup tests then passed
   12/12 in a repeat run.
 
+### 2026-10-01 midday: P1/P2 status audit and new claims
+
+[sprint-49-status-audit-2026-10-01.md](sprint-49-status-audit-2026-10-01.md) records the
+implementation state of S49-15 to S49-38 at `ba9298df`. S49-01 to S49-14 are tracked in
+`sprint-49.md` by the other lane, which was editing that file at the time. This lane did
+not touch it.
+
+**Claimed now:**
+- **S49-19 close-out:** the Bio-Vampiric Membrane "suit battery" text has no consumer;
+  add a catalog test pinning the four exclusions.
+- **S49-31:** meshopt-compress `bio_charger.glb` (19.3 MB) and the oversized boss GLBs
+  with no visual change, then lower the retail budget.
+- **S49-31:** attribute the co-op deploy wait (the 13.6 s unattributed long task in the
+  QA capture).
+
 ## Next
 
 1. **Publisher/hardware (not code):** a Deck and pad pass with the keyboard unplugged
