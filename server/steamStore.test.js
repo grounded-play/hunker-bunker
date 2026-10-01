@@ -557,12 +557,23 @@ describe('paid grant recovery', () => {
     async function seed(status = 'pending_confirmation') {
         enableLiveStoreEnv();
         counter += 1;
-        return savePurchaseState({ steamId64: '76561198000000000', sku: 'key_5',
-            transId: `recover-${counter}`, orderId: `recover-order-${counter}`, status, priceUsdCents: 399 });
+        const record = {
+            steamId64: '76561198000000000',
+            sku: 'key_5',
+            transId: `recover-${counter}`,
+            orderId: `recover-order-${counter}`,
+            status,
+            priceUsdCents: 399
+        };
+        await savePurchaseState(record);
+        return record;
     }
-    async function finalize(purchase) {
+    async function finalize(purchase, extra = {}) {
+        const transId = String(purchase?.transId || '');
         const response = await fetch(`${baseUrl}/steam/store/purchase/finalize`, {
-            method: 'POST', headers: liveAuthHeaders(), body: JSON.stringify({ transId: purchase.transId })
+            method: 'POST',
+            headers: liveAuthHeaders(),
+            body: JSON.stringify({ transId, ...extra })
         });
         return { status: response.status, body: await response.json() };
     }
@@ -746,11 +757,9 @@ describe('paid grant recovery', () => {
             expect(String(url)).toContain('/QueryTxn/');
             return query(purchase, 'Approved');
         });
-        const response = await fetch(`${baseUrl}/steam/store/purchase/finalize`, {
-            method: 'POST', headers: liveAuthHeaders(), body: JSON.stringify({ transId: purchase.transId, reconcile: true })
-        });
-        expect(response.status).toBe(409);
-        expect(await response.json()).toMatchObject({ reason: 'grant_without_settled_payment' });
+        const result = await finalize(purchase, { reconcile: true });
+        expect(result.status).toBe(409);
+        expect(result.body).toMatchObject({ reason: 'grant_without_settled_payment' });
         expect(externalFetchCallCount()).toBe(1);
     });
 });

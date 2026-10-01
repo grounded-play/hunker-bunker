@@ -25,7 +25,8 @@ function traceServer() {
             const spec = match[1] || match[2] || match[3];
             if (spec.startsWith('.')) {
                 const target = path.resolve(path.dirname(file), spec);
-                if (!target.startsWith(path.join(repo, 'server') + path.sep)) outside.add(path.relative(repo, target));
+                const rel = path.relative(repo, target).split(path.sep).join('/');
+                if (!target.startsWith(path.join(repo, 'server') + path.sep)) outside.add(rel);
                 walk(target);
             } else {
                 const name = spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0];

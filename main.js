@@ -10647,6 +10647,8 @@ window.__DEBUG__ = {
     // career readout and progress bars without playing a full expedition.
     recordRunEnd: (stats = {}) => recordAchievementRunEnd(stats).state,
     closeMuseum: () => closeDebugMuseum(window.game),
+    // One row per museum exhibit: load ok/error, measured size, triangles.
+    museumReport: () => window.game?.scene?.getObjectByName('debug-museum')?.userData?.museumReport ?? null,
     getState: () => ({
         appPhase,
         playerType: window.game?.playerType,
@@ -16641,7 +16643,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const loaderStatusEl = document.querySelector('.loader-status');
                 if (loaderTitle) loaderTitle.textContent = t('ui.loader.init_failed');
                 if (loaderStatusEl) {
-                    loaderStatusEl.innerHTML = `<div style="color: var(--accent-secondary); font-size: var(--font-xs);">${err?.message ?? 'UNKNOWN ERROR — WebGL may be unavailable'}</div>`;
+                    const errorBox = document.createElement('div');
+                    errorBox.style.color = 'var(--accent-secondary)';
+                    errorBox.style.fontSize = 'var(--font-xs)';
+                    errorBox.textContent = err?.message ?? t('ui.loading.log_unknown_error');
+                    loaderStatusEl.replaceChildren(errorBox);
                 }
                 const loadingScreen = document.getElementById('loading-screen');
                 if (loadingScreen) loadingScreen.classList.remove('hidden');
@@ -16682,11 +16688,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 logs.pop();
             }
         }
-        loaderStatus.innerHTML = logs.map((log, distance) => {
+        loaderStatus.replaceChildren(...logs.map((log, distance) => {
             const opacities = [1.0, 0.6, 0.35, 0.18, 0.06];
             const opacity = opacities[distance] ?? 0.04;
-            return `<div style="opacity: ${opacity}; line-height: 1.4; transition: opacity 0.2s ease, transform 0.2s ease;">${log}</div>`;
-        }).join('');
+            const logItem = document.createElement('div');
+            logItem.style.opacity = String(opacity);
+            logItem.style.lineHeight = '1.4';
+            logItem.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+            logItem.textContent = log;
+            return logItem;
+        }));
     };
 
     renderLoaderLogs();
