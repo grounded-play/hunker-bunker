@@ -72,6 +72,21 @@ describe('world 3D replacement catalog', () => {
         expect(root.visible).toBe(true);
     });
 
+    // Modular kit pieces carry their topology rotation and carve-fit scale on
+    // the anchor: no billboard facing offset, which would turn a corner's
+    // openings away from the route it was chosen for.
+    it('places a socketed kit anchor at its exact rotation and fitted scale', () => {
+        const anchor = new THREE.Object3D();
+        const root = new THREE.Group();
+        anchor.userData = { world3dRoot: root, world3dDesiredVisible: true, socketRotation: Math.PI / 2, modelScale: 1.25 };
+        anchor.position.set(2, 0, 5);
+        expect(syncWorld3dReplacement(anchor)).toBe(true);
+        expect(root.rotation.y).toBeCloseTo(Math.PI / 2);
+        expect(root.scale.toArray()).toEqual([1.25, 1.25, 1.25]);
+        expect(syncWorld3dReplacement(anchor, { scale: 0.5 })).toBe(true);
+        expect(root.scale.x).toBeCloseTo(0.625);
+    });
+
     // A sprite and its 3D replacement must never both be drawable. When the
     // O2 generator's flat sprite stayed visible after the GLB was parented, the
     // billboard rendered *inside* the model. sync is the one funnel every

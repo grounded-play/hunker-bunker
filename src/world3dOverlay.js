@@ -460,7 +460,11 @@ export function syncWorld3dReplacement(source, { scale = 1, visible } = {}) {
     const root = source?.userData?.world3dRoot;
     if (!root) return false;
     root.position.copy(source.position);
-    if (source.userData?.wallNormal) {
+    const socketRotation = source.userData?.socketRotation;
+    if (Number.isFinite(socketRotation)) {
+        // Socketed modular piece: its rotation is topology, applied exactly.
+        root.rotation.y = socketRotation;
+    } else if (source.userData?.wallNormal) {
         const wn = source.userData.wallNormal;
         root.rotation.y = Math.atan2(wn.x, wn.z);
         if (source.userData.isWallBackedProp) {
@@ -470,7 +474,8 @@ export function syncWorld3dReplacement(source, { scale = 1, visible } = {}) {
     } else {
         root.rotation.y = (source.material?.rotation ?? 0) + WORLD_3D_FACING_YAW;
     }
-    root.scale.setScalar(Math.max(0, Number.isFinite(scale) ? scale : 1));
+    const modelScale = Number.isFinite(source.userData?.modelScale) ? source.userData.modelScale : 1;
+    root.scale.setScalar(Math.max(0, (Number.isFinite(scale) ? scale : 1) * modelScale));
     root.visible = visible ?? Boolean(source.userData.world3dDesiredVisible);
     // Once a replacement exists the flat sprite must never draw again, or the
     // billboard renders *inside* the model. Callers legitimately flip

@@ -21,11 +21,66 @@ describe('biome skinning', () => {
 describe('corridor topology placement', () => {
     const grid = (rows) => rows.map((row) => [...row]);
 
-    it('aligns straight modules to north/south and east/west routes', () => {
+    // Rotation is three.js yaw (rotationSteps * PI/2, counter-clockwise from
+    // above), which turns east to north, north to west, west to south and south
+    // to east. Openings rotate the same way.
+    const turn = { e: 'n', n: 'w', w: 's', s: 'e' };
+    const rotate = (dirs, steps) => {
+        let out = [...dirs];
+        for (let i = 0; i < steps; i += 1) out = out.map((d) => turn[d]);
+        return out.sort().join('');
+    };
+    // The kit pieces' own wall layout, measured from the source GLBs
+    // (2026-10-01): which sides each base piece leaves open at rotation 0.
+    const BASE_OPEN = { corridor: ['e', 'w'], corridorCorner: ['n', 'w'], corridorEnd: ['e'], corridorT: ['e', 'n', 'w'], corridorCross: ['e', 'n', 's', 'w'] };
+    const opensTo = (placement) => rotate(BASE_OPEN[placement.role.replace('Wide', '')], placement.rotationSteps);
+
+    it('turns straight modules along the route (the base piece runs east/west)', () => {
         const vertical = corridorKitPlacement(grid(['#.#', '#.#', '#.#']), 1, 1, 'active');
         const horizontal = corridorKitPlacement(grid(['###', '...', '###']), 1, 1, 'active');
-        expect(vertical).toMatchObject({ type: 'kit_space_corridor', rotationSteps: 0 });
-        expect(horizontal).toMatchObject({ type: 'kit_space_corridor', rotationSteps: 1 });
+        expect(vertical).toMatchObject({ type: 'kit_space_corridor', rotationSteps: 1 });
+        expect(horizontal).toMatchObject({ type: 'kit_space_corridor', rotationSteps: 0 });
+    });
+
+    it('opens every module exactly toward its open neighbours', () => {
+        const cases = {
+            ens: ['#.#', '#..', '#.#'],
+            enw: ['#.#', '...', '###'],
+            ensw: ['#.#', '...', '#.#'],
+            en: ['#.#', '#..', '###'],
+            nw: ['#.#', '..#', '###'],
+            sw: ['###', '..#', '#.#'],
+            es: ['###', '#..', '#.#'],
+            n: ['#.#', '#.#', '###'],
+            e: ['###', '#..', '###'],
+            s: ['###', '#.#', '#.#'],
+            w: ['###', '..#', '###']
+        };
+        for (const [open, rows] of Object.entries(cases)) {
+            const placement = corridorKitPlacement(grid(rows), 1, 1, 'bio');
+            expect(opensTo(placement), `${open} -> ${placement.role} x${placement.rotationSteps}`).toBe(open);
+        }
+    });
+
+    // The hallway generator carves corridors 2*width+1 cells across, so every
+    // cell next to a marker is open; topology has to be read past the carve.
+    it('reads topology past a wide carve and fits a wide module to it', () => {
+        const rows = [
+            '#########',
+            '#########',
+            '.........',
+            '.........',
+            '.........',
+            '.........',
+            '.........',
+            '#########',
+            '#########'
+        ];
+        const placement = corridorKitPlacement(grid(rows), 4, 4, 'active', { width: 2 });
+        expect(placement).toMatchObject({ type: 'kit_space_corridor_wide', rotationSteps: 0 });
+        // 5 carved cells across a 6-unit wide module (8 Kenney units at 0.75).
+        expect(placement.modelScale).toBeCloseTo(5 / 6, 5);
+        expect(corridorKitPlacement(grid(['###', '...', '###']), 1, 1, 'active').modelScale).toBe(1);
     });
 
     it('selects corner, junction, and intersection silhouettes from connectivity', () => {

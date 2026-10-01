@@ -109,6 +109,8 @@ describe('realizeHallwayConnector', () => {
         for (const marker of result.wayfindingMarkers) {
             expect(marker.dressingKit).toBe(archetype.dressingKit);
             expect(marker.lightingRhythm).toBe(archetype.lightingRhythm);
+            // The kit grammar reads topology past the carve and fits module width to it.
+            expect(marker.width).toBe(result.width);
         }
     });
 

@@ -31290,13 +31290,15 @@ export class ThreeGame {
                 const worldX = chunkX * this.chunkSize + marker.x;
                 const worldZ = chunkY * this.chunkSize + marker.y;
                 const biome = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
-                const kit = corridorKitPlacement(grid, marker.x, marker.y, biome);
+                const kit = corridorKitPlacement(grid, marker.x, marker.y, biome, { width: marker.width });
                 if (!kit) continue;
                 placements.push({
                     x: worldX,
                     z: worldZ,
                     type: kit.type,
                     rotation: kit.rotationSteps * (Math.PI / 2),
+                    socketed: true,
+                    modelScale: kit.modelScale,
                     scatterKey: `hallway-kit:${chunkX},${chunkY}:${marker.x},${marker.y}`,
                     scale: 1,
                     tiltX: 0,
@@ -32340,6 +32342,10 @@ export class ThreeGame {
                 baseScaleY: scaleY,
                 baseOpacity: placement.opacity ?? 1,
                 wallNormal: placement.wallNormal ?? null,
+                // Modular kit pieces: rotation is corridor topology and scale
+                // fits the carve, so both go to the model exactly.
+                socketRotation: placement.socketed ? (placement.rotation ?? 0) : null,
+                modelScale: placement.socketed ? (placement.modelScale ?? 1) : null,
                 isWallBackedProp: placement.type === 'prop_fungal_tendril_altar'
                     || placement.type === 'prop_flesh_steel_cradle'
                     || placement.type === 'prop_shrine_plinth_broken'
