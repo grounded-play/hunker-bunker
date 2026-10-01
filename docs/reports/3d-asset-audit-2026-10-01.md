@@ -71,3 +71,8 @@ The two copied boss files only duplicate bytes (≈5 MB). Pointing `enemy3dOverl
 
 - `art/source/new3d/assets/BioStalker.glb`: the best candidate for `bio_charger` and `mycelium_stalker` (needs a rig).
 - `art/source/new3d/Ch11_nonPBR.fbx`, `Ch44_nonPBR.fbx`, `Vanguard By T. Choonyung.fbx`, `Tank.glb`: no obvious runtime counterpart by name. Check provenance before use ([ASSET_PROVENANCE](../ASSET_PROVENANCE.md)).
+
+## Production 2D turnaround generation prompts
+
+For the complete list of missing models with orthographic turnaround generation prompts formatted for automated 2D-to-3D pipeline conversion (Tripo/Meshy/NeRF), see:
+- [Missing 3D assets & 2D turnaround generation prompts](../design/missing-assets-and-2d-generation-prompts.md)

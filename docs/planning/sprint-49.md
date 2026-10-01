@@ -661,11 +661,18 @@ rendering performance measurement.
 
 ### S49-37 — art and content completeness through in-game inspection
 
+Implementation checkpoint: 3D asset audit completed ([3d-asset-audit-2026-10-01](../reports/3d-asset-audit-2026-10-01.md)).
+Duplicate model copies eliminated (-5 MB), visual distinction applied in `src/enemy3dOverlay.js`
+(`cryosnail` ice emissive/roughness, `boss_corrupted_engineer` necrotic veins in `9adc6a21`),
+and comprehensive turnaround generation prompts for 2D-to-3D pipeline documented in
+[missing-assets-and-2d-generation-prompts](../design/missing-assets-and-2d-generation-prompts.md).
+
 - [ ] **Owner: art + narrative + audio · Size: L.** Review new achievement cosmetics,
   enemy meshes, rigged operators, room dressing and ending sequences in their actual
   gameplay contexts. Prioritize missing identity/readability over another bulk asset
   batch. Check animation, sockets, scale, camera framing and loading budgets.
   **Files:** [3D asset backlog](../3d-asset-master-backlog-and-prompts.md),
+  [missing assets and turnaround prompts](../design/missing-assets-and-2d-generation-prompts.md),
   [armory gap report](../reports/armory-asset-gaps.md),
   [asset provenance](../ASSET_PROVENANCE.md), [retail audit](../../scripts/audit-retail-assets.js).
   **Accept:** every selected asset has an in-game capture, correct equipped/remote
