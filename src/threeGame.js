@@ -1131,7 +1131,7 @@ const _scratchVector3 = new THREE.Vector3();
 const _scratchScale = new THREE.Vector3(1, 1, 1);
 const _scratchEuler = new THREE.Euler();
 
-const LORE_LOGS = {
+export const LORE_LOGS = {
     active: [
         { key: 'A01', text: 'PRIORITY: RESTRICTED\nPersonnel count: 312. Deployment: Sub-level 1 through 9.\nMission status: CLASSIFIED. Authorization: DIRECTOR CHEN, OVERSEER RANK.' },
         { key: 'A02', text: 'Cryogenic transfer complete. 847 units preserved in long-term stasis.\nNotes: Units 802-847 classified. Manifests sealed. Do not approach Bay C.' },

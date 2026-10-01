@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { MatureContentAudit, MATURE_CONTENT_MANIFEST, REVIEWER_LOG_LETTERS, buildDialogueTranscript } from './matureContentAudit.js';
+import { MatureContentAudit, MATURE_CONTENT_MANIFEST, REVIEWER_LOG_LETTERS, buildDialogueTranscript, endingCutsceneSources } from './matureContentAudit.js';
 import { NPC_DIALOGUE_TREES } from './npcDialogueTrees.js';
 
 describe('MatureContentAudit', () => {
@@ -71,6 +71,26 @@ describe('MatureContentAudit', () => {
     it('playScene and closeSceneViewer are safe no-ops without a DOM', () => {
         expect(() => audit.playScene({ kind: 'log', log: 'reyes_c11' })).not.toThrow();
         expect(() => audit.closeSceneViewer()).not.toThrow();
+    });
+
+    it('shows each log letter word for word as the game shows it', async () => {
+        // The reviewer copies are duplicated so the guide has no runtime game
+        // dependency; this keeps them from drifting from what a player reads.
+        const { LORE_LOGS } = await import('./threeGame.js');
+        const inGame = Object.values(LORE_LOGS ?? {}).flat();
+        const keyByLog = { reyes_c11: 'C11', chen_b03: 'B03' };
+        for (const [log, key] of Object.entries(keyByLog)) {
+            expect(inGame.find((entry) => entry.key === key)?.text, log).toBe(REVIEWER_LOG_LETTERS[log].text);
+        }
+    });
+
+    it('resolves ending cutscenes inside the packaged Steam build, not at the drive root', () => {
+        // A root-absolute "/cutscenes/..." under file:// is file:///cutscenes/...;
+        // the reviewer's VIEW CINEMATIC buttons silently fell back to text.
+        const base = 'file:///C:/Steam/steamapps/common/Hunker%20Bunker/resources/app.asar/dist/index.html';
+        const { video, poster } = endingCutsceneSources('full_brood', base);
+        expect(video).toBe('file:///C:/Steam/steamapps/common/Hunker%20Bunker/resources/app.asar.unpacked/dist/cutscenes/ending-fullbrood.webm');
+        expect(poster).toBe('file:///C:/Steam/steamapps/common/Hunker%20Bunker/resources/app.asar/dist/cutscenes/ending-fullbrood-poster.jpg');
     });
 
     it('bindGamepadShortcut does not throw when gamepad API is unavailable', () => {
