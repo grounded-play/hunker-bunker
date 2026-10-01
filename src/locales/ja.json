@@ -46,6 +46,20 @@
     "elite_contact": "スーツ：エリート敵と接触。重装甲目標――退路を確保せよ。"
   },
   "ui": {
+    "workbench": {
+      "aria_close": "作業台を閉じる",
+      "kicker": "キャンプ作業台 // 現地製造リンク",
+      "title": "フィールド作業台",
+      "copy": "備蓄素材を使用して補給物資を製造します。効果は現在の遠征に即時適用されます。",
+      "craft": "製造",
+      "close": "作業台を離れる",
+      "ammo_pack_name": "標準弾薬パック",
+      "ammo_pack_desc": "運動エネルギー弾を30発補充し、マガジンを満載にします。",
+      "med_patch_name": "緊急バイオ縫合キット",
+      "med_patch_desc": "防腐生体組織密閉剤を合成し、HPを40回復します。",
+      "suit_armor_plate_name": "強化スーツ装甲板",
+      "suit_armor_plate_desc": "アブレーション複合装甲を装着し、耐久度を修復してシールド+25を付与します。"
+    },
     "chat": {
       "title": "ルームチャット",
       "open": "チャット",
@@ -75,6 +89,7 @@
       "player": "プレイヤー",
       "quick": {
         "help": "援護を頼む！",
+        "wait": "待機せよ / 停止。",
         "regroup": "ここに再集結。",
         "follow": "ついて来てくれ。",
         "thanks": "ありがとう！"
@@ -87,6 +102,18 @@
         "threat": "脅迫",
         "other": "その他"
       }
+    },
+    "ping": {
+      "point": "戦術ピン",
+      "target": "目標: {target}",
+      "supplies": "補給物資: {item}",
+      "help": "救援要請！",
+      "wait": "位置を維持",
+      "follow": "合流・追従",
+      "regroup": "ビーコンへ再集結",
+      "thanks": "了解 / 感謝",
+      "aria_radial": "戦術クイックコマンド",
+      "reticle": "ピン"
     },
     "encounters": {
       "locked_crossfire": {

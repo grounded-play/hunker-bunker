@@ -46,6 +46,20 @@
     "elite_contact": "ANZUG: Elite-Kontakt. Verstärkter Feind — Rückzugsweg freihalten."
   },
   "ui": {
+    "workbench": {
+      "aria_close": "Feldwerkbank schließen",
+      "kicker": "LAGER-WERKBANK // FELDFABRIKATION",
+      "title": "FELDWERKBANK",
+      "copy": "Stelle Feldnachschub aus gebankten Materialien her. Effekte wirken sofort auf deine aktuelle Expedition.",
+      "craft": "HERSTELLEN",
+      "close": "WERKBANK VERLASSEN",
+      "ammo_pack_name": "Standard-Munitionspaket",
+      "ammo_pack_desc": "Füllt 30 Schuss kinetische Munition auf und lädt das aktive Magazin nach.",
+      "med_patch_name": "Notfall-Bionaht",
+      "med_patch_desc": "Synthetisiert antiseptisches Gewebedichtmittel und stellt 40 TP wieder her.",
+      "suit_armor_plate_name": "Verstärkte Anzugpanzerung",
+      "suit_armor_plate_desc": "Installiert abtragende Verbundplatten, repariert Rüstung und gewährt +25 Schild."
+    },
     "chat": {
       "title": "RAUMCHAT",
       "open": "CHAT",
@@ -75,6 +89,7 @@
       "player": "Spieler",
       "quick": {
         "help": "Brauche Hilfe!",
+        "wait": "Stellung halten / Warten.",
         "regroup": "Hier sammeln.",
         "follow": "Folgt mir.",
         "thanks": "Danke!"
@@ -87,6 +102,18 @@
         "threat": "Drohung",
         "other": "Sonstiges"
       }
+    },
+    "ping": {
+      "point": "TAKTIK-SIGNAL",
+      "target": "ZIEL: {target}",
+      "supplies": "VORRÄTE: {item}",
+      "help": "BRAUCHE UNTERSTÜTZUNG!",
+      "wait": "STELLUNG HALTEN",
+      "follow": "FOLGEN",
+      "regroup": "BEI SIGNAL SAMMELN",
+      "thanks": "VERSTANDEN / DANKE",
+      "aria_radial": "Taktische Schnellbefehle",
+      "reticle": "SIGNAL"
     },
     "encounters": {
       "locked_crossfire": {

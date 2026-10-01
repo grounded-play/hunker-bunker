@@ -32,6 +32,7 @@ const CHAT_KEYS = Object.freeze({
     'reported': 'ui.chat.reported',
     'player': 'ui.chat.player',
     'quick.help': 'ui.chat.quick.help',
+    'quick.wait': 'ui.chat.quick.wait',
     'quick.regroup': 'ui.chat.quick.regroup',
     'quick.follow': 'ui.chat.quick.follow',
     'quick.thanks': 'ui.chat.quick.thanks',
@@ -44,7 +45,7 @@ const CHAT_KEYS = Object.freeze({
 });
 const tr = (key, vars) => t(CHAT_KEYS[key], vars);
 const NOTIFICATIONS_KEY = 'hb_chat_badges';
-const QUICK_MESSAGES = ['help', 'regroup', 'follow', 'thanks'];
+const QUICK_MESSAGES = ['help', 'wait', 'regroup', 'follow', 'thanks'];
 const REPORT_REASONS = ['harassment', 'hate', 'spam', 'sexual', 'threat', 'other'];
 
 function element(tag, className = '', text = '') {

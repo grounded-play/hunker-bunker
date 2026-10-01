@@ -46,6 +46,20 @@
     "elite_contact": "SUIT: ELITE CONTACT. REINFORCED HOSTILE — KEEP AN ESCAPE ROUTE."
   },
   "ui": {
+    "workbench": {
+      "aria_close": "Close field workbench",
+      "kicker": "CAMP WORKBENCH // FIELD FABRICATION",
+      "title": "FIELD WORKBENCH",
+      "copy": "Synthesize field supplies using banked materials. Effects apply immediately to your current expedition.",
+      "craft": "CRAFT",
+      "close": "EXIT WORKBENCH",
+      "ammo_pack_name": "Standard Munitions Pack",
+      "ammo_pack_desc": "Refills 30 kinetic ammunition and reloads active weapon clip.",
+      "med_patch_name": "Emergency Bio-Suture",
+      "med_patch_desc": "Synthesizes antiseptic bio-tissue sealant, restoring 40 HP.",
+      "suit_armor_plate_name": "Reinforced Suit Plating",
+      "suit_armor_plate_desc": "Installs ablative composite plating, repairing armor and adding +25 shield."
+    },
     "chat": {
       "title": "ROOM CHAT",
       "open": "CHAT",
@@ -75,6 +89,7 @@
       "player": "Player",
       "quick": {
         "help": "Need help!",
+        "wait": "Hold position / Wait here.",
         "regroup": "Regroup here.",
         "follow": "Follow me.",
         "thanks": "Thanks!"
@@ -87,6 +102,18 @@
         "threat": "Threat",
         "other": "Other"
       }
+    },
+    "ping": {
+      "point": "TACTICAL PING",
+      "target": "TARGET: {target}",
+      "supplies": "SUPPLIES: {item}",
+      "help": "NEED ASSISTANCE!",
+      "wait": "HOLD POSITION",
+      "follow": "FOLLOW LEAD",
+      "regroup": "REGROUP ON BEACON",
+      "thanks": "AFFIRMED / THANKS",
+      "aria_radial": "Tactical Quick Commands",
+      "reticle": "PING"
     },
     "encounters": {
       "locked_crossfire": {

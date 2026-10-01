@@ -46,6 +46,20 @@
     "elite_contact": "TRAJE: Contacto de élite. Hostil blindado — mantén una ruta de escape."
   },
   "ui": {
+    "workbench": {
+      "aria_close": "Cerrar banco de trabajo de campo",
+      "kicker": "BANCO DEL CAMPAMENTO // FABRICACIÓN DE CAMPO",
+      "title": "BANCO DE TRABAJO DE CAMPO",
+      "copy": "Sintetiza suministros de campo usando materiales almacenados. Los efectos se aplican de inmediato a tu expedición actual.",
+      "craft": "FABRICAR",
+      "close": "SALIR DEL BANCO",
+      "ammo_pack_name": "Paquete de Municiones Estándar",
+      "ammo_pack_desc": "Recarga 30 rondas cinéticas y llena el cargador activo.",
+      "med_patch_name": "Biosutura de Emergencia",
+      "med_patch_desc": "Sintetiza sellador biológico antiséptico, restaurando 40 PS.",
+      "suit_armor_plate_name": "Blindaje Reforzado para Traje",
+      "suit_armor_plate_desc": "Instala placas compuestas ablativas, reparando la armadura y sumando +25 al escudo."
+    },
     "chat": {
       "title": "CHAT DE SALA",
       "open": "CHAT",
@@ -75,6 +89,7 @@
       "player": "Jugador",
       "quick": {
         "help": "¡Necesito ayuda!",
+        "wait": "Mantener posición / Esperen.",
         "regroup": "Reagruparse aquí.",
         "follow": "Síganme.",
         "thanks": "¡Gracias!"
@@ -87,6 +102,18 @@
         "threat": "Amenaza",
         "other": "Otro"
       }
+    },
+    "ping": {
+      "point": "PING TÁCTICO",
+      "target": "OBJETIVO: {target}",
+      "supplies": "SUMINISTROS: {item}",
+      "help": "¡NECESITO APOYO!",
+      "wait": "MANTENER POSICIÓN",
+      "follow": "SÍGANME",
+      "regroup": "REAGRUPARSE EN BALIZA",
+      "thanks": "AFIRMATIVO / GRACIAS",
+      "aria_radial": "Comandos tácticos rápidos",
+      "reticle": "PING"
     },
     "encounters": {
       "locked_crossfire": {

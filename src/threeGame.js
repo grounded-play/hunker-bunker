@@ -23,6 +23,12 @@ import {
     ROOM_CUTAWAY_HEIGHT
 } from './roomPresentation.js';
 import { planHallwayRouteDressing } from './hallwayPresentation.js';
+import {
+    QUICK_COMMAND_IDS,
+    createTacticalPingPayload,
+    resolveTacticalPingLabel,
+    createPingSpamGuard
+} from './tacticalPingContract.js';
 
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -242,7 +248,7 @@ import { spawnEnemyGibs, spawnPropDebris } from './enemyGibs.js';
 import { registerTinaHit, TINA_TOTAL_HITS } from './mayorTinaCombat.js';
 import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
-import { WORLD_3D_FACING_YAW, WORLD_3D_SWAP_PREFETCH_DISTANCE, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
+import { WORLD_3D_FACING_YAW, WORLD_3D_SWAP_PREFETCH_DISTANCE, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, resolveScatterWorld3dType, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { intersectWallMeshes } from './wallRaycastIndex.js';
 import { createFlatMaterialSweeper, useSinglePassForFlatMaterials } from './singlePassFlatMaterials.js';
@@ -6554,10 +6560,15 @@ export class ThreeGame {
                 });
             }
         } else if (event === 'tactical-ping') {
-            this.spawnTacticalPingMarker?.(detail);
-            if (typeof window !== 'undefined' && window.AudioManager) {
-                window.AudioManager.play?.('ui_scan_ping', { volume: 0.4, playbackRate: detail.kind === 'enemy' ? 1.3 : 1.0 });
+            const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+            if (!this._lastRemotePingAudioTime || now - this._lastRemotePingAudioTime >= 250) {
+                this._lastRemotePingAudioTime = now;
+                if (typeof window !== 'undefined' && window.AudioManager) {
+                    const pitch = detail?.kind === 'enemy' ? 1.3 : (detail?.kind === 'quick-command' ? 1.15 : 1.0);
+                    window.AudioManager.play?.('ui_scan_ping', { volume: 0.4, playbackRate: pitch });
+                }
             }
+            this.spawnTacticalPingMarker?.(detail);
         }
 
         if (typeof window !== 'undefined') {
@@ -7368,6 +7379,34 @@ export class ThreeGame {
                 debugLog.debug('INPUT', 'Action: TACTICAL PING (T)');
                 this.triggerTacticalPing();
             }
+            if (event.code === 'KeyG') {
+                event.preventDefault();
+                if (typeof window !== 'undefined') {
+                    if (window.quickCommandRadial?.isOpen?.()) {
+                        window.quickCommandRadial.close();
+                    } else {
+                        window.dispatchEvent(new CustomEvent('open-quick-command-radial'));
+                    }
+                }
+            }
+            if (event.altKey) {
+                if (event.code === 'Digit1') {
+                    event.preventDefault();
+                    this.triggerQuickCommand('help');
+                } else if (event.code === 'Digit2') {
+                    event.preventDefault();
+                    this.triggerQuickCommand('wait');
+                } else if (event.code === 'Digit3') {
+                    event.preventDefault();
+                    this.triggerQuickCommand('follow');
+                } else if (event.code === 'Digit4') {
+                    event.preventDefault();
+                    this.triggerQuickCommand('regroup');
+                } else if (event.code === 'Digit5') {
+                    event.preventDefault();
+                    this.triggerQuickCommand('thanks');
+                }
+            }
             this.setKeyState(event.code, true);
         };
         this.handleKeyUp = (event) => this.setKeyState(event.code, false);
@@ -7924,14 +7963,28 @@ export class ThreeGame {
         return true;
     }
 
-    triggerTacticalPing() {
+    triggerQuickCommand(commandId) {
         if (!this.player || !this.isGameplayInputActive()) return false;
-        let kind = 'point';
-        let targetId = null;
-        let label = 'TACTICAL PING';
+        if (!QUICK_COMMAND_IDS.includes(commandId)) return false;
+        return this.triggerTacticalPing({ commandId });
+    }
 
-        let point = null;
-        if (Number.isFinite(this.lastMouseClientX) && Number.isFinite(this.lastMouseClientY)) {
+    triggerTacticalPing(options = {}) {
+        if (!this.player || !this.isGameplayInputActive()) return false;
+        if (!this._pingSpamGuard) {
+            this._pingSpamGuard = createPingSpamGuard();
+        }
+        if (!this._pingSpamGuard.canPing()) {
+            return false;
+        }
+
+        let kind = options.commandId ? 'quick-command' : (options.kind || 'point');
+        let targetId = options.targetId ?? null;
+        let targetName = null;
+        let label = options.label || 'TACTICAL PING';
+
+        let point = options.point || null;
+        if (!point && Number.isFinite(this.lastMouseClientX) && Number.isFinite(this.lastMouseClientY)) {
             point = this.getWorldAimPoint?.(this.lastMouseClientX, this.lastMouseClientY);
         }
         if (!point && this.aimWorldPoint) {
@@ -7948,34 +8001,50 @@ export class ThreeGame {
         let targetX = point.x;
         let targetZ = point.z;
 
-        for (const sprite of this.scatterSprites ?? []) {
-            if (!this.isEnemyType(sprite.userData?.type) || sprite.userData?.dead || sprite.userData?.burstTriggered || sprite.userData?.isDisplayModel) continue;
-            const dist = Math.hypot(sprite.position.x - targetX, sprite.position.z - targetZ);
-            if (dist <= 2.0) {
-                kind = 'enemy';
-                targetId = sprite.userData.scatterKey;
-                targetX = sprite.position.x;
-                targetZ = sprite.position.z;
-                label = sprite.userData.isBoss ? 'TARGET: BOSS' : `TARGET: ${String(sprite.userData.type || 'HOSTILE').toUpperCase()}`;
-                break;
-            }
-        }
-
-        if (kind === 'point') {
-            for (const pickup of this.pickupMeshes ?? []) {
-                const dist = Math.hypot(pickup.position.x - targetX, pickup.position.z - targetZ);
-                if (dist <= 1.4) {
-                    kind = 'item';
-                    targetX = pickup.position.x;
-                    targetZ = pickup.position.z;
-                    const itemName = pickup.userData?.item?.name || pickup.userData?.type || 'SUPPLIES';
-                    label = `SUPPLIES: ${String(itemName).toUpperCase()}`;
+        if (!options.commandId) {
+            for (const sprite of this.scatterSprites ?? []) {
+                if (!this.isEnemyType(sprite.userData?.type) || sprite.userData?.dead || sprite.userData?.burstTriggered || sprite.userData?.isDisplayModel) continue;
+                const dist = Math.hypot(sprite.position.x - targetX, sprite.position.z - targetZ);
+                if (dist <= 2.0) {
+                    kind = 'enemy';
+                    targetId = sprite.userData.scatterKey;
+                    targetX = sprite.position.x;
+                    targetZ = sprite.position.z;
+                    targetName = sprite.userData.isBoss ? 'BOSS' : String(sprite.userData.type || 'HOSTILE').toUpperCase();
+                    label = sprite.userData.isBoss ? 'TARGET: BOSS' : `TARGET: ${targetName}`;
                     break;
                 }
             }
+
+            if (kind === 'point') {
+                for (const pickup of this.pickupMeshes ?? []) {
+                    const dist = Math.hypot(pickup.position.x - targetX, pickup.position.z - targetZ);
+                    if (dist <= 1.4) {
+                        kind = 'item';
+                        targetX = pickup.position.x;
+                        targetZ = pickup.position.z;
+                        targetName = pickup.userData?.item?.name || pickup.userData?.type || 'SUPPLIES';
+                        label = `SUPPLIES: ${String(targetName).toUpperCase()}`;
+                        break;
+                    }
+                }
+            }
+        } else {
+            label = options.commandId.toUpperCase();
         }
 
-        const pingData = { x: targetX, z: targetZ, kind, label, targetId, peerId: this.multiplayerLocalPlayerId ?? null };
+        const pingData = createTacticalPingPayload({
+            x: targetX,
+            z: targetZ,
+            kind,
+            commandId: options.commandId ?? null,
+            targetId,
+            targetName,
+            peerId: this.multiplayerLocalPlayerId ?? null,
+            senderName: this.playerName || null,
+            label
+        });
+
         this.spawnTacticalPingMarker(pingData);
 
         if (this.isMultiplayer) {
@@ -7983,14 +8052,24 @@ export class ThreeGame {
         }
 
         if (typeof window !== 'undefined' && window.AudioManager) {
-            window.AudioManager.play?.('ui_scan_ping', { volume: 0.45, playbackRate: kind === 'enemy' ? 1.3 : 1.0 });
+            const pitch = kind === 'enemy' ? 1.3 : (kind === 'quick-command' ? 1.15 : 1.0);
+            window.AudioManager.play?.('ui_scan_ping', { volume: 0.45, playbackRate: pitch });
         }
         return true;
     }
 
-    spawnTacticalPingMarker({ x = 0, z = 0, kind = 'point', label = 'TACTICAL PING', targetId = null } = {}) {
+    spawnTacticalPingMarker(pingData = {}) {
         if (!this.scene) return null;
-        const color = kind === 'enemy' ? 0xff3344 : (kind === 'item' ? 0x10b981 : 0x38bdf8);
+        const {
+            x = 0,
+            z = 0,
+            kind = 'point',
+            targetId = null,
+            duration = 6.0
+        } = pingData;
+
+        const displayLabel = resolveTacticalPingLabel(pingData) || pingData.label || 'TACTICAL PING';
+        const color = kind === 'enemy' ? 0xff3344 : (kind === 'item' ? 0x10b981 : (kind === 'quick-command' ? 0xf59e0b : 0x38bdf8));
         const y = this.getTerrainHeightAt?.(x, z) ?? 0;
 
         const group = new THREE.Group();
@@ -8022,7 +8101,6 @@ export class ThreeGame {
 
         this.scene.add(group);
 
-        const duration = 6.0;
         let age = 0;
 
         const pingEffect = {
@@ -8054,19 +8132,19 @@ export class ThreeGame {
 
         if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('tactical-ping-alert', {
-                detail: { x, z, kind, label, targetId }
+                detail: { ...pingData, x, z, kind, label: displayLabel, displayLabel, targetId }
             }));
             const pingId = `ping-${Math.round(x)},${Math.round(z)}`;
             window.objectiveRegistry?.trackObjective?.({
                 id: pingId,
                 source: 'tactical-ping',
-                label,
+                label: displayLabel,
                 priority: 35,
                 compass: { x, z }
             });
             setTimeout(() => {
                 window.objectiveRegistry?.resolveObjective?.(pingId, 'expired');
-            }, 6000);
+            }, duration * 1000);
         }
 
         return group;
@@ -15369,6 +15447,13 @@ export class ThreeGame {
         const site = this.chooseCaveEntrancePosition();
         if (instant) this.caveEntrance.revealInstant(site.x, site.z);
         else this.caveEntrance.reveal(site.x, site.z);
+        // The Queen's throne in 3D, standing on the cave floor; the backdrop
+        // sprite hides once the model is in.
+        const throneAnchor = this.caveEntrance.throneAnchor;
+        if (throneAnchor) {
+            void this.setupWorld3dReplacement(throneAnchor, 'prop_cave_queen_throne', { owner: this.caveEntrance, ownerKey: 'throne3d' })
+                .then((root) => { if (root && this.caveEntrance.throneSprite) this.caveEntrance.throneSprite.visible = false; });
+        }
         window.dispatchEvent(new CustomEvent('cave-entrance-revealed', {
             detail: {
                 x: site.x,
@@ -19479,9 +19564,9 @@ export class ThreeGame {
             window.dispatchEvent(new CustomEvent('open-field-workbench', {
                 detail: {
                     campId: camp.id,
-                    campLabel: camp.label,
+                    campLabel: camp.label || 'Safe Haven',
                     recipes: [
-                        { id: 'ammo_pack', name: 'Standard Munitions Pack', cost: { scrap: 15 }, effect: 'Refills 30 Ammo' },
+                        { id: 'ammo_pack', name: 'Standard Munitions Pack', cost: { scrap: 15, tech: 15 }, effect: 'Refills 30 Ammo' },
                         { id: 'med_patch', name: 'Emergency Bio-Suture', cost: { med: 20 }, effect: 'Restores 40 HP' },
                         { id: 'suit_armor_plate', name: 'Reinforced Suit Plating', cost: { scrap: 25, tech: 10 }, effect: 'Repairs Suit Condition & +25 Shield' }
                     ]
@@ -19494,22 +19579,41 @@ export class ThreeGame {
     craftFieldRecipe(recipeId) {
         if (!recipeId) return false;
         const bank = this.bank?.getState?.() ?? {};
+        const availableScrap = Number(bank.scrap ?? bank.tech) || 0;
+        const availableTech = Number(bank.tech ?? bank.scrap) || 0;
+        const availableMed = Number(bank.med) || 0;
+
         if (recipeId === 'ammo_pack') {
             const cost = 15;
-            if ((bank.scrap ?? 0) < cost) {
+            if (availableScrap < cost && availableTech < cost) {
                 this.showBunkerLine?.('WORKBENCH: INSUFFICIENT SCRAP FOR AMMO PACK');
                 return false;
             }
-            this.bank?.spend?.({ scrap: cost });
+            if (bank.scrap !== undefined) {
+                this.bank?.spend?.({ scrap: cost });
+            } else {
+                this.bank?.spend?.({ tech: cost });
+            }
             this.currentClip = this.maxClip;
             this.totalAmmo = Math.min(this.maxTotalAmmo, (this.totalAmmo ?? 0) + 30);
             this.emitAmmoState?.();
             this.showBunkerLine?.('WORKBENCH: MUNITIONS PACK SYNTHESIZED');
             window.AudioManager?.play?.('weapon_reload', { volume: 0.6 });
+            if (this.isMultiplayer) {
+                this.broadcastSharedWorldEvent?.('field-workbench-crafted', {
+                    recipeId,
+                    peerId: this.multiplayerLocalPlayerId ?? null
+                });
+            }
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('field-recipe-crafted', {
+                    detail: { recipeId, ammo: { clip: this.currentClip, total: this.totalAmmo } }
+                }));
+            }
             return true;
         } else if (recipeId === 'med_patch') {
             const cost = 20;
-            if ((bank.med ?? 0) < cost) {
+            if (availableMed < cost) {
                 this.showBunkerLine?.('WORKBENCH: INSUFFICIENT MED SUPPLIES FOR SUTURE');
                 return false;
             }
@@ -19517,17 +19621,47 @@ export class ThreeGame {
             this.healPlayer?.(40);
             this.showBunkerLine?.('WORKBENCH: EMERGENCY SUTURE APPLIED (+40 HP)');
             window.AudioManager?.play?.('fx_level_up', { volume: 0.5, playbackRate: 1.3 });
+            if (this.isMultiplayer) {
+                this.broadcastSharedWorldEvent?.('field-workbench-crafted', {
+                    recipeId,
+                    peerId: this.multiplayerLocalPlayerId ?? null
+                });
+            }
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('field-recipe-crafted', {
+                    detail: { recipeId, hp: this.playerHp }
+                }));
+            }
             return true;
         } else if (recipeId === 'suit_armor_plate') {
-            if ((bank.scrap ?? 0) < 25 || (bank.tech ?? 0) < 10) {
-                this.showBunkerLine?.('WORKBENCH: INSUFFICIENT MATERIALS FOR ARMOR PLATING');
-                return false;
+            if (bank.scrap !== undefined) {
+                if ((bank.scrap ?? 0) < 25 || (bank.tech ?? 0) < 10) {
+                    this.showBunkerLine?.('WORKBENCH: INSUFFICIENT MATERIALS FOR ARMOR PLATING');
+                    return false;
+                }
+                this.bank?.spend?.({ scrap: 25, tech: 10 });
+            } else {
+                if (availableTech < 25) {
+                    this.showBunkerLine?.('WORKBENCH: INSUFFICIENT MATERIALS FOR ARMOR PLATING');
+                    return false;
+                }
+                this.bank?.spend?.({ tech: 25 });
             }
-            this.bank?.spend?.({ scrap: 25, tech: 10 });
             this.playerShieldHp = Math.min(this.playerShieldMax || 50, (this.playerShieldHp ?? 0) + 25);
             this.emitHealthState?.();
             this.showBunkerLine?.('WORKBENCH: SUIT PLATING REINFORCED (+25 SHIELD)');
             window.AudioManager?.play?.('turret_reprogram', { volume: 0.5 });
+            if (this.isMultiplayer) {
+                this.broadcastSharedWorldEvent?.('field-workbench-crafted', {
+                    recipeId,
+                    peerId: this.multiplayerLocalPlayerId ?? null
+                });
+            }
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('field-recipe-crafted', {
+                    detail: { recipeId, shield: this.playerShieldHp }
+                }));
+            }
             return true;
         }
         return false;
@@ -32594,11 +32728,10 @@ export class ThreeGame {
             phase: placement.phase ?? 0,
             baseOpacity: placement.opacity ?? 1
         };
-        if (placement.type === 'body_human_frozen_suit') {
-            this.deferWorld3dReplacement(sprite, 'frozen_tanker');
-        } else if (hasWorld3dModel(placement.type)) {
-            this.deferWorld3dReplacement(sprite, placement.type);
-        }
+        // Bodies alternate between their two models; frozen bodies used to
+        // load the frozen_tanker machine (3D asset audit 2026-10-01).
+        const model3dType = resolveScatterWorld3dType(placement.type, placement.x, placement.z);
+        if (model3dType) this.deferWorld3dReplacement(sprite, model3dType);
         return sprite;
     }
 

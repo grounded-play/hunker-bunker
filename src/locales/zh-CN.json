@@ -46,6 +46,20 @@
     "elite_contact": "机甲：接触精英目标。重装敌方单位——注意保留撤退路线。"
   },
   "ui": {
+    "workbench": {
+      "aria_close": "关闭野外工作台",
+      "kicker": "营地工作台 // 野外制造链接",
+      "title": "野外工作台",
+      "copy": "使用储存物资合成野外补给。效果将立即应用于当前远征。",
+      "craft": "制造",
+      "close": "退出工作台",
+      "ammo_pack_name": "标准弹药包",
+      "ammo_pack_desc": "补充30发动能弹药并装填当前弹匣。",
+      "med_patch_name": "应急生物缝合剂",
+      "med_patch_desc": "合成抗菌生物组织封闭剂，恢复40点生命值。",
+      "suit_armor_plate_name": "强化防护服甲片",
+      "suit_armor_plate_desc": "安装烧蚀复合装甲片，修复护甲并增加25点护盾值。"
+    },
     "chat": {
       "title": "房间聊天",
       "open": "聊天",
@@ -75,6 +89,7 @@
       "player": "玩家",
       "quick": {
         "help": "需要援助！",
+        "wait": "在此等待 / 暂缓推进。",
         "regroup": "在此集结。",
         "follow": "跟我来。",
         "thanks": "多谢！"
@@ -87,6 +102,18 @@
         "threat": "威胁恐吓",
         "other": "其他"
       }
+    },
+    "ping": {
+      "point": "战术标记",
+      "target": "目标: {target}",
+      "supplies": "补给: {item}",
+      "help": "请求支援！",
+      "wait": "坚守位置",
+      "follow": "跟紧队长",
+      "regroup": "在信标集合",
+      "thanks": "收到 / 感谢",
+      "aria_radial": "战术快捷指令",
+      "reticle": "标记"
     },
     "encounters": {
       "locked_crossfire": {

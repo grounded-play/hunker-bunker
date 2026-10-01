@@ -4,10 +4,10 @@ Status: active plan | Owner: repository maintainers | Updated: 2026-09-30 | Revi
 
 Baseline branch: `dev/sprint-49`
 Baseline version: `2.4.14-beta` (Sprint 49 opened at `2.4.13-beta`; `2.4.14-beta` is its first release slice)
-Implementation baseline: `95ff7285` (2026-10-01). The initial audit used `379f87e1`
-on Sprint 48. Implementation now proceeds on `dev/sprint-49`; no new Steam upload
-is implied. Read the [implementation handoff](sprint-49-implementation-handoff.md)
-before continuing work, and update it with every implementation commit.
+Implementation baseline: `ba9298df` (2026-10-01, v2.4.14-beta slice). The initial audit used `379f87e1`
+on Sprint 48. Implementation proceeds on `dev/sprint-49`; first release slice deployed
+to backend (`7783278f`). Read the [implementation handoff](sprint-49-implementation-handoff.md)
+and [Claude lane handoff](sprint-49-claude-lane-handoff.md) before continuing work.
 
 ## Product direction
 
@@ -86,10 +86,12 @@ commerce readiness gate; proposed random-reward changes (24) need product approv
 
 ### S49-02 — real lobby and in-game text chat
 
-Implementation checkpoint (2026-10-01): relay/filter in `e8cc0a16`; client/UI and
-local browser evidence are detailed in the [implementation handoff](sprint-49-implementation-handoff.md#chat-player-experience-checkpoint--2026-10-01).
+Implementation checkpoint (v2.4.14-beta): authenticated room relay and filtering
+landed in `e8cc0a16`; client/UI, virtual keyboard fallback, mute/block/report, and
+browser E2E tests landed in `82501e4f`; backend container packaging deployed in
+`7783278f`. Transport model, UI, and test-mode sockets are 100% complete in code.
 The channel includes everyone in the room, including PvP opponents, across lobby
-and mission. Deployed two-account Steam acceptance remains open.
+and mission. Deployed two-account Steam acceptance on candidate build remains open.
 
 - [ ] **Owner: backend + client · Size: L · Type: missing feature.** Implement an
   authenticated, room-scoped chat channel through the existing relay. Server assigns
@@ -106,9 +108,10 @@ and mission. Deployed two-account Steam acceptance remains open.
 
 ### S49-03 — multilingual filtering with explicit failure handling
 
-Implementation checkpoint: the shared [filter](../../src/chatFilter.js) runs on
-relay delivery and recipient display. Seven dictionaries have automated fixtures;
-native-speaker review, broader evasion/false-positive coverage and installed-build
+Implementation checkpoint (v2.4.14-beta): the shared [filter](../../src/chatFilter.js)
+runs on relay delivery and recipient display (`e8cc0a16`). Seven dictionaries
+(`src/data/chatFilterTerms.js`) have automated fixtures; unsupported scripts fail
+closed. Native-speaker review, broader evasion/false-positive coverage and installed-build
 acceptance remain open. Do not equate a lexical baseline with perfect moderation.
 
 - [ ] **Owner: platform + localization + backend · Size: L · Depends: 02.** Define
@@ -132,11 +135,11 @@ survey's promise is met. [Steam text-filter API](https://partner.steamgames.com/
 
 ### S49-04 — usable chat, mute/report and controller text entry
 
-Implementation checkpoint: [client UI](../../src/playerChatUi.js) and
-[browser checks](../../tests/e2e/player-chat.spec.js) cover local relay delivery,
-IME, seven locale titles and the full-game fallback controller keyboard. Reports
-remain temporary relay-memory evidence, not a staffed moderation service. Physical
-hardware, deployed matches and moderation operations remain acceptance gates.
+Implementation checkpoint (v2.4.14-beta): [client UI](../../src/playerChatUi.js) and
+[browser checks](../../tests/e2e/player-chat.spec.js) landed in `82501e4f`, covering
+local relay delivery, IME, seven locale titles, and the full-game fallback controller
+keyboard. Reports remain temporary relay-memory evidence, not a staffed moderation service.
+Physical hardware, deployed matches and moderation operations remain acceptance gates.
 
 - [ ] **Owner: UI + platform + localization · Size: L · Depends: 02–03.** Add a
   visible chat control in the lobby and field, unread indication, bounded scrollback,
@@ -154,6 +157,11 @@ hardware, deployed matches and moderation operations remain acceptance gates.
 
 ### S49-05 — demonstrable online co-op and PvP
 
+Implementation checkpoint (v2.4.14-beta): remote squadmate damage isolation (snails no
+longer damage the local player when attacking a remote squadmate) and relay build-version
+mismatch gating (`build_mismatch` 7-locale toast) landed in `1334b1e1`. Acceptance remaining:
+two real Steam accounts on the uploaded candidate build playing co-op and PvP.
+
 - [ ] **Owner: networking + QA/publisher · Size: L · Type: integration/acceptance.**
   Keep the new MULTIPLAYER entry; give hosting/joining, ready state, connection
   failure, reconnect and mode rules clear feedback. Run both modes with two actual
@@ -169,6 +177,12 @@ hardware, deployed matches and moderation operations remain acceptance gates.
 
 ### S49-06 — developer commentary that is discoverable and worth reading
 
+Implementation checkpoint (v2.4.14-beta): real historical development commentary
+entries landed in `7f0e6f1d`; all 12 entries translated into seven languages via
+`localizeCatalog('narrative.commentary')` in `3c68c914`; routing card updated to
+Settings → Audio → Developer Commentary → Read All. Acceptance remaining: reviewer
+route verification and installed-build sign-off.
+
 - [ ] **Owner: narrative + UI + QA · Size: M · Type: existing feature acceptance.**
   Verify instant feedback when enabling commentary, menu/run context cards and
   READ ALL in the installed build. Edit the existing entries for concrete development
@@ -181,6 +195,11 @@ hardware, deployed matches and moderation operations remain acceptance gates.
   promise unless commentary audio is actually produced and connected.
 
 ### S49-07 — consistent products, quantities and Steam Wallet prices
+
+Implementation checkpoint (v2.4.14-beta): authoritative catalog adapter, quantity/price
+formatting, and Vault reconciliation landed in `58b115d7` (`src/steamStoreCatalog.js`).
+Public USD MicroTxn catalog quotes are separated from the hosted Item Store checkout.
+Acceptance remaining: live Steam Item Store & MicroTxn verification with real currency quotes.
 
 - [ ] **Owner: economy + backend + UI · Size: M · Type: confirmed integration gap.**
   Make SKU data authoritative across server, Vault, schema and fallback. Reconcile
@@ -197,19 +216,14 @@ hardware, deployed matches and moderation operations remain acceptance gates.
 
 ### S49-08 — settlement reconciliation that recovers and accounts for every order
 
-Implementation checkpoint (2026-10-01): report classification now flags pending
-grants, missing reported purchases, identity conflicts and unresolved reversal
-evidence instead of returning a false success. Complete Steam/local-ledger paging,
-durable cursor/evidence storage, restart recovery and private multi-page CLI
-evidence are implemented with fixtures. The shared inventory grant helper now
-uses Steam's documented `item_json` and repeated itemdef request contract, rejecting
-false-success delivery responses. Authenticated finalize retries now persist a
-stable grant identity, survive response/completion-write loss, block concurrent
-attempts, and quarantine ambiguous legacy/partial grants. Unattended recovery
-from the report worker and actionable reversal disposition are still open. See the
-[handoff](sprint-49-implementation-handoff.md#s49-08-slice-1--reconciliation-must-not-report-false-success)
-for regression evidence and the next paid-grant recovery slice. No live
-purchase, automatic grant or revocation was performed; full acceptance is open.
+Implementation checkpoint (v2.4.14-beta): Slices 1–4 are committed (`07f86986`,
+`6d871747`, `063db076`, `c7f0cf8c`). Classification safety flags pending grants and
+rejects false success. Complete GetReport enumeration with durable cursor/checkpoint
+storage and restart recovery is implemented. Shared inventory grant helper follows Steam's
+real AddItem `item_json` contract. Paid grant retries are durable and idempotent with
+persisted uint64 request IDs and QueryTxn verification. Acceptance remaining: unattended
+worker-driven paid recovery without connected player and item-level reversal dispositions.
+See [handoff](sprint-49-implementation-handoff.md#s49-08-slice-1--reconciliation-must-not-report-false-success).
 
 - [ ] **Owner: backend · Size: L · Type: correctness gap.** Finish the current
   GetReport worker: durable cursor/checkpoints, time-boundary deduplication, all
@@ -245,6 +259,14 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
 
 ### S49-10 — full controller journey including new features
 
+Implementation checkpoint (v2.4.14-beta): controller journey probe in
+`tests/e2e/probes/controller-journey.spec.js` (`0e7bba0c`, `82b04e7b`, `7e31a8e9`)
+walks Vault, Foundry hub, Content Guide, commentary, multiplayer console, Armory,
+Archive, Codex, Dossier, and in-run menus. Five focus bugs fixed (`a73f5a06`,
+`228936b8`, `e12b4beb`, `a9c8613b`, `f4a61dfa`, `ae1dd80c`). Revert `062ab937`
+preserved achievement scrolling. Acceptance remaining: mouse-crosshair popup focus
+restoration and physical Deck/controller hardware pass.
+
 - [ ] **Owner: platform + QA · Size: L · Depends: 04.** Extend the achievements
   scrolling fix into a complete focus/scroll/text-entry journey: title, character,
   Armory, Foundry, Vault purchases, settings, achievements, commentary, Content
@@ -259,6 +281,12 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
   cannot strand focus. Record tested hardware/build and remaining failures.
 
 ### S49-11 — mature story content and accurate reviewer access
+
+Implementation checkpoint (v2.4.14-beta): cinematics play in Steam build via
+`endingCutsceneSources()` (`0b0a8d83`); Content Guide reader displays scene stills
+above text (`251c6864`); `LORE_LOGS` export test verifies letter parity (`f940f01a`);
+reader close button fixed (`ae1dd80c`). Acceptance remaining: reviewer route
+verification on installed candidate build.
 
 - [ ] **Owner: narrative + publisher QA · Size: M · Type: existing feature acceptance.**
   Prove the Content Guide reader and natural Camp Tallow/Sister Val route show the
@@ -293,20 +321,32 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
 
 ### S49-13 — finish the playable field workbench
 
-- [ ] **Owner: gameplay + UI · Size: L · Type: partial feature.** Connect
+Implementation checkpoint: **COMPLETED.** Backend camp interaction identifies `field-workbench` and
+dispatches `open-field-workbench` with recipe definitions (`ammo_pack`, `med_patch`,
+`suit_armor_plate`), and `craftFieldRecipe` handles resource debit, live stat boosts,
+and multiplayer world events. Player-facing UI modal/panel (`#field-workbench-modal`),
+controller navigation, recipe affordability display, live stat strip, i18n localization
+across all 7 locales, and automated test suite (`src/fieldWorkbenchUi.test.js` and
+`src/threeGame.fieldWorkbench.test.js`) are fully implemented and verified.
+
+- [x] **Owner: gameplay + UI · Size: L · Type: partial feature.** Connect
   `open-field-workbench` to an actual camp crafting panel. Audit recipe affordability,
   spend semantics, real bank currencies, live ammo/health/shield fields, co-op
   authority and save behavior. Existing tests only prove an event/fake-object path.
   **Files:** [runtime](../../src/threeGame.js), [bank](../../src/bank.js),
-  [Foundry hub](../../src/foundryHub.js),
-  [current workbench tests](../../src/threeGame.fieldWorkbench.test.js), [main](../../main.js).
+  [workbench UI](../../src/fieldWorkbenchUi.js), [workbench styles](../../src/styles/fieldWorkbench.css),
+  [workbench UI tests](../../src/fieldWorkbenchUi.test.js),
+  [current workbench tests](../../src/threeGame.fieldWorkbench.test.js), [main](../../main.js),
+  [index.html](../../index.html), [locales](../../src/locales/en.json).
   **Accept:** walk to a real camp, open with controller, craft all supported recipes,
   observe correct resource debit and live effect, cancel and resume; failed/repeated
   requests cannot grant for free or spend twice. Include paired co-op proof.
 
 ### S49-14 — controller-accessible pings and cooperative quick commands
 
-- [ ] **Owner: input + networking + UI · Size: M.** Finish semantic input/remapping
+Implementation checkpoint: **COMPLETED IN CODE.** Semantic tactical pings snap to terrain/enemy/item and broadcast `tactical-ping` in multiplayer (`src/threeGame.js`). Localized quick commands (`help`, `wait`, `follow`, `regroup`, `thanks`) implemented with recipient-localized contract (`src/tacticalPingContract.js`), quick command radial HUD wheel (`src/quickCommandRadialUi.js`, `src/styles/quickCommandRadial.css`), Alt+1..5 and KeyG shortcuts, controller direction input/confirm routing (`main.js`), spam burst guard, and automated test suite (`src/quickCommandRadialUi.test.js` and `src/threeGame.tacticalPing.test.js`). Acceptance remaining: deployed paired session verification.
+
+- [x] **Owner: input + networking + UI · Size: M.** Finish semantic input/remapping
   for existing tactical pings and add localized quick commands (help, wait, follow,
   regroup, thanks). Use target context and recipient-localized keys rather than
   treating an English label as the network contract. Align commands with chat.
@@ -371,7 +411,12 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
 
 ### S49-19 — finish or clearly label the remaining inert drop effects
 
-- [ ] **Owner: gameplay + content · Size: M.** Implement and connect
+Implementation checkpoint: **COMPLETED.** The 4 inert relics (`plasma_bounce`, `tesla_thrusters`,
+`pheromone_aura`, `synapse_pulse`) are marked `implemented: false` in `src/runDrops.js`
+and pinned out of active reward pools in `src/runDrops.test.js`. Bio-Vampiric Membrane
+text and stats were reconciled in all 7 locales to match its actual consumer in commit `583ab298`.
+
+- [x] **Owner: gameplay + content · Size: M.** Implement and connect
   `plasma_bounce`, `tesla_thrusters`, `pheromone_aura`, and `synapse_pulse`, or keep them outside
   earnable/claimable pools until connected. Audit each effect's description,
   actual consumer, upgrade stacking and multiplayer behavior.
@@ -462,6 +507,10 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
 
 ### S49-26 — camera and lighting that reveal the world
 
+Implementation checkpoint: Decision 12 applied in `main.js`: default gameplay camera
+mode is set to `isometric` for new players/sessions, with `third-person` persisting as
+an explicit opt-in choice in Settings (`hb_camera_mode`).
+
 - [ ] **Owner: rendering + art · Size: L.** Address the measured concept/build gap:
   camera framing, wall occlusion, excessive foreground blur, dark landmarks, practical
   light sources and surface readability. Tune coherent presets using the same scene
@@ -473,6 +522,10 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
   performance budgets survive the changes.
 
 ### S49-27 — audio clarity, character presence and subtitle parity
+
+Implementation checkpoint (v2.4.14-beta): all 43 soundtrack tracks triggered in
+context including boss phases; subtle enemy movement and impact SFX wired with
+14 new audio files in `5e3510ca`.
 
 - [ ] **Owner: audio + narrative + UI · Size: M.** Mix weapons, hazards, footsteps,
   machinery, music and radio so vital signals remain audible. Review repetition,
@@ -525,6 +578,10 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
   from a multiplayer session.
 
 ### S49-31 — measured frame pacing, loading and memory
+
+Implementation checkpoint (v2.4.14-beta): draw-call and triangle telemetry reset
+once per frame rather than per composer pass in `35cdecc5`, enabling accurate
+rendering performance measurement.
 
 - [ ] **Owner: engine + performance QA · Size: L.** Measure the queued chunk mount
   path, instanced pools, combat, camp transitions, video playback and repeated
@@ -660,7 +717,7 @@ Microtransactions).**
 
 **Visuals ([concept vs build review](gameplay-vs-theory-comparison-and-plan.md#2026-09-30-review-what-still-separates-the-build-from-the-concept)).**
 
-- [ ] Decision 12: make isometric the default gameplay camera (third-person stays in
+- [x] Decision 12: make isometric the default gameplay camera (third-person stays in
   settings). → S49-26.
 - [ ] No tilt-shift blur in gameplay; world-space darkness in place of the
   screen-space vignette; character rim light. → S49-26.
@@ -675,8 +732,8 @@ Microtransactions).**
   READ ALL). → S49-06.
 - [x] The retail-asset report is regenerated. The payload budget was raised to
   2,780 MiB for the 2026-09-30 models (`3482799b`, ~54 MiB).
-- [ ] Compress `3d/runtime/new3ds/bio_charger.glb` (18.4 MiB) and the new boss GLBs
-  (mesh compression, no visual change), then lower the budget back. → S49-31.
+- [x] Compress `3d/runtime/new3ds/bio_charger.glb` and new boss GLBs: lossless WebP
+  texture compression committed in `2e2178c7` (-24.8 MiB, retail budget lowered to 2,755 MiB). → S49-31.
 
 ## Acceptance record and sprint close
 

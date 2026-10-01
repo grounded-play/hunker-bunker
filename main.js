@@ -97,6 +97,8 @@ import { sideStoryManager, SIDE_STORIES_CONFIG, SIDE_STORY_STATUS } from './src/
 import { matureContentAudit } from './src/matureContentAudit.js';
 import { progressionWalkthrough } from './src/progressionWalkthrough.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
+import { createFieldWorkbenchUi } from './src/fieldWorkbenchUi.js';
+import { createQuickCommandRadialUi } from './src/quickCommandRadialUi.js';
 import { flushPendingRunSubmits, submitRunWithRetryQueue } from './src/steam/runSubmitQueue.js';
 import { FATIGUE_STATE_KEY, describeScars, normalizeFatigueState } from './src/fatigue.js';
 import { unlockSheenForMilestone, reconcileSheenUnlocks, unlockAllSheens } from './src/weaponSheens.js';
@@ -2526,6 +2528,16 @@ function handleSteamGameplayInput(controller) {
     if (controller.scan && !prev.scan) {
         window.game?.triggerRadarScan?.();
     }
+    if (window.quickCommandRadial?.isOpen()) {
+        window.quickCommandRadial.handleDirectionInput(aimX, aimY);
+        if ((controller.fire && !prev.fire) || (controller.interact && !prev.interact) || (controller.tacticalPing && !prev.tacticalPing)) {
+            window.quickCommandRadial.confirmSelection();
+        } else if ((controller.menuBack && !prev.menuBack) || (controller.dash && !prev.dash)) {
+            window.quickCommandRadial.close();
+        }
+    } else if (controller.tacticalPing && !prev.tacticalPing) {
+        window.game?.triggerTacticalPing?.();
+    }
 
     if (controller.pause && !prev.pause) {
         triggerControllerPauseAction();
@@ -2545,6 +2557,7 @@ function handleSteamGameplayInput(controller) {
         ability: Boolean(controller.ability),
         dash: Boolean(controller.dash),
         scan: Boolean(controller.scan),
+        tacticalPing: Boolean(controller.tacticalPing),
         pause: Boolean(controller.pause),
         toggleMap: Boolean(controller.toggleMap),
         sprint: Boolean(controller.sprint),
@@ -2771,7 +2784,7 @@ const state = {
         textFloor: [16, 18, 20, 22, 24].includes(Number(localStorage.getItem('hb_text_floor')))
             ? Number(localStorage.getItem('hb_text_floor'))
             : 18,
-        cameraMode: localStorage.getItem('hb_camera_mode') === 'isometric' ? 'isometric' : 'third-person',
+        cameraMode: localStorage.getItem('hb_camera_mode') === 'third-person' ? 'third-person' : 'isometric',
         cameraDistance: ['close', 'standard', 'wide'].includes(localStorage.getItem('hb_camera_distance'))
             ? localStorage.getItem('hb_camera_distance')
             : 'close',
@@ -17425,6 +17438,8 @@ matureContentAudit.init();
 progressionWalkthrough.init();
 initVirtualKeyboard();
 setupNpcDialogueEvents();
+createFieldWorkbenchUi();
+createQuickCommandRadialUi();
 
 // Keep the title art alive at rest while making pointer movement feel like a
 // reflection travelling across damp metal. Motion is deliberately tiny so the
