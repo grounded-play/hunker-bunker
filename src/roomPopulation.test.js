@@ -211,4 +211,28 @@ describe('room population', () => {
             }));
         }
     });
+
+    it('restricts wall-backed props (altars, cradles) to cells adjacent to walls with wallNormal', () => {
+        const room = {
+            id: 'altar-room',
+            role: 'generic',
+            interior: [
+                { x: 1, y: 2 },
+                { x: 2, y: 2 },
+                { x: 3, y: 2 }
+            ],
+            navigation: { doorLanes: [] },
+            populationBudget: { signature: 1, large: 0, small: 0, pickup: 0, enemy: 0 },
+            themeConfig: { signatureProps: ['prop_fungal_tendril_altar'] }
+        };
+        const grid = Array.from({ length: 5 }, () => Array(5).fill('.'));
+        grid[2][0] = '#';
+        const plan = planRoomPopulation(room, grid, () => 0);
+        expect(plan.placements[0]).toMatchObject({
+            type: 'prop_fungal_tendril_altar',
+            x: 1,
+            y: 2,
+            wallNormal: { x: 1, z: 0 }
+        });
+    });
 });

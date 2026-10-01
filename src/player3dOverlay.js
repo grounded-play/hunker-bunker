@@ -63,12 +63,11 @@ export const WEAPON_SKIN_MESHES = {
     4222: '/3d/runtime/new3ds/skin_horizon_corporate.glb',        // Horizon Corporate Weapon Skin
     4229: '/3d/runtime/new3ds/skin_bunker404.glb',                // Bunker 404 Weapon Skin
     4236: '/3d/runtime/new3ds/skin_grand_marshal.glb',            // Grand Marshal Weapon Skin
-    // Achievement weapons share an existing model (same file, not a copy)
-    // until their own art lands: 3D asset audit 2026-10-01.
-    5002: '/3d/runtime/new3ds/gun_scout_talon_c.glb',             // Chrono-Drifter Talon-C
-    5006: '/3d/runtime/new3ds/gun_tank_siege_breaker50.glb',      // Bunker Bastion Siege-Breaker
-    5009: '/3d/runtime/new3ds/gun_engineer_tesla_lock.glb',       // Archival Constructor Arc Driver
-    5010: '/3d/runtime/new3ds/skin_queen_carapace_carbine.glb'    // Hive-Weaver Bio-Plasma Emitter
+    // Achievement weapons now load their bespoke optimized 3D models:
+    5002: '/3d/runtime/new3ds/skin_scout_chrono_drifter.glb',             // Chrono-Drifter Talon-C
+    5006: '/3d/runtime/new3ds/skin_tank_bunker_bastion.glb',              // Bunker Bastion Siege-Breaker
+    5009: '/3d/runtime/new3ds/skin_engineer_archival_constructor.glb',   // Archival Constructor Arc Driver
+    5010: '/3d/runtime/new3ds/skin_engineer_hive_weaver.glb'             // Hive-Weaver Bio-Plasma Emitter
 };
 
 import { COMMUNITY_GESTURES, COMMUNITY_GLB_MAP } from './data/communitySkins.js';

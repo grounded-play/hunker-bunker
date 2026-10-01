@@ -106,6 +106,21 @@ describe('world 3D replacement catalog', () => {
         }
     });
 
+    it('orients and offsets wall-backed props against their adjacent wall', () => {
+        const source = new THREE.Sprite(new THREE.SpriteMaterial());
+        const root = new THREE.Group();
+        source.userData.world3dRoot = root;
+        source.userData.world3dDesiredVisible = true;
+        source.userData.wallNormal = { x: 0, z: 1 };
+        source.userData.isWallBackedProp = true;
+        source.position.set(5, 0, 10);
+
+        expect(syncWorld3dReplacement(source)).toBe(true);
+        expect(root.rotation.y).toBeCloseTo(0);
+        expect(root.position.x).toBeCloseTo(5);
+        expect(root.position.z).toBeCloseTo(10 - 0.22);
+    });
+
     it('exposes preload list with valid model types and safely runs preload', async () => {
         const { COMMON_WORLD_3D_MODEL_TYPES, preloadWorld3dModels } = await import('./world3dOverlay.js');
         expect(COMMON_WORLD_3D_MODEL_TYPES.length).toBeGreaterThan(10);

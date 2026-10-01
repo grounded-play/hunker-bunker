@@ -198,7 +198,7 @@ export const ARMORY_PREVIEWS = Object.freeze({
     "5002": {
         "icon": "/ach_quick_study.png",
         "source": "achievement-emblem",
-        "model": "/3d/runtime/new3ds/gun_scout_talon_c.glb"
+        "model": "/3d/runtime/new3ds/skin_scout_chrono_drifter.glb"
     },
     "5003": {
         "icon": "/economy/armory/5003.png",
@@ -218,7 +218,7 @@ export const ARMORY_PREVIEWS = Object.freeze({
     "5006": {
         "icon": "/ach_hunkered.png",
         "source": "achievement-emblem",
-        "model": "/3d/runtime/new3ds/gun_tank_siege_breaker50.glb"
+        "model": "/3d/runtime/new3ds/skin_tank_bunker_bastion.glb"
     },
     "5007": {
         "icon": "/economy/armory/5007.png",
@@ -233,12 +233,12 @@ export const ARMORY_PREVIEWS = Object.freeze({
     "5009": {
         "icon": "/ach_archivist.png",
         "source": "achievement-emblem",
-        "model": "/3d/runtime/new3ds/gun_engineer_tesla_lock.glb"
+        "model": "/3d/runtime/new3ds/skin_engineer_archival_constructor.glb"
     },
     "5010": {
         "icon": "/ach_kin.png",
         "source": "achievement-emblem",
-        "model": "/3d/runtime/new3ds/skin_queen_carapace_carbine.glb"
+        "model": "/3d/runtime/new3ds/skin_engineer_hive_weaver.glb"
     },
     "5011": {
         "icon": "/economy/armory/5011.png",

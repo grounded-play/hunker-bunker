@@ -48,7 +48,9 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // names (achievement rewards 5001/5002/5006/5009/5010, bio_charger and the
 // three corrupted bosses). The rewards went back to `pending`, the enemies
 // point at the originals, and the copies were deleted;
-// src/modelCatalogIntegrity.test.js now fails on any such copy.
+// src/modelCatalogIntegrity.test.js now fails on any such copy. The unrigged
+// incoming 3D replacements (Talon-C base, 5002/5006/5009/5010 rewards, Queen's
+// Bane, and 5 environment props) fit cleanly under this 2715 MiB ceiling.
 const PUBLIC_BUDGET = 2715 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks

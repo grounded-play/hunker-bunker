@@ -434,7 +434,16 @@ export function syncWorld3dReplacement(source, { scale = 1, visible } = {}) {
     const root = source?.userData?.world3dRoot;
     if (!root) return false;
     root.position.copy(source.position);
-    root.rotation.y = (source.material?.rotation ?? 0) + WORLD_3D_FACING_YAW;
+    if (source.userData?.wallNormal) {
+        const wn = source.userData.wallNormal;
+        root.rotation.y = Math.atan2(wn.x, wn.z);
+        if (source.userData.isWallBackedProp) {
+            root.position.x -= wn.x * 0.22;
+            root.position.z -= wn.z * 0.22;
+        }
+    } else {
+        root.rotation.y = (source.material?.rotation ?? 0) + WORLD_3D_FACING_YAW;
+    }
     root.scale.setScalar(Math.max(0, Number.isFinite(scale) ? scale : 1));
     root.visible = visible ?? Boolean(source.userData.world3dDesiredVisible);
     // Once a replacement exists the flat sprite must never draw again, or the

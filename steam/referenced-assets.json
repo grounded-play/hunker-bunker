@@ -274,7 +274,9 @@
     "3d/runtime/new3ds/skin_biolume_spore_sprayer.glb",
     "3d/runtime/new3ds/skin_bunker404.glb",
     "3d/runtime/new3ds/skin_deep_frost.glb",
+    "3d/runtime/new3ds/skin_engineer_archival_constructor.glb",
     "3d/runtime/new3ds/skin_engineer_cryo_plasma.glb",
+    "3d/runtime/new3ds/skin_engineer_hive_weaver.glb",
     "3d/runtime/new3ds/skin_glitched_circuit_bolter.glb",
     "3d/runtime/new3ds/skin_grand_marshal.glb",
     "3d/runtime/new3ds/skin_hazard_stripe_smg.glb",
@@ -284,8 +286,10 @@
     "3d/runtime/new3ds/skin_queen_carapace_carbine.glb",
     "3d/runtime/new3ds/skin_rust_bone.glb",
     "3d/runtime/new3ds/skin_rust_bone_trench.glb",
+    "3d/runtime/new3ds/skin_scout_chrono_drifter.glb",
     "3d/runtime/new3ds/skin_scout_frostbite.glb",
     "3d/runtime/new3ds/skin_solar_flare_antimatter.glb",
+    "3d/runtime/new3ds/skin_tank_bunker_bastion.glb",
     "3d/runtime/new3ds/skin_tank_deep_core_melter.glb",
     "3d/runtime/new3ds/skin_tectonic_driller.glb",
     "3d/runtime/new3ds/skin_void_walker_beam.glb",
@@ -2156,7 +2160,7 @@
     },
     {
       "path": "3d/runtime/new3ds/fixture_sconce_vine.glb",
-      "bytes": 94400,
+      "bytes": 331296,
       "classification": "runtime-required"
     },
     {
@@ -2171,7 +2175,7 @@
     },
     {
       "path": "3d/runtime/new3ds/gun_scout_talon_c.glb",
-      "bytes": 118376,
+      "bytes": 608620,
       "classification": "runtime-required"
     },
     {
@@ -2236,7 +2240,7 @@
     },
     {
       "path": "3d/runtime/new3ds/mod_queens_bane.glb",
-      "bytes": 153076,
+      "bytes": 682672,
       "classification": "runtime-required"
     },
     {
@@ -2411,7 +2415,7 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_conduit_junction_box.glb",
-      "bytes": 95400,
+      "bytes": 393688,
       "classification": "runtime-required"
     },
     {
@@ -2431,7 +2435,7 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_flesh_steel_cradle.glb",
-      "bytes": 105144,
+      "bytes": 383288,
       "classification": "runtime-required"
     },
     {
@@ -2456,7 +2460,7 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_fungal_tendril_altar.glb",
-      "bytes": 103328,
+      "bytes": 395580,
       "classification": "runtime-required"
     },
     {
@@ -2506,7 +2510,7 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_pipe_rupture.glb",
-      "bytes": 98824,
+      "bytes": 346888,
       "classification": "runtime-required"
     },
     {
@@ -2600,8 +2604,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/skin_engineer_archival_constructor.glb",
+      "bytes": 687376,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/skin_engineer_cryo_plasma.glb",
       "bytes": 541968,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/skin_engineer_hive_weaver.glb",
+      "bytes": 654192,
       "classification": "runtime-required"
     },
     {
@@ -2650,6 +2664,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/skin_scout_chrono_drifter.glb",
+      "bytes": 667804,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/skin_scout_frostbite.glb",
       "bytes": 478056,
       "classification": "runtime-required"
@@ -2657,6 +2676,11 @@
     {
       "path": "3d/runtime/new3ds/skin_solar_flare_antimatter.glb",
       "bytes": 45688800,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/skin_tank_bunker_bastion.glb",
+      "bytes": 722536,
       "classification": "runtime-required"
     },
     {

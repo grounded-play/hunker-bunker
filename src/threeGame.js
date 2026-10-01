@@ -32334,7 +32334,11 @@ export class ThreeGame {
                 elevationOffset: placement.elevation,
                 baseScaleX: scaleX,
                 baseScaleY: scaleY,
-                baseOpacity: placement.opacity ?? 1
+                baseOpacity: placement.opacity ?? 1,
+                wallNormal: placement.wallNormal ?? null,
+                isWallBackedProp: placement.type === 'prop_fungal_tendril_altar'
+                    || placement.type === 'prop_flesh_steel_cradle'
+                    || placement.type === 'prop_shrine_plinth_broken'
             };
             this.deferWorld3dReplacement(anchor, placement.type);
             return anchor;
@@ -32368,7 +32372,11 @@ export class ThreeGame {
                 burstTriggered: false,
                 burstTimer: 0,
                 phase: placement.phase ?? 0,
-                baseOpacity: placement.opacity ?? 1
+                baseOpacity: placement.opacity ?? 1,
+                wallNormal: placement.wallNormal ?? null,
+                isWallBackedProp: placement.type === 'prop_fungal_tendril_altar'
+                    || placement.type === 'prop_flesh_steel_cradle'
+                    || placement.type === 'prop_shrine_plinth_broken'
             };
             // `prop_bunker_supplies` is a common room-dressing family, not a
             // literal locker at every placement. Promote only a stable subset
