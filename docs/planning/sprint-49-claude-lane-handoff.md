@@ -204,6 +204,16 @@ male (Mixamo skeleton via weight transfer from rigged references), and
 `Mycelium Stalker Quadruped` (procedural quadruped rig and clips). Please don't
 process these five in parallel.
 
+### 2026-10-01 15:10: four of the animated five are in
+
+- **Cryosnail** (`125ca366`): its own ice model, 1.5M to 25k triangles, no rig.
+- **Corrupted Kaelen boss** (`c7a9042f`): rigged onto `npc_kaelen`'s skeleton; the tint/emissive disguise on the friendly Kaelen is gone.
+- **5001 Ghost Runner, female and male** (`c7a9042f`, `eb503aab`): rigged onto the Corpo Shadow Runner and Briggs skeletons. The male is a second **body** of the same item (`src/chassisBodies.js`): a picker tile per body, `suit.chassisBody` in the loadout, and `chassisBody` in the co-op summary.
+- Tool: `scripts/blender/rig_by_weight_transfer.py <static> <rigged_ref> <out>` (Blender 5.2, headless). It needs a T-pose target facing the reference's direction.
+- Retail budget 2715 to 2730 MiB, justified in `scripts/audit-retail-assets.js`.
+- **Still this lane's:** the Mycelium Stalker quadruped (procedural rig and clips) for `mycelium_stalker` and `bio_charger`.
+
+
 ## Next
 
 1. **Publisher/hardware (not code):** a Deck and pad pass with the keyboard unplugged
