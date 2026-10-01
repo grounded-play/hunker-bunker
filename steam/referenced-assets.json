@@ -1335,7 +1335,7 @@
     },
     {
       "path": "3d/runtime/community/scout_corpo_shadow_runner.glb",
-      "bytes": 13903192,
+      "bytes": 9260924,
       "classification": "runtime-required"
     },
     {
@@ -1365,7 +1365,7 @@
     },
     {
       "path": "3d/runtime/community/scout_xeno_stalker.glb",
-      "bytes": 19323352,
+      "bytes": 12647060,
       "classification": "runtime-required"
     },
     {
@@ -1940,7 +1940,7 @@
     },
     {
       "path": "3d/runtime/new3ds/bio_charger.glb",
-      "bytes": 19323352,
+      "bytes": 12647060,
       "classification": "runtime-required"
     },
     {
@@ -1955,27 +1955,27 @@
     },
     {
       "path": "3d/runtime/new3ds/boss_corrupted_briggs.glb",
-      "bytes": 3386260,
+      "bytes": 2813748,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/boss_corrupted_engineer.glb",
-      "bytes": 3682960,
+      "bytes": 3105052,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/boss_corrupted_martha.glb",
-      "bytes": 3025896,
+      "bytes": 2490056,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/boss_corrupted_scout.glb",
-      "bytes": 3025896,
+      "bytes": 2490056,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/boss_corrupted_tank.glb",
-      "bytes": 3386260,
+      "bytes": 2813748,
       "classification": "runtime-required"
     },
     {
@@ -2140,7 +2140,7 @@
     },
     {
       "path": "3d/runtime/new3ds/chassis_scout_ghost_runner.glb",
-      "bytes": 13903192,
+      "bytes": 9260924,
       "classification": "runtime-required"
     },
     {
@@ -2325,7 +2325,7 @@
     },
     {
       "path": "3d/runtime/new3ds/npc_kaelen.glb",
-      "bytes": 3682960,
+      "bytes": 3105052,
       "classification": "runtime-required"
     },
     {
