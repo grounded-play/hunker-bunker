@@ -68,7 +68,10 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // states) from their ~50k-triangle sources at 12k triangles and 1024 WebP
 // (~0.85 MB each). The shipped 1k-triangle copies read as fragments and dark
 // slabs (3D asset audit 2026-10-01 section 3); +25 MB.
-const PUBLIC_BUDGET = 2770 * 1024 * 1024;
+// Raised 2770->2775 MiB for the Proto Spitter's own model (4.9 MB): the
+// crawler body plus the 2D design's acid sac (scripts/blender/build_spitter.py),
+// replacing a green tint on the shared crawler model.
+const PUBLIC_BUDGET = 2775 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus

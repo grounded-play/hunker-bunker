@@ -126,6 +126,7 @@
     "3d/runtime/kits/modular-space-kit/template-wall.glb",
     "3d/runtime/new3ds/alien_proto_crawler.glb",
     "3d/runtime/new3ds/alien_proto_crawler_A.glb",
+    "3d/runtime/new3ds/alien_proto_spitter.glb",
     "3d/runtime/new3ds/arch_bulkhead_frame.glb",
     "3d/runtime/new3ds/arch_deco_archway_grand_01.glb",
     "3d/runtime/new3ds/arch_deco_archway_grand_02.glb",
@@ -2031,6 +2032,11 @@
     {
       "path": "3d/runtime/new3ds/alien_proto_crawler_A.glb",
       "bytes": 4582244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/alien_proto_spitter.glb",
+      "bytes": 4904884,
       "classification": "runtime-required"
     },
     {

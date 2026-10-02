@@ -34,8 +34,10 @@ const MODEL_CONFIG = {
     // without touching it (the same trick cryosnail plays on the cybersnail
     // mesh). Shape differences live in the GLB, colour differences live here.
     alien_proto_crawler_A: { url: '/3d/runtime/new3ds/alien_proto_crawler_A.glb', height: 0.98, yaw: 0, tint: 0xc2a887 },
-    // Shares the crawler's body; an acid-green cast marks the ranged threat.
-    alien_proto_spitter: { url: '/3d/runtime/new3ds/alien_proto_crawler_A.glb', height: 0.95, yaw: 0, tint: 0x9fe07a },
+    // The crawler body with the 2D design's glowing acid sac on its back
+    // (scripts/blender/build_spitter.py). The sac adds ~44% to the height, so
+    // the normalised height is raised to keep the body crawler-sized.
+    alien_proto_spitter: { url: '/3d/runtime/new3ds/alien_proto_spitter.glb', height: 1.35, yaw: 0 },
     sentinel: { url: '/3d/runtime/new3ds/sentinel.glb', height: 1.25, yaw: 0 },
     // Lighter, faster scout variant (4 HP vs sentinel_B's 5) -- rendered a
     // touch shorter as well, so the weight difference reads before it is shot.

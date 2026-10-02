@@ -32,15 +32,6 @@ describe('enemy 3D rigged locomotion routing', () => {
         expect(getEnemyAssetYaw('boss_sporesnail')).toBe(Math.PI / 2);
     });
 
-    it('tints the spitter so a ranged threat never reads as the crawler it shares a model with', async () => {
-        const { ENEMY_3D_MODELS } = await import('./enemy3dOverlay.js');
-        const spitter = ENEMY_3D_MODELS.alien_proto_spitter;
-        expect(spitter.tint).toBeTruthy();
-        for (const other of ['alien_proto_crawler', 'alien_proto_crawler_A']) {
-            expect(spitter.tint, other).not.toBe(ENEMY_3D_MODELS[other].tint);
-        }
-    });
-
     it('gives cryosnail its own ice model instead of a recoloured cybersnail', async () => {
         // Owner-supplied Regular Cryosnail (2026-10-01) replaces the tinted,
         // emissive cybersnail stand-in.
@@ -58,6 +49,14 @@ describe('enemy 3D rigged locomotion routing', () => {
         expect(engineer.url).toBe('/3d/runtime/new3ds/boss_corrupted_engineer.glb');
         expect(engineer.tint).toBeUndefined();
         expect(engineer.emissive).toBeUndefined();
+    });
+
+    it('gives the spitter its own acid-sac body instead of a green-tinted crawler', async () => {
+        const { ENEMY_3D_MODELS } = await import('./enemy3dOverlay.js');
+        const spitter = ENEMY_3D_MODELS.alien_proto_spitter;
+        expect(spitter.url).toBe('/3d/runtime/new3ds/alien_proto_spitter.glb');
+        expect(spitter.url).not.toBe(ENEMY_3D_MODELS.alien_proto_crawler_A.url);
+        expect(spitter.tint).toBeUndefined();
     });
 
     it('gives the stalker and charger the owner-supplied quadruped with its own clips, not a humanoid player skin', async () => {
