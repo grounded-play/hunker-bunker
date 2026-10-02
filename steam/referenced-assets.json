@@ -126,6 +126,7 @@
     "3d/runtime/kits/modular-space-kit/template-wall.glb",
     "3d/runtime/new3ds/alien_proto_crawler.glb",
     "3d/runtime/new3ds/alien_proto_crawler_A.glb",
+    "3d/runtime/new3ds/alien_proto_spitter.glb",
     "3d/runtime/new3ds/arch_bulkhead_frame.glb",
     "3d/runtime/new3ds/arch_deco_archway_grand_01.glb",
     "3d/runtime/new3ds/arch_deco_archway_grand_02.glb",
@@ -140,14 +141,11 @@
     "3d/runtime/new3ds/arch_rib_ceiling_vault_02.glb",
     "3d/runtime/new3ds/arch_rib_ceiling_vault_03.glb",
     "3d/runtime/new3ds/arch_window_stained.glb",
-    "3d/runtime/new3ds/bio_charger.glb",
     "3d/runtime/new3ds/body_empty_exosuit.glb",
     "3d/runtime/new3ds/body_frozen_human.glb",
     "3d/runtime/new3ds/boss_corrupted_briggs.glb",
     "3d/runtime/new3ds/boss_corrupted_engineer.glb",
     "3d/runtime/new3ds/boss_corrupted_martha.glb",
-    "3d/runtime/new3ds/boss_corrupted_scout.glb",
-    "3d/runtime/new3ds/boss_corrupted_tank.glb",
     "3d/runtime/new3ds/bunker_junk_rare.glb",
     "3d/runtime/new3ds/bunker_junk_uncommon.glb",
     "3d/runtime/new3ds/charm_amber_bio_flask.glb",
@@ -181,6 +179,7 @@
     "3d/runtime/new3ds/chassis_rust_bone.glb",
     "3d/runtime/new3ds/chassis_scout_cartographer.glb",
     "3d/runtime/new3ds/chassis_scout_ghost_runner.glb",
+    "3d/runtime/new3ds/chassis_scout_ghost_runner_male.glb",
     "3d/runtime/new3ds/chassis_scout_pioneer_courier.glb",
     "3d/runtime/new3ds/chassis_subterran_drill_engineer.glb",
     "3d/runtime/new3ds/chassis_tank_colossus_hive.glb",
@@ -188,6 +187,7 @@
     "3d/runtime/new3ds/chassis_tank_old_iron.glb",
     "3d/runtime/new3ds/chassis_trench_warden_heavy.glb",
     "3d/runtime/new3ds/chassis_void_commando_recon.glb",
+    "3d/runtime/new3ds/cryosnail.glb",
     "3d/runtime/new3ds/cybersnail_dead.glb",
     "3d/runtime/new3ds/fixture_clock_dead.glb",
     "3d/runtime/new3ds/fixture_sconce_vine.glb",
@@ -212,6 +212,7 @@
     "3d/runtime/new3ds/mod_symbiotic_adrenaline_pump.glb",
     "3d/runtime/new3ds/mod_thermal_heat_exchanger.glb",
     "3d/runtime/new3ds/mod_zero_point_flux.glb",
+    "3d/runtime/new3ds/mycelium_stalker.glb",
     "3d/runtime/new3ds/npc_alien_rhun.glb",
     "3d/runtime/new3ds/npc_alien_vey.glb",
     "3d/runtime/new3ds/npc_aria.glb",
@@ -235,6 +236,7 @@
     "3d/runtime/new3ds/prop_body_human_frozen.glb",
     "3d/runtime/new3ds/prop_broken_specimen_tank.glb",
     "3d/runtime/new3ds/prop_bunker_supplies.glb",
+    "3d/runtime/new3ds/prop_camp_cookfire.glb",
     "3d/runtime/new3ds/prop_camp_cot.glb",
     "3d/runtime/new3ds/prop_camp_crate.glb",
     "3d/runtime/new3ds/prop_cave_bones.glb",
@@ -359,6 +361,20 @@
     "audio/cc0-derived/mechanisms/door_lock_body_01.ogg",
     "audio/cc0-derived/mechanisms/door_lock_body_02.ogg",
     "audio/cc0-derived/mechanisms/metal_lock_impact_01.ogg",
+    "audio/enemies/creak1.ogg",
+    "audio/enemies/creak2.ogg",
+    "audio/enemies/creak3.ogg",
+    "audio/enemies/impactSoft_heavy_000.ogg",
+    "audio/enemies/impactSoft_heavy_001.ogg",
+    "audio/enemies/impactSoft_heavy_002.ogg",
+    "audio/enemies/impactSoft_heavy_003.ogg",
+    "audio/enemies/impactSoft_heavy_004.ogg",
+    "audio/enemies/impactSoft_medium_000.ogg",
+    "audio/enemies/impactSoft_medium_001.ogg",
+    "audio/enemies/impactSoft_medium_002.ogg",
+    "audio/enemies/impactSoft_medium_003.ogg",
+    "audio/enemies/impactSoft_medium_004.ogg",
+    "audio/enemies/metalClick.ogg",
     "audio/foley/bunker/foley_bunker_blackout_breaker.wav",
     "audio/foley/bunker/foley_bunker_facility_room_loop.wav",
     "audio/foley/bunker/foley_bunker_nav_corruption.wav",
@@ -1321,7 +1337,7 @@
     },
     {
       "path": "3d/runtime/community/scout_corpo_shadow_runner.glb",
-      "bytes": 13903192,
+      "bytes": 9260924,
       "classification": "runtime-required"
     },
     {
@@ -1351,7 +1367,7 @@
     },
     {
       "path": "3d/runtime/community/scout_xeno_stalker.glb",
-      "bytes": 19323352,
+      "bytes": 12647060,
       "classification": "runtime-required"
     },
     {
@@ -1445,404 +1461,569 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/kits/modular-cave-kit/better-todo-tree-20261001-1442.txt",
+      "bytes": 7340,
+      "classification": "unknown"
+    },
+    {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-corner.glb",
-      "bytes": 10180,
+      "bytes": 45404,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-end.glb",
-      "bytes": 15524,
+      "bytes": 83260,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-intersection.glb",
-      "bytes": 3432,
+      "bytes": 17952,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-junction.glb",
-      "bytes": 7748,
+      "bytes": 37452,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-transition.glb",
-      "bytes": 24556,
+      "bytes": 137540,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-wide-corner.glb",
-      "bytes": 19672,
+      "bytes": 97056,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-wide-end.glb",
-      "bytes": 25180,
+      "bytes": 144616,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-wide-intersection.glb",
-      "bytes": 3516,
+      "bytes": 18000,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-wide-junction.glb",
-      "bytes": 11408,
+      "bytes": 57904,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor-wide.glb",
-      "bytes": 17632,
+      "bytes": 97640,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/corridor.glb",
-      "bytes": 11280,
+      "bytes": 57092,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/gate-metal-bars.glb",
-      "bytes": 9552,
+      "bytes": 42904,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/gate-overhang.glb",
-      "bytes": 2328,
+      "bytes": 8276,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/gate-rock.glb",
-      "bytes": 5400,
+      "bytes": 22292,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/gate.glb",
-      "bytes": 7544,
+      "bytes": 34124,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/ladder.glb",
-      "bytes": 2228,
+      "bytes": 10172,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/room-corner.glb",
-      "bytes": 41936,
+      "bytes": 225656,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/room-large-variation.glb",
-      "bytes": 87984,
+      "bytes": 488612,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/room-large.glb",
-      "bytes": 89008,
+      "bytes": 494232,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/room-small-variation.glb",
-      "bytes": 44500,
+      "bytes": 241864,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/room-small.glb",
-      "bytes": 40292,
+      "bytes": 217616,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/room-wide-variation.glb",
-      "bytes": 73244,
+      "bytes": 411120,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/room-wide.glb",
-      "bytes": 61540,
+      "bytes": 341880,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/stairs-wide.glb",
-      "bytes": 26100,
+      "bytes": 142860,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/stairs.glb",
-      "bytes": 25196,
+      "bytes": 139640,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-corner.glb",
-      "bytes": 9584,
+      "bytes": 42256,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-detail.glb",
-      "bytes": 6096,
+      "bytes": 25068,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-floor-big.glb",
-      "bytes": 10300,
+      "bytes": 45540,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-floor-detail-a.glb",
-      "bytes": 4240,
+      "bytes": 18272,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-floor-detail.glb",
-      "bytes": 4224,
+      "bytes": 18200,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-floor-layer-hole.glb",
-      "bytes": 4888,
+      "bytes": 24172,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-floor-layer-raised.glb",
-      "bytes": 3540,
+      "bytes": 19596,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-floor-layer.glb",
-      "bytes": 2500,
+      "bytes": 12744,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-floor.glb",
-      "bytes": 1184,
+      "bytes": 4348,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-wall-corner.glb",
-      "bytes": 2136,
+      "bytes": 7916,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-wall-detail-a.glb",
-      "bytes": 6524,
+      "bytes": 29208,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-wall-half.glb",
-      "bytes": 3720,
+      "bytes": 15648,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-wall-stairs.glb",
-      "bytes": 2636,
+      "bytes": 9928,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-wall-top.glb",
-      "bytes": 2768,
+      "bytes": 12156,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/template-wall.glb",
-      "bytes": 6568,
+      "bytes": 30824,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/cables.glb",
-      "bytes": 7444,
+      "bytes": 32688,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-corner.glb",
-      "bytes": 9764,
+      "bytes": 56504,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-end.glb",
-      "bytes": 7468,
+      "bytes": 55260,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-intersection.glb",
-      "bytes": 2876,
+      "bytes": 16056,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-junction.glb",
-      "bytes": 4496,
+      "bytes": 27344,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-transition.glb",
-      "bytes": 11124,
+      "bytes": 84992,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-wide-corner.glb",
-      "bytes": 14272,
+      "bytes": 90824,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-wide-end.glb",
-      "bytes": 23256,
+      "bytes": 161184,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-wide-intersection.glb",
-      "bytes": 2992,
+      "bytes": 16152,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-wide-junction.glb",
-      "bytes": 10084,
+      "bytes": 62412,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor-wide.glb",
-      "bytes": 16200,
+      "bytes": 108720,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/corridor.glb",
-      "bytes": 5652,
+      "bytes": 38304,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/gate-door-window.glb",
-      "bytes": 14304,
+      "bytes": 78772,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/gate-door.glb",
-      "bytes": 13676,
+      "bytes": 76012,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/gate-lasers.glb",
-      "bytes": 32584,
+      "bytes": 138024,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/gate.glb",
-      "bytes": 5132,
+      "bytes": 30664,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/room-corner.glb",
-      "bytes": 42468,
+      "bytes": 280892,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/room-large-variation.glb",
-      "bytes": 64612,
+      "bytes": 431216,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/room-large.glb",
-      "bytes": 72940,
+      "bytes": 482812,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/room-small-variation.glb",
-      "bytes": 27412,
+      "bytes": 188640,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/room-small.glb",
-      "bytes": 33516,
+      "bytes": 223260,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/room-wide-variation.glb",
-      "bytes": 66152,
+      "bytes": 443508,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/room-wide.glb",
-      "bytes": 59884,
+      "bytes": 395280,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/stairs-wide.glb",
-      "bytes": 16936,
+      "bytes": 124400,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/stairs.glb",
-      "bytes": 16780,
+      "bytes": 124452,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-corner.glb",
-      "bytes": 9340,
+      "bytes": 53736,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-detail.glb",
-      "bytes": 4768,
+      "bytes": 24644,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-floor-big.glb",
-      "bytes": 4680,
+      "bytes": 25004,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-floor-detail-a.glb",
-      "bytes": 1392,
+      "bytes": 4372,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-floor-detail.glb",
-      "bytes": 1720,
+      "bytes": 5648,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-floor-layer-hole.glb",
-      "bytes": 22360,
+      "bytes": 142276,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-floor-layer-raised.glb",
-      "bytes": 21664,
+      "bytes": 139024,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-floor-layer.glb",
-      "bytes": 4520,
+      "bytes": 26332,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-floor.glb",
-      "bytes": 1224,
+      "bytes": 4440,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-wall-corner.glb",
-      "bytes": 1992,
+      "bytes": 7388,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-wall-detail-a.glb",
-      "bytes": 8488,
+      "bytes": 50056,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-wall-half.glb",
-      "bytes": 1988,
+      "bytes": 8036,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-wall-stairs.glb",
-      "bytes": 2980,
+      "bytes": 14736,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-wall-top.glb",
-      "bytes": 3484,
+      "bytes": 18560,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/modular-space-kit/template-wall.glb",
-      "bytes": 3688,
+      "bytes": 21748,
       "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/biomech_floor_color.webp",
+      "bytes": 211924,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/biomech_floor_emissive.webp",
+      "bytes": 48212,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/biomech_floor_normal.webp",
+      "bytes": 210950,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/biomech_floor_rough.webp",
+      "bytes": 70836,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/biomech_wall_color.webp",
+      "bytes": 331944,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/biomech_wall_emissive.webp",
+      "bytes": 38708,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/biomech_wall_normal.webp",
+      "bytes": 320638,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/biomech_wall_rough.webp",
+      "bytes": 109062,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/bunker_floor_color.webp",
+      "bytes": 260574,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/bunker_floor_normal.webp",
+      "bytes": 267780,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/bunker_floor_rough.webp",
+      "bytes": 57830,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/bunker_wall_color.webp",
+      "bytes": 162760,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/bunker_wall_normal.webp",
+      "bytes": 167868,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/bunker_wall_rough.webp",
+      "bytes": 25392,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cathedral_floor_color.webp",
+      "bytes": 313316,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cathedral_floor_normal.webp",
+      "bytes": 270508,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cathedral_floor_rough.webp",
+      "bytes": 37342,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cathedral_wall_color.webp",
+      "bytes": 309764,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cathedral_wall_normal.webp",
+      "bytes": 293512,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cathedral_wall_rough.webp",
+      "bytes": 29110,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cave_floor_color.webp",
+      "bytes": 332476,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cave_floor_normal.webp",
+      "bytes": 618304,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cave_floor_rough.webp",
+      "bytes": 468370,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cave_wall_color.webp",
+      "bytes": 138038,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cave_wall_normal.webp",
+      "bytes": 474130,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cave_wall_rough.webp",
+      "bytes": 157520,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/space_floor_color.webp",
+      "bytes": 59032,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/space_floor_normal.webp",
+      "bytes": 223238,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/space_floor_rough.webp",
+      "bytes": 240142,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/space_wall_color.webp",
+      "bytes": 64764,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/space_wall_normal.webp",
+      "bytes": 25700,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/space_wall_rough.webp",
+      "bytes": 347484,
+      "classification": "unknown"
     },
     {
       "path": "3d/runtime/new3ds/alien_proto_crawler.glb",
@@ -1855,78 +2036,78 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/alien_proto_spitter.glb",
+      "bytes": 4904884,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/arch_bulkhead_frame.glb",
-      "bytes": 97432,
+      "bytes": 937180,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_deco_archway_grand_01.glb",
-      "bytes": 91684,
+      "bytes": 610768,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_deco_archway_grand_02.glb",
-      "bytes": 112332,
+      "bytes": 1312864,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_deco_archway_grand_03.glb",
-      "bytes": 91768,
+      "bytes": 609880,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_deco_archway_grand_04.glb",
-      "bytes": 96400,
+      "bytes": 674656,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_niche_shrine.glb",
-      "bytes": 92316,
+      "bytes": 678192,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_pillar_buttress_01.glb",
-      "bytes": 110852,
+      "bytes": 872992,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_pillar_buttress_02.glb",
-      "bytes": 106720,
+      "bytes": 943880,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_pillar_buttress_03.glb",
-      "bytes": 94808,
+      "bytes": 806756,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_pillar_buttress_04.glb",
-      "bytes": 112356,
+      "bytes": 1153348,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_rib_ceiling_vault_01.glb",
-      "bytes": 91312,
+      "bytes": 776576,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_rib_ceiling_vault_02.glb",
-      "bytes": 88704,
+      "bytes": 799192,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_rib_ceiling_vault_03.glb",
-      "bytes": 95896,
+      "bytes": 756376,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_window_stained.glb",
-      "bytes": 119088,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/new3ds/bio_charger.glb",
-      "bytes": 19323352,
+      "bytes": 1044396,
       "classification": "runtime-required"
     },
     {
@@ -1941,27 +2122,17 @@
     },
     {
       "path": "3d/runtime/new3ds/boss_corrupted_briggs.glb",
-      "bytes": 3386260,
+      "bytes": 2813748,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/boss_corrupted_engineer.glb",
-      "bytes": 3682960,
+      "bytes": 4123196,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/boss_corrupted_martha.glb",
-      "bytes": 3025896,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/new3ds/boss_corrupted_scout.glb",
-      "bytes": 3025896,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/new3ds/boss_corrupted_tank.glb",
-      "bytes": 3386260,
+      "bytes": 2490056,
       "classification": "runtime-required"
     },
     {
@@ -2126,7 +2297,12 @@
     },
     {
       "path": "3d/runtime/new3ds/chassis_scout_ghost_runner.glb",
-      "bytes": 13903192,
+      "bytes": 3317280,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_scout_ghost_runner_male.glb",
+      "bytes": 3450060,
       "classification": "runtime-required"
     },
     {
@@ -2165,18 +2341,23 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/cryosnail.glb",
+      "bytes": 1634308,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/cybersnail_dead.glb",
       "bytes": 4283480,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/fixture_clock_dead.glb",
-      "bytes": 103540,
+      "bytes": 901992,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/fixture_sconce_vine.glb",
-      "bytes": 94400,
+      "bytes": 331296,
       "classification": "runtime-required"
     },
     {
@@ -2191,7 +2372,7 @@
     },
     {
       "path": "3d/runtime/new3ds/gun_scout_talon_c.glb",
-      "bytes": 118376,
+      "bytes": 608620,
       "classification": "runtime-required"
     },
     {
@@ -2256,7 +2437,7 @@
     },
     {
       "path": "3d/runtime/new3ds/mod_queens_bane.glb",
-      "bytes": 153076,
+      "bytes": 682672,
       "classification": "runtime-required"
     },
     {
@@ -2282,6 +2463,11 @@
     {
       "path": "3d/runtime/new3ds/mod_zero_point_flux.glb",
       "bytes": 2099316,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/mycelium_stalker.glb",
+      "bytes": 3900252,
       "classification": "runtime-required"
     },
     {
@@ -2311,7 +2497,7 @@
     },
     {
       "path": "3d/runtime/new3ds/npc_kaelen.glb",
-      "bytes": 3682960,
+      "bytes": 3105052,
       "classification": "runtime-required"
     },
     {
@@ -2400,6 +2586,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_camp_cookfire.glb",
+      "bytes": 1292412,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_camp_cot.glb",
       "bytes": 159716,
       "classification": "runtime-required"
@@ -2421,7 +2612,7 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_chair_operator_wrecked.glb",
-      "bytes": 103216,
+      "bytes": 866704,
       "classification": "runtime-required"
     },
     {
@@ -2431,7 +2622,7 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_conduit_junction_box.glb",
-      "bytes": 95400,
+      "bytes": 393688,
       "classification": "runtime-required"
     },
     {
@@ -2446,37 +2637,37 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_flesh_steel_coffin.glb",
-      "bytes": 104828,
+      "bytes": 992684,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_flesh_steel_cradle.glb",
-      "bytes": 105144,
+      "bytes": 383288,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_flesh_steel_inhaler.glb",
-      "bytes": 93996,
+      "bytes": 742808,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_fungal_mycelium_loom.glb",
-      "bytes": 90048,
+      "bytes": 877076,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_fungal_resin_basin.glb",
-      "bytes": 89576,
+      "bytes": 524088,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_fungal_spore_dispenser.glb",
-      "bytes": 84796,
+      "bytes": 609832,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_fungal_tendril_altar.glb",
-      "bytes": 103328,
+      "bytes": 395580,
       "classification": "runtime-required"
     },
     {
@@ -2486,17 +2677,17 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_icey_frost_manifold.glb",
-      "bytes": 95952,
+      "bytes": 917464,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_icey_frost_vent.glb",
-      "bytes": 84368,
+      "bytes": 792340,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_icey_thermal_pod.glb",
-      "bytes": 90592,
+      "bytes": 823956,
       "classification": "runtime-required"
     },
     {
@@ -2506,12 +2697,12 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_light_cluster_dripping.glb",
-      "bytes": 99468,
+      "bytes": 678604,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_locker_bulged.glb",
-      "bytes": 98916,
+      "bytes": 991136,
       "classification": "runtime-required"
     },
     {
@@ -2526,7 +2717,7 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_pipe_rupture.glb",
-      "bytes": 98824,
+      "bytes": 346888,
       "classification": "runtime-required"
     },
     {
@@ -2536,7 +2727,7 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_shrine_plinth_broken.glb",
-      "bytes": 84244,
+      "bytes": 855848,
       "classification": "runtime-required"
     },
     {
@@ -2546,7 +2737,7 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_storage_drum_dented.glb",
-      "bytes": 90124,
+      "bytes": 756520,
       "classification": "runtime-required"
     },
     {
@@ -2556,7 +2747,7 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_terminal_ruptured.glb",
-      "bytes": 96540,
+      "bytes": 767796,
       "classification": "runtime-required"
     },
     {
@@ -2566,12 +2757,12 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_valve_wheel_fused.glb",
-      "bytes": 91620,
+      "bytes": 681208,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_vent_grate_exploded.glb",
-      "bytes": 90804,
+      "bytes": 646600,
       "classification": "runtime-required"
     },
     {
@@ -2621,7 +2812,7 @@
     },
     {
       "path": "3d/runtime/new3ds/skin_engineer_archival_constructor.glb",
-      "bytes": 689520,
+      "bytes": 687376,
       "classification": "runtime-required"
     },
     {
@@ -2631,7 +2822,7 @@
     },
     {
       "path": "3d/runtime/new3ds/skin_engineer_hive_weaver.glb",
-      "bytes": 11966464,
+      "bytes": 654192,
       "classification": "runtime-required"
     },
     {
@@ -2681,7 +2872,7 @@
     },
     {
       "path": "3d/runtime/new3ds/skin_scout_chrono_drifter.glb",
-      "bytes": 118376,
+      "bytes": 667804,
       "classification": "runtime-required"
     },
     {
@@ -2696,7 +2887,7 @@
     },
     {
       "path": "3d/runtime/new3ds/skin_tank_bunker_bastion.glb",
-      "bytes": 614468,
+      "bytes": 722536,
       "classification": "runtime-required"
     },
     {
@@ -2736,7 +2927,7 @@
     },
     {
       "path": "3d/runtime/new3ds/state_column_shattered.glb",
-      "bytes": 98912,
+      "bytes": 781076,
       "classification": "runtime-required"
     },
     {
@@ -2751,17 +2942,17 @@
     },
     {
       "path": "3d/runtime/new3ds/state_wall_breached_01.glb",
-      "bytes": 92560,
+      "bytes": 793044,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/state_wall_breached_02.glb",
-      "bytes": 109708,
+      "bytes": 1046708,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/state_wall_breached_03.glb",
-      "bytes": 103752,
+      "bytes": 1311380,
       "classification": "runtime-required"
     },
     {
@@ -3482,6 +3673,76 @@
     {
       "path": "audio/cover.png",
       "bytes": 867896,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/creak1.ogg",
+      "bytes": 15761,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/creak2.ogg",
+      "bytes": 19012,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/creak3.ogg",
+      "bytes": 10408,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_heavy_000.ogg",
+      "bytes": 6570,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_heavy_001.ogg",
+      "bytes": 6689,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_heavy_002.ogg",
+      "bytes": 6749,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_heavy_003.ogg",
+      "bytes": 6665,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_heavy_004.ogg",
+      "bytes": 6478,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_medium_000.ogg",
+      "bytes": 5351,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_medium_001.ogg",
+      "bytes": 5506,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_medium_002.ogg",
+      "bytes": 5358,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_medium_003.ogg",
+      "bytes": 5392,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/impactSoft_medium_004.ogg",
+      "bytes": 5438,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/enemies/metalClick.ogg",
+      "bytes": 13615,
       "classification": "runtime-required"
     },
     {

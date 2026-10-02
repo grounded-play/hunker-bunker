@@ -1,4 +1,5 @@
 import { createControllerPressGate } from './src/controllerPressGate.js';
+import { initPlayerChatUI } from './src/playerChatUi.js';
 import { crossingGuidance, expeditionDebrief } from './src/expeditionFeedback.js';
 import { runO2MilestoneChoreography } from './src/o2CinematicDoors.js';
 import { compactPerformanceSnapshot, compactPerfPhase, createLongTaskReporter } from './src/longTaskDiagnostics.js';
@@ -26,7 +27,7 @@ import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
 import { DEPTH_TIER_NAMES } from './src/data/loot.js';
 import { getVoiceAudioManifest } from './src/data/voiceBanks.js';
-import { GAMEPLAY_FOLEY_MANIFEST } from './src/data/gameSoundsets.js';
+import { GAMEPLAY_FOLEY_MANIFEST, GAMEPLAY_ENEMY_MANIFEST } from './src/data/gameSoundsets.js';
 import { getDeathCinematicSpec, getEventCinematicSpec, normalizeCinematicStillSpec, shouldPlayAuthoredEventCinematic } from './src/cinematicFallback.js';
 import { DialogueManager, resolveEffectiveVoicePackId } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
@@ -96,6 +97,8 @@ import { sideStoryManager, SIDE_STORIES_CONFIG, SIDE_STORY_STATUS } from './src/
 import { matureContentAudit } from './src/matureContentAudit.js';
 import { progressionWalkthrough } from './src/progressionWalkthrough.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
+import { createFieldWorkbenchUi } from './src/fieldWorkbenchUi.js';
+import { createQuickCommandRadialUi } from './src/quickCommandRadialUi.js';
 import { flushPendingRunSubmits, submitRunWithRetryQueue } from './src/steam/runSubmitQueue.js';
 import { FATIGUE_STATE_KEY, describeScars, normalizeFatigueState } from './src/fatigue.js';
 import { unlockSheenForMilestone, reconcileSheenUnlocks, unlockAllSheens } from './src/weaponSheens.js';
@@ -109,6 +112,8 @@ import { SongInterstitialController, selectCampInterstitial } from './src/songIn
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
 import { LeaderConversation3d } from './src/leaderConversation3d.js';
 import { getLocale, setLocale, t, t as i18nT, getAvailableLocales } from './src/i18n.js';
+import { localizeCatalog } from './src/i18nCatalog.js';
+import { trackStartupStages } from './src/perfPhases.js';
 import {
     computeTopologyDistances,
     findConflictingChunkReservations,
@@ -612,38 +617,39 @@ function closeModalWithAnimation(modal, onComplete, { exitClass = '', duration =
 }
 window.closeModalWithAnimation = closeModalWithAnimation;
 
-const COMMENTARY_ENTRIES = Object.freeze({
+// Localized in place (narrative.commentary.<key>.title/body); English here is the source.
+const COMMENTARY_ENTRIES = localizeCatalog('narrative.commentary', Object.freeze({
     commentary_on: {
         title: 'Developer Commentary',
-        body: 'Commentary is on. Cards like this one appear as you reach the moments they talk about: your first run, black boxes, special rooms, the Queen. Every entry can also be read from Settings > Commentary > Read All.'
+        body: 'Commentary is on. Cards like this one appear as you reach the moments they talk about: your first run, black boxes, special rooms, the Queen. Every entry can also be read from Settings > Audio > Developer Commentary > Read All.'
     },
     run_start: {
         title: 'The Run Loop',
-        body: 'The bunker is built around short pressure cycles: deploy, read the threat, bank what matters, and decide whether one more room is worth it.'
+        body: 'Oxygen, banking and the generator repair loop arrived together, in one commit on 28 May 2026. Before that nothing carried over between runs. The O2 clock is what turns "one more room" into a decision: deploy, read the threat, bank what matters, and get back before the air runs out.'
     },
     black_box_signal: {
         title: 'Failure Becomes Map Data',
-        body: 'Black boxes make death persistent without making it punitive. A failed run becomes a breadcrumb, a banked lesson, and a reason to go back in.'
+        body: 'Black boxes went in during the first week of June 2026, and a day later the base began showing a previous contractor\'s box. A failed run stays on the map as a breadcrumb with its salvage still inside, rather than being wiped by a reload.'
     },
     black_box_recovered: {
         title: 'Recoverable Consequences',
-        body: 'The black box is meant to feel like contract work, not a reload button. You are collecting evidence from your own mistakes.'
+        body: 'Recovering a box returns the salvage that run was carrying. In co-op every box has an owner: a September 2026 playtest showed one player\'s box being "recovered" when the other player died, so ownership is now sent over the network with the box.'
     },
     room_armory: {
         title: 'Armory Rooms',
-        body: 'Armories are deliberately loud rewards. They break the procedural rhythm so players can spot a meaningful room before reading any UI.'
+        body: 'Armories were one of the first five authored room templates, added on 29 May 2026. They break the procedural rhythm on purpose: a hand-made room inside a generated map reads as meaningful before any UI does.'
     },
     room_the_nest: {
         title: 'Nest Rooms',
-        body: 'The nest is an authored danger shape inside a generated map. It says: this was not just rolled, something lives here.'
+        body: 'The nest came from the same 29 May template pass. It is an authored danger shape inside generated terrain, so it says that something lives here, not that the dice rolled badly.'
     },
     room_agent_wreckage: {
         title: 'Three Wrecks',
-        body: 'The class wreckage rooms connect the three operators to the larger crash mystery: tracking signal, relay, and weapon, scattered through one disaster.'
+        body: 'The wreckage rooms tie the three operators to one crash: one ship carried the tracking signal, one the relay and one the weapon. The wreck art was redrawn on 22 May 2026, one of the first art passes in the project.'
     },
     queen_fight: {
         title: 'Queen Fight',
-        body: 'The Queen fight uses vulnerability windows so the arena is about reading intent, not only pouring damage into a large health bar.'
+        body: 'The Queen moves through three phases, brood, fury and desperation, and her armor only fully drops during weakpoint windows. Automated tests run every class through the fight, so none can skip the escalation and even the lowest-damage class still chips through her armor.'
     },
     queen_killed: {
         title: 'The Queen Can Die',
@@ -651,17 +657,17 @@ const COMMENTARY_ENTRIES = Object.freeze({
     },
     achievement: {
         title: 'Steam Achievements',
-        body: 'Achievements mirror fiction-first milestones. They should read like field records, not chores.'
+        body: 'Achievement tracking was added on 29 May 2026, alongside personal bests. They mark story milestones and should read like field records, not chores.'
     },
     leaderboard: {
         title: 'Trusted Scores',
-        body: 'Leaderboard scores are recomputed server-side so the client submits a run receipt, not a number we blindly trust.'
+        body: 'Scores are recomputed on our server from a run receipt; the client never just submits a number. In September 2026 that check silently rejected every Deck and PC score for six days, because the client and server tests used separate fixtures. One contract test now pins both.'
     },
     steam_vault: {
         title: 'Steam Vault',
-        body: 'The Vault is intentionally read-heavy. Tradable and marketable value belongs in Steam systems; the game renders verified ownership.'
+        body: 'The Vault arrived with the Steam backend in July 2026. Tradable and marketable items live in Steam\'s inventory; the game only shows what Steam has verified you own.'
     }
-});
+}));
 
 const steamInputState = {
     available: false,
@@ -1864,6 +1870,7 @@ function dispatchControllerEscape() {
         bubbles: true,
         cancelable: true
     });
+    escapeEvent.isControllerBack = true;
     document.dispatchEvent(escapeEvent);
 
     // Some newer and developer-only overlays predate the centralized Escape
@@ -1903,17 +1910,22 @@ function getControllerBackTarget(root) {
 let lastModalCloseTimestamp = 0;
 let lastTacticalMapToggleTimestamp = 0;
 
+function noteModalClosed(_source = 'general') {
+    lastModalCloseTimestamp = performance.now();
+    controllerPressGate.claim(['menuBack', 'dash', 'toggleMap', 'pause', 'sprint']);
+    window.game?.clearGameplayInputState?.();
+    window.game?.setVirtualInputSprint?.(false);
+}
+
 function triggerControllerPauseAction() {
     const settingsPopup = document.getElementById('settings-popup');
     if (settingsPopup && !settingsPopup.classList.contains('hidden')) {
-        dispatchControllerEscape();
-        lastModalCloseTimestamp = performance.now();
+        closeSettingsModal();
         return true;
     }
     const tacticalMapModal = document.getElementById('tactical-map-modal');
     if (tacticalMapModal && !tacticalMapModal.classList.contains('hidden')) {
         toggleTacticalMapModal(false);
-        lastModalCloseTimestamp = performance.now();
         return true;
     }
     const activeModal = STEAM_INPUT_FOCUS_ROOT_IDS
@@ -1922,7 +1934,7 @@ function triggerControllerPauseAction() {
         .find((element) => element && !element.classList.contains('hidden') && element !== settingsPopup);
     if (activeModal) {
         dispatchControllerEscape();
-        lastModalCloseTimestamp = performance.now();
+        noteModalClosed('pause-active-modal');
         return true;
     }
     if (performance.now() - lastModalCloseTimestamp < 350) {
@@ -2522,6 +2534,16 @@ function handleSteamGameplayInput(controller) {
     if (controller.scan && !prev.scan) {
         window.game?.triggerRadarScan?.();
     }
+    if (window.quickCommandRadial?.isOpen()) {
+        window.quickCommandRadial.handleDirectionInput(aimX, aimY);
+        if ((controller.fire && !prev.fire) || (controller.interact && !prev.interact) || (controller.tacticalPing && !prev.tacticalPing)) {
+            window.quickCommandRadial.confirmSelection();
+        } else if ((controller.menuBack && !prev.menuBack) || (controller.dash && !prev.dash)) {
+            window.quickCommandRadial.close();
+        }
+    } else if (controller.tacticalPing && !prev.tacticalPing) {
+        window.game?.triggerTacticalPing?.();
+    }
 
     if (controller.pause && !prev.pause) {
         triggerControllerPauseAction();
@@ -2541,6 +2563,7 @@ function handleSteamGameplayInput(controller) {
         ability: Boolean(controller.ability),
         dash: Boolean(controller.dash),
         scan: Boolean(controller.scan),
+        tacticalPing: Boolean(controller.tacticalPing),
         pause: Boolean(controller.pause),
         toggleMap: Boolean(controller.toggleMap),
         sprint: Boolean(controller.sprint),
@@ -2640,9 +2663,11 @@ function markBrowserGamepadInput(controller) {
 }
 
 function clearBrowserGamepadGameplayInput() {
-    if (!browserGamepadOwnedVirtualInput) return;
-    window.game?.setVirtualInput?.(0, 0);
-    browserGamepadOwnedVirtualInput = false;
+    if (browserGamepadOwnedVirtualInput) {
+        window.game?.setVirtualInput?.(0, 0);
+        browserGamepadOwnedVirtualInput = false;
+    }
+    window.game?.setVirtualInputSprint?.(false);
 }
 
 function handleBrowserGamepadFallbackFrame() {
@@ -2767,7 +2792,7 @@ const state = {
         textFloor: [16, 18, 20, 22, 24].includes(Number(localStorage.getItem('hb_text_floor')))
             ? Number(localStorage.getItem('hb_text_floor'))
             : 18,
-        cameraMode: localStorage.getItem('hb_camera_mode') === 'isometric' ? 'isometric' : 'third-person',
+        cameraMode: localStorage.getItem('hb_camera_mode') === 'third-person' ? 'third-person' : 'isometric',
         cameraDistance: ['close', 'standard', 'wide'].includes(localStorage.getItem('hb_camera_distance'))
             ? localStorage.getItem('hb_camera_distance')
             : 'close',
@@ -7459,7 +7484,26 @@ function updateMusicTension() {
 
     // ── Track context (drives which stem plays) ──
     let nextContext;
-    if (bossActive || _distressModeActive) {
+    if (bossActive) {
+        const bossType = window.game?.activeBoss?.userData?.type ?? window.game?.activeBossType;
+        if (bossType === 'boss_cybersnail') {
+            nextContext = 'boss_cybersnail';
+        } else if (bossType === 'boss_cryosnail') {
+            nextContext = 'boss_cryosnail';
+        } else if (bossType === 'boss_sporesnail') {
+            nextContext = 'boss_sporesnail';
+        } else if (bossType === 'boss_queen') {
+            nextContext = 'boss_queen';
+        } else if (bossType === 'boss_corrupted_scout') {
+            nextContext = 'boss_scout';
+        } else if (bossType === 'boss_corrupted_tank') {
+            nextContext = 'boss_tank';
+        } else if (bossType === 'boss_corrupted_engineer') {
+            nextContext = 'boss_engineer';
+        } else {
+            nextContext = 'combat';
+        }
+    } else if (_distressModeActive) {
         nextContext = 'combat';
     } else if (nextTension === 'safe') {
         nextContext = 'safe_ship';
@@ -8095,7 +8139,9 @@ async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
     const wasLoadingPaused = Boolean(game.loadingPaused);
 
     let announcedStage = '';
+    const startupStages = trackStartupStages();
     const announceDeploymentStage = (stage, status, progress) => {
+        startupStages.enter(stage);
         showRunLoadingScreen(status, progress, { overDoor: loaderOverDoor });
         if (announcedStage !== stage) {
             announcedStage = stage;
@@ -8129,6 +8175,7 @@ async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
         announceDeploymentStage('READY', 'DEPLOYMENT READY — TRANSFERRING CONTROL', 100);
         await new Promise((resolve) => window.setTimeout(resolve, loaderOverDoor ? 220 : 120));
     } finally {
+        startupStages.end();
         game.setLoadingPaused?.(wasLoadingPaused);
         await hideRunLoadingScreen({ fade: loaderOverDoor });
     }
@@ -9036,10 +9083,18 @@ window.addEventListener('foundry-discovered', (event) => {
     });
 });
 window.addEventListener('black-box-recovered', () => {
+    window.AudioManager?.playOST?.(32, { volume: 0.58, loop: false });
     playAuthoredEventOnce('black_box_recovered', { videoBase: 'event-black-box-recovered' });
 });
 window.addEventListener('queen-fight-started', () => {
+    window.AudioManager?.playOST?.(31, { volume: 0.65, loop: true });
     playAuthoredEventOnce('queen_encounter', { videoBase: 'event-queen-encounter' });
+});
+window.addEventListener('enemy-first-spotted', (event) => {
+    const trackNum = event?.detail?.trackNum;
+    if (trackNum) {
+        window.AudioManager?.playOST?.(trackNum, { volume: 0.50, loop: false });
+    }
 });
 
 // ── Act 2 run intro: the queen replaces the Mothership handshake ──
@@ -9082,6 +9137,9 @@ async function runAct2IntroSequence(game, playerType) {
     document.body.classList.remove('hud-hidden');
 
     const lines = alreadyBegun ? ACT2_LINES.resume : ACT2_LINES.intro;
+    if (!alreadyBegun) {
+        window.AudioManager?.playOST?.(33, { volume: 0.55, loop: true });
+    }
     await dialogueManager?.openBriefTransmission({ playerType, lines: [...lines] });
     // Post-reveal HUD: the cover meter joins the vitals panel.
     const infectedState = act2Manager.getState();
@@ -10597,6 +10655,8 @@ window.__DEBUG__ = {
     // career readout and progress bars without playing a full expedition.
     recordRunEnd: (stats = {}) => recordAchievementRunEnd(stats).state,
     closeMuseum: () => closeDebugMuseum(window.game),
+    // One row per museum exhibit: load ok/error, measured size, triangles.
+    museumReport: () => window.game?.scene?.getObjectByName('debug-museum')?.userData?.museumReport ?? null,
     getState: () => ({
         appPhase,
         playerType: window.game?.playerType,
@@ -10947,7 +11007,10 @@ function organizeSettingsPanels() {
         ['setting-camera-shake', 'accessibility'],
         ['setting-aim-assist', 'controls'],
         ['setting-reduced-pressure', 'accessibility'],
-        ['setting-gore-toggle', 'accessibility']
+        ['setting-gore-toggle', 'accessibility'],
+        // The mature-content reader sits with the gore toggle: a reviewer told
+        // "Settings > Content Guide" found it stranded under CONTROLS (S49-10/11).
+        ['open-mature-audit-btn', 'accessibility']
     ].forEach(([id, target]) => moveControl(id, target));
 }
 organizeSettingsPanels();
@@ -11382,17 +11445,23 @@ if (confirmYes) {
         }
     });
 }
+function closeSettingsModal() {
+    if (!settingsPopup) return;
+    settingsPopup.classList.add('hidden');
+    noteModalClosed('settings');
+    syncSteamInputPhase();
+    draftAudioMix = cloneAudioMix(state.settings.audioMix);
+    AudioManager.setMix(state.settings.audioMix);
+    setAudioMixerOpen(false);
+    setSaveDataOpen(false);
+    setResetSaveConfirmOpen(false);
+    setCrosshairColorOpen(false);
+    setLanguageSelectOpen(false);
+}
+
 if (closeSettings && settingsPopup) {
     closeSettings.addEventListener('click', () => {
-        settingsPopup.classList.add('hidden');
-        syncSteamInputPhase();
-        draftAudioMix = cloneAudioMix(state.settings.audioMix);
-        AudioManager.setMix(state.settings.audioMix);
-        setAudioMixerOpen(false);
-        setSaveDataOpen(false);
-        setResetSaveConfirmOpen(false);
-        setCrosshairColorOpen(false);
-        setLanguageSelectOpen(false);
+        closeSettingsModal();
     });
 }
 
@@ -11883,7 +11952,8 @@ function pollTacticalMapGamepadInput() {
                 controllerPressGate.claim([
                     ...(pad.buttons?.[1]?.pressed ? ['menuBack', 'dash'] : []),
                     ...(pad.buttons?.[8]?.pressed ? ['toggleMap'] : []),
-                    ...(pad.buttons?.[9]?.pressed ? ['pause'] : [])
+                    ...(pad.buttons?.[9]?.pressed ? ['pause'] : []),
+                    'sprint'
                 ], `browser-gamepad:${pad.index ?? 0}`);
                 toggleTacticalMapModal(false);
                 return;
@@ -12492,6 +12562,7 @@ function toggleTacticalMapModal(forceState) {
     } else {
         modal.classList.add('hidden');
         modal.setAttribute('aria-hidden', 'true');
+        noteModalClosed('tactical-map');
         if (tacticalMapAnimFrame) {
             cancelAnimationFrame(tacticalMapAnimFrame);
             tacticalMapAnimFrame = null;
@@ -12704,14 +12775,21 @@ document.addEventListener('keydown', (event) => {
 
         const settingsPopup = document.getElementById('settings-popup');
         if (settingsPopup && !settingsPopup.classList.contains('hidden')) {
-            settingsPopup.classList.add('hidden');
-            draftAudioMix = cloneAudioMix(state.settings.audioMix);
-            AudioManager.setMix(state.settings.audioMix);
-            setAudioMixerOpen(false);
-            setSaveDataOpen(false);
-            setResetSaveConfirmOpen(false);
-            setCrosshairColorOpen(false);
-            setLanguageSelectOpen(false);
+            // A surface opened from Settings and drawn above it (the Content
+            // Guide, the walkthrough) closes on its own; one Back press used to
+            // close it AND Settings behind it, dropping the reviewer out of
+            // Settings entirely (S49-10/11).
+            const surfaceAbove = getControllerFocusRoot();
+            if (surfaceAbove && surfaceAbove !== settingsPopup && isModalFocusRoot(surfaceAbove)) {
+                const back = getControllerBackTarget(surfaceAbove);
+                if (back) {
+                    back.click();
+                    noteModalClosed('settings-subsurface');
+                    event.preventDefault();
+                    return;
+                }
+            }
+            closeSettingsModal();
             event.preventDefault();
             return;
         }
@@ -12719,6 +12797,7 @@ document.addEventListener('keydown', (event) => {
         const aboutModal = document.getElementById('about-modal');
         if (aboutModal && !aboutModal.classList.contains('hidden')) {
             closeAboutModal();
+            noteModalClosed('about');
             event.preventDefault();
             return;
         }
@@ -12726,6 +12805,7 @@ document.addEventListener('keydown', (event) => {
         const consoleModal = document.getElementById('console-terminal-modal');
         if (consoleModal && !consoleModal.classList.contains('hidden')) {
             window.game?.closeConsoleModal?.();
+            noteModalClosed('console');
             event.preventDefault();
             return;
         }
@@ -12733,6 +12813,7 @@ document.addEventListener('keydown', (event) => {
         const o2GeneratorModal = document.getElementById('o2-generator-modal');
         if (o2GeneratorModal && !o2GeneratorModal.classList.contains('hidden')) {
             window.game?.closeO2GeneratorModal?.();
+            noteModalClosed('o2');
             event.preventDefault();
             return;
         }
@@ -12740,12 +12821,14 @@ document.addEventListener('keydown', (event) => {
         const loreModal = document.getElementById('lore-modal');
         if (loreModal && !loreModal.classList.contains('hidden')) {
             closeLoreModalAndResume();
+            noteModalClosed('lore');
             event.preventDefault();
             return;
         }
 
         if (foundryHub.isOpen()) {
             foundryHub.close();
+            noteModalClosed('foundry');
             event.preventDefault();
             return;
         }
@@ -12753,6 +12836,7 @@ document.addEventListener('keydown', (event) => {
         const fabricationModal = document.getElementById('fabrication-modal');
         if (fabricationModal && !fabricationModal.classList.contains('hidden')) {
             closeFabricationModal();
+            noteModalClosed('fabrication');
             event.preventDefault();
             return;
         }
@@ -12760,6 +12844,7 @@ document.addEventListener('keydown', (event) => {
         const archiveLogDetail = document.getElementById('archive-log-detail-modal');
         if (archiveLogDetail && !archiveLogDetail.classList.contains('hidden')) {
             closeArchiveLogDetail();
+            noteModalClosed('archive-detail');
             event.preventDefault();
             return;
         }
@@ -12769,6 +12854,7 @@ document.addEventListener('keydown', (event) => {
             closeArchiveLogDetail();
             archiveModal.classList.add('hidden');
             archiveModal.setAttribute('aria-hidden', 'true');
+            noteModalClosed('archive');
             event.preventDefault();
             return;
         }
@@ -12776,6 +12862,7 @@ document.addEventListener('keydown', (event) => {
         const codexDetailModal = document.getElementById('codex-detail-modal');
         if (codexDetailModal && !codexDetailModal.classList.contains('hidden')) {
             closeCodexDetailModal();
+            noteModalClosed('codex-detail');
             event.preventDefault();
             return;
         }
@@ -12783,6 +12870,7 @@ document.addEventListener('keydown', (event) => {
         const codexModal = document.getElementById('codex-modal');
         if (codexModal && !codexModal.classList.contains('hidden')) {
             closeCodexModal();
+            noteModalClosed('codex');
             event.preventDefault();
             return;
         }
@@ -12790,6 +12878,7 @@ document.addEventListener('keydown', (event) => {
         const achievementsModal = document.getElementById('achievements-modal');
         if (achievementsModal && !achievementsModal.classList.contains('hidden')) {
             document.getElementById('close-achievements-modal')?.click();
+            noteModalClosed('achievements');
             event.preventDefault();
             return;
         }
@@ -12797,6 +12886,7 @@ document.addEventListener('keydown', (event) => {
         const seasonPassModal = document.getElementById('season-pass-modal');
         if (seasonPassModal && !seasonPassModal.classList.contains('hidden')) {
             document.getElementById('close-season-pass-modal')?.click();
+            noteModalClosed('season-pass');
             event.preventDefault();
             return;
         }
@@ -12804,6 +12894,7 @@ document.addEventListener('keydown', (event) => {
         const steamVaultModal = document.getElementById('steam-vault-modal');
         if (steamVaultModal && !steamVaultModal.classList.contains('hidden')) {
             document.getElementById('close-steam-vault-modal')?.click();
+            noteModalClosed('steam-vault');
             event.preventDefault();
             return;
         }
@@ -12811,6 +12902,7 @@ document.addEventListener('keydown', (event) => {
         const operatorPolishModal = document.getElementById('operator-polish-modal');
         if (operatorPolishModal && !operatorPolishModal.classList.contains('hidden')) {
             setOperatorPolishModalOpen(false);
+            noteModalClosed('operator-polish');
             event.preventDefault();
             return;
         }
@@ -12818,6 +12910,7 @@ document.addEventListener('keydown', (event) => {
         const armoryScreen = document.getElementById('armory-screen');
         if (armoryScreen && !armoryScreen.classList.contains('hidden')) {
             document.getElementById('armory-btn-back')?.click();
+            noteModalClosed('armory');
             event.preventDefault();
             return;
         }
@@ -12828,11 +12921,16 @@ document.addEventListener('keydown', (event) => {
             : null;
         if (fallbackBackTarget) {
             fallbackBackTarget.click();
+            noteModalClosed('fallback-back');
             event.preventDefault();
             return;
         }
 
         if (isGameplayPhase()) {
+            if (event.isControllerBack || (performance.now() - lastModalCloseTimestamp < 350)) {
+                event.preventDefault();
+                return;
+            }
             openSettingsModal();
             event.preventDefault();
             return;
@@ -14832,6 +14930,20 @@ async function runAct2DepartureSequence(detail = {}) {
         playerType: classType,
         lines: [...getAct2EndingLines(ending)]
     });
+    const endingSongMap = {
+        empty_husk: 34,
+        scorched_sky: 34,
+        failed_carrier: 34,
+        carriers_bargain: 35,
+        mixed_crew: 36,
+        full_brood: 36,
+        mothership_infection: 36,
+        alien_exodus: 36,
+        clean_escape: 37,
+        outed_escape: 37
+    };
+    const endingTrackId = endingSongMap[ending] ?? 38;
+    AudioManager?.playOST?.(endingTrackId, { loop: false, volume: 0.65 });
     await playCinematicBeat({
         videoBase,
         fallback: {
@@ -15880,6 +15992,12 @@ function initTacticalCursor() {
             cursor.classList.remove('cursor-hovering');
             return null;
         }
+        // A pointer that has not moved since the controller took over is not
+        // the player's: closing a modal re-fires pointerover on whatever now
+        // sits under it, and that stole controller focus from the button the
+        // modal had just returned it to (S49-10). Real movement switches the
+        // input mode back first (capture-phase pointermove), so hover still works.
+        if (isSteamControllerInputActive()) return null;
         const target = resolveInteractiveFocusTarget(rawTarget);
         if (!target) return null;
         if (currentHoverTarget !== target || document.activeElement !== target) {
@@ -16341,6 +16459,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ],
                 audio: [
                     ...GAMEPLAY_FOLEY_MANIFEST,
+                    ...GAMEPLAY_ENEMY_MANIFEST,
+                    { key: 'impactSoft_medium_000', url: '/audio/enemies/impactSoft_medium_000.ogg' },
+                    { key: 'impactSoft_medium_001', url: '/audio/enemies/impactSoft_medium_001.ogg' },
+                    { key: 'impactSoft_medium_002', url: '/audio/enemies/impactSoft_medium_002.ogg' },
+                    { key: 'impactSoft_medium_003', url: '/audio/enemies/impactSoft_medium_003.ogg' },
+                    { key: 'impactSoft_medium_004', url: '/audio/enemies/impactSoft_medium_004.ogg' },
+                    { key: 'impactSoft_heavy_000', url: '/audio/enemies/impactSoft_heavy_000.ogg' },
+                    { key: 'impactSoft_heavy_001', url: '/audio/enemies/impactSoft_heavy_001.ogg' },
+                    { key: 'impactSoft_heavy_002', url: '/audio/enemies/impactSoft_heavy_002.ogg' },
+                    { key: 'impactSoft_heavy_003', url: '/audio/enemies/impactSoft_heavy_003.ogg' },
+                    { key: 'impactSoft_heavy_004', url: '/audio/enemies/impactSoft_heavy_004.ogg' },
+                    { key: 'creak1', url: '/audio/enemies/creak1.ogg' },
+                    { key: 'creak2', url: '/audio/enemies/creak2.ogg' },
+                    { key: 'creak3', url: '/audio/enemies/creak3.ogg' },
+                    { key: 'metalClick', url: '/audio/enemies/metalClick.ogg' },
                     { key: 'music_safe_ship', url: '/audio/ost/Safe Haven (Ship Sanctuary).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },
                     { key: 'music_cryo_explore', url: '/audio/ost/Glacial Depths (Cryo Biome).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },
                     { key: 'music_bio_explore', url: '/audio/ost/Overgrown Bio-Sphere (Bio Biome).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },
@@ -16540,7 +16673,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const loaderStatusEl = document.querySelector('.loader-status');
                 if (loaderTitle) loaderTitle.textContent = t('ui.loader.init_failed');
                 if (loaderStatusEl) {
-                    loaderStatusEl.innerHTML = `<div style="color: var(--accent-secondary); font-size: var(--font-xs);">${err?.message ?? 'UNKNOWN ERROR — WebGL may be unavailable'}</div>`;
+                    const errorBox = document.createElement('div');
+                    errorBox.style.color = 'var(--accent-secondary)';
+                    errorBox.style.fontSize = 'var(--font-xs)';
+                    errorBox.textContent = err?.message ?? t('ui.loading.log_unknown_error');
+                    loaderStatusEl.replaceChildren(errorBox);
                 }
                 const loadingScreen = document.getElementById('loading-screen');
                 if (loadingScreen) loadingScreen.classList.remove('hidden');
@@ -16581,11 +16718,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 logs.pop();
             }
         }
-        loaderStatus.innerHTML = logs.map((log, distance) => {
+        loaderStatus.replaceChildren(...logs.map((log, distance) => {
             const opacities = [1.0, 0.6, 0.35, 0.18, 0.06];
             const opacity = opacities[distance] ?? 0.04;
-            return `<div style="opacity: ${opacity}; line-height: 1.4; transition: opacity 0.2s ease, transform 0.2s ease;">${log}</div>`;
-        }).join('');
+            const logItem = document.createElement('div');
+            logItem.style.opacity = String(opacity);
+            logItem.style.lineHeight = '1.4';
+            logItem.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+            logItem.textContent = log;
+            return logItem;
+        }));
     };
 
     renderLoaderLogs();
@@ -17332,10 +17474,13 @@ initSteamVaultUI();
 initSeasonPassUI();
 initVoiceCallouts();
 multiplayerLobby.init();
+initPlayerChatUI({ onBoundaryChange: () => syncSteamInputPhase() });
 matureContentAudit.init();
 progressionWalkthrough.init();
 initVirtualKeyboard();
 setupNpcDialogueEvents();
+createFieldWorkbenchUi();
+createQuickCommandRadialUi();
 
 // Keep the title art alive at rest while making pointer movement feel like a
 // reflection travelling across damp metal. Motion is deliberately tiny so the

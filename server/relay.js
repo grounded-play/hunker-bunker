@@ -1,5 +1,6 @@
 import { Server } from 'socket.io';
 import { verifySteamSessionToken, isSteamAuthDevFallbackAllowed } from './steamAuth.js';
+import { createChatPolicy } from './chatPolicy.js';
 
 // Movement & ballistics hardening: reject non-finite values, clamp to a sane world range,
 // and rate-limit updates to protect the relay from flooding.
@@ -196,7 +197,7 @@ export function isAllowedRelayOrigin(origin, allowedOrigins = []) {
     return allowedOrigins.includes(origin) || isEquivalentLoopbackOrigin(origin, allowedOrigins);
 }
 
-export function attachRelay(server, { allowedOrigins = [] } = {}) {
+export function attachRelay(server, { allowedOrigins = [], chatPolicy = createChatPolicy() } = {}) {
     const io = new Server(server, {
         cors: {
             origin: (origin, callback) => {
@@ -210,6 +211,18 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
     const players = new Map();
     // Map: roomCode -> Set of socketIds
     const rooms = new Map();
+    // Trusted backend access only: there is deliberately no socket event
+    // exposing another player's moderation report or private chat evidence.
+    io.getChatReports = () => chatPolicy.getReports();
+    const getChatParticipant = (socketId) => {
+        const current = players.get(socketId);
+        if (!current || !rooms.get(current.roomCode)?.has(socketId)) return null;
+        return {
+            roomCode: current.roomCode,
+            senderId: current.steamId64 || socketId,
+            senderName: current.callsign
+        };
+    };
     // Map: roomCode -> 'coop' | 'pvp'. A reconnect gets an entirely fresh
     // socket.id and therefore a fresh `player` object (mode defaults back to
     // 'coop' below) -- without this, a reconnect mid-PvP-match silently
@@ -251,6 +264,13 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
     // same reconnect reason) -- only ever overwritten if the room's host
     // reclaims with a different password.
     const roomPasswordHashes = new Map();
+
+    // A room is locked to its host's build. Co-op messages change between
+    // releases, and two builds in one room silently disagree about who is
+    // down, what dropped and who owns what (QA 2026-09-30: a 2.4.9 guest in a
+    // 2.4.13 host's room). Clients older than this gate send no build; they
+    // count as their own "unknown" build, so two of them can still play.
+    const roomBuildVersions = new Map();
 
     const getStableClientKey = (p) => p.steamId64 || p.profileId || null;
 
@@ -362,6 +382,7 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             if (player.roomCode && rooms.has(player.roomCode)) {
                 socket.leave(player.roomCode);
                 rooms.get(player.roomCode).delete(socket.id);
+                if (rooms.get(player.roomCode).size === 0) chatPolicy.clearRoom(player.roomCode);
                 socket.to(player.roomCode).emit('playerDisconnected', socket.id);
             }
 
@@ -449,6 +470,19 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             // than what's recorded is trusted to update it -- they own the
             // room, not an attacker impersonating them, since reclaim itself
             // already required stableKey === recordedHostKey above.
+            const clientBuild = sanitizeString(data.buildVersion, 64, '') || null;
+            if (player.isHost) {
+                roomBuildVersions.set(roomCode, clientBuild);
+            } else if (roomBuildVersions.has(roomCode) && roomBuildVersions.get(roomCode) !== clientBuild) {
+                socket.emit('joinRejected', {
+                    reason: 'build_mismatch',
+                    hostBuild: roomBuildVersions.get(roomCode),
+                    clientBuild
+                });
+                player.roomCode = null;
+                return;
+            }
+
             const suppliedPasswordHash = typeof data.passwordHash === 'string' && data.passwordHash.length <= 128
                 ? data.passwordHash
                 : null;
@@ -471,8 +505,46 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
 
             // Send current roster in this room to the joining player
             socket.emit('currentPlayers', getRoomPlayers(roomCode));
+            const participant = getChatParticipant(socket.id);
+            socket.emit('chatHistory', chatPolicy.getHistory(participant));
+            socket.emit('chatModerationState', chatPolicy.getModerationState(participant.senderId));
             // Notify other peers in this room
             socket.to(roomCode).emit('newPlayer', getPublicPlayer(player));
+        });
+
+        socket.on('sendChat', (data, acknowledge) => {
+            const reply = typeof acknowledge === 'function' ? acknowledge : () => {};
+            const participant = getChatParticipant(socket.id);
+            if (!participant) return reply({ ok: false, reason: 'not_in_room' });
+            const result = chatPolicy.send(participant, data);
+            if (result.ok && !result.duplicate) {
+                for (const peerId of rooms.get(participant.roomCode)) {
+                    const peer = getChatParticipant(peerId);
+                    if (peer && chatPolicy.canReceive(peer.senderId, participant.senderId)) {
+                        io.to(peerId).emit('chatMessage', result.message);
+                    }
+                }
+            }
+            reply(result);
+        });
+
+        socket.on('chatModeration', (data, acknowledge) => {
+            const reply = typeof acknowledge === 'function' ? acknowledge : () => {};
+            const participant = getChatParticipant(socket.id);
+            if (!participant) return reply({ ok: false, reason: 'not_in_room' });
+            const peers = [...rooms.get(participant.roomCode)].map(getChatParticipant).filter(Boolean);
+            const result = chatPolicy.moderate(participant, data, peers.map((peer) => peer.senderId));
+            if (result.ok && data.action !== 'report') {
+                // Refresh both sides after a block; recipient filtering applies
+                // to history as well as all future live messages.
+                for (const peerId of rooms.get(participant.roomCode)) {
+                    const peer = getChatParticipant(peerId);
+                    if (!peer) continue;
+                    io.to(peerId).emit('chatHistory', chatPolicy.getHistory(peer));
+                    io.to(peerId).emit('chatModerationState', chatPolicy.getModerationState(peer.senderId));
+                }
+            }
+            reply(result);
         });
 
         // Ready-up gate: previously there was no readiness concept at all --
@@ -1039,6 +1111,7 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
                 if (roomSet.size === 0) {
                     rooms.delete(roomCode);
                     roomModes.delete(roomCode);
+                    chatPolicy.clearRoom(roomCode);
                     // roomHostKeys is deliberately NOT cleared here -- it
                     // must survive a room going momentarily empty so a solo
                     // host's reconnect can still reclaim (see joinRoom's

@@ -574,7 +574,7 @@ function normalizeInventory(inventory) {
     return {
         med: clampCount(source.med ?? source.health),
         ammo: clampCount(source.ammo),
-        tech: clampCount(source.tech ?? source.weapon),
+        tech: clampCount(source.tech ?? source.weapon ?? source.scrap),
         coin: clampCount(source.coin)
     };
 }

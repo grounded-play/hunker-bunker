@@ -1,0 +1,83 @@
+SPRINT 49 / ECONOMY TODO ITERATIONS — updated 2026-10-01
+
+Canonical TODO files (repo-relative):
+  docs/planning/sprint-49.md
+  docs/planning/economy-master-plan-2026-09-30.md
+Resume notes: docs/planning/todo-tree-2026-10-01-handoff.md
+Branch: dev/sprint-49. Original snapshot follows below; line numbers are historical.
+Original checked entries are not newly certified by this iteration.
+
+[x] Iteration 1: fix live GetInventory item_json decoding, exact item IDs/counts,
+    false-empty ownership, malformed/rejected responses, timeout and key redaction.
+    Files: server/steamInventoryRead.js, server/steamInventory.js,
+    server/steamInventoryRead.test.js, server/steamInventory.test.js,
+    server/steamTradeUp.test.js. Evidence: 4 targeted suites / 80 tests; scoped lint.
+    Commit: 473794a1. Full backend checkpoint: 34 suites / 306 tests.
+[x] Iteration 2: fixed/cache recipe exchanges use real owned stack quantities,
+    validate item_json rewards, persist request/account holds before Steam, and
+    cannot repeat an uncertain craft by retrying or changing the request nonce.
+    Files: server/steamRecipeExchange.js, server/steamRecipeExchange.test.js,
+    server/steamInventory.js, server/steamInventory.test.js. Full evidence/limits
+    and operator handoff: docs/planning/todo-tree-2026-10-01-handoff.md.
+[ ] Next S49-08/32 + economy P5: durable exchange outcomes, correct mutation API
+    contracts, safe background paid recovery, and item-level reversal dispositions.
+[ ] Full source-ticket acceptance remains open; no real purchase, deployment,
+    account revocation, Steamworks setting or hardware certification performed.
+
+ORIGINAL IMPORTED TODO SNAPSHOT
+└─ hunker-bunker
+   ├─ economy-master-plan-2026-09-30.md
+   │  ├─ line 119: [x] Odds shown before every random purchase (the Vault has an odds table; keep it
+   │  ├─ line 121: [ ] Direct-purchase alternative for every collection item (R1).
+   │  ├─ line 122: [x] Region handling for paid random items (Belgium at minimum); ratings updated with
+   │  ├─ line 124: [ ] Microtransactions: `GetReport` reconciliation running (done), refund/chargeback
+   │  ├─ line 126: [ ] Steam store page: in-app purchases declared; Item Store live; reviewer purchase
+   │  ├─ line 128: [ ] No sales to accounts flagged as minors where platform rules require it (Steam
+   │  └─ line 130: [x] Terms: virtual items have no cash value; Steam's subscriber agreement governs
+   └─ sprint-49.md
+      ├─ line 96: [ ] **Owner: backend + client · Size: L · Type: missing feature.** Implement an
+      ├─ line 117: [ ] **Owner: platform + localization + backend · Size: L · Depends: 02.** Define
+      ├─ line 144: [ ] **Owner: UI + platform + localization · Size: L · Depends: 02–03.** Add a
+      ├─ line 165: [ ] **Owner: networking + QA/publisher · Size: L · Type: integration/acceptance.**
+      ├─ line 186: [ ] **Owner: narrative + UI + QA · Size: M · Type: existing feature acceptance.**
+      ├─ line 204: [ ] **Owner: economy + backend + UI · Size: M · Type: confirmed integration gap.**
+      ├─ line 228: [ ] **Owner: backend · Size: L · Type: correctness gap.** Finish the current
+      ├─ line 246: [ ] **Owner: publisher + backend QA · Size: M · Depends: 07–08, 23.** Confirm
+      ├─ line 270: [ ] **Owner: platform + QA · Size: L · Depends: 04.** Extend the achievements
+      ├─ line 291: [ ] **Owner: narrative + publisher QA · Size: M · Type: existing feature acceptance.**
+      ├─ line 306: [ ] **Owner: publisher + QA · Size: M · Depends: 04–06, 09–11.** Assemble access
+      ├─ line 362: [ ] **Owner: networking + gameplay · Size: L.** Exercise the recently added host
+      ├─ line 375: [ ] **Owner: gameplay + narrative · Size: M.** Validate distinct assist behavior,
+      ├─ line 388: [ ] **Owner: design + gameplay + independent playtesters · Size: L.** Tune the
+      ├─ line 401: [ ] **Owner: combat design + gameplay · Size: L.** Tune enemy formation pressure,
+      ├─ line 430: [ ] **Owner: world design + gameplay · Size: L.** Use the existing seed portfolio
+      ├─ line 444: [ ] **Owner: narrative + gameplay + UI · Size: M.** Verify communion, infection
+      ├─ line 458: [ ] **Owner: UI + economy · Size: M.** Refine the existing Stash/Loadout/Fabricate/
+      ├─ line 470: [x] **Owner: economy + backend · Size: M · Commerce readiness gate.** Trace every
+      ├─ line 483: [ ] **Owner: product + economy · Size: L · Design decision required.** Measure free
+      ├─ line 497: [ ] **Owner: UI + art + accessibility QA · Size: M.** Audit the actual default
+      ├─ line 514: [ ] **Owner: rendering + art · Size: L.** Address the measured concept/build gap:
+      ├─ line 530: [ ] **Owner: audio + narrative + UI · Size: M.** Mix weapons, hazards, footsteps,
+      ├─ line 543: [ ] **Owner: accessibility + gameplay · Size: M.** Validate existing shake,
+      ├─ line 557: [ ] **Owner: localization + UI + native-language reviewers · Size: L.** Re-audit
+      ├─ line 569: [ ] **Owner: persistence + platform QA · Size: L.** Exercise corruption recovery,
+      ├─ line 586: [ ] **Owner: engine + performance QA · Size: L.** Measure the queued chunk mount
+      ├─ line 601: [ ] **Owner: backend + operations · Size: M.** Exercise auth expiry, relay outage,
+      ├─ line 615: [ ] **Owner: QA + maintainers · Size: M.** Add integration coverage at the seams
+      ├─ line 630: [ ] **Owner: game design + gameplay · Size: L.** Expand the existing event/relic/
+      ├─ line 641: [ ] **Owner: multiplayer product + UI · Size: L · Depends: 02–05, 14–15.** Design
+      ├─ line 653: [ ] **Owner: product + economy · Size: L · Depends: 07–09, 23–24.** Propose the next
+      ├─ line 670: [ ] **Owner: art + narrative + audio · Size: L.** Review new achievement cosmetics,
+      ├─ line 684: [ ] **Owner: maintainers · Size: L.** Extract chat, commentary, field crafting and
+      ├─ line 701: [ ] **Publisher, Steamworks:** confirm the Item Store is enabled with 4001 / 4005 /
+      ├─ line 704: [ ] **Owner go-ahead, then deploy:** set `HB_STEAM_STORE_ENABLED=1`,
+      ├─ line 708: [ ] **Publisher:** one real-account key purchase through each route, then
+      ├─ line 714: [x] Charms 4130–4139 carry combat stats and are marketable: split into a tradeable
+      ├─ line 716: [ ] The $1 cache yields 55% common fragments: approve cosmetic-only caches with pity
+      ├─ line 718: [x] One price per key. The Vault says $0.99 / $3.99 / $9.99; the schema says
+      ├─ line 720: [ ] Revoke on refund or chargeback (P5) and trade holds on new items (P6). →
+      ├─ line 722: [ ] Set the market publisher fee, the key, pack and Season Pass prices, and the
+      ├─ line 729: [x] No tilt-shift blur in gameplay; world-space darkness in place of the
+      ├─ line 734: [ ] Two real accounts on the uploaded candidate: co-op and PvP, via Title →
+      ├─ line 736: [ ] Controller-only pass on the Deck and a PC pad with the keyboard unplugged,
+      └─ line 738: [ ] Commentary checked on the uploaded candidate (Settings → Commentary Mode, and

@@ -206,3 +206,12 @@ describe('resolveGameplayCharmSocket', () => {
         expect(resolveGameplayCharmSocket('gg1', 1).cordDrop).toBeCloseTo(0.045, 3);
     });
 });
+
+describe('achievement chassis models', () => {
+    it('renders 5001 Ghost Runner in its own rigged body, not the Corpo Shadow Runner community skin', async () => {
+        const { CHASSIS_SKIN_MODELS } = await import('./player3dOverlay.js');
+        const { ARMORY_PREVIEWS } = await import('./data/armoryPreviews.js');
+        expect(CHASSIS_SKIN_MODELS['5001']).toBe('/3d/runtime/new3ds/chassis_scout_ghost_runner.glb');
+        expect(ARMORY_PREVIEWS['5001'].model).toBe(CHASSIS_SKIN_MODELS['5001']);
+    });
+});

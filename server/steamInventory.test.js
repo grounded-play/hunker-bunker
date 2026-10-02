@@ -4,8 +4,9 @@ import fs from 'node:fs';
 import express from 'express';
 import { afterEach, beforeAll, afterAll, describe, expect, it, vi } from 'vitest';
 import { attachSteamInventoryRoutes } from './steamInventory.js';
-import { initDb, setMockInventory, getMockInventory } from './db.js';
+import { initDb, setMockInventory, getMockInventory, checkIdempotency } from './db.js';
 import { createSteamSessionToken } from './steamAuth.js';
+import { recipeExchangeJournalKey } from './steamRecipeExchange.js';
 
 let server;
 let baseUrl;
@@ -51,6 +52,121 @@ afterEach(() => {
 });
 
 describe('Steam Inventory API endpoints', () => {
+    function liveInventory(responseBody, { throws = false } = {}) {
+        process.env.HB_SESSION_SECRET = 'inventory-contract-test';
+        process.env.HB_STEAM_PUBLISHER_KEY = 'private-test-key';
+        const session = createSteamSessionToken({ steamId64: '76561198000000000', isDevMode: false });
+        const external = vi.fn(async (url) => {
+            const request = new URL(url);
+            expect(request.pathname).toBe('/IInventoryService/GetInventory/v1/');
+            expect(request.searchParams.get('steamid')).toBe('76561198000000000');
+            if (throws) throw new Error(`${url} contains a private publisher key`);
+            return new Response(JSON.stringify(responseBody));
+        });
+        globalThis.fetch = vi.fn((url, options) => String(url).startsWith(baseUrl)
+            ? ORIGINAL_FETCH(url, options) : external(url, options));
+        return { external, headers: { authorization: `Bearer ${session.token}` } };
+    }
+
+    it('GET /steam/inventory reads real item_json with exact IDs, counts and stable acquisition dates', async () => {
+        const { headers, external } = liveInventory({ response: { item_json: JSON.stringify([
+            { itemid: '18446744073709551615', itemdefid: '4001', quantity: '5', acquired: '20260930T120000Z' },
+            { itemid: '17212166272732706', itemdefid: 1100, quantity: 2, acquired: '2026-09-29T12:00:00Z' },
+            { itemid: '3', itemdefid: 1000, quantity: 0 },
+            { itemid: '4', itemdefid: 1000, quantity: 1, state: 'removed' }
+        ]) } });
+        const response = await fetch(`${baseUrl}/steam/inventory`, { headers });
+        expect(response.status).toBe(200);
+        expect((await response.json()).inventory).toEqual([
+            { itemId: '18446744073709551615', itemdefid: 4001, quantity: 5, acquiredAt: Date.parse('2026-09-30T12:00:00Z') },
+            { itemId: '17212166272732706', itemdefid: 1100, quantity: 2, acquiredAt: Date.parse('2026-09-29T12:00:00Z') }
+        ]);
+        expect(external).toHaveBeenCalledTimes(1);
+        expect(external.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
+    });
+
+    it('GET /steam/inventory distinguishes a confirmed empty inventory from failed/missing evidence', async () => {
+        const { headers } = liveInventory({ response: { success: true, item_json: '[]' } });
+        const response = await fetch(`${baseUrl}/steam/inventory`, { headers });
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({ ok: true, inventory: [] });
+    });
+
+    it.each([
+        {},
+        { response: { success: false, error: 'private publisher detail', item_json: '[]' } },
+        { response: { success: true } },
+        { response: { item_list: [] } },
+        { response: { item_json: 'not JSON' } },
+        { response: { item_json: '{}' } },
+        { response: { item_json: '[{"itemid":"1","itemdefid":4001,"quantity":-1}]' } },
+        { response: { item_json: '[{"itemid":18446744073709551615,"itemdefid":4001,"quantity":1}]' } },
+        { response: { item_json: '[{"itemid":"1","itemdefid":4001,"quantity":1},{"itemid":"1","itemdefid":4001,"quantity":1}]' } }
+    ])('fails closed instead of erasing ownership for an invalid Steam response: %j', async (payload) => {
+        const { headers } = liveInventory(payload);
+        const response = await fetch(`${baseUrl}/steam/inventory`, { headers });
+        expect(response.status).toBe(502);
+        const body = await response.json();
+        expect(body.ok).toBe(false);
+        expect(body.inventory).toBeUndefined();
+        expect(JSON.stringify(body)).not.toContain('private');
+    });
+
+    it('does not expose publisher keys from inventory transport exceptions', async () => {
+        const { headers } = liveInventory(null, { throws: true });
+        const response = await fetch(`${baseUrl}/steam/inventory`, { headers });
+        expect(response.status).toBe(502);
+        expect(await response.json()).toEqual({ ok: false, reason: 'steam_request_failed' });
+    });
+
+    it('routes live crafting through exact quantities and persists its private request journal', async () => {
+        const { headers } = liveInventory({});
+        const external = vi.fn(async (url, options) => {
+            const items = String(url).includes('/GetInventory/')
+                ? [{ itemid: '1', itemdefid: 1000, quantity: 10 }]
+                : [{ itemid: '1', itemdefid: 1000, quantity: 5 }, { itemid: '2', itemdefid: 2100, quantity: 1 }];
+            if (String(url).includes('/ExchangeItem/')) expect(options.body.get('materialsquantity[0]')).toBe('5');
+            return new Response(JSON.stringify({ response: { item_json: JSON.stringify(items) } }));
+        });
+        globalThis.fetch = vi.fn((url, options) => String(url).startsWith(baseUrl)
+            ? ORIGINAL_FETCH(url, options) : external(url, options));
+        const requestId = `live-craft-${Date.now()}`;
+        const post = () => fetch(`${baseUrl}/steam/inventory/exchange`, {
+            method: 'POST', headers: { ...headers, 'content-type': 'application/json' },
+            body: JSON.stringify({ requestId, recipeId: 2100, materials: ['1'] })
+        });
+        const first = await post();
+        expect(first.status).toBe(200);
+        const body = await first.json();
+        expect(body.granted).toHaveLength(1);
+        expect(body.granted[0]).toMatchObject({ itemId: '2', itemdefid: 2100 });
+        expect(body.exchangeJournal).toBeUndefined();
+        const saved = checkIdempotency(recipeExchangeJournalKey({ appId: 4957040, steamId: '76561198000000000', requestId }));
+        expect(saved.body.exchangeJournal).toMatchObject({ state: 'completed', plan: { consumed: [{ quantity: 5 }] } });
+        expect(await (await post()).json()).toEqual(body);
+        expect(external).toHaveBeenCalledTimes(2);
+    });
+
+    it('persists an uncertain live craft hold that a new request ID cannot bypass', async () => {
+        const { headers } = liveInventory({});
+        const external = vi.fn(async (url) => {
+            if (String(url).includes('/GetInventory/')) return new Response(JSON.stringify({ response: { item_json: '[{"itemid":"1","itemdefid":1000,"quantity":20}]' } }));
+            throw new Error('response lost after Steam may have exchanged');
+        });
+        globalThis.fetch = vi.fn((url, options) => String(url).startsWith(baseUrl)
+            ? ORIGINAL_FETCH(url, options) : external(url, options));
+        for (const requestId of ['uncertain-craft', 'uncertain-craft', 'another-click']) {
+            const response = await fetch(`${baseUrl}/steam/inventory/exchange`, {
+                method: 'POST', headers: { ...headers, 'content-type': 'application/json' },
+                body: JSON.stringify({ requestId, recipeId: 2100, materials: ['1'] })
+            });
+            expect(response.status).toBe(409);
+            expect(await response.json()).toEqual({ ok: false, reason: 'exchange_outcome_requires_review' });
+        }
+        expect(external).toHaveBeenCalledTimes(2);
+        expect(checkIdempotency('recipe-exchange-active.4957040.76561198000000000').body.exchangeJournal.state).toBe('submitted_unknown');
+    });
+
     it('GET /steam/inventory returns mock items in dev mode', async () => {
         delete process.env.HB_STEAM_PUBLISHER_KEY;
         delete process.env.STEAM_PUBLISHER_KEY;

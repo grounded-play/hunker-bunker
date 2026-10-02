@@ -27,7 +27,8 @@ import {
     CACHE_ITEMDEFID,
     CACHE_KEY_ITEMDEFID
 } from './cacheOpening.js';
-import { t, onLocaleChange } from './i18n.js';
+import { t, getLocale, onLocaleChange } from './i18n.js';
+import { adaptStoreCatalogResponse, formatStorePrice } from './steamStoreCatalog.js';
 
 export { STEAM_ITEM_CATALOG };
 
@@ -118,6 +119,9 @@ let storePurchasesEnabled = false;
 let storePurchaseMode = 'disabled';
 let storeDisabledReason = 'catalog_unavailable';
 let storeHostedItemStore = null;
+let storeKeysRestricted = false;
+let storeRestrictedNotice = null;
+let storeLegalTerms = null;
 
 let vaultItems = [];
 // Which inventory `vaultItems` holds: 'steam' (the service's response) or
@@ -714,37 +718,43 @@ export function reconcileCosmeticsOwnership(inventory = []) {
     }
 }
 
-const FALLBACK_STORE_SKUS = [
-    { sku: 'keys_1', label: '1x Relic Key', priceUsdCents: 99, keys: 1 },
-    { sku: 'keys_5', label: '5x Relic Keys', priceUsdCents: 449, keys: 5 },
-    { sku: 'keys_10', label: '10x Relic Keys', priceUsdCents: 799, keys: 10 }
-];
-const FALLBACK_STORE_ODDS = [
-    { label: 'Victory Patches (Scout/Tank/Eng)', rarity: 'uncommon', percent: 60 },
-    { label: 'Rare Decals & Weapon Finishes', rarity: 'rare', percent: 25 },
-    { label: 'Epic Emblems & Armaments', rarity: 'epic', percent: 12 },
-    { label: 'Legendary Queen Slayer Emblem', rarity: 'legendary', percent: 3 }
-];
+let storeCatalogRequest = 0;
 
 export async function loadStoreCatalog() {
+    const request = ++storeCatalogRequest;
+    storeCatalog = [];
+    storeOdds = [];
+    storePurchasesEnabled = false;
+    storePurchaseMode = 'disabled';
+    storeDisabledReason = 'catalog_unavailable';
+    storeHostedItemStore = null;
     if (window.electronAPI?.getSteamStoreCatalog) {
-        const result = await window.electronAPI.getSteamStoreCatalog().catch(() => null);
-        if (result?.ok) {
-            storeCatalog = result.catalog ?? [];
-            storeOdds = result.deepRelicCacheOdds ?? [];
+        let result;
+        try {
+            result = await window.electronAPI.getSteamStoreCatalog();
+        } catch { return; }
+        if (request !== storeCatalogRequest) return;
+        const adapted = adaptStoreCatalogResponse(result);
+        if (adapted) {
+            storeCatalog = adapted.catalog;
+            storeOdds = adapted.odds;
             storePurchasesEnabled = Boolean(result.purchasesEnabled);
             storePurchaseMode = result.purchaseMode ?? (storePurchasesEnabled ? 'live' : 'disabled');
             storeDisabledReason = result.disabledReason ?? null;
             storeHostedItemStore = result.hostedItemStore ?? null;
-            return;
+            storeKeysRestricted = Boolean(adapted.keysRestricted);
+            storeRestrictedNotice = adapted.restrictedRegionNotice ?? null;
+            storeLegalTerms = adapted.legalTerms ?? null;
         }
     }
-    storeCatalog = FALLBACK_STORE_SKUS;
-    storeOdds = FALLBACK_STORE_ODDS;
-    storePurchasesEnabled = false;
-    storePurchaseMode = 'disabled';
-    storeDisabledReason = 'steam_store_disabled';
-    storeHostedItemStore = null;
+}
+
+export function getStoreKeysRestricted() { return storeKeysRestricted; }
+export function getStoreRestrictedNotice() { return storeRestrictedNotice; }
+export function getStoreLegalTerms() { return storeLegalTerms; }
+
+function escapeStoreText(value) {
+    return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 }
 
 function formatStoreDisabledReason(reason) {
@@ -763,37 +773,68 @@ export function renderStoreSkuGrid() {
         return;
     }
 
+    let noticeEl = document.getElementById('vault-store-region-notice');
+    if (storeKeysRestricted) {
+        if (!noticeEl && grid.parentElement) {
+            noticeEl = document.createElement('div');
+            noticeEl.id = 'vault-store-region-notice';
+            noticeEl.className = 'vault-store-region-notice';
+            noticeEl.setAttribute('role', 'alert');
+            grid.parentElement.insertBefore(noticeEl, grid);
+        }
+        if (noticeEl) {
+            noticeEl.textContent = storeRestrictedNotice
+                || 'Paid random item keys are unavailable in your region in accordance with local regulations. Direct collection purchases and in-game crafting remain available.';
+            noticeEl.style.display = '';
+        }
+    } else if (noticeEl) {
+        noticeEl.style.display = 'none';
+    }
+
     for (const sku of storeCatalog) {
         const card = document.createElement('div');
         card.className = 'vault-store-sku-card';
-        const priceLabel = `$${(sku.priceUsdCents / 100).toFixed(2)}`;
         // Microtransactions checkout when the backend runs it; otherwise the
         // key's own page in Steam's hosted Item Store.
         const viaHostedStore = !storePurchasesEnabled && hostedItemStoreEnabled();
-        const purchasable = storePurchasesEnabled || viaHostedStore;
-        const buttonLabel = storePurchasesEnabled
-            ? (storePurchaseMode === 'mock' ? '◈ BUY (DEV)' : '◈ BUY VIA STEAM')
-            : viaHostedStore ? t('ui.vault.buy_on_steam') : formatStoreDisabledReason(storeDisabledReason);
-        const keyCount = sku.keys || 1;
-        const savingsTag = keyCount === 5
-            ? '<span class="vault-sku-save-badge">SAVE 10%</span>'
-            : (keyCount === 10 ? '<span class="vault-sku-save-badge vault-sku-save-badge--best">BEST VALUE // -20%</span>' : '');
+        const isRestricted = storeKeysRestricted || Boolean(sku.restricted);
+        const purchasable = !isRestricted && (storePurchasesEnabled || (viaHostedStore && Boolean(HOSTED_STORE_ITEMDEF_BY_SKU[sku.sku])));
+        // The public USD MicroTxn catalog is not a quote for Steam's hosted
+        // Item Store. Steam shows its own account-currency total at checkout.
+        const priceLabel = viaHostedStore ? 'PRICE SHOWN ON STEAM' : formatStorePrice(sku, getLocale());
+        const buttonLabel = isRestricted
+            ? t('ui.vault.region_restricted')
+            : (storePurchasesEnabled
+                ? (storePurchaseMode === 'mock' ? '◈ BUY (DEV)' : '◈ BUY VIA STEAM')
+                : viaHostedStore ? t('ui.vault.buy_on_steam') : formatStoreDisabledReason(storeDisabledReason));
+        const keyCount = sku.keyCount;
         card.innerHTML = `
             <div class="vault-store-sku-top">
                 <div class="vault-sku-icon-wrap">
                     <span class="vault-sku-icon">🗝️</span>
                     <span class="vault-sku-count">x${keyCount}</span>
                 </div>
-                ${savingsTag}
             </div>
-            <div class="vault-store-sku-label">${sku.label}</div>
-            <div class="vault-store-sku-price">${priceLabel}</div>
+            <div class="vault-store-sku-label">${escapeStoreText(sku.label)}</div>
+            <div class="vault-store-sku-price">${escapeStoreText(priceLabel)}</div>
             <div class="vault-store-sku-sub">${t('ui.vault.wallet_direct')}</div>
             <button class="start-btn vault-store-buy-btn" data-sku="${sku.sku}" ${purchasable ? '' : 'disabled'}>${buttonLabel}</button>
         `;
         const buyBtn = card.querySelector('.vault-store-buy-btn');
         buyBtn?.addEventListener('click', () => (viaHostedStore ? openHostedSteamItemStore(sku.sku) : purchaseKeys(sku.sku)));
         grid.appendChild(card);
+    }
+
+    let legalEl = document.getElementById('vault-store-legal-terms');
+    if (!legalEl && grid.parentElement) {
+        legalEl = document.createElement('div');
+        legalEl.id = 'vault-store-legal-terms';
+        legalEl.className = 'vault-store-legal-terms';
+        grid.parentElement.appendChild(legalEl);
+    }
+    if (legalEl) {
+        legalEl.textContent = storeLegalTerms
+            || 'Virtual items have no cash value. Steam Subscriber Agreement governs Steam Wallet and Community Market transactions. In-Game Purchases (Includes Random Items).';
     }
 }
 
@@ -838,6 +879,7 @@ export function hostedItemStoreUrl(store, sku = null) {
 let refreshInventoryOnReturn = false;
 
 export async function openHostedSteamItemStore(sku = null) {
+    if (!hostedItemStoreEnabled() || (typeof sku === 'string' && !storeCatalog?.some((row) => row.sku === sku))) return;
     const url = hostedItemStoreUrl(storeHostedItemStore, typeof sku === 'string' ? sku : null);
     if (!url) {
         renderHostedItemStoreCta();
@@ -864,6 +906,11 @@ export function renderOddsTable() {
     const table = document.getElementById('vault-store-odds-table');
     if (!table) return;
     table.innerHTML = '';
+    document.querySelector?.('.vault-store-odds-badge')?.classList.toggle('hidden', storeOdds.length === 0);
+    if (storeOdds.length === 0) {
+        table.innerHTML = '<div class="vault-empty-state">DROP RATES UNAVAILABLE</div>';
+        return;
+    }
 
     for (const row of storeOdds) {
         const rowEl = document.createElement('div');
@@ -872,8 +919,8 @@ export function renderOddsTable() {
         const rarityLabel = (row.rarity || 'UNCOMMON').toUpperCase();
         rowEl.innerHTML = `
             <div class="vault-store-odds-left">
-                <span class="vault-odds-rarity-pill" style="color:${color}; border-color:${color}80; background:${color}1a;">${rarityLabel}</span>
-                <span class="vault-store-odds-item">${row.label}</span>
+                <span class="vault-odds-rarity-pill" style="color:${color}; border-color:${color}80; background:${color}1a;">${escapeStoreText(rarityLabel)}</span>
+                <span class="vault-store-odds-item">${escapeStoreText(row.label)}</span>
             </div>
             <div class="vault-store-odds-right">
                 <div class="vault-odds-gauge-track">
@@ -887,7 +934,8 @@ export function renderOddsTable() {
 }
 
 export async function purchaseKeys(sku) {
-    if (!storePurchasesEnabled) {
+    const skuInfo = storeCatalog?.find((row) => row.sku === sku);
+    if (!storePurchasesEnabled || !skuInfo) {
         const statusEl = document.getElementById('vault-store-open-status');
         if (statusEl) {
             statusEl.classList.remove('hidden');
@@ -896,9 +944,18 @@ export async function purchaseKeys(sku) {
         return;
     }
 
+    if (storeKeysRestricted || skuInfo.restricted) {
+        const statusEl = document.getElementById('vault-store-open-status');
+        if (statusEl) {
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = t('ui.vault.purchases_region_restricted');
+        }
+        return { ok: false, reason: 'region_restricted' };
+    }
+
     if (!window.electronAPI?.purchaseSteamKeys) {
-        const skuInfo = storeCatalog?.find((s) => s.sku === sku) || { keys: 1 };
-        const keyCount = skuInfo.keys || 1;
+        if (storePurchaseMode !== 'mock' || !isBrowserSandbox()) return;
+        const keyCount = skuInfo.keyCount;
         const existingKey = vaultItems.find((i) => i.itemdefid === 4001);
         if (existingKey) {
             existingKey.quantity += keyCount;

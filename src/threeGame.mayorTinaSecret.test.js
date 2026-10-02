@@ -67,7 +67,7 @@ describe('Mayor Tina secret encounter', () => {
         const mayorRoot = new THREE.Group();
         const teacupRoot = new THREE.Group();
         const normalizedModel = new THREE.Group();
-        normalizedModel.rotation.y = Math.PI;
+        normalizedModel.rotation.y = WORLD_3D_MODELS.secret_mayor_tina.yaw;
         mayorRoot.add(normalizedModel);
         const game = {
             runEntropy: 0,
@@ -80,20 +80,39 @@ describe('Mayor Tina secret encounter', () => {
         await expect(ThreeGame.prototype.setupMayorTinaEncounter.call(game)).resolves.toBe(true);
         await expect(ThreeGame.prototype.setupMayorTinaEncounter.call(game)).resolves.toBe(true);
         expect(game.createWorld3dModel).toHaveBeenCalledTimes(2);
-        expect(mayorRoot.rotation.y).toBe(Math.PI);
+        expect(mayorRoot.rotation.y + normalizedModel.rotation.y).toBeCloseTo(0, 6);
         expect(teacupRoot.rotation.y).toBe(Math.PI);
-        expect(normalizedModel.rotation.y).toBe(Math.PI);
         expect(mayorRoot.position.z).toBeCloseTo(-14.03);
         expect(teacupRoot.position.z).toBe(-14);
 
         game.runEntropy = 6;
         ThreeGame.prototype.resetMayorTinaEncounter.call(game);
-        expect(mayorRoot.rotation.y).toBe(Math.PI);
+        expect(mayorRoot.rotation.y + normalizedModel.rotation.y).toBeCloseTo(0, 6);
         expect(teacupRoot.rotation.y).toBe(Math.PI);
-        expect(normalizedModel.rotation.y).toBe(Math.PI);
         expect(mayorRoot.position.z).toBeCloseTo(-20.03);
         expect(teacupRoot.position.z).toBe(-20);
         expect(game.scene.children).toHaveLength(2);
+    });
+
+    // The roach's config yaw is what prepareWorld3dModel applies to the
+    // normalized child; the hostile chase turns the root so +Z points at the
+    // player. Their sum must face the player, or Tina chases backwards.
+    it('faces the player while chasing, not away from them', () => {
+        const mayorRoot = new THREE.Group();
+        const normalizedModel = new THREE.Group();
+        normalizedModel.rotation.y = WORLD_3D_MODELS.secret_mayor_tina.yaw;
+        mayorRoot.add(normalizedModel);
+        const game = {
+            mayorTinaEncounter: { phase: 'hostile', mayorRoot, tinaDead: false, hostileLastUpdateAt: 1000, hostileAttackReadyAt: Infinity },
+            player: { position: new THREE.Vector3(6, 0, 0) },
+            canOccupyPosition: () => true,
+            takeDamage: vi.fn()
+        };
+        ThreeGame.prototype.updateMayorTinaEncounter.call(game, 1050);
+        const facing = mayorRoot.rotation.y + normalizedModel.rotation.y;
+        const toPlayer = new THREE.Vector2(6 - mayorRoot.position.x, -mayorRoot.position.z).normalize();
+        expect(Math.sin(facing)).toBeCloseTo(toPlayer.x, 3);
+        expect(Math.cos(facing)).toBeCloseTo(toPlayer.y, 3);
     });
 
     it('locks input and requests the door cinematic when the player interacts nearby', () => {

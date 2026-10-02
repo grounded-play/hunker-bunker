@@ -104,13 +104,33 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
         );
         const kit = placements.find((placement) => placement.scatterKey.startsWith('hallway-kit:'));
 
+        // An east-west route: the base corridor module already runs east-west
+        // (measured from the kit's walls), so no turn.
         expect(kit).toMatchObject({
             type: 'kit_cave_corridor',
-            rotation: Math.PI / 2,
+            rotation: 0,
+            socketed: true,
+            modelScale: 1,
             groupType: 'architecture',
             isSolidProp: false,
             dressingKit: 'pipes_and_cable_trays',
             lightingRhythm: 'dim'
         });
+    });
+
+    it('fits a wide hallway with the wide module, turned along a north-south route', () => {
+        const game = makeFakeGame();
+        game.getBiomeKeyForWorldPosition = () => 'active';
+        game.wfcMetadataCache = new Map([['0,0', {
+            generatorId: 'hallway-connector',
+            roomInstances: [],
+            wayfindingMarkers: [{ x: 8, y: 8, width: 3, dressingKit: 'gate_staging', lightingRhythm: 'dim' }]
+        }]]);
+        const connectorGrid = Array.from({ length: 17 }, () => Array(17).fill('#'));
+        for (let y = 0; y < 17; y += 1) for (let x = 5; x <= 11; x += 1) connectorGrid[y][x] = '.';
+        const placements = ThreeGame.prototype.createChunkSetPiecePlacements.call(game, 0, 0, connectorGrid);
+        const kit = placements.find((placement) => placement.scatterKey.startsWith('hallway-kit:'));
+        expect(kit).toMatchObject({ type: 'kit_space_corridor_wide', rotation: Math.PI / 2, socketed: true });
+        expect(kit.modelScale).toBeCloseTo(7 / 6, 5);
     });
 });

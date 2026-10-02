@@ -13,4 +13,6 @@ acceptance status still comes from [Product State](../../PRODUCT_STATE.md).
   consistency.
 - [AAA polish and studio strategy](aaa-polish-and-studio-strategy.md) — quality
   framing and evidence hierarchy.
+- [Missing 3D assets & 2D turnaround generation prompts](missing-assets-and-2d-generation-prompts.md) —
+  production turnaround prompts for external 2D-to-3D pipeline conversion.
 

@@ -372,35 +372,46 @@ describe('createArmoryUi ownership gating', () => {
         expect(html).not.toMatch(/data-value="comm_scout_foxhole_shadow"[^>]*aria-disabled/);
     });
 
-    it('shows the GHOST chassis now that its rigged model exists', () => {
+    it('offers the earned GHOST chassis', () => {
         ownership.grantDev(5001, 1);
         mount();
         const html = openSlotHtml(container, 'chassis');
         expect(html).toContain('data-value="5001"');
     });
 
-    it('shows achievement weapons for their respective classes now that their authored GLBs exist', () => {
+    it('offers the Ghost Runner chassis as a female and a male body', () => {
+        ownership.grantDev(5001, 1);
+        mount();
+        const html = openSlotHtml(container, 'chassis');
+        expect(html).toContain('data-value="5001"');
+        expect(html).toContain('data-value="5001:male"');
+        expect(html).not.toMatch(/data-value="5001:male"[^>]*aria-disabled/);
+
+        openSlot(container, 'chassis').dispatchEvent(tileClick('5001:male'));
+        expect(loadoutManager.getEquippedChassisSkinId()).toBe('5001');
+        expect(loadoutManager.getEquippedChassisBody()).toBe('male');
+        expect(fakeScene.setChassisSkin).toHaveBeenCalledWith('5001:male', 'scout');
+        expect(openSlotHtml(container, 'chassis')).toMatch(/is-selected"[^>]*data-value="5001:male"|data-value="5001:male"[^>]*aria-pressed="true"/);
+    });
+
+    it('refuses the male Ghost Runner body when 5001 is not owned', () => {
+        mount();
+        openSlot(container, 'chassis').dispatchEvent(tileClick('5001:male'));
+        expect(loadoutManager.getEquippedChassisSkinId()).toBeNull();
+    });
+
+    it('offers earned achievement weapons to their own class only', () => {
         for (const id of [5002, 5006, 5009, 5010]) ownership.grantDev(id, 1);
         mount();
-
-        const scoutTab = container.querySelectorAll('.class-tab').find((tab) => tab.dataset.class === 'scout');
-        scoutTab?.click();
-        const scoutHtml = openSlotHtml(container, 'weapon');
-        expect(scoutHtml).toContain('data-value="5002"');
-        expect(scoutHtml).not.toContain('data-value="5006"');
-
-        const tankTab = container.querySelectorAll('.class-tab').find((tab) => tab.dataset.class === 'tank');
-        tankTab?.click();
-        const tankHtml = openSlotHtml(container, 'weapon');
-        expect(tankHtml).toContain('data-value="5006"');
-        expect(tankHtml).not.toContain('data-value="5002"');
-
-        const engTab = container.querySelectorAll('.class-tab').find((tab) => tab.dataset.class === 'engineer');
-        engTab?.click();
-        const engHtml = openSlotHtml(container, 'weapon');
-        expect(engHtml).toContain('data-value="5009"');
-        expect(engHtml).toContain('data-value="5010"');
-        expect(engHtml).not.toContain('data-value="5002"');
+        const expected = { scout: ['5002'], tank: ['5006'], engineer: ['5009', '5010'] };
+        for (const [cls, ids] of Object.entries(expected)) {
+            container.querySelectorAll('.class-tab').find((tab) => tab.dataset.class === cls)?.click();
+            const html = openSlotHtml(container, 'weapon');
+            for (const id of ['5002', '5006', '5009', '5010']) {
+                if (ids.includes(id)) expect(html, `${cls} ${id}`).toContain(`data-value="${id}"`);
+                else expect(html, `${cls} ${id}`).not.toContain(`data-value="${id}"`);
+            }
+        }
     });
 
     it('renders an owned item enabled and without a locked label', () => {

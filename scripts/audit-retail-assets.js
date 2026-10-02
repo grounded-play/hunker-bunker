@@ -40,7 +40,38 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // three phased corrupted-operator bosses and the bio charger (3482799b,
 // ~54 MiB; bio_charger.glb alone is 18.4 MiB and is queued for mesh
 // compression in Sprint 49, S49-31).
-const PUBLIC_BUDGET = 2780 * 1024 * 1024;
+// Lowered 2780->2755 MiB in Sprint 49 (S49-31): PNG textures re-encoded as
+// lossless WebP, renders verified pixel-identical (meshopt was rejected: it
+// changed the render).
+// Lowered 2755->2715 MiB in Sprint 49 (3D asset audit 2026-10-01): nine of
+// the 3482799b "models" were byte-identical copies of existing GLBs under new
+// names (achievement rewards 5001/5002/5006/5009/5010, bio_charger and the
+// three corrupted bosses). The rewards went back to `pending`, the enemies
+// point at the originals, and the copies were deleted;
+// src/modelCatalogIntegrity.test.js now fails on any such copy. The unrigged
+// incoming 3D replacements (Talon-C base, 5002/5006/5009/5010 rewards, Queen's
+// Bane, and 5 environment props) fit cleanly under this 2715 MiB ceiling.
+// Raised 2715->2725 MiB the same day for the owner-supplied animated models
+// that replace the last stand-ins: the regular cryosnail (0.7 MiB), the 5001
+// Ghost Runner chassis (3.2 MiB) and the corrupted Kaelen boss (3.9 MiB), each
+// rigged or decimated from a 1.5M-triangle source, WebP textures.
+// Raised 2725->2730 MiB for the Ghost Runner's male body (3.3 MiB), the
+// second body of the same 5001 item (src/chassisBodies.js).
+// Raised 2730->2735 MiB for the rigged Mycelium Stalker quadruped (3.7 MiB),
+// which replaces a humanoid player skin on both the stalker and the charger.
+// Raised 2735->2745 MiB for the 80 modular kit pieces: they shipped Draco-
+// compressed (1.5 MB) and no game loader can decode Draco, so none ever
+// loaded. Re-exported with tiling-texture UVs and lossless meshopt (8.1 MB)
+// plus four shared CC0 surface texture sets (3.1 MB).
+// Raised 2745->2770 MiB to restore 35 sprint-34 environment props (arches,
+// buttresses, vaults, fixtures, fungal/cryo/industrial props, breached-wall
+// states) from their ~50k-triangle sources at 12k triangles and 1024 WebP
+// (~0.85 MB each). The shipped 1k-triangle copies read as fragments and dark
+// slabs (3D asset audit 2026-10-01 section 3); +25 MB.
+// Raised 2770->2775 MiB for the Proto Spitter's own model (4.9 MB): the
+// crawler body plus the 2D design's acid sac (scripts/blender/build_spitter.py),
+// replacing a green tint on the shared crawler model.
+const PUBLIC_BUDGET = 2775 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus

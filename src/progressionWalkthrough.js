@@ -11,7 +11,8 @@
  * hook — per the plan doc's scope-discipline note, a stage with no real trigger is left as a
  * documented gap, not a button that pretends to do something.
  */
-import { ACT2_ENDINGS, ACT2_ENDING_CUTSCENES, getAct2EndingLines } from './act2.js';
+import { ACT2_ENDINGS, getAct2EndingLines } from './act2.js';
+import { endingCutsceneSources } from './matureContentAudit.js';
 
 export const PROGRESSION_MANIFEST = Object.freeze([
     {
@@ -202,14 +203,15 @@ export class ProgressionWalkthrough {
         closeBtn.type = 'button';
         closeBtn.textContent = '× CLOSE SCENE VIEWER';
         closeBtn.className = 'close-modal';
-        closeBtn.style.cssText = 'position:absolute;top:16px;right:16px;font-size:14px;padding:8px 14px;';
+        // .close-modal is a fixed small square; this label needs its own width.
+        closeBtn.style.cssText = 'position:absolute;top:16px;right:16px;font-size:14px;padding:8px 14px;width:auto;height:auto;white-space:nowrap;';
         closeBtn.addEventListener('click', () => this.closeSceneViewer());
         overlay.appendChild(closeBtn);
 
-        const cutsceneId = ACT2_ENDING_CUTSCENES[ending];
+        const sources = endingCutsceneSources(ending);
         const video = document.createElement('video');
-        video.src = `/cutscenes/${cutsceneId}.webm`;
-        video.poster = `/cutscenes/${cutsceneId}-poster.jpg`;
+        video.src = sources.video;
+        video.poster = sources.poster;
         video.controls = true;
         video.autoplay = true;
         video.style.cssText = 'max-width:90vw;max-height:70vh;';

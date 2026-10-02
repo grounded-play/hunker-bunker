@@ -22,5 +22,15 @@ export const GAME_AUDIO_ALIASES = Object.freeze({
     // Turret fire is a gunshot, not the Engineer ability's deployment sting.
     turret_fire: 'weapon_fire_sidearm',
     turret_reprogram: 'ui_upgrade_weapon',
-    crystal_shatter: 'prop_impact_glass'
+    crystal_shatter: 'prop_impact_glass',
+    // Enemy walking and movement noise aliases
+    enemy_walk_crawler: 'footstep_concrete',
+    enemy_skitter_crawler: 'footstep_concrete',
+    // Enemy noise triggers: alert, attack abilities, wall breaking
+    enemy_alert_crawler: 'ui_scan_ping',
+    enemy_alert_snail: 'hive_eggs_hum',
+    enemy_alert_boss: 'hive_queen_throne',
+    enemy_attack_sporesnail: 'hive_spores_puff',
+    enemy_shockwave_cryosnail: 'fx_tank_shockwave',
+    enemy_break_wall: 'prop_impact_metal'
 });

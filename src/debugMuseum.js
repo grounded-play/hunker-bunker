@@ -6,52 +6,38 @@
  */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { assetUrl } from './assetUrl.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
-import { WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES, CHARM_GLB_MAP, MOD_GLB_MAP, CHASSIS_SKIN_GLB_MAP, NPC_GLB_MAP } from './debugAssetCatalogs.js';
-import { SHOWROOM_CATEGORIES, createDebugWallDecalDisplay } from './debugShowroom.js';
-import { createWorld3dModel } from './world3dOverlay.js';
+import { createDebugWallDecalDisplay } from './debugShowroom.js';
+import { createWorld3dModel, createWorld3dStructure } from './world3dOverlay.js';
+import { createEnemy3dVisual } from './enemy3dOverlay.js';
+import { MUSEUM_OPERATOR_HEIGHT, buildMuseumExhibitPlan } from './debugMuseumPlan.js';
+import { updateKitMaterials } from './kitMaterials.js';
 import { AudioManager } from './audio.js';
 import { getVoiceScriptRows } from './data/voiceBanks.js';
 import { SONG_INTERSTITIALS } from './songInterstitials.js';
 
 // Far outside any real generated terrain so the museum never overlaps a real run's chunks.
 const MUSEUM_ORIGIN = Object.freeze({ x: 9000, z: 9000 });
-const ITEM_SPACING_X = 3.2;
-const ITEM_SPACING_Z = 3.4;
 const CATEGORY_COLUMNS = 6;
+// Exhibits loading at once within a category. Unbounded, a 56-chassis wing
+// (10-30 MB GLBs) dropped fetches and reported healthy models as broken.
+const LOAD_CONCURRENCY = 6;
+
+async function forEachLimited(items, limit, fn) {
+    let next = 0;
+    const worker = async () => {
+        while (next < items.length) {
+            const index = next;
+            next += 1;
+            await fn(items[index], index);
+        }
+    };
+    await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+}
 const CATEGORY_GAP = 3.5;
-
-// Hand-collected from threeGame.js's isEnemyType() allowlist.
-const ENEMY_TYPES = SHOWROOM_CATEGORIES.ENEMIES;
-
-// Hand-collected from threeGame.js's WALL_DECAL_TYPES set.
-const ENVIRONMENTAL_DECAL_TYPES = SHOWROOM_CATEGORIES.WALL_DECALS;
-
-// World-model props (spawned via createWorld3dModel — a different loader than the
-// createScatterInstance-based types below, since debugShowroom.js's TACTICAL_PROPS/
-// BIOMECH_PROPS/SETPIECES were authored against that catalog, not the scatter one).
-const WORLD_MODEL_PROP_TYPES = [
-    ...SHOWROOM_CATEGORIES.TACTICAL_PROPS,
-    ...SHOWROOM_CATEGORIES.BIOMECH_PROPS,
-    ...SHOWROOM_CATEGORIES.SETPIECES,
-    ...SHOWROOM_CATEGORIES.CAMP_PROPS,
-    ...SHOWROOM_CATEGORIES.AFTERMATH_STATES,
-    ...SHOWROOM_CATEGORIES.SECRETS,
-    ...SHOWROOM_CATEGORIES.ARCHITECTURE_3D,
-    ...SHOWROOM_CATEGORIES.FIXTURES_3D,
-    ...SHOWROOM_CATEGORIES.FUNGAL_PROPS,
-    ...SHOWROOM_CATEGORIES.CRYO_PROPS,
-    ...SHOWROOM_CATEGORIES.RUINED_INDUSTRIAL_PROPS
-];
-
-// Ground overlays / floor decals — these ARE createScatterInstance-compatible.
-const PROP_AND_OVERLAY_TYPES = SHOWROOM_CATEGORIES.FLOOR_DECALS;
-
-// Season 0 chassis skins (itemdefs 4112-4119) and cosmetic decals (4120-4129)
-const CHASSIS_SKIN_ITEMDEFS = SHOWROOM_CATEGORIES.CHASSIS_SKINS;
-const COSMETIC_DECAL_ITEMDEFS = SHOWROOM_CATEGORIES.COSMETIC_PLAYER_DECALS;
 
 function createMuseumGltfLoader() {
     return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
@@ -107,6 +93,7 @@ function startMuseumAnimationLoop(group) {
             for (const item of rotatingItems) {
                 item.rotation.y += delta * 0.75;
             }
+            updateKitMaterials(now / 1000);
             _museumAnimFrame = requestAnimationFrame(tick);
         }
     }
@@ -151,6 +138,63 @@ async function spawnGlbAt(loader, cache, url, x, y, z, options = {}) {
         console.warn('[debug-museum] failed to load GLB:', url, err);
         return null;
     }
+}
+
+// An operator body at its in-game height: SkeletonUtils clone (a plain clone
+// leaves every copy bound to the first one's bones), feet on y=0, centred,
+// no rotation (glTF/Mixamo forward is +Z, toward the placards and viewer).
+async function spawnCharacterAt(loader, cache, url, x, z, height, mixersList) {
+    if (!cache.has(url)) {
+        cache.set(url, loader.loadAsync(assetUrl(url)).catch((err) => {
+            cache.delete(url);
+            throw err;
+        }));
+    }
+    const gltf = await cache.get(url);
+    const model = cloneSkeleton(gltf.scene);
+    model.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(model);
+    const measured = bounds.max.y - bounds.min.y;
+    if (!Number.isFinite(measured) || measured <= 0) throw new Error('model has no measurable height');
+    model.scale.multiplyScalar(height / measured);
+    model.updateMatrixWorld(true);
+    const scaled = new THREE.Box3().setFromObject(model);
+    const center = scaled.getCenter(new THREE.Vector3());
+    model.position.set(x - center.x, -scaled.min.y, z - center.z);
+    const root = new THREE.Group();
+    root.add(model);
+    const clips = gltf.animations ?? [];
+    const idle = clips.find((clip) => /idle/i.test(clip.name)) ?? clips[0];
+    if (idle) {
+        const mixer = new THREE.AnimationMixer(model);
+        mixer.clipAction(idle).play();
+        mixersList?.push(mixer);
+    }
+    return root;
+}
+
+// A reference post beside each life-size exhibit, as tall as an operator, so
+// scale reads at a glance without walking the player over.
+function spawnOperatorHeightPost(x, z) {
+    const post = new THREE.Mesh(
+        new THREE.BoxGeometry(0.04, MUSEUM_OPERATOR_HEIGHT, 0.04),
+        new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.7 })
+    );
+    post.name = 'debug-museum-height-post';
+    post.position.set(x, PEDESTAL_HEIGHT + MUSEUM_OPERATOR_HEIGHT / 2, z);
+    return post;
+}
+
+function measureExhibit(object3d) {
+    object3d.updateMatrixWorld(true);
+    const box = new THREE.Box3();
+    object3d.traverse((child) => {
+        if (child.isMesh && child.visible !== false && child.userData?.museumSpecimenState !== 'damaged') box.expandByObject(child);
+    });
+    if (box.isEmpty()) return null;
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    return { size: { x: size.x, y: size.y, z: size.z }, minY: box.min.y, center: { x: center.x, y: center.y, z: center.z } };
 }
 
 // Wing 1 (docs/debug-gallery-and-architectural-grid-expansion-plan.md §2): every item sits on
@@ -214,7 +258,7 @@ export function buildMuseumAudioCatalog(buffers = AudioManager.buffers) {
             key: song.musicKey,
             label: `${song.id} // ${song.title}`,
             source: song.audio,
-            available: Boolean(buffers?.[song.musicKey]),
+            available: Boolean(buffers?.[song.musicKey] || song.audio),
             bus: 'music'
         })),
         voice: voiceRows.flatMap((row) => row.takes.map((key, index) => ({
@@ -268,8 +312,19 @@ function mountMuseumJukebox(game, group) {
             button.className = `museum-track${row.available ? '' : ' unavailable'}`;
             button.disabled = !row.available;
             button.innerHTML = `<span>${row.label}</span><b>${row.available ? 'PLAY' : 'MISSING'}</b>${row.subtitle ? `<small>${row.subtitle} // ${row.semanticId}</small>` : ''}`;
-            button.addEventListener?.('click', () => {
+            button.addEventListener?.('click', async () => {
                 stopMuseumAudition(group);
+                if (row.source && !AudioManager.buffers?.[row.key] && typeof AudioManager.decodeAudioAsset === 'function') {
+                    try {
+                        const buffer = await AudioManager.decodeAudioAsset(row.source);
+                        if (buffer) {
+                            if (!AudioManager.buffers) AudioManager.buffers = {};
+                            AudioManager.buffers[row.key] = buffer;
+                        }
+                    } catch (err) {
+                        console.warn('[museum] failed to load audio', row.source, err);
+                    }
+                }
                 group.userData.museumAudition = AudioManager.play(row.key, {
                     bus: row.bus,
                     volume: Number(gain?.value ?? 0.8),
@@ -315,15 +370,17 @@ export function setMuseumSpecimenState(game, state = 'intact') {
     return true;
 }
 
-function createPairedSpecimen(source) {
+// `damaged` is a second, independent spawn of the same exhibit (cloning a
+// skinned model would leave the copy bound to the original's bones).
+function createPairedSpecimen(source, damaged) {
     const pair = new THREE.Group();
     pair.name = 'debug-museum-specimen-pair';
     source.userData.museumSpecimenState = 'intact';
     source.position.z -= 0.55;
     pair.add(source);
-    const damaged = source.clone(true);
+    if (!damaged) return pair;
     damaged.userData.museumSpecimenState = 'damaged';
-    damaged.position.z += 1.1;
+    damaged.position.z += 0.55;
     damaged.visible = false;
     damaged.traverse((child) => {
         if (!child.isMesh || !child.material) return;
@@ -393,6 +450,10 @@ export async function openDebugMuseum(game) {
         group.userData.restoreSkyVisible = game.skyRig.group.visible;
         game.skyRig.group.visible = false;
     }
+    // Biome fog swallows anything more than a few units off, which on a
+    // 15-unit kit room or a boss reads as a broken, washed-out model.
+    group.userData.restoreFog = game.scene.fog ?? null;
+    game.scene.fog = null;
     if (game.scene.background?.isColor) {
         group.userData.restoreBackground = game.scene.background.clone();
         game.scene.background.setHex(0x0b0d0f);
@@ -411,7 +472,8 @@ export async function openDebugMuseum(game) {
     // a dark metal strip plus a GridHelper drawn on top of it. Square and
     // oversized instead of a 14-wide corridor, so there is room to walk
     // around an exhibit and view it from any side.
-    const corridorLength = 280;
+    const plan = buildMuseumExhibitPlan();
+    const corridorLength = plan.reduce((sum, category) => sum + (category.columns ?? CATEGORY_COLUMNS) * category.spacing + CATEGORY_GAP, 0);
     const floorSize = corridorLength + 100;
     const gridTexture = game.createMenuGridTexture?.();
     if (gridTexture) {
@@ -430,137 +492,125 @@ export async function openDebugMuseum(game) {
 
     const loader = createMuseumGltfLoader();
     const glbCache = new Map();
-    let cursorX = MUSEUM_ORIGIN.x;
     const z = MUSEUM_ORIGIN.z;
+    // One row per planned exhibit: did it load, and at what size. Read it with
+    // window.__DEBUG__.museumReport() to QA loading and scale without looking.
+    const report = [];
+    group.userData.museumReport = report;
+    // The live objects behind the report, in the same order, for QA tooling
+    // that frames one exhibit at a time (not serializable, so kept apart).
+    const exhibits = [];
+    group.userData.museumExhibits = exhibits;
+    const mixers = group.userData.mixers;
+    const rotating = group.userData.rotatingItems;
+
+    const spawners = {
+        item: (entry, x, zPos) => spawnGlbAt(loader, glbCache, entry.url, x, entry.size > 0.9 ? 1.0 : 0.7, zPos, { scale: entry.size, rotate: true, rotatingList: rotating }),
+        character: (entry, x, zPos) => spawnCharacterAt(loader, glbCache, entry.url, x, zPos, entry.height, mixers),
+        world: async (entry, x, zPos) => {
+            const model = await (game?.createWorld3dModel ? game.createWorld3dModel(entry.type) : createWorld3dModel(entry.type));
+            model?.position.set(x, 0, zPos);
+            return model;
+        },
+        enemy: async (entry, x, zPos) => {
+            const visual = await (game?.createEnemy3dVisual ? game.createEnemy3dVisual(entry.type) : createEnemy3dVisual(entry.type));
+            if (!visual?.root) return null;
+            // The live overlay grows the root in from 0.05 as the enemy
+            // emerges; an exhibit is shown fully grown, idling in place.
+            visual.root.scale.setScalar(1);
+            visual.root.position.set(x, 0, zPos);
+            if (visual.mixer) mixers.push(visual.mixer);
+            return visual.root;
+        },
+        structure: async (entry, x, zPos) => {
+            const structure = await createWorld3dStructure(entry.type);
+            structure?.position.set(x, 0, zPos);
+            return structure;
+        },
+        icon: (entry, x, zPos) => {
+            const catalog = getItemCatalogEntry(entry.itemdefid);
+            return spawnIconPlaneAt(catalog?.localImg || catalog?.img, x, 1.0, zPos);
+        },
+        wallDecal: (entry, x, zPos) => {
+            const display = createDebugWallDecalDisplay(game, entry.type, { wallNormal: { x: 0, z: 1 } });
+            display.position.set(x, 0, zPos);
+            return display;
+        },
+        floorDecal: (entry, x, zPos) => game.createScatterInstance({ type: entry.type, x, z: zPos, scale: 1, tiltX: 0, elevation: 0.05, rotation: 0 })
+    };
+    const LIFE_SIZE = new Set(['character', 'world', 'enemy']);
+
+    let cursorX = MUSEUM_ORIGIN.x;
     let spawnedCount = 0;
     let skippedCount = 0;
-
-    async function addCategory(title, entries, spawnFn, { paired = false } = {}) {
-        const categoryLabel = makeLabelSprite(`=== ${title} (${entries.length}) ===`, { color: '#22d3ee', fontSize: 40 });
-        categoryLabel.position.set(cursorX + ((CATEGORY_COLUMNS - 1) * ITEM_SPACING_X) / 2, 2.8, z - 1.4);
+    for (const category of plan) {
+        const columns = category.columns ?? CATEGORY_COLUMNS;
+        const spacing = category.spacing;
+        const categoryLabel = makeLabelSprite(`=== ${category.title} (${category.entries.length}) ===`, { color: '#22d3ee', fontSize: 40 });
+        categoryLabel.position.set(cursorX + ((columns - 1) * spacing) / 2, 2.8, z - 1.4);
         categoryLabel.scale.set(2.4, 0.6, 1);
         group.add(categoryLabel);
+        const spawn = spawners[category.kind];
 
-        for (let index = 0; index < entries.length; index += 1) {
-            const entry = entries[index];
-            const itemX = cursorX + (index % CATEGORY_COLUMNS) * ITEM_SPACING_X;
-            const itemZ = z + Math.floor(index / CATEGORY_COLUMNS) * ITEM_SPACING_Z;
+        // A category's exhibits load a few at a time; categories fill in order.
+        await forEachLimited(category.entries, LOAD_CONCURRENCY, async (entry, index) => {
+            const itemX = cursorX + (index % columns) * spacing;
+            const itemZ = z + Math.floor(index / columns) * (category.kind === 'structure' ? spacing : Math.max(3.4, spacing));
+            const row = { category: category.title, kind: category.kind, label: entry.label, url: entry.url ?? null, type: entry.type ?? null, x: itemX, z: itemZ, ok: false };
+            report.push(row);
             let obj = null;
             try {
-                obj = await spawnFn(entry, itemX, itemZ);
+                // One retry: a dropped fetch is not a broken model.
+                obj = await Promise.resolve().then(() => spawn(entry, itemX, itemZ)).catch(() => spawn(entry, itemX, itemZ));
+                if (!obj) row.error = 'spawn returned nothing';
             } catch (err) {
-                console.warn('[debug-museum] spawn failed:', entry, err);
+                row.error = String(err?.message ?? err);
+                console.warn('[debug-museum] spawn failed:', category.title, entry.label, err);
             }
-            if (obj) {
-                // Wing 1 §2.3: uniform +Z forward orientation for every asset. Best-effort —
-                // GLB sources don't carry a "this is the front" convention this tool can read,
-                // so this normalizes rotation to a fixed value rather than leaving whatever
-                // orientation each source file happened to author it in.
-                obj.rotation.y = 0;
+            if (!obj) {
+                skippedCount += 1;
+                return;
+            }
+            // Every exhibit faces +Z, toward the placards. Production loaders
+            // (world, enemy) carry each asset's own yaw inside this root.
+            obj.rotation.y = 0;
+            const raised = category.kind !== 'structure' && category.raised !== false;
+            if (raised) {
                 group.add(spawnPedestal(itemX, itemZ));
                 obj.position.y += PEDESTAL_HEIGHT;
-                if (paired) obj = createPairedSpecimen(obj);
-                group.add(obj);
-                spawnedCount += 1;
-
-                const label = typeof entry === 'string'
-                    ? entry
-                    : (Array.isArray(entry) ? entry[0] : (entry.label ?? String(entry)));
-                const triCount = countTriangles(obj);
-                const placardText = triCount > 0 ? `${label} // ${triCount} TRIS` : label;
-                const nameLabel = makeLabelSprite(placardText, { fontSize: 26 });
-                nameLabel.position.set(itemX, PEDESTAL_HEIGHT + 1.1, itemZ + 1.0);
-                nameLabel.scale.set(1.8, 0.45, 1);
-                group.add(nameLabel);
-            } else {
-                skippedCount += 1;
             }
-        }
-        cursorX += CATEGORY_COLUMNS * ITEM_SPACING_X + CATEGORY_GAP;
+            if (LIFE_SIZE.has(category.kind)) group.add(spawnOperatorHeightPost(itemX + spacing * 0.42, itemZ));
+            const intact = obj;
+            if (category.paired) {
+                let twin = null;
+                try {
+                    twin = await spawn(entry, itemX, itemZ);
+                    if (twin) {
+                        twin.rotation.y = 0;
+                        if (raised) twin.position.y += PEDESTAL_HEIGHT;
+                    }
+                } catch { /* the intact exhibit is what QA needs */ }
+                obj = createPairedSpecimen(obj, twin);
+            }
+            group.add(obj);
+            exhibits.push({ row, object: obj });
+            spawnedCount += 1;
+            // Measured on the intact specimen in its final place (the damaged
+            // twin is hidden and must not count toward size or triangles).
+            const measured = measureExhibit(intact);
+            const triCount = countTriangles(intact);
+
+            Object.assign(row, { ok: true, tris: triCount, yaw: obj.rotation.y }, measured ?? {});
+            const placardText = triCount > 0 ? `${entry.label} // ${triCount} TRIS` : entry.label;
+            const nameLabel = makeLabelSprite(placardText, { fontSize: 26 });
+            nameLabel.position.set(itemX, PEDESTAL_HEIGHT + Math.max(1.1, (measured?.size.y ?? 0) + 0.3), itemZ + 1.0);
+            nameLabel.scale.set(1.8, 0.45, 1);
+            group.add(nameLabel);
+        });
+        cursorX += columns * spacing + CATEGORY_GAP;
     }
 
-    // 1. Weapon archetypes (base guns)
-    await addCategory('WEAPON ARCHETYPES', Object.entries(WEAPON_ARCHETYPES), async ([id, url], x, zPos) => {
-        const model = await spawnGlbAt(loader, glbCache, url, x, 1.0, zPos, { rotate: true, rotatingList: group.userData.rotatingItems });
-        if (model) model.userData.label = id;
-        return model;
-    });
-
-    // 2. Weapon skins
-    await addCategory('WEAPON SKINS', Object.entries(WEAPON_SKIN_MESHES), async ([, url], x, zPos) => {
-        return spawnGlbAt(loader, glbCache, url, x, 1.0, zPos, { rotate: true, rotatingList: group.userData.rotatingItems });
-    });
-
-    // 3. Tactical charms
-    await addCategory('WEAPON CHARMS', Object.entries(CHARM_GLB_MAP), async ([, url], x, zPos) => {
-        return spawnGlbAt(loader, glbCache, url, x, 0.7, zPos, { rotate: true, rotatingList: group.userData.rotatingItems });
-    });
-
-    // 4. Rig overclock mods
-    await addCategory('RIG OVERCLOCK MODS', Object.entries(MOD_GLB_MAP), async ([, url], x, zPos) => {
-        return spawnGlbAt(loader, glbCache, url, x, 0.7, zPos, { rotate: true, rotatingList: group.userData.rotatingItems });
-    });
-
-    // 5. Chassis skins (3D Model with icon-plane fallback)
-    await addCategory('CHASSIS SKINS', CHASSIS_SKIN_ITEMDEFS, async (itemdefid, x, zPos) => {
-        const glbUrl = CHASSIS_SKIN_GLB_MAP[itemdefid];
-        if (glbUrl) {
-            try {
-                return await spawnGlbAt(loader, glbCache, glbUrl, x, 0.0, zPos, { scale: 1.4, mixersList: group.userData.mixers });
-            } catch (err) {
-                console.warn('[debug-museum] chassis glb fallback:', itemdefid, err);
-            }
-        }
-        const catalog = getItemCatalogEntry(itemdefid);
-        return spawnIconPlaneAt(catalog?.localImg || catalog?.img, x, 1.0, zPos);
-    });
-
-    // 5b. Camp Leaders & NPC Entities
-    await addCategory('CAMP LEADERS & NPCS', Object.entries(NPC_GLB_MAP), async ([, url], x, zPos) => {
-        return spawnGlbAt(loader, glbCache, url, x, 0.0, zPos, { scale: 1.4, mixersList: group.userData.mixers });
-    });
-
-    // 6. Cosmetic player decals (icon-plane)
-    await addCategory('COSMETIC PLAYER DECALS', COSMETIC_DECAL_ITEMDEFS, async (itemdefid, x, zPos) => {
-        const catalog = getItemCatalogEntry(itemdefid);
-        return spawnIconPlaneAt(catalog?.localImg || catalog?.img, x, 1.0, zPos);
-    });
-
-    // 7. Environmental wall decals (real production spawn path)
-    await addCategory('ENVIRONMENTAL WALL DECALS', ENVIRONMENTAL_DECAL_TYPES, async (type, x, zPos) => {
-        const display = createDebugWallDecalDisplay(game, type, {
-            wallNormal: { x: 0, z: 1 }
-        });
-        display.position.set(x, 0, zPos);
-        return display;
-    });
-
-    // 8a. World-model props (createWorld3dModel — TACTICAL_PROPS/BIOMECH_PROPS/SETPIECES;
-    // these are NOT createScatterInstance-compatible, see WORLD_MODEL_PROP_TYPES comment above)
-    await addCategory('WORLD PROPS & SETPIECES', WORLD_MODEL_PROP_TYPES, async (type, x, zPos) => {
-        try {
-            const modelGroup = await (game?.createWorld3dModel ? game.createWorld3dModel(type) : createWorld3dModel(type));
-            if (modelGroup) modelGroup.position.set(x, 0, zPos);
-            return modelGroup;
-        } catch (err) {
-            console.warn('[debug-museum] failed to load world prop:', type, err);
-            return null;
-        }
-    }, { paired: true });
-
-    // 8b. Ground overlays / floor decals (real production spawn path)
-    await addCategory('GROUND OVERLAYS & FLOOR DECALS', PROP_AND_OVERLAY_TYPES, async (type, x, zPos) => {
-        const placement = { type, x, z: zPos, scale: 1, tiltX: 0, elevation: 0.05, rotation: 0 };
-        return game.createScatterInstance(placement);
-    });
-
-    // 9. Enemies (real production spawn path with static in-place walk cycle animation)
-    await addCategory('ENEMIES & BOSSES', ENEMY_TYPES, async (type, x, zPos) => {
-        const placement = { type, x, z: zPos, scale: 1, tiltX: 0, elevation: 0, isDisplayModel: true };
-        return game.createScatterInstance(placement);
-    }, { paired: true });
-
-    console.log(`[debug-museum] opened: ${spawnedCount} objects spawned, ${skippedCount} skipped across bounded category grids.`);
+    console.log(`[debug-museum] opened: ${spawnedCount} exhibits, ${skippedCount} failed to load (window.__DEBUG__.museumReport()).`);
     return true;
 }
 
@@ -577,6 +627,7 @@ export function closeDebugMuseum(game) {
     if (game.skyRig?.group) {
         game.skyRig.group.visible = group.userData.restoreSkyVisible ?? true;
     }
+    if (group.userData.restoreFog) game.scene.fog = group.userData.restoreFog;
     if (group.userData.restoreBackground && game.scene.background?.isColor) {
         game.scene.background.copy(group.userData.restoreBackground);
     }
@@ -604,6 +655,7 @@ if (typeof window !== 'undefined') {
     window.__DEBUG__ = window.__DEBUG__ || {};
     window.__DEBUG__.openMuseum = (game = window.game || window.threeGame) => openDebugMuseum(game);
     window.__DEBUG__.closeMuseum = (game = window.game || window.threeGame) => closeDebugMuseum(game);
+    window.__DEBUG__.museumReport = (game = window.game || window.threeGame) => game?.scene?.getObjectByName('debug-museum')?.userData?.museumReport ?? null;
     window.__DEBUG__.openAssetColonnade = window.__DEBUG__.openMuseum;
     window.__DEBUG__.closeAssetColonnade = window.__DEBUG__.closeMuseum;
 }

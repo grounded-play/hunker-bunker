@@ -50,6 +50,42 @@ describe('one physical press, one action', () => {
         expect(g.filter(native({ sprint: true }), 'gameplay').sprint).toBe(true);
     });
 
+    it('masks equivalent action keys across an action set transition (menuBack -> dash)', () => {
+        const { g, tick } = gate();
+        // In menu action set, physical B is reported as menuBack.
+        expect(g.filter(native({ menuBack: true }), 'menu').menuBack).toBe(true);
+        tick(16);
+        // Map closes, transitioning to gameplay action set where physical B is dash.
+        // User is still holding the same physical button.
+        const inGameplay = g.filter(native({ dash: true }), 'gameplay');
+        expect(inGameplay.dash).toBe(false);
+        tick(16);
+        expect(g.filter(native({ dash: true }), 'gameplay').dash).toBe(false);
+        // Once released, pressing B in gameplay executes dash.
+        g.filter(native({ dash: false }), 'gameplay');
+        tick(16);
+        expect(g.filter(native({ dash: true }), 'gameplay').dash).toBe(true);
+    });
+
+    it('masks equivalent bumper keys across an action set transition (menuTabLeft -> sprint)', () => {
+        const { g, tick } = gate();
+        // In menu, physical LB is menuTabLeft.
+        expect(g.filter(native({ menuTabLeft: true }), 'menu').menuTabLeft).toBe(true);
+        tick(16);
+        // In gameplay, physical LB is sprint.
+        expect(g.filter(native({ sprint: true }), 'gameplay').sprint).toBe(false);
+        g.filter(native({ sprint: false }), 'gameplay');
+        tick(16);
+        expect(g.filter(native({ sprint: true }), 'gameplay').sprint).toBe(true);
+    });
+
+    it('masks equivalent actions when claimed with one name (claim menuBack masks dash)', () => {
+        const { g, tick } = gate();
+        g.claim(['menuBack'], 'direct-poll');
+        tick(50);
+        expect(g.filter(native({ dash: true }), 'gameplay').dash).toBe(false);
+    });
+
     it('lets the same source repeat quickly (a real double tap)', () => {
         const { g, tick } = gate();
         expect(g.filter(native({ pause: true }), 'menu').pause).toBe(true);

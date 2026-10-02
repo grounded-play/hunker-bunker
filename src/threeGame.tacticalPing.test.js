@@ -43,6 +43,7 @@ function createMockGame({ isMultiplayer = false } = {}) {
 
     for (const method of [
         'triggerTacticalPing',
+        'triggerQuickCommand',
         'spawnTacticalPingMarker',
         'broadcastSharedWorldEvent',
         'handleSharedWorldEvent'
@@ -145,5 +146,34 @@ describe('Tactical Context Pings v1', () => {
         buttons[10] = { pressed: true, value: 1 }; // Left stick click
         const mapped = mapBrowserGamepad({ id: 'Xbox Controller', buttons, axes: [0, 0, 0, 0] });
         expect(mapped.tacticalPing).toBe(true);
+    });
+
+    it('triggers quick commands with localized commandId and broadcasts', () => {
+        const { game, emitted } = createMockGame({ isMultiplayer: true });
+        game.multiplayerLocalPlayerId = 'peer_beta';
+
+        const ok = game.triggerQuickCommand('regroup');
+        expect(ok).toBe(true);
+        expect(window.dispatchEvent).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'tactical-ping-alert',
+            detail: expect.objectContaining({
+                kind: 'quick-command',
+                commandId: 'regroup'
+            })
+        }));
+        expect(emitted[0].payload.detail).toEqual(expect.objectContaining({
+            commandId: 'regroup',
+            peerId: 'peer_beta'
+        }));
+
+        expect(game.triggerQuickCommand('invalid_cmd')).toBe(false);
+    });
+
+    it('spam guard throttles ping bursts', () => {
+        const { game } = createMockGame();
+        expect(game.triggerTacticalPing()).toBe(true);
+        // Fast consecutive pings should be suppressed
+        const second = game.triggerTacticalPing();
+        expect(second).toBe(false);
     });
 });

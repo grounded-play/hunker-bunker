@@ -13,6 +13,8 @@
  * resolves to null rather than silently substituting the wrong one.
  */
 
+import { KIT_SCALE } from './kitMaterials.js';
+
 export const KIT_SKINS = Object.freeze({ CAVE: 'cave', SPACE: 'space' });
 
 /**
@@ -39,6 +41,9 @@ export const SHARED_ROLES = Object.freeze({
     corridorCross: 'corridor_intersection',
     corridorWide: 'corridor_wide',
     corridorWideCorner: 'corridor_wide_corner',
+    corridorWideEnd: 'corridor_wide_end',
+    corridorWideT: 'corridor_wide_junction',
+    corridorWideCross: 'corridor_wide_intersection',
     corridorTransition: 'corridor_transition',
     roomSmall: 'room_small',
     roomWide: 'room_wide',
@@ -128,43 +133,68 @@ export function chooseKitPiece(role, biome, random = Math.random) {
     };
 }
 
+// Which sides each base module leaves open at rotation 0, measured from the
+// kit GLBs' wall faces (2026-10-01; the wide pieces match the narrow ones).
+// The old hand-written table assumed north/south straights and the opposite
+// turn direction, so straights, corners and dead ends all faced wrong.
+const BASE_OPENINGS = Object.freeze({
+    corridor: ['e', 'w'],
+    corridorCorner: ['n', 'w'],
+    corridorEnd: ['e'],
+    corridorT: ['e', 'n', 'w'],
+    corridorCross: ['e', 'n', 's', 'w']
+});
+// rotationSteps are three.js yaw steps of +PI/2: east -> north -> west -> south.
+const TURN = Object.freeze({ e: 'n', n: 'w', w: 's', s: 'e' });
+const WIDE_ROLES = Object.freeze({
+    corridor: 'corridorWide',
+    corridorCorner: 'corridorWideCorner',
+    corridorEnd: 'corridorWideEnd',
+    corridorT: 'corridorWideT',
+    corridorCross: 'corridorWideCross'
+});
+// Module widths in world units: 4 and 8 Kenney units at the kit's uniform scale.
+const MODULE_WIDTH = Object.freeze({ narrow: 4 * KIT_SCALE, wide: 8 * KIT_SCALE });
+
+function stepsToOpen(role, open) {
+    const want = [...open].sort().join('');
+    let dirs = BASE_OPENINGS[role];
+    for (let steps = 0; steps < 4; steps += 1) {
+        if ([...dirs].sort().join('') === want) return steps;
+        dirs = dirs.map((d) => TURN[d]);
+    }
+    return 0;
+}
+
 /**
  * Resolve a carved hallway cell to a socket-safe module and orientation.
  * Corridor pieces may vary by skin, but their rotation is topology, not
  * decoration: random cardinal turns still produce walls across the route.
+ *
+ * `width` is the carve radius the hallway generator used (2*width+1 cells
+ * across). Topology is read just past the carve, since every cell beside a
+ * marker inside a wide corridor is open; corridors five or more cells across
+ * take the wide modules, and `modelScale` fits the module to the carve.
  */
-export function corridorKitPlacement(grid, x, y, biome) {
+export function corridorKitPlacement(grid, x, y, biome, { width = 0 } = {}) {
     if (!Array.isArray(grid) || grid[y]?.[x] !== '.') return null;
-    const open = {
-        n: grid[y - 1]?.[x] === '.',
-        e: grid[y]?.[x + 1] === '.',
-        s: grid[y + 1]?.[x] === '.',
-        w: grid[y]?.[x - 1] === '.'
-    };
-    const directions = Object.entries(open).filter(([, value]) => value).map(([key]) => key);
-    let role = 'corridor';
-    let rotationSteps = 0;
+    const reach = Math.max(0, Math.floor(Number(width) || 0)) + 1;
+    const open = ['n', 'e', 's', 'w'].filter((direction) => {
+        const [dx, dy] = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] }[direction];
+        return grid[y + dy * reach]?.[x + dx * reach] === '.';
+    });
+    let role;
+    if (open.length >= 4) role = 'corridorCross';
+    else if (open.length === 3) role = 'corridorT';
+    else if (open.length === 2) role = (open.includes('n') && open.includes('s')) || (open.includes('e') && open.includes('w')) ? 'corridor' : 'corridorCorner';
+    else role = 'corridorEnd';
+    // A lone cell opens nowhere; treat it as a dead end facing east.
+    const rotationSteps = open.length ? stepsToOpen(role, open) : 0;
 
-    if (directions.length >= 4) {
-        role = 'corridorCross';
-    } else if (directions.length === 3) {
-        role = 'corridorT';
-        // Base T opens N/E/W; rotate until the missing socket matches.
-        const missing = ['n', 'e', 's', 'w'].find((direction) => !open[direction]);
-        rotationSteps = ({ s: 0, w: 1, n: 2, e: 3 })[missing] ?? 0;
-    } else if (directions.length === 2 && !((open.n && open.s) || (open.e && open.w))) {
-        role = 'corridorCorner';
-        // Base corner opens N/E.
-        const key = directions.sort().join('');
-        rotationSteps = ({ en: 0, es: 1, sw: 2, nw: 3 })[key] ?? 0;
-    } else if (directions.length <= 1) {
-        role = 'corridorEnd';
-        // Base end opens north.
-        rotationSteps = ({ n: 0, e: 1, s: 2, w: 3 })[directions[0]] ?? 0;
-    } else if (open.e && open.w) {
-        rotationSteps = 1;
-    }
-
-    const type = kitPieceFor(role, biome);
-    return type ? { type, role, rotationSteps } : null;
+    const wide = reach - 1 >= 2;
+    const carved = 2 * (reach - 1) + 1;
+    const modelScale = reach > 1 ? carved / (wide ? MODULE_WIDTH.wide : MODULE_WIDTH.narrow) : 1;
+    const placedRole = wide ? WIDE_ROLES[role] : role;
+    const type = kitPieceFor(placedRole, biome);
+    return type ? { type, role: placedRole, rotationSteps, modelScale } : null;
 }

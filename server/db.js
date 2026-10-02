@@ -3,6 +3,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { createSqliteBackend } from './db-sqlite.js';
+import { validateMicroTxnCheckpoint } from './microTxnCheckpoint.js';
+import { mergePurchaseGrantIntent } from './purchaseGrantIntent.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -39,7 +41,8 @@ let dbState = {
     receipts: [], // array of run receipts
     // Canonical store purchases keyed by transId/orderId with an event trail.
     // Older append-only rows are migrated into this shape during initDb().
-    purchases: [] // { steamId64, sku, transId, orderId, status, createdAt, updatedAt, events }
+    purchases: [], // { steamId64, sku, transId, orderId, status, createdAt, updatedAt, events }
+    microTxnCheckpoints: {}
 };
 
 let writeQueue = Promise.resolve();
@@ -93,15 +96,17 @@ function getSqliteBackend() {
 }
 
 // Atomic writing: write to tmp, then rename to ensure crash-resistance
-async function saveToDisk() {
+async function saveToDisk({ prepare = () => dbState, onCommit = () => {} } = {}) {
     const dbFilePath = getDbFilePath();
     writeQueue = writeQueue.catch(() => {}).then(async () => {
+        const snapshot = prepare();
         const tmpPath = `${dbFilePath}.tmp`;
         try {
-            const data = JSON.stringify(dbState, null, 2);
+            const data = JSON.stringify(snapshot, null, 2);
             await fs.promises.mkdir(path.dirname(dbFilePath), { recursive: true });
-            await fs.promises.writeFile(tmpPath, data, 'utf8');
+            await fs.promises.writeFile(tmpPath, data, { encoding: 'utf8', mode: 0o600 });
             await fs.promises.rename(tmpPath, dbFilePath);
+            onCommit();
             lastWriteAt = Date.now();
             lastWriteError = null;
         } catch (err) {
@@ -177,11 +182,15 @@ function mergePurchaseRecord(existing, input = {}, now = Date.now()) {
     }
 
     if (Array.isArray(input.granted)) {
-        next.granted = input.granted;
+        next.granted = input.granted.map((item) => ({ ...item }));
     } else if (Array.isArray(existing?.granted)) {
         next.granted = existing.granted;
     }
 
+    const grantIntent = mergePurchaseGrantIntent(existing, input, next);
+    if (grantIntent) next.grantIntent = grantIntent;
+    if (typeof input.grantReplayed === 'boolean') next.grantReplayed = input.grantReplayed;
+    if (input.grantDelivered === true) next.grantDelivered = true;
     return next;
 }
 
@@ -200,6 +209,8 @@ function clonePurchase(purchase) {
     if (!purchase) return null;
     return {
         ...purchase,
+        ...(purchase.grantIntent ? { grantIntent: { ...purchase.grantIntent } } : {}),
+        ...(Array.isArray(purchase.granted) ? { granted: purchase.granted.map((item) => ({ ...item })) } : {}),
         events: Array.isArray(purchase.events) ? purchase.events.map((event) => ({ ...event })) : []
     };
 }
@@ -263,6 +274,8 @@ function normalizeDbStateShape() {
     dbState.idempotency = dbState.idempotency && typeof dbState.idempotency === 'object' ? dbState.idempotency : {};
     dbState.receipts = Array.isArray(dbState.receipts) ? dbState.receipts : [];
     dbState.purchases = normalizePurchaseCollection(dbState.purchases);
+    dbState.microTxnCheckpoints = dbState.microTxnCheckpoints && typeof dbState.microTxnCheckpoints === 'object'
+        ? dbState.microTxnCheckpoints : {};
 }
 
 export async function initDb() {
@@ -489,39 +502,72 @@ export function findPurchaseByRequestId(requestId) {
     return clonePurchase(purchase);
 }
 
-export function listPurchases({ steamId64 = null, status = null, limit = 100 } = {}) {
+export function listPurchases({ steamId64 = null, status = null, limit = 100, offset = 0 } = {}) {
     const sqlite = getSqliteBackend();
-    if (sqlite) return sqlite.listPurchases({ steamId64, status, limit });
+    if (sqlite) return sqlite.listPurchases({ steamId64, status, limit, offset });
 
     const steamIdText = normalizeOptionalString(steamId64);
     const statusText = normalizeOptionalString(status);
-    const max = Math.min(1000, Math.max(1, Number(limit) || 100));
+    const max = Math.min(1000, Math.max(1, Math.trunc(Number(limit)) || 100));
+    const start = Number.isSafeInteger(offset) && offset > 0 ? offset : 0;
     return dbState.purchases
         .filter((purchase) => !steamIdText || purchase.steamId64 === steamIdText)
         .filter((purchase) => !statusText || purchase.status === statusText)
         .slice()
-        .sort((a, b) => Number(b.updatedAt ?? 0) - Number(a.updatedAt ?? 0))
-        .slice(0, max)
+        .sort((a, b) => Number(b.updatedAt ?? 0) - Number(a.updatedAt ?? 0)
+            || (String(a.transId) < String(b.transId) ? 1 : String(a.transId) > String(b.transId) ? -1 : 0))
+        .slice(start, start + max)
         .map(clonePurchase);
+}
+
+export function getMicroTxnCheckpoint(scope) {
+    const sqlite = getSqliteBackend();
+    if (sqlite) return sqlite.getMicroTxnCheckpoint(scope);
+    const record = safeGet(dbState.microTxnCheckpoints, scope);
+    return record ? JSON.parse(JSON.stringify(record)) : null;
+}
+
+export async function saveMicroTxnCheckpoint(scope, value, { expectedRevision } = {}) {
+    const sqlite = getSqliteBackend();
+    if (sqlite) return sqlite.saveMicroTxnCheckpoint(scope, value, { expectedRevision });
+    if (!dbInitialized) throw new Error('report_checkpoint_db_not_initialized');
+    const clone = validateMicroTxnCheckpoint(scope, value, expectedRevision);
+    let record;
+    await saveToDisk({
+        prepare: () => {
+            const current = safeGet(dbState.microTxnCheckpoints, scope);
+            if ((current?.revision ?? 0) !== expectedRevision) throw new Error('report_checkpoint_conflict');
+            record = { ...clone, revision: expectedRevision + 1 };
+            return { ...dbState, microTxnCheckpoints: { ...dbState.microTxnCheckpoints, [scope]: record } };
+        },
+        // Publish in-memory state only after atomic rename succeeds. A failed
+        // checkpoint write must not allow the next tick to skip unpersisted data.
+        onCommit: () => { safeSet(dbState.microTxnCheckpoints, scope, record); }
+    });
+    return JSON.parse(JSON.stringify(record));
 }
 
 export async function savePurchaseState(receipt) {
     const sqlite = getSqliteBackend();
     if (sqlite) return sqlite.savePurchaseState(receipt);
 
-    const now = Date.now();
-    const index = dbState.purchases.findIndex((purchase) => purchasesMatch(purchase, {
-        transId: receipt?.transId,
-        orderId: receipt?.orderId,
-        requestId: receipt?.requestId
-    }));
-    const merged = mergePurchaseRecord(index >= 0 ? dbState.purchases[index] : null, receipt, now);
-    if (!merged) {
-        throw new Error('purchase_state_requires_trans_id_or_order_id');
-    }
-    if (index >= 0) dbState.purchases[index] = merged;
-    else dbState.purchases.push(merged);
-    await saveToDisk();
+    let merged;
+    let purchases;
+    await saveToDisk({
+        prepare: () => {
+            const index = dbState.purchases.findIndex((purchase) => purchasesMatch(purchase, {
+                transId: receipt?.transId, orderId: receipt?.orderId, requestId: receipt?.requestId
+            }));
+            merged = mergePurchaseRecord(index >= 0 ? dbState.purchases[index] : null, receipt, Date.now());
+            if (!merged) throw new Error('purchase_state_requires_trans_id_or_order_id');
+            purchases = [...dbState.purchases];
+            if (index >= 0) purchases[index] = merged;
+            else purchases.push(merged);
+            return { ...dbState, purchases };
+        },
+        // Never publish a paid intent/completion that a failed rename did not save.
+        onCommit: () => { dbState.purchases = purchases; }
+    });
     return clonePurchase(merged);
 }
 

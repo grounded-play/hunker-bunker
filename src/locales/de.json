@@ -46,6 +46,75 @@
     "elite_contact": "ANZUG: Elite-Kontakt. Verstärkter Feind — Rückzugsweg freihalten."
   },
   "ui": {
+    "workbench": {
+      "aria_close": "Feldwerkbank schließen",
+      "kicker": "LAGER-WERKBANK // FELDFABRIKATION",
+      "title": "FELDWERKBANK",
+      "copy": "Stelle Feldnachschub aus gebankten Materialien her. Effekte wirken sofort auf deine aktuelle Expedition.",
+      "craft": "HERSTELLEN",
+      "close": "WERKBANK VERLASSEN",
+      "ammo_pack_name": "Standard-Munitionspaket",
+      "ammo_pack_desc": "Füllt 30 Schuss kinetische Munition auf und lädt das aktive Magazin nach.",
+      "med_patch_name": "Notfall-Bionaht",
+      "med_patch_desc": "Synthetisiert antiseptisches Gewebedichtmittel und stellt 40 TP wieder her.",
+      "suit_armor_plate_name": "Verstärkte Anzugpanzerung",
+      "suit_armor_plate_desc": "Installiert abtragende Verbundplatten, repariert Rüstung und gewährt +25 Schild."
+    },
+    "chat": {
+      "title": "RAUMCHAT",
+      "open": "CHAT",
+      "close": "SCHLIESSEN",
+      "scope": "Lobby und Mission teilen diesen Kanal. Alle im Raum können mitlesen, auch PvP-Gegner. Die Welt läuft beim Schreiben weiter.",
+      "history": "Nachrichten im Raum",
+      "empty": "Noch keine Nachrichten.",
+      "compose": "Nachricht (bis zu 400 Zeichen)",
+      "placeholder": "Nachricht eingeben… Enter sendet; Umschalt+Enter fügt eine Zeile hinzu.",
+      "send": "SENDEN",
+      "sending": "Wird gesendet…",
+      "disconnected": "Tritt einem Online-Raum bei. Warte auf eine bestätigte Relay-Verbindung.",
+      "connected": "Verbunden mit {room}. Nachricht für Moderation auswählen.",
+      "rateLimited": "Zu viele Aktionen. Warte 10 Sekunden und versuche es erneut.",
+      "filterError": "Der Text konnte nicht sicher gefiltert werden. Nutze die unterstützten Spielsprachen und entferne ungewöhnliche Steuerzeichen.",
+      "sendError": "Nicht gesendet oder nicht bestätigt. Prüfe das Limit von 400 Zeichen und die Verbindung. Unveränderte Wiederholungen werden nicht doppelt zugestellt.",
+      "notifications": "Ungelesen-Markierungen anzeigen",
+      "privacy": "Nur gefilterter Text wird zugestellt. Chat bleibt im Relay-Speicher (50 Nachrichten pro Raum), Meldungen bis zu 24 Stunden / 100 Meldungen. Neustart löscht alles. Keine automatische Antwort des Teams.",
+      "selectMessage": "Wähle eine Nachricht zum Stummschalten, Blockieren oder Melden.",
+      "mute": "STUMM",
+      "unmute": "LAUT",
+      "block": "BLOCKIEREN",
+      "unblock": "FREIGEBEN",
+      "report": "MELDEN",
+      "reportReason": "Meldegrund",
+      "reported": "Meldung in der temporären Warteschlange dieses Relays gespeichert.",
+      "player": "Spieler",
+      "quick": {
+        "help": "Brauche Hilfe!",
+        "wait": "Stellung halten / Warten.",
+        "regroup": "Hier sammeln.",
+        "follow": "Folgt mir.",
+        "thanks": "Danke!"
+      },
+      "reasons": {
+        "harassment": "Belästigung",
+        "hate": "Hass",
+        "spam": "Spam",
+        "sexual": "Sexuelle Inhalte",
+        "threat": "Drohung",
+        "other": "Sonstiges"
+      }
+    },
+    "ping": {
+      "point": "TAKTIK-SIGNAL",
+      "target": "ZIEL: {target}",
+      "supplies": "VORRÄTE: {item}",
+      "help": "BRAUCHE UNTERSTÜTZUNG!",
+      "wait": "STELLUNG HALTEN",
+      "follow": "FOLGEN",
+      "regroup": "BEI SIGNAL SAMMELN",
+      "thanks": "VERSTANDEN / DANKE",
+      "aria_radial": "Taktische Schnellbefehle",
+      "reticle": "SIGNAL"
+    },
     "encounters": {
       "locked_crossfire": {
         "name": "Kreuzfeuer-Sperre"
@@ -277,6 +346,8 @@
       "stage_eyebrow": "◈ LIVE-VORSCHAU",
       "weapon_label": "WAFFE:",
       "chassis_label": "CHASSIS:",
+      "body_female": "WEIBLICH",
+      "body_male": "MÄNNLICH",
       "sheen_kicker": "OPERATOR-GLANZ",
       "sheen_cta": "FARBMATRIX ÖFFNEN",
       "stage_hint": "3D-BÜHNE ZIEHEN, UM OPERATOR & WAFFE ZU PRÜFEN",
@@ -1125,6 +1196,8 @@
       "wallet_direct": "STEAM-GUTHABEN DIREKT",
       "store_offline": "STEAM-ITEM-SHOP OFFLINE",
       "purchases_offline": "Steam-Shop-Käufe sind in diesem Build offline.",
+      "purchases_region_restricted": "Käufe von Schlüsseln sind in Ihrer Region aufgrund lokaler Vorschriften nicht verfügbar.",
+      "region_restricted": "REGION EINGESCHRÄNKT",
       "qa_grant": "Synthetische QA-Vergabe: +{count} nicht handelbare Relikt-Schlüssel. Es wurde kein Kauf ausgelöst.",
       "purchases_disabled": "Käufe sind in dieser Beta deaktiviert. Nutze QA GRANT TEST KIT in der Waffenkammer für nicht handelbare Testgegenstände.",
       "key_and_cache_required": "Für die Entschlüsselung werden Schlüssel und Cache benötigt.",
@@ -1179,7 +1252,8 @@
       "black_box_clear": "KEIN AKTIVES BERGUNGSSIGNAL",
       "no_tracked_objectives": "KEINE VERFOLGTEN ZIELE",
       "surface": "OBERFLÄCHE",
-      "story_prelude": "AKT I // MENSCHLICHES VORSPIEL"
+      "story_prelude": "AKT I // MENSCHLICHES VORSPIEL",
+      "build_mismatch": "HOST NUTZT {host}, DU NUTZT {client} — AKTUALISIERE ODER WECHSLE DEINEN STEAM-BETA-ZWEIG"
     },
     "dossier": {
       "title": "TAKTISCHES DOSSIER",
@@ -1741,7 +1815,7 @@
       },
       "bio_vampirism": {
         "name": "Bio-Vampirische Membran",
-        "description": "Das Töten von Bio-Feinden stellt O₂-Werte und Anzugbatterie wieder her."
+        "description": "Ein korrodierter Bio-Feind stellt beim Tod bis zu 8 % O₂ und, wenn du verletzt bist, ein Herz wieder her."
       }
     },
     "cache": {
@@ -3512,6 +3586,56 @@
         "rail_marksman": "Schienen-Präzisionsgewehr",
         "neon_smg": "Neon-MP",
         "cryo_lance": "Kryolanze"
+      }
+    },
+    "commentary": {
+      "commentary_on": {
+        "title": "Entwicklerkommentar",
+        "body": "Der Kommentar ist an. Karten wie diese erscheinen, sobald du die Momente erreichst, um die es geht: dein erster Einsatz, Blackboxen, besondere Räume, die Königin. Jeder Eintrag lässt sich auch unter Systemeinstellungen > Audio > Entwicklerkommentar > Alle lesen nachlesen."
+      },
+      "run_start": {
+        "title": "Die Einsatzschleife",
+        "body": "Sauerstoff, das Konto und die Reparaturschleife des Generators kamen gemeinsam, in einem Commit am 28. Mai 2026. Davor blieb zwischen den Einsätzen nichts erhalten. Erst die O2-Uhr macht aus „noch ein Raum“ eine Entscheidung: ausrücken, die Bedrohung lesen, sichern, was zählt, und zurück sein, bevor die Luft ausgeht."
+      },
+      "black_box_signal": {
+        "title": "Scheitern wird Kartendaten",
+        "body": "Blackboxen kamen in der ersten Juniwoche 2026 ins Spiel, und einen Tag später zeigte die Basis erstmals die Blackbox eines früheren Auftragnehmers. Ein gescheiterter Einsatz bleibt als Spur auf der Karte, samt Bergungsgut, statt von einem Neuladen gelöscht zu werden."
+      },
+      "black_box_recovered": {
+        "title": "Bergbare Folgen",
+        "body": "Wer eine Blackbox birgt, bekommt das Bergungsgut zurück, das jener Einsatz bei sich trug. Im Koop gehört jede Blackbox jemandem: Ein Playtest im September 2026 zeigte, wie die Box des einen Spielers „geborgen“ wurde, als der andere starb. Seitdem wird der Besitz mit der Box über das Netzwerk gesendet."
+      },
+      "room_armory": {
+        "title": "Waffenkammern",
+        "body": "Waffenkammern gehörten zu den ersten fünf handgebauten Raumvorlagen, eingeführt am 29. Mai 2026. Sie brechen den prozeduralen Rhythmus mit Absicht: Ein handgebauter Raum in einer generierten Karte wirkt bedeutsam, noch bevor die Oberfläche etwas sagt."
+      },
+      "room_the_nest": {
+        "title": "Nesträume",
+        "body": "Das Nest stammt aus demselben Vorlagen-Durchgang vom 29. Mai. Es ist eine gebaute Gefahrenform in generiertem Gelände und sagt damit: Hier lebt etwas, nicht bloß: Die Würfel fielen schlecht."
+      },
+      "room_agent_wreckage": {
+        "title": "Drei Wracks",
+        "body": "Die Wrackräume verbinden die drei Operatoren mit einem einzigen Absturz: Ein Schiff trug das Peilsignal, eines das Relais und eines die Waffe. Die Wrackgrafik wurde am 22. Mai 2026 neu gezeichnet, einer der ersten Grafikdurchgänge des Projekts."
+      },
+      "queen_fight": {
+        "title": "Kampf gegen die Königin",
+        "body": "Die Königin durchläuft drei Phasen, Brut, Raserei und Verzweiflung, und ihre Panzerung fällt nur in Schwachstellenfenstern ganz. Automatisierte Tests schicken jede Klasse durch den Kampf, damit keine die Eskalation überspringt und selbst die schwächste Klasse ihre Panzerung noch ankratzt."
+      },
+      "queen_killed": {
+        "title": "Die Königin kann sterben",
+        "body": "Siege im Kampf und erzählerische Ablehnung werden getrennt erfasst. Die Geschichte unterscheidet, ob du ihren Körper besiegt oder nur ihr Angebot abgelehnt hast."
+      },
+      "achievement": {
+        "title": "Steam-Errungenschaften",
+        "body": "Das Errungenschafts-Tracking kam am 29. Mai 2026, zusammen mit den persönlichen Bestwerten. Errungenschaften markieren Meilensteine der Geschichte und sollen sich wie Einsatzprotokolle lesen, nicht wie Pflichtaufgaben."
+      },
+      "leaderboard": {
+        "title": "Vertrauenswürdige Punktzahlen",
+        "body": "Punktzahlen werden auf unserem Server aus einem Einsatzbeleg neu berechnet; der Client schickt nie einfach eine Zahl. Im September 2026 verwarf genau diese Prüfung sechs Tage lang stillschweigend jede Punktzahl von Deck und PC, weil Client- und Servertests unterschiedliche Testdaten nutzten. Heute bindet ein einziger Vertragstest beide."
+      },
+      "steam_vault": {
+        "title": "Steam-Tresor",
+        "body": "Der Tresor kam im Juli 2026 mit dem Steam-Backend. Handel- und marktfähige Gegenstände liegen im Steam-Inventar; das Spiel zeigt nur, was Steam als dein Eigentum bestätigt hat."
       }
     }
   }

@@ -91,7 +91,8 @@ export function realizeHallwayConnector(archetype, random, { size = CHUNK_SIZE, 
                 x: Math.round(from.x + (to.x - from.x) * t),
                 y: Math.round(from.y + (to.y - from.y) * t),
                 dressingKit: archetype.dressingKit,
-                lightingRhythm: archetype.lightingRhythm
+                lightingRhythm: archetype.lightingRhythm,
+                width
             });
         }
     };

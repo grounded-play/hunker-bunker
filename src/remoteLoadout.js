@@ -1,5 +1,6 @@
 import { ARCHETYPE_SKINS, CLASS_ARCHETYPES, DEFAULT_ARCHETYPES, isChassisSupportedForClass } from './loadout.js';
 import { EQUIPMENT_SCHEMA_VERSION, getEquipmentDefinition } from './data/equipmentDefinitions.js';
+import { decodeChassisChoice, encodeChassisChoice } from './chassisBodies.js';
 
 function normalizeClassId(classId) {
     const value = String(classId || 'SCOUT').toLowerCase();
@@ -27,6 +28,9 @@ export function resolveRemoteEquipmentVisuals(classId, raw = {}) {
         .filter((id) => getEquipmentDefinition(id)?.family === 'overclock');
     while (overclockIds.length < 2) overclockIds.push(null);
     const requestedChassis = raw?.chassisSkinId == null ? null : String(raw.chassisSkinId);
+    const chassisSkinId = requestedChassis && isChassisSupportedForClass(cls, requestedChassis)
+        ? requestedChassis
+        : null;
 
     return Object.freeze({
         schemaVersion,
@@ -34,9 +38,8 @@ export function resolveRemoteEquipmentVisuals(classId, raw = {}) {
         weaponSkinId,
         charmId,
         overclockIds: Object.freeze(overclockIds),
-        chassisSkinId: requestedChassis && isChassisSupportedForClass(cls, requestedChassis)
-            ? requestedChassis
-            : null
+        chassisSkinId,
+        chassisBody: decodeChassisChoice(encodeChassisChoice(chassisSkinId, raw?.chassisBody)).body
     });
 }
 
@@ -46,6 +49,7 @@ export function remoteEquipmentSignature(visuals) {
         visuals?.weaponSkinId ?? null,
         visuals?.charmId ?? null,
         ...(visuals?.overclockIds ?? []),
-        visuals?.chassisSkinId ?? null
+        visuals?.chassisSkinId ?? null,
+        visuals?.chassisBody ?? null
     ]);
 }

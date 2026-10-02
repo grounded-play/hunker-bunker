@@ -46,3 +46,25 @@ export function measurePerfPhase(phase, context, operation) {
         span.end();
     }
 }
+
+// One open `startup:<stage>` phase per deployment loading stage, so a
+// main-thread stall during deploy is attributed to its stage instead of
+// arriving with no active phase (QA 2026-09-30: 13.6 s, `activePhases: []`).
+export function trackStartupStages() {
+    let current = null;
+    let span = null;
+    return {
+        enter(stage) {
+            const name = `startup:${String(stage).toLowerCase()}`;
+            if (name === current) return;
+            span?.end();
+            current = name;
+            span = beginPerfPhase(name);
+        },
+        end() {
+            span?.end();
+            span = null;
+            current = null;
+        }
+    };
+}

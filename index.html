@@ -15,6 +15,8 @@
   <link rel="stylesheet" href="/src/styles/armory.css">
   <link rel="stylesheet" href="/src/styles/itemCard.css">
   <link rel="stylesheet" href="/src/styles/foundryHub.css">
+  <link rel="stylesheet" href="/src/styles/fieldWorkbench.css">
+  <link rel="stylesheet" href="/src/styles/quickCommandRadial.css">
   <link rel="icon" type="image/png" href="/favicon.png" />
   <title data-i18n="ui.misc.hunker_bunker_tactical_command">HUNKER BUNKER | TACTICAL COMMAND</title>
 
@@ -347,7 +349,7 @@
 
         <div class="credits-footer">
           <span data-i18n="ui.about.thank_you_for_deploying" class="credits-footer-thankyou">THANK YOU FOR DEPLOYING</span>
-          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.13-BETA // ACTIVE</span>
+          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.14-BETA // ACTIVE</span>
         </div>
       </div>
     </div>
@@ -1429,6 +1431,7 @@
       </div>
       <!-- Settings gear: pinned to top-right corner, never part of any flex layout -->
       <div class="hud-corner-settings">
+        <button type="button" class="calibrate-btn" data-player-chat-open data-i18n="ui.chat.open">CHAT</button>
         <button class="calibrate-btn open-settings-btn">⚙</button>
       </div>
       <div id="pickup-counter-panel" class="pickup-counter-panel" aria-live="polite">
@@ -2309,6 +2312,20 @@
       </div>
     </div>
 
+    <div id="field-workbench-modal" class="modal field-workbench-modal hidden" aria-hidden="true">
+      <div class="modal-content field-workbench-panel">
+        <button data-i18n-aria-label="ui.workbench.aria_close" class="close-modal field-workbench-close" id="close-field-workbench" aria-label="Close field workbench">×</button>
+        <div data-i18n="ui.workbench.kicker" class="field-workbench-kicker" id="field-workbench-kicker">CAMP WORKBENCH // FIELD FABRICATION</div>
+        <h2 data-i18n="ui.workbench.title" class="modal-title field-workbench-title" id="field-workbench-title">FIELD WORKBENCH</h2>
+        <div class="field-workbench-stats-strip" id="field-workbench-stats-strip"></div>
+        <p data-i18n="ui.workbench.copy" class="field-workbench-copy" id="field-workbench-copy">Synthesize field supplies using banked materials. Effects apply immediately to your current expedition.</p>
+        <div class="field-workbench-recipes-grid" id="field-workbench-recipes-grid"></div>
+        <div class="field-workbench-footer">
+          <button data-i18n="ui.workbench.close" type="button" class="field-workbench-close-btn" id="field-workbench-footer-close">EXIT WORKBENCH</button>
+        </div>
+      </div>
+    </div>
+
     <div id="song-interstitial" class="song-interstitial hidden" aria-hidden="true">
       <div class="song-interstitial__placeholder" aria-hidden="true"></div>
       <img id="song-interstitial-image" class="song-interstitial__media" alt="" hidden>
@@ -2372,6 +2389,10 @@
           <!-- Section 1: Display & Graphics -->
         <div class="settings-category-group" data-settings-panel="session">
           <div data-i18n="ui.settings.session_display" class="settings-category-header">SESSION &amp; DISPLAY</div>
+          <div class="setting-item setting-item--action">
+            <span data-i18n="ui.chat.title">ROOM CHAT</span>
+            <button type="button" class="calibrate-btn settings-action-btn" data-player-chat-open data-i18n="ui.chat.open">CHAT</button>
+          </div>
           <div class="setting-item setting-item--action">
             <span data-i18n="ui.settings.return_to_game">RETURN TO GAME</span>
             <button data-i18n="ui.settings.resume" type="button" class="calibrate-btn settings-action-btn" id="resume-settings">RESUME</button>
@@ -3288,6 +3309,7 @@
             <span class="net-hint-item"><kbd data-i18n="ui.multiplayer.host">HOST</kbd> <span data-i18n="ui.multiplayer.hint_deploy">DEPLOY SQUAD</span></span>
           </div>
           <div class="net-modal-btn-row">
+            <button type="button" class="start-btn" data-player-chat-open data-i18n="ui.chat.open">CHAT</button>
             <button data-i18n="ui.multiplayer.back_to_armory" type="button" class="start-btn net-back-btn" id="net-back-btn">← BACK TO ARMORY</button>
             <button type="button" class="start-btn net-deploy-btn hb-advance-slot" id="net-deploy-btn">DEPLOY SQUAD</button>
           </div>

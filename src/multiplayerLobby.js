@@ -9,6 +9,7 @@ import { createFreshRunEntropy } from './runEntropy.js';
 import { clearMultiplayerSession, startMultiplayerRun } from './gameController.js';
 import { getSelectedPolish } from './operatorPolishes.js';
 import { t, onLocaleChange } from './i18n.js';
+import { playerChat } from './playerChat.js';
 import { RUN_GRADE_BANDS } from './runRating.js';
 import {
     createSteamLobby,
@@ -164,6 +165,7 @@ export function getLocalLoadoutSummary(opClass, mode = 'deployment') {
     const classLoadout = window.loadout.getClassLoadout?.(opClass) ?? {};
     const hasCharm = Boolean(equipment?.charmId ?? window.loadout.getEquippedCharmId?.(opClass));
     const chassisSkinId = window.loadout.getEquippedChassisSkinId?.() ?? null;
+    const chassisBody = window.loadout.getEquippedChassisBody?.() ?? null;
     const polishColor = getSelectedPolish(window.localStorage).color;
     const summary = {
         weapon,
@@ -178,6 +180,7 @@ export function getLocalLoadoutSummary(opClass, mode = 'deployment') {
         )) ?? []
     };
     if (chassisSkinId) summary.chassisSkinId = chassisSkinId;
+    if (chassisSkinId && chassisBody) summary.chassisBody = chassisBody;
     if (polishColor) summary.polishColor = polishColor;
     return summary;
 }
@@ -215,6 +218,23 @@ export function getLocalCallsign() {
         : '';
     const callsign = String(profileCallsign || inputCallsign || '').trim().toUpperCase();
     return callsign || 'AGENT';
+}
+
+// The relay locks a room to its host's build (server/relay.js
+// roomBuildVersions), so every join carries this client's build.
+export function getLocalBuildVersion(buildInfo = globalThis.__HB_BUILD_INFO__) {
+    return typeof buildInfo?.version === 'string' && buildInfo.version ? buildInfo.version : null;
+}
+
+export function describeJoinRejection({ reason, hostBuild, clientBuild } = {}) {
+    if (reason === 'incorrect_password') return 'INCORRECT LOBBY PASSWORD';
+    if (reason === 'build_mismatch') {
+        return t('ui.lobby.build_mismatch', {
+            host: hostBuild || '?',
+            client: clientBuild || '?'
+        });
+    }
+    return 'COULD NOT JOIN LOBBY';
 }
 
 export function filterDiscoverableSteamLobbies(lobbies = [], localSteamId64 = null) {
@@ -475,6 +495,7 @@ export class MultiplayerLobby {
                     reconnectionAttempts: 2,
                     auth: { sessionToken }
                 });
+                playerChat.attachSocket(this.socket, (this.roomCode.trim().slice(0, 24) || 'SECTOR-7').toUpperCase());
 
                 this.socket.on('connect', () => {
                     this.connected = true;
@@ -499,7 +520,8 @@ export class MultiplayerLobby {
                         // like the same anonymous peer.
                         profileId: window.profile?.getProfileId?.() || null,
                         passwordHash,
-                        loadout
+                        loadout,
+                        buildVersion: getLocalBuildVersion()
                     };
                     logMultiplayerEvent('relay-join-sent', {
                         roomCode: this.roomCode,
@@ -643,12 +665,9 @@ export class MultiplayerLobby {
                 // joinRoom before adding this socket to the room at all --
                 // there's no roster/ready state to clean up, just tell the
                 // player and let them retry.
-                this.socket.on('joinRejected', ({ reason } = {}) => {
+                this.socket.on('joinRejected', (detail = {}) => {
                     this.disconnect();
-                    const message = reason === 'incorrect_password'
-                        ? 'INCORRECT LOBBY PASSWORD'
-                        : 'COULD NOT JOIN LOBBY';
-                    window.showToastNotification?.(message);
+                    window.showToastNotification?.(describeJoinRejection(detail));
                 });
 
                 this.socket.on('connect_error', (err) => {
@@ -940,6 +959,7 @@ export class MultiplayerLobby {
     }
 
     disconnect() {
+        playerChat.attachSocket(null);
         if (this.socket) {
             try { this.socket.disconnect(); } catch { /* ignore */ }
             this.socket = null;

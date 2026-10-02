@@ -20,7 +20,16 @@
 
 🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord Server](https://discord.gg/XXwwz3rauu)** • 📚 **[Documentation Map](docs/README.md)**
 
-> **Status (2026-09-30):** Sprint 48 is on `dev/sprint-48` at `v2.4.13-beta`, in a release PR into `mothership`. `v2.4.12-beta` is live on the Steam `beta` branch. This release answers Steam build review 25475189 in code:
+> **Status (2026-10-01):** Sprint 49 is on `dev/sprint-49` at `v2.4.14-beta`, in a release PR into `mothership`. `v2.4.13-beta` is live on the Steam `beta` branch. This release adds:
+> - **Filtered player chat** in co-op and PvP, in seven languages, with mute, block and report.
+> - **Developer commentary** that tells the real history of the game, in seven languages.
+> - **Controller fixes** found by a new pad-only walk through every review screen.
+> - **Purchase reconciliation** that pages completely, survives restarts and never reports false success.
+> - **Co-op fixes** from the 2026-09-30 playtest, and a lobby check that both players run the same build.
+>
+> See [`docs/releases/v2.4.14-beta.md`](docs/releases/v2.4.14-beta.md).
+>
+> `v2.4.13-beta` answered Steam build review 25475189 in code:
 > - **Multiplayer:** now on the title menu.
 > - **Developer commentary:** you can see it, and read all of it.
 > - **Controller:** the whole menu set works with a controller, Achievements included.

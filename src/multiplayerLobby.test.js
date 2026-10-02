@@ -733,6 +733,21 @@ describe('MultiplayerLobby', () => {
             expect(getEquippedCharmId).toHaveBeenCalledWith('TANK');
         });
 
+        it('sends the chassis body so squadmates see the same Ghost Runner body', () => {
+            originalWindow = globalThis.window;
+            globalThis.window = {
+                loadout: {
+                    getEquippedLabel: () => 'SIDEARM',
+                    getEquippedCharmId: () => null,
+                    getEquippedChassisSkinId: () => '5001',
+                    getEquippedChassisBody: () => 'male'
+                },
+                fabricator: {}
+            };
+
+            expect(getLocalLoadoutSummary('SCOUT')).toMatchObject({ chassisSkinId: '5001', chassisBody: 'male' });
+        });
+
         it('reports hasCharm:false when no charm is equipped', () => {
             originalWindow = globalThis.window;
             globalThis.window = {

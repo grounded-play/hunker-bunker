@@ -12,6 +12,11 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 COPY server ./server
+# Client modules the server shares (the chat filter is applied on both
+# sides). Keep this list in step with server/deployImageContents.test.js,
+# which fails when the server imports a file the image does not contain.
+COPY src/chatFilter.js ./src/chatFilter.js
+COPY src/data/chatFilterTerms.js ./src/data/chatFilterTerms.js
 
 ENV NODE_ENV=production
 ENV PORT=3001

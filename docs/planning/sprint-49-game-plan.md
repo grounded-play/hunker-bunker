@@ -1,5 +1,9 @@
 # Sprint 49 Implementation Game Plan: Hanging Systems & Features
 
+Status: historical design sketch. Use the [canonical Sprint 49 plan](sprint-49.md)
+and [implementation handoff](sprint-49-implementation-handoff.md). The descriptions
+below predate later integrations and are not current feature status.
+
 **Author:** Antigravity Engineering  
 **Target Branch:** `dev/sprint-49`  
 **Prerequisites:** Sprint 48 Baseline (`v2.4.12-beta-f0676af38196`)  

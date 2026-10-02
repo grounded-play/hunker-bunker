@@ -49,19 +49,30 @@ function findCellWallNormal(cell, grid) {
     return null;
 }
 
-function pickCandidate(candidates, random, grid, center) {
+export function isWallBackedPropType(type) {
+    return type === 'prop_fungal_tendril_altar'
+        || type === 'prop_flesh_steel_cradle'
+        || type === 'prop_shrine_plinth_broken';
+}
+
+function pickCandidate(candidates, random, grid, center, wallOnly = false) {
     if (candidates.length === 0) return null;
     // Props belong at the perimeter: keep the room center open for the player,
-    // ship consoles, mission fixtures, and readable combat lanes. Randomness
-    // only breaks ties between equally wall-adjacent cells.
-    const scored = candidates.map((cell) => ({
+    // ship consoles, mission fixtures, and readable combat lanes. Wall-backed
+    // props (like altars and cradles) strictly require an adjacent wall tile.
+    let pool = wallOnly
+        ? candidates.filter((cell) => findCellWallNormal(cell, grid) !== null)
+        : candidates;
+    if (pool.length === 0 && wallOnly) pool = candidates;
+    const scored = pool.map((cell) => ({
         cell,
         score: wallAdjacency(cell, grid) * 100
             + Math.hypot(cell.x - center.x, cell.y - center.y)
             + random() * 0.01
     })).sort((a, b) => b.score - a.score);
     const selected = scored[0].cell;
-    candidates.splice(candidates.indexOf(selected), 1);
+    const indexInCandidates = candidates.indexOf(selected);
+    if (indexInCandidates >= 0) candidates.splice(indexInCandidates, 1);
     return selected;
 }
 
@@ -129,7 +140,8 @@ export function planRoomPopulation(room, grid, random) {
     const reservePlacement = (kind, type, blocking = false) => {
         if (placements.length >= 3) return false;
         if (kind !== 'pickup' && placements.filter((placement) => placement.kind !== 'pickup').length >= propLimit) return false;
-        const cell = pickCandidate(candidates, random, grid, center);
+        const wallOnly = isWallBackedPropType(type);
+        const cell = pickCandidate(candidates, random, grid, center, wallOnly);
         if (!cell) return false;
         reserved.add(cellKey(cell));
         const wallNormal = findCellWallNormal(cell, grid);

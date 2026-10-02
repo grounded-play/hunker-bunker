@@ -6,6 +6,7 @@ import { assetUrl } from './assetUrl.js';
 import { recordAssetLoad } from './assetLoadTelemetry.js';
 import { measurePerfPhase } from './perfPhases.js';
 import { useSinglePassForFlatMaterials } from './singlePassFlatMaterials.js';
+import { KIT_SCALE, applyKitMaterials } from './kitMaterials.js';
 
 // docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws without this registered first.
@@ -14,99 +15,100 @@ function createGltfLoader() {
 }
 
 export const WORLD_3D_MODELS = Object.freeze({
-    // Kenney modular kits, CC0, restyled to the game palette by
-    // scripts/blender/restyle_kit_pieces.py. The cave and space kits share an
+    // Kenney modular kits, CC0, textured by scripts/blender/texture_kit_pieces.py
+    // with shared CC0 surface materials (src/kitMaterials.js). One uniform
+    // scale and the source origin keep the 4-unit socket grid intact. The cave and space kits share an
     // identical 40-piece grammar, so both skins expose the same key suffixes and
     // a generator can swap biome without changing its socket logic.
     // 3D-only by design: these have no billboard fallback, which is why kit_
     // joins WORLD_3D_ONLY_PREFIXES above.
-    kit_cave_corridor_corner: { url: '/3d/runtime/kits/modular-cave-kit/corridor-corner.glb', height: 3.0, yaw: 0 },
-    kit_cave_corridor_end: { url: '/3d/runtime/kits/modular-cave-kit/corridor-end.glb', height: 3.0, yaw: 0 },
-    kit_cave_corridor_intersection: { url: '/3d/runtime/kits/modular-cave-kit/corridor-intersection.glb', height: 3.0, yaw: 0 },
-    kit_cave_corridor_junction: { url: '/3d/runtime/kits/modular-cave-kit/corridor-junction.glb', height: 3.0, yaw: 0 },
-    kit_cave_corridor_transition: { url: '/3d/runtime/kits/modular-cave-kit/corridor-transition.glb', height: 3.0, yaw: 0 },
-    kit_cave_corridor_wide_corner: { url: '/3d/runtime/kits/modular-cave-kit/corridor-wide-corner.glb', height: 3.0, yaw: 0 },
-    kit_cave_corridor_wide_end: { url: '/3d/runtime/kits/modular-cave-kit/corridor-wide-end.glb', height: 3.0, yaw: 0 },
-    kit_cave_corridor_wide_intersection: { url: '/3d/runtime/kits/modular-cave-kit/corridor-wide-intersection.glb', height: 3.0, yaw: 0 },
-    kit_cave_corridor_wide_junction: { url: '/3d/runtime/kits/modular-cave-kit/corridor-wide-junction.glb', height: 3.0, yaw: 0 },
-    kit_cave_corridor_wide: { url: '/3d/runtime/kits/modular-cave-kit/corridor-wide.glb', height: 3.0, yaw: 0 },
-    kit_cave_corridor: { url: '/3d/runtime/kits/modular-cave-kit/corridor.glb', height: 3.0, yaw: 0 },
-    kit_cave_gate_metal_bars: { url: '/3d/runtime/kits/modular-cave-kit/gate-metal-bars.glb', height: 2.6, yaw: 0 },
-    kit_cave_gate_overhang: { url: '/3d/runtime/kits/modular-cave-kit/gate-overhang.glb', height: 2.6, yaw: 0 },
-    kit_cave_gate_rock: { url: '/3d/runtime/kits/modular-cave-kit/gate-rock.glb', height: 2.6, yaw: 0 },
-    kit_cave_gate: { url: '/3d/runtime/kits/modular-cave-kit/gate.glb', height: 2.6, yaw: 0 },
-    kit_cave_ladder: { url: '/3d/runtime/kits/modular-cave-kit/ladder.glb', height: 2.2, yaw: 0 },
-    kit_cave_room_corner: { url: '/3d/runtime/kits/modular-cave-kit/room-corner.glb', height: 3.0, yaw: 0 },
-    kit_cave_room_large_variation: { url: '/3d/runtime/kits/modular-cave-kit/room-large-variation.glb', height: 3.0, yaw: 0 },
-    kit_cave_room_large: { url: '/3d/runtime/kits/modular-cave-kit/room-large.glb', height: 3.0, yaw: 0 },
-    kit_cave_room_small_variation: { url: '/3d/runtime/kits/modular-cave-kit/room-small-variation.glb', height: 3.0, yaw: 0 },
-    kit_cave_room_small: { url: '/3d/runtime/kits/modular-cave-kit/room-small.glb', height: 3.0, yaw: 0 },
-    kit_cave_room_wide_variation: { url: '/3d/runtime/kits/modular-cave-kit/room-wide-variation.glb', height: 3.0, yaw: 0 },
-    kit_cave_room_wide: { url: '/3d/runtime/kits/modular-cave-kit/room-wide.glb', height: 3.0, yaw: 0 },
-    kit_cave_stairs_wide: { url: '/3d/runtime/kits/modular-cave-kit/stairs-wide.glb', height: 2.2, yaw: 0 },
-    kit_cave_stairs: { url: '/3d/runtime/kits/modular-cave-kit/stairs.glb', height: 2.2, yaw: 0 },
-    kit_cave_template_corner: { url: '/3d/runtime/kits/modular-cave-kit/template-corner.glb', height: 3.0, yaw: 0 },
-    kit_cave_template_detail: { url: '/3d/runtime/kits/modular-cave-kit/template-detail.glb', height: 3.0, yaw: 0 },
-    kit_cave_template_floor_big: { url: '/3d/runtime/kits/modular-cave-kit/template-floor-big.glb', height: 0.25, yaw: 0 },
-    kit_cave_template_floor_detail_a: { url: '/3d/runtime/kits/modular-cave-kit/template-floor-detail-a.glb', height: 0.25, yaw: 0 },
-    kit_cave_template_floor_detail: { url: '/3d/runtime/kits/modular-cave-kit/template-floor-detail.glb', height: 0.25, yaw: 0 },
-    kit_cave_template_floor_layer_hole: { url: '/3d/runtime/kits/modular-cave-kit/template-floor-layer-hole.glb', height: 0.25, yaw: 0 },
-    kit_cave_template_floor_layer_raised: { url: '/3d/runtime/kits/modular-cave-kit/template-floor-layer-raised.glb', height: 0.25, yaw: 0 },
-    kit_cave_template_floor_layer: { url: '/3d/runtime/kits/modular-cave-kit/template-floor-layer.glb', height: 0.25, yaw: 0 },
-    kit_cave_template_floor: { url: '/3d/runtime/kits/modular-cave-kit/template-floor.glb', height: 0.25, yaw: 0 },
-    kit_cave_template_wall_corner: { url: '/3d/runtime/kits/modular-cave-kit/template-wall-corner.glb', height: 2.6, yaw: 0 },
-    kit_cave_template_wall_detail_a: { url: '/3d/runtime/kits/modular-cave-kit/template-wall-detail-a.glb', height: 2.6, yaw: 0 },
-    kit_cave_template_wall_half: { url: '/3d/runtime/kits/modular-cave-kit/template-wall-half.glb', height: 2.6, yaw: 0 },
-    kit_cave_template_wall_stairs: { url: '/3d/runtime/kits/modular-cave-kit/template-wall-stairs.glb', height: 2.6, yaw: 0 },
-    kit_cave_template_wall_top: { url: '/3d/runtime/kits/modular-cave-kit/template-wall-top.glb', height: 2.6, yaw: 0 },
-    kit_cave_template_wall: { url: '/3d/runtime/kits/modular-cave-kit/template-wall.glb', height: 2.6, yaw: 0 },
-    kit_space_cables: { url: '/3d/runtime/kits/modular-space-kit/cables.glb', height: 3.0, yaw: 0 },
-    kit_space_corridor_corner: { url: '/3d/runtime/kits/modular-space-kit/corridor-corner.glb', height: 3.0, yaw: 0 },
-    kit_space_corridor_end: { url: '/3d/runtime/kits/modular-space-kit/corridor-end.glb', height: 3.0, yaw: 0 },
-    kit_space_corridor_intersection: { url: '/3d/runtime/kits/modular-space-kit/corridor-intersection.glb', height: 3.0, yaw: 0 },
-    kit_space_corridor_junction: { url: '/3d/runtime/kits/modular-space-kit/corridor-junction.glb', height: 3.0, yaw: 0 },
-    kit_space_corridor_transition: { url: '/3d/runtime/kits/modular-space-kit/corridor-transition.glb', height: 3.0, yaw: 0 },
-    kit_space_corridor_wide_corner: { url: '/3d/runtime/kits/modular-space-kit/corridor-wide-corner.glb', height: 3.0, yaw: 0 },
-    kit_space_corridor_wide_end: { url: '/3d/runtime/kits/modular-space-kit/corridor-wide-end.glb', height: 3.0, yaw: 0 },
-    kit_space_corridor_wide_intersection: { url: '/3d/runtime/kits/modular-space-kit/corridor-wide-intersection.glb', height: 3.0, yaw: 0 },
-    kit_space_corridor_wide_junction: { url: '/3d/runtime/kits/modular-space-kit/corridor-wide-junction.glb', height: 3.0, yaw: 0 },
-    kit_space_corridor_wide: { url: '/3d/runtime/kits/modular-space-kit/corridor-wide.glb', height: 3.0, yaw: 0 },
-    kit_space_corridor: { url: '/3d/runtime/kits/modular-space-kit/corridor.glb', height: 3.0, yaw: 0 },
-    kit_space_gate_door_window: { url: '/3d/runtime/kits/modular-space-kit/gate-door-window.glb', height: 2.6, yaw: 0 },
-    kit_space_gate_door: { url: '/3d/runtime/kits/modular-space-kit/gate-door.glb', height: 2.6, yaw: 0 },
-    kit_space_gate_lasers: { url: '/3d/runtime/kits/modular-space-kit/gate-lasers.glb', height: 2.6, yaw: 0 },
-    kit_space_gate: { url: '/3d/runtime/kits/modular-space-kit/gate.glb', height: 2.6, yaw: 0 },
-    kit_space_room_corner: { url: '/3d/runtime/kits/modular-space-kit/room-corner.glb', height: 3.0, yaw: 0 },
-    kit_space_room_large_variation: { url: '/3d/runtime/kits/modular-space-kit/room-large-variation.glb', height: 3.0, yaw: 0 },
-    kit_space_room_large: { url: '/3d/runtime/kits/modular-space-kit/room-large.glb', height: 3.0, yaw: 0 },
-    kit_space_room_small_variation: { url: '/3d/runtime/kits/modular-space-kit/room-small-variation.glb', height: 3.0, yaw: 0 },
-    kit_space_room_small: { url: '/3d/runtime/kits/modular-space-kit/room-small.glb', height: 3.0, yaw: 0 },
-    kit_space_room_wide_variation: { url: '/3d/runtime/kits/modular-space-kit/room-wide-variation.glb', height: 3.0, yaw: 0 },
-    kit_space_room_wide: { url: '/3d/runtime/kits/modular-space-kit/room-wide.glb', height: 3.0, yaw: 0 },
-    kit_space_stairs_wide: { url: '/3d/runtime/kits/modular-space-kit/stairs-wide.glb', height: 2.2, yaw: 0 },
-    kit_space_stairs: { url: '/3d/runtime/kits/modular-space-kit/stairs.glb', height: 2.2, yaw: 0 },
-    kit_space_template_corner: { url: '/3d/runtime/kits/modular-space-kit/template-corner.glb', height: 3.0, yaw: 0 },
-    kit_space_template_detail: { url: '/3d/runtime/kits/modular-space-kit/template-detail.glb', height: 3.0, yaw: 0 },
-    kit_space_template_floor_big: { url: '/3d/runtime/kits/modular-space-kit/template-floor-big.glb', height: 0.25, yaw: 0 },
-    kit_space_template_floor_detail_a: { url: '/3d/runtime/kits/modular-space-kit/template-floor-detail-a.glb', height: 0.25, yaw: 0 },
-    kit_space_template_floor_detail: { url: '/3d/runtime/kits/modular-space-kit/template-floor-detail.glb', height: 0.25, yaw: 0 },
-    kit_space_template_floor_layer_hole: { url: '/3d/runtime/kits/modular-space-kit/template-floor-layer-hole.glb', height: 0.25, yaw: 0 },
-    kit_space_template_floor_layer_raised: { url: '/3d/runtime/kits/modular-space-kit/template-floor-layer-raised.glb', height: 0.25, yaw: 0 },
-    kit_space_template_floor_layer: { url: '/3d/runtime/kits/modular-space-kit/template-floor-layer.glb', height: 0.25, yaw: 0 },
-    kit_space_template_floor: { url: '/3d/runtime/kits/modular-space-kit/template-floor.glb', height: 0.25, yaw: 0 },
-    kit_space_template_wall_corner: { url: '/3d/runtime/kits/modular-space-kit/template-wall-corner.glb', height: 2.6, yaw: 0 },
-    kit_space_template_wall_detail_a: { url: '/3d/runtime/kits/modular-space-kit/template-wall-detail-a.glb', height: 2.6, yaw: 0 },
-    kit_space_template_wall_half: { url: '/3d/runtime/kits/modular-space-kit/template-wall-half.glb', height: 2.6, yaw: 0 },
-    kit_space_template_wall_stairs: { url: '/3d/runtime/kits/modular-space-kit/template-wall-stairs.glb', height: 2.6, yaw: 0 },
-    kit_space_template_wall_top: { url: '/3d/runtime/kits/modular-space-kit/template-wall-top.glb', height: 2.6, yaw: 0 },
-    kit_space_template_wall: { url: '/3d/runtime/kits/modular-space-kit/template-wall.glb', height: 2.6, yaw: 0 },
+    kit_cave_corridor_corner: { url: '/3d/runtime/kits/modular-cave-kit/corridor-corner.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_corridor_end: { url: '/3d/runtime/kits/modular-cave-kit/corridor-end.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_corridor_intersection: { url: '/3d/runtime/kits/modular-cave-kit/corridor-intersection.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_corridor_junction: { url: '/3d/runtime/kits/modular-cave-kit/corridor-junction.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_corridor_transition: { url: '/3d/runtime/kits/modular-cave-kit/corridor-transition.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_corridor_wide_corner: { url: '/3d/runtime/kits/modular-cave-kit/corridor-wide-corner.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_corridor_wide_end: { url: '/3d/runtime/kits/modular-cave-kit/corridor-wide-end.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_corridor_wide_intersection: { url: '/3d/runtime/kits/modular-cave-kit/corridor-wide-intersection.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_corridor_wide_junction: { url: '/3d/runtime/kits/modular-cave-kit/corridor-wide-junction.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_corridor_wide: { url: '/3d/runtime/kits/modular-cave-kit/corridor-wide.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_corridor: { url: '/3d/runtime/kits/modular-cave-kit/corridor.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_gate_metal_bars: { url: '/3d/runtime/kits/modular-cave-kit/gate-metal-bars.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_gate_overhang: { url: '/3d/runtime/kits/modular-cave-kit/gate-overhang.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_gate_rock: { url: '/3d/runtime/kits/modular-cave-kit/gate-rock.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_gate: { url: '/3d/runtime/kits/modular-cave-kit/gate.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_ladder: { url: '/3d/runtime/kits/modular-cave-kit/ladder.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_room_corner: { url: '/3d/runtime/kits/modular-cave-kit/room-corner.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_room_large_variation: { url: '/3d/runtime/kits/modular-cave-kit/room-large-variation.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_room_large: { url: '/3d/runtime/kits/modular-cave-kit/room-large.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_room_small_variation: { url: '/3d/runtime/kits/modular-cave-kit/room-small-variation.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_room_small: { url: '/3d/runtime/kits/modular-cave-kit/room-small.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_room_wide_variation: { url: '/3d/runtime/kits/modular-cave-kit/room-wide-variation.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_room_wide: { url: '/3d/runtime/kits/modular-cave-kit/room-wide.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_stairs_wide: { url: '/3d/runtime/kits/modular-cave-kit/stairs-wide.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_stairs: { url: '/3d/runtime/kits/modular-cave-kit/stairs.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_template_corner: { url: '/3d/runtime/kits/modular-cave-kit/template-corner.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_template_detail: { url: '/3d/runtime/kits/modular-cave-kit/template-detail.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_template_floor_big: { url: '/3d/runtime/kits/modular-cave-kit/template-floor-big.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_template_floor_detail_a: { url: '/3d/runtime/kits/modular-cave-kit/template-floor-detail-a.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_template_floor_detail: { url: '/3d/runtime/kits/modular-cave-kit/template-floor-detail.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_template_floor_layer_hole: { url: '/3d/runtime/kits/modular-cave-kit/template-floor-layer-hole.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_template_floor_layer_raised: { url: '/3d/runtime/kits/modular-cave-kit/template-floor-layer-raised.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_template_floor_layer: { url: '/3d/runtime/kits/modular-cave-kit/template-floor-layer.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_template_floor: { url: '/3d/runtime/kits/modular-cave-kit/template-floor.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_template_wall_corner: { url: '/3d/runtime/kits/modular-cave-kit/template-wall-corner.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_template_wall_detail_a: { url: '/3d/runtime/kits/modular-cave-kit/template-wall-detail-a.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_template_wall_half: { url: '/3d/runtime/kits/modular-cave-kit/template-wall-half.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_template_wall_stairs: { url: '/3d/runtime/kits/modular-cave-kit/template-wall-stairs.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_template_wall_top: { url: '/3d/runtime/kits/modular-cave-kit/template-wall-top.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_cave_template_wall: { url: '/3d/runtime/kits/modular-cave-kit/template-wall.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_cables: { url: '/3d/runtime/kits/modular-space-kit/cables.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_corridor_corner: { url: '/3d/runtime/kits/modular-space-kit/corridor-corner.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_corridor_end: { url: '/3d/runtime/kits/modular-space-kit/corridor-end.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_corridor_intersection: { url: '/3d/runtime/kits/modular-space-kit/corridor-intersection.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_corridor_junction: { url: '/3d/runtime/kits/modular-space-kit/corridor-junction.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_corridor_transition: { url: '/3d/runtime/kits/modular-space-kit/corridor-transition.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_corridor_wide_corner: { url: '/3d/runtime/kits/modular-space-kit/corridor-wide-corner.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_corridor_wide_end: { url: '/3d/runtime/kits/modular-space-kit/corridor-wide-end.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_corridor_wide_intersection: { url: '/3d/runtime/kits/modular-space-kit/corridor-wide-intersection.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_corridor_wide_junction: { url: '/3d/runtime/kits/modular-space-kit/corridor-wide-junction.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_corridor_wide: { url: '/3d/runtime/kits/modular-space-kit/corridor-wide.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_corridor: { url: '/3d/runtime/kits/modular-space-kit/corridor.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_gate_door_window: { url: '/3d/runtime/kits/modular-space-kit/gate-door-window.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_gate_door: { url: '/3d/runtime/kits/modular-space-kit/gate-door.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_gate_lasers: { url: '/3d/runtime/kits/modular-space-kit/gate-lasers.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_gate: { url: '/3d/runtime/kits/modular-space-kit/gate.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_room_corner: { url: '/3d/runtime/kits/modular-space-kit/room-corner.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_room_large_variation: { url: '/3d/runtime/kits/modular-space-kit/room-large-variation.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_room_large: { url: '/3d/runtime/kits/modular-space-kit/room-large.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_room_small_variation: { url: '/3d/runtime/kits/modular-space-kit/room-small-variation.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_room_small: { url: '/3d/runtime/kits/modular-space-kit/room-small.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_room_wide_variation: { url: '/3d/runtime/kits/modular-space-kit/room-wide-variation.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_room_wide: { url: '/3d/runtime/kits/modular-space-kit/room-wide.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_stairs_wide: { url: '/3d/runtime/kits/modular-space-kit/stairs-wide.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_stairs: { url: '/3d/runtime/kits/modular-space-kit/stairs.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_template_corner: { url: '/3d/runtime/kits/modular-space-kit/template-corner.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_template_detail: { url: '/3d/runtime/kits/modular-space-kit/template-detail.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_template_floor_big: { url: '/3d/runtime/kits/modular-space-kit/template-floor-big.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_template_floor_detail_a: { url: '/3d/runtime/kits/modular-space-kit/template-floor-detail-a.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_template_floor_detail: { url: '/3d/runtime/kits/modular-space-kit/template-floor-detail.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_template_floor_layer_hole: { url: '/3d/runtime/kits/modular-space-kit/template-floor-layer-hole.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_template_floor_layer_raised: { url: '/3d/runtime/kits/modular-space-kit/template-floor-layer-raised.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_template_floor_layer: { url: '/3d/runtime/kits/modular-space-kit/template-floor-layer.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_template_floor: { url: '/3d/runtime/kits/modular-space-kit/template-floor.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_template_wall_corner: { url: '/3d/runtime/kits/modular-space-kit/template-wall-corner.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_template_wall_detail_a: { url: '/3d/runtime/kits/modular-space-kit/template-wall-detail-a.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_template_wall_half: { url: '/3d/runtime/kits/modular-space-kit/template-wall-half.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_template_wall_stairs: { url: '/3d/runtime/kits/modular-space-kit/template-wall-stairs.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_template_wall_top: { url: '/3d/runtime/kits/modular-space-kit/template-wall-top.glb', scale: KIT_SCALE, yaw: 0 },
+    kit_space_template_wall: { url: '/3d/runtime/kits/modular-space-kit/template-wall.glb', scale: KIT_SCALE, yaw: 0 },
     broken_scout_ship: { url: '/3d/runtime/broken-scout-ship.glb', height: 1.35, yaw: 0 },
     broken_tank_ship: { url: '/3d/runtime/broken-tank-ship.glb', height: 1.35, yaw: 0 },
     broken_engineer_ship: { url: '/3d/runtime/broken-engineer-ship.glb', height: 1.35, yaw: 0 },
     base_console: { url: '/3d/runtime/console.glb', height: 1.05, yaw: 0 },
     o2_generator: { url: '/3d/runtime/o2-generator.glb', height: 1.2, yaw: 0 },
     hull_matrix: { url: '/3d/runtime/hull-matrix.glb', height: 1.15, yaw: 0 },
-    radar: { url: '/3d/runtime/radar.glb', height: 1.05, yaw: 0 },
+    radar: { url: '/3d/runtime/radar.glb', height: 1.05, yaw: -Math.PI / 2 },
     fusion_generator: { url: '/3d/runtime/fusion-generator.glb', height: 1.1, yaw: 0 },
     basic_pile: { url: '/3d/runtime/basic-pile.glb', height: 0.42, yaw: 0 },
     storage_locker: { url: '/3d/runtime/storage-locker.glb', height: 1.25, yaw: 0 },
@@ -128,7 +130,7 @@ export const WORLD_3D_MODELS = Object.freeze({
     prop_biomech_flesh_locker: { url: '/3d/runtime/new3ds/prop_biomech_flesh_locker.glb', height: 1.35, yaw: 0 },
     prop_biomech_incubator: { url: '/3d/runtime/new3ds/prop_biomech_incubator.glb', height: 1.45, yaw: 0 },
     prop_biomech_neural_synapse: { url: '/3d/runtime/new3ds/prop_biomech_neural_synapse.glb', height: 1.40, yaw: 0 },
-    prop_biomech_respirator: { url: '/3d/runtime/new3ds/prop_biomech_respirator.glb', height: 1.30, yaw: 0 },
+    prop_biomech_respirator: { url: '/3d/runtime/new3ds/prop_biomech_respirator.glb', height: 1.30, yaw: Math.PI / 2 },
     prop_biomech_sphincter_trap: { url: '/3d/runtime/new3ds/prop_biomech_sphincter_trap.glb', height: 0.80, yaw: 0 },
     prop_biomech_triage_cradle: { url: '/3d/runtime/new3ds/prop_biomech_triage_cradle.glb', height: 0.95, yaw: 0 },
     prop_fabricator_workstation: { url: '/3d/runtime/new3ds/prop_fabricator_workstation.glb', height: 1.20, yaw: 0 },
@@ -151,9 +153,13 @@ export const WORLD_3D_MODELS = Object.freeze({
     npc_nahl: { url: '/3d/runtime/new3ds/npc_nahl.glb', height: 1.75, yaw: 0 },
     npc_aria: { url: '/3d/runtime/new3ds/npc_aria.glb', height: 1.80, yaw: 0 },
     npc_queen: { url: '/3d/runtime/new3ds/npc_queen.glb', height: 2.10, yaw: 0 },
-    secret_mayor_tina: { url: '/3d/runtime/secrets/mayor-tina.glb', height: 1.72, yaw: Math.PI },
+    // The source faces +Z already; a yaw of PI turned her back to the player
+    // in the museum and through the whole hostile chase.
+    secret_mayor_tina: { url: '/3d/runtime/secrets/mayor-tina.glb', height: 1.72, yaw: 0 },
     secret_teacup_roach: { url: '/3d/runtime/secrets/teacup-roach.glb', height: 1.18, yaw: Math.PI },
-    prop_camp_cookfire: { url: '/3d/runtime/new3ds/prop_fabricator_workstation.glb', height: 0.85, yaw: 0 },
+    // Built by scripts/blender/build_cookfire.py; this used to point at the
+    // fabricator workstation, so every camp's fire rendered as a crafting bench.
+    prop_camp_cookfire: { url: '/3d/runtime/new3ds/prop_camp_cookfire.glb', height: 0.85, yaw: 0 },
     prop_camp_crates: { url: '/3d/runtime/new3ds/prop_bunker_supplies.glb', height: 0.75, yaw: 0 },
     prop_camp_sandbags: { url: '/3d/runtime/new3ds/prop_security_barricade.glb', height: 0.82, yaw: 0 },
     prop_camp_cot: { url: '/3d/runtime/new3ds/prop_camp_cot.glb', height: 0.65, yaw: 0 },
@@ -191,7 +197,7 @@ export const WORLD_3D_MODELS = Object.freeze({
     prop_conduit_junction_box: { url: '/3d/runtime/new3ds/prop_conduit_junction_box.glb', height: 0.90, yaw: 0 },
     prop_flesh_steel_coffin: { url: '/3d/runtime/new3ds/prop_flesh_steel_coffin.glb', height: 1.40, yaw: 0 },
     prop_flesh_steel_cradle: { url: '/3d/runtime/new3ds/prop_flesh_steel_cradle.glb', height: 0.95, yaw: 0 },
-    prop_flesh_steel_inhaler: { url: '/3d/runtime/new3ds/prop_flesh_steel_inhaler.glb', height: 1.30, yaw: 0 },
+    prop_flesh_steel_inhaler: { url: '/3d/runtime/new3ds/prop_flesh_steel_inhaler.glb', height: 1.30, yaw: -Math.PI / 2 },
     prop_fungal_mycelium_loom: { url: '/3d/runtime/new3ds/prop_fungal_mycelium_loom.glb', height: 1.85, yaw: 0 },
     prop_fungal_resin_basin: { url: '/3d/runtime/new3ds/prop_fungal_resin_basin.glb', height: 0.85, yaw: 0 },
     prop_fungal_spore_dispenser: { url: '/3d/runtime/new3ds/prop_fungal_spore_dispenser.glb', height: 1.25, yaw: 0 },
@@ -199,8 +205,8 @@ export const WORLD_3D_MODELS = Object.freeze({
     prop_icey_frost_manifold: { url: '/3d/runtime/new3ds/prop_icey_frost_manifold.glb', height: 1.20, yaw: 0 },
     prop_icey_frost_vent: { url: '/3d/runtime/new3ds/prop_icey_frost_vent.glb', height: 1.10, yaw: 0 },
     prop_icey_thermal_pod: { url: '/3d/runtime/new3ds/prop_icey_thermal_pod.glb', height: 1.40, yaw: 0 },
-    prop_light_cluster_dripping: { url: '/3d/runtime/new3ds/prop_light_cluster_dripping.glb', height: 1.20, yaw: 0 },
-    prop_locker_bulged: { url: '/3d/runtime/new3ds/prop_locker_bulged.glb', height: 1.35, yaw: 0 },
+    prop_light_cluster_dripping: { url: '/3d/runtime/new3ds/prop_light_cluster_dripping.glb', height: 1.20, yaw: -Math.PI / 2 },
+    prop_locker_bulged: { url: '/3d/runtime/new3ds/prop_locker_bulged.glb', height: 1.35, yaw: -Math.PI / 2 },
     prop_pipe_rupture: { url: '/3d/runtime/new3ds/prop_pipe_rupture.glb', height: 0.85, yaw: 0 },
     prop_shrine_plinth_broken: { url: '/3d/runtime/new3ds/prop_shrine_plinth_broken.glb', height: 1.25, yaw: 0 },
     prop_storage_drum_dented: { url: '/3d/runtime/new3ds/prop_storage_drum_dented.glb', height: 0.80, yaw: 0 },
@@ -310,6 +316,7 @@ export function prepareWorld3dStructure(renderModel, collisionModel, type, confi
 }
 
 function prepareWorld3dModel(model, type, config) {
+    if (config.scale) return prepareUniformScaleModel(model, type, config);
     model.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(model);
     const size = bounds.getSize(new THREE.Vector3());
@@ -342,18 +349,67 @@ function prepareWorld3dModel(model, type, config) {
     return root;
 }
 
+// Modular pieces: one scale for the whole kit and the authored origin kept,
+// because pieces only line up on their shared socket grid.
+function prepareUniformScaleModel(model, type, config) {
+    model.scale.multiplyScalar(config.scale);
+    model.rotation.y = config.yaw ?? 0;
+    model.traverse((object) => {
+        if (!object.isMesh) return;
+        object.castShadow = true;
+        object.receiveShadow = true;
+        if (!object.geometry.boundingSphere) object.geometry.computeBoundingSphere();
+        object.frustumCulled = true;
+    });
+    useSinglePassForFlatMaterials(model);
+    // After the flat-material pass: shared materials must not be mutated per piece.
+    applyKitMaterials(model, type, null, {
+        skinOverride: config.skin || config.theme,
+        dynamicVariations: config.dynamicVariations ?? false
+    });
+    const root = new THREE.Group();
+    root.name = `World3d:${type}`;
+    root.add(model);
+    return root;
+}
+
 export function hasWorld3dModel(type) {
     return Boolean(WORLD_3D_MODELS[type]);
 }
 
 const WORLD_3D_ONLY_PREFIXES = Object.freeze(['arch_', 'state_', 'fixture_', 'kit_']);
+// Registered models with no 2D sprite of their own. Without this a `prop_`
+// placement of them found no scatter material and was silently dropped.
+const WORLD_3D_ONLY_TYPES = Object.freeze(new Set([
+    'frozen_tanker', 'prop_body_human_frozen', 'prop_body_empty_exosuit', 'body_frozen_human'
+]));
+
+// Scattered body sprites alternate between the two models of each body, by
+// position (stable for a seed). Frozen bodies used to load `frozen_tanker`,
+// an industrial tank machine (3D asset audit 2026-10-01).
+const SCATTER_BODY_VARIANTS = Object.freeze({
+    body_human_frozen_suit: Object.freeze(['prop_body_human_frozen', 'body_frozen_human']),
+    body_empty_exosuit: Object.freeze(['prop_body_empty_exosuit', 'body_empty_exosuit'])
+});
+
+export function resolveScatterWorld3dType(type, x = 0, z = 0) {
+    const variants = Object.hasOwn(SCATTER_BODY_VARIANTS, type) ? SCATTER_BODY_VARIANTS[type] : null;
+    if (variants) {
+        let hash = Math.imul(Math.round(x * 10) | 0, 73856093) ^ Math.imul(Math.round(z * 10) | 0, 19349663);
+        hash ^= hash >>> 13;
+        hash = Math.imul(hash, 0x5bd1e995);
+        hash ^= hash >>> 15;
+        return variants[(hash >>> 0) % variants.length];
+    }
+    return hasWorld3dModel(type) ? type : null;
+}
 
 // Architectural/state fixtures have no billboard fallback by design. Keep
 // this contract explicit so room dressing routes them to their GLB instead of
 // rejecting them at the generic sprite-material gate.
 export function isWorld3dOnlyPlacementType(type) {
     return typeof type === 'string'
-        && WORLD_3D_ONLY_PREFIXES.some((prefix) => type.startsWith(prefix))
+        && (WORLD_3D_ONLY_TYPES.has(type) || WORLD_3D_ONLY_PREFIXES.some((prefix) => type.startsWith(prefix)))
         && hasWorld3dModel(type);
 }
 
@@ -409,8 +465,22 @@ export function syncWorld3dReplacement(source, { scale = 1, visible } = {}) {
     const root = source?.userData?.world3dRoot;
     if (!root) return false;
     root.position.copy(source.position);
-    root.rotation.y = (source.material?.rotation ?? 0) + WORLD_3D_FACING_YAW;
-    root.scale.setScalar(Math.max(0, Number.isFinite(scale) ? scale : 1));
+    const socketRotation = source.userData?.socketRotation;
+    if (Number.isFinite(socketRotation)) {
+        // Socketed modular piece: its rotation is topology, applied exactly.
+        root.rotation.y = socketRotation;
+    } else if (source.userData?.wallNormal) {
+        const wn = source.userData.wallNormal;
+        root.rotation.y = Math.atan2(wn.x, wn.z);
+        if (source.userData.isWallBackedProp) {
+            root.position.x -= wn.x * 0.22;
+            root.position.z -= wn.z * 0.22;
+        }
+    } else {
+        root.rotation.y = (source.material?.rotation ?? 0) + WORLD_3D_FACING_YAW;
+    }
+    const modelScale = Number.isFinite(source.userData?.modelScale) ? source.userData.modelScale : 1;
+    root.scale.setScalar(Math.max(0, (Number.isFinite(scale) ? scale : 1) * modelScale));
     root.visible = visible ?? Boolean(source.userData.world3dDesiredVisible);
     // Once a replacement exists the flat sprite must never draw again, or the
     // billboard renders *inside* the model. Callers legitimately flip

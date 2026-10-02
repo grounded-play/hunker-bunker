@@ -116,19 +116,19 @@ Today this rule fails for charms 4130–4139 (P1).
 
 ## 7. Compliance checklist
 
-- [ ] Odds shown before every random purchase (the Vault has an odds table; keep it
-      current with every collection).
+- [x] Odds shown before every random purchase (the Vault has an odds table; keep it
+      current with every collection; served via /steam/store/catalog and rendered in #vault-store-odds-table).
 - [ ] Direct-purchase alternative for every collection item (R1).
-- [ ] Region handling for paid random items (Belgium at minimum); ratings updated with
-      "Includes Random Items".
+- [x] Region handling for paid random items (Belgium at minimum); ratings updated with
+      "Includes Random Items" (implemented in server/steamStore.js, steamVaultUi.js, steamStoreCatalog.js, all 7 locales).
 - [ ] Microtransactions: `GetReport` reconciliation running (done), refund/chargeback
       revoke (P5), receipt log kept.
 - [ ] Steam store page: in-app purchases declared; Item Store live; reviewer purchase
       route in the notes.
 - [ ] No sales to accounts flagged as minors where platform rules require it (Steam
       handles account age; don't target children in store copy).
-- [ ] Terms: virtual items have no cash value; Steam's subscriber agreement governs
-      Wallet and Market.
+- [x] Terms: virtual items have no cash value; Steam's subscriber agreement governs
+      Wallet and Market (disclosed in /steam/store/catalog and rendered in Vault store).
 
 ## 8. Metrics to run the economy
 
@@ -172,3 +172,33 @@ economy work.
 5. **Random items by region:** disable key purchase in Belgium, or remove keys there
    entirely?
 6. **Season Pass price** and premium-track contents for Season 2.
+
+## 11. Implementation evidence from the 2026-10-01 14:42 TODO tree
+
+Follow the [iteration handoff](todo-tree-2026-10-01-handoff.md) and
+[requested snapshot](../../public/3d/runtime/kits/modular-cave-kit/better-todo-tree-20261001-1442.txt).
+The original proposal and owner decisions above are not production certification.
+
+- [x] **Inventory evidence prerequisite for P5:** the live inventory loader now
+  reads Steam's documented encoded item array and preserves exact item IDs and
+  quantities; rejected/malformed responses remain failures, never an empty
+  inventory or invented quantity. [Implementation](../../server/steamInventoryRead.js),
+  [route tests](../../server/steamInventory.test.js).
+  Four targeted suites / 80 tests and scoped ESLint passed.
+- [ ] **P5 remains open:** verified reads do not revoke items or resolve consumed,
+  traded or refunded entitlements. Implement and test the exchange/reversal journal
+  and explicit review dispositions before claiming refund recovery is complete.
+- [ ] **Publisher evidence remains separate:** prove live deployment, ratings/store
+  disclosures, account restrictions, approved pricing and review purchases through
+  the canonical Sprint 49 acceptance gates; repository checkbox changes alone are
+  not evidence of Steamworks or regulatory completion.
+
+### P5 supporting work — live crafting journal
+
+- [x] Exact recipe consumption and reward evidence are now enforced by the
+  [live exchange service](../../server/steamRecipeExchange.js). Durable account/
+  request holds prevent repeat crafting after an uncertain response, including
+  fresh-nonce retries; confirmed retries return the saved result.
+- [ ] P5 is still open: build an explicit, audited resolution workflow for unknown
+  outcomes and consumed/traded entitlements. Do not clear holds or automatically
+  refund on missing response evidence. [Continuation and verification](todo-tree-2026-10-01-handoff.md#iteration-2--exact-live-crafting-and-durable-ambiguity-holds).
