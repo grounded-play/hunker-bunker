@@ -232,6 +232,16 @@ process these five in parallel.
 - **This lane next:** `alien_proto_spitter` model, `prop_camp_cookfire` (currently the fabricator model) from the nature kit's campfire, nature/building kit subsets, and the simplified sprint-34 props.
 
 
+### 2026-10-01 18:30: props restored, spitter and cookfire built, museum all-green
+
+- **35 sprint-34 props** restored from their ~50k-triangle sources (`art/source/3d`) at 12k triangles and 1024 WebP. The shipped copies had about 1k triangles and read as fragments. Another contributor's commit `5dd08cc0` swept these files in; the budget is now 2770 MiB.
+- **Proto Spitter** (`d0ae8f32`): its own model, built by `scripts/blender/build_spitter.py`: the crawler body plus the 2D design's glowing honeycomb acid sac on the animated thorax. It replaces the green tint.
+- **Camp cookfire** (`891f6373`): `scripts/blender/build_cookfire.py`; it was the fabricator workstation model.
+- **Museum** (`43312a58`): loads each wing six at a time with one retry. A run that loaded all 56 chassis at once dropped 18 fetches. Final QA: **398/398 exhibits load, 0 page errors.**
+- **Not done, needs an owner decision:** the Kenney **nature** (329 pieces, flat colours, outdoor: trees and grass) and **building** (79 urban pieces) kits. Both are low-poly and clash with the detailed props. Kit texturing now belongs to the other contributor, and kits have no default placement space yet (see the 15:30 entry). Importing all 408 would add about 20 MB that never appears in play.
+- **Still open:** `WORLD_3D_FACING_YAW = PI` check in a live run.
+
+
 ## Next
 
 1. **Publisher/hardware (not code):** a Deck and pad pass with the keyboard unplugged
