@@ -273,6 +273,31 @@ describe('Debug Hallway Museum', () => {
         expect(prop.minY).toBeCloseTo(0.1, 3);
     });
 
+    // A category used to start every load at once: 56 chassis GLBs of
+    // 10-30 MB each, which dropped fetches ("Failed to fetch") and reported
+    // healthy models as broken.
+    it('loads a category a few exhibits at a time and retries a dropped fetch once', async () => {
+        let inFlight = 0;
+        let peak = 0;
+        const attempts = new Map();
+        GLTFLoader.prototype.loadAsync.mockImplementation(async (url) => {
+            inFlight += 1;
+            peak = Math.max(peak, inFlight);
+            await new Promise((resolve) => setTimeout(resolve, 1));
+            inFlight -= 1;
+            const n = (attempts.get(url) ?? 0) + 1;
+            attempts.set(url, n);
+            if (String(url).includes('tank-rigged') && n === 1) throw new TypeError('Failed to fetch');
+            const sceneRoot = new THREE.Group();
+            sceneRoot.add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 2, 0.4), new THREE.MeshBasicMaterial()));
+            return { scene: sceneRoot, animations: [] };
+        });
+        await openDebugMuseum(mockGame);
+        expect(peak).toBeLessThanOrEqual(6);
+        const report = scene.getObjectByName('debug-museum').userData.museumReport;
+        expect(report.find((row) => row.url === '/3d/runtime/tank-rigged.glb').ok).toBe(true);
+    });
+
     it('catalogs every song and alternate VO take without gameplay triggers', () => {
         const buffers = {
             music_menu: {},

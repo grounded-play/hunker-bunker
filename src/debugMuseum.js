@@ -22,6 +22,21 @@ import { SONG_INTERSTITIALS } from './songInterstitials.js';
 // Far outside any real generated terrain so the museum never overlaps a real run's chunks.
 const MUSEUM_ORIGIN = Object.freeze({ x: 9000, z: 9000 });
 const CATEGORY_COLUMNS = 6;
+// Exhibits loading at once within a category. Unbounded, a 56-chassis wing
+// (10-30 MB GLBs) dropped fetches and reported healthy models as broken.
+const LOAD_CONCURRENCY = 6;
+
+async function forEachLimited(items, limit, fn) {
+    let next = 0;
+    const worker = async () => {
+        while (next < items.length) {
+            const index = next;
+            next += 1;
+            await fn(items[index], index);
+        }
+    };
+    await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+}
 const CATEGORY_GAP = 3.5;
 
 function createMuseumGltfLoader() {
@@ -537,15 +552,16 @@ export async function openDebugMuseum(game) {
         group.add(categoryLabel);
         const spawn = spawners[category.kind];
 
-        // A category's exhibits load in parallel; categories fill in order.
-        await Promise.all(category.entries.map(async (entry, index) => {
+        // A category's exhibits load a few at a time; categories fill in order.
+        await forEachLimited(category.entries, LOAD_CONCURRENCY, async (entry, index) => {
             const itemX = cursorX + (index % columns) * spacing;
             const itemZ = z + Math.floor(index / columns) * (category.kind === 'structure' ? spacing : Math.max(3.4, spacing));
             const row = { category: category.title, kind: category.kind, label: entry.label, url: entry.url ?? null, type: entry.type ?? null, x: itemX, z: itemZ, ok: false };
             report.push(row);
             let obj = null;
             try {
-                obj = await spawn(entry, itemX, itemZ);
+                // One retry: a dropped fetch is not a broken model.
+                obj = await Promise.resolve().then(() => spawn(entry, itemX, itemZ)).catch(() => spawn(entry, itemX, itemZ));
                 if (!obj) row.error = 'spawn returned nothing';
             } catch (err) {
                 row.error = String(err?.message ?? err);
@@ -590,7 +606,7 @@ export async function openDebugMuseum(game) {
             nameLabel.position.set(itemX, PEDESTAL_HEIGHT + Math.max(1.1, (measured?.size.y ?? 0) + 0.3), itemZ + 1.0);
             nameLabel.scale.set(1.8, 0.45, 1);
             group.add(nameLabel);
-        }));
+        });
         cursorX += columns * spacing + CATEGORY_GAP;
     }
 
