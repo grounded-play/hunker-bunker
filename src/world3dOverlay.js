@@ -157,7 +157,9 @@ export const WORLD_3D_MODELS = Object.freeze({
     // in the museum and through the whole hostile chase.
     secret_mayor_tina: { url: '/3d/runtime/secrets/mayor-tina.glb', height: 1.72, yaw: 0 },
     secret_teacup_roach: { url: '/3d/runtime/secrets/teacup-roach.glb', height: 1.18, yaw: Math.PI },
-    prop_camp_cookfire: { url: '/3d/runtime/new3ds/prop_fabricator_workstation.glb', height: 0.85, yaw: 0 },
+    // Built by scripts/blender/build_cookfire.py; this used to point at the
+    // fabricator workstation, so every camp's fire rendered as a crafting bench.
+    prop_camp_cookfire: { url: '/3d/runtime/new3ds/prop_camp_cookfire.glb', height: 0.85, yaw: 0 },
     prop_camp_crates: { url: '/3d/runtime/new3ds/prop_bunker_supplies.glb', height: 0.75, yaw: 0 },
     prop_camp_sandbags: { url: '/3d/runtime/new3ds/prop_security_barricade.glb', height: 0.82, yaw: 0 },
     prop_camp_cot: { url: '/3d/runtime/new3ds/prop_camp_cot.glb', height: 0.65, yaw: 0 },

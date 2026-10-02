@@ -157,4 +157,9 @@ describe('world 3D replacement catalog', () => {
         expect(WORLD_3D_MODELS.prop_biomech_respirator.yaw).toBeCloseTo(Math.PI / 2);
         expect(WORLD_3D_MODELS.radar.yaw).toBeCloseTo(-Math.PI / 2);
     });
+
+    it('renders the camp cookfire as a cookfire, not the fabricator workstation', () => {
+        expect(WORLD_3D_MODELS.prop_camp_cookfire.url).toBe('/3d/runtime/new3ds/prop_camp_cookfire.glb');
+        expect(WORLD_3D_MODELS.prop_camp_cookfire.url).not.toBe(WORLD_3D_MODELS.prop_fabricator_workstation.url);
+    });
 });

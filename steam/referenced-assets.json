@@ -236,6 +236,7 @@
     "3d/runtime/new3ds/prop_body_human_frozen.glb",
     "3d/runtime/new3ds/prop_broken_specimen_tank.glb",
     "3d/runtime/new3ds/prop_bunker_supplies.glb",
+    "3d/runtime/new3ds/prop_camp_cookfire.glb",
     "3d/runtime/new3ds/prop_camp_cot.glb",
     "3d/runtime/new3ds/prop_camp_crate.glb",
     "3d/runtime/new3ds/prop_cave_bones.glb",
@@ -2582,6 +2583,11 @@
     {
       "path": "3d/runtime/new3ds/prop_bunker_supplies.glb",
       "bytes": 4932964,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_camp_cookfire.glb",
+      "bytes": 1292412,
       "classification": "runtime-required"
     },
     {
