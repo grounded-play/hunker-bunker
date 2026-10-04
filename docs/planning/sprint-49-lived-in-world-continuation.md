@@ -58,7 +58,7 @@ commit so another contributor can resume without reconstructing the audit.
 Verification completed: 75 focused tests, 562 full-suite files / 4,941 tests, and
 a 500-seed sweep all passed.
 
-### Next commit — authored-room modular gateway landmarks
+### `e3aa3b05` — authored-room modular gateway landmarks
 
 - Add a pure `roomGatewayKitPlacement` grammar helper that centres the open
   `gate.glb` frame for the room biome on a real three-cell threshold.
@@ -70,6 +70,28 @@ a 500-seed sweep all passed.
   shell over existing geometry.
 - Verification before commit: kit grammar, room set-piece, 3D overlay, prop
   collision and destructibility suites; 500-seed sweep; then the full unit suite.
+
+Verification completed: 55 focused tests, 562 full-suite files / 4,944 tests, and
+a 500-seed sweep all passed.
+
+## Final key-art read
+
+A contact-sheet review of the actual shipped key art confirmed the repeated visual
+language rather than relying on filenames alone:
+
+- one large, readable functional anchor per composition (slab, hatch, gantry,
+  oxygen rack, exchanger, shrine);
+- infrastructure packed around the perimeter (pipe forests, bundled cables,
+  ribbed wall panels and suspended fixtures), leaving the working floor readable;
+- evidence of use and failure at floor level (tools, containers, coolant pools,
+  drainage, caution markings and residue);
+- restrained practical light concentrated on the object, usually amber, green or
+  cyan, instead of uniform room brightness.
+
+The implementation follows that hierarchy: signature/large anchors remain first,
+small and ambient layers stay at room edges, rare shrines/landmarks are occasional,
+and the cap prevents the surrounding detail from swallowing navigation or the Deck
+frame budget. No key-art files were modified.
 
 ## Safe continuation after the gateway commit
 
