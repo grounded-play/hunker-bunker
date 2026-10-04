@@ -146,3 +146,27 @@ sequence 552, retained gameplay average 58.51 ms. No guest-side acceptance infer
 Next safe observability increment: make the session analyzer report repeated joins,
 roster/avatar mismatch and presented frame pacing, and distinguish poison from PvP
 damage. Remaining economy order above is unchanged; no financial policy changes.
+
+## Iteration 4 — actionable one-sided session diagnostics
+
+- [x] `scripts/session-log-findings.mjs` with regression fixtures powers the analyzer:
+  repeated joins, possible stale avatars, hit reports/confirmations and damage reasons.
+  Missing evidence remains unknown, and confirmations are not called packet loss.
+- [x] Presented frame average/p95 and approximate FPS are separate from GPU timing.
+  The source capture now reports 13 joins, roster 1 / remote avatars 2, 44/4 hit
+  reports/confirmations, poison 4 / PvP 1 damage events, and approximately 17.1 FPS.
+- [x] Lobby connection diagnostics include old/new connection IDs and allowlisted
+  disconnect reasons, never serialized transport errors or authentication payloads.
+- [x] Targeted analyzer/lobby/reconnect run: 3 suites / 58 tests passed.
+- [ ] Two-client fault drill and relay-side rejected-hit reasons still needed.
+
+Iteration 3 commit: `cd43420d`. No PvP rules, prices, inventory mutations, deployments
+or Steam submissions changed. Keep the source tickets open pending full acceptance.
+
+Verification: build/media audit and generated presubmit passed; retail reports
+were refreshed after editing the public TODO snapshot. Lint and documentation
+audit passed. A later shared-worktree full run had 549 passing suites / 4,856 passing
+tests and two failures in `server/steamTradeUp.test.js` refund cases while another
+contributor edited economy code/tests. Those changes are not part of iterations
+3–4; do not treat this as a green whole-branch/CI certification. Commentary
+extraction work in `main.js` is also owned by the concurrent contributor.

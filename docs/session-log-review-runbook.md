@@ -51,6 +51,15 @@ multiplayer milestones, missing completion signals, final GPU telemetry, long
 tasks, and error counts. Its yes/no output means “this signal appears in the
 capture,” not “the ticket passes.” Review the original events before citing them.
 
+The analyzer also reports repeated relay joins, the latest captured roster versus
+final remote-avatar count, explicit PvP damage reasons, and presented gameplay
+frame intervals. Repeated joins are evidence of churn, not proof of its cause;
+roster/avatar mismatch is a diagnostic flag, not a synchronized server snapshot.
+Hit reports minus confirmations are not a packet-loss rate. GPU milliseconds must
+not be substituted for presented-frame FPS. New clients log `relay-connected` and
+`relay-disconnected` with connection IDs and bounded reasons to support paired
+reconnect investigations without exporting authentication or transport payloads.
+
 Useful manual inspection:
 
 ```bash
@@ -88,4 +97,3 @@ Before closing an acceptance ticket:
 Hosted captures can be deleted or rotated independently of git. Durable
 acceptance conclusions belong in a compact report; do not commit 40–70 MB raw
 captures unless the repository policy explicitly changes.
-

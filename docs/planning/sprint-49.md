@@ -613,6 +613,11 @@ rendering performance measurement.
 
 ### S49-32 — reliable services and player-facing failure recovery
 
+2026-10-04 observability checkpoint: session analysis reports repeated relay joins,
+roster/avatar discrepancies, damage reasons and presented-frame FPS separately from
+GPU timing. Lobby logs bounded disconnect reasons and connection IDs without auth
+payloads. This improves the fault-drill evidence; it does not complete the drill.
+
 - [ ] **Owner: backend + operations · Size: M.** Exercise auth expiry, relay outage,
   inventory timeout, database backup/restore and worker restart. Add actionable
   health/settlement alerts and localized retry states; review spoofing/replay at

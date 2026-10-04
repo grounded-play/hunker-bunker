@@ -497,7 +497,14 @@ export class MultiplayerLobby {
                 });
                 playerChat.attachSocket(this.socket, (this.roomCode.trim().slice(0, 24) || 'SECTOR-7').toUpperCase());
 
+                let previousConnectionId = null;
                 this.socket.on('connect', () => {
+                    logMultiplayerEvent('relay-connected', {
+                        connectionId: this.socket.id,
+                        previousConnectionId,
+                        roomCode: this.roomCode
+                    });
+                    previousConnectionId = this.socket.id;
                     this.connected = true;
                     this.usingRelay = true;
                     // A reconnect re-fires 'connect' with a brand-new
@@ -545,6 +552,17 @@ export class MultiplayerLobby {
                     this.updateUiState();
                 });
 
+                this.socket.on('disconnect', (reason) => {
+                    // Do not serialize transport errors/auth payloads into logs.
+                    const knownReasons = ['io server disconnect', 'io client disconnect',
+                        'ping timeout', 'transport close', 'transport error'];
+                    logMultiplayerEvent('relay-disconnected', {
+                        connectionId: previousConnectionId,
+                        reason: knownReasons.includes(reason) ? reason : 'unknown',
+                        roomCode: this.roomCode
+                    });
+                });
+
                 this.socket.on('currentPlayers', (serverPlayers) => {
                     // Sprint 24 Milestone A item 5 (docs/sprint24-multiplayer-runtime-2026-08-19.md):
                     // this is the only point in the connection lifecycle where
@@ -557,6 +575,7 @@ export class MultiplayerLobby {
                     this.syncServerRoster(serverPlayers);
                     logMultiplayerEvent('relay-roster-received', {
                         players: Object.values(serverPlayers).map((player) => ({
+                            id: player.id,
                             callsign: player.callsign,
                             opClass: player.opClass,
                             ready: Boolean(player.ready),

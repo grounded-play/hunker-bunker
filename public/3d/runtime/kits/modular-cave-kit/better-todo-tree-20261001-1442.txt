@@ -35,6 +35,10 @@ Original checked entries are not newly certified by this iteration.
 [ ] Paired Deck acceptance, reconnect cause, hit rejection evidence, shared
     PvP death/rematch rules and measured performance remain open.
 
+[x] Iteration 4, S49-32: analyzer flags repeated joins and possible stale avatars,
+    distinguishes poison/PvP damage and reports presented FPS, not GPU-derived FPS.
+    Lobby logs connection IDs and bounded disconnect reasons. 58 targeted tests.
+
 ORIGINAL IMPORTED TODO SNAPSHOT
 └─ hunker-bunker
    ├─ economy-master-plan-2026-09-30.md
