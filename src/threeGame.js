@@ -32552,6 +32552,7 @@ export class ThreeGame {
         // chunk lifecycle own them while the registered model loads.
         if (isWorld3dOnlyPlacementType(placement.type)) {
             const anchor = new THREE.Object3D();
+            const isDestructibleProp = placement.type.startsWith('prop_');
             anchor.position.set(placement.x, anchoredY, placement.z);
             anchor.rotation.y = placement.rotation ?? 0;
             anchor.scale.set(scaleX, scaleY, 1);
@@ -32559,6 +32560,15 @@ export class ThreeGame {
             anchor.userData = {
                 isScatter: true,
                 isWorld3dOnly: true,
+                // GLB-only prop placements have no billboard fallback, but
+                // they still participate in the same damage, co-op break and
+                // drop contract as sprite-backed props. Architecture/state/
+                // modular-kit anchors intentionally remain structural.
+                isDestructibleProp,
+                propHp: isDestructibleProp ? (placement.hp ?? 3) : undefined,
+                maxPropHp: isDestructibleProp ? (placement.hp ?? 3) : undefined,
+                burstTriggered: false,
+                burstTimer: 0,
                 isSolidProp: placement.isSolidProp ?? placement.type.startsWith('arch_'),
                 collisionRadius: placement.collisionRadius ?? Math.max(0.3, scaleX * 0.35),
                 type: placement.type,
@@ -33815,6 +33825,12 @@ export class ThreeGame {
 
         const idx = this.scatterSprites.indexOf(sprite);
         if (idx !== -1) this.scatterSprites.splice(idx, 1);
+        const umbilicalAttacker = sprite.userData?.umbilicalAttacker;
+        if (umbilicalAttacker) {
+            umbilicalAttacker.dispose?.();
+            const attackerIndex = this.umbilicalAttackers?.indexOf?.(umbilicalAttacker) ?? -1;
+            if (attackerIndex >= 0) this.umbilicalAttackers.splice(attackerIndex, 1);
+        }
         sprite.userData.world3dRoot?.removeFromParent();
         if (sprite.parent) sprite.parent.remove(sprite);
         return true;
