@@ -15,7 +15,6 @@ yellow-green cell walls) used as both base colour and emissive.
 The crawler faces glTF +Z (Blender -Y); the sac sits behind the head on the
 dorsal hump, measured from the body's bounds.
 """
-import math
 import random
 import sys
 
