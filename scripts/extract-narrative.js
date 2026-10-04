@@ -29,6 +29,7 @@ import '../src/data/missions.js';
 import '../src/data/strains.js';
 import '../src/data/steamItemCatalog.js';
 import '../src/data/communitySkins.js';
+import '../src/developerCommentary.js';
 import { getRegisteredCatalogs, flattenCatalog } from '../src/i18nCatalog.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -72,13 +73,18 @@ for (const key of keys) {
     setPath(enDict, key, flat[key]);
 }
 
-// Drop narrative keys whose source prose no longer exists.
+// Drop narrative keys whose source prose no longer exists -- only inside the
+// registered catalogs' namespaces. Other narrative.* keys (item names looked up
+// by key through t(), e.g. narrative.items.*) have no catalog here, so absence
+// from `flat` says nothing about them.
+const owned = getRegisteredCatalogs().map((c) => c.namespace);
+const isOwned = (key) => owned.some((ns) => key === ns || key.startsWith(`${ns}.`));
 const stale = [];
 (function sweep(node, path) {
     for (const [k, v] of Object.entries(node)) {
         const next = path ? `${path}.${k}` : k;
         if (v && typeof v === 'object') sweep(v, next);
-        else if (!(next in flat)) stale.push(next);
+        else if (isOwned(next) && !(next in flat)) stale.push(next);
     }
 })(enDict.narrative ?? {}, 'narrative');
 for (const key of stale) {
