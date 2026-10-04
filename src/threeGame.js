@@ -8741,7 +8741,7 @@ export class ThreeGame {
      * THREE.Color that the fog system lerps every frame (see the fog blend in
      * updateFog); replacing it with a texture would silently break that.
      */
-    installEnvironmentLighting(url = assetUrl('/sky/cinematic_deep_space_panorama.jpg')) {
+    installEnvironmentLighting(url = assetUrl('/sky/cinematic_cathedral_crypt_panorama.jpg')) {
         if (!this.renderer || !this.scene) return false;
         const pmrem = new THREE.PMREMGenerator(this.renderer);
         // Compiling the equirect shader up front avoids a hitch on first use.
@@ -8755,9 +8755,9 @@ export class ThreeGame {
                 this._environmentTexture = target.texture;
                 this.scene.environment = target.texture;
                 // Keep indirect light well under the practicals. IBL here is
-                // for specular shape and silhouette separation, not room fill
-                // -- lifting the blacks would undo the whole look.
-                this.scene.environmentIntensity = 0.35;
+                // for specular shape and silhouette separation on metallic chitin
+                // and brushed titanium without lifting the cavernous shadow blacks.
+                this.scene.environmentIntensity = 0.42;
                 // The equirect source is no longer needed once convolved.
                 texture.dispose();
                 pmrem.dispose();

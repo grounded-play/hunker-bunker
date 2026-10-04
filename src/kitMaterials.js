@@ -28,7 +28,10 @@ export const KIT_THEMES = Object.freeze({
     SPACE: 'space',
     CATHEDRAL: 'cathedral',
     BUNKER: 'bunker',
-    BIOMECH: 'biomech'
+    BIOMECH: 'biomech',
+    GIGER: 'giger',
+    RELIQUARY: 'reliquary',
+    CRYO_DECK: 'cryo_deck'
 });
 
 const TEXTURE_ROOT = '/3d/runtime/kits/textures';
@@ -37,11 +40,14 @@ const SURFACES = Object.freeze({
     space: { wall: { metalness: 0.55 }, floor: { metalness: 0.6 } },
     cathedral: { wall: { metalness: 0.15 }, floor: { metalness: 0.2 } },
     bunker: { wall: { metalness: 0.65 }, floor: { metalness: 0.7 } },
-    biomech: { wall: { metalness: 0.2 }, floor: { metalness: 0.15 } }
+    biomech: { wall: { metalness: 0.2 }, floor: { metalness: 0.15 } },
+    giger: { wall: { metalness: 0.45 }, floor: { metalness: 0.50 } },
+    reliquary: { wall: { metalness: 0.50 }, floor: { metalness: 0.55 } },
+    cryo_deck: { wall: { metalness: 0.60 }, floor: { metalness: 0.65 } }
 });
 
 export function kitSkinForType(type) {
-    const match = /^kit_(cave|space|cathedral|bunker|biomech)_/.exec(String(type ?? ''));
+    const match = /^kit_(cave|space|cathedral|bunker|biomech|giger|reliquary|cryo_deck)_/.exec(String(type ?? ''));
     return match ? match[1] : null;
 }
 
@@ -52,7 +58,7 @@ export function kitTextureUrls(skin, surface) {
         normal: `${base}_normal.webp`,
         rough: `${base}_rough.webp`
     };
-    if (skin === 'biomech') {
+    if (skin === 'biomech' || skin === 'giger' || skin === 'reliquary' || skin === 'cryo_deck') {
         urls.emissive = `${base}_emissive.webp`;
     }
     return urls;

@@ -68,6 +68,60 @@ TEXTURE_TARGETS = {
         'emissive': True,
         'emissive_tint': (0.85, 0.95, 0.25), # Sickly amber/green
     },
+    'giger_wall': {
+        'pattern': 'giger_biomech_wall*.jpg',
+        'roughness_base': 0.38, # Wet polished biomech metallic chitin
+        'roughness_contrast': 0.32,
+        'normal_strength': 3.8,
+        'emissive': True,
+        'emissive_tint': (1.0, 0.65, 0.15), # Glowing amber capillary veins
+        'emissive_mode': 'amber',
+    },
+    'giger_floor': {
+        'pattern': 'giger_biomech_floor*.jpg',
+        'roughness_base': 0.35, # Wet ribbed exoskeleton floor
+        'roughness_contrast': 0.30,
+        'normal_strength': 3.6,
+        'emissive': True,
+        'emissive_tint': (1.0, 0.70, 0.20), # Amber bio-fluid channels
+        'emissive_mode': 'amber',
+    },
+    'reliquary_wall': {
+        'pattern': 'reliquary_wall*.jpg',
+        'roughness_base': 0.36, # Polished obsidian and brushed titanium
+        'roughness_contrast': 0.30,
+        'normal_strength': 3.8,
+        'emissive': True,
+        'emissive_tint': (1.0, 0.65, 0.15), # Inlaid amber fiber-optic microcircuits
+        'emissive_mode': 'amber',
+    },
+    'reliquary_floor': {
+        'pattern': 'reliquary_floor*.jpg',
+        'roughness_base': 0.35, # Wet polished obsidian and titanium floor
+        'roughness_contrast': 0.28,
+        'normal_strength': 3.6,
+        'emissive': True,
+        'emissive_tint': (1.0, 0.65, 0.15), # Inlaid amber fiber-optic microcircuits
+        'emissive_mode': 'amber',
+    },
+    'cryo_deck_wall': {
+        'pattern': 'cryo_deck_wall*.jpg',
+        'roughness_base': 0.48, # Cold-rolled steel and frost rime
+        'roughness_contrast': 0.28,
+        'normal_strength': 3.7,
+        'emissive': True,
+        'emissive_tint': (0.2, 0.95, 1.0), # Glowing cyan diagnostic status strips
+        'emissive_mode': 'cyan',
+    },
+    'cryo_deck_floor': {
+        'pattern': 'cryo_deck_floor*.jpg',
+        'roughness_base': 0.45, # Hexagonal anti-slip grating and ice
+        'roughness_contrast': 0.32,
+        'normal_strength': 3.9,
+        'emissive': True,
+        'emissive_tint': (0.15, 0.95, 1.0), # Sub-grate glowing cyan coolant pool
+        'emissive_mode': 'cyan',
+    },
 }
 
 
@@ -123,13 +177,26 @@ def compute_roughness_map(arr_rgb, base_rough=0.7, contrast=0.2):
     return np.clip(rough * 255.0, 0, 255).astype(np.uint8)
 
 
-def compute_emissive_map(arr_rgb, tint=(0.4, 1.0, 0.4)):
-    """Extract vibrant bioluminescent mycelium / spore capillaries."""
+def compute_emissive_map(arr_rgb, tint=(0.4, 1.0, 0.4), mode='green'):
+    """Extract vibrant bioluminescent mycelium, cyan telemetry, or warm amber capillary channels."""
     r, g, b = arr_rgb[:, :, 0], arr_rgb[:, :, 1], arr_rgb[:, :, 2]
-    green_excess = np.maximum(0.0, g - np.maximum(r, b) * 0.85)
-    brightness = np.maximum(r, np.maximum(g, b))
-    mask = np.clip((green_excess * 3.5) * np.clip(brightness * 1.5, 0.0, 1.0), 0.0, 1.0)
-    mask = mask ** 1.8
+    if mode == 'amber':
+        # Warm amber/orange channels in crevices: red + green dominate over blue
+        amber_excess = np.maximum(0.0, np.minimum(r, g * 1.5) - b * 1.2)
+        brightness = np.maximum(r, g)
+        mask = np.clip((amber_excess * 4.0) * np.clip(brightness * 1.8, 0.0, 1.0), 0.0, 1.0)
+        mask = mask ** 1.6
+    elif mode == 'cyan':
+        # Glowing cyan / teal status strips: green + blue dominate over red
+        cyan_excess = np.maximum(0.0, np.minimum(g, b) - r * 1.3)
+        brightness = np.maximum(g, b)
+        mask = np.clip((cyan_excess * 4.5) * np.clip(brightness * 1.8, 0.0, 1.0), 0.0, 1.0)
+        mask = mask ** 1.5
+    else:
+        green_excess = np.maximum(0.0, g - np.maximum(r, b) * 0.85)
+        brightness = np.maximum(r, np.maximum(g, b))
+        mask = np.clip((green_excess * 3.5) * np.clip(brightness * 1.5, 0.0, 1.0), 0.0, 1.0)
+        mask = mask ** 1.8
 
     emissive_r = mask * tint[0]
     emissive_g = mask * tint[1]
@@ -175,7 +242,11 @@ def process_texture_set(target_name, config):
 
     # 5. Emissive map (if supported)
     if config.get('emissive'):
-        emissive_arr = compute_emissive_map(seamless_rgb, tint=config.get('emissive_tint', (0.4, 1.0, 0.4)))
+        emissive_arr = compute_emissive_map(
+            seamless_rgb,
+            tint=config.get('emissive_tint', (0.4, 1.0, 0.4)),
+            mode=config.get('emissive_mode', 'green')
+        )
         emissive_img = Image.fromarray(emissive_arr)
         emissive_out = OUT_DIR / f'{target_name}_emissive.webp'
         emissive_img.save(emissive_out, quality=88, method=6)

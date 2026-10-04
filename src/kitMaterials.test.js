@@ -21,6 +21,9 @@ describe('kit surface materials', () => {
         expect(kitSkinForType('kit_cathedral_room_wide')).toBe('cathedral');
         expect(kitSkinForType('kit_bunker_corridor')).toBe('bunker');
         expect(kitSkinForType('kit_biomech_corridor')).toBe('biomech');
+        expect(kitSkinForType('kit_giger_room_large')).toBe('giger');
+        expect(kitSkinForType('kit_reliquary_room_small')).toBe('reliquary');
+        expect(kitSkinForType('kit_cryo_deck_corridor_wide')).toBe('cryo_deck');
         expect(kitSkinForType('prop_camp_crate')).toBeNull();
     });
 
@@ -31,6 +34,9 @@ describe('kit surface materials', () => {
         expect(skins).toContain('cathedral');
         expect(skins).toContain('bunker');
         expect(skins).toContain('biomech');
+        expect(skins).toContain('giger');
+        expect(skins).toContain('reliquary');
+        expect(skins).toContain('cryo_deck');
 
         for (const skin of skins) {
             for (const surface of ['wall', 'floor']) {
