@@ -23,6 +23,7 @@ describe('voice line extraction', () => {
         expect(en.find((l) => l.key.startsWith('narrative.leaderDialogue.scientist.')).role).toBe('okonkwo');
         expect(en.find((l) => l.key === 'narrative.mothershipReactive.0.text').role).toBe('mothership');
         expect(en.find((l) => l.key === 'narrative.commentary.commentary_on.body').role).toBe('developer');
+        expect(en.find((l) => l.key === 'narrative.devHistory.day_one.body').role).toBe('developer');
     });
 
     it('keeps the suit register for System lines so glitched and reverent reads can differ', () => {

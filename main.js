@@ -4417,7 +4417,11 @@ const developerCommentary = createDeveloperCommentary({
     updateDeck: () => updateHudNotificationDeck(),
     focusTarget: (target) => focusControllerTarget(target),
     // Generated commentary reads (scripts/voice/), when recorded for this language.
-    speak: (key) => AudioManager.playVoiceLine(`narrative.commentary.${key}.body`, { priority: 2 })
+    speak: (key) => AudioManager.playVoiceLine(`narrative.commentary.${key}.body`, { priority: 2 }),
+    // Read All's play buttons (commentary cards and the Development History).
+    hasVoice: (key) => Boolean(AudioManager.voiceLines.urlFor(key)),
+    playVoice: (key) => AudioManager.playVoiceLine(key, { priority: 1 }),
+    loadVoices: () => AudioManager.voiceLines.load()
 });
 
 function resetCommentaryRunState() {

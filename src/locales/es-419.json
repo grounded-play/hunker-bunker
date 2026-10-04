@@ -1443,7 +1443,11 @@
     "commentary": {
       "kicker": "COMENTARIO DEL DESARROLLADOR",
       "close_list": "Cerrar comentarios del desarrollador",
-      "list_intro": "Notas de los desarrolladores sobre por qué el juego funciona como funciona. Con el modo comentario activado, cada una aparece también al llegar a ese momento."
+      "list_intro": "Notas de los desarrolladores sobre por qué el juego funciona como funciona. Con el modo comentario activado, cada una aparece también al llegar a ese momento.",
+      "play": "▶ REPRODUCIR",
+      "play_aria": "Reproducir {title}",
+      "history_heading": "HISTORIA DEL DESARROLLO",
+      "history_intro": "Cómo llegó el juego hasta aquí, en orden, narrado por el desarrollador."
     },
     "radio": {
       "online": "EN LÍNEA",
@@ -3637,6 +3641,48 @@
       "steam_vault": {
         "title": "Bóveda de Steam",
         "body": "La Bóveda llegó con el backend de Steam en julio de 2026. Los objetos intercambiables y comerciables viven en el inventario de Steam; el juego solo muestra lo que Steam confirmó que te pertenece."
+      }
+    },
+    "devHistory": {
+      "day_one": {
+        "title": "El primer día",
+        "body": "El primer commit llegó el catorce de mayo de 2026. Era un menú, una pantalla de ajustes y una puerta de búnker que se cerraba entre escenas. Hunker Bunker empezó como un juego de celular que se jugaba con los pulgares, y esa puerta sigue en el juego hoy."
+      },
+      "engine": {
+        "title": "Cuatro días después",
+        "body": "El cuarto día tiré el motor. La primera versión corría en Phaser, un framework 2D, y yo quería luz, profundidad y un mundo que se mira desde arriba, así que pasé todo a Three.js. Esa misma semana llegaron los mapas procedurales con semilla, las colisiones con paredes y los primeros sprites de personajes."
+      },
+      "loop": {
+        "title": "Encontrar el ciclo",
+        "body": "Durante las dos primeras semanas nada pasaba de una partida a la siguiente. A fines de mayo entraron juntos el oxígeno, el depósito y la reparación del generador, y al día siguiente llegaron las salas hechas a mano. Ese fue el momento en que dejó de ser un juguete y se volvió un juego: cada sala se volvió la pregunta de si te la podías permitir."
+      },
+      "story": {
+        "title": "Aparece la historia",
+        "body": "En julio la historia llegó de golpe: la revelación de la cueva, las colmenas, los campamentos humanos y los líderes que te contestan. Diez finales salieron de una sola noche larga de trabajo, y la pelea contra la Reina llegó una semana después."
+      },
+      "steam": {
+        "title": "Hecho para el Deck",
+        "body": "A mediados de julio el juego pasó a una aplicación de escritorio y a un sistema de compilación para Steam. El veinticuatro borré por completo los controles táctiles y reconstruí la pantalla alrededor del Steam Deck, dieciséis por diez, primero el control. Tres días después se marcó la primera beta de la versión dos punto cero."
+      },
+      "maze": {
+        "title": "El laberinto, reconstruido",
+        "body": "El subsuelo se genera con colapso de función de onda, una técnica que encaja piezas como un rompecabezas. La primera versión hacía laberintos hermosos que no siempre se podían terminar. Lo reconstruí una y otra vez durante una semana, hasta que el laberinto creció desde el centro como un árbol y cada sala tuvo una salida."
+      },
+      "together": {
+        "title": "Juntos, y en contra",
+        "body": "El cooperativo y el versus llegaron en agosto. La mayor parte del trabajo no fue el combate, sino lo aburrido: qué pasa cuando el anfitrión se va, de quién es una caja negra, y asegurarse de que sea el servidor, no tu máquina, quien decide quién ganó una ronda."
+      },
+      "languages": {
+        "title": "Siete idiomas",
+        "body": "En septiembre cada palabra del juego pasó a siete idiomas, tanto los menús como la historia. Una auditoría corre con las pruebas y hace fallar la compilación si se cuela un texto nuevo en inglés sin traducir."
+      },
+      "lessons": {
+        "title": "Lo que se rompió",
+        "body": "Se rompieron muchas cosas. Los puntajes del Deck y de PC se rechazaron durante seis días sin que nadie lo notara. Se perdieron cuadros por segundo en cosas que nunca ves, como rayos disparados contra las paredes. Redibujé una y otra vez un sprite del jugador que nunca quedó bien, y al final construí el personaje en 3D. La regla que mantuve: nunca hacer que el juego se vea peor para que corra más rápido."
+      },
+      "voices": {
+        "title": "Las voces",
+        "body": "Las voces que escuchas se generaron en mi propia computadora con un modelo de voz abierto, y luego un reconocedor de voz las revisó línea por línea. La voz que lee esta historia es la mía, clonada de una grabación mía. Gracias por jugar, y por escuchar hasta aquí."
       }
     }
   }

@@ -1443,7 +1443,11 @@
     "commentary": {
       "kicker": "DEVELOPER COMMENTARY",
       "close_list": "Close developer commentary",
-      "list_intro": "Notes from the developers on why the game works the way it does. With Commentary Mode on, each also appears in play when you reach it."
+      "list_intro": "Notes from the developers on why the game works the way it does. With Commentary Mode on, each also appears in play when you reach it.",
+      "play": "▶ PLAY",
+      "play_aria": "Play {title}",
+      "history_heading": "DEVELOPMENT HISTORY",
+      "history_intro": "How the game got here, in order, read by the developer."
     },
     "radio": {
       "online": "ONLINE",
@@ -3637,6 +3641,48 @@
       "steam_vault": {
         "title": "Steam Vault",
         "body": "The Vault arrived with the Steam backend in July 2026. Tradable and marketable items live in Steam's inventory; the game only shows what Steam has verified you own."
+      }
+    },
+    "devHistory": {
+      "day_one": {
+        "title": "Day One",
+        "body": "The first commit landed on the fourteenth of May, 2026. It was a menu, a settings screen and a bunker door that slid shut between scenes. Hunker Bunker started as a phone game you played with your thumbs, and that door is still in the game today."
+      },
+      "engine": {
+        "title": "Four Days In",
+        "body": "On day four I threw out the engine. The first build ran on Phaser, a 2D framework, and I wanted light, depth and a world you look down into, so I moved everything to Three.js. The same week brought seeded procedural maps, wall collision and the first character sprites."
+      },
+      "loop": {
+        "title": "Finding the Loop",
+        "body": "For the first two weeks nothing carried over between runs. At the end of May oxygen, banking and the generator repair went in together, and the hand-made rooms arrived the next day. That was the moment it stopped being a toy and became a game: every room became a question of whether you could afford it."
+      },
+      "story": {
+        "title": "The Story Shows Up",
+        "body": "In July the story arrived all at once: the cave reveal, the hives, the human camps and the leaders who talk back. Ten endings came out of one long night of wiring, and the Queen fight followed a week later."
+      },
+      "steam": {
+        "title": "Built for the Deck",
+        "body": "In mid July the game moved into a desktop shell and a Steam build pipeline. On the twenty-fourth I deleted touch controls entirely and rebuilt the screen around the Steam Deck, sixteen by ten, controller first. Three days later the first two-point-oh beta was tagged."
+      },
+      "maze": {
+        "title": "The Maze, Rebuilt",
+        "body": "The underground is generated with wave function collapse, a technique that fits tiles together like a jigsaw. The first version made beautiful mazes you could not always finish. I rebuilt it again and again over one week, until the maze grew outward from the centre like a tree and every room had a way through."
+      },
+      "together": {
+        "title": "Together, and Against",
+        "body": "Co-op and versus arrived in August. Most of the work was not the fighting, it was the dull parts: what happens when the host leaves, who owns a black box, and making sure the server, not your machine, decides who won a round."
+      },
+      "languages": {
+        "title": "Seven Languages",
+        "body": "In September every word in the game was moved into seven languages, menus and story alike. An audit runs with the tests and fails the build if a new piece of English slips in untranslated."
+      },
+      "lessons": {
+        "title": "What Broke",
+        "body": "Plenty broke. Scores from Deck and PC were rejected for six days without anyone noticing. Frame rate was lost to things you never see, like rays fired at walls. I kept redrawing a player sprite that never came right, and in the end built the character in 3D instead. The rule I kept: never make the game look worse to make it run faster."
+      },
+      "voices": {
+        "title": "The Voices",
+        "body": "The cast you hear was generated on my own machine with an open voice model, then checked line by line by a speech recogniser. The voice reading this history is mine, cloned from a recording of me speaking. Thank you for playing, and for listening this far."
       }
     }
   }

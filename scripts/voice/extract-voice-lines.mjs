@@ -35,7 +35,8 @@ export const VOICE_LINE_RULES = Object.freeze([
     { catalog: 'classWreckageLogs', match: (parts) => (parts.at(-1) === 'payload' ? { role: 'system' } : null) },
     { catalog: 'loreClassLogs', match: () => ({ role: 'system' }) },
     // Developer commentary is read by the developer (a recording, not a design).
-    { catalog: 'commentary', match: (parts) => (parts.at(-1) === 'body' ? { role: 'developer' } : null) }
+    { catalog: 'commentary', match: (parts) => (parts.at(-1) === 'body' ? { role: 'developer' } : null) },
+    { catalog: 'devHistory', match: (parts) => (parts.at(-1) === 'body' ? { role: 'developer' } : null) }
 ]);
 
 function* walk(node, parts = []) {

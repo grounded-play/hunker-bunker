@@ -1443,7 +1443,11 @@
     "commentary": {
       "kicker": "ENTWICKLERKOMMENTAR",
       "close_list": "Entwicklerkommentar schließen",
-      "list_intro": "Anmerkungen der Entwickler dazu, warum das Spiel so funktioniert, wie es funktioniert. Mit aktiviertem Kommentarmodus erscheinen sie auch im Spiel, sobald du die Stelle erreichst."
+      "list_intro": "Anmerkungen der Entwickler dazu, warum das Spiel so funktioniert, wie es funktioniert. Mit aktiviertem Kommentarmodus erscheinen sie auch im Spiel, sobald du die Stelle erreichst.",
+      "play": "▶ ABSPIELEN",
+      "play_aria": "{title} abspielen",
+      "history_heading": "ENTWICKLUNGSGESCHICHTE",
+      "history_intro": "Wie das Spiel entstanden ist, der Reihe nach, gelesen vom Entwickler."
     },
     "radio": {
       "online": "ONLINE",
@@ -3637,6 +3641,48 @@
       "steam_vault": {
         "title": "Steam-Tresor",
         "body": "Der Tresor kam im Juli 2026 mit dem Steam-Backend. Handel- und marktfähige Gegenstände liegen im Steam-Inventar; das Spiel zeigt nur, was Steam als dein Eigentum bestätigt hat."
+      }
+    },
+    "devHistory": {
+      "day_one": {
+        "title": "Tag eins",
+        "body": "Der erste Commit kam am vierzehnten Mai 2026. Er bestand aus einem Menü, einem Einstellungsbildschirm und einer Bunkertür, die sich zwischen den Szenen schloss. Hunker Bunker begann als Handyspiel, das man mit den Daumen spielte, und diese Tür ist bis heute im Spiel."
+      },
+      "engine": {
+        "title": "Vier Tage später",
+        "body": "An Tag vier habe ich die Engine weggeworfen. Die erste Version lief auf Phaser, einem 2D-Framework, und ich wollte Licht, Tiefe und eine Welt, auf die man hinabblickt. Also habe ich alles auf Three.js umgestellt. In derselben Woche kamen prozedurale Karten mit Seeds, Wandkollision und die ersten Figuren-Sprites."
+      },
+      "loop": {
+        "title": "Die Schleife finden",
+        "body": "In den ersten zwei Wochen wurde nichts von einem Einsatz in den nächsten übernommen. Ende Mai kamen Sauerstoff, das Einlagern und die Generatorreparatur zusammen ins Spiel, und am nächsten Tag die handgebauten Räume. Das war der Moment, in dem aus einem Spielzeug ein Spiel wurde: Jeder Raum wurde zur Frage, ob man ihn sich leisten kann."
+      },
+      "story": {
+        "title": "Die Geschichte taucht auf",
+        "body": "Im Juli kam die Geschichte auf einen Schlag: die Enthüllung in der Höhle, die Nester, die Lager der Menschen und die Anführer, die widersprechen. Zehn Enden entstanden in einer langen Nacht, und der Kampf gegen die Königin folgte eine Woche später."
+      },
+      "steam": {
+        "title": "Gebaut für das Deck",
+        "body": "Mitte Juli zog das Spiel in eine Desktop-Hülle und eine Steam-Build-Pipeline um. Am vierundzwanzigsten habe ich die Touch-Steuerung komplett gelöscht und den Bildschirm um das Steam Deck herum neu gebaut, sechzehn zu zehn, Controller zuerst. Drei Tage später wurde die erste Beta der Version zwei-null markiert."
+      },
+      "maze": {
+        "title": "Das Labyrinth, neu gebaut",
+        "body": "Die Unterwelt wird mit Wave Function Collapse erzeugt, einer Technik, die Kacheln wie ein Puzzle zusammenfügt. Die erste Version erzeugte wunderschöne Labyrinthe, die man nicht immer schaffen konnte. Ich habe es eine Woche lang immer wieder neu gebaut, bis das Labyrinth wie ein Baum aus der Mitte wuchs und jeder Raum einen Weg hindurch hatte."
+      },
+      "together": {
+        "title": "Miteinander und gegeneinander",
+        "body": "Koop und Versus kamen im August. Die meiste Arbeit steckte nicht im Kämpfen, sondern in den langweiligen Teilen: was passiert, wenn der Host geht, wem eine Blackbox gehört, und dass der Server, nicht dein Rechner, entscheidet, wer eine Runde gewonnen hat."
+      },
+      "languages": {
+        "title": "Sieben Sprachen",
+        "body": "Im September wurde jedes Wort des Spiels in sieben Sprachen übertragen, Menüs wie Geschichte. Eine Prüfung läuft mit den Tests und lässt den Build scheitern, wenn sich ein neues Stück Englisch unübersetzt einschleicht."
+      },
+      "lessons": {
+        "title": "Was kaputtging",
+        "body": "Vieles ging kaputt. Punktzahlen von Deck und PC wurden sechs Tage lang abgelehnt, ohne dass es jemand bemerkte. Bildrate ging an Dingen verloren, die man nie sieht, etwa an Strahlen, die auf Wände geschossen werden. Ich habe ein Spieler-Sprite immer wieder neu gezeichnet, das nie richtig wurde, und die Figur am Ende in 3D gebaut. Die Regel, an die ich mich gehalten habe: Das Spiel nie schlechter aussehen lassen, damit es schneller läuft."
+      },
+      "voices": {
+        "title": "Die Stimmen",
+        "body": "Die Stimmen, die du hörst, wurden auf meinem eigenen Rechner mit einem offenen Sprachmodell erzeugt und dann Zeile für Zeile von einer Spracherkennung geprüft. Die Stimme, die diese Geschichte liest, ist meine, geklont aus einer Aufnahme von mir. Danke fürs Spielen und fürs Zuhören bis hierher."
       }
     }
   }

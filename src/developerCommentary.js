@@ -62,6 +62,53 @@ export const COMMENTARY_ENTRIES = localizeCatalog('narrative.commentary', Object
     }
 }));
 
+// The development history, told in order and read by the developer: the
+// "Development History" section of Read All. Unlike the cards above it is not
+// tied to a moment in play, so it is there whether or not commentary is on.
+// Localized in place (narrative.devHistory.<key>.title/body).
+export const DEV_HISTORY_ENTRIES = localizeCatalog('narrative.devHistory', Object.freeze({
+    day_one: {
+        title: 'Day One',
+        body: 'The first commit landed on the fourteenth of May, 2026. It was a menu, a settings screen and a bunker door that slid shut between scenes. Hunker Bunker started as a phone game you played with your thumbs, and that door is still in the game today.'
+    },
+    engine: {
+        title: 'Four Days In',
+        body: 'On day four I threw out the engine. The first build ran on Phaser, a 2D framework, and I wanted light, depth and a world you look down into, so I moved everything to Three.js. The same week brought seeded procedural maps, wall collision and the first character sprites.'
+    },
+    loop: {
+        title: 'Finding the Loop',
+        body: 'For the first two weeks nothing carried over between runs. At the end of May oxygen, banking and the generator repair went in together, and the hand-made rooms arrived the next day. That was the moment it stopped being a toy and became a game: every room became a question of whether you could afford it.'
+    },
+    story: {
+        title: 'The Story Shows Up',
+        body: 'In July the story arrived all at once: the cave reveal, the hives, the human camps and the leaders who talk back. Ten endings came out of one long night of wiring, and the Queen fight followed a week later.'
+    },
+    steam: {
+        title: 'Built for the Deck',
+        body: 'In mid July the game moved into a desktop shell and a Steam build pipeline. On the twenty-fourth I deleted touch controls entirely and rebuilt the screen around the Steam Deck, sixteen by ten, controller first. Three days later the first two-point-oh beta was tagged.'
+    },
+    maze: {
+        title: 'The Maze, Rebuilt',
+        body: 'The underground is generated with wave function collapse, a technique that fits tiles together like a jigsaw. The first version made beautiful mazes you could not always finish. I rebuilt it again and again over one week, until the maze grew outward from the centre like a tree and every room had a way through.'
+    },
+    together: {
+        title: 'Together, and Against',
+        body: 'Co-op and versus arrived in August. Most of the work was not the fighting, it was the dull parts: what happens when the host leaves, who owns a black box, and making sure the server, not your machine, decides who won a round.'
+    },
+    languages: {
+        title: 'Seven Languages',
+        body: 'In September every word in the game was moved into seven languages, menus and story alike. An audit runs with the tests and fails the build if a new piece of English slips in untranslated.'
+    },
+    lessons: {
+        title: 'What Broke',
+        body: 'Plenty broke. Scores from Deck and PC were rejected for six days without anyone noticing. Frame rate was lost to things you never see, like rays fired at walls. I kept redrawing a player sprite that never came right, and in the end built the character in 3D instead. The rule I kept: never make the game look worse to make it run faster.'
+    },
+    voices: {
+        title: 'The Voices',
+        body: 'The cast you hear was generated on my own machine with an open voice model, then checked line by line by a speech recogniser. The voice reading this history is mine, cloned from a recording of me speaking. Thank you for playing, and for listening this far.'
+    }
+}));
+
 const MENU_STACK_ID = 'menu-commentary-stack';
 const PLAYING_WAIT_MS = 120_000;
 const PLAYING_POLL_MS = 500;
@@ -81,6 +128,9 @@ const REMOVE_DELAY_MS = 320;
  * @param {(el: Element|null) => void} [deps.focusTarget]
  * @param {(fn: () => void) => void} [deps.requestFrame]
  * @param {(key: string) => void} [deps.speak]  read an entry aloud if it has a recorded line
+ * @param {(i18nKey: string) => boolean} [deps.hasVoice]  a recorded line exists for this key
+ * @param {(i18nKey: string) => void} [deps.playVoice]    play it (Read All's play buttons)
+ * @param {() => Promise<unknown>} [deps.loadVoices]       resolves once hasVoice() can answer
  */
 export function createDeveloperCommentary({
     doc = globalThis.document,
@@ -95,7 +145,11 @@ export function createDeveloperCommentary({
     focusTarget = () => {},
     requestFrame = (fn) => globalThis.requestAnimationFrame(fn),
     speak = () => {},
-    entries = COMMENTARY_ENTRIES
+    hasVoice = () => false,
+    playVoice = () => {},
+    loadVoices = () => Promise.resolve(),
+    entries = COMMENTARY_ENTRIES,
+    historyEntries = DEV_HISTORY_ENTRIES
 }) {
     const seenThisRun = new Set();
     const timers = new Set();
@@ -200,21 +254,45 @@ export function createDeveloperCommentary({
         tick();
     }
 
+    function listItem(entry, voiceKey) {
+        const item = doc.createElement('article');
+        item.className = 'commentary-list__item';
+        const title = doc.createElement('h3');
+        title.className = 'commentary-list__title';
+        title.textContent = entry.title;
+        item.append(title);
+        if (hasVoice(voiceKey)) {
+            const play = doc.createElement('button');
+            play.type = 'button';
+            play.className = 'commentary-list__play';
+            play.textContent = t('ui.commentary.play');
+            play.setAttribute('aria-label', t('ui.commentary.play_aria', { title: entry.title }));
+            play.addEventListener('click', () => playVoice(voiceKey));
+            item.append(play);
+        }
+        const body = doc.createElement('p');
+        body.className = 'commentary-list__body';
+        body.textContent = entry.body;
+        item.append(body);
+        return item;
+    }
+
     function renderList() {
         const list = doc.getElementById('commentary-list');
         if (!list) return;
         list.innerHTML = '';
-        for (const entry of Object.values(entries)) {
-            const item = doc.createElement('article');
-            item.className = 'commentary-list__item';
-            const title = doc.createElement('h3');
-            title.className = 'commentary-list__title';
-            title.textContent = entry.title;
-            const body = doc.createElement('p');
-            body.className = 'commentary-list__body';
-            body.textContent = entry.body;
-            item.append(title, body);
-            list.appendChild(item);
+        for (const [key, entry] of Object.entries(entries)) {
+            list.appendChild(listItem(entry, `narrative.commentary.${key}.body`));
+        }
+        const heading = doc.createElement('h3');
+        heading.className = 'commentary-list__section';
+        heading.textContent = t('ui.commentary.history_heading');
+        const intro = doc.createElement('p');
+        intro.className = 'commentary-list__section-intro';
+        intro.textContent = t('ui.commentary.history_intro');
+        list.append(heading, intro);
+        for (const [key, entry] of Object.entries(historyEntries)) {
+            list.appendChild(listItem(entry, `narrative.devHistory.${key}.body`));
         }
     }
 
@@ -224,6 +302,10 @@ export function createDeveloperCommentary({
         renderList();
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
+        // Play buttons appear once the voice manifest is known (first open only).
+        Promise.resolve(loadVoices()).then(() => {
+            if (!disposed && !modal.classList.contains('hidden')) renderList();
+        }, () => {});
         requestFrame(() => focusTarget(doc.getElementById('close-commentary-list')));
     }
 

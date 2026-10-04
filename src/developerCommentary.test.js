@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { COMMENTARY_ENTRIES, createDeveloperCommentary } from './developerCommentary.js';
+import { COMMENTARY_ENTRIES, DEV_HISTORY_ENTRIES, createDeveloperCommentary } from './developerCommentary.js';
 
 // Minimal DOM: enough element behaviour for the commentary cards and list.
 class FakeElement {
@@ -148,10 +148,57 @@ describe('developer commentary', () => {
         doc.register(Object.assign(new FakeElement('button'), { id: 'close-commentary-list' }));
         commentary.openList();
         expect(modal.classList.contains('hidden')).toBe(false);
-        expect(list.children).toHaveLength(Object.keys(COMMENTARY_ENTRIES).length);
+        // Commentary entries, then the Development History heading, intro and chapters.
+        expect(list.children).toHaveLength(Object.keys(COMMENTARY_ENTRIES).length + 2 + Object.keys(DEV_HISTORY_ENTRIES).length);
         expect(deps.focusTarget).toHaveBeenCalled();
         expect(commentary.closeList()).toBe(true);
         expect(commentary.closeList()).toBe(false);
+    });
+
+    it('ships the development history in order, ending with the voices', () => {
+        const chapters = Object.values(DEV_HISTORY_ENTRIES);
+        expect(chapters.length).toBeGreaterThanOrEqual(8);
+        expect(Object.keys(DEV_HISTORY_ENTRIES)[0]).toBe('day_one');
+        expect(Object.keys(DEV_HISTORY_ENTRIES).at(-1)).toBe('voices');
+        for (const chapter of chapters) {
+            expect(chapter.title.length).toBeGreaterThan(0);
+            // One voiced read each: long enough to say something, short enough to hold.
+            expect(chapter.body.split(/\s+/).length).toBeGreaterThan(20);
+            expect(chapter.body.split(/\s+/).length).toBeLessThan(90);
+        }
+    });
+
+    it('lists the development history after the commentary, whether or not commentary is on', () => {
+        const { commentary, doc, setEnabled } = setup();
+        setEnabled(false);
+        doc.register(Object.assign(new FakeElement('div'), { id: 'commentary-list-modal' }));
+        const list = doc.register(Object.assign(new FakeElement('div'), { id: 'commentary-list' }));
+        commentary.renderList();
+        const heading = list.children[Object.keys(COMMENTARY_ENTRIES).length];
+        expect(heading.textContent).toBe('ui.commentary.history_heading');
+        expect(list.children.at(-1).children[0].textContent).toBe(DEV_HISTORY_ENTRIES.voices.title);
+    });
+
+    it('adds a play button once the voice manifest loads, only where a line is recorded', async () => {
+        const recorded = new Set(['narrative.devHistory.day_one.body', 'narrative.commentary.run_start.body']);
+        let loaded = false;
+        const playVoice = vi.fn();
+        const { commentary, doc } = setup({
+            hasVoice: (key) => loaded && recorded.has(key),
+            playVoice,
+            loadVoices: () => { loaded = true; return Promise.resolve(); }
+        });
+        const modal = doc.register(Object.assign(new FakeElement('div'), { id: 'commentary-list-modal' }));
+        modal.classList.add('hidden');
+        const list = doc.register(Object.assign(new FakeElement('div'), { id: 'commentary-list' }));
+        const buttons = () => list.children.flatMap((item) => item.children.filter((c) => c.tagName === 'BUTTON'));
+        commentary.openList();
+        expect(buttons()).toHaveLength(0);
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(buttons()).toHaveLength(2);
+        buttons().at(-1).listeners.click[0]();
+        expect(playVoice).toHaveBeenCalledWith('narrative.devHistory.day_one.body');
     });
 
     // Generated voice lines (src/voiceLines.js): a card is also read aloud

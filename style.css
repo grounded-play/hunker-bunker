@@ -11906,6 +11906,33 @@ html.phase-menu .menu-commentary-stack .commentary-toast,
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.8);
 }
+.commentary-list__play {
+  margin: 0 0 6px;
+  padding: 2px 10px;
+  font: 700 max(11px, calc(var(--font-xs) * 0.8)) / 1.4 'Space Mono', monospace;
+  letter-spacing: 0.08em;
+  color: rgb(251, 191, 36);
+  background: transparent;
+  border: 1px solid rgba(251, 191, 36, 0.6);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.commentary-list__play:hover,
+.commentary-list__play:focus-visible {
+  background: rgba(251, 191, 36, 0.15);
+  outline: none;
+}
+.commentary-list__section {
+  margin: calc(var(--vu) * 1.5) 0 0;
+  font: 800 calc(var(--font-xs) * 1.1) / 1.1 'Space Mono', monospace;
+  letter-spacing: 0.1em;
+  color: rgb(251, 191, 36);
+}
+.commentary-list__section-intro {
+  margin: 0;
+  font-size: max(12px, calc(var(--font-xs) * 0.9));
+  color: rgba(255, 255, 255, 0.7);
+}
 
 .commentary-toast {
   display: grid;

@@ -1443,7 +1443,11 @@
     "commentary": {
       "kicker": "COMENTÁRIO DO DESENVOLVEDOR",
       "close_list": "Fechar comentários dos desenvolvedores",
-      "list_intro": "Notas dos desenvolvedores sobre por que o jogo funciona como funciona. Com o modo comentário ativado, cada uma também aparece quando você chega a esse momento."
+      "list_intro": "Notas dos desenvolvedores sobre por que o jogo funciona como funciona. Com o modo comentário ativado, cada uma também aparece quando você chega a esse momento.",
+      "play": "▶ OUVIR",
+      "play_aria": "Ouvir {title}",
+      "history_heading": "HISTÓRIA DO DESENVOLVIMENTO",
+      "history_intro": "Como o jogo chegou até aqui, em ordem, narrado pelo desenvolvedor."
     },
     "radio": {
       "online": "ONLINE",
@@ -3637,6 +3641,48 @@
       "steam_vault": {
         "title": "Cofre da Steam",
         "body": "O Cofre chegou com o backend da Steam em julho de 2026. Itens trocáveis e comercializáveis ficam no inventário da Steam; o jogo só mostra o que a Steam confirmou que é seu."
+      }
+    },
+    "devHistory": {
+      "day_one": {
+        "title": "O primeiro dia",
+        "body": "O primeiro commit chegou em catorze de maio de 2026. Era um menu, uma tela de configurações e uma porta de bunker que se fechava entre as cenas. Hunker Bunker começou como um jogo de celular jogado com os polegares, e essa porta continua no jogo até hoje."
+      },
+      "engine": {
+        "title": "Quatro dias depois",
+        "body": "No quarto dia eu joguei fora o motor. A primeira versão rodava em Phaser, um framework 2D, e eu queria luz, profundidade e um mundo visto de cima, então passei tudo para Three.js. Na mesma semana vieram os mapas procedurais com semente, a colisão com paredes e os primeiros sprites de personagens."
+      },
+      "loop": {
+        "title": "Encontrando o ciclo",
+        "body": "Nas duas primeiras semanas nada passava de uma partida para a outra. No fim de maio entraram juntos o oxigênio, o depósito e o conserto do gerador, e no dia seguinte chegaram as salas feitas à mão. Foi aí que deixou de ser um brinquedo e virou um jogo: cada sala virou a pergunta de se você podia bancá-la."
+      },
+      "story": {
+        "title": "A história aparece",
+        "body": "Em julho a história chegou de uma vez: a revelação da caverna, as colmeias, os acampamentos humanos e os líderes que respondem. Dez finais saíram de uma única noite longa de trabalho, e a luta contra a Rainha veio uma semana depois."
+      },
+      "steam": {
+        "title": "Feito para o Deck",
+        "body": "Em meados de julho o jogo foi para um aplicativo de desktop e um sistema de build para a Steam. No dia vinte e quatro eu apaguei os controles de toque por completo e reconstruí a tela em torno do Steam Deck, dezesseis por dez, controle em primeiro lugar. Três dias depois foi marcada a primeira beta da versão dois ponto zero."
+      },
+      "maze": {
+        "title": "O labirinto, reconstruído",
+        "body": "O subterrâneo é gerado com colapso de função de onda, uma técnica que encaixa peças como um quebra-cabeça. A primeira versão fazia labirintos lindos que nem sempre dava para terminar. Eu reconstruí tudo de novo e de novo durante uma semana, até o labirinto crescer a partir do centro como uma árvore e toda sala ter uma passagem."
+      },
+      "together": {
+        "title": "Juntos, e contra",
+        "body": "O cooperativo e o versus chegaram em agosto. A maior parte do trabalho não foi o combate, foram as partes chatas: o que acontece quando o anfitrião sai, de quem é uma caixa-preta, e garantir que o servidor, não a sua máquina, decida quem venceu uma rodada."
+      },
+      "languages": {
+        "title": "Sete idiomas",
+        "body": "Em setembro cada palavra do jogo passou para sete idiomas, dos menus à história. Uma auditoria roda junto com os testes e faz o build falhar se um texto novo em inglês escapar sem tradução."
+      },
+      "lessons": {
+        "title": "O que quebrou",
+        "body": "Muita coisa quebrou. As pontuações do Deck e do PC foram rejeitadas por seis dias sem ninguém perceber. Perdemos quadros por segundo com coisas que você nunca vê, como raios disparados contra paredes. Eu redesenhei várias vezes um sprite do jogador que nunca ficou certo, e no fim construí o personagem em 3D. A regra que mantive: nunca deixar o jogo mais feio para ele rodar mais rápido."
+      },
+      "voices": {
+        "title": "As vozes",
+        "body": "As vozes que você ouve foram geradas no meu próprio computador com um modelo de voz aberto, e depois conferidas linha por linha por um reconhecedor de fala. A voz que lê esta história é a minha, clonada de uma gravação minha. Obrigado por jogar, e por ouvir até aqui."
       }
     }
   }
