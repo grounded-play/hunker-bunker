@@ -162,4 +162,26 @@ describe('world 3D replacement catalog', () => {
         expect(WORLD_3D_MODELS.prop_camp_cookfire.url).toBe('/3d/runtime/new3ds/prop_camp_cookfire.glb');
         expect(WORLD_3D_MODELS.prop_camp_cookfire.url).not.toBe(WORLD_3D_MODELS.prop_fabricator_workstation.url);
     });
+
+    it('binds an AnimationMixer and plays idle animation clip on character models', async () => {
+        const { prepareWorld3dModel } = await import('./world3dOverlay.js');
+        const model = new THREE.Group();
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshBasicMaterial());
+        model.add(mesh);
+        const idleTrack = new THREE.VectorKeyframeTrack('.position', [0, 1], [0, 0, 0, 0, 1, 0]);
+        const clip = new THREE.AnimationClip('Armature|mixamo.com|Layer0', 1, [idleTrack]);
+
+        const root = prepareWorld3dModel(model, 'npc_martha', { height: 1.75, yaw: 0 }, [clip]);
+        expect(root.name).toBe('World3d:npc_martha');
+        expect(root.userData.mixer).toBeInstanceOf(THREE.AnimationMixer);
+        expect(root.userData.animations).toEqual([clip]);
+
+        // delta tick updates the mixer
+        const source = new THREE.Sprite();
+        source.userData.world3dRoot = root;
+        source.userData.yaw = 1.25;
+        expect(syncWorld3dReplacement(source, { delta: 0.016 })).toBe(true);
+        expect(root.rotation.y).toBeCloseTo(1.25);
+    });
 });
+

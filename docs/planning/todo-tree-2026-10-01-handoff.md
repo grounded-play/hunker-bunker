@@ -171,6 +171,18 @@ contributor edited economy code/tests. Those changes are not part of iterations
 3–4; do not treat this as a green whole-branch/CI certification. Commentary
 extraction work in `main.js` is also owned by the concurrent contributor.
 
+## Iteration 8 — camp 3D NPC idle animation, duplicate NPC elimination, leader pathing sync, and prop fallback hiding
+
+2026-10-04. Scope: `src/world3dOverlay.js`, `src/threeGame.js`, `src/camp.js`, and their test suites.
+
+- [x] Rigged NPC GLB models (`npc_martha`, `npc_kaelen`, `npc_civilian_miner`, `npc_civilian_researcher`, etc.) bind an `AnimationMixer` in `prepareWorld3dModel` targeting idle clips (`idle` or `Armature|mixamo.com|Layer0`) with slightly randomized start times to prevent synchronized robotic idling.
+- [x] Central `updateWorld3dMixers` in `ThreeGame` registers loaded mixers via `setupWorld3dReplacement` and ticks them per frame.
+- [x] Decoupled camp leader movement and waypoint pathfinding from `this.npcSprite.visible` in `camp.js`: leader now walks along patrol paths, computes facing yaw (`Math.atan2(dx, dz)` or turns toward player when talking), and updates the 3D model via `syncWorld3dReplacement(this.npcSprite, { delta })`.
+- [x] Eliminated duplicate civilian NPC visuals: `updateCampCivilians` keeps 2D billboard sprite hidden when 3D replacement is mounted (`sprite.visible = alive && !has3d`).
+- [x] Eliminated duplicate primitive geometric mannequin workers: `SurvivorCamp.setWorkersVisible(false)` hides placeholder cylinder/sphere figures when real 3D civilians are spawned in `ensureAct2Camps`.
+- [x] Hidden 2D billboard signature prop fallback letter boxes (`makeSignaturePropFallbackCanvas` / 96x96 dashed boxes) whenever 3D camp dressing models are attached.
+- [x] Targeted verification: 4 suites passed (`src/camp.test.js`, `src/world3dOverlay.test.js`, `src/threeGame.camp3dAnimations.test.js`, `src/threeGame.survivorLifecycle.test.js`), full server test suite (35 suites / 330 tests) passed, ESLint clean (0 errors).
+
 ## Iteration 7 — remove campaign defenses from PvP rival damage
 
 Work begins from `d796194e`; concurrent Fabrication Bay extraction is excluded.

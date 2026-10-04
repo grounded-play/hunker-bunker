@@ -264,7 +264,7 @@ export async function createWorld3dModel(type) {
     const gltf = await loadTemplate(config.url);
     const context = { type, url: config.url };
     const model = measurePerfPhase('world-model:clone', context, () => cloneSkeleton(gltf.scene));
-    return measurePerfPhase('world-model:prepare', context, () => prepareWorld3dModel(model, type, config));
+    return measurePerfPhase('world-model:prepare', context, () => prepareWorld3dModel(model, type, config, gltf.animations));
 }
 
 export async function createWorld3dStructure(type) {
@@ -315,8 +315,8 @@ export function prepareWorld3dStructure(renderModel, collisionModel, type, confi
     return root;
 }
 
-function prepareWorld3dModel(model, type, config) {
-    if (config.scale) return prepareUniformScaleModel(model, type, config);
+export function prepareWorld3dModel(model, type, config, animations = null) {
+    if (config.scale) return prepareUniformScaleModel(model, type, config, animations);
     model.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(model);
     const size = bounds.getSize(new THREE.Vector3());
@@ -325,7 +325,7 @@ function prepareWorld3dModel(model, type, config) {
     const scaled = new THREE.Box3().setFromObject(model);
     const center = scaled.getCenter(new THREE.Vector3());
     model.position.set(-center.x, -scaled.min.y, -center.z);
-    model.rotation.y = config.yaw;
+    model.rotation.y = config.yaw ?? 0;
     model.traverse((object) => {
         if (!object.isMesh) return;
         object.castShadow = true;
@@ -343,15 +343,43 @@ function prepareWorld3dModel(model, type, config) {
         object.frustumCulled = true;
     });
     useSinglePassForFlatMaterials(model);
+
+    let mixer = null;
+    if (animations && animations.length > 0) {
+        const idleClip = animations.find((clip) => /idle/i.test(clip.name))
+            || animations.find((clip) => /mixamo|layer0/i.test(clip.name))
+            || animations[0];
+        if (idleClip) {
+            mixer = new THREE.AnimationMixer(model);
+            const action = mixer.clipAction(idleClip);
+            action.play();
+            if (idleClip.duration > 0) {
+                action.time = Math.random() * idleClip.duration;
+            }
+            mixer.update(0);
+        }
+    }
+
     const root = new THREE.Group();
     root.name = `World3d:${type}`;
+    root.userData = {
+        modelType: type,
+        mixer,
+        animations,
+        dispose: () => {
+            if (mixer) {
+                mixer.stopAllAction();
+                mixer.uncacheRoot(model);
+            }
+        }
+    };
     root.add(model);
     return root;
 }
 
 // Modular pieces: one scale for the whole kit and the authored origin kept,
 // because pieces only line up on their shared socket grid.
-function prepareUniformScaleModel(model, type, config) {
+function prepareUniformScaleModel(model, type, config, animations = null) {
     model.scale.multiplyScalar(config.scale);
     model.rotation.y = config.yaw ?? 0;
     model.traverse((object) => {
@@ -369,6 +397,7 @@ function prepareUniformScaleModel(model, type, config) {
     });
     const root = new THREE.Group();
     root.name = `World3d:${type}`;
+    root.userData = { modelType: type, animations };
     root.add(model);
     return root;
 }
@@ -461,7 +490,7 @@ export async function preloadWorld3dModels(types = COMMON_WORLD_3D_MODEL_TYPES) 
 // The sprite can move after a GLB request starts (the O2 generator's boot
 // animation does exactly that), so copying its transform only once at load
 // completion can strand the model below the floor.
-export function syncWorld3dReplacement(source, { scale = 1, visible } = {}) {
+export function syncWorld3dReplacement(source, { scale = 1, visible, delta } = {}) {
     const root = source?.userData?.world3dRoot;
     if (!root) return false;
     root.position.copy(source.position);
@@ -476,12 +505,17 @@ export function syncWorld3dReplacement(source, { scale = 1, visible } = {}) {
             root.position.x -= wn.x * 0.22;
             root.position.z -= wn.z * 0.22;
         }
+    } else if (Number.isFinite(source.userData?.yaw)) {
+        root.rotation.y = source.userData.yaw;
     } else {
         root.rotation.y = (source.material?.rotation ?? 0) + WORLD_3D_FACING_YAW;
     }
     const modelScale = Number.isFinite(source.userData?.modelScale) ? source.userData.modelScale : 1;
     root.scale.setScalar(Math.max(0, (Number.isFinite(scale) ? scale : 1) * modelScale));
     root.visible = visible ?? Boolean(source.userData.world3dDesiredVisible);
+    if (Number.isFinite(delta) && root.userData?.mixer) {
+        root.userData.mixer.update(delta);
+    }
     // Once a replacement exists the flat sprite must never draw again, or the
     // billboard renders *inside* the model. Callers legitimately flip
     // `source.visible` while animating (the O2 generator rise sets it every

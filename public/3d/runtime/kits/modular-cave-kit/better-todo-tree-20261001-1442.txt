@@ -71,6 +71,12 @@ Original checked entries are not newly certified by this iteration.
     relic/overclock mitigation, shields and carapace; 72 targeted regression tests.
 [ ] Shared spawn-protection/lifecycle authority remains open; see iteration 7 notes.
 
+[x] Iteration 8, S49-26: Camp 3D NPC idle animation mixer autoplay (eliminating T-pose),
+    elimination of duplicate 2D/3D and placeholder mannequin worker visuals, leader
+    3D movement pathfinding sync, and hiding signature prop fallback letter boxes
+    when 3D dressing models attach. 19 targeted tests.
+
+
 ORIGINAL IMPORTED TODO SNAPSHOT
 └─ hunker-bunker
    ├─ economy-master-plan-2026-09-30.md

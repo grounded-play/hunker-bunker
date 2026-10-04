@@ -190,7 +190,7 @@ import { extractChunkPortals, buildWorldRouteGraph, reachableChunkKeys } from '.
 import { BaseLights } from './baseLights.js';
 import { FabricationFoundry } from './foundry.js';
 import { CaveEntrance } from './caveEntrance.js';
-import { SurvivorCamp, CAMP_CLEARING_RADIUS } from './camp.js';
+import { SurvivorCamp, CAMP_CLEARING_RADIUS, CAMP_DRESSING_MODELS } from './camp.js';
 import {
     ACT2_CAMP_LABELS,
     ACT2_CAMP_MAX_LEVEL,
@@ -5553,6 +5553,8 @@ export class ThreeGame {
 
         this.isMultiplayer = true;
         this.multiplayerMode = session.mode || MULTIPLAYER_SPAWN_MODES.COOP;
+        this.pvpRoundId = session.roundId || null;
+        this._pvpGameplayReady = false;
         if (this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP) {
             this.currentRunModifier = null;
             if (this.bunkerDirector?.setRunCards) {
@@ -5646,6 +5648,10 @@ export class ThreeGame {
                 socket.on(event, handler);
             };
             on('currentPlayers', (players) => this.reconcileMultiplayerRoster(players));
+            on('pvpRoundState', (data) => {
+                this.pvpRoundId = data?.roundId || null;
+                if (this._pvpGameplayReady) this.notifyPvpGameplayReady();
+            });
             on('connect', () => {
                 this.multiplayerLocalPlayerId = socket.id;
             });
@@ -5654,7 +5660,8 @@ export class ThreeGame {
             on('playerDamaged', (data) => this.handleRemotePlayerDamaged(data));
             on('weaponHitRejected', (data) => {
                 const reasons = ['not_pvp', 'reporter_dead', 'participant_unavailable',
-                    'attacker_dead', 'target_dead', 'hit_cadence', 'invalid_impact', 'out_of_range', 'target_miss'];
+                    'attacker_dead', 'target_dead', 'hit_cadence', 'invalid_impact', 'out_of_range', 'target_miss',
+                    'player_loading', 'spawn_protected'];
                 debugLog.info('WEAPON', 'pvp-hit-rejected', {
                     reason: reasons.includes(data?.reason) ? data.reason : 'unknown'
                 });
@@ -5730,6 +5737,8 @@ export class ThreeGame {
         const leavingPvp = this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP;
         this.isMultiplayer = false;
         this.multiplayerMode = null;
+        this.pvpRoundId = null;
+        this._pvpGameplayReady = false;
         if (leavingPvp && this.bank) this.syncPersistentUpgrades?.();
         // Shared world beats are deduped per session. Without clearing, a
         // second co-op run would treat a beat it already saw (the O2 build,
@@ -5751,6 +5760,13 @@ export class ThreeGame {
         this.globalSeedOffset = 0;
         this._descentIndex = 0;
         this._descentBaseOffset = null;
+    }
+
+    notifyPvpGameplayReady() {
+        this._pvpGameplayReady = true;
+        if (this.multiplayerMode === 'pvp' && this.pvpRoundId && this.netSocket?.connected) {
+            this.netSocket.emit('pvpGameplayReady', { roundId: this.pvpRoundId });
+        }
     }
 
     reconcileMultiplayerRoster(players) {
@@ -7026,6 +7042,10 @@ export class ThreeGame {
                 source.userData.replacedBy3d = true;
                 source.visible = false;
                 syncWorld3dReplacement(source);
+                if (root.userData?.mixer) {
+                    this.world3dMixers = this.world3dMixers || new Set();
+                    this.world3dMixers.add(root.userData.mixer);
+                }
                 if (owner && ownerKey) owner[ownerKey] = root;
                 if (owner?.threeObjects && !owner.threeObjects.includes(root)) owner.threeObjects.push(root);
                 return root;
@@ -16216,6 +16236,13 @@ export class ThreeGame {
         }
     }
 
+    updateWorld3dMixers(delta) {
+        if (!this.world3dMixers?.size) return;
+        for (const mixer of this.world3dMixers) {
+            mixer.update(delta);
+        }
+    }
+
     // Camps exist from Act 1 onward: friendly outposts the player can support
     // with shells (and later must betray). Leveled camps double as O2 havens
     // during the human prelude.
@@ -16263,6 +16290,7 @@ export class ThreeGame {
 
         this.reanchorUnanchoredCamps?.();
         this.updateCampCivilians(delta);
+        this.updateWorld3dMixers(delta);
         this.updateCampTurrets(delta, phase);
         this.updateCampPrompt(phase);
         this.updateScientistPromptState();
@@ -17137,6 +17165,14 @@ export class ThreeGame {
             return camp;
         });
         this.ensureCampCivilians();
+        for (const camp of this.camps) {
+            camp.setWorkersVisible?.(false);
+            if (camp.signatureProps && (camp.dressingModels?.length || CAMP_DRESSING_MODELS?.[camp.id]?.length)) {
+                for (const propSprite of Object.values(camp.signatureProps)) {
+                    propSprite.visible = false;
+                }
+            }
+        }
         this._act2CampsReady = true;
         this.restoreActiveCampQuestFromState?.();
     }
@@ -17147,7 +17183,13 @@ export class ThreeGame {
     ensureCampCivilians() {
         for (const civ of this.campCivilians) {
             if (civ.sprite) this.scene.remove(civ.sprite);
-            if (civ.sprite?.userData?.world3dRoot) this.scene.remove(civ.sprite.userData.world3dRoot);
+            if (civ.sprite?.userData?.world3dRoot) {
+                if (civ.sprite.userData.world3dRoot.userData?.mixer) {
+                    this.world3dMixers?.delete(civ.sprite.userData.world3dRoot.userData.mixer);
+                    civ.sprite.userData.world3dRoot.userData.dispose?.();
+                }
+                this.scene.remove(civ.sprite.userData.world3dRoot);
+            }
         }
         this.campCivilians = [];
         for (const camp of this.camps) {
@@ -17194,8 +17236,9 @@ export class ThreeGame {
             const sprite = civ.sprite;
             if (!camp || !sprite) continue;
             const alive = camp.revealed && !camp.destroyed && camp.status !== 'culled';
-            sprite.visible = alive;
-            if (sprite.userData?.world3dRoot) {
+            const has3d = Boolean(sprite.userData?.world3dRoot);
+            sprite.visible = alive && !has3d;
+            if (has3d) {
                 sprite.userData.world3dRoot.visible = alive;
             }
             if (!alive) continue;
@@ -17219,6 +17262,7 @@ export class ThreeGame {
                 const dirZ = dz / dist;
                 sprite.position.x += dirX * 0.55 * delta;
                 sprite.position.z += dirZ * 0.55 * delta;
+                sprite.userData.yaw = Math.atan2(dirX, dirZ);
                 this.updateSheetSpriteFrame(sprite, dirX, dirZ, delta);
             }
             syncWorld3dReplacement(sprite);
@@ -17420,6 +17464,13 @@ export class ThreeGame {
         this.camps = [];
         for (const civ of this.campCivilians ?? []) {
             if (civ.sprite) this.scene.remove(civ.sprite);
+            if (civ.sprite?.userData?.world3dRoot) {
+                if (civ.sprite.userData.world3dRoot.userData?.mixer) {
+                    this.world3dMixers?.delete(civ.sprite.userData.world3dRoot.userData.mixer);
+                    civ.sprite.userData.world3dRoot.userData.dispose?.();
+                }
+                this.scene.remove(civ.sprite.userData.world3dRoot);
+            }
         }
         this.campCivilians = [];
         this._act2CampsReady = false;

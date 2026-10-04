@@ -441,6 +441,13 @@ export class SurvivorCamp {
         }
     }
 
+    setWorkersVisible(visible = true) {
+        this.workersVisible = Boolean(visible);
+        for (const worker of this.campWorkers ?? []) {
+            if (worker.mesh) worker.mesh.visible = this.workersVisible && this.status !== 'culled';
+        }
+    }
+
     build(x, z, groundY = 0) {
         if (this.built) {
             this.pos = { x, z };
@@ -1050,8 +1057,9 @@ export class SurvivorCamp {
         if (this.propSprites.laundry) this.propSprites.laundry.visible = occupiedByHumans;
         if (this.propSprites.bedrolls) this.propSprites.bedrolls.visible = occupiedByHumans && this.status !== 'robbed';
         if (this.propSprites.grave) this.propSprites.grave.visible = this.status === 'culled';
+        const has3dDressing = Boolean(this.dressingModels?.length > 0);
         for (const sprite of Object.values(this.signatureProps ?? {})) {
-            sprite.visible = lit && this.status !== 'robbed';
+            sprite.visible = !has3dDressing && lit && this.status !== 'robbed';
         }
 
         if (this.sandbagSprites) {
@@ -1178,16 +1186,24 @@ export class SurvivorCamp {
                 console.warn(`[camp] dressing model ${spec.type} unavailable`, err);
             }
         }
+        if (this.dressingModels.length > 0 && this.signatureProps) {
+            for (const sprite of Object.values(this.signatureProps)) {
+                sprite.visible = false;
+            }
+        }
         return this.dressingModels.length;
     }
 
     setDestroyed(destroyed = true) {
         this.destroyed = Boolean(destroyed);
         if (this.npcSprite) {
-            this.npcSprite.visible = !this.destroyed;
+            this.npcSprite.visible = !this.destroyed && !this.npcSprite.userData?.world3dRoot;
+            if (this.npcSprite.userData?.world3dRoot) {
+                this.npcSprite.userData.world3dRoot.visible = !this.destroyed;
+            }
         }
         for (const worker of this.campWorkers) {
-            if (worker.mesh) worker.mesh.visible = !this.destroyed;
+            if (worker.mesh) worker.mesh.visible = !this.destroyed && this.workersVisible !== false;
         }
         if (!this.destroyed) return;
         this.status = 'culled';
@@ -1381,13 +1397,27 @@ export class SurvivorCamp {
         }
 
         // NPC movement pathfinding and animation update loop
-        if (this.npcSprite && this.npcSprite.visible) {
+        // Decouple from this.npcSprite.visible: when replaced by a 3D model,
+        // npcSprite.visible is set to false (replacedBy3d = true), but pathing,
+        // position updates, facing yaw, and syncWorld3dReplacement must continue!
+        const isNpcActive = Boolean(
+            this.npcSprite &&
+            !this.destroyed &&
+            this.status !== 'culled' &&
+            (this.npcSprite.visible || this.npcSprite.userData?.world3dRoot || this.npcSprite.userData?.replacedBy3d)
+        );
+        if (isNpcActive) {
             // When close to player, pause patrol to converse/react
-            const pausingForPlayer = distToPlayer < 3.2 && !this.destroyed && this.status !== 'culled';
+            const pausingForPlayer = distToPlayer < 3.2;
             this.isInteractingWithPlayer = pausingForPlayer;
 
             if (pausingForPlayer) {
                 this.npcAction = this.status === 'turned' ? 'turned_stare' : this.isLockedDown ? 'wary_standoff' : 'attentive_idle';
+                if (typeof window !== 'undefined' && window.game?.player?.position) {
+                    const toPlayerX = window.game.player.position.x - this.npcPos.x;
+                    const toPlayerZ = window.game.player.position.z - this.npcPos.z;
+                    this.npcSprite.userData.yaw = Math.atan2(toPlayerX, toPlayerZ);
+                }
             } else if (this.npcAction !== 'walking') {
                 this.npcActionTimer -= delta;
                 if (this.npcActionTimer <= 0) {
@@ -1417,6 +1447,7 @@ export class SurvivorCamp {
                     } else {
                         this.npcFacingRow = dz > 0 ? 0 : 1; // South / North
                     }
+                    this.npcSprite.userData.yaw = Math.atan2(dx, dz);
                 }
             }
 
@@ -1437,7 +1468,7 @@ export class SurvivorCamp {
             } else {
                 this.npcSprite.rotation.z = 0;
             }
-            syncWorld3dReplacement(this.npcSprite);
+            syncWorld3dReplacement(this.npcSprite, { delta });
         }
 
         // docs/human-ai-activation-plan.md Slice 3: per-worker (not
@@ -1465,7 +1496,7 @@ export class SurvivorCamp {
             const worker = this.campWorkers[index];
             worker.humanState = workerHumanStates[index];
             if (!worker.mesh) continue;
-            worker.mesh.visible = this.status !== 'culled';
+            worker.mesh.visible = this.status !== 'culled' && this.workersVisible !== false;
             if (!worker.mesh.visible) continue;
             const humanVisual = campWorkerVisualForHumanState(worker.humanState);
             const t = this.elapsed * worker.speed * humanVisual.speedMult + worker.phase;
