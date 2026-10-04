@@ -1,0 +1,236 @@
+{
+  "source": "docs/elevenlabs-voice-design-prompts-11-core-roles-2026-08-25.md",
+  "roles": [
+    {
+      "id": "mothership",
+      "name": "Mothership Command",
+      "promptRevision": "VD-MOTHERSHIP-01",
+      "description": "Native English, neutral North American dialect. Androgynous adult voice, perceived age 38–48. Excellent studio quality. Persona: orbital operations controller. Emotion: composed, detached, quietly authoritative. Smooth mid-register timbre with firm consonants, restrained warmth, minimal breath, and a natural human core beneath institutional discipline. Even, measured pacing around a calm conversational rate; short pauses divide information into operational clauses. Important nouns and status changes receive precise emphasis, while threats remain level and administrative. The voice never shouts, performs action-hero bravado, becomes cheerful, sounds seductive, or slips into a cartoon robot. It should sound credible giving rescue instructions and deeply unsettling when the same professionalism authorizes a purge.",
+      "referenceText": "Agent. You're alive. Your ship took a hypersonic strike on descent, but the salvage console remains operational. Bank what you recover and rebuild the vessel — system by system.",
+      "previewText": "Agent. You're alive. Your ship took a hypersonic strike on descent, but the salvage console remains operational. Bank what you recover and rebuild the vessel — system by system. Warning: an unauthorized biological signal has entered the channel. Do not answer it. Your vital signs are critical. An early extraction window is open. Correction: recovery has been abandoned. Orbital extermination is now authorized. Remain where you are.",
+      "direction": [
+        "Baseline read: objective, useful, never hurried.",
+        "Critical warnings: compress pauses, add urgency through articulation rather than volume.",
+        "Act 2 hostility: slow by roughly 5%; make final words land like completed paperwork.",
+        "Radio texture is post-processing only. Preserve a dry master."
+      ],
+      "reject": [
+        "It sounds like a movie trailer, military drill instructor, superhero handler, customer-service parody, or seductive AI.",
+        "It is fully robotic; the bureaucracy is frightening because a recognizable person could be behind it.",
+        "Sentence endings rise like questions or soften into apology.",
+        "Urgent material causes shouting, rasp, or melodramatic anger."
+      ],
+      "postChain": "Communications band-pass, light compression, carrier chirp"
+    },
+    {
+      "id": "system",
+      "name": "System / Exosuit",
+      "promptRevision": "VD-SYSTEM-01",
+      "description": "Native English, neutral international pronunciation with no strong regional dialect. Feminine-leaning gender-neutral adult voice, perceived age 28–38. Excellent studio quality. Persona: embodied diagnostic system. Emotion: neutral, attentive, exact. Clean upper-mid timbre, light vocal weight, very low breath noise, crisp consonants, stable pitch, and no synthetic caricature. Even pacing with compact phrases and consistent spacing between technical terms; numbers, warnings, and state changes are exceptionally legible. Delivery feels close, immediate, and informational, as though the listener has heard it for years. No sarcasm, sales warmth, maternal comfort, panic, vocal fry, singsong melody, or exaggerated robotic staccato. Subtle damaged uncertainty must remain possible without changing the core identity.",
+      "referenceText": "Oxygen field life support at one hundred percent. Base console stabilized. Hull integrity expanded. Structural capacity increased. Uplink severed. Mothership telemetry lost. Warning: operator respiration is approaching critical limits.",
+      "previewText": "Oxygen field life support at one hundred percent. Base console stabilized. Hull integrity expanded. Structural capacity increased. Uplink severed. Mothership telemetry lost. Warning: operator respiration is approaching critical limits. Residual neural activity detected beneath the approved signal floor. Manifest check complete. Four seats pressurized. Five heartbeats detected. Recounting… Five heartbeats detected.",
+      "direction": [
+        "Keep normal system lines rhythmically consistent.",
+        "For glitched lines, preserve the performance and add edits, dropouts, and duplicate fragments in post.",
+        "For reverent lines, reduce the clinical spacing and allow slightly longer vowels; do not recast the voice.",
+        "Pronounce `O₂` as “oxygen” in render scripts."
+      ],
+      "reject": [
+        "It sounds like Mothership with a higher pitch.",
+        "It becomes cute, perky, apologetic, snide, or conspicuously sensual.",
+        "Technical phrases blur or numbers lose intelligibility.",
+        "The delivery is a monotone with no usable distinction between routine and anomaly."
+      ],
+      "postChain": "Minimal EQ; controlled digital breakup for glitched variants"
+    },
+    {
+      "id": "bunker",
+      "name": "Bunker / Facilities Director",
+      "promptRevision": "VD-BUNKER-01",
+      "description": "Native English, neutral North American dialect. Masculine adult voice, perceived age 58–70. Excellent studio quality. Persona: obsolete facilities intelligence. Emotion: dry, watchful, faintly disapproving. Low-pitched dense timbre with restrained chest resonance, slightly worn edges, precise diction, and very little breathiness. Slow, deliberate pacing with small pauses before bureaucratic reversals and understated final words. The intelligence sounds old because it has processed decades of failures, not because it is frail. Humor is delivered completely straight, with only a trace of private amusement. Avoid booming trailer narration, horror growls, jovial grandfather warmth, theatrical evil, slurred gravel, and obvious robot voices. Every word must remain clear beneath ambience.",
+      "referenceText": "Unauthorized exploration detected. Local lighting has been suspended. Please enjoy the darkness responsibly. Movement logged. Facilities has dispatched a welcome committee to your position. Your curiosity continues to exceed your clearance.",
+      "previewText": "Unauthorized exploration detected. Local lighting has been suspended. Please enjoy the darkness responsibly. Movement logged. Facilities has dispatched a welcome committee to your position. Your curiosity continues to exceed your clearance. Power has been rerouted to a department that resents you. Navigation telemetry is no longer considered authoritative. The structure notes your depth… and disapproves.",
+      "direction": [
+        "Let the joke live in syntax, never add a wink or laugh.",
+        "Use slightly longer pauses at greater depth to imply increased attention.",
+        "PA resonance and structural vibration are added after rendering.",
+        "Glitched Bunker variants should sound damaged, not possessed; Queen register material may then soften the same voice unnaturally."
+      ],
+      "reject": [
+        "The actor sounds gleefully evil or broadly comedic.",
+        "Low pitch destroys consonants on “unauthorized,” “telemetry,” or “responsibly.”",
+        "It resembles Briggs; Bunker must feel disembodied and unhurried.",
+        "Age becomes weakness, wheezing, or a shaky elderly stereotype."
+      ],
+      "postChain": "Short industrial reflection, subtle low resonance"
+    },
+    {
+      "id": "queen",
+      "name": "The Queen",
+      "promptRevision": "VD-QUEEN-01",
+      "description": "Native English, neutral international pronunciation with no identifiable regional dialect. Feminine adult voice, perceived age 38–50. Excellent studio quality. Persona: ancient intimate sovereign. Emotion: tender, certain, possessive. Velvety mid-low timbre with rich resonance, clean consonants, controlled breath, and a close natural presence; beautiful but unmistakably mature. Slow fluid pacing, joining thoughts into graceful clauses, with deliberate silence before words such as carrier, heart, together, and ours. Affection and threat occupy the same calm delivery. Anger becomes quieter, colder, and more exact rather than louder. Never breathy pin-up seduction, innocent fairy softness, witch cackling, monster growling, regal stage projection, ASMR exaggeration, or maternal baby talk. The listener should feel understood, claimed, and endangered.",
+      "referenceText": "Two heartbeats. One purpose. The cold box they kept me in could not freeze the mind… and now we share the body. The Mothership still whispers through your wreck. It will send exterminators. Sever the uplink, Carrier.",
+      "previewText": "Two heartbeats. One purpose. The cold box they kept me in could not freeze the mind… and now we share the body. The Mothership still whispers through your wreck. It will send exterminators. Sever the uplink, Carrier. Good. Their grid dies with it. You hide warm bodies in my ship, and I feel every heartbeat. You may call that mercy. I call it a door left open. Sleep now. When you wake, we choose a new world.",
+      "direction": [
+        "Use plain text for most production lines; reserve `[whispers]` for rare authored moments.",
+        "The word “Carrier” is relational, not a fantasy title shouted to an audience.",
+        "Obedient-path warmth should be genuine enough to complicate the player's judgment.",
+        "Create hive width from a quiet doubled layer in post; never sacrifice the central dry performance."
+      ],
+      "reject": [
+        "It reads as conventionally sexy, breathy, youthful, campy, or witch-like.",
+        "Threats acquire a villain smile or overt relish.",
+        "The voice sounds physically distant or theatrically projected.",
+        "Tender lines lose the impression of immense intelligence and control."
+      ],
+      "postChain": "Quiet double, restrained stereo width, subtle harmonic bed"
+    },
+    {
+      "id": "martha",
+      "name": "Sister Martha",
+      "promptRevision": "VD-MARTHA-01",
+      "description": "Native English, neutral North American dialect with a very slight rural softness, never a broad regional accent. Feminine adult voice, perceived age 45–55. Excellent studio quality. Persona: survivalist spiritual caretaker. Emotion: warm, vigilant, quietly tired. Medium-pitched mellow timbre with grounded chest warmth, lightly weathered texture, clear articulation, and natural breath. Relaxed conversational pacing that becomes brisk and practical when danger or work is named. Ritual phrases carry sincere belief without sermon cadence; terms of care sound earned rather than sugary. Strength stays present beneath gentleness. Avoid youthful ingénue energy, frail mysticism, breathy seduction, exaggerated maternal cooing, folk caricature, and melodramatic grief. She can command a perimeter, tend a wound, and confess fear with the same recognizable voice.",
+      "referenceText": "Welcome to the warm pipes, child. The steam keeps us… and we keep each other. The moss is warm because we carried it here one living tray at a time.",
+      "previewText": "Welcome to the warm pipes, child. The steam keeps us… and we keep each other. The moss is warm because we carried it here one living tray at a time. Do not mistake care for softness. I can cross that perimeter before your rifle clears its sling. You died out there. I felt the cold arrive before the radio did. Give me your hand. The other one. There. Your pulse is counting something I do not recognize.",
+      "direction": [
+        "“Child” is community language addressed to an adult, never infantilizing.",
+        "Practical clauses move faster than ritual clauses.",
+        "Later suspicion tightens consonants and removes warmth without turning Martha shrill.",
+        "Corrupted boss material should preserve her identity under processing."
+      ],
+      "reject": [
+        "She sounds naïve, dreamy, elderly, coquettish, or like a generic fantasy priestess.",
+        "Warmth erases field competence.",
+        "The slight rural softness becomes a distracting or stereotyped accent.",
+        "Danger lines require a different apparent actor to feel credible."
+      ],
+      "postChain": "Light cleanup, leveling, scene-space send"
+    },
+    {
+      "id": "briggs",
+      "name": "Commander Briggs",
+      "promptRevision": "VD-BRIGGS-01",
+      "description": "Native English, neutral North American dialect. Masculine adult voice, perceived age 48–60. Excellent studio quality. Persona: exhausted defensive commander. Emotion: guarded, decisive, loyal. Low chest-resonant timbre with a lightly gravelled edge, firm consonants, controlled breath, and substantial vocal weight without forced bass. Brisk command pacing at sentence openings, followed by measured assessment; private lines slow slightly and allow warmth to appear in the final clause rather than throughout. Authority is habitual, not performed. Avoid drill-sergeant shouting, action-movie swagger, macho parody, constant anger, slurred rasp, cowboy coloring, and sentimental softness. The voice must remain intelligible during combat and believable when speaking quietly to one trusted person.",
+      "referenceText": "Stop. Identify. A corporate suit. Fine. Keep your hands where the turrets can see them. The defense line is solid, but solid is not the same as safe. Check the southern barricade, count every magazine, and tell me what moved beyond the flare.",
+      "previewText": "Stop. Identify. A corporate suit. Fine. Keep your hands where the turrets can see them. The defense line is solid, but solid is not the same as safe. Check the southern barricade, count every magazine, and tell me what moved beyond the flare. You died out there. I heard the frequency go empty. Sit down. Do that again. Blink. There. That is new. I am not putting it in the ledger yet.",
+      "direction": [
+        "Never shout a line that can be made urgent through timing.",
+        "Use short breaths between orders, not inside them.",
+        "Intimate dialogue retains weight and restraint; it does not become a romance-novel growl.",
+        "Combat radio treatment is added to a clean master."
+      ],
+      "reject": [
+        "It sounds like an imitation of a famous soldier character or actor.",
+        "Gravel obscures words or feels deliberately “cool.”",
+        "Every line carries identical anger.",
+        "Quiet material becomes seductive performance instead of guarded human contact."
+      ],
+      "postChain": "Light cleanup, leveling, scene-space send"
+    },
+    {
+      "id": "kaelen",
+      "name": "Overseer Kaelen",
+      "promptRevision": "VD-KAELEN-01",
+      "description": "Native English, neutral North American dialect. Masculine adult voice, perceived age 42–54. Excellent studio quality. Persona: skeptical systems overseer. Emotion: analytical, sleep-deprived, fascinated. Mid-low narrow timbre with a dry clean texture, alert consonants, restrained nasal brightness, and modest vocal weight; neither booming nor gravelly. Natural conversational pacing that accelerates slightly through technical chains, then stops cleanly for a dry conclusion. Questions sound diagnostic rather than uncertain. Wonder appears as focused attention, not breathless excitement. Avoid mad-scientist theatrics, smug tech-bro cadence, robotic monotone, mystical sermonizing, broad sarcasm, and romantic purring. He should sound equally credible repairing a generator, challenging a doctrine, and noticing an impossible change in someone's pulse.",
+      "referenceText": "Another suit from the surface. The machine dreamed you would come. The grid keeps the dark at bay, operator — as long as the lights hum and nobody improvises with the primary bus.",
+      "previewText": "Another suit from the surface. The machine dreamed you would come. The grid keeps the dark at bay, operator — as long as the lights hum and nobody improvises with the primary bus. The central computer sleeps under Sector Zero. Everything here may be its dream. Even you, probably. No offense. Sit still. Your sensory telemetry is fluctuating in a pattern I have never seen. Your pulse reads through the floor plating now. It did not before. I checked.",
+      "direction": [
+        "Technical terms should gain momentum without becoming fast or showy.",
+        "Dry jokes land by returning immediately to work.",
+        "Awe slightly widens the voice but does not raise pitch dramatically.",
+        "Corrupted Kaelen keeps recognizable articulation beneath cybernetic processing."
+      ],
+      "reject": [
+        "It sounds like Briggs with less gravel.",
+        "Technical delivery becomes smug, frantic, eccentric, or comedic.",
+        "Mystical lines turn into cult-leader projection.",
+        "Intimacy reads as practiced charm rather than involuntary attention."
+      ],
+      "postChain": "Light cleanup, leveling, scene-space send"
+    },
+    {
+      "id": "okonkwo",
+      "name": "Dr. Okonkwo-Vass",
+      "promptRevision": "VD-OKONKWO-01",
+      "description": "Native English, educated Nigerian English with a light, authentic Lagos influence; the dialect is clear to an international audience and never exaggerated. Feminine adult voice, perceived age 38–48. Excellent studio quality. Persona: humane field xenobiologist. Emotion: incisive, curious, cautiously hopeful. Clear medium register with warm undertones, precise consonants, agile pitch movement, and contained physical energy. Conversational pacing is efficient and evidence-led; hypotheses accelerate slightly, while ethical admissions slow and become plain. Excitement sounds like a scientist seeing data align, not a manic breakthrough. Avoid caricatured accent, lecturer stiffness, breathless nerd enthusiasm, clinical coldness, maternal sweetness, and broad comedy. She is brave enough to test her theory and humble enough to name the harm caused by being wrong.",
+      "referenceText": "You move like someone who has not been bitten yet. I study the shelled ones, and they are not as simple as the reports say. Every camp logs them as vermin. That is lazy science.",
+      "previewText": "You move like someone who has not been bitten yet. I study the shelled ones, and they are not as simple as the reports say. Every camp logs them as vermin. That is lazy science. Here is my theory: they do not hate us. They READ us. Something about what we carry may change the answer. So do not kill the next one. Stand your ground and let it decide. If I am wrong, you lose a few minutes. If I am right… we owe them more than a footnote.",
+      "direction": [
+        "Pronounce **Okonkwo-Vass** approximately `oh-KON-kwoh vahs`; approve with the narrative team before final rendering.",
+        "The light dialect choice is an original casting proposal, not established canon; if authenticity cannot be reviewed, use neutral international English instead.",
+        "Her final success should briefly break professional restraint, then settle into accountability.",
+        "Do not use a “scientist voice” effect."
+      ],
+      "reject": [
+        "The dialect is inconsistent, stereotyped, difficult to understand, or appears only on selected words.",
+        "Curiosity becomes whimsy or eccentricity.",
+        "Ethical lines sound sanctimonious.",
+        "Excited lines become much younger in apparent age."
+      ],
+      "postChain": "Light cleanup, leveling, scene-space send"
+    },
+    {
+      "id": "nahl",
+      "name": "Nahl, the Suture",
+      "promptRevision": "VD-NAHL-01",
+      "description": "Native English, neutral international pronunciation with no strong regional dialect. Masculine-leaning androgynous adult voice, perceived age 34–46. Excellent studio quality. Persona: empathic biological surgeon. Emotion: gentle, sorrowful, steadfast. Medium-to-high smooth timbre with warm resonance, soft edges, immaculate consonants, and a faintly luminous tonal quality produced by performance rather than effects. Slow measured pacing organized into careful thought groups, with quiet emphasis on consent, choice, hurt, and repair. The voice listens even while speaking. Strength appears as unwavering calm, never dominance. Avoid whispery fragility, ethereal elf performance, mystical sing-song cadence, clinical detachment, romantic breathiness, monster resonance, and naïve innocence. He must feel nonhuman, adult, intelligent, and morally grounded.",
+      "referenceText": "Oh. You can hear me now. I felt every sac you cut, little Carrier… and I healed around the holes you left. Do not look away. Pain is information, but it is not permission. The Queen sees every death and calls it growth. I do not.",
+      "previewText": "Oh. You can hear me now. I felt every sac you cut, little Carrier… and I healed around the holes you left. Do not look away. Pain is information, but it is not permission. The Queen sees every death and calls it growth. I do not. I felt your thread sever… and I stitched it back because I chose to keep you here. Love and shared consciousness require two separate hearts… choosing to beat in rhythm.",
+      "direction": [
+        "Pronounce **Nahl** as one open syllable, approximately `nahl`.",
+        "“Little Carrier” is compassionate recognition, not flirtation or infantilization.",
+        "Add only a subtle harmonic double in post; the dry voice must work alone.",
+        "Use the same saved identity for `Dr. Nahl` unless canon explicitly separates the characters."
+      ],
+      "reject": [
+        "The voice reads as young, weak, elven, angelic, or conventionally seductive.",
+        "Calm becomes low-energy or sleepy.",
+        "Care sounds paternalistic.",
+        "Alien material depends on an audio effect to feel distinct."
+      ],
+      "postChain": "Role-specific quiet double or resonance"
+    },
+    {
+      "id": "vey",
+      "name": "Vey, the Listener",
+      "promptRevision": "VD-VEY-01",
+      "description": "Native English, neutral international pronunciation. Androgynous adult voice, perceived age 26–40. Excellent studio quality. Persona: signal-hungry neural listener. Emotion: alert, wounded, intensely curious. Lean upper-mid timbre with bright clean overtones, little chest weight, exact consonants, and controlled energy; unusual but recognizably adult. Pacing alternates between brief repeated words, abrupt analytical bursts, and sudden complete stillness. Repetition sounds like locking onto a frequency, never a comic stammer. Emotional closeness reduces speed and sharpness without becoming soft or romantic. Avoid childlike pitch, hyperactive chatter, glitch-robot cliché, nasal caricature, singsong alien speech, random stuttering, and vocal fry. The identity must survive without electronic effects and make every signal metaphor feel physically perceived.",
+      "referenceText": "Signal. Signal. You are a signal now, not just noise. Finally. I heard every filament you ripped out of me. I archived the sound. The humans have a relay. The Queen has a choir. I have… gaps where you mined me.",
+      "previewText": "Signal. Signal. You are a signal now, not just noise. Finally. I heard every filament you ripped out of me. I archived the sound. The humans have a relay. The Queen has a choir. I have… gaps where you mined me. The static quiets when you are near. I can hear the Mothership from here, Carrier. It is very loud — and very sure of itself. Sure things are the easiest to forge.",
+      "direction": [
+        "Pronounce **Vey** to rhyme with `day`.",
+        "Maintain identical tone on a repeated word, then shift on the discovery that follows.",
+        "Antenna chirps belong between sentences in post, never under consonants.",
+        "Reserve production audio tags for rare reactions; the default rhythm is already expressive."
+      ],
+      "reject": [
+        "Repetition sounds accidental, anxious, cute, or comedic.",
+        "The voice appears adolescent.",
+        "Brightness becomes nasal or piercing.",
+        "The delivery is so erratic that subtitles become necessary for ordinary lines."
+      ],
+      "postChain": "Role-specific quiet double or resonance"
+    },
+    {
+      "id": "rhun",
+      "name": "Rhun, the Shield",
+      "promptRevision": "VD-RHUN-01",
+      "description": "Native English, neutral international pronunciation with no strong regional dialect. Masculine adult voice, perceived age 45–60. Excellent studio quality. Persona: living oath-bound guardian. Emotion: restrained, solemn, protective. Very low broad timbre with stable chest resonance, clean unforced bass, minimal rasp, controlled breath, and slow muscular articulation. Deliberate pacing divides language into short complete units; silence carries consideration rather than confusion. He never wastes emphasis. Loyalty warms the center of the voice without lifting its pitch, while anger becomes harder and more still. Avoid booming deity narration, monster growls, fantasy-orc caricature, caveman simplicity, sluggish speech, macho swagger, and theatrical nobility. Every consonant must remain legible, and quiet lines must feel as physically substantial as commands.",
+      "referenceText": "The one who pried my plates. Stand still so I may look at you. No. You are not prey. You are not Queen. You are something new… wearing old armor.",
+      "previewText": "The one who pried my plates. Stand still so I may look at you. No. You are not prey. You are not Queen. You are something new… wearing old armor. I guard. It is all I am. The question is only ever: guard what. A shield that changes hands is still a shield. A shield that hesitates… is a gravestone. It is done. Her mark fades from my plates. Where you stand, I stand in front.",
+      "direction": [
+        "Pronounce **Rhun** as one syllable, approximately `roon`.",
+        "Do not stretch every vowel; mass comes from resonance and timing.",
+        "Private loyalty lines get quieter but not breathier.",
+        "A subtle subharmonic may be tested in post, but clarity at the dry-master stage is mandatory."
+      ],
+      "reject": [
+        "It sounds like a monster, god, trailer narrator, barbarian, or simple-minded brute.",
+        "Bass is forced, unstable, or muddy.",
+        "Slow pacing feels drugged or vacant.",
+        "Tenderness causes a sudden different vocal placement."
+      ],
+      "postChain": "Role-specific quiet double or resonance"
+    }
+  ]
+}

@@ -80,6 +80,7 @@ const REMOVE_DELAY_MS = 320;
  * @param {() => void} deps.updateDeck
  * @param {(el: Element|null) => void} [deps.focusTarget]
  * @param {(fn: () => void) => void} [deps.requestFrame]
+ * @param {(key: string) => void} [deps.speak]  read an entry aloud if it has a recorded line
  */
 export function createDeveloperCommentary({
     doc = globalThis.document,
@@ -93,6 +94,7 @@ export function createDeveloperCommentary({
     updateDeck,
     focusTarget = () => {},
     requestFrame = (fn) => globalThis.requestAnimationFrame(fn),
+    speak = () => {},
     entries = COMMENTARY_ENTRIES
 }) {
     const seenThisRun = new Set();
@@ -165,6 +167,7 @@ export function createDeveloperCommentary({
 
         stack.append(card);
         card.classList.remove('hidden');
+        speak(key);
         if (hudStack) {
             updateDeck();
             requestFrame(() => {

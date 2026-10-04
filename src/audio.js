@@ -40,6 +40,11 @@ export class AudioManager {
     static _lastSoundsetVariant = new Map();
     static _lastVoiceTake = new Map();
     static _playedVoiceSemantics = new Set();
+    // Generated narrative lines (src/voiceLines.js); main.js installs the
+    // library. Null means no exact-line audio: keyword clips only.
+    static voiceLines = null;
+    static _voiceLineFetches = new Map();
+    static _voiceLineUrls = {};
     static _voiceRunId = null;
 
     static beginVoiceRun(runId) {
@@ -723,6 +728,37 @@ export class AudioManager {
         return null;
     }
 
+    /** Play a generated narrative line by its i18n key, if one is recorded in the current language. */
+    static playVoiceLine(key, options = {}) {
+        if (this.globalMuted || !this.voiceEnabled) return null;
+        const url = this.voiceLines?.urlFor?.(key);
+        if (!url) return null;
+        return this._playVoiceLineUrl(key, url, { priority: 2, varyPitch: false, ...options });
+    }
+
+    // A recorded line plays at once when decoded; otherwise it is fetched and
+    // played on arrival, unless that took long enough to feel late.
+    static _playVoiceLineUrl(key, url, options = {}) {
+        const bufferKey = `line:${key}`;
+        const cachedUrl = this._voiceLineUrls[bufferKey];
+        if (this.buffers[bufferKey] && (!cachedUrl || cachedUrl === url)) {
+            return this.playVoiceTrack(bufferKey, options);
+        }
+        if (!this._voiceLineFetches.has(url)) {
+            const requestedAt = Date.now();
+            const pending = this.decodeAudioAsset(url)
+                .then((buffer) => {
+                    this.buffers[bufferKey] = buffer;
+                    this._voiceLineUrls[bufferKey] = url;
+                    if (Date.now() - requestedAt <= 1500) this.playVoiceTrack(bufferKey, options);
+                })
+                .catch(() => {})
+                .finally(() => this._voiceLineFetches.delete(url));
+            this._voiceLineFetches.set(url, pending);
+        }
+        return null;
+    }
+
     static playVoiceForMessage(speakerInfo = {}, messageText = '', options = {}) {
         if (this.globalMuted || !this.voiceEnabled) return null;
         if (!this.isUnlocked) {
@@ -753,6 +789,19 @@ export class AudioManager {
             priority = 1;
         } else if (speakerName.includes('MOTHERSHIP') || speakerName.includes('SYSTEM') || speakerName.includes('EXOSUIT') || speakerName.includes('BUNKER') || speakerName.includes('COMMANDER') || speakerName.includes('AURA')) {
             priority = 2;
+        }
+
+        // 0. The exact recorded line, when generated audio exists for it.
+        const recorded = options.isChirp ? null : this.voiceLines?.resolve?.(text);
+        if (recorded) {
+            const semanticId = options.semanticId ?? `line:${recorded.key}`;
+            if (!options.audition && this._playedVoiceSemantics.has(semanticId)) return null;
+            const playback = this._playVoiceLineUrl(recorded.key, recorded.url, { priority, speakerName, volume: options.volume ?? 1.0, varyPitch: false, ...options });
+            if (playback) {
+                if (!options.audition) this._playedVoiceSemantics.add(semanticId);
+                this.emitVoiceLine({ cue: 'dialogue', semanticId, subtitle: text, take: recorded.key, speakerName, audition: Boolean(options.audition) });
+            }
+            return playback;
         }
 
         // 1. Check direct key match or character script mapping

@@ -1,0 +1,15 @@
+{
+  "_note": "Chosen audition per role: {\"take\": n, \"by\": \"...\", \"date\": \"YYYY-MM-DD\", \"notes\": \"...\"}. Auditions: art/source/voice/auditions/<role>/take_<n>.wav (scripts/voice/qwen_voice.py design). developer = a recording of the developer, not a design.",
+  "mothership": null,
+  "system": null,
+  "bunker": null,
+  "queen": null,
+  "martha": null,
+  "briggs": null,
+  "kaelen": null,
+  "okonkwo": null,
+  "nahl": null,
+  "vey": null,
+  "rhun": null,
+  "developer": null
+}

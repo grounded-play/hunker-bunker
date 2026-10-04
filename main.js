@@ -113,6 +113,7 @@ import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } fr
 import { LeaderConversation3d } from './src/leaderConversation3d.js';
 import { getLocale, setLocale, t, t as i18nT, getAvailableLocales } from './src/i18n.js';
 import { createDeveloperCommentary } from './src/developerCommentary.js';
+import { createVoiceLineLibrary, VOICE_LINES_ROOT } from './src/voiceLines.js';
 import { trackStartupStages } from './src/perfPhases.js';
 import {
     computeTopologyDistances,
@@ -4388,6 +4389,18 @@ function dismissHudNotificationCard(card) {
 }
 window.dismissHudNotificationCard = dismissHudNotificationCard;
 
+// Generated narrative voice lines (scripts/voice/, src/voiceLines.js): exact
+// lines play when recorded for the current language; keyword clips otherwise.
+AudioManager.voiceLines = createVoiceLineLibrary({
+    fetchJson: async () => {
+        const response = await fetch(assetUrl(`${VOICE_LINES_ROOT}/manifest.json`));
+        if (!response.ok) throw new Error(`voice line manifest ${response.status}`);
+        return response.json();
+    },
+    getLocale: () => getLocale(),
+    translate: (key) => t(key)
+});
+
 // Developer commentary lives in src/developerCommentary.js (S49-38); main.js
 // supplies the settings flag, the HUD deck and controller focus. The thin
 // wrappers keep the game-event call sites below unchanged.
@@ -4402,7 +4415,9 @@ const developerCommentary = createDeveloperCommentary({
     nextCardSeq: () => hudCardSeq++,
     dismissCard: (card) => dismissHudNotificationCard(card),
     updateDeck: () => updateHudNotificationDeck(),
-    focusTarget: (target) => focusControllerTarget(target)
+    focusTarget: (target) => focusControllerTarget(target),
+    // Generated commentary reads (scripts/voice/), when recorded for this language.
+    speak: (key) => AudioManager.playVoiceLine(`narrative.commentary.${key}.body`, { priority: 2 })
 });
 
 function resetCommentaryRunState() {

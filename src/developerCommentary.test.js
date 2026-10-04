@@ -154,6 +154,17 @@ describe('developer commentary', () => {
         expect(commentary.closeList()).toBe(false);
     });
 
+    // Generated voice lines (src/voiceLines.js): a card is also read aloud
+    // when that entry has a recording in the current language.
+    it('asks for the entry to be read aloud each time its card is shown', () => {
+        const speak = vi.fn();
+        const { commentary } = setup({ speak });
+        commentary.show('run_start');
+        expect(speak).toHaveBeenCalledWith('run_start');
+        commentary.show('run_start');
+        expect(speak).toHaveBeenCalledTimes(1);
+    });
+
     // S49-38: explicit lifecycle. Nothing may fire or linger after teardown.
     it('cancels pending cards and waits, and removes its menu stack, on dispose', () => {
         const { commentary, doc, setGameplay } = setup();
