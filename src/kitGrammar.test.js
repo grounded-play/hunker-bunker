@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { WORLD_3D_MODELS } from './world3dOverlay.js';
 import {
     KIT_SKINS, SHARED_ROLES, SKIN_ONLY_ROLES,
-    skinForBiome, kitPieceFor, chooseKitPiece, corridorKitPlacement
+    skinForBiome, kitPieceFor, chooseKitPiece, corridorKitPlacement, roomGatewayKitPlacement
 } from './kitGrammar.js';
 
 describe('biome skinning', () => {
@@ -138,6 +138,30 @@ describe('role resolution', () => {
         expect(kitPieceFor('roomSmall', 'active', { variation: true })).toBe('kit_space_room_small_variation');
         // Corridors have no variation twin; asking for one must not invent a type.
         expect(kitPieceFor('corridor', 'active', { variation: true })).toBe('kit_space_corridor');
+    });
+});
+
+describe('authored room gateway placement', () => {
+    it('centres an open biome-skinned frame on a north/south threshold', () => {
+        expect(roomGatewayKitPlacement({
+            side: 'n',
+            cells: [{ x: 3, y: 2 }, { x: 4, y: 2 }, { x: 5, y: 2 }]
+        }, 'bio')).toEqual({
+            type: 'kit_cave_gate',
+            x: 4,
+            y: 2,
+            rotationSteps: 0,
+            modelScale: 1
+        });
+    });
+
+    it('turns east/west frames cardinally and rejects malformed thresholds', () => {
+        expect(roomGatewayKitPlacement({
+            side: 'e',
+            cells: [{ x: 8, y: 4 }, { x: 8, y: 5 }, { x: 8, y: 6 }]
+        }, 'active')).toMatchObject({ type: 'kit_space_gate', x: 8, y: 5, rotationSteps: 1 });
+        expect(roomGatewayKitPlacement({ side: 'n', cells: [] }, 'active')).toBeNull();
+        expect(roomGatewayKitPlacement({ side: 'up', cells: [{ x: 1, y: 1 }] }, 'active')).toBeNull();
     });
 });
 

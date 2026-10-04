@@ -80,6 +80,43 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
         expect(placements.map(({ scatterKey }) => scatterKey)).toEqual(['room_plan:far']);
     });
 
+    it('gives authored rooms one open kit gateway without changing collision authority', () => {
+        const game = makeFakeGame();
+        game.getBiomeKeyForWorldPosition = () => 'active';
+        game.wfcMetadataCache = new Map([['0,0', {
+            generatorId: 'authored-room',
+            roomInstances: [{
+                id: 'medical-bay',
+                doors: [{
+                    id: 'entry',
+                    side: 'e',
+                    cells: [{ x: 14, y: 7 }, { x: 14, y: 8 }, { x: 14, y: 9 }]
+                }],
+                populationPlan: { placements: [] }
+            }]
+        }]]);
+
+        const placements = ThreeGame.prototype.createChunkSetPiecePlacements.call(
+            game,
+            0,
+            0,
+            buildTwoBlockGrid(17)
+        );
+        const gateway = placements.find(({ scatterKey }) => scatterKey.startsWith('room-gateway:'));
+
+        expect(gateway).toMatchObject({
+            x: 14,
+            z: 8,
+            type: 'kit_space_gate',
+            rotation: Math.PI / 2,
+            socketed: true,
+            modelScale: 1,
+            hp: Infinity,
+            groupType: 'architecture',
+            isSolidProp: false
+        });
+    });
+
     it('turns hallway route markers into biome-skinned, cardinal kit architecture', () => {
         const game = makeFakeGame();
         game.getBiomeKeyForWorldPosition = () => 'bio';

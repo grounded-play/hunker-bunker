@@ -42,7 +42,7 @@ commit so another contributor can resume without reconstructing the audit.
   it cannot continue ticking after the visible prop is gone.
 - Verification: 30 focused tests passed.
 
-### Next commit — bounded room life and cached destruction
+### `5997431e` — bounded room life and cached destruction
 
 - Spend the existing small/ambient/rare theme pools at room edges without blocking
   doors, reserved fixtures, room centers, pickups, or combat lanes.
@@ -55,11 +55,29 @@ commit so another contributor can resume without reconstructing the audit.
 - Verify focused world/destruction suites plus the configured seed sweep. Then run
   the full unit suite before taking the prefab-placement continuation.
 
-## Safe continuation after the next commit
+Verification completed: 75 focused tests, 562 full-suite files / 4,941 tests, and
+a 500-seed sweep all passed.
 
-1. Create a dedicated socket-safe modular-kit room or gateway placement path that
-   appears in normal play even when no `hallway-connector` chunk is selected.
-2. Start with room/gate pieces, not template/reference primitives. Preserve kit
+### Next commit — authored-room modular gateway landmarks
+
+- Add a pure `roomGatewayKitPlacement` grammar helper that centres the open
+  `gate.glb` frame for the room biome on a real three-cell threshold.
+- Mount at most one gateway per authored room. Keep it non-colliding, structural,
+  socket-scaled, and cardinally rotated; procedural doors and the tile grid remain
+  the only collision/lock authority.
+- This gives the cave/space prefab kits a normal-play placement path even when the
+  generator produces no `hallway-connector` chunks, without layering a full room
+  shell over existing geometry.
+- Verification before commit: kit grammar, room set-piece, 3D overlay, prop
+  collision and destructibility suites; 500-seed sweep; then the full unit suite.
+
+## Safe continuation after the gateway commit
+
+1. Visually verify the gateway frame against north/south and east/west authored
+   thresholds in a real run; adjust only the pure grammar rotation if the asset's
+   authored forward differs from the measured corridor convention.
+2. Expand from gateways to room pieces only after a dedicated authored interior can
+   replace, rather than overlap, existing walls. Preserve kit
    uniform scale and topology rotations from `kitGrammar.js`; never height-normalize
    individual kit pieces.
 3. Treat modular shells as structural rather than destructible. Interior props are

@@ -297,7 +297,7 @@ import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
 import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
-import { corridorKitPlacement } from './kitGrammar.js';
+import { corridorKitPlacement, roomGatewayKitPlacement } from './kitGrammar.js';
 import {
     PLANE_KINDS,
     activePlane,
@@ -31536,6 +31536,37 @@ export class ThreeGame {
 
         if (wfcMeta?.roomInstances?.length) {
             for (const room of wfcMeta.roomInstances) {
+                // Hallway-connector chunks were absent from the Thursday
+                // census, so their kit path was practically invisible. Give
+                // every authored room one open, non-colliding socket-safe
+                // gateway frame. Procedural doors and grid collision remain
+                // authoritative; this is presentation only.
+                const roomDoor = (room.doors ?? []).find((door) => door?.cells?.length);
+                const doorCell = roomDoor?.cells?.[Math.floor(roomDoor.cells.length / 2)];
+                const doorWorldX = Number.isFinite(doorCell?.x) ? chunkX * this.chunkSize + doorCell.x : null;
+                const doorWorldZ = Number.isFinite(doorCell?.y) ? chunkY * this.chunkSize + doorCell.y : null;
+                const doorBiome = Number.isFinite(doorWorldX) && Number.isFinite(doorWorldZ)
+                    ? (this.getBiomeKeyForWorldPosition?.(doorWorldX, doorWorldZ) ?? BIOME_KEYS.ACTIVE)
+                    : BIOME_KEYS.ACTIVE;
+                const gateway = roomGatewayKitPlacement(roomDoor, doorBiome);
+                if (gateway) {
+                    placements.push({
+                        x: chunkX * this.chunkSize + gateway.x,
+                        z: chunkY * this.chunkSize + gateway.y,
+                        type: gateway.type,
+                        rotation: gateway.rotationSteps * (Math.PI / 2),
+                        socketed: true,
+                        modelScale: gateway.modelScale,
+                        scatterKey: `room-gateway:${room.id}:${roomDoor.id ?? roomDoor.side}`,
+                        scale: 1,
+                        tiltX: 0,
+                        elevation: 0,
+                        hp: Infinity,
+                        groupType: 'architecture',
+                        opacity: 1,
+                        isSolidProp: false
+                    });
+                }
                 for (const planned of room.populationPlan?.placements ?? []) {
                     if (planned.kind === 'pickup') continue;
                     const worldX = chunkX * this.chunkSize + planned.x;

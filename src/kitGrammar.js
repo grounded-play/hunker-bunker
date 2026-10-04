@@ -198,3 +198,26 @@ export function corridorKitPlacement(grid, x, y, biome, { width = 0 } = {}) {
     const type = kitPieceFor(placedRole, biome);
     return type ? { type, role: placedRole, rotationSteps, modelScale } : null;
 }
+
+/**
+ * Turn an authored three-cell room threshold into an open modular gateway.
+ *
+ * The base `gate.glb` in each skin is a frame, unlike the skin-only door,
+ * rock and laser variants which communicate a closed or hazardous route.
+ * One frame per room makes the kit visible in ordinary authored-room runs
+ * without changing the tile collision or procedural-door state.
+ */
+export function roomGatewayKitPlacement(door, biome) {
+    const cells = Array.isArray(door?.cells) ? door.cells : [];
+    if (cells.length === 0 || !['n', 'e', 's', 'w'].includes(door?.side)) return null;
+    const valid = cells.filter((cell) => Number.isFinite(cell?.x) && Number.isFinite(cell?.y));
+    if (valid.length === 0) return null;
+    const skin = skinForBiome(biome);
+    return {
+        type: `kit_${skin}_gate`,
+        x: valid.reduce((sum, cell) => sum + cell.x, 0) / valid.length,
+        y: valid.reduce((sum, cell) => sum + cell.y, 0) / valid.length,
+        rotationSteps: door.side === 'e' || door.side === 'w' ? 1 : 0,
+        modelScale: 1
+    };
+}
