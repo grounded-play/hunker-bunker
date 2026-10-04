@@ -93,6 +93,13 @@ browser E2E tests landed in `82501e4f`; backend container packaging deployed in
 The channel includes everyone in the room, including PvP opponents, across lobby
 and mission. Deployed two-account Steam acceptance on candidate build remains open.
 
+2026-10-04 reconnect checkpoint (`aed41421`): the 2026-10-02 Deck capture (build
+`e8b92f83`) shows the host's relay socket rejoining 13 times in ~7 minutes while
+alone in the lobby; each drop emptied the room and the relay wiped its chat, so the
+friend who joined later saw nothing. Empty-room history now survives a 5-minute
+grace and clients merge reconnect history instead of replacing it. The churn's own
+cause is still unknown: relay `DISCONNECT` reasons (`d3cb667c`) are not deployed yet.
+
 - [ ] **Owner: backend + client · Size: L · Type: missing feature.** Implement an
   authenticated, room-scoped chat channel through the existing relay. Server assigns
   sender identity and message IDs; enforce room membership, bounded Unicode text,
@@ -140,6 +147,12 @@ Implementation checkpoint (v2.4.14-beta): [client UI](../../src/playerChatUi.js)
 local relay delivery, IME, seven locale titles, and the full-game fallback controller
 keyboard. Reports remain temporary relay-memory evidence, not a staffed moderation service.
 Physical hardware, deployed matches and moderation operations remain acceptance gates.
+
+2026-10-04 (`aed41421`): incoming lines now appear on screen in a non-interactive
+feed (last three, 8 s) whenever the panel is closed, in runs, lobby and menus,
+under the existing notifications preference. Before this a line only raised a
+`CHAT (n)` badge. Browser→relay→peer e2e covers it; Deck legibility/placement over
+combat HUD is unverified.
 
 - [ ] **Owner: UI + platform + localization · Size: L · Depends: 02–03.** Add a
   visible chat control in the lobby and field, unread indication, bounded scrollback,
@@ -201,6 +214,12 @@ entries landed in `7f0e6f1d`; all 12 entries translated into seven languages via
 `localizeCatalog('narrative.commentary')` in `3c68c914`; routing card updated to
 Settings → Audio → Developer Commentary → Read All. Acceptance remaining: reviewer
 route verification and installed-build sign-off.
+
+2026-10-04 (`4c863874`, `099fa558`): commentary is now voiced. Lines are generated
+locally (Qwen3-TTS) as a clone of the developer's own voice, rendering in all seven
+languages; a ten-chapter Development History joins READ ALL with play buttons, and
+every entry is a controller focus stop. Recorded audio is real, so the audio promise
+below is met once the rendered lines ship in the candidate build.
 
 - [ ] **Owner: narrative + UI + QA · Size: M · Type: existing feature acceptance.**
   Verify instant feedback when enabling commentary, menu/run context cards and
@@ -285,6 +304,14 @@ Archive, Codex, Dossier, and in-run menus. Five focus bugs fixed (`a73f5a06`,
 `228936b8`, `e12b4beb`, `a9c8613b`, `f4a61dfa`, `ae1dd80c`). Revert `062ab937`
 preserved achievement scrolling. Acceptance remaining: mouse-crosshair popup focus
 restoration and physical Deck/controller hardware pass.
+
+2026-10-04 rerun (`HB_PROBES=1`, browser, software GL): 12/15 passed. Fixed in
+`099fa558`: commentary D-pad scrolling and focus return to CONTINUE TO DEPLOYMENT
+after backing out of the multiplayer console. Still red: the console probe's 4 s
+window (door transition ran >9 s on a loaded machine; also red on `1684b90e`), and
+the in-run probe, now pausing by Start since B no longer pauses in gameplay
+(`e8b92f83`); a headless browser-gamepad Start press is swallowed, so it needs a
+native Steam Input injection hook.
 
 - [ ] **Owner: platform + QA · Size: L · Depends: 04.** Extend the achievements
   scrolling fix into a complete focus/scroll/text-entry journey: title, character,
