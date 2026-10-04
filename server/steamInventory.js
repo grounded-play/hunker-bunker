@@ -15,7 +15,7 @@ import {
 import { grantItemToPlayer } from './steamGrant.js';
 import { commitExchange, planRedeem, planTradeUp, withPlayerLock } from './steamTradeUp.js';
 import { createRateLimitOptions } from './rateLimit.js';
-import { fetchSteamInventory } from './steamInventoryRead.js';
+import { fetchSteamInventory, decodeSteamInventory } from './steamInventoryRead.js';
 import { performSteamRecipeExchange } from './steamRecipeExchange.js';
 
 const STEAM_INVENTORY_URL = 'https://partner.steam-api.com/IInventoryService/';
@@ -169,7 +169,8 @@ export function attachSteamInventoryRoutes(app) {
                 const response = await fetch(`${STEAM_INVENTORY_URL}TriggerItemDrop/v1/`, {
                     method: 'POST',
                     headers: { 'content-type': 'application/x-www-form-urlencoded' },
-                    body: params
+                    body: params,
+                    signal: AbortSignal.timeout(15_000)
                 });
 
                 if (!response.ok) {
@@ -179,21 +180,46 @@ export function attachSteamInventoryRoutes(app) {
                     };
                 } else {
                     const data = await response.json();
-                    const items = (data?.response?.item_list ?? []).map((item) => ({
-                        itemId: String(item.itemid),
-                        itemdefid: Number(item.itemdefid),
-                        quantity: Number(item.quantity) || 1,
-                        acquiredAt: Date.now()
-                    }));
-                    result = {
-                        status: 200,
-                        body: { ok: true, granted: items }
-                    };
+                    if (data?.response?.success !== undefined && data.response.success !== true) {
+                        result = {
+                            status: 502,
+                            body: { ok: false, reason: 'steam_inventory_rejected' }
+                        };
+                    } else if (typeof data?.response?.item_json === 'string') {
+                        const decoded = decodeSteamInventory(data);
+                        if (!decoded.ok) {
+                            result = {
+                                status: decoded.status || 502,
+                                body: { ok: false, reason: decoded.reason }
+                            };
+                        } else {
+                            result = {
+                                status: 200,
+                                body: { ok: true, granted: decoded.inventory }
+                            };
+                        }
+                    } else if (Array.isArray(data?.response?.item_list)) {
+                        const items = data.response.item_list.map((item) => ({
+                            itemId: String(item.itemid),
+                            itemdefid: Number(item.itemdefid),
+                            quantity: Number(item.quantity) || 1,
+                            acquiredAt: Date.now()
+                        }));
+                        result = {
+                            status: 200,
+                            body: { ok: true, granted: items }
+                        };
+                    } else {
+                        result = {
+                            status: 502,
+                            body: { ok: false, reason: 'steam_inventory_invalid_response' }
+                        };
+                    }
                 }
-            } catch (err) {
+            } catch {
                 result = {
                     status: 502,
-                    body: { ok: false, reason: 'steam_request_failed', message: err.message }
+                    body: { ok: false, reason: 'steam_request_failed' }
                 };
             }
         }

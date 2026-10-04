@@ -293,6 +293,75 @@ describe('Steam Inventory API endpoints', () => {
         expect(getMockInventory(testId)).toHaveLength(1);
     });
 
+    it('POST /steam/inventory/trigger-drop decodes live item_json response and handles errors', async () => {
+        process.env.HB_STEAM_PUBLISHER_KEY = 'publisher-key';
+        process.env.HB_SESSION_SECRET = 'inventory-test-secret';
+        process.env.HB_STEAM_DROP_COOLDOWN_SECONDS = '0';
+        const session = createSteamSessionToken({ steamId64: '76561198000000000', isDevMode: false });
+
+        const origFetch = globalThis.fetch;
+        let mockResponse = {
+            response: {
+                success: true,
+                item_json: JSON.stringify([
+                    { itemid: '12345678901234567', itemdefid: 1000, quantity: 1, state: 'complete' }
+                ])
+            }
+        };
+        let fetchStatus = 200;
+        globalThis.fetch = vi.fn(async (url, options) => {
+            if (String(url).startsWith(baseUrl)) return origFetch(url, options);
+            if (String(url).includes('TriggerItemDrop')) {
+                return new Response(JSON.stringify(mockResponse), {
+                    status: fetchStatus,
+                    headers: { 'content-type': 'application/json' }
+                });
+            }
+            return origFetch(url, options);
+        });
+
+        // 1. Success with item_json
+        const res = await fetch(`${baseUrl}/steam/inventory/trigger-drop`, {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json',
+                authorization: `Bearer ${session.token}`
+            },
+            body: JSON.stringify({ requestId: `live-drop-${Math.random()}` })
+        });
+        expect(res.status).toBe(200);
+        const body = await res.json();
+        expect(body.ok).toBe(true);
+        expect(body.granted).toHaveLength(1);
+        expect(body.granted[0]).toMatchObject({ itemId: '12345678901234567', itemdefid: 1000, quantity: 1 });
+
+        // 2. Steam rejects drop
+        mockResponse = { response: { success: false } };
+        const resReject = await fetch(`${baseUrl}/steam/inventory/trigger-drop`, {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json',
+                authorization: `Bearer ${session.token}`
+            },
+            body: JSON.stringify({ requestId: `live-drop-reject-${Math.random()}` })
+        });
+        expect(resReject.status).toBe(502);
+        expect((await resReject.json()).reason).toBe('steam_inventory_rejected');
+
+        // 3. Malformed item_json
+        mockResponse = { response: { success: true, item_json: 'not valid json' } };
+        const resBad = await fetch(`${baseUrl}/steam/inventory/trigger-drop`, {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json',
+                authorization: `Bearer ${session.token}`
+            },
+            body: JSON.stringify({ requestId: `live-drop-bad-${Math.random()}` })
+        });
+        expect(resBad.status).toBe(502);
+        expect((await resBad.json()).reason).toBe('steam_inventory_invalid_response');
+    });
+
     it('POST /steam/inventory/grant-promo awards class victory patches', async () => {
         delete process.env.HB_STEAM_PUBLISHER_KEY;
         const testId = '76561198000000000';

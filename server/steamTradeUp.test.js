@@ -154,6 +154,7 @@ describe('POST /steam/inventory/trade-up (live Steam, faked)', () => {
     function fakeSteam({ items, failConsumeAt = null, failAdd = false }) {
         const calls = [];
         let consumes = 0;
+        let addCalls = 0;
         globalThis.fetch = vi.fn(async (url, options) => {
             if (String(url).startsWith(baseUrl)) return ORIGINAL_FETCH(url, options);
             const method = String(url).match(/IInventoryService\/(\w+)\//)?.[1];
@@ -165,11 +166,11 @@ describe('POST /steam/inventory/trade-up (live Steam, faked)', () => {
             }
             if (method === 'ConsumeItem') {
                 consumes += 1;
-                return consumes === failConsumeAt ? json({}, 500) : json({ response: {} });
+                return consumes === failConsumeAt ? json({ response: { success: false } }, 500) : json({ response: { success: true, item_json: '[]' } });
             }
             if (method === 'AddItem') {
-                const refund = String(params.requestid ?? '').includes(':refund:');
-                if (failAdd && !refund) return json({}, 500);
+                addCalls += 1;
+                if (failAdd && addCalls === 1) return json({}, 500);
                 const quantity = Object.keys(params).filter((key) => key.startsWith('itemdefid[')).length;
                 return json({ response: { success: true, item_json: JSON.stringify([
                     { itemid: String(10000 + calls.length), itemdefid: params['itemdefid[0]'], quantity }
@@ -188,16 +189,17 @@ describe('POST /steam/inventory/trade-up (live Steam, faked)', () => {
         { itemId: '105', itemdefid: 4103, quantity: 1 }
     ];
 
-    it('consumes each input with the publisher key, then grants the output', async () => {
+    it('consumes each input with the publisher key and uint64 requestid, then grants the output', async () => {
         const session = liveSession();
         const calls = fakeSteam({ items: liveItems });
         const response = await post('/steam/inventory/trade-up', { requestId: nextId(), rarity: 'rare' }, { authorization: `Bearer ${session.token}` });
         expect(response.status).toBe(200);
         const consumes = calls.filter((c) => c.method === 'ConsumeItem');
         expect(consumes.map((c) => c.params.itemid).sort()).toEqual(['101', '102', '103', '104', '105']);
-        expect(consumes.every((c) => c.params.key === 'publisher-key' && c.params.requestid)).toBe(true);
+        expect(consumes.every((c) => c.params.key === 'publisher-key' && /^[1-9]\d{0,19}$/.test(c.params.requestid))).toBe(true);
         const adds = calls.filter((c) => c.method === 'AddItem');
         expect(adds).toHaveLength(1);
+        expect(/^[1-9]\d{0,19}$/.test(adds[0].params.requestid)).toBe(true);
         expect(tradeUpRarity(adds[0].params['itemdefid[0]'])).toBe('epic');
     });
 
@@ -211,11 +213,11 @@ describe('POST /steam/inventory/trade-up (live Steam, faked)', () => {
         expect(body.refunded).toHaveLength(2);
         expect(body.refunded.every((r) => r.ok)).toBe(true);
         const adds = calls.filter((c) => c.method === 'AddItem');
-        expect(adds.every((c) => c.params.requestid.includes(':refund:'))).toBe(true);
+        expect(adds.every((c) => /^[1-9]\d{0,19}$/.test(c.params.requestid))).toBe(true);
         expect(adds).toHaveLength(2);
     });
 
-    it('refunds all five when the grant fails', async () => {
+    it('refunds all five with uint64 request IDs when the grant fails', async () => {
         const session = liveSession();
         const calls = fakeSteam({ items: liveItems, failAdd: true });
         const response = await post('/steam/inventory/trade-up', { requestId: nextId(), rarity: 'rare' }, { authorization: `Bearer ${session.token}` });
@@ -223,6 +225,32 @@ describe('POST /steam/inventory/trade-up (live Steam, faked)', () => {
         const body = await response.json();
         expect(body.reason).toBe('grant_failed');
         expect(body.refunded.map((r) => r.itemdefid).sort()).toEqual([4103, 4103, 4104, 4105, 4106]);
-        expect(calls.filter((c) => c.method === 'AddItem' && c.params.requestid.includes(':refund:'))).toHaveLength(5);
+        const adds = calls.filter((c) => c.method === 'AddItem');
+        expect(adds).toHaveLength(6); // 1 initial grant attempt + 5 refunds
+        const refunds = adds.slice(1);
+        expect(refunds.every((c) => /^[1-9]\d{0,19}$/.test(c.params.requestid))).toBe(true);
+    });
+
+    it('treats a network timeout / lost response during consume as ambiguous, requiring review rather than blind refund', async () => {
+        const session = liveSession();
+        fakeSteam({ items: liveItems });
+        // Override fetch for 2nd consume to simulate timeout/abort
+        const origFetch = globalThis.fetch;
+        let consumeCount = 0;
+        globalThis.fetch = vi.fn(async (url, options) => {
+            const method = String(url).match(/IInventoryService\/(\w+)\//)?.[1];
+            if (method === 'ConsumeItem') {
+                consumeCount += 1;
+                if (consumeCount === 2) {
+                    throw new Error('fetch failed (timeout)');
+                }
+            }
+            return origFetch(url, options);
+        });
+        const response = await post('/steam/inventory/trade-up', { requestId: nextId(), rarity: 'rare' }, { authorization: `Bearer ${session.token}` });
+        expect(response.status).toBe(502);
+        const body = await response.json();
+        expect(body.reason).toBe('exchange_outcome_requires_review');
+        expect(body.detail?.ambiguous).toBe(true);
     });
 });

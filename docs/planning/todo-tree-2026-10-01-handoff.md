@@ -170,3 +170,14 @@ tests and two failures in `server/steamTradeUp.test.js` refund cases while anoth
 contributor edited economy code/tests. Those changes are not part of iterations
 3–4; do not treat this as a green whole-branch/CI certification. Commentary
 extraction work in `main.js` is also owned by the concurrent contributor.
+
+## Iteration 5 — mutation API contracts and ambiguous review safeguards
+
+2026-10-04. Scope: `server/steamTradeUp.js`, `server/steamInventory.js`, and their test suites.
+
+- [x] Corrected `ConsumeItem`: parses and decodes `item_json` from Steam instead of trusting HTTP 200 alone; verifies `response.success !== false` and rejects invalid payloads.
+- [x] Textual request IDs replaced with derived deterministic uint64 numeric request IDs (`deriveNumericRequestId`) for `ConsumeItem`, `AddItem` (grants), and `AddItem` (refunds), matching Steam IInventoryService Web API schema requirements.
+- [x] Ambiguous transport failures (e.g. network timeout / abort during consume or grant) no longer trigger blind refunds or double-grants; they return status 502 with `exchange_outcome_requires_review` and preserve state for manual review.
+- [x] Corrected `TriggerItemDrop`: live route parses `item_json` using `decodeSteamInventory` with a 15-second timeout and key redaction; supports backward-compatible `item_list` arrays and rejects Steam failures explicitly (`steam_inventory_rejected`).
+- [x] Full backend test suite checkpoint: **35 files / 329 tests passed** (including resolved `server/steamTradeUp.test.js` cases). Scoped ESLint passed with 0 errors.
+

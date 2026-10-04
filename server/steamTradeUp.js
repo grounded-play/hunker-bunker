@@ -10,6 +10,7 @@
 // nothing. Steam's IInventoryService/ConsumeItem and AddItem are partner
 // (publisher-key) calls, the same trust path the backend already uses for
 // grants, so no Steamworks schema change is needed.
+import { createHash } from 'node:crypto';
 import { getMockInventory, setMockInventory } from './db.js';
 import { grantItemToPlayer } from './steamGrant.js';
 import { TRADE_UP_ITEMS } from './tradeUpCatalog.js';
@@ -67,6 +68,34 @@ export function planRedeem({ inventory = [], itemdefid }) {
     return { ok: true, consumed, outputItemdefid: Number(itemdefid), cost };
 }
 
+export function deriveNumericRequestId(baseRequestId, ...parts) {
+    if (!baseRequestId) return null;
+    const identity = JSON.stringify(['hb-trade-up-v1', String(baseRequestId), ...parts]);
+    const value = createHash('sha256').update(identity).digest().readBigUInt64BE(0);
+    return String(value || 1n);
+}
+
+export function decodeConsumeItemResponse(data) {
+    const response = data?.response;
+    if (response?.success !== undefined && response.success !== true) {
+        return { ok: false, reason: 'steam_consume_rejected' };
+    }
+    if (typeof response?.item_json !== 'string') {
+        if (response && typeof response === 'object' && Object.keys(response).length === 0) {
+            return { ok: true };
+        }
+        return { ok: false, reason: 'steam_consume_invalid_response' };
+    }
+    let rows;
+    try {
+        rows = JSON.parse(response.item_json);
+    } catch {
+        return { ok: false, reason: 'steam_consume_invalid_response' };
+    }
+    if (!Array.isArray(rows)) return { ok: false, reason: 'steam_consume_invalid_response' };
+    return { ok: true, items: rows };
+}
+
 function getSteamPublisherKey() {
     return process.env.HB_STEAM_PUBLISHER_KEY ?? process.env.STEAM_PUBLISHER_KEY ?? process.env.STEAM_WEB_API_KEY ?? '';
 }
@@ -83,15 +112,22 @@ async function consumeLive({ steamId, entry, requestId }) {
         params.append('steamid', steamId);
         params.append('itemid', entry.itemId);
         params.append('quantity', String(entry.quantity));
-        params.append('requestid', requestId);
+        if (requestId) {
+            params.append('requestid', String(requestId));
+        }
         const response = await fetch(`${STEAM_INVENTORY_URL}ConsumeItem/v1/`, {
             method: 'POST',
             headers: { 'content-type': 'application/x-www-form-urlencoded' },
-            body: params
+            body: params,
+            signal: AbortSignal.timeout(15_000)
         });
-        return response.ok ? { ok: true } : { ok: false, reason: 'steam_api_error', status: response.status };
+        if (!response.ok) {
+            return { ok: false, reason: 'steam_api_error', status: response.status };
+        }
+        const data = await response.json();
+        return decodeConsumeItemResponse(data);
     } catch (err) {
-        return { ok: false, reason: 'steam_request_failed', message: err.message };
+        return { ok: false, reason: 'steam_request_failed', message: err.message, ambiguous: true };
     }
 }
 
@@ -108,6 +144,7 @@ function consumeMock(steamId, consumed) {
 async function refund({ steamId, taken, isDevMode, requestId }) {
     const refunded = [];
     for (const [index, entry] of taken.entries()) {
+        const refundRequestId = deriveNumericRequestId(requestId, 'refund', index);
         const grant = await grantItemToPlayer({
             steamId,
             itemdefid: entry.itemdefid,
@@ -115,7 +152,7 @@ async function refund({ steamId, taken, isDevMode, requestId }) {
             isDevMode,
             source: 'trade_up_refund',
             mode: 'stack',
-            requestId: `${requestId}:refund:${index}`
+            requestId: refundRequestId
         });
         refunded.push({ itemdefid: entry.itemdefid, quantity: entry.quantity, ok: grant.ok });
     }
@@ -134,14 +171,19 @@ export async function commitExchange({ steamId, plan, isDevMode, requestId, sour
     } else {
         const taken = [];
         for (const [index, entry] of plan.consumed.entries()) {
-            const result = await consumeLive({ steamId, entry, requestId: `${requestId}:consume:${index}` });
+            const consumeRequestId = deriveNumericRequestId(requestId, 'consume', index);
+            const result = await consumeLive({ steamId, entry, requestId: consumeRequestId });
             if (!result.ok) {
+                if (result.ambiguous) {
+                    return { ok: false, reason: 'exchange_outcome_requires_review', detail: result };
+                }
                 const refunded = await refund({ steamId, taken, isDevMode, requestId });
                 return { ok: false, reason: 'consume_failed', detail: result, refunded };
             }
             taken.push(entry);
         }
     }
+    const grantRequestId = deriveNumericRequestId(requestId, 'grant');
     const grant = await grantItemToPlayer({
         steamId,
         itemdefid: plan.outputItemdefid,
@@ -149,9 +191,12 @@ export async function commitExchange({ steamId, plan, isDevMode, requestId, sour
         isDevMode,
         source,
         mode: 'unique',
-        requestId: `${requestId}:grant`
+        requestId: grantRequestId
     });
     if (!grant.ok) {
+        if (grant.reason === 'steam_request_failed') {
+            return { ok: false, reason: 'exchange_outcome_requires_review', detail: grant };
+        }
         const refunded = await refund({ steamId, taken: plan.consumed, isDevMode, requestId });
         return { ok: false, reason: 'grant_failed', detail: grant, refunded };
     }

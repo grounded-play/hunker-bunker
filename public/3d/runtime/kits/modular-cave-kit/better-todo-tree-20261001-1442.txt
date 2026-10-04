@@ -21,11 +21,16 @@ Original checked entries are not newly certified by this iteration.
     and operator handoff: docs/planning/todo-tree-2026-10-01-handoff.md.
 [ ] Next S49-08/32 + economy P5: durable exchange outcomes, correct mutation API
     contracts, safe background paid recovery, and item-level reversal dispositions.
-[~] S49-38 (a) — CLAIMED 2026-10-04 by the Claude lane: extract developer
-    commentary out of main.js into a bounded module (src/developerCommentary.js)
-    with explicit lifecycle (timers/cards cleaned up on dispose), characterization
-    tests, and a system-map pointer. Field crafting and purchase presentation
-    (S49-38 b/c) stay open.
+[x] S49-38 (a) — DONE 2026-10-04 (Claude lane): developer commentary extracted
+    from main.js (-178 lines) into src/developerCommentary.js: catalog, cards,
+    once-per-run memory, wait-for-gameplay hold, Read All list, and dispose()
+    that cancels pending timers and removes its menu stack. main.js keeps thin
+    wrappers, so game-event call sites are unchanged. Evidence: 8 characterization
+    tests (src/developerCommentary.test.js); full vitest 550 files / 4858 tests;
+    i18n audit unchanged; browser probe (toggle on -> card over menus, Read All
+    lists 12 entries, open/close, no page errors). Owner pointer added in
+    docs/architecture/system-map.md section 5.
+[ ] S49-38 (b/c) — field crafting and purchase presentation extraction still open.
 [ ] Full source-ticket acceptance remains open; no real purchase, deployment,
     account revocation, Steamworks setting or hardware certification performed.
 
@@ -38,6 +43,13 @@ Original checked entries are not newly certified by this iteration.
 [x] Iteration 4, S49-32: analyzer flags repeated joins and possible stale avatars,
     distinguishes poison/PvP damage and reports presented FPS, not GPU-derived FPS.
     Lobby logs connection IDs and bounded disconnect reasons. 58 targeted tests.
+
+[x] Iteration 5 (2026-10-04), S49-08/32 + economy P5: correct mutation API contracts
+    in server/steamTradeUp.js and server/steamInventory.js. ConsumeItem decodes
+    item_json and verifies success, uses derived uint64 numeric request IDs, and
+    flags ambiguous transport failures for review instead of blind refunds.
+    TriggerItemDrop live path decodes Steam item_json with 15s timeout and key redaction.
+    Evidence: 35 backend suites / 329 tests passed; scoped lint clean.
 
 ORIGINAL IMPORTED TODO SNAPSHOT
 └─ hunker-bunker

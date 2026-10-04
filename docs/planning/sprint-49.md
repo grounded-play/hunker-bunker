@@ -709,9 +709,11 @@ and comprehensive turnaround generation prompts for 2D-to-3D pipeline documented
   [system map](../architecture/system-map.md), [documentation system](../documentation-system.md).
   **Accept:** characterized behavior and journey tests pass; listeners/resources
   clean up on teardown; current subsystem docs point to actual owners/modules.
-  **In progress 2026-10-04 (Claude lane):** (a) developer commentary extraction
-  from `main.js` to `src/developerCommentary.js`. Chat was extracted earlier
-  (`82501e4f`); field crafting and purchase presentation remain.
+  **Implementation checkpoint 2026-10-04 (Claude lane):** (a) developer commentary
+  is extracted to `src/developerCommentary.js`: explicit `dispose()`, 8
+  characterization tests, browser-verified, owner listed in the system map.
+  Chat was extracted earlier (`82501e4f`). Field crafting and purchase
+  presentation remain, so the ticket stays open.
 
 ## Owner asks carried from Sprint 48 (Claude, 2026-09-30)
 
