@@ -171,6 +171,30 @@ contributor edited economy code/tests. Those changes are not part of iterations
 3–4; do not treat this as a green whole-branch/CI certification. Commentary
 extraction work in `main.js` is also owned by the concurrent contributor.
 
+## Iteration 7 — remove campaign defenses from PvP rival damage
+
+Work begins from `d796194e`; concurrent Fabrication Bay extraction is excluded.
+The game-development state guidance keeps campaign and PvP mitigation separate.
+
+- [x] A relay-accepted rival hit no longer rolls Tank/NPC block/evasion or applies
+  campaign overclock/relic multipliers, NPC armor, equipment shields or carapace.
+- [x] Regression cases cover all three classes with stacked campaign defenses;
+  one rival hit still removes one heart. Co-op shield absorption is unchanged.
+- [x] Targeted damage/passive/relic/gameplay suite: 5 files / 72 tests; lint passed.
+- [x] Full shared-worktree run: 551 suites / 4,876 tests passed. Documentation
+  audit and generated presubmit passed; retail reports regenerated. The concurrent
+  `82bdb506` commit included this iteration's Sprint 49/public TODO text while
+  landing Fabrication Bay work; the combat implementation is committed separately.
+- [ ] Full authoritative local health is NOT complete: `takeDamage` still has
+  lifecycle, i-frame and spawn guards, while relay `weaponHit` has no matching
+  spawn-protection deadline. Move protection into the relay with deployment-ready
+  timing and round IDs before bypassing local protection on accepted hits.
+- [ ] Environmental damage/healing and unilateral TRY AGAIN remain separate
+  synchronization gaps. Do not overwrite local HP with a higher server value:
+  the relay currently does not know those environmental losses.
+- [ ] Next commit should define the shared deployment-ready/protected/alive/dead
+  contract and test loading delays, reconnects, environmental deaths and rematches.
+
 ## Iteration 6 — explain rejected PvP hits and repair remote health
 
 Starting checkpoint: clean worktree at `d916a212`; the commentary and inventory

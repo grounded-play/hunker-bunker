@@ -44,6 +44,34 @@ function operator({ hullLevel = 0, fatigued = false, playerType = 'SCOUT', plati
 }
 
 describe('PvP hearts are the same for every operator', () => {
+    it.each(['TANK', 'SCOUT', 'ENGINEER'])('does not apply campaign defenses to %s rival hits', (playerType) => {
+        window.npcDialogueTreeManager = { activePerks: new Set(['nahl_bio_cloaking', 'nahl_symbiotic_resonance', 'vesper_field_armor']) };
+        const game = {
+            isMultiplayer: true, multiplayerMode: 'pvp', playerType,
+            performanceProfile: 'gameplay', blockChance: 1,
+            playerVitals: { hp: 4, maxHp: 4 },
+            playerShieldMax: 10, playerShieldHp: 10,
+            runOverclocks: [{ stats: { takenDamageMult: 0.5 } }],
+            runRelics: [{ id: 'chitin_membrane', stats: { takenDamageMult: 0.5 } }],
+            emitHealthState: vi.fn(), handleDeath: vi.fn()
+        };
+        expect(ThreeGame.prototype.takeDamage.call(game, 1, 'pvp-rival')).toBe(true);
+        expect(game.playerVitals.hp).toBe(3);
+        expect(game.playerShieldHp).toBe(10);
+        expect(window.dispatchEvent).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'player-damaged', detail: expect.objectContaining({ amount: 1, reason: 'pvp-rival' })
+        }));
+    });
+
+    it('retains shield absorption outside PvP rival damage', () => {
+        const game = {
+            isMultiplayer: true, multiplayerMode: 'coop', playerType: 'SCOUT',
+            playerVitals: { hp: 4, maxHp: 4 }, playerShieldMax: 10, playerShieldHp: 10
+        };
+        expect(ThreeGame.prototype.takeDamage.call(game, 1, 'crawler')).toBe(false);
+        expect(game.playerVitals.hp).toBe(4);
+        expect(game.playerShieldHp).toBe(9);
+    });
     it('repairs remote health from the relay snapshot after a missed damage event', () => {
         const remote = { hp: 4 };
         const game = { remotePlayers: new Map([['peer', remote]]), netSocket: { id: 'self' } };

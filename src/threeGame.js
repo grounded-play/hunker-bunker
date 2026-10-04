@@ -22348,6 +22348,7 @@ export class ThreeGame {
     }
 
     takeDamage(amount = 1, reason = 'hazard', sourceX = null, sourceZ = null) {
+        const isPvpHit = this.isMultiplayer && this.multiplayerMode === 'pvp' && reason === 'pvp-rival';
         if (this.isPlayerDead || this.isPlayerDowned) return false;
         // Menu/showroom previews share the player object with gameplay, but
         // defensive effects must never damage the preview operator.
@@ -22371,12 +22372,12 @@ export class ThreeGame {
                 return false; // Damage absorbed by safe haven or closed containment barrier
             }
         }
-        if (reason !== 'abyss' && this.playerType === 'TANK' && Math.random() < (this.blockChance ?? 0)) {
+        if (!isPvpHit && reason !== 'abyss' && this.playerType === 'TANK' && Math.random() < (this.blockChance ?? 0)) {
             window.AudioManager?.play('fx_tank_shockwave', { volume: 0.4, bus: 'sfx' });
             window.dispatchEvent(new CustomEvent('player-blocked', { detail: { reason } }));
             return false;
         }
-        if (reason !== 'abyss' && typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_bio_cloaking') && Math.random() < 0.15) {
+        if (!isPvpHit && reason !== 'abyss' && typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_bio_cloaking') && Math.random() < 0.15) {
             window.dispatchEvent(new CustomEvent('player-evaded', { detail: { reason } }));
             return false;
         }
@@ -22392,22 +22393,22 @@ export class ThreeGame {
         const previousHp = this.playerVitals.hp;
         const previousShieldHp = this.playerShieldHp ?? 0;
         let effectiveAmount = amount;
-        effectiveAmount = applyIncomingDamageModifiers(effectiveAmount, this.runOverclocks, this.runRelics);
-        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('arias_psychic_mind_caress') && ['poison', 'hazard-zone', 'bio', 'sporesnail'].includes(reason)) {
+        if (!isPvpHit) effectiveAmount = applyIncomingDamageModifiers(effectiveAmount, this.runOverclocks, this.runRelics);
+        if (!isPvpHit && typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('arias_psychic_mind_caress') && ['poison', 'hazard-zone', 'bio', 'sporesnail'].includes(reason)) {
             effectiveAmount *= 0.8;
         }
-        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_symbiotic_resonance') && (this.playerVitals?.hp ?? 100) < 50) {
+        if (!isPvpHit && typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_symbiotic_resonance') && (this.playerVitals?.hp ?? 100) < 50) {
             effectiveAmount *= 0.85;
         }
-        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_neural_freedom') && ['psychic', 'queen', 'dread'].includes(reason)) {
+        if (!isPvpHit && typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_neural_freedom') && ['psychic', 'queen', 'dread'].includes(reason)) {
             effectiveAmount *= 0.5;
         }
-        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('vesper_field_armor')) {
+        if (!isPvpHit && typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('vesper_field_armor')) {
             effectiveAmount *= 0.9;
         }
         // Season 0 Thermal Heat Exchanger overclock (itemdef 4144): shield absorbs damage
         // before HP, then goes on a recharge delay (shortened by shieldRechargeDelayMultiplier).
-        if (this.playerShieldMax > 0 && this.playerShieldHp > 0) {
+        if (!isPvpHit && this.playerShieldMax > 0 && this.playerShieldHp > 0) {
             const absorbed = Math.min(this.playerShieldHp, effectiveAmount);
             this.playerShieldHp -= absorbed;
             effectiveAmount -= absorbed;
@@ -22423,7 +22424,7 @@ export class ThreeGame {
             const baseDelay = 4.0;
             this.shieldRechargeDelayTimer = baseDelay * (this.loadoutMods?.shieldRechargeDelayMultiplier ?? 1.0);
         }
-        const hasCarapace = (this.runRelics ?? []).some((relic) => relic.id === 'chitin_membrane');
+        const hasCarapace = !isPvpHit && (this.runRelics ?? []).some((relic) => relic.id === 'chitin_membrane');
         if (!hasCarapace) this._carapaceArmorCredit = 0;
         const carapace = applyCarapaceProtection(effectiveAmount, this._carapaceArmorCredit ?? 0,
             hasCarapace && !['o2-depletion', 'abyss', 'fall', 'queens-milk-backlash'].includes(reason)
