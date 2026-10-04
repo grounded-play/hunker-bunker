@@ -71,7 +71,10 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // Raised 2770->2775 MiB for the Proto Spitter's own model (4.9 MB): the
 // crawler body plus the 2D design's acid sac (scripts/blender/build_spitter.py),
 // replacing a green tint on the shared crawler model.
-const PUBLIC_BUDGET = 2775 * 1024 * 1024;
+// Raised 2775->2935 MiB in Sprint 49 for the 20 newly decimated biomechanical
+// and cathedral environment props, rigged umbilical tentacle attacker, 23
+// key art visual references, and 2 upgraded milestone cutscenes (~110 MiB payload).
+const PUBLIC_BUDGET = 2935 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus
@@ -169,8 +172,8 @@ export function classifyPublicAsset(relativePath, referenced) {
     if (/^(?:ach|door|decal|prop|scatter)_[^/]+\.(?:avif|gif|jpe?g|png|svg|webp)$/i.test(relativePath)) {
         return 'runtime-required';
     }
-    if (/(?:^|\/)(?:concepts?|references?|rejected-candidates|sources-keyed|strips|identity)(?:\/|$)/.test(lower)
-        || /(?:contact[_-]?sheet|preview|attempt|rejected|master-keyed|source-row)/.test(lower)) {
+    if (/(?:^|\/)(?:concepts?|references?|rejected-candidates|sources-keyed|strips|identity|keyart)(?:\/|$)/.test(lower)
+        || /(?:contact[_-]?sheet|preview|attempt|rejected|master-keyed|source-row|keyart)/.test(lower)) {
         return 'source-reference';
     }
     if (/(?:^|\/)(?:generated|frames)(?:\/|$)/.test(lower)) return 'generated-intermediate';

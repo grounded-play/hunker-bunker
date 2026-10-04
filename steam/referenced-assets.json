@@ -224,13 +224,18 @@
     "3d/runtime/new3ds/npc_queen.glb",
     "3d/runtime/new3ds/npc_val.glb",
     "3d/runtime/new3ds/prop_ammo_crate_stack.glb",
+    "3d/runtime/new3ds/prop_autopsy_dissection_slab.glb",
     "3d/runtime/new3ds/prop_base_defense_turret.glb",
     "3d/runtime/new3ds/prop_biomech_arch.glb",
     "3d/runtime/new3ds/prop_biomech_flesh_locker.glb",
     "3d/runtime/new3ds/prop_biomech_incubator.glb",
     "3d/runtime/new3ds/prop_biomech_neural_synapse.glb",
     "3d/runtime/new3ds/prop_biomech_respirator.glb",
+    "3d/runtime/new3ds/prop_biomech_sphincter_hatch_vent.glb",
     "3d/runtime/new3ds/prop_biomech_sphincter_trap.glb",
+    "3d/runtime/new3ds/prop_biomech_spore_umbilical_cable.glb",
+    "3d/runtime/new3ds/prop_biomech_spore_umbilical_cable_rigged.glb",
+    "3d/runtime/new3ds/prop_biomech_tracheal_wall_pipe.glb",
     "3d/runtime/new3ds/prop_biomech_triage_cradle.glb",
     "3d/runtime/new3ds/prop_body_empty_exosuit.glb",
     "3d/runtime/new3ds/prop_body_human_frozen.glb",
@@ -241,14 +246,22 @@
     "3d/runtime/new3ds/prop_camp_crate.glb",
     "3d/runtime/new3ds/prop_cave_bones.glb",
     "3d/runtime/new3ds/prop_cave_queen_throne.glb",
+    "3d/runtime/new3ds/prop_ceiling_crane_hoist.glb",
     "3d/runtime/new3ds/prop_chair_operator_wrecked.glb",
     "3d/runtime/new3ds/prop_conduit_hub.glb",
     "3d/runtime/new3ds/prop_conduit_junction_box.glb",
+    "3d/runtime/new3ds/prop_coolant_drum_leaking_pool.glb",
+    "3d/runtime/new3ds/prop_corporate_saint_reliquary.glb",
+    "3d/runtime/new3ds/prop_decon_eyewash_shower_station.glb",
     "3d/runtime/new3ds/prop_diagnostic_console.glb",
+    "3d/runtime/new3ds/prop_exhaust_blower_fan_hood.glb",
+    "3d/runtime/new3ds/prop_exosuit_docking_gantry.glb",
     "3d/runtime/new3ds/prop_fabricator_workstation.glb",
     "3d/runtime/new3ds/prop_flesh_steel_coffin.glb",
     "3d/runtime/new3ds/prop_flesh_steel_cradle.glb",
     "3d/runtime/new3ds/prop_flesh_steel_inhaler.glb",
+    "3d/runtime/new3ds/prop_floor_conduit_bridge.glb",
+    "3d/runtime/new3ds/prop_floor_drainage_sump_trough.glb",
     "3d/runtime/new3ds/prop_fungal_mycelium_loom.glb",
     "3d/runtime/new3ds/prop_fungal_resin_basin.glb",
     "3d/runtime/new3ds/prop_fungal_spore_dispenser.glb",
@@ -259,9 +272,14 @@
     "3d/runtime/new3ds/prop_icey_thermal_pod.glb",
     "3d/runtime/new3ds/prop_laser_trap_emitter.glb",
     "3d/runtime/new3ds/prop_light_cluster_dripping.glb",
+    "3d/runtime/new3ds/prop_liturgical_terminal_lectern.glb",
     "3d/runtime/new3ds/prop_locker_bulged.glb",
+    "3d/runtime/new3ds/prop_maintenance_tool_cart.glb",
     "3d/runtime/new3ds/prop_medical_bed.glb",
     "3d/runtime/new3ds/prop_o2_filter_vat.glb",
+    "3d/runtime/new3ds/prop_overhead_cage_fluorescent.glb",
+    "3d/runtime/new3ds/prop_oxygen_bottle_cascade_rack.glb",
+    "3d/runtime/new3ds/prop_pipe_organ_heat_exchanger.glb",
     "3d/runtime/new3ds/prop_pipe_rupture.glb",
     "3d/runtime/new3ds/prop_security_barricade.glb",
     "3d/runtime/new3ds/prop_shrine_plinth_broken.glb",
@@ -272,7 +290,10 @@
     "3d/runtime/new3ds/prop_tesla_coil_node.glb",
     "3d/runtime/new3ds/prop_valve_wheel_fused.glb",
     "3d/runtime/new3ds/prop_vent_grate_exploded.glb",
+    "3d/runtime/new3ds/prop_vertebral_cable_riser.glb",
     "3d/runtime/new3ds/prop_vital_monitor.glb",
+    "3d/runtime/new3ds/prop_votive_candle_shrine.glb",
+    "3d/runtime/new3ds/prop_wall_cable_tray_swag.glb",
     "3d/runtime/new3ds/scatter_bolts.glb",
     "3d/runtime/new3ds/scatter_cable_coil.glb",
     "3d/runtime/new3ds/sentinel.glb",
@@ -1211,7 +1232,7 @@
     "scout_ship_healed.png",
     "ship_wreckage.png",
     "site_floor_material_atlas_v1.png",
-    "sky/cinematic_deep_space_panorama.jpg",
+    "sky/cinematic_cathedral_crypt_panorama.jpg",
     "sky/fx_comet_longtail.png",
     "sky/fx_lightning_crawler.png",
     "sky/fx_lightning_fork.png",
@@ -1462,7 +1483,7 @@
     },
     {
       "path": "3d/runtime/kits/modular-cave-kit/better-todo-tree-20261001-1442.txt",
-      "bytes": 10913,
+      "bytes": 11325,
       "classification": "unknown"
     },
     {
@@ -1996,6 +2017,126 @@
       "classification": "unknown"
     },
     {
+      "path": "3d/runtime/kits/textures/cryo_deck_floor_color.webp",
+      "bytes": 384676,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cryo_deck_floor_emissive.webp",
+      "bytes": 87988,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cryo_deck_floor_normal.webp",
+      "bytes": 368524,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cryo_deck_floor_rough.webp",
+      "bytes": 127962,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cryo_deck_wall_color.webp",
+      "bytes": 317632,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cryo_deck_wall_emissive.webp",
+      "bytes": 8520,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cryo_deck_wall_normal.webp",
+      "bytes": 311422,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cryo_deck_wall_rough.webp",
+      "bytes": 82232,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/giger_floor_color.webp",
+      "bytes": 267686,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/giger_floor_emissive.webp",
+      "bytes": 28248,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/giger_floor_normal.webp",
+      "bytes": 260034,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/giger_floor_rough.webp",
+      "bytes": 77836,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/giger_wall_color.webp",
+      "bytes": 243852,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/giger_wall_emissive.webp",
+      "bytes": 18438,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/giger_wall_normal.webp",
+      "bytes": 249832,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/giger_wall_rough.webp",
+      "bytes": 77686,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/reliquary_floor_color.webp",
+      "bytes": 279826,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/reliquary_floor_emissive.webp",
+      "bytes": 59826,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/reliquary_floor_normal.webp",
+      "bytes": 257464,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/reliquary_floor_rough.webp",
+      "bytes": 71938,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/reliquary_wall_color.webp",
+      "bytes": 260090,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/reliquary_wall_emissive.webp",
+      "bytes": 72888,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/reliquary_wall_normal.webp",
+      "bytes": 259568,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/reliquary_wall_rough.webp",
+      "bytes": 77338,
+      "classification": "unknown"
+    },
+    {
       "path": "3d/runtime/kits/textures/space_floor_color.webp",
       "bytes": 59032,
       "classification": "unknown"
@@ -2526,6 +2667,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_autopsy_dissection_slab.glb",
+      "bytes": 4259692,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_base_defense_turret.glb",
       "bytes": 5036496,
       "classification": "runtime-required"
@@ -2556,8 +2702,28 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_biomech_sphincter_hatch_vent.glb",
+      "bytes": 4577336,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_biomech_sphincter_trap.glb",
       "bytes": 1419608,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_biomech_spore_umbilical_cable.glb",
+      "bytes": 4210780,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_biomech_spore_umbilical_cable_rigged.glb",
+      "bytes": 4642128,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_biomech_tracheal_wall_pipe.glb",
+      "bytes": 3565760,
       "classification": "runtime-required"
     },
     {
@@ -2611,6 +2777,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_ceiling_crane_hoist.glb",
+      "bytes": 4827260,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_chair_operator_wrecked.glb",
       "bytes": 866704,
       "classification": "runtime-required"
@@ -2626,8 +2797,33 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_coolant_drum_leaking_pool.glb",
+      "bytes": 3836208,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_corporate_saint_reliquary.glb",
+      "bytes": 4910620,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_decon_eyewash_shower_station.glb",
+      "bytes": 4676004,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_diagnostic_console.glb",
       "bytes": 5365368,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_exhaust_blower_fan_hood.glb",
+      "bytes": 4185012,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_exosuit_docking_gantry.glb",
+      "bytes": 3640144,
       "classification": "runtime-required"
     },
     {
@@ -2648,6 +2844,16 @@
     {
       "path": "3d/runtime/new3ds/prop_flesh_steel_inhaler.glb",
       "bytes": 742808,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_floor_conduit_bridge.glb",
+      "bytes": 3565632,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_floor_drainage_sump_trough.glb",
+      "bytes": 4281880,
       "classification": "runtime-required"
     },
     {
@@ -2701,8 +2907,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_liturgical_terminal_lectern.glb",
+      "bytes": 4573256,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_locker_bulged.glb",
       "bytes": 991136,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_maintenance_tool_cart.glb",
+      "bytes": 4421640,
       "classification": "runtime-required"
     },
     {
@@ -2713,6 +2929,21 @@
     {
       "path": "3d/runtime/new3ds/prop_o2_filter_vat.glb",
       "bytes": 1119976,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_overhead_cage_fluorescent.glb",
+      "bytes": 5248440,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_oxygen_bottle_cascade_rack.glb",
+      "bytes": 4700556,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_pipe_organ_heat_exchanger.glb",
+      "bytes": 3823036,
       "classification": "runtime-required"
     },
     {
@@ -2766,8 +2997,23 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_vertebral_cable_riser.glb",
+      "bytes": 4145232,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_vital_monitor.glb",
       "bytes": 1060412,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_votive_candle_shrine.glb",
+      "bytes": 3798748,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_wall_cable_tray_swag.glb",
+      "bytes": 4135872,
       "classification": "runtime-required"
     },
     {
@@ -5736,6 +5982,2881 @@
       "classification": "runtime-required"
     },
     {
+      "path": "audio/voice/lines/de/narrative.classWreckageLogs.ENGINEER.payload.mp3",
+      "bytes": 121097,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.classWreckageLogs.SCOUT.payload.mp3",
+      "bytes": 128041,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.classWreckageLogs.TANK.payload.mp3",
+      "bytes": 128808,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.blackBoxRecovery.0.mp3",
+      "bytes": 50035,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.blackBoxRecovery.1.mp3",
+      "bytes": 58374,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.blackBoxRecovery.2.mp3",
+      "bytes": 42767,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.blackBoxRecovery.3.mp3",
+      "bytes": 55936,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.blackBoxRecovery.4.mp3",
+      "bytes": 54618,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.caveSignal.0.mp3",
+      "bytes": 36766,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.caveSignal.1.mp3",
+      "bytes": 41709,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.caveSignal.2.mp3",
+      "bytes": 42816,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.caveSignal.3.mp3",
+      "bytes": 34830,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.death.0.mp3",
+      "bytes": 54494,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.death.1.mp3",
+      "bytes": 47754,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.death.2.mp3",
+      "bytes": 46455,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.death.3.mp3",
+      "bytes": 41426,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.death.4.mp3",
+      "bytes": 36389,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.director.0.mp3",
+      "bytes": 47960,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.director.1.mp3",
+      "bytes": 51772,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.director.2.mp3",
+      "bytes": 53699,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.director.3.mp3",
+      "bytes": 38691,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.director.4.mp3",
+      "bytes": 32672,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.director.5.mp3",
+      "bytes": 38793,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.director.6.mp3",
+      "bytes": 39938,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.director.7.mp3",
+      "bytes": 37730,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.extraction.0.mp3",
+      "bytes": 60587,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.extraction.1.mp3",
+      "bytes": 54108,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.extraction.2.mp3",
+      "bytes": 44178,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.extraction.3.mp3",
+      "bytes": 48771,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.extraction.4.mp3",
+      "bytes": 47375,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.lowO2.0.mp3",
+      "bytes": 55520,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.lowO2.1.mp3",
+      "bytes": 68654,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.lowO2.2.mp3",
+      "bytes": 50325,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.lowO2.3.mp3",
+      "bytes": 49031,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.lowO2.4.mp3",
+      "bytes": 50905,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.majorUpgrade.0.mp3",
+      "bytes": 53621,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.majorUpgrade.1.mp3",
+      "bytes": 59526,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.majorUpgrade.2.mp3",
+      "bytes": 52457,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.majorUpgrade.3.mp3",
+      "bytes": 47086,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.majorUpgrade.4.mp3",
+      "bytes": 48042,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.terminalChoice.0.mp3",
+      "bytes": 56195,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.terminalChoice.1.mp3",
+      "bytes": 40489,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.terminalChoice.2.mp3",
+      "bytes": 57494,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.terminalChoice.3.mp3",
+      "bytes": 52976,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.corporate.terminalChoice.4.mp3",
+      "bytes": 45723,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.blackBoxRecovery.0.mp3",
+      "bytes": 36115,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.blackBoxRecovery.1.mp3",
+      "bytes": 52323,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.blackBoxRecovery.2.mp3",
+      "bytes": 41528,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.blackBoxRecovery.3.mp3",
+      "bytes": 44944,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.blackBoxRecovery.4.mp3",
+      "bytes": 44876,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.caveSignal.0.mp3",
+      "bytes": 31370,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.caveSignal.1.mp3",
+      "bytes": 32307,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.caveSignal.2.mp3",
+      "bytes": 33980,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.caveSignal.3.mp3",
+      "bytes": 30648,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.death.0.mp3",
+      "bytes": 54967,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.death.1.mp3",
+      "bytes": 44383,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.death.2.mp3",
+      "bytes": 50230,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.death.3.mp3",
+      "bytes": 45713,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.death.4.mp3",
+      "bytes": 32572,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.director.0.mp3",
+      "bytes": 58514,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.director.1.mp3",
+      "bytes": 46290,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.director.2.mp3",
+      "bytes": 51915,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.director.3.mp3",
+      "bytes": 49304,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.extraction.0.mp3",
+      "bytes": 47234,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.extraction.1.mp3",
+      "bytes": 59207,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.extraction.2.mp3",
+      "bytes": 36485,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.extraction.3.mp3",
+      "bytes": 32143,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.extraction.4.mp3",
+      "bytes": 44549,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.lowO2.0.mp3",
+      "bytes": 47797,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.lowO2.1.mp3",
+      "bytes": 67302,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.lowO2.2.mp3",
+      "bytes": 53816,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.lowO2.3.mp3",
+      "bytes": 62577,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.lowO2.4.mp3",
+      "bytes": 40634,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.majorUpgrade.0.mp3",
+      "bytes": 34782,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.majorUpgrade.1.mp3",
+      "bytes": 34113,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.majorUpgrade.2.mp3",
+      "bytes": 55298,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.majorUpgrade.3.mp3",
+      "bytes": 39348,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.majorUpgrade.4.mp3",
+      "bytes": 37672,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.terminalChoice.0.mp3",
+      "bytes": 38699,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.terminalChoice.1.mp3",
+      "bytes": 42699,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.terminalChoice.2.mp3",
+      "bytes": 34753,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.terminalChoice.3.mp3",
+      "bytes": 46917,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.glitched.terminalChoice.4.mp3",
+      "bytes": 23498,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.blackBoxRecovery.0.mp3",
+      "bytes": 35453,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.blackBoxRecovery.1.mp3",
+      "bytes": 44279,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.blackBoxRecovery.2.mp3",
+      "bytes": 36731,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.blackBoxRecovery.3.mp3",
+      "bytes": 35534,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.blackBoxRecovery.4.mp3",
+      "bytes": 35192,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.caveSignal.0.mp3",
+      "bytes": 31484,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.caveSignal.1.mp3",
+      "bytes": 30828,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.caveSignal.2.mp3",
+      "bytes": 30820,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.caveSignal.3.mp3",
+      "bytes": 24215,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.death.0.mp3",
+      "bytes": 37795,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.death.1.mp3",
+      "bytes": 34573,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.death.2.mp3",
+      "bytes": 35536,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.death.3.mp3",
+      "bytes": 35121,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.death.4.mp3",
+      "bytes": 34036,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.director.0.mp3",
+      "bytes": 52416,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.director.1.mp3",
+      "bytes": 39442,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.director.2.mp3",
+      "bytes": 40603,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.director.3.mp3",
+      "bytes": 45173,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.extraction.0.mp3",
+      "bytes": 39782,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.extraction.1.mp3",
+      "bytes": 36962,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.extraction.2.mp3",
+      "bytes": 41717,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.extraction.3.mp3",
+      "bytes": 36600,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.extraction.4.mp3",
+      "bytes": 35632,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.lowO2.0.mp3",
+      "bytes": 51248,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.lowO2.1.mp3",
+      "bytes": 56155,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.lowO2.2.mp3",
+      "bytes": 51349,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.lowO2.3.mp3",
+      "bytes": 41833,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.lowO2.4.mp3",
+      "bytes": 43881,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.majorUpgrade.0.mp3",
+      "bytes": 44382,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.majorUpgrade.1.mp3",
+      "bytes": 37309,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.majorUpgrade.2.mp3",
+      "bytes": 33162,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.majorUpgrade.3.mp3",
+      "bytes": 34433,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.majorUpgrade.4.mp3",
+      "bytes": 32227,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.terminalChoice.0.mp3",
+      "bytes": 44298,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.terminalChoice.1.mp3",
+      "bytes": 32284,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.terminalChoice.2.mp3",
+      "bytes": 44662,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.terminalChoice.3.mp3",
+      "bytes": 51843,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.dialogue.reverent.terminalChoice.4.mp3",
+      "bytes": 37357,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.directorAmbient.0.text.mp3",
+      "bytes": 69606,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.directorAmbient.1.text.mp3",
+      "bytes": 63931,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.directorAmbient.10.text.mp3",
+      "bytes": 51903,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.directorAmbient.11.text.mp3",
+      "bytes": 45100,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.directorAmbient.12.text.mp3",
+      "bytes": 58536,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.directorAmbient.13.text.mp3",
+      "bytes": 55739,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.directorAmbient.14.text.mp3",
+      "bytes": 32730,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.directorAmbient.15.text.mp3",
+      "bytes": 34831,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.directorAmbient.16.text.mp3",
+      "bytes": 47137,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.directorAmbient.2.text.mp3",
+      "bytes": 45373,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.directorAmbient.3.text.mp3",
+      "bytes": 40277,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.directorAmbient.4.text.mp3",
+      "bytes": 40668,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.directorAmbient.5.text.mp3",
+      "bytes": 44411,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.directorAmbient.6.text.mp3",
+      "bytes": 48204,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.directorAmbient.7.text.mp3",
+      "bytes": 41598,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.directorAmbient.8.text.mp3",
+      "bytes": 52191,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.directorAmbient.9.text.mp3",
+      "bytes": 43415,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDeathBeats.briggs.0.mp3",
+      "bytes": 64495,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDeathBeats.briggs.1.mp3",
+      "bytes": 73421,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDeathBeats.briggs.2.mp3",
+      "bytes": 65472,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDeathBeats.kaelen.0.mp3",
+      "bytes": 62156,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDeathBeats.kaelen.1.mp3",
+      "bytes": 67019,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDeathBeats.kaelen.2.mp3",
+      "bytes": 66488,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDeathBeats.martha.0.mp3",
+      "bytes": 55034,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDeathBeats.martha.1.mp3",
+      "bytes": 46690,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDeathBeats.martha.2.mp3",
+      "bytes": 56610,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDeathBeats.nahl.0.mp3",
+      "bytes": 55893,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDeathBeats.nahl.1.mp3",
+      "bytes": 44307,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDeathBeats.rhun.0.mp3",
+      "bytes": 44982,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDeathBeats.rhun.1.mp3",
+      "bytes": 72965,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDeathBeats.vey.0.mp3",
+      "bytes": 50960,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDeathBeats.vey.1.mp3",
+      "bytes": 65578,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.briggs.stages.0.beats.0.0.mp3",
+      "bytes": 75585,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.briggs.stages.0.beats.0.1.mp3",
+      "bytes": 72503,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.briggs.stages.0.beats.1.0.mp3",
+      "bytes": 55281,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.briggs.stages.0.loop.mp3",
+      "bytes": 62367,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.briggs.stages.1.beats.0.0.mp3",
+      "bytes": 46170,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.briggs.stages.1.beats.0.1.mp3",
+      "bytes": 111220,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.briggs.stages.1.beats.1.0.mp3",
+      "bytes": 57469,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.briggs.stages.1.loop.mp3",
+      "bytes": 59776,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.briggs.stages.2.beats.0.0.mp3",
+      "bytes": 49401,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.briggs.stages.2.beats.0.1.mp3",
+      "bytes": 72183,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.briggs.stages.2.beats.1.0.mp3",
+      "bytes": 87781,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.briggs.stages.2.loop.mp3",
+      "bytes": 40581,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.briggs.stages.3.beats.0.0.mp3",
+      "bytes": 81211,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.briggs.stages.3.beats.0.1.mp3",
+      "bytes": 79154,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.briggs.stages.3.beats.1.0.mp3",
+      "bytes": 85484,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.briggs.stages.3.beats.2.0.mp3",
+      "bytes": 60658,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.briggs.stages.3.beats.2.1.mp3",
+      "bytes": 85265,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.briggs.stages.3.loop.mp3",
+      "bytes": 62629,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.0.beats.0.0.mp3",
+      "bytes": 54013,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.0.beats.0.1.mp3",
+      "bytes": 66253,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.0.beats.1.0.mp3",
+      "bytes": 59006,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.0.beats.1.1.mp3",
+      "bytes": 23845,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.0.loop.mp3",
+      "bytes": 50625,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.1.beats.0.0.mp3",
+      "bytes": 63770,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.1.beats.0.1.mp3",
+      "bytes": 79378,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.1.beats.1.0.mp3",
+      "bytes": 26670,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.1.loop.mp3",
+      "bytes": 51450,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.2.beats.0.0.mp3",
+      "bytes": 69568,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.2.beats.0.1.mp3",
+      "bytes": 104144,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.2.beats.1.0.mp3",
+      "bytes": 48891,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.2.loop.mp3",
+      "bytes": 46911,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.3.beats.0.0.mp3",
+      "bytes": 71917,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.3.beats.0.1.mp3",
+      "bytes": 84325,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.3.beats.1.0.mp3",
+      "bytes": 75286,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.3.beats.2.0.mp3",
+      "bytes": 101651,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.3.beats.3.0.mp3",
+      "bytes": 63804,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.kaelen.stages.3.loop.mp3",
+      "bytes": 46338,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.martha.stages.0.beats.0.0.mp3",
+      "bytes": 55132,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.martha.stages.0.beats.0.1.mp3",
+      "bytes": 55536,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.martha.stages.0.beats.1.0.mp3",
+      "bytes": 45340,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.martha.stages.0.loop.mp3",
+      "bytes": 55837,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.martha.stages.1.beats.0.0.mp3",
+      "bytes": 48228,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.martha.stages.1.beats.0.1.mp3",
+      "bytes": 44735,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.martha.stages.1.beats.1.0.mp3",
+      "bytes": 64405,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.martha.stages.1.loop.mp3",
+      "bytes": 44584,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.martha.stages.2.beats.0.0.mp3",
+      "bytes": 38186,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.martha.stages.2.beats.0.1.mp3",
+      "bytes": 39360,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.martha.stages.2.beats.1.0.mp3",
+      "bytes": 69055,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.martha.stages.2.loop.mp3",
+      "bytes": 30477,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.martha.stages.3.beats.0.0.mp3",
+      "bytes": 64509,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.martha.stages.3.beats.0.1.mp3",
+      "bytes": 83046,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.martha.stages.3.beats.1.0.mp3",
+      "bytes": 70799,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.martha.stages.3.beats.2.0.mp3",
+      "bytes": 61340,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.martha.stages.3.beats.2.1.mp3",
+      "bytes": 70067,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.martha.stages.3.loop.mp3",
+      "bytes": 64691,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.nahl.stages.0.beats.0.0.mp3",
+      "bytes": 49071,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.nahl.stages.0.beats.0.1.mp3",
+      "bytes": 71529,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.nahl.stages.0.beats.1.0.mp3",
+      "bytes": 50386,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.nahl.stages.0.loop.mp3",
+      "bytes": 55433,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.nahl.stages.1.beats.0.0.mp3",
+      "bytes": 41895,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.nahl.stages.1.beats.0.1.mp3",
+      "bytes": 64850,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.nahl.stages.1.beats.1.0.mp3",
+      "bytes": 42715,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.nahl.stages.1.loop.mp3",
+      "bytes": 52025,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.nahl.stages.2.beats.0.0.mp3",
+      "bytes": 60711,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.nahl.stages.2.beats.0.1.mp3",
+      "bytes": 59343,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.nahl.stages.2.loop.mp3",
+      "bytes": 56962,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.nahl.stages.3.beats.0.0.mp3",
+      "bytes": 59223,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.nahl.stages.3.beats.0.1.mp3",
+      "bytes": 82554,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.nahl.stages.3.loop.mp3",
+      "bytes": 48372,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.rhun.stages.0.beats.0.0.mp3",
+      "bytes": 45060,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.rhun.stages.0.beats.0.1.mp3",
+      "bytes": 61229,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.rhun.stages.0.beats.1.0.mp3",
+      "bytes": 59615,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.rhun.stages.0.loop.mp3",
+      "bytes": 65895,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.rhun.stages.1.beats.0.0.mp3",
+      "bytes": 49481,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.rhun.stages.1.beats.0.1.mp3",
+      "bytes": 51664,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.rhun.stages.1.beats.1.0.mp3",
+      "bytes": 36095,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.rhun.stages.1.loop.mp3",
+      "bytes": 37059,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.rhun.stages.2.beats.0.0.mp3",
+      "bytes": 53926,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.rhun.stages.2.beats.0.1.mp3",
+      "bytes": 73190,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.rhun.stages.2.loop.mp3",
+      "bytes": 46448,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.rhun.stages.3.beats.0.0.mp3",
+      "bytes": 45812,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.rhun.stages.3.beats.0.1.mp3",
+      "bytes": 58852,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.rhun.stages.3.loop.mp3",
+      "bytes": 40032,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.scientist.stages.0.beats.0.0.mp3",
+      "bytes": 33020,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.scientist.stages.0.beats.0.1.mp3",
+      "bytes": 46658,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.scientist.stages.0.beats.1.0.mp3",
+      "bytes": 51164,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.scientist.stages.0.loop.mp3",
+      "bytes": 52295,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.scientist.stages.1.beats.0.0.mp3",
+      "bytes": 44536,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.scientist.stages.1.beats.0.1.mp3",
+      "bytes": 64911,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.scientist.stages.1.beats.1.0.mp3",
+      "bytes": 69291,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.scientist.stages.1.loop.mp3",
+      "bytes": 69038,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.scientist.stages.2.beats.0.0.mp3",
+      "bytes": 37456,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.scientist.stages.2.beats.0.1.mp3",
+      "bytes": 49544,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.scientist.stages.2.beats.1.0.mp3",
+      "bytes": 46247,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.scientist.stages.2.loop.mp3",
+      "bytes": 38654,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.scientist.stages.3.beats.0.0.mp3",
+      "bytes": 33362,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.scientist.stages.3.beats.0.1.mp3",
+      "bytes": 66263,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.scientist.stages.3.beats.1.0.mp3",
+      "bytes": 41544,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.scientist.stages.3.loop.mp3",
+      "bytes": 53237,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.vey.stages.0.beats.0.0.mp3",
+      "bytes": 53147,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.vey.stages.0.beats.0.1.mp3",
+      "bytes": 56011,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.vey.stages.0.beats.1.0.mp3",
+      "bytes": 73007,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.vey.stages.0.loop.mp3",
+      "bytes": 59708,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.vey.stages.1.beats.0.0.mp3",
+      "bytes": 42353,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.vey.stages.1.beats.0.1.mp3",
+      "bytes": 61767,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.vey.stages.1.beats.1.0.mp3",
+      "bytes": 30347,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.vey.stages.1.loop.mp3",
+      "bytes": 45054,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.vey.stages.2.beats.0.0.mp3",
+      "bytes": 91560,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.vey.stages.2.beats.0.1.mp3",
+      "bytes": 36727,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.vey.stages.2.loop.mp3",
+      "bytes": 43555,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.vey.stages.3.beats.0.0.mp3",
+      "bytes": 47788,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.vey.stages.3.beats.0.1.mp3",
+      "bytes": 89408,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.leaderDialogue.vey.stages.3.loop.mp3",
+      "bytes": 44193,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.loreClassLogs.ENGINEER.mp3",
+      "bytes": 120368,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.loreClassLogs.SCOUT.mp3",
+      "bytes": 134660,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.loreClassLogs.TANK.mp3",
+      "bytes": 125722,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.mothershipReactive.0.text.mp3",
+      "bytes": 37565,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.mothershipReactive.1.text.mp3",
+      "bytes": 42698,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.mothershipReactive.10.text.mp3",
+      "bytes": 51949,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.mothershipReactive.11.text.mp3",
+      "bytes": 43724,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.mothershipReactive.12.text.mp3",
+      "bytes": 44349,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.mothershipReactive.13.text.mp3",
+      "bytes": 45088,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.mothershipReactive.2.text.mp3",
+      "bytes": 47878,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.mothershipReactive.3.text.mp3",
+      "bytes": 44754,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.mothershipReactive.4.text.mp3",
+      "bytes": 49781,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.mothershipReactive.5.text.mp3",
+      "bytes": 44158,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.mothershipReactive.6.text.mp3",
+      "bytes": 47781,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.mothershipReactive.7.text.mp3",
+      "bytes": 41759,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.mothershipReactive.8.text.mp3",
+      "bytes": 38312,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.mothershipReactive.9.text.mp3",
+      "bytes": 44007,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.terminalEvents.0.body.mp3",
+      "bytes": 89861,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.terminalEvents.1.body.mp3",
+      "bytes": 77401,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.terminalEvents.2.body.mp3",
+      "bytes": 89280,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.classWreckageLogs.ENGINEER.payload.mp3",
+      "bytes": 115393,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.classWreckageLogs.SCOUT.payload.mp3",
+      "bytes": 146425,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.classWreckageLogs.TANK.payload.mp3",
+      "bytes": 108495,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.commentary.commentary_on.body.mp3",
+      "bytes": 132341,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.commentary.run_start.body.mp3",
+      "bytes": 169781,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.blackBoxRecovery.0.mp3",
+      "bytes": 47808,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.blackBoxRecovery.1.mp3",
+      "bytes": 43893,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.blackBoxRecovery.2.mp3",
+      "bytes": 43964,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.blackBoxRecovery.3.mp3",
+      "bytes": 54066,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.blackBoxRecovery.4.mp3",
+      "bytes": 43045,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.caveSignal.0.mp3",
+      "bytes": 34804,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.caveSignal.1.mp3",
+      "bytes": 38536,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.caveSignal.2.mp3",
+      "bytes": 35189,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.caveSignal.3.mp3",
+      "bytes": 35690,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.death.0.mp3",
+      "bytes": 51555,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.death.1.mp3",
+      "bytes": 34627,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.death.2.mp3",
+      "bytes": 40148,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.death.3.mp3",
+      "bytes": 34783,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.death.4.mp3",
+      "bytes": 35795,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.director.0.mp3",
+      "bytes": 41086,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.director.1.mp3",
+      "bytes": 43353,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.director.2.mp3",
+      "bytes": 41554,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.director.3.mp3",
+      "bytes": 28476,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.director.4.mp3",
+      "bytes": 25632,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.director.5.mp3",
+      "bytes": 39100,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.director.6.mp3",
+      "bytes": 34206,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.director.7.mp3",
+      "bytes": 31519,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.extraction.0.mp3",
+      "bytes": 45810,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.extraction.1.mp3",
+      "bytes": 41106,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.extraction.2.mp3",
+      "bytes": 48378,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.extraction.3.mp3",
+      "bytes": 36386,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.extraction.4.mp3",
+      "bytes": 41730,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.lowO2.0.mp3",
+      "bytes": 54711,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.lowO2.1.mp3",
+      "bytes": 59175,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.lowO2.2.mp3",
+      "bytes": 39226,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.lowO2.3.mp3",
+      "bytes": 43639,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.lowO2.4.mp3",
+      "bytes": 42669,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.majorUpgrade.0.mp3",
+      "bytes": 39675,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.majorUpgrade.1.mp3",
+      "bytes": 46622,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.majorUpgrade.2.mp3",
+      "bytes": 46215,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.majorUpgrade.3.mp3",
+      "bytes": 47852,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.majorUpgrade.4.mp3",
+      "bytes": 42161,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.terminalChoice.0.mp3",
+      "bytes": 49002,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.terminalChoice.1.mp3",
+      "bytes": 43682,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.terminalChoice.2.mp3",
+      "bytes": 41452,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.terminalChoice.3.mp3",
+      "bytes": 41444,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.corporate.terminalChoice.4.mp3",
+      "bytes": 34108,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.blackBoxRecovery.0.mp3",
+      "bytes": 35362,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.blackBoxRecovery.1.mp3",
+      "bytes": 38237,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.blackBoxRecovery.2.mp3",
+      "bytes": 31293,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.blackBoxRecovery.3.mp3",
+      "bytes": 43472,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.blackBoxRecovery.4.mp3",
+      "bytes": 28905,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.caveSignal.0.mp3",
+      "bytes": 28499,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.caveSignal.1.mp3",
+      "bytes": 28063,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.caveSignal.2.mp3",
+      "bytes": 28718,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.caveSignal.3.mp3",
+      "bytes": 25300,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.death.0.mp3",
+      "bytes": 53876,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.death.1.mp3",
+      "bytes": 45146,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.death.2.mp3",
+      "bytes": 41533,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.death.3.mp3",
+      "bytes": 40316,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.death.4.mp3",
+      "bytes": 30203,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.director.0.mp3",
+      "bytes": 56922,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.director.1.mp3",
+      "bytes": 45098,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.director.2.mp3",
+      "bytes": 53113,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.director.3.mp3",
+      "bytes": 39579,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.extraction.0.mp3",
+      "bytes": 47486,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.extraction.1.mp3",
+      "bytes": 50801,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.extraction.2.mp3",
+      "bytes": 44779,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.extraction.3.mp3",
+      "bytes": 31365,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.extraction.4.mp3",
+      "bytes": 44566,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.lowO2.0.mp3",
+      "bytes": 38544,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.lowO2.1.mp3",
+      "bytes": 66669,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.lowO2.2.mp3",
+      "bytes": 34917,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.lowO2.3.mp3",
+      "bytes": 49547,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.lowO2.4.mp3",
+      "bytes": 32548,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.majorUpgrade.0.mp3",
+      "bytes": 34799,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.majorUpgrade.1.mp3",
+      "bytes": 36168,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.majorUpgrade.2.mp3",
+      "bytes": 27080,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.majorUpgrade.3.mp3",
+      "bytes": 38647,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.majorUpgrade.4.mp3",
+      "bytes": 27731,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.terminalChoice.0.mp3",
+      "bytes": 30718,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.terminalChoice.1.mp3",
+      "bytes": 37524,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.terminalChoice.2.mp3",
+      "bytes": 26626,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.terminalChoice.3.mp3",
+      "bytes": 42536,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.glitched.terminalChoice.4.mp3",
+      "bytes": 24623,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.blackBoxRecovery.0.mp3",
+      "bytes": 32559,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.blackBoxRecovery.1.mp3",
+      "bytes": 37173,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.blackBoxRecovery.2.mp3",
+      "bytes": 31334,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.blackBoxRecovery.3.mp3",
+      "bytes": 32279,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.blackBoxRecovery.4.mp3",
+      "bytes": 32486,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.caveSignal.0.mp3",
+      "bytes": 35680,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.caveSignal.1.mp3",
+      "bytes": 23632,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.caveSignal.2.mp3",
+      "bytes": 28569,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.caveSignal.3.mp3",
+      "bytes": 17446,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.death.0.mp3",
+      "bytes": 36662,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.death.1.mp3",
+      "bytes": 30952,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.death.2.mp3",
+      "bytes": 30942,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.death.3.mp3",
+      "bytes": 35481,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.death.4.mp3",
+      "bytes": 32015,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.director.0.mp3",
+      "bytes": 45407,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.director.1.mp3",
+      "bytes": 34120,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.director.2.mp3",
+      "bytes": 40818,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.director.3.mp3",
+      "bytes": 40633,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.extraction.0.mp3",
+      "bytes": 36912,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.extraction.1.mp3",
+      "bytes": 35506,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.extraction.2.mp3",
+      "bytes": 39121,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.extraction.3.mp3",
+      "bytes": 37339,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.extraction.4.mp3",
+      "bytes": 34250,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.lowO2.0.mp3",
+      "bytes": 45532,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.lowO2.1.mp3",
+      "bytes": 44936,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.lowO2.2.mp3",
+      "bytes": 39627,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.lowO2.3.mp3",
+      "bytes": 39724,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.lowO2.4.mp3",
+      "bytes": 52478,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.majorUpgrade.0.mp3",
+      "bytes": 35278,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.majorUpgrade.1.mp3",
+      "bytes": 32583,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.majorUpgrade.2.mp3",
+      "bytes": 32423,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.majorUpgrade.3.mp3",
+      "bytes": 33100,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.majorUpgrade.4.mp3",
+      "bytes": 28574,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.terminalChoice.0.mp3",
+      "bytes": 32138,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.terminalChoice.1.mp3",
+      "bytes": 31659,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.terminalChoice.2.mp3",
+      "bytes": 38923,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.terminalChoice.3.mp3",
+      "bytes": 40785,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.dialogue.reverent.terminalChoice.4.mp3",
+      "bytes": 29048,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.directorAmbient.0.text.mp3",
+      "bytes": 32080,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.directorAmbient.1.text.mp3",
+      "bytes": 57529,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.directorAmbient.10.text.mp3",
+      "bytes": 44737,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.directorAmbient.11.text.mp3",
+      "bytes": 49492,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.directorAmbient.12.text.mp3",
+      "bytes": 43935,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.directorAmbient.13.text.mp3",
+      "bytes": 47674,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.directorAmbient.14.text.mp3",
+      "bytes": 30066,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.directorAmbient.15.text.mp3",
+      "bytes": 42306,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.directorAmbient.16.text.mp3",
+      "bytes": 36774,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.directorAmbient.2.text.mp3",
+      "bytes": 38695,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.directorAmbient.3.text.mp3",
+      "bytes": 32302,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.directorAmbient.4.text.mp3",
+      "bytes": 30640,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.directorAmbient.5.text.mp3",
+      "bytes": 49064,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.directorAmbient.6.text.mp3",
+      "bytes": 46930,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.directorAmbient.7.text.mp3",
+      "bytes": 37804,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.directorAmbient.8.text.mp3",
+      "bytes": 48357,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.directorAmbient.9.text.mp3",
+      "bytes": 36451,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDeathBeats.briggs.0.mp3",
+      "bytes": 56571,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDeathBeats.briggs.1.mp3",
+      "bytes": 64394,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDeathBeats.briggs.2.mp3",
+      "bytes": 47478,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDeathBeats.kaelen.0.mp3",
+      "bytes": 47981,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDeathBeats.kaelen.1.mp3",
+      "bytes": 52547,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDeathBeats.kaelen.2.mp3",
+      "bytes": 52809,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDeathBeats.martha.0.mp3",
+      "bytes": 46596,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDeathBeats.martha.1.mp3",
+      "bytes": 45483,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDeathBeats.martha.2.mp3",
+      "bytes": 67304,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDeathBeats.nahl.0.mp3",
+      "bytes": 40103,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDeathBeats.nahl.1.mp3",
+      "bytes": 50132,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDeathBeats.rhun.0.mp3",
+      "bytes": 37080,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDeathBeats.rhun.1.mp3",
+      "bytes": 53337,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDeathBeats.vey.0.mp3",
+      "bytes": 44124,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDeathBeats.vey.1.mp3",
+      "bytes": 53641,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.0.beats.0.0.mp3",
+      "bytes": 69346,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.0.beats.0.1.mp3",
+      "bytes": 65246,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.0.beats.1.0.mp3",
+      "bytes": 51052,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.0.loop.mp3",
+      "bytes": 48752,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.1.beats.0.0.mp3",
+      "bytes": 36557,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.1.beats.0.1.mp3",
+      "bytes": 100104,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.1.beats.1.0.mp3",
+      "bytes": 52090,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.1.loop.mp3",
+      "bytes": 43332,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.2.beats.0.0.mp3",
+      "bytes": 38327,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.2.beats.0.1.mp3",
+      "bytes": 61342,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.2.beats.1.0.mp3",
+      "bytes": 73685,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.2.loop.mp3",
+      "bytes": 31673,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.3.beats.0.0.mp3",
+      "bytes": 72804,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.3.beats.0.1.mp3",
+      "bytes": 76097,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.3.beats.1.0.mp3",
+      "bytes": 67704,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.3.beats.2.0.mp3",
+      "bytes": 54197,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.3.beats.2.1.mp3",
+      "bytes": 63466,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.briggs.stages.3.loop.mp3",
+      "bytes": 51592,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.0.beats.0.0.mp3",
+      "bytes": 46090,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.0.beats.0.1.mp3",
+      "bytes": 68800,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.0.beats.1.0.mp3",
+      "bytes": 59598,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.0.beats.1.1.mp3",
+      "bytes": 26149,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.0.loop.mp3",
+      "bytes": 52831,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.1.beats.0.0.mp3",
+      "bytes": 52965,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.1.beats.0.1.mp3",
+      "bytes": 63201,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.1.beats.1.0.mp3",
+      "bytes": 45953,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.1.loop.mp3",
+      "bytes": 53078,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.2.beats.0.0.mp3",
+      "bytes": 47776,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.2.beats.0.1.mp3",
+      "bytes": 80842,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.2.beats.1.0.mp3",
+      "bytes": 53359,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.2.loop.mp3",
+      "bytes": 46562,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.3.beats.0.0.mp3",
+      "bytes": 54292,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.3.beats.0.1.mp3",
+      "bytes": 74160,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.3.beats.1.0.mp3",
+      "bytes": 81857,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.3.beats.2.0.mp3",
+      "bytes": 90291,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.3.beats.3.0.mp3",
+      "bytes": 63235,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.kaelen.stages.3.loop.mp3",
+      "bytes": 46861,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.martha.stages.0.beats.0.0.mp3",
+      "bytes": 52130,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.martha.stages.0.beats.0.1.mp3",
+      "bytes": 46124,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.martha.stages.0.beats.1.0.mp3",
+      "bytes": 44212,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.martha.stages.0.loop.mp3",
+      "bytes": 37445,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.martha.stages.1.beats.0.0.mp3",
+      "bytes": 39919,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.martha.stages.1.beats.0.1.mp3",
+      "bytes": 40318,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.martha.stages.1.beats.1.0.mp3",
+      "bytes": 51259,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.martha.stages.1.loop.mp3",
+      "bytes": 47201,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.martha.stages.2.beats.0.0.mp3",
+      "bytes": 38037,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.martha.stages.2.beats.0.1.mp3",
+      "bytes": 38181,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.martha.stages.2.beats.1.0.mp3",
+      "bytes": 49700,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.martha.stages.2.loop.mp3",
+      "bytes": 23336,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.martha.stages.3.beats.0.0.mp3",
+      "bytes": 50555,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.martha.stages.3.beats.0.1.mp3",
+      "bytes": 81409,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.martha.stages.3.beats.1.0.mp3",
+      "bytes": 63233,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.martha.stages.3.beats.2.0.mp3",
+      "bytes": 52596,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.martha.stages.3.beats.2.1.mp3",
+      "bytes": 55509,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.martha.stages.3.loop.mp3",
+      "bytes": 57212,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.nahl.stages.0.beats.0.0.mp3",
+      "bytes": 42669,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.nahl.stages.0.beats.0.1.mp3",
+      "bytes": 53611,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.nahl.stages.0.beats.1.0.mp3",
+      "bytes": 45066,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.nahl.stages.0.loop.mp3",
+      "bytes": 40460,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.nahl.stages.1.beats.0.0.mp3",
+      "bytes": 45017,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.nahl.stages.1.beats.0.1.mp3",
+      "bytes": 48333,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.nahl.stages.1.beats.1.0.mp3",
+      "bytes": 35221,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.nahl.stages.1.loop.mp3",
+      "bytes": 46260,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.nahl.stages.2.beats.0.0.mp3",
+      "bytes": 53059,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.nahl.stages.2.beats.0.1.mp3",
+      "bytes": 52045,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.nahl.stages.2.loop.mp3",
+      "bytes": 51682,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.nahl.stages.3.beats.0.0.mp3",
+      "bytes": 47283,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.nahl.stages.3.beats.0.1.mp3",
+      "bytes": 76432,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.nahl.stages.3.loop.mp3",
+      "bytes": 38404,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.rhun.stages.0.beats.0.0.mp3",
+      "bytes": 50949,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.rhun.stages.0.beats.0.1.mp3",
+      "bytes": 54299,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.rhun.stages.0.beats.1.0.mp3",
+      "bytes": 51687,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.rhun.stages.0.loop.mp3",
+      "bytes": 56060,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.rhun.stages.1.beats.0.0.mp3",
+      "bytes": 38092,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.rhun.stages.1.beats.0.1.mp3",
+      "bytes": 45923,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.rhun.stages.1.beats.1.0.mp3",
+      "bytes": 22977,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.rhun.stages.1.loop.mp3",
+      "bytes": 27504,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.rhun.stages.2.beats.0.0.mp3",
+      "bytes": 49019,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.rhun.stages.2.beats.0.1.mp3",
+      "bytes": 55360,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.rhun.stages.2.loop.mp3",
+      "bytes": 41390,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.rhun.stages.3.beats.0.0.mp3",
+      "bytes": 44898,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.rhun.stages.3.beats.0.1.mp3",
+      "bytes": 55650,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.rhun.stages.3.loop.mp3",
+      "bytes": 32938,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.scientist.stages.0.beats.0.0.mp3",
+      "bytes": 30588,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.scientist.stages.0.beats.0.1.mp3",
+      "bytes": 39680,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.scientist.stages.0.beats.1.0.mp3",
+      "bytes": 47793,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.scientist.stages.0.loop.mp3",
+      "bytes": 49749,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.scientist.stages.1.beats.0.0.mp3",
+      "bytes": 33518,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.scientist.stages.1.beats.0.1.mp3",
+      "bytes": 52834,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.scientist.stages.1.beats.1.0.mp3",
+      "bytes": 35808,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.scientist.stages.1.loop.mp3",
+      "bytes": 57145,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.scientist.stages.2.beats.0.0.mp3",
+      "bytes": 26825,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.scientist.stages.2.beats.0.1.mp3",
+      "bytes": 42271,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.scientist.stages.2.beats.1.0.mp3",
+      "bytes": 37818,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.scientist.stages.2.loop.mp3",
+      "bytes": 30762,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.scientist.stages.3.beats.0.0.mp3",
+      "bytes": 22939,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.scientist.stages.3.beats.0.1.mp3",
+      "bytes": 49842,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.scientist.stages.3.beats.1.0.mp3",
+      "bytes": 35530,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.scientist.stages.3.loop.mp3",
+      "bytes": 35982,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.vey.stages.0.beats.0.0.mp3",
+      "bytes": 51982,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.vey.stages.0.beats.0.1.mp3",
+      "bytes": 40133,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.vey.stages.0.beats.1.0.mp3",
+      "bytes": 63709,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.vey.stages.0.loop.mp3",
+      "bytes": 44521,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.vey.stages.1.beats.0.0.mp3",
+      "bytes": 30830,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.vey.stages.1.beats.0.1.mp3",
+      "bytes": 52558,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.vey.stages.1.beats.1.0.mp3",
+      "bytes": 25476,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.vey.stages.1.loop.mp3",
+      "bytes": 43776,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.vey.stages.2.beats.0.0.mp3",
+      "bytes": 65175,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.vey.stages.2.beats.0.1.mp3",
+      "bytes": 42695,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.vey.stages.2.loop.mp3",
+      "bytes": 42737,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.vey.stages.3.beats.0.0.mp3",
+      "bytes": 35932,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.vey.stages.3.beats.0.1.mp3",
+      "bytes": 79206,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.leaderDialogue.vey.stages.3.loop.mp3",
+      "bytes": 40960,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.loreClassLogs.ENGINEER.mp3",
+      "bytes": 117928,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.loreClassLogs.SCOUT.mp3",
+      "bytes": 132713,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.loreClassLogs.TANK.mp3",
+      "bytes": 106225,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.mothershipReactive.0.text.mp3",
+      "bytes": 34993,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.mothershipReactive.1.text.mp3",
+      "bytes": 43411,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.mothershipReactive.10.text.mp3",
+      "bytes": 56548,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.mothershipReactive.11.text.mp3",
+      "bytes": 40032,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.mothershipReactive.12.text.mp3",
+      "bytes": 47155,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.mothershipReactive.13.text.mp3",
+      "bytes": 43904,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.mothershipReactive.2.text.mp3",
+      "bytes": 46016,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.mothershipReactive.3.text.mp3",
+      "bytes": 53834,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.mothershipReactive.4.text.mp3",
+      "bytes": 54649,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.mothershipReactive.5.text.mp3",
+      "bytes": 44926,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.mothershipReactive.6.text.mp3",
+      "bytes": 39072,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.mothershipReactive.7.text.mp3",
+      "bytes": 41009,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.mothershipReactive.8.text.mp3",
+      "bytes": 43020,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.mothershipReactive.9.text.mp3",
+      "bytes": 48901,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.terminalEvents.0.body.mp3",
+      "bytes": 73459,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.terminalEvents.1.body.mp3",
+      "bytes": 68119,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.terminalEvents.2.body.mp3",
+      "bytes": 83073,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/manifest.json",
+      "bytes": 30167,
+      "classification": "runtime-required"
+    },
+    {
       "path": "audio/voice/mothership/voice_mothership_01_alive.mp3",
       "bytes": 318529,
       "classification": "runtime-required"
@@ -6221,6 +9342,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "cutscenes/death-oxygen.mp4",
+      "bytes": 6040327,
+      "classification": "runtime-required"
+    },
+    {
       "path": "cutscenes/death-oxygen.webm",
       "bytes": 805741,
       "classification": "runtime-required"
@@ -6398,6 +9524,11 @@
     {
       "path": "cutscenes/event-o2-generator-upgraded-poster.jpg",
       "bytes": 973147,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/event-o2-generator-upgraded.mp4",
+      "bytes": 7827036,
       "classification": "runtime-required"
     },
     {
@@ -9501,6 +12632,121 @@
       "classification": "runtime-required"
     },
     {
+      "path": "keyart/keyart_prop_autopsy_dissection_slab.jpg",
+      "bytes": 906634,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_biomech_sphincter_hatch_ring.jpg",
+      "bytes": 755376,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_biomech_sphincter_hatch_vent.jpg",
+      "bytes": 827485,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_biomech_spore_umbilical_cable.jpg",
+      "bytes": 922202,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_biomech_tracheal_wall_pipe.jpg",
+      "bytes": 910913,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_ceiling_crane_hoist.jpg",
+      "bytes": 721787,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_console_mycelium_ruptured.jpg",
+      "bytes": 910684,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_coolant_drum_leaking_pool.jpg",
+      "bytes": 926242,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_corporate_saint_reliquary.jpg",
+      "bytes": 851922,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_decon_eyewash_shower_station.jpg",
+      "bytes": 1059991,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_exhaust_blower_fan_hood.jpg",
+      "bytes": 1016898,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_exosuit_docking_gantry.jpg",
+      "bytes": 982569,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_floor_drainage_sump_trough.jpg",
+      "bytes": 1039767,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_liturgical_terminal_lectern.jpg",
+      "bytes": 859016,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_maintenance_tool_cart.jpg",
+      "bytes": 977831,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_overhead_cage_fluorescent.jpg",
+      "bytes": 939437,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_oxygen_bottle_cascade_rack.jpg",
+      "bytes": 972554,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_pipe_organ_heat_exchanger.jpg",
+      "bytes": 866389,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_vertebral_cable_riser.jpg",
+      "bytes": 917403,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_votive_candle_shrine.jpg",
+      "bytes": 972801,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_wall_cable_tray_conduit.jpg",
+      "bytes": 759909,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_prop_wall_cable_tray_swag.jpg",
+      "bytes": 818070,
+      "classification": "source-reference"
+    },
+    {
+      "path": "keyart/keyart_room_bulkhead_sector_gateway.jpg",
+      "bytes": 1010478,
+      "classification": "source-reference"
+    },
+    {
       "path": "lore_portraits/bunker_announcer.webp",
       "bytes": 6466,
       "classification": "runtime-required"
@@ -10986,8 +14232,23 @@
       "classification": "runtime-required"
     },
     {
+      "path": "sky/cinematic_cathedral_crypt_panorama.jpg",
+      "bytes": 528605,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "sky/cinematic_cryo_subdeck_panorama.jpg",
+      "bytes": 624731,
+      "classification": "runtime-required"
+    },
+    {
       "path": "sky/cinematic_deep_space_panorama.jpg",
       "bytes": 663994,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "sky/cinematic_xenobiotic_cloister_panorama.jpg",
+      "bytes": 586459,
       "classification": "runtime-required"
     },
     {
