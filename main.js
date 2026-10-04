@@ -8493,7 +8493,6 @@ function playCutsceneVideo(base, options = {}) {
         }
 
         const CUTSCENE_UPGRADE_MAP = {
-            'event-o2-generator-upgraded': 'int_04_warmth_beneath_the_ice',
             'event-boss-encounter-cybersnail': 'int_13_a_snail_blocks_the_hallway',
             'event-boss-encounter-cryosnail': 'int_26_absolute_zero_has_a_shell',
             'event-boss-encounter-sporesnail': 'int_27_the_bloom_that_hunts',

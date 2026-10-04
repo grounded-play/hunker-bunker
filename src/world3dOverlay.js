@@ -212,7 +212,29 @@ export const WORLD_3D_MODELS = Object.freeze({
     prop_storage_drum_dented: { url: '/3d/runtime/new3ds/prop_storage_drum_dented.glb', height: 0.80, yaw: 0 },
     prop_terminal_ruptured: { url: '/3d/runtime/new3ds/prop_terminal_ruptured.glb', height: 1.15, yaw: 0 },
     prop_valve_wheel_fused: { url: '/3d/runtime/new3ds/prop_valve_wheel_fused.glb', height: 0.75, yaw: 0 },
-    prop_vent_grate_exploded: { url: '/3d/runtime/new3ds/prop_vent_grate_exploded.glb', height: 0.65, yaw: 0 }
+    prop_vent_grate_exploded: { url: '/3d/runtime/new3ds/prop_vent_grate_exploded.glb', height: 0.65, yaw: 0 },
+    // Sprint 49 Giger-Post-Jugendstil Biomechanical & Corpospace Cathedral interactive props
+    prop_autopsy_dissection_slab: { url: '/3d/runtime/new3ds/prop_autopsy_dissection_slab.glb', height: 1.05, yaw: 0 },
+    prop_biomech_sphincter_hatch_vent: { url: '/3d/runtime/new3ds/prop_biomech_sphincter_hatch_vent.glb', height: 1.80, yaw: 0 },
+    prop_biomech_spore_umbilical_cable: { url: '/3d/runtime/new3ds/prop_biomech_spore_umbilical_cable.glb', height: 2.80, yaw: 0 },
+    prop_biomech_spore_umbilical_cable_rigged: { url: '/3d/runtime/new3ds/prop_biomech_spore_umbilical_cable_rigged.glb', height: 2.80, yaw: 0 },
+    prop_biomech_tracheal_wall_pipe: { url: '/3d/runtime/new3ds/prop_biomech_tracheal_wall_pipe.glb', height: 2.40, yaw: 0 },
+    prop_ceiling_crane_hoist: { url: '/3d/runtime/new3ds/prop_ceiling_crane_hoist.glb', height: 2.20, yaw: 0 },
+    prop_coolant_drum_leaking_pool: { url: '/3d/runtime/new3ds/prop_coolant_drum_leaking_pool.glb', height: 0.95, yaw: 0 },
+    prop_corporate_saint_reliquary: { url: '/3d/runtime/new3ds/prop_corporate_saint_reliquary.glb', height: 1.70, yaw: 0 },
+    prop_decon_eyewash_shower_station: { url: '/3d/runtime/new3ds/prop_decon_eyewash_shower_station.glb', height: 2.10, yaw: 0 },
+    prop_exhaust_blower_fan_hood: { url: '/3d/runtime/new3ds/prop_exhaust_blower_fan_hood.glb', height: 2.20, yaw: 0 },
+    prop_exosuit_docking_gantry: { url: '/3d/runtime/new3ds/prop_exosuit_docking_gantry.glb', height: 2.40, yaw: 0 },
+    prop_floor_conduit_bridge: { url: '/3d/runtime/new3ds/prop_floor_conduit_bridge.glb', height: 0.25, yaw: 0 },
+    prop_floor_drainage_sump_trough: { url: '/3d/runtime/new3ds/prop_floor_drainage_sump_trough.glb', height: 0.30, yaw: 0 },
+    prop_liturgical_terminal_lectern: { url: '/3d/runtime/new3ds/prop_liturgical_terminal_lectern.glb', height: 1.25, yaw: 0 },
+    prop_maintenance_tool_cart: { url: '/3d/runtime/new3ds/prop_maintenance_tool_cart.glb', height: 0.85, yaw: 0 },
+    prop_overhead_cage_fluorescent: { url: '/3d/runtime/new3ds/prop_overhead_cage_fluorescent.glb', height: 0.65, yaw: 0 },
+    prop_oxygen_bottle_cascade_rack: { url: '/3d/runtime/new3ds/prop_oxygen_bottle_cascade_rack.glb', height: 1.65, yaw: 0 },
+    prop_pipe_organ_heat_exchanger: { url: '/3d/runtime/new3ds/prop_pipe_organ_heat_exchanger.glb', height: 2.40, yaw: 0 },
+    prop_vertebral_cable_riser: { url: '/3d/runtime/new3ds/prop_vertebral_cable_riser.glb', height: 2.30, yaw: 0 },
+    prop_votive_candle_shrine: { url: '/3d/runtime/new3ds/prop_votive_candle_shrine.glb', height: 1.30, yaw: 0 },
+    prop_wall_cable_tray_swag: { url: '/3d/runtime/new3ds/prop_wall_cable_tray_swag.glb', height: 1.10, yaw: 0 }
 });
 
 // Metric-scale set-piece shells are deliberately separate from prop models.
@@ -410,7 +432,28 @@ const WORLD_3D_ONLY_PREFIXES = Object.freeze(['arch_', 'state_', 'fixture_', 'ki
 // Registered models with no 2D sprite of their own. Without this a `prop_`
 // placement of them found no scatter material and was silently dropped.
 const WORLD_3D_ONLY_TYPES = Object.freeze(new Set([
-    'frozen_tanker', 'prop_body_human_frozen', 'prop_body_empty_exosuit', 'body_frozen_human'
+    'frozen_tanker', 'prop_body_human_frozen', 'prop_body_empty_exosuit', 'body_frozen_human',
+    'prop_autopsy_dissection_slab',
+    'prop_biomech_sphincter_hatch_vent',
+    'prop_biomech_spore_umbilical_cable',
+    'prop_biomech_spore_umbilical_cable_rigged',
+    'prop_biomech_tracheal_wall_pipe',
+    'prop_ceiling_crane_hoist',
+    'prop_coolant_drum_leaking_pool',
+    'prop_corporate_saint_reliquary',
+    'prop_decon_eyewash_shower_station',
+    'prop_exhaust_blower_fan_hood',
+    'prop_exosuit_docking_gantry',
+    'prop_floor_conduit_bridge',
+    'prop_floor_drainage_sump_trough',
+    'prop_liturgical_terminal_lectern',
+    'prop_maintenance_tool_cart',
+    'prop_overhead_cage_fluorescent',
+    'prop_oxygen_bottle_cascade_rack',
+    'prop_pipe_organ_heat_exchanger',
+    'prop_vertebral_cable_riser',
+    'prop_votive_candle_shrine',
+    'prop_wall_cable_tray_swag'
 ]));
 
 // Scattered body sprites alternate between the two models of each body, by

@@ -29,6 +29,14 @@ import {
     resolveTacticalPingLabel,
     createPingSpamGuard
 } from './tacticalPingContract.js';
+import {
+    handleCustomPropDestruction,
+    findNearestInteractableProp,
+    interactWithCustomProp,
+    PROP_INTERACTION_SPECS
+} from './propInteractions.js';
+import { resolvePropVariant } from './propVariants.js';
+import { UmbilicalAttacker } from './3d/umbilicalAttacker.js';
 
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -137,7 +145,7 @@ import {
 import { generateArchitecturalMazeChunk } from './architecturalMaze.js';
 import { applyVerticalBridgeFeature, VERTICAL_TILE } from './verticalWfc.js';
 import { assignRoomThemes } from './roomThemes.js';
-import { planChunkRoomPopulation } from './roomPopulation.js';
+import { isWallBackedPropType, planChunkRoomPopulation } from './roomPopulation.js';
 import { collectReachableCells, planChunkRoomEncounters } from './roomEncounters.js';
 import {
     planProceduralDoors,
@@ -7071,6 +7079,25 @@ export class ThreeGame {
                     this.world3dMixers = this.world3dMixers || new Set();
                     this.world3dMixers.add(root.userData.mixer);
                 }
+                if (modelType === 'prop_biomech_spore_umbilical_cable_rigged' || modelType === 'prop_biomech_spore_umbilical_cable') {
+                    this.umbilicalAttackers = this.umbilicalAttackers || [];
+                    const attacker = new UmbilicalAttacker({
+                        scene: root.children[0] || root,
+                        animations: root.userData?.animations || []
+                    }, {
+                        x: source.position.x,
+                        y: source.position.y,
+                        z: source.position.z,
+                        hp: source.userData?.propHp ?? 85,
+                        detectionRadius: 7.5,
+                        strikeRadius: 3.5,
+                        attackDamage: 1,
+                        root
+                    });
+                    this.umbilicalAttackers.push(attacker);
+                    source.userData.umbilicalAttacker = attacker;
+                    root.userData.umbilicalAttacker = attacker;
+                }
                 if (owner && ownerKey) owner[ownerKey] = root;
                 if (owner?.threeObjects && !owner.threeObjects.includes(root)) owner.threeObjects.push(root);
                 return root;
@@ -7873,6 +7900,7 @@ export class ThreeGame {
         if (!handled) handled = this.interactWithHoleTile();
         if (!handled) handled = this.interactWithPocketClimbPoint();
         if (!handled) handled = this.interactWithBiomechanicalDoor();
+        if (!handled) handled = this.interactWithCustomBiomechProp();
         if (!handled) {
             this.playThrottledUiError('_lastNoInteractCueAt', { volume: 0.3, playbackRate: 0.9 });
         }
@@ -16268,6 +16296,32 @@ export class ThreeGame {
         }
     }
 
+    updateUmbilicalAttackers(delta) {
+        if (!this.umbilicalAttackers?.length || !this.player) return;
+        const playerPos = this.player.position;
+        for (let i = this.umbilicalAttackers.length - 1; i >= 0; i--) {
+            const attacker = this.umbilicalAttackers[i];
+            if (!attacker.isAlive && attacker.stateTimer <= -2.0) {
+                attacker.dispose?.();
+                this.umbilicalAttackers.splice(i, 1);
+                continue;
+            }
+            attacker.update(delta, playerPos, {
+                onDamagePlayer: (event) => {
+                    if (this.isPlayerDead) return;
+                    this.takeDamage(event.damage || 1, 'biomech_umbilical_strike', attacker.x, attacker.z);
+                    if (this.playerVitals) {
+                        this.playerVitals.infection = Math.min(100, (this.playerVitals.infection || 0) + 15);
+                    }
+                    this.triggerScreenShake?.(6.0, 0.25);
+                    if (typeof window !== 'undefined') {
+                        window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 0.7, force: true });
+                    }
+                }
+            });
+        }
+    }
+
     // Camps exist from Act 1 onward: friendly outposts the player can support
     // with shells (and later must betray). Leveled camps double as O2 havens
     // during the human prelude.
@@ -16316,10 +16370,12 @@ export class ThreeGame {
         this.reanchorUnanchoredCamps?.();
         this.updateCampCivilians(delta);
         this.updateWorld3dMixers(delta);
+        this.updateUmbilicalAttackers(delta);
         this.updateCampTurrets(delta, phase);
         this.updateCampPrompt(phase);
         this.updateScientistPromptState();
         this.updateWandererPromptState();
+        this.updateCustomBiomechPropPromptState();
         // Last, so a camp verb at the same spot always wins the prompt.
         this.updateRestPrompt?.();
     }
@@ -19521,6 +19577,27 @@ export class ThreeGame {
         this.activeWanderer = null;
         this._wandererPromptLabel = null;
         window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+    }
+
+    updateCustomBiomechPropPromptState() {
+        if (!this.player || this._wandererPromptLabel) return;
+        const nearest = findNearestInteractableProp(this, 2.5);
+        const label = nearest?.spec?.interactPrompt ?? null;
+        if (label !== this._customPropPromptLabel) {
+            this._customPropPromptLabel = label;
+            if (label) {
+                window.dispatchEvent(new CustomEvent('camp-prompt-nearby', { detail: { label } }));
+            } else if (!this._wandererPromptLabel) {
+                window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+            }
+        }
+    }
+
+    interactWithCustomBiomechProp() {
+        if (!this.isGameplayInputActive() || !this.player) return false;
+        const nearest = findNearestInteractableProp(this, 2.5);
+        if (!nearest) return false;
+        return Boolean(interactWithCustomProp(this, nearest));
     }
 
     async addHumanoidCompanion(wanderer) {
@@ -31463,7 +31540,10 @@ export class ThreeGame {
                     if (planned.kind === 'pickup') continue;
                     const worldX = chunkX * this.chunkSize + planned.x;
                     const worldZ = chunkY * this.chunkSize + planned.y;
-                    const propType = planned.type;
+                    const rawPropType = planned.type;
+                    const propType = resolvePropVariant(rawPropType, { rng, allowSubstitution: true });
+                    const isWallBacked = isWallBackedPropType(propType);
+                    const spec = PROP_INTERACTION_SPECS[propType];
                     placements.push({
                         x: worldX,
                         z: worldZ,
@@ -31476,11 +31556,12 @@ export class ThreeGame {
                                 ? 1.15
                                 : planned.kind === 'ambient' ? 1.05 : 0.82,
                         elevation: isWallDecalType(propType) ? 0 : (isFloorOverlayType(propType) ? 0.035 : 0.08),
-                        hp: propType === 'prop_specimen_tank' ? 4 : 3,
+                        hp: spec?.hp ?? (propType === 'prop_specimen_tank' ? 4 : 3),
                         groupType: 'prop',
                         opacity: 1,
                         worldDressing: planned.kind === 'ambient',
-                        isSolidProp: planned.blocking !== false
+                        isSolidProp: planned.blocking !== false,
+                        isWallBacked
                     });
                     reservedCells.add(`${planned.x},${planned.y}`);
                 }
@@ -31519,7 +31600,9 @@ export class ThreeGame {
                 const setProps = roleProps[roomRole]
                     || DECORATION_PROPS[biomeDecorationSet]
                     || DECORATION_PROPS.bunker;
-                const propType = setProps[Math.floor(rng() * setProps.length)];
+                const rawPropType = setProps[Math.floor(rng() * setProps.length)];
+                const propType = resolvePropVariant(rawPropType, { rng, allowSubstitution: true });
+                const spec = PROP_INTERACTION_SPECS[propType];
 
                 placements.push({
                     x: worldX,
@@ -31528,7 +31611,7 @@ export class ThreeGame {
                     scatterKey: `wfc_anchor:${worldX},${worldZ}`,
                     scale: kind === 'large-prop' ? 1.3 : 1.15,
                     elevation: 0.08,
-                    hp: propType === 'prop_specimen_tank' ? 4 : 3,
+                    hp: spec?.hp ?? (propType === 'prop_specimen_tank' ? 4 : 3),
                     groupType: 'prop',
                     opacity: 1
                 });
@@ -31607,7 +31690,9 @@ export class ThreeGame {
                         ]
                     };
                     const props = propPalettes[biomeKey] ?? propPalettes.active;
-                    const propType = props[Math.floor(rng() * props.length)];
+                    const rawPropType = props[Math.floor(rng() * props.length)];
+                    const propType = resolvePropVariant(rawPropType, { rng, allowSubstitution: true });
+                    const spec = PROP_INTERACTION_SPECS[propType];
                     placements.push({
                         x: worldX,
                         z: worldZ,
@@ -31615,7 +31700,7 @@ export class ThreeGame {
                         scatterKey: `prop:${worldX},${worldZ}`,
                         scale: 1.15,
                         elevation: 0.08,
-                        hp: propType === 'prop_specimen_tank' ? 4 : 3,
+                        hp: spec?.hp ?? (propType === 'prop_specimen_tank' ? 4 : 3),
                         groupType: 'prop',
                         opacity: 1
                     });
@@ -33712,6 +33797,11 @@ export class ThreeGame {
         }
         if (isBio) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
         window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 1.85, force: true });
+
+        const propKey = sprite.userData?.type || sprite.userData?.modelKey || sprite.userData?.propKey;
+        if (propKey) {
+            handleCustomPropDestruction(this, propKey, sprite.position, sprite);
+        }
 
         this.spawnDestructiblePropDrops(sprite, plannedDrops);
         if (!fromRemote && coopRole(this) !== COOP_ROLE.SOLO) {

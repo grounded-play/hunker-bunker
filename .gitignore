@@ -70,6 +70,7 @@ art/source/
 art/raw/
 art/scratch/
 art/upscales/
+public/3dprops/
 *.fbx
 *.blend
 *.blend1

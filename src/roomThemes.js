@@ -346,12 +346,34 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'bunker-storage',
         floorStyle: 'storage',
         doorStyle: 'security',
-        signatureProps: ['prop_bunker_supplies', 'prop_ammo_crate_stack'],
-        largeProps: ['prop_camp_crates', 'arch_deco_archway_grand_04', 'arch_pillar_buttress_03'],
+        signatureProps: ['prop_bunker_supplies', 'prop_ammo_crate_stack', 'prop_corporate_saint_reliquary'],
+        largeProps: ['prop_camp_crates', 'prop_votive_candle_shrine', 'arch_deco_archway_grand_04', 'arch_pillar_buttress_03'],
         smallProps: ['scatter_bolts', 'decal_hazard_stripes', 'decal_meridian_stencil'],
         ambientProps: LIVED_IN_DECALS.bunker,
         rareProps: ['scatter_horizon_black_box', 'arch_window_stained', 'arch_niche_shrine', 'prop_shrine_plinth_broken', 'prop_flesh_steel_coffin'],
         encounterProfile: 'safe'
+    },
+    {
+        id: 'giger-cathedral',
+        biomes: ['active', 'bio', 'cryo'],
+        roles: ['security', 'reward', 'engineering', 'generic'],
+        weight: 1.25,
+        wallStyle: 'giger',
+        floorStyle: 'giger',
+        doorStyle: 'hive',
+        signatureProps: ['prop_corporate_saint_reliquary', 'prop_biomech_spore_umbilical_cable_rigged', 'prop_votive_candle_shrine', 'prop_oxygen_bottle_cascade_rack'],
+        largeProps: [
+            'prop_pipe_organ_heat_exchanger', 'prop_liturgical_terminal_lectern', 'prop_coolant_drum_leaking_pool',
+            'prop_exosuit_docking_gantry', 'prop_decon_eyewash_shower_station', 'prop_autopsy_dissection_slab',
+            'prop_biomech_sphincter_hatch_vent', 'prop_biomech_tracheal_wall_pipe', 'prop_vertebral_cable_riser',
+            'prop_ceiling_crane_hoist', 'prop_floor_drainage_sump_trough', 'prop_floor_conduit_bridge',
+            'prop_wall_cable_tray_swag', 'prop_maintenance_tool_cart', 'prop_exhaust_blower_fan_hood',
+            'arch_deco_archway_grand_01', 'arch_pillar_buttress_01', 'arch_rib_ceiling_vault_01'
+        ],
+        smallProps: ['prop_overhead_cage_fluorescent', 'scatter_bolts', 'scatter_cable_coil', 'fixture_sconce_vine'],
+        ambientProps: LIVED_IN_DECALS.bio,
+        rareProps: ['prop_corporate_saint_reliquary', 'prop_votive_candle_shrine'],
+        encounterProfile: 'security'
     }
 ]);
 

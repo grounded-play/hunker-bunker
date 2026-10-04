@@ -66,7 +66,7 @@ node scripts/voice/encode-voice-lines.mjs
 $PY scripts/voice/qwen_voice.py all
 ```
 
-QA needs `faster-whisper` in the tools venv (`uv pip install faster-whisper`); each dry master gets a sidecar JSON with the transcript, character error rate, seed and attempts, and `qa: review` marks lines that never reached the threshold.
+QA needs `faster-whisper` in the tools venv (`uv pip install faster-whisper 'av<15' --only-binary av`; PyAV 15+ dropped the `metadata_errors` argument faster-whisper 1.2.1 passes, so every transcription fails); each dry master gets a sidecar JSON with the transcript, character error rate, seed and attempts, and `qa: review` marks lines that never reached the threshold.
 
 **Developer commentary** is read by the developer, not designed. Record a clean 30–60 s read, save it as `art/source/voice/auditions/developer/take_1.wav` with `take_1.json` containing `{ "text": "<what you read>" }`, set `"developer": { "take": 1, ... }` in the selection file, then run `lines --roles developer` for each language.
 
