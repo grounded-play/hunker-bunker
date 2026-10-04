@@ -1,6 +1,8 @@
 import { Server } from 'socket.io';
 import { verifySteamSessionToken, isSteamAuthDevFallbackAllowed } from './steamAuth.js';
 import { createChatPolicy } from './chatPolicy.js';
+import { randomUUID } from 'node:crypto';
+import { beginPvpRound, markPvpReady, pvpReadinessRejection, PVP_SPAWN_PROTECTION_MS } from './pvpReadiness.js';
 
 // Movement & ballistics hardening: reject non-finite values, clamp to a sane world range,
 // and rate-limit updates to protect the relay from flooding.
@@ -234,6 +236,7 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
     // decision (respawn-on-reconnect vs. exact-HP-restore) this fix doesn't
     // attempt.
     const roomModes = new Map();
+    const pvpRounds = new Map();
     // Map: roomCode -> { timeout }. Set when a host's matchDeploy passes the
     // ready-up gate below; the actual mode/HP arm + matchStarted broadcast
     // is deferred to when this timer fires, giving every client the same
@@ -502,6 +505,11 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
 
             rooms.get(roomCode).add(socket.id);
             socket.join(roomCode);
+            player.pvpReadinessVersion = data.pvpReadinessVersion === 1 ? 1 : 0;
+            if (pvpRounds.has(roomCode)) {
+                beginPvpRound(player, pvpRounds.get(roomCode));
+                socket.emit('pvpRoundState', { roundId: player.pvpRoundId });
+            }
 
             // Send current roster in this room to the joining player
             socket.emit('currentPlayers', getRoomPlayers(roomCode));
@@ -598,12 +606,19 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
             const seed = matchData.seed || 'SECTOR-7';
             const crashPlan = matchData.crashPlan || null;
             const startedBy = socket.id;
+            const roundId = mode === 'pvp' && matchData.pvpReadinessVersion === 1 ? randomUUID() : null;
+            if (roundId && [...(rooms.get(roomCode) ?? [])].some((id) => players.get(id)?.pvpReadinessVersion !== 1)) {
+                socket.emit('matchDeployRejected', { reason: 'build_mismatch' });
+                return;
+            }
 
             io.to(roomCode).emit('matchCountdown', { durationMs: MATCH_COUNTDOWN_MS });
 
             const timeout = setTimeout(() => {
                 roomCountdowns.delete(roomCode);
                 roomModes.set(roomCode, mode);
+                if (roundId) pvpRounds.set(roomCode, roundId);
+                else pvpRounds.delete(roomCode);
 
                 // Sprint 24 Milestone A: (re)arm server-authoritative HP for
                 // every player in the room at the start of a fresh match, not
@@ -618,16 +633,25 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                         p.hp = PVP_DEFAULT_MAX_HP;
                         p.maxHp = PVP_DEFAULT_MAX_HP;
                         p.ready = false;
+                        beginPvpRound(p, roundId);
                     });
                 }
 
                 sessionTelemetry.matchesDeployed += 1;
                 logRelayEvent('MATCH_DEPLOY', { roomCode, mode, seed, startedBy });
 
-                io.to(roomCode).emit('matchStarted', { seed, mode, crashPlan, startedBy, timestamp: Date.now() });
+                io.to(roomCode).emit('matchStarted', { seed, mode, crashPlan, startedBy, timestamp: Date.now(), roundId });
             }, MATCH_COUNTDOWN_MS);
 
             roomCountdowns.set(roomCode, { timeout });
+        });
+
+        socket.on('pvpGameplayReady', (data = {}) => {
+            if (player.mode !== 'pvp' || !markPvpReady(player, data?.roundId)) return;
+            socket.emit('pvpReadyAccepted', {
+                roundId: player.pvpRoundId,
+                protectionRemainingMs: Math.max(0, player.pvpReadyAt + PVP_SPAWN_PROTECTION_MS - Date.now())
+            });
         });
 
         // Player movement relay
@@ -1027,6 +1051,8 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
 
             const now = Date.now();
             if (now - (attacker.lastWeaponHitAt || 0) < PVP_MIN_HIT_INTERVAL_MS) return reject('hit_cadence');
+            const readiness = pvpReadinessRejection(attacker, now) || pvpReadinessRejection(target, now);
+            if (readiness) return reject(readiness);
 
             const originX = sanitizeCoord(hitData.originX);
             const originZ = sanitizeCoord(hitData.originZ);
@@ -1053,7 +1079,8 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                 targetId: target.id,
                 damage,
                 isFatal,
-                remainingHp: target.hp
+                remainingHp: target.hp,
+                roundId: player.pvpRoundId ?? null
             });
         });
 
@@ -1123,6 +1150,7 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                 if (roomSet.size === 0) {
                     rooms.delete(roomCode);
                     roomModes.delete(roomCode);
+                    pvpRounds.delete(roomCode);
                     chatPolicy.clearRoom(roomCode);
                     // roomHostKeys is deliberately NOT cleared here -- it
                     // must survive a room going momentarily empty so a solo

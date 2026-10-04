@@ -529,6 +529,7 @@ export class MultiplayerLobby {
                         passwordHash,
                         loadout,
                         buildVersion: getLocalBuildVersion()
+                        , pvpReadinessVersion: 1
                     };
                     logMultiplayerEvent('relay-join-sent', {
                         roomCode: this.roomCode,
@@ -654,6 +655,7 @@ export class MultiplayerLobby {
 
                 this.socket.on('matchDeployRejected', ({ reason } = {}) => {
                     logMultiplayerEvent('relay-deploy-rejected', { reason: reason || 'unknown' });
+                    if (reason === 'build_mismatch') window.showToastNotification?.(describeJoinRejection({ reason }));
                     const el = document.getElementById('net-status-pill');
                     if (!el) return;
                     const original = el.textContent;
@@ -1175,6 +1177,7 @@ export class MultiplayerLobby {
             this.socket.emit('matchDeploy', {
                 seed,
                 mode: this.currentMode,
+                pvpReadinessVersion: 1,
                 crashPlan
             });
             return;
@@ -1188,7 +1191,8 @@ export class MultiplayerLobby {
         this.finalizeDeploy({
             mode: data.mode || this.currentMode,
             seed: data.seed || this.roomCode,
-            crashPlan: data.crashPlan || null
+            crashPlan: data.crashPlan || null,
+            roundId: data.roundId || null
         });
     }
 
@@ -1199,11 +1203,12 @@ export class MultiplayerLobby {
     // twice: once instantly and redundantly from its own deployMatch, and
     // again moments later reacting to its own matchStarted echo from the
     // server (io.to() includes the sender). Consolidated to one place.
-    finalizeDeploy({ mode, seed, crashPlan }) {
+    finalizeDeploy({ mode, seed, crashPlan, roundId = null }) {
         this.activeMatch = {
             roomCode: this.roomCode,
             mode,
             seed,
+            roundId,
             crashPlan: crashPlan || null,
             isMultiplayer: true,
             isHost: Boolean(this.isLocalPlayerHost),

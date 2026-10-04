@@ -468,6 +468,7 @@ window.isGameplayReady = isGameplayReady;
 
 function notifyGameplayReady() {
     if (typeof window === 'undefined') return;
+    window.game?.notifyPvpGameplayReady?.();
     window.dispatchEvent(new CustomEvent('gameplay-ready', {
         detail: {
             timestamp: Date.now(),

@@ -87,6 +87,8 @@ describe('ThreeGame.teardownMultiplayerNetwork', () => {
         // listeners registered on the underlying socket after "teardown."
         const expectedEvents = [
             'currentPlayers', 'connect', 'weaponHitRejected',
+            // PvP spawn readiness: the relay's round id for this player.
+            'pvpRoundState',
             'playerMoved', 'playerFired', 'playerDamaged', 'playerRevived',
             'playerDownedBroadcast', 'playerExtractedBroadcast', 'enemyDamaged', 'enemyHitReported', 'enemyStateSnapshot',
             // Co-op shared world beats and the friendly-fire shove.
