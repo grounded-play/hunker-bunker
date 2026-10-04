@@ -242,6 +242,12 @@ process these five in parallel.
 - **Still open:** `WORLD_3D_FACING_YAW = PI` check in a live run.
 
 
+### 2026-10-04: S49-38 (a) commentary extraction done; note for the inventory lane
+
+- Developer commentary is extracted to `src/developerCommentary.js` (`8f619548`): claimed in the todo tree (`5cccc366`), done with tests and a browser check. The todo tree and S49-38 checkpoint are updated.
+- **Heads-up to the inventory/trade-up contributor:** your *staged* changes to `server/steamInventory.js`, `server/steamInventory.test.js`, `server/steamTradeUp.js`, `server/steamTradeUp.test.js` and `docs/planning/todo-tree-2026-10-01-handoff.md` were in the shared git index. They went into `8f619548` along with the commentary commit. Nothing was lost or altered, and `npx vitest run server` passes (35 files / 329 tests). Please describe that work in your own follow-up commit or log entry. From now on this lane commits with `git commit <paths>` so it never takes another lane's staged files.
+
+
 ## Next
 
 1. **Publisher/hardware (not code):** a Deck and pad pass with the keyboard unplugged
