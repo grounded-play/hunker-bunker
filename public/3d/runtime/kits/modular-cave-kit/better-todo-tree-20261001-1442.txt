@@ -76,6 +76,13 @@ Original checked entries are not newly certified by this iteration.
     3D movement pathfinding sync, and hiding signature prop fallback letter boxes
     when 3D dressing models attach. 19 targeted tests.
 
+[x] Iteration 9, S49-05/32: Disconnect reason logging in relay, socket timeout tuning
+    (30s server ping timeout, 10s client connection timeout) to stop connection churn
+    during hardware hitches, session analyzer disconnect telemetry, server-authoritative
+    PvP round completion (combat & environmental deaths), and synchronized rematch
+    voting preventing unilateral retry desync. 48 targeted tests.
+
+
 
 ORIGINAL IMPORTED TODO SNAPSHOT
 └─ hunker-bunker

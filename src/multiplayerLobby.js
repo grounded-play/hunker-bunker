@@ -491,8 +491,8 @@ export class MultiplayerLobby {
             if (typeof window !== 'undefined') {
                 const sessionToken = await fetchMultiplayerSessionToken(this.serverUrl, callsign);
                 this.socket = connectSocketIo(this.serverUrl, {
-                    timeout: 4000,
-                    reconnectionAttempts: 2,
+                    timeout: 10000,
+                    reconnectionAttempts: 5,
                     auth: { sessionToken }
                 });
                 playerChat.attachSocket(this.socket, (this.roomCode.trim().slice(0, 24) || 'SECTOR-7').toUpperCase());

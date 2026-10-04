@@ -7478,6 +7478,12 @@ const gameOverMainMenu = document.getElementById('game-over-main-menu');
 
 if (gameOverTryAgain) {
     gameOverTryAgain.addEventListener('click', () => {
+        if (window.game?.isMultiplayer && window.game?.multiplayerMode === 'pvp') {
+            gameOverTryAgain.disabled = true;
+            gameOverTryAgain.textContent = 'REMATCH REQUESTED...';
+            window.game.requestPvpRematch?.();
+            return;
+        }
         triggerDoorTransition(
             () => {
                 hideGameOverScreen();

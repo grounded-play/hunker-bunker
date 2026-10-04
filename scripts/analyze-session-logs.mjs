@@ -89,6 +89,7 @@ for (const filename of files) {
     console.log(`  multiplayer: join=${yes(signals.relayJoin)} twoPlayerRoster=${yes(signals.twoPlayerRoster)} ready=${yes(signals.ready)} deployed=${yes(signals.deployed)} remote3d=${yes(signals.remote3d)} pvp=${yes(signals.pvp)}`);
     console.log(`  completion: playerDamage=${yes(signals.playerDamage)} pvpDamage=${yes(Boolean(findings.damageReasons['pvp-rival']) || findings.hitConfirmations > 0)} death/results=${yes(signals.deathOrResults)} extraction=${yes(signals.extraction)} reconnectMention=${yes(signals.reconnect)} suspend/resume=${yes(signals.suspendResume)}`);
     console.log(`  relay: joins=${findings.joins} repeatedJoins=${yes(findings.repeatedJoins)} latestRoster=${findings.latestRosterSize ?? '?'} finalRemoteAvatars=${findings.finalRemotePlayers ?? '?'} possibleStaleAvatars=${yes(findings.possibleStaleAvatars)}`);
+    console.log(`  captured disconnects: ${JSON.stringify(findings.disconnectReasons)}`);
     console.log(`  combat: hitReports=${findings.hitReports} confirmations=${findings.hitConfirmations} damageReasons=${JSON.stringify(findings.damageReasons)} (not a packet-loss measurement)`);
     console.log(`  captured hit rejections: ${JSON.stringify(findings.hitRejectionReasons)} (rate-limited diagnostics, not exhaustive totals)`);
     console.log(`  presented gameplay: average=${findings.gameplayAverageMs ?? '?'}ms p95=${findings.gameplayP95Ms ?? '?'}ms approximateFps=${findings.approximateFps ?? '?'} (retained frame intervals, not GPU timing)`);

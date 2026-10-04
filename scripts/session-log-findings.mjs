@@ -19,6 +19,13 @@ export function sessionLogFindings(capture) {
     const frame = capture.state?.performance?.frameIntervals?.profiles?.gameplay;
     const damageReasons = {};
     const hitRejectionReasons = {};
+    const disconnectReasons = {};
+    for (const event of events.filter((event) => event.name === 'relay-disconnected')) {
+        const reason = event.detail?.reason;
+        if (typeof reason === 'string' && !['__proto__', 'constructor', 'prototype'].includes(reason)) {
+            disconnectReasons[reason] = (disconnectReasons[reason] ?? 0) + 1;
+        }
+    }
     for (const event of events.filter((event) => event.name === 'pvp-hit-rejected')) {
         const reason = event.detail?.reason;
         if (typeof reason === 'string' && !['__proto__', 'constructor', 'prototype'].includes(reason)) {
@@ -43,6 +50,7 @@ export function sessionLogFindings(capture) {
         hitConfirmations: count('pvp-hit-confirmed'),
         hitRejectionReasons,
         damageReasons,
+        disconnectReasons,
         gameplayAverageMs: frame?.averageMs ?? null,
         gameplayP95Ms: frame?.p95Ms ?? null,
         approximateFps: frame?.averageMs > 0 ? Math.round(10000 / frame.averageMs) / 10 : null

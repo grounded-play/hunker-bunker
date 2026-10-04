@@ -29,4 +29,12 @@ describe('one-sided session evidence', () => {
         expect(result.hitRejectionReasons).toEqual({ target_dead: 2, hit_cadence: 1 });
         expect(result.damageReasons).toEqual({});
     });
+    it('counts captured relay disconnect reasons', () => {
+        const result = sessionLogFindings({ entries: [
+            { message: 'relay-disconnected {"reason":"ping timeout"}' },
+            { message: 'relay-disconnected {"reason":"transport close"}' },
+            { message: 'relay-disconnected {"reason":"ping timeout"}' }
+        ] });
+        expect(result.disconnectReasons).toEqual({ 'ping timeout': 2, 'transport close': 1 });
+    });
 });

@@ -93,7 +93,9 @@ describe('ThreeGame.teardownMultiplayerNetwork', () => {
             'playerDownedBroadcast', 'playerExtractedBroadcast', 'enemyDamaged', 'enemyHitReported', 'enemyStateSnapshot',
             // Co-op shared world beats and the friendly-fire shove.
             'worldEventBroadcast', 'playerNudged',
-            'playerDisconnected', 'newPlayer', 'hostChanged'
+            'playerDisconnected', 'newPlayer', 'hostChanged',
+            // PvP round completion and synchronized rematch.
+            'pvpRoundCompleted', 'pvpRematchVoteProgress'
         ];
         expect(fake._socketOffCalls.sort()).toEqual([...expectedEvents].sort());
         expect(fake.netSocket).toBeNull();

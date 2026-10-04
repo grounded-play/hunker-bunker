@@ -201,6 +201,8 @@ export function isAllowedRelayOrigin(origin, allowedOrigins = []) {
 
 export function attachRelay(server, { allowedOrigins = [], chatPolicy = createChatPolicy() } = {}) {
     const io = new Server(server, {
+        pingTimeout: 30000,
+        pingInterval: 25000,
         cors: {
             origin: (origin, callback) => {
                 callback(null, isAllowedRelayOrigin(origin, allowedOrigins));
@@ -237,6 +239,7 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
     // attempt.
     const roomModes = new Map();
     const pvpRounds = new Map();
+    const pvpRematchVotes = new Map();
     // Map: roomCode -> { timeout }. Set when a host's matchDeploy passes the
     // ready-up gate below; the actual mode/HP arm + matchStarted broadcast
     // is deferred to when this timer fires, giving every client the same
@@ -333,6 +336,7 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
     });
 
     io.on('connection', (socket) => {
+        socket.connectedAt = Date.now();
         sessionTelemetry.totalConnections += 1;
         logRelayEvent('CONNECT', { socketId: socket.id, steamId64: socket.steamAuth?.steamId64 ?? null, isDevMode: Boolean(socket.steamAuth?.isDevMode) });
         const player = {
@@ -770,6 +774,18 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                 originId: socket.id,
                 timestamp: now
             });
+
+            if (player.mode === 'pvp' && eventName === 'player-died') {
+                player.hp = 0;
+                const roomIds = rooms.get(player.roomCode);
+                const opponentId = roomIds ? [...roomIds].find((id) => id !== socket.id && (players.get(id)?.hp ?? 0) > 0) : null;
+                io.to(player.roomCode).emit('pvpRoundCompleted', {
+                    winnerId: opponentId ?? null,
+                    loserId: socket.id,
+                    roundId: player.pvpRoundId ?? null,
+                    reason: detail?.reason || 'hazard'
+                });
+            }
         });
 
         // Friendly fire in co-op shoves a squadmate instead of hurting them.
@@ -1071,6 +1087,12 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
             if (isFatal) {
                 sessionTelemetry.fatalHits += 1;
                 logRelayEvent('FATAL_HIT', { roomCode: attacker.roomCode, attackerId: attacker.id, targetId: target.id, damage });
+                io.to(attacker.roomCode).emit('pvpRoundCompleted', {
+                    winnerId: attacker.id,
+                    loserId: target.id,
+                    roundId: player.pvpRoundId ?? null,
+                    reason: 'combat'
+                });
             }
             logRelayEvent('WEAPON_HIT', { roomCode: attacker.roomCode, attackerId: attacker.id, targetId: target.id, damage, isFatal });
 
@@ -1132,13 +1154,58 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
             }
         });
 
-        socket.on('disconnect', () => {
+        socket.on('pvpRematchVote', () => {
+            if (player.mode !== 'pvp' || !player.roomCode) return;
             const roomCode = player.roomCode;
+            let votes = pvpRematchVotes.get(roomCode);
+            if (!votes) {
+                votes = new Set();
+                pvpRematchVotes.set(roomCode, votes);
+            }
+            votes.add(socket.id);
+            const roomSocketIds = rooms.get(roomCode);
+            const requiredVotes = roomSocketIds ? roomSocketIds.size : 1;
+            io.to(roomCode).emit('pvpRematchVoteProgress', {
+                votedCount: votes.size,
+                requiredCount: requiredVotes
+            });
+            if (votes.size >= requiredVotes && requiredVotes > 0) {
+                pvpRematchVotes.delete(roomCode);
+                const nextSeed = `rematch-${randomUUID().slice(0, 8)}`;
+                const nextRoundId = `round-${randomUUID()}`;
+                pvpRounds.set(roomCode, nextRoundId);
+                if (roomSocketIds) {
+                    roomSocketIds.forEach((id) => {
+                        const p = players.get(id);
+                        if (!p) return;
+                        p.hp = PVP_DEFAULT_MAX_HP;
+                        p.maxHp = PVP_DEFAULT_MAX_HP;
+                        p.ready = false;
+                        beginPvpRound(p, nextRoundId);
+                    });
+                }
+                io.to(roomCode).emit('matchStarted', {
+                    seed: nextSeed,
+                    mode: 'pvp',
+                    startedBy: socket.id,
+                    timestamp: Date.now(),
+                    roundId: nextRoundId
+                });
+            }
+        });
+
+        socket.on('disconnect', (reason) => {
+            const roomCode = player.roomCode;
+            const durationMs = Date.now() - (socket.connectedAt || Date.now());
+            logRelayEvent('DISCONNECT', { socketId: socket.id, roomCode, reason, durationMs });
             players.delete(socket.id);
 
             if (roomCode && rooms.has(roomCode)) {
                 const roomSet = rooms.get(roomCode);
                 roomSet.delete(socket.id);
+                if (pvpRematchVotes.has(roomCode)) {
+                    pvpRematchVotes.get(roomCode).delete(socket.id);
+                }
                 // A disconnect mid-countdown means the room that was
                 // confirmed all-ready no longer matches who's actually
                 // still here -- cancel rather than deploy without them.
@@ -1151,6 +1218,7 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                     rooms.delete(roomCode);
                     roomModes.delete(roomCode);
                     pvpRounds.delete(roomCode);
+                    pvpRematchVotes.delete(roomCode);
                     chatPolicy.clearRoom(roomCode);
                     // roomHostKeys is deliberately NOT cleared here -- it
                     // must survive a room going momentarily empty so a solo

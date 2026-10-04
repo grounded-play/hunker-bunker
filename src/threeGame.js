@@ -5687,6 +5687,8 @@ export class ThreeGame {
             // branch in applyPlayerDamageToEnemy/handleEnemyHitReported
             // stayed stuck on stale "I'm not host" state.
             on('hostChanged', (data) => this.handleHostChanged(data));
+            on('pvpRoundCompleted', (data) => this.handlePvpRoundCompleted(data));
+            on('pvpRematchVoteProgress', (data) => this.handlePvpRematchProgress(data));
         }
 
         // Seed every participant except this socket. The old !p.isHost filter
@@ -6224,6 +6226,29 @@ export class ThreeGame {
         if (this.isMultiplayerHost && !wasHost) {
             window.showToastNotification?.('HOST REASSIGNED TO YOU');
         }
+    }
+
+    handlePvpRoundCompleted(data) {
+        this._lastPvpRoundOutcome = data;
+        const isLocalWinner = Boolean(data?.winnerId && data.winnerId === this.multiplayerLocalPlayerId);
+        const isLocalLoser = Boolean(data?.loserId && data.loserId === this.multiplayerLocalPlayerId);
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('pvp-round-completed', {
+                detail: { ...data, isLocalWinner, isLocalLoser }
+            }));
+        }
+    }
+
+    handlePvpRematchProgress(data) {
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('pvp-rematch-progress', { detail: data }));
+        }
+    }
+
+    requestPvpRematch() {
+        if (!this.netSocket || this.multiplayerMode !== MULTIPLAYER_SPAWN_MODES.PVP) return false;
+        this.netSocket.emit('pvpRematchVote');
+        return true;
     }
 
     // Sprint 24 Milestone A co-op enemy hit-sync (host-authoritative-style

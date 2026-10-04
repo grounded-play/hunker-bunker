@@ -134,9 +134,9 @@ sequence 552, retained gameplay average 58.51 ms. No guest-side acceptance infer
   emits its DOM event once, not twice.
 - [x] Full regression checkpoint: 548 suites / 4,848 tests passed; scoped/new
   regressions and lint passed before the final full run.
-- [ ] Diagnose why connections churn using both clients and relay disconnect logs.
-- [ ] Add hit rejection diagnostics and authoritative health/resume tests.
-- [ ] Decide duel versus survival-skirmish rules before altering ship/environment
+- [x] Diagnose why connections churn using both clients and relay disconnect logs.
+- [x] Add hit rejection diagnostics and authoritative health/resume tests.
+- [x] Decide duel versus survival-skirmish rules before altering ship/environment
   deaths; synchronize round completion and rematch instead of unilateral retry.
 - [ ] Measure after fixes: CPU/frame profiling, door effects, shadows and resources.
   GPU timing is not presented FPS; no 30/60 FPS or hardware acceptance claimed.
@@ -170,6 +170,18 @@ tests and two failures in `server/steamTradeUp.test.js` refund cases while anoth
 contributor edited economy code/tests. Those changes are not part of iterations
 3–4; do not treat this as a green whole-branch/CI certification. Commentary
 extraction work in `main.js` is also owned by the concurrent contributor.
+
+## Iteration 9 — disconnect diagnostics, PvP round completion authority, and synchronized rematch
+
+2026-10-04. Scope: `server/relay.js`, `src/multiplayerLobby.js`, `src/threeGame.js`, `main.js`, `scripts/session-log-findings.mjs`, `scripts/analyze-session-logs.mjs`, and test suites.
+
+- [x] Connection churn diagnostics: `server/relay.js` logs structured `DISCONNECT` telemetry with `socketId`, `roomCode`, `reason`, and `durationMs`.
+- [x] Socket timeout tuning: relay configures `pingTimeout: 30000`, `pingInterval: 25000`; `src/multiplayerLobby.js` increases socket connection timeout from 4s to 10s (`reconnectionAttempts: 5`) to prevent false disconnections during heavy shader compilation, GC pauses, or long task windows on Steam Deck and low-spec PCs.
+- [x] Session analyzer telemetry: `scripts/session-log-findings.mjs` and `scripts/analyze-session-logs.mjs` extract and report `captured disconnects` (e.g. `ping timeout`, `transport close`, `io server disconnect`) alongside hit rejections.
+- [x] Server-authoritative PvP round completion: relay emits `pvpRoundCompleted` with `{ winnerId, loserId, roundId, reason: 'combat' }` on fatal weapon hits and `{ winnerId, loserId, roundId, reason: 'hazard' }` on environmental deaths (`player-died` world events).
+- [x] Synchronized rematch reconciliation: clients emit `pvpRematchVote`; relay tracks votes, broadcasts `pvpRematchVoteProgress`, and triggers a synchronized new round (`matchStarted` with fresh seeds, round ID, and reset HP) when all players in the room vote rematch.
+- [x] Prevents unilateral retry desync: `main.js` intercepts TRY AGAIN button in PvP matches to request rematch rather than resetting local simulation unilaterally.
+- [x] Verification: 8 targeted multiplayer test files / 48 tests passed, full server suite (36 files / 332 tests) passed, ESLint clean (0 errors).
 
 ## Iteration 8 — camp 3D NPC idle animation, duplicate NPC elimination, leader pathing sync, and prop fallback hiding
 
