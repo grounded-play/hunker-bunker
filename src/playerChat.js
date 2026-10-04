@@ -10,6 +10,7 @@ export class PlayerChat {
         this.ackTimeoutMs = ackTimeoutMs;
         this.nonce = nonce;
         this.listeners = new Set();
+        this.messageListeners = new Set();
         this.socket = null;
         this.handlers = {};
         this.generation = 0;
@@ -34,6 +35,12 @@ export class PlayerChat {
     }
 
     notify() { for (const listener of this.listeners) listener(this); }
+
+    /** Live lines from other players as they arrive (not history, not your own). */
+    onMessage(listener) {
+        this.messageListeners.add(listener);
+        return () => this.messageListeners.delete(listener);
+    }
 
     attachSocket(socket, roomCode = null) {
         for (const [event, handler] of Object.entries(this.handlers)) this.socket?.off(event, handler);
@@ -63,7 +70,19 @@ export class PlayerChat {
             chatHistory: (payload) => {
                 if (payload?.roomCode !== this.roomCode || !Array.isArray(payload.messages)) return;
                 this.selfId = typeof payload.selfId === 'string' ? payload.selfId : null;
-                this.messages = payload.messages.slice(-CHAT_HISTORY_LIMIT).map((entry) => this.validate(entry)).filter(Boolean);
+                // A reconnect into the same room merges rather than replaces:
+                // the relay's copy can be shorter than what is already on screen.
+                const byId = new Map(this.messages.map((entry) => [entry.id, entry]));
+                for (const entry of payload.messages.slice(-CHAT_HISTORY_LIMIT)) {
+                    const clean = this.validate(entry);
+                    if (clean) byId.set(clean.id, clean);
+                }
+                // No mute/block filter here: the relay already filtered this
+                // history, and after an unmute it arrives before the ack that
+                // updates this.muted.
+                this.messages = [...byId.values()]
+                    .sort((a, b) => a.sentAt - b.sentAt)
+                    .slice(-CHAT_HISTORY_LIMIT);
                 this.ready = true; // Only an accepted room join enables the composer.
                 this.notify();
             },
@@ -103,6 +122,9 @@ export class PlayerChat {
         this.messages = this.messages.slice(-CHAT_HISTORY_LIMIT);
         if (!this.visible && clean.senderId !== this.selfId) this.unread = Math.min(CHAT_HISTORY_LIMIT, this.unread + 1);
         this.notify();
+        if (clean.senderId !== this.selfId) {
+            for (const listener of this.messageListeners) listener(clean);
+        }
     }
 
     setVisible(visible) {

@@ -1,6 +1,9 @@
 import { Server } from 'socket.io';
 import { verifySteamSessionToken, isSteamAuthDevFallbackAllowed } from './steamAuth.js';
 import { createChatPolicy } from './chatPolicy.js';
+
+// How long an empty room keeps its chat history (see releaseRoomChat).
+export const CHAT_ROOM_GRACE_MS = 5 * 60 * 1000;
 import { randomUUID } from 'node:crypto';
 import { beginPvpRound, markPvpReady, pvpReadinessRejection, PVP_SPAWN_PROTECTION_MS } from './pvpReadiness.js';
 
@@ -199,7 +202,7 @@ export function isAllowedRelayOrigin(origin, allowedOrigins = []) {
     return allowedOrigins.includes(origin) || isEquivalentLoopbackOrigin(origin, allowedOrigins);
 }
 
-export function attachRelay(server, { allowedOrigins = [], chatPolicy = createChatPolicy() } = {}) {
+export function attachRelay(server, { allowedOrigins = [], chatPolicy = createChatPolicy(), chatRoomGraceMs = CHAT_ROOM_GRACE_MS } = {}) {
     const io = new Server(server, {
         pingTimeout: 30000,
         pingInterval: 25000,
@@ -218,6 +221,19 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
     // Trusted backend access only: there is deliberately no socket event
     // exposing another player's moderation report or private chat evidence.
     io.getChatReports = () => chatPolicy.getReports();
+    // A room's chat outlives a moment of emptiness: a solo host whose socket
+    // drops and reconnects (Deck playtest 2026-10-02) must not wipe what it
+    // wrote before a friend joins. Cleared only if still empty after the grace.
+    const chatClearTimers = new Map();
+    const releaseRoomChat = (roomCode) => {
+        clearTimeout(chatClearTimers.get(roomCode));
+        const timer = setTimeout(() => {
+            chatClearTimers.delete(roomCode);
+            if (!rooms.get(roomCode)?.size) chatPolicy.clearRoom(roomCode);
+        }, chatRoomGraceMs);
+        timer.unref?.();
+        chatClearTimers.set(roomCode, timer);
+    };
     const getChatParticipant = (socketId) => {
         const current = players.get(socketId);
         if (!current || !rooms.get(current.roomCode)?.has(socketId)) return null;
@@ -389,7 +405,7 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
             if (player.roomCode && rooms.has(player.roomCode)) {
                 socket.leave(player.roomCode);
                 rooms.get(player.roomCode).delete(socket.id);
-                if (rooms.get(player.roomCode).size === 0) chatPolicy.clearRoom(player.roomCode);
+                if (rooms.get(player.roomCode).size === 0) releaseRoomChat(player.roomCode);
                 socket.to(player.roomCode).emit('playerDisconnected', socket.id);
             }
 
@@ -1219,7 +1235,7 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                     roomModes.delete(roomCode);
                     pvpRounds.delete(roomCode);
                     pvpRematchVotes.delete(roomCode);
-                    chatPolicy.clearRoom(roomCode);
+                    releaseRoomChat(roomCode);
                     // roomHostKeys is deliberately NOT cleared here -- it
                     // must survive a room going momentarily empty so a solo
                     // host's reconnect can still reclaim (see joinRoom's

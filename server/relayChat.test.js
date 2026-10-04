@@ -3,9 +3,9 @@ import http from 'node:http';
 import { io as ioClient } from 'socket.io-client';
 import { attachRelay } from './relay.js';
 
-function startTestServer() {
+function startTestServer(options = {}) {
     const httpServer = http.createServer();
-    const io = attachRelay(httpServer);
+    const io = attachRelay(httpServer, options);
     return new Promise((resolve) => {
         httpServer.listen(0, () => {
             const { port } = httpServer.address();
@@ -165,5 +165,50 @@ describe('Server Relay: room-scoped filtered chat', () => {
         await new Promise((resolve) => setTimeout(resolve, 100));
 
         expect(hostReceivedAfterMute).toBe(false);
+    });
+
+    // Playtest 2026-10-02 (Deck host, build e8b92f83): the host's socket
+    // reconnected every ~10 s while waiting alone in the lobby. Each drop left
+    // the room empty for a moment, the relay wiped its chat history, and the
+    // friend who joined afterwards never saw what the host had written.
+    it('keeps room history through a solo host reconnect, for a peer who joins afterwards', async () => {
+        ({ httpServer, io, url } = await startTestServer());
+        const host = await connectClient(url);
+        sockets.push(host);
+        host.emit('joinRoom', { roomCode: 'CHAT-RECONNECT', callsign: 'HOST_VIPER', buildVersion: '2.4.13-beta' });
+        await waitForEvent(host, 'chatHistory');
+        const sent = await emitAck(host, 'sendChat', { text: 'Need help!', clientNonce: 'n-1' });
+        expect(sent.ok).toBe(true);
+
+        host.disconnect();
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        const rejoined = await connectClient(url);
+        sockets.push(rejoined);
+        rejoined.emit('joinRoom', { roomCode: 'CHAT-RECONNECT', callsign: 'HOST_VIPER', buildVersion: '2.4.13-beta' });
+        const hostHistory = await waitForEvent(rejoined, 'chatHistory');
+        expect(hostHistory.messages.map((m) => m.text)).toEqual(['Need help!']);
+
+        const guest = await connectClient(url);
+        sockets.push(guest);
+        guest.emit('joinRoom', { roomCode: 'CHAT-RECONNECT', callsign: 'GUEST_GHOST', buildVersion: '2.4.13-beta' });
+        const guestHistory = await waitForEvent(guest, 'chatHistory');
+        expect(guestHistory.messages.map((m) => m.text)).toEqual(['Need help!']);
+    });
+
+    it('clears history once a room has stayed empty past the grace period', async () => {
+        ({ httpServer, io, url } = await startTestServer({ chatRoomGraceMs: 40 }));
+        const host = await connectClient(url);
+        sockets.push(host);
+        host.emit('joinRoom', { roomCode: 'CHAT-ABANDONED', callsign: 'HOST_VIPER', buildVersion: '2.4.13-beta' });
+        await waitForEvent(host, 'chatHistory');
+        await emitAck(host, 'sendChat', { text: 'anyone there?', clientNonce: 'n-2' });
+        host.disconnect();
+        await new Promise((resolve) => setTimeout(resolve, 150));
+
+        const later = await connectClient(url);
+        sockets.push(later);
+        later.emit('joinRoom', { roomCode: 'CHAT-ABANDONED', callsign: 'LATECOMER', buildVersion: '2.4.13-beta' });
+        const history = await waitForEvent(later, 'chatHistory');
+        expect(history.messages).toEqual([]);
     });
 });

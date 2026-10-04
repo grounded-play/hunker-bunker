@@ -43,3 +43,34 @@
     #player-chat-modal .player-chat-panel { padding: 10px; gap: 6px; }
     .player-chat-log { height: 100px; }
 }
+
+/* Incoming lines while the chat panel is closed (src/playerChatUi.js). */
+#player-chat-feed {
+    position: fixed;
+    left: 16px;
+    top: 34%;
+    z-index: 100020;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: min(420px, 70vw);
+    pointer-events: none;
+}
+.player-chat-feed-line {
+    padding: 6px 10px;
+    color: #eef8f5;
+    background: rgba(16, 29, 35, 0.86);
+    border-left: 3px solid #7fd1c7;
+    border-radius: 4px;
+    font-size: max(14px, var(--font-sm, 14px));
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    animation: player-chat-feed-in 160ms ease-out;
+    transition: opacity 400ms ease;
+}
+.player-chat-feed-line.is-leaving { opacity: 0; }
+.player-chat-feed-name { font-weight: 700; color: #7fd1c7; margin-right: 8px; }
+@keyframes player-chat-feed-in { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+    .player-chat-feed-line { animation: none; transition: none; }
+}

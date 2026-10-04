@@ -76,7 +76,7 @@
       "rateLimited": "Ações excessivas. Aguarde 10 segundos e tente novamente.",
       "filterError": "O texto não pôde ser filtrado com segurança. Use os idiomas suportados e remova caracteres de controle.",
       "sendError": "Não enviado ou não confirmado. Verifique o limite de 400 caracteres e a conexão. Tentativas sem alteração não são duplicadas.",
-      "notifications": "Mostrar indicadores de não lidas",
+      "notifications": "Mostrar novas mensagens na tela e indicadores de não lidas",
       "privacy": "Apenas textos filtrados são entregues. O chat fica na memória do servidor (50 mensagens por sala); denúncias ficam por até 24 horas / 100 registros.",
       "selectMessage": "Selecione uma mensagem para silenciar, bloquear ou denunciar o remetente.",
       "mute": "SILENCIAR",

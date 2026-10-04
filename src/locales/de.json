@@ -76,7 +76,7 @@
       "rateLimited": "Zu viele Aktionen. Warte 10 Sekunden und versuche es erneut.",
       "filterError": "Der Text konnte nicht sicher gefiltert werden. Nutze die unterstützten Spielsprachen und entferne ungewöhnliche Steuerzeichen.",
       "sendError": "Nicht gesendet oder nicht bestätigt. Prüfe das Limit von 400 Zeichen und die Verbindung. Unveränderte Wiederholungen werden nicht doppelt zugestellt.",
-      "notifications": "Ungelesen-Markierungen anzeigen",
+      "notifications": "Neue Nachrichten im Bild und Ungelesen-Markierungen anzeigen",
       "privacy": "Nur gefilterter Text wird zugestellt. Chat bleibt im Relay-Speicher (50 Nachrichten pro Raum), Meldungen bis zu 24 Stunden / 100 Meldungen. Neustart löscht alles. Keine automatische Antwort des Teams.",
       "selectMessage": "Wähle eine Nachricht zum Stummschalten, Blockieren oder Melden.",
       "mute": "STUMM",

@@ -88,6 +88,47 @@ describe('PlayerChat transport and state machine', () => {
         expect(chat.messages[1].text).toBe('Ready');
     });
 
+    // Playtest 2026-10-02: the Deck host reconnected every ~10 s; each fresh
+    // history replaced the panel, so lines on screen vanished on a reconnect.
+    it('merges a reconnect history with lines already on screen, in send order', () => {
+        const socket = createMockSocket();
+        chat.attachSocket(socket, 'ROOM-A');
+        socket.trigger('chatHistory', { roomCode: 'ROOM-A', selfId: 'self-1', messages: [] });
+        chat.receive({ id: 'm1', roomCode: 'ROOM-A', senderId: 'self-1', senderName: 'Zero', text: 'Need help!', sentAt: 100 });
+
+        socket.trigger('disconnect');
+        socket.trigger('connect');
+        socket.trigger('chatHistory', {
+            roomCode: 'ROOM-A',
+            selfId: 'self-1',
+            messages: [{ id: 'm2', roomCode: 'ROOM-A', senderId: 'p2', senderName: 'Cypher', text: 'On my way', sentAt: 200 }]
+        });
+
+        expect(chat.messages.map((m) => m.text)).toEqual(['Need help!', 'On my way']);
+        socket.trigger('chatHistory', {
+            roomCode: 'ROOM-A',
+            selfId: 'self-1',
+            messages: [{ id: 'm1', roomCode: 'ROOM-A', senderId: 'self-1', senderName: 'Zero', text: 'Need help!', sentAt: 100 }]
+        });
+        expect(chat.messages).toHaveLength(2);
+    });
+
+    it('tells message listeners about live lines from other players only', () => {
+        const socket = createMockSocket();
+        chat.attachSocket(socket, 'ROOM-A');
+        socket.trigger('chatHistory', {
+            roomCode: 'ROOM-A',
+            selfId: 'self-1',
+            messages: [{ id: 'old', roomCode: 'ROOM-A', senderId: 'p2', senderName: 'Cypher', text: 'earlier', sentAt: 50 }]
+        });
+        const heard = [];
+        chat.onMessage((message) => heard.push(message.text));
+        socket.trigger('chatMessage', { id: 'a', roomCode: 'ROOM-A', senderId: 'p2', senderName: 'Cypher', text: 'Behind you', sentAt: 100 });
+        socket.trigger('chatMessage', { id: 'b', roomCode: 'ROOM-A', senderId: 'self-1', senderName: 'Zero', text: 'mine', sentAt: 110 });
+        socket.trigger('chatMessage', { id: 'a', roomCode: 'ROOM-A', senderId: 'p2', senderName: 'Cypher', text: 'Behind you', sentAt: 100 });
+        expect(heard).toEqual(['Behind you']);
+    });
+
     it('ignores chatHistory for mismatched roomCode', () => {
         const socket = createMockSocket();
         chat.attachSocket(socket, 'ROOM-A');

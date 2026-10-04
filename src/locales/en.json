@@ -76,7 +76,7 @@
       "rateLimited": "Too many actions. Wait 10 seconds and try again.",
       "filterError": "Text could not be safely filtered. Use the supported game languages and remove unusual control characters.",
       "sendError": "Not sent or not confirmed. Check the 400-character limit and connection, then retry; unchanged retries are deduplicated.",
-      "notifications": "Show unread badges",
+      "notifications": "Show new messages on screen and unread badges",
       "privacy": "Only filtered text is delivered. Chat stays in relay memory (50 messages per room); reports stay up to 24 hours / 100 reports and are lost on restart. No automatic staff response.",
       "selectMessage": "Select a message to mute, block or report its sender.",
       "mute": "MUTE",

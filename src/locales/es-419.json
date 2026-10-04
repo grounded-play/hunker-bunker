@@ -76,7 +76,7 @@
       "rateLimited": "Demasiadas acciones. Espera 10 segundos y vuelve a intentarlo.",
       "filterError": "El texto no se pudo filtrar de forma segura. Usa idiomas compatibles y elimina caracteres de control inusuales.",
       "sendError": "No enviado o no confirmado. Revisa el límite de 400 caracteres y la conexión. Los reintentos sin cambios no se duplican.",
-      "notifications": "Mostrar insignias de no leídos",
+      "notifications": "Mostrar mensajes nuevos en pantalla e insignias de no leídos",
       "privacy": "Solo se entrega texto filtrado. El chat permanece en la memoria del repetidor (50 mensajes por sala); los reportes duran hasta 24 horas / 100 reportes. El reinicio lo borra todo.",
       "selectMessage": "Selecciona un mensaje para silenciar, bloquear o reportar al remitente.",
       "mute": "SILENCIAR",

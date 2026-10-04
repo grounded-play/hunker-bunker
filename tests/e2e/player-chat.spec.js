@@ -72,6 +72,24 @@ test.describe('player chat browser → relay → peer', () => {
         } finally { await guest.close(); await other.close(); }
     });
 
+    // Playtest 2026-10-02: a friend with the panel closed never saw the line.
+    test('a closed panel shows incoming lines on screen in the feed', async ({ page, context }) => {
+        const guest = await context.newPage();
+        try {
+            await join(page, 'CHAT-FEED', 'Host');
+            await join(guest, 'CHAT-FEED', 'Guest');
+            await guest.locator('#player-chat-close').click();
+            await send(page, 'Need help!');
+            const line = guest.locator('#player-chat-feed .player-chat-feed-line');
+            await expect(line).toBeVisible();
+            await expect(line).toContainText('Host');
+            await expect(line).toContainText('Need help!');
+            await expect(page.locator('#player-chat-feed .player-chat-feed-line')).toHaveCount(0);
+        } finally {
+            await guest.close();
+        }
+    });
+
     test('IME Enter cannot send early; all locales render; room changes clear drafts', async ({ page }) => {
         await join(page, 'CHAT-IME', 'Writer');
         const composer = page.locator('#player-chat-input');

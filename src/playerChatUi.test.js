@@ -293,4 +293,44 @@ describe('PlayerChat UI controller with mock DOM', () => {
         openBtn.click();
         expect(openBtn.textContent).toBe('CHAT');
     });
+
+    // Playtest 2026-10-02: lines only raised a badge on a CHAT button, so a
+    // friend mid-run never saw them. Closed panel => they appear in the feed.
+    it('shows incoming lines in the feed while the panel is closed, then fades them', () => {
+        vi.useFakeTimers();
+        try {
+            const feed = mockDoc.getElementById('player-chat-feed');
+            expect(feed).not.toBeNull();
+            chat.receive({ id: 'f1', roomCode: 'SECTOR-7', senderId: 'remote-1', senderName: 'Cypher', text: 'Behind you', sentAt: 1000 });
+            expect(feed.children).toHaveLength(1);
+            expect(feed.children[0].children.map((c) => c.textContent)).toEqual(['Cypher', 'Behind you']);
+
+            chat.receive({ id: 'f2', roomCode: 'SECTOR-7', senderId: 'self-1', senderName: 'Zero', text: 'mine', sentAt: 1100 });
+            expect(feed.children).toHaveLength(1);
+
+            vi.advanceTimersByTime(9000);
+            expect(feed.children).toHaveLength(0);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('keeps the feed quiet while the panel is open, and clears it on open', () => {
+        const feed = mockDoc.getElementById('player-chat-feed');
+        chat.receive({ id: 'g1', roomCode: 'SECTOR-7', senderId: 'remote-1', senderName: 'Cypher', text: 'one', sentAt: 1000 });
+        expect(feed.children).toHaveLength(1);
+        openBtn.click();
+        expect(feed.children).toHaveLength(0);
+        chat.receive({ id: 'g2', roomCode: 'SECTOR-7', senderId: 'remote-1', senderName: 'Cypher', text: 'two', sentAt: 1100 });
+        expect(feed.children).toHaveLength(0);
+    });
+
+    it('caps the feed at three lines', () => {
+        const feed = mockDoc.getElementById('player-chat-feed');
+        for (let i = 0; i < 5; i += 1) {
+            chat.receive({ id: `h${i}`, roomCode: 'SECTOR-7', senderId: 'remote-1', senderName: 'Cypher', text: `line ${i}`, sentAt: 1000 + i });
+        }
+        expect(feed.children.map((line) => line.children[1].textContent)).toEqual(['line 2', 'line 3', 'line 4']);
+    });
 });
+

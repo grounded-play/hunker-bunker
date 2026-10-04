@@ -45,6 +45,8 @@ const CHAT_KEYS = Object.freeze({
 });
 const tr = (key, vars) => t(CHAT_KEYS[key], vars);
 const NOTIFICATIONS_KEY = 'hb_chat_badges';
+const FEED_LINE_MS = 8000;
+const FEED_MAX_LINES = 3;
 const QUICK_MESSAGES = ['help', 'wait', 'regroup', 'follow', 'thanks'];
 const REPORT_REASONS = ['harassment', 'hate', 'spam', 'sexual', 'threat', 'other'];
 
@@ -151,11 +153,39 @@ export function initPlayerChatUI({ chat = playerChat, onBoundaryChange = () => {
     const openButtons = [...document.querySelectorAll('[data-player-chat-open]')];
     for (const entry of openButtons) entry.addEventListener('click', open);
 
+    // Incoming lines while the panel is closed -- in a run, in the lobby, in
+    // menus. Before this they only raised a badge on a CHAT button the other
+    // player had to notice (playtest 2026-10-02: "they never saw it"). Not a
+    // focus root and never interactive, so it cannot capture controller input.
+    const feed = element('div', 'player-chat-feed');
+    feed.id = 'player-chat-feed';
+    feed.setAttribute('role', 'log');
+    feed.setAttribute('aria-live', 'polite');
+    feed.setAttribute('aria-label', tr('history'));
+    document.body.append(feed);
+    const feedTimers = new Set();
+    function showFeedLine(message) {
+        if (chat.visible || !notifications) return;
+        const line = element('div', 'player-chat-feed-line');
+        line.append(element('span', 'player-chat-feed-name', message.senderName), element('span', 'player-chat-feed-text', message.text));
+        feed.append(line);
+        while (feed.children.length > FEED_MAX_LINES) feed.children[0].remove();
+        const timer = setTimeout(() => {
+            feedTimers.delete(timer);
+            line.classList.add('is-leaving');
+            const removal = setTimeout(() => { feedTimers.delete(removal); line.remove(); }, 400);
+            feedTimers.add(removal);
+        }, FEED_LINE_MS);
+        feedTimers.add(timer);
+    }
+    const unsubscribeFeed = chat.onMessage(showFeedLine);
+
     function open(event) {
         invoker = event?.currentTarget ?? document.activeElement;
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
         chat.setVisible(true);
+        feed.replaceChildren();
         window.game?.clearGameplayInputState?.();
         onBoundaryChange();
         (composer.disabled ? closeButton : composer).focus();
@@ -296,6 +326,9 @@ export function initPlayerChatUI({ chat = playerChat, onBoundaryChange = () => {
     return { open, close, dispose() {
         unsubscribe();
         unsubscribeLocale();
+        unsubscribeFeed();
+        for (const timer of feedTimers) clearTimeout(timer);
+        feed.remove();
         window.removeEventListener('keydown', keyboard, true);
         for (const entry of openButtons) entry.removeEventListener('click', open);
         modal.remove();
