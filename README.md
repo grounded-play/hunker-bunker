@@ -20,12 +20,21 @@
 
 🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord Server](https://discord.gg/XXwwz3rauu)** • 📚 **[Documentation Map](docs/README.md)**
 
-> **Status (2026-10-01):** Sprint 49 is on `dev/sprint-49` at `v2.4.14-beta`, in a release PR into `mothership`. `v2.4.13-beta` is live on the Steam `beta` branch. This release adds:
+> **Status (2026-10-04):** Sprint 49 is on `dev/sprint-49` at `v2.4.14-beta`, in a release PR into `mothership`. `v2.4.13-beta` is live on the Steam `beta` branch, and the relay server already runs this branch's backend (`91477067`). This release adds:
 > - **Filtered player chat** in co-op and PvP, in seven languages, with mute, block and report.
 > - **Developer commentary** that tells the real history of the game, in seven languages.
 > - **Controller fixes** found by a new pad-only walk through every review screen.
-> - **Purchase reconciliation** that pages completely, survives restarts and never reports false success.
-> - **Co-op fixes** from the 2026-09-30 playtest, and a lobby check that both players run the same build.
+> - **3D overhaul:**
+>   - The 80 modular cave and space kit pieces now load, with seamless custom surfaces that line up on their socket grid.
+>   - 35 environment props are restored to full detail.
+>   - New models: the cryosnail, corrupted Kaelen, both Ghost Runner bodies, the Mycelium Stalker, the Proto Spitter and a real camp cookfire.
+>   - The debug museum exhibits every shipped model at in-game size and facing.
+> - **Economy compliance:** Belgium paid-key restriction, the store priced at Steam tiers, purchase reconciliation that never reports false success, and verified zero pay-to-win stats.
+> - **Multiplayer fixes:**
+>   - Co-op: the 2026-09-30 playtest fixes and a same-build lobby check.
+>   - PvP: hits count only once both players have loaded, then after a short spawn protection; rival damage is kept apart from campaign defences.
+>   - Reconnects keep the roster in sync.
+> - **Isometric camera** as the default for new players.
 >
 > See [`docs/releases/v2.4.14-beta.md`](docs/releases/v2.4.14-beta.md).
 >
@@ -89,8 +98,9 @@ All store and library art lives in [`steam/store/`](steam/store/) (English slots
 - **Online Co-op & PvP**: Title menu → **MULTIPLAYER**. Steam lobbies (public list, friend invites, room codes) over our relay server; the host runs companions, Ring 1 events and drops, and tactical pings work from a controller. Solo runs stay fully offline-capable.
 - **The Foundry**: One window for your stash, loadout, fabrication, 5→1 trade-ups and the store. One item catalog means every item looks and reads the same on every screen, and trade-ups on your Steam inventory are decided by the server.
 - **Steamworks Integration**: Code-backed support for trusted leaderboards, Steam Cloud saves, Steam lobbies, 24 achievements, and a cosmetic-only Steam Vault economy. That economy covers inventory drops, trade-ups, the Steam Item Store and Microtransactions checkout with `GetReport` reconciliation. It is free to play and never pay to win ([economy plan](docs/planning/economy-master-plan-2026-09-30.md)). Production acceptance varies by feature and is tracked in [Product State](PRODUCT_STATE.md).
-- **Developer Commentary**: Settings → Commentary Mode shows designer notes as you reach the moments they discuss; Settings → Developer Commentary → Read All lists every note.
+- **Developer Commentary**: Settings → Audio → Developer Commentary shows designer notes as you reach the moments they discuss, over the menus as well as in a run; **Read All** lists every note.
 - **In-Game Dev & QA Console (`~`)**: Real-time diagnostic telemetry, event interceptors, audio/network monitors, and QA cheat commands (`resetachievements`).
+- **3D Asset Museum**: `window.__DEBUG__.openMuseum()` lays out every shipped 3D model at its in-game size and facing (weapons, chassis, NPCs, props, kits, enemies); `window.__DEBUG__.museumReport()` lists each exhibit's load result and measured size.
 
 ---
 
