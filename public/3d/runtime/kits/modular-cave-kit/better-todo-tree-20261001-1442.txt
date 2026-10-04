@@ -30,7 +30,11 @@ Original checked entries are not newly certified by this iteration.
     i18n audit unchanged; browser probe (toggle on -> card over menus, Read All
     lists 12 entries, open/close, no page errors). Owner pointer added in
     docs/architecture/system-map.md section 5.
-[ ] S49-38 (b/c) — field crafting and purchase presentation extraction still open.
+[~] S49-38 (b) — CLAIMED 2026-10-04 by the Claude lane: extract the Fabrication
+    Bay presentation (cost text, field print, Foundry activation, recipe grid,
+    print ticker, roll reveal, open/close + camp-rest session) out of main.js
+    into src/fabricationBay.js with dispose(), characterization tests, browser check.
+[ ] S49-38 (c) — purchase presentation extraction still open.
 [ ] Full source-ticket acceptance remains open; no real purchase, deployment,
     account revocation, Steamworks setting or hardware certification performed.
 
