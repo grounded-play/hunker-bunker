@@ -117,3 +117,32 @@ API reference: [Steam ExchangeItem](https://partner.steamgames.com/doc/webapi/II
 
 Do not check a full ticket merely because one fixture suite passes. Checked items
 in the imported snapshot were not independently recertified by this iteration.
+
+## Iteration 3 — Deck PvP reconnect and door follow-up
+
+2026-10-04, source capture `hunker-bunker-session-2026-10-02T01-37-00-805Z-muqam0sq-bhvr.json`,
+build `e8b92f83ac9b`, host only. Evidence: 13 relay joins, final roster with one
+player but two remote avatars, 44 hit reports / four confirmations, blast-door
+sequence 552, retained gameplay average 58.51 ms. No guest-side acceptance inferred.
+
+- [x] Reconcile gameplay avatars against reconnect `currentPlayers`, remove stale
+  peers, exclude self, refresh local socket ID and host authority.
+- [x] Own gameplay callback references and remove only those on teardown; lobby
+  disconnect/host listeners remain attached to their shared socket.
+- [x] Only host runs automatic blast-door proximity decisions. Guests still apply
+  replicated state and manual interactions are unchanged. Remote state application
+  emits its DOM event once, not twice.
+- [x] Full regression checkpoint: 548 suites / 4,848 tests passed; scoped/new
+  regressions and lint passed before the final full run.
+- [ ] Diagnose why connections churn using both clients and relay disconnect logs.
+- [ ] Add hit rejection diagnostics and authoritative health/resume tests.
+- [ ] Decide duel versus survival-skirmish rules before altering ship/environment
+  deaths; synchronize round completion and rematch instead of unilateral retry.
+- [ ] Measure after fixes: CPU/frame profiling, door effects, shadows and resources.
+  GPU timing is not presented FPS; no 30/60 FPS or hardware acceptance claimed.
+- [ ] Test host migration and simultaneous manual door actions; this increment
+  stops competing automatic decisions, not a full server-authoritative door protocol.
+
+Next safe observability increment: make the session analyzer report repeated joins,
+roster/avatar mismatch and presented frame pacing, and distinguish poison from PvP
+damage. Remaining economy order above is unchanged; no financial policy changes.

@@ -157,6 +157,13 @@ Physical hardware, deployed matches and moderation operations remain acceptance 
 
 ### S49-05 — demonstrable online co-op and PvP
 
+2026-10-04 Deck follow-up: gameplay reconciles remote avatars and local identity
+from reconnect rosters; teardown preserves lobby-owned socket callbacks; automatic
+blast-door proximity decisions are host-only and remote applications emit once.
+Regression coverage: `src/threeGame.reconnectRoster.test.js`. Full checkpoint:
+548 suites / 4,848 tests passed. These are implementation fixes, not paired-Deck
+acceptance. See [iteration handoff](todo-tree-2026-10-01-handoff.md#iteration-3--deck-pvp-reconnect-and-door-follow-up).
+
 Implementation checkpoint (v2.4.14-beta): remote squadmate damage isolation (snails no
 longer damage the local player when attacking a remote squadmate) and relay build-version
 mismatch gating (`build_mismatch` 7-locale toast) landed in `1334b1e1`. Acceptance remaining:

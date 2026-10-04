@@ -72,6 +72,13 @@ describe('ThreeGame.teardownMultiplayerNetwork', () => {
 
     it('unregisters every event setupMultiplayerNetwork actually subscribes and nulls the socket reference', () => {
         const fake = buildFakeGameInstance();
+        const subscriptions = [];
+        fake.netSocket.on = (event, handler) => subscriptions.push([event, handler]);
+        ThreeGame.prototype.setupMultiplayerNetwork.call({
+            remotePlayers: new Map(),
+            getOrCreateRemotePlayer: vi.fn()
+        }, { socket: fake.netSocket, mode: 'coop' });
+        fake._gameplaySocketListeners = subscriptions;
         ThreeGame.prototype.teardownMultiplayerNetwork.call(fake);
 
         // Mirrors setupMultiplayerNetwork's own .on(...) list exactly --
@@ -79,6 +86,7 @@ describe('ThreeGame.teardownMultiplayerNetwork', () => {
         // of sync with it (missing 3 of these events), leaving those
         // listeners registered on the underlying socket after "teardown."
         const expectedEvents = [
+            'currentPlayers', 'connect',
             'playerMoved', 'playerFired', 'playerDamaged', 'playerRevived',
             'playerDownedBroadcast', 'playerExtractedBroadcast', 'enemyDamaged', 'enemyHitReported', 'enemyStateSnapshot',
             // Co-op shared world beats and the friendly-fire shove.

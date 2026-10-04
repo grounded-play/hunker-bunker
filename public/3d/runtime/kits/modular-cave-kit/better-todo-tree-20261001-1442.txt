@@ -29,6 +29,12 @@ Original checked entries are not newly certified by this iteration.
 [ ] Full source-ticket acceptance remains open; no real purchase, deployment,
     account revocation, Steamworks setting or hardware certification performed.
 
+[x] Iteration 3 (2026-10-04), S49-05: reconnect roster reconciliation, callback
+    ownership, host-only automatic blast door and single remote application event.
+    Regression checkpoint: 548 suites / 4848 tests. See iteration handoff.
+[ ] Paired Deck acceptance, reconnect cause, hit rejection evidence, shared
+    PvP death/rematch rules and measured performance remain open.
+
 ORIGINAL IMPORTED TODO SNAPSHOT
 └─ hunker-bunker
    ├─ economy-master-plan-2026-09-30.md

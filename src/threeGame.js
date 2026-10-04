@@ -5638,19 +5638,30 @@ export class ThreeGame {
 
         // Bind socket network events
         if (this.netSocket) {
-            this.netSocket.on('playerMoved', (data) => this.handleRemotePlayerMoved(data));
-            this.netSocket.on('playerFired', (data) => this.handleRemotePlayerFired(data));
-            this.netSocket.on('playerDamaged', (data) => this.handleRemotePlayerDamaged(data));
-            this.netSocket.on('playerRevived', (data) => this.handleRemotePlayerRevived(data));
-            this.netSocket.on('playerDownedBroadcast', (data) => this.handleRemotePlayerDowned(data?.playerId));
-            this.netSocket.on('playerExtractedBroadcast', (data) => this.handleRemotePlayerExtracted(data));
-            this.netSocket.on('enemyDamaged', (data) => this.handleRemoteEnemyDamage(data));
-            this.netSocket.on('enemyHitReported', (data) => this.handleEnemyHitReported(data));
-            this.netSocket.on('enemyStateSnapshot', (data) => this.handleEnemyStateSnapshot(data));
-            this.netSocket.on('worldEventBroadcast', (data) => this.handleSharedWorldEvent(data));
-            this.netSocket.on('playerNudged', (data) => this.handlePlayerNudged(data));
-            this.netSocket.on('playerDisconnected', (id) => this.removeRemotePlayer(id));
-            this.netSocket.on('newPlayer', (player) => this.getOrCreateRemotePlayer(player));
+            // Track exact callbacks: this socket is also owned by the lobby.
+            const socket = this.netSocket;
+            this._gameplaySocketListeners = [];
+            const on = (event, handler) => {
+                this._gameplaySocketListeners.push([event, handler]);
+                socket.on(event, handler);
+            };
+            on('currentPlayers', (players) => this.reconcileMultiplayerRoster(players));
+            on('connect', () => {
+                this.multiplayerLocalPlayerId = socket.id;
+            });
+            on('playerMoved', (data) => this.handleRemotePlayerMoved(data));
+            on('playerFired', (data) => this.handleRemotePlayerFired(data));
+            on('playerDamaged', (data) => this.handleRemotePlayerDamaged(data));
+            on('playerRevived', (data) => this.handleRemotePlayerRevived(data));
+            on('playerDownedBroadcast', (data) => this.handleRemotePlayerDowned(data?.playerId));
+            on('playerExtractedBroadcast', (data) => this.handleRemotePlayerExtracted(data));
+            on('enemyDamaged', (data) => this.handleRemoteEnemyDamage(data));
+            on('enemyHitReported', (data) => this.handleEnemyHitReported(data));
+            on('enemyStateSnapshot', (data) => this.handleEnemyStateSnapshot(data));
+            on('worldEventBroadcast', (data) => this.handleSharedWorldEvent(data));
+            on('playerNudged', (data) => this.handlePlayerNudged(data));
+            on('playerDisconnected', (id) => this.removeRemotePlayer(id));
+            on('newPlayer', (player) => this.getOrCreateRemotePlayer(player));
             // Sprint 26: server/relay.js's disconnect handler now promotes a
             // remaining connected player to interim host the instant the
             // current host drops mid-match (see its own comment), rather
@@ -5661,7 +5672,7 @@ export class ThreeGame {
             // failover, so a promoted client's own enemyHitReport authority
             // branch in applyPlayerDamageToEnemy/handleEnemyHitReported
             // stayed stuck on stale "I'm not host" state.
-            this.netSocket.on('hostChanged', (data) => this.handleHostChanged(data));
+            on('hostChanged', (data) => this.handleHostChanged(data));
         }
 
         // Seed every participant except this socket. The old !p.isHost filter
@@ -5703,20 +5714,10 @@ export class ThreeGame {
             this.remotePlayers.clear();
         }
         if (this.netSocket) {
-            this.netSocket.off('playerMoved');
-            this.netSocket.off('playerFired');
-            this.netSocket.off('playerDamaged');
-            this.netSocket.off('playerRevived');
-            this.netSocket.off('playerDownedBroadcast');
-            this.netSocket.off('playerExtractedBroadcast');
-            this.netSocket.off('enemyDamaged');
-            this.netSocket.off('enemyHitReported');
-            this.netSocket.off('enemyStateSnapshot');
-            this.netSocket.off('worldEventBroadcast');
-            this.netSocket.off('playerNudged');
-            this.netSocket.off('playerDisconnected');
-            this.netSocket.off('newPlayer');
-            this.netSocket.off('hostChanged');
+            for (const [event, handler] of this._gameplaySocketListeners ?? []) {
+                this.netSocket.off(event, handler);
+            }
+            this._gameplaySocketListeners = [];
             this.netSocket = null;
         }
         const leavingPvp = this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP;
@@ -5743,6 +5744,20 @@ export class ThreeGame {
         this.globalSeedOffset = 0;
         this._descentIndex = 0;
         this._descentBaseOffset = null;
+    }
+
+    reconcileMultiplayerRoster(players) {
+        if (!players || typeof players !== 'object' || !this.netSocket?.id) return;
+        const localId = this.netSocket.id;
+        this.multiplayerLocalPlayerId = localId;
+        const roster = new Map(Object.entries(players).map(([id, player]) => [id, { ...player, id }]));
+        this.isMultiplayerHost = Boolean(roster.get(localId)?.isHost);
+        for (const id of this.remotePlayers?.keys() ?? []) {
+            if (id === localId || !roster.has(id)) this.removeRemotePlayer(id);
+        }
+        for (const [id, player] of roster) {
+            if (id !== localId) this.getOrCreateRemotePlayer(player);
+        }
     }
 
     getOrCreateRemotePlayer(playerData) {
@@ -6472,6 +6487,8 @@ export class ThreeGame {
             if (this.bunkerBlastDoorState && typeof detail.open === 'boolean') {
                 if (this.bunkerBlastDoorState.open !== detail.open) {
                     this.toggleBunkerBlastDoor({ fromRemote: true });
+                    // toggle already dispatches the applied event.
+                    return true;
                 }
             }
         } else if (event === 'procedural-door-toggled') {
@@ -11399,7 +11416,8 @@ export class ThreeGame {
         if (!this.bunkerBlastDoorGroup || !this.bunkerBlastDoorState) return;
 
         const state = this.bunkerBlastDoorState;
-        if (this.isGameplayInputActive() && !state.destroyed) {
+        // Guests animate replicated state, but only the host decides proximity.
+        if (this.isGameplayInputActive() && !state.destroyed && (!this.isMultiplayer || this.isMultiplayerHost)) {
             let distance = this.player ? Math.hypot(
                 this.player.position.x - (state.doorCenterX ?? 9),
                 this.player.position.z - state.doorZ
