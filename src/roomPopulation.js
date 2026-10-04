@@ -143,11 +143,15 @@ export function planRoomPopulation(room, grid, random) {
     const placements = [];
     const theme = room.themeConfig ?? {};
     const center = roomCenter;
-    const propLimit = room.role === 'medical' || room.role === 'cryo-lab' ? 3 : 2;
+    // Keep the authored gameplay anchors legible, then spend the remaining
+    // budget on non-blocking edge dressing. Five is deliberate: the Thursday
+    // Deck capture showed prop destruction on the worst frame window, so room
+    // life comes from a bounded mix of one small prop, one decal and an
+    // occasional rare landmark rather than an unbounded scatter pass.
+    const roomObjectLimit = 5;
 
     const reservePlacement = (kind, type, blocking = false) => {
-        if (placements.length >= 3) return false;
-        if (kind !== 'pickup' && placements.filter((placement) => placement.kind !== 'pickup').length >= propLimit) return false;
+        if (placements.length >= roomObjectLimit) return false;
         const wallOnly = isWallBackedPropType(type);
         const cell = pickCandidate(candidates, random, grid, center, wallOnly);
         if (!cell) return false;
@@ -252,6 +256,21 @@ export function planRoomPopulation(room, grid, random) {
         }
     }
     if (budget.pickup.min > 0) reservePlacement('pickup', 'room-biased', false);
+
+    // The theme catalog has always carried small, ambient and rare pools, but
+    // the population planner previously ignored all three. That left finished
+    // props and environmental-story decals unused while rooms stopped after
+    // two large objects. These additions never block navigation and retain the
+    // same doorway apron, fixture reservation and center-lane exclusions.
+    if (budget.small.min > 0 && theme.smallProps?.length) {
+        reservePlacement('small', propFrom(theme.smallProps, random, 'scatter_bolts'), false);
+    }
+    if (theme.rareProps?.length && random() < 0.2) {
+        reservePlacement('rare', propFrom(theme.rareProps, random, theme.rareProps[0]), false);
+    }
+    if (budget.small.min > 1 && theme.ambientProps?.length) {
+        reservePlacement('ambient', propFrom(theme.ambientProps, random, theme.ambientProps[0]), false);
+    }
 
     const signaturePlaced = placements.some((placement) => placement.kind === 'signature');
 

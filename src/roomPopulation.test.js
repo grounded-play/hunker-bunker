@@ -63,7 +63,7 @@ describe('room population', () => {
         expect(plan.degraded).toBe(false);
     });
 
-    it('caps ordinary rooms at two wall-biased props', () => {
+    it('layers non-blocking small and ambient dressing around an ordinary room edge', () => {
         const room = {
             id: 'ordinary-room',
             role: 'generic',
@@ -83,12 +83,15 @@ describe('room population', () => {
         const plan = planRoomPopulation(room, grid, () => 0);
 
         const props = plan.placements.filter(({ kind }) => kind !== 'pickup');
-        expect(props).toHaveLength(2);
+        expect(props).toHaveLength(4);
         expect(props.every(({ x, y }) => x === 1 || x === 5 || y === 1 || y === 5)).toBe(true);
-        expect(plan.placements.some(({ kind }) => kind === 'small' || kind === 'ambient')).toBe(false);
+        expect(plan.placements).toContainEqual(expect.objectContaining({ kind: 'small', type: 'small', blocking: false }));
+        expect(plan.placements).toContainEqual(expect.objectContaining({
+            kind: 'ambient', type: 'decal_worker_sleep_roll', blocking: false
+        }));
     });
 
-    it('places exactly three themed fixtures in medical rooms', () => {
+    it('keeps three medical fixtures and adds bounded non-blocking story dressing', () => {
         const room = {
             id: 'medical-room',
             role: 'medical',
@@ -98,7 +101,8 @@ describe('room population', () => {
             themeConfig: {
                 signatureProps: ['prop_medical_bed'],
                 largeProps: ['prop_diagnostic_console', 'prop_surgical_cart', 'prop_specimen_tank'],
-                smallProps: ['scatter_bolts']
+                smallProps: ['scatter_bolts'],
+                ambientProps: ['decal_worker_sleep_roll']
             }
         };
         const grid = Array.from({ length: 7 }, () => Array(7).fill('#'));
@@ -106,12 +110,14 @@ describe('room population', () => {
         const plan = planRoomPopulation(room, grid, () => 0);
 
         expect(plan.placements.map(({ type }) => type)).toEqual([
-            'prop_medical_bed', 'prop_diagnostic_console', 'prop_surgical_cart'
+            'prop_medical_bed', 'prop_diagnostic_console', 'prop_surgical_cart',
+            'scatter_bolts', 'decal_worker_sleep_roll'
         ]);
-        expect(plan.placements).toHaveLength(3);
+        expect(plan.placements).toHaveLength(5);
+        expect(plan.placements.slice(3).every(({ blocking }) => blocking === false)).toBe(true);
     });
 
-    it('never exceeds three total objects even when a full room also requests a pickup', () => {
+    it('never exceeds five total objects even when a full room also requests a pickup', () => {
         const room = {
             id: 'busy-medical-room',
             role: 'medical',
@@ -120,13 +126,44 @@ describe('room population', () => {
             populationBudget: { signature: 1, large: 3, small: 3, pickup: 1, enemy: 0 },
             themeConfig: {
                 signatureProps: ['prop_medical_bed'],
-                largeProps: ['prop_diagnostic_console', 'prop_surgical_cart']
+                largeProps: ['prop_diagnostic_console', 'prop_surgical_cart'],
+                smallProps: ['scatter_bolts'],
+                ambientProps: ['decal_worker_sleep_roll']
             }
         };
         const grid = Array.from({ length: 7 }, () => Array(7).fill('#'));
         for (const cell of room.interior) grid[cell.y][cell.x] = '.';
 
-        expect(planRoomPopulation(room, grid, () => 0).placements).toHaveLength(3);
+        const plan = planRoomPopulation(room, grid, () => 0);
+        expect(plan.placements).toHaveLength(5);
+        expect(plan.placements).toContainEqual(expect.objectContaining({ kind: 'pickup' }));
+        expect(plan.placements.filter(({ kind }) => kind === 'small' || kind === 'ambient')).toHaveLength(1);
+    });
+
+    it('occasionally spends the bounded story slot on a rare theme landmark', () => {
+        const room = {
+            id: 'shrine-room',
+            role: 'generic',
+            interior: Array.from({ length: 25 }, (_, index) => ({ x: index % 5 + 1, y: Math.floor(index / 5) + 1 })),
+            navigation: { doorLanes: [] },
+            populationBudget: { signature: 1, large: 1, small: 3, pickup: 0, enemy: 0 },
+            themeConfig: {
+                signatureProps: ['signature'],
+                largeProps: ['large'],
+                smallProps: ['small'],
+                ambientProps: ['ambient'],
+                rareProps: ['prop_votive_candle_shrine']
+            }
+        };
+        const grid = Array.from({ length: 7 }, () => Array(7).fill('#'));
+        for (const cell of room.interior) grid[cell.y][cell.x] = '.';
+
+        const plan = planRoomPopulation(room, grid, () => 0);
+
+        expect(plan.placements).toHaveLength(5);
+        expect(plan.placements).toContainEqual(expect.objectContaining({
+            kind: 'rare', type: 'prop_votive_candle_shrine', blocking: false
+        }));
     });
 
     it('respects reserved fixture cells and leaves the room center open', () => {
