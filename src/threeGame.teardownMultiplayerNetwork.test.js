@@ -86,7 +86,7 @@ describe('ThreeGame.teardownMultiplayerNetwork', () => {
         // of sync with it (missing 3 of these events), leaving those
         // listeners registered on the underlying socket after "teardown."
         const expectedEvents = [
-            'currentPlayers', 'connect',
+            'currentPlayers', 'connect', 'weaponHitRejected',
             'playerMoved', 'playerFired', 'playerDamaged', 'playerRevived',
             'playerDownedBroadcast', 'playerExtractedBroadcast', 'enemyDamaged', 'enemyHitReported', 'enemyStateSnapshot',
             // Co-op shared world beats and the friendly-fire shove.

@@ -5652,6 +5652,13 @@ export class ThreeGame {
             on('playerMoved', (data) => this.handleRemotePlayerMoved(data));
             on('playerFired', (data) => this.handleRemotePlayerFired(data));
             on('playerDamaged', (data) => this.handleRemotePlayerDamaged(data));
+            on('weaponHitRejected', (data) => {
+                const reasons = ['not_pvp', 'reporter_dead', 'participant_unavailable',
+                    'attacker_dead', 'target_dead', 'hit_cadence', 'invalid_impact', 'out_of_range', 'target_miss'];
+                debugLog.info('WEAPON', 'pvp-hit-rejected', {
+                    reason: reasons.includes(data?.reason) ? data.reason : 'unknown'
+                });
+            });
             on('playerRevived', (data) => this.handleRemotePlayerRevived(data));
             on('playerDownedBroadcast', (data) => this.handleRemotePlayerDowned(data?.playerId));
             on('playerExtractedBroadcast', (data) => this.handleRemotePlayerExtracted(data));
@@ -6076,7 +6083,10 @@ export class ThreeGame {
         } else if (this.remotePlayers?.has(data.targetId)) {
             const remote = this.remotePlayers.get(data.targetId);
             const remoteDamage = Number.isFinite(data.damage) ? data.damage : 1;
-            remote.hp = Math.max(0, remote.hp - remoteDamage);
+            // Use the relay snapshot to recover a missed hit, while retaining
+            // compatibility with relays that only send a damage delta.
+            remote.hp = Number.isFinite(data.remainingHp) && data.remainingHp >= 0
+                ? data.remainingHp : Math.max(0, remote.hp - remoteDamage);
             if (data.attackerId === this.netSocket?.id || !data.attackerId) {
                 debugLog.info('WEAPON', 'pvp-hit-confirmed', {
                     targetId: data.targetId,

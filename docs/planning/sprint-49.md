@@ -157,6 +157,12 @@ Physical hardware, deployed matches and moderation operations remain acceptance 
 
 ### S49-05 — demonstrable online co-op and PvP
 
+2026-10-04 combat follow-up: relay hit validation now returns bounded rejection
+reasons to the reporting client and authoritative remaining health on accepted
+hits. Legacy victim-reported hits cannot attribute damage to a dead attacker.
+Remote avatar health recovers from missed damage events using the relay snapshot;
+local environmental damage/death and shared rematch reconciliation remain open.
+
 2026-10-04 Deck follow-up: gameplay reconciles remote avatars and local identity
 from reconnect rosters; teardown preserves lobby-owned socket callbacks; automatic
 blast-door proximity decisions are host-only and remote applications emit once.

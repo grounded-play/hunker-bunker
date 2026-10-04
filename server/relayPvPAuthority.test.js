@@ -85,6 +85,17 @@ describe('Server Relay: PvP 4-Heart Authority Contract (GAP-PV-01)', () => {
         const damageEvents = [];
         p2.on('playerDamaged', (data) => damageEvents.push(data));
 
+        for (const [payload, reason] of [
+            [{ targetId: 'missing', originX: 9, originZ: 9 }, 'participant_unavailable'],
+            [{ targetId: p2.id, originX: 'invalid', originZ: 9 }, 'invalid_impact'],
+            [{ targetId: p2.id, originX: 1000, originZ: 1000 }, 'out_of_range']
+        ]) {
+            const rejected = waitForEvent(p1, 'weaponHitRejected');
+            p1.emit('weaponHit', payload);
+            expect(await rejected).toEqual({ reason });
+        }
+        expect(damageEvents).toHaveLength(0);
+
         // Attacker fires 4 consecutive hits at Defender with >110ms intervals
         for (let i = 1; i <= 4; i += 1) {
             await sleep(140);
@@ -97,6 +108,7 @@ describe('Server Relay: PvP 4-Heart Authority Contract (GAP-PV-01)', () => {
         }
 
         expect(damageEvents).toHaveLength(4);
+        expect(damageEvents.map((event) => event.remainingHp)).toEqual([3, 2, 1, 0]);
         expect(damageEvents[0]).toMatchObject({ attackerId: p1.id, targetId: p2.id, damage: 1, isFatal: false });
         expect(damageEvents[1]).toMatchObject({ attackerId: p1.id, targetId: p2.id, damage: 1, isFatal: false });
         expect(damageEvents[2]).toMatchObject({ attackerId: p1.id, targetId: p2.id, damage: 1, isFatal: false });
@@ -105,12 +117,32 @@ describe('Server Relay: PvP 4-Heart Authority Contract (GAP-PV-01)', () => {
 
         // A 5th hit against the already dead target is dropped
         await sleep(140);
+        const deadTarget = waitForEvent(p1, 'weaponHitRejected');
         p1.emit('weaponHit', {
             targetId: p2.id,
             originX: 9,
             originZ: 9
         });
+        expect(await deadTarget).toEqual({ reason: 'target_dead' });
         await sleep(50);
         expect(damageEvents).toHaveLength(4);
+
+        // Legacy victim-reported hits must not resurrect a dead attacker's damage.
+        const deadAttacker = waitForEvent(p1, 'weaponHitRejected');
+        p1.emit('weaponHit', { attackerId: p2.id, originX: 9, originZ: 9 });
+        expect(await deadAttacker).toEqual({ reason: 'attacker_dead' });
+        expect(damageEvents).toHaveLength(4);
     }, 10000);
+
+    it('bounds diagnostic replies and does not echo untrusted hit payloads', async () => {
+        ({ httpServer, url } = await startTestServer());
+        const reporter = await connectClient(url);
+        sockets.push(reporter);
+        const replies = [];
+        reporter.on('weaponHitRejected', (reply) => replies.push(reply));
+        for (let i = 0; i < 30; i += 1) reporter.emit('weaponHit', { secret: 'never echo this' });
+        await sleep(100);
+        expect(replies).toHaveLength(5);
+        expect(replies.every((reply) => JSON.stringify(reply) === '{"reason":"not_pvp"}')).toBe(true);
+    });
 });

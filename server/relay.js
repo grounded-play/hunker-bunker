@@ -1002,28 +1002,39 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
         // proximity of the reported impact to the target's known position.
         // Legacy victim-side reports remain accepted for rolling clients.
         socket.on('weaponHit', (hitData) => {
+            // Reply only to the reporter; never disclose another room's roster
+            // or serialize attacker-controlled payloads. Bound diagnostic spam.
+            const reject = (reason) => {
+                const now = Date.now();
+                player.hitDiagnosticTimes = (player.hitDiagnosticTimes ?? []).filter((at) => now - at < 1000);
+                if (player.hitDiagnosticTimes.length >= 5) return;
+                player.hitDiagnosticTimes.push(now);
+                socket.emit('weaponHitRejected', { reason });
+            };
             if (!hitData || typeof hitData !== 'object') return;
-            if (player.mode !== 'pvp') return;
-            if (player.hp <= 0) return;
+            if (player.mode !== 'pvp') return reject('not_pvp');
+            if (player.hp <= 0) return reject('reporter_dead');
 
             const reportedTargetId = sanitizeString(hitData.targetId, 64, '');
             const legacyAttackerId = sanitizeString(hitData.attackerId, 64, '');
             const attacker = reportedTargetId ? player : players.get(legacyAttackerId);
             const target = reportedTargetId ? players.get(reportedTargetId) : player;
-            if (!attacker || !target || attacker.id === target.id) return;
-            if (!attacker.roomCode || attacker.roomCode !== target.roomCode) return;
-            if (attacker.mode !== 'pvp' || target.mode !== 'pvp' || target.hp <= 0) return;
+            if (!attacker || !target || attacker.id === target.id) return reject('participant_unavailable');
+            if (!attacker.roomCode || attacker.roomCode !== target.roomCode) return reject('participant_unavailable');
+            if (attacker.mode !== 'pvp' || target.mode !== 'pvp') return reject('not_pvp');
+            if (attacker.hp <= 0) return reject('attacker_dead');
+            if (target.hp <= 0) return reject('target_dead');
 
             const now = Date.now();
-            if (now - (attacker.lastWeaponHitAt || 0) < PVP_MIN_HIT_INTERVAL_MS) return;
+            if (now - (attacker.lastWeaponHitAt || 0) < PVP_MIN_HIT_INTERVAL_MS) return reject('hit_cadence');
 
             const originX = sanitizeCoord(hitData.originX);
             const originZ = sanitizeCoord(hitData.originZ);
-            if (originX === null || originZ === null) return;
+            if (originX === null || originZ === null) return reject('invalid_impact');
             const dist = Math.hypot(originX - attacker.x, originZ - attacker.z);
-            if (dist > PVP_WEAPON_RANGE) return;
+            if (dist > PVP_WEAPON_RANGE) return reject('out_of_range');
             const targetDist = Math.hypot(originX - target.x, originZ - target.z);
-            if (targetDist > PVP_HIT_REPORT_RADIUS) return;
+            if (targetDist > PVP_HIT_REPORT_RADIUS) return reject('target_miss');
 
             attacker.lastWeaponHitAt = now;
 
@@ -1041,7 +1052,8 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                 attackerId: attacker.id,
                 targetId: target.id,
                 damage,
-                isFatal
+                isFatal,
+                remainingHp: target.hp
             });
         });
 

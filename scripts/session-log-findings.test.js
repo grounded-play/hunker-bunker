@@ -20,4 +20,13 @@ describe('one-sided session evidence', () => {
             possibleStaleAvatars: false, repeatedJoins: false, approximateFps: null, latestRosterSize: null
         });
     });
+    it('counts captured hit rejection reasons separately from damage', () => {
+        const result = sessionLogFindings({ entries: [
+            { message: 'pvp-hit-rejected {"reason":"target_dead"}' },
+            { message: 'pvp-hit-rejected {"reason":"target_dead"}' },
+            { message: 'pvp-hit-rejected {"reason":"hit_cadence"}' }
+        ] });
+        expect(result.hitRejectionReasons).toEqual({ target_dead: 2, hit_cadence: 1 });
+        expect(result.damageReasons).toEqual({});
+    });
 });

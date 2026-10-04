@@ -55,6 +55,11 @@ Original checked entries are not newly certified by this iteration.
     TriggerItemDrop live path decodes Steam item_json with 15s timeout and key redaction.
     Evidence: 35 backend suites / 329 tests passed; scoped lint clean.
 
+[x] Iteration 6, S49-05/32: bounded PvP hit rejection diagnostics; reject dead
+    legacy attackers; remote health repairs from relay remainingHp snapshots.
+    Analyzer counts captured rejection reasons. 17 targeted relay/client tests.
+[ ] Still open: local health/death/redeploy authority and paired Deck fault drill.
+
 ORIGINAL IMPORTED TODO SNAPSHOT
 └─ hunker-bunker
    ├─ economy-master-plan-2026-09-30.md

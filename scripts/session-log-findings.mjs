@@ -18,6 +18,13 @@ export function sessionLogFindings(capture) {
     const finalRemotePlayers = samples.at(-1)?.activity?.remotePlayers ?? null;
     const frame = capture.state?.performance?.frameIntervals?.profiles?.gameplay;
     const damageReasons = {};
+    const hitRejectionReasons = {};
+    for (const event of events.filter((event) => event.name === 'pvp-hit-rejected')) {
+        const reason = event.detail?.reason;
+        if (typeof reason === 'string' && !['__proto__', 'constructor', 'prototype'].includes(reason)) {
+            hitRejectionReasons[reason] = (hitRejectionReasons[reason] ?? 0) + 1;
+        }
+    }
     for (const event of events.filter((event) => event.name === 'player-damaged')) {
         const reason = event.detail?.reason;
         if (typeof reason === 'string' && !['__proto__', 'constructor', 'prototype'].includes(reason)) {
@@ -34,6 +41,7 @@ export function sessionLogFindings(capture) {
             && finalRemotePlayers > Math.max(0, latestRosterSize - 1),
         hitReports: count('pvp-hit-dealt'),
         hitConfirmations: count('pvp-hit-confirmed'),
+        hitRejectionReasons,
         damageReasons,
         gameplayAverageMs: frame?.averageMs ?? null,
         gameplayP95Ms: frame?.p95Ms ?? null,

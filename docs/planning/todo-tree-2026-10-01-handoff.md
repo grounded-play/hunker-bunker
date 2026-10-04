@@ -171,6 +171,33 @@ contributor edited economy code/tests. Those changes are not part of iterations
 3–4; do not treat this as a green whole-branch/CI certification. Commentary
 extraction work in `main.js` is also owned by the concurrent contributor.
 
+## Iteration 6 — explain rejected PvP hits and repair remote health
+
+Starting checkpoint: clean worktree at `d916a212`; the commentary and inventory
+contributors committed their work after iteration 4. This iteration owns only
+PvP relay/client diagnostics, tests, and the linked TODO documentation.
+
+- [x] Relay emits `weaponHitRejected` to the reporting socket only, at most five
+  times per second, with fixed reason codes and no raw request/auth data. Missing
+  and cross-room participants share one reason to avoid exposing room membership.
+- [x] Legacy victim-reported hits reject dead attackers as well as dead reporters
+  and targets. Damage, cadence, range and impact validation remain relay-owned.
+- [x] Accepted hits include `remainingHp`; remote avatar health uses this snapshot
+  instead of accumulating permanent drift after a missed event. Old relay delta
+  responses remain supported. This does not reconcile local environmental damage.
+- [x] Client captures `pvp-hit-rejected`; analyzer breaks down captured reasons.
+  Rate-limited rejection counts are explicitly not exhaustive or packet-loss rates.
+- [x] Targeted relay/vitals/teardown run: 3 suites / 17 tests passed, including
+  real Socket.IO invalid-impact/missing-target/range/dead-attacker and flood cases.
+- [ ] Next: authoritative local health/death/redeploy contract, shared round ID,
+  reason-tagged disconnect drill and paired Deck captures. Do not claim the
+  44 reports / four confirmations in the old log are fully explained by this fix.
+
+Verification: lint, docs audit and generated presubmit passed; retail reports
+refreshed. Full run: 550 suites / 4,863 tests passed, with one additional concurrent
+untracked `src/fabricationBay.test.js` failing import because its implementation
+was not present yet. No live relay deployment or whole-branch CI claim is made.
+
 ## Iteration 5 — mutation API contracts and ambiguous review safeguards
 
 2026-10-04. Scope: `server/steamTradeUp.js`, `server/steamInventory.js`, and their test suites.
@@ -180,4 +207,3 @@ extraction work in `main.js` is also owned by the concurrent contributor.
 - [x] Ambiguous transport failures (e.g. network timeout / abort during consume or grant) no longer trigger blind refunds or double-grants; they return status 502 with `exchange_outcome_requires_review` and preserve state for manual review.
 - [x] Corrected `TriggerItemDrop`: live route parses `item_json` using `decodeSteamInventory` with a 15-second timeout and key redaction; supports backward-compatible `item_list` arrays and rejects Steam failures explicitly (`steam_inventory_rejected`).
 - [x] Full backend test suite checkpoint: **35 files / 329 tests passed** (including resolved `server/steamTradeUp.test.js` cases). Scoped ESLint passed with 0 errors.
-

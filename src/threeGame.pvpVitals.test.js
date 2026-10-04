@@ -44,6 +44,20 @@ function operator({ hullLevel = 0, fatigued = false, playerType = 'SCOUT', plati
 }
 
 describe('PvP hearts are the same for every operator', () => {
+    it('repairs remote health from the relay snapshot after a missed damage event', () => {
+        const remote = { hp: 4 };
+        const game = { remotePlayers: new Map([['peer', remote]]), netSocket: { id: 'self' } };
+        ThreeGame.prototype.handleRemotePlayerDamaged.call(game, {
+            targetId: 'peer', attackerId: 'self', damage: 1, remainingHp: 1
+        });
+        expect(remote.hp).toBe(1);
+        // Legacy relay without the snapshot still applies the delta.
+        remote.hp = 4;
+        ThreeGame.prototype.handleRemotePlayerDamaged.call(game, {
+            targetId: 'peer', attackerId: 'self', damage: 1
+        });
+        expect(remote.hp).toBe(3);
+    });
     it('ignores fatigue, hull, class plating and equipment in PvP', () => {
         const worn = operator({ fatigued: true });
         const kitted = operator({ hullLevel: 2, playerType: 'TANK', plating: true });
