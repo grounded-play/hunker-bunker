@@ -20,8 +20,8 @@ import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { ExpeditionReceipt } from './src/economyReceipt.js';
 import { renderReturnManifest } from './src/returnManifest.js';
 import { renderLoadoutStrip } from './src/itemCard.js';
-import { describeFieldWeapon } from './src/fieldWeapon.js';
-import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, describeRecipe, getFabricatedOutputIds, getFabricationOdds } from './src/fabricator.js';
+import { FabricatorManager, FAB_RECIPES, getFabricatedOutputIds } from './src/fabricator.js';
+import { createFabricationBay, fabMissingResourceText as fabMissingResourceTextFor } from './src/fabricationBay.js';
 import { ProfileManager, exportSaveCode, importSaveCode, resetAllDataFactory, startNewCampaign } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
@@ -12844,419 +12844,40 @@ setupClickOutside('archive-modal', () => {
 document.getElementById('close-archive-log-detail')?.addEventListener('click', closeArchiveLogDetail);
 setupClickOutside('archive-log-detail-modal', closeArchiveLogDetail);
 
-// ── Fabrication Bay ───────────────────────────────────────────
-// Spend banked salvage to print gear (recipe art reused from mothership's item
-// cards). The Bay button unlocks once the O2 station powers the base (Beat 4 /
-// .claude_work/01-feature-port-from-mothership.md §A).
-function fabCostMarkup(cost) {
-    const parts = [];
-    if (cost.tech) parts.push(`<span class="fab-cost-chip">⬢ ${cost.tech}</span>`);
-    if (cost.coin) parts.push(`<span class="fab-cost-chip">◎ ${cost.coin}</span>`);
-    if (cost.med) parts.push(`<span class="fab-cost-chip">✚ ${cost.med}</span>`);
-    return parts.join('');
-}
-
-function getBankResourceAmount(bank, key) {
-    const value = Number(bank?.[key]);
-    return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
-}
-
-function fabCostText(cost, bank = bankManager.getState(), { showHaveNeed = false } = {}) {
-    const parts = [];
-    for (const [key, label] of [['tech', 'TECH'], ['coin', 'COIN'], ['med', 'MED']]) {
-        const need = Number(cost?.[key] ?? 0);
-        if (!Number.isFinite(need) || need <= 0) continue;
-        const normalizedNeed = Math.floor(need);
-        const have = getBankResourceAmount(bank, key);
-        parts.push(showHaveNeed ? `${label} ${have}/${normalizedNeed}` : `${normalizedNeed} ${label}`);
-    }
-    return parts.length ? parts.join(' / ') : 'NO COST';
-}
+// ── Fabrication Bay (src/fabricationBay.js, S49-38) ─────────────
+// Spend banked salvage to print gear. The bay module owns its DOM, timers and
+// listeners; main.js supplies the managers, focus, prompts and the hub, and
+// keeps these thin wrappers so the menu, hub and camp-rest call sites stay put.
+const fabricationBay = createFabricationBay({
+    t,
+    fabricator,
+    bankManager,
+    loadout,
+    getGame: () => window.game,
+    playSound: (sound, options) => window.AudioManager?.play?.(sound, options),
+    playLoot: (kind, rarity) => window.AudioManager?.playProceduralLoot?.(kind, rarity),
+    log: (event, detail) => debugLog.info('FOUNDRY', event, detail),
+    focus: (target) => focusControllerTarget(target),
+    getPreferredFocus: (modal) => getPreferredControllerFocusTarget(modal, getVisibleControllerFocusables(modal)),
+    updateMenuStatuses: () => updateMenuCommandStatuses(),
+    syncEquippedWeaponLabel: () => syncEquippedWeaponLabel(),
+    syncOutputOwnership: () => syncFabricatorOutputOwnership(),
+    showPrompt: (text) => showBiomePrompt(text),
+    onFoundryActivated: () => refreshFabAccess(),
+    isHubEnabled: () => isFoundryHubEnabled(),
+    openHub: (tab) => foundryHub.open(tab)
+});
+fabricationBay.attach();
 
 function fabMissingResourceText(cost, bank = bankManager.getState()) {
-    const missing = [];
-    for (const [key, label] of [['tech', 'TECH'], ['coin', 'COIN'], ['med', 'MED']]) {
-        const need = Number(cost?.[key] ?? 0);
-        if (!Number.isFinite(need) || need <= 0) continue;
-        const delta = Math.max(0, Math.floor(need) - getBankResourceAmount(bank, key));
-        if (delta > 0) missing.push(`${delta} ${label}`);
-    }
-    return missing.length ? `NEED ${missing.join(' / ')}` : '';
+    return fabMissingResourceTextFor(cost, bank);
 }
-
-// What a recipe prints, as the shared item catalog shows it. A fabricated
-// weapon is a firing profile fitted to the active class's gun, so it wears
-// that gun's picture.
-function fabItemOptions() {
-    const classId = loadout.activeClassId;
-    return { classId, frameId: `frame:${loadout.getClassLoadout(classId)?.archetypeId ?? ''}` };
-}
-
-function fabItemView(recipe) {
-    const view = describeRecipe(recipe, fabItemOptions());
-    return { id: view?.id ?? null, name: view?.name ?? recipe?.name ?? '', icon: view?.icon ?? '/favicon.png' };
-}
-
-// A Foundry weapon's effect on the class gun, as chips: the multipliers
-// combat applies (src/fieldWeapon.js), so every weapon card reads differently
-// even though they all fit the same gun.
-function fabWeaponStatsMarkup(recipe) {
-    const stats = recipe?.output?.kind === 'weapon' ? describeFieldWeapon(recipe.id) : null;
-    if (!stats) return '';
-    const mult = (value) => (Math.round(value * 100) / 100).toFixed(2).replace(/0$/, '');
-    const tone = (value) => (value > 1.001 ? 'up' : value < 0.999 ? 'down' : 'flat');
-    const chip = (key, value, vars) => `<span class="fab-stat fab-stat--${tone(value)}">${t(key, vars)}</span>`;
-    return `<div class="fab-stats">${[
-        chip('ui.fab.stat_damage', stats.damage, { value: mult(stats.damage) }),
-        chip('ui.fab.stat_rate', stats.fireRate, { value: mult(stats.fireRate) }),
-        chip('ui.fab.stat_range', stats.range, { value: mult(stats.range) }),
-        stats.projectiles > 1 ? chip('ui.fab.stat_shots', 2, { count: stats.projectiles }) : ''
-    ].join('')}</div>`;
-}
-
-function logFoundry(event, recipe, extra = {}) {
-    const view = recipe ? fabItemView(recipe) : null;
-    debugLog.info('FOUNDRY', event, { recipeId: recipe?.id ?? null, item: view?.id ?? null, itemName: view?.name ?? null, rarity: recipe?.rarity ?? null, icon: view?.icon ?? null, classId: loadout.activeClassId, ...extra });
-}
-
-window.addEventListener('fabrication-started', (event) => logFoundry('print-started', event.detail?.recipe));
-window.addEventListener('fabrication-complete', (event) => logFoundry('print-complete', event.detail?.recipe));
-window.addEventListener('fabrication-rolled', (event) => logFoundry('roll-revealed', event.detail?.recipe, { duplicate: Boolean(event.detail?.duplicate), objectiveHit: Boolean(event.detail?.objectiveHit), broken: Boolean(event.detail?.broken) }));
-
-function renderFieldPrint(grid, bank) {
-    const recipe = FAB_RECIPES.find(entry => entry.id === 'scatter_rep');
-    const cost = fabricator.getEffectiveCost(recipe);
-    const fabricated = fabricator.isFabricated(recipe.id);
-    const printing = fabricator.isPrinting(recipe.id);
-    const equipped = loadout.getEquippedId() === recipe.id;
-    const panel = document.createElement('div');
-    panel.className = 'fab-activation-panel';
-    panel.innerHTML = `<div class="fab-activation-panel__kicker">GUARANTEED FIELD PRINT · ALL CLASSES</div>
-        <div class="fab-activation-panel__title">${t('ui.fab.scatter_repeater')}</div>
-        <p>Three close-range projectiles per shot; shorter reach. Equip for your next deployment. No Foundry activation needed for this field schematic.</p>
-        <div class="fab-activation-panel__cost">${fabCostText(cost, bank, { showHaveNeed: !bankManager.canAfford(cost) })}</div>`;
-    const button = document.createElement('button');
-    button.id = 'season-field-print';
-    button.className = 'fab-card__btn';
-    button.textContent = fabricated ? (equipped ? t('ui.fab.equipped_next_run') : t('ui.fab.equip_scatter')) : printing ? t('ui.fab.printing') : bankManager.canAfford(cost) ? 'PRINT SCATTER REPEATER' : fabMissingResourceText(cost, bank);
-    button.disabled = printing || equipped || (!fabricated && !bankManager.canAfford(cost));
-    button.addEventListener('click', () => {
-        try {
-            if (fabricated) { loadout.equip(recipe.id, fabricator); syncEquippedWeaponLabel(); }
-            else { fabricator.startPrint(recipe.id, bankManager); startFabTicker(); }
-            renderFabricationModal();
-        } catch { button.textContent = t('ui.fab.save_pending'); }
-    });
-    panel.appendChild(button);
-    grid.appendChild(panel);
-}
-
-function renderFoundryActivationPanel(grid, bank) {
-    const activated = bankManager.isFoundryActivated();
-    if (activated) return false;
-
-    const canActivate = bankManager.canActivateFoundry();
-    const missingText = fabMissingResourceText(FOUNDRY_ACTIVATION_COST, bank);
-    const panel = document.createElement('div');
-    panel.className = 'fab-activation-panel';
-    panel.innerHTML = `
-        <div class="fab-activation-panel__kicker">${t('ui.fab.foundry_required')}</div>
-        <div class="fab-activation-panel__title">${t('ui.fab.activate_bay')}</div>
-        <div class="fab-activation-panel__desc">${t('ui.fab.bring_online')}</div>
-        <div class="fab-activation-panel__cost">${fabCostText(FOUNDRY_ACTIVATION_COST, bank, { showHaveNeed: !canActivate })}</div>
-        <div class="fab-activation-panel__hint">${canActivate ? 'READY TO ACTIVATE' : missingText}</div>
-    `;
-    const btn = document.createElement('button');
-    btn.id = 'fab-activate-btn';
-    btn.className = 'fab-card__btn';
-    btn.disabled = !canActivate;
-    btn.textContent = canActivate ? t('ui.fab.activate_foundry') : missingText;
-    if (!canActivate) btn.classList.add('fab-card__btn--locked');
-    btn.addEventListener('click', () => {
-        if (bankManager.activateFoundry()) {
-            window.AudioManager?.play?.('class_lock', { volume: 0.55 });
-            renderFabricationModal();
-            refreshFabAccess();
-            requestAnimationFrame(() => focusControllerTarget(document.getElementById('fab-roll-btn')));
-        } else {
-            window.AudioManager?.play?.('ui_error', { volume: 0.5 });
-            renderFabricationModal();
-        }
-    });
-    panel.appendChild(btn);
-    grid.appendChild(panel);
-    return true;
-}
-
-function renderFabricationModal() {
-    const grid = document.getElementById('fab-recipe-grid');
-    if (!grid) return;
-    const bank = bankManager.getState();
-    updateMenuCommandStatuses();
-    const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    setTxt('fab-bank-tech', bank.tech ?? 0);
-    setTxt('fab-bank-coin', bank.coin ?? 0);
-    setTxt('fab-bank-med', bank.med ?? 0);
-    setTxt('fab-bank-shells', bank.shells ?? 0);
-
-    const rollPanel = document.getElementById('fab-roll-panel');
-    grid.innerHTML = '';
-    if (!bankManager.isFoundryActivated()) renderFieldPrint(grid, bank);
-    if (renderFoundryActivationPanel(grid, bank)) {
-        rollPanel?.classList.add('hidden');
-        setTxt('fab-summary', `FOUNDRY ACTIVATION: ${fabCostText(FOUNDRY_ACTIVATION_COST, bank, { showHaveNeed: !bankManager.canActivateFoundry() })}`);
-        return;
-    }
-
-    // Bay is online → show the gamba roll panel and sync the roll button.
-    rollPanel?.classList.remove('hidden');
-    const rollBtn = document.getElementById('fab-roll-btn');
-    if (rollBtn && !fabRollSpinning) {
-        const canRoll = fabricator.canRoll(bankManager);
-        const objective = fabricator.getObjectiveState();
-        rollBtn.disabled = !canRoll;
-        rollBtn.classList.toggle('fab-roll-btn--locked', !canRoll);
-        rollBtn.innerHTML = canRoll
-            ? `FABRICATE TARGET &nbsp;·&nbsp; ${fabCostMarkup(FAB_SPIN_COST)}`
-            : objective.siteUsesRemaining <= 0
-                ? 'FABRICATOR BROKEN — FOLLOW NEXT SIGNAL'
-                : `INSUFFICIENT SALVAGE &nbsp;·&nbsp; ${fabCostText(FAB_SPIN_COST, bank, { showHaveNeed: true })}`;
-    }
-
-    // The odds the roll uses, shown before the player spends (decision 10).
-    const oddsEl = document.getElementById('fab-odds');
-    if (oddsEl) {
-        oddsEl.innerHTML = `<span class="fab-odds__label">${t('ui.fab.odds')}</span>`
-            + getFabricationOdds().map(({ rarity, chance }) => `<span class="fab-odds__tier fab-odds__tier--${rarity.toLowerCase()}">${t(`rarity.${rarity.toLowerCase()}`)} ${Math.round(chance * 100)}%</span>`).join('');
-    }
-
-    for (const recipe of FAB_RECIPES) {
-        const fabricated = fabricator.isFabricated(recipe.id);
-
-        // These are real current-run outputs, not concept collection cards.
-        const rarity = (recipe.rarity ?? 'COMMON').toLowerCase();
-        const card = document.createElement('div');
-        card.className = ['fab-card', `fab-card--${rarity}`, fabricated ? 'fab-card--done' : 'fab-card--locked'].filter(Boolean).join(' ');
-
-        const art = document.createElement('div');
-        art.className = 'fab-card__art';
-        const img = document.createElement('img');
-        const view = fabItemView(recipe);
-        img.loading = 'lazy'; img.decoding = 'async'; img.alt = view.name; img.src = assetUrl(view.icon);
-        img.addEventListener('error', () => { img.src = assetUrl('/bunker_junk_rare.png'); }, { once: true });
-        art.appendChild(img);
-        const rarityTag = document.createElement('span');
-        rarityTag.className = 'fab-card__rarity';
-        rarityTag.textContent = recipe.rarity ?? t('ui.fab.common');
-        art.appendChild(rarityTag);
-        card.appendChild(art);
-
-        const name = document.createElement('div');
-        name.className = 'fab-card__name';
-        name.innerHTML = `<span class="fab-card__klass">${recipe.klass}</span>${view.name}`;
-        card.appendChild(name);
-
-        const description = document.createElement('div');
-        description.className = 'fab-card__description';
-        description.textContent = recipe.blurb;
-        card.appendChild(description);
-        const stats = fabWeaponStatsMarkup(recipe);
-        if (stats) card.insertAdjacentHTML('beforeend', stats);
-
-        const status = document.createElement('div');
-        status.className = 'fab-card__status';
-        status.textContent = fabricated ? t('ui.fab.ready_to_apply') : fabricator.isPrinting(recipe.id)
-            ? `PRINTING ${Math.round(fabricator.getPrintProgress(recipe.id) * 100)}%`
-            : `PRINT COST · ${fabCostText(fabricator.getEffectiveCost(recipe), bank)}`;
-        card.appendChild(status);
-
-        const addApplyButton = (label, replaceSlot = null) => {
-            const button = document.createElement('button');
-            button.className = 'fab-card__btn';
-            button.textContent = label;
-            button.addEventListener('click', () => {
-                syncFabricatorOutputOwnership();
-                const result = applyFabricatedRecipeOutput(recipe, {
-                    fabricator,
-                    loadout,
-                    game: window.game,
-                    classId: loadout.activeClassId,
-                    replaceSlot
-                });
-                logFoundry(result.ok ? 'output-applied' : 'output-rejected', recipe, { granted: result.id ?? result.itemdefid ?? null, slot: result.slot ?? null, reason: result.reason ?? null });
-                if (result.ok) {
-                    window.AudioManager?.play?.('class_lock', { volume: 0.55 });
-                    syncEquippedWeaponLabel();
-                    renderFabricationModal();
-                } else {
-                    button.textContent = result.reason === 'slot_conflict' ? t('ui.fab.choose_bay') : t('ui.fab.apply_failed');
-                    window.AudioManager?.play?.('ui_error', { volume: 0.5 });
-                }
-            });
-            card.appendChild(button);
-        };
-
-        if (fabricated) {
-            const output = recipe.output ?? { kind: 'weapon' };
-            const current = loadout.getClassLoadout(loadout.activeClassId);
-            if (output.kind === 'weapon') {
-                const equipped = loadout.getEquippedId(loadout.activeClassId) === recipe.id;
-                if (!equipped) addApplyButton('EQUIP NOW');
-                else status.textContent = t('ui.fab.equipped_current');
-            } else if (output.kind === 'charm') {
-                const equipped = String(current.charmId ?? '') === String(output.itemdefid);
-                if (!equipped) addApplyButton(current.charmId ? `REPLACE CHARM ${current.charmId}` : 'MOUNT CHARM NOW');
-                else status.textContent = t('ui.fab.mounted_current');
-            } else if (output.kind === 'mod') {
-                const equippedSlot = [current.mod1Id, current.mod2Id].findIndex((id) => String(id ?? '') === String(output.itemdefid));
-                if (equippedSlot >= 0) status.textContent = t('ui.fab.active_in_bay', { bay: equippedSlot === 0 ? 'A' : 'B' });
-                else if (!current.mod1Id || !current.mod2Id) addApplyButton(`INSTALL IN OPEN BAY`);
-                else {
-                    addApplyButton(`REPLACE BAY A · ${current.mod1Id}`, 1);
-                    addApplyButton(`REPLACE BAY B · ${current.mod2Id}`, 2);
-                }
-            }
-        } else {
-            const cost = fabricator.getEffectiveCost(recipe);
-            const printing = fabricator.isPrinting(recipe.id);
-            const button = document.createElement('button');
-            button.className = 'fab-card__btn';
-            button.disabled = printing || !fabricator.canFabricate(recipe.id, bankManager);
-            button.textContent = printing ? t('ui.fab.printing') : bankManager.canAfford(cost) ? t('ui.fab.print_output') : fabMissingResourceText(cost, bank);
-            button.addEventListener('click', () => {
-                if (!fabricator.startPrint(recipe.id, bankManager)) return;
-                startFabTicker();
-                renderFabricationModal();
-            });
-            card.appendChild(button);
-        }
-
-        grid.appendChild(card);
-    }
-    const objective = fabricator.getObjectiveState();
-    const targetName = objective.targetRecipe ? fabItemView(objective.targetRecipe).name : 'ALL TARGETS COMPLETE';
-    const pct = Math.round((objective.chance ?? 1) * 100);
-    setTxt('fab-summary', objective.complete
-        ? `SCHEMATICS FABRICATED: ${fabricator.getFabricatedCount()} / ${FAB_RECIPES.length}`
-        : `TARGET: ${targetName} · ODDS ${pct}% · USES ${objective.siteUsesRemaining}/${FABRICATOR_SITE_MAX_USES}`);
-}
-
-let fabTicker = null;
-function startFabTicker() {
-    if (fabTicker) return;
-    fabTicker = setInterval(() => {
-        fabricator.tickPrints();
-        renderFabricationModal();
-        if (!FAB_RECIPES.some((r) => fabricator.isPrinting(r.id))) stopFabTicker();
-    }, 500);
-}
-function stopFabTicker() { if (fabTicker) { clearInterval(fabTicker); fabTicker = null; } }
-
-// ── Fabricator gamba reveal (T7) ──────────────────────────────
-const RARITY_TILES = ['COMMON', 'UNCOMMON', 'RARE', 'COMMON', 'RARE', 'EPIC', 'RARE', 'UNCOMMON', 'EPIC', 'LEGENDARY'];
-let fabRollSpinning = false;
-
-function runFabricatorRoll() {
-    if (fabRollSpinning) return;
-    const result = fabricator.rollFabrication(bankManager);
-    if (!result) { window.AudioManager?.play?.('ui_error', { volume: 0.5 }); return; }
-
-    fabRollSpinning = true;
-    const reveal = document.getElementById('fab-reveal');
-    const strip = document.getElementById('fab-reveal-strip');
-    const cardEl = document.getElementById('fab-reveal-card');
-    const rollBtn = document.getElementById('fab-roll-btn');
-    if (rollBtn) { rollBtn.disabled = true; rollBtn.textContent = t('ui.fab.fabricating'); }
-    window.AudioManager?.play?.('door_gears_spin', { volume: 0.4 });
-
-    // Build a long strip of rarity tiles; the winner lands under the marker.
-    const WIN_INDEX = 42;
-    const tiles = [];
-    for (let i = 0; i < 58; i++) {
-        tiles.push(i === WIN_INDEX ? result.rarity : RARITY_TILES[Math.floor(Math.random() * RARITY_TILES.length)]);
-    }
-    if (strip) {
-        strip.innerHTML = tiles.map((r) => `<div class="fab-tile fab-tile--${r.toLowerCase()}">${r}</div>`).join('');
-        strip.style.transition = 'none';
-        strip.style.transform = 'translateX(0)';
-        strip.offsetWidth; // Force synchronous layout reflow for accurate measurements
-    }
-    if (reveal) reveal.dataset.state = 'spinning';
-    if (cardEl) cardEl.innerHTML = '';
-
-    // Kick the animation on the next frame so the transition applies.
-    requestAnimationFrame(() => {
-        if (!strip) return;
-        const wrap = document.getElementById('fab-reveal-strip-wrap');
-        const firstTile = strip.firstElementChild;
-        const tileRect = firstTile?.getBoundingClientRect?.();
-        const computedStyle = window.getComputedStyle(strip);
-        const tileWidth = tileRect?.width ?? 92;
-        const tileGap = parseFloat(computedStyle.columnGap || computedStyle.gap || '0') || 0;
-        const paddingLeft = parseFloat(computedStyle.paddingLeft || '0') || 0;
-        const center = (wrap?.clientWidth ?? 320) / 2;
-        const step = tileWidth + tileGap;
-        const target = center - (paddingLeft + (WIN_INDEX * step) + (tileWidth / 2));
-        strip.style.transition = 'transform 3.2s cubic-bezier(0.12, 0.8, 0.18, 1)';
-        strip.style.transform = `translateX(${target}px)`;
-    });
-
-    setTimeout(() => {
-        const r = result.rarity;
-        const rec = result.recipe;
-        const view = fabItemView(rec);
-        if (reveal) reveal.dataset.state = 'revealed';
-        if (cardEl) {
-            cardEl.className = `fab-reveal__card fab-reveal__card--${r.toLowerCase()}`;
-            cardEl.innerHTML =
-                `<img class="fab-reveal__art" src="${assetUrl(view.icon)}" alt="${view.name}" onerror="this.src='/bunker_junk_rare.png'">` +
-                `<div class="fab-reveal__rarity">${r}${result.duplicate ? ' · DUPLICATE' : ''}</div>` +
-                `<div class="fab-reveal__name">${view.name}</div>` +
-                fabWeaponStatsMarkup(rec) +
-                `<div class="fab-reveal__klass">${rec.klass}${result.objectiveHit ? ' · OBJECTIVE FABRICATED' : result.duplicate ? ' · ALREADY OWNED' : ' · SCHEMATIC UNLOCKED'}${result.broken ? ' · FABRICATOR BROKE' : ''}</div>`;
-        }
-        window.AudioManager?.playProceduralLoot?.('weapon', r.toLowerCase());
-        if (result.objectiveHit) showBiomePrompt(`> FABRICATOR: ${view.name} OBJECTIVE PRINT COMPLETE.`);
-        if (result.broken) {
-            showBiomePrompt('> FABRICATOR: PRINT HEAD FAILURE. PARTIAL REFUND ISSUED. FOLLOW NEW SIGNAL.');
-            window.game?.revealFoundry?.({ randomEdge: true });
-        }
-        fabRollSpinning = false;
-        renderFabricationModal();
-    }, 3300);
-}
-
-document.getElementById('fab-roll-btn')?.addEventListener('click', runFabricatorRoll);
-
-function openFabricationModal() {
-    if (isFoundryHubEnabled()) {
-        foundryHub.open('fabricate');
-        return;
-    }
-    fabricator.tickPrints();
-    renderFabricationModal();
-    const modal = document.getElementById('fabrication-modal');
-    if (modal) { modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false'); }
-    requestAnimationFrame(() => {
-        const focusables = getVisibleControllerFocusables(modal);
-        focusControllerTarget(getPreferredControllerFocusTarget(modal, focusables));
-    });
-    if (FAB_RECIPES.some((r) => fabricator.isPrinting(r.id))) startFabTicker();
-}
-let campRestSessionOpen = false;
-// Leaving the Fab Bay, or the Foundry hub that shows it, ends a camp rest.
-function finishFabricationSession() {
-    stopFabTicker();
-    if (campRestSessionOpen) {
-        campRestSessionOpen = false;
-        window.game?.finishCampRest?.();
-    }
-}
-function closeFabricationModal() {
-    const modal = document.getElementById('fabrication-modal');
-    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
-    finishFabricationSession();
-}
+function renderFabricationModal() { fabricationBay.render(); }
+function startFabTicker() { fabricationBay.startTicker(); }
+function stopFabTicker() { fabricationBay.stopTicker(); }
+function openFabricationModal() { fabricationBay.open(); }
+function finishFabricationSession() { fabricationBay.finishSession(); }
+function closeFabricationModal() { fabricationBay.close(); }
 
 // ── Foundry hub (src/foundryHub.js; on unless hb_foundry_hub=0) ─
 // Stash, Trade-up and Store show the Vault's panels; Fabricate shows the Fab
@@ -13330,7 +12951,7 @@ setupClickOutside('fabrication-modal', closeFabricationModal);
 window.addEventListener('o2-generator-upgraded', refreshFabAccess);
 window.addEventListener('bank-updated', () => {
     const modal = document.getElementById('fabrication-modal');
-    if (modal && !modal.classList.contains('hidden') && !fabRollSpinning) renderFabricationModal();
+    if (modal && !modal.classList.contains('hidden') && !fabricationBay.isRolling()) renderFabricationModal();
 });
 refreshFabAccess();
 
@@ -13679,7 +13300,7 @@ dayRestWarningConfirm?.addEventListener('click', () => {
 });
 window.addEventListener('day-rest-open', (event) => {
     const detail = event?.detail ?? {};
-    campRestSessionOpen = true;
+    fabricationBay.beginCampRest();
     showBiomePrompt(`> DAY ${detail.day} // ${detail.campLabel ?? 'CAMP'} REST CYCLE COMPLETE // THREAT ${Number(detail.difficulty ?? 1).toFixed(2)}×`);
     if (detail.expired?.length) {
         showBiomePrompt(`> MISSED SIGNALS CLOSED: ${detail.expired.join(', ').replaceAll('_', ' ').toUpperCase()}`);

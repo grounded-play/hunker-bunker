@@ -30,10 +30,17 @@ Original checked entries are not newly certified by this iteration.
     i18n audit unchanged; browser probe (toggle on -> card over menus, Read All
     lists 12 entries, open/close, no page errors). Owner pointer added in
     docs/architecture/system-map.md section 5.
-[~] S49-38 (b) — CLAIMED 2026-10-04 by the Claude lane: extract the Fabrication
-    Bay presentation (cost text, field print, Foundry activation, recipe grid,
-    print ticker, roll reveal, open/close + camp-rest session) out of main.js
-    into src/fabricationBay.js with dispose(), characterization tests, browser check.
+[x] S49-38 (b) — DONE 2026-10-04 (Claude lane): Fabrication Bay presentation
+    extracted from main.js (-412 lines) into src/fabricationBay.js (cost text,
+    field print, Foundry activation, recipe grid, print ticker, roll reveal,
+    open/close + camp-rest session). attach() registers the roll button and the
+    fabrication-* telemetry listeners; dispose() removes them and cancels the
+    ticker and a pending reveal. Evidence: 9 characterization tests
+    (src/fabricationBay.test.js); full vitest 551 files / 4872 tests; eslint and
+    i18n audit clean; browser probe on both open paths (Foundry hub and the
+    standalone modal with hb_foundry_hub=0): field print + activation panel
+    render, have/need cost text correct, modal closes, no page errors. Owner
+    pointer in docs/architecture/system-map.md section 7.
 [ ] S49-38 (c) — purchase presentation extraction still open.
 [ ] Full source-ticket acceptance remains open; no real purchase, deployment,
     account revocation, Steamworks setting or hardware certification performed.
@@ -59,6 +66,10 @@ Original checked entries are not newly certified by this iteration.
     legacy attackers; remote health repairs from relay remainingHp snapshots.
     Analyzer counts captured rejection reasons. 17 targeted relay/client tests.
 [ ] Still open: local health/death/redeploy authority and paired Deck fault drill.
+
+[x] Iteration 7, S49-05/23: rival-hit damage bypasses campaign block, NPC perks,
+    relic/overclock mitigation, shields and carapace; 72 targeted regression tests.
+[ ] Shared spawn-protection/lifecycle authority remains open; see iteration 7 notes.
 
 ORIGINAL IMPORTED TODO SNAPSHOT
 └─ hunker-bunker

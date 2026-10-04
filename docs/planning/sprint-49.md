@@ -157,6 +157,12 @@ Physical hardware, deployed matches and moderation operations remain acceptance 
 
 ### S49-05 — demonstrable online co-op and PvP
 
+2026-10-04 local damage checkpoint: PvP rival hits bypass campaign Tank block,
+NPC evasion/armor, run damage multipliers, equipment shields and carapace armor.
+All three operators now lose the unmodified relay damage amount once the hit
+passes lifecycle guards. Spawn protection/i-frames are still client-only and
+remain an authority gap; do not treat this as complete local health reconciliation.
+
 2026-10-04 combat follow-up: relay hit validation now returns bounded rejection
 reasons to the reporting client and authoritative remaining health on accepted
 hits. Legacy victim-reported hits cannot attribute damage to a dead attacker.
@@ -718,8 +724,10 @@ and comprehensive turnaround generation prompts for 2D-to-3D pipeline documented
   **Implementation checkpoint 2026-10-04 (Claude lane):** (a) developer commentary
   is extracted to `src/developerCommentary.js`: explicit `dispose()`, 8
   characterization tests, browser-verified, owner listed in the system map.
-  Chat was extracted earlier (`82501e4f`). Field crafting and purchase
-  presentation remain, so the ticket stays open.
+  Chat was extracted earlier (`82501e4f`). (b) the Fabrication Bay ("field
+  crafting") is extracted to `src/fabricationBay.js`, with `attach()`/`dispose()`
+  listener and timer ownership, 9 characterization tests, browser-verified on hub
+  and standalone paths. Purchase presentation remains, so the ticket stays open.
 
 ## Owner asks carried from Sprint 48 (Claude, 2026-09-30)
 

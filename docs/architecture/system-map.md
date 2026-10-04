@@ -189,6 +189,11 @@ Do not call `advanceQuest()` from arbitrary UI clicks or introduce a second ques
 - progression/reward data modules;
 - Sprint 29 `rewardPreview.js` / XP feedback / weapon-charm presentation modules;
 - Steam Vault/Inventory UI for Steam-owned item surfaces.
+- The Fabrication Bay (field print, Foundry activation, recipe grid, print ticker,
+  roll reveal, camp-rest session) is owned by
+  [`src/fabricationBay.js`](../../src/fabricationBay.js); `FabricatorManager`
+  (`src/fabricator.js`) owns the state. `main.js` creates the bay, opens it from the
+  menu, Foundry hub and camp rest, and keeps thin wrappers (extracted 2026-10-04, S49-38).
 
 ### Rule
 
