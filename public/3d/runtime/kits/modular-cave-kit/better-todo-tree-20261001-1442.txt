@@ -21,6 +21,11 @@ Original checked entries are not newly certified by this iteration.
     and operator handoff: docs/planning/todo-tree-2026-10-01-handoff.md.
 [ ] Next S49-08/32 + economy P5: durable exchange outcomes, correct mutation API
     contracts, safe background paid recovery, and item-level reversal dispositions.
+[~] S49-38 (a) — CLAIMED 2026-10-04 by the Claude lane: extract developer
+    commentary out of main.js into a bounded module (src/developerCommentary.js)
+    with explicit lifecycle (timers/cards cleaned up on dispose), characterization
+    tests, and a system-map pointer. Field crafting and purchase presentation
+    (S49-38 b/c) stay open.
 [ ] Full source-ticket acceptance remains open; no real purchase, deployment,
     account revocation, Steamworks setting or hardware certification performed.
 
