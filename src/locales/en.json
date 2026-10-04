@@ -783,7 +783,8 @@
       "pts": "PTS",
       "world_seed": "WORLD SEED:",
       "leaderboard_results": "◈ LEADERBOARD RESULTS",
-      "try_again": "TRY AGAIN"
+      "try_again": "TRY AGAIN",
+      "rematch_requested": "REMATCH REQUESTED…"
     },
     "game_over_main_menu": {
       "main_menu": "MAIN MENU"

@@ -783,7 +783,8 @@
       "pts": "ОЧК",
       "world_seed": "СИД МИРА:",
       "leaderboard_results": "◈ РЕЗУЛЬТАТЫ ТАБЛИЦЫ ЛИДЕРОВ",
-      "try_again": "ПОПРОБОВАТЬ СНОВА"
+      "try_again": "ПОПРОБОВАТЬ СНОВА",
+      "rematch_requested": "ЗАПРОШЕН РЕВАНШ…"
     },
     "game_over_main_menu": {
       "main_menu": "ГЛАВНОЕ МЕНЮ"

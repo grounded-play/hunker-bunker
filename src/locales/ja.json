@@ -783,7 +783,8 @@
       "pts": "点",
       "world_seed": "ワールドシード：",
       "leaderboard_results": "◈ リーダーボード結果",
-      "try_again": "もう一度"
+      "try_again": "もう一度",
+      "rematch_requested": "再戦をリクエスト中…"
     },
     "game_over_main_menu": {
       "main_menu": "メインメニュー"

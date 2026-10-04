@@ -783,7 +783,8 @@
       "pts": "PTS",
       "world_seed": "SEED DO MUNDO:",
       "leaderboard_results": "◈ RESULTADOS DO PLACAR",
-      "try_again": "TENTAR NOVAMENTE"
+      "try_again": "TENTAR NOVAMENTE",
+      "rematch_requested": "REVANCHE SOLICITADA…"
     },
     "game_over_main_menu": {
       "main_menu": "MENU PRINCIPAL"

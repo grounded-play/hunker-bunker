@@ -783,7 +783,8 @@
       "pts": "分",
       "world_seed": "世界种子：",
       "leaderboard_results": "◈ 排行榜结果",
-      "try_again": "再试一次"
+      "try_again": "再试一次",
+      "rematch_requested": "已请求再战…"
     },
     "game_over_main_menu": {
       "main_menu": "主菜单"

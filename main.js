@@ -7480,7 +7480,7 @@ if (gameOverTryAgain) {
     gameOverTryAgain.addEventListener('click', () => {
         if (window.game?.isMultiplayer && window.game?.multiplayerMode === 'pvp') {
             gameOverTryAgain.disabled = true;
-            gameOverTryAgain.textContent = 'REMATCH REQUESTED...';
+            gameOverTryAgain.textContent = t('ui.game_over.rematch_requested');
             window.game.requestPvpRematch?.();
             return;
         }

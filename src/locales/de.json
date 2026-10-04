@@ -783,7 +783,8 @@
       "pts": "PKT",
       "world_seed": "WELT-SEED:",
       "leaderboard_results": "◈ BESTENLISTEN-ERGEBNISSE",
-      "try_again": "NOCHMAL VERSUCHEN"
+      "try_again": "NOCHMAL VERSUCHEN",
+      "rematch_requested": "REVANCHE ANGEFRAGT…"
     },
     "game_over_main_menu": {
       "main_menu": "HAUPTMENÜ"

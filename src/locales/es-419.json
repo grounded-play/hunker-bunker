@@ -783,7 +783,8 @@
       "pts": "PTS",
       "world_seed": "SEMILLA DEL MUNDO:",
       "leaderboard_results": "◈ RESULTADOS DE CLASIFICACIÓN",
-      "try_again": "REINTENTAR"
+      "try_again": "REINTENTAR",
+      "rematch_requested": "REVANCHA SOLICITADA…"
     },
     "game_over_main_menu": {
       "main_menu": "MENÚ PRINCIPAL"
