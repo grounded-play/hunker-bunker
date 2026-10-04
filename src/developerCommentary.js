@@ -257,6 +257,10 @@ export function createDeveloperCommentary({
     function listItem(entry, voiceKey) {
         const item = doc.createElement('article');
         item.className = 'commentary-list__item';
+        // Focusable like the achievement cards: the D-pad steps entry by entry
+        // and each scrolls into view. Without it the play buttons were the only
+        // stops, so focus cycled near the top and the history was unreachable.
+        item.tabIndex = 0;
         const title = doc.createElement('h3');
         title.className = 'commentary-list__title';
         title.textContent = entry.title;

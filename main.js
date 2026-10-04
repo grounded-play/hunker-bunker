@@ -9446,7 +9446,15 @@ if (startBtn) {
                     triggerDoorTransition(
                         () => {
                             multiplayerLobby.closeModal();
-                            void openArmoryGate(openDeploymentBriefing, { skipDoor: true });
+                            // Back on the Armory, a controller lands on the button it
+                            // left from. The screen is hidden mid-door, so the focus
+                            // boundary loses the invoker and the pad used to start
+                            // from nothing (S49-10 journey probe).
+                            void openArmoryGate(openDeploymentBriefing, { skipDoor: true }).then(() => {
+                                if (isSteamControllerInputActive()) {
+                                    focusControllerTarget(document.getElementById('armory-btn-embark'));
+                                }
+                            });
                         },
                         undefined,
                         playerType

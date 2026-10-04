@@ -12,6 +12,25 @@ const pad = (page, action) => page.evaluate(
     action
 );
 
+// Start (button 9) on a browser gamepad. In gameplay B is deliberately not
+// pause (e8b92f83: B closing the map must not also open Settings); Start is.
+async function pressStart(page) {
+    const setStart = (pressed) => page.evaluate((down) => {
+        const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+        buttons[9] = { pressed: down, value: down ? 1 : 0 };
+        const pad = { id: 'Xbox Wireless Controller (STANDARD GAMEPAD)', index: 0, connected: true, mapping: 'standard', axes: [0, 0, 0, 0], buttons };
+        navigator.getGamepads = () => [pad];
+    }, pressed);
+    // Connect released first: a button already down when a pad appears is
+    // treated as held, not pressed.
+    await setStart(false);
+    await page.waitForTimeout(250);
+    await setStart(true);
+    await page.waitForTimeout(250);
+    await setStart(false);
+    await page.waitForTimeout(250);
+}
+
 const focused = (page) => page.evaluate(() => {
     const el = document.activeElement;
     if (!el || el === document.body) return null;
@@ -297,7 +316,10 @@ test.describe('S49-10 controller journey', () => {
     test('In run: pause, settings, abort, results — all by controller', async ({ page }) => {
         await bootToOperatorMenu(page);
         await startRunAndSkipIntro(page);
-        await pad(page, 'menu_back');
+        await pressStart(page);
+        // A pad's first press wakes the game when audio is still locked (no
+        // real gesture in a headless run) and is swallowed; press once more.
+        if (await page.locator('#settings-popup').isHidden()) await pressStart(page);
         await expect(page.locator('#settings-popup')).toBeVisible({ timeout: 10_000 });
         await steerTo(page, '#abort-mission');
         await pad(page, 'menu_confirm');

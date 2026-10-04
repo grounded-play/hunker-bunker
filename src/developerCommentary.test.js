@@ -177,6 +177,8 @@ describe('developer commentary', () => {
         const heading = list.children[Object.keys(COMMENTARY_ENTRIES).length];
         expect(heading.textContent).toBe('ui.commentary.history_heading');
         expect(list.children.at(-1).children[0].textContent).toBe(DEV_HISTORY_ENTRIES.voices.title);
+        // Controller: every entry is a focus stop, so the D-pad scrolls the whole list.
+        expect(list.children.filter((c) => c.tagName === 'ARTICLE').every((c) => c.tabIndex === 0)).toBe(true);
     });
 
     it('adds a play button once the voice manifest loads, only where a line is recorded', async () => {

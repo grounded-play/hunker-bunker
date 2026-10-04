@@ -11895,6 +11895,11 @@ html.phase-menu .menu-commentary-stack .commentary-toast,
   background: rgba(12, 18, 24, 0.85);
   border-radius: 4px;
 }
+.commentary-list__item:focus,
+.commentary-list__item:focus-visible {
+  outline: 2px solid rgba(251, 191, 36, 0.9);
+  outline-offset: 2px;
+}
 .commentary-list__title {
   margin: 0 0 4px;
   font: 700 max(13px, calc(var(--font-xs) * 1)) / 1.2 'Space Mono', monospace;
