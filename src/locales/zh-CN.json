@@ -567,8 +567,6 @@
     },
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ 战斗嘉奖 // 深层地壳表彰",
-      "title_copy_a_portable": "复制便携存档代码",
-      "copy_save_code": "复制存档代码",
       "title": "特工嘉奖",
       "accent_archive": "// 档案"
     },
@@ -1508,9 +1506,7 @@
       "unlocked": "已解锁",
       "summary_unlocked": "已解锁 {unlocked} / {total}"
     },
-    "save": {
-      "code_unavailable": "存档代码不可用"
-    },
+    "save": {},
     "objective": {
       "blocked": "受阻",
       "next": "下一个目标",

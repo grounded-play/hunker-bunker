@@ -567,8 +567,6 @@
     },
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ 戦闘表彰 // 深部地殻功績",
-      "title_copy_a_portable": "携帯用セーブコードをコピー",
-      "copy_save_code": "セーブコードをコピー",
       "title": "オペレーティブ表彰",
       "accent_archive": "// アーカイブ"
     },
@@ -1508,9 +1506,7 @@
       "unlocked": "解除済み",
       "summary_unlocked": "{unlocked} / {total} 解除"
     },
-    "save": {
-      "code_unavailable": "セーブコードを取得できません"
-    },
+    "save": {},
     "objective": {
       "blocked": "進行不能",
       "next": "次の目標",

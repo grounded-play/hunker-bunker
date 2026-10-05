@@ -1264,7 +1264,6 @@ function moveAchievementsDirectionalFocus(code) {
 
     const isCard = active?.classList?.contains('achievement-card');
     const isClose = active?.id === 'close-achievements-modal';
-    const isSave = active?.id === 'achievement-copy-save';
 
     if (isClose) {
         if (code === 'ArrowDown' || code === 'KeyS' || code === 'ArrowRight' || code === 'KeyD') {
@@ -1273,12 +1272,6 @@ function moveAchievementsDirectionalFocus(code) {
         return false;
     }
 
-    if (isSave) {
-        if (code === 'ArrowUp' || code === 'KeyW' || code === 'ArrowLeft' || code === 'KeyA') {
-            return focusControllerTarget(cards[cards.length - 1], { playHover: true });
-        }
-        return false;
-    }
 
     if (!isCard) return false;
 
@@ -6551,9 +6544,7 @@ function renderAchievementsModal() {
     const state = achievementEngine.getState();
     const grid = document.getElementById('achievements-grid');
     const summary = document.getElementById('achievements-summary');
-    const status = document.getElementById('achievements-save-status');
     if (summary) summary.textContent = t('ui.ach.summary_unlocked', { unlocked: getAchievementUnlockCount(state), total: getLiveAchievementCount() });
-    if (status) status.textContent = '';
     renderAchievementCards(grid, state);
 }
 
@@ -6576,41 +6567,10 @@ function closeAchievementsModal() {
     }
 }
 
-async function copyAchievementSaveCode() {
-    const code = exportSaveCode();
-    const status = document.getElementById('achievements-save-status');
-    if (!code) {
-        if (status) status.textContent = t('ui.save.code_unavailable');
-        window.AudioManager?.play?.('ui_error', { volume: 0.5 });
-        return;
-    }
-    let copied = false;
-    try {
-        await navigator.clipboard?.writeText(code);
-        copied = true;
-    } catch {
-        // clipboard blocked
-    }
-    if (status) {
-        status.textContent = copied
-            ? 'SAVE CODE COPIED'
-            : 'SAVE CODE READY IN SAVE DATA PANEL';
-    }
-    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
-    if (!copied) {
-        setSaveDataOpen(true);
-        if (saveDataCode) {
-            saveDataCode.value = code;
-            saveDataCode.select();
-        }
-    }
-}
-
 function installAchievementsUi() {
     updateAchievementsMenuButton({ shine: hasAnyUnlock(achievementEngine.getState()) });
     document.getElementById('achievements-btn')?.addEventListener('click', openAchievementsModal);
     document.getElementById('close-achievements-modal')?.addEventListener('click', closeAchievementsModal);
-    document.getElementById('achievement-copy-save')?.addEventListener('click', copyAchievementSaveCode);
     document.getElementById('achievements-modal')?.addEventListener('click', (event) => {
         if (event.target?.id === 'achievements-modal') closeAchievementsModal();
     });

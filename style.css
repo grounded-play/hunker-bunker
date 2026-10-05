@@ -11623,15 +11623,6 @@ body.hud-hidden .compound-location-title {
   margin-top: calc(var(--vu) * 0.8);
 }
 
-.achievements-save-status {
-  font-family: 'Space Mono', monospace;
-  font-size: var(--font-xs);
-  letter-spacing: 0.08em;
-  color: rgba(215, 255, 205, 0.82);
-  margin-top: calc(var(--vu) * 0.6);
-  min-height: 1.1em;
-}
-
 .achievements-grid {
   flex: 1 1 auto;
   min-height: 0;
@@ -11738,17 +11729,6 @@ body.hud-hidden .compound-location-title {
 
 .achievement-card__meta--unlocked {
   color: rgba(125, 255, 90, 0.92);
-}
-
-.achievements-footer {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: calc(var(--vu) * 1.2);
-  margin-top: calc(var(--vu) * 1.4);
-  padding-top: calc(var(--vu) * 1.2);
-  border-top: 1px solid rgba(var(--achievement-glow-rgb), 0.22);
 }
 
 .achievement-toast {

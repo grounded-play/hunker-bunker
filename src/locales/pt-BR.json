@@ -567,8 +567,6 @@
     },
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ CITAÇÕES DE COMBATE // CONDECORAÇÕES DA CROSTA PROFUNDA",
-      "title_copy_a_portable": "Copiar um código de save portátil",
-      "copy_save_code": "COPIAR CÓDIGO DE SAVE",
       "title": "CITAÇÕES DE OPERATIVO",
       "accent_archive": "// ARQUIVO"
     },
@@ -1508,9 +1506,7 @@
       "unlocked": "DESBLOQUEADO",
       "summary_unlocked": "{unlocked} / {total} DESBLOQUEADOS"
     },
-    "save": {
-      "code_unavailable": "CÓDIGO DE SAVE INDISPONÍVEL"
-    },
+    "save": {},
     "objective": {
       "blocked": "BLOQUEADO",
       "next": "PRÓXIMO OBJETIVO",

@@ -567,8 +567,6 @@
     },
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ CITACIONES DE COMBATE // CONDECORACIONES DE CORTEZA PROFUNDA",
-      "title_copy_a_portable": "Copiar un código de guardado portátil",
-      "copy_save_code": "COPIAR CÓDIGO DE GUARDADO",
       "title": "CITACIONES DE OPERATIVO",
       "accent_archive": "// ARCHIVO"
     },
@@ -1508,9 +1506,7 @@
       "unlocked": "DESBLOQUEADO",
       "summary_unlocked": "{unlocked} / {total} DESBLOQUEADOS"
     },
-    "save": {
-      "code_unavailable": "CÓDIGO DE GUARDADO NO DISPONIBLE"
-    },
+    "save": {},
     "objective": {
       "blocked": "BLOQUEADO",
       "next": "PRÓXIMO OBJETIVO",

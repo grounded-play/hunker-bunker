@@ -113,7 +113,7 @@ Boot (DoorIntro cinematic) ─▶ TITLE (#splash)
   ├─ SWITCH CLASS ........ (hidden until relevant) → operator menu
   ├─ NEW RUN ............. → OPERATOR MENU (§4.2)
   ├─ MULTIPLAYER ......... → TACTICAL NET (§4.5)
-  ├─ ACHIEVEMENTS ........ → Operative Citations (#achievements-modal): every card focusable, grid scrolls; COPY SAVE CODE
+  ├─ ACHIEVEMENTS ........ → Operative Citations (#achievements-modal): every card focusable, grid scrolls (save codes live in Settings → Profile & Saves → Save data)
   ├─ SETTINGS ............ → SETTINGS (§4.7)
   ├─ ABOUT ............... → Credits (#about-modal)
   ├─ QUIT GAME ........... → Quit confirm (#quit-confirm-modal)

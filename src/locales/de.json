@@ -567,8 +567,6 @@
     },
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ GEFECHTSAUSZEICHNUNGEN // TIEFENKRUSTEN-EHRUNGEN",
-      "title_copy_a_portable": "Portablen Speichercode kopieren",
-      "copy_save_code": "SPEICHERCODE KOPIEREN",
       "title": "OPERATIVEN-AUSZEICHNUNGEN",
       "accent_archive": "// ARCHIV"
     },
@@ -1508,9 +1506,7 @@
       "unlocked": "FREIGESCHALTET",
       "summary_unlocked": "{unlocked} / {total} FREIGESCHALTET"
     },
-    "save": {
-      "code_unavailable": "SPEICHERCODE NICHT VERFÜGBAR"
-    },
+    "save": {},
     "objective": {
       "blocked": "BLOCKIERT",
       "next": "NÄCHSTES ZIEL",

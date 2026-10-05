@@ -567,8 +567,6 @@
     },
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ БОЕВЫЕ НАГРАДЫ // ОТЛИЧИЯ ГЛУБИННОЙ КОРЫ",
-      "title_copy_a_portable": "Скопировать переносимый код сохранения",
-      "copy_save_code": "КОПИРОВАТЬ КОД СОХРАНЕНИЯ",
       "title": "НАГРАДЫ ОПЕРАТИВНИКА",
       "accent_archive": "// АРХИВ"
     },
@@ -1508,9 +1506,7 @@
       "unlocked": "ОТКРЫТО",
       "summary_unlocked": "РАЗБЛОКИРОВАНО {unlocked} / {total}"
     },
-    "save": {
-      "code_unavailable": "КОД СОХРАНЕНИЯ НЕДОСТУПЕН"
-    },
+    "save": {},
     "objective": {
       "blocked": "ЗАБЛОКИРОВАНО",
       "next": "СЛЕДУЮЩАЯ ЦЕЛЬ",

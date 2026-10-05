@@ -567,8 +567,6 @@
     },
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ COMBAT CITATIONS // DEEP CRUST COMMENDATIONS",
-      "title_copy_a_portable": "Copy a portable save code",
-      "copy_save_code": "COPY SAVE CODE",
       "title": "OPERATIVE CITATIONS",
       "accent_archive": "// ARCHIVE"
     },
@@ -1508,9 +1506,7 @@
       "unlocked": "UNLOCKED",
       "summary_unlocked": "{unlocked} / {total} UNLOCKED"
     },
-    "save": {
-      "code_unavailable": "SAVE CODE UNAVAILABLE"
-    },
+    "save": {},
     "objective": {
       "blocked": "BLOCKED",
       "next": "NEXT OBJECTIVE",
