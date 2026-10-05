@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-    GROUNDING_DECAL_LIMIT, GROUNDING_RULES, groundingRuleFor, normalizePopulationBudget, planRoomPopulation
+    GROUNDING_DECAL_LIMIT, GROUNDING_RULES, areaRoomObjectLimit, groundingRuleFor, normalizePopulationBudget, planRoomPopulation
 } from './roomPopulation.js';
 import fs from 'node:fs';
 
@@ -402,4 +402,51 @@ describe('room population', () => {
             expect(bare.plan.placements.some(({ kind }) => kind.startsWith('grounding'))).toBe(false);
         });
     });
+
+    describe('area density budget (lived-in world M3, flag off by default)', () => {
+        it.each([
+            ['4x4', 16, 3],
+            ['6x6', 36, 5],
+            ['8x8', 64, 7],
+            ['10x10', 100, 8],
+            ['14x14', 196, 8]
+        ])('clamps floor(cells / 12) + 2 to 3..8 for a %s room', (_label, floorCells, limit) => {
+            expect(areaRoomObjectLimit(floorCells)).toBe(limit);
+        });
+
+        // A 12x12 interior (144 floor cells) asks for up to 8 objects.
+        function largeRoom() {
+            const grid = Array.from({ length: 14 }, (_, y) => Array.from({ length: 14 }, (_, x) => (
+                x === 0 || y === 0 || x === 13 || y === 13 ? '#' : '.'
+            )));
+            const interior = [];
+            for (let y = 1; y <= 12; y += 1) for (let x = 1; x <= 12; x += 1) interior.push({ x, y });
+            return {
+                grid,
+                room: {
+                    id: 'cathedral',
+                    role: 'generic',
+                    interior,
+                    navigation: { doorLanes: [{ x: 0, y: 6 }] },
+                    populationBudget: { signature: 1, large: 3, small: 3, pickup: 1, enemy: 0 },
+                    themeConfig: {
+                        signatureProps: ['prop_votive_candle_shrine'],
+                        largeProps: ['prop_conduit_hub', 'prop_specimen_tank'],
+                        smallProps: ['scatter_bolts'],
+                        rareProps: ['prop_corporate_saint_reliquary'],
+                        ambientProps: ['decal_worker_sleep_roll']
+                    }
+                }
+            };
+        }
+        const objectCount = (plan) => plan.placements.filter(({ kind }) => kind !== 'grounding-decal').length;
+
+        it('keeps the five-object cap unless the area budget is asked for', () => {
+            const { room, grid } = largeRoom();
+            expect(objectCount(planRoomPopulation(room, grid, () => 0.1))).toBeLessThanOrEqual(5);
+            const roomy = planRoomPopulation(room, grid, () => 0.1, { areaBudget: true });
+            expect(objectCount(roomy)).toBeLessThanOrEqual(areaRoomObjectLimit(144));
+        });
+    });
 });
+

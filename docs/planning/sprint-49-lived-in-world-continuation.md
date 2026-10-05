@@ -259,22 +259,47 @@ was folded into `GROUNDING_RULES`.
 
 ### Goal 3 — density scaling (M3, measure first)
 
-**Now:** `const roomObjectLimit = 5` in `roomPopulation.js`. Fractured debris is
-cached per model type on first break (`5997431e`). Nothing measures draw calls per
-room (`renderer.info` is only read by `rewardPreview.js`).
+**Before M3:** `const roomObjectLimit = 5` in `roomPopulation.js`. Fractured debris
+was cached per model type on first break (`5997431e`). Nothing measured draw calls
+per room (`renderer.info` is only read by `rewardPreview.js`).
 
-- [ ] Measurement first: a probe that reports placements, draw calls and triangles
-  per generated room (showroom or headless sweep) and commits a baseline report.
-- [ ] Area budget behind a flag (default off):
-  `limit = clamp(floor(floorCells / 12) + 2, 3, 8)`, priority unchanged (pickups →
-  signature anchor → wall infrastructure → floor grounding → edge decals).
-- [ ] Warm the fracture cache for the active room's theme models during idle time
-  on room entry, rather than precomputing every prop at boot.
+- [x] Measurement first: a probe that reports placements, draw calls and triangles
+  per generated room and commits a baseline report.
+  [`scripts/room-density-probe.mjs`](../../scripts/room-density-probe.mjs) stamps
+  all 12 authored builds × 4 biomes × 50 seeds, themes and plans them as
+  `buildChunk` does, and prices each placement from asset data (GLB primitives and
+  triangles; sprites as one quad). It is a content-cost estimate, not a GPU
+  measurement. Baseline:
+  [`room-density-baseline-2026-10-04.json`](../reports/room-density-baseline-2026-10-04.json).
+- [x] Area budget behind a flag (default off): `areaRoomObjectLimit` implements
+  `clamp(floor(floorCells / 12) + 2, 3, 8)`, priority unchanged. Opt in with
+  `planRoomPopulation(..., { areaBudget: true })`. In game it is
+  `featureFlags.isAreaRoomDensityEnabled()` (`localStorage.hb_area_room_density =
+  'on'`), which `ThreeGame` ignores in multiplayer: peers generate rooms locally,
+  so one player's setting must not change everyone's rooms.
+- [x] Warm the fracture cache in idle time on room entry:
+  [`propDebrisPrewarm.js`](../../src/propDebrisPrewarm.js) queues a destructible
+  prop's model family when its 3D model attaches, and fractures one family per
+  idle period with at least 30 ms of idle time. It has no timeout fallback, so a
+  device that never idles keeps today's behaviour instead of hitching at random.
 - [ ] **[Deck]** Paired capture, flag on vs off: presented p95 does not regress and
   the destruction-burst window improves on 152 ms. Only then default the flag on.
 
 **Accept (agent):** baseline report committed; formula unit-tested at 4×4, 6×6,
 8×8, 10×10 and 14×14; flag off by default.
+
+**Result (2026-10-04):** baseline (cap 5): 4.85 objects per room on average (max 6,
+because structural anchors sit outside the cap), 6.8 estimated draw calls (p95 8),
+about 67k triangles on average (p95 110k, max 125k). With the area budget
+([report](../reports/room-density-area-budget-2026-10-04.json)): 6.64 objects (max 8),
+8.6 draw calls (p95 10), about 93k triangles on average (p95 147k). That is +37%
+objects and +39% triangles. **Finding:** every authored build has 99–209 floor
+cells, so the formula returns its maximum of 8 for all of them. On today's catalog
+it is a flat raise to 8, not area scaling, and the alcove and standard tiers it was
+designed around do not exist as authored rooms. Its stated targets also disagree
+with the formula: an 8×8 room gets 7, not "4 to 5". Decide whether to keep the
+formula before the [Deck] capture. Checks: 28 focused tests, full suite 4,969
+passed, 500-seed sweep 0 failures.
 
 ### Goal 4 — practical emissive light (M4)
 

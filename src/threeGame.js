@@ -257,6 +257,8 @@ export const BLACK_BOX_CORPSE_VISUALS = Object.freeze({
 });
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
 import { spawnEnemyGibs, spawnPropDebris } from './enemyGibs.js';
+import { createPropDebrisPrewarmQueue } from './propDebrisPrewarm.js';
+import { isAreaRoomDensityEnabled } from './featureFlags.js';
 import { registerTinaHit, TINA_TOTAL_HITS } from './mayorTinaCombat.js';
 import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
@@ -2011,6 +2013,9 @@ export class ThreeGame {
         this.wfcMetadataCache = new Map();
         this.proceduralDoorStates = new Map();
         this.proceduralDoorMeshes = new Map();
+        // Fracture destructible props' debris in idle time once their model
+        // streams in, not on the frame they break (lived-in world M3).
+        this.propDebrisPrewarm = createPropDebrisPrewarmQueue();
         this.mazeAccessState = createAccessState();
         this.worldRouteRecords = new Map();
         this.pocketGroups = new Map();
@@ -7114,6 +7119,7 @@ export class ThreeGame {
                 source.userData.replacedBy3d = true;
                 source.visible = false;
                 syncWorld3dReplacement(source);
+                this.propDebrisPrewarm?.enqueue(source, root);
                 if (root.userData?.mixer) {
                     this.world3dMixers = this.world3dMixers || new Set();
                     this.world3dMixers.add(root.userData.mixer);
@@ -40478,7 +40484,11 @@ export class ThreeGame {
                     activeQuests
                 })
             }));
-            const plans = planChunkRoomPopulation(mazeMetadata.roomInstances, grid, roomRandom);
+            // M3 area density is a solo QA flag: co-op peers generate rooms
+            // independently, so it must not depend on one player's setting.
+            const plans = planChunkRoomPopulation(mazeMetadata.roomInstances, grid, roomRandom, {
+                areaBudget: !this.isMultiplayer && isAreaRoomDensityEnabled()
+            });
             const planByRoom = new Map(plans.map((plan) => [plan.roomId, plan]));
             mazeMetadata.roomInstances = mazeMetadata.roomInstances.map((room) => ({
                 ...room,
@@ -41123,6 +41133,7 @@ export class ThreeGame {
     }
 
     destroy() {
+        this.propDebrisPrewarm?.dispose();
         this.clearCompanions();
         this.applyMilestoneBossRuntimeEvent?.({ type: MILESTONE_BOSS_EVENT_TYPES.QUIT });
         this.renderer.setAnimationLoop(null);

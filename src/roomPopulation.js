@@ -122,6 +122,18 @@ export const GROUNDING_RULES = Object.freeze([
     }
 ]);
 
+/**
+ * Lived-in world M3: a room's object budget from its usable floor instead of
+ * the fixed five, clamp(floor(floorCells / 12) + 2, 3, 8). Off by default
+ * (`planRoomPopulation(..., { areaBudget: true })`, behind
+ * featureFlags.isAreaRoomDensityEnabled); it stays off until a paired Deck
+ * capture shows presented p95 does not regress.
+ */
+export function areaRoomObjectLimit(floorCells) {
+    const cells = Number.isFinite(floorCells) ? Math.max(0, floorCells) : 0;
+    return Math.min(8, Math.max(3, Math.floor(cells / 12) + 2));
+}
+
 /** Flat grounding decals per room. They sit outside the five-object cap. */
 export const GROUNDING_DECAL_LIMIT = 2;
 const GROUNDED_ANCHOR_KINDS = ['signature', 'large', 'ammo-cache', 'structural', 'interaction', 'reward', 'lore'];
@@ -147,7 +159,7 @@ function propFrom(list, random, fallback) {
     return source[Math.floor(random() * source.length)];
 }
 
-export function planRoomPopulation(room, grid, random, { grounding = true } = {}) {
+export function planRoomPopulation(room, grid, random, { grounding = true, areaBudget = false } = {}) {
     const budget = normalizePopulationBudget(room.populationBudget);
     const doorLanes = room.navigation?.doorLanes ?? [];
     const fixtureCells = room.navigation?.reserved ?? [];
@@ -206,7 +218,8 @@ export function planRoomPopulation(room, grid, random, { grounding = true } = {}
     // Deck capture showed prop destruction on the worst frame window, so room
     // life comes from a bounded mix of one small prop, one decal and an
     // occasional rare landmark rather than an unbounded scatter pass.
-    const roomObjectLimit = 5;
+    const floorCells = (room.interior ?? []).filter(({ x, y }) => grid?.[y]?.[x] === '.').length;
+    const roomObjectLimit = areaBudget ? areaRoomObjectLimit(floorCells) : 5;
     const budgetedObjectCount = () => placements.filter((placement) => (
         placement.kind !== 'grounding-decal'
     )).length;
@@ -406,6 +419,6 @@ export function planRoomPopulation(room, grid, random, { grounding = true } = {}
     };
 }
 
-export function planChunkRoomPopulation(rooms, grid, random) {
-    return (rooms ?? []).map((room) => planRoomPopulation(room, grid, random));
+export function planChunkRoomPopulation(rooms, grid, random, options = {}) {
+    return (rooms ?? []).map((room) => planRoomPopulation(room, grid, random, options));
 }
