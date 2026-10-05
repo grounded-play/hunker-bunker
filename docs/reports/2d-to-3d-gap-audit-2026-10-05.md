@@ -41,37 +41,45 @@ types below spawn under names the GLB registry does not know, so they keep their
 billboard. Fixing most of them is one `WORLD_3D_MODEL_ALIASES` entry each, after a
 side-by-side look confirms the model reads as the same object.
 
-Visible counts are from the six sampled areas.
+**Reviewed side by side (2026-10-05).** The debug museum now opens on a
+"2D -> 3D REVIEW" row: each 2D sprite beside each candidate GLB
+(`src/data/world3dCandidates.js`; re-capture with
+`HB_PROBES=1 npx playwright test tests/e2e/probes/review-2d-3d.spec.js`).
+Contact sheets: `assets/2d-3d-review/sheet-1..3.png`.
 
-| 2D type (visible) | Existing GLB candidate | Fit |
+Two of the six "obvious" matches were wrong once seen: `prop_cyber_junction` is
+a console with a junction box bolted on, and `prop_alien_respiratory_vent` is a
+purple alien bloom. They went back to review with better candidates.
+
+**Wired** (aliased, renders as the model): fusion generator, doused cookfire,
+Vesper turret, camp supplies → camp crate. The alias table had never reached
+the game before this: the room-prop, junk and scatter spawn paths checked
+`hasWorld3dModel` with the raw 2D name, so aliases only worked in unit tests.
+`bunker_junk_legendary` had been falling back to `basic_pile`.
+
+**Corpses:** `cybersnail_dead.glb` now draws for cybersnail corpses
+(`attachCorpse3d`); the sprite keeps the shell pickup, fade and fog.
+
+**Placeholder art:** every camp and hive signature-prop sprite is a ~10 KB
+placeholder tile (dashed box with initials). Hives show them in game. Any of
+their candidates is an upgrade.
+
+| 2D type | Best candidate on review | Verdict |
 |---|---|---|
-| prop_cyber_junction (31) | prop_conduit_junction_box, prop_conduit_hub | direct |
-| prop_alien_respiratory_vent (2) | prop_biomech_respirator, prop_biomech_sphincter_hatch_vent | direct |
-| prop_fusion_generator (1) | fusion_generator (registered under the short key) | direct |
-| prop_camp_cookfire_doused | prop_camp_cookfire (the GLB has no flames) | direct |
-| prop_camp_vesper_turret | prop_base_defense_turret | direct |
-| scatter_camp_supplies | prop_camp_crate, prop_bunker_supplies | direct |
-| prop_cave_spores (39), prop_spore_colony (32) | prop_fungal_spore_dispenser | check look |
-| prop_cave_lichen (19) | state_growth_overrun_1/2 | check look |
-| prop_biomech_pillar_left / _right (25/25) | arch_pillar_buttress_01–04, prop_biomech_arch | check look |
-| scatter_bio_pod (20), prop_hive_chitin_hatchery | prop_biomech_incubator | check look |
-| prop_cryo_sleep_pod (2) | prop_icey_thermal_pod, prop_flesh_steel_coffin | check look |
-| prop_cave_hive_wounded (37) | prop_hive_resin_sac | check look |
-| prop_hive_synaptic_web | prop_biomech_neural_synapse | check look |
-| prop_hive_suture_organ | prop_flesh_steel_inhaler | check look |
-| prop_hive_wound_cauterizer | prop_biomech_triage_cradle | check look |
-| prop_hive_relay_antenna | prop_vertebral_cable_riser | check look |
-| prop_camp_tallow_resin_urn | prop_fungal_resin_basin | check look |
-| prop_camp_tallow_spore_trays | prop_fungal_mycelium_loom | check look |
-| prop_camp_tallow_still | prop_pipe_organ_heat_exchanger | check look |
-| prop_camp_vesper_ammo_press | prop_fabricator_workstation | check look |
-| prop_camp_vesper_shield_rack | prop_security_barricade | check look |
-| prop_camp_meridian_repair_rig (1) | prop_maintenance_tool_cart | check look |
-| prop_camp_meridian_battery_bank | prop_oxygen_bottle_cascade_rack | check look |
-| lore_terminal | prop_terminal_ruptured, prop_liturgical_terminal_lectern | check look |
-| cybersnail_dead | cybersnail_dead.glb is registered, but the corpse path still draws the sprite | wiring |
+| prop_cyber_junction | prop_diagnostic_console | good |
+| prop_alien_respiratory_vent | prop_biomech_sphincter_hatch_vent | fair |
+| prop_biomech_pillar_left / _right | prop_biomech_arch | good |
+| prop_cryo_sleep_pod | prop_flesh_steel_coffin | good (thermal pod: no) |
+| scatter_bio_pod | prop_biomech_incubator | fair |
+| prop_cave_hive_wounded | prop_hive_resin_sac | sprite is unusable; upgrade |
+| lore_terminal | prop_liturgical_terminal_lectern | fair (ruptured terminal reads broken) |
+| hive suture / cauterizer / relay / synaptic / hatchery | inhaler / triage cradle / cable riser / neural synapse / incubator | placeholders; all upgrades |
+| camp tallow, vesper, meridian signature props | resin basin, loom, heat exchanger, fabricator, barricade, tool cart, O2 rack | placeholders; camps already hide them behind 3D dressing |
+| prop_cave_spores, prop_spore_colony | prop_fungal_spore_dispenser | weak; prompt written |
+| prop_cave_lichen | state_growth_overrun_1/2 | wrong shape; prompt written |
 
-**Genuinely no model yet** (art requests): cave eggs intact/hatched (45+38
+**Genuinely no model yet** (art requests; prompts in
+`docs/planning/3d-gap-generation-prompts-2026-10-05.md`): cave eggs intact/hatched (45+38
 visible) and scatter_hive_eggs, cave webs (38), hive carapace molt, hive-signature
 prop, camp graves (fresh/old), laundry, warning placard, lockdown shutter,
 meridian radio, cryo icicle/stalagmite/shards, broken drone, biomech debris,
