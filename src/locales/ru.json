@@ -1497,7 +1497,10 @@
         "item_unlock": "Открыто: {label}",
         "item_faction": "Репутация: {label}",
         "item_lead": "Зацепка: {label}"
-      }
+      },
+      "rival_eliminated": "СОПЕРНИК УСТРАНЁН",
+      "pvp_duel_won": "> ДУЭЛЬ ВЫИГРАНА. СЕКТОР ТВОЙ — ПОКА ЧТО.",
+      "rival_down": "СОПЕРНИК ПОВЕРЖЕН: {callsign}"
     },
     "ach": {
       "unlocked_kicker": "ДОСТИЖЕНИЕ ПОЛУЧЕНО",

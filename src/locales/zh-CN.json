@@ -1497,7 +1497,10 @@
         "item_unlock": "解锁：{label}",
         "item_faction": "声望：{label}",
         "item_lead": "线索：{label}"
-      }
+      },
+      "rival_eliminated": "对手已清除",
+      "pvp_duel_won": "> 决斗胜利。这片区域暂时归你了。",
+      "rival_down": "对手倒下：{callsign}"
     },
     "ach": {
       "unlocked_kicker": "成就解锁",

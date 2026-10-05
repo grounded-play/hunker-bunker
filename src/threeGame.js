@@ -6423,6 +6423,9 @@ export class ThreeGame {
         this._lastPvpRoundOutcome = data;
         const isLocalWinner = Boolean(data?.winnerId && data.winnerId === this.multiplayerLocalPlayerId);
         const isLocalLoser = Boolean(data?.loserId && data.loserId === this.multiplayerLocalPlayerId);
+        debugLog.info('MULTIPLAYER', 'pvp-round-completed', {
+            roundId: data?.roundId ?? null, reason: data?.reason ?? null, isLocalWinner, isLocalLoser
+        });
         if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('pvp-round-completed', {
                 detail: { ...data, isLocalWinner, isLocalLoser }
@@ -7089,7 +7092,9 @@ export class ThreeGame {
         }
         remote.overlay?.setDowned?.(true);
         this.showRemotePlayerDeathMarker?.(remote, { keepBody: true });
-        window.showToastNotification?.(`SQUADMATE LOST: ${remote.callsign ?? ''}`.trim());
+        window.showToastNotification?.(this.multiplayerMode === 'pvp'
+            ? t('ui.go.rival_down', { callsign: remote.callsign ?? '' }).trim()
+            : `SQUADMATE LOST: ${remote.callsign ?? ''}`.trim());
         window.AudioManager?.play?.('ui_error', { volume: 0.4 });
         debugLog.info('MULTIPLAYER', 'remote-player-died', { playerId: detail.playerId, reason: detail.reason ?? null, x: detail.x, z: detail.z });
         return true;

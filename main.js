@@ -5279,11 +5279,14 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     // Title / subtitle
     const title = document.querySelector('.game-over-title');
     const subtitle = document.querySelector('.game-over-subtitle');
-    if (title) title.textContent = isVictory ? t('ui.go.extraction_complete') : t('ui.go.exosuit_failure');
+    const pvpWin = isVictory && deathReason === 'pvp-win';
+    if (title) title.textContent = pvpWin ? t('ui.go.rival_eliminated') : (isVictory ? t('ui.go.extraction_complete') : t('ui.go.exosuit_failure'));
     if (subtitle) {
-        const outcomeReport = isVictory
-            ? `> MISSION: ${stats.missionLabel ?? 'COMPLETE'}. RETURNING TO MOTHERSHIP.`
-            : generateDeathReport(stats, deathReason);
+        const outcomeReport = pvpWin
+            ? t('ui.go.pvp_duel_won')
+            : isVictory
+                ? `> MISSION: ${stats.missionLabel ?? 'COMPLETE'}. RETURNING TO MOTHERSHIP.`
+                : generateDeathReport(stats, deathReason);
         const report = `${outcomeReport}\n\n${expeditionDebrief({
             victory: isVictory, reason: deathReason,
             buildCount: (window.game?.runRelics?.length ?? 0) + (window.game?.runOverclocks?.length ?? 0)
@@ -6089,6 +6092,25 @@ window.addEventListener('player-extracted', (event) => {
             'win'
         );
     }, 600);
+});
+
+// PvP: the relay names the round's winner (pvpRoundCompleted). The loser
+// reaches Game Over through their own death; the winner used to get no screen
+// at all, so they could neither see the result nor vote for the rematch.
+window.addEventListener('pvp-round-completed', (event) => {
+    if (!event?.detail?.isLocalWinner || appPhase === 'gameover') return;
+    window.game?.setInputEnabled?.(false);
+    const stats = window.game?.getRunStats?.() ?? {};
+    window.setTimeout(() => {
+        triggerDoorTransition(
+            () => {
+                showGameOverScreen(stats, { isVictory: true, deathReason: 'pvp-win' });
+                window.game?.setInputEnabled?.(false);
+            },
+            null,
+            'win'
+        );
+    }, 900);
 });
 
 // ── Bunker Archive ────────────────────────────────────────────

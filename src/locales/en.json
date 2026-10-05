@@ -1497,7 +1497,10 @@
         "item_unlock": "Unlocked: {label}",
         "item_faction": "Standing: {label}",
         "item_lead": "Lead: {label}"
-      }
+      },
+      "rival_eliminated": "RIVAL ELIMINATED",
+      "pvp_duel_won": "> DUEL WON. THE SECTOR IS YOURS — FOR NOW.",
+      "rival_down": "RIVAL DOWN: {callsign}"
     },
     "ach": {
       "unlocked_kicker": "ACHIEVEMENT UNLOCKED",

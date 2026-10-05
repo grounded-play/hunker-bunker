@@ -1497,7 +1497,10 @@
         "item_unlock": "解放：{label}",
         "item_faction": "評判：{label}",
         "item_lead": "手がかり：{label}"
-      }
+      },
+      "rival_eliminated": "ライバル排除",
+      "pvp_duel_won": "> 決闘に勝利。このセクターは今だけお前のものだ。",
+      "rival_down": "ライバルダウン: {callsign}"
     },
     "ach": {
       "unlocked_kicker": "実績解除",

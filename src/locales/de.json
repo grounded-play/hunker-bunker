@@ -1497,7 +1497,10 @@
         "item_unlock": "Freigeschaltet: {label}",
         "item_faction": "Ansehen: {label}",
         "item_lead": "Spur: {label}"
-      }
+      },
+      "rival_eliminated": "RIVALE AUSGESCHALTET",
+      "pvp_duel_won": "> DUELL GEWONNEN. DER SEKTOR GEHÖRT DIR — VORERST.",
+      "rival_down": "RIVALE AM BODEN: {callsign}"
     },
     "ach": {
       "unlocked_kicker": "ERFOLG FREIGESCHALTET",

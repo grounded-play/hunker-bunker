@@ -1497,7 +1497,10 @@
         "item_unlock": "Desbloqueado: {label}",
         "item_faction": "Reputación: {label}",
         "item_lead": "Pista: {label}"
-      }
+      },
+      "rival_eliminated": "RIVAL ELIMINADO",
+      "pvp_duel_won": "> DUELO GANADO. EL SECTOR ES TUYO… POR AHORA.",
+      "rival_down": "RIVAL ABATIDO: {callsign}"
     },
     "ach": {
       "unlocked_kicker": "LOGRO DESBLOQUEADO",
