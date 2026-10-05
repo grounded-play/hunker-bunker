@@ -39,27 +39,71 @@
     import { roomPracticalLightPlacement } from '/src/anchorPracticalLight.js';
     import { applyBlackChromaKey, applyGreenChromaKey } from '/src/textureKeying.js';
     import { planRoomDressing } from '/src/roomDressing.js';
-    import { buildRoomDressingGroup, loadKeyedDecalTexture } from '/src/roomDressingRenderer.js';
+    import { buildRoomDressingGroup, loadKeyedDecalTexture, hideRoomDressingSupport } from '/src/roomDressingRenderer.js';
+    import { buildGrammarRoomChunk } from '/src/roomGrammarChunk.js';
 
     const params = new URLSearchParams(location.search);
     const catalog = ALL_ROOM_BUILDS ?? ROOM_BUILD_CATALOG;
-    const build = catalog.find((b) => b.id === params.get('build')) ?? ROOM_BUILD_CATALOG[0];
+    const isGrammar = params.get('build') === 'maintenance_hall' || params.get('grammar') === '1';
+    const isBreached = params.get('view') === 'breached' || params.get('breach') === '1';
+    const build = isGrammar ? null : (catalog.find((b) => b.id === params.get('build')) ?? ROOM_BUILD_CATALOG[0]);
     const biome = ['active', 'cryo', 'bio', 'cave'].includes(params.get('biome')) ? params.get('biome') : 'active';
     let state = Number(params.get('seed')) || 11;
     const random = () => (state = (state * 16807) % 2147483647) / 2147483647;
 
-    // ---- the room, exactly as buildChunk plans it ---------------------------
-    const LONG = { n: 'north', s: 'south', e: 'east', w: 'west' };
-    const stamp = stampRoomBuild(build, random, {
-      openings: Object.fromEntries(build.sockets.map((socket) => [LONG[socket.side], { open: true, offset: 8 }]))
-    });
-    const [themed] = assignRoomThemes([buildRoomInstanceFromBuild(build, stamp)], { biome, depthTier: 1, random });
-    const room = { ...themed, contentPlan: bindRoomContent(themed, build, { chunkSize: stamp.grid.length, activeQuests: [] }) };
-    const plan = planRoomPopulation(room, stamp.grid, random);
-    const shells = wallShellPlacements(stamp.grid, room, biome);
+    // ---- the room -----------------------------------------------------------
+    let room, bounds, currentGrid, shells = [], gateways = [], plan, practical, themeStyle;
+    const breachedCells = new Set();
+    if (isGrammar) {
+      const grammarChunk = buildGrammarRoomChunk({
+        seed: Number(params.get('seed')) || 7,
+        tier: params.get('tier') || 'standard',
+        openings: { north: { open: true, offset: 8 }, south: { open: true, offset: 8 } }
+      });
+      room = grammarChunk.rooms[0];
+      bounds = room.bounds;
+      currentGrid = grammarChunk.grid.map((row) => [...row]);
+      themeStyle = 'bunker';
+      shells = [];
+      gateways = room.doors.map((door) => roomGatewayKitPlacement(door, biome)).filter(Boolean);
+      plan = {
+        placements: (room.grammar?.anchors ?? []).map((a, i) => ({
+          id: a.id,
+          type: i === 0 ? 'prop_maintenance_tool_cart' : 'prop_conduit_junction_box',
+          x: a.x,
+          y: a.y,
+          kind: i === 0 ? 'signature' : 'structural'
+        })),
+        reserved: (room.navigation?.reserved ?? []).map((p) => `${p.x},${p.y}`),
+        degraded: false
+      };
+      practical = null;
+      if (isBreached && room.grammar?.modules?.length) {
+        for (const m of room.grammar.modules) {
+          for (let y = m.y; y < m.y + m.h; y += 1) {
+            for (let x = m.x; x < m.x + m.w; x += 1) {
+              currentGrid[y][x] = '.';
+              breachedCells.add(`${x},${y}`);
+            }
+          }
+        }
+      }
+    } else {
+      const LONG = { n: 'north', s: 'south', e: 'east', w: 'west' };
+      const stamp = stampRoomBuild(build, random, {
+        openings: Object.fromEntries(build.sockets.map((socket) => [LONG[socket.side], { open: true, offset: 8 }]))
+      });
+      const [themed] = assignRoomThemes([buildRoomInstanceFromBuild(build, stamp)], { biome, depthTier: 1, random });
+      room = { ...themed, contentPlan: bindRoomContent(themed, build, { chunkSize: stamp.grid.length, activeQuests: [] }) };
+      bounds = stamp.bounds;
+      currentGrid = stamp.grid;
+      themeStyle = build.themeStyle;
+      shells = wallShellPlacements(stamp.grid, room, biome);
+      gateways = room.doors.map((door) => roomGatewayKitPlacement(door, biome)).filter(Boolean);
+      plan = planRoomPopulation(room, stamp.grid, random);
+      practical = roomPracticalLightPlacement(plan.placements);
+    }
     const shellCells = new Set(shells.flatMap(({ cells }) => cells.map(({ x, y }) => `${x},${y}`)));
-    const gateways = room.doors.map((door) => roomGatewayKitPlacement(door, biome)).filter(Boolean);
-    const practical = roomPracticalLightPlacement(plan.placements);
 
     // ---- textures -----------------------------------------------------------
     const PBR_SUITES = {
@@ -70,7 +114,7 @@
       bunker: { wall: '/3d/runtime/kits/textures/bunker_wall_diffuse.webp', wallNormal: '/3d/runtime/kits/textures/bunker_wall_normal.webp', floor: '/3d/runtime/kits/textures/bunker_floor_diffuse.webp', top: '/3d/runtime/kits/textures/bunker_floor_diffuse.webp' },
       biomech: { wall: '/3d/runtime/kits/textures/biomech_wall_diffuse.webp', wallNormal: '/3d/runtime/kits/textures/biomech_wall_normal.webp', floor: '/3d/runtime/kits/textures/biomech_floor_diffuse.webp', top: '/3d/runtime/kits/textures/biomech_floor_diffuse.webp' }
     };
-    const TERRAIN = PBR_SUITES[build.themeStyle] ?? {
+    const TERRAIN = PBR_SUITES[themeStyle] ?? {
       active: { floor: '/bunker_base_metal.png', wall: '/bunker_wall_metal.png', wallNormal: '/bunker_wall_metal_normal.png', top: '/bunker_base_metal.png' },
       cryo: { floor: '/cryo_base_frost.png', wall: '/cryo_wall_conduit.png', wallNormal: '/cryo_wall_conduit_normal.png', top: '/cryo_base_frost.png' },
       bio: { floor: '/bio_base_growth.png', wall: '/bio_wall_veins.png', wallNormal: '/bio_wall_veins_normal.png', top: '/bio_base_growth.png' }
@@ -116,7 +160,7 @@
     scene.background = new THREE.Color(0x07090b);
     scene.add(new THREE.HemisphereLight(0xb5c6d8, 0x2a2118, 1.7));
     const key = new THREE.DirectionalLight(0xfff1dd, 2.3);
-    const { left, right, top, bottom } = stamp.bounds;
+    const { left, right, top, bottom } = bounds;
     const cx = (left + right) / 2;
     const cz = (top + bottom) / 2;
     key.position.set(cx - 6, 14, cz + 9);
@@ -161,7 +205,7 @@
     const edgeMat = new THREE.LineBasicMaterial({ color: 0x0b0d0f, transparent: true, opacity: 0.55 });
     for (let y = top - 1; y <= bottom + 1; y += 1) {
       for (let x = left - 1; x <= right + 1; x += 1) {
-        if (stamp.grid[y]?.[x] !== '#' || shellCells.has(`${x},${y}`)) continue;
+        if (currentGrid[y]?.[x] !== '#' || shellCells.has(`${x},${y}`)) continue;
         const wall = new THREE.Mesh(wallGeo, wallMaterials);
         wall.position.set(x, WALL_HEIGHT / 2, y);
         scene.add(wall);
@@ -233,11 +277,17 @@
     }
 
     // Lived-in dressing layer: the same planner and instanced renderer the game uses.
-    const dressing = planRoomDressing(room, stamp.grid, { reserved: plan.reserved, occupied: plan.placements });
+    const dressing = planRoomDressing(room, currentGrid, { reserved: plan.reserved, occupied: plan.placements });
     const dressingGroup = await buildRoomDressingGroup(dressing.items, {
       loadModel: (type) => kit(type),
       loadDecalTexture: (type) => loadKeyedDecalTexture(type)
     });
+    if (isBreached && breachedCells.size) {
+      for (const cellKey of breachedCells) {
+        const [bx, by] = cellKey.split(',').map(Number);
+        hideRoomDressingSupport(dressingGroup, bx, by);
+      }
+    }
     scene.add(dressingGroup);
 
     // M4 practical on the signature anchor.
@@ -292,7 +342,10 @@
     label.className = 'label';
     label.style.left = '8px';
     label.style.top = '8px';
-    label.textContent = `${build.id} · ${biome} · theme ${room.theme} · ${props} props, ${decals} decals, `
+    const roomTitle = isGrammar
+      ? `maintenance_hall (${room.grammar?.motif ?? 'industrial'}) · ${isBreached ? 'BREACHED' : 'INTACT'}`
+      : `${build.id} · ${biome} · theme ${room.theme}`;
+    label.textContent = `${roomTitle} · ${props} props, ${decals} decals, `
       + `${shells.length} wall shells, ${gateways.length} gateway${gateways.length === 1 ? '' : 's'} · `
       + `dressing ${dressing.items.length} pieces in ${dressingGroup.userData.drawCalls} draw calls`
       + `${practical ? ` · ${practical.light.palette} practical` : ''}`;
@@ -301,11 +354,26 @@
     detail.className = 'label';
     detail.style.left = `${width * 0.58 + 8}px`;
     detail.style.top = '8px';
-    const onWalls = plan.placements.filter((p) => p.kind === 'structural' && stamp.grid[p.y]?.[p.x] === '#').length;
+    const onWalls = plan.placements.filter((p) => p.kind === 'structural' && currentGrid[p.y]?.[p.x] === '#').length;
     detail.textContent = `focus: ${signature.kind ?? '-'} ${String(signature.type ?? '-').replace('prop_', '')}`
       + `${plan.degraded ? ' · NO SIGNATURE (cap full)' : ''}${onWalls ? ` · ${onWalls} structural on wall cells` : ''}`;
     document.body.append(detail);
-    window.__showroom = { ready: true, dressing: dressing.items.length, dressingDrawCalls: dressingGroup.userData.drawCalls, theme: room.theme, props, decals, shells: shells.length, gateways: gateways.length, missing, degraded: plan.degraded, onWalls };
+    window.__showroom = {
+      ready: true,
+      mode: isGrammar ? 'grammar' : 'authored',
+      motif: isGrammar ? room.grammar?.motif : null,
+      breached: isBreached,
+      dressing: dressing.items.length,
+      dressingDrawCalls: dressingGroup.userData.drawCalls,
+      theme: room.theme,
+      props,
+      decals,
+      shells: shells.length,
+      gateways: gateways.length,
+      missing,
+      degraded: plan.degraded,
+      onWalls
+    };
   </script>
 </body>
 </html>

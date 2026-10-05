@@ -25,8 +25,12 @@ plan for milestone scope, dependencies, verification gates, and definition of do
   tracking, hit sequence ordering, late-join state distribution, protocol version 1
   negotiation in lobby, and Dockerfile container dependency synchronization.
   [Implementation and evidence](../reports/room-dressing-coop-reconciliation-2026-10-05.md).
-- [ ] **Next commit:** finished key-art maintenance-hall presentation with matched
-  intact/breached captures. Preserve the opt-in rollout until performance checks pass.
+- [x] **G3 maintenance-hall presentation slice (2026-10-05):** key-art dressing
+  assets, wall-mount heights, engineering role integration, breached showroom view
+  with support-dressing disposal, and verified co-op damage state tracking.
+  [Implementation and evidence](../reports/room-grammar-maintenance-hall-2026-10-05.md).
+- [ ] **Next commit:** critical-service recovery behavior for functional setpieces
+  and broader area profiles (medical/cryo and machine naves).
 
 - [x] **G3 persistence slice (2026-10-05):** added sanitized map-local dressing
   break records to maze snapshots, legacy-safe restore, and new-map reset. Remote

@@ -539,7 +539,10 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
 - [x] G3 co-op reconciliation: relay dressing HP authority, sequence ordering,
   late-join state synchronization and protocol version 1 negotiation implemented.
   [Evidence](../reports/room-dressing-coop-reconciliation-2026-10-05.md).
-- [ ] Finish maintenance-hall visuals and remaining service-recovery gates;
+- [x] G3 maintenance-hall presentation: key-art asset integration, wall-mount heights,
+  engineering role grammar pairing, and showroom breach visualization implemented.
+  [Evidence](../reports/room-grammar-maintenance-hall-2026-10-05.md).
+- [ ] Finish remaining service-recovery gates and area profiles;
   room grammar stays opt-in pending gameplay and hardware acceptance.
 
 - [x] G3 persistence: dressing break IDs survive maze snapshots and unloaded remote

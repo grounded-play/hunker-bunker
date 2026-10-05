@@ -18,6 +18,9 @@ export const WALL_MOUNT_HEIGHT = Object.freeze({
     fixture_sconce_vine: 1.45,
     fixture_clock_dead: 1.65,
     prop_overhead_cage_fluorescent: 1.95,
+    prop_wall_cable_tray_swag: 1.25,
+    prop_exhaust_blower_fan_hood: 1.85,
+    prop_ceiling_crane_hoist: 2.15,
     arch_window_stained: 0.45,
     prop_light_cluster_dripping: 1.35
 });
@@ -87,8 +90,18 @@ export const ROLE_DRESSING = Object.freeze({
     armory: { clutter: ['prop_ammo_crate_stack'], corners: ['prop_ammo_crate_stack'], wallDecals: ['decal_hazard_stripes'] },
     storage: { clutter: ['prop_bunker_supplies', 'prop_storage_drum_dented'], corners: ['prop_camp_crates'] },
     reward: { clutter: ['prop_bunker_supplies'], corners: ['prop_ammo_crate_stack'] },
-    engineering: { clutter: ['prop_maintenance_tool_cart'], wallProps: ['prop_conduit_junction_box'], floorDecals: ['decal_grease_pool'] },
-    workshop: { clutter: ['prop_maintenance_tool_cart'], wallProps: ['prop_conduit_junction_box'], floorDecals: ['decal_grease_pool'] }
+    engineering: {
+        wallProps: ['prop_conduit_junction_box', 'prop_wall_cable_tray_swag', 'prop_exhaust_blower_fan_hood', 'prop_pipe_organ_heat_exchanger'],
+        clutter: ['prop_maintenance_tool_cart', 'scatter_cable_coil', 'scatter_bolts'],
+        corners: ['prop_oxygen_bottle_cascade_rack', 'prop_exosuit_docking_gantry', 'prop_coolant_drum_leaking_pool', 'prop_floor_drainage_sump_trough'],
+        floorDecals: ['decal_grease_pool', 'decal_oil_spill_patch', 'scatter_coolant_puddle', 'decal_floor_grate_01']
+    },
+    workshop: {
+        wallProps: ['prop_conduit_junction_box', 'prop_wall_cable_tray_swag', 'prop_exhaust_blower_fan_hood', 'prop_pipe_organ_heat_exchanger'],
+        clutter: ['prop_maintenance_tool_cart', 'scatter_cable_coil', 'scatter_bolts'],
+        corners: ['prop_oxygen_bottle_cascade_rack', 'prop_exosuit_docking_gantry', 'prop_coolant_drum_leaking_pool', 'prop_floor_drainage_sump_trough'],
+        floorDecals: ['decal_grease_pool', 'decal_oil_spill_patch', 'scatter_coolant_puddle', 'decal_floor_grate_01']
+    }
 });
 
 /** Theme id -> kit family. */
@@ -158,8 +171,16 @@ export const ROLE_VIGNETTES = Object.freeze({
     armory: [['prop_ammo_crate_stack', 'prop_security_barricade', 'scatter_bolts']],
     storage: [['prop_bunker_supplies', 'prop_camp_crates', 'prop_storage_drum_dented']],
     reward: [['prop_bunker_supplies', 'prop_ammo_crate_stack']],
-    engineering: [['prop_fabricator_workstation', 'prop_maintenance_tool_cart', 'scatter_cable_coil']],
-    workshop: [['prop_fabricator_workstation', 'prop_maintenance_tool_cart', 'scatter_cable_coil']]
+    engineering: [
+        ['prop_fabricator_workstation', 'prop_maintenance_tool_cart', 'scatter_cable_coil'],
+        ['prop_pipe_organ_heat_exchanger', 'prop_maintenance_tool_cart', 'prop_floor_drainage_sump_trough'],
+        ['prop_coolant_drum_leaking_pool', 'prop_maintenance_tool_cart', 'scatter_bolts']
+    ],
+    workshop: [
+        ['prop_fabricator_workstation', 'prop_maintenance_tool_cart', 'scatter_cable_coil'],
+        ['prop_pipe_organ_heat_exchanger', 'prop_maintenance_tool_cart', 'prop_floor_drainage_sump_trough'],
+        ['prop_coolant_drum_leaking_pool', 'prop_maintenance_tool_cart', 'scatter_bolts']
+    ]
 });
 
 /** Vignettes for a theme and role: role groups first, then the family's. */

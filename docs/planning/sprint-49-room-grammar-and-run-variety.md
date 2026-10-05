@@ -284,8 +284,11 @@ Co-op peers must agree on version and plan digest before mounting geometry.
   [Evidence](../reports/room-dressing-integration-2026-10-05.md).
 - [x] **G3 co-op reconciliation subtask:** relay-authoritative partial-HP tracking,
   hit sequence ordering, late-join reconciliation, and protocol version 1 negotiation.
-  [Evidence](../reports/room-dressing-coop-reconciliation-2026-10-05.md). General service
-  recovery and maintenance-hall visual targets keep the parent gate open.
+  [Evidence](../reports/room-dressing-coop-reconciliation-2026-10-05.md).
+- [x] **G3 maintenance-hall presentation subtask:** key-art dressing integration,
+  wall-mount heights, industrial room grammar pairing, and showroom breach visualization.
+  [Evidence](../reports/room-grammar-maintenance-hall-2026-10-05.md). General service
+  recovery keeps the parent gate open.
 - [x] **G3 persistence subtask:** map-local dressing break snapshots, replacement
   restore, new-map clearing and exact-ID remote replay handling implemented; see
   [persistence notes](../reports/room-dressing-persistence-2026-10-05.md).
