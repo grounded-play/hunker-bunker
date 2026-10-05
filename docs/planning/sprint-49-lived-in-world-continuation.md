@@ -303,20 +303,40 @@ passed, 500-seed sweep 0 failures.
 
 ### Goal 4 — practical emissive light (M4)
 
-**Now:** the environment light pool already caps the visible lights
+**Before M4:** the environment light pool already caps the visible lights
 (`ENV_LIGHT_BUDGET = 8`, nearest registered sources lit, the rest parked at zero;
 [`threeGame.envLightBudget.test.js`](../../src/threeGame.envLightBudget.test.js)).
 So the existing pool already provides the "max one light, fade off-screen" idea.
 
-- [ ] Emissive palette table for signature anchors: cyan (oxygen cascade rack,
+- [x] Emissive palette table for signature anchors: cyan (oxygen cascade rack,
   coolant drum), amber (liturgical lectern, votive shrine), green (biomech hatch
   vent, tracheal wall pipe). Audit which GLBs carry an emissive map, and list the
   rest as art requests instead of faking them in code.
-- [ ] Register each room's signature anchor as one pooled source in its palette
-  colour; add no lights outside the pool.
+  [`anchorPracticalLight.js`](../../src/anchorPracticalLight.js) maps anchor families
+  to the palette. **Audit:** none of the 37 signature or key-art anchor props has an
+  emissive material (26 GLBs, all one material with no emissive map or factor;
+  11 are sprites with no GLB). **Art requests:** emissive maps for
+  `prop_oxygen_bottle_cascade_rack` and `prop_coolant_drum_leaking_pool` (cyan
+  gauges and frost), `prop_liturgical_terminal_lectern` and `prop_votive_candle_shrine`
+  (amber CRT and candle flames), and `prop_biomech_sphincter_hatch_vent` and
+  `prop_biomech_tracheal_wall_pipe` (green fluid veins).
+- [x] Register each room's signature anchor as one pooled source in its palette
+  colour; add no lights outside the pool. The light sits beside the prop in the chunk
+  group (a child would be culled once the prop's GLB hides it), is registered with
+  `registerEnvLight`, and is retired in `breakScatterProp`.
 
 **Accept:** light-budget tests still pass; a new test proves at most one anchor
 source per room; before/after screenshots. **[Deck]** p95 does not regress.
+
+**Result (2026-10-04):** `threeGame.roomSetPieces.test.js` proves only a room's
+signature anchor is marked, even when other anchors in the room have palettes. The
+light-budget suite is unchanged and passing. Before/after:
+`docs/reports/assets/anchor-practical-light-2026-10-04.png`
+(`HB_PROBES=1 npx playwright test tests/e2e/probes/anchor-practical-light.spec.js`).
+The pool keeps the lit-light count constant, so this adds no shader variants; its
+only per-frame cost is one more entry in the pool's 0.35 s distance sort per loaded
+room. **[Deck]** p95 is not yet checked. Checks: 18 light and set-piece tests, full
+suite 4,972 passed, 500-seed sweep 0 failures.
 
 ### Goal 5 — modular wall shells (M5, design-gated)
 

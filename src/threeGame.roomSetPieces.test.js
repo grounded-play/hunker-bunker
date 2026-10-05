@@ -81,6 +81,39 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
         expect(placements.map(({ scatterKey }) => scatterKey)).toEqual(['room_plan:far']);
     });
 
+    // Lived-in world M4: the key-art practical lights the signature anchor
+    // only -- at most one pooled source per room, whatever else it holds.
+    it('marks only the signature anchor of each room for a practical light', () => {
+        const game = makeFakeGame();
+        game.wfcMetadataCache = new Map([['0,0', {
+            roomInstances: [
+                {
+                    id: 'cathedral',
+                    populationPlan: {
+                        placements: [
+                            { id: 'cathedral:signature:0', x: 13, y: 3, kind: 'signature', type: 'prop_oxygen_bottle_cascade_rack' },
+                            { id: 'cathedral:large:1', x: 11, y: 2, kind: 'large', type: 'prop_liturgical_terminal_lectern' },
+                            { id: 'cathedral:large:2', x: 12, y: 4, kind: 'large', type: 'prop_biomech_incubator' }
+                        ]
+                    }
+                },
+                {
+                    id: 'storeroom',
+                    populationPlan: {
+                        placements: [
+                            { id: 'storeroom:signature:0', x: 5, y: 3, kind: 'signature', type: 'prop_bunker_supplies' }
+                        ]
+                    }
+                }
+            ]
+        }]]);
+
+        const placements = ThreeGame.prototype.createChunkSetPiecePlacements.call(game, 0, 0, buildTwoBlockGrid(17));
+        const lit = placements.filter(({ practicalLight }) => practicalLight);
+        expect(lit).toHaveLength(1);
+        expect(lit[0]).toMatchObject({ scatterKey: 'room_plan:cathedral:signature:0', practicalLight: { palette: 'cyan' } });
+    });
+
     it('gives authored rooms one open kit gateway without changing collision authority', () => {
         const game = makeFakeGame();
         game.getBiomeKeyForWorldPosition = () => 'active';

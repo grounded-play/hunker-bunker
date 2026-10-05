@@ -259,6 +259,7 @@ import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from '
 import { spawnEnemyGibs, spawnPropDebris } from './enemyGibs.js';
 import { createPropDebrisPrewarmQueue } from './propDebrisPrewarm.js';
 import { isAreaRoomDensityEnabled } from './featureFlags.js';
+import { roomPracticalLightPlacement } from './anchorPracticalLight.js';
 import { registerTinaHit, TINA_TOTAL_HITS } from './mayorTinaCombat.js';
 import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
@@ -31229,6 +31230,18 @@ export class ThreeGame {
             if (propSprite) {
                 group.add(propSprite);
                 this.scatterSprites.push(propSprite);
+                // A sibling, not a child: a prop hides itself once its GLB
+                // loads, and the env-light pool skips lights under hidden
+                // parents. breakScatterProp retires it with the prop.
+                if (placement.practicalLight) {
+                    const { color, intensity, distance, decay } = placement.practicalLight;
+                    const light = new THREE.PointLight(color, intensity, distance, decay);
+                    light.position.set(placement.x, 1.45, placement.z);
+                    light.userData.isAnchorPracticalLight = true;
+                    group.add(light);
+                    this.registerEnvLight?.(light);
+                    propSprite.userData.practicalLight = light;
+                }
             }
         }
 
@@ -31614,6 +31627,8 @@ export class ThreeGame {
                         isSolidProp: false
                     });
                 }
+                // M4: the signature anchor's key-art practical (one per room).
+                const practical = roomPracticalLightPlacement(room.populationPlan?.placements ?? []);
                 for (const planned of room.populationPlan?.placements ?? []) {
                     if (planned.kind === 'pickup') continue;
                     const worldX = chunkX * this.chunkSize + planned.x;
@@ -31638,6 +31653,7 @@ export class ThreeGame {
                         groupType: 'prop',
                         opacity: 1,
                         worldDressing: planned.kind === 'ambient',
+                        practicalLight: practical?.placementId === planned.id ? practical.light : null,
                         isSolidProp: planned.blocking !== false,
                         isWallBacked
                     });
@@ -33869,6 +33885,12 @@ export class ThreeGame {
     // drops (2026-09-24 QA: nothing in co-op may differ between screens).
     breakScatterProp(sprite, { plannedDrops = null, fromRemote = false } = {}) {
         sprite.userData.burstTriggered = true;
+        const practicalLight = sprite.userData.practicalLight;
+        if (practicalLight) {
+            practicalLight.userData.envLightEnabled = false;
+            practicalLight.parent?.remove(practicalLight);
+            sprite.userData.practicalLight = null;
+        }
         const isBio = sprite.userData.type?.includes?.('spore') || sprite.userData.type?.includes?.('specimen');
         // Props with a 3D model come apart into physical chunks; the poof
         // remains the fallback for flat-sprite props that have nothing to
