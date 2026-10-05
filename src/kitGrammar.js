@@ -213,11 +213,17 @@ export function roomGatewayKitPlacement(door, biome) {
     const valid = cells.filter((cell) => Number.isFinite(cell?.x) && Number.isFinite(cell?.y));
     if (valid.length === 0) return null;
     const skin = skinForBiome(biome);
+    const transform = {
+        n: { x: 0, y: 0.5, rotationSteps: 0 },
+        e: { x: -0.5, y: 0, rotationSteps: 1 },
+        s: { x: 0, y: -0.5, rotationSteps: 2 },
+        w: { x: 0.5, y: 0, rotationSteps: 3 }
+    }[door.side];
     return {
         type: `kit_${skin}_gate`,
-        x: valid.reduce((sum, cell) => sum + cell.x, 0) / valid.length,
-        y: valid.reduce((sum, cell) => sum + cell.y, 0) / valid.length,
-        rotationSteps: door.side === 'e' || door.side === 'w' ? 1 : 0,
+        x: valid.reduce((sum, cell) => sum + cell.x, 0) / valid.length + transform.x,
+        y: valid.reduce((sum, cell) => sum + cell.y, 0) / valid.length + transform.y,
+        rotationSteps: transform.rotationSteps,
         modelScale: 1
     };
 }

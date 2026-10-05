@@ -36,6 +36,21 @@ plan for milestone scope, dependencies, verification gates, and definition of do
 
 ## Commit record
 
+### M1 — cardinal gateway truth
+
+- Measure the shipped cave and space `gate.glb` bounds at the shared kit scale,
+  then give north/east/south/west room thresholds distinct cardinal transforms
+  with the approved half-cell room-side inset.
+- Suppress the decorative frame for locked procedural gates, ring crossings, and
+  authored rooms that already declare structural gateway architecture. Ordinary
+  animated door slabs remain compatible and retain all collision and state authority.
+- Add four-side grammar coverage and room-set-piece eligibility coverage, commit a
+  reproducible four-orientation visual capture, then run the focused tests, docs
+  audit, 500-seed sweep, and full unit suite.
+- Assumption to verify visually: the open kit frame is front/back symmetric enough
+  for four semantic yaws; the unique yaws preserve room-facing intent even where
+  the current mesh silhouette is symmetric.
+
 ### `b3767e8a` — GLB-only props join the destruction contract
 
 - `prop_` placements without billboard fallbacks now receive HP, projectile/melee
@@ -152,13 +167,13 @@ objects ship behind a flag until that capture exists.
 and 1 for e/w, scale 1, at most one per authored room, non-colliding. It has never
 been looked at in a real run.
 
-- [ ] Screenshot the gate on a north, east, south and west authored threshold
+- [x] Screenshot the gate on a north, east, south and west authored threshold
   (showroom or seeded run) and record whether the frame's authored forward matches
   the corridor convention, and whether the procedural door slab passes through it.
-- [ ] Only if the screenshots show clipping: add a side-dependent offset or a
+- [x] Only if the screenshots show clipping: add a side-dependent offset or a
   four-step rotation in the pure helper; procedural doors and the tile grid remain
   the only collision and lock authority.
-- [ ] Parameterized test in [`kitGrammar.test.js`](../../src/kitGrammar.test.js)
+- [x] Parameterized test in [`kitGrammar.test.js`](../../src/kitGrammar.test.js)
   pinning position and rotation for all four sides.
 
 **Accept:** four-side test passes; 500-seed sweep clean; screenshots committed

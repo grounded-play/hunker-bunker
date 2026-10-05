@@ -142,24 +142,18 @@ describe('role resolution', () => {
 });
 
 describe('authored room gateway placement', () => {
-    it('centres an open biome-skinned frame on a north/south threshold', () => {
-        expect(roomGatewayKitPlacement({
-            side: 'n',
-            cells: [{ x: 3, y: 2 }, { x: 4, y: 2 }, { x: 5, y: 2 }]
-        }, 'bio')).toEqual({
-            type: 'kit_cave_gate',
-            x: 4,
-            y: 2,
-            rotationSteps: 0,
-            modelScale: 1
+    it.each([
+        ['n', [{ x: 3, y: 2 }, { x: 4, y: 2 }, { x: 5, y: 2 }], 4, 2.5, 0],
+        ['e', [{ x: 8, y: 4 }, { x: 8, y: 5 }, { x: 8, y: 6 }], 7.5, 5, 1],
+        ['s', [{ x: 3, y: 8 }, { x: 4, y: 8 }, { x: 5, y: 8 }], 4, 7.5, 2],
+        ['w', [{ x: 2, y: 4 }, { x: 2, y: 5 }, { x: 2, y: 6 }], 2.5, 5, 3]
+    ])('insets and turns the %s frame toward the room', (side, cells, x, y, rotationSteps) => {
+        expect(roomGatewayKitPlacement({ side, cells }, 'bio')).toEqual({
+            type: 'kit_cave_gate', x, y, rotationSteps, modelScale: 1
         });
     });
 
-    it('turns east/west frames cardinally and rejects malformed thresholds', () => {
-        expect(roomGatewayKitPlacement({
-            side: 'e',
-            cells: [{ x: 8, y: 4 }, { x: 8, y: 5 }, { x: 8, y: 6 }]
-        }, 'active')).toMatchObject({ type: 'kit_space_gate', x: 8, y: 5, rotationSteps: 1 });
+    it('rejects malformed thresholds', () => {
         expect(roomGatewayKitPlacement({ side: 'n', cells: [] }, 'active')).toBeNull();
         expect(roomGatewayKitPlacement({ side: 'up', cells: [{ x: 1, y: 1 }] }, 'active')).toBeNull();
     });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ThreeGame } from './threeGame.js';
+import { ThreeGame, isRoomGatewayFrameEligible } from './threeGame.js';
 
 // A grid with two solid 5x3 floor blocks, far enough apart that neither has
 // any "doorway" cell (wall-floor-wall on one axis) — isolates the "Room Set
@@ -105,7 +105,7 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
         const gateway = placements.find(({ scatterKey }) => scatterKey.startsWith('room-gateway:'));
 
         expect(gateway).toMatchObject({
-            x: 14,
+            x: 13.5,
             z: 8,
             type: 'kit_space_gate',
             rotation: Math.PI / 2,
@@ -115,6 +115,24 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
             groupType: 'architecture',
             isSolidProp: false
         });
+    });
+
+    it.each([
+        ['locked procedural gate', { doors: [{ id: 'entry', lock: { type: 'power' } }] }, {}],
+        ['ring crossing', { ringCrossingId: 'ring-2' }, {}],
+        ['authored structural gateway', {}, { roomBuild: { id: 'ring_crossing_landmark', family: 'gate' } }]
+    ])('does not double-frame a %s', (_label, metadata, roomPatch) => {
+        const door = { id: 'entry', side: 'n', cells: [{ x: 7, y: 2 }] };
+        const room = { id: 'room', doors: [door], populationPlan: { placements: [] }, ...roomPatch };
+        const game = makeFakeGame();
+        game.getBiomeKeyForWorldPosition = () => 'active';
+        game.wfcMetadataCache = new Map([['0,0', { roomInstances: [room], ...metadata }]]);
+
+        expect(isRoomGatewayFrameEligible(room, door, { roomInstances: [room], ...metadata })).toBe(false);
+        const placements = ThreeGame.prototype.createChunkSetPiecePlacements.call(
+            game, 0, 0, buildTwoBlockGrid(17)
+        );
+        expect(placements.some(({ scatterKey }) => scatterKey.startsWith('room-gateway:'))).toBe(false);
     });
 
     it('turns hallway route markers into biome-skinned, cardinal kit architecture', () => {

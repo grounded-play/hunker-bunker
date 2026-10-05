@@ -1696,6 +1696,36 @@ function isChunkTraversalConnected(grid) {
 // and repackGeneratedSpriteAtlas's output isn't safe to assume shareable.
 const keyedSpriteTextureCache = new Map();
 
+const STRUCTURAL_GATEWAY_PATTERN = /(^|[_-])(gate|gateway|bulkhead|archway|portal)([_-]|$)/i;
+
+/**
+ * Open kit frames are presentation around ordinary animated door slabs. Special
+ * progression gates and authored structural gateways already own their silhouette,
+ * so layering another frame there would obscure state and duplicate architecture.
+ */
+export function isRoomGatewayFrameEligible(room, door, metadata = {}) {
+    if (!room || !door?.id || !door?.cells?.length || metadata.ringCrossingId) return false;
+    const runtimeDoor = (metadata.doors ?? []).find((candidate) => candidate?.id === door.id);
+    if (
+        runtimeDoor?.lock
+        || runtimeDoor?.gateId
+        || runtimeDoor?.ringCrossingId
+        || (metadata.gates ?? []).some((gate) => gate?.doorId === door.id)
+    ) return false;
+
+    const roomBuild = room.roomBuild ?? {};
+    if (
+        roomBuild.family === 'gate'
+        || STRUCTURAL_GATEWAY_PATTERN.test(String(roomBuild.id ?? ''))
+        || (room.structuralAnchors ?? roomBuild.structuralAnchors ?? []).some((anchor) => (
+            STRUCTURAL_GATEWAY_PATTERN.test(String(anchor?.id ?? ''))
+            || STRUCTURAL_GATEWAY_PATTERN.test(String(anchor?.type ?? ''))
+            || STRUCTURAL_GATEWAY_PATTERN.test(String(anchor?.role ?? ''))
+        ))
+    ) return false;
+    return true;
+}
+
 export class ThreeGame {
     constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null, cameraMode = 'isometric', gameplayTiltShiftBlurEnabled = false } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
@@ -31541,7 +31571,9 @@ export class ThreeGame {
                 // every authored room one open, non-colliding socket-safe
                 // gateway frame. Procedural doors and grid collision remain
                 // authoritative; this is presentation only.
-                const roomDoor = (room.doors ?? []).find((door) => door?.cells?.length);
+                const roomDoor = (room.doors ?? []).find((door) => (
+                    isRoomGatewayFrameEligible(room, door, wfcMeta)
+                ));
                 const doorCell = roomDoor?.cells?.[Math.floor(roomDoor.cells.length / 2)];
                 const doorWorldX = Number.isFinite(doorCell?.x) ? chunkX * this.chunkSize + doorCell.x : null;
                 const doorWorldZ = Number.isFinite(doorCell?.y) ? chunkY * this.chunkSize + doorCell.y : null;
