@@ -100,3 +100,54 @@ describe('renderGameOverLeaderboard', () => {
         expect(statusEl.textContent).toBe('LEADERBOARD OFFLINE - SCORE BANKED LOCALLY');
     });
 });
+
+describe('fetchLeaderboard (shared by Game Over and Archive → RECORDS)', () => {
+    const top = [
+        { steamId64: '1', persona: 'A', score: 300, rank: 1 },
+        { steamId64: '2', persona: 'B', score: 200, rank: 2 }
+    ];
+
+    it('is offline without the Steam bridge', async () => {
+        const { fetchLeaderboard } = await import('./leaderboardUi.js');
+        expect(await fetchLeaderboard({ board: 'best_run_score', api: null })).toEqual({ state: 'offline', entries: [], selfSteamId: null });
+    });
+
+    it('pins your row under the global top when you are outside it', async () => {
+        const { fetchLeaderboard } = await import('./leaderboardUi.js');
+        const api = {
+            getSteamLeaderboard: vi.fn(async (_board, scope) => (scope === 'Global'
+                ? { ok: true, entries: top }
+                : { ok: true, entries: [{ steamId64: SELF, persona: 'Me', score: 50, rank: 40 }] })),
+            getSteamIdentity: async () => ({ steamId64: SELF })
+        };
+        const result = await fetchLeaderboard({ board: 'best_run_score', scope: 'Global', count: 10, api });
+        expect(result.state).toBe('live');
+        expect(result.selfSteamId).toBe(SELF);
+        expect(result.entries).toEqual([...top, { separator: true }, { steamId64: SELF, persona: 'Me', score: 50, rank: 40 }]);
+        expect(api.getSteamLeaderboard).toHaveBeenCalledWith('best_run_score', 'Global', 10);
+    });
+
+    it('asks Steam for the requested scope and marks the dev mock', async () => {
+        const { fetchLeaderboard } = await import('./leaderboardUi.js');
+        const api = { getSteamLeaderboard: vi.fn(async () => ({ ok: true, mock: true, entries: top })), getSteamIdentity: async () => null };
+        const result = await fetchLeaderboard({ board: 'survival_time_seconds', scope: 'Friends', count: 10, api });
+        expect(api.getSteamLeaderboard).toHaveBeenCalledWith('survival_time_seconds', 'Friends', 10);
+        expect(result).toMatchObject({ state: 'mock', entries: top });
+    });
+
+    it('is offline when Steam answers not ok or throws', async () => {
+        const { fetchLeaderboard } = await import('./leaderboardUi.js');
+        expect((await fetchLeaderboard({ board: 'best_run_score', api: { getSteamLeaderboard: async () => ({ ok: false }) } })).state).toBe('offline');
+        expect((await fetchLeaderboard({ board: 'best_run_score', api: { getSteamLeaderboard: async () => { throw new Error('down'); } } })).state).toBe('offline');
+    });
+});
+
+describe('formatLeaderboardScore', () => {
+    it('formats every board', async () => {
+        const { formatLeaderboardScore } = await import('./leaderboardUi.js');
+        expect(formatLeaderboardScore('fastest_extraction_ms', 245_400)).toBe('4m 05s');
+        expect(formatLeaderboardScore('survival_time_seconds', 125)).toBe('2m 5s');
+        expect(formatLeaderboardScore('daily_ops_score', 1550)).toBe('1550');
+        expect(formatLeaderboardScore('best_run_score', 1550)).toBe('1550');
+    });
+});
