@@ -8517,7 +8517,7 @@ function playCutsceneVideo(base, options = {}) {
             const cleanSlug = resolvedBase.replace(/(_key_v1|_motion_v1)?\.(mp4|webm)$/, '').replace(/(_key_v1|_motion_v1)$/, '');
             overlay.style.setProperty('--class-intro-poster', `url('${assetUrl(`/interstitials/${cleanSlug}_key_v1.webp`)}')`);
         } else {
-            const posterUrl = resolvedBase.includes('/') || resolvedBase.endsWith('.mp4') ? '/title_key_art_v2.png' : `/cutscenes/${resolvedBase}-poster.jpg`;
+            const posterUrl = resolvedBase.includes('/') || resolvedBase.endsWith('.mp4') ? '/title_key_art_v2.webp' : `/cutscenes/${resolvedBase}-poster.jpg`;
             overlay.style.setProperty('--class-intro-poster', `url('${assetUrl(posterUrl)}')`);
         }
 
@@ -9195,7 +9195,40 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
     }
 }
 
+let scoutHeroPreview = null;
+let scoutHeroPreviewPromise = null;
+
+function ensureScoutHeroPreview() {
+    const canvas = document.getElementById('char-preview-3d');
+    if (!canvas) return Promise.resolve(null);
+    if (!scoutHeroPreviewPromise) {
+        scoutHeroPreviewPromise = createScoutHeroPreview(canvas)
+            .then((preview) => {
+                scoutHeroPreview = preview;
+                preview.setOperatorPolish(getSelectedPolish?.()?.color ?? 0xffffff);
+                const targetType = (typeof activePreviewType !== 'undefined' ? activePreviewType : null)
+                    ?? document.querySelector('.char-card.selected')?.getAttribute('data-type')
+                    ?? 'SCOUT';
+                void preview.setType(targetType);
+                preview.setVisible(true);
+                const sprite = document.getElementById('char-preview-sprite');
+                const fallback = document.getElementById('char-preview-fallback');
+                sprite?.classList.add('hidden');
+                fallback?.classList.add('hidden');
+                return preview;
+            })
+            .catch((error) => {
+                console.warn('[scout-hero-preview] keeping 2D fallback', error);
+                return null;
+            });
+    }
+    return scoutHeroPreviewPromise;
+}
+
 const transitionFromTitleToMenu = (afterClosed = null) => {
+    ensureScoutHeroPreview();
+    const currentSelectedType = document.querySelector('.char-card.selected')?.getAttribute('data-type') || 'SCOUT';
+    warmClassIntroMedia?.(currentSelectedType);
     triggerDoorTransition(
         () => {
             if (splash) splash.classList.add('hidden');
@@ -14735,11 +14768,11 @@ function preloadDoorAssets() {
         '/door_cryo_keyart_var3.jpg',
         '/door_alien_keyart_v2.webp',
         '/door_rust_keyart_v2.webp',
-        '/door_bio.png',
-        '/door_nuclear.png',
-        '/door_cryo.png',
-        '/door_biomechanical.png',
-        '/ship_wreckage.png'
+        '/door_bio.webp',
+        '/door_nuclear.webp',
+        '/door_cryo.webp',
+        '/door_biomechanical.webp',
+        '/ship_wreckage.webp'
     ];
 
     for (const src of doorImages) {
@@ -14934,24 +14967,11 @@ let previewFrameIndex = 0;
 let previewAnimationTimer = null;
 let previewDoorTimer = null;
 let pendingPreviewType = null;
-let scoutHeroPreview = null;
-void createScoutHeroPreview(preview3dCanvas)
-    .then((preview) => {
-        scoutHeroPreview = preview;
-        preview.setOperatorPolish(getSelectedPolish().color);
-        void preview.setType(activePreviewType);
-        preview.setVisible(true);
-        previewSprite?.classList.add('hidden');
-        previewFallback?.classList.add('hidden');
-    })
-    .catch((error) => {
-        console.warn('[scout-hero-preview] keeping 2D fallback', error);
-    });
 const previewSpriteImages = new Map();
 const PREVIEW_PORTRAITS = Object.freeze({
-    SCOUT: '/Scout.full_v2.png',
-    TANK: '/Tank.full_v2.png',
-    ENGINEER: '/Eng.Full_v2.png'
+    SCOUT: '/Scout.full_v2.webp',
+    TANK: '/Tank.full_v2.webp',
+    ENGINEER: '/Eng.Full_v2.webp'
 });
 
 charCards.forEach((card) => {
@@ -15646,17 +15666,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             '/door_cryo_keyart_v2.webp',
             '/door_alien_keyart_v2.webp',
             '/door_rust_keyart_v2.webp',
-            '/title_key_art_v2.png',
+            '/title_key_art_v2.webp',
             '/menu_bg.webp',
-            '/ship_wreckage.png',
+            '/ship_wreckage.webp',
             '/scout_ship.png',
             '/tank_ship.png',
             '/engineer_ship.png',
-            '/console.png',
-            '/module_o2_generator.png',
-            '/module_hull_matrix.png',
-            '/module_radar_dish.png',
-            '/module_reactor_compressor.png',
+            '/console.webp',
             PLAYER_SPRITE_LAYOUTS.SCOUT.path,
             PLAYER_SPRITE_LAYOUTS.TANK.path,
             PLAYER_SPRITE_LAYOUTS.ENGINEER.path

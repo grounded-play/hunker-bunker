@@ -131,13 +131,13 @@ body {
   --vu-text: calc(var(--vu) * var(--ui-scale-multiplier, 1));
   --stage-px: calc(var(--vu) / 8);
   --gutter: calc(var(--vu) * 4);
-  --font-xl: calc(var(--vu-text) * 18);
-  --font-lg: calc(var(--vu-text) * 6);
-  --font-md: calc(var(--vu-text) * 4);
-  --font-sm: calc(var(--vu-text) * 2.5);
-  --font-xs: calc(var(--vu-text) * 1.8);
-  --font-xxs: calc(var(--vu-text) * 1.4);
-  --font-xxxs: calc(var(--vu-text) * 1.1);
+  --font-xl: max(calc(var(--vu-text) * 18), 24px);
+  --font-lg: max(calc(var(--vu-text) * 6), 18px);
+  --font-md: max(calc(var(--vu-text) * 4), 14px);
+  --font-sm: max(calc(var(--vu-text) * 2.5), 12px);
+  --font-xs: max(calc(var(--vu-text) * 1.8), 12px);
+  --font-xxs: max(calc(var(--vu-text) * 1.4), 12px);
+  --font-xxxs: max(calc(var(--vu-text) * 1.1), 12px);
   /* Reserved layout lanes around the play canvas. Defined here (shared
      ancestor) so both #game-container and the left-lane HUD read the same
      lane width and stay aligned. */
@@ -948,7 +948,7 @@ body {
   overflow: clip;
   isolation: isolate;
   background-color: #000;
-  background-image: url('/title_key_art_v2.png');
+  background-image: url('/title_key_art_v2.webp');
   background-position: calc(50% + var(--hero-shift-x)) calc(50% + var(--hero-shift-y));
   background-size: 102% auto;
   background-repeat: no-repeat;
@@ -1260,6 +1260,7 @@ body {
   width: auto;
   text-transform: uppercase;
   animation: title-glow-pulse 4s infinite ease-in-out;
+  will-change: transform, opacity;
 }
 
 .splash-title span {
@@ -1272,7 +1273,7 @@ body {
 
 .splash-subtitle {
   position: relative;
-  font-size: calc(var(--vu) * 1.35);
+  font-size: max(calc(var(--vu) * 1.35), 12px);
   color: var(--accent-primary);
   font-weight: 900;
   letter-spacing: 0.24em;
@@ -1422,9 +1423,9 @@ body {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: calc(var(--vu) * 0.4);
+  gap: max(calc(var(--vu) * 0.4), 6px);
   margin: calc(var(--vu) * 1.0) 0 0;
-  width: calc(var(--vu) * 22);
+  width: clamp(240px, calc(var(--vu) * 22), 100%);
   max-width: 100%;
 }
 
@@ -1468,7 +1469,7 @@ body {
 
 .title-menu-btn {
   font-family: 'Outfit', sans-serif;
-  font-size: calc(var(--vu-text) * 1.45);
+  font-size: max(calc(var(--vu-text) * 1.45), 13px);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.8px;
@@ -1479,7 +1480,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.05);
   color: rgba(240, 244, 248, 0.92);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
+  transition: transform 0.12s ease, opacity 0.12s ease;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
@@ -1488,6 +1489,35 @@ body {
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  position: relative;
+  isolation: isolate;
+}
+
+.title-menu-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--accent-primary);
+  box-shadow: 0 0 14px rgba(255, 159, 28, 0.4);
+  opacity: 0;
+  transform: scale(0.98);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@media (pointer: coarse), (max-width: 768px) {
+  .title-menu {
+    gap: 8px;
+    width: min(320px, 92vw);
+  }
+  .title-menu-btn {
+    min-height: 44px;
+    margin: 4px 0;
+    font-size: max(calc(var(--vu-text) * 1.45), 14px);
+    padding: 10px 16px;
+  }
 }
 
 .title-menu-btn:first-child,
@@ -1503,24 +1533,22 @@ body {
 
 .title-menu:hover .title-menu-btn:not(:hover) {
   outline: none !important;
-  background: rgba(8, 10, 12, 0.88) !important;
-  border-color: rgba(255, 255, 255, 0.05) !important;
   color: rgba(240, 244, 248, 0.92) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
 }
 
 .title-menu .title-menu-btn:hover {
   outline: none !important;
-  background: var(--accent-primary) !important;
-  border-color: var(--accent-primary) !important;
   color: #000000 !important;
-  box-shadow: 0 0 14px rgba(255, 159, 28, 0.4) !important;
   transform: translateY(-1px);
+}
+
+.title-menu .title-menu-btn:hover::before {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .title-menu-btn:active {
   transform: translateY(1px);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
 #title-continue-btn:not(:disabled) {
@@ -1530,11 +1558,16 @@ body {
   box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
+#title-continue-btn:not(:disabled)::before {
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
 .title-menu #title-continue-btn:not(:disabled):hover {
   outline: none !important;
-  background: linear-gradient(135deg, #0369a1 0%, #075985 100%) !important;
   border-color: #7dd3fc !important;
-  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
 }
 
 .title-menu-btn--quit {
@@ -1542,12 +1575,16 @@ body {
   color: rgba(255, 190, 190, 0.9);
 }
 
+.title-menu-btn--quit::before {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.45);
+}
+
 .title-menu .title-menu-btn--quit:hover {
   outline: none !important;
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
   border-color: #ef4444 !important;
   color: #ffffff !important;
-  box-shadow: 0 0 14px rgba(239, 68, 68, 0.45) !important;
+  transform: translateY(-1px);
 }
 
 .title-menu-btn--secondary {
@@ -1555,12 +1592,16 @@ body {
   color: rgba(180, 240, 250, 0.92);
 }
 
+.title-menu-btn--secondary::before {
+  background: #00e5ff;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.4);
+}
+
 .title-menu .title-menu-btn--secondary:hover {
   outline: none !important;
-  background: #00e5ff !important;
   border-color: #38bdf8 !important;
   color: #000000 !important;
-  box-shadow: 0 0 14px rgba(0, 229, 255, 0.4) !important;
+  transform: translateY(-1px);
 }
 
 .title-menu-btn:disabled {
@@ -1578,8 +1619,14 @@ body {
 }
 
 @keyframes title-glow-pulse {
-  0%, 100% { text-shadow: 0 0 20px rgba(255, 159, 28, 0.6), 0 0 40px rgba(255, 159, 28, 0.3); }
-  50% { text-shadow: 0 0 30px rgba(255, 159, 28, 0.8), 0 0 60px rgba(255, 159, 28, 0.5); }
+  0%, 100% {
+    opacity: 0.90;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.008);
+  }
 }
 
 /* docs/reports/playtest-issues-2026-09-12.md P1-4 -- "the drop downs not being

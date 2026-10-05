@@ -112,6 +112,10 @@ export const CHROMA_GREEN_ALLOWLIST = new Set([
     'public/Tank.full_v2.png',
     'public/Eng.Full_v2.png',
     'public/Scout.full_v2.png',
+    // WebP copies of the same raw chroma portraits, keyed at runtime like the PNGs.
+    'public/Tank.full_v2.webp',
+    'public/Eng.Full_v2.webp',
+    'public/Scout.full_v2.webp',
     'public/lore_portraits/queen_00.webp',
 ]);
 

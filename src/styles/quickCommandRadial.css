@@ -103,7 +103,7 @@
 }
 
 .quick-command-slice-label {
-    font-size: 0.7rem;
+    font-size: max(0.75rem, 12px);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -121,7 +121,7 @@
     background: #0f172a;
     border: 1px solid rgba(56, 189, 248, 0.4);
     border-radius: 4px;
-    font-size: 0.6rem;
+    font-size: max(0.68rem, 11px);
     color: #38bdf8;
     padding: 1px 4px;
     font-family: monospace;

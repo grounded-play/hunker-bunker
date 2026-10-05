@@ -833,13 +833,13 @@
   z-index: 17000 !important;
   pointer-events: none !important;
   max-width: 86vw !important;
-  box-sizing: border-box !important;
   animation: directive-pulse 3s infinite alternate ease-in-out !important;
+  will-change: transform, opacity;
 }
 
 @keyframes directive-pulse {
-  from { box-shadow: 0 0 16px rgba(0, 229, 255, 0.2), inset 0 0 8px rgba(0, 229, 255, 0.08); }
-  to { box-shadow: 0 0 28px rgba(0, 229, 255, 0.4), inset 0 0 14px rgba(0, 229, 255, 0.18); }
+  from { opacity: 0.88; transform: translateX(-50%) scale(0.995); }
+  to { opacity: 1; transform: translateX(-50%) scale(1); }
 }
 
 .loop-step-hud__chevron {
