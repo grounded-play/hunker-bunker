@@ -30,7 +30,7 @@
   -->
   <script type="module">
     import * as THREE from 'three';
-    import { ROOM_BUILD_CATALOG, stampRoomBuild, buildRoomInstanceFromBuild } from '/src/roomBuilds.js';
+    import { ROOM_BUILD_CATALOG, ALL_ROOM_BUILDS, stampRoomBuild, buildRoomInstanceFromBuild } from '/src/roomBuilds.js';
     import { assignRoomThemes } from '/src/roomThemes.js';
     import { bindRoomContent } from '/src/roomContent.js';
     import { planRoomPopulation } from '/src/roomPopulation.js';
@@ -42,7 +42,8 @@
     import { buildRoomDressingGroup, loadKeyedDecalTexture } from '/src/roomDressingRenderer.js';
 
     const params = new URLSearchParams(location.search);
-    const build = ROOM_BUILD_CATALOG.find((b) => b.id === params.get('build')) ?? ROOM_BUILD_CATALOG[0];
+    const catalog = ALL_ROOM_BUILDS ?? ROOM_BUILD_CATALOG;
+    const build = catalog.find((b) => b.id === params.get('build')) ?? ROOM_BUILD_CATALOG[0];
     const biome = ['active', 'cryo', 'bio', 'cave'].includes(params.get('biome')) ? params.get('biome') : 'active';
     let state = Number(params.get('seed')) || 11;
     const random = () => (state = (state * 16807) % 2147483647) / 2147483647;
@@ -61,7 +62,15 @@
     const practical = roomPracticalLightPlacement(plan.placements);
 
     // ---- textures -----------------------------------------------------------
-    const TERRAIN = {
+    const PBR_SUITES = {
+      giger: { wall: '/3d/runtime/kits/textures/giger_biomech_wall_diffuse.webp', wallNormal: '/3d/runtime/kits/textures/giger_biomech_wall_normal.webp', floor: '/3d/runtime/kits/textures/giger_biomech_floor_diffuse.webp', top: '/3d/runtime/kits/textures/giger_biomech_floor_diffuse.webp' },
+      reliquary: { wall: '/3d/runtime/kits/textures/reliquary_crypt_wall_diffuse.webp', wallNormal: '/3d/runtime/kits/textures/reliquary_crypt_wall_normal.webp', floor: '/3d/runtime/kits/textures/reliquary_floor_diffuse.webp', top: '/3d/runtime/kits/textures/reliquary_floor_diffuse.webp' },
+      cryo_deck: { wall: '/3d/runtime/kits/textures/cryo_deck_wall_diffuse.webp', wallNormal: '/3d/runtime/kits/textures/cryo_deck_wall_normal.webp', floor: '/3d/runtime/kits/textures/cryo_deck_floor_diffuse.webp', top: '/3d/runtime/kits/textures/cryo_deck_floor_diffuse.webp' },
+      cathedral: { wall: '/3d/runtime/kits/textures/cathedral_wall_diffuse.webp', wallNormal: '/3d/runtime/kits/textures/cathedral_wall_normal.webp', floor: '/3d/runtime/kits/textures/cathedral_floor_diffuse.webp', top: '/3d/runtime/kits/textures/cathedral_floor_diffuse.webp' },
+      bunker: { wall: '/3d/runtime/kits/textures/bunker_wall_diffuse.webp', wallNormal: '/3d/runtime/kits/textures/bunker_wall_normal.webp', floor: '/3d/runtime/kits/textures/bunker_floor_diffuse.webp', top: '/3d/runtime/kits/textures/bunker_floor_diffuse.webp' },
+      biomech: { wall: '/3d/runtime/kits/textures/biomech_wall_diffuse.webp', wallNormal: '/3d/runtime/kits/textures/biomech_wall_normal.webp', floor: '/3d/runtime/kits/textures/biomech_floor_diffuse.webp', top: '/3d/runtime/kits/textures/biomech_floor_diffuse.webp' }
+    };
+    const TERRAIN = PBR_SUITES[build.themeStyle] ?? {
       active: { floor: '/bunker_base_metal.png', wall: '/bunker_wall_metal.png', wallNormal: '/bunker_wall_metal_normal.png', top: '/bunker_base_metal.png' },
       cryo: { floor: '/cryo_base_frost.png', wall: '/cryo_wall_conduit.png', wallNormal: '/cryo_wall_conduit_normal.png', top: '/cryo_base_frost.png' },
       bio: { floor: '/bio_base_growth.png', wall: '/bio_wall_veins.png', wallNormal: '/bio_wall_veins_normal.png', top: '/bio_base_growth.png' }

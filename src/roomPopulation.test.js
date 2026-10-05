@@ -56,6 +56,34 @@ describe('room population', () => {
         expect(plan.reserved).toContain('2,2');
     });
 
+    it('always places a signature even when authored anchor density reaches or exceeds the room object limit', () => {
+        const room = {
+            id: 'dense-authored-room',
+            role: 'engineering',
+            interior: Array.from({ length: 25 }, (_, index) => ({ x: 1 + (index % 5), y: 1 + Math.floor(index / 5) })),
+            navigation: { doorLanes: [] },
+            populationBudget: { signature: 1, large: 2, small: 2, pickup: 1, enemy: 0 },
+            themeConfig: { signatureProps: ['prop_reactor_core'] },
+            structuralAnchors: [{ id: 's1', type: 'prop_conduit_hub', x: 2, y: 2 }],
+            interactionAnchors: [
+                { id: 'i1', type: 'console', x: 1, y: 1 },
+                { id: 'i2', type: 'console', x: 5, y: 1 }
+            ],
+            rewardAnchors: [
+                { id: 'r1', type: 'prop_bunker_supplies', x: 1, y: 5 },
+                { id: 'r2', type: 'prop_bunker_supplies', x: 5, y: 5 }
+            ],
+            loreAnchors: [{ id: 'l1', type: 'lore_terminal', x: 3, y: 1 }]
+        };
+        const grid = Array.from({ length: 7 }, () => Array(7).fill('#'));
+        for (const cell of room.interior) grid[cell.y][cell.x] = '.';
+        grid[2][2] = '#';
+        const plan = planRoomPopulation(room, grid, () => 0);
+        expect(plan.signaturePlaced).toBe(true);
+        expect(plan.degraded).toBe(false);
+        expect(plan.placements.some((p) => p.kind === 'signature' && p.type === 'prop_reactor_core')).toBe(true);
+    });
+
     it('honors an explicit zero signature budget without marking the plan degraded', () => {
         const room = {
             id: 'deliberately-empty-room',

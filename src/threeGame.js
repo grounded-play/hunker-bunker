@@ -826,18 +826,30 @@ const LANDFORM_SHADER_ID = {
     pocket: 5
 };
 const ROOM_WALL_STYLE_ID = Object.freeze({
-    'bunker-standard': 0,
+    // Generic procedural fallback (0 preserves procedural biome terrain blend)
+    'bunker-standard': 1,
     'bunker-utility': 1,
-    'bunker-medical': 2,
-    'bunker-security': 3,
-    'bunker-storage': 4,
-    'cryo-rough': 5,
-    'cryo-clean': 6,
-    'cryo-lab': 7,
-    'bio-resin': 8,
-    'bio-hive': 9,
-    'bio-nest': 10,
-    'camp-fortified': 11
+    'bunker-medical': 6,
+    'bunker-security': 1,
+    'bunker-storage': 1,
+    'cryo-rough': 2,
+    'cryo-clean': 2,
+    'cryo-lab': 2,
+    'bio-resin': 3,
+    'bio-hive': 3,
+    'bio-nest': 3,
+    'camp-fortified': 1,
+    // Direct PBR suites (1 to 8):
+    'bunker': 1,
+    'cryo_deck': 2,
+    'cryo': 2,
+    'biomech': 3,
+    'bio': 3,
+    'giger': 4,
+    'reliquary': 5,
+    'cathedral': 6,
+    'cave': 7,
+    'space': 8
 });
 const ROOM_FLOOR_STYLE_COLOR = Object.freeze({
     'bunker-standard': 0x7a858c,
@@ -2518,6 +2530,26 @@ export class ThreeGame {
             textureLoader,
             maxAnisotropy
         );
+        this.roomWallColorAtlas = this.loadTerrainTexture(
+            '/3d/runtime/kits/textures/pbr_wall_color_atlas.webp',
+            textureLoader,
+            maxAnisotropy
+        );
+        this.roomWallNormalAtlas = this.loadTerrainTexture(
+            '/3d/runtime/kits/textures/pbr_wall_normal_atlas.webp',
+            textureLoader,
+            maxAnisotropy
+        );
+        this.roomWallRoughAtlas = this.loadTerrainTexture(
+            '/3d/runtime/kits/textures/pbr_wall_rough_atlas.webp',
+            textureLoader,
+            maxAnisotropy
+        );
+        this.roomWallEmissiveAtlas = this.loadTerrainTexture(
+            '/3d/runtime/kits/textures/pbr_wall_emissive_atlas.webp',
+            textureLoader,
+            maxAnisotropy
+        );
         this.roomFloorMaterialAtlas = this.loadTerrainTexture(
             '/room_floor_material_atlas_v1.png',
             textureLoader,
@@ -2802,6 +2834,10 @@ export class ThreeGame {
             shader.uniforms.tBioWallTop = { value: bioTerrainTextures.wallTop };
             shader.uniforms.tBioWallGrunge = { value: bioTerrainTextures.wallGrunge };
             shader.uniforms.tRoomWallAtlas = { value: this.roomWallMaterialAtlas };
+            shader.uniforms.tRoomWallColorAtlas = { value: this.roomWallColorAtlas };
+            shader.uniforms.tRoomWallNormalAtlas = { value: this.roomWallNormalAtlas };
+            shader.uniforms.tRoomWallRoughAtlas = { value: this.roomWallRoughAtlas };
+            shader.uniforms.tRoomWallEmissiveAtlas = { value: this.roomWallEmissiveAtlas };
             shader.uniforms.uShipWorldPos = { value: this.biomeShipAnchor };
             // Set per-mesh right before each wall's draw call (see
             // configureWallMesh's onBeforeRender) so one shared material can
@@ -2842,6 +2878,10 @@ export class ThreeGame {
                 uniform sampler2D tBioWallTop;
                 uniform sampler2D tBioWallGrunge;
                 uniform sampler2D tRoomWallAtlas;
+                uniform sampler2D tRoomWallColorAtlas;
+                uniform sampler2D tRoomWallNormalAtlas;
+                uniform sampler2D tRoomWallRoughAtlas;
+                uniform sampler2D tRoomWallEmissiveAtlas;
                 uniform vec2 uShipWorldPos;
                 uniform float uLandformId;
                 uniform float uRoomStyleId;
@@ -2858,6 +2898,7 @@ export class ThreeGame {
                 }
                 float hbWallRoughness;
                 vec3 hbWallNormalPerturb;
+                vec3 hbWallEmissive;
                 ${shader.fragmentShader}
             `;
 
@@ -2950,44 +2991,60 @@ export class ThreeGame {
                     }
                     finalWallColor = landformTintColor;
 
-                    // Dedicated authored room materials replace the biome
-                    // surface; unthemed walls retain biome blending.
-                    vec2 roomUv = fract(uvX) * 0.5;
-                    if (uRoomStyleId > 0.5 && uRoomStyleId < 1.5) {
-                        finalWallColor = texture2D(tRoomWallAtlas, roomUv + vec2(0.0, 0.5)).rgb;
-                    } else if (uRoomStyleId > 1.5 && uRoomStyleId < 2.5) {
-                        finalWallColor = texture2D(tRoomWallAtlas, roomUv + vec2(0.5, 0.5)).rgb;
-                    } else if (uRoomStyleId > 2.5 && uRoomStyleId < 4.5) {
-                        finalWallColor = texture2D(tRoomWallAtlas, roomUv + vec2(0.0, 0.5)).rgb;
-                    } else if (uRoomStyleId > 4.5 && uRoomStyleId < 7.5) {
-                        finalWallColor = texture2D(tRoomWallAtlas, roomUv + vec2(0.0, 0.0)).rgb;
-                    } else if (uRoomStyleId > 7.5 && uRoomStyleId < 10.5) {
-                        finalWallColor = texture2D(tRoomWallAtlas, roomUv + vec2(0.5, 0.0)).rgb;
-                    } else if (uRoomStyleId > 10.5) {
-                        finalWallColor = texture2D(tRoomWallAtlas, roomUv + vec2(0.0, 0.5)).rgb;
+                    // Dedicated authored room materials using the 8 PBR texture suites;
+                    // unthemed walls (uRoomStyleId == 0) retain biome blending.
+                    hbWallEmissive = vec3(0.0);
+                    if (uRoomStyleId > 0.5) {
+                        float suiteIdx = clamp(floor(uRoomStyleId - 0.5), 0.0, 7.0);
+                        float col = mod(suiteIdx, 4.0);
+                        float row = floor(suiteIdx / 4.0);
+                        // Continuous world-aligned wall UVs: spans 3 horizontal cells and the full 2.8m wall height
+                        vec2 localUv = (abs(vWorldNormal.y) > 0.5)
+                            ? fract(vWorldPos.xz * (1.0 / 3.0))
+                            : fract((abs(vWorldNormal.x) > abs(vWorldNormal.z) ? vWorldPos.zy : vWorldPos.xy) * vec2(1.0 / 3.0, 1.0 / 2.8));
+                        vec2 atlasUv = vec2((col + localUv.x) * 0.25, ((1.0 - row) + localUv.y) * 0.5);
+
+                        vec3 pbrCol = texture2D(tRoomWallColorAtlas, atlasUv).rgb;
+                        vec3 pbrNorm = texture2D(tRoomWallNormalAtlas, atlasUv).rgb * 2.0 - 1.0;
+                        float pbrRough = texture2D(tRoomWallRoughAtlas, atlasUv).r;
+                        vec3 pbrEmiss = texture2D(tRoomWallEmissiveAtlas, atlasUv).rgb;
+
+                        finalWallColor = pbrCol;
+                        hbWallRoughness = clamp(pbrRough, 0.08, 0.95);
+
+                        if (abs(vWorldNormal.y) <= 0.5) {
+                            if (abs(vWorldNormal.x) > abs(vWorldNormal.z)) {
+                                hbWallNormalPerturb = vec3(0.0, pbrNorm.y * 1.5, pbrNorm.x * sign(vWorldNormal.x) * 1.5);
+                            } else {
+                                hbWallNormalPerturb = vec3(pbrNorm.x * sign(-vWorldNormal.z) * 1.5, pbrNorm.y * 1.5, 0.0);
+                            }
+                        }
+                        hbWallEmissive = pbrEmiss;
                     }
 
                     // Per-tile wear jitter breaks the "one flat slab" read
                     // when several wall tiles sit side by side.
                     float tileWear = hbWallTileHash(floor(vWorldPos.xz) + 0.5);
-                    finalWallColor *= mix(0.85, 1.15, tileWear);
+                    finalWallColor *= mix(0.92, 1.08, tileWear);
 
                     diffuseColor *= vec4(finalWallColor, 1.0);
 
-                    // Phase B2: Roughness variation break-up
-                    float bunkerWallRough = mix(0.35, 0.88, bunkerRustMask);
-                    float cryoWallRough = mix(0.44, 0.90, cryoMask);
-                    float bioWallRough = mix(0.22, 0.58, bioMask);
-                    hbWallRoughness = mix(bunkerWallRough, cryoWallRough, cryoMix);
-                    hbWallRoughness = mix(hbWallRoughness, bioWallRough, bioMix);
+                    // Phase B2: Roughness variation break-up for unthemed walls
+                    if (uRoomStyleId <= 0.5) {
+                        float bunkerWallRough = mix(0.35, 0.88, bunkerRustMask);
+                        float cryoWallRough = mix(0.44, 0.90, cryoMask);
+                        float bioWallRough = mix(0.22, 0.58, bioMask);
+                        hbWallRoughness = mix(bunkerWallRough, cryoWallRough, cryoMix);
+                        hbWallRoughness = mix(hbWallRoughness, bioWallRough, bioMix);
 
-                    // Phase B1: Derived surface normal perturbation from luminance
-                    float wallLum = dot(finalWallColor, vec3(0.299, 0.587, 0.114));
-                    float dWallX = dFdx(wallLum);
-                    float dWallY = dFdy(wallLum);
-                    hbWallNormalPerturb = (abs(vWorldNormal.y) > 0.5)
-                        ? vec3(-dWallX * 1.8, 0.0, -dWallY * 1.8)
-                        : vec3(-dWallX * vWorldNormal.z * 1.8, -dWallY * 1.8, dWallX * vWorldNormal.x * 1.8);
+                        // Phase B1: Derived surface normal perturbation from luminance
+                        float wallLum = dot(finalWallColor, vec3(0.299, 0.587, 0.114));
+                        float dWallX = dFdx(wallLum);
+                        float dWallY = dFdy(wallLum);
+                        hbWallNormalPerturb = (abs(vWorldNormal.y) > 0.5)
+                            ? vec3(-dWallX * 1.8, 0.0, -dWallY * 1.8)
+                            : vec3(-dWallX * vWorldNormal.z * 1.8, -dWallY * 1.8, dWallX * vWorldNormal.x * 1.8);
+                    }
                 #endif
                 `
             );
@@ -3009,6 +3066,16 @@ export class ThreeGame {
                 #include <normal_fragment_maps>
                 #ifdef USE_MAP
                     normal = normalize(normal + hbWallNormalPerturb);
+                #endif
+                `
+            );
+
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <emissivemap_fragment>',
+                `
+                #include <emissivemap_fragment>
+                #ifdef USE_MAP
+                    totalEmissiveRadiance += hbWallEmissive;
                 #endif
                 `
             );
@@ -41386,6 +41453,10 @@ export class ThreeGame {
             material?.dispose?.();
         }
         this.roomWallMaterialAtlas?.dispose?.();
+        this.roomWallColorAtlas?.dispose?.();
+        this.roomWallNormalAtlas?.dispose?.();
+        this.roomWallRoughAtlas?.dispose?.();
+        this.roomWallEmissiveAtlas?.dispose?.();
         this.roomFloorMaterialAtlas?.dispose?.();
         this.siteFloorMaterialAtlas?.dispose?.();
         Object.values(this.cliffMaterials ?? {}).forEach((material) => material?.dispose?.());

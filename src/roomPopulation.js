@@ -225,7 +225,7 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
     )).length;
 
     const reservePlacement = (kind, type, blocking = false) => {
-        if (budgetedObjectCount() >= roomObjectLimit) return false;
+        if (kind !== 'signature' && budgetedObjectCount() >= roomObjectLimit) return false;
         const wallOnly = isWallBackedPropType(type);
         const cell = pickCandidate(candidates, random, grid, center, wallOnly);
         if (!cell) return false;

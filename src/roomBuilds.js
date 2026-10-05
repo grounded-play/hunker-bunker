@@ -6,14 +6,14 @@ import {
     stampRoomThresholds,
     addWallShell
 } from './architecturalMaze.js';
-import { ROOM_BUILD_CATALOG, ROOM_BUILD_VERSION } from './data/roomBuilds.js';
+import { ROOM_BUILD_CATALOG, ROOM_BUILD_VERSION, CATHEDRAL_ROOM_BLUEPRINTS, ALL_ROOM_BUILDS } from './data/roomBuilds.js';
 
 // Sprint 23 Phase 3 / Lane B — pure validate/rotate/select/stamp API over
 // the authored-room data in src/data/roomBuilds.js. No Three.js/DOM/random
 // side effects except the one seeded `random` argument `stampRoomBuild`
 // takes for connector bending, matching the rest of this pipeline's contract.
 
-export { ROOM_BUILD_CATALOG, ROOM_BUILD_VERSION };
+export { ROOM_BUILD_CATALOG, ROOM_BUILD_VERSION, CATHEDRAL_ROOM_BLUEPRINTS, ALL_ROOM_BUILDS };
 
 const LONG_TO_SHORT_SIDE = Object.freeze({ north: 'n', south: 's', west: 'w', east: 'e' });
 const CLOCKWISE_SIDE = Object.freeze({ n: 'e', e: 's', s: 'w', w: 'n' });

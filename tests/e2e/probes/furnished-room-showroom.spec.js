@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ROOM_BUILD_CATALOG } from '../../../src/roomBuilds.js';
+import { ALL_ROOM_BUILDS } from '../../../src/roomBuilds.js';
 
 // Furnished-room showroom: every authored prefab room, themed, populated and
 // dressed with the game's real textures, kit shells, gateways, props, decals
@@ -10,7 +10,7 @@ const BIOME_FOR = (build) => {
     return ['bio', 'cryo', 'active', 'cave'].find((biome) => eligible.includes(biome)) ?? 'active';
 };
 
-for (const build of ROOM_BUILD_CATALOG) {
+for (const build of ALL_ROOM_BUILDS) {
     const biome = BIOME_FOR(build);
     test(`furnished room — ${build.id} (${biome})`, async ({ page }) => {
         await page.setViewportSize({ width: 1600, height: 900 });

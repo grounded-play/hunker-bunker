@@ -398,7 +398,7 @@ All panoramas are authored at 2048 × 1024 (2:1 equirectangular) and convolved v
 
 ### Phase 3: Prebuilt Room Assembly & World Generator Hookup
 
-- [ ] The eight specifically named cathedral blueprints in this plan are not the current 12-entry ROOM_BUILD_CATALOG; do not mark them complete by proxy.
+- [x] The eight specifically named cathedral blueprints are authored in `src/data/cathedralBlueprints.js` (`CATHEDRAL_ROOM_BLUEPRINTS`) and exported through `ALL_ROOM_BUILDS`, verified with `src/cathedralBlueprints.test.js`.
 - [~] World hookup is substantial: theme pools, bounded room dressing, grounded floor traces/support pieces, destructibility, gateways, practical lights, and furnished-room evidence are complete.
 - [ ] Dedicated wall-hugging and ceiling attachment contracts for cable trays, pipe organs, oxygen racks, cage lamps, and crane hoists remain distinct from the completed generic/grounded placement work.
 - [~] Ground alignment for conduit bridges and sumps is implemented and tested.

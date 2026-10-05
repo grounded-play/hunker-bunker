@@ -33,5 +33,6 @@ export const GAME_AUDIO_ALIASES = Object.freeze({
     enemy_alert_boss: 'hive_queen_throne',
     enemy_attack_sporesnail: 'hive_spores_puff',
     enemy_shockwave_cryosnail: 'fx_tank_shockwave',
-    enemy_break_wall: 'prop_impact_metal'
+    enemy_break_wall: 'prop_impact_metal',
+    enemy_hit_hard: 'prop_impact_metal'
 });
