@@ -1,0 +1,187 @@
+TODO tree reconciliation — 2026-10-04 19:11 PDT
+Branch: dev/sprint-49
+Evidence head reviewed: 44484597
+
+Legend
+  [x] Verified complete in repository code/tests or completed local evidence.
+  [~] Substantial implementation is complete; the source ticket stays open for
+      remaining integration, installed-build, hardware, playtest, or operations evidence.
+  [ ] Open and suitable for repository implementation or automated verification.
+  [H] Human/publisher/hardware decision or evidence is required. Codex can prepare
+      tooling and runbooks, but must not claim or perform the external action.
+
+Notes
+  - This report reconciles the old unchecked-tree snapshot; it does not silently
+    change the acceptance boxes in the source plans.
+  - Stale line numbers were replaced with stable section/ticket names.
+  - A passing unit suite is not treated as a Steamworks, Deck, native-language,
+    real-account, or independent-playtest acceptance result.
+
+└─ hunker-bunker
+   ├─ economy-master-plan-2026-09-30.md
+   │  ├─ [H] Direct-purchase alternative for every collection item (R1).
+   │  │      Product/catalog decision remains open.
+   │  ├─ [~] GetReport reconciliation, durable cursors, restart recovery, and
+   │  │      idempotent paid-grant retry are implemented. P5 is not closed:
+   │  │      unattended recovery and explicit item-level reversal dispositions remain.
+   │  ├─ [H] Steam store declaration, live Item Store, reviewer route, production
+   │  │      flags, and real purchases require publisher authority/evidence.
+   │  ├─ [H] Minor-account/platform compliance remains a publisher/platform policy gate.
+   │  ├─ [ ] Build the explicit audited P5 resolution workflow for ambiguous,
+   │  │      consumed, traded, refunded, and chargeback outcomes.
+   │  └─ [H] Live deployment, ratings, disclosures, pricing, and review evidence
+   │         remain separate from repository implementation.
+   │
+   ├─ nordic-cathedral-biomech-environmental-spaces-and-textures-plan.md
+   │  ├─ [x] Props 01–20 exist as authored GLBs in public/3d/runtime/new3ds/.
+   │  ├─ [x] All 20 are registered in src/world3dOverlay.js with authored height/yaw.
+   │  ├─ [x] Debug museum coverage is generated from WORLD_3D_MODELS and guarded by
+   │  │      debugMuseumPlan/new3d asset coverage tests.
+   │  ├─ [ ] The eight specifically named cathedral blueprints in this plan are not
+   │  │      the current 12-entry ROOM_BUILD_CATALOG; do not mark them complete by proxy.
+   │  ├─ [~] World hookup is substantial: theme pools, bounded room dressing,
+   │  │      grounded floor traces/support pieces, destructibility, gateways,
+   │  │      practical lights, and furnished-room evidence are complete.
+   │  ├─ [ ] Dedicated wall-hugging and ceiling attachment contracts for cable trays,
+   │  │      pipe organs, oxygen racks, cage lamps, and crane hoists remain distinct
+   │  │      from the completed generic/grounded placement work.
+   │  ├─ [~] Ground alignment for conduit bridges and sumps is implemented and tested.
+   │  ├─ [~] The cathedral crypt panorama is installed by environment lighting;
+   │  │      sector-specific visual acceptance remains unverified.
+   │  ├─ [x] Room connectivity/anchor tests, full Vitest, museum audits, retail asset
+   │  │      checks, and 12 furnished-room showroom captures are present.
+   │  ├─ [H] Real gameplay frame pacing, GPU memory/VRAM, and Deck acceptance remain.
+   │  └─ [~] Local handoff and retail reports are current; final art acceptance remains.
+   │
+   ├─ sprint-49-lived-in-world-continuation.md
+   │  ├─ [x] M1 gateways, M2 grounding, M3 reversible density experiment, M4 practical
+   │  │      light budget, M6 reactive biomech synergies, and the M5 showroom grammar
+   │  │      are implemented, tested, documented, and committed.
+   │  ├─ [x] Integrated checks: 564 files / 4,996 tests, generated presubmit, and
+   │  │      5,000 seeds with zero validity/spacing/manifest/determinism failures.
+   │  ├─ [H] M3/M4 paired Steam Deck performance captures remain open.
+   │  └─ [H] M5 art-direction approval remains open; wall shells stay default-off and
+   │         showroom-only until destruction, cutaway, height, and depth blockers resolve.
+   │
+   ├─ sprint-49.md
+   │  ├─ [~] S49-02 chat relay/channel: code complete; deployed two-account acceptance open.
+   │  ├─ [~] S49-03 multilingual filtering: seven-language baseline complete;
+   │  │      native review/evasion/false-positive acceptance open.
+   │  ├─ [~] S49-04 chat UI/mute/report/controller entry: implemented; Deck placement,
+   │  │      deployed match, and staffed moderation operations open.
+   │  ├─ [~] S49-05 co-op/PvP: authority, reconnect, rejection diagnostics, round
+   │  │      completion, and rematch improved; paired real-account candidate run open.
+   │  ├─ [~] S49-06 developer commentary: localized text, voiced lines, history reader,
+   │  │      controller stops, and routes exist; installed-candidate review open.
+   │  ├─ [~] S49-07 catalog/quantity/price consistency: adapter complete; live Steam
+   │  │      currency and both checkout routes require publisher evidence.
+   │  ├─ [ ] S49-08 settlement reconciliation: finish unattended paid recovery and
+   │  │      explicit item-level reversal/review dispositions.
+   │  ├─ [H] S49-09 real purchase/cancel/delivery/reversal evidence.
+   │  ├─ [~] S49-10 controller journey: broad browser route and focus fixes exist;
+   │  │      native Steam Input plus physical Deck/Xbox/PlayStation passes remain.
+   │  ├─ [~] S49-11 mature-content routes: content/code checks complete; installed
+   │  │      reviewer route and authorized save evidence remain.
+   │  ├─ [H] S49-12 one-BuildID Steam resubmission packet.
+   │  ├─ [x] S49-13 playable field workbench.
+   │  ├─ [x] S49-14 tactical pings and localized quick-command radial in code;
+   │  │      deployed paired-session acceptance is still part of S49-15/33.
+   │  ├─ [ ] S49-15 co-op parity journeys, host loss/rejoin, and replay-safe rewards.
+   │  ├─ [ ] S49-16 companion behavior/pathing/settlement/save validation.
+   │  ├─ [H] S49-17 first-hour/second-run tuning needs independent playtesters;
+   │  │      Codex can prepare probes and fix reproduced progression blocks.
+   │  ├─ [ ] S49-18 encounter/boss/ammo/class tuning and seeded combat reports.
+   │  ├─ [x] S49-19 inert drop effects explicitly removed from active reward pools.
+   │  ├─ [~] S49-20 world variety: Sprint 49 room-life and 5,000-seed reachability
+   │  │      work landed; three human route playthroughs and save/destruction checks remain.
+   │  ├─ [ ] S49-21 narrative consequence/debrief state verification.
+   │  ├─ [ ] S49-22 unified Foundry/inventory controller journey.
+   │  ├─ [x] S49-23 earned-power/paid-cosmetic separation and ownership tests.
+   │  ├─ [H] S49-24 reward-economy design and regional/platform approval.
+   │  ├─ [~] S49-25 HUD automation exists; physical Deck/desktop captures and final
+   │  │      accessibility review remain.
+   │  ├─ [~] S49-26 camera/world readability: isometric default and Sprint 49 room
+   │  │      presentation landed; matched Deck/desktop acceptance remains.
+   │  ├─ [~] S49-27 soundtrack/SFX wiring complete; stress mix, ducking, and subtitle
+   │  │      parity capture remain.
+   │  ├─ [ ] S49-28 accessibility settings end-to-end validation.
+   │  ├─ [H] S49-29 automated seven-locale audit can be rerun, but semantic/native
+   │  │      language acceptance requires reviewers.
+   │  ├─ [H] S49-30 save/Cloud/suspend automation can expand, but Deck sleep/wake and
+   │  │      two-machine Cloud conflict evidence require hardware/accounts.
+   │  ├─ [H] S49-31 telemetry is corrected; named-hardware frame pacing and memory
+   │  │      acceptance remain.
+   │  ├─ [~] S49-32 service diagnostics improved; repeatable fault drills, durable
+   │  │      report operations, alerts, backup/restore, and ownership remain open.
+   │  ├─ [ ] S49-33 end-to-end seams and packaged-output journey tests.
+   │  ├─ [ ] S49-34 deeper expedition choices and replayable contracts.
+   │  ├─ [ ] S49-35 party continuity and post-run social loop.
+   │  ├─ [H] S49-36 seasonal progression/direct cosmetics needs product decisions.
+   │  ├─ [~] S49-37 asset audits plus 12 furnished-room captures are complete;
+   │  │      gameplay-context art/narrative/audio review remains.
+   │  └─ [~] S49-38 chat, commentary, and Fabrication Bay were extracted; purchase
+   │         presentation extraction and lifecycle characterization remain open.
+   │
+   └─ todo-tree-2026-10-01-handoff.md
+      ├─ [x] Inventory decoding, exact recipe exchange, durable ambiguity holds,
+      │      mutation response parsing, numeric request IDs, and no-blind-refund rules.
+      ├─ [x] Reconnect roster cleanup, host-only automatic doors, hit rejection
+      │      reasons, remote-health snapshots, disconnect diagnostics, authoritative
+      │      PvP round completion, and synchronized rematch.
+      ├─ [ ] Define and enforce a shared deployment-ready/spawn-protected/alive/dead
+      │      contract at the relay boundary; test loading delay and reconnect edges.
+      ├─ [ ] Test host migration plus simultaneous manual door actions.
+      ├─ [H] Run the two-client relay fault drill and paired Deck capture.
+      ├─ [H] Measure post-fix CPU/presented-frame/shadow/resource behavior on hardware.
+      └─ [ ] Finish the explicit operator resolution workflow for ambiguous inventory
+             outcomes; existing holds must never be manually cleared without evidence.
+
+Codex takeover outline
+
+1. Recommended first lane — S49-08/P5 audited resolution workflow
+   - Add a pure disposition state machine for unresolved recipe/order attempts.
+   - Permit only explicit evidence-backed outcomes: confirmed fulfilled, confirmed
+     not applied, reversed/charged back, or still unresolved.
+   - Add an authenticated operator CLI/API with dry-run, immutable audit append,
+     actor/reason/evidence fields, and idempotent retry behavior.
+   - Test SQLite and JSON persistence, restart recovery, concurrent disposition,
+     redaction, stale evidence, and refusal to auto-refund/regrant ambiguous attempts.
+   - Do not deploy, mutate live inventory, clear holds, or make purchases.
+
+2. Safe parallel follow-up — S49-38 purchase-presentation extraction
+   - Characterize the current Vault/store presentation listeners and cleanup.
+   - Extract a bounded module with attach/dispose ownership and unchanged behavior.
+   - Add lifecycle, focus-restoration, stale/offline catalog, and teardown tests.
+
+3. Gameplay/network follow-up — S49-15 plus handoff lifecycle gaps
+   - Build deterministic two-peer simulations for deployment-ready/spawn protection,
+     host loss/rejoin, simultaneous manual doors, shared rewards, death, and rematch.
+   - Fix only failures reproduced by those tests; preserve relay authority and event IDs.
+
+4. World follow-up — cathedral attachment contract
+   - Add pure wall/ceiling anchor planning for the five remaining attachment families.
+   - Keep tile collision authoritative, structural pieces protected, ordinary props
+     destructible, scale/yaw authored, and generation stable for a seed.
+   - Verify with focused placement tests, furnished-room captures, full suite, and
+     the configured 5,000-seed sweep. Leave art/Deck acceptance pending.
+
+5. Evidence/tooling follow-up — S49-32/33
+   - Add repeatable local fault-drill scripts and end-to-end seams for chat, workbench,
+     pings, settlement recovery, and packaged smoke.
+   - Emit sanitized evidence bundles; never substitute them for real-account,
+     publisher, native-language, independent-playtest, or hardware sign-off.
+
+Suggested commit order
+  A. docs(todo): reconcile stale tree and name remaining owners
+  B. test(economy): characterize unresolved disposition invariants
+  C. feat(economy): add audited operator resolution workflow
+  D. refactor(store): extract purchase presentation lifecycle
+  E. test(multiplayer): cover shared deployment/host-migration contracts
+  F. feat(world): add pure wall/ceiling attachment planning
+
+Stop/ask boundaries
+  - Any production flag, deployment, Steam purchase, refund, chargeback, inventory
+    mutation, submission, or live-account operation.
+  - Any price, paid-randomness, season, regional compliance, or market-fee decision.
+  - Any claim that Deck, native-language, publisher, Art, or independent-playtest
+    acceptance passed without the named external evidence.
