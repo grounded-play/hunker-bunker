@@ -472,15 +472,11 @@
       "log_asset": "> {message}…",
       "log_booting_webgl": "> 正在启动战术 WebGL 核心…",
       "log_preloading_cinematic": "> 正在预载过场影像（DoorIntro）…",
-      "log_assets_loaded": "> 所有资源已载入 — 正在开启气闸…",
-      "initializing_core": "> 正在初始化战术外骨骼核心…（{percent}%）"
+      "log_assets_loaded": "> 所有资源已载入 — 正在开启气闸…"
     },
     "splash_steam_badge": {
       "title_click_to_open": "点击打开 Steam 界面档案",
       "aria_label_open_steam_profile": "打开 Steam 档案"
-    },
-    "splash": {
-      "tactical_command_v2_0": "战术指挥 v2.0"
     },
     "title_profile_hud": {
       "aria_label_current_operator_profile": "当前操作员档案",

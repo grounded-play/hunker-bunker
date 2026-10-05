@@ -472,15 +472,11 @@
       "log_asset": "> {message}...",
       "log_booting_webgl": "> ЗАПУСК ТАКТИЧЕСКОГО ЯДРА WEBGL...",
       "log_preloading_cinematic": "> ПРЕДЗАГРУЗКА КИНЕМАТИЧЕСКОГО ПОТОКА (DoorIntro)...",
-      "log_assets_loaded": "> ВСЕ РЕСУРСЫ ЗАГРУЖЕНЫ — ОТКРЫТИЕ ШЛЮЗА...",
-      "initializing_core": "> ИНИЦИАЛИЗАЦИЯ ТАКТИЧЕСКОГО ЯДРА ЭКЗОКОСТЮМА... ({percent}%)"
+      "log_assets_loaded": "> ВСЕ РЕСУРСЫ ЗАГРУЖЕНЫ — ОТКРЫТИЕ ШЛЮЗА..."
     },
     "splash_steam_badge": {
       "title_click_to_open": "Открыть профиль через оверлей Steam",
       "aria_label_open_steam_profile": "Открыть профиль Steam"
-    },
-    "splash": {
-      "tactical_command_v2_0": "ТАКТИЧЕСКОЕ КОМАНДОВАНИЕ v2.0"
     },
     "title_profile_hud": {
       "aria_label_current_operator_profile": "Текущий профиль оператора",

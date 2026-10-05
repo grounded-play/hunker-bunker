@@ -472,15 +472,11 @@
       "log_asset": "> {message}...",
       "log_booting_webgl": "> BOOTING TACTICAL WEBGL CORE...",
       "log_preloading_cinematic": "> PRELOADING CINEMATIC FEED (DoorIntro)...",
-      "log_assets_loaded": "> ALL ASSETS LOADED — OPENING AIRLOCK...",
-      "initializing_core": "> INITIALIZING TACTICAL EXOSUIT CORE... ({percent}%)"
+      "log_assets_loaded": "> ALL ASSETS LOADED — OPENING AIRLOCK..."
     },
     "splash_steam_badge": {
       "title_click_to_open": "Click to open Steam Overlay profile",
       "aria_label_open_steam_profile": "Open Steam profile"
-    },
-    "splash": {
-      "tactical_command_v2_0": "TACTICAL COMMAND v2.0"
     },
     "title_profile_hud": {
       "aria_label_current_operator_profile": "Current operator profile",

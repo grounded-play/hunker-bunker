@@ -472,15 +472,11 @@
       "log_asset": "> {message}...",
       "log_booting_webgl": "> TAKTISCHER WEBGL-KERN WIRD GESTARTET...",
       "log_preloading_cinematic": "> CINEMATIC-FEED WIRD VORGELADEN (DoorIntro)...",
-      "log_assets_loaded": "> ALLE ASSETS GELADEN – LUFTSCHLEUSE WIRD GEÖFFNET...",
-      "initializing_core": "> TAKTISCHER EXOANZUG-KERN WIRD INITIALISIERT... ({percent}%)"
+      "log_assets_loaded": "> ALLE ASSETS GELADEN – LUFTSCHLEUSE WIRD GEÖFFNET..."
     },
     "splash_steam_badge": {
       "title_click_to_open": "Klicken, um Steam-Overlay-Profil zu öffnen",
       "aria_label_open_steam_profile": "Steam-Profil öffnen"
-    },
-    "splash": {
-      "tactical_command_v2_0": "TAKTISCHES KOMMANDO v2.0"
     },
     "title_profile_hud": {
       "aria_label_current_operator_profile": "Aktuelles Operator-Profil",

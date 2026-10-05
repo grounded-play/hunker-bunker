@@ -472,15 +472,11 @@
       "log_asset": "> {message}...",
       "log_booting_webgl": "> 戦術 WebGL コアを起動中...",
       "log_preloading_cinematic": "> シネマティック・フィードを先読み中（DoorIntro）...",
-      "log_assets_loaded": "> 全アセット読込完了 — エアロックを開放中...",
-      "initializing_core": "> 戦術エクソスーツ・コアを初期化中...（{percent}%）"
+      "log_assets_loaded": "> 全アセット読込完了 — エアロックを開放中..."
     },
     "splash_steam_badge": {
       "title_click_to_open": "クリックして Steam オーバーレイのプロフィールを開く",
       "aria_label_open_steam_profile": "Steam プロフィールを開く"
-    },
-    "splash": {
-      "tactical_command_v2_0": "戦術コマンド v2.0"
     },
     "title_profile_hud": {
       "aria_label_current_operator_profile": "現在のオペレーター・プロフィール",

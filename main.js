@@ -126,6 +126,7 @@ import { installSettingsWheelGuard } from './src/settingsWheelGuard.js';
 import { installNativeTooltipGuard } from './src/nativeTooltipGuard.js';
 import { installAccessibilitySettings } from './src/accessibilitySettings.js';
 import { recordCollectedPickup, recordDebugResourceGrant, resetRunResourceTelemetry } from './src/runTelemetry.js';
+import { loaderBuildLabel, versionLabel } from './src/buildLabels.js';
 
 // These galleries are explicit developer destinations. Keeping their modules
 // out of the boot graph prevents QA scene code (and its transitive catalogs)
@@ -292,12 +293,8 @@ function formatBuildTimestamp(raw) {
 
 const buildCommitLabel = `${buildInfo.commit}${buildInfo.dirty ? '-dirty' : ''}`;
 const pipelineBuildLabel = buildInfo.steamBuild ? ` // PIPELINE ${buildInfo.steamBuild}` : '';
-const branchName = buildInfo.branch ? buildInfo.branch.replace(/^dev\//i, '').toUpperCase() : '';
-const sprintLabel = branchName
-    ? (branchName.startsWith('SPRINT') ? branchName.replace('-', ' ') : branchName)
-    : '';
 const buildTimestampLabel = formatBuildTimestamp(buildInfo.builtAt);
-const loadingVersionText = `${sprintLabel ? `${sprintLabel} // ` : ''}${buildCommitLabel}${pipelineBuildLabel}`;
+const loadingVersionText = loaderBuildLabel(buildInfo);
 const canonicalVersionText = `BUILD ${buildInfo.version} // ${buildCommitLabel} // ${buildInfo.branch}${pipelineBuildLabel}${buildTimestampLabel ? ` // ${buildTimestampLabel}` : ''}`;
 if (loaderVersionTag) {
     loaderVersionTag.textContent = loadingVersionText;
@@ -308,6 +305,12 @@ if (loaderBuildTime) {
     loaderBuildTime.title = `Built ${buildInfo.builtAt ?? 'unknown time'}`;
 } else if (loaderSystemInfoLabel && buildTimestampLabel) {
     loaderSystemInfoLabel.textContent = `SYSTEM BUILD // ${buildTimestampLabel}`;
+}
+// The title showed a fixed "v2.0"; it now shows the shipped package version.
+const splashVersion = document.getElementById('splash-version');
+if (splashVersion) {
+    splashVersion.textContent = versionLabel(buildInfo);
+    splashVersion.title = canonicalVersionText;
 }
 const aboutSysVer = document.getElementById('about-modal-sys-ver');
 if (aboutSysVer) {
@@ -16291,11 +16294,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ]
             };
 
+            // Same log and bar as the core assets: this used to overwrite the
+            // log with a second "(NN%)" line that repeated asset messages and
+            // disagreed with the bar.
             await AudioManager.loadAssets(gameplayManifest, (progress, itemName) => {
-                if (loaderStatus && itemName) {
-                    const msg = getLoadingMessageForAsset(itemName);
-                    loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1s infinite ease-in-out;">${t('ui.loading.initializing_core', { percent: Math.round(progress) })}<br><span style="font-size: var(--font-xs); color: var(--text-muted);">> ${msg}...</span></div>`;
-                }
+                if (loaderBar) loaderBar.style.width = `${65 + Math.round(progress * 0.2)}%`;
+                if (itemName) renderLoaderLogs(t('ui.loading.log_asset', { message: getLoadingMessageForAsset(itemName) }));
             });
             traceBootPhase('gameplay-assets-ready', {
                 images: gameplayManifest.images.length,

@@ -347,6 +347,11 @@ body {
   border-radius: clamp(6px, calc(var(--vu) * 1.1), 12px);
 }
 
+/* Title version (src/buildLabels.js): versions read as v2.4.14-beta, not V2.4.14-BETA. */
+.splash-subtitle .splash-version {
+  text-transform: none;
+}
+
 #cabinet-bezel::before {
   content: "";
   position: absolute;

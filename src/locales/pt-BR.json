@@ -472,15 +472,11 @@
       "log_asset": "> {message}...",
       "log_booting_webgl": "> INICIANDO O NÚCLEO TÁTICO WEBGL...",
       "log_preloading_cinematic": "> PRÉ-CARREGANDO A CINEMÁTICA (DoorIntro)...",
-      "log_assets_loaded": "> TODOS OS RECURSOS CARREGADOS — ABRINDO A ECLUSA...",
-      "initializing_core": "> INICIALIZANDO O NÚCLEO TÁTICO DO EXOTRAJE... ({percent}%)"
+      "log_assets_loaded": "> TODOS OS RECURSOS CARREGADOS — ABRINDO A ECLUSA..."
     },
     "splash_steam_badge": {
       "title_click_to_open": "Clique para abrir o perfil no Overlay da Steam",
       "aria_label_open_steam_profile": "Abrir perfil da Steam"
-    },
-    "splash": {
-      "tactical_command_v2_0": "COMANDO TÁTICO v2.0"
     },
     "title_profile_hud": {
       "aria_label_current_operator_profile": "Perfil do operador atual",
