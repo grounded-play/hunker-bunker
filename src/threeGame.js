@@ -152,7 +152,9 @@ import {
     restoreDoorStates,
     serializeDoorStates,
     stampDoorRecords,
-    transitionDoorState
+    transitionDoorState,
+    PROCEDURAL_DOOR_SLAB_SPAN,
+    PROCEDURAL_DOOR_SLAB_THICKNESS
 } from './proceduralDoors.js';
 import {
     createAccessState,
@@ -30531,9 +30533,9 @@ export class ThreeGame {
                     const blastDoorHeightScale = 1.72;
                     doorMesh.position.set(worldX, (this.wallHeight * blastDoorHeightScale) / 2, worldZ);
                     doorMesh.scale.set(
-                        horizontal ? 3.35 : 0.58,
+                        horizontal ? PROCEDURAL_DOOR_SLAB_SPAN : PROCEDURAL_DOOR_SLAB_THICKNESS,
                         blastDoorHeightScale,
-                        horizontal ? 0.58 : 3.35
+                        horizontal ? PROCEDURAL_DOOR_SLAB_THICKNESS : PROCEDURAL_DOOR_SLAB_SPAN
                     );
                     doorMesh.castShadow = true;
                     doorMesh.receiveShadow = true;

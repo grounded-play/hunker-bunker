@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ThreeGame, isRoomGatewayFrameEligible } from './threeGame.js';
+import { GATEWAY_ROOM_INSET } from './kitGrammar.js';
 
 // A grid with two solid 5x3 floor blocks, far enough apart that neither has
 // any "doorway" cell (wall-floor-wall on one axis) — isolates the "Room Set
@@ -105,7 +106,7 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
         const gateway = placements.find(({ scatterKey }) => scatterKey.startsWith('room-gateway:'));
 
         expect(gateway).toMatchObject({
-            x: 13.5,
+            x: 14 - GATEWAY_ROOM_INSET,
             z: 8,
             type: 'kit_space_gate',
             rotation: Math.PI / 2,

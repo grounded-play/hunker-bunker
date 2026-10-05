@@ -162,10 +162,10 @@ objects ship behind a flag until that capture exists.
 
 ### Goal 1 — gateway alignment (M1)
 
-**Now:** [`roomGatewayKitPlacement(door, biome)`](../../src/kitGrammar.js) centres
-`kit_<skin>_gate` on the authored threshold cells, `rotationSteps` 0 for n/s doors
-and 1 for e/w, scale 1, at most one per authored room, non-colliding. It has never
-been looked at in a real run.
+**Before M1:** [`roomGatewayKitPlacement(door, biome)`](../../src/kitGrammar.js)
+centred `kit_<skin>_gate` on the authored threshold cells, `rotationSteps` 0 for n/s
+doors and 1 for e/w, scale 1, at most one per authored room, non-colliding. No one
+had seen it rendered.
 
 - [x] Screenshot the gate on a north, east, south and west authored threshold
   (showroom or seeded run) and record whether the frame's authored forward matches
@@ -178,6 +178,20 @@ been looked at in a real run.
 
 **Accept:** four-side test passes; 500-seed sweep clean; screenshots committed
 under `docs/reports/assets/`.
+
+**Result (2026-10-04):** the gate frame matches the corridor convention on all four
+sides in both skins (`gate.glb` is 4.4 × 1.4 units, so 3.3/3.15 wide × 1.05 deep at
+`KIT_SCALE`), and frames the open threshold cleanly. The closed blast door did not
+fit. It is a 3.35 × 4.8 × 0.58 slab centred on the threshold line that sinks into
+the floor to open, so it ran through both posts and above the arch, both with the
+frame centred and with `e113e3e3`'s half-cell inset. The frame now stands
+`GATEWAY_ROOM_INSET` (≈0.85 = frame half-depth 0.525 + slab half-thickness 0.29 +
+3.5 cm) into the room, just clear of the slab's room-side face. The slab footprint
+moved to [`proceduralDoors.js`](../../src/proceduralDoors.js) constants so the two
+cannot drift apart, and a test measures both `gate.glb` files against them.
+Evidence: `HB_PROBES=1 npx playwright test tests/e2e/probes/gateway-orientation.spec.js`
+writes `docs/reports/assets/gateway-orientation-{cave,space}-{closed,open}-2026-10-04.png`.
+Checks: 41 focused tests, full suite 4,952 passed, 500-seed sweep 0 failures.
 
 ### Goal 2 — floor grounding (M2)
 

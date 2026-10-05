@@ -14,6 +14,7 @@
  */
 
 import { KIT_SCALE } from './kitMaterials.js';
+import { PROCEDURAL_DOOR_SLAB_THICKNESS } from './proceduralDoors.js';
 
 export const KIT_SKINS = Object.freeze({ CAVE: 'cave', SPACE: 'space' });
 
@@ -199,6 +200,20 @@ export function corridorKitPlacement(grid, x, y, biome, { width = 0 } = {}) {
     return type ? { type, role: placedRole, rotationSteps, modelScale } : null;
 }
 
+/** Both skins' gate.glb are 1.4 units deep before KIT_SCALE (front/back +-0.7). */
+export const GATE_MODEL_HALF_DEPTH = 0.7;
+
+/**
+ * How far into the room the gateway frame stands from the threshold line.
+ * The closed procedural blast door is a slab centred on that line which sinks
+ * into the floor to open; a frame centred there, or inset only half a cell,
+ * encloses the slab and its posts cut through it (gateway-orientation probe,
+ * 2026-10-04). Clear the slab's room-side face by a few centimetres instead.
+ */
+export const GATEWAY_ROOM_INSET = GATE_MODEL_HALF_DEPTH * KIT_SCALE
+    + PROCEDURAL_DOOR_SLAB_THICKNESS / 2
+    + 0.035;
+
 /**
  * Turn an authored three-cell room threshold into an open modular gateway.
  *
@@ -214,10 +229,10 @@ export function roomGatewayKitPlacement(door, biome) {
     if (valid.length === 0) return null;
     const skin = skinForBiome(biome);
     const transform = {
-        n: { x: 0, y: 0.5, rotationSteps: 0 },
-        e: { x: -0.5, y: 0, rotationSteps: 1 },
-        s: { x: 0, y: -0.5, rotationSteps: 2 },
-        w: { x: 0.5, y: 0, rotationSteps: 3 }
+        n: { x: 0, y: GATEWAY_ROOM_INSET, rotationSteps: 0 },
+        e: { x: -GATEWAY_ROOM_INSET, y: 0, rotationSteps: 1 },
+        s: { x: 0, y: -GATEWAY_ROOM_INSET, rotationSteps: 2 },
+        w: { x: GATEWAY_ROOM_INSET, y: 0, rotationSteps: 3 }
     }[door.side];
     return {
         type: `kit_${skin}_gate`,

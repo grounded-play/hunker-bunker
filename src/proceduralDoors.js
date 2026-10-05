@@ -1,3 +1,10 @@
+// Blast-door slab footprint in world units: it spans the three-cell threshold
+// and is this thick across it, centred on the middle cell, and sinks into the
+// floor to open. threeGame scales its wall box to these; the room gateway frame
+// (kitGrammar.GATEWAY_ROOM_INSET) stands clear of the slab using them.
+export const PROCEDURAL_DOOR_SLAB_SPAN = 3.35;
+export const PROCEDURAL_DOOR_SLAB_THICKNESS = 0.58;
+
 const SIDE_ORIENTATION = Object.freeze({
     n: 'horizontal',
     s: 'horizontal',

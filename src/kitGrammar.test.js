@@ -1,9 +1,35 @@
 import { describe, expect, it } from 'vitest';
+import fs from 'node:fs';
 import { WORLD_3D_MODELS } from './world3dOverlay.js';
+import { KIT_SCALE } from './kitMaterials.js';
+import { PROCEDURAL_DOOR_SLAB_THICKNESS } from './proceduralDoors.js';
 import {
-    KIT_SKINS, SHARED_ROLES, SKIN_ONLY_ROLES,
+    KIT_SKINS, SHARED_ROLES, SKIN_ONLY_ROLES, GATE_MODEL_HALF_DEPTH, GATEWAY_ROOM_INSET,
     skinForBiome, kitPieceFor, chooseKitPiece, corridorKitPlacement, roomGatewayKitPlacement
 } from './kitGrammar.js';
+
+// Z extent (depth across the threshold) of every mesh in a GLB, from its
+// POSITION accessor bounds through the node translations. Enough for the
+// kit gate, whose nodes are translated but not rotated or scaled.
+function glbDepthExtent(path) {
+    const buffer = fs.readFileSync(path);
+    const json = JSON.parse(buffer.subarray(20, 20 + buffer.readUInt32LE(12)).toString('utf8'));
+    let min = Infinity;
+    let max = -Infinity;
+    const visit = (index, offsetZ) => {
+        const node = json.nodes[index];
+        expect(node.rotation ?? [0, 0, 0, 1]).toEqual([0, 0, 0, 1]);
+        const z = offsetZ + (node.translation?.[2] ?? 0);
+        for (const primitive of json.meshes[node.mesh]?.primitives ?? []) {
+            const accessor = json.accessors[primitive.attributes.POSITION];
+            min = Math.min(min, z + accessor.min[2]);
+            max = Math.max(max, z + accessor.max[2]);
+        }
+        for (const child of node.children ?? []) visit(child, z);
+    };
+    for (const root of json.scenes[json.scene ?? 0].nodes) visit(root, 0);
+    return { min, max };
+}
 
 describe('biome skinning', () => {
     it('routes rock biomes to the cave kit and fabricated ones to space', () => {
@@ -143,14 +169,27 @@ describe('role resolution', () => {
 
 describe('authored room gateway placement', () => {
     it.each([
-        ['n', [{ x: 3, y: 2 }, { x: 4, y: 2 }, { x: 5, y: 2 }], 4, 2.5, 0],
-        ['e', [{ x: 8, y: 4 }, { x: 8, y: 5 }, { x: 8, y: 6 }], 7.5, 5, 1],
-        ['s', [{ x: 3, y: 8 }, { x: 4, y: 8 }, { x: 5, y: 8 }], 4, 7.5, 2],
-        ['w', [{ x: 2, y: 4 }, { x: 2, y: 5 }, { x: 2, y: 6 }], 2.5, 5, 3]
+        ['n', [{ x: 3, y: 2 }, { x: 4, y: 2 }, { x: 5, y: 2 }], 4, 2 + GATEWAY_ROOM_INSET, 0],
+        ['e', [{ x: 8, y: 4 }, { x: 8, y: 5 }, { x: 8, y: 6 }], 8 - GATEWAY_ROOM_INSET, 5, 1],
+        ['s', [{ x: 3, y: 8 }, { x: 4, y: 8 }, { x: 5, y: 8 }], 4, 8 - GATEWAY_ROOM_INSET, 2],
+        ['w', [{ x: 2, y: 4 }, { x: 2, y: 5 }, { x: 2, y: 6 }], 2 + GATEWAY_ROOM_INSET, 5, 3]
     ])('insets and turns the %s frame toward the room', (side, cells, x, y, rotationSteps) => {
         expect(roomGatewayKitPlacement({ side, cells }, 'bio')).toEqual({
             type: 'kit_cave_gate', x, y, rotationSteps, modelScale: 1
         });
+    });
+
+    // Gateway probe 2026-10-04: a half-cell inset left the closed blast door
+    // (a slab centred on the threshold line) running through both posts.
+    it.each(['cave', 'space'])('stands the %s frame clear of the closed blast door', (skin) => {
+        const { min, max } = glbDepthExtent(`public/3d/runtime/kits/modular-${skin}-kit/gate.glb`);
+        const halfDepth = Math.max(-min, max);
+        expect(halfDepth).toBeLessThanOrEqual(GATE_MODEL_HALF_DEPTH + 1e-6);
+        const frameBackFace = GATEWAY_ROOM_INSET - halfDepth * KIT_SCALE;
+        const slabRoomFace = PROCEDURAL_DOOR_SLAB_THICKNESS / 2;
+        expect(frameBackFace).toBeGreaterThan(slabRoomFace);
+        // ...but not so far that the frame floats in the room: under a tenth of a cell.
+        expect(frameBackFace - slabRoomFace).toBeLessThan(0.1);
     });
 
     it('rejects malformed thresholds', () => {
