@@ -1,6 +1,11 @@
 # Steam Backend Admin Runbook
 
-Last updated: 2026-10-01
+Last updated: 2026-10-05
+
+Production checkpoint: Microtransactions enabled on backend `cf9f49671ed4`,
+with mocks/sandbox off, durable storage, a verified restore backup, and healthy
+initial reconciliation. Hosted Item Store and real checkout acceptance are not
+verified. See [enablement evidence and rollback handoff](reports/steam-commerce-enablement-2026-10-05.md).
 
 This runbook covers the trusted backend rail for Hunker Bunker's Steam
 leaderboards, inventory grants, and Store purchases. It is for operators and
