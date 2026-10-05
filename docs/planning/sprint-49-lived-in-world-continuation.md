@@ -15,13 +15,23 @@ plan for milestone scope, dependencies, verification gates, and definition of do
 
 ### Room grammar scope handoff — 2026-10-04
 
+- [x] **G2 persistence/live slice (2026-10-05):** adapter commit `dbf9c378` is now
+  selected by `ThreeGame.buildChunk` for opted-in optional rooms. Map seed and
+  `interiorVersion` persist across retries/reloads; changing the version requires
+  a new map. Legacy/missing versions remain 0. Full suite: 572 files / 5,067 tests.
+  Shared-file prop-alias edits belong to another contributor and are excluded.
+- [ ] **Next: G3 destruction and visual slice.** Instanced prop damage and
+  interior-module breach behavior still need integration, persistence and co-op
+  testing; do not enable this pilot by default. See the
+  [activation and acceptance notes](../reports/room-grammar-baseline-2026-10-04.md#g2-live-pilot-2026-10-05).
+
 - [x] **G2 adapter slice (2026-10-05):** `roomGrammarChunk.js` centers the local
   pilot in a 49-cell chunk, routes external doglegs to exact three-cell doors,
   preserves declared edge seams and emits metadata from the final grid.
   Adapter tests cover 360 seed/entrance cases, extreme portal offsets, both tiers,
   connectivity, metadata and serialization. No live selection in this commit.
-- [ ] **Next commit:** persist interior version on new maps and select the adapter
-  for eligible optional rooms; keep old saves, authored sites and co-op unchanged.
+- [x] Persisted interior version and optional-room selection implemented in the
+  live slice above; old saves, authored sites and co-op remain on their prior paths.
 
 - [x] Baseline slice committed as `73a96f20`.
 - [x] G1 pure planner added in `src/roomGrammar.js` with data profiles and tests.

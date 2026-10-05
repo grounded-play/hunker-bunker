@@ -533,6 +533,11 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
 
 ### S49-20 — world variety that preserves navigation and purpose
 
+- [x] G2 chunk adapter (`dbf9c378`) and persisted opt-in live single-player path
+  implemented; legacy maps keep interior version 0. Full suite: 5,067 tests passed.
+- [ ] G3 destruction and key-art presentation; full-world/co-op/Deck acceptance
+  and default rollout remain open. [Pilot notes](../reports/room-grammar-baseline-2026-10-04.md#g2-live-pilot-2026-10-05).
+
 - [x] Initial G0 baseline (`73a96f20`) and G1 pure industrial planner implemented:
   larger envelopes, three motifs, bounded offsets and safe 1–4-way socket contracts.
   [Evidence](../reports/room-grammar-baseline-2026-10-04.md): 43 tests and 5,000 planner seeds.

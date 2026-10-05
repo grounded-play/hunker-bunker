@@ -173,6 +173,7 @@ import {
 } from './roomContainment.js';
 import { bindRoomContent } from './roomContent.js';
 import { buildMazeChunkStructure, buildHallwayConnectorChunkStructure } from './chunkStructure.js';
+import { buildGrammarRoomChunk } from './roomGrammarChunk.js';
 import {
     MILESTONE_BOSS_STATES,
     MILESTONE_BOSS_EVENT_TYPES,
@@ -16893,6 +16894,16 @@ export class ThreeGame {
 
     // A campaign keeps the route generation it was created with; see
     // ROUTE_LAYOUT_VERSION. Everything unsaved uses the current generator.
+    getRoomGrammarConfig() {
+        // Pilot has no multiplayer version negotiation yet. Never let a local
+        // save setting change peer geometry, fixed-seed probes or menu worlds.
+        if (this.fixedRunEntropy || this.isMultiplayer || this._campaignWorldSeed == null) return null;
+        const state = campaignWorldStore.getState();
+        if (state?.seed !== this._campaignWorldSeed || !state.interiorVersion) return null;
+        if (state.interiorVersion !== 1) throw new Error('Unsupported saved interior generator');
+        return { seed: state.mapSeed, version: state.interiorVersion };
+    }
+
     getRouteLayoutVersion() {
         if (this.fixedRunEntropy || this.isMultiplayer || this._campaignWorldSeed == null) return ROUTE_LAYOUT_VERSION;
         const state = campaignWorldStore.getState();
@@ -40494,6 +40505,12 @@ export class ThreeGame {
                     : null;
                 let structure = null;
                 if (authoredResolution?.status === 'accepted') structure = authoredResolution.structure;
+                const grammarConfig = roomMode && !isDestination && !authoredResolution?.reservationId
+                    && !this.isInTutorialRing(chunkX, chunkY) ? this.getRoomGrammarConfig?.() : null;
+                if (!structure && grammarConfig) {
+                    structure = buildGrammarRoomChunk({ seed: grammarConfig.seed,
+                        chunkX, chunkY, chunkSize: this.chunkSize, openings: architecturalOpenings });
+                }
                 if (!structure && !roomMode) {
                     structure = buildHallwayConnectorChunkStructure(random, {
                         chunkX,
@@ -40521,7 +40538,8 @@ export class ThreeGame {
                     });
                 }
                 preserveAuthoredGrid = structure.generatorId === 'authored-room'
-                    || structure.generatorId === 'hallway-connector';
+                    || structure.generatorId === 'hallway-connector'
+                    || structure.generatorId === 'grammar-room';
                 grid = structure.grid;
                 if (!this.wfcMetadataCache) this.wfcMetadataCache = new Map();
                 mazeMetadata = {

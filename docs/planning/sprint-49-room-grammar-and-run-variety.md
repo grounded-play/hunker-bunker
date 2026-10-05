@@ -269,6 +269,12 @@ Co-op peers must agree on version and plan digest before mounting geometry.
   behind a persisted generator version/feature flag. Eliminate discarded geometry
   on the new path; ensure metadata describes the grid actually rendered. Integrate
   cathedral builds with explicit selection rules and reachable objectives.
+- [x] **G2 adapter and opt-in path:** `roomGrammarChunk.js` supplies the final chunk
+  contract directly; `ThreeGame.buildChunk` selects it for eligible optional rooms
+  on maps saved with `interiorVersion: 1`. Missing versions stay legacy (0).
+  Authored sites, destinations, tutorials, fixed worlds and multiplayer are excluded.
+  Remaining G2 work: cathedral catalog integration, plan digest negotiation for co-op,
+  full-world/visual acceptance and rollout; the parent gate stays open.
 - [ ] **G3 — destructible module runtime.** Add instanced-prop identity/removal,
   partition breach and attachment handling. Test collision, save/reload, late join,
   duplicate hits and critical-service recovery before enabling generated partitions.

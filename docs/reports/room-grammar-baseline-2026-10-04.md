@@ -62,3 +62,42 @@ Next: G2 adapter must translate local room sockets to actual chunk portals, prod
 metadata from the final grid, and persist version/identity choices before live use.
 Campaign terrain currently persists between deployments; do not reroll it merely
 because an expedition seed changes. No live defaults or save formats changed here.
+
+## G2 live pilot — 2026-10-05
+
+`dbf9c378` adds the chunk adapter. It preserves exactly declared edge portals,
+routes outside the room shell to fixed doors, and emits translated anchors,
+reservations, module bounds and actual wall/interior cells. Tests exercise 360
+seed/mask combinations including extreme offsets and both room tiers.
+
+The next slice connects it to `ThreeGame.buildChunk` after authored-site resolution.
+Only optional, non-tutorial rooms in the authored-world path can select it. The
+grid is protected from later legacy erosion. The normal live pilot uses the standard
+tier; major rooms are tested at adapter level and await gameplay tuning.
+
+`campaignWorldStore` now persists `interiorVersion` (missing = 0). Explicit version
+1 is accepted at campaign creation or `beginNewRun({ interiorVersion: 1 })` only.
+Existing campaigns ignore a changed creation option; retry/resume retain their
+version and map seed. Future numeric versions are retained and rejected at the
+unsupported live generator, rather than silently converted to legacy geography.
+
+Developer QA activation: in a development build, using a disposable profile and
+the authored-world path, import `campaignWorldStore` from `/src/campaignWorld.js`
+and call `beginNewRun({ interiorVersion: 1 })` while at the title, then start a new
+single-player run. This intentionally starts a fresh map; do not edit the field
+on an active map. Return to version 0 through another new-map call. No profile was
+changed during implementation. A public setting is not added in this slice.
+
+Multiplayer and fixed worlds ignore the pilot until shared-version negotiation
+exists. Camp, hive, queen, mission and authored-room reservations retain existing
+generation. This is a live geometry pilot, not finished room art or a claim of
+fully destructible setpieces. No release default is changed.
+
+Checks: full Vitest suite 572 files / 5,067 tests passed; scoped ESLint passed.
+The live chunk test confirms the larger room is selected and remains connected,
+with un-eroded walls. Persistence tests cover version pinning and map identity.
+No browser screenshot, installed-build, co-op or physical Deck acceptance claimed.
+
+Next: G3 hit targets/removal for instanced dressing and module destruction, followed
+by the key-art maintenance-hall visual slice. Keep broader G2 acceptance open for
+cathedral selection, whole-world sweeps and co-op plan digest negotiation.

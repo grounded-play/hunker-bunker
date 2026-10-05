@@ -31,6 +31,19 @@ function completedRoute() {
 }
 
 describe('campaign world continuity', () => {
+    it('pins interior versions through resume and retries and only changes them on a new map', () => {
+        const storage = makeStorage();
+        const store = createCampaignWorldStore({ storage, createSeed: () => 44 });
+        expect(store.getOrCreate().interiorVersion).toBe(0);
+        expect(store.getOrCreate({ interiorVersion: 1 }).interiorVersion).toBe(0);
+        const next = store.beginNewRun({ mapSeed: 88, interiorVersion: 1 });
+        expect(next).toMatchObject({ mapSeed: 88, interiorVersion: 1 });
+        expect(store.beginExpedition()).toMatchObject({ mapSeed: 88, interiorVersion: 1 });
+        expect(createCampaignWorldStore({ storage }).getState()).toMatchObject({ mapSeed: 88, interiorVersion: 1 });
+        expect(() => store.beginNewRun({ interiorVersion: 2 })).toThrow();
+        expect(store.getState().mapSeed).toBe(88);
+    });
+
     it('creates new campaigns on the current route generation and keeps old saves on theirs', () => {
         const storage = makeStorage();
         const store = createCampaignWorldStore({ storage, createSeed: () => 4040 });
