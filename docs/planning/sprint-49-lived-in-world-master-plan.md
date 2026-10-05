@@ -10,6 +10,15 @@ non-breaking commits.
 
 ## Outcome
 
+The [room grammar and run-variety extension](sprint-49-room-grammar-and-run-variety.md)
+scopes the next structural generation work (G0–G6): room-local module solving,
+purposeful rewrites, asymmetric corridors/junctions, area profiles and camp/start
+variants. Its first implementation step is a measured, opt-in industrial pilot.
+It expands destruction to new interior wall modules with authoritative breaches;
+the structural-protection contract below continues to govern legacy M1–M6 and
+world boundaries until that versioned path passes its gates. Do not enable wall
+breaches through a visual shell swap alone.
+
 Bring playable rooms closer to the shipped key art without sacrificing navigation,
 objective safety, co-op determinism, or Steam Deck frame pacing:
 

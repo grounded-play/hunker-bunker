@@ -13,6 +13,20 @@ plan for milestone scope, dependencies, verification gates, and definition of do
 
 ## Evidence carried into implementation
 
+### Room grammar scope handoff — 2026-10-04
+
+- [x] Inspected current geometry: the maze structure path discards WFC geometry;
+  Markov detail rules only erode edges; authored selection still uses the old catalog.
+- [x] Added the [G0–G6 scope](sprint-49-room-grammar-and-run-variety.md), including
+  room-family motifs, corridors, 3/4-way junctions, destruction, camps and starts.
+- [ ] **Next commit: G0.** Measure normalized geometry repetition and seed/version
+  behavior on the actual live path, then characterize socket and persistence contracts.
+- [ ] **Following commit: G1.** Pure industrial interior planner; fixed entrances,
+  asymmetric motifs, bounded solve and valid fallback. Keep live defaults unchanged.
+
+This is planning evidence only; no new grammar or wall-destruction runtime shipped.
+The plan uses the game-dev skill's seeded generation and constraint patterns.
+
 - The Thursday Deck session
   `logs/hunker-bunker-session-2026-10-02T01-37-00-805Z-muqam0sq-bhvr.json`
   recorded average GPU time of 16.51 ms, but presented gameplay p95 of 76.5 ms.

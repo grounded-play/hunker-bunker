@@ -533,6 +533,13 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
 
 ### S49-20 — world variety that preserves navigation and purpose
 
+- [x] Scope layered room/corridor grammars, area identity, destruction and camp/start
+  variety in the [room grammar plan](sprint-49-room-grammar-and-run-variety.md).
+- [ ] **G0–G1:** measure current structural repetition and implement a pure seeded
+  industrial room/junction pilot with fixed doorway contracts and bounded fallback.
+- [ ] **G2–G6:** integrate live geometry, destructible modules, area/corridor profiles
+  and safe camp/start variants; preserve legacy saves and verify co-op/Deck acceptance.
+
 - [x] M1–M6 implementation checkpoints: gateways, grounding, reversible density
   experiment, practical lights, wall-shell showroom spike and biomech synergies.
 - [x] Eight cathedral blueprints authored (`ddb1bfaf`); deterministic instanced
