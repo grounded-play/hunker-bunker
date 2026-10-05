@@ -265,7 +265,7 @@ import { buildRoomDressingGroup, loadKeyedDecalTexture } from './roomDressingRen
 import { registerTinaHit, TINA_TOTAL_HITS } from './mayorTinaCombat.js';
 import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
-import { WORLD_3D_FACING_YAW, WORLD_3D_SWAP_PREFETCH_DISTANCE, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, resolveScatterWorld3dType, syncWorld3dReplacement } from './world3dOverlay.js';
+import { WORLD_3D_FACING_YAW, WORLD_3D_SWAP_PREFETCH_DISTANCE, world3dModelTypeFor, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, resolveScatterWorld3dType, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { intersectWallMeshes } from './wallRaycastIndex.js';
 import { createFlatMaterialSweeper, useSinglePassForFlatMaterials } from './singlePassFlatMaterials.js';
@@ -7232,6 +7232,7 @@ export class ThreeGame {
         const loadPromise = (async () => {
             try {
                 const root = await (this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType));
+                if (!root) this.revealWorld3dFallback?.(source);
                 if (!root || !source.parent) return null;
                 root.position.copy(source.position);
                 // Must match syncWorld3dReplacement, which adds WORLD_3D_FACING_YAW.
@@ -7279,6 +7280,7 @@ export class ThreeGame {
                 return root;
             } catch (error) {
                 console.warn(`[world-3d-overlay] ${modelType} unavailable; keeping sprite`, error);
+                this.revealWorld3dFallback?.(source);
                 return null;
             } finally {
                 source.userData.world3dLoading = false;
@@ -7306,9 +7308,27 @@ export class ThreeGame {
         return root;
     }
 
-    deferWorld3dReplacement(source, modelType) {
+    deferWorld3dReplacement(source, requestedType) {
+        const modelType = world3dModelTypeFor(requestedType);
         if (!source?.userData || !hasWorld3dModel(modelType)) return;
         source.userData.world3dModelType = modelType;
+        // The game is 3D: a prop with a model never draws its 2D sprite. The
+        // sprite stays the gameplay owner (collision, HP, co-op state) and only
+        // its own cloned material stops rendering until the GLB attaches. Before
+        // this, props streamed in as flat billboards (up to 73 at once in a
+        // 2026-10-05 runtime audit) and stayed that way until the 28-unit,
+        // three-at-a-time swap queue reached them.
+        if (source.isSprite && source.material) {
+            source.material.visible = false;
+            source.userData.hiddenUntil3d = true;
+        }
+    }
+
+    // A model that cannot load must not leave an invisible prop behind.
+    revealWorld3dFallback(source) {
+        if (!source?.userData?.hiddenUntil3d || !source.material) return;
+        source.material.visible = true;
+        source.userData.hiddenUntil3d = false;
     }
 
     loadNearbyWorld3dReplacement(source) {

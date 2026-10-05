@@ -464,6 +464,22 @@ const SCATTER_BODY_VARIANTS = Object.freeze({
     body_empty_exosuit: Object.freeze(['prop_body_empty_exosuit', 'body_empty_exosuit'])
 });
 
+/**
+ * 2D scatter types whose subject already ships as a GLB under another name.
+ * The swap funnel (ThreeGame.deferWorld3dReplacement) resolves these so the
+ * prop renders in 3D instead of as its legacy billboard. Only exact matches:
+ * a lit cookfire is NOT aliased to the flameless prop_camp_cookfire.
+ */
+export const WORLD_3D_MODEL_ALIASES = Object.freeze({
+    body_human_frozen_suit: 'prop_body_human_frozen',
+    prop_camp_crates_chained: 'prop_camp_crates',
+    bunker_junk_legendary: 'bunker_junk_rare'
+});
+
+export function world3dModelTypeFor(type) {
+    return Object.hasOwn(WORLD_3D_MODEL_ALIASES, type) ? WORLD_3D_MODEL_ALIASES[type] : type;
+}
+
 export function resolveScatterWorld3dType(type, x = 0, z = 0) {
     const variants = Object.hasOwn(SCATTER_BODY_VARIANTS, type) ? SCATTER_BODY_VARIANTS[type] : null;
     if (variants) {
