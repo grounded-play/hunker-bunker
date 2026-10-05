@@ -32048,9 +32048,9 @@ export class ThreeGame {
                     ? (biomeKey === BIOME_KEYS.CRYO ? 'cryo' : biomeKey === BIOME_KEYS.BIO ? 'bio' : 'bunker')
                     : decorationSet;
                 const roleProps = {
-                    medical: ['prop_specimen_tank', 'prop_bunker_supplies'],
-                    utility: ['prop_cyber_junction', 'prop_conduit_hub'],
-                    reward: ['prop_bunker_supplies', 'prop_camp_crates'],
+                    medical: ['medical_station', 'life_support', 'diagnostic_terminal', 'prop_specimen_tank'],
+                    utility: ['pipe_system', 'cable_management', 'workshop_tooling', 'prop_conduit_hub'],
+                    reward: ['sacred_shrine', 'bunker_junk', 'flesh_steel_reliquary', 'prop_bunker_supplies'],
                     nest: DECORATION_PROPS.nest,
                     camp: DECORATION_PROPS.camp
                 };
@@ -32131,19 +32131,20 @@ export class ThreeGame {
                     const biomeKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
                     const propPalettes = {
                         active: [
-                            'prop_cyber_junction', 'prop_specimen_tank',
-                            'prop_bunker_supplies', 'prop_conduit_hub',
-                            'prop_camp_sandbags', 'prop_camp_crates'
+                            'prop_cyber_junction', 'specimen_tank',
+                            'bunker_junk', 'cable_management',
+                            'workshop_tooling', 'diagnostic_terminal',
+                            'storage_drum'
                         ],
                         cryo: [
-                            'prop_specimen_tank', 'prop_cave_lichen',
-                            'prop_cave_bones', 'prop_bunker_supplies',
-                            'prop_conduit_hub'
+                            'specimen_tank', 'prop_cave_lichen',
+                            'prop_cave_bones', 'cryo_manifold',
+                            'life_support'
                         ],
                         bio: [
                             'prop_spore_colony', 'prop_cave_eggs_intact',
-                            'prop_cave_eggs_hatched', 'prop_cave_spores',
-                            'prop_cave_webs', 'prop_cave_hive_wounded'
+                            'fungal_biomech_station', 'flesh_steel_reliquary',
+                            'pipe_system', 'umbilical_hazard'
                         ]
                     };
                     const props = propPalettes[biomeKey] ?? propPalettes.active;

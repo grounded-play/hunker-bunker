@@ -347,8 +347,7 @@ body {
   border-radius: clamp(6px, calc(var(--vu) * 1.1), 12px);
 }
 
-#cabinet-bezel::before,
-#cabinet-bezel::after {
+#cabinet-bezel::before {
   content: "";
   position: absolute;
   width: calc(var(--vu) * 4.5);
@@ -356,17 +355,12 @@ body {
   top: calc(var(--vu) * 0.8);
   opacity: 0.42;
   border-top: 1px solid var(--accent-secondary);
-}
-
-#cabinet-bezel::before {
   left: calc(var(--vu) * 0.9);
   border-left: 1px solid var(--accent-secondary);
 }
 
 #cabinet-bezel::after {
-  right: calc(var(--vu) * 0.9);
-  border-right: 1px solid var(--accent-primary);
-  border-top-color: var(--accent-primary);
+  display: none !important;
 }
 
 /* --- Loading Screen (Pre-Splash) --- */
@@ -5478,6 +5472,8 @@ input:checked+.slider:before {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  /* label and action never touch (ABORT CURRENT MISSION ran into its button) */
+  gap: calc(var(--vu) * 1.5);
   margin-bottom: calc(var(--vu) * 3);
   font-size: var(--font-sm);
   color: var(--text-main);
@@ -23776,7 +23772,7 @@ body.contrast-max .hud-panel {
 }
 
 #menu .char-selection {
-  padding: calc(var(--vu) * 0.4) calc(var(--vu) * 0.85) calc(var(--vu) * 0.6);
+  padding: calc(var(--vu) * 1.5) calc(var(--vu) * 0.95) calc(var(--vu) * 0.5);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -23787,6 +23783,14 @@ body.contrast-max .hud-panel {
   flex: 1 1 0;
   min-height: 0;
   margin: 0;
+}
+
+#menu .char-card[data-type="SCOUT"] {
+  clip-path: polygon(calc(var(--vu) * 2.8) 0%, 100% 0%, 100% 100%, 0% 100%, 0% calc(var(--vu) * 2.8));
+}
+
+#menu .char-card[data-type="SCOUT"] .char-header-row {
+  padding-left: calc(var(--vu) * 1.6);
 }
 
 /* Foreground non-clickable biomechanical frame overlay.
@@ -24728,7 +24732,7 @@ html.phase-gameplay #tactical-telemeter-box {
   width: auto !important;
   height: var(--corner-settings-hit) !important;
   margin: 0 !important;
-  padding: 0 !important;
+  padding: 0 2px !important;
   transform: none !important;
   display: flex !important;
   flex-direction: row !important;
@@ -24736,7 +24740,12 @@ html.phase-gameplay #tactical-telemeter-box {
   justify-content: flex-end !important;
   gap: 8px !important;
   pointer-events: auto !important;
-  z-index: 17100 !important;
+  background: rgba(4, 10, 18, 0.94) !important;
+  border: 1px solid rgba(0, 229, 255, 0.28) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.85), inset 0 0 10px rgba(0, 229, 255, 0.05) !important;
+  backdrop-filter: blur(8px) !important;
+  z-index: 17200 !important;
 }
 
 #game-viewport .hud-corner-settings .calibrate-btn,

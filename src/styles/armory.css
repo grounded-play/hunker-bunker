@@ -250,7 +250,7 @@
   left: auto !important;
   bottom: auto !important;
   pointer-events: auto !important;
-  z-index: 10000 !important;
+  z-index: 17200 !important;
   display: flex !important;
   align-items: center !important;
   gap: calc(var(--vu) * 0.8) !important;

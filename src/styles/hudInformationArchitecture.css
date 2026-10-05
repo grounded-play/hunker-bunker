@@ -42,8 +42,8 @@ html[data-hud-layout="dock"] #game-viewport #loop-step-hud {
 
 html[data-hud-layout="dock"] #game-viewport .hud-right-rail {
   position: absolute;
-  top: var(--hud-margin);
-  right: calc(var(--hud-margin) + 56 * var(--u));
+  top: calc(var(--corner-settings-top) + var(--corner-settings-hit) + calc(8 * var(--u)));
+  right: var(--hud-margin);
   width: min(calc(420 * var(--u)), calc(100% - 40 * var(--u)));
   max-height: min(calc(440 * var(--u)), 62vh);
   display: flex;
@@ -158,7 +158,7 @@ html[data-hud-layout="dock"] #game-viewport .hud-right-rail > .hud-notification-
   position: relative !important;
   inset: auto !important;
   width: 100% !important;
-  max-height: min(calc(170 * var(--u)), 24vh);
+  max-height: min(calc(220 * var(--u)), 32vh);
   min-height: 0 !important;
   overflow: hidden;
   flex: 0 1 auto;
@@ -272,4 +272,135 @@ html[data-hud-layout="dock"] [data-hud-feedback="pickup"] {
   html[data-hud-layout="dock"] :is(#class-ability-panel, #radar-scan-panel) { transition: none; }
   html[data-hud-layout="dock"][data-hud-gameplay-state="critical"] :is(#vitals-panel, #ship-status-panel),
   html[data-hud-layout="dock"] [data-hud-feedback] { animation: none; }
+}
+
+/* docs/planning/ui-overhaul-plan-2026-10-05.md H3, H6, H7 (checked by
+   tests/e2e/ui-layout-contract.spec.js). */
+/* HUD safe frame: the Deck spec keeps essential HUD 32 stage px from the edge;
+   20 u alone is 16 px on the Deck. */
+html[data-hud-layout="dock"] #game-viewport {
+  --hud-margin: max(calc(20 * var(--u)), calc(4 * var(--vu)));
+  --dock-bottom: var(--hud-margin);
+}
+
+/* Dash and melee were never taken out of flow, so their bottom/right offsets
+   did nothing and they rendered at the stage's top-left. They share the
+   rightmost slot of the arms housing, stacked inside its painted frame
+   (8 u top and bottom, 12 u at the sides): dash above melee. Slots from the
+   right, inside the 380 u housing: kinetic 12–58 u, class ability 58–146 u
+   (wide enough for BULWARK), radar 146–210 u, weapon 210–368 u. */
+html[data-hud-layout="dock"] #game-viewport #ui :is(#dash-cooldown-panel, #melee-cooldown-panel) {
+  position: absolute !important;
+  top: auto !important;
+  left: auto !important;
+  right: calc(var(--hud-margin) + 12 * var(--u)) !important;
+  width: calc(46 * var(--u)) !important;
+  height: calc(24 * var(--u)) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: calc(2 * var(--u)) !important;
+  border: 0 !important;
+  min-height: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  z-index: 2 !important;
+}
+html[data-hud-layout="dock"] #game-viewport #ui :is(#dash-cooldown-panel, #melee-cooldown-panel) .class-ability-panel__bar-track {
+  flex: 0 0 auto !important;
+  height: calc(4 * var(--u)) !important;
+  min-height: 0 !important;
+}
+html[data-hud-layout="dock"] #game-viewport #ui #class-ability-panel {
+  right: calc(var(--hud-margin) + 58 * var(--u)) !important;
+  width: calc(88 * var(--u)) !important;
+}
+html[data-hud-layout="dock"] #game-viewport #ui #radar-scan-panel {
+  right: calc(var(--hud-margin) + 146 * var(--u)) !important;
+  width: calc(64 * var(--u)) !important;
+}
+html[data-hud-layout="dock"] #game-viewport #ui #weapon-status-panel {
+  right: calc(var(--hud-margin) + 210 * var(--u)) !important;
+  width: calc(158 * var(--u)) !important;
+}
+html[data-hud-layout="dock"] #game-viewport #ui :is(#dash-cooldown-panel, #melee-cooldown-panel) .class-ability-panel__name {
+  letter-spacing: 0 !important;
+}
+/* The half-height kinetic slots show name and bar only; their key icons were
+   hidden on the Deck by a window media query and overflowed at 1080p. */
+html[data-hud-layout="dock"] #game-viewport #ui :is(#dash-cooldown-panel, #melee-cooldown-panel) .class-ability-panel__key {
+  display: none !important;
+}
+html[data-hud-layout="dock"] #game-viewport #ui #dash-cooldown-panel { bottom: calc(var(--dock-bottom) + 32 * var(--u)) !important; }
+html[data-hud-layout="dock"] #game-viewport #ui #melee-cooldown-panel { bottom: calc(var(--dock-bottom) + 8 * var(--u)) !important; }
+
+/* The bottom visor brackets sat on the dock housings' outer corners. */
+html[data-hud-layout="dock"] #game-viewport .hud-visor-bracket:is(.hud-visor-bracket--bl, .hud-visor-bracket--br) {
+  display: none;
+}
+
+/* Dock text stays inside the housings' painted frame, 8 u clear at top and
+   bottom: the centre band is 48 u, so vitals is three 16 u rows (hearts,
+   O₂, hull) and the loot and arms panels pad by the frame. */
+html[data-hud-layout="dock"] #game-viewport #ui #vitals-hearts,
+html[data-hud-layout="dock"] #game-viewport #ui #vitals-hearts .heart {
+  top: calc(10 * var(--u)) !important;
+  line-height: calc(14 * var(--u)) !important;
+}
+html[data-hud-layout="dock"] #game-viewport #ui #vitals-hearts .heart { top: auto !important; }
+html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui #vitals-panel .vitals-panel__o2-row {
+  top: calc(24 * var(--u)) !important;
+  bottom: auto !important;
+  height: calc(16 * var(--u)) !important;
+}
+/* #ship-status-panel is positioned against #ui, not the vitals panel. */
+html[data-hud-layout="dock"] #game-viewport #ui #ship-status-panel {
+  top: auto !important;
+  bottom: calc(var(--dock-bottom) + 8 * var(--u)) !important;
+  height: calc(16 * var(--u)) !important;
+}
+html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui #pickup-counter-panel {
+  padding: calc(8 * var(--u)) calc(6 * var(--u)) !important;
+}
+html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui #weapon-status-panel {
+  padding: calc(10 * var(--u)) calc(4 * var(--u)) calc(8 * var(--u)) !important;
+}
+html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui #weapon-status-panel,
+html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui #weapon-status-panel .weapon-status-panel__ammo {
+  gap: 0 !important;
+}
+html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui #weapon-status-panel :is(span, div) {
+  line-height: 1.1 !important;
+}
+/* Three stacked lines did not fit the arms window: clip and cache share a row,
+   ammo in the larger type. */
+html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui #weapon-status-panel .weapon-status-panel__ammo {
+  flex-direction: row !important;
+  align-items: baseline !important;
+  gap: calc(8 * var(--u)) !important;
+}
+html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui #weapon-status-panel .weapon-status-panel__clip {
+  font-size: max(14px, calc(18 * var(--u))) !important;
+}
+html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui #weapon-status-panel .weapon-status-panel__clip span {
+  font-size: inherit !important;
+}
+/* Deck text floor (11 px, hud-readability.spec.js) for labels whose own rules
+   out-rank the shared floor in expeditionHud.css. */
+html[data-hud-layout="dock"] #game-viewport #ui :is(
+  #ship-status-panel,
+  #vitals-panel .vitals-panel__o2-row,
+  #ship-status-panel .ship-status-panel__title,
+  #ship-status-panel .ship-status-panel__value,
+  #vitals-panel .vitals-panel__o2-label,
+  #vitals-panel .vitals-panel__o2-pct,
+  #radar-scan-panel .class-ability-panel__name,
+  #dash-cooldown-panel .class-ability-panel__name,
+  #melee-cooldown-panel .class-ability-panel__name
+) {
+  font-size: max(11px, calc(14 * var(--u))) !important;
+  line-height: 1.15 !important;
+}
+html[data-hud-layout="dock"] #game-viewport #ui #ship-status-panel .ship-status-panel__title {
+  max-width: none !important;
+  flex: 0 0 auto !important;
 }
