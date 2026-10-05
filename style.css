@@ -24718,3 +24718,41 @@ html.phase-gameplay #tactical-telemeter-box {
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
+
+/* Phone-width viewports (mobile web; Lighthouse audits a 360px Moto G4).
+   The 16:10 stage is only ~225px tall there, so the title column cannot fit:
+   it scrolls inside the stage instead of clipping NEW RUN off the top, keeps
+   the 44px buttons and 8px gaps of the coarse-pointer rule above (48px finger
+   zones never overlap), and the Steam badge shrinks to its icon so it stops
+   covering the menu. max-width only: the 1280-wide Deck and desktop never
+   match this. */
+@media (max-width: 768px) {
+  #splash .splash-content {
+    justify-content: flex-start;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 60px 16px 16px;
+  }
+
+  #splash .splash-content > * {
+    flex-shrink: 0;
+  }
+
+  #splash .title-profile-hud {
+    width: 100% !important;
+  }
+
+  #splash-steam-badge {
+    top: 8px;
+    right: 8px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    gap: 0;
+    justify-content: center;
+  }
+
+  #splash-steam-badge .steam-account-badge__info {
+    display: none;
+  }
+}

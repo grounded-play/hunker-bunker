@@ -15749,7 +15749,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const initialType = initialSelected?.getAttribute('data-type') || savedHeroType;
     setActiveAmmoCapacity(initialType, { clampExisting: true });
     if (initialSelected && heroData[initialType]) {
-        warmClassIntroMedia(initialType);
+        // Class intro videos are not warmed here: boot already streams the
+        // DoorIntro cinematic. They warm on menu entry and on class pick,
+        // both well ahead of New Run's playClassIntroSequence.
         syncHeroPreview(initialType);
         updateHeroStats(initialType);
     }
