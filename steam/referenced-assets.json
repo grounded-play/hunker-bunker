@@ -150,6 +150,8 @@
     "3d/runtime/new3ds/boss_corrupted_briggs.glb",
     "3d/runtime/new3ds/boss_corrupted_engineer.glb",
     "3d/runtime/new3ds/boss_corrupted_martha.glb",
+    "3d/runtime/new3ds/boss_cryosnail_dead.glb",
+    "3d/runtime/new3ds/boss_cybersnail_dead.glb",
     "3d/runtime/new3ds/bunker_junk_rare.glb",
     "3d/runtime/new3ds/bunker_junk_uncommon.glb",
     "3d/runtime/new3ds/charm_amber_bio_flask.glb",
@@ -192,6 +194,7 @@
     "3d/runtime/new3ds/chassis_trench_warden_heavy.glb",
     "3d/runtime/new3ds/chassis_void_commando_recon.glb",
     "3d/runtime/new3ds/cryosnail.glb",
+    "3d/runtime/new3ds/cryosnail_dead.glb",
     "3d/runtime/new3ds/cybersnail_dead.glb",
     "3d/runtime/new3ds/fixture_clock_dead.glb",
     "3d/runtime/new3ds/fixture_sconce_vine.glb",
@@ -245,11 +248,23 @@
     "3d/runtime/new3ds/prop_body_human_frozen.glb",
     "3d/runtime/new3ds/prop_broken_specimen_tank.glb",
     "3d/runtime/new3ds/prop_bunker_supplies.glb",
+    "3d/runtime/new3ds/prop_camp_bedrolls.glb",
     "3d/runtime/new3ds/prop_camp_cookfire.glb",
+    "3d/runtime/new3ds/prop_camp_cookfire_lit.glb",
     "3d/runtime/new3ds/prop_camp_cot.glb",
     "3d/runtime/new3ds/prop_camp_crate.glb",
+    "3d/runtime/new3ds/prop_camp_laundry.glb",
+    "3d/runtime/new3ds/prop_camp_meridian_radio.glb",
+    "3d/runtime/new3ds/prop_camp_shutter_lockdown.glb",
+    "3d/runtime/new3ds/prop_camp_warning_placard.glb",
     "3d/runtime/new3ds/prop_cave_bones.glb",
+    "3d/runtime/new3ds/prop_cave_eggs_hatched.glb",
+    "3d/runtime/new3ds/prop_cave_eggs_intact.glb",
+    "3d/runtime/new3ds/prop_cave_hive_wounded.glb",
+    "3d/runtime/new3ds/prop_cave_lichen.glb",
     "3d/runtime/new3ds/prop_cave_queen_throne.glb",
+    "3d/runtime/new3ds/prop_cave_spores.glb",
+    "3d/runtime/new3ds/prop_cave_webs.glb",
     "3d/runtime/new3ds/prop_ceiling_crane_hoist.glb",
     "3d/runtime/new3ds/prop_chair_operator_wrecked.glb",
     "3d/runtime/new3ds/prop_conduit_hub.glb",
@@ -270,6 +285,7 @@
     "3d/runtime/new3ds/prop_fungal_resin_basin.glb",
     "3d/runtime/new3ds/prop_fungal_spore_dispenser.glb",
     "3d/runtime/new3ds/prop_fungal_tendril_altar.glb",
+    "3d/runtime/new3ds/prop_hive_carapace_molt.glb",
     "3d/runtime/new3ds/prop_hive_resin_sac.glb",
     "3d/runtime/new3ds/prop_icey_frost_manifold.glb",
     "3d/runtime/new3ds/prop_icey_frost_vent.glb",
@@ -288,6 +304,7 @@
     "3d/runtime/new3ds/prop_security_barricade.glb",
     "3d/runtime/new3ds/prop_shrine_plinth_broken.glb",
     "3d/runtime/new3ds/prop_specimen_tank.glb",
+    "3d/runtime/new3ds/prop_spore_colony.glb",
     "3d/runtime/new3ds/prop_storage_drum_dented.glb",
     "3d/runtime/new3ds/prop_surgical_cart.glb",
     "3d/runtime/new3ds/prop_terminal_ruptured.glb",
@@ -300,6 +317,7 @@
     "3d/runtime/new3ds/prop_wall_cable_tray_swag.glb",
     "3d/runtime/new3ds/scatter_bolts.glb",
     "3d/runtime/new3ds/scatter_cable_coil.glb",
+    "3d/runtime/new3ds/scatter_hive_eggs.glb",
     "3d/runtime/new3ds/sentinel.glb",
     "3d/runtime/new3ds/sentinel_A.glb",
     "3d/runtime/new3ds/sentinel_B.glb",
@@ -327,6 +345,7 @@
     "3d/runtime/new3ds/skin_void_walker_beam.glb",
     "3d/runtime/new3ds/spore_mortar.glb",
     "3d/runtime/new3ds/sporesnail.glb",
+    "3d/runtime/new3ds/sporesnail_dead.glb",
     "3d/runtime/new3ds/state_barricade_improvised_1.glb",
     "3d/runtime/new3ds/state_barricade_improvised_2.glb",
     "3d/runtime/new3ds/state_column_shattered.glb",
@@ -2307,6 +2326,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/boss_cryosnail_dead.glb",
+      "bytes": 1304656,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/boss_cybersnail_dead.glb",
+      "bytes": 1154888,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/bunker_junk_rare.glb",
       "bytes": 4363348,
       "classification": "runtime-required"
@@ -2514,6 +2543,11 @@
     {
       "path": "3d/runtime/new3ds/cryosnail.glb",
       "bytes": 1634308,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/cryosnail_dead.glb",
+      "bytes": 1286424,
       "classification": "runtime-required"
     },
     {
@@ -2782,8 +2816,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_camp_bedrolls.glb",
+      "bytes": 1208804,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_camp_cookfire.glb",
       "bytes": 1292412,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_camp_cookfire_lit.glb",
+      "bytes": 1240988,
       "classification": "runtime-required"
     },
     {
@@ -2797,13 +2841,63 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_camp_laundry.glb",
+      "bytes": 1218032,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_camp_meridian_radio.glb",
+      "bytes": 1212292,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_camp_shutter_lockdown.glb",
+      "bytes": 1463220,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_camp_warning_placard.glb",
+      "bytes": 1223732,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_cave_bones.glb",
       "bytes": 4435296,
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_cave_eggs_hatched.glb",
+      "bytes": 1152892,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_cave_eggs_intact.glb",
+      "bytes": 975536,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_cave_hive_wounded.glb",
+      "bytes": 853656,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_cave_lichen.glb",
+      "bytes": 1325708,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_cave_queen_throne.glb",
       "bytes": 5885988,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_cave_spores.glb",
+      "bytes": 1267636,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_cave_webs.glb",
+      "bytes": 1243040,
       "classification": "runtime-required"
     },
     {
@@ -2907,6 +3001,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_hive_carapace_molt.glb",
+      "bytes": 1271064,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_hive_resin_sac.glb",
       "bytes": 118528,
       "classification": "runtime-required"
@@ -2997,6 +3096,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_spore_colony.glb",
+      "bytes": 1803480,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_storage_drum_dented.glb",
       "bytes": 756520,
       "classification": "runtime-required"
@@ -3054,6 +3158,11 @@
     {
       "path": "3d/runtime/new3ds/scatter_cable_coil.glb",
       "bytes": 144164,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/scatter_hive_eggs.glb",
+      "bytes": 973732,
       "classification": "runtime-required"
     },
     {
@@ -3189,6 +3298,11 @@
     {
       "path": "3d/runtime/new3ds/sporesnail.glb",
       "bytes": 5308636,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/sporesnail_dead.glb",
+      "bytes": 1128416,
       "classification": "runtime-required"
     },
     {
@@ -10672,6 +10786,116 @@
       "classification": "runtime-required"
     },
     {
+      "path": "audio/voice/lines/ja/narrative.commentary.achievement.body.mp3",
+      "bytes": 325125,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.commentary.black_box_recovered.body.mp3",
+      "bytes": 181314,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.commentary.black_box_signal.body.mp3",
+      "bytes": 200030,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.commentary.commentary_on.body.mp3",
+      "bytes": 178025,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.commentary.leaderboard.body.mp3",
+      "bytes": 246590,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.commentary.queen_fight.body.mp3",
+      "bytes": 175241,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.commentary.queen_killed.body.mp3",
+      "bytes": 130005,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.commentary.room_agent_wreckage.body.mp3",
+      "bytes": 206424,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.commentary.room_armory.body.mp3",
+      "bytes": 179889,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.commentary.room_the_nest.body.mp3",
+      "bytes": 138393,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.commentary.run_start.body.mp3",
+      "bytes": 228387,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.commentary.steam_vault.body.mp3",
+      "bytes": 137156,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.devHistory.day_one.body.mp3",
+      "bytes": 141012,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.devHistory.engine.body.mp3",
+      "bytes": 186399,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.devHistory.languages.body.mp3",
+      "bytes": 129722,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.devHistory.lessons.body.mp3",
+      "bytes": 231868,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.devHistory.loop.body.mp3",
+      "bytes": 177015,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.devHistory.maze.body.mp3",
+      "bytes": 200200,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.devHistory.steam.body.mp3",
+      "bytes": 197511,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.devHistory.story.body.mp3",
+      "bytes": 135455,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.devHistory.together.body.mp3",
+      "bytes": 171484,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ja/narrative.devHistory.voices.body.mp3",
+      "bytes": 167152,
+      "classification": "runtime-required"
+    },
+    {
       "path": "audio/voice/lines/ja/narrative.dialogue.corporate.blackBoxRecovery.0.mp3",
       "bytes": 67572,
       "classification": "runtime-required"
@@ -12088,7 +12312,7 @@
     },
     {
       "path": "audio/voice/lines/manifest.json",
-      "bytes": 108924,
+      "bytes": 111951,
       "classification": "runtime-required"
     },
     {
@@ -13647,6 +13871,116 @@
       "classification": "runtime-required"
     },
     {
+      "path": "audio/voice/lines/ru/narrative.commentary.achievement.body.mp3",
+      "bytes": 104044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.commentary.black_box_recovered.body.mp3",
+      "bytes": 180864,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.commentary.black_box_signal.body.mp3",
+      "bytes": 161312,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.commentary.commentary_on.body.mp3",
+      "bytes": 171846,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.commentary.leaderboard.body.mp3",
+      "bytes": 177277,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.commentary.queen_fight.body.mp3",
+      "bytes": 173767,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.commentary.queen_killed.body.mp3",
+      "bytes": 105119,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.commentary.room_agent_wreckage.body.mp3",
+      "bytes": 163020,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.commentary.room_armory.body.mp3",
+      "bytes": 172478,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.commentary.room_the_nest.body.mp3",
+      "bytes": 139794,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.commentary.run_start.body.mp3",
+      "bytes": 169988,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.commentary.steam_vault.body.mp3",
+      "bytes": 125408,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.devHistory.day_one.body.mp3",
+      "bytes": 178636,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.devHistory.engine.body.mp3",
+      "bytes": 201347,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.devHistory.languages.body.mp3",
+      "bytes": 117750,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.devHistory.lessons.body.mp3",
+      "bytes": 228138,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.devHistory.loop.body.mp3",
+      "bytes": 183403,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.devHistory.maze.body.mp3",
+      "bytes": 191568,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.devHistory.steam.body.mp3",
+      "bytes": 173344,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.devHistory.story.body.mp3",
+      "bytes": 128074,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.devHistory.together.body.mp3",
+      "bytes": 155875,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/ru/narrative.devHistory.voices.body.mp3",
+      "bytes": 194349,
+      "classification": "runtime-required"
+    },
+    {
       "path": "audio/voice/lines/ru/narrative.dialogue.corporate.blackBoxRecovery.0.mp3",
       "bytes": 58177,
       "classification": "runtime-required"
@@ -15074,6 +15408,116 @@
     {
       "path": "audio/voice/lines/zh-CN/narrative.classWreckageLogs.TANK.payload.mp3",
       "bytes": 110908,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.commentary.achievement.body.mp3",
+      "bytes": 100777,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.commentary.black_box_recovered.body.mp3",
+      "bytes": 143338,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.commentary.black_box_signal.body.mp3",
+      "bytes": 150623,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.commentary.commentary_on.body.mp3",
+      "bytes": 143071,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.commentary.leaderboard.body.mp3",
+      "bytes": 189248,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.commentary.queen_fight.body.mp3",
+      "bytes": 150243,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.commentary.queen_killed.body.mp3",
+      "bytes": 78788,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.commentary.room_agent_wreckage.body.mp3",
+      "bytes": 161143,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.commentary.room_armory.body.mp3",
+      "bytes": 126581,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.commentary.room_the_nest.body.mp3",
+      "bytes": 109992,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.commentary.run_start.body.mp3",
+      "bytes": 197612,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.commentary.steam_vault.body.mp3",
+      "bytes": 107340,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.devHistory.day_one.body.mp3",
+      "bytes": 145125,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.devHistory.engine.body.mp3",
+      "bytes": 151874,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.devHistory.languages.body.mp3",
+      "bytes": 119972,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.devHistory.lessons.body.mp3",
+      "bytes": 192679,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.devHistory.loop.body.mp3",
+      "bytes": 152503,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.devHistory.maze.body.mp3",
+      "bytes": 142537,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.devHistory.steam.body.mp3",
+      "bytes": 158493,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.devHistory.story.body.mp3",
+      "bytes": 116889,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.devHistory.together.body.mp3",
+      "bytes": 142621,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/zh-CN/narrative.devHistory.voices.body.mp3",
+      "bytes": 127705,
       "classification": "runtime-required"
     },
     {
