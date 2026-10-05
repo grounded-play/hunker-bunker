@@ -6,6 +6,11 @@ This file is the continuation point for the prop, prefab, destruction, and room-
 work requested after reviewing the Sprint 49 plan. Keep it current before each
 commit so another contributor can resume without reconstructing the audit.
 
+The ordered execution contract now lives in the
+[Sprint 49 Lived-In World Master Implementation Plan](sprint-49-lived-in-world-master-plan.md).
+Use this journal for commit-by-commit evidence and next-step handoffs; use the master
+plan for milestone scope, dependencies, verification gates, and definition of done.
+
 ## Evidence carried into implementation
 
 - The Thursday Deck session
@@ -121,12 +126,12 @@ Based on the Thursday Deck session telemetry (`logs/hunker-bunker-session-2026-1
 
 - **Visual Target**: Seamless transition between corridor threshold and room entrance. The modular `gate.glb` frame must sit flush against door apertures without double-framing procedural doors, clipping through ceiling bulkheads, or floating off-axis.
 - **Technical Implementation**:
-  - Audit `roomGatewayKitPlacement(room, grid, biome)` in [`src/kitGrammar.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/kitGrammar.js):
+  - Audit `roomGatewayKitPlacement(room, grid, biome)` in [`src/kitGrammar.js`](../../src/kitGrammar.js):
     - Verify cardinal rotation steps (0, 1, 2, 3) against all 4 door facing vectors (North, South, East, West).
     - Align the threshold center with the interior side of the doorway apron (`dx`, `dz` offset of $0.5$ units into the room) so the exterior corridor door slider glides cleanly through the gate archway.
   - Guardrail: Maintain non-colliding `isSolidProp: false`, `groupType: 'architecture'` so procedural door collision and door states in `proceduralDoors.js` remain authoritative.
 - **Verification**:
-  - Add parameterized unit tests in [`src/kitGrammar.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/kitGrammar.test.js) validating offsets for all four cardinal door directions.
+  - Add parameterized unit tests in [`src/kitGrammar.test.js`](../../src/kitGrammar.test.js) validating offsets for all four cardinal door directions.
   - Visual verification in showroom / live run.
 
 ---
@@ -135,7 +140,7 @@ Based on the Thursday Deck session telemetry (`logs/hunker-bunker-session-2026-1
 
 - **Visual Target**: Transform rectangular, monolithic box walls into sinuous Art Nouveau / Giger biomech ribbing, recessed wall niches, and cathedral buttresses (`arch_pillar_buttress_01-04`, `arch_rib_ceiling_vault_01-03`, `kit_space_template_wall`, `kit_cave_template_wall`).
 - **Technical Implementation**:
-  - Rather than layering 3D meshes on top of existing wall tiles (which creates geometry z-fighting and double-draw calls), introduce a **Pure Wall Shell Substitution Grammar** in [`src/kitGrammar.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/kitGrammar.js):
+  - Rather than layering 3D meshes on top of existing wall tiles (which creates geometry z-fighting and double-draw calls), introduce a **Pure Wall Shell Substitution Grammar** in [`src/kitGrammar.js`](../../src/kitGrammar.js):
     - Identify unbroken wall runs of length $\ge 3$ facing chamber floors.
     - Suppress the generic procedural block wall render at those specific tile coordinates and instantiate socketed modular wall components (`kit_space_template_wall` or `arch_rib_ceiling_vault`).
     - Keep kit piece scale at $1.0$ (never normalize kit piece heights or squish UVs).
@@ -168,11 +173,11 @@ Based on the Thursday Deck session telemetry (`logs/hunker-bunker-session-2026-1
   - `prop_floor_drainage_sump_trough` collecting dripping run-off under cooling racks and dissection slabs.
   - Floor decals (`decal_rust_bleed`, `decal_water_stain`, slime pools) procedurally stamped at prop footprints.
 - **Technical Implementation**:
-  - In [`src/roomPopulation.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/roomPopulation.js), create an automatic **Grounding Association Pass**:
+  - In [`src/roomPopulation.js`](../../src/roomPopulation.js), create an automatic **Grounding Association Pass**:
     - When placing a signature anchor prop, automatically evaluate adjacent floor cells for low-profile ground dressing (`isFloorOverlayType` with $y=0.035$ elevation).
     - Grounding layers consume the non-blocking ambient budget, ensuring zero collision obstruction on player movement routes.
 - **Verification**:
-  - Automated placement tests in [`src/roomPopulation.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/roomPopulation.test.js) confirming grounding overlays never spawn in doorway aprons or center movement lanes.
+  - Automated placement tests in [`src/roomPopulation.test.js`](../../src/roomPopulation.test.js) confirming grounding overlays never spawn in doorway aprons or center movement lanes.
 
 ---
 
@@ -183,10 +188,10 @@ Based on the Thursday Deck session telemetry (`logs/hunker-bunker-session-2026-1
   - Standard chambers ($6 \times 6$ to $8 \times 8$): 4 to 5 objects max (current baseline).
   - Grand Cathedrals & Extraction Vaults ($10 \times 10$ and up): 6 to 8 objects (signature anchor, corner infrastructure, floor drainage, wall shrines).
 - **Technical Implementation**:
-  - Replace the static `const roomObjectLimit = 5` in [`src/roomPopulation.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/roomPopulation.js) with a calculated budget based on walkable cell count:
+  - Replace the static `const roomObjectLimit = 5` in [`src/roomPopulation.js`](../../src/roomPopulation.js) with a calculated budget based on walkable cell count:
     $$\text{limit} = \text{clamp}\left(\lfloor \text{floorCells} / 12 \rfloor + 2,\, 3,\, 8\right)$$
   - Strict priority order preserved: Pickups $\rightarrow$ Signature Anchor $\rightarrow$ Wall Infrastructure $\rightarrow$ Floor Grounding $\rightarrow$ Edge Decals.
-  - Debris fracture cache ([`src/threeGame.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/threeGame.js)): ensure all 20 new props have pre-calculated Voronoi cell caches so destruction spikes remain under $16.5$ ms.
+  - Debris fracture cache ([`src/threeGame.js`](../../src/threeGame.js)): ensure all 20 new props have pre-calculated Voronoi cell caches so destruction spikes remain under $16.5$ ms.
 - **Verification**:
   - Performance regression test measuring frame time during multi-prop chain-reaction destructions.
   - Verification across 1,000 generated rooms to ensure draw call count per room never exceeds 60.
@@ -204,7 +209,7 @@ Based on the Thursday Deck session telemetry (`logs/hunker-bunker-session-2026-1
     - Rupturing a `prop_oxygen_bottle_cascade_rack` cryo-stuns nearby living umbilicals for 4.0 seconds.
     - Breaching a `prop_biomech_sphincter_hatch_vent` corrosive bile spray damages and weakens surrounding enemy chitin armor.
 - **Verification**:
-  - Unit tests in [`src/umbilicalAttacker.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/umbilicalAttacker.test.js) and [`src/propInteractions.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/propInteractions.test.js) for synergy callbacks and state transitions.
+  - Unit tests in [`src/umbilicalAttacker.test.js`](../../src/umbilicalAttacker.test.js) and [`src/propInteractions.test.js`](../../src/propInteractions.test.js) for synergy callbacks and state transitions.
 
 ---
 
@@ -218,4 +223,3 @@ Based on the Thursday Deck session telemetry (`logs/hunker-bunker-session-2026-1
 | **M4: Practical Emissive Lighting Pass** | Sprint 49.4 | High-contrast key art atmospheric lighting | Signature prop emissives, amber/cyan/green palettes | Max 1 dynamic light/room, zero unlit wash |
 | **M5: Modular Wall Shell Substitution** | Sprint 50.0 | Replacing primitive box walls with cathedral arches | Wall run replacement grammar, structural kit piece reuse | Zero z-fighting, 100% pathing determinism |
 | **M6: Reactive Environmental Synergies** | Sprint 50.1 | Living hazards, chain reactions, cryo/bile synergies | Umbilical stun from cryo vents, corrosive acid cascades | Full combat & interaction test pass |
-
