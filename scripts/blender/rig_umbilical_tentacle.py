@@ -6,9 +6,8 @@ Usage:
 
 import math
 import os
-import sys
 import bpy
-from mathutils import Vector, Quaternion, Matrix, Euler
+from mathutils import Vector, Euler
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 SRC_GLB = os.path.join(ROOT, 'public', '3d', 'runtime', 'new3ds', 'prop_biomech_spore_umbilical_cable.glb')

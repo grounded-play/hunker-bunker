@@ -76,7 +76,9 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // key art visual references, and 2 upgraded milestone cutscenes (~110 MiB payload).
 // Raised 2935->2985 MiB for the 859 Spanish (LatAm), Portuguese (BR), and
 // Russian narrative voice lines in public/audio/voice/ (~46 MiB payload).
-const PUBLIC_BUDGET = 2985 * 1024 * 1024;
+// Raised 2985->3020 MiB for the Japanese (ja) and Chinese (zh-CN) narrative voice
+// packs and 8-suite PBR room wall texture atlases (~35 MiB payload).
+const PUBLIC_BUDGET = 3020 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus
