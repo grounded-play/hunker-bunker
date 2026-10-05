@@ -23,7 +23,9 @@ test.describe('Game-over leaderboard', () => {
 
         await page.evaluate(() => window.game.handleDeath('debug-test'));
 
-        await expect(page.locator('#game-over-modal')).toBeVisible({ timeout: 10_000 });
+        // The death sequence (cinematic or its fallback card) runs first; the
+        // screen appears after ~13 s on a cold headless run.
+        await expect(page.locator('#game-over-modal')).toBeVisible({ timeout: 30_000 });
         await expect(page.locator('#go-leaderboard-status')).toHaveClass(/go-leaderboard-status--offline/, { timeout: 10_000 });
         await expect(page.locator('#go-leaderboard-status')).toHaveText(/OFFLINE/i);
         await expect(page.locator('#hole-hud-prompt')).toBeHidden();

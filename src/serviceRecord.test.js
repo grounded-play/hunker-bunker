@@ -40,6 +40,16 @@ describe('service record', () => {
         expect(record.find((s) => s.id === 'story').rows.find((r) => r.id === 'lore').display).toBe('5 / 42');
     });
 
+    it('uses the counts the Archive shows when the caller has them', () => {
+        const record = buildServiceRecord({
+            stats: { loreDrops: 5, endings: { a: 1 } },
+            totals: { lore: 42, loreFound: 17, endings: 10, endingsFound: 4 },
+            t: label, locale: 'en'
+        });
+        const story = Object.fromEntries(record.find((s) => s.id === 'story').rows.map((r) => [r.id, r.display]));
+        expect(story).toMatchObject({ lore: '17 / 42', endings: '4 / 10' });
+    });
+
     it('formats durations in hours, minutes and seconds', () => {
         expect(formatDuration(0)).toBe('0s');
         expect(formatDuration(59_999)).toBe('59s');

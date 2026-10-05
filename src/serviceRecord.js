@@ -31,49 +31,53 @@ export function buildServiceRecord({ stats = {}, ledger = {}, totals = {}, t = (
     const progress = (value, total) => (count(total) ? `${n(value)} / ${n(total)}` : n(value));
     const tierNames = Array.isArray(totals.tierNames) && totals.tierNames.length ? totals.tierNames : ['SURFACE'];
     const tier = Math.min(tierNames.length - 1, Math.floor(count(stats.maxDepthTier)));
-    const lore = Math.max(count(stats.loreDrops), Array.isArray(stats.loreDropIds) ? stats.loreDropIds.length : 0);
-    const endings = Object.keys(stats.endings ?? {}).length;
+    // The Archive's own counts (world-memory logs, discovered endings) win when
+    // the caller has them, so RECORDS never disagrees with the other tabs.
+    const lore = Number.isFinite(totals.loreFound) ? totals.loreFound
+        : Math.max(count(stats.loreDrops), Array.isArray(stats.loreDropIds) ? stats.loreDropIds.length : 0);
+    const endings = Number.isFinite(totals.endingsFound) ? totals.endingsFound : Object.keys(stats.endings ?? {}).length;
     const classes = Object.values(stats.classesCompleted ?? {}).filter(Boolean).length;
-    const row = (id, value) => ({ id, labelKey: `ui.records.${id}`, display: value });
+    // Label keys are spelled out so the i18n audit can see each one in use.
+    const row = (id, labelKey, value) => ({ id, labelKey, display: value });
 
     return [
         {
             id: 'career',
             titleKey: 'ui.records.section_career',
             rows: [
-                row('runs', n(stats.runCount)),
-                row('victories', n(stats.victories)),
-                row('deaths', n(stats.totalDeaths)),
-                row('longestRun', formatDuration(stats.maxRunMs)),
-                ...(isoDate(ledger.startedAt) ? [row('since', isoDate(ledger.startedAt))] : [])
+                row('runs', 'ui.records.runs', n(stats.runCount)),
+                row('victories', 'ui.records.victories', n(stats.victories)),
+                row('deaths', 'ui.records.deaths', n(stats.totalDeaths)),
+                row('longestRun', 'ui.records.longestRun', formatDuration(stats.maxRunMs)),
+                ...(isoDate(ledger.startedAt) ? [row('since', 'ui.records.since', isoDate(ledger.startedAt))] : [])
             ]
         },
         {
             id: 'combat',
             titleKey: 'ui.records.section_combat',
             rows: [
-                row('hostiles', n(stats.totalKills)),
-                row('mostInRun', n(stats.maxKillsOneRun)),
-                row('queen', t(stats.queenDefeated ? 'ui.records.yes' : 'ui.records.not_yet'))
+                row('hostiles', 'ui.records.hostiles', n(stats.totalKills)),
+                row('mostInRun', 'ui.records.mostInRun', n(stats.maxKillsOneRun)),
+                row('queen', 'ui.records.queen', t(stats.queenDefeated ? 'ui.records.yes' : 'ui.records.not_yet'))
             ]
         },
         {
             id: 'exploration',
             titleKey: 'ui.records.section_exploration',
             rows: [
-                row('deepest', tierNames[tier]),
-                row('distance', `${n(stats.totalDistanceTravelled)}u`),
-                row('camps', n(stats.maxCampsDiscoveredOneRun))
+                row('deepest', 'ui.records.deepest', tierNames[tier]),
+                row('distance', 'ui.records.distance', `${n(stats.totalDistanceTravelled)}u`),
+                row('camps', 'ui.records.camps', n(stats.maxCampsDiscoveredOneRun))
             ]
         },
         {
             id: 'story',
             titleKey: 'ui.records.section_story',
             rows: [
-                row('lore', progress(lore, totals.lore)),
-                row('endings', progress(endings, totals.endings)),
-                row('classes', progress(classes, totals.classes)),
-                row('shells', n(stats.shellsCollected))
+                row('lore', 'ui.records.lore', progress(lore, totals.lore)),
+                row('endings', 'ui.records.endings', progress(endings, totals.endings)),
+                row('classes', 'ui.records.classes', progress(classes, totals.classes)),
+                row('shells', 'ui.records.shells', n(stats.shellsCollected))
             ]
         }
     ];

@@ -29,6 +29,24 @@ screens link to it instead of growing their own stat panels.
   board that run counted for.
 - Title screen: optional (open question 1).
 
+## Status (2026-10-05)
+
+| Steps | State |
+| --- | --- |
+| 1 Archive tab skip bug | Done (`64b297fa`): one handler for left/right on every tab bar |
+| 2 Data-driven Archive tabs | Done |
+| 3–5 Shared leaderboard fetch/renderer, score formats, service-record builder | Done (`6bb4c026`) |
+| 6–13 Strings (7 locales), tab, styles (`src/styles/records.css`), service record, boards, scopes, 60 s cache | Done |
+| 14 E2E | Done: `tests/e2e/records-tab.spec.js` |
+| 15–18 Shortcuts | Done: `openArchiveModal()`, operator menu, Tactical Net, Game Over. The DAILY LEADERBOARD chip is not a shortcut: it sits inside the Daily Ops mode button, and a button cannot hold a button |
+| 19–23 New tracking (save-format bump) | Not started |
+| 24–25 Web Global boards (backend CORS deploy) | Not started |
+| 26–28 Polish | Not started |
+
+Calls made on the open questions: no title-screen entry; default board BEST
+RUN (Game Over opens the run's own board); per-class stats stay local when
+built; web build shows an honest offline state; Tactical Net's ledger stays.
+
 ## What already exists
 
 | Piece | Where | Gives |

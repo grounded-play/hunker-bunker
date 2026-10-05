@@ -89,6 +89,7 @@ import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
 import { campaignLedger } from './src/campaignLedger.js';
+import { createRecordsTab } from './src/recordsTab.js';
 import { campaignWorldStore, deriveExpeditionSeed } from './src/campaignWorld.js';
 import { clearMultiplayerSession } from './src/gameController.js';
 import { playerTradeManager, TRADEABLE_RESOURCES } from './src/playerTrade.js';
@@ -96,7 +97,7 @@ import { npcDialogueTreeManager, NPC_DIALOGUE_TREES } from './src/npcDialogueTre
 import { sideStoryManager, SIDE_STORIES_CONFIG, SIDE_STORY_STATUS } from './src/sideStorySystem.js';
 import { matureContentAudit } from './src/matureContentAudit.js';
 import { progressionWalkthrough } from './src/progressionWalkthrough.js';
-import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
+import { getGameOverLeaderboardBoard, renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { createFieldWorkbenchUi } from './src/fieldWorkbenchUi.js';
 import { createQuickCommandRadialUi } from './src/quickCommandRadialUi.js';
 import { flushPendingRunSubmits, submitRunWithRetryQueue } from './src/steam/runSubmitQueue.js';
@@ -1603,6 +1604,17 @@ function moveOperatorPolishGridFocus(code) {
 
 function moveMenuCommandGridFocus(code) {
     const active = document.activeElement;
+    // CAREER TELEMETRY's RECORDS ▸ sits above the command grid.
+    const recordsBtn = document.getElementById('homebase-records-btn');
+    if (active === recordsBtn) {
+        const commands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
+        const target = (code === 'KeyS' || code === 'ArrowDown')
+            ? commands[0]
+            : (code === 'KeyD' || code === 'ArrowRight')
+                ? (document.getElementById('hero-polish-btn') ?? document.querySelector('.char-selection .char-card.selected'))
+                : null;
+        return target ? focusControllerTarget(target, { playHover: true }) : true;
+    }
     if (active?.id === 'start-game') {
         if (code !== 'KeyW' && code !== 'ArrowUp') return false;
         const visibleCommands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
@@ -1625,7 +1637,9 @@ function moveMenuCommandGridFocus(code) {
     let target = null;
 
     if (code === 'KeyW' || code === 'ArrowUp') {
-        target = index >= columnCount ? commands[index - columnCount] : commands[index];
+        target = index >= columnCount
+            ? commands[index - columnCount]
+            : (recordsBtn && isElementVisible(recordsBtn) ? recordsBtn : commands[index]);
     } else if (code === 'KeyS' || code === 'ArrowDown') {
         if (index + columnCount >= commands.length) {
             lastHeroMenuCommandFocus = active;
@@ -5396,6 +5410,9 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     latestRunSubmission = null;
     dispatchSteamRunScoreFinalized(steamRunPayload, window);
     void renderGameOverLeaderboard(steamRunPayload, { submission: latestRunSubmission });
+    // VIEW ALL RECORDS opens Archive → RECORDS on the board this run counted for.
+    const recordsLink = document.getElementById('go-records-btn');
+    if (recordsLink) recordsLink.dataset.board = getGameOverLeaderboardBoard(steamRunPayload);
 
     const scoreVal = document.getElementById('go-score-val');
     const ratingBadge = document.getElementById('go-rating-badge');
@@ -6379,8 +6396,13 @@ function renderArchiveAchievements() {
     renderAchievementCards(document.getElementById('archive-achievements-grid'), state);
 }
 
+// Tab ids come from the markup ([data-archive-tab]), so a new tab needs no edit here.
+function getArchiveTabNames() {
+    return [...document.querySelectorAll('#archive-modal [data-archive-tab]')].map((button) => button.dataset.archiveTab);
+}
+
 function setArchiveTab(tab, { focus = false } = {}) {
-    const known = ['lore', 'dossier', 'endings', 'achievements'];
+    const known = getArchiveTabNames();
     activeArchiveTab = known.includes(tab) ? tab : 'lore';
     for (const name of known) {
         const button = document.getElementById(`archive-tab-${name}`);
@@ -6394,6 +6416,7 @@ function setArchiveTab(tab, { focus = false } = {}) {
     if (activeArchiveTab === 'dossier') renderArchiveDossier();
     if (activeArchiveTab === 'endings') renderArchiveEndings();
     if (activeArchiveTab === 'achievements') renderArchiveAchievements();
+    if (activeArchiveTab === 'records') recordsTab.render();
     if (focus) document.getElementById(`archive-tab-${activeArchiveTab}`)?.focus?.();
 }
 
@@ -12906,9 +12929,7 @@ document.addEventListener('keydown', (event) => {
 
         const archiveModal = document.getElementById('archive-modal');
         if (archiveModal && !archiveModal.classList.contains('hidden')) {
-            closeArchiveLogDetail();
-            archiveModal.classList.add('hidden');
-            archiveModal.setAttribute('aria-hidden', 'true');
+            closeArchiveModal();
             noteModalClosed('archive');
             event.preventDefault();
             return;
@@ -13017,9 +13038,12 @@ function closeArchiveModal() {
     const modal = document.getElementById('archive-modal');
     closeArchiveLogDetail();
     if (modal) {
+        modal.classList.remove('archive-modal--overlay');
         modal.classList.add('hidden');
         modal.setAttribute('aria-hidden', 'true');
     }
+    // Hands focus back to whatever opened the Archive.
+    syncControllerFocusBoundary();
 }
 
 for (const tab of document.querySelectorAll('[data-archive-tab]')) {
@@ -13029,7 +13053,7 @@ for (const tab of document.querySelectorAll('[data-archive-tab]')) {
         if (event.defaultPrevented) return;
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
         event.preventDefault();
-        const tabs = ['lore', 'dossier', 'endings', 'achievements'];
+        const tabs = getArchiveTabNames();
         const current = tabs.indexOf(activeArchiveTab);
         const next = event.key === 'Home' ? 0
             : event.key === 'End' ? tabs.length - 1
@@ -13038,15 +13062,55 @@ for (const tab of document.querySelectorAll('[data-archive-tab]')) {
     });
 }
 
-document.getElementById('archive-btn')?.addEventListener('click', () => {
+// Archive → RECORDS (docs/planning/records-and-leaderboards-popup-plan-2026-10-05.md).
+const recordsTab = createRecordsTab({
+    getStats: () => achievementEngine.getState().stats,
+    getLedger: () => campaignLedger.getState(),
+    getTotals: () => {
+        const endings = buildEndingArchive(window.game?.act2?.getState?.() ?? act2Manager.getState(), achievementEngine.getState().unlocked);
+        return {
+            lore: ALL_LORE_KEYS.length,
+            loreFound: new Set(getWorldMemory().logsFound ?? []).size,
+            endings: endings.length,
+            endingsFound: endings.filter((ending) => ending.discovered).length,
+            classes: PLAYABLE_CLASSES.length,
+            tierNames: DEPTH_TIER_NAMES
+        };
+    },
+    getLocale,
+    t
+});
+
+/**
+ * The one way into the Archive. `overlay` lifts it above the screen that
+ * opened it (Tactical Net, Game Over), which share its z-index but come later
+ * in the page.
+ */
+function openArchiveModal({ tab = activeArchiveTab, view = null, board = null, overlay = false } = {}) {
     buildArchiveModal();
-    setArchiveTab(activeArchiveTab);
     const modal = document.getElementById('archive-modal');
+    modal?.classList.toggle('archive-modal--overlay', overlay);
     if (modal) {
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
     }
-});
+    // Sync before focusing the tab: the boundary records the opener (still
+    // focused outside the Archive) and gives focus back to it on close.
+    syncControllerFocusBoundary();
+    if (tab === 'records' && view) recordsTab.show({ view, board });
+    setArchiveTab(tab, { focus: true });
+}
+window.openArchiveModal = openArchiveModal;
+
+document.getElementById('archive-btn')?.addEventListener('click', () => openArchiveModal());
+document.getElementById('homebase-records-btn')?.addEventListener('click', () => openArchiveModal({ tab: 'records', view: 'service' }));
+document.getElementById('net-records-btn')?.addEventListener('click', () => openArchiveModal({ tab: 'records', view: 'service', overlay: true }));
+document.getElementById('go-records-btn')?.addEventListener('click', () => openArchiveModal({
+    tab: 'records',
+    view: 'boards',
+    board: document.getElementById('go-records-btn')?.dataset.board || null,
+    overlay: true
+}));
 document.getElementById('close-archive-modal')?.addEventListener('click', () => {
     closeArchiveModal();
 });

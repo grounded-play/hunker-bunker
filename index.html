@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/src/styles/expeditionHud.css">
   <link rel="stylesheet" href="/src/styles/hudDockHousings.css">
   <link rel="stylesheet" href="/src/styles/hudInformationArchitecture.css">
+  <link rel="stylesheet" href="/src/styles/records.css">
   <link rel="stylesheet" href="/src/styles/suitCondition.css">
   <link rel="stylesheet" href="/src/styles/armory.css">
   <link rel="stylesheet" href="/src/styles/itemCard.css">
@@ -382,7 +383,10 @@
                 </div>
               </div>
               <section class="homebase-telemetry" id="roster-run-telemetry" aria-labelledby="homebase-telemetry-title">
-                <div class="homebase-section-kicker" id="homebase-telemetry-title" data-i18n="ui.roster.telemetry_title">CAREER TELEMETRY</div>
+                <div class="homebase-telemetry__head">
+                  <div class="homebase-section-kicker" id="homebase-telemetry-title" data-i18n="ui.roster.telemetry_title">CAREER TELEMETRY</div>
+                  <button type="button" class="records-link-btn" id="homebase-records-btn" data-i18n="ui.records.open_records">RECORDS ▸</button>
+                </div>
                 <div class="homebase-telemetry__grid">
                   <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.deepest_sector">DEEPEST SECTOR:</span> <b data-i18n="ui.roster.sector_0" id="roster-stat-depth">SECTOR 0</b></div>
                   <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.total_distance">TOTAL DISTANCE:</span> <b id="roster-stat-distance">0u</b></div>
@@ -609,6 +613,7 @@
           <button id="archive-tab-dossier" class="archive-console-tab" type="button" role="tab" aria-selected="false" aria-controls="archive-panel-dossier" data-archive-tab="dossier" data-i18n="ui.hub.dossier">DOSSIER</button>
           <button id="archive-tab-endings" class="archive-console-tab" type="button" role="tab" aria-selected="false" aria-controls="archive-panel-endings" data-archive-tab="endings" data-i18n="ui.archive.story_endings">STORY ENDINGS</button>
           <button id="archive-tab-achievements" class="archive-console-tab" type="button" role="tab" aria-selected="false" aria-controls="archive-panel-achievements" data-archive-tab="achievements" data-i18n="ui.hub.achievements">ACHIEVEMENTS</button>
+          <button id="archive-tab-records" class="archive-console-tab" type="button" role="tab" aria-selected="false" aria-controls="archive-panel-records" data-archive-tab="records" data-i18n="ui.records.tab">RECORDS</button>
         </div>
         <div class="archive-console-body">
           <section id="archive-panel-lore" class="archive-console-panel" role="tabpanel" aria-labelledby="archive-tab-lore">
@@ -623,6 +628,20 @@
           <section id="archive-panel-achievements" class="archive-console-panel hidden" role="tabpanel" aria-labelledby="archive-tab-achievements">
             <div id="archive-achievements-summary" class="archive-console-section-summary"></div>
             <div id="archive-achievements-grid" class="achievements-grid archive-achievements-grid"></div>
+          </section>
+          <!-- Archive → RECORDS: src/recordsTab.js fills both views. -->
+          <section id="archive-panel-records" class="archive-console-panel records-panel hidden" role="tabpanel" aria-labelledby="archive-tab-records">
+            <div class="records-views" role="group" data-i18n-aria-label="ui.records.aria_views" aria-label="Records view">
+              <button type="button" class="records-chip records-view-chip" data-records-view="service" aria-pressed="true" data-i18n="ui.records.service_record">SERVICE RECORD</button>
+              <button type="button" class="records-chip records-view-chip" data-records-view="boards" aria-pressed="false" data-i18n="ui.records.leaderboards">LEADERBOARDS</button>
+            </div>
+            <div id="records-service" class="records-service"></div>
+            <div id="records-boards" class="records-boards hidden">
+              <div id="records-board-chips" class="records-chip-row" role="group" data-i18n-aria-label="ui.records.aria_boards" aria-label="Leaderboard"></div>
+              <div id="records-scope-chips" class="records-chip-row" role="group" data-i18n-aria-label="ui.records.aria_scopes" aria-label="Leaderboard scope"></div>
+              <div id="records-board-status" class="records-board-status" role="status" aria-live="polite"></div>
+              <div id="records-board-list" class="records-board-list"></div>
+            </div>
           </section>
         </div>
       </div>
@@ -1565,6 +1584,7 @@
           <div data-i18n="ui.game_over.leaderboard_results" class="go-leaderboard-header">◈ LEADERBOARD RESULTS</div>
           <div class="go-leaderboard-status" id="go-leaderboard-status">CONNECTING...</div>
           <div class="go-leaderboard-list" id="go-leaderboard-list"></div>
+          <button type="button" class="records-link-btn go-records-btn" id="go-records-btn" data-i18n="ui.records.view_all">VIEW ALL RECORDS</button>
         </div>
 
         <div class="game-over-actions">
@@ -3178,7 +3198,7 @@
              briefing; Co-op keeps it visible above relay/roster controls. -->
         <div class="net-deployment-ledger hidden" id="net-deployment-ledger">
           <section class="net-ledger-panel" aria-labelledby="net-career-ledger-title">
-            <div class="net-ledger-title" id="net-career-ledger-title" data-i18n="ui.multiplayer.career_ledger">CAREER LEDGER</div>
+            <div class="net-ledger-head"><div class="net-ledger-title" id="net-career-ledger-title" data-i18n="ui.multiplayer.career_ledger">CAREER LEDGER</div><button type="button" class="records-link-btn" id="net-records-btn" data-i18n="ui.records.open_records">RECORDS ▸</button></div>
             <div class="net-ledger-stats">
               <span><b id="net-career-runs">0</b><small data-i18n="ui.multiplayer.runs">RUNS</small></span>
               <span><b id="net-career-deaths">0</b><small data-i18n="ui.multiplayer.deaths">DEATHS</small></span>

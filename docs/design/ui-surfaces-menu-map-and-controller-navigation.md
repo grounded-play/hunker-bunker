@@ -85,7 +85,7 @@ Tabbed surfaces and what LB / RB (and now Q / E) cycle:
 | Surface | Tabs |
 |---|---|
 | Settings (`#settings-popup`) | Session · Audio · Controls · Camera & HUD · Accessibility · Profile & Saves |
-| Archive (`#archive-modal`) | Lore Logs · Dossier · Story Endings · Achievements |
+| Archive (`#archive-modal`) | Lore Logs · Dossier · Story Endings · Achievements · Records (Service Record / Leaderboards) |
 | Foundry hub (`#foundry-hub-modal`, default) | Stash · Loadout · Fabricate · Trade-Up (Fabricate and Trade-Up show a lock until earned) |
 | Steam Vault (`#steam-vault-modal`, `hb_foundry_hub=0`) | Owned Inventory · Relic Store & Drop · Smelter & Dispensary |
 | Tactical Dossier (`#season-pass-modal`) | Dossier · Directives · Fragment Workshop |
@@ -190,8 +190,11 @@ FOUNDRY HUB (#foundry-hub-modal)    tabs: STASH · LOADOUT · FABRICATE 🔒 · 
   currency strip (TECH · COIN · MED · SHELLS) · ✕
   (hb_foundry_hub=0: STEAM VAULT #steam-vault-modal — OWNED · RELIC STORE · SMELTER;
    FAB BAY #fabrication-modal; reveals → #vault-reveal-overlay, #progression-reward-overlay)
-ARCHIVE (#archive-modal)            tabs: LORE LOGS · DOSSIER · STORY ENDINGS · ACHIEVEMENTS
+ARCHIVE (#archive-modal)            tabs: LORE LOGS · DOSSIER · STORY ENDINGS · ACHIEVEMENTS · RECORDS
   found log → #archive-log-detail-modal
+  RECORDS: SERVICE RECORD (all-time stats) · LEADERBOARDS (5 boards × Global / Friends / Around me)
+  shortcuts in: CAREER TELEMETRY "RECORDS ▸" (menu), CAREER LEDGER "RECORDS ▸" (Tactical Net),
+  "VIEW ALL RECORDS" (Game Over, opens the run's board); window.openArchiveModal({ tab, view, board, overlay })
 FIELD CODEX (#codex-modal)          endings archive, then bestiary by category; record → #codex-detail-modal
 TACTICAL DOSSIER (#season-pass-modal) tabs: DOSSIER · DIRECTIVES · FRAGMENT WORKSHOP; TRACK per reward
 ARCHIVE SIMS (#archive-sims-modal)  RGB chapters → #rgb-root (archive action set)
