@@ -15,6 +15,8 @@ import bpy
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 SOURCE_DIR = os.path.join(ROOT, 'public', '3dprops')
+if not os.path.exists(SOURCE_DIR):
+    SOURCE_DIR = os.path.join(ROOT, 'art', 'raw', 'newartandprops')
 RUNTIME_DIR = os.path.join(ROOT, 'public', '3d', 'runtime', 'new3ds')
 
 TARGET_TRIS = 18000

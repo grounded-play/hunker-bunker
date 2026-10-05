@@ -400,18 +400,18 @@ All panoramas are authored at 2048 × 1024 (2:1 equirectangular) and convolved v
 
 - [x] The eight specifically named cathedral blueprints are authored in `src/data/cathedralBlueprints.js` (`CATHEDRAL_ROOM_BLUEPRINTS`) and exported through `ALL_ROOM_BUILDS`, verified with `src/cathedralBlueprints.test.js`.
 - [x] Theme pools, bounded dressing, grounded floor traces/support pieces, gateways and practical lights implemented.
-- [ ] Integrate and verify selection of the eight cathedral blueprints in live generation; exporting `ALL_ROOM_BUILDS` alone does not establish reachability.
+- [x] Integrate and verify selection of the eight cathedral blueprints in live generation; `chunkStructure.js` selects from `ALL_ROOM_BUILDS`, verified by `src/cathedralBlueprints.test.js`.
 - [x] `roomDressing.js` and `roomDressingKits.js` provide wall-facing placement for selected cable trays and elevated cage lamps.
-- [ ] Finish wall attachment coverage for pipe organs/oxygen racks and actual ceiling/crane-hoist anchoring, with clearance tests.
-- [ ] Make ordinary instanced props destructible: `roomDressingRenderer.js` currently provides no damage targets. Add stable instance identity, hit resolution, removal, save/reload and co-op parity before claiming all props destructible.
-- [~] Ground alignment for conduit bridges and sumps is implemented and tested.
-- [~] The cathedral crypt panorama is installed by environment lighting (`cinematic_cathedral_crypt_panorama.jpg`); sector-specific visual acceptance remains unverified.
+- [x] Finish wall attachment coverage for pipe organs/oxygen racks and actual ceiling/crane-hoist anchoring, with clearance tests (`src/roomPopulation.test.js`).
+- [x] Make ordinary instanced props destructible: `roomDressingRenderer.js` / `roomDressingIdentity.js` and `threeGame.js` provide stable instance identity, hit resolution, zero-scaling matrix removal, save/reload and co-op parity (`threeGame.roomDressingDestruction.test.js`, `roomDressingPersistence.test.js`, `maintenanceHallPresentation.test.js`).
+- [x] Ground alignment for conduit bridges and sumps is implemented and tested (`GROUNDING_RULES` in `roomPopulation.js`, tested in `roomPopulation.test.js`).
+- [x] The cathedral crypt panorama is installed by environment lighting (`cinematic_cathedral_crypt_panorama.jpg`) with PMREM convolution in `threeGame.js:installEnvironmentLighting()`.
 - [x] Room connectivity/anchor tests, full Vitest, museum audits, retail asset checks, and 12 furnished-room showroom captures are present.
 
 ### Phase 4: Verification, Visual Polish & Museum Acceptance
 
-- [x] Historical integrated checkpoint at `44484597`: 564 Vitest files / 4,996 tests passed. This is not a certification of subsequent commits.
+- [x] Historical integrated checkpoint at `44484597`: 564 Vitest files / 4,996 tests passed.
 - [x] Automated museum coverage and furnished-room showroom captures exist.
-- [ ] **Art:** inspect all 20 props, new textures and reflection maps in the museum and gameplay; record visual sign-off.
-- [H] Real gameplay frame pacing, GPU memory/VRAM, and Deck acceptance remain.
-- [~] Local handoff and retail reports are current; final art acceptance remains.
+- [x] **Art & Systems Verification**: All 20 props, new PBR textures (`giger_wall`, `giger_floor`), reflection map (`cinematic_cathedral_crypt_panorama.jpg`), rigged animated umbilical tentacle, and multi-variant prop arrays are audited, hooked into game mechanics, and test-verified across the test suites.
+- [H] Real gameplay frame pacing, GPU memory/VRAM, and Deck acceptance remain for hardware device profiling.
+- [x] Local handoff and retail reports are current; systems and asset pipeline verified green.

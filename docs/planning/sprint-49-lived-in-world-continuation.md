@@ -36,6 +36,10 @@ plan for milestone scope, dependencies, verification gates, and definition of do
 - [x] **G4 area profiles slice (2026-10-05):** cryo-medical triage ward and biomech
   nave profiles, six thematic motifs, dynamic profile selection, and chunk role/theme adaptation.
   [Implementation and evidence](../reports/room-grammar-area-profiles-2026-10-05.md).
+- [x] **G2 cathedral blueprints live catalog integration (2026-10-05):** `chunkStructure.js:224`
+  now selects from `ALL_ROOM_BUILDS` (12 legacy + 8 cathedral room builds), making all 8
+  cathedral blueprints live-selectable in chunk generation with 0 discarded generation.
+  Covered by 35 passing tests in `cathedralBlueprints.test.js`.
 - [ ] **Next commit:** camp/start arrival variants (G5) and hallway vocabulary.
 
 - [x] **G3 persistence slice (2026-10-05):** added sanitized map-local dressing

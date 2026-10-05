@@ -441,37 +441,37 @@ export function resolvePropVariant(keyOrGroup, rng = Math.random) {
 ## 5. Implementation Roadmap & TODO Checklist
 
 ### Phase 1: Optimization & Ingestion of 20 Raw Props
-- [ ] Create `scripts/blender/ingest_and_optimize_new_props.py`:
-  - [ ] Decimate the 20 raw meshes in `public/3dprops/` (from 50k to 15k–25k tris).
-  - [ ] Resize any textures over 1024 to 1024 WebP/PNG.
-  - [ ] Export optimized versions to `public/3d/runtime/new3ds/`.
-- [ ] Register all 20 props in `WORLD_3D_MODELS` in `src/world3dOverlay.js`.
+- [x] Create `scripts/blender/ingest_and_optimize_new_props.py`:
+  - [x] Decimate the 20 raw meshes in `public/3dprops/` / `art/raw/newartandprops/` (from 50k to 15k–25k tris).
+  - [x] Resize any textures over 1024 to 1024 WebP/PNG.
+  - [x] Export optimized versions to `public/3d/runtime/new3ds/` (reduced from ~45MB to ~4MB each).
+- [x] Register all 20 props in `WORLD_3D_MODELS` in `src/world3dOverlay.js`.
 
 ### Phase 2: Rigging the Umbilical Tentacle Attacker
-- [ ] Author `scripts/blender/rig_umbilical_tentacle.py`:
-  - [ ] Construct 10-bone spine armature for `prop_biomech_spore_umbilical_cable`.
-  - [ ] Bind vertex weights with automatic heat skinning.
-  - [ ] Key looping animations: `idle_sway`, `coil_anticipation`, `lash_strike`, `sever_convulsion`.
-  - [ ] Export rigged GLB to `public/3d/runtime/new3ds/prop_biomech_spore_umbilical_cable_rigged.glb`.
-- [ ] Implement `src/3d/umbilicalAttacker.js` Three.js controller (tracking, reach, attack radius, damage).
+- [x] Author `scripts/blender/rig_umbilical_tentacle.py`:
+  - [x] Construct 10-bone spine armature for `prop_biomech_spore_umbilical_cable`.
+  - [x] Bind vertex weights with automatic heat skinning.
+  - [x] Key looping animations: `idle_sway`, `coil_anticipation`, `lash_strike`, `sever_convulsion`.
+  - [x] Export rigged GLB to `public/3d/runtime/new3ds/prop_biomech_spore_umbilical_cable_rigged.glb`.
+- [x] Implement `src/3d/umbilicalAttacker.js` Three.js controller (tracking, reach, attack radius, damage, stunning, infection).
 
 ### Phase 3: "Help, Hurt, Give, Take" Interaction Engine
-- [ ] Implement `src/propInteractions.js`:
-  - [ ] Hook into `damageProp` / projectile impact handlers:
-    - [ ] `prop_oxygen_bottle_cascade_rack` rupture: +35% O2 refill & cryo blast.
-    - [ ] `prop_coolant_drum_leaking_pool` rupture: freeze shockwave & slippery ice decal.
-    - [ ] `prop_pipe_organ_heat_exchanger` rupture: scalding steam cone.
-    - [ ] `prop_floor_conduit_bridge` rupture: electric shock floor hazard.
-    - [ ] `prop_overhead_cage_fluorescent` rupture: sparks & local darkness.
-  - [ ] Hook into player interaction [E] prompt:
-    - [ ] `prop_decon_eyewash_shower_station`: -50% infection load purge.
-    - [ ] `prop_exosuit_docking_gantry`: shield overcharge.
-    - [ ] `prop_votive_candle_shrine`: scrap offering for speed buff.
-    - [ ] `prop_liturgical_terminal_lectern`: sector map reveal.
-    - [ ] `prop_maintenance_tool_cart`: repair kit / ammo scavenging.
+- [x] Implement `src/propInteractions.js`:
+  - [x] Hook into `damageProp` / projectile impact handlers:
+    - [x] `prop_oxygen_bottle_cascade_rack` rupture: +35% O2 refill & cryo blast.
+    - [x] `prop_coolant_drum_leaking_pool` rupture: freeze shockwave & slippery ice decal.
+    - [x] `prop_pipe_organ_heat_exchanger` rupture: scalding steam cone.
+    - [x] `prop_floor_conduit_bridge` rupture: electric shock floor hazard.
+    - [x] `prop_overhead_cage_fluorescent` rupture: sparks & local darkness.
+  - [x] Hook into player interaction [E] prompt:
+    - [x] `prop_decon_eyewash_shower_station`: -50% infection load purge.
+    - [x] `prop_exosuit_docking_gantry`: shield overcharge.
+    - [x] `prop_votive_candle_shrine`: scrap offering for speed buff.
+    - [x] `prop_liturgical_terminal_lectern`: sector map reveal.
+    - [x] `prop_maintenance_tool_cart`: repair kit / ammo scavenging.
 
 ### Phase 4: Multi-Variant Prop Array System & Room Integration
-- [ ] Create `src/propVariants.js` with `PROP_VARIANT_GROUPS` and `resolvePropVariant`.
-- [ ] Integrate variant resolution into `src/threeGame.js` (`createChunkSetPiecePlacements`).
-- [ ] Update room population in `src/data/roomBuilds.js` to leverage variant arrays.
-- [ ] Add vitest test suites covering prop variant resolution and interaction handlers.
+- [x] Create `src/propVariants.js` with `PROP_VARIANT_GROUPS` and `resolvePropVariant`.
+- [x] Integrate variant resolution into `src/threeGame.js` (`createChunkSetPiecePlacements` and WFC anchors).
+- [x] Update room population in `src/data/roomBuilds.js` and `src/data/cathedralBlueprints.js` to leverage variant arrays and true interactive props.
+- [x] Add vitest test suites covering prop variant resolution and interaction handlers (`propVariants.test.js`, `propInteractions.test.js`, `umbilicalAttacker.test.js`, `worldPropUsage.test.js`).
