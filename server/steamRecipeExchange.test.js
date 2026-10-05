@@ -65,6 +65,57 @@ describe('live fixed/cache recipe exchange', () => {
         expect([...f.records.values()][0].state).toBe('submitted_unknown');
     });
 
+    // 2026-10-05: one rejected cache open (the 4002 itemdef had no exchange
+    // recipe) left the account's active fence at submitted_unknown forever, so
+    // every later open or craft answered 409. Once Steam's inventory has had
+    // time to settle, materials still present at their pre-exchange quantities
+    // prove the attempt was never applied, and a new request may proceed.
+    describe('stuck review hold reconciliation', () => {
+        const later = (ms) => () => Date.now() + ms;
+        async function stuck() {
+            const f = fixture({ exchange: () => new Response(JSON.stringify({ response: { success: false } })) });
+            const first = await performSteamRecipeExchange({ ...input, ...f });
+            expect(first).toMatchObject({ status: 409, body: { reason: 'exchange_outcome_requires_review' } });
+            return f;
+        }
+
+        it('records the materials\' quantities before the exchange', async () => {
+            const f = await stuck();
+            expect(f.save.mock.calls[0][1].plan.before).toEqual([{ itemId: '1', quantity: 20 }, { itemId: '2', quantity: 5 }]);
+        });
+
+        it('keeps the hold, without re-reading Steam, until the inventory has settled', async () => {
+            const f = await stuck();
+            const result = await performSteamRecipeExchange({ ...input, ...f, requestId: 'fresh-click', now: later(30_000) });
+            expect(result).toMatchObject({ status: 409, body: { reason: 'exchange_outcome_requires_review' } });
+            expect(f.fetchImpl).toHaveBeenCalledTimes(2);
+        });
+
+        it('releases the hold when every material is still there and runs the new request', async () => {
+            const f = await stuck();
+            const exchange = vi.fn(() => reply([
+                { ...rows[0], quantity: 10 }, { ...rows[1], quantity: 3 }, { itemid: '3', itemdefid: 2200, quantity: 1 }
+            ]));
+            f.fetchImpl.mockImplementation(async (url, options) => (url.includes('/GetInventory/') ? reply(rows) : exchange(url, options)));
+            const result = await performSteamRecipeExchange({ ...input, ...f, requestId: 'fresh-click', now: later(180_000) });
+            expect(result).toMatchObject({ status: 200, body: { ok: true } });
+            expect(exchange).toHaveBeenCalledTimes(1);
+            const states = [...f.records.entries()].map(([key, value]) => [key.startsWith('recipe-exchange-active') ? 'active' : key, value.state]);
+            expect(states.find(([key, state]) => key !== 'active' && state === 'not_applied')).toBeTruthy();
+            expect(states.find(([key]) => key === 'active')[1]).toBe('completed');
+        });
+
+        it('keeps the hold when any material was consumed', async () => {
+            const f = await stuck();
+            f.fetchImpl.mockImplementation(async (url) => (url.includes('/GetInventory/')
+                ? reply([{ ...rows[0], quantity: 10 }, rows[1]])
+                : reply([])));
+            const result = await performSteamRecipeExchange({ ...input, ...f, requestId: 'fresh-click', now: later(180_000) });
+            expect(result).toMatchObject({ status: 409, body: { reason: 'exchange_outcome_requires_review' } });
+            expect(f.fetchImpl.mock.calls.filter(([url]) => url.includes('/ExchangeItem/'))).toHaveLength(1);
+        });
+    });
+
     it('cannot mutate when the preflight journal cannot be persisted', async () => {
         const f = fixture({ failSave: true });
         expect(await performSteamRecipeExchange({ ...input, ...f })).toMatchObject({ status: 503 });

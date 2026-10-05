@@ -31,8 +31,24 @@ describe('Steam renderer catalog generation', () => {
     it('keeps the Steam resolver weights equal to server loot odds', () => {
         expect(validateResolverOdds(schema)).toBe(true);
         expect(() => validateResolverOdds({
-            items: [{ itemdefid: 4002, bundle: '1000,100' }]
+            items: [{ itemdefid: 4002, type: 'generator', exchange: '4000x1,4001x1', bundle: '1000x100' }]
         })).toThrow(/does not match/);
+    });
+
+    // Steamworks Inventory schema rules (partner.steamgames.com/doc/features/
+    // inventory/schema): ExchangeItem may target a generator, which needs an
+    // `exchange` recipe; `bundle` is `defid x weight` joined by `;`; a
+    // generator grants one item, so a 3-fragment reward is its own bundle.
+    // The old 4002 (playtimegenerator, comma list, no exchange) made every
+    // live cache open fail (session logs 2026-10-05, 409 review holds).
+    it('makes the cache resolver a valid Steam exchange generator', () => {
+        const byId = Object.fromEntries(schema.items.map((item) => [item.itemdefid, item]));
+        expect(byId[4002]).toMatchObject({ type: 'generator', exchange: '4000x1,4001x1', store_hidden: true, tradable: false, marketable: false });
+        expect(byId[4002].bundle).toMatch(/^\d+x\d+(;\d+x\d+)*$/);
+        expect(byId[4003]).toMatchObject({ type: 'bundle', bundle: '1000x3', store_hidden: true, tradable: false, marketable: false });
+        expect(() => validateResolverOdds({
+            items: [{ itemdefid: 4002, type: 'playtimegenerator', bundle: '1000,55,1100,25,2100,12,2200,8' }]
+        })).toThrow();
     });
 
     it('keeps the checked-in generated module current', () => {

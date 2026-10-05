@@ -21,9 +21,9 @@ function readJournal(key) {
     return { ...row, body, ...exchangeJournal };
 }
 
-function saveJournal(key, { signature, plan, state, createdAt, ...result }) {
+function saveJournal(key, { signature, plan, state, createdAt, journalKey, releasedAt, ...result }) {
     return saveIdempotency(key, { status: result.status,
-        body: { ...result.body, exchangeJournal: { signature, plan, state, createdAt } } });
+        body: { ...result.body, exchangeJournal: { signature, plan, state, createdAt, journalKey, releasedAt } } });
 }
 
 export function planSteamRecipe(recipeId, materials, inventory) {
@@ -44,7 +44,27 @@ export function planSteamRecipe(recipeId, materials, inventory) {
         needed[item.itemdefid] -= quantity;
     }
     if (Object.values(needed).some((quantity) => quantity > 0)) return { ok: false, reason: 'insufficient_recipe_materials' };
-    return { ok: true, consumed, outputItemdefid: recipeId === OPEN_CACHE_RECIPE_ID ? 4002 : recipeId };
+    // Stack sizes before the exchange: proof, later, of whether it was applied.
+    const before = consumed.map(({ itemId }) => ({ itemId, quantity: inventory.find((row) => row.itemId === itemId).quantity }));
+    return { ok: true, consumed, before, outputItemdefid: recipeId === OPEN_CACHE_RECIPE_ID ? 4002 : recipeId };
+}
+
+// A fence left at submitted_unknown blocks every later exchange for the
+// account. Once Steam's inventory has settled, it can be released only when
+// the evidence shows the attempt never ran: every planned material is still
+// present with at least its pre-exchange quantity. Anything consumed keeps the
+// hold for an operator.
+export const EXCHANGE_SETTLE_MS = 120_000;
+
+export function provesExchangeNotApplied(pending, inventory) {
+    const consumed = pending?.plan?.consumed;
+    if (!Array.isArray(consumed) || !consumed.length) return false;
+    return consumed.every(({ itemId, quantity }) => {
+        const row = inventory.find((item) => item.itemId === itemId);
+        if (!row) return false;
+        const before = pending.plan.before?.find((entry) => entry.itemId === itemId)?.quantity;
+        return row.quantity >= (Number.isFinite(before) ? before : quantity);
+    });
 }
 
 // ExchangeItem has no documented requestid parameter. Persist a fence BEFORE
@@ -55,26 +75,39 @@ export function performSteamRecipeExchange(options) {
 }
 
 async function performLockedRecipeExchange({ steamId, recipeId, materials, requestId, key, appId,
-    fetchImpl = fetch, read = readJournal, save = saveJournal }) {
+    fetchImpl = fetch, read = readJournal, save = saveJournal, now = Date.now }) {
     if (typeof requestId !== 'string' || !requestId || requestId.length > 256) return failure('missing_request_id');
     if (!Array.isArray(materials) || materials.some((id) => typeof id !== 'string')) return failure('invalid_exchange_parameters');
     const journalKey = recipeExchangeJournalKey({ appId, steamId, requestId });
     const activeKey = `recipe-exchange-active.${appId}.${steamId}`;
     const signature = JSON.stringify([recipeId, [...materials].sort()]);
+    let stuck = null;
     try {
         const existing = read(journalKey);
         if (existing) return existing.signature === signature ? existing : failure('exchange_request_conflict', 409);
         // The UI can generate a new nonce after a failed click. Do not let that
         // bypass an unresolved attempt and consume another batch from the stack.
-        if (read(activeKey)?.state === 'submitted_unknown') return uncertain();
+        const active = read(activeKey);
+        if (active?.state === 'submitted_unknown') {
+            if (!(now() - (active.createdAt ?? 0) >= EXCHANGE_SETTLE_MS)) return uncertain();
+            stuck = active;
+        }
         // Older global nonce records cannot be safely attributed to this account.
         if (read(requestId)) return failure('legacy_exchange_requires_review', 409);
     } catch { return failure('exchange_journal_unavailable', 503); }
     const loaded = await fetchSteamInventory({ steamId, key, appId, fetchImpl });
     if (!loaded.ok) return failure(loaded.reason, loaded.status);
+    if (stuck) {
+        if (!provesExchangeNotApplied(stuck, loaded.inventory)) return uncertain();
+        const released = { ...stuck, ...failure('exchange_not_applied', 409), state: 'not_applied', releasedAt: now() };
+        try {
+            if (stuck.journalKey) await save(stuck.journalKey, released);
+            await save(activeKey, released);
+        } catch { return failure('exchange_journal_unavailable', 503); }
+    }
     const plan = planSteamRecipe(recipeId, materials, loaded.inventory);
     if (!plan.ok) return failure(plan.reason);
-    const pending = { ...uncertain(), signature, plan, createdAt: Date.now(), state: 'submitted_unknown' };
+    const pending = { ...uncertain(), signature, plan, createdAt: now(), state: 'submitted_unknown', journalKey };
     try {
         await save(journalKey, pending);
         await save(activeKey, pending);
