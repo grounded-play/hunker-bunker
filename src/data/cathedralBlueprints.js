@@ -175,7 +175,7 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         compassAnchors: { approach: 'entry', objective: 'cryo_bleed_valve' },
         coverZones: [{ x: 3, y: 3, w: 3, h: 2 }, { x: 11, y: 3, w: 3, h: 2 }],
         encounterZones: [{ id: 'exchanger_patrol', x: 7, y: 3, w: 3, h: 7 }],
-        rewardAnchors: [{ id: 'coolant_drum_cache', type: 'prop_bunker_supplies', x: 8, y: 2 }],
+        rewardAnchors: [{ id: 'coolant_drum_cache', type: 'prop_coolant_drum_leaking_pool', x: 8, y: 2 }],
         loreAnchors: [{ id: 'cryo_shift_log', type: 'lore_terminal', x: 2, y: 2 }],
         hazardZones: [{ id: 'frost_coolant_pool', x: 6, y: 5, w: 5, h: 3 }],
         quietZones: [],
@@ -290,11 +290,11 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['support', 'questDestination'],
         structuralAnchors: [
-            { id: 'stasis_rack_north', type: 'prop_engineering_bench', x: 4, y: 1 },
-            { id: 'stasis_rack_south', type: 'prop_engineering_bench', x: 9, y: 7 }
+            { id: 'stasis_rack_north', type: 'prop_exosuit_docking_gantry', x: 4, y: 1 },
+            { id: 'stasis_rack_south', type: 'prop_exosuit_docking_gantry', x: 9, y: 7 }
         ],
         interactionAnchors: [
-            { id: 'chrysalis_pod_console', type: 'prop_fabricator_workstation', x: 7, y: 4 }
+            { id: 'chrysalis_pod_console', type: 'prop_liturgical_terminal_lectern', x: 7, y: 4 }
         ],
         compassAnchors: { approach: 'entry', objective: 'chrysalis_pod_console' },
         coverZones: [{ x: 3, y: 1, w: 4, h: 2 }, { x: 8, y: 6, w: 4, h: 2 }],
@@ -335,16 +335,16 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['challenge', 'questDestination'],
         structuralAnchors: [
-            { id: 'decon_station_west', type: 'prop_cyber_junction', x: 3, y: 4 },
-            { id: 'decon_station_east', type: 'prop_cyber_junction', x: 9, y: 4 }
+            { id: 'decon_station_west', type: 'prop_decon_eyewash_shower_station', x: 3, y: 4 },
+            { id: 'decon_station_east', type: 'prop_decon_eyewash_shower_station', x: 9, y: 4 }
         ],
         interactionAnchors: [
-            { id: 'airlock_purge_override', type: 'prop_cyber_junction', x: 6, y: 4 }
+            { id: 'airlock_purge_override', type: 'prop_pipe_organ_heat_exchanger', x: 6, y: 4 }
         ],
         compassAnchors: { approach: 'entry', objective: 'airlock_purge_override' },
         coverZones: [{ x: 2, y: 3, w: 3, h: 3 }, { x: 8, y: 3, w: 3, h: 3 }],
         encounterZones: [],
-        rewardAnchors: [{ id: 'emergency_o2_pack', type: 'prop_bunker_supplies', x: 6, y: 2 }],
+        rewardAnchors: [{ id: 'emergency_o2_pack', type: 'prop_oxygen_bottle_cascade_rack', x: 6, y: 2 }],
         loreAnchors: [],
         hazardZones: [{ id: 'decon_purge_plume', x: 4, y: 3, w: 5, h: 3 }],
         quietZones: [{ x: 0, y: 0, w: 13, h: 9 }],

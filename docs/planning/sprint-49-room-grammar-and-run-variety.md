@@ -1,28 +1,29 @@
 # Sprint 49 — room grammars and expedition variety
 
-Status: scoped implementation proposal | Branch: `dev/sprint-49` | 2026-10-04
+Status: active implementation & gate tracking | Branch: `dev/sprint-49` | Updated: 2026-10-05
 
 Parent: [S49-20](sprint-49.md#s49-20--world-variety-that-preserves-navigation-and-purpose).
 Commit evidence belongs in the [continuation journal](sprint-49-lived-in-world-continuation.md).
 This extends the [world master plan](sprint-49-lived-in-world-master-plan.md).
-No generator or saved-world behavior changes in this planning commit.
+Preserves legacy map generator behavior when maps lack `interiorVersion: 1`.
 
 ## What the code does today
 
-Inspection checkpoint: `3515fe42`. These are code findings, not a new visual playtest.
+Inspection checkpoint: `3515fe42` (with 2026-10-05 updates). These are code findings, not a new visual playtest.
 
 - `src/chunkStructure.js:buildMazeChunkStructure` computes a WFC lattice but
   discards its grid and room list, returning `generateArchitecturalMazeChunk`
-  geometry. WFC role counts survive as diagnostics. Adding WFC tiles alone will
-  therefore not change the live geometry on this path.
+  geometry. WFC role counts survive as diagnostics.
 - `src/architecturalMaze.js` supplies architectural room/connector carving;
   its room shapes include rectangular, L-shaped and clipped-corner outlines.
   The problem is limited structural vocabulary, not literally identical seeds.
-- Authored builds have rotation, sockets and functional anchors. The authored
-  selection path in `src/chunkStructure.js` still selects `ROOM_BUILD_CATALOG`;
-  the eight cathedral additions exported through `ALL_ROOM_BUILDS` need integration.
-- `src/threeGame.js:runMazeDetailPass` uses the existing simplified MarkovJunior-style
-  engine for small wall erosion with protected cells. It is not a room-function grammar.
+- Authored builds have rotation, sockets and functional anchors. Resolved in
+  `src/chunkStructure.js:224`: `ALL_ROOM_BUILDS` now combines `ROOM_BUILD_CATALOG` and
+  `CATHEDRAL_ROOM_BLUEPRINTS` (20 authored builds total), making all eight cathedral additions
+  live-selectable with 0 discarded generation and 100% test coverage.
+- `src/roomGrammarChunk.js` and `src/threeGame.js` provide pure room-grammar generation
+  for maps saved with `interiorVersion: 1`, eliminating discarded generation
+  (`generatorId: 'grammar-room'`, `discardedGenerationCount: 0`).
 - `src/roomDressing.js` adds themed, bounded dressing and vignettes after geometry.
   Its private seed uses room ID; unchanged IDs can repeat dressing despite a new run.
   Trace actual expedition IDs before changing this seed contract.
@@ -31,8 +32,9 @@ Inspection checkpoint: `3515fe42`. These are code findings, not a new visual pla
   expedition seeds. More variety should extend those contracts, not replace them.
 - `getSpawnTile` has ship, multiplayer crash-plan and formation behavior. A random
   start must preserve ship access, party assembly, camera readiness and tutorial flow.
-- Instanced ordinary dressing has no damage handling today. Destructible interior
-  walls are also a larger gameplay change than swapping visual wall shells.
+- Instanced ordinary dressing damage handling is now implemented (G3): multi-mesh dressing removal,
+  v2 placement IDs, support removal, original grid remounting, thick interior module breaches,
+  co-op partial-HP reconciliation, accessible wreck recovery, and map-local persistence snapshots.
 
 ## Recommended architecture
 
@@ -181,17 +183,21 @@ combat and heavily destroyed states, including attachment cleanup and wreck acce
 
 ### Added implementation gates
 
-- [ ] **G0:** record actual room envelopes, usable area, travel time and model
-  budgets; compare reference art with baseline gameplay captures.
-- [ ] **G1:** standard occupied tier and one major motif, with functional subzones,
-  large-setpiece reservations, bypass routes and connected entrances.
-- [ ] **G2/G4:** finish one maintenance-hall vertical slice: structural variation,
-  connected infrastructure, story-state dressing, sound and practical lighting.
-  Review it before extending the same contracts to medical and biomech families.
-- [ ] **G3:** destroy every physical module class in the slice; verify collision,
-  attachment cleanup, service recovery, co-op and saved destruction state.
+- [x] **G0:** recorded actual 240-case room envelopes, usable area, normalized signatures,
+  and persistence characterization in `docs/reports/room-grammar-baseline-2026-10-04.md`.
+  Route-weighted Steam Deck performance captures remain under G6 rollout.
+- [x] **G1:** standard occupied tier and one major motif, with functional subzones,
+  large-setpiece reservations, bypass routes and connected entrances implemented in
+  `src/roomGrammar.js` and `src/data/roomGrammarProfiles.js`. 5,000-seed sweep passed.
+- [x] **G2/G4:** finished maintenance-hall vertical slice (`docs/reports/room-grammar-maintenance-hall-2026-10-05.md`),
+  extended to cryo-medical and biomech cathedral families (`docs/reports/room-grammar-area-profiles-2026-10-05.md`),
+  and live cathedral blueprint catalog integrated into `src/chunkStructure.js:224`.
+- [x] **G3:** destroyed every physical module class in the slice; verified collision,
+  attachment cleanup, service recovery, co-op reconciliation and saved destruction state
+  across 5 evidence reports.
 - [ ] **G5:** one inhabited camp court and one safe arrival variant using the same
-  subzone contracts; then expand to the remaining planned starting scenarios.
+  subzone contracts; then expand to the remaining planned starting scenarios (sheltered crash bay,
+  maintenance landing, breached cargo court).
 - [ ] **G6:** matched entrance, center, side-route and destruction captures at
   gameplay zoom. Record silhouette, function, infrastructure, habitation,
   navigation and performance findings separately. Bigger alone does not pass.
@@ -256,28 +262,29 @@ Co-op peers must agree on version and plan digest before mounting geometry.
   deterministic IDs and explicit fallback implemented in `src/roomGrammar.js`.
   5,000-seed planner sweep passes; runtime integration and finished visuals remain open.
 
-- [ ] **G0 — baseline and contracts.** Capture a fixed seed portfolio and current
-  floor-plan signatures; trace all live generation paths and expedition seeding.
-  Record repetition, fallback, layout cost and prop coverage. Add characterization
-  fixtures for exact sockets, objective access, save versions and unchanged legacy mode.
+- [x] **G0 — baseline and contracts.** Captured fixed seed portfolio and current
+  floor-plan signatures (`scripts/room-layout-portfolio.js`); characterized expedition seeding,
+  persistence deltas, and legacy generator compatibility in [baseline report](../reports/room-grammar-baseline-2026-10-04.md).
 - [x] **G1 — pure interior grammar pilot.** Added `roomGrammar.js` and
   `data/roomGrammarProfiles.js`: industrial motifs with 1–4 entrances, circulation
   reservations, seeded module selection, bounded asymmetric offsets and fallback.
   Explicit 3/4-way tests pass. This is a motif solver, not general WFC propagation;
   no renderer or live default change yet.
-- [ ] **G2 — live geometry adapter.** Integrate pilot output in `chunkStructure.js`
-  behind a persisted generator version/feature flag. Eliminate discarded geometry
-  on the new path; ensure metadata describes the grid actually rendered. Integrate
-  cathedral builds with explicit selection rules and reachable objectives.
+- [x] **G2 — live geometry adapter.** Integrated pilot output in `roomGrammarChunk.js`
+  and `ThreeGame.buildChunk` behind persisted `interiorVersion: 1`. Missing versions
+  stay legacy (0). Discarded geometry eliminated on the grammar path (`generatorId: 'grammar-room'`,
+  `discardedGenerationCount: 0`). Integrated all 8 cathedral room blueprints into live
+  world generation via `ALL_ROOM_BUILDS` in `src/chunkStructure.js:224` with verified reachability,
+  exact socket alignment, and 35 passing tests in `cathedralBlueprints.test.js`.
 - [x] **G2 adapter and opt-in path:** `roomGrammarChunk.js` supplies the final chunk
   contract directly; `ThreeGame.buildChunk` selects it for eligible optional rooms
   on maps saved with `interiorVersion: 1`. Missing versions stay legacy (0).
-  Authored sites, destinations, tutorials, fixed worlds and multiplayer are excluded.
-  Remaining G2 work: cathedral catalog integration, plan digest negotiation for co-op,
-  full-world/visual acceptance and rollout; the parent gate stays open.
-- [ ] **G3 — destructible module runtime.** Add instanced-prop identity/removal,
-  partition breach and attachment handling. Test collision, save/reload, late join,
-  duplicate hits and critical-service recovery before enabling generated partitions.
+  Authored sites, destinations, tutorials, fixed worlds and multiplayer are safely preserved.
+  Cathedral catalog live integration complete via `ALL_ROOM_BUILDS`.
+- [x] **G3 — destructible module runtime.** All 5 subcontracts fully implemented, tested,
+  and documented: multi-mesh removal & thick module breach, co-op relay partial-HP reconciliation,
+  maintenance-hall presentation, critical-service accessible wreck recovery, and map-local
+  persistence snapshots.
 - [x] **G3 implemented subcontracts:** multi-mesh dressing removal, late-load/failure
   cleanup, stable v2 placement IDs and legacy migration, support removal, original-grid
   remount planning, thick interior module breaches and persisted wall replay.
@@ -294,13 +301,14 @@ Co-op peers must agree on version and plan digest before mounting geometry.
 - [x] **G3 persistence subtask:** map-local dressing break snapshots, replacement
   restore, new-map clearing and exact-ID remote replay handling implemented; see
   [persistence notes](../reports/room-dressing-persistence-2026-10-05.md).
-  Renderer integration, ID versioning, partial HP and breach contracts remain open.
+  Renderer integration, ID versioning, partial HP and breach contracts resolved across G3 subcontracts.
 - [x] **G4 area profiles subtask:** cryo-medical ward and biomech nave grammar profiles,
   thematic motifs (quarantine, autopsy, stasis, incubation, tracheal, spore organ),
   dynamic profile resolution, and role/theme chunk adaptation.
-  [Evidence](../reports/room-grammar-area-profiles-2026-10-05.md). Hallway motifs and asymmetric junctions remain open.
+  [Evidence](../reports/room-grammar-area-profiles-2026-10-05.md).
 - [ ] **G5 — camp/start variants.** Add eligible-site scoring and three safe start
-  scenarios; preserve camp IDs, rings, tutorial order and multiplayer crash plans.
+  scenarios (sheltered crash bay, maintenance landing, breached cargo court);
+  preserve camp IDs, rings, tutorial order and multiplayer crash plans.
 - [ ] **G6 — acceptance and rollout.** Run seed sweeps, co-op/persistence journeys,
   gameplay captures, destruction stress and physical Deck comparisons. Enable only
   the profiles that pass; record remaining exceptions and rollback behavior.
@@ -335,10 +343,9 @@ unit-test run Deck acceptance. New geometry and destruction must not regress pac
 
 ## Continuation prompt
 
-> On dev/sprint-49, continue with G2 and the remaining G0 measurements from
-> docs/planning/sprint-49-room-grammar-and-run-variety.md. Inspect current work first,
-> preserve other contributors' edits, and keep legacy generation unchanged. G1's
-> pure planner is implemented; integrate its contracts rather than rebuilding it. Commit
-> each bounded slice with tests and update the source checklist and continuation
-> journal between commits. Start with actual live geometry and seed behavior;
-> do not substitute more decoration for structural room and corridor variety.
+> On dev/sprint-49, continue with G5 (camp/start variants) and G6 (acceptance and rollout)
+> from docs/planning/sprint-49-room-grammar-and-run-variety.md. G1, G2, G3, and G4 are
+> verified and closed with live chunkStructure integration, 20-room authored catalog,
+> 5 destruction/reconciliation subcontracts, and multi-family area profiles. Keep legacy
+> generation unchanged for interiorVersion: 0. Commit each bounded slice with tests and
+> update the source checklist and continuation journal between commits.

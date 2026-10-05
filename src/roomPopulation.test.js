@@ -319,6 +319,37 @@ describe('room population', () => {
         });
     });
 
+    it('attaches pipe organs, oxygen racks, and ceiling crane hoists along walls with valid wallNormal clearance', () => {
+        const testProps = [
+            'prop_pipe_organ_heat_exchanger',
+            'prop_oxygen_bottle_cascade_rack',
+            'prop_ceiling_crane_hoist'
+        ];
+        for (const propType of testProps) {
+            const room = {
+                id: `wall-mount-${propType}`,
+                role: 'generic',
+                interior: [
+                    { x: 1, y: 2 },
+                    { x: 2, y: 2 },
+                    { x: 3, y: 2 }
+                ],
+                navigation: { doorLanes: [] },
+                populationBudget: { signature: 1, large: 0, small: 0, pickup: 0, enemy: 0 },
+                themeConfig: { signatureProps: [propType] }
+            };
+            const grid = Array.from({ length: 5 }, () => Array(5).fill('.'));
+            grid[2][0] = '#';
+            const plan = planRoomPopulation(room, grid, () => 0);
+            expect(plan.placements[0]).toMatchObject({
+                type: propType,
+                x: 1,
+                y: 2,
+                wallNormal: { x: 1, z: 0 }
+            });
+        }
+    });
+
     describe('floor grounding (lived-in world M2)', () => {
         // A 9x9 room: walls on the border, a west door at (0,4), interior 1..7.
         function groundedRoom(overrides = {}) {

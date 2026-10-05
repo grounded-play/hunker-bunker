@@ -60,7 +60,8 @@ export function isWallBackedPropType(type) {
         || type === 'prop_wall_cable_tray_swag'
         || type === 'prop_vertebral_cable_riser'
         || type === 'prop_oxygen_bottle_cascade_rack'
-        || type === 'prop_pipe_organ_heat_exchanger';
+        || type === 'prop_pipe_organ_heat_exchanger'
+        || type === 'prop_ceiling_crane_hoist';
 }
 
 function pickCandidate(candidates, random, grid, center, wallOnly = false) {
