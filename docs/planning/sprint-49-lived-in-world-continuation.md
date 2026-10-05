@@ -36,6 +36,18 @@ plan for milestone scope, dependencies, verification gates, and definition of do
 
 ## Commit record
 
+### Next commit — M4 active practical-light guard
+
+- Keep one registered practical source per eligible room, but allow only the nearest
+  anchor practical to occupy the fixed environment-light pool at a time. This meets
+  the active-chamber contract while preserving the other seven slots for existing
+  objective, threat, portal, and accessibility lighting.
+- Extend the pool test across two anchor rooms and camera movement; the visible light
+  count must remain fixed and the nearest anchor must hand off without enabling a
+  second anchor source.
+- Run focused light/set-piece tests, docs audit, 500 seeds, and the full suite; stage
+  only this journal, the pool guard, and its test.
+
 ### Next commit — M2 grounding priority hardening
 
 - Run the grounded-anchor relationship before small/rare/ambient edge dressing so

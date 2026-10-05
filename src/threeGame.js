@@ -37725,10 +37725,20 @@ export class ThreeGame {
             };
         });
         withDistance.sort((a, b) => a.distSq - b.distSq);
+        // Every eligible room may register one anchor practical, but only the
+        // nearest (the active chamber) may consume a real pooled slot. Other
+        // environment/objective sources retain their normal distance priority.
+        let anchorPracticalClaimed = false;
+        const budgetedSources = withDistance.filter(({ light }) => {
+            if (!light.userData?.isAnchorPracticalLight) return true;
+            if (anchorPracticalClaimed) return false;
+            anchorPracticalClaimed = true;
+            return true;
+        });
 
         for (let i = 0; i < pool.length; i++) {
             const slot = pool[i];
-            const source = withDistance[i];
+            const source = budgetedSources[i];
             if (!source) {
                 // Parked, not hidden. An intensity-0 light still counts toward
                 // numPointLights, which is exactly what we need it to do.
