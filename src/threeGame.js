@@ -1706,20 +1706,27 @@ const STRUCTURAL_GATEWAY_PATTERN = /(^|[_-])(gate|gateway|bulkhead|archway|porta
  * so layering another frame there would obscure state and duplicate architecture.
  */
 export function isRoomGatewayFrameEligible(room, door, metadata = {}) {
-    if (!room || !door?.id || !door?.cells?.length || metadata.ringCrossingId) return false;
-    const runtimeDoor = (metadata.doors ?? []).find((candidate) => candidate?.id === door.id);
+    if (!room || !door?.cells?.length || metadata.ringCrossingId) return false;
+    const runtimeDoor = door.id == null
+        ? null
+        : (metadata.doors ?? []).find((candidate) => candidate?.id === door.id);
     if (
         runtimeDoor?.lock
         || runtimeDoor?.gateId
         || runtimeDoor?.ringCrossingId
-        || (metadata.gates ?? []).some((gate) => gate?.doorId === door.id)
+        || (door.id != null && (metadata.gates ?? []).some((gate) => gate?.doorId === door.id))
     ) return false;
 
     const roomBuild = room.roomBuild ?? {};
+    const structuralAnchors = [
+        ...(room.structuralAnchors ?? []),
+        ...(roomBuild.structuralAnchors ?? []),
+        ...(room.contentPlan?.structural ?? [])
+    ];
     if (
-        roomBuild.family === 'gate'
+        String(roomBuild.family ?? '').toLowerCase() === 'gate'
         || STRUCTURAL_GATEWAY_PATTERN.test(String(roomBuild.id ?? ''))
-        || (room.structuralAnchors ?? roomBuild.structuralAnchors ?? []).some((anchor) => (
+        || structuralAnchors.some((anchor) => (
             STRUCTURAL_GATEWAY_PATTERN.test(String(anchor?.id ?? ''))
             || STRUCTURAL_GATEWAY_PATTERN.test(String(anchor?.type ?? ''))
             || STRUCTURAL_GATEWAY_PATTERN.test(String(anchor?.role ?? ''))

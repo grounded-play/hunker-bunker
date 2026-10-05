@@ -36,6 +36,16 @@ plan for milestone scope, dependencies, verification gates, and definition of do
 
 ## Commit record
 
+### Next commit — M1 evidence and compatibility hardening
+
+- Regenerate the committed four-side overview plate with the measured 0.85-unit
+  room inset from `8fb9d2a8`; the current plate still shows the rejected 0.5-unit
+  intermediate even though the closed/open Playwright captures are correct.
+- Keep legacy room doors without IDs eligible for ordinary presentation frames,
+  while also recognizing structural gateway declarations carried by `contentPlan`.
+- Add focused eligibility tests, run the M1 test set and `git diff --check`, and
+  stage only the journal, overview renderer/capture, helper, and its test.
+
 ### M1 — cardinal gateway truth
 
 - Measure the shipped cave and space `gate.glb` bounds at the shared kit scale,

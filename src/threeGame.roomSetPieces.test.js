@@ -121,7 +121,8 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
     it.each([
         ['locked procedural gate', { doors: [{ id: 'entry', lock: { type: 'power' } }] }, {}],
         ['ring crossing', { ringCrossingId: 'ring-2' }, {}],
-        ['authored structural gateway', {}, { roomBuild: { id: 'ring_crossing_landmark', family: 'gate' } }]
+        ['authored structural gateway', {}, { roomBuild: { id: 'ring_crossing_landmark', family: 'gate' } }],
+        ['content-plan bulkhead', {}, { contentPlan: { structural: [{ type: 'arch_bulkhead_frame' }] } }]
     ])('does not double-frame a %s', (_label, metadata, roomPatch) => {
         const door = { id: 'entry', side: 'n', cells: [{ x: 7, y: 2 }] };
         const room = { id: 'room', doors: [door], populationPlan: { placements: [] }, ...roomPatch };
@@ -134,6 +135,11 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
             game, 0, 0, buildTwoBlockGrid(17)
         );
         expect(placements.some(({ scatterKey }) => scatterKey.startsWith('room-gateway:'))).toBe(false);
+    });
+
+    it('keeps an ordinary legacy door without an id eligible for a presentation frame', () => {
+        const door = { side: 'w', cells: [{ x: 2, y: 4 }, { x: 2, y: 5 }, { x: 2, y: 6 }] };
+        expect(isRoomGatewayFrameEligible({ id: 'legacy-room', doors: [door] }, door)).toBe(true);
     });
 
     it('turns hallway route markers into biome-skinned, cardinal kit architecture', () => {

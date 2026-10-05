@@ -13,6 +13,13 @@ from mathutils import Vector
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / "docs/reports/assets/sprint-49/gateway-cardinal-alignment.png"
 KIT_SCALE = 0.75
+GATE_MODEL_HALF_DEPTH = 0.7
+PROCEDURAL_DOOR_SLAB_THICKNESS = 0.58
+GATEWAY_ROOM_INSET = (
+    GATE_MODEL_HALF_DEPTH * KIT_SCALE
+    + PROCEDURAL_DOOR_SLAB_THICKNESS / 2
+    + 0.035
+)
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 
@@ -95,8 +102,8 @@ def add_panel(side, origin, gate_path, offset, yaw_steps, surface):
     gate_xy = Vector((ox, oy)) + Vector(offset)
     import_gate(gate_path, f"{side} open kit frame", gate_xy, yaw_steps, surface)
     add_label(
-        f"{side}   inset ({offset[0]:+.1f}, {offset[1]:+.1f})   yaw {yaw_steps * 90} deg",
-        (ox, oy - 3.0, 3.35),
+        f"{side}   inset ({offset[0]:+.2f}, {offset[1]:+.2f})   yaw {yaw_steps * 90} deg",
+        (ox, oy - 3.0, 3.35), 0.25,
     )
 
 
@@ -106,10 +113,10 @@ world.color = (0.012, 0.015, 0.02)
 
 space_gate = ROOT / "public/3d/runtime/kits/modular-space-kit/gate.glb"
 cave_gate = ROOT / "public/3d/runtime/kits/modular-cave-kit/gate.glb"
-add_panel("NORTH", (-4.5, 4.0), space_gate, (0.0, 0.5), 0, SPACE_GATE_MAT)
-add_panel("EAST", (4.5, 4.0), cave_gate, (-0.5, 0.0), 1, CAVE_GATE_MAT)
-add_panel("SOUTH", (-4.5, -4.0), cave_gate, (0.0, -0.5), 2, CAVE_GATE_MAT)
-add_panel("WEST", (4.5, -4.0), space_gate, (0.5, 0.0), 3, SPACE_GATE_MAT)
+add_panel("NORTH", (-4.5, 4.0), space_gate, (0.0, GATEWAY_ROOM_INSET), 0, SPACE_GATE_MAT)
+add_panel("EAST", (4.5, 4.0), cave_gate, (-GATEWAY_ROOM_INSET, 0.0), 1, CAVE_GATE_MAT)
+add_panel("SOUTH", (-4.5, -4.0), cave_gate, (0.0, -GATEWAY_ROOM_INSET), 2, CAVE_GATE_MAT)
+add_panel("WEST", (4.5, -4.0), space_gate, (GATEWAY_ROOM_INSET, 0.0), 3, SPACE_GATE_MAT)
 
 add_label("SPRINT 49 M1 — SHIPPED GATE GLBs + AUTHORITATIVE DOOR SLABS", (0, 9.0, 3.35), 0.52)
 add_label("teal = room side     orange = threshold     charcoal = corridor", (0, 8.35, 3.35), 0.34)
@@ -127,7 +134,7 @@ bpy.context.object.data.size = 7
 bpy.ops.object.camera_add(location=(0, -0.5, 22), rotation=(0, 0, 0))
 camera = bpy.context.object
 camera.data.type = "ORTHO"
-camera.data.ortho_scale = 19.5
+camera.data.ortho_scale = 21.5
 camera.rotation_euler = (0, 0, 0)
 camera.rotation_euler.x = 0
 # Cameras look down local -Z; identity rotation gives a deterministic plan view.
