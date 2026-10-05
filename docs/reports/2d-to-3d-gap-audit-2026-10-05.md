@@ -29,45 +29,55 @@ and UI art are 2D by nature and are not gaps.
   (`WORLD_3D_MODEL_ALIASES` in `src/world3dOverlay.js`). The lit cookfire is
   deliberately not aliased, because the GLB has no flames.
 
-## Still 2D: no 3D model exists (art requests)
+## Still drawn 2D: mostly a wiring gap, not an art gap
 
-Ranked by how many were visible across the six sampled areas. These are the
-remaining 2D props players see:
+**Correction (re-checked the same day).** The first version of this section said
+these types had "no 3D model". That came from matching type names, not art. The
+game ships 128 non-kit world GLBs, every one referenced in code, including **26
+hive/biomech/fungal props, 21 camp/survival props and 6 cryo props**. Hive sites
+and camp centres also build their core pieces from code primitives
+(`src/hiveSite.js`, `src/camp.js`). What is missing is the link: the 2D prop
+types below spawn under names the GLB registry does not know, so they keep their
+billboard. Fixing most of them is one `WORLD_3D_MODEL_ALIASES` entry each, after a
+side-by-side look confirms the model reads as the same object.
 
-| Type | Visible in audit |
-|---|---|
-| prop_cave_eggs_hatched | 45 |
-| prop_cave_spores | 39 |
-| prop_cave_webs | 38 |
-| prop_cave_eggs_intact | 38 |
-| prop_cave_hive_wounded | 37 |
-| prop_spore_colony | 32 |
-| prop_cyber_junction | 31 |
-| prop_biomech_pillar_left / _right | 25 / 25 |
-| scatter_bio_pod | 20 |
-| prop_cave_lichen | 19 |
-| hive-signature-prop | 6 |
-| scatter_cryo_icicle, scatter_ice_stalagmite | 5, 5 |
-| prop_cryo_sleep_pod, prop_alien_respiratory_vent | 2, 2 |
-| prop_camp_meridian_radio | 2 |
-| prop_fusion_generator, prop_camp_meridian_repair_rig, prop_camp_warning_placard, prop_camp_shutter_lockdown, prop_camp_cookfire_lit, prop_camp_laundry | 1 each |
+Visible counts are from the six sampled areas.
 
-Other 2D-only types in the sprite registry that did not appear in this sample but
-can spawn:
+| 2D type (visible) | Existing GLB candidate | Fit |
+|---|---|---|
+| prop_cyber_junction (31) | prop_conduit_junction_box, prop_conduit_hub | direct |
+| prop_alien_respiratory_vent (2) | prop_biomech_respirator, prop_biomech_sphincter_hatch_vent | direct |
+| prop_fusion_generator (1) | fusion_generator (registered under the short key) | direct |
+| prop_camp_cookfire_doused | prop_camp_cookfire (the GLB has no flames) | direct |
+| prop_camp_vesper_turret | prop_base_defense_turret | direct |
+| scatter_camp_supplies | prop_camp_crate, prop_bunker_supplies | direct |
+| prop_cave_spores (39), prop_spore_colony (32) | prop_fungal_spore_dispenser | check look |
+| prop_cave_lichen (19) | state_growth_overrun_1/2 | check look |
+| prop_biomech_pillar_left / _right (25/25) | arch_pillar_buttress_01–04, prop_biomech_arch | check look |
+| scatter_bio_pod (20), prop_hive_chitin_hatchery | prop_biomech_incubator | check look |
+| prop_cryo_sleep_pod (2) | prop_icey_thermal_pod, prop_flesh_steel_coffin | check look |
+| prop_cave_hive_wounded (37) | prop_hive_resin_sac | check look |
+| prop_hive_synaptic_web | prop_biomech_neural_synapse | check look |
+| prop_hive_suture_organ | prop_flesh_steel_inhaler | check look |
+| prop_hive_wound_cauterizer | prop_biomech_triage_cradle | check look |
+| prop_hive_relay_antenna | prop_vertebral_cable_riser | check look |
+| prop_camp_tallow_resin_urn | prop_fungal_resin_basin | check look |
+| prop_camp_tallow_spore_trays | prop_fungal_mycelium_loom | check look |
+| prop_camp_tallow_still | prop_pipe_organ_heat_exchanger | check look |
+| prop_camp_vesper_ammo_press | prop_fabricator_workstation | check look |
+| prop_camp_vesper_shield_rack | prop_security_barricade | check look |
+| prop_camp_meridian_repair_rig (1) | prop_maintenance_tool_cart | check look |
+| prop_camp_meridian_battery_bank | prop_oxygen_bottle_cascade_rack | check look |
+| lore_terminal | prop_terminal_ruptured, prop_liturgical_terminal_lectern | check look |
+| cybersnail_dead | cybersnail_dead.glb is registered, but the corpse path still draws the sprite | wiring |
 
-- **Camp:** `prop_camp_cookfire_doused`, `_grave_fresh`, `_grave_old`,
-  `_meridian_battery_bank`, `_tallow_resin_urn`, `_tallow_spore_trays`,
-  `_tallow_still`, `_vesper_ammo_press`, `_vesper_shield_rack`, `_vesper_turret`.
-- **Hive:** `prop_hive_carapace_molt`, `_chitin_hatchery`, `_relay_antenna`,
-  `_suture_organ`, `_synaptic_web`, `_wound_cauterizer`.
-- **Scatter:** `scatter_biomech_debris`, `scatter_broken_drone`, `scatter_camp_supplies`,
-  `scatter_cryo_shards`, `scatter_hive_eggs`.
-- **Other:** `door_biomechanical`, `lore_terminal` (sprite plus light), and the
-  enemy corpses `cybersnail_dead`, `cryosnail_dead`, `boss_*_dead`, which are
-  billboards even though the living enemies are 3D.
+**Genuinely no model yet** (art requests): cave eggs intact/hatched (45+38
+visible) and scatter_hive_eggs, cave webs (38), hive carapace molt, hive-signature
+prop, camp graves (fresh/old), laundry, warning placard, lockdown shutter,
+meridian radio, cryo icicle/stalagmite/shards, broken drone, biomech debris,
+`door_biomechanical`, and the boss/cryosnail corpses.
 
-Enemies, bosses and NPCs are covered by `ENEMY_3D_MODELS` and the NPC GLBs; their
-sprites are hidden gameplay owners.
+The lit cookfire stays 2D until the GLB gets flames (or particles are added on top).
 
 ## Loaded but not drawn in 3D play
 
