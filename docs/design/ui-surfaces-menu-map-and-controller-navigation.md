@@ -283,7 +283,15 @@ From `ui-surface-audit` at 1280×800 (Deck), plus the existing browser suites.
 | 13 | Achievements reachable to the last card by pad (Steam review item 5) | `achievements-and-profile.spec.js`, audit (26 focusables) | Holds |
 | 14 | T opened a barter window in **solo** play, with a made-up "SQUAD-OPERATIVE", on every tactical ping | browser probe: `player-trade-modal` visible after T | **Fixed**: trade only with a real squadmate; solo T is ping only |
 | 15 | Terminal tabs and the 20 skill cards are reachable (Q / E, LB / RB, D-pad) | browser probe | Holds |
-| 16 | After these fixes, no off-stage, clipped or truncated content on any of 44 surfaces / tabs at 1280×800, 1280×720 or 1920×1080 | `docs/reports/ui-surface-audit/<size>/audit-<size>.json`, key screenshots in `1280x800/` | Holds |
+| 16 | After these fixes, no off-stage, clipped or truncated content on any of 44 surfaces / tabs at 1280×800, 1280×720 or 1920×1080 | `docs/reports/ui-surface-audit/<size>/audit-<size>.json`, key screenshots in `1280x800/` | **Wrong by eye** — see note below |
+
+Note on #16: the audit compares element boxes with the stage and with their
+scroll parents only. It cannot see paint order, a painted frame's alpha,
+pseudo-element lines, wrapped one-line labels or 3D canvas content, so a
+"clean" run still missed the cut-off Scout card, the bezel bracket around the
+⚙ button and the HUD overlaps. These are catalogued, with causes, in
+[UI overhaul plan](../planning/ui-overhaul-plan-2026-10-05.md), which
+supersedes §7 P2.
 
 ## 7. Improvement plan (keeping what we have)
 
