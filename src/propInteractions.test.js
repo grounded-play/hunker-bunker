@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
     BIOMECH_SYNERGY_TUNING,
+    BILE_ARMOR_WEAKEN,
     findNearestInteractableProp,
     handleCustomPropDestruction,
     interactWithCustomProp,
@@ -72,6 +73,61 @@ describe('propInteractions', () => {
         near.userData.statusEffects.chitinVulnerabilityTimer = 3;
         handleCustomPropDestruction(game, 'prop_biomech_sphincter_hatch_vent', prop, propObject);
         expect(near.userData.statusEffects.chitinVulnerabilityTimer).toBe(3);
+    });
+
+    it('exports data-driven BILE_ARMOR_WEAKEN constants matching synergy tuning', () => {
+        expect(BILE_ARMOR_WEAKEN.multiplier).toBe(BIOMECH_SYNERGY_TUNING.bileDamageMultiplier);
+        expect(BILE_ARMOR_WEAKEN.duration).toBe(BIOMECH_SYNERGY_TUNING.bileVulnerabilitySeconds);
+        expect(BILE_ARMOR_WEAKEN.multiplier).toBeGreaterThan(1);
+        expect(BILE_ARMOR_WEAKEN.duration).toBeGreaterThan(0);
+    });
+
+    it('handles coolant drum destruction: stuns living umbilicals in cryo radius', () => {
+        const nearUmbilical = { isAlive: true, x: 2, z: 2, stun: vi.fn() };
+        const deadUmbilical = { isAlive: false, x: 1, z: 1, stun: vi.fn() };
+        const farUmbilical = { isAlive: true, x: 25, z: 25, stun: vi.fn() };
+        const mockGame = {
+            showBunkerLine: vi.fn(),
+            triggerCameraShake: vi.fn(),
+            spawnPhysicalBurst: vi.fn(),
+            applyPlayerDamageToEnemy: vi.fn(),
+            snails: [{ isAlive: true, x: 1, z: 1 }],
+            umbilicalAttackers: [nearUmbilical, deadUmbilical, farUmbilical]
+        };
+
+        const handled = handleCustomPropDestruction(
+            mockGame,
+            'prop_coolant_drum_leaking_pool',
+            { x: 0, z: 0 }
+        );
+
+        expect(handled).toBe(true);
+        expect(nearUmbilical.stun).toHaveBeenCalledWith(BIOMECH_SYNERGY_TUNING.cryoStunSeconds);
+        expect(deadUmbilical.stun).not.toHaveBeenCalled();
+        expect(farUmbilical.stun).not.toHaveBeenCalled();
+    });
+
+    it('handles tracheal wall pipe destruction: damages and applies chitin vulnerability in radius', () => {
+        const nearSnail = { isAlive: true, x: 2, z: 1, userData: {} };
+        const farSnail = { isAlive: true, x: 30, z: 30, userData: {} };
+        const mockGame = {
+            showBunkerLine: vi.fn(),
+            spawnPhysicalBurst: vi.fn(),
+            applyPlayerDamageToEnemy: vi.fn(),
+            snails: [nearSnail, farSnail]
+        };
+
+        const handled = handleCustomPropDestruction(
+            mockGame,
+            'prop_biomech_tracheal_wall_pipe',
+            { x: 0, z: 0 }
+        );
+
+        expect(handled).toBe(true);
+        expect(mockGame.applyPlayerDamageToEnemy).toHaveBeenCalledWith(nearSnail, 35, { element: 'bile' });
+        expect(nearSnail.userData.statusEffects.chitinVulnerabilityTimer).toBe(BIOMECH_SYNERGY_TUNING.bileVulnerabilitySeconds);
+        expect(nearSnail.userData.statusEffects.chitinDamageMultiplier).toBe(BIOMECH_SYNERGY_TUNING.bileDamageMultiplier);
+        expect(farSnail.userData.statusEffects).toBeUndefined();
     });
 
     it('handles decon eyewash destruction: cleanses infection and restores O2', () => {

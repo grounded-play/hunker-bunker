@@ -393,6 +393,13 @@ Checks: 42 kit grammar tests, full suite 4,986 passed, 500-seed sweep 0 failures
 The gateway probe now waits for kit textures, and its four captures were re-taken
 textured.
 
+**Next commit — M5 pure grammar handoff:** keep the spike showroom-only and the
+runtime flag off, while adding stable run/piece IDs, inward normals, explicit
+objective/protected-cell exclusions, and a suppression mask to the pure analyzer.
+The showroom fixture will consume that mask. Unit tests will cover stability,
+exclusions, transforms, and mask contents; the 5,000-seed and full-suite gates must
+remain green. This does not resolve or bypass the four Art/runtime blockers above.
+
 ### Goal 6 — reactive biomech synergies (M6)
 
 **Now:** in [`propInteractions.js`](../../src/propInteractions.js) a ruptured oxygen
@@ -409,7 +416,8 @@ Nothing yet affects an umbilical.
 - [x] Bile spray applies a timed armour-weakening status to snails, in addition to
   its current damage. Define the multiplier and duration in data. `1c040947`:
   `STATUS_EFFECT.CHITIN_VULNERABILITY`, 1.25× damage taken for 6 s
-  (`STATUS_DEFAULTS` in [`statusEffects.js`](../../src/statusEffects.js)); reapplying
+  (`STATUS_DEFAULTS` in [`statusEffects.js`](../../src/statusEffects.js); `BILE_ARMOR_WEAKEN`
+  in [`propInteractions.js`](../../src/propInteractions.js)); reapplying
   refreshes to the greater remaining time, never stacks.
 - [x] Spatial breathing/tension cue when the player enters an umbilical's 7 m
   detection radius, using the existing sound keys. `b8abf652`: a one-shot
@@ -420,34 +428,14 @@ Nothing yet affects an umbilical.
 [`propInteractions.test.js`](../../src/propInteractions.test.js) cover stun timing,
 status expiry and the cue trigger; full suite green.
 
-**Next commit — M6 attacker lifecycle and detection cue:** add a bounded,
-non-stacking `STUNNED` state with visible frost feedback and cleanup to
-`src/3d/umbilicalAttacker.js`; emit a separate callback once when the player crosses
-into detection range; wire that callback to an existing spatial biomech sound in
-`src/threeGame.js`; and cover entry, repeated stun, expiry, death-during-stun, and
-disposal in `src/umbilicalAttacker.test.js`. The existing Giger signature placement
-remains deterministic and capped at one signature anchor per room. Focused attacker
-tests and the full suite are the commit gate.
-
-**Result:** `b8abf652` adds the explicit stun lifecycle, independent frost visual,
+**Result (2026-10-04):** `b8abf652` adds the explicit stun lifecycle, independent frost visual,
 one-shot detection-entry callback, deterministic spatial cue pitch, and idempotent
-material/mixer cleanup. Checks: 13 focused attacker/audio tests and full suite 4,988
-passed.
-
-**Next commit — M6 environmental synergies:** oxygen-cascade rupture will stun only
-live umbilicals within 5 m for 4 s. Sphincter bile will apply a data-defined 1.25×
-chitin damage-taken modifier for 6 s through the shared status engine. Reapplication
-refreshes to the greater remaining duration rather than adding durations or
-multipliers; a stable prop scatter key deduplicates co-op replay. Damage scaling will
-occur after the existing host-authoritative hit-routing boundary. Status, interaction,
-co-op damage-path, and full-suite tests are the commit gate.
-
-**Verified (2026-10-04):** the acceptance tests cover stun timing and expiry
-(`umbilicalAttacker.test.js` "stuns without stacking, expires to idle…"), the
-rupture stun inside versus outside range and the deduplicated bile vulnerability
-(`propInteractions.test.js`), status expiry (`statusEffects.test.js`), and the
-one-shot detection cue (`onDetectionEnter` called once). 22 focused tests pass,
-and the full suite passes with 4,991 tests at `1c040947`.
+material/mixer cleanup. `1c040947` connects prop rupture synergies: oxygen rack and coolant
+drum ruptures stun living umbilicals in range for 4 s; sphincter vent and tracheal pipe ruptures
+apply data-driven bile damage and 1.25× armor weakening (`BILE_ARMOR_WEAKEN`) for 6 s to snails.
+Reapplication refreshes rather than stacks. Scaling occurs cleanly on authoritative hit resolution.
+Checks: 25 focused tests pass, 500-seed sweep 0 failures, and the full suite passes with 4,994 tests
+across 564 test files.
 
 ### Handed off (human gates)
 

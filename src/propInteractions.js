@@ -13,6 +13,11 @@ export const BIOMECH_SYNERGY_TUNING = Object.freeze({
     bileDamageMultiplier: STATUS_DEFAULTS.chitinDamageMultiplier
 });
 
+export const BILE_ARMOR_WEAKEN = Object.freeze({
+    multiplier: BIOMECH_SYNERGY_TUNING.bileDamageMultiplier,
+    duration: BIOMECH_SYNERGY_TUNING.bileVulnerabilitySeconds
+});
+
 function targetPosition(target) {
     return target?.position ?? target;
 }
@@ -115,6 +120,13 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
                     if (d <= 4.0) {
                         game.applyPlayerDamageToEnemy?.(snail, 60, { element: 'cryo' });
                     }
+                }
+            }
+            for (const attacker of game.umbilicalAttackers ?? []) {
+                if (!attacker?.isAlive) continue;
+                const d = Math.hypot(attacker.x - prop.position.x, attacker.z - prop.position.z);
+                if (d <= BIOMECH_SYNERGY_TUNING.cryoStunRadius) {
+                    attacker.stun?.(BIOMECH_SYNERGY_TUNING.cryoStunSeconds);
                 }
             }
         }
@@ -414,15 +426,7 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
         onDestroy: (game, prop) => {
             game.showBunkerLine?.('TRACHEAL TUBE PUNCTURED! DIGESTIVE BILE SPRAY (+25% BONUS VULNERABILITY)');
             game.spawnPhysicalBurst?.(prop.position.x, prop.position.z, { color: 0xddff22, count: 20, upward: 0.3 });
-            if (game.snails) {
-                for (const snail of game.snails) {
-                    if (!snail || !snail.isAlive) continue;
-                    const d = Math.hypot(snail.x - prop.position.x, snail.z - prop.position.z);
-                    if (d <= 4.5) {
-                        game.applyPlayerDamageToEnemy?.(snail, 30, { element: 'bile' });
-                    }
-                }
-            }
+            applyBileInRadius(game, prop, 4.5);
         }
     },
 
