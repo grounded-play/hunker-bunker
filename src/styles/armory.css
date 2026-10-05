@@ -249,6 +249,31 @@
   bottom: auto !important;
   pointer-events: auto !important;
   z-index: 10000 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: calc(var(--vu) * 0.8) !important;
+}
+
+#armory-screen .armory-chat-btn {
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--font-xs) * 0.85);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--accent-primary);
+  border: 1px solid rgba(0, 229, 255, 0.45);
+  background: rgba(0, 229, 255, 0.1);
+  padding: calc(var(--vu) * 0.4) calc(var(--vu) * 0.9);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#armory-screen .armory-chat-btn:hover,
+#armory-screen .armory-chat-btn:focus-visible {
+  background: rgba(0, 229, 255, 0.22);
+  border-color: #00e5ff;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.35);
+  outline: none;
 }
 
 #armory-screen .armory-main-layout {
@@ -383,6 +408,15 @@
   font-size: calc(var(--font-xs) * 0.7);
   letter-spacing: 0.04em;
   display: block;
+}
+
+#armory-screen .armory-stage-readout__systems {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.45);
+  margin-top: calc(var(--vu) * 0.3);
+  padding-top: calc(var(--vu) * 0.5);
+  border-top: 1px solid var(--armory-border);
 }
 
 #armory-screen .armory-stage-readout__hint {

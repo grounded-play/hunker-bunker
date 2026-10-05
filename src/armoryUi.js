@@ -617,6 +617,7 @@ export function createArmoryUi({
                 </header>
 
                 <div class="armory-corner-settings">
+                    <button type="button" class="calibrate-btn armory-chat-btn" data-player-chat-open data-i18n="ui.chat.open">CHAT</button>
                     <button type="button" class="calibrate-btn open-settings-btn armory-settings-btn" id="armory-settings-btn" title="Open Settings" aria-label="Open Settings" data-i18n-title="ui.armory.aria_settings" data-i18n-aria-label="ui.armory.aria_settings">⚙</button>
                 </div>
 
@@ -638,6 +639,16 @@ export function createArmoryUi({
                                     <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_patch">PATCH:</b> ${fields.decal.currentName()}</span>
                                     <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_hud">HUD:</b> ${fields.hud.currentName()}</span>
                                     <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_voicebank">RADIO:</b> ${fields.voicebank.currentName()}</span>
+                                </div>
+                            </div>
+                            <div class="armory-stage-readout__systems">
+                                <div class="bench-field">
+                                    <label data-i18n="ui.armory.f_hud">TACTICAL HUD THEME</label>
+                                    ${slotHtml('hud')}
+                                </div>
+                                <div class="armory-hud-theme-preview" data-hud-theme="${hudTheme?.id ?? 'default'}" data-hud-shape="${hudTheme?.shape ?? 'default'}" style="${hudThemeStyle}" aria-label="Equipped HUD preview">
+                                    <span class="armory-hud-theme-preview__map" aria-hidden="true">⌁</span>
+                                    <span class="armory-hud-theme-preview__copy"><b>${hudTheme?.name ?? 'Default Monochrome'}</b><small>♥♥♥ · O₂ 96% · LIVE PREVIEW</small></span>
                                 </div>
                             </div>
                             <div class="armory-stage-readout__hint" data-i18n="ui.armory.stage_hint">DRAG 3D STAGE TO INSPECT OPERATOR &amp; WEAPON</div>
@@ -740,16 +751,6 @@ export function createArmoryUi({
                                 <div class="bench-field">
                                     <label data-i18n="ui.armory.f_voicebank">ALT RADIO VOICE BANK</label>
                                     ${slotHtml('voicebank')}
-                                </div>
-                            </div>
-                            <div class="bench-row-two-col armory-systems-row">
-                                <div class="bench-field" style="grid-column: 1 / -1;">
-                                    <label data-i18n="ui.armory.f_hud">TACTICAL HUD THEME</label>
-                                    ${slotHtml('hud')}
-                                    <div class="armory-hud-theme-preview" data-hud-theme="${hudTheme?.id ?? 'default'}" data-hud-shape="${hudTheme?.shape ?? 'default'}" style="${hudThemeStyle}" aria-label="Equipped HUD preview">
-                                        <span class="armory-hud-theme-preview__map" aria-hidden="true">⌁</span>
-                                        <span class="armory-hud-theme-preview__copy"><b>${hudTheme?.name ?? 'Default Monochrome'}</b><small>♥♥♥ · O₂ 96% · LIVE PREVIEW</small></span>
-                                    </div>
                                 </div>
                             </div>
                         </section>

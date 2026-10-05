@@ -15,11 +15,14 @@
  *   type's own height, yaw and clips.
  * - structure: createWorld3dStructure(type).
  * - icon, wallDecal, floorDecal: 2D art.
+ * - compare: a 2D prop's billboard beside a candidate GLB (createWorld3dModel),
+ *   so a name-only match is judged by eye (src/data/world3dCandidates.js).
  */
 import { SHOWROOM_CATEGORIES } from './debugShowroom.js';
 import { WORLD_3D_MODELS, WORLD_3D_STRUCTURES } from './world3dOverlay.js';
 import { ENEMY_3D_MODELS } from './enemy3dOverlay.js';
 import { CHASSIS_BODY_VARIANTS } from './chassisBodies.js';
+import { WORLD_3D_CANDIDATES } from './data/world3dCandidates.js';
 import {
     WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES, CHARM_GLB_MAP, MOD_GLB_MAP, CHASSIS_SKIN_GLB_MAP
 } from './debugAssetCatalogs.js';
@@ -55,6 +58,17 @@ const byId = (a, b) => String(a).localeCompare(String(b), 'en', { numeric: true 
 
 export function buildMuseumExhibitPlan() {
     const plan = [];
+    // First in the hall: what is still drawn 2D, beside the model that may replace it.
+    plan.push({
+        title: '2D -> 3D REVIEW', kind: 'compare', spacing: 5, raised: false,
+        entries: WORLD_3D_CANDIDATES.flatMap(({ type, sprite, status, site, candidates }) => candidates
+            .filter((model) => WORLD_3D_MODELS[model])
+            .map((model) => ({
+                label: `${type} -> ${model} [${status.toUpperCase()}]`,
+                type, modelType: model, sprite, status, site,
+                url: WORLD_3D_MODELS[model].url
+            })))
+    });
     const items = (title, map, size) => plan.push({
         title, kind: 'item', spacing: 3.2,
         entries: Object.entries(map).map(([label, url]) => ({ label, url, size }))

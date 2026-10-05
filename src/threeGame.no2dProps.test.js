@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { ThreeGame } from './threeGame.js';
+import { WORLD_3D_MODEL_ALIASES, hasWorld3dModel, resolveScatterWorld3dType } from './world3dOverlay.js';
 
 // 2026-10-05: the game is 3D. A prop with a model never draws its 2D sprite;
 // the sprite keeps owning gameplay state, and only reappears if the model fails.
@@ -53,5 +54,49 @@ describe('no 2D stand-ins for props with 3D models', () => {
         expect(sprite.userData.world3dModelType).toBe('prop_body_human_frozen');
         expect(sprite.material.visible).toBe(false);
     });
+
+    it('every alias points at a registered model', () => {
+        for (const [type, model] of Object.entries(WORLD_3D_MODEL_ALIASES)) {
+            expect(hasWorld3dModel(model), `${type} -> ${model}`).toBe(true);
+        }
+    });
+
+    // The spawn paths gate on "has a model" before deferring. They used to ask
+    // with the raw 2D name, so an alias never reached the game: the deferral
+    // tests above passed while every aliased prop still drew its billboard.
+    const spawn = (type) => {
+        const game = {
+            deferWorld3dReplacement: ThreeGame.prototype.deferWorld3dReplacement,
+            hashTile: () => 1,
+            scatterMaterials: { [type]: new THREE.SpriteMaterial() }
+        };
+        return ThreeGame.prototype.createScatterInstance.call(game, { type, x: 2, z: 3, scale: 1, scatterKey: 'k' });
+    };
+
+    it.each([
+        ['prop_fusion_generator', 'fusion_generator'],
+        ['prop_camp_cookfire_doused', 'prop_camp_cookfire'],
+        ['prop_camp_vesper_turret', 'prop_base_defense_turret'],
+        ['bunker_junk_legendary', 'bunker_junk_rare']
+    ])('a spawned %s prop renders as %s, not its billboard', (type, model) => {
+        const sprite = spawn(type);
+        expect(sprite.userData.world3dModelType).toBe(model);
+        expect(sprite.material.visible).toBe(false);
+    });
+
+    it('resolves aliased scatter types for the scatter spawn path', () => {
+        expect(resolveScatterWorld3dType('scatter_camp_supplies')).toBe('prop_camp_crate');
+        expect(resolveScatterWorld3dType('scatter_definitely_not_a_model')).toBeNull();
+    });
 });
 
+describe('2D -> 3D candidate list', () => {
+    it('marks wired exactly the aliased types, and every candidate is a real model', async () => {
+        const { WORLD_3D_CANDIDATES } = await import('./data/world3dCandidates.js');
+        for (const entry of WORLD_3D_CANDIDATES) {
+            for (const model of entry.candidates) expect(hasWorld3dModel(model), `${entry.type} -> ${model}`).toBe(true);
+            if (entry.status === 'wired') expect(WORLD_3D_MODEL_ALIASES[entry.type]).toBe(entry.candidates[0]);
+            else expect(WORLD_3D_MODEL_ALIASES[entry.type], `${entry.type} is aliased but still marked review`).toBeUndefined();
+        }
+    });
+});

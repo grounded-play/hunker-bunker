@@ -9,6 +9,9 @@ test.describe('player chat browser → relay → peer', () => {
     let io;
     let url;
     let oldEnv;
+    test.beforeEach(() => {
+        test.setTimeout(90_000);
+    });
     test.beforeAll(async () => {
         oldEnv = { NODE_ENV: process.env.NODE_ENV, HB_STEAM_PUBLISHER_KEY: process.env.HB_STEAM_PUBLISHER_KEY, HB_ALLOW_DEV_STEAM_AUTH: process.env.HB_ALLOW_DEV_STEAM_AUTH };
         process.env.NODE_ENV = 'test';

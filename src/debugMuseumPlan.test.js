@@ -71,3 +71,18 @@ describe('debug museum exhibit plan', () => {
         expect(plan.find((c) => c.kind === 'enemy').spacing).toBeGreaterThanOrEqual(4.5);
     });
 });
+
+describe('2D -> 3D review row', () => {
+    it('leads the hall and pairs every candidate with its sprite', async () => {
+        const { buildMuseumExhibitPlan } = await import('./debugMuseumPlan.js');
+        const { WORLD_3D_CANDIDATES } = await import('./data/world3dCandidates.js');
+        const [first] = buildMuseumExhibitPlan();
+        expect(first.kind).toBe('compare');
+        const pairs = WORLD_3D_CANDIDATES.reduce((n, c) => n + c.candidates.length, 0);
+        expect(first.entries).toHaveLength(pairs);
+        for (const entry of first.entries) {
+            expect(entry.sprite).toMatch(/^\//);
+            expect(entry.modelType).toBeTruthy();
+        }
+    });
+});

@@ -473,7 +473,14 @@ const SCATTER_BODY_VARIANTS = Object.freeze({
 export const WORLD_3D_MODEL_ALIASES = Object.freeze({
     body_human_frozen_suit: 'prop_body_human_frozen',
     prop_camp_crates_chained: 'prop_camp_crates',
-    bunker_junk_legendary: 'bunker_junk_rare'
+    bunker_junk_legendary: 'bunker_junk_rare',
+    // 2D -> 3D gap audit 2026-10-05: same subject, different name, confirmed
+    // side by side in the debug museum's review row. Candidates still waiting
+    // on a look live in src/data/world3dCandidates.js.
+    prop_fusion_generator: 'fusion_generator',
+    prop_camp_cookfire_doused: 'prop_camp_cookfire',
+    prop_camp_vesper_turret: 'prop_base_defense_turret',
+    scatter_camp_supplies: 'prop_camp_crate'
 });
 
 export function world3dModelTypeFor(type) {
@@ -489,7 +496,8 @@ export function resolveScatterWorld3dType(type, x = 0, z = 0) {
         hash ^= hash >>> 15;
         return variants[(hash >>> 0) % variants.length];
     }
-    return hasWorld3dModel(type) ? type : null;
+    const modelType = world3dModelTypeFor(type);
+    return hasWorld3dModel(modelType) ? modelType : null;
 }
 
 // Architectural/state fixtures have no billboard fallback by design. Keep

@@ -115,16 +115,34 @@ All store and library art lives in [`steam/store/`](steam/store/) (English slots
 
 ## 🕹️ Controls
 
+### Gameplay Controls
+
 | Action | Keyboard / Mouse | Gamepad / Touch |
 | --- | --- | --- |
 | **Move** | `WASD` / Arrow Keys | Left Stick / Touch Joystick |
-| **Aim & Fire** | Mouse Aim + Left Click | Right Stick / Fire Trigger |
-| **Interact** | `E` | Action / Confirm Button |
-| **Reload** | `R` | Reload Button |
-| **Class Ability** | `F` | Special Ability Button |
-| **Radar Scan** | `Q` | Sub-weapon / Scan |
+| **Aim & Fire** | Mouse Aim + Left Click | Right Stick / Fire Trigger (RT) |
+| **Interact** | `E` | Action / Confirm Button (A) |
+| **Reload** | `R` | Reload Button (X) |
+| **Class Ability** | `F` | Special Ability Button (Y) |
+| **Radar Scan** | `Q` | Sub-weapon / Scan (LB) |
 | **Sprint** | `Shift` | Left Stick Click / Sprint Toggle |
+| **Tactical Chat** | `Enter` or `T` | View / Select Button |
 | **Dev Telemetry** | `~` (Tilde) | Open Diagnostic Overlay |
+
+### 🎮 Controller Navigation & Menu Accessibility
+
+Hunker Bunker features **Full Controller Support** tailored for the Steam Deck and standard gamepads (Xbox, PlayStation, DualSense). Every menu, modal, upgrade terminal, and archive log is 100% operable without touching a mouse or touchscreen.
+
+| Action | Gamepad (Steam Deck / Xbox) | Keyboard Alternative | Function |
+| :--- | :--- | :--- | :--- |
+| **Navigate Menus & Grids** | **D-Pad** / **Left Stick** | `W`, `A`, `S`, `D` or Arrows | Visual spatial roving focus across buttons, cards, and slots. |
+| **Activate / Select** | **A** or **Right Trigger (RT)** | `Enter` or `Space` | Equips gear, confirms upgrades, selects operative. |
+| **Back / Cancel** | **B** | `Escape` | Closes topmost modal or returns to previous briefing screen. |
+| **Switch Tabs** | **Left Bumper (LB)** / **Right Bumper (RB)** | `Q` / `E` | Cycles tabs in Settings, Armory, Archives, and Terminals. |
+| **Adjust Values** | **D-Pad Left** / **Right** (focused) | `Left` / `Right` Arrows | Adjusts sliders, audio volume, UI scale, and dropdown options. |
+| **Scroll Text Panels** | **D-Pad Up** / **Down** (text views) | `Page Up` / `Page Down` | Scrolls lore logs, transcripts, and commentary text. |
+| **Open Chat** | **View / Select** (or HUD Chat button) | `Enter` or `T` (in gameplay) | Opens the filtered in-game and lobby tactical chat. |
+| **Tactical Pointer** | **Right Stick** + **A** click | Mouse Move + Left Click | Optional virtual mouse cursor for freeform pointing. |
 
 ---
 

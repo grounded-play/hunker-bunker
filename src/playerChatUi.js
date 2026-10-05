@@ -152,6 +152,16 @@ export function initPlayerChatUI({ chat = playerChat, onBoundaryChange = () => {
     document.body.append(modal);
     const openButtons = [...document.querySelectorAll('[data-player-chat-open]')];
     for (const entry of openButtons) entry.addEventListener('click', open);
+    const handleOpenClick = (event) => {
+        const btn = event.target?.closest?.('[data-player-chat-open]');
+        if (btn) {
+            event.preventDefault?.();
+            open({ currentTarget: btn });
+        }
+    };
+    if (typeof document.addEventListener === 'function') {
+        document.addEventListener('click', handleOpenClick);
+    }
 
     // Incoming lines while the panel is closed -- in a run, in the lobby, in
     // menus. Before this they only raised a badge on a CHAT button the other
@@ -244,7 +254,8 @@ export function initPlayerChatUI({ chat = playerChat, onBoundaryChange = () => {
     window.addEventListener('keydown', keyboard, true);
 
     function renderBadges() {
-        for (const entry of openButtons) {
+        const liveButtons = document.querySelectorAll('[data-player-chat-open]');
+        for (const entry of liveButtons) {
             entry.textContent = tr('open') + (notifications && chat.unread ? ` (${chat.unread})` : '');
             entry.setAttribute('aria-label', entry.textContent);
         }
@@ -330,6 +341,9 @@ export function initPlayerChatUI({ chat = playerChat, onBoundaryChange = () => {
         for (const timer of feedTimers) clearTimeout(timer);
         feed.remove();
         window.removeEventListener('keydown', keyboard, true);
+        if (typeof document.removeEventListener === 'function') {
+            document.removeEventListener('click', handleOpenClick);
+        }
         for (const entry of openButtons) entry.removeEventListener('click', open);
         modal.remove();
     } };

@@ -3038,10 +3038,26 @@ body:not(.controller-mode) .title-menu-btn:focus:not(:focus-visible) {
 .save-data-code:focus-visible,
 .controller-mode .save-data-code:focus,
 .hero-select-back-btn:focus-visible,
-.controller-mode .hero-select-back-btn:focus {
+.controller-mode .hero-select-back-btn:focus,
+.action-card:focus-within,
+.action-card:focus-visible,
+.controller-mode .action-card:focus,
+.terminal-action-btn:focus-visible,
+.controller-mode .terminal-action-btn:focus {
   outline: 1.5px solid rgba(0, 229, 255, 0.85);
   outline-offset: 1.5px;
   box-shadow: 0 0 6px rgba(0, 229, 255, 0.25);
+}
+
+.achievement-card:focus-visible,
+.controller-mode .achievement-card:focus {
+  outline: 2px solid #00e5ff !important;
+  outline-offset: 2px !important;
+  border-color: #00e5ff !important;
+  background: rgba(0, 229, 255, 0.12) !important;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.4), inset 0 0 12px rgba(0, 229, 255, 0.1) !important;
+  opacity: 1 !important;
+  transform: translateY(-1px);
 }
 
 .char-info {
@@ -13855,21 +13871,35 @@ button.archive-log-entry:active {
 }
 
 .action-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(8, 16, 22, 0.92) 0%, rgba(12, 24, 32, 0.85) 100%);
+  border: 1px solid rgba(var(--terminal-glow-rgb, 84, 218, 235), 0.18);
+  border-left: 3px solid rgba(var(--terminal-glow-rgb, 84, 218, 235), 0.6);
   border-radius: 8px;
   padding: calc(var(--vu) * 1.55);
   display: flex;
   flex-direction: column;
   gap: calc(var(--vu) * 0.95);
   transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.action-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--terminal-glow-rgb, 84, 218, 235), 0.4), transparent);
+  pointer-events: none;
 }
 
 .action-card:hover {
-  background: rgba(var(--terminal-glow-rgb), 0.02);
-  border-color: rgba(var(--terminal-glow-rgb), 0.35);
+  background: linear-gradient(135deg, rgba(12, 24, 34, 0.96) 0%, rgba(18, 36, 48, 0.9) 100%);
+  border-color: rgba(var(--terminal-glow-rgb), 0.5);
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(var(--terminal-glow-rgb), 0.18);
 }
 
 .action-card--generator {
@@ -13880,12 +13910,112 @@ button.archive-log-entry:active {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: calc(var(--vu) * 1.6);
+  gap: calc(var(--vu) * 1.2);
   flex-wrap: wrap;
 }
 
+.action-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 1.0);
+  min-width: 0;
+}
+
+.action-card-icon {
+  width: calc(var(--vu) * 3.8);
+  height: calc(var(--vu) * 3.8);
+  min-width: 32px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: calc(var(--vu) * 1.8);
+  background: rgba(var(--terminal-glow-rgb), 0.1);
+  border: 1px solid rgba(var(--terminal-glow-rgb), 0.35);
+  box-shadow: 0 0 10px rgba(var(--terminal-glow-rgb), 0.15);
+  flex-shrink: 0;
+}
+
+.action-card-icon--o2 {
+  background: rgba(0, 229, 255, 0.12);
+  border-color: rgba(0, 229, 255, 0.4);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+}
+
+.action-card-icon--hull {
+  background: rgba(255, 170, 0, 0.12);
+  border-color: rgba(255, 170, 0, 0.4);
+  box-shadow: 0 0 10px rgba(255, 170, 0, 0.2);
+}
+
+.action-card-icon--radar {
+  background: rgba(50, 220, 150, 0.12);
+  border-color: rgba(50, 220, 150, 0.4);
+  box-shadow: 0 0 10px rgba(50, 220, 150, 0.2);
+}
+
+.action-card-icon--reactor {
+  background: rgba(180, 120, 255, 0.12);
+  border-color: rgba(180, 120, 255, 0.4);
+  box-shadow: 0 0 10px rgba(180, 120, 255, 0.2);
+}
+
+.action-card-icon--medkit {
+  background: rgba(255, 60, 90, 0.12);
+  border-color: rgba(255, 60, 90, 0.4);
+  box-shadow: 0 0 10px rgba(255, 60, 90, 0.2);
+}
+
+.action-card-tech-tag {
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(8.5px, calc(var(--vu) * 0.9), 10.5px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--terminal-glow);
+  opacity: 0.85;
+  margin-bottom: 2px;
+}
+
+.action-card-deltas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--vu) * 0.6);
+  margin: calc(var(--vu) * 0.2) 0;
+}
+
+.stat-delta-pill {
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(9px, calc(var(--vu) * 0.95), 11px);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.stat-delta-pill--cyan {
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  color: #00e5ff;
+}
+
+.stat-delta-pill--emerald {
+  background: rgba(50, 220, 150, 0.12);
+  border: 1px solid rgba(50, 220, 150, 0.4);
+  color: #4ade80;
+}
+
+.stat-delta-pill--amber {
+  background: rgba(255, 170, 0, 0.12);
+  border: 1px solid rgba(255, 170, 0, 0.4);
+  color: #fbbf24;
+}
+
 .action-title {
-  font-size: calc(var(--vu) * 2.02);
+  font-size: calc(var(--vu) * 1.85);
   font-weight: 900;
   color: #ffffff;
   letter-spacing: 0.75px;
@@ -13898,15 +14028,15 @@ button.archive-log-entry:active {
   color: var(--accent-primary);
   letter-spacing: 1px;
   background: rgba(255, 159, 28, 0.1);
-  padding: 2px 6px;
+  padding: 3px 8px;
   border-radius: 4px;
   border: 1px solid rgba(255, 159, 28, 0.2);
 }
 
 .action-desc {
   font-size: calc(var(--vu) * 1.28);
-  color: rgba(255, 255, 255, 0.6);
-  line-height: 1.32;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.35;
   margin: 0;
 }
 
@@ -24592,14 +24722,17 @@ html.phase-gameplay #tactical-telemeter-box {
   right: var(--corner-settings-right) !important;
   left: auto !important;
   bottom: auto !important;
-  width: var(--corner-settings-hit) !important;
+  min-width: var(--corner-settings-hit) !important;
+  width: auto !important;
   height: var(--corner-settings-hit) !important;
   margin: 0 !important;
   padding: 0 !important;
   transform: none !important;
   display: flex !important;
+  flex-direction: row !important;
   align-items: center !important;
-  justify-content: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
   pointer-events: auto !important;
   z-index: 17100 !important;
 }
@@ -24625,6 +24758,22 @@ html.phase-gameplay #tactical-telemeter-box {
   margin: 0 !important;
 }
 
+/* Chat button in corner settings slots: auto width with readable typography */
+#game-viewport .hud-corner-settings [data-player-chat-open],
+#game-viewport .menu-corner-settings [data-player-chat-open],
+#game-viewport .armory-corner-settings [data-player-chat-open],
+#armory-screen .armory-corner-settings [data-player-chat-open],
+#ui .hud-corner-settings [data-player-chat-open] {
+  width: auto !important;
+  min-width: 60px !important;
+  height: var(--corner-settings-hit) !important;
+  padding: 0 10px !important;
+  font-family: inherit !important;
+  font-size: clamp(10px, calc(var(--vu) * 1.35), 13px) !important;
+  letter-spacing: 0.06em !important;
+  border-radius: 4px !important;
+}
+
 #multiplayer-modal .net-header .close-modal {
   position: absolute !important;
   top: var(--corner-settings-top) !important;
@@ -24647,6 +24796,40 @@ html.phase-gameplay #tactical-telemeter-box {
 /* Hidden with the menu it belongs to, now that it is no longer inside it. */
 #game-viewport > #menu.hidden ~ .menu-corner-settings {
   display: none !important;
+}
+
+/* First menus anti-spill adjustments on screens <= 820px height (e.g. Steam Deck 800p/720p) */
+@media (max-height: 820px) {
+  .splash-content {
+    padding: calc(var(--vu) * 1.5) calc(var(--vu) * 4) calc(var(--vu) * 1.5) !important;
+  }
+  .splash-title {
+    font-size: calc(var(--vu) * 4.6) !important;
+  }
+  #title-profile-hud,
+  .title-profile-hud {
+    margin: calc(var(--vu) * 0.75) 0 !important;
+    padding: 8px 14px !important;
+    gap: 10px !important;
+  }
+  .title-menu {
+    gap: 4px !important;
+    margin-top: calc(var(--vu) * 0.4) !important;
+  }
+  .title-menu-btn {
+    min-height: calc(var(--vu) * 3.1) !important;
+    font-size: max(calc(var(--vu-text) * 1.25), 12px) !important;
+    padding: calc(var(--vu) * 0.2) calc(var(--vu) * 0.6) !important;
+  }
+  #menu .map-box {
+    gap: calc(var(--vu) * 0.15) !important;
+  }
+  #menu .homebase-telemetry {
+    padding: calc(var(--vu) * 0.3) calc(var(--vu) * 0.5) !important;
+  }
+  #menu .homebase-telemetry .roster-telemetry-chip {
+    min-height: calc(var(--vu) * 2.9) !important;
+  }
 }
 
 /* ── Timeline Divergence Warning Banner ────────────────────────────── */

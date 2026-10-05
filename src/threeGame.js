@@ -32994,7 +32994,7 @@ export class ThreeGame {
             sprite.userData.isAmmoLocker = lockerType;
             if (lockerType) {
                 this.deferWorld3dReplacement(sprite, 'storage_locker');
-            } else if (hasWorld3dModel(placement.type)) {
+            } else if (hasWorld3dModel(world3dModelTypeFor(placement.type))) {
                 this.deferWorld3dReplacement(sprite, placement.type);
             }
             return sprite;
@@ -33035,7 +33035,7 @@ export class ThreeGame {
                 phase: placement.phase ?? 0,
                 baseOpacity: placement.opacity ?? 1
             };
-            this.deferWorld3dReplacement(sprite, hasWorld3dModel(placement.type) ? placement.type : 'basic_pile');
+            this.deferWorld3dReplacement(sprite, hasWorld3dModel(world3dModelTypeFor(placement.type)) ? placement.type : 'basic_pile');
             return sprite;
         }
 
@@ -34586,6 +34586,65 @@ export class ThreeGame {
         corpse.renderOrder = 3; // Render below active enemies
         this.scene.add(corpse);
         this.corpses.push(corpse);
+        if (hasWorld3dModel(deadType)) void this.attachCorpse3d(corpse, deadType, enemySprite);
+    }
+
+    // The 3D game draws a corpse as its GLB, not the billboard. The sprite stays
+    // the gameplay owner (shell pickup, fade, fog), as with every 3D prop; the
+    // model mirrors it each frame in syncCorpse3d. Materials are cloned because
+    // a corpse fades on its own and template materials are shared.
+    async attachCorpse3d(corpse, modelType, enemySprite) {
+        corpse.material.visible = false;
+        try {
+            const root = await (this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType));
+            if (!root || !corpse.parent || !this.corpses?.includes(corpse)) {
+                if (!root) corpse.material.visible = true;
+                return;
+            }
+            root.traverse((child) => {
+                if (!child.isMesh) return;
+                child.material = Array.isArray(child.material)
+                    ? child.material.map((m) => m.clone())
+                    : child.material.clone();
+                for (const m of [child.material].flat()) m.transparent = true;
+            });
+            const enemyRoot = enemySprite?.userData?.enemy3dVisual?.root;
+            root.rotation.y = Number.isFinite(enemyRoot?.rotation?.y) ? enemyRoot.rotation.y : WORLD_3D_FACING_YAW;
+            root.position.set(corpse.position.x, 0, corpse.position.z);
+            corpse.parent.add(root);
+            corpse.userData.corpse3d = root;
+            this.syncCorpse3d(corpse);
+        } catch (error) {
+            console.warn(`[corpse-3d] ${modelType} unavailable; keeping sprite`, error);
+            corpse.material.visible = true;
+        }
+    }
+
+    syncCorpse3d(corpse, pop = 1) {
+        const root = corpse.userData.corpse3d;
+        if (!root) return;
+        root.position.x = corpse.position.x;
+        root.position.z = corpse.position.z;
+        root.scale.setScalar(pop);
+        // The billboard rests at baseOpacity (0.85) so it sits under live
+        // enemies; a solid model should not look ghostly, so normalise to it.
+        const opacity = Math.min(1, corpse.material.opacity / (corpse.userData.baseOpacity || 1));
+        root.visible = opacity > 0.01;
+        root.traverse((child) => {
+            if (!child.isMesh) return;
+            for (const m of [child.material].flat()) m.opacity = opacity;
+        });
+    }
+
+    disposeCorpse3d(corpse) {
+        const root = corpse.userData?.corpse3d;
+        if (!root) return;
+        root.parent?.remove(root);
+        // Geometry belongs to the shared template; only the cloned materials are ours.
+        root.traverse((child) => {
+            if (child.isMesh) for (const m of [child.material].flat()) m.dispose?.();
+        });
+        corpse.userData.corpse3d = null;
     }
 
     // Per-frame corpse upkeep: touch-to-collect, then fade out (fast pop when
@@ -34618,6 +34677,7 @@ export class ThreeGame {
                     1
                 );
                 corpse.material.opacity = corpse.userData.baseOpacity * (1 - fadeT);
+                corpse.userData.pop = pop;
                 done = fadeT >= 1;
             } else if (corpse.userData.decayTimer >= decayStart) {
                 const fadeT = Math.min((corpse.userData.decayTimer - decayStart) / decayDuration, 1);
@@ -34626,12 +34686,14 @@ export class ThreeGame {
             }
 
             if (done) {
+                this.disposeCorpse3d(corpse);
                 corpse.parent?.remove(corpse);
                 corpse.material?.dispose?.();
                 continue;
             }
             const fogVisibility = this.getFogOfWarVisibility(corpse.position.x, corpse.position.z);
             this.applyFogOfWarOpacity(corpse, fogVisibility, { captureCurrent: true });
+            this.syncCorpse3d(corpse, corpse.userData.pop ?? 1);
             survivors.push(corpse);
         }
         this.corpses = survivors;
@@ -34639,6 +34701,7 @@ export class ThreeGame {
 
     clearCorpses() {
         for (const corpse of this.corpses ?? []) {
+            this.disposeCorpse3d(corpse);
             corpse.parent?.remove(corpse);
             corpse.material?.dispose?.();
         }

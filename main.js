@@ -831,6 +831,8 @@ function getVisibleControllerFocusables(root = document) {
     ].join(', ');
     const elements = Array.from(root.querySelectorAll(selector));
     if (root.id === 'menu') {
+        const chatBtn = document.querySelector('.menu-corner-settings [data-player-chat-open]');
+        if (chatBtn && !elements.includes(chatBtn)) elements.push(chatBtn);
         const settingsBtn = document.querySelector('.menu-corner-settings .open-settings-btn');
         if (settingsBtn && !elements.includes(settingsBtn)) elements.push(settingsBtn);
         const startGame = document.getElementById('start-game');
@@ -1067,6 +1069,18 @@ function getPreferredControllerFocusTarget(root, focusables) {
             ?? focusables.find((element) => element.id === 'close-steam-vault-modal')
             ?? focusables[0];
     }
+    if (root?.id === 'achievements-modal') {
+        return focusables.find((element) => element.classList?.contains('achievement-card'))
+            ?? focusables.find((element) => element.id === 'close-achievements-modal')
+            ?? focusables[0];
+    }
+    if (root?.id === 'console-terminal-modal') {
+        return focusables.find((element) => element.id === 'terminal-btn-o2-generator' && !element.disabled)
+            ?? focusables.find((element) => element.classList?.contains('terminal-action-btn') && !element.disabled)
+            ?? focusables.find((element) => element.classList?.contains('terminal-tab-btn') && element.classList.contains('active'))
+            ?? focusables.find((element) => element.id === 'close-terminal')
+            ?? focusables[0];
+    }
     if (root?.id === 'mothership-dialogue') {
         return focusables.find((element) => element.id === 'mothership-choice-skip' && isElementVisible(element))
             ?? focusables.find((element) => element.id === 'mothership-choice-tutorial' && isElementVisible(element))
@@ -1238,11 +1252,89 @@ function scrollFocuslessRegion(root, code) {
     return true;
 }
 
+function moveAchievementsDirectionalFocus(code) {
+    const modal = document.getElementById('achievements-modal');
+    const active = document.activeElement;
+    if (!modal || !modal.contains(active)) return false;
+    const cards = Array.from(modal.querySelectorAll('#achievements-grid .achievement-card'));
+    if (!cards.length) return false;
+
+    const isCard = active?.classList?.contains('achievement-card');
+    const isClose = active?.id === 'close-achievements-modal';
+    const isSave = active?.id === 'achievement-copy-save';
+
+    if (isClose) {
+        if (code === 'ArrowDown' || code === 'KeyS' || code === 'ArrowRight' || code === 'KeyD') {
+            return focusControllerTarget(cards[0], { playHover: true });
+        }
+        return false;
+    }
+
+    if (isSave) {
+        if (code === 'ArrowUp' || code === 'KeyW' || code === 'ArrowLeft' || code === 'KeyA') {
+            return focusControllerTarget(cards[cards.length - 1], { playHover: true });
+        }
+        return false;
+    }
+
+    if (!isCard) return false;
+
+    const currentIndex = cards.indexOf(active);
+    if (currentIndex < 0) return false;
+
+    let columns = 1;
+    if (cards.length > 1) {
+        const firstTop = cards[0].offsetTop;
+        for (let i = 1; i < cards.length; i += 1) {
+            if (cards[i].offsetTop === firstTop) {
+                columns += 1;
+            } else {
+                break;
+            }
+        }
+    }
+
+    if (code === 'ArrowDown' || code === 'KeyS') {
+        const nextIndex = currentIndex + columns;
+        if (nextIndex < cards.length) {
+            return focusControllerTarget(cards[nextIndex], { playHover: true });
+        }
+        return true;
+    }
+
+    if (code === 'ArrowUp' || code === 'KeyW') {
+        const prevIndex = currentIndex - columns;
+        if (prevIndex >= 0) {
+            return focusControllerTarget(cards[prevIndex], { playHover: true });
+        }
+        return focusControllerTarget(document.getElementById('close-achievements-modal') || cards[0], { playHover: true });
+    }
+
+    if (code === 'ArrowRight' || code === 'KeyD') {
+        const nextIndex = currentIndex + 1;
+        if (nextIndex < cards.length) {
+            return focusControllerTarget(cards[nextIndex], { playHover: true });
+        }
+        return true;
+    }
+
+    if (code === 'ArrowLeft' || code === 'KeyA') {
+        const prevIndex = currentIndex - 1;
+        if (prevIndex >= 0) {
+            return focusControllerTarget(cards[prevIndex], { playHover: true });
+        }
+        return true;
+    }
+
+    return false;
+}
+
 // One directional step in a menu, shared by the Steam Input poll and the
 // gamepad-menu-nav event so both behave the same.
 function moveControllerDirectional(root, code, backward) {
     if (root?.id === 'menu') return moveMenuDirectionalFocus(code);
     if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(code)) return true;
+    if (root?.id === 'achievements-modal' && moveAchievementsDirectionalFocus(code)) return true;
     if (scrollFocuslessRegion(root, code)) return true;
     if (moveSpatialControllerFocus(root, code)) return true;
     return moveControllerFocus(backward ? -1 : 1);
@@ -1256,7 +1348,11 @@ const SPATIAL_FOCUS_ROOT_IDS = new Set([
     'fabrication-modal',
     'archive-modal',
     'codex-modal',
-    'multiplayer-modal'
+    'multiplayer-modal',
+    'console-terminal-modal',
+    'field-workbench-modal',
+    'mature-content-audit-modal',
+    'season-pass-modal'
 ]);
 
 function moveSpatialControllerFocus(root, code) {
@@ -1305,6 +1401,7 @@ function moveHeroSelectPanelFocus(code) {
     const previewRail = active?.closest?.('.preview-box');
     const initializeButton = active?.id === 'start-game';
     const settingsButton = active?.closest?.('.menu-corner-settings .open-settings-btn');
+    const chatButton = active?.closest?.('.menu-corner-settings [data-player-chat-open]');
     const selectedHero = document.querySelector('.char-selection .char-card.selected')
         ?? document.querySelector('.char-selection .char-card');
     const heroBackBtn = document.getElementById('hero-select-back-btn');
@@ -1323,9 +1420,18 @@ function moveHeroSelectPanelFocus(code) {
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
 
+    if (chatButton) {
+        const target = isRight
+            ? document.querySelector('.menu-corner-settings .open-settings-btn')
+            : isLeft
+                ? document.getElementById('hero-polish-btn')
+                : (isDown ? selectedHero : null);
+        return target ? focusControllerTarget(target, { playHover: true }) : true;
+    }
+
     if (settingsButton) {
         const target = isLeft
-            ? document.getElementById('hero-polish-btn')
+            ? (document.querySelector('.menu-corner-settings [data-player-chat-open]') ?? document.getElementById('hero-polish-btn'))
             : (isDown ? selectedHero : null);
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
@@ -6437,6 +6543,7 @@ function openAchievementsModal() {
     if (modal) {
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
+        syncControllerFocusBoundary();
     }
 }
 
@@ -6445,6 +6552,7 @@ function closeAchievementsModal() {
     if (modal) {
         modal.classList.add('hidden');
         modal.setAttribute('aria-hidden', 'true');
+        syncControllerFocusBoundary();
     }
 }
 

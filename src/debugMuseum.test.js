@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { openDebugMuseum, closeDebugMuseum, buildMuseumAudioCatalog, setMuseumSpecimenState } from './debugMuseum.js';
+import { openDebugMuseum, closeDebugMuseum, buildMuseumAudioCatalog, setMuseumSpecimenState, spawnAudioValidationConsole } from './debugMuseum.js';
 import { SHOWROOM_CATEGORIES, createDebugWallDecalDisplay } from './debugShowroom.js';
 import { MUSEUM_OPERATOR_HEIGHT, buildMuseumExhibitPlan } from './debugMuseumPlan.js';
 
@@ -312,6 +312,52 @@ describe('Debug Hallway Museum', () => {
         expect(catalog.voice.some((row) => row.key.endsWith('2'))).toBe(true);
         expect(catalog.effects.map((row) => row.key)).toContain('gunshot');
         expect(catalog.music.map((row) => row.key)).toContain('music_menu');
+        expect(catalog.music.some((row) => row.key === 'music_safe_ship')).toBe(true);
+        expect(catalog.effects.some((row) => row.key === 'footstep_concrete_000')).toBe(true);
+        expect(catalog.voice.some((row) => row.key === 'voice_commander_reloading' && row.source)).toBe(true);
+    });
+
+    it('spawns the audio validation console near the entrance and keeps the jukebox hidden until triggered', async () => {
+        const group = new THREE.Group();
+        spawnAudioValidationConsole(mockGame, group, 8998, 8998.5);
+        expect(group.userData.audioConsolePosition).toBeDefined();
+        expect(group.userData.audioConsolePosition.x).toBe(8998);
+        expect(group.getObjectByName('debug-audio-validation-console')).toBeDefined();
+
+        const rootEl = {
+            id: '',
+            style: {},
+            classList: new Set(),
+            setAttribute: vi.fn(),
+            querySelector: vi.fn(() => ({ addEventListener: vi.fn() })),
+            addEventListener: vi.fn()
+        };
+        rootEl.classList.add = (c) => rootEl.classList.add(c);
+        rootEl.classList.remove = (c) => rootEl.classList.delete(c);
+        rootEl.classList.contains = (c) => rootEl.classList.has(c);
+
+        globalThis.document.body = { appendChild: vi.fn() };
+        globalThis.document.createElement = vi.fn((tag) => {
+            if (tag === 'section') return rootEl;
+            return {
+                style: {},
+                classList: { add: vi.fn(), remove: vi.fn(), contains: vi.fn(() => false) },
+                setAttribute: vi.fn(),
+                querySelector: vi.fn(),
+                addEventListener: vi.fn(),
+                replaceChildren: vi.fn(),
+                appendChild: vi.fn()
+            };
+        });
+
+        await openDebugMuseum(mockGame);
+        const museumGroup = scene.getObjectByName('debug-museum');
+        expect(museumGroup).toBeDefined();
+        expect(museumGroup.getObjectByName('debug-audio-validation-console')).toBeDefined();
+        expect(typeof museumGroup.userData.openJukebox).toBe('function');
+        expect(typeof museumGroup.userData.closeJukebox).toBe('function');
+
+        closeDebugMuseum(mockGame);
     });
 
     it('survives a game without the optional debug hooks', async () => {

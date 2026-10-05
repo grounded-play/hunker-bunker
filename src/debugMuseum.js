@@ -16,8 +16,9 @@ import { createEnemy3dVisual } from './enemy3dOverlay.js';
 import { MUSEUM_OPERATOR_HEIGHT, buildMuseumExhibitPlan } from './debugMuseumPlan.js';
 import { updateKitMaterials } from './kitMaterials.js';
 import { AudioManager } from './audio.js';
-import { getVoiceScriptRows } from './data/voiceBanks.js';
+import { getVoiceScriptRows, getVoiceAudioManifest } from './data/voiceBanks.js';
 import { SONG_INTERSTITIALS } from './songInterstitials.js';
+import { GAMEPLAY_FOLEY_MANIFEST, GAMEPLAY_ENEMY_MANIFEST } from './data/gameSoundsets.js';
 
 // Far outside any real generated terrain so the museum never overlaps a real run's chunks.
 const MUSEUM_ORIGIN = Object.freeze({ x: 9000, z: 9000 });
@@ -72,7 +73,7 @@ function makeLabelSprite(text, { color = '#e2e8f0', fontSize = 48 } = {}) {
 let _museumAnimFrame = null;
 let _lastMuseumTickTime = 0;
 
-function startMuseumAnimationLoop(group) {
+function startMuseumAnimationLoop(group, game) {
     if (typeof requestAnimationFrame === 'undefined') return;
     if (_museumAnimFrame != null && typeof cancelAnimationFrame === 'function') {
         cancelAnimationFrame(_museumAnimFrame);
@@ -92,6 +93,18 @@ function startMuseumAnimationLoop(group) {
             const rotatingItems = group.userData.rotatingItems || [];
             for (const item of rotatingItems) {
                 item.rotation.y += delta * 0.75;
+            }
+            if (game?.player?.position && group.userData?.audioConsolePosition) {
+                const dist = game.player.position.distanceTo(group.userData.audioConsolePosition);
+                if (dist <= 2.8) {
+                    if (!group.userData.jukeboxOpen) {
+                        group.userData.jukeboxOpen = true;
+                        group.userData.openJukebox?.();
+                    }
+                } else if (dist > 5.5 && group.userData.jukeboxOpen) {
+                    group.userData.jukeboxOpen = false;
+                    group.userData.closeJukebox?.();
+                }
             }
             updateKitMaterials(now / 1000);
             _museumAnimFrame = requestAnimationFrame(tick);
@@ -246,31 +259,140 @@ function spawnIconPlaneAt(iconPath, x, y, z) {
     }
 }
 
+// A 2D prop's billboard (keyed exactly as the game keys it) on the left, the
+// candidate GLB at its in-game height on the right, both on the floor. The
+// billboard is sized to the model's height so the comparison is like for like.
+const COMPARE_OFFSET = 1.25;
+async function spawnComparePair(game, entry, x, z) {
+    const pair = new THREE.Group();
+    pair.name = `debug-museum-compare:${entry.type}`;
+    const model = await (game?.createWorld3dModel ? game.createWorld3dModel(entry.modelType) : createWorld3dModel(entry.modelType));
+    if (!model) return null;
+    model.position.set(x + COMPARE_OFFSET, 0, z);
+    pair.add(model);
+    const height = Math.max(0.6, measureExhibit(model)?.size.y ?? 1);
+
+    const material = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.05, depthWrite: false });
+    const sprite = new THREE.Sprite(material);
+    sprite.center.set(0.5, 0);
+    sprite.position.set(x - COMPARE_OFFSET, 0, z);
+    sprite.scale.set(height, height, 1);
+    sprite.name = 'debug-museum-compare-sprite';
+    const fitAspect = (texture) => {
+        const image = texture?.image;
+        if (image?.width > 1 && image?.height > 1) sprite.scale.set(height * (image.width / image.height), height, 1);
+    };
+    material.map = typeof game?.loadKeyedSpriteTexture === 'function'
+        ? game.loadKeyedSpriteTexture(entry.sprite, 14, fitAspect)
+        : new THREE.TextureLoader().load(assetUrl(entry.sprite), fitAspect);
+    pair.add(sprite);
+
+    const tag = makeLabelSprite(entry.status === 'wired' ? 'WIRED' : 'REVIEW', {
+        color: entry.status === 'wired' ? '#4ade80' : '#f59e0b', fontSize: 34
+    });
+    tag.position.set(x, 0.25, z + 0.9);
+    tag.scale.set(1.0, 0.25, 1);
+    pair.add(tag);
+    return pair;
+}
+
 export function buildMuseumAudioCatalog(buffers = AudioManager.buffers) {
     const bufferKeys = Object.keys(buffers ?? {}).sort();
     const voiceRows = getVoiceScriptRows();
     const voiceKeys = new Set(voiceRows.flatMap((row) => row.takes));
     const songKeys = new Set(Object.values(SONG_INTERSTITIALS).map((song) => song.musicKey));
-    return {
-        music: bufferKeys.filter((key) => key.startsWith('music_') && !songKeys.has(key))
-            .map((key) => ({ key, label: key, available: true, bus: 'music' })),
-        songs: Object.values(SONG_INTERSTITIALS).map((song) => ({
-            key: song.musicKey,
-            label: `${song.id} // ${song.title}`,
-            source: song.audio,
-            available: Boolean(buffers?.[song.musicKey] || song.audio),
-            bus: 'music'
-        })),
-        voice: voiceRows.flatMap((row) => row.takes.map((key, index) => ({
+
+    // 1. Music: Core OST + context tracks + any buffer starting with music_
+    const musicMap = new Map();
+    if (AudioManager.CORE_OST_TRACKS) {
+        for (const [key, track] of Object.entries(AudioManager.CORE_OST_TRACKS)) {
+            musicMap.set(key, {
+                key,
+                label: track.title || key,
+                source: track.url,
+                available: Boolean(buffers?.[key] || track.url),
+                bus: 'music'
+            });
+        }
+    }
+    for (const key of bufferKeys) {
+        if (key.startsWith('music_') && !songKeys.has(key) && !musicMap.has(key)) {
+            musicMap.set(key, { key, label: key, available: true, bus: 'music' });
+        }
+    }
+
+    // 2. Songs: all 38 interstitial songs (exact 38 count) + side stories if requested
+    const songs = Object.values(SONG_INTERSTITIALS).map((song) => ({
+        key: song.musicKey,
+        label: `${song.id} // ${song.title}`,
+        source: song.audio,
+        available: Boolean(buffers?.[song.musicKey] || song.audio),
+        bus: 'music'
+    }));
+
+    // 3. Voice: voice bank takes with URLs + narrative character voices
+    const voiceManifest = typeof getVoiceAudioManifest === 'function' ? getVoiceAudioManifest() : [];
+    const voiceUrlByKey = new Map(voiceManifest.map((item) => [item.key, item.url]));
+
+    const voiceItems = voiceRows.flatMap((row) => row.takes.map((key, index) => {
+        const sourceUrl = voiceUrlByKey.get(key) || `/audio/generated/${key}.wav`;
+        return {
             key,
             label: `${row.bankName} // ${row.cue} // TAKE ${index + 1}`,
             subtitle: row.subtitle,
             semanticId: row.semanticId,
-            available: Boolean(buffers?.[key]),
+            source: sourceUrl,
+            available: Boolean(buffers?.[key] || sourceUrl),
             bus: 'voice'
-        }))),
-        effects: bufferKeys.filter((key) => !key.startsWith('music_') && !voiceKeys.has(key))
-            .map((key) => ({ key, label: key, available: true, bus: key.startsWith('amb_') ? 'world' : 'sfx' }))
+        };
+    }));
+
+    const narrativeKeys = bufferKeys.filter((key) => key.startsWith('voice_') && !voiceKeys.has(key));
+    for (const key of narrativeKeys) {
+        voiceItems.push({
+            key,
+            label: `NARRATIVE // ${key.replace('voice_', '').toUpperCase()}`,
+            available: true,
+            bus: 'voice'
+        });
+    }
+
+    // 4. Effects: Foley + enemy movement/idle + SFX/ambient
+    const effectMap = new Map();
+    for (const item of (GAMEPLAY_FOLEY_MANIFEST || [])) {
+        effectMap.set(item.key, {
+            key: item.key,
+            label: `FOLEY // ${item.key}`,
+            source: item.url,
+            available: Boolean(buffers?.[item.key] || item.url),
+            bus: 'sfx'
+        });
+    }
+    for (const item of (GAMEPLAY_ENEMY_MANIFEST || [])) {
+        effectMap.set(item.key, {
+            key: item.key,
+            label: `ENEMY // ${item.key}`,
+            source: item.url,
+            available: Boolean(buffers?.[item.key] || item.url),
+            bus: 'sfx'
+        });
+    }
+    for (const key of bufferKeys) {
+        if (!key.startsWith('music_') && !voiceKeys.has(key) && !key.startsWith('voice_') && !effectMap.has(key)) {
+            effectMap.set(key, {
+                key,
+                label: key,
+                available: true,
+                bus: key.startsWith('amb_') ? 'world' : 'sfx'
+            });
+        }
+    }
+
+    return {
+        music: Array.from(musicMap.values()),
+        songs,
+        voice: voiceItems,
+        effects: Array.from(effectMap.values())
     };
 }
 
@@ -280,7 +402,40 @@ function stopMuseumAudition(group) {
     if (group?.userData) group.userData.museumAudition = null;
 }
 
-function mountMuseumJukebox(game, group) {
+export function spawnAudioValidationConsole(game, group, x, z) {
+    const consoleGroup = new THREE.Group();
+    consoleGroup.name = 'debug-audio-validation-console';
+    consoleGroup.position.set(x, 0, z);
+
+    const pedestal = spawnPedestal(0, 0);
+    consoleGroup.add(pedestal);
+
+    const screenGeo = new THREE.BoxGeometry(0.8, 0.45, 0.35);
+    const screenMat = new THREE.MeshStandardMaterial({
+        color: 0x0a1622,
+        emissive: 0x00f0ff,
+        emissiveIntensity: 0.45,
+        roughness: 0.25,
+        metalness: 0.85
+    });
+    const screenMesh = new THREE.Mesh(screenGeo, screenMat);
+    screenMesh.position.y = PEDESTAL_HEIGHT + 0.25;
+    consoleGroup.add(screenMesh);
+
+    const label = makeLabelSprite('◈ AUDIO VALIDATION CONSOLE // TOUCH OR [E] TO AUDITION', {
+        color: '#00f0ff',
+        fontSize: 34
+    });
+    label.position.set(0, PEDESTAL_HEIGHT + 1.15, 0);
+    label.scale.set(1.4, 0.35, 1);
+    consoleGroup.add(label);
+
+    group.add(consoleGroup);
+    group.userData.audioConsolePosition = new THREE.Vector3(x, 0, z);
+    return consoleGroup;
+}
+
+export function mountMuseumJukebox(game, group) {
     if (typeof document === 'undefined' || !document.body?.appendChild) return null;
     const catalog = buildMuseumAudioCatalog();
     const root = document.createElement('section');
@@ -288,13 +443,14 @@ function mountMuseumJukebox(game, group) {
     root.id = 'debug-museum-jukebox';
     root.setAttribute?.('aria-label', 'Museum audio jukebox');
     root.innerHTML = `<style>
-      #debug-museum-jukebox{position:fixed;right:2vw;top:9vh;width:min(520px,42vw);max-height:82vh;z-index:10020;background:#070d14f2;border:1px solid #22d3ee;color:#e2e8f0;font:12px "Space Mono",monospace;padding:12px;box-shadow:0 0 28px #000;display:flex;flex-direction:column;gap:9px}
+      #debug-museum-jukebox{display:none;position:fixed;right:2vw;top:9vh;width:min(520px,42vw);max-height:82vh;z-index:10020;background:#070d14f2;border:1px solid #22d3ee;color:#e2e8f0;font:12px "Space Mono",monospace;padding:12px;box-shadow:0 0 28px #000;flex-direction:column;gap:9px}
+      #debug-museum-jukebox.visible{display:flex}
       #debug-museum-jukebox .museum-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px} #debug-museum-jukebox button,#debug-museum-jukebox input{font:inherit}
       #debug-museum-jukebox button{background:#101b28;color:#bdebf2;border:1px solid #31566b;padding:8px;cursor:pointer} #debug-museum-jukebox button[aria-selected="true"]{border-color:#f59e0b;color:#fbbf24}
       #debug-museum-jukebox .museum-list{overflow:auto;display:grid;gap:5px;min-height:180px} #debug-museum-jukebox .museum-track{text-align:left;display:grid;grid-template-columns:1fr auto;gap:8px}
       #debug-museum-jukebox .museum-track small{grid-column:1/-1;color:#7dd3fc} #debug-museum-jukebox .unavailable{opacity:.48} #debug-museum-jukebox .museum-controls{display:flex;gap:7px;align-items:center}
       #debug-museum-jukebox.collapsed .museum-tabs,#debug-museum-jukebox.collapsed .museum-search,#debug-museum-jukebox.collapsed .museum-list{display:none}
-    </style><strong>AUDIO VALIDATION JUKEBOX</strong><div class="museum-tabs"></div><input class="museum-search" aria-label="Filter audio" placeholder="FILTER BY TITLE / CUE / ID"><div class="museum-list"></div><div class="museum-controls"><button data-action="stop">STOP</button><button data-action="reset">RESET SPECIMENS</button><button data-action="damage">DAMAGE STATE</button><label>GAIN <input data-action="gain" type="range" min="0" max="1" step="0.05" value="0.8"></label><button data-action="close">MINIMIZE</button></div>`;
+    </style><strong>AUDIO VALIDATION JUKEBOX</strong><div class="museum-tabs"></div><input class="museum-search" aria-label="Filter audio" placeholder="FILTER BY TITLE / CUE / ID"><div class="museum-list"></div><div class="museum-controls"><button data-action="stop">STOP</button><button data-action="reset">RESET SPECIMENS</button><button data-action="damage">DAMAGE STATE</button><label>GAIN <input data-action="gain" type="range" min="0" max="1" step="0.05" value="0.8"></label><button data-action="close">CLOSE</button></div>`;
     const tabs = root.querySelector?.('.museum-tabs');
     const list = root.querySelector?.('.museum-list');
     const search = root.querySelector?.('.museum-search');
@@ -305,7 +461,7 @@ function mountMuseumJukebox(game, group) {
     const render = () => {
         if (!list) return;
         const query = String(search?.value ?? '').trim().toLowerCase();
-        const rows = catalog[activeTab].filter((row) => `${row.label} ${row.subtitle ?? ''} ${row.semanticId ?? ''}`.toLowerCase().includes(query));
+        const rows = (catalog[activeTab] || []).filter((row) => `${row.label} ${row.subtitle ?? ''} ${row.semanticId ?? ''}`.toLowerCase().includes(query));
         list.replaceChildren?.();
         for (const row of rows) {
             const button = document.createElement('button');
@@ -349,13 +505,30 @@ function mountMuseumJukebox(game, group) {
     root.querySelector?.('[data-action="stop"]')?.addEventListener?.('click', () => stopMuseumAudition(group));
     root.querySelector?.('[data-action="reset"]')?.addEventListener?.('click', () => setMuseumSpecimenState(game, 'intact'));
     root.querySelector?.('[data-action="damage"]')?.addEventListener?.('click', () => setMuseumSpecimenState(game, 'damaged'));
-    root.querySelector?.('[data-action="close"]')?.addEventListener?.('click', (event) => {
-        root.classList?.toggle('collapsed');
-        event.currentTarget.textContent = root.classList?.contains('collapsed') ? 'EXPAND' : 'MINIMIZE';
-        stopMuseumAudition(group);
+
+    if (group?.userData) {
+        group.userData.openJukebox = () => {
+            root.classList.add('visible');
+            root.classList.remove('collapsed');
+            render();
+        };
+        group.userData.closeJukebox = () => {
+            root.classList.remove('visible');
+            stopMuseumAudition(group);
+        };
+        group.userData.toggleJukebox = () => {
+            if (root.classList.contains('visible')) {
+                group.userData.closeJukebox();
+            } else {
+                group.userData.openJukebox();
+            }
+        };
+    }
+
+    root.querySelector?.('[data-action="close"]')?.addEventListener?.('click', () => {
+        group?.userData?.closeJukebox?.();
     });
     document.body.appendChild(root);
-    render();
     return root;
 }
 
@@ -409,7 +582,7 @@ export async function openDebugMuseum(game) {
     group.userData.restoreGodMode = Boolean(game.godMode);
     group.userData.restoreMuseumSessionActive = Boolean(game._debugMuseumSessionActive);
     game.scene.add(group);
-    startMuseumAnimationLoop(group);
+    startMuseumAnimationLoop(group, game);
 
     // Teleport first, spawn after. This used to sit at the very end of the
     // function, after ~76 sequential (unbatched, one-await-at-a-time) GLB
@@ -458,7 +631,24 @@ export async function openDebugMuseum(game) {
         group.userData.restoreBackground = game.scene.background.clone();
         game.scene.background.setHex(0x0b0d0f);
     }
+    group.userData.openJukebox = () => {};
+    group.userData.closeJukebox = () => {};
+    group.userData.toggleJukebox = () => {};
     group.userData.jukebox = mountMuseumJukebox(game, group);
+    spawnAudioValidationConsole(game, group, MUSEUM_ORIGIN.x - 2, MUSEUM_ORIGIN.z - 1.5);
+
+    const onConsoleKey = (e) => {
+        if (e.code === 'KeyE' && game?.player?.position && group?.userData?.audioConsolePosition) {
+            const dist = game.player.position.distanceTo(group.userData.audioConsolePosition);
+            if (dist <= 4.0) {
+                group.userData.toggleJukebox?.();
+            }
+        }
+    };
+    if (typeof window !== 'undefined') {
+        window.addEventListener('keydown', onConsoleKey);
+        group.userData.cleanupAudioKey = () => window.removeEventListener('keydown', onConsoleKey);
+    }
 
     // Studio lighting for museum corridor
     const ambient = new THREE.AmbientLight(0xffffff, 1.4);
@@ -536,7 +726,8 @@ export async function openDebugMuseum(game) {
             display.position.set(x, 0, zPos);
             return display;
         },
-        floorDecal: (entry, x, zPos) => game.createScatterInstance({ type: entry.type, x, z: zPos, scale: 1, tiltX: 0, elevation: 0.05, rotation: 0 })
+        floorDecal: (entry, x, zPos) => game.createScatterInstance({ type: entry.type, x, z: zPos, scale: 1, tiltX: 0, elevation: 0.05, rotation: 0 }),
+        compare: (entry, x, zPos) => spawnComparePair(game, entry, x, zPos)
     };
     const LIFE_SIZE = new Set(['character', 'world', 'enemy']);
 
@@ -632,6 +823,7 @@ export function closeDebugMuseum(game) {
         game.scene.background.copy(group.userData.restoreBackground);
     }
     stopMuseumAudition(group);
+    group.userData.cleanupAudioKey?.();
     group.userData.jukebox?.remove?.();
     for (const [display, visible] of group.userData.restoreTransientVisibility ?? []) {
         display.visible = visible;
