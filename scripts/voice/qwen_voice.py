@@ -150,11 +150,24 @@ def lines(args):
             render_line(model, device, prompt, entry, args.locale, args.force, args.max_cer)
 
 
+# The 12 Hz codec emits 12 tokens per second of audio. A render that never
+# emits its stop token runs to the model's 2048-token default (~170 s); mixed
+# script glitched lines in Japanese did that for 15+ minutes per attempt.
+# Passing lines peak at 0.28 s/character (ja) and 0.16 elsewhere, so this cap
+# leaves 1.6x headroom on the slowest language.
+CODEC_TOKENS_PER_SECOND = 12
+
+
+def max_new_tokens_for(text):
+    return int(max(6.0, 0.45 * len(text)) * CODEC_TOKENS_PER_SECOND) + 24
+
+
 def render_line(model, device, prompt, entry, locale, force=False, max_cer=0.35):
     import soundfile as sf
     import torch
     path = OUT / 'lines' / locale / f'{entry["key"]}.wav'
-    if path.exists() and not force:
+    # The sidecar is written last; a WAV alone is an interrupted attempt.
+    if path.with_suffix('.json').exists() and not force:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
     best = None
@@ -162,7 +175,8 @@ def render_line(model, device, prompt, entry, locale, force=False, max_cer=0.35)
         seed = line_seed(entry['key'], attempt)
         torch.manual_seed(seed)
         start = time.time()
-        wavs, sr = model.generate_voice_clone(text=entry['spoken'], language=LANGUAGE[locale], voice_clone_prompt=prompt)
+        wavs, sr = model.generate_voice_clone(text=entry['spoken'], language=LANGUAGE[locale], voice_clone_prompt=prompt,
+                                              max_new_tokens=max_new_tokens_for(entry['spoken']))
         elapsed = time.time() - start
         sf.write(path, wavs[0], sr)
         heard = transcribe(path, locale)
