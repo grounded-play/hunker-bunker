@@ -260,6 +260,8 @@ import { spawnEnemyGibs, spawnPropDebris } from './enemyGibs.js';
 import { createPropDebrisPrewarmQueue } from './propDebrisPrewarm.js';
 import { isAreaRoomDensityEnabled } from './featureFlags.js';
 import { roomPracticalLightPlacement } from './anchorPracticalLight.js';
+import { planRoomDressing } from './roomDressing.js';
+import { buildRoomDressingGroup, loadKeyedDecalTexture } from './roomDressingRenderer.js';
 import { registerTinaHit, TINA_TOTAL_HITS } from './mayorTinaCombat.js';
 import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
@@ -28944,6 +28946,60 @@ export class ThreeGame {
         group.add(pool);
     }
 
+    /**
+     * Lived-in dressing for every authored room in the chunk (roomDressing.js):
+     * wall decals and fixtures, a clutter ring along the walls, corner pieces,
+     * floor story and furniture vignettes. Drawn as static instanced batches
+     * (roomDressingRenderer.js) once the models are ready, so a stuffed room
+     * costs a bounded number of draw calls and nothing per frame. Vignette
+     * furniture collides through invisible anchors in scatterSprites, which
+     * chunk unload already removes with their group.
+     */
+    addRoomDressing(group, chunkX, chunkY, metadata, grid) {
+        const originX = chunkX * this.chunkSize;
+        const originZ = chunkY * this.chunkSize;
+        const items = [];
+        for (const room of metadata?.roomInstances ?? []) {
+            const plan = room.populationPlan;
+            if (!plan || !room.interior?.length) continue;
+            const dressing = planRoomDressing(room, grid, { reserved: plan.reserved, occupied: plan.placements });
+            for (const item of dressing.items) items.push({ ...item, x: item.x + originX, y: item.y + originZ });
+        }
+        if (items.length === 0) return null;
+
+        for (const item of items) {
+            if (!item.blocking) continue;
+            const collider = new THREE.Object3D();
+            collider.position.set(item.x, 0, item.y);
+            collider.userData = {
+                isScatter: true,
+                isSolidProp: true,
+                isDestructibleProp: false,
+                isRoomDressingCollider: true,
+                collisionRadius: 0.34,
+                type: 'room_dressing_collider',
+                groupType: 'dressing'
+            };
+            group.add(collider);
+            this.scatterSprites.push(collider);
+        }
+
+        const token = {};
+        group.userData.roomDressingToken = token;
+        buildRoomDressingGroup(items, {
+            loadModel: (type) => createWorld3dModel(type),
+            loadDecalTexture: (type) => loadKeyedDecalTexture(type)
+        }).then((dressing) => {
+            // The chunk may have unloaded while models streamed in.
+            if (!group.parent || group.userData.roomDressingToken !== token) {
+                dressing.traverse((node) => node.isInstancedMesh && node.dispose());
+                return;
+            }
+            group.add(dressing);
+        }).catch((error) => console.warn('[room-dressing] could not dress chunk', error));
+        return token;
+    }
+
     addRoomEnvironmentalDrips(group, chunkX, chunkY, metadata) {
         const rooms = metadata?.roomInstances ?? [];
         if (!group || rooms.length === 0 || !this.environmentDripGeometry) return;
@@ -30367,6 +30423,13 @@ export class ThreeGame {
             this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
         );
         this.addHallwayRouteDressing(
+            group,
+            chunkX,
+            chunkY,
+            this.wfcMetadataCache?.get(`${chunkX},${chunkY}`),
+            grid
+        );
+        this.addRoomDressing(
             group,
             chunkX,
             chunkY,

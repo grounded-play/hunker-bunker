@@ -38,6 +38,8 @@
     import { createWorld3dModel, WORLD_3D_MODELS, WORLD_3D_FACING_YAW } from '/src/world3dOverlay.js';
     import { roomPracticalLightPlacement } from '/src/anchorPracticalLight.js';
     import { applyBlackChromaKey, applyGreenChromaKey } from '/src/textureKeying.js';
+    import { planRoomDressing } from '/src/roomDressing.js';
+    import { buildRoomDressingGroup, loadKeyedDecalTexture } from '/src/roomDressingRenderer.js';
 
     const params = new URLSearchParams(location.search);
     const build = ROOM_BUILD_CATALOG.find((b) => b.id === params.get('build')) ?? ROOM_BUILD_CATALOG[0];
@@ -60,9 +62,9 @@
 
     // ---- textures -----------------------------------------------------------
     const TERRAIN = {
-      active: { floor: '/bunker_base_metal.png', wall: '/bunker_wall_metal.png', top: '/bunker_base_metal.png' },
-      cryo: { floor: '/cryo_base_frost.png', wall: '/cryo_wall_conduit.png', top: '/cryo_base_frost.png' },
-      bio: { floor: '/bio_base_growth.png', wall: '/bio_wall_veins.png', top: '/bio_base_growth.png' }
+      active: { floor: '/bunker_base_metal.png', wall: '/bunker_wall_metal.png', wallNormal: '/bunker_wall_metal_normal.png', top: '/bunker_base_metal.png' },
+      cryo: { floor: '/cryo_base_frost.png', wall: '/cryo_wall_conduit.png', wallNormal: '/cryo_wall_conduit_normal.png', top: '/cryo_base_frost.png' },
+      bio: { floor: '/bio_base_growth.png', wall: '/bio_wall_veins.png', wallNormal: '/bio_wall_veins_normal.png', top: '/bio_base_growth.png' }
     }[biome === 'cave' ? 'bio' : biome];
     const textureLoader = new THREE.TextureLoader();
     const tiled = (path, repeatX = 1, repeatY = 1) => {
@@ -122,7 +124,27 @@
     scene.add(floor);
 
     const WALL_HEIGHT = 2.8;
-    const wallSide = new THREE.MeshStandardMaterial({ map: tiled(TERRAIN.wall, 1, WALL_HEIGHT / 2), roughness: 0.76, metalness: 0.26 });
+    // World-aligned wall UVs: one texture spans three cells and the full wall
+    // height, continuous across neighbouring wall boxes, instead of restarting
+    // on every 1x1 cell (the visible repetition in the first showroom pass).
+    const wallNormalMap = textureLoader.load(TERRAIN.wallNormal);
+    wallNormalMap.wrapS = wallNormalMap.wrapT = THREE.RepeatWrapping;
+    const wallSide = new THREE.MeshStandardMaterial({
+      map: tiled(TERRAIN.wall, 1, 1), normalMap: wallNormalMap, normalScale: new THREE.Vector2(0.9, 0.9),
+      roughness: 0.76, metalness: 0.26
+    });
+    wallSide.onBeforeCompile = (shader) => {
+      shader.vertexShader = shader.vertexShader.replace('#include <uv_vertex>', `#include <uv_vertex>
+        vec4 hbWorld = modelMatrix * vec4(position, 1.0);
+        vec3 hbN = abs(normalize(mat3(modelMatrix) * normal));
+        vec2 hbUv = (hbN.x > hbN.z ? hbWorld.zy : hbWorld.xy) * vec2(1.0 / 3.0, 1.0 / ${WALL_HEIGHT.toFixed(1)});
+        #ifdef USE_MAP
+          vMapUv = hbUv;
+        #endif
+        #ifdef USE_NORMALMAP
+          vNormalMapUv = hbUv;
+        #endif`);
+    };
     const wallTop = new THREE.MeshStandardMaterial({ map: tiled(TERRAIN.top, 0.5, 0.5), roughness: 0.8, metalness: 0.2 });
     const wallMaterials = [wallSide, wallSide, wallTop, wallTop, wallSide, wallSide];
     const wallGeo = new THREE.BoxGeometry(1, WALL_HEIGHT, 1);
@@ -201,6 +223,14 @@
       }
     }
 
+    // Lived-in dressing layer: the same planner and instanced renderer the game uses.
+    const dressing = planRoomDressing(room, stamp.grid, { reserved: plan.reserved, occupied: plan.placements });
+    const dressingGroup = await buildRoomDressingGroup(dressing.items, {
+      loadModel: (type) => kit(type),
+      loadDecalTexture: (type) => loadKeyedDecalTexture(type)
+    });
+    scene.add(dressingGroup);
+
     // M4 practical on the signature anchor.
     if (practical) {
       const anchor = plan.placements.find(({ id }) => id === practical.placementId);
@@ -233,7 +263,8 @@
     if (toCentre.lengthSq() < 0.01) toCentre.set(1, 1);
     toCentre.normalize();
     const close = new THREE.PerspectiveCamera(50, (width * 0.42) / height, 0.1, 300);
-    close.position.set(signature.x + toCentre.x * 4.2, 3.6, signature.y + toCentre.y * 4.2);
+    // High and back (above the 2.8 m walls) so the view never starts inside a partition.
+    close.position.set(signature.x + toCentre.x * 5.2, 5.4, signature.y + toCentre.y * 5.2);
     close.lookAt(signature.x, 0.9, signature.y);
 
     const renderAll = () => {
@@ -253,7 +284,8 @@
     label.style.left = '8px';
     label.style.top = '8px';
     label.textContent = `${build.id} · ${biome} · theme ${room.theme} · ${props} props, ${decals} decals, `
-      + `${shells.length} wall shells, ${gateways.length} gateway${gateways.length === 1 ? '' : 's'}`
+      + `${shells.length} wall shells, ${gateways.length} gateway${gateways.length === 1 ? '' : 's'} · `
+      + `dressing ${dressing.items.length} pieces in ${dressingGroup.userData.drawCalls} draw calls`
       + `${practical ? ` · ${practical.light.palette} practical` : ''}`;
     document.body.append(label);
     const detail = document.createElement('div');
@@ -264,7 +296,7 @@
     detail.textContent = `focus: ${signature.kind ?? '-'} ${String(signature.type ?? '-').replace('prop_', '')}`
       + `${plan.degraded ? ' · NO SIGNATURE (cap full)' : ''}${onWalls ? ` · ${onWalls} structural on wall cells` : ''}`;
     document.body.append(detail);
-    window.__showroom = { ready: true, theme: room.theme, props, decals, shells: shells.length, gateways: gateways.length, missing, degraded: plan.degraded, onWalls };
+    window.__showroom = { ready: true, dressing: dressing.items.length, dressingDrawCalls: dressingGroup.userData.drawCalls, theme: room.theme, props, decals, shells: shells.length, gateways: gateways.length, missing, degraded: plan.degraded, onWalls };
   </script>
 </body>
 </html>
