@@ -1,3 +1,4 @@
+import { loadGltfTemplate } from './gltfTemplateCache.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
@@ -155,13 +156,8 @@ export async function preloadEnemy3dTemplates(game = null) {
 }
 
 function loadTemplate(url) {
-    if (!templates.has(url)) {
-        const promise = createGltfLoader().loadAsync(assetUrl(url)).catch((err) => {
-            templates.delete(url);
-            throw err;
-        });
-        templates.set(url, promise);
-    }
+    // Shared with the player overlay: Scout.game.glb is both (gltfTemplateCache.js).
+    if (!templates.has(url)) templates.set(url, loadGltfTemplate(url, { createLoader: createGltfLoader }));
     return templates.get(url);
 }
 

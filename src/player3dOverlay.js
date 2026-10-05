@@ -1,3 +1,4 @@
+import { loadGltfTemplate } from './gltfTemplateCache.js';
 import { createOperatorPatch } from './operatorPatch.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -139,7 +140,7 @@ function loadCharacterTemplate(url) {
     }
     const started = performance.now();
     if (!characterTemplates.has(url)) {
-        const promise = createGltfLoader().loadAsync(assetUrl(url)).catch((err) => {
+        const promise = loadGltfTemplate(url, { createLoader: createGltfLoader }).catch((err) => {
             recordAssetLoad(url, { group: 'player-character', status: 'failed', durationMs: performance.now() - started, error: err });
             characterTemplates.delete(url);
             throw err;
