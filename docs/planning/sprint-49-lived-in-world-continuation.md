@@ -15,12 +15,24 @@ plan for milestone scope, dependencies, verification gates, and definition of do
 
 ### Room grammar scope handoff — 2026-10-04
 
+- [x] Baseline slice committed as `73a96f20`.
+- [x] G1 pure planner added in `src/roomGrammar.js` with data profiles and tests.
+  Three industrial motifs, standard/major envelopes, bounded asymmetric module
+  offsets, stable IDs, three-wide circulation and exact sockets. Maximum seven
+  candidates including explicit fallback; no shared RNG or runtime changes.
+  Checks: 43 tests, scoped ESLint, 5,000 planner seeds with no failures/fallbacks.
+  [Measurements and floor plans](../reports/room-grammar-baseline-2026-10-04.md#g1-pilot-implementation).
+- [ ] **Next implementation slice: G2 adapter.** Map local sockets to chunk portals,
+  preserve actual metadata and version/identity persistence. Keep legacy saves on
+  their generator; do not reroll campaign terrain on expedition resume. G3 damage
+  targets and the finished maintenance-hall visual slice remain unimplemented.
+
 - [x] G0 first measured slice: `scripts/room-layout-portfolio.js` exercises 240
   architectural room-mode cases; 18 normalized floor shapes, 97–169 floor cells,
   widths/heights 11–13. [Evidence and limits](../reports/room-grammar-baseline-2026-10-04.md).
   Metrics/chunk/persistence tests: 38 passed. No live behavior changes.
-- [ ] Next commit: G1 pure industrial pilot. G0 still needs route-weighted coverage,
-  travel/clearance measurements and visual/render baselines before rollout.
+- [x] Next pure industrial pilot implemented as recorded above. G0 still needs
+  route-weighted coverage, travel measurements and visual/render baselines before rollout.
 
 - [x] Expanded the scope with larger room tiers and finished-room briefs after
   visually inspecting heat-exchanger, autopsy-slab, sector-gateway and tool-cart
@@ -34,12 +46,13 @@ plan for milestone scope, dependencies, verification gates, and definition of do
   Markov detail rules only erode edges; authored selection still uses the old catalog.
 - [x] Added the [G0–G6 scope](sprint-49-room-grammar-and-run-variety.md), including
   room-family motifs, corridors, 3/4-way junctions, destruction, camps and starts.
-- [ ] **Next commit: G0.** Measure normalized geometry repetition and seed/version
-  behavior on the actual live path, then characterize socket and persistence contracts.
-- [ ] **Following commit: G1.** Pure industrial interior planner; fixed entrances,
-  asymmetric motifs, bounded solve and valid fallback. Keep live defaults unchanged.
+- [x] **G0 initial baseline:** measured repetition and characterized existing seed/
+  persistence behavior; remaining portfolio/render work is listed above.
+- [x] **G1 pure planner:** fixed entrances, larger industrial motifs, bounded
+  offsets and valid fallback implemented. Next integration step is G2 above.
 
-This is planning evidence only; no new grammar or wall-destruction runtime shipped.
+The original scope entry was planning-only. A pure grammar now exists; live room
+generation and wall-destruction runtime integration remain open.
 The plan uses the game-dev skill's seeded generation and constraint patterns.
 
 - The Thursday Deck session

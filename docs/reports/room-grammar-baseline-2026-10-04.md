@@ -32,3 +32,33 @@ No runtime behavior or save schema changed.
 Remaining G0 evidence: full route-weighted portfolio, travel/clearance distributions,
 authored/connector coverage, render budgets and matched visual captures. Next slice:
 pure industrial planner with larger envelopes, fixed sockets and bounded motifs.
+
+## G1 pilot implementation
+
+Baseline commit: `73a96f20`. The script now also measures the pure pilot;
+`node scripts/room-layout-portfolio.js --sweep` runs 5,000 pilot seeds with alternating
+standard/major envelopes and cycling entrance masks. It is not distribution-matched
+to the 240-case legacy sample, so the unique counts are not a comparative percentage.
+
+- 209–641 walkable interior cells, excluding boundary doorway cells.
+- 866 rotation/translation-normalized variants across three motifs. Small bounded
+  setpiece shifts count here; this does not mean 866 distinct architectural concepts.
+- Machine island: 1,673; service spine: 1,692; paired bays: 1,635.
+- Zero fallback plans for this unconstrained portfolio. A separate forced-reservation
+  test exercises the explicit fallback after at most seven candidates.
+- 43 tests pass across grammar, metrics, chunk structure and campaign continuity;
+  the grammar test includes 960 tier/seed/entrance combinations, independent
+  three-cell-clearance traversal, offset entrances and malformed-input rejection.
+
+![Generated industrial floor plans](assets/room-grammar-pilot.svg)
+
+The diagram shows deterministic major-tier seeds with four entrances. Gray blocks
+are wall/setpiece reservations, not instantiated art or destruction targets.
+The planner is a bounded motif/offset constraint solver, not a general WFC engine.
+It preserves a circulation loop and required anchor approaches; module semantics,
+wall attachments, population and final visuals remain future integration work.
+
+Next: G2 adapter must translate local room sockets to actual chunk portals, produce
+metadata from the final grid, and persist version/identity choices before live use.
+Campaign terrain currently persists between deployments; do not reroll it merely
+because an expedition seed changes. No live defaults or save formats changed here.

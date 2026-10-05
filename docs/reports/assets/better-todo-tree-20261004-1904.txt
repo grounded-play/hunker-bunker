@@ -139,6 +139,9 @@ Notes
 Codex takeover outline
 
 Current world-design scope: docs/planning/sprint-49-room-grammar-and-run-variety.md.
+[x] G0 initial baseline (73a96f20) and G1 pure industrial planner implemented;
+    43 tests and a 5,000-seed planner sweep passed. See room-grammar-baseline report.
+[ ] Next: G2 live adapter/version persistence, then G3 damage and finished room visuals.
 Expanded: larger room tiers, four visually inspected key-art references, finished
 workshop/ward/nave/camp/arrival briefs and a maintenance-hall vertical slice.
 G0 baseline/seed contracts → G1 room grammar pilot → G2 live geometry → G3 destruction

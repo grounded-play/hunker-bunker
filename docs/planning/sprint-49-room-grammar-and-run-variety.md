@@ -248,14 +248,23 @@ Co-op peers must agree on version and plan digest before mounting geometry.
 
 ## Commit-sized implementation order
 
+- [x] **G0 initial evidence:** `73a96f20` adds a read-only 240-case baseline,
+  normalized geometry metrics and persistence characterization. Full route-weighted
+  performance/visual evidence remains open; see the [report](../reports/room-grammar-baseline-2026-10-04.md).
+- [x] **G1 pure pilot:** industrial standard/major envelopes, three motifs, bounded
+  asymmetric offsets, exact 1–4 doorway contracts, reserved circulation/anchors,
+  deterministic IDs and explicit fallback implemented in `src/roomGrammar.js`.
+  5,000-seed planner sweep passes; runtime integration and finished visuals remain open.
+
 - [ ] **G0 — baseline and contracts.** Capture a fixed seed portfolio and current
   floor-plan signatures; trace all live generation paths and expedition seeding.
   Record repetition, fallback, layout cost and prop coverage. Add characterization
   fixtures for exact sockets, objective access, save versions and unchanged legacy mode.
-- [ ] **G1 — pure interior grammar pilot.** Add proposed `roomGrammar.js` and
-  `data/roomGrammarProfiles.js`; implement industrial motifs with 1–4 entrances,
-  circulation reservations, seeded module selection, bounded rewrites and fallback.
-  Test 3/4-way connectors explicitly. No renderer or live default change yet.
+- [x] **G1 — pure interior grammar pilot.** Added `roomGrammar.js` and
+  `data/roomGrammarProfiles.js`: industrial motifs with 1–4 entrances, circulation
+  reservations, seeded module selection, bounded asymmetric offsets and fallback.
+  Explicit 3/4-way tests pass. This is a motif solver, not general WFC propagation;
+  no renderer or live default change yet.
 - [ ] **G2 — live geometry adapter.** Integrate pilot output in `chunkStructure.js`
   behind a persisted generator version/feature flag. Eliminate discarded geometry
   on the new path; ensure metadata describes the grid actually rendered. Integrate
@@ -302,9 +311,10 @@ unit-test run Deck acceptance. New geometry and destruction must not regress pac
 
 ## Continuation prompt
 
-> On dev/sprint-49, implement G0 then G1 from
+> On dev/sprint-49, continue with G2 and the remaining G0 measurements from
 > docs/planning/sprint-49-room-grammar-and-run-variety.md. Inspect current work first,
-> preserve other contributors' edits, and keep legacy generation unchanged. Commit
+> preserve other contributors' edits, and keep legacy generation unchanged. G1's
+> pure planner is implemented; integrate its contracts rather than rebuilding it. Commit
 > each bounded slice with tests and update the source checklist and continuation
 > journal between commits. Start with actual live geometry and seed behavior;
 > do not substitute more decoration for structural room and corridor variety.

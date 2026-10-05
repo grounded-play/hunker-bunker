@@ -533,6 +533,12 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
 
 ### S49-20 — world variety that preserves navigation and purpose
 
+- [x] Initial G0 baseline (`73a96f20`) and G1 pure industrial planner implemented:
+  larger envelopes, three motifs, bounded offsets and safe 1–4-way socket contracts.
+  [Evidence](../reports/room-grammar-baseline-2026-10-04.md): 43 tests and 5,000 planner seeds.
+- [ ] G2 live adapter and persisted version/identity contracts; G3 runtime destruction
+  and finished maintenance-hall presentation remain required before player rollout.
+
 - [ ] Build larger occupied rooms through the [size tiers and key-art briefs](sprint-49-room-grammar-and-run-variety.md#larger-rooms-and-finished-visual-targets):
   pilot 19×15–23×19 envelopes, then a 27×19–31×25 destination; validate actual
   floor area, circulation, combat readability and budgets before enabling.
