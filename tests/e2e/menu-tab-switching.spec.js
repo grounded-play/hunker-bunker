@@ -43,3 +43,27 @@ test.describe('menu tabs switch with Q / E', () => {
         }
     });
 });
+
+// Left / right on a focused Settings tab moved two tabs: the capture-phase
+// menu handler moved focus one tab spatially, then the tab bar's own handler
+// advanced again from there. One press must be one tab, wrapping at the ends.
+test('Settings tabs step one at a time with arrows and A / D', async ({ page }) => {
+    await bootToTitleSplash(page);
+    await page.locator('#title-settings-btn').click();
+    await expect(page.locator('#settings-popup')).toBeVisible();
+    await page.locator('#settings-popup .settings-tab.active').focus();
+    const order = await page.locator('#settings-popup .settings-tab').evaluateAll((tabs) => tabs.map((t) => t.textContent.replace(/\s+/g, ' ').trim()));
+    const focused = () => page.evaluate(() => document.activeElement?.textContent.replace(/\s+/g, ' ').trim());
+    for (let i = 1; i < order.length; i += 1) {
+        await page.keyboard.press(i % 2 ? 'ArrowRight' : 'KeyD');
+        await expect.poll(() => activeTab(page, '#settings-popup')).toBe(order[i]);
+        expect(await focused()).toBe(order[i]);
+    }
+    await page.keyboard.press('ArrowRight');
+    await expect.poll(() => activeTab(page, '#settings-popup')).toBe(order[0]);
+    await page.keyboard.press('ArrowLeft');
+    await expect.poll(() => activeTab(page, '#settings-popup')).toBe(order[order.length - 1]);
+    await page.keyboard.press('KeyA');
+    await expect.poll(() => activeTab(page, '#settings-popup')).toBe(order[order.length - 2]);
+    expect(await focused()).toBe(order[order.length - 2]);
+});

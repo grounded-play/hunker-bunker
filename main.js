@@ -1378,6 +1378,17 @@ function moveSettingsDirectionalFocus(code) {
         const target = getVisibleControllerFocusables(panel)[0];
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
+    // Left / right on a tab selects the neighbouring tab, wrapping at the ends.
+    // Spatial focus used to move first and the tab bar then stepped again from
+    // there, so one press skipped a tab.
+    const step = (code === 'ArrowRight' || code === 'KeyD') ? 1 : (code === 'ArrowLeft' || code === 'KeyA') ? -1 : 0;
+    if (tab && step) {
+        const tabs = [...popup.querySelectorAll('[data-settings-tab]')];
+        const next = tabs[(tabs.indexOf(tab) + step + tabs.length) % tabs.length];
+        selectSettingsTab(next.dataset.settingsTab, { focus: true });
+        window.AudioManager?.play?.('ui_hover', { volume: 0.12, varyPitch: true });
+        return true;
+    }
 
     return false;
 }
@@ -11042,6 +11053,9 @@ settingsPopup?.querySelector('.settings-tabs')?.addEventListener('click', (event
 });
 
 settingsPopup?.querySelector('.settings-tabs')?.addEventListener('keydown', (event) => {
+    // The capture-phase menu handler (moveSettingsDirectionalFocus) already
+    // moved: stepping again here skipped a tab per press.
+    if (event.defaultPrevented) return;
     if (event.key === 'ArrowDown') {
         event.preventDefault();
         moveSettingsDirectionalFocus(event.key);
