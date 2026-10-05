@@ -400,6 +400,18 @@ The showroom fixture will consume that mask. Unit tests will cover stability,
 exclusions, transforms, and mask contents; the 5,000-seed and full-suite gates must
 remain green. This does not resolve or bypass the four Art/runtime blockers above.
 
+**Result:** `92f95c2e` adds stable run/piece IDs, cardinal inward normals,
+objective/protected/structural/reserved-cell exclusions, and an exact presentation
+suppression mask; the showroom now consumes that mask while collision retains the
+original grid. `8d8292ea` adds overview and focal evidence for all 12 authored rooms
+using real room population, grounding, gateways, practical colours, props, decals,
+and kit assets. The fixture uses the gameplay chroma-key path; no green backing is
+present in the committed captures. Checks: 53 focused tests, 2 wall-shell Chromium
+captures, 12 furnished-room Chromium captures, full suite 4,996 passed, and a
+5,000-seed sweep reported 0 validity, spacing, manifest/territory, or determinism
+failures. M5 remains showroom-only and default-off pending **[Art]** and the four
+runtime blockers above.
+
 ### Goal 6 — reactive biomech synergies (M6)
 
 **Now:** in [`propInteractions.js`](../../src/propInteractions.js) a ruptured oxygen
@@ -415,7 +427,7 @@ Nothing yet affects an umbilical.
   within 5 m for `BIOMECH_SYNERGY_TUNING.cryoStunSeconds` = 4).
 - [x] Bile spray applies a timed armour-weakening status to snails, in addition to
   its current damage. Define the multiplier and duration in data. `1c040947`:
-  `STATUS_EFFECT.CHITIN_VULNERABILITY`, 1.25× damage taken for 6 s
+  `STATUS_IDS.CHITIN_VULNERABILITY`, 1.25× damage taken for 6 s
   (`STATUS_DEFAULTS` in [`statusEffects.js`](../../src/statusEffects.js); `BILE_ARMOR_WEAKEN`
   in [`propInteractions.js`](../../src/propInteractions.js)); reapplying
   refreshes to the greater remaining time, never stacks.
@@ -450,6 +462,26 @@ Agents cannot complete these, and they stay unchecked:
   approved, the four in-game blockers in the M5 Result must be solved before
   `hb_modular_wall_shells` does anything in play.
 - **Art requests (M4):** emissive maps for the six key-art anchors listed in M4.
+
+### Agent implementation close (2026-10-04)
+
+All safe, agent-completable Sprint 49 lived-in-world work is committed on
+`dev/sprint-49`. Final checks on the integrated tree:
+
+- `npm test -- --run`: 564 files, 4,996 tests passed.
+- `npm run audit:world-seeds:sweep`: 5,000 seeds, zero validity, spacing,
+  manifest/territory, or determinism failures.
+- `npm run presubmit:generated`: Steam claims, planned SFX, retail assets, item and
+  trade-up catalogs, soundtrack, chroma-green, and economy-icon checks passed.
+- `HB_PROBES=1 npx playwright test tests/e2e/probes/wall-shell-spike.spec.js`:
+  2/2 Chromium captures passed.
+- Furnished-room showroom: 12/12 authored room captures passed after the fixture was
+  routed through gameplay-equivalent green/black chroma keying.
+- `git diff --check`: clean for the implementation commits.
+
+The Thursday Deck log remains the comparison baseline: 16.51 ms average GPU,
+76.5 ms presented p95, and 152 ms destruction-window p95. No local test substitutes
+for the outstanding M3/M4 Deck measurements or the M5 Art decision listed above.
 
 ### Milestones
 
