@@ -114,112 +114,154 @@ frame budget. No key-art files were modified.
 
 ---
 
-## Lived-In World Improvement Goals & Master Roadmap
+## World improvement goals (verified 2026-10-04)
 
-### Strategic Overview & Design North Star
+The six goals below keep the structure added in `800816a9` but are corrected
+against the code. That expansion called 76.5 ms p95 a budget (it is the Deck's
+*measured* problem, about 13 fps), gave the gateway helper the wrong signature,
+proposed a light cap the engine already enforces, named a nonexistent
+`spore_colony` asset, and raised the room cap before measuring. It also used
+absolute `file:///` links, which failed `npm run audit:docs`.
 
-Based on the Thursday Deck session telemetry (`logs/hunker-bunker-session-2026-10-02T01-37-00-805Z-muqam0sq-bhvr.json`) and the 23 key art reference compositions (`public/keyart/`), the environment must advance from isolated prop clusters to fully realized, high-atmosphere **Giger-Corpospace Biomechanical Necro-Cathedrals** and **Frozen Industrial Extraction Facilities**. Every room must tell an immediate visual story of human corporate worship, biomechanical infection, and sudden catastrophic evacuation, while strictly maintaining the Deck 60 FPS (16.5 ms GPU / 76.5 ms gameplay p95) frame budget.
+### North star and budget
 
----
+Every room reads like the key art: **one functional anchor, infrastructure on the
+perimeter, evidence of use and failure on the floor, and restrained practical light
+on the anchor** (see *Final key-art read* above). The working floor stays readable.
 
-### Goal 1: Gateway Alignment & Doorway Apron Precision
+Budget, from the 2026-10-02 Deck capture: GPU average 16.51 ms, presented-gameplay
+p95 76.5 ms, worst window p95 152 ms at `event:destructible-prop-broken`. Frame loss
+on this project is main-thread CPU, and quality is never cut to buy frames
+(adaptive changes resolution only). So **no goal may raise main-thread work per
+frame without a Deck capture showing it does not regress p95**, and goals that add
+objects ship behind a flag until that capture exists.
 
-- **Visual Target**: Seamless transition between corridor threshold and room entrance. The modular `gate.glb` frame must sit flush against door apertures without double-framing procedural doors, clipping through ceiling bulkheads, or floating off-axis.
-- **Technical Implementation**:
-  - Audit `roomGatewayKitPlacement(room, grid, biome)` in [`src/kitGrammar.js`](../../src/kitGrammar.js):
-    - Verify cardinal rotation steps (0, 1, 2, 3) against all 4 door facing vectors (North, South, East, West).
-    - Align the threshold center with the interior side of the doorway apron (`dx`, `dz` offset of $0.5$ units into the room) so the exterior corridor door slider glides cleanly through the gate archway.
-  - Guardrail: Maintain non-colliding `isSolidProp: false`, `groupType: 'architecture'` so procedural door collision and door states in `proceduralDoors.js` remain authoritative.
-- **Verification**:
-  - Add parameterized unit tests in [`src/kitGrammar.test.js`](../../src/kitGrammar.test.js) validating offsets for all four cardinal door directions.
-  - Visual verification in showroom / live run.
+### Standing verification (every goal)
 
----
+- `npx vitest run` (full suite) and `npm run audit:docs` pass.
+- World changes: `node scripts/world-seed-portfolio-report.js --sweep-only --sweep=500`
+  passes with no navigation or reachability regressions.
+- `npm run presubmit:generated` passes when assets or catalogs change.
+- Deck-gated acceptance is marked **[Deck]** and needs a human capture uploaded to
+  the session-log drop box; agents may not mark those boxes complete.
 
-### Goal 2: Modular Architecture Shell Replacement (Replacing Generic Box Walls)
+### Goal 1 — gateway alignment (M1)
 
-- **Visual Target**: Transform rectangular, monolithic box walls into sinuous Art Nouveau / Giger biomech ribbing, recessed wall niches, and cathedral buttresses (`arch_pillar_buttress_01-04`, `arch_rib_ceiling_vault_01-03`, `kit_space_template_wall`, `kit_cave_template_wall`).
-- **Technical Implementation**:
-  - Rather than layering 3D meshes on top of existing wall tiles (which creates geometry z-fighting and double-draw calls), introduce a **Pure Wall Shell Substitution Grammar** in [`src/kitGrammar.js`](../../src/kitGrammar.js):
-    - Identify unbroken wall runs of length $\ge 3$ facing chamber floors.
-    - Suppress the generic procedural block wall render at those specific tile coordinates and instantiate socketed modular wall components (`kit_space_template_wall` or `arch_rib_ceiling_vault`).
-    - Keep kit piece scale at $1.0$ (never normalize kit piece heights or squish UVs).
-  - Treat all modular shell pieces as structural (`groupType: 'architecture'`, infinite HP, non-destructible), preserving seed layout determinism and pathfinding colliders.
-- **Verification**:
-  - 500-seed sweep confirming zero walkable-cell occlusion or navigation reachability regression.
-  - Draw-call audit verifying frustum culling handles instanced/batched modular pieces efficiently.
+**Now:** [`roomGatewayKitPlacement(door, biome)`](../../src/kitGrammar.js) centres
+`kit_<skin>_gate` on the authored threshold cells, `rotationSteps` 0 for n/s doors
+and 1 for e/w, scale 1, at most one per authored room, non-colliding. It has never
+been looked at in a real run.
 
----
+- [ ] Screenshot the gate on a north, east, south and west authored threshold
+  (showroom or seeded run) and record whether the frame's authored forward matches
+  the corridor convention, and whether the procedural door slab passes through it.
+- [ ] Only if the screenshots show clipping: add a side-dependent offset or a
+  four-step rotation in the pure helper; procedural doors and the tile grid remain
+  the only collision and lock authority.
+- [ ] Parameterized test in [`kitGrammar.test.js`](../../src/kitGrammar.test.js)
+  pinning position and rotation for all four sides.
 
-### Goal 3: Key-Art Practical Lighting & Atmospheric Contrast Pass
+**Accept:** four-side test passes; 500-seed sweep clean; screenshots committed
+under `docs/reports/assets/`.
 
-- **Visual Target**: Replace flat, uniform ambient room illumination with high-contrast, moody practical lighting drawn directly from the key art:
-  - Piercing cryogenic cyan accents (`prop_oxygen_bottle_cascade_rack`, `prop_coolant_drum_leaking_pool`).
-  - Warm liturgical amber CRT glow (`prop_liturgical_terminal_lectern`, `prop_votive_candle_shrine`).
-  - Sickly bioluminescent green fluid veins (`prop_biomech_sphincter_hatch_vent`, `prop_biomech_tracheal_wall_pipe`, `spore_colony`).
-- **Technical Implementation**:
-  - Leverage the emissive channels of PBR textures with bloom rather than adding costly dynamic point lights everywhere.
-  - Maximum **one** localized dynamic light source per chamber, tied directly to the signature anchor prop.
-  - Implement distance-attenuated light fading outside the active room bounding box to ensure zero off-screen lighting cost on the Deck GPU.
-- **Verification**:
-  - Benchmark in `src/gpuMemoryBudget.test.js` and `src/threeGame.envLightBudget.test.js` ensuring active point light limits are enforced.
+### Goal 2 — floor grounding (M2)
 
----
+**Now:** [`planRoomPopulation`](../../src/roomPopulation.js) spends the theme's
+small/ambient/rare pools at room edges under a five-object cap. Floor overlays
+exist (`FLOOR_OVERLAY_TYPES`, drawn at 0.035 elevation in `threeGame.js`). Grounding
+assets exist: `prop_floor_conduit_bridge`, `prop_floor_drainage_sump_trough`,
+`decal_rust_bleed_*`, `decal_water_stain`, `decal_spore_stain_02/03`.
 
-### Goal 4: Floor-Level Grounding Infrastructure (Conduits, Sumps & Fluid Trails)
+- [ ] A data table pairing anchors with ground dressing (e.g. dissection slab or
+  oxygen cascade rack → drainage sump or water stain; liturgical lectern → floor
+  conduit bridge; biomech vent or pipe → spore stain).
+- [ ] Place the pairing on a floor cell adjacent to the anchor, never in a door
+  apron, the room-centre lane, a pickup or a reserved fixture cell; deterministic
+  per seed.
+- [ ] Decide and document the budget rule: GLB grounding pieces count toward the
+  room cap; flat decals get their own small cap (proposal: 2 per room).
 
-- **Visual Target**: Eliminate "floating prop" syndrome by visually tethering every anchor prop to the facility floor with industrial conduits, drainage troughs, and fluid weeping:
-  - `prop_floor_conduit_bridge` spanning between wall conduits and central terminals.
-  - `prop_floor_drainage_sump_trough` collecting dripping run-off under cooling racks and dissection slabs.
-  - Floor decals (`decal_rust_bleed`, `decal_water_stain`, slime pools) procedurally stamped at prop footprints.
-- **Technical Implementation**:
-  - In [`src/roomPopulation.js`](../../src/roomPopulation.js), create an automatic **Grounding Association Pass**:
-    - When placing a signature anchor prop, automatically evaluate adjacent floor cells for low-profile ground dressing (`isFloorOverlayType` with $y=0.035$ elevation).
-    - Grounding layers consume the non-blocking ambient budget, ensuring zero collision obstruction on player movement routes.
-- **Verification**:
-  - Automated placement tests in [`src/roomPopulation.test.js`](../../src/roomPopulation.test.js) confirming grounding overlays never spawn in doorway aprons or center movement lanes.
+**Accept:** [`roomPopulation.test.js`](../../src/roomPopulation.test.js) proves the
+exclusions and determinism; 500-seed sweep clean.
 
----
+### Goal 3 — density scaling (M3, measure first)
 
-### Goal 5: Dynamic Room Density Scaling & Deck Frame Budgeting
+**Now:** `const roomObjectLimit = 5` in `roomPopulation.js`. Fractured debris is
+cached per model type on first break (`5997431e`). Nothing measures draw calls per
+room (`renderer.info` is only read by `rewardPreview.js`).
 
-- **Visual Target**: Naturally tailored density based on room volume:
-  - Cramped alcoves ($4 \times 4$ to $5 \times 5$): 2 to 3 objects max (focused functional purpose).
-  - Standard chambers ($6 \times 6$ to $8 \times 8$): 4 to 5 objects max (current baseline).
-  - Grand Cathedrals & Extraction Vaults ($10 \times 10$ and up): 6 to 8 objects (signature anchor, corner infrastructure, floor drainage, wall shrines).
-- **Technical Implementation**:
-  - Replace the static `const roomObjectLimit = 5` in [`src/roomPopulation.js`](../../src/roomPopulation.js) with a calculated budget based on walkable cell count:
-    $$\text{limit} = \text{clamp}\left(\lfloor \text{floorCells} / 12 \rfloor + 2,\, 3,\, 8\right)$$
-  - Strict priority order preserved: Pickups $\rightarrow$ Signature Anchor $\rightarrow$ Wall Infrastructure $\rightarrow$ Floor Grounding $\rightarrow$ Edge Decals.
-  - Debris fracture cache ([`src/threeGame.js`](../../src/threeGame.js)): ensure all 20 new props have pre-calculated Voronoi cell caches so destruction spikes remain under $16.5$ ms.
-- **Verification**:
-  - Performance regression test measuring frame time during multi-prop chain-reaction destructions.
-  - Verification across 1,000 generated rooms to ensure draw call count per room never exceeds 60.
+- [ ] Measurement first: a probe that reports placements, draw calls and triangles
+  per generated room (showroom or headless sweep) and commits a baseline report.
+- [ ] Area budget behind a flag (default off):
+  `limit = clamp(floor(floorCells / 12) + 2, 3, 8)`, priority unchanged (pickups →
+  signature anchor → wall infrastructure → floor grounding → edge decals).
+- [ ] Warm the fracture cache for the active room's theme models during idle time
+  on room entry, rather than precomputing every prop at boot.
+- [ ] **[Deck]** Paired capture, flag on vs off: presented p95 does not regress and
+  the destruction-burst window improves on 152 ms. Only then default the flag on.
 
----
+**Accept (agent):** baseline report committed; formula unit-tested at 4×4, 6×6,
+8×8, 10×10 and 14×14; flag off by default.
 
-### Goal 6: Living Biomechanical Attacker Ecosystem & Environmental Synergy
+### Goal 4 — practical emissive light (M4)
 
-- **Visual Target**: Biomechanical chambers feel dynamically dangerous, alive, and reactive.
-- **Technical Implementation**:
-  - Expand `UmbilicalAttacker` integration:
-    - Procedurally position umbilical attackers on ceiling anchors or wall breaches in `bio` and `giger-cathedral` chambers.
-    - Audio cues: spatial organic breathing and tension soundscapes (`ambient_steam_hiss`, `flesh_squish`) when entering detection radius ($7.0$m).
-  - Environmental Prop Synergies:
-    - Rupturing a `prop_oxygen_bottle_cascade_rack` cryo-stuns nearby living umbilicals for 4.0 seconds.
-    - Breaching a `prop_biomech_sphincter_hatch_vent` corrosive bile spray damages and weakens surrounding enemy chitin armor.
-- **Verification**:
-  - Unit tests in [`src/umbilicalAttacker.test.js`](../../src/umbilicalAttacker.test.js) and [`src/propInteractions.test.js`](../../src/propInteractions.test.js) for synergy callbacks and state transitions.
+**Now:** the environment light pool already caps the visible lights
+(`ENV_LIGHT_BUDGET = 8`, nearest registered sources lit, the rest parked at zero;
+[`threeGame.envLightBudget.test.js`](../../src/threeGame.envLightBudget.test.js)).
+So the existing pool already provides the "max one light, fade off-screen" idea.
 
----
+- [ ] Emissive palette table for signature anchors: cyan (oxygen cascade rack,
+  coolant drum), amber (liturgical lectern, votive shrine), green (biomech hatch
+  vent, tracheal wall pipe). Audit which GLBs carry an emissive map, and list the
+  rest as art requests instead of faking them in code.
+- [ ] Register each room's signature anchor as one pooled source in its palette
+  colour; add no lights outside the pool.
 
-### Milestone Implementation Roadmap
+**Accept:** light-budget tests still pass; a new test proves at most one anchor
+source per room; before/after screenshots. **[Deck]** p95 does not regress.
 
-| Milestone | Target Horizon | Core Focus | Primary Deliverables | Key Metric / Gate |
-|---|---|---|---|---|
-| **M1: Threshold & Gateway Precision** | Sprint 49.1 | Doorway framing & cardinal alignment | `kitGrammar.js` rotation tuning, zero doorway apron clipping | 500-seed sweep, 0 navigation conflicts |
-| **M2: Floor Grounding & Decal Tethering** | Sprint 49.2 | Eliminating floating props, industrial floor clutter | `roomPopulation.js` grounding associations, drainage sumps | Non-blocking edge placement verified |
-| **M3: Dynamic Room Density Scaling** | Sprint 49.3 | Area-based density budgeting (3–8 props) | Adaptive `roomObjectLimit` by room area, draw-call cap | Deck p95 GPU $\le 16.5$ ms |
-| **M4: Practical Emissive Lighting Pass** | Sprint 49.4 | High-contrast key art atmospheric lighting | Signature prop emissives, amber/cyan/green palettes | Max 1 dynamic light/room, zero unlit wash |
-| **M5: Modular Wall Shell Substitution** | Sprint 50.0 | Replacing primitive box walls with cathedral arches | Wall run replacement grammar, structural kit piece reuse | Zero z-fighting, 100% pathing determinism |
-| **M6: Reactive Environmental Synergies** | Sprint 50.1 | Living hazards, chain reactions, cryo/bile synergies | Umbilical stun from cryo vents, corrosive acid cascades | Full combat & interaction test pass |
+### Goal 5 — modular wall shells (M5, design-gated)
+
+**Now:** wall kit pieces exist (`kit_cave_template_wall*`, `arch_pillar_buttress_01-04`,
+`arch_rib_ceiling_vault_01-03`) but only gateways reach normal play. Layering shells
+over existing walls was ruled out (z-fighting, double draw).
+
+- [ ] Spike in the showroom: detect straight wall runs of 3 or more facing an
+  authored chamber, and swap the procedural wall render for kit pieces at uniform
+  scale 1 for one biome. Tile collision stays authoritative; shells are structural
+  and indestructible.
+- [ ] **[Art]** Art-direction sign-off on the spike before it reaches normal play.
+
+**Accept (agent):** spike screenshots plus a 500-seed sweep with the spike flag on;
+no default-on change without the art sign-off.
+
+### Goal 6 — reactive biomech synergies (M6)
+
+**Now:** in [`propInteractions.js`](../../src/propInteractions.js) a ruptured oxygen
+cascade rack already deals cryo damage to nearby snails, and the sphincter hatch vent
+deals bile damage. The `ambient_steam_hiss` and `flesh_squish` cues exist. Living
+umbilicals ([`umbilicalAttacker.js`](../../src/3d/umbilicalAttacker.js)) come only
+from the giger theme's `prop_biomech_spore_umbilical_cable_rigged` signature prop.
+Nothing yet affects an umbilical.
+
+- [ ] `UmbilicalAttacker` gains a stun state; a cryo rupture within range stuns
+  it for 4 s (no attacks; a visible frost state).
+- [ ] Bile spray applies a timed armour-weakening status to snails, in addition to
+  its current damage. Define the multiplier and duration in data.
+- [ ] Spatial breathing/tension cue when the player enters an umbilical's 7 m
+  detection radius, using the existing sound keys.
+
+**Accept:** [`umbilicalAttacker.test.js`](../../src/umbilicalAttacker.test.js) and
+[`propInteractions.test.js`](../../src/propInteractions.test.js) cover stun timing,
+status expiry and the cue trigger; full suite green.
+
+### Milestones
+
+| Milestone | Goal | Agent-completable gate | Human gate |
+|---|---|---|---|
+| M1 | Gateway alignment | 4-side test, screenshots, 500-seed sweep | none |
+| M2 | Floor grounding | exclusion and determinism tests, sweep | none |
+| M3 | Density scaling | baseline probe report, flag-off formula | **[Deck]** paired capture |
+| M4 | Emissive light | pool tests, one-anchor test, screenshots | **[Deck]** p95 check |
+| M5 | Wall shells | showroom spike, sweep with flag on | **[Art]** sign-off |
+| M6 | Reactive synergies | stun, debuff and cue tests | none |
