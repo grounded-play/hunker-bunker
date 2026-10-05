@@ -40,9 +40,10 @@ export function buildEquipOptions({
         const equippable = ownership.canEquip(id);
         const isSelected = selected !== null && selected === id;
 
+        const isSecretLocked = Boolean(entry.isSecret) && !owned && !equippable;
         const rarity = entry.rarity ? entry.rarity.toUpperCase() : '';
-        const name = getItemName(id) ?? entry.name;
-        let label = rarity ? `${name} (${rarity})` : name;
+        const name = isSecretLocked ? '??? [SECRET EXOSUIT]' : (getItemName(id) ?? entry.name);
+        let label = rarity && !isSecretLocked ? `${name} (${rarity})` : name;
         if (!owned) {
             // Distinguish "you don't have this" from "you don't have this but
             // dev mode is letting you wear it anyway", so a dev session can

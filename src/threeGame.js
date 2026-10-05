@@ -5318,19 +5318,63 @@ export class ThreeGame {
         }
     }
 
+    isMayorTinaSpawnEligible(seed = this.runEntropy) {
+        if (this.forceMayorTinaSpawn) return true;
+        const s = (Number(seed ?? 0) >>> 0) ^ 0x5a17e0ac;
+        const hash = Math.imul(s ^ (s >>> 16), 0x45d9f3b);
+        return ((hash ^ (hash >>> 16)) >>> 0) % 4 === 0;
+    }
+
     getMayorTinaEncounterPosition() {
-        // Farther down the three-wide north approach, before its first bend.
-        // Pick once per seed rather than rolling during the per-frame query:
-        // the models, siren, and interaction must agree on a stable position.
-        const offset = ((this.runEntropy || 0) >>> 0) % 7;
-        return { x: CRASH_SITE_CENTER, z: -14 - offset };
+        if (this._mayorTinaPosition) return this._mayorTinaPosition;
+        // Anchor to Ring 2 radial band (~85--105m from anchor/center)
+        const anchor = this.getBiomeAnchorPosition?.() ?? { x: CRASH_SITE_CENTER, z: CRASH_SITE_CENTER };
+        const seed = Number(this.runEntropy || 0) >>> 0;
+        // Deterministic angle and radius within Ring 2 (78m - 118m)
+        const s = (seed ^ 0x714a) >>> 0;
+        const hash = Math.imul(s ^ (s >>> 16), 0x9e3779b9);
+        const angle = ((hash >>> 0) % 6283) / 1000;
+        const radiusOffset = ((hash >>> 16) % 18);
+        const radius = 86 + radiusOffset; // 86m to 103m, safely in Ring 2 band [78, 118]
+
+        let targetX = anchor.x + Math.cos(angle) * radius;
+        let targetZ = anchor.z + Math.sin(angle) * radius;
+
+        if (typeof this.canOccupyPosition === 'function') {
+            let found = false;
+            for (let r = 0; r <= 8 && !found; r++) {
+                for (let dx = -r; dx <= r && !found; dx++) {
+                    for (let dz = -r; dz <= r && !found; dz++) {
+                        const checkX = Math.round(targetX) + dx;
+                        const checkZ = Math.round(targetZ) + dz;
+                        if (this.canOccupyPosition(checkX, checkZ) &&
+                            this.canOccupyPosition(checkX + 1, checkZ) &&
+                            this.canOccupyPosition(checkX - 1, checkZ) &&
+                            this.canOccupyPosition(checkX, checkZ + 1) &&
+                            this.canOccupyPosition(checkX, checkZ - 1)) {
+                            targetX = checkX;
+                            targetZ = checkZ;
+                            found = true;
+                        }
+                    }
+                }
+            }
+        } else {
+            targetX = Math.round(targetX);
+            targetZ = Math.round(targetZ);
+        }
+
+        const pos = { x: targetX, z: targetZ };
+        this._mayorTinaPosition = pos;
+        return pos;
     }
 
     async setupMayorTinaEncounter() {
+        if (!this.isMayorTinaSpawnEligible()) return false;
         const encounter = this.mayorTinaEncounter;
         if (!encounter || this.isMultiplayer || encounter.phase !== 'idle') return false;
         if (encounter.mayorRoot && encounter.teacupRoot) {
-            encounter.mayorRoot.visible = this.performanceProfile === 'gameplay';
+            encounter.mayorRoot.visible = false;
             encounter.teacupRoot.visible = this.performanceProfile === 'gameplay';
             return true;
         }
@@ -5342,17 +5386,15 @@ export class ThreeGame {
         ]).then(([mayorRoot, teacupRoot]) => {
             if (!mayorRoot || !teacupRoot || this.mayorTinaEncounter !== encounter) return false;
             const position = this.getMayorTinaEncounterPosition();
-            // The cup is Mayor Tina's extremely questionable bath. Tina sits
-            // slightly inside it; both remain separately readable from above.
+            // In the initial idle state, only the teacup is visible in the world.
+            // Mayor Tina is placed inside at y=0.43 but hidden (visible = false)
+            // until the player attacks or triggers her.
             teacupRoot.position.set(position.x, 0, position.z);
             teacupRoot.rotation.y = Math.PI;
             mayorRoot.position.set(position.x, 0.43, position.z - 0.03);
-            // The model faces +Z (south), toward the player's approach; the
-            // root carries no turn of its own, so the hostile chase's
-            // atan2(dx, dz) points her face, not her back, at the player.
             mayorRoot.rotation.y = 0;
             mayorRoot.scale.setScalar(0.68);
-            mayorRoot.visible = this.performanceProfile === 'gameplay';
+            mayorRoot.visible = false;
             teacupRoot.visible = this.performanceProfile === 'gameplay';
             this.scene.add(teacupRoot, mayorRoot);
             encounter.mayorRoot = mayorRoot;
@@ -5506,7 +5548,7 @@ export class ThreeGame {
     finishMayorTinaTransformationSequence() {
         if (this.mayorTinaEncounter?.phase !== 'transformed') return false;
         this.cinematicLock = false;
-        this.setInputEnabled(true);
+        this.setInputEnabled?.(true);
         // The other half of the Tina linchpin. This transformation IS the
         // "become a bug" path -- it was already implemented and simply never
         // reported its outcome, so the joined resolution was reachable only
@@ -5514,6 +5556,12 @@ export class ThreeGame {
         // interaction, so an aborted cinematic does not bank the consequence.
         applyLinchpinResolution(this.act2, 'mayor_tina', 'joined');
         this.act2?.adjustInfectionLoad?.(50);
+        const store = typeof window !== 'undefined' ? window.itemOwnership : null;
+        if (store?.grantSecret) {
+            store.grantSecret('skin_scout_mayor_tina');
+        }
+        this.showBunkerLine?.('SECRET UNLOCKED: SCOUT CHASSIS — MAYOR TINA');
+        window.dispatchEvent?.(new CustomEvent('secret-skin-unlocked', { detail: { id: 'skin_scout_mayor_tina' } }));
         return true;
     }
 
@@ -5545,6 +5593,7 @@ export class ThreeGame {
     resetMayorTinaEncounter() {
         const encounter = this.mayorTinaEncounter;
         if (!encounter) return;
+        this._mayorTinaPosition = null;
         if (encounter.phase === 'transformed' && encounter.originalOverlay?.root && this.player) {
             encounter.transformedOverlay?.dispose?.();
             encounter.transformedOverlay = null;
@@ -5583,7 +5632,7 @@ export class ThreeGame {
             encounter.mayorRoot.position.set(position.x, 0.43, position.z - 0.03);
             encounter.mayorRoot.rotation.set(0, 0, 0);
             encounter.mayorRoot.scale.setScalar(0.68);
-            encounter.mayorRoot.visible = this.performanceProfile === 'gameplay';
+            encounter.mayorRoot.visible = false;
             this.scene.add(encounter.mayorRoot);
         }
         this.cinematicLock = false;
@@ -27105,12 +27154,15 @@ export class ThreeGame {
     checkProjectileMayorTinaHit(projectile) {
         if (projectile?.isEnemy) return false;
         const encounter = this.mayorTinaEncounter;
-        const root = encounter?.mayorRoot;
-        if (!root || encounter.tinaDead || !root.visible) return false;
+        if (!encounter || encounter.tinaDead) return false;
+        const hitTarget = encounter.phase === 'idle'
+            ? (encounter.teacupRoot || encounter.mayorRoot)
+            : encounter.mayorRoot;
+        if (!hitTarget || !hitTarget.visible) return false;
 
         const distance = Math.hypot(
-            projectile.mesh.position.x - root.position.x,
-            projectile.mesh.position.z - root.position.z
+            projectile.mesh.position.x - hitTarget.position.x,
+            projectile.mesh.position.z - hitTarget.position.z
         );
         if (distance > 0.75 + (projectile.radius ?? PROJECTILE_RADIUS)) return false;
 
@@ -27131,20 +27183,25 @@ export class ThreeGame {
         if (result.outcome === 'warning') {
             // One warning, then she fights. The choice has to be legible as a
             // choice, so it speaks.
-            //
-            // Via bunker-line, not lineDirector: LineDirector exposes
-            // requestLine(trigger, context, pool, random) and has no say(), so
-            // the previous call was dead code that optional chaining swallowed
-            // silently -- the warning beat never appeared at all. The speaker
-            // prefix must be "MAYOR TINA:" exactly; main.js whitelists that and
-            // renders anything else as a line spoken by the bunker.
+            // Ceramic destruction burst VFX, camera shake, and shatter sound
+            this.spawnPhysicalBurst?.(root.position.x, root.position.z, { color: 0xffffff, count: 24, upward: 0.35 });
+            this.triggerCameraShake?.(0.08, 0.2);
+            window.AudioManager?.play?.('glass_break', (this.audioAt?.(root.position.x, root.position.z, { volume: 0.7 }) ?? { volume: 0.7 }));
+
             window.dispatchEvent(new CustomEvent('bunker-line', {
                 detail: { text: 'MAYOR TINA: PUT THAT DOWN. I AM ASKING ONCE.' }
             }));
             encounter.phase = 'hostile';
             encounter.hostileLastUpdateAt = performance.now();
             encounter.teacupRoot?.removeFromParent?.();
-            encounter.mayorRoot.position.y = 0;
+            if (encounter.teacupRoot) encounter.teacupRoot.visible = false;
+            encounter.mayorRoot.visible = true;
+            encounter.mayorRoot.position.set(root.position.x, 0, root.position.z);
+            if (this.player) {
+                const dx = this.player.position.x - root.position.x;
+                const dz = this.player.position.z - root.position.z;
+                encounter.mayorRoot.rotation.y = Math.atan2(dx, dz);
+            }
             document.getElementById('mayor-tina-hud-prompt')?.classList.add('hidden');
             if (window.AudioManager?.activeVoice?.speakerName?.toUpperCase?.().includes('TINA')) {
                 window.AudioManager.stopActiveVoice?.(0.05);
@@ -27155,6 +27212,7 @@ export class ThreeGame {
 
         encounter.phase = 'dead';
         encounter.teacupRoot?.removeFromParent?.();
+        if (encounter.teacupRoot) encounter.teacupRoot.visible = false;
         document.getElementById('mayor-tina-hud-prompt')?.classList.add('hidden');
         if (window.AudioManager?.activeVoice?.speakerName?.toUpperCase?.().includes('TINA')) {
             window.AudioManager.stopActiveVoice?.(0.05);
@@ -27173,6 +27231,12 @@ export class ThreeGame {
         // Irreversible: applyLinchpinResolution is write-once, so a stray
         // extra projectile in the same frame cannot double the standing hit.
         applyLinchpinResolution(this.act2, 'mayor_tina', 'killed');
+        const store = typeof window !== 'undefined' ? window.itemOwnership : null;
+        if (store?.grantSecret) {
+            store.grantSecret('skin_scout_mayor_tina');
+        }
+        this.showBunkerLine?.('SECRET UNLOCKED: SCOUT CHASSIS — MAYOR TINA');
+        window.dispatchEvent?.(new CustomEvent('secret-skin-unlocked', { detail: { id: 'skin_scout_mayor_tina' } }));
         window.dispatchEvent(new CustomEvent('mayor-tina-killed', {
             detail: { x: root.position.x, z: root.position.z }
         }));

@@ -49,21 +49,32 @@ describe('Mayor Tina secret encounter', () => {
         });
     });
 
-    it('places the encounter farther down the approach and keeps it stable for each seed', () => {
+    it('places the encounter in Ring 2 and keeps it stable for each seed', () => {
         const positions = new Set();
         for (const runEntropy of [0, 1, 2, 3, 4, 5, 6, 99999, -1, 0xffffffff]) {
             const position = ThreeGame.prototype.getMayorTinaEncounterPosition.call({ runEntropy });
-            expect(position.x).toBe(9);
-            expect(position.z).toBeGreaterThanOrEqual(-20);
-            expect(position.z).toBeLessThanOrEqual(-14);
-            expect(Math.hypot(position.x - 9, position.z - 9)).toBeGreaterThanOrEqual(23);
+            const distance = Math.hypot(position.x - 9, position.z - 9);
+            expect(distance).toBeGreaterThanOrEqual(78);
+            expect(distance).toBeLessThanOrEqual(118);
             expect(ThreeGame.prototype.getMayorTinaEncounterPosition.call({ runEntropy })).toEqual(position);
-            positions.add(position.z);
+            positions.add(`${position.x},${position.z}`);
         }
-        expect(positions.size).toBe(7);
+        expect(positions.size).toBeGreaterThanOrEqual(5);
     });
 
-    it('keeps both encounter models facing the approach after repeated setup and a new-run reset', async () => {
+    it('gates Mayor Tina behind a deterministic ~25% rare seed distribution', () => {
+        let eligible = 0;
+        const total = 1000;
+        for (let i = 0; i < total; i++) {
+            if (ThreeGame.prototype.isMayorTinaSpawnEligible.call({ runEntropy: i })) {
+                eligible++;
+            }
+        }
+        expect(eligible / total).toBeCloseTo(0.25, 1);
+        expect(ThreeGame.prototype.isMayorTinaSpawnEligible.call({ forceMayorTinaSpawn: true, runEntropy: 1 })).toBe(true);
+    });
+
+    it('keeps only teacup visible in idle and resets properly', async () => {
         const mayorRoot = new THREE.Group();
         const teacupRoot = new THREE.Group();
         const normalizedModel = new THREE.Group();
@@ -71,6 +82,8 @@ describe('Mayor Tina secret encounter', () => {
         mayorRoot.add(normalizedModel);
         const game = {
             runEntropy: 0,
+            forceMayorTinaSpawn: true,
+            isMayorTinaSpawnEligible: ThreeGame.prototype.isMayorTinaSpawnEligible,
             performanceProfile: 'gameplay',
             scene: new THREE.Scene(),
             mayorTinaEncounter: { phase: 'idle', lastSirenAt: 0, calloutIndex: 0 },
@@ -82,15 +95,21 @@ describe('Mayor Tina secret encounter', () => {
         expect(game.createWorld3dModel).toHaveBeenCalledTimes(2);
         expect(mayorRoot.rotation.y + normalizedModel.rotation.y).toBeCloseTo(0, 6);
         expect(teacupRoot.rotation.y).toBe(Math.PI);
-        expect(mayorRoot.position.z).toBeCloseTo(-14.03);
-        expect(teacupRoot.position.z).toBe(-14);
+        const pos0 = game.getMayorTinaEncounterPosition();
+        expect(teacupRoot.position.x).toBe(pos0.x);
+        expect(teacupRoot.position.z).toBe(pos0.z);
+        expect(teacupRoot.visible).toBe(true);
+        expect(mayorRoot.visible).toBe(false); // Tina hidden initially!
 
         game.runEntropy = 6;
         ThreeGame.prototype.resetMayorTinaEncounter.call(game);
         expect(mayorRoot.rotation.y + normalizedModel.rotation.y).toBeCloseTo(0, 6);
         expect(teacupRoot.rotation.y).toBe(Math.PI);
-        expect(mayorRoot.position.z).toBeCloseTo(-20.03);
-        expect(teacupRoot.position.z).toBe(-20);
+        const pos6 = game.getMayorTinaEncounterPosition();
+        expect(teacupRoot.position.x).toBe(pos6.x);
+        expect(teacupRoot.position.z).toBe(pos6.z);
+        expect(teacupRoot.visible).toBe(true);
+        expect(mayorRoot.visible).toBe(false);
         expect(game.scene.children).toHaveLength(2);
     });
 
@@ -258,6 +277,54 @@ describe('Mayor Tina secret encounter', () => {
         });
         expect(scene.children).toContain(mayorRoot);
         expect(scene.children).toContain(teacupRoot);
-        expect(mayorRoot.visible).toBe(true);
+        expect(teacupRoot.visible).toBe(true);
+        expect(mayorRoot.visible).toBe(false);
+    });
+
+    it('allows projectiles to hit the teacup during idle and burst into hostile chasing Tina', () => {
+        const mayorRoot = new THREE.Group();
+        const teacupRoot = new THREE.Group();
+        teacupRoot.position.set(20, 0, 80);
+        mayorRoot.position.set(20, 0.43, 79.97);
+        mayorRoot.visible = false;
+        teacupRoot.visible = true;
+        const game = {
+            mayorTinaEncounter: { phase: 'idle', mayorRoot, teacupRoot, tinaDead: false, tinaHitsRemaining: 4 },
+            player: { position: new THREE.Vector3(20, 0, 75) },
+            onMayorTinaHit: vi.fn(),
+            spawnPhysicalBurst: vi.fn(),
+            triggerCameraShake: vi.fn()
+        };
+        const projectile = {
+            isEnemy: false,
+            mesh: { position: new THREE.Vector3(20, 0, 80.1) },
+            radius: 0.1
+        };
+        const hit = ThreeGame.prototype.checkProjectileMayorTinaHit.call(game, projectile);
+        expect(hit).toBe(true);
+        expect(game.onMayorTinaHit).toHaveBeenCalled();
+    });
+
+    it('unlocks the Scout: Mayor Tina secret skin upon transformation completion and combat victory', () => {
+        const grantSecret = vi.fn();
+        window.itemOwnership = { grantSecret };
+        const game = {
+            mayorTinaEncounter: { phase: 'transformed' },
+            act2: { adjustInfectionLoad: vi.fn() },
+            showBunkerLine: vi.fn()
+        };
+        ThreeGame.prototype.finishMayorTinaTransformationSequence.call(game);
+        expect(grantSecret).toHaveBeenCalledWith('skin_scout_mayor_tina');
+
+        grantSecret.mockClear();
+        const mayorRoot = new THREE.Group();
+        const combatGame = {
+            mayorTinaEncounter: { phase: 'hostile', mayorRoot, tinaDead: true },
+            showBunkerLine: vi.fn(),
+            spawnDamagePip: vi.fn(),
+            audioAt: vi.fn(() => ({}))
+        };
+        ThreeGame.prototype.onMayorTinaHit.call(combatGame, { outcome: 'killed' });
+        expect(grantSecret).toHaveBeenCalledWith('skin_scout_mayor_tina');
     });
 });

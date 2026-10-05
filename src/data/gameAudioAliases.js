@@ -23,6 +23,7 @@ export const GAME_AUDIO_ALIASES = Object.freeze({
     turret_fire: 'weapon_fire_sidearm',
     turret_reprogram: 'ui_upgrade_weapon',
     crystal_shatter: 'prop_impact_glass',
+    glass_break: 'prop_impact_glass',
     // Enemy walking and movement noise aliases
     enemy_walk_crawler: 'footstep_concrete',
     enemy_skitter_crawler: 'footstep_concrete',

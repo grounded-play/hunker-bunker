@@ -97,6 +97,7 @@ export const CHASSIS_SKIN_MODELS = Object.freeze({
     '5008': '/3d/runtime/new3ds/chassis_tank_gentle_titan.glb',
     '5011': '/3d/runtime/new3ds/chassis_engineer_chen_undying.glb',
     '5012': '/3d/runtime/new3ds/chassis_engineer_exodus_vanguard.glb',
+    'skin_scout_mayor_tina': '/3d/runtime/secrets/mayor-tina-rigged.glb',
     ...(COMMUNITY_GLB_MAP || {})
 });
 

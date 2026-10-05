@@ -419,5 +419,10 @@ export const ARMORY_PREVIEWS = Object.freeze({
         "icon": "/economy/armory/comm_eng_apex.png",
         "source": "model-render",
         "model": "/3d/runtime/community/eng_apex.glb"
+    },
+    "skin_scout_mayor_tina": {
+        "icon": "/lore_portraits/mayor_tina.webp",
+        "source": "model-render",
+        "model": "/3d/runtime/secrets/mayor-tina-rigged.glb"
     }
 });

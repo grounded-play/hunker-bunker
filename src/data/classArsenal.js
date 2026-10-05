@@ -23,7 +23,7 @@ export const CLASS_ARCHETYPES = Object.freeze({
 export const CLASS_CHASSIS_SKINS = Object.freeze({
     // 4200/4207/4214/4228/4235 are static meshes with no skin binding;
     // 5001 uses the rigged Corpo Shadow Runner body until its own model lands.
-    scout: ['4113', '4115', '4118', '4221', '5001', '5003', '5004', ...(COMMUNITY_CLASS_MAP?.scout || [])],
+    scout: ['4113', '4115', '4118', '4221', '5001', '5003', '5004', 'skin_scout_mayor_tina', ...(COMMUNITY_CLASS_MAP?.scout || [])],
     tank: ['4114', '4117', '4119', '5005', '5007', '5008', ...(COMMUNITY_CLASS_MAP?.tank || [])],
     engineer: ['4112', '4116', '5011', '5012', ...(COMMUNITY_CLASS_MAP?.engineer || [])]
 });
