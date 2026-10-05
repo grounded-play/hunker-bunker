@@ -16,10 +16,14 @@ afterEach(() => {
     directory = null;
 });
 
-async function open(kind, seed = []) {
+// `memory` keeps a large sqlite seed off the disk: each savePurchaseState is
+// its own committed transaction, and 1,005 synced commits outran the 15 s
+// test timeout on CI runners (1.2 s locally).
+async function open(kind, seed = [], { memory = false } = {}) {
     directory ??= fs.mkdtempSync(path.join(os.tmpdir(), 'hb-report-db-'));
     if (kind === 'sqlite') {
-        backend = createSqliteBackend({ DatabaseSync, dbFilePath: path.join(directory, 'ledger.sqlite') });
+        const dbFilePath = memory ? ':memory:' : path.join(directory, 'ledger.sqlite');
+        backend = createSqliteBackend({ DatabaseSync, dbFilePath });
         await backend.initDb();
         for (const row of seed) await backend.savePurchaseState(row);
     } else {
@@ -68,7 +72,7 @@ describe.each(['json', 'sqlite'])('%s report persistence', (kind) => {
             status: 'completed', createdAt: 123, updatedAt: 456
         }));
         vi.spyOn(Date, 'now').mockReturnValue(456);
-        const db = await open(kind, rows);
+        const db = await open(kind, rows, { memory: true });
         const first = db.listPurchases({ limit: 1000 });
         const second = db.listPurchases({ limit: 1000, offset: 1000 });
         expect(first).toHaveLength(1000);
