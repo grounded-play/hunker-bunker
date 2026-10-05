@@ -37637,6 +37637,10 @@ export class ThreeGame {
         }
 
         for (const child of this.scatterSprites) {
+            // Room-dressing collision proxies have no material or sprite: the
+            // instanced dressing batch draws them. Animating one by its type
+            // (bunker_junk_*) threw every frame and blacked out the render.
+            if (child.userData.isRoomDressingCollider) continue;
             const baseY = child.userData.elevationOffset ?? 0;
             child.userData.baseY = baseY;
             if (shouldScan3dReplacements) {
