@@ -7135,7 +7135,7 @@ export class ThreeGame {
                         y: source.position.y,
                         z: source.position.z,
                         hp: source.userData?.propHp ?? 85,
-                        detectionRadius: 7.5,
+                        detectionRadius: 7.0,
                         strikeRadius: 3.5,
                         attackDamage: 1,
                         root
@@ -16353,6 +16353,15 @@ export class ThreeGame {
                 continue;
             }
             attacker.update(delta, playerPos, {
+                onDetectionEnter: () => {
+                    const pitchOffset = Math.abs(Math.trunc(attacker.x * 17 + attacker.z * 31)) % 5;
+                    if (typeof window !== 'undefined') {
+                        window.AudioManager?.play?.('enemy_alert_snail', this.audioAt?.(attacker.x, attacker.z, {
+                            volume: 0.42,
+                            playbackRate: 0.66 + pitchOffset * 0.025
+                        }) ?? { volume: 0.42, playbackRate: 0.66 + pitchOffset * 0.025 });
+                    }
+                },
                 onDamagePlayer: (event) => {
                     if (this.isPlayerDead) return;
                     this.takeDamage(event.damage || 1, 'biomech_umbilical_strike', attacker.x, attacker.z);

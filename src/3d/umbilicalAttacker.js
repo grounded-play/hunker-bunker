@@ -23,11 +23,15 @@ export class UmbilicalAttacker {
         this.strikeCooldown = options.strikeCooldown || 2.4;
         this.cooldownTimer = 0;
 
-        this.state = 'IDLE'; // IDLE | TRACKING | ANTICIPATION | STRIKE | RECOVERY | DEAD
+        this.state = 'IDLE'; // IDLE | TRACKING | ANTICIPATION | STRIKE | RECOVERY | STUNNED | DEAD
         this.stateTimer = 0;
+        this.stunTimer = 0;
+        this.disposed = false;
 
         this.flashTimer = 0;
         this._ownsRoot = !options.root;
+        this._ownedMaterials = new Set();
+        this._materialRestState = new Map();
 
         if (options.root) {
             this.rootGroup = options.root;
@@ -65,6 +69,14 @@ export class UmbilicalAttacker {
                     child.material = Array.isArray(child.material)
                         ? child.material.map((m) => m.clone())
                         : child.material.clone();
+                    const materials = Array.isArray(child.material) ? child.material : [child.material];
+                    for (const material of materials) {
+                        this._ownedMaterials.add(material);
+                        this._materialRestState.set(material, {
+                            emissive: material.emissive?.clone?.() ?? null,
+                            emissiveIntensity: material.emissiveIntensity ?? 0
+                        });
+                    }
                 }
             });
 
@@ -104,6 +116,37 @@ export class UmbilicalAttacker {
         this.activeAction = nextAction;
     }
 
+    _restoreMaterialVisuals() {
+        for (const [material, rest] of this._materialRestState) {
+            if (material.emissive && rest.emissive) material.emissive.copy(rest.emissive);
+            if ('emissiveIntensity' in material) material.emissiveIntensity = rest.emissiveIntensity;
+        }
+    }
+
+    _showFrostVisual() {
+        for (const material of this._ownedMaterials) {
+            if (!material.emissive) continue;
+            material.emissive.setHex(0x55ccff);
+            material.emissiveIntensity = 0.85;
+        }
+    }
+
+    /**
+     * Holds the attacker harmless for a bounded duration. Repeated applications
+     * refresh to the longer remaining duration rather than stacking.
+     */
+    stun(seconds) {
+        if (!this.isAlive || this.disposed) return false;
+        const duration = Math.max(0, Number(seconds) || 0);
+        if (duration <= 0) return false;
+        this.stunTimer = Math.max(this.stunTimer, duration);
+        this.state = 'STUNNED';
+        this.stateTimer = 0;
+        this.playAction('idle_sway', 0.1);
+        this._showFrostVisual();
+        return true;
+    }
+
     takeDamage(amount) {
         if (!this.isAlive) return false;
         this.hp -= amount;
@@ -127,6 +170,7 @@ export class UmbilicalAttacker {
         if (this.hp <= 0) {
             this.hp = 0;
             this.isAlive = false;
+            this.stunTimer = 0;
             this.state = 'DEAD';
             this.playAction('sever_convulsion', 0.1, THREE.LoopOnce);
             return true; // Fatal blow
@@ -148,9 +192,9 @@ export class UmbilicalAttacker {
                         const mats = Array.isArray(child.material) ? child.material : [child.material];
                         for (const mat of mats) {
                             if (mat && mat.emissive) {
-                                mat.emissive.setHex(0x000000);
-                                mat.emissiveIntensity = 0.0;
-                            }
+                            if (this.state === 'STUNNED') this._showFrostVisual();
+                            else this._restoreMaterialVisuals();
+                        }
                         }
                     }
                 });
@@ -162,6 +206,18 @@ export class UmbilicalAttacker {
         }
 
         if (!this.isAlive) {
+            return;
+        }
+
+        if (this.state === 'STUNNED') {
+            this.stunTimer = Math.max(0, this.stunTimer - dt);
+            if (this.stunTimer > 0) {
+                this._showFrostVisual();
+                return;
+            }
+            this._restoreMaterialVisuals();
+            this.state = 'IDLE';
+            this.playAction('idle_sway', 0.2);
             return;
         }
 
@@ -177,11 +233,13 @@ export class UmbilicalAttacker {
         switch (this.state) {
             case 'IDLE':
                 if (dist <= this.strikeRadius && this.cooldownTimer <= 0) {
+                    callbacks.onDetectionEnter?.(this);
                     this.state = 'ANTICIPATION';
                     this.stateTimer = 0.35;
                     this.playAction('coil_anticipation', 0.1, THREE.LoopOnce);
                     if (callbacks.onAlert) callbacks.onAlert(this);
                 } else if (dist <= this.detectionRadius) {
+                    callbacks.onDetectionEnter?.(this);
                     this.state = 'TRACKING';
                     this.playAction('idle_sway', 0.3);
                 }
@@ -250,8 +308,12 @@ export class UmbilicalAttacker {
     }
 
     dispose() {
+        if (this.disposed) return;
+        this.disposed = true;
+        this.stunTimer = 0;
         if (this.mixer) {
             this.mixer.stopAllAction();
+            this.mixer.uncacheRoot?.(this.mesh);
         }
         if (this._ownsRoot) {
             if (this.mesh && this.mesh.parent) {
@@ -261,5 +323,8 @@ export class UmbilicalAttacker {
                 this.rootGroup.parent.remove(this.rootGroup);
             }
         }
+        for (const material of this._ownedMaterials) material.dispose?.();
+        this._ownedMaterials.clear();
+        this._materialRestState.clear();
     }
 }
