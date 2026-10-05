@@ -17,6 +17,7 @@ COPY server ./server
 # which fails when the server imports a file the image does not contain.
 COPY src/chatFilter.js ./src/chatFilter.js
 COPY src/data/chatFilterTerms.js ./src/data/chatFilterTerms.js
+COPY src/roomDressingPersistence.js ./src/roomDressingPersistence.js
 
 ENV NODE_ENV=production
 ENV PORT=3001

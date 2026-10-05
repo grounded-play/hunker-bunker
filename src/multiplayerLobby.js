@@ -529,7 +529,7 @@ export class MultiplayerLobby {
                         passwordHash,
                         loadout,
                         buildVersion: getLocalBuildVersion()
-                        , pvpReadinessVersion: 1
+                        , pvpReadinessVersion: 1, dressingProtocolVersion: 1
                     };
                     logMultiplayerEvent('relay-join-sent', {
                         roomCode: this.roomCode,

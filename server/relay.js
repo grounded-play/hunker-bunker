@@ -1,4 +1,5 @@
 import { Server } from 'socket.io';
+import { createDressingAuthority } from './dressingAuthority.js';
 import { verifySteamSessionToken, isSteamAuthDevFallbackAllowed } from './steamAuth.js';
 import { createChatPolicy } from './chatPolicy.js';
 
@@ -216,6 +217,7 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
 
     // Map: socketId -> playerState
     const players = new Map();
+    const dressingAuthority = createDressingAuthority();
     // Map: roomCode -> Set of socketIds
     const rooms = new Map();
     // Trusted backend access only: there is deliberately no socket event
@@ -229,7 +231,10 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
         clearTimeout(chatClearTimers.get(roomCode));
         const timer = setTimeout(() => {
             chatClearTimers.delete(roomCode);
-            if (!rooms.get(roomCode)?.size) chatPolicy.clearRoom(roomCode);
+            if (!rooms.get(roomCode)?.size) {
+                chatPolicy.clearRoom(roomCode);
+                dressingAuthority.clear(roomCode);
+            }
         }, chatRoomGraceMs);
         timer.unref?.();
         chatClearTimers.set(roomCode, timer);
@@ -526,6 +531,10 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
             rooms.get(roomCode).add(socket.id);
             socket.join(roomCode);
             player.pvpReadinessVersion = data.pvpReadinessVersion === 1 ? 1 : 0;
+            player.dressingProtocolVersion = data.dressingProtocolVersion === 1 ? 1 : 0;
+            dressingAuthority.clear(roomCode);
+            io.to(roomCode).emit('worldEventBroadcast', { event: 'dressing-protocol', originId: 'relay',
+                detail: { version: 1, enabled: [...rooms.get(roomCode)].every(id => players.get(id)?.dressingProtocolVersion === 1) } });
             if (pvpRounds.has(roomCode)) {
                 beginPvpRound(player, pvpRounds.get(roomCode));
                 socket.emit('pvpRoundState', { roundId: player.pvpRoundId });
@@ -660,6 +669,7 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                 sessionTelemetry.matchesDeployed += 1;
                 logRelayEvent('MATCH_DEPLOY', { roomCode, mode, seed, startedBy });
 
+                dressingAuthority.clear(roomCode);
                 io.to(roomCode).emit('matchStarted', { seed, mode, crashPlan, startedBy, timestamp: Date.now(), roundId });
             }, MATCH_COUNTDOWN_MS);
 
@@ -765,6 +775,15 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
             if (!player.roomCode || !payload || typeof payload !== 'object') return;
             const eventName = sanitizeString(payload.event, 64, '');
             if (!eventName) return;
+            if (eventName === 'dressing-protocol') return;
+            if (eventName === 'dressing-protocol-request') {
+                socket.emit('worldEventBroadcast', { event: 'dressing-protocol', originId: 'relay', detail: {
+                    version: 1, enabled: [...(rooms.get(player.roomCode) ?? [])].every(id => players.get(id)?.dressingProtocolVersion === 1)
+                } });
+                return;
+            }
+            if (eventName.startsWith('dressing-') && ![...(rooms.get(player.roomCode) ?? [])]
+                .every(id => players.get(id)?.dressingProtocolVersion === 1)) return;
 
             const now = Date.now();
             // Cheap flood guard: a world beat is a rare, deliberate thing;
@@ -783,6 +802,9 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                 if (encoded.length <= WORLD_EVENT_MAX_DETAIL_BYTES) detail = JSON.parse(encoded);
             } catch { detail = null; }
 
+            if (dressingAuthority.handle(player, eventName, detail, (peerId, state) => {
+                io.to(peerId).emit('worldEventBroadcast', { event: 'dressing-state', detail: state, originId: 'relay', timestamp: now });
+            })) return;
             logRelayEvent('WORLD_EVENT', { roomCode: player.roomCode, originId: socket.id, event: eventName });
             io.to(player.roomCode).emit('worldEventBroadcast', {
                 event: eventName,

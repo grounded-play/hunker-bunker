@@ -264,6 +264,7 @@ import { isAreaRoomDensityEnabled } from './featureFlags.js';
 import { roomPracticalLightPlacement } from './anchorPracticalLight.js';
 import { planRoomDressing } from './roomDressing.js';
 import { resolveRoomDressingIdentity } from './roomDressingIdentity.js';
+import { registerDressingNetwork, applyDressingNetworkEvent } from './dressingNetwork.js';
 import { isRoomDressingId, serializeBrokenRoomDressing, restoreBrokenRoomDressing } from './roomDressingPersistence.js';
 import { buildRoomDressingGroup, loadKeyedDecalTexture, hideRoomDressingItem, hideRoomDressingSupport } from './roomDressingRenderer.js';
 import { registerTinaHit, TINA_TOTAL_HITS } from './mayorTinaCombat.js';
@@ -5861,6 +5862,7 @@ export class ThreeGame {
             on('enemyHitReported', (data) => this.handleEnemyHitReported(data));
             on('enemyStateSnapshot', (data) => this.handleEnemyStateSnapshot(data));
             on('worldEventBroadcast', (data) => this.handleSharedWorldEvent(data));
+            this.netSocket?.emit?.('worldEvent', { event: 'dressing-protocol-request', detail: { version: 1 } });
             on('playerNudged', (data) => this.handlePlayerNudged(data));
             on('playerDisconnected', (id) => this.removeRemotePlayer(id));
             on('newPlayer', (player) => this.getOrCreateRemotePlayer(player));
@@ -6676,6 +6678,7 @@ export class ThreeGame {
     handleSharedWorldEvent(data) {
         const event = data?.event;
         if (!event) return false;
+        if (event === 'dressing-state' || event === 'dressing-protocol') return applyDressingNetworkEvent(this, data);
         if (this.multiplayerMode === 'pvp' && PVP_PRIVATE_WORLD_EVENTS.has(event)) return false;
         const detail = data?.detail ?? {};
         const isEcho = data?.originId && data.originId === this.multiplayerLocalPlayerId;
@@ -23149,6 +23152,8 @@ export class ThreeGame {
         this.destroyedWallKeys.clear();
         this.brokenPropScatterKeys = new Set();
         this.destroyedExteriorWallKeys?.clear();
+        this._dressingManifest = new Map();
+        this._dressingHp = new Map();
         this._wallInstanceIndex?.clear();
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys.clear();
@@ -29142,8 +29147,9 @@ export class ThreeGame {
             if (!plan || !room.interior?.length) continue;
             const dressing = planRoomDressing(room, metadata.dressingGrid ?? grid, { reserved: plan.reserved, occupied: plan.placements });
             for (const item of dressing.items) {
+                item.stableId = item.id;
                 item.id = resolveRoomDressingIdentity(item, this.brokenPropScatterKeys, { multiplayer: this.isMultiplayer });
-                const isDestroyed = this.brokenPropScatterKeys.has(item.id);
+                const isDestroyed = this.brokenPropScatterKeys.has(item.id) || this.brokenPropScatterKeys.has(item.stableId);
                 const supportCell = item.supportCell ? { x: item.supportCell.x + originX, y: item.supportCell.y + originZ } : null;
                 const supportBroken = supportCell && this.destroyedWallKeys?.has(this.getWallKey?.(supportCell.x, supportCell.y));
                 items.push({ ...item, x: item.x + originX, y: item.y + originZ, supportCell, isDestroyed: isDestroyed || Boolean(supportBroken) });
@@ -29166,7 +29172,8 @@ export class ThreeGame {
                 groupType: 'dressing',
                 scatterKey: item.id,
                 dressingId: item.id,
-                propHp: item.hp ?? 3,
+                dressingStableId: item.stableId,
+                propHp: this._dressingHp?.get(item.stableId)?.hp ?? item.hp ?? 3,
                 maxPropHp: item.hp ?? 3,
                 dressingItem: item
             };
@@ -29175,6 +29182,7 @@ export class ThreeGame {
             this.scatterSprites.push(collider);
         }
 
+        registerDressingNetwork(this, items);
         const token = {};
         group.userData.roomDressingToken = token;
         buildRoomDressingGroup(items, {
@@ -34218,6 +34226,14 @@ export class ThreeGame {
 
     damageScatterProp(sprite, amount = 1) {
         if (!sprite?.userData?.isDestructibleProp || sprite.userData.burstTriggered) return false;
+        if (this._dressingProtocolEnabled && this.isMultiplayer && this.multiplayerMode !== 'pvp'
+            && sprite.userData.dressingStableId) {
+            if (!Number.isFinite(amount) || amount <= 0) return false;
+            this._dressingHitSequence = (this._dressingHitSequence ?? 0) + 1;
+            this.broadcastSharedWorldEvent('dressing-hit', { version: 1, id: sprite.userData.dressingStableId,
+                damage: Math.min(32, Math.max(1, Math.round(amount))), sequence: this._dressingHitSequence });
+            return false;
+        }
         const previousHp = sprite.userData.propHp ?? 3;
         const damage = Math.max(1, Math.round(amount));
         sprite.userData.propHp = Math.max(0, previousHp - damage);

@@ -536,7 +536,10 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
 - [x] G3 renderer integration, stable v2 prop identities, legacy migration,
   wall-support cleanup and grammar interior breaches implemented.
   [Evidence and limits](../reports/room-dressing-integration-2026-10-05.md).
-- [ ] Finish maintenance-hall visuals and remaining co-op/service-recovery gates;
+- [x] G3 co-op reconciliation: relay dressing HP authority, sequence ordering,
+  late-join state synchronization and protocol version 1 negotiation implemented.
+  [Evidence](../reports/room-dressing-coop-reconciliation-2026-10-05.md).
+- [ ] Finish maintenance-hall visuals and remaining service-recovery gates;
   room grammar stays opt-in pending gameplay and hardware acceptance.
 
 - [x] G3 persistence: dressing break IDs survive maze snapshots and unloaded remote
