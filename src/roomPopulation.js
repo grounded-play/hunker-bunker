@@ -63,6 +63,65 @@ export function isWallBackedPropType(type) {
         || type === 'prop_pipe_organ_heat_exchanger';
 }
 
+export const ANCHOR_GROUND_DRESSING_TABLE = Object.freeze({
+    // Cryo / autopsy / slabs
+    prop_autopsy_dissection_slab: ['prop_floor_drainage_sump_trough', 'decal_water_stain'],
+    // Oxygen cascade racks
+    prop_oxygen_bottle_cascade_rack: ['prop_floor_drainage_sump_trough', 'decal_water_stain', 'decal_rust_bleed_1'],
+    // Liturgical lectern
+    prop_liturgical_terminal_lectern: ['prop_floor_conduit_bridge', 'decal_water_stain'],
+    // Heat exchanger
+    prop_pipe_organ_heat_exchanger: ['prop_floor_conduit_bridge', 'prop_floor_drainage_sump_trough', 'decal_rust_bleed_2'],
+    // Biomech vents and pipes
+    prop_biomech_sphincter_hatch_vent: ['decal_spore_stain_02', 'decal_spore_stain_03'],
+    prop_biomech_tracheal_wall_pipe: ['decal_spore_stain_02', 'decal_spore_stain_03'],
+    // Living umbilical
+    prop_biomech_spore_umbilical_cable_rigged: ['decal_spore_stain_03'],
+    // Reliquary & shrine
+    prop_corporate_saint_reliquary: ['prop_floor_conduit_bridge', 'decal_rust_bleed_1'],
+    prop_votive_candle_shrine: ['decal_water_stain', 'decal_rust_bleed_2'],
+    // Coolant drums & eyewash
+    prop_coolant_drum_leaking_pool: ['prop_floor_drainage_sump_trough', 'decal_water_stain'],
+    prop_decon_eyewash_shower_station: ['prop_floor_drainage_sump_trough', 'decal_water_stain'],
+    prop_exosuit_docking_gantry: ['prop_floor_conduit_bridge', 'decal_rust_bleed_1']
+});
+
+export const GROUND_DRESSING_DECAL_LIMIT = 2;
+
+export function isGroundDressingDecal(type) {
+    return typeof type === 'string' && (type.startsWith('decal_') || type.startsWith('scatter_'));
+}
+
+export function findAdjacentGroundDressingCell(anchor, grid, interiorSet, reserved, roomCenter, random) {
+    if (!anchor || !Number.isFinite(anchor.x) || !Number.isFinite(anchor.y)) return null;
+    const orthogonal = [
+        { x: anchor.x + 1, y: anchor.y },
+        { x: anchor.x - 1, y: anchor.y },
+        { x: anchor.x, y: anchor.y + 1 },
+        { x: anchor.x, y: anchor.y - 1 }
+    ];
+    const valid = orthogonal.filter((cell) => (
+        isCellOnGrid(cell, grid)
+        && grid[cell.y]?.[cell.x] === '.'
+        && interiorSet.has(cellKey(cell))
+        && !reserved.has(cellKey(cell))
+        && Math.hypot(cell.x - roomCenter.x, cell.y - roomCenter.y) >= 0.75
+    ));
+    if (valid.length === 0) return null;
+
+    if (anchor.wallNormal && (anchor.wallNormal.x !== 0 || anchor.wallNormal.z !== 0)) {
+        const inFront = valid.find((c) => (
+            c.x === anchor.x + anchor.wallNormal.x
+            && c.y === anchor.y + anchor.wallNormal.z
+        ));
+        if (inFront) return inFront;
+    }
+
+    valid.sort((a, b) => (a.x - b.x) || (a.y - b.y));
+    const index = Math.floor(random() * valid.length);
+    return valid[index] ?? valid[0];
+}
+
 function pickCandidate(candidates, random, grid, center, wallOnly = false) {
     if (candidates.length === 0) return null;
     // Props belong at the perimeter: keep the room center open for the player,
@@ -84,12 +143,70 @@ function pickCandidate(candidates, random, grid, center, wallOnly = false) {
     return selected;
 }
 
+// Lived-in world M2 (docs/planning/sprint-49-lived-in-world-continuation.md):
+// the key art ties each functional anchor to the floor with run-off, residue
+// and service runs. Rules match anchor families by name, first match wins.
+// Decals must stay inside threeGame's FLOOR_OVERLAY_TYPES (drawn flat); the
+// rust/water/spore stains are wall decals and would stand upright.
+export const GROUNDING_RULES = Object.freeze([
+    {
+        match: /cryo|coolant|oxygen|o2_|frost|icey|thermal/,
+        decals: ['scatter_coolant_puddle', 'decal_frost_bloom_1', 'decal_condensation_run'],
+        piece: 'prop_floor_drainage_sump_trough'
+    },
+    {
+        match: /autopsy|dissection|surgical|medical|specimen|vital|diagnostic|triage/,
+        decals: ['decal_bio_sample_spill', 'decal_fluid_seep'],
+        piece: 'prop_floor_drainage_sump_trough'
+    },
+    {
+        match: /biomech|flesh|hive|spore|fungal|alien|egg|incubator|umbilical|mycelium/,
+        decals: ['scatter_slime_puddle', 'decal_spore_growth_patch', 'decal_fluid_seep'],
+        piece: null
+    },
+    {
+        match: /lectern|terminal|conduit|junction|console|fabricator|engineering|generator|tesla|cyber/,
+        decals: ['decal_grease_pool', 'scatter_cable_coil', 'decal_floor_grate_01'],
+        piece: 'prop_floor_conduit_bridge'
+    },
+    {
+        match: /votive|reliquary|shrine|saint|altar/,
+        decals: ['decal_floor_medallion_01', 'decal_floor_medallion_02', 'decal_floor_medallion_03', 'decal_floor_medallion_04'],
+        piece: null
+    },
+    {
+        match: /supplies|ammo|locker|crate|drum|storage/,
+        decals: ['decal_oil_spill_patch', 'scatter_bolts'],
+        piece: null
+    }
+]);
+
+/** Flat grounding decals per room. They sit outside the five-object cap. */
+export const GROUNDING_DECAL_LIMIT = 2;
+const GROUNDED_ANCHOR_KINDS = ['signature', 'large', 'ammo-cache', 'structural', 'interaction', 'reward', 'lore'];
+
+export function groundingRuleFor(type) {
+    const name = String(type ?? '');
+    return GROUNDING_RULES.find((rule) => rule.match.test(name)) ?? null;
+}
+
+// FNV-1a: grounding choices come from the room and anchor, not the shared RNG,
+// so adding them never reshuffles anything planned after this room.
+function stableHash(text) {
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < text.length; i += 1) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 0x01000193) >>> 0;
+    }
+    return hash;
+}
+
 function propFrom(list, random, fallback) {
     const source = Array.isArray(list) && list.length > 0 ? list : [fallback];
     return source[Math.floor(random() * source.length)];
 }
 
-export function planRoomPopulation(room, grid, random) {
+export function planRoomPopulation(room, grid, random, { grounding = true } = {}) {
     const budget = normalizePopulationBudget(room.populationBudget);
     const doorLanes = room.navigation?.doorLanes ?? [];
     const fixtureCells = room.navigation?.reserved ?? [];
@@ -257,6 +374,55 @@ export function planRoomPopulation(room, grid, random) {
     }
     if (budget.pickup.min > 0) reservePlacement('pickup', 'room-biased', false);
 
+    // Sprint 49 Goal 2 (M2): Ground dressing pass.
+    // Pair each eligible signature / authored anchor with at least one floor-grounding
+    // dressing mesh or decal from ANCHOR_GROUND_DRESSING_TABLE.
+    // Placed on an adjacent floor cell (never in door apron, room center lane, or reserved cells).
+    // GLB dressing counts toward the 5-object room cap; flat decals get their own small cap (<= 2).
+    const interiorSet = new Set((room.interior ?? []).map(cellKey));
+    const eligibleAnchors = placements.filter((p) => Boolean(ANCHOR_GROUND_DRESSING_TABLE[p.type]));
+
+    for (const anchor of eligibleAnchors) {
+        const dressingOptions = ANCHOR_GROUND_DRESSING_TABLE[anchor.type];
+        if (!dressingOptions || dressingOptions.length === 0) continue;
+
+        const candidateCell = findAdjacentGroundDressingCell(anchor, grid, interiorSet, reserved, center, random);
+        if (!candidateCell) continue;
+
+        const dressingType = dressingOptions[Math.floor(random() * dressingOptions.length)];
+        const isDecal = isGroundDressingDecal(dressingType);
+
+        const currentGlbCount = placements.filter((p) => !isGroundDressingDecal(p.type)).length;
+        const currentDecalCount = placements.filter((p) => isGroundDressingDecal(p.type)).length;
+
+        let selectedType = dressingType;
+        if (isDecal) {
+            if (currentDecalCount >= GROUND_DRESSING_DECAL_LIMIT) continue;
+        } else {
+            if (currentGlbCount >= roomObjectLimit) {
+                const decalFallback = dressingOptions.find(isGroundDressingDecal);
+                if (decalFallback && currentDecalCount < GROUND_DRESSING_DECAL_LIMIT) {
+                    selectedType = decalFallback;
+                } else {
+                    continue;
+                }
+            }
+        }
+
+        reserved.add(cellKey(candidateCell));
+        placements.push({
+            id: `${room.id}:ground_dressing:${placements.length}`,
+            roomId: room.id,
+            pairedAnchorId: anchor.id ?? null,
+            x: candidateCell.x,
+            y: candidateCell.y,
+            kind: 'ground_dressing',
+            type: selectedType,
+            blocking: false,
+            isFloorOverlay: isGroundDressingDecal(selectedType)
+        });
+    }
+
     // The theme catalog has always carried small, ambient and rare pools, but
     // the population planner previously ignored all three. That left finished
     // props and environmental-story decals unused while rooms stopped after
@@ -270,6 +436,73 @@ export function planRoomPopulation(room, grid, random) {
     }
     if (budget.small.min > 1 && theme.ambientProps?.length) {
         reservePlacement('ambient', propFrom(theme.ambientProps, random, theme.ambientProps[0]), false);
+    }
+
+    if (grounding) {
+        // Ground anchors in priority order: signature first, then large and
+        // authored content. Only cells beside the anchor that are still free
+        // floor (so never a door apron, fixture ring, pickup, the centre or
+        // another placement) are eligible.
+        const free = new Map(candidates.map((cell) => [cellKey(cell), cell]));
+        const anchors = GROUNDED_ANCHOR_KINDS.flatMap((kind) => placements.filter((placement) => placement.kind === kind));
+        let decals = 0;
+        let pieceUsed = false;
+        const objectCount = () => placements.filter((placement) => placement.kind !== 'grounding-decal').length;
+        for (const anchor of anchors) {
+            const rule = groundingRuleFor(anchor.type);
+            if (!rule) continue;
+            const hash = stableHash(`${room.id}:${anchor.x},${anchor.y}:${anchor.type}`);
+            const take = (offset) => {
+                const beside = [];
+                for (let dy = -1; dy <= 1; dy += 1) {
+                    for (let dx = -1; dx <= 1; dx += 1) {
+                        const key = `${anchor.x + dx},${anchor.y + dy}`;
+                        if ((dx || dy) && free.has(key)) beside.push(free.get(key));
+                    }
+                }
+                if (beside.length === 0) return null;
+                const cell = beside[(hash + offset) % beside.length];
+                free.delete(cellKey(cell));
+                const index = candidates.indexOf(cell);
+                if (index >= 0) candidates.splice(index, 1);
+                reserved.add(cellKey(cell));
+                return cell;
+            };
+            if (decals < GROUNDING_DECAL_LIMIT && rule.decals.length) {
+                const cell = take(0);
+                if (cell) {
+                    placements.push({
+                        id: `${room.id}:grounding:${placements.length}`,
+                        roomId: room.id,
+                        anchorPlacementId: anchor.id,
+                        x: cell.x,
+                        y: cell.y,
+                        kind: 'grounding-decal',
+                        type: rule.decals[(hash >>> 8) % rule.decals.length],
+                        blocking: false,
+                        wallNormal: null
+                    });
+                    decals += 1;
+                }
+            }
+            if (rule.piece && !pieceUsed && objectCount() < roomObjectLimit) {
+                const cell = take(3);
+                if (cell) {
+                    placements.push({
+                        id: `${room.id}:grounding:${placements.length}`,
+                        roomId: room.id,
+                        anchorPlacementId: anchor.id,
+                        x: cell.x,
+                        y: cell.y,
+                        kind: 'grounding',
+                        type: rule.piece,
+                        blocking: false,
+                        wallNormal: null
+                    });
+                    pieceUsed = true;
+                }
+            }
+        }
     }
 
     const signaturePlaced = placements.some((placement) => placement.kind === 'signature');

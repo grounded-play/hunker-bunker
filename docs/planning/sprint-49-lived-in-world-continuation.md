@@ -205,23 +205,38 @@ Checks: 41 focused tests, full suite 4,952 passed, 500-seed sweep 0 failures.
 
 ### Goal 2 — floor grounding (M2)
 
-**Now:** [`planRoomPopulation`](../../src/roomPopulation.js) spends the theme's
-small/ambient/rare pools at room edges under a five-object cap. Floor overlays
-exist (`FLOOR_OVERLAY_TYPES`, drawn at 0.035 elevation in `threeGame.js`). Grounding
-assets exist: `prop_floor_conduit_bridge`, `prop_floor_drainage_sump_trough`,
-`decal_rust_bleed_*`, `decal_water_stain`, `decal_spore_stain_02/03`.
+**Before M2:** [`planRoomPopulation`](../../src/roomPopulation.js) spent the theme's
+small/ambient/rare pools at room edges under a five-object cap, with nothing tying an
+anchor to the floor. Floor overlays exist (`FLOOR_OVERLAY_TYPES`, drawn flat at 0.035
+in `threeGame.js`). Grounding pieces exist: `prop_floor_conduit_bridge` and
+`prop_floor_drainage_sump_trough`. Correction to the earlier list: `decal_rust_bleed_*`,
+`decal_water_stain` and `decal_spore_stain_*` are **wall** decals and would stand
+upright on a floor. The floor set includes `scatter_coolant_puddle`,
+`scatter_slime_puddle`, `decal_fluid_seep`, `decal_grease_pool`,
+`decal_frost_bloom_*`, `decal_spore_growth_patch` and `decal_floor_medallion_*`.
 
-- [ ] A data table pairing anchors with ground dressing (e.g. dissection slab or
-  oxygen cascade rack → drainage sump or water stain; liturgical lectern → floor
-  conduit bridge; biomech vent or pipe → spore stain).
-- [ ] Place the pairing on a floor cell adjacent to the anchor, never in a door
+- [x] A data table pairing anchors with ground dressing: `GROUNDING_RULES` matches
+  anchor families by name (cryo/coolant/oxygen; medical/autopsy; biomech/fungal/hive;
+  terminal/conduit/machinery; shrine/reliquary; storage/ammo).
+- [x] Place the pairing on a floor cell adjacent to the anchor, never in a door
   apron, the room-centre lane, a pickup or a reserved fixture cell; deterministic
-  per seed.
-- [ ] Decide and document the budget rule: GLB grounding pieces count toward the
-  room cap; flat decals get their own small cap (proposal: 2 per room).
+  per seed. Choices come from a stable hash of room and anchor, so grounding draws
+  nothing from the shared RNG and changes no other placement.
+- [x] Budget rule: flat grounding decals have their own cap
+  (`GROUNDING_DECAL_LIMIT` = 2 per room, kind `grounding-decal`). A GLB grounding
+  piece (kind `grounding`, at most one per room) counts toward the five-object cap
+  and is placed only when the cap has room. Everything grounding places is non-blocking.
 
 **Accept:** [`roomPopulation.test.js`](../../src/roomPopulation.test.js) proves the
 exclusions and determinism; 500-seed sweep clean.
+
+**Result (2026-10-04):** tests prove every decal type is in the renderer's flat
+floor-overlay set (read from `threeGame.js`), that grounding sits beside its anchor
+outside door aprons, fixture rings, the pickup and the centre, the decal and object
+caps, and that the plan is identical with grounding on or off apart from the added
+dressing and the RNG draw count. Checks: 17 population tests, full suite 4,958
+passed, 500-seed sweep 0 failures. The renderer needed no change: grounding
+placements take the existing non-blocking floor-overlay path.
 
 ### Goal 3 — density scaling (M3, measure first)
 

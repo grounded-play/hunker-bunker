@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { normalizePopulationBudget, planRoomPopulation } from './roomPopulation.js';
+import {
+    GROUNDING_DECAL_LIMIT, GROUNDING_RULES, groundingRuleFor, normalizePopulationBudget, planRoomPopulation
+} from './roomPopulation.js';
+import fs from 'node:fs';
+
+// The renderer's flat floor-overlay set (threeGame.js FLOOR_OVERLAY_TYPES).
+// Anything else is drawn upright, so grounding must stay inside this set.
+function rendererFloorOverlayTypes() {
+    const source = fs.readFileSync(new URL('./threeGame.js', import.meta.url), 'utf8');
+    const body = source.match(/const FLOOR_OVERLAY_TYPES = new Set\(\[([\s\S]*?)\]\);/)?.[1] ?? '';
+    return new Set([...body.matchAll(/'([^']+)'/g)].map((match) => match[1]));
+}
 
 describe('room population', () => {
     it('reserves a full doorway apron so blocking props cannot seal a connector', () => {
@@ -108,13 +119,18 @@ describe('room population', () => {
         const grid = Array.from({ length: 7 }, () => Array(7).fill('#'));
         for (const cell of room.interior) grid[cell.y][cell.x] = '.';
         const plan = planRoomPopulation(room, grid, () => 0);
+        const objects = plan.placements.filter(({ kind }) => kind !== 'grounding-decal');
 
-        expect(plan.placements.map(({ type }) => type)).toEqual([
+        expect(objects.map(({ type }) => type)).toEqual([
             'prop_medical_bed', 'prop_diagnostic_console', 'prop_surgical_cart',
             'scatter_bolts', 'decal_worker_sleep_roll'
         ]);
-        expect(plan.placements).toHaveLength(5);
-        expect(plan.placements.slice(3).every(({ blocking }) => blocking === false)).toBe(true);
+        expect(objects).toHaveLength(5);
+        expect(objects.slice(3).every(({ blocking }) => blocking === false)).toBe(true);
+        // M2: the medical anchors are grounded with spill/seep decals, non-blocking.
+        const grounding = plan.placements.filter(({ kind }) => kind === 'grounding-decal');
+        expect(grounding.length).toBeGreaterThan(0);
+        expect(grounding.every(({ blocking, type }) => !blocking && ['decal_bio_sample_spill', 'decal_fluid_seep'].includes(type))).toBe(true);
     });
 
     it('never exceeds five total objects even when a full room also requests a pickup', () => {
@@ -135,8 +151,10 @@ describe('room population', () => {
         for (const cell of room.interior) grid[cell.y][cell.x] = '.';
 
         const plan = planRoomPopulation(room, grid, () => 0);
-        expect(plan.placements).toHaveLength(5);
-        expect(plan.placements).toContainEqual(expect.objectContaining({ kind: 'pickup' }));
+        // Flat grounding decals have their own cap (M2); every other object counts.
+        const objects = plan.placements.filter(({ kind }) => kind !== 'grounding-decal');
+        expect(objects).toHaveLength(5);
+        expect(objects).toContainEqual(expect.objectContaining({ kind: 'pickup' }));
         expect(plan.placements.filter(({ kind }) => kind === 'small' || kind === 'ambient')).toHaveLength(1);
     });
 
@@ -272,4 +290,89 @@ describe('room population', () => {
             wallNormal: { x: 1, z: 0 }
         });
     });
+
+    describe('floor grounding (lived-in world M2)', () => {
+        // A 9x9 room: walls on the border, a west door at (0,4), interior 1..7.
+        function groundedRoom(overrides = {}) {
+            const grid = Array.from({ length: 9 }, (_, y) => Array.from({ length: 9 }, (_, x) => (
+                x === 0 || y === 0 || x === 8 || y === 8 ? '#' : '.'
+            )));
+            grid[4][0] = '.';
+            const interior = [];
+            for (let y = 1; y <= 7; y += 1) for (let x = 1; x <= 7; x += 1) interior.push({ x, y });
+            const room = {
+                id: 'grounding-room',
+                role: 'generic',
+                interior,
+                navigation: { doorLanes: [{ x: 0, y: 4 }, { x: 1, y: 4 }], reserved: [{ x: 6, y: 6 }] },
+                populationBudget: { signature: 1, large: 1, small: 0, pickup: 1, enemy: 0 },
+                themeConfig: {
+                    signatureProps: ['prop_oxygen_bottle_cascade_rack'],
+                    largeProps: ['prop_liturgical_terminal_lectern']
+                },
+                ...overrides
+            };
+            return { room, grid };
+        }
+
+        it('maps anchor families to floor-overlay dressing only', () => {
+            const floorOverlays = rendererFloorOverlayTypes();
+            expect(floorOverlays.size).toBeGreaterThan(20);
+            for (const rule of GROUNDING_RULES) {
+                for (const type of rule.decals) expect(floorOverlays.has(type), type).toBe(true);
+            }
+            expect(groundingRuleFor('prop_oxygen_bottle_cascade_rack').decals).toContain('scatter_coolant_puddle');
+            expect(groundingRuleFor('prop_biomech_incubator').decals).toContain('scatter_slime_puddle');
+            expect(groundingRuleFor('prop_liturgical_terminal_lectern').piece).toBe('prop_floor_conduit_bridge');
+            expect(groundingRuleFor('prop_bunker_supplies').decals).toContain('decal_oil_spill_patch');
+            expect(groundingRuleFor('mystery_object')).toBeNull();
+        });
+
+        it('tethers dressing to a cell beside its anchor, never in an apron, fixture, pickup or centre cell', () => {
+            const { room, grid } = groundedRoom();
+            const plan = planRoomPopulation(room, grid, () => 0.42);
+            const anchors = plan.placements.filter(({ kind }) => kind === 'signature' || kind === 'large');
+            const grounding = plan.placements.filter(({ kind }) => kind.startsWith('grounding'));
+            expect(grounding.length).toBeGreaterThan(0);
+            const pickup = plan.placements.find(({ kind }) => kind === 'pickup');
+            for (const placement of grounding) {
+                const anchor = plan.placements.find(({ id }) => id === placement.anchorPlacementId);
+                expect(anchors).toContain(anchor);
+                expect(Math.max(Math.abs(anchor.x - placement.x), Math.abs(anchor.y - placement.y))).toBe(1);
+                expect(placement.blocking).toBe(false);
+                // West door lane (0..1, 4) and its 3x3 apron; fixture (6,6) and its ring.
+                expect(placement.x <= 2 && placement.y >= 3 && placement.y <= 5).toBe(false);
+                expect(placement.x >= 5 && placement.y >= 5).toBe(false);
+                expect(placement.x === 4 && placement.y === 4).toBe(false);
+                if (pickup) expect(`${placement.x},${placement.y}`).not.toBe(`${pickup.x},${pickup.y}`);
+            }
+            const cells = plan.placements.map(({ x, y }) => `${x},${y}`);
+            expect(new Set(cells).size).toBe(cells.length);
+        });
+
+        it('caps flat decals per room and counts a grounding piece against the object budget', () => {
+            const { room, grid } = groundedRoom();
+            const plan = planRoomPopulation(room, grid, () => 0.42);
+            expect(plan.placements.filter(({ kind }) => kind === 'grounding-decal').length).toBeLessThanOrEqual(GROUNDING_DECAL_LIMIT);
+            expect(plan.placements.filter(({ kind }) => kind !== 'grounding-decal').length).toBeLessThanOrEqual(5);
+        });
+
+        it('is deterministic and leaves the shared RNG sequence untouched', () => {
+            const { room, grid } = groundedRoom();
+            const run = (grounding) => {
+                let state = 1234;
+                let calls = 0;
+                const random = () => { calls += 1; state = (state * 16807) % 2147483647; return state / 2147483647; };
+                return { plan: planRoomPopulation(room, grid, random, { grounding }), calls };
+            };
+            const grounded = run(true);
+            expect(run(true).plan).toEqual(grounded.plan);
+            const bare = run(false);
+            // Grounding consumes no draws and changes nothing it does not add.
+            expect(grounded.calls).toBe(bare.calls);
+            expect(grounded.plan.placements.filter(({ kind }) => !kind.startsWith('grounding'))).toEqual(bare.plan.placements);
+            expect(bare.plan.placements.some(({ kind }) => kind.startsWith('grounding'))).toBe(false);
+        });
+    });
 });
+
