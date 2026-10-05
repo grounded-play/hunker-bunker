@@ -1,4 +1,4 @@
-import { INDUSTRIAL_ROOM_PROFILE } from './data/roomGrammarProfiles.js';
+import { getRoomGrammarProfile } from './data/roomGrammarProfiles.js';
 import { measureRoomLayout } from './roomLayoutMetrics.js';
 
 export const ROOM_GRAMMAR_VERSION = 1;
@@ -40,7 +40,7 @@ function reachable(start, allowed) {
 export function planInterior({ seed, areaId = 'industrial', roomId = 'room',
     generatorVersion = ROOM_GRAMMAR_VERSION, tier = 'standard', sockets = [], reservations = [] } = {}) {
     if (!Number.isSafeInteger(seed) || generatorVersion !== ROOM_GRAMMAR_VERSION) throw new Error('Unsupported room seed/version');
-    const profile = INDUSTRIAL_ROOM_PROFILE;
+    const profile = getRoomGrammarProfile(areaId);
     if (!Object.hasOwn(profile.tiers, tier)) throw new Error('Unsupported room tier');
     if (!Array.isArray(sockets) || sockets.length < 1 || sockets.length > 4) throw new Error('Expected one to four sockets');
     const identity = [generatorVersion, seed, areaId, roomId];

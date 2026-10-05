@@ -9,7 +9,7 @@ const SIDES = { north: 'n', east: 'e', south: 's', west: 'w' };
 // the caller must run authored-site resolution before selecting this fallback.
 export function buildGrammarRoomChunk({ seed, chunkX = 0, chunkY = 0,
     chunkSize = CHUNK_SIZE, openings = {}, tier = 'standard',
-    role = null, theme = null } = {}) {
+    areaId = 'industrial', role = null, theme = null } = {}) {
     if (chunkSize !== CHUNK_SIZE || !Number.isInteger(chunkX) || !Number.isInteger(chunkY)) {
         throw new Error('Grammar adapter requires current chunk dimensions and integer coordinates');
     }
@@ -21,7 +21,7 @@ export function buildGrammarRoomChunk({ seed, chunkX = 0, chunkY = 0,
     }
     const chunkKey = `${chunkX},${chunkY}`;
     const id = `grammar:${ROOM_GRAMMAR_VERSION}:${seed}:${chunkKey}`;
-    const plan = planInterior({ seed, roomId: id, tier,
+    const plan = planInterior({ seed, areaId, roomId: id, tier,
         sockets: active.map(([, side]) => ({ side, width: 3, offset: 7 })) });
     const ox = Math.floor((chunkSize - plan.width) / 2), oy = Math.floor((chunkSize - plan.height) / 2);
     const translate = p => ({ ...p, x: p.x + ox, y: p.y + oy });
@@ -52,8 +52,18 @@ export function buildGrammarRoomChunk({ seed, chunkX = 0, chunkY = 0,
     }
     const anchors = plan.anchors.map(p => ({ ...translate(p), id: `${id}:anchor:${p.role}` }));
     const reserved = plan.reservedCells.map(cell => { const [x, y] = cell.split(',').map(Number); return translate({ x, y }); });
-    const assignedRole = role ?? (plan.profile === 'industrial' ? 'engineering' : 'generic');
-    const assignedTheme = theme ?? (plan.profile === 'industrial' ? 'bunker-utility' : null);
+    const assignedRole = role ?? (
+        plan.profile === 'cryo-medical' || plan.profile === 'medical' ? 'medical'
+        : plan.profile === 'biomech' ? 'nest'
+        : plan.profile === 'industrial' ? 'engineering'
+        : 'generic'
+    );
+    const assignedTheme = theme ?? (
+        plan.profile === 'cryo-medical' || plan.profile === 'medical' ? 'cryo'
+        : plan.profile === 'biomech' ? 'bio'
+        : plan.profile === 'industrial' ? 'bunker-utility'
+        : null
+    );
     const room = { id, chunkKey, role: assignedRole, theme: assignedTheme, sizeClass: tier === 'major' ? 'large' : 'standard',
         footprint: interior, interior, wallCells, bounds: { left: ox, top: oy, right: ox + plan.width - 1, bottom: oy + plan.height - 1 },
         doors, navigation: { doorLanes: doors.flatMap(d => d.cells), primaryRoute: reserved, reserved },

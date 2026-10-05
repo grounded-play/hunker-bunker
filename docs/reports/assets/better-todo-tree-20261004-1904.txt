@@ -143,7 +143,8 @@ Current world-design scope: docs/planning/sprint-49-room-grammar-and-run-variety
 [x] G3 co-op reconciliation: relay dressing HP authority, sequence ordering and late-join sync.
 [x] G3 maintenance-hall presentation: key-art assets, wall mounts, and breached showroom view.
 [x] G3 critical-service recovery: accessible non-blocking wreck lifecycle and interaction preservation.
-[ ] Next: G4 medical/cryo and machine nave profiles, hallway motifs and asymmetric junctions.
+[x] G4 area profiles: cryo-medical ward and biomech nave profiles and motifs.
+[ ] Next: G5 camp and start arrival variants, hallway motifs and asymmetric junctions.
 [x] G3 persistence subtask: dressing break snapshots/reset and exact remote identity.
 [ ] Renderer integration, versioned IDs, late-join/drop parity and wall breaches remain.
 [x] G2 connected chunk adapter (dbf9c378) and saved opt-in live single-player path.

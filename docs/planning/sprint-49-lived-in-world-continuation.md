@@ -33,7 +33,10 @@ plan for milestone scope, dependencies, verification gates, and definition of do
   wreck spawning on prop destruction, preserved interaction prompts/handlers, dynamic
   interactionSpec resolution, and persistence serialization.
   [Implementation and evidence](../reports/critical-service-recovery-2026-10-05.md).
-- [ ] **Next commit:** broader G4 area profiles (cryo-medical triage ward and biomech naves).
+- [x] **G4 area profiles slice (2026-10-05):** cryo-medical triage ward and biomech
+  nave profiles, six thematic motifs, dynamic profile selection, and chunk role/theme adaptation.
+  [Implementation and evidence](../reports/room-grammar-area-profiles-2026-10-05.md).
+- [ ] **Next commit:** camp/start arrival variants (G5) and hallway vocabulary.
 
 - [x] **G3 persistence slice (2026-10-05):** added sanitized map-local dressing
   break records to maze snapshots, legacy-safe restore, and new-map reset. Remote

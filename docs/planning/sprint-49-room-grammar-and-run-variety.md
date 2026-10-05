@@ -295,9 +295,10 @@ Co-op peers must agree on version and plan digest before mounting geometry.
   restore, new-map clearing and exact-ID remote replay handling implemented; see
   [persistence notes](../reports/room-dressing-persistence-2026-10-05.md).
   Renderer integration, ID versioning, partial HP and breach contracts remain open.
-- [ ] **G4 — area and corridor vocabulary.** Add cryo/medical and biomech profiles,
-  hallway motifs and asymmetric junctions; measure normalized layout repetition.
-  Expand assets only where the coverage audit identifies an actual missing module.
+- [x] **G4 area profiles subtask:** cryo-medical ward and biomech nave grammar profiles,
+  thematic motifs (quarantine, autopsy, stasis, incubation, tracheal, spore organ),
+  dynamic profile resolution, and role/theme chunk adaptation.
+  [Evidence](../reports/room-grammar-area-profiles-2026-10-05.md). Hallway motifs and asymmetric junctions remain open.
 - [ ] **G5 — camp/start variants.** Add eligible-site scoring and three safe start
   scenarios; preserve camp IDs, rings, tutorial order and multiplayer crash plans.
 - [ ] **G6 — acceptance and rollout.** Run seed sweeps, co-op/persistence journeys,
