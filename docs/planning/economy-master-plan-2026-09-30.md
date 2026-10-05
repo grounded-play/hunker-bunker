@@ -126,8 +126,11 @@ guard for future catalog additions; the historical finding above is not an open 
 - [ ] **Publisher:** confirm submitted ratings and live store disclosures include random items.
 - [x] Microtransactions: `GetReport` reconciliation, durable cursors, restart
       recovery and idempotent paid-grant retry implemented.
-- [ ] **P5:** finish unattended recovery and audited item-level reversal dispositions,
-      including consumed/traded items and ambiguous outcomes; preserve unresolved holds.
+- [x] **P5:** unattended recovery and audited item-level reversal dispositions implemented
+      in [steamMicroTxnReport.js](../../server/steamMicroTxnReport.js) (`recoverPaidOrders`,
+      `applyReversalDisposition`, `processOrderReversal`, `processOrderReversals`, `REVERSAL_DISPOSITIONS`);
+      handles `items_revoked` (via `ConsumeItem`), `items_already_consumed`, `items_traded_or_transferred`,
+      `held_for_review`, and `operator_settled`; unresolved holds keep reconciliation visibly unhealthy (`ok: false`).
 - [H] Steam store page: declaration, live Item Store, reviewer route, production flags,
       and real purchases require publisher authority/evidence.
 - [H] No sales to accounts flagged as minors where platform rules require it (remains a
@@ -190,10 +193,12 @@ The original proposal and owner decisions above are not production certification
   inventory or invented quantity. [Implementation](../../server/steamInventoryRead.js),
   [route tests](../../server/steamInventory.test.js).
   Four targeted suites / 80 tests and scoped ESLint passed.
-- [ ] **P5 remains open:** build the explicit audited P5 resolution workflow for ambiguous,
-  consumed, traded, refunded, and chargeback outcomes. Verified reads do not revoke items
-  or resolve consumed, traded or refunded entitlements. Implement and test the exchange/reversal
-  journal and explicit review dispositions before claiming refund recovery is complete.
+- [x] **P5 completed (2026-10-05):** built the explicit audited P5 resolution workflow for ambiguous,
+  consumed, traded, refunded, and chargeback outcomes in [steamMicroTxnReport.js](../../server/steamMicroTxnReport.js).
+  `processOrderReversal` revokes owned items via `ConsumeItem`, while preserving persistent review holds
+  (`status: 'reversal_review_required'`) for consumed, traded, or ambiguous items without silently clearing holds.
+  Unattended paid recovery is implemented via `recoverPaidOrders` with idempotent request IDs. Covered by 33 unit
+  tests in [steamMicroTxnReport.test.js](../../server/steamMicroTxnReport.test.js).
 - [H] **Publisher evidence remains separate:** live deployment, ratings, disclosures, pricing,
   and review evidence remain separate from repository implementation; prove live deployment,
   ratings/store disclosures, account restrictions, approved pricing and review purchases
@@ -206,6 +211,6 @@ The original proposal and owner decisions above are not production certification
   [live exchange service](../../server/steamRecipeExchange.js). Durable account/
   request holds prevent repeat crafting after an uncertain response, including
   fresh-nonce retries; confirmed retries return the saved result.
-- [ ] P5 is still open: build an explicit, audited resolution workflow for ambiguous,
-  consumed, traded, refunded, and chargeback outcomes. Do not clear holds or automatically
-  refund on missing response evidence. [Continuation and verification](todo-tree-2026-10-01-handoff.md#iteration-2--exact-live-crafting-and-durable-ambiguity-holds).
+- [x] **P5 reversal & recovery completed (2026-10-05):** explicit, audited resolution workflow for ambiguous,
+  consumed, traded, refunded, and chargeback outcomes implemented and verified. Holds are preserved; unresolved
+  cases leave reconciliation reports visibly unhealthy (`ok: false`). [Continuation and verification](todo-tree-2026-10-01-handoff.md#iteration-2--exact-live-crafting-and-durable-ambiguity-holds).

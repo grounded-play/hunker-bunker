@@ -352,7 +352,7 @@ function hasLegacyGrantAttempt(purchase) {
     return !purchase.grantIntent && (attempted(purchase.status) || purchase.events?.some((event) => attempted(event.status)));
 }
 
-async function fulfillPurchasedKeys(purchase) {
+export async function fulfillPurchasedKeys(purchase) {
     const sku = findSku(purchase.sku);
     if (!sku) {
         await savePurchaseState({

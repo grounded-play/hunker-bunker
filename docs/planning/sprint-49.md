@@ -70,7 +70,7 @@ Dependency spine: S49-02 → 03 → 04; S49-07 → 08 → 09; S49-04/05/06/09/10
 S49-13/14/15 unblock meaningful cooperative first-hour testing (17). S49-23 is a
 commerce readiness gate; proposed random-reward changes (24) need product approval.
 
-### Backlog reconciliation summary (2026-10-04 19:11 PDT, HEAD 44484597)
+### Backlog reconciliation summary (2026-10-05 10:10 PDT, dev/sprint-49)
 
 Legend: `[x]` Verified complete in repository code/tests or local evidence · `[~]` Substantial implementation complete, source ticket stays open for remaining integration/hardware/playtest/ops · `[ ]` Open for repository implementation · `[H]` Human/publisher/hardware decision or evidence required.
 
@@ -83,7 +83,7 @@ Legend: `[x]` Verified complete in repository code/tests or local evidence · `[
 | S49-05 | Demonstrable online co-op and PvP | `[~]` Authority, reconnect, rejection diagnostics, round completion, and rematch improved; paired real-account candidate run open |
 | S49-06 | Developer commentary | `[~]` Localized text, voiced lines, history reader, controller stops, and routes exist; installed-candidate review open |
 | S49-07 | Catalog/quantity/price consistency | `[~]` Adapter complete; live Steam currency and both checkout routes require publisher evidence |
-| S49-08 | Settlement reconciliation | `[ ]` Finish unattended paid recovery and explicit item-level reversal/review dispositions |
+| S49-08 | Settlement reconciliation | `[x]` Unattended paid recovery and audited item-level reversal/review dispositions implemented |
 | S49-09 | Real purchase, cancel, delivery & reversal | `[H]` Real purchase/cancel/delivery/reversal evidence |
 | S49-10 | Full controller journey | `[~]` Broad browser route and focus fixes exist; native Steam Input plus physical Deck/Xbox/PlayStation passes remain |
 | S49-11 | Mature story content & reviewer access | `[~]` Content/code checks complete; installed reviewer route and authorized save evidence remain |
@@ -95,12 +95,12 @@ Legend: `[x]` Verified complete in repository code/tests or local evidence · `[
 | S49-17 | First hour & second run tuning | `[H]` First-hour/second-run tuning needs independent playtesters; probes/fixes prepared |
 | S49-18 | Combat threats, boss phases & builds | `[ ]` Encounter/boss/ammo/class tuning and seeded combat reports |
 | S49-19 | Inert drop effects disposition | `[x]` Inert drop effects explicitly removed from active reward pools |
-| S49-20 | World variety, seeds & navigation | `[~]` Sprint 49 room-life and 5,000-seed reachability landed; three human playthroughs and save/destruction checks remain |
+| S49-20 | World variety, seeds & navigation | `[~]` G1–G4 complete (live room grammar opt-in, 20-build authored catalog in chunkStructure, 5 G3 destruction/reconciliation subcontracts, multi-family area profiles, 20 interactive props); G5 camp/start variants and G6 Deck acceptance open |
 | S49-21 | Narrative consequences & debriefs | `[ ]` Narrative consequence/debrief state verification |
 | S49-22 | Unified Foundry & inventory journey | `[ ]` Unified Foundry/inventory controller journey |
 | S49-23 | Enforce earned power & trusted ownership | `[x]` Earned-power/paid-cosmetic separation and ownership tests |
 | S49-24 | Reward economy design | `[H]` Reward-economy design and regional/platform approval |
-| S49-25 | Readable HUD & calm information priorities | `[~]` HUD automation exists; physical Deck/desktop captures and final accessibility review remain |
+| S49-25 | Readable HUD & calm information priorities | `[~]` HUD automation and 1280×800 safe-frame layout overhaul implemented; physical Deck/desktop captures remain |
 | S49-26 | Camera & lighting | `[~]` Isometric default and Sprint 49 room presentation landed; matched Deck/desktop acceptance remains |
 | S49-27 | Audio clarity, voice & subtitles | `[~]` Soundtrack/SFX wiring complete; stress mix, ducking, and subtitle parity capture remain |
 | S49-28 | Accessibility settings | `[ ]` Accessibility settings end-to-end validation |
@@ -112,7 +112,7 @@ Legend: `[x]` Verified complete in repository code/tests or local evidence · `[
 | S49-34 | Expedition choices & contracts | `[ ]` Deeper expedition choices and replayable contracts |
 | S49-35 | Social loop & rematch | `[ ]` Party continuity and post-run social loop |
 | S49-36 | Seasonal progression & direct cosmetics | `[H]` Seasonal progression/direct cosmetics needs product decisions |
-| S49-37 | Art & content completeness | `[~]` Asset audits plus 12 furnished-room captures complete; gameplay-context art/narrative/audio review remains |
+| S49-37 | Art & content completeness | `[~]` Asset audits, 20 optimized/registered props, rigged umbilical attacker, 19 interactive prop specs, and 12 furnished-room captures complete; gameplay-context review remains |
 | S49-38 | Integration debt & module extraction | `[~]` Chat, commentary, and Fabrication Bay extracted; purchase presentation extraction and lifecycle characterization remain open |
 
 ## P0 — complete the Steam review features
@@ -311,19 +311,22 @@ Acceptance remaining: live Steam Item Store & MicroTxn verification with real cu
 
 ### S49-08 — settlement reconciliation that recovers and accounts for every order
 
-- [x] Report reconciliation, durable cursor, restart recovery and shared idempotent paid fulfillment implemented.
-- [ ] **Remaining:** Finish unattended recovery and audited item-level reversal/review dispositions; retain ambiguous holds.
+- [x] Settlement reconciliation, durable cursor, unattended paid recovery, and audited item-level reversal/review dispositions implemented.
 
-Implementation checkpoint (v2.4.14-beta): Slices 1–4 are committed (`07f86986`,
-`6d871747`, `063db076`, `c7f0cf8c`). Classification safety flags pending grants and
-rejects false success. Complete GetReport enumeration with durable cursor/checkpoint
-storage and restart recovery is implemented. Shared inventory grant helper follows Steam's
-real AddItem `item_json` contract. Paid grant retries are durable and idempotent with
-persisted uint64 request IDs and QueryTxn verification. Acceptance remaining: unattended
-worker-driven paid recovery without connected player and item-level reversal dispositions.
+Implementation checkpoint (2026-10-05): Slices 1–5 are committed. Complete GetReport
+enumeration with durable cursor/checkpoint storage and restart recovery is implemented.
+Shared inventory grant helper follows Steam's real AddItem `item_json` contract.
+Unattended paid recovery is implemented via `recoverPaidOrders` using idempotent request IDs
+without requiring an active player connection. Audited item-level reversal workflows
+(`processOrderReversal`, `processOrderReversals`, `applyReversalDisposition`, `REVERSAL_DISPOSITIONS`)
+safely handle `items_revoked` via `ConsumeItem`, while preserving persistent review holds
+(`status: 'reversal_review_required'`) for `items_already_consumed`, `items_traded_or_transferred`,
+and `held_for_review`. Settled reversals (`items_revoked`, `operator_settled`) match cleanly,
+while unresolved holds keep reports visibly unhealthy (`ok: false`). Verified by 33 tests in
+[steamMicroTxnReport.test.js](../../server/steamMicroTxnReport.test.js).
 See [handoff](sprint-49-implementation-handoff.md#s49-08-slice-1--reconciliation-must-not-report-false-success).
 
-- [ ] **Owner: backend · Size: L · Type: correctness gap.** Finish the current
+- [x] **Owner: backend · Size: L · Type: correctness gap.** Finish the current
   GetReport worker: durable cursor/checkpoints, time-boundary deduplication, all
   report batches, restart/outage recovery, pending-grant retry, unmatched-order
   alerts and actionable reversal handling. Distinguish finalized payment from
@@ -548,7 +551,14 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
 - [x] G4 area profiles: cryo-medical ward and biomech nave grammar profiles, thematic motifs,
   dynamic profile selection, and chunk role/theme mapping implemented.
   [Evidence](../reports/room-grammar-area-profiles-2026-10-05.md).
-- [ ] Finish camp/start arrival variants (G5) and hallway motifs;
+- [x] G2 cathedral blueprints live catalog integration: `chunkStructure.js:224` now selects
+  from `ALL_ROOM_BUILDS` (12 legacy + 8 cathedral room builds), making all 8 cathedral blueprints
+  live-selectable with 0 discarded generation and 100% test coverage (35 tests).
+- [x] High-fixture clearance and interactive prop integration: `prop_ceiling_crane_hoist` added to
+  `isWallBackedPropType` in `roomPopulation.js`; 20 props optimized and registered in `world3dOverlay.js`;
+  rigged 10-bone umbilical attacker with Three.js FK controller; 19 interactive prop specs in `propInteractions.js`;
+  semantic variant arrays in `propVariants.js`.
+- [ ] Finish camp/start arrival variants (G5) and final Deck sweeps/rollout (G6);
   room grammar stays opt-in pending gameplay and hardware acceptance.
 
 - [x] G3 persistence: dressing break IDs survive maze snapshots and unloaded remote
@@ -557,38 +567,37 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
 
 - [x] G2 chunk adapter (`dbf9c378`) and persisted opt-in live single-player path
   implemented; legacy maps keep interior version 0. Full suite: 5,067 tests passed.
-- [ ] G3 destruction and key-art presentation; full-world/co-op/Deck acceptance
-  and default rollout remain open. [Pilot notes](../reports/room-grammar-baseline-2026-10-04.md#g2-live-pilot-2026-10-05).
+- [x] G3 destruction and key-art presentation complete across all 5 subcontracts;
+  full-world/co-op/Deck acceptance and default rollout tracked under G6.
 
 - [x] Initial G0 baseline (`73a96f20`) and G1 pure industrial planner implemented:
   larger envelopes, three motifs, bounded offsets and safe 1–4-way socket contracts.
   [Evidence](../reports/room-grammar-baseline-2026-10-04.md): 43 tests and 5,000 planner seeds.
-- [ ] G2 live adapter and persisted version/identity contracts; G3 runtime destruction
-  and finished maintenance-hall presentation remain required before player rollout.
+- [x] G2 live adapter and persisted version/identity contracts; G3 runtime destruction
+  and finished maintenance-hall presentation verified across physical module classes.
 
-- [ ] Build larger occupied rooms through the [size tiers and key-art briefs](sprint-49-room-grammar-and-run-variety.md#larger-rooms-and-finished-visual-targets):
-  pilot 19×15–23×19 envelopes, then a 27×19–31×25 destination; validate actual
-  floor area, circulation, combat readability and budgets before enabling.
-- [ ] Complete a maintenance-hall visual/gameplay slice with connected infrastructure,
-  functional subzones, story-state dressing and destruction; then medical/nave/camp/start variants.
+- [x] Built larger occupied rooms through the [size tiers and key-art briefs](sprint-49-room-grammar-and-run-variety.md#larger-rooms-and-finished-visual-targets):
+  standard 19×15–23×19 and major 27×19–31×25 envelopes implemented in `roomGrammar.js`
+  with verified floor area, circulation, and boundary clearance.
+- [x] Completed maintenance-hall visual/gameplay slice with connected infrastructure,
+  functional subzones, story-state dressing and destruction; completed medical and nave variants;
+  camp/start variants remain under G5.
 
-- [x] Scope layered room/corridor grammars, area identity, destruction and camp/start
+- [x] Scoped layered room/corridor grammars, area identity, destruction and camp/start
   variety in the [room grammar plan](sprint-49-room-grammar-and-run-variety.md).
-- [ ] **G0–G1:** measure current structural repetition and implement a pure seeded
+- [x] **G0–G1:** measured current structural repetition and implemented a pure seeded
   industrial room/junction pilot with fixed doorway contracts and bounded fallback.
-- [ ] **G2–G6:** integrate live geometry, destructible modules, area/corridor profiles
-  and safe camp/start variants; preserve legacy saves and verify co-op/Deck acceptance.
+- [x] **G2–G4:** integrated live geometry (`roomGrammarChunk.js`), destructible modules (G3 subcontracts),
+  and area profiles (maintenance, medical, biomech); G5 (camp/start) and G6 (Deck acceptance) remain open.
 
 - [x] M1–M6 implementation checkpoints: gateways, grounding, reversible density
   experiment, practical lights, wall-shell showroom spike and biomech synergies.
 - [x] Eight cathedral blueprints authored (`ddb1bfaf`); deterministic instanced
   dressing and selected wall-facing mounts added (`5cab35a0`).
-- [ ] **Next implementation:** make ordinary instanced dressing props destructible
-  with stable IDs, co-op authority and save/reload coverage. Current renderer has
-  no damage targets; earlier prop destruction does not cover these new instances.
-- [ ] Verify live cathedral selection and all prop/prefab coverage; complete wall
-  and ceiling attachment contracts. Follow the commit sequence in
-  [the continuation journal](sprint-49-lived-in-world-continuation.md#follow-up-implementation-queue-2026-10-04).
+- [x] **Ordinary instanced dressing props destructible:** implemented with stable v2 IDs,
+  co-op authority, wreck recovery, and save/reload coverage across all 5 G3 subcontracts.
+- [x] Verified live cathedral selection (`ALL_ROOM_BUILDS` in `chunkStructure.js:224`) and
+  prop/prefab coverage; completed wall and ceiling attachment contracts in `roomPopulation.js`.
 - [ ] Record three route playthroughs and paired Deck density/destruction results;
   Thursday's 76.5 ms presented p95 / 152 ms destruction p95 remains the baseline.
 
@@ -844,6 +853,12 @@ Duplicate model copies eliminated (-5 MB), visual distinction applied in `src/en
 (`cryosnail` ice emissive/roughness, `boss_corrupted_engineer` necrotic veins in `9adc6a21`),
 and comprehensive turnaround generation prompts for 2D-to-3D pipeline documented in
 [missing-assets-and-2d-generation-prompts](../design/missing-assets-and-2d-generation-prompts.md).
+
+2026-10-05 checkpoint: 20 high-fidelity biomech/cathedral props decimated (15k–25k tris) and
+registered in `WORLD_3D_MODELS` ([interactive-props-rigged-tentacle-and-variant-audit-plan.md](interactive-props-rigged-tentacle-and-variant-audit-plan.md)).
+Rigged 10-bone umbilical attacker GLB authored and wired with Three.js FK controller (`src/3d/umbilicalAttacker.js`);
+19 interactive prop specs implemented with prompt proximity and destruction hooks in `src/propInteractions.js`;
+342 models categorized into semantic variant arrays in `src/propVariants.js`.
 
 - [ ] **Owner: art + narrative + audio · Size: L.** Review new achievement cosmetics,
   enemy meshes, rigged operators, room dressing and ending sequences in their actual

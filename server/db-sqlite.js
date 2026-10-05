@@ -86,6 +86,16 @@ function mergePurchaseRecord(existing, input = {}, now = Date.now()) {
     if (grantIntent) next.grantIntent = grantIntent;
     if (typeof input.grantReplayed === 'boolean') next.grantReplayed = input.grantReplayed;
     if (input.grantDelivered === true) next.grantDelivered = true;
+    if (input.reversalDisposition !== undefined) {
+        next.reversalDisposition = normalizeOptionalString(input.reversalDisposition);
+    } else if (existing?.reversalDisposition !== undefined) {
+        next.reversalDisposition = existing.reversalDisposition;
+    }
+    if (input.reversalAudit !== undefined) {
+        next.reversalAudit = input.reversalAudit ? { ...input.reversalAudit } : null;
+    } else if (existing?.reversalAudit !== undefined) {
+        next.reversalAudit = existing.reversalAudit;
+    }
     return next;
 }
 
@@ -99,6 +109,7 @@ function clonePurchase(purchase) {
     return {
         ...purchase,
         ...(purchase.grantIntent ? { grantIntent: { ...purchase.grantIntent } } : {}),
+        ...(purchase.reversalAudit ? { reversalAudit: { ...purchase.reversalAudit } } : {}),
         ...(Array.isArray(purchase.granted) ? { granted: purchase.granted.map((item) => ({ ...item })) } : {}),
         events: Array.isArray(purchase.events) ? purchase.events.map((event) => ({ ...event })) : []
     };

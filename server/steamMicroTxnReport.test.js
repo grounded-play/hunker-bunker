@@ -1,5 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fetchMicroTxnReport, reconcileMicroTxnReport, microTxnReportUrl } from './steamMicroTxnReport.js';
+import {
+    fetchMicroTxnReport,
+    reconcileMicroTxnReport,
+    microTxnReportUrl,
+    REVERSAL_DISPOSITIONS,
+    hasGrantEvidence,
+    applyReversalDisposition,
+    processOrderReversal,
+    processOrderReversals,
+    recoverPaidOrders,
+    runMicroTxnReconciliation
+} from './steamMicroTxnReport.js';
 
 const order = (orderid, status, transid = `t${orderid}`) => ({ orderid, transid, status, steamid: '76561198000000000', items: [{ itemid: 4001, qty: 1, amount: 99 }] });
 const purchase = (orderId, status, createdAt = Date.parse('2026-09-30T12:00:00Z')) => ({ orderId: String(orderId), transId: `t${orderId}`, status, sku: 'key_1', createdAt });
@@ -140,4 +151,381 @@ describe('reconciliation', () => {
         expect(r.ok).toBe(false);
         expect(r.reason).toBe('invalid_since');
     });
+
+    it('matches settled reversals with items_revoked or operator_settled as resolved', () => {
+        const p1 = { ...purchase('1', 'reversed_settled'), reversalDisposition: REVERSAL_DISPOSITIONS.ITEMS_REVOKED };
+        const p2 = { ...purchase('2', 'reversed_settled'), reversalDisposition: REVERSAL_DISPOSITIONS.OPERATOR_SETTLED };
+        expect(hasGrantEvidence(p1)).toBe(false);
+        expect(hasGrantEvidence(p2)).toBe(false);
+
+        const r = reconcileMicroTxnReport([order('1', 'Refunded'), order('2', 'Chargedback')], [p1, p2]);
+        expect(r.ok).toBe(true);
+        expect(r.matched).toHaveLength(2);
+        expect(r.reversedButGranted).toHaveLength(0);
+        expect(r.needsReview).toHaveLength(0);
+    });
+
+    it('keeps reversal_review_required holds unhealthy in needsReview', () => {
+        const pConsumed = {
+            ...purchase('1', 'reversal_review_required'),
+            reversalDisposition: REVERSAL_DISPOSITIONS.ITEMS_ALREADY_CONSUMED,
+            reason: 'items_already_consumed'
+        };
+        const pTraded = {
+            ...purchase('2', 'reversal_review_required'),
+            reversalDisposition: REVERSAL_DISPOSITIONS.ITEMS_TRADED_OR_TRANSFERRED,
+            reason: 'items_traded_or_transferred'
+        };
+        const pHeld = {
+            ...purchase('3', 'reversal_review_required'),
+            reversalDisposition: REVERSAL_DISPOSITIONS.HELD_FOR_REVIEW,
+            reason: 'consume_item_ambiguous'
+        };
+
+        const r = reconcileMicroTxnReport([order('1', 'Refunded'), order('2', 'Refunded')], [pConsumed, pTraded, pHeld]);
+        expect(r.ok).toBe(false);
+        expect(r.needsReview).toHaveLength(3);
+        expect(r.needsReview.map((x) => x.disposition)).toEqual([
+            'items_already_consumed',
+            'items_traded_or_transferred',
+            'held_for_review'
+        ]);
+    });
 });
+
+describe('applyReversalDisposition', () => {
+    it('validates disposition is a supported REVERSAL_DISPOSITIONS enum', async () => {
+        const res = await applyReversalDisposition({ purchase: purchase('1', 'completed'), disposition: 'invalid_disposition' });
+        expect(res.ok).toBe(false);
+        expect(res.reason).toBe('invalid_reversal_disposition');
+    });
+
+    it('settles items_revoked and operator_settled as reversed_settled', async () => {
+        let saved = null;
+        const save = async (record) => { saved = record; return record; };
+
+        const r1 = await applyReversalDisposition({
+            purchase: purchase('1', 'completed'),
+            disposition: REVERSAL_DISPOSITIONS.ITEMS_REVOKED,
+            auditNote: 'keys consumed',
+            savePurchase: save
+        });
+        expect(r1.ok).toBe(true);
+        expect(r1.status).toBe('reversed_settled');
+        expect(saved.reversalDisposition).toBe('items_revoked');
+        expect(saved.reversalAudit.auditNote).toBe('keys consumed');
+
+        const r2 = await applyReversalDisposition({
+            purchase: purchase('2', 'completed'),
+            disposition: REVERSAL_DISPOSITIONS.OPERATOR_SETTLED,
+            operatorId: 'admin_42',
+            auditNote: 'waived chargeback',
+            savePurchase: save
+        });
+        expect(r2.ok).toBe(true);
+        expect(r2.status).toBe('reversed_settled');
+        expect(saved.reversalDisposition).toBe('operator_settled');
+        expect(saved.reversalAudit.operatorId).toBe('admin_42');
+    });
+
+    it('places consumed, traded, or ambiguous items on persistent reversal_review_required hold', async () => {
+        let saved = null;
+        const save = async (record) => { saved = record; return record; };
+
+        for (const disp of [
+            REVERSAL_DISPOSITIONS.ITEMS_ALREADY_CONSUMED,
+            REVERSAL_DISPOSITIONS.ITEMS_TRADED_OR_TRANSFERRED,
+            REVERSAL_DISPOSITIONS.HELD_FOR_REVIEW
+        ]) {
+            const res = await applyReversalDisposition({
+                purchase: purchase('10', 'completed'),
+                disposition: disp,
+                savePurchase: save
+            });
+            expect(res.ok).toBe(true);
+            expect(res.status).toBe('reversal_review_required');
+            expect(saved.status).toBe('reversal_review_required');
+            expect(saved.reversalDisposition).toBe(disp);
+        }
+    });
+});
+
+describe('processOrderReversal', () => {
+    it('successfully revokes items still owned in inventory and settles the purchase', async () => {
+        let savedPurchase = null;
+        const consumeMock = vi.fn(async () => ({ ok: true, items: [] }));
+        const p = {
+            ...purchase('1', 'completed'),
+            mode: 'mock',
+            steamId64: '76561198000000000',
+            granted: [{ itemId: 'item_101', itemdefid: 4001, quantity: 1 }]
+        };
+        const inventory = [{ itemId: 'item_101', itemdefid: 4001, quantity: 1 }];
+
+        const res = await processOrderReversal({
+            purchase: p,
+            order: order('1', 'Refunded'),
+            inventory,
+            consumeMock,
+            savePurchase: async (rec) => { savedPurchase = rec; return rec; }
+        });
+
+        expect(res.ok).toBe(true);
+        expect(res.disposition).toBe(REVERSAL_DISPOSITIONS.ITEMS_REVOKED);
+        expect(res.status).toBe('reversed_settled');
+        expect(consumeMock).toHaveBeenCalledWith('76561198000000000', { itemId: 'item_101', quantity: 1 });
+        expect(savedPurchase.reversalDisposition).toBe('items_revoked');
+    });
+
+    it('detects when items were already consumed and holds for review', async () => {
+        let savedPurchase = null;
+        const p = {
+            ...purchase('2', 'completed'),
+            mode: 'mock',
+            steamId64: '76561198000000000',
+            granted: [{ itemId: 'item_102', itemdefid: 4001, quantity: 1, state: 'consumed' }]
+        };
+        const inventory = []; // empty inventory
+
+        const res = await processOrderReversal({
+            purchase: p,
+            order: order('2', 'Refunded'),
+            inventory,
+            savePurchase: async (rec) => { savedPurchase = rec; return rec; }
+        });
+
+        expect(res.ok).toBe(true);
+        expect(res.disposition).toBe(REVERSAL_DISPOSITIONS.ITEMS_ALREADY_CONSUMED);
+        expect(res.status).toBe('reversal_review_required');
+        expect(savedPurchase.status).toBe('reversal_review_required');
+    });
+
+    it('detects when items were traded or transferred and holds for review', async () => {
+        let savedPurchase = null;
+        const p = {
+            ...purchase('3', 'completed'),
+            mode: 'mock',
+            steamId64: '76561198000000000',
+            granted: [{ itemId: 'item_103', itemdefid: 4001, quantity: 1, state: 'removed' }]
+        };
+        const inventory = [];
+
+        const res = await processOrderReversal({
+            purchase: p,
+            order: order('3', 'Chargedback'),
+            inventory,
+            savePurchase: async (rec) => { savedPurchase = rec; return rec; }
+        });
+
+        expect(res.ok).toBe(true);
+        expect(res.disposition).toBe(REVERSAL_DISPOSITIONS.ITEMS_TRADED_OR_TRANSFERRED);
+        expect(res.status).toBe('reversal_review_required');
+        expect(savedPurchase.reversalDisposition).toBe('items_traded_or_transferred');
+    });
+
+    it('holds for review when consumeItem fails or returns ambiguous error', async () => {
+        let savedPurchase = null;
+        const consumeMock = vi.fn(async () => ({ ok: false, reason: 'steam_api_error' }));
+        const p = {
+            ...purchase('4', 'completed'),
+            mode: 'mock',
+            steamId64: '76561198000000000',
+            granted: [{ itemId: 'item_104', itemdefid: 4001, quantity: 1 }]
+        };
+        const inventory = [{ itemId: 'item_104', itemdefid: 4001, quantity: 1 }];
+
+        const res = await processOrderReversal({
+            purchase: p,
+            order: order('4', 'Refunded'),
+            inventory,
+            consumeMock,
+            savePurchase: async (rec) => { savedPurchase = rec; return rec; }
+        });
+
+        expect(res.ok).toBe(true);
+        expect(res.disposition).toBe(REVERSAL_DISPOSITIONS.HELD_FOR_REVIEW);
+        expect(res.status).toBe('reversal_review_required');
+        expect(savedPurchase.reversalDisposition).toBe('held_for_review');
+    });
+
+    it('processes batch reversals across multiple orders with processOrderReversals', async () => {
+        const processReversal = vi.fn(async ({ purchase: item }) => ({
+            ok: true,
+            status: 'reversed_settled',
+            disposition: REVERSAL_DISPOSITIONS.ITEMS_REVOKED,
+            purchase: item
+        }));
+        const p1 = purchase('51', 'completed');
+        const p2 = purchase('52', 'completed');
+        const orders = [order('51', 'Refunded'), order('52', 'Chargedback')];
+
+        const batchResults = await processOrderReversals({
+            orders,
+            purchases: [p1, p2],
+            processReversal
+        });
+
+        expect(batchResults).toHaveLength(2);
+        expect(batchResults.map((r) => r.disposition)).toEqual(['items_revoked', 'items_revoked']);
+        expect(processReversal).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe('recoverPaidOrders', () => {
+    it('recovers ungranted paid orders using idempotent fulfill function', async () => {
+        const fulfill = vi.fn(async (p) => ({ status: 200, body: { ok: true, transId: p.transId } }));
+        const ungranted = purchase('10', 'finalized_pending_grant');
+        const orders = [order('10', 'Succeeded')];
+
+        const results = await recoverPaidOrders({
+            orders,
+            purchases: [ungranted],
+            fulfill
+        });
+
+        expect(results).toHaveLength(1);
+        expect(results[0]).toMatchObject({ orderid: '10', ok: true });
+        expect(fulfill).toHaveBeenCalledWith(ungranted);
+    });
+
+    it('never attempts recovery for refunded, chargebacked, or non-Succeeded orders', async () => {
+        const fulfill = vi.fn();
+        const ungranted = purchase('11', 'finalized_pending_grant');
+        const orders = [order('11', 'Refunded'), order('12', 'Chargedback'), order('13', 'Init')];
+
+        const results = await recoverPaidOrders({
+            orders,
+            purchases: [ungranted],
+            fulfill
+        });
+
+        expect(results).toHaveLength(0);
+        expect(fulfill).not.toHaveBeenCalled();
+    });
+
+    it('skips orders with active grant_review_required or reversal_review_required holds', async () => {
+        const fulfill = vi.fn();
+        const underReview = { ...purchase('14', 'grant_review_required'), reason: 'legacy_grant_requires_review' };
+        const orders = [order('14', 'Succeeded')];
+
+        const results = await recoverPaidOrders({
+            orders,
+            purchases: [underReview],
+            fulfill
+        });
+
+        expect(results).toHaveLength(0);
+        expect(fulfill).not.toHaveBeenCalled();
+    });
+});
+
+describe('runMicroTxnReconciliation with recoverPaid and processReversals', () => {
+    it('executes unattended paid recovery and re-reconciles to healthy ok: true', async () => {
+        let callCount = 0;
+        const fetchImpl = vi.fn(async () => {
+            callCount++;
+            if (callCount === 1) {
+                return new Response(JSON.stringify({
+                    response: {
+                        result: 'OK',
+                        params: {
+                            count: 1,
+                            orders: [{
+                                orderid: '20',
+                                transid: '2000',
+                                status: 'Succeeded',
+                                time: '2026-09-30T01:00:00Z',
+                                steamid: '76561198000000000'
+                            }]
+                        }
+                    }
+                }), { status: 200 });
+            }
+            return new Response(JSON.stringify({
+                response: { result: 'OK', params: { count: 0, orders: [] } }
+            }), { status: 200 });
+        });
+
+        const p = { ...purchase('20', 'finalized_pending_grant'), transId: '2000' };
+        const purchasesList = [p];
+
+        const fulfill = vi.fn(async (local) => {
+            local.status = 'completed';
+            local.grantDelivered = true;
+            return { status: 200, body: { ok: true } };
+        });
+
+        const res = await runMicroTxnReconciliation({
+            key: 'test_key',
+            since: '2026-09-30T00:00:00Z',
+            fetchImpl,
+            purchases: purchasesList,
+            recoverPaid: true,
+            fulfill
+        });
+
+        expect(fulfill).toHaveBeenCalled();
+        expect(res.recoveryResults).toHaveLength(1);
+        expect(res.recoveryResults[0].ok).toBe(true);
+        expect(res.ok).toBe(true);
+        expect(res.reconciliation.matched).toHaveLength(1);
+        expect(res.reconciliation.paidNotGranted).toHaveLength(0);
+    });
+
+    it('executes automated reversals for refunded orders and re-reconciles cleanly', async () => {
+        let callCount = 0;
+        const fetchImpl = vi.fn(async () => {
+            callCount++;
+            if (callCount === 1) {
+                return new Response(JSON.stringify({
+                    response: {
+                        result: 'OK',
+                        params: {
+                            count: 1,
+                            orders: [{
+                                orderid: '30',
+                                transid: '3000',
+                                status: 'Refunded',
+                                time: '2026-09-30T01:00:00Z',
+                                steamid: '76561198000000000'
+                            }]
+                        }
+                    }
+                }), { status: 200 });
+            }
+            return new Response(JSON.stringify({
+                response: { result: 'OK', params: { count: 0, orders: [] } }
+            }), { status: 200 });
+        });
+
+        const p = {
+            ...purchase('30', 'completed'),
+            transId: '3000',
+            granted: [{ itemId: 'item_30', itemdefid: 4001, quantity: 1 }]
+        };
+        const purchasesList = [p];
+
+        const processReversal = vi.fn(async ({ purchase: local }) => {
+            local.status = 'reversed_settled';
+            local.reversalDisposition = REVERSAL_DISPOSITIONS.ITEMS_REVOKED;
+            return { ok: true, disposition: 'items_revoked', status: 'reversed_settled' };
+        });
+
+        const res = await runMicroTxnReconciliation({
+            key: 'test_key',
+            since: '2026-09-30T00:00:00Z',
+            fetchImpl,
+            purchases: purchasesList,
+            processReversals: true,
+            processReversal
+        });
+
+        expect(processReversal).toHaveBeenCalled();
+        expect(res.reversalResults).toHaveLength(1);
+        expect(res.reversalResults[0].ok).toBe(true);
+        expect(res.ok).toBe(true);
+        expect(res.reconciliation.matched).toHaveLength(1);
+        expect(res.reconciliation.reversedButGranted).toHaveLength(0);
+    });
+});
+
