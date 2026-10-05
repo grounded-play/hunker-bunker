@@ -115,26 +115,47 @@ All store and library art lives in [`steam/store/`](steam/store/) (English slots
 
 ## 🕹️ Controls
 
+Full map of every menu, sub-menu and tab, the input model and the UI
+improvement plan: [`docs/design/ui-surfaces-menu-map-and-controller-navigation.md`](docs/design/ui-surfaces-menu-map-and-controller-navigation.md).
+
 ### Gameplay Controls
 
-| Action | Keyboard / Mouse | Gamepad / Touch |
+| Action | Keyboard / Mouse | Steam Deck / Gamepad (official layout) |
 | --- | --- | --- |
-| **Move** | `WASD` / Arrow Keys | Left Stick / Touch Joystick |
-| **Aim & Fire** | Mouse Aim + Left Click | Right Stick / Fire Trigger (RT) |
-| **Interact** | `E` | Action / Confirm Button (A) |
-| **Reload** | `R` | Reload Button (X) |
-| **Class Ability** | `F` | Special Ability Button (Y) |
-| **Radar Scan** | `Q` | Sub-weapon / Scan (LB) |
-| **Sprint** | `Shift` | Left Stick Click / Sprint Toggle |
-| **Tactical Chat** | `Enter` or `T` | View / Select Button |
-| **Dev Telemetry** | `~` (Tilde) | Open Diagnostic Overlay |
+| **Move** | `WASD` / Arrow keys | Left stick |
+| **Aim & Fire** | Mouse + left click | Right stick or trackpad + **RT** |
+| **Interact** | `E` (or `Enter`) | **A** |
+| **Dodge** | — | **B** |
+| **Reload** | `R` | **X** / D-pad ◀ |
+| **Smash / Class Ability** | `F` | **Y** / D-pad ▶ |
+| **Scan** | `Q` | **LB** / D-pad ▼ |
+| **Tactical Map** | `M` or `Tab` | **RB** / D-pad ▲ / View |
+| **Sprint** | `Shift` | Left stick click |
+| **Melee** | `V` | — |
+| **Tactical Ping** | `T` (with a squadmate in the room, `T` also opens trade) | — |
+| **Pause / Settings** | `Esc` | ☰ Menu |
+| **Chat** | HUD **CHAT** button, or Pause → Settings → Session → Room Chat | Pause → Settings → Session → Room Chat |
+| **Dev Telemetry** | `~` | — |
 
 ### 🎮 Controller Navigation & Menu Accessibility
 
-Hunker Bunker features **Full Controller Support** tailored for the Steam Deck and standard gamepads (Xbox, PlayStation, DualSense). Every menu, modal, upgrade terminal, and archive log is 100% operable without touching a mouse or touchscreen.
+Every menu is built for the Steam Deck stage (1280×800) and driven by one
+focus system shared by the pad, the keyboard and the mouse. Every surface is
+registered in `MENU_FOCUS_ROOT_IDS` (`src/inputActions.js`) and covered by the
+`menu-reachability`, `controller-focus` and `menu-tab-switching` browser suites.
 
-| Action | Gamepad (Steam Deck / Xbox) | Keyboard Alternative | Function |
+| Action | Steam Deck / Gamepad | Keyboard | Function |
 | :--- | :--- | :--- | :--- |
+| **Navigate** | D-pad / left stick | `W` `A` `S` `D` or arrows | Spatial focus across buttons, cards and slots; wraps at the edges. |
+| **Activate** | **A** or **RT** | `Enter` / `Space` | Equips gear, buys upgrades, selects an operative; A on a dropdown opens its full list. |
+| **Back / Close** | **B** | `Esc` | Closes the topmost surface and returns focus to the button that opened it. |
+| **Switch Tabs** | **LB** / **RB** (also **X** / **Y**) | `Q` / `E` | Settings, Archive, Foundry hub / Vault, Dossier, ship terminal; class cards on the operator menu and in the Armory. |
+| **Adjust Values** | D-pad ◀ ▶ (focused) | `A` / `D` or ◀ ▶ | Sliders, volume, UI scale, dropdowns. |
+| **Scroll Text** | D-pad ▲ ▼ | `W` / `S` or ▲ ▼ | Scrolls lore, codex detail and commentary text that has nothing to focus. |
+| **Enter Text** | **A** (Steam keyboard; in-game keyboard fallback) | type | Callsign and chat. |
+| **Pointer** | Right trackpad / stick cursor + **A** | Mouse | Optional; never the only way to reach a control. |
+
+--- | :--- | :--- | :--- |
 | **Navigate Menus & Grids** | **D-Pad** / **Left Stick** | `W`, `A`, `S`, `D` or Arrows | Visual spatial roving focus across buttons, cards, and slots. |
 | **Activate / Select** | **A** or **Right Trigger (RT)** | `Enter` or `Space` | Equips gear, confirms upgrades, selects operative. |
 | **Back / Cancel** | **B** | `Escape` | Closes topmost modal or returns to previous briefing screen. |
