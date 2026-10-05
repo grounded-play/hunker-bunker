@@ -422,6 +422,19 @@ disposal in `src/umbilicalAttacker.test.js`. The existing Giger signature placem
 remains deterministic and capped at one signature anchor per room. Focused attacker
 tests and the full suite are the commit gate.
 
+**Result:** `b8abf652` adds the explicit stun lifecycle, independent frost visual,
+one-shot detection-entry callback, deterministic spatial cue pitch, and idempotent
+material/mixer cleanup. Checks: 13 focused attacker/audio tests and full suite 4,988
+passed.
+
+**Next commit — M6 environmental synergies:** oxygen-cascade rupture will stun only
+live umbilicals within 5 m for 4 s. Sphincter bile will apply a data-defined 1.25×
+chitin damage-taken modifier for 6 s through the shared status engine. Reapplication
+refreshes to the greater remaining duration rather than adding durations or
+multipliers; a stable prop scatter key deduplicates co-op replay. Damage scaling will
+occur after the existing host-authoritative hit-routing boundary. Status, interaction,
+co-op damage-path, and full-suite tests are the commit gate.
+
 ### Milestones
 
 | Milestone | Goal | Agent-completable gate | Human gate |

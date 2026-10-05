@@ -503,6 +503,7 @@ import {
     shouldApplyDescent
 } from './coopTransitions.js';
 import {
+    getDamageTakenMultiplier,
     applyStatus,
     getStatus,
     clearStatus,
@@ -16006,6 +16007,9 @@ export class ThreeGame {
                 return;
             }
         }
+        // Applied after co-op routing: reports and broadcasts carry the same
+        // pre-vulnerability damage, then each authoritative replica scales once.
+        amount *= getDamageTakenMultiplier(sprite);
         const fight = sprite?.userData?.queenFight;
         if (fight) {
             const dealt = applyBossDamage(fight, amount);

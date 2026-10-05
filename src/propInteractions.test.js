@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+    BIOMECH_SYNERGY_TUNING,
     findNearestInteractableProp,
     handleCustomPropDestruction,
     interactWithCustomProp,
@@ -16,6 +17,8 @@ describe('propInteractions', () => {
     });
 
     it('handles oxygen rack destruction: adjusts O2 and damages nearby enemies', () => {
+        const nearUmbilical = { isAlive: true, x: 12, z: 10, stun: vi.fn() };
+        const farUmbilical = { isAlive: true, x: 30, z: 30, stun: vi.fn() };
         const mockGame = {
             adjustOxygen: vi.fn(),
             showBunkerLine: vi.fn(),
@@ -25,7 +28,8 @@ describe('propInteractions', () => {
             snails: [
                 { isAlive: true, x: 10, z: 10 },
                 { isAlive: true, x: 100, z: 100 }
-            ]
+            ],
+            umbilicalAttackers: [nearUmbilical, farUmbilical]
         };
 
         const handled = handleCustomPropDestruction(
@@ -42,6 +46,32 @@ describe('propInteractions', () => {
             45,
             expect.objectContaining({ element: 'cryo' })
         );
+        expect(nearUmbilical.stun).toHaveBeenCalledWith(BIOMECH_SYNERGY_TUNING.cryoStunSeconds);
+        expect(farUmbilical.stun).not.toHaveBeenCalled();
+    });
+
+    it('applies bounded bile damage and deduplicated chitin vulnerability in radius', () => {
+        const near = { isAlive: true, x: 1, z: 1, userData: {} };
+        const far = { isAlive: true, x: 20, z: 20, userData: {} };
+        const game = {
+            showBunkerLine: vi.fn(),
+            spawnPhysicalBurst: vi.fn(),
+            applyPlayerDamageToEnemy: vi.fn(),
+            snails: [near, far]
+        };
+        const prop = { x: 0, z: 0 };
+        const propObject = { userData: { scatterKey: 'room:7:hatch' } };
+
+        handleCustomPropDestruction(game, 'prop_biomech_sphincter_hatch_vent', prop, propObject);
+        expect(game.applyPlayerDamageToEnemy).toHaveBeenCalledTimes(1);
+        expect(game.applyPlayerDamageToEnemy).toHaveBeenCalledWith(near, 35, { element: 'bile' });
+        expect(near.userData.statusEffects.chitinVulnerabilityTimer).toBe(6);
+        expect(near.userData.statusEffects.chitinDamageMultiplier).toBe(1.25);
+        expect(far.userData.statusEffects).toBeUndefined();
+
+        near.userData.statusEffects.chitinVulnerabilityTimer = 3;
+        handleCustomPropDestruction(game, 'prop_biomech_sphincter_hatch_vent', prop, propObject);
+        expect(near.userData.statusEffects.chitinVulnerabilityTimer).toBe(3);
     });
 
     it('handles decon eyewash destruction: cleanses infection and restores O2', () => {

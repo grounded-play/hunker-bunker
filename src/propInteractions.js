@@ -3,6 +3,42 @@
  * "Help, Hurt, Give, Take" System for Sprint 49 Biomechanical & Corpospace Cathedral Props
  */
 
+import { applyChitinVulnerability, STATUS_DEFAULTS } from './statusEffects.js';
+
+export const BIOMECH_SYNERGY_TUNING = Object.freeze({
+    cryoStunRadius: 5.0,
+    cryoStunSeconds: 4.0,
+    bileRadius: 3.5,
+    bileVulnerabilitySeconds: STATUS_DEFAULTS.chitinVulnerabilityDuration,
+    bileDamageMultiplier: STATUS_DEFAULTS.chitinDamageMultiplier
+});
+
+function targetPosition(target) {
+    return target?.position ?? target;
+}
+
+function livingEnemyTargets(game) {
+    if (Array.isArray(game?.snails)) return game.snails.filter((target) => target?.isAlive !== false);
+    return (game?.scatterSprites ?? []).filter((target) => {
+        const data = target?.userData;
+        return data && !data.burstTriggered && (data.hp ?? 1) > 0 && game.isEnemyType?.(data.type);
+    });
+}
+
+function applyBileInRadius(game, prop, radius) {
+    const eventId = prop.userData?.scatterKey ? `bile:${prop.userData.scatterKey}` : null;
+    for (const target of livingEnemyTargets(game)) {
+        const position = targetPosition(target);
+        const d = Math.hypot(position.x - prop.position.x, position.z - prop.position.z);
+        if (d > radius) continue;
+        game.applyPlayerDamageToEnemy?.(target, 35, { element: 'bile' });
+        applyChitinVulnerability(target, {
+            duration: BIOMECH_SYNERGY_TUNING.bileVulnerabilitySeconds,
+            multiplier: BIOMECH_SYNERGY_TUNING.bileDamageMultiplier,
+            eventId
+        });
+    }
+}
 
 function safePlaySound(sound, options) {
     if (typeof window !== 'undefined' && window.AudioManager?.play) {
@@ -44,6 +80,13 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
                         snail.x += kx;
                         snail.z += kz;
                     }
+                }
+            }
+            for (const attacker of game.umbilicalAttackers ?? []) {
+                if (!attacker?.isAlive) continue;
+                const d = Math.hypot(attacker.x - prop.position.x, attacker.z - prop.position.z);
+                if (d <= BIOMECH_SYNERGY_TUNING.cryoStunRadius) {
+                    attacker.stun?.(BIOMECH_SYNERGY_TUNING.cryoStunSeconds);
                 }
             }
         }
@@ -353,15 +396,7 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
         onDestroy: (game, prop) => {
             game.showBunkerLine?.('BIOMECH HATCH SPASMS: CORROSIVE BILE VOMIT!');
             game.spawnPhysicalBurst?.(prop.position.x, prop.position.z, { color: 0x88ff00, count: 20, upward: 0.3 });
-            if (game.snails) {
-                for (const snail of game.snails) {
-                    if (!snail || !snail.isAlive) continue;
-                    const d = Math.hypot(snail.x - prop.position.x, snail.z - prop.position.z);
-                    if (d <= 3.5) {
-                        game.applyPlayerDamageToEnemy?.(snail, 35, { element: 'acid' });
-                    }
-                }
-            }
+            applyBileInRadius(game, prop, BIOMECH_SYNERGY_TUNING.bileRadius);
         }
     },
 
