@@ -242,3 +242,79 @@ export function roomGatewayKitPlacement(door, biome) {
         modelScale: 1
     };
 }
+
+/** Grid cells covered by one kit wall piece: 4 kit units at KIT_SCALE 0.75 = 3 tiles. */
+export const WALL_SHELL_SPAN = 3;
+
+const SHELL_SIDES = Object.freeze({
+    // step: from an interior floor cell to its boundary wall; face: the wall's
+    // room-side face from the wall cell centre; rotationSteps turn the piece's
+    // +z front toward the room.
+    n: { step: [0, -1], face: [0, 0.5], rotationSteps: 0 },
+    s: { step: [0, 1], face: [0, -0.5], rotationSteps: 2 },
+    e: { step: [1, 0], face: [-0.5, 0], rotationSteps: 3 },
+    w: { step: [-1, 0], face: [0.5, 0], rotationSteps: 1 }
+});
+
+/**
+ * Lived-in world M5 spike (showroom only; docs/planning/sprint-49-lived-in-world-continuation.md):
+ * kit wall pieces for straight runs of an authored room's boundary wall.
+ *
+ * A run is consecutive `#` cells on one boundary line, one cell outside the
+ * stamped pattern's bounds (room.bounds, where doors are also cut), whose
+ * room-side neighbour is interior floor, so interior obstruction blocks never
+ * qualify, and that stays more than one cell from every door. Each run is
+ * covered by as many whole WALL_SHELL_SPAN pieces as fit, centred; leftover
+ * cells keep the procedural wall. Each placement lists the wall cells whose
+ * procedural render it replaces. Collision stays with the tile grid.
+ *
+ * Not wired into play: in-game walls are destructible and cut away toward the
+ * camera, and a shell would have to follow both (see the journal).
+ */
+export function wallShellPlacements(grid, room, biome) {
+    const bounds = room?.bounds;
+    if (!Array.isArray(grid) || !bounds) return [];
+    const skin = skinForBiome(biome);
+    const interior = new Set((room.interior ?? []).map(({ x, y }) => `${x},${y}`));
+    const doorCells = (room.doors ?? []).flatMap((door) => door.cells ?? []);
+    const nearDoor = (cell) => doorCells.some((door) => Math.max(Math.abs(door.x - cell.x), Math.abs(door.y - cell.y)) <= 1);
+    const lineOf = { n: bounds.top - 1, s: bounds.bottom + 1, w: bounds.left - 1, e: bounds.right + 1 };
+    const placements = [];
+
+    for (const [side, spec] of Object.entries(SHELL_SIDES)) {
+        const horizontal = side === 'n' || side === 's';
+        const [from, to] = horizontal ? [bounds.left, bounds.right] : [bounds.top, bounds.bottom];
+        const eligible = (t) => {
+            const cell = horizontal ? { x: t, y: lineOf[side] } : { x: lineOf[side], y: t };
+            const inside = `${cell.x - spec.step[0]},${cell.y - spec.step[1]}`;
+            return grid[cell.y]?.[cell.x] === '#' && interior.has(inside) && !nearDoor(cell) ? cell : null;
+        };
+        let run = [];
+        const flush = () => {
+            const pieces = Math.floor(run.length / WALL_SHELL_SPAN);
+            const start = Math.floor((run.length - pieces * WALL_SHELL_SPAN) / 2);
+            for (let i = 0; i < pieces; i += 1) {
+                const cells = run.slice(start + i * WALL_SHELL_SPAN, start + (i + 1) * WALL_SHELL_SPAN);
+                const middle = cells[1];
+                placements.push({
+                    type: `kit_${skin}_template_wall`,
+                    side,
+                    x: middle.x + spec.face[0],
+                    y: middle.y + spec.face[1],
+                    rotationSteps: spec.rotationSteps,
+                    modelScale: 1,
+                    cells
+                });
+            }
+            run = [];
+        };
+        for (let t = from; t <= to; t += 1) {
+            const cell = eligible(t);
+            if (cell) run.push(cell);
+            else flush();
+        }
+        flush();
+    }
+    return placements;
+}
+

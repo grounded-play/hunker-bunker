@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <!-- Game asset URLs (kit textures) are page-relative (Electron file://); resolve them from the root. -->
+  <base href="/">
   <title>Gateway orientation probe</title>
   <style>
     html, body { margin: 0; background: #0b1013; color: #dfe8e6; font: 14px monospace; }
@@ -108,12 +110,20 @@
 
     const sides = ['n', 'e', 's', 'w'];
     const panels = sides.map(buildScene);
-    panels.forEach(({ scene, camera, placement }, i) => {
+    const renderAll = () => panels.forEach(({ scene, camera }, i) => {
       const vx = (i % 2) * (width / 2);
       const vy = (i < 2 ? 1 : 0) * (height / 2);
       renderer.setViewport(vx, vy, width / 2, height / 2);
       renderer.setScissor(vx, vy, width / 2, height / 2);
       renderer.render(scene, camera);
+    });
+    renderAll();
+    // Kit materials fetch their textures asynchronously; render again once they land.
+    await new Promise((resolve) => { THREE.DefaultLoadingManager.onLoad = resolve; setTimeout(resolve, 5000); });
+    renderAll();
+    panels.forEach(({ placement }, i) => {
+      const vx = (i % 2) * (width / 2);
+      const vy = (i < 2 ? 1 : 0) * (height / 2);
       const label = document.createElement('div');
       label.className = 'label';
       label.style.left = `${vx + 8}px`;

@@ -63,3 +63,34 @@ export function isAreaRoomDensityEnabled() {
     return false;
 }
 
+// ── Modular wall shells (lived-in world M5 spike) ────────────────────
+// Swap straight boundary runs of 3+ cells for kit template walls.
+// Default OFF: showroom spike only until [Art] sign-off.
+export const MODULAR_WALL_SHELLS_STORAGE_KEY = 'hb_modular_wall_shells';
+
+export function isModularWallShellsEnabled() {
+    if (typeof window !== 'undefined' && typeof window.__MODULAR_WALL_SHELLS__ === 'boolean') {
+        return window.__MODULAR_WALL_SHELLS__;
+    }
+    try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+            return window.localStorage.getItem(MODULAR_WALL_SHELLS_STORAGE_KEY) === 'on';
+        }
+    } catch {
+        // Storage unavailable -- default off.
+    }
+    return false;
+}
+
+export function setModularWallShellsEnabled(enabled) {
+    try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.setItem(MODULAR_WALL_SHELLS_STORAGE_KEY, enabled ? 'on' : 'off');
+        }
+    } catch {
+        // Non-fatal.
+    }
+    if (typeof window !== 'undefined') window.__MODULAR_WALL_SHELLS__ = Boolean(enabled);
+    return Boolean(enabled);
+}
+

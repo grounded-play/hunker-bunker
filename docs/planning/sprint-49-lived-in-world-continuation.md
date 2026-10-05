@@ -352,18 +352,46 @@ suite 4,972 passed, 500-seed sweep 0 failures.
 
 ### Goal 5 — modular wall shells (M5, design-gated)
 
-**Now:** wall kit pieces exist (`kit_cave_template_wall*`, `arch_pillar_buttress_01-04`,
+**Before M5:** wall kit pieces exist (`kit_cave_template_wall*`, `arch_pillar_buttress_01-04`,
 `arch_rib_ceiling_vault_01-03`) but only gateways reach normal play. Layering shells
 over existing walls was ruled out (z-fighting, double draw).
 
-- [ ] Spike in the showroom: detect straight wall runs of 3 or more facing an
+- [x] Spike in the showroom: detect straight wall runs of 3 or more facing an
   authored chamber, and swap the procedural wall render for kit pieces at uniform
   scale 1 for one biome. Tile collision stays authoritative; shells are structural
   and indestructible.
+  [`wallShellPlacements(grid, room, biome)`](../../src/kitGrammar.js) finds runs of
+  boundary `#` cells (one cell outside the stamped bounds, where doors are also cut)
+  whose room-side neighbour is interior floor and that stay more than one cell from
+  every door. It covers each run with whole 3-cell `kit_<skin>_template_wall` pieces
+  (4 kit units at `KIT_SCALE` = 3 tiles), centred, each listing the wall cells whose
+  render it replaces. The showroom probe
+  ([`wall-shell-spike.spec.js`](../../tests/e2e/probes/wall-shell-spike.spec.js))
+  stamps a real build with its socket doors and draws it before and after.
 - [ ] **[Art]** Art-direction sign-off on the spike before it reaches normal play.
 
 **Accept (agent):** spike screenshots plus a 500-seed sweep with the spike flag on;
 no default-on change without the art sign-off.
+
+**Result (2026-10-04):** evidence for the sign-off:
+`docs/reports/assets/wall-shell-spike-medical_triage-active-2026-10-04.png` (13 pieces)
+and `...-reactor_compressor_hall-cave-2026-10-04.png` (16 pieces). The grammar is
+tested on all 12 authored builds: every replaced cell is a boundary wall facing
+interior floor, more than a cell from every door, with no cell used twice. The spike
+is showroom-only. It changes no world generation or play path, so the 500-seed
+sweep (0 failures) runs exactly as it does with the spike off, and there is no
+in-game switch to turn on. Before any in-game wiring (for example behind
+`hb_modular_wall_shells`, which another agent added to `featureFlags.js` default-off),
+four blockers need answers:
+1. Procedural walls are destructible (`wallHp`), so a shell must break or hide with
+   its cells.
+2. Camera-side walls are cut away to `ROOM_CUTAWAY_HEIGHT` as the camera rotates,
+   and a 3 m shell would block the view into the room.
+3. Kit walls are 3.04–3.19 tall against 2.8 m procedural walls.
+4. The cave piece is 1.62 deep and reaches past its wall cell.
+Checks: 42 kit grammar tests, full suite 4,986 passed, 500-seed sweep 0 failures.
+The gateway probe now waits for kit textures, and its four captures were re-taken
+textured.
 
 ### Goal 6 — reactive biomech synergies (M6)
 
@@ -384,6 +412,15 @@ Nothing yet affects an umbilical.
 **Accept:** [`umbilicalAttacker.test.js`](../../src/umbilicalAttacker.test.js) and
 [`propInteractions.test.js`](../../src/propInteractions.test.js) cover stun timing,
 status expiry and the cue trigger; full suite green.
+
+**Next commit — M6 attacker lifecycle and detection cue:** add a bounded,
+non-stacking `STUNNED` state with visible frost feedback and cleanup to
+`src/3d/umbilicalAttacker.js`; emit a separate callback once when the player crosses
+into detection range; wire that callback to an existing spatial biomech sound in
+`src/threeGame.js`; and cover entry, repeated stun, expiry, death-during-stun, and
+disposal in `src/umbilicalAttacker.test.js`. The existing Giger signature placement
+remains deterministic and capped at one signature anchor per room. Focused attacker
+tests and the full suite are the commit gate.
 
 ### Milestones
 

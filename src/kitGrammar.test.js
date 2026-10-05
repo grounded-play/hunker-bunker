@@ -5,8 +5,9 @@ import { KIT_SCALE } from './kitMaterials.js';
 import { PROCEDURAL_DOOR_SLAB_THICKNESS } from './proceduralDoors.js';
 import {
     KIT_SKINS, SHARED_ROLES, SKIN_ONLY_ROLES, GATE_MODEL_HALF_DEPTH, GATEWAY_ROOM_INSET,
-    skinForBiome, kitPieceFor, chooseKitPiece, corridorKitPlacement, roomGatewayKitPlacement
+    skinForBiome, kitPieceFor, chooseKitPiece, corridorKitPlacement, roomGatewayKitPlacement, wallShellPlacements
 } from './kitGrammar.js';
+import { ROOM_BUILD_CATALOG, stampRoomBuild } from './roomBuilds.js';
 
 // Z extent (depth across the threshold) of every mesh in a GLB, from its
 // POSITION accessor bounds through the node translations. Enough for the
@@ -255,3 +256,67 @@ describe('hostile input', () => {
         expect([0, 1, 2, 3]).toContain(piece.rotationSteps);
     });
 });
+
+// Lived-in world M5 spike (showroom only, design-gated): replace straight
+// runs of a room's boundary wall with 3-cell kit wall pieces.
+describe('wall shell substitution grammar (M5 spike)', () => {
+    const LONG_SIDE = { n: 'north', s: 'south', e: 'east', w: 'west' };
+    const FACE = { n: [0, 0.5, 0], s: [0, -0.5, 2], e: [-0.5, 0, 3], w: [0.5, 0, 1] };
+
+    function stamped(build, seed = 7) {
+        let state = seed;
+        const random = () => (state = (state * 16807) % 2147483647) / 2147483647;
+        const openings = Object.fromEntries(build.sockets.map((socket) => [LONG_SIDE[socket.side], { open: true, offset: 8 }]));
+        const stamp = stampRoomBuild(build, random, { openings });
+        return { grid: stamp.grid, room: { interior: stamp.interior, bounds: stamp.bounds, doors: stamp.doors } };
+    }
+
+    it('covers a plain wall run with whole 3-cell kit pieces, centred, facing the room', () => {
+        // 9x9: boundary walls on the border, interior 1..7, no doors.
+        const grid = Array.from({ length: 9 }, (_, y) => Array.from({ length: 9 }, (_, x) => (
+            x === 0 || y === 0 || x === 8 || y === 8 ? '#' : '.'
+        )));
+        const interior = [];
+        for (let y = 1; y <= 7; y += 1) for (let x = 1; x <= 7; x += 1) interior.push({ x, y });
+        const shells = wallShellPlacements(grid, { interior, bounds: { left: 1, right: 7, top: 1, bottom: 7 }, doors: [] }, 'active');
+        const north = shells.filter(({ side }) => side === 'n');
+        expect(north.map(({ cells }) => cells.map(({ x }) => x))).toEqual([[1, 2, 3], [4, 5, 6]]);
+        expect(north[0]).toMatchObject({ type: 'kit_space_template_wall', x: 2, y: 0.5, rotationSteps: 0, modelScale: 1 });
+        expect(shells.filter(({ side }) => side === 'e')[0]).toMatchObject({ x: 7.5, rotationSteps: 3 });
+        expect(shells).toHaveLength(8);
+    });
+
+    it.each(ROOM_BUILD_CATALOG.map((build) => [build.id, build]))('stays on boundary walls and clear of doors in %s', (_id, build) => {
+        const { grid, room } = stamped(build);
+        const shells = wallShellPlacements(grid, room, 'cave');
+        const doorCells = room.doors.flatMap(({ cells }) => cells);
+        const used = new Set();
+        const interior = new Set(room.interior.map(({ x, y }) => `${x},${y}`));
+        for (const shell of shells) {
+            expect(shell.type).toBe('kit_cave_template_wall');
+            expect(shell.modelScale).toBe(1);
+            expect(shell.cells).toHaveLength(3);
+            const [dx, dy, rotationSteps] = FACE[shell.side];
+            expect(shell.rotationSteps).toBe(rotationSteps);
+            expect(shell.x).toBeCloseTo(shell.cells[1].x + dx);
+            expect(shell.y).toBeCloseTo(shell.cells[1].y + dy);
+            // Boundary walls sit one cell outside the stamped pattern's bounds.
+            const onLine = { n: ({ y }) => y === room.bounds.top - 1, s: ({ y }) => y === room.bounds.bottom + 1,
+                w: ({ x }) => x === room.bounds.left - 1, e: ({ x }) => x === room.bounds.right + 1 }[shell.side];
+            for (const cell of shell.cells) {
+                const key = `${cell.x},${cell.y}`;
+                expect(grid[cell.y][cell.x]).toBe('#');
+                expect(onLine(cell)).toBe(true);
+                expect(used.has(key)).toBe(false);
+                used.add(key);
+                const inward = { n: [0, 1], s: [0, -1], e: [-1, 0], w: [1, 0] }[shell.side];
+                expect(interior.has(`${cell.x + inward[0]},${cell.y + inward[1]}`)).toBe(true);
+                for (const door of doorCells) {
+                    expect(Math.max(Math.abs(door.x - cell.x), Math.abs(door.y - cell.y))).toBeGreaterThan(1);
+                }
+            }
+        }
+        expect(shells.length).toBeGreaterThan(0);
+    });
+});
+
