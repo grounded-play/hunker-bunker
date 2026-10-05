@@ -23801,8 +23801,10 @@ body.contrast-max .hud-panel {
 #menu .char-selection .char-card:focus-visible {
   outline-offset: -3px !important;
 }
-#menu .char-selection .char-card.selected {
-  animation-name: hero-card-throb-flat;
+@media (prefers-reduced-motion: no-preference) {
+  #menu .char-selection .char-card.selected {
+    animation-name: hero-card-throb-flat;
+  }
 }
 @keyframes hero-card-throb-flat {
   0%, 100% {
