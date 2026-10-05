@@ -15,6 +15,13 @@ plan for milestone scope, dependencies, verification gates, and definition of do
 
 ### Room grammar scope handoff — 2026-10-04
 
+- [x] G0 first measured slice: `scripts/room-layout-portfolio.js` exercises 240
+  architectural room-mode cases; 18 normalized floor shapes, 97–169 floor cells,
+  widths/heights 11–13. [Evidence and limits](../reports/room-grammar-baseline-2026-10-04.md).
+  Metrics/chunk/persistence tests: 38 passed. No live behavior changes.
+- [ ] Next commit: G1 pure industrial pilot. G0 still needs route-weighted coverage,
+  travel/clearance measurements and visual/render baselines before rollout.
+
 - [x] Expanded the scope with larger room tiers and finished-room briefs after
   visually inspecting heat-exchanger, autopsy-slab, sector-gateway and tool-cart
   key art. Concrete reference links and observations live in the grammar plan.
