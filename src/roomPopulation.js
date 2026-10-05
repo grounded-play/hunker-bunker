@@ -207,9 +207,12 @@ export function planRoomPopulation(room, grid, random, { grounding = true } = {}
     // life comes from a bounded mix of one small prop, one decal and an
     // occasional rare landmark rather than an unbounded scatter pass.
     const roomObjectLimit = 5;
+    const budgetedObjectCount = () => placements.filter((placement) => (
+        placement.kind !== 'grounding-decal'
+    )).length;
 
     const reservePlacement = (kind, type, blocking = false) => {
-        if (placements.length >= roomObjectLimit) return false;
+        if (budgetedObjectCount() >= roomObjectLimit) return false;
         const wallOnly = isWallBackedPropType(type);
         const cell = pickCandidate(candidates, random, grid, center, wallOnly);
         if (!cell) return false;
@@ -315,43 +318,22 @@ export function planRoomPopulation(room, grid, random, { grounding = true } = {}
     }
     if (budget.pickup.min > 0) reservePlacement('pickup', 'room-biased', false);
 
-    // The theme catalog has always carried small, ambient and rare pools, but
-    // the population planner previously ignored all three. That left finished
-    // props and environmental-story decals unused while rooms stopped after
-    // two large objects. These additions never block navigation and retain the
-    // same doorway apron, fixture reservation and center-lane exclusions.
-    if (budget.small.min > 0 && theme.smallProps?.length) {
-        reservePlacement('small', propFrom(theme.smallProps, random, 'scatter_bolts'), false);
-    }
-    if (theme.rareProps?.length && random() < 0.2) {
-        reservePlacement('rare', propFrom(theme.rareProps, random, theme.rareProps[0]), false);
-    }
-    if (budget.small.min > 1 && theme.ambientProps?.length) {
-        reservePlacement('ambient', propFrom(theme.ambientProps, random, theme.ambientProps[0]), false);
-    }
-
     if (grounding) {
-        // Ground anchors in priority order: signature first, then large and
-        // authored content. Only cells beside the anchor that are still free
-        // floor (so never a door apron, fixture ring, pickup, the centre or
-        // another placement) are eligible.
+        // Ground anchors before optional edge dressing so a GLB service piece
+        // spends the ambient portion of the five-object budget rather than
+        // losing its slot to an unrelated small prop.
         const free = new Map(candidates.map((cell) => [cellKey(cell), cell]));
         const anchors = GROUNDED_ANCHOR_KINDS.flatMap((kind) => placements.filter((placement) => placement.kind === kind));
         let decals = 0;
         let pieceUsed = false;
-        const objectCount = () => placements.filter((placement) => placement.kind !== 'grounding-decal').length;
         for (const anchor of anchors) {
             const rule = groundingRuleFor(anchor.type);
             if (!rule) continue;
             const hash = stableHash(`${room.id}:${anchor.x},${anchor.y}:${anchor.type}`);
             const take = (offset) => {
-                const beside = [];
-                for (let dy = -1; dy <= 1; dy += 1) {
-                    for (let dx = -1; dx <= 1; dx += 1) {
-                        const key = `${anchor.x + dx},${anchor.y + dy}`;
-                        if ((dx || dy) && free.has(key)) beside.push(free.get(key));
-                    }
-                }
+                const beside = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+                    .map(([dx, dy]) => free.get(`${anchor.x + dx},${anchor.y + dy}`))
+                    .filter(Boolean);
                 if (beside.length === 0) return null;
                 const cell = beside[(hash + offset) % beside.length];
                 free.delete(cellKey(cell));
@@ -377,7 +359,7 @@ export function planRoomPopulation(room, grid, random, { grounding = true } = {}
                     decals += 1;
                 }
             }
-            if (rule.piece && !pieceUsed && objectCount() < roomObjectLimit) {
+            if (rule.piece && !pieceUsed && budgetedObjectCount() < roomObjectLimit) {
                 const cell = take(3);
                 if (cell) {
                     placements.push({
@@ -395,6 +377,21 @@ export function planRoomPopulation(room, grid, random, { grounding = true } = {}
                 }
             }
         }
+    }
+
+    // The theme catalog has always carried small, ambient and rare pools, but
+    // the population planner previously ignored all three. That left finished
+    // props and environmental-story decals unused while rooms stopped after
+    // two large objects. These additions never block navigation and retain the
+    // same doorway apron, fixture reservation and center-lane exclusions.
+    if (budget.small.min > 0 && theme.smallProps?.length) {
+        reservePlacement('small', propFrom(theme.smallProps, random, 'scatter_bolts'), false);
+    }
+    if (theme.rareProps?.length && random() < 0.2) {
+        reservePlacement('rare', propFrom(theme.rareProps, random, theme.rareProps[0]), false);
+    }
+    if (budget.small.min > 1 && theme.ambientProps?.length) {
+        reservePlacement('ambient', propFrom(theme.ambientProps, random, theme.ambientProps[0]), false);
     }
 
     const signaturePlaced = placements.some((placement) => placement.kind === 'signature');

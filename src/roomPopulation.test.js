@@ -123,7 +123,7 @@ describe('room population', () => {
 
         expect(objects.map(({ type }) => type)).toEqual([
             'prop_medical_bed', 'prop_diagnostic_console', 'prop_surgical_cart',
-            'scatter_bolts', 'decal_worker_sleep_roll'
+            'prop_floor_drainage_sump_trough', 'scatter_bolts'
         ]);
         expect(objects).toHaveLength(5);
         expect(objects.slice(3).every(({ blocking }) => blocking === false)).toBe(true);
@@ -155,7 +155,7 @@ describe('room population', () => {
         const objects = plan.placements.filter(({ kind }) => kind !== 'grounding-decal');
         expect(objects).toHaveLength(5);
         expect(objects).toContainEqual(expect.objectContaining({ kind: 'pickup' }));
-        expect(plan.placements.filter(({ kind }) => kind === 'small' || kind === 'ambient')).toHaveLength(1);
+        expect(plan.placements.filter(({ kind }) => kind === 'small' || kind === 'ambient')).toHaveLength(0);
     });
 
     it('occasionally spends the bounded story slot on a rare theme landmark', () => {
@@ -345,7 +345,7 @@ describe('room population', () => {
             for (const placement of grounding) {
                 const anchor = plan.placements.find(({ id }) => id === placement.anchorPlacementId);
                 expect(anchors).toContain(anchor);
-                expect(Math.max(Math.abs(anchor.x - placement.x), Math.abs(anchor.y - placement.y))).toBe(1);
+                expect(Math.abs(anchor.x - placement.x) + Math.abs(anchor.y - placement.y)).toBe(1);
                 expect(placement.blocking).toBe(false);
                 // West door lane (0..1, 4) and its 3x3 apron; fixture (6,6) and its ring.
                 expect(placement.x <= 2 && placement.y >= 3 && placement.y <= 5).toBe(false);
@@ -362,6 +362,27 @@ describe('room population', () => {
             const plan = planRoomPopulation(room, grid, () => 0.42);
             expect(plan.placements.filter(({ kind }) => kind === 'grounding-decal').length).toBeLessThanOrEqual(GROUNDING_DECAL_LIMIT);
             expect(plan.placements.filter(({ kind }) => kind !== 'grounding-decal').length).toBeLessThanOrEqual(5);
+        });
+
+        it('prioritizes a support piece over optional edge dressing in a full room', () => {
+            const { room, grid } = groundedRoom({
+                populationBudget: { signature: 1, large: 1, small: 3, pickup: 1, enemy: 0 },
+                themeConfig: {
+                    signatureProps: ['prop_oxygen_bottle_cascade_rack'],
+                    largeProps: ['prop_liturgical_terminal_lectern'],
+                    smallProps: ['scatter_bolts'],
+                    ambientProps: ['decal_worker_sleep_roll'],
+                    rareProps: ['prop_votive_candle_shrine']
+                }
+            });
+            const plan = planRoomPopulation(room, grid, () => 0);
+            const objects = plan.placements.filter(({ kind }) => kind !== 'grounding-decal');
+
+            expect(objects).toHaveLength(5);
+            expect(objects).toContainEqual(expect.objectContaining({
+                kind: 'grounding', type: 'prop_floor_drainage_sump_trough'
+            }));
+            expect(objects.some(({ kind }) => kind === 'ambient')).toBe(false);
         });
 
         it('is deterministic and leaves the shared RNG sequence untouched', () => {
@@ -382,4 +403,3 @@ describe('room population', () => {
         });
     });
 });
-

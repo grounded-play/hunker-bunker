@@ -36,6 +36,17 @@ plan for milestone scope, dependencies, verification gates, and definition of do
 
 ## Commit record
 
+### Next commit — M2 grounding priority hardening
+
+- Run the grounded-anchor relationship before small/rare/ambient edge dressing so
+  its GLB support piece can consume the documented five-object budget instead of
+  silently losing every slot in a busy room.
+- Restrict “beside the anchor” to the four cardinal neighbor cells; diagonal decals
+  do not visually tether machinery to its service run.
+- Add a crowded-room priority regression, tighten the adjacency assertion, and run
+  the population tests, docs audit, 500-seed sweep, and full unit suite. Leave the
+  unrelated generated chroma audit file unstaged.
+
 ### Next commit — M1 evidence and compatibility hardening
 
 - Regenerate the committed four-side overview plate with the measured 0.85-unit
