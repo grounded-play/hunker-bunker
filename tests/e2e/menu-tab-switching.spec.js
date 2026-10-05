@@ -67,3 +67,22 @@ test('Settings tabs step one at a time with arrows and A / D', async ({ page }) 
     await expect.poll(() => activeTab(page, '#settings-popup')).toBe(order[order.length - 2]);
     expect(await focused()).toBe(order[order.length - 2]);
 });
+
+// Same capture-phase double move as the Settings tabs (061d80a4): every tab
+// bar with its own left/right handler stepped twice per press.
+test('Archive tabs step one at a time with arrows and A / D', async ({ page }) => {
+    await bootToOperatorMenu(page);
+    await page.locator('#archive-btn').click();
+    await expect(page.locator('#archive-modal')).toBeVisible();
+    const tabs = page.locator('#archive-modal [data-archive-tab]');
+    await tabs.first().click();
+    const order = await tabs.evaluateAll((list) => list.map((t) => t.textContent.replace(/\s+/g, ' ').trim()));
+    for (let i = 1; i < order.length; i += 1) {
+        await page.keyboard.press(i % 2 ? 'ArrowRight' : 'KeyD');
+        await expect.poll(() => activeTab(page, '#archive-modal')).toBe(order[i]);
+    }
+    await page.keyboard.press('ArrowRight');
+    await expect.poll(() => activeTab(page, '#archive-modal')).toBe(order[0]);
+    await page.keyboard.press('KeyA');
+    await expect.poll(() => activeTab(page, '#archive-modal')).toBe(order[order.length - 1]);
+});

@@ -1330,6 +1330,7 @@ function moveAchievementsDirectionalFocus(code) {
 function moveControllerDirectional(root, code, backward) {
     if (root?.id === 'menu') return moveMenuDirectionalFocus(code);
     if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(code)) return true;
+    if (moveTabBarSelection(document.activeElement, code)) return true;
     if (root?.id === 'achievements-modal' && moveAchievementsDirectionalFocus(code)) return true;
     if (scrollFocuslessRegion(root, code)) return true;
     if (moveSpatialControllerFocus(root, code)) return true;
@@ -1365,6 +1366,24 @@ function moveSpatialControllerFocus(root, code) {
     const rects = focusables.map((element) => element.getBoundingClientRect());
     const nextIndex = spatialFocusIndex(rects, currentIndex, direction);
     return focusControllerTarget(focusables[nextIndex], { playHover: true });
+}
+
+// Left / right (arrows, A / D, D-pad) on a focused tab selects its neighbour
+// in the same tab bar, wrapping at the ends. Tab bars that also handle keys
+// themselves check defaultPrevented, so one press is one tab.
+function moveTabBarSelection(active, code) {
+    const step = (code === 'ArrowRight' || code === 'KeyD') ? 1 : (code === 'ArrowLeft' || code === 'KeyA') ? -1 : 0;
+    if (!step || !active?.matches?.('[role="tab"]')) return false;
+    const bar = active.closest('[role="tablist"]') ?? active.parentElement;
+    const tabs = [...(bar?.querySelectorAll('[role="tab"]') ?? [])]
+        .filter((tab) => !tab.disabled && tab.offsetParent !== null);
+    const index = tabs.indexOf(active);
+    if (index < 0 || tabs.length < 2) return false;
+    const next = tabs[(index + step + tabs.length) % tabs.length];
+    next.click();
+    next.focus({ preventScroll: true });
+    window.AudioManager?.play?.('ui_hover', { volume: 0.12, varyPitch: true });
+    return true;
 }
 
 function moveSettingsDirectionalFocus(code) {
@@ -1653,6 +1672,7 @@ document.addEventListener('keydown', (event) => {
         if (root.id === 'operator-polish-modal' && moveOperatorPolishGridFocus(event.code)) return;
         if (root.id === 'menu' && moveMenuDirectionalFocus(event.code)) return;
         if (root.id === 'settings-popup' && moveSettingsDirectionalFocus(event.code)) return;
+        if (moveTabBarSelection(document.activeElement, event.code)) return;
         const horizontal = ['KeyA', 'KeyD', 'ArrowLeft', 'ArrowRight'].includes(event.code);
         const active = document.activeElement;
         const adjusted = horizontal && (
@@ -13005,6 +13025,8 @@ function closeArchiveModal() {
 for (const tab of document.querySelectorAll('[data-archive-tab]')) {
     tab.addEventListener('click', () => setArchiveTab(tab.dataset.archiveTab, { focus: true }));
     tab.addEventListener('keydown', (event) => {
+        // Left / right are handled once by moveTabBarSelection (capture phase).
+        if (event.defaultPrevented) return;
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
         event.preventDefault();
         const tabs = ['lore', 'dossier', 'endings', 'achievements'];
