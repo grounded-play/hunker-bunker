@@ -38,4 +38,30 @@ describe('Steam renderer catalog generation', () => {
     it('keeps the checked-in generated module current', () => {
         expect(() => buildSteamItemCatalog({ check: true })).not.toThrow();
     });
+
+    it('enforces 7-day trade and market restrictions on purchased items and marketable cosmetics (P6)', () => {
+        const keyItem = schema.items.find((i) => i.itemdefid === 4001);
+        const cacheItem = schema.items.find((i) => i.itemdefid === 4000);
+        const bundle4005 = schema.items.find((i) => i.itemdefid === 4005);
+        const bundle4015 = schema.items.find((i) => i.itemdefid === 4015);
+        const cosmetic = schema.items.find((i) => i.itemdefid === 4100);
+
+        expect(keyItem).toMatchObject({ market_tradable_restriction: 7, market_marketable_restriction: 7 });
+        expect(cacheItem).toMatchObject({ market_tradable_restriction: 7, market_marketable_restriction: 7 });
+        expect(bundle4005).toMatchObject({ market_tradable_restriction: 7, market_marketable_restriction: 7 });
+        expect(bundle4015).toMatchObject({ market_tradable_restriction: 7, market_marketable_restriction: 7 });
+        expect(cosmetic).toMatchObject({ market_tradable_restriction: 7, market_marketable_restriction: 7 });
+
+        // Non-marketable items and legacy earnable patches must not have restrictions set
+        const fragment = schema.items.find((i) => i.itemdefid === 1000);
+        const overclock = schema.items.find((i) => i.itemdefid === 4140);
+        const victoryPatch = schema.items.find((i) => i.itemdefid === 2000);
+
+        expect(fragment.market_tradable_restriction).toBeUndefined();
+        expect(fragment.market_marketable_restriction).toBeUndefined();
+        expect(overclock.market_tradable_restriction).toBeUndefined();
+        expect(overclock.market_marketable_restriction).toBeUndefined();
+        expect(victoryPatch.market_tradable_restriction).toBeUndefined();
+        expect(victoryPatch.market_marketable_restriction).toBeUndefined();
+    });
 });

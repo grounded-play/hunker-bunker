@@ -173,7 +173,9 @@
       "item_slot": "Container",
       "tags": "rarity:container;class:all;slot:cache",
       "store_tags": "containers;caches",
-      "store_hidden": true
+      "store_hidden": true,
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4001,
@@ -191,7 +193,9 @@
       "item_slot": "Key",
       "tags": "rarity:key;class:all;slot:cache_key",
       "store_tags": "featured;keys;cache_key",
-      "price_category": "1;VLV100"
+      "price_category": "1;VLV100",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4005,
@@ -211,7 +215,9 @@
       "store_tags": "featured;keys;bundles",
       "bundle": "4001x5",
       "use_bundle_price": true,
-      "price_category": "1;VLV400"
+      "price_category": "1;VLV400",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4015,
@@ -231,7 +237,9 @@
       "store_tags": "featured;keys;bundles;best_value",
       "bundle": "4001x15",
       "use_bundle_price": true,
-      "price_category": "1;VLV1000"
+      "price_category": "1;VLV1000",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4002,
@@ -259,7 +267,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:uncommon;class:scout;slot:weapon_finish;season:0"
+      "tags": "rarity:uncommon;class:scout;slot:weapon_finish;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4101,
@@ -275,7 +285,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:uncommon;class:scout;slot:weapon_finish;season:0"
+      "tags": "rarity:uncommon;class:scout;slot:weapon_finish;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4102,
@@ -291,7 +303,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:uncommon;class:tank;slot:weapon_finish;season:0"
+      "tags": "rarity:uncommon;class:tank;slot:weapon_finish;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4103,
@@ -307,7 +321,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:rare;class:engineer;slot:weapon_finish;season:0"
+      "tags": "rarity:rare;class:engineer;slot:weapon_finish;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4104,
@@ -323,7 +339,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:rare;class:scout;slot:weapon_finish;season:0"
+      "tags": "rarity:rare;class:scout;slot:weapon_finish;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4105,
@@ -339,7 +357,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:rare;class:scout;slot:weapon_finish;season:0"
+      "tags": "rarity:rare;class:scout;slot:weapon_finish;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4106,
@@ -355,7 +375,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:rare;class:tank;slot:weapon_finish;season:0"
+      "tags": "rarity:rare;class:tank;slot:weapon_finish;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4107,
@@ -371,7 +393,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:epic;class:tank;slot:weapon_finish;season:0"
+      "tags": "rarity:epic;class:tank;slot:weapon_finish;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4108,
@@ -387,7 +411,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:epic;class:scout;slot:weapon_finish;season:0"
+      "tags": "rarity:epic;class:scout;slot:weapon_finish;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4109,
@@ -403,7 +429,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:epic;class:engineer;slot:weapon_finish;season:0"
+      "tags": "rarity:epic;class:engineer;slot:weapon_finish;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4110,
@@ -419,7 +447,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:legendary;class:scout;slot:weapon_finish;season:0"
+      "tags": "rarity:legendary;class:scout;slot:weapon_finish;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4111,
@@ -435,7 +465,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:legendary;class:engineer;slot:weapon_finish;season:0"
+      "tags": "rarity:legendary;class:engineer;slot:weapon_finish;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4112,
@@ -451,7 +483,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticChassis",
-      "tags": "rarity:uncommon;class:engineer;slot:chassis_skin;season:0"
+      "tags": "rarity:uncommon;class:engineer;slot:chassis_skin;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4113,
@@ -467,7 +501,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticChassis",
-      "tags": "rarity:uncommon;class:scout;slot:chassis_skin;season:0"
+      "tags": "rarity:uncommon;class:scout;slot:chassis_skin;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4114,
@@ -483,7 +519,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticChassis",
-      "tags": "rarity:rare;class:tank;slot:chassis_skin;season:0"
+      "tags": "rarity:rare;class:tank;slot:chassis_skin;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4115,
@@ -499,7 +537,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticChassis",
-      "tags": "rarity:rare;class:scout;slot:chassis_skin;season:0"
+      "tags": "rarity:rare;class:scout;slot:chassis_skin;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4116,
@@ -515,7 +555,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticChassis",
-      "tags": "rarity:rare;class:all;slot:chassis_skin;season:0"
+      "tags": "rarity:rare;class:all;slot:chassis_skin;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4117,
@@ -531,7 +573,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticChassis",
-      "tags": "rarity:epic;class:tank;slot:chassis_skin;season:0"
+      "tags": "rarity:epic;class:tank;slot:chassis_skin;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4118,
@@ -547,7 +591,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticChassis",
-      "tags": "rarity:epic;class:scout;slot:chassis_skin;season:0"
+      "tags": "rarity:epic;class:scout;slot:chassis_skin;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4119,
@@ -563,7 +609,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticChassis",
-      "tags": "rarity:legendary;class:all;slot:chassis_skin;season:0"
+      "tags": "rarity:legendary;class:all;slot:chassis_skin;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4120,
@@ -579,7 +627,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticDecal",
-      "tags": "rarity:uncommon;class:all;slot:decal;season:0"
+      "tags": "rarity:uncommon;class:all;slot:decal;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4121,
@@ -595,7 +645,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticDecal",
-      "tags": "rarity:uncommon;class:all;slot:decal;season:0"
+      "tags": "rarity:uncommon;class:all;slot:decal;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4122,
@@ -611,7 +663,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticDecal",
-      "tags": "rarity:uncommon;class:all;slot:decal;season:0"
+      "tags": "rarity:uncommon;class:all;slot:decal;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4123,
@@ -627,7 +681,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticDecal",
-      "tags": "rarity:rare;class:all;slot:decal;season:0"
+      "tags": "rarity:rare;class:all;slot:decal;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4124,
@@ -643,7 +699,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticDecal",
-      "tags": "rarity:rare;class:all;slot:decal;season:0"
+      "tags": "rarity:rare;class:all;slot:decal;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4125,
@@ -659,7 +717,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticDecal",
-      "tags": "rarity:rare;class:all;slot:decal;season:0"
+      "tags": "rarity:rare;class:all;slot:decal;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4126,
@@ -675,7 +735,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticDecal",
-      "tags": "rarity:epic;class:all;slot:decal;season:0"
+      "tags": "rarity:epic;class:all;slot:decal;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4127,
@@ -691,7 +753,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticDecal",
-      "tags": "rarity:epic;class:all;slot:decal;season:0"
+      "tags": "rarity:epic;class:all;slot:decal;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4128,
@@ -707,7 +771,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticDecal",
-      "tags": "rarity:epic;class:all;slot:decal;season:0"
+      "tags": "rarity:epic;class:all;slot:decal;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4129,
@@ -723,7 +789,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticDecal",
-      "tags": "rarity:legendary;class:all;slot:decal;season:0"
+      "tags": "rarity:legendary;class:all;slot:decal;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4130,
@@ -739,7 +807,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticCharm",
-      "tags": "rarity:uncommon;class:all;slot:weapon_charm;season:0"
+      "tags": "rarity:uncommon;class:all;slot:weapon_charm;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4131,
@@ -755,7 +825,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticCharm",
-      "tags": "rarity:uncommon;class:all;slot:weapon_charm;season:0"
+      "tags": "rarity:uncommon;class:all;slot:weapon_charm;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4132,
@@ -771,7 +843,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticCharm",
-      "tags": "rarity:uncommon;class:all;slot:weapon_charm;season:0"
+      "tags": "rarity:uncommon;class:all;slot:weapon_charm;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4133,
@@ -787,7 +861,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticCharm",
-      "tags": "rarity:rare;class:all;slot:weapon_charm;season:0"
+      "tags": "rarity:rare;class:all;slot:weapon_charm;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4134,
@@ -803,7 +879,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticCharm",
-      "tags": "rarity:rare;class:all;slot:weapon_charm;season:0"
+      "tags": "rarity:rare;class:all;slot:weapon_charm;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4135,
@@ -819,7 +897,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticCharm",
-      "tags": "rarity:rare;class:all;slot:weapon_charm;season:0"
+      "tags": "rarity:rare;class:all;slot:weapon_charm;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4136,
@@ -835,7 +915,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticCharm",
-      "tags": "rarity:epic;class:all;slot:weapon_charm;season:0"
+      "tags": "rarity:epic;class:all;slot:weapon_charm;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4137,
@@ -851,7 +933,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticCharm",
-      "tags": "rarity:epic;class:all;slot:weapon_charm;season:0"
+      "tags": "rarity:epic;class:all;slot:weapon_charm;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4138,
@@ -867,7 +951,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticCharm",
-      "tags": "rarity:epic;class:all;slot:weapon_charm;season:0"
+      "tags": "rarity:epic;class:all;slot:weapon_charm;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4139,
@@ -883,7 +969,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticCharm",
-      "tags": "rarity:legendary;class:all;slot:weapon_charm;season:0"
+      "tags": "rarity:legendary;class:all;slot:weapon_charm;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4140,
@@ -1027,7 +1115,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticAudio",
-      "tags": "rarity:rare;class:all;slot:voice_pack;season:0"
+      "tags": "rarity:rare;class:all;slot:voice_pack;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4149,
@@ -1043,7 +1133,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticAudio",
-      "tags": "rarity:rare;class:all;slot:voice_pack;season:0"
+      "tags": "rarity:rare;class:all;slot:voice_pack;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4150,
@@ -1059,7 +1151,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticHUD",
-      "tags": "rarity:rare;class:all;slot:hud_theme;season:0"
+      "tags": "rarity:rare;class:all;slot:hud_theme;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4151,
@@ -1075,7 +1169,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticHUD",
-      "tags": "rarity:rare;class:all;slot:hud_theme;season:0"
+      "tags": "rarity:rare;class:all;slot:hud_theme;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4152,
@@ -1091,7 +1187,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticFX",
-      "tags": "rarity:epic;class:all;slot:tracer_fx;season:0"
+      "tags": "rarity:epic;class:all;slot:tracer_fx;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4153,
@@ -1107,7 +1205,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticFX",
-      "tags": "rarity:epic;class:all;slot:muzzle_fx;season:0"
+      "tags": "rarity:epic;class:all;slot:muzzle_fx;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4154,
@@ -1139,7 +1239,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "Bundle",
-      "tags": "rarity:rare;class:all;slot:reagent;season:0"
+      "tags": "rarity:rare;class:all;slot:reagent;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4156,
@@ -1347,7 +1449,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticChassis",
-      "tags": "rarity:rare;class:all;slot:chassis_skin;season:0"
+      "tags": "rarity:rare;class:all;slot:chassis_skin;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4201,
@@ -1363,7 +1467,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:rare;class:all;slot:weapon_finish;season:0"
+      "tags": "rarity:rare;class:all;slot:weapon_finish;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4202,
@@ -1379,7 +1485,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticCharm",
-      "tags": "rarity:rare;class:all;slot:weapon_charm;season:0"
+      "tags": "rarity:rare;class:all;slot:weapon_charm;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4203,
@@ -1395,7 +1503,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticPatch",
-      "tags": "rarity:rare;class:all;slot:patch"
+      "tags": "rarity:rare;class:all;slot:patch",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4204,
@@ -1411,7 +1521,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticFX",
-      "tags": "rarity:epic;class:all;slot:sheen;season:0"
+      "tags": "rarity:epic;class:all;slot:sheen;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4205,
@@ -1427,7 +1539,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticFX",
-      "tags": "rarity:epic;class:all;slot:tracer_fx;season:0"
+      "tags": "rarity:epic;class:all;slot:tracer_fx;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4206,
@@ -1443,7 +1557,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticHUD",
-      "tags": "rarity:rare;class:all;slot:hud_theme;season:0"
+      "tags": "rarity:rare;class:all;slot:hud_theme;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4207,
@@ -1459,7 +1575,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticChassis",
-      "tags": "rarity:rare;class:all;slot:chassis_skin;season:0"
+      "tags": "rarity:rare;class:all;slot:chassis_skin;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4208,
@@ -1475,7 +1593,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:rare;class:all;slot:weapon_finish;season:0"
+      "tags": "rarity:rare;class:all;slot:weapon_finish;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4209,
@@ -1491,7 +1611,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticCharm",
-      "tags": "rarity:rare;class:all;slot:weapon_charm;season:0"
+      "tags": "rarity:rare;class:all;slot:weapon_charm;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4210,
@@ -1507,7 +1629,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticPatch",
-      "tags": "rarity:rare;class:all;slot:patch"
+      "tags": "rarity:rare;class:all;slot:patch",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4211,
@@ -1523,7 +1647,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticFX",
-      "tags": "rarity:rare;class:all;slot:sheen;season:0"
+      "tags": "rarity:rare;class:all;slot:sheen;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4212,
@@ -1539,7 +1665,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticFX",
-      "tags": "rarity:rare;class:all;slot:tracer_fx;season:0"
+      "tags": "rarity:rare;class:all;slot:tracer_fx;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4213,
@@ -1555,7 +1683,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticHUD",
-      "tags": "rarity:rare;class:all;slot:hud_theme;season:0"
+      "tags": "rarity:rare;class:all;slot:hud_theme;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4214,
@@ -1571,7 +1701,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticChassis",
-      "tags": "rarity:rare;class:all;slot:chassis_skin;season:0"
+      "tags": "rarity:rare;class:all;slot:chassis_skin;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4215,
@@ -1587,7 +1719,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:rare;class:all;slot:weapon_finish;season:0"
+      "tags": "rarity:rare;class:all;slot:weapon_finish;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4216,
@@ -1603,7 +1737,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticCharm",
-      "tags": "rarity:rare;class:all;slot:weapon_charm;season:0"
+      "tags": "rarity:rare;class:all;slot:weapon_charm;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4217,
@@ -1619,7 +1755,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticPatch",
-      "tags": "rarity:rare;class:all;slot:patch"
+      "tags": "rarity:rare;class:all;slot:patch",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4218,
@@ -1635,7 +1773,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticFX",
-      "tags": "rarity:epic;class:all;slot:sheen;season:0"
+      "tags": "rarity:epic;class:all;slot:sheen;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4219,
@@ -1651,7 +1791,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticFX",
-      "tags": "rarity:epic;class:all;slot:tracer_fx;season:0"
+      "tags": "rarity:epic;class:all;slot:tracer_fx;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4220,
@@ -1667,7 +1809,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticHUD",
-      "tags": "rarity:epic;class:all;slot:hud_theme;season:0"
+      "tags": "rarity:epic;class:all;slot:hud_theme;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4221,
@@ -1683,7 +1827,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticChassis",
-      "tags": "rarity:rare;class:all;slot:chassis_skin;season:0"
+      "tags": "rarity:rare;class:all;slot:chassis_skin;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4222,
@@ -1699,7 +1845,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:rare;class:all;slot:weapon_finish;season:0"
+      "tags": "rarity:rare;class:all;slot:weapon_finish;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4223,
@@ -1715,7 +1863,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticCharm",
-      "tags": "rarity:rare;class:all;slot:weapon_charm;season:0"
+      "tags": "rarity:rare;class:all;slot:weapon_charm;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4224,
@@ -1731,7 +1881,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticPatch",
-      "tags": "rarity:rare;class:all;slot:patch"
+      "tags": "rarity:rare;class:all;slot:patch",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4225,
@@ -1747,7 +1899,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticFX",
-      "tags": "rarity:rare;class:all;slot:sheen;season:0"
+      "tags": "rarity:rare;class:all;slot:sheen;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4226,
@@ -1763,7 +1917,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticFX",
-      "tags": "rarity:rare;class:all;slot:tracer_fx;season:0"
+      "tags": "rarity:rare;class:all;slot:tracer_fx;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4227,
@@ -1779,7 +1935,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticHUD",
-      "tags": "rarity:rare;class:all;slot:hud_theme;season:0"
+      "tags": "rarity:rare;class:all;slot:hud_theme;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4228,
@@ -1795,7 +1953,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticChassis",
-      "tags": "rarity:epic;class:all;slot:chassis_skin;season:0"
+      "tags": "rarity:epic;class:all;slot:chassis_skin;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4229,
@@ -1811,7 +1971,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:epic;class:all;slot:weapon_finish;season:0"
+      "tags": "rarity:epic;class:all;slot:weapon_finish;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4230,
@@ -1827,7 +1989,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticCharm",
-      "tags": "rarity:epic;class:all;slot:weapon_charm;season:0"
+      "tags": "rarity:epic;class:all;slot:weapon_charm;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4231,
@@ -1843,7 +2007,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticPatch",
-      "tags": "rarity:epic;class:all;slot:patch"
+      "tags": "rarity:epic;class:all;slot:patch",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4232,
@@ -1859,7 +2025,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticFX",
-      "tags": "rarity:epic;class:all;slot:sheen;season:0"
+      "tags": "rarity:epic;class:all;slot:sheen;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4233,
@@ -1875,7 +2043,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticFX",
-      "tags": "rarity:epic;class:all;slot:tracer_fx;season:0"
+      "tags": "rarity:epic;class:all;slot:tracer_fx;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4234,
@@ -1891,7 +2061,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticHUD",
-      "tags": "rarity:epic;class:all;slot:hud_theme;season:0"
+      "tags": "rarity:epic;class:all;slot:hud_theme;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4235,
@@ -1907,7 +2079,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticChassis",
-      "tags": "rarity:legendary;class:all;slot:chassis_skin;season:0"
+      "tags": "rarity:legendary;class:all;slot:chassis_skin;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4236,
@@ -1923,7 +2097,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:legendary;class:all;slot:weapon_finish;season:0"
+      "tags": "rarity:legendary;class:all;slot:weapon_finish;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4237,
@@ -1939,7 +2115,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticCharm",
-      "tags": "rarity:legendary;class:all;slot:weapon_charm;season:0"
+      "tags": "rarity:legendary;class:all;slot:weapon_charm;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4238,
@@ -1955,7 +2133,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticPatch",
-      "tags": "rarity:legendary;class:all;slot:patch"
+      "tags": "rarity:legendary;class:all;slot:patch",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4239,
@@ -1971,7 +2151,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticFX",
-      "tags": "rarity:legendary;class:all;slot:sheen;season:0"
+      "tags": "rarity:legendary;class:all;slot:sheen;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4240,
@@ -1987,7 +2169,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticFX",
-      "tags": "rarity:legendary;class:all;slot:tracer_fx;season:0"
+      "tags": "rarity:legendary;class:all;slot:tracer_fx;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     },
     {
       "itemdefid": 4241,
@@ -2003,7 +2187,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticHUD",
-      "tags": "rarity:legendary;class:all;slot:hud_theme;season:0"
+      "tags": "rarity:legendary;class:all;slot:hud_theme;season:0",
+      "market_tradable_restriction": 7,
+      "market_marketable_restriction": 7
     }
   ]
 }
