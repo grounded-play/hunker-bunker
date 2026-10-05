@@ -42,13 +42,27 @@ test.describe('boot and main menu', () => {
     test('NEW RUN keeps the title selection visible until the doors fully close', async ({ page }) => {
         await bootToTitleSplash(page);
 
+        // Snapshot the screens at each door class change inside the page. The
+        // swap behind the closed doors runs long main-thread tasks (menu and
+        // 3D preview set-up), so Playwright's own polls landed after the doors
+        // had moved on and saw the menu during "closing".
+        await page.evaluate(() => {
+            const overlay = document.getElementById('transition-overlay');
+            const visible = (id) => document.getElementById(id)?.checkVisibility() ?? false;
+            window.__doorSnapshots = [];
+            new MutationObserver(() => window.__doorSnapshots.push({
+                cls: overlay.className, splash: visible('splash'), menu: visible('menu')
+            })).observe(overlay, { attributes: true, attributeFilter: ['class'] });
+        });
         await page.locator('#title-newrun-btn').click();
-        await page.locator('#transition-overlay.closing-v.active').waitFor({ state: 'visible' });
+        await expect.poll(() => page.evaluate(() => window.__doorSnapshots.some((s) => /\bopening-h\b/.test(s.cls))), { timeout: 20_000 }).toBe(true);
+        const snapshots = await page.evaluate(() => window.__doorSnapshots);
 
-        await expect(page.locator('#splash')).toBeVisible();
-        await expect(page.locator('#menu')).toBeHidden();
+        const closed = snapshots.find((s) => /\bclosing-v\b/.test(s.cls) && /\bactive\b/.test(s.cls));
+        expect(closed, JSON.stringify(snapshots)).toMatchObject({ splash: true, menu: false });
+        const opening = snapshots.find((s) => /\bopening-h\b/.test(s.cls));
+        expect(opening, JSON.stringify(snapshots)).toMatchObject({ splash: false, menu: true });
 
-        await page.locator('#transition-overlay.opening-h').waitFor({ state: 'visible' });
         await expect(page.locator('#splash')).toBeHidden();
         await expect(page.locator('#menu')).toBeVisible();
         await expect(page.locator('#roster-callsign-input')).toBeVisible();
