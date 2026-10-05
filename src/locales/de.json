@@ -1230,7 +1230,8 @@
       "cache_opened": "Cache-Paket geöffnet.",
       "cache_partial": "Cache-Tausch mit teilweiser Steam-Vergabe abgeschlossen.",
       "cache_failed": "Cache konnte nicht geöffnet werden – Verbindung prüfen und erneut versuchen.",
-      "buy_on_steam": "◈ AUF STEAM KAUFEN"
+      "buy_on_steam": "◈ AUF STEAM KAUFEN",
+      "cache_pending_review": "Eine frühere Cache-Öffnung wird noch mit Steam geprüft. Versuche es in ein paar Minuten erneut."
     },
     "lobby": {
       "connecting": "VERBINDE...",

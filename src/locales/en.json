@@ -1230,7 +1230,8 @@
       "cache_opened": "Cache bundle opened.",
       "cache_partial": "Cache exchange completed with a partial Steam grant.",
       "cache_failed": "Cache open failed — check your connection and try again.",
-      "buy_on_steam": "◈ BUY ON STEAM"
+      "buy_on_steam": "◈ BUY ON STEAM",
+      "cache_pending_review": "A previous cache open is still being verified with Steam. Try again in a few minutes."
     },
     "lobby": {
       "connecting": "CONNECTING...",

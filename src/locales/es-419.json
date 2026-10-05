@@ -1230,7 +1230,8 @@
       "cache_opened": "Paquete de alijo abierto.",
       "cache_partial": "Intercambio de alijo completado con una concesión parcial de Steam.",
       "cache_failed": "Error al abrir el alijo: comprueba tu conexión e inténtalo de nuevo.",
-      "buy_on_steam": "◈ COMPRAR EN STEAM"
+      "buy_on_steam": "◈ COMPRAR EN STEAM",
+      "cache_pending_review": "Una apertura de caché anterior aún se está verificando con Steam. Inténtalo de nuevo en unos minutos."
     },
     "lobby": {
       "connecting": "CONECTANDO...",

@@ -720,6 +720,13 @@ export function reconcileCosmeticsOwnership(inventory = []) {
 
 let storeCatalogRequest = 0;
 
+// Store outcomes in the session log: purchases and cache opens are what a
+// Steam support case or refund review asks about, and failures alone left no
+// record of what did work.
+function storeLog(level, message, detail = {}) {
+    if (typeof window !== 'undefined') window.hbLog?.('STORE', level, message, detail);
+}
+
 export async function loadStoreCatalog() {
     const request = ++storeCatalogRequest;
     storeCatalog = [];
@@ -978,6 +985,7 @@ export async function purchaseKeys(sku) {
         return;
     }
 
+    storeLog('info', 'purchase-start', { sku });
     const result = await window.electronAPI.purchaseSteamKeys(sku).catch((err) => ({ ok: false, message: err?.message }));
 
     if (result?.reason === 'qa_test_mode_no_charge') {
@@ -996,8 +1004,12 @@ export async function purchaseKeys(sku) {
     }
 
     if (result?.ok && result.requiresConfirmation && result.confirmUrl) {
+        storeLog('info', 'purchase-confirm-overlay', { sku, transId: result.transId ?? null });
         await window.electronAPI.openSteamOverlayToUrl(result.confirmUrl);
         const finalized = await window.electronAPI.finalizeSteamPurchase(result.transId).catch(() => null);
+        storeLog(finalized?.ok && finalized.status === 'completed' ? 'info' : 'warn', 'purchase-finalized', {
+            sku, transId: result.transId ?? null, ok: Boolean(finalized?.ok), status: finalized?.status ?? null, reason: finalized?.reason ?? null
+        });
         if (finalized?.ok && finalized.status === 'completed') {
             await loadVaultData();
             updateOpenCacheAvailability();
@@ -1007,6 +1019,7 @@ export async function purchaseKeys(sku) {
         return;
     }
 
+    storeLog('error', 'purchase-failed', { sku, reason: result?.reason ?? null, status: result?.status ?? null });
     console.error('[steam-store] purchase failed:', result);
 }
 
@@ -1524,6 +1537,10 @@ export async function openDeepRelicCache() {
         });
         updateOpenCacheAvailability();
         const opening = adaptSteamCacheResult(result);
+        storeLog('info', 'cache-opened', {
+            granted: (result.granted ?? []).map((item) => ({ itemdefid: item.itemdefid ?? null, quantity: item.quantity ?? 1 })),
+            complete: Boolean(opening.complete)
+        });
 
         // Steam can legitimately return an empty `granted` array for a
         // duplicate/already-granted exchange. Still show the same decryptor
@@ -1541,7 +1558,11 @@ export async function openDeepRelicCache() {
         console.error('[steam-store] cache open failed:', result);
         if (statusEl) {
             statusEl.classList.remove('hidden');
-            statusEl.textContent = t('ui.vault.cache_failed');
+            // The server holds an account's exchanges while an earlier attempt
+            // is unverified and releases it once Steam's inventory has settled.
+            statusEl.textContent = result?.reason === 'exchange_outcome_requires_review'
+                ? t('ui.vault.cache_pending_review')
+                : t('ui.vault.cache_failed');
         }
     }
 }

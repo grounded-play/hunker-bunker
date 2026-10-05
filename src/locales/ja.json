@@ -1230,7 +1230,8 @@
       "cache_opened": "キャッシュ・バンドルを開封しました。",
       "cache_partial": "キャッシュ交換は完了しましたが、Steam の付与は一部のみです。",
       "cache_failed": "キャッシュを開けませんでした — 接続を確認して再試行してください。",
-      "buy_on_steam": "◈ STEAMで購入"
+      "buy_on_steam": "◈ STEAMで購入",
+      "cache_pending_review": "前回のキャッシュ開封をSteamで確認中です。数分後にもう一度お試しください。"
     },
     "lobby": {
       "connecting": "接続中...",

@@ -1230,7 +1230,8 @@
       "cache_opened": "宝箱礼包已开启。",
       "cache_partial": "宝箱兑换已完成，但 Steam 仅部分发放。",
       "cache_failed": "宝箱开启失败 — 请检查网络后重试。",
-      "buy_on_steam": "◈ 在 STEAM 上购买"
+      "buy_on_steam": "◈ 在 STEAM 上购买",
+      "cache_pending_review": "上一次开启补给箱仍在与 Steam 核验中。请几分钟后再试。"
     },
     "lobby": {
       "connecting": "正在连接…",

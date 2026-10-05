@@ -1230,7 +1230,8 @@
       "cache_opened": "Pacote de cache aberto.",
       "cache_partial": "Troca de cache concluída com concessão parcial da Steam.",
       "cache_failed": "Falha ao abrir o cache — verifique sua conexão e tente novamente.",
-      "buy_on_steam": "◈ COMPRAR NA STEAM"
+      "buy_on_steam": "◈ COMPRAR NA STEAM",
+      "cache_pending_review": "Uma abertura de cache anterior ainda está sendo verificada com a Steam. Tente de novo em alguns minutos."
     },
     "lobby": {
       "connecting": "CONECTANDO...",
