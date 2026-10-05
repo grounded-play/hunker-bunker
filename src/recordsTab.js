@@ -6,6 +6,10 @@ import { t as defaultT } from './i18n.js';
 import { buildServiceRecord } from './serviceRecord.js';
 import { fetchLeaderboard, renderLeaderboardRows } from './leaderboardUi.js';
 
+export function boardLabelKey(board) {
+    return BOARD_LABEL_KEYS[board] ?? BOARD_LABEL_KEYS.best_run_score;
+}
+
 export const RECORD_BOARDS = Object.freeze([
     'best_run_score', 'survival_time_seconds', 'deepest_depth_score', 'fastest_extraction_ms', 'daily_ops_score'
 ]);
@@ -44,6 +48,14 @@ export function createBoardCache({ fetch = fetchLeaderboard, now = Date.now, ttl
     };
 }
 
+/** Your rank in an Around me result, or null. */
+export function selfRank(result) {
+    if (!result || result.state === 'offline' || !result.selfSteamId) return null;
+    const entry = (result.entries ?? []).find((row) => String(row.steamId64) === String(result.selfSteamId));
+    const rank = Number(entry?.rank);
+    return Number.isFinite(rank) && rank > 0 ? rank : null;
+}
+
 export function recordsStatus({ state, board, scope }, t = defaultT) {
     if (state === 'loading') return t('ui.records.loading');
     if (state === 'offline') return t('ui.records.offline');
@@ -56,10 +68,12 @@ export function createRecordsTab({
     getStats = () => ({}),
     getLedger = () => ({}),
     getTotals = () => ({}),
+    getBests = () => ({}),
     hasSteam = () => Boolean(globalThis.window?.electronAPI?.getSteamLeaderboard),
     getLocale = () => 'en',
     t = defaultT,
-    cache = createBoardCache()
+    // Without Steam (web / LAN build) Global boards come from the backend.
+    cache = createBoardCache({ fetch: (args) => fetchLeaderboard({ ...args, web: hasSteam() ? null : {} }) })
 } = {}) {
     const state = { view: 'service', board: RECORD_BOARDS[0], scope: 'Global' };
     let boardRequest = 0;
@@ -81,7 +95,7 @@ export function createRecordsTab({
         if (!root) return;
         root.innerHTML = '';
         const sections = buildServiceRecord({
-            stats: getStats() ?? {}, ledger: getLedger() ?? {}, totals: getTotals() ?? {}, t, locale: getLocale()
+            stats: getStats() ?? {}, ledger: getLedger() ?? {}, totals: getTotals() ?? {}, bests: getBests() ?? {}, t, locale: getLocale()
         });
         for (const section of sections) {
             const card = doc.createElement('article');
@@ -103,6 +117,21 @@ export function createRecordsTab({
             card.append(title, list);
             root.appendChild(card);
         }
+        // Your Steam rank beside the best-run personal best, when Steam has one.
+        if (hasSteam()) {
+            void bestRunRank().then((rank) => {
+                const cell = root.querySelector('[data-records-row="best_run_score"]');
+                if (rank && cell && !cell.dataset.rank) {
+                    cell.dataset.rank = String(rank);
+                    cell.textContent = `${cell.textContent} · ${t('ui.records.rank_suffix', { rank })}`;
+                }
+            });
+        }
+    }
+
+    async function bestRunRank() {
+        if (!hasSteam()) return null;
+        return selfRank(await cache.get('best_run_score', 'AroundUser'));
     }
 
     function renderChips() {
@@ -176,6 +205,8 @@ export function createRecordsTab({
             if (board && RECORD_BOARDS.includes(board)) state.board = board;
             selectView(view);
         },
+        /** Your Best Run rank on Steam, or null (operator menu badge). */
+        bestRunRank,
         get state() { return { ...state }; }
     };
 }

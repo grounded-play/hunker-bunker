@@ -8,7 +8,8 @@ describe('service record', () => {
         const record = buildServiceRecord({ stats: {}, ledger: {}, totals: {}, t: label, locale: 'en' });
         const text = JSON.stringify(record);
         expect(text).not.toMatch(/NaN|undefined|null/);
-        expect(record.map((section) => section.id)).toEqual(['career', 'combat', 'exploration', 'story']);
+        expect(record.map((section) => section.id)).toEqual(['career', 'bests', 'byClass', 'combat', 'exploration', 'story']);
+        expect(record.find((s) => s.id === 'bests').rows).toEqual([{ id: 'noBests', labelKey: 'ui.records.no_bests', display: '—' }]);
         const career = Object.fromEntries(record[0].rows.map((row) => [row.id, row.display]));
         expect(career).toMatchObject({ runs: '0', victories: '0', deaths: '0' });
     });
@@ -48,6 +49,33 @@ describe('service record', () => {
         });
         const story = Object.fromEntries(record.find((s) => s.id === 'story').rows.map((r) => [r.id, r.display]));
         expect(story).toMatchObject({ lore: '17 / 42', endings: '4 / 10' });
+    });
+
+    it('shows time in the crust, personal bests and per-class records', () => {
+        const record = buildServiceRecord({
+            stats: {
+                totalRunMs: 3_725_000,
+                byClass: { SCOUT: { runs: 12, victories: 3, deaths: 9, deepestTier: 2 } }
+            },
+            bests: {
+                best_run_score: { score: 1550, at: 1, classType: 'TANK' },
+                fastest_extraction_ms: { score: 245_400, at: 1, classType: 'SCOUT' }
+            },
+            totals: { tierNames: ['SURFACE', 'SHALLOW', 'DEEP'], classes: 3 },
+            t: label,
+            locale: 'en'
+        });
+        const rows = (id) => record.find((s) => s.id === id).rows;
+        expect(rows('career').find((r) => r.id === 'timeInCrust').display).toBe('1h 02m');
+        expect(rows('bests')).toEqual([
+            { id: 'best_run_score', labelKey: 'ui.records.board_best_run_score', display: '1550' },
+            { id: 'fastest_extraction_ms', labelKey: 'ui.records.board_fastest_extraction_ms', display: '4m 05s' }
+        ]);
+        expect(rows('byClass').map((r) => [r.id, r.labelKey, r.display])).toEqual([
+            ['SCOUT', 'ui.menu.scout', 'ui.records.class_line:{"runs":"12","wins":"3","tier":"DEEP"}'],
+            ['TANK', 'ui.menu.tank', 'ui.records.class_line:{"runs":"0","wins":"0","tier":"SURFACE"}'],
+            ['ENGINEER', 'ui.menu.engineer', 'ui.records.class_line:{"runs":"0","wins":"0","tier":"SURFACE"}']
+        ]);
     });
 
     it('formats durations in hours, minutes and seconds', () => {

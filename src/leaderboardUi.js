@@ -49,13 +49,35 @@ export function getGameOverLeaderboardLabel(board) {
     return 'BEST RUN SCORE';
 }
 
+/** The backend the web build talks to (same order as the session-log upload). */
+export function resolveWebBackendUrl(win = globalThis.window) {
+    return win?.__HB_BACKEND_URL__ || win?.HB_RELAY_URL || 'https://steam.tuesdaycinema.club';
+}
+
+// The web build has no Steam bridge; a Global board is public, so it can be
+// read from the backend directly. Friends / Around me need Steam.
+async function fetchGlobalOverHttp({ board, scope, count, http = globalThis.fetch, backendUrl = resolveWebBackendUrl() }) {
+    const offline = { state: 'offline', entries: [], selfSteamId: null };
+    if (scope !== 'Global' || typeof http !== 'function') return offline;
+    try {
+        const url = `${backendUrl}/steam/leaderboards/${encodeURIComponent(board)}?dataRequest=RequestGlobal&count=${count}`;
+        const response = await http(url, { signal: AbortSignal.timeout?.(8000) });
+        if (!response.ok) return offline;
+        const body = await response.json();
+        if (!body?.ok) return offline;
+        return { state: body.mock ? 'mock' : 'live', entries: body.entries ?? [], selfSteamId: null };
+    } catch {
+        return offline;
+    }
+}
+
 /**
  * One read of a Steam board, shared by the Game Over panel and Archive →
  * RECORDS. `scope` is Global, Friends or AroundUser. On Global, your own row
  * is pinned after a separator when you are outside the requested top.
  */
-export async function fetchLeaderboard({ board, scope = 'Global', count = 10, api = globalThis.window?.electronAPI } = {}) {
-    if (!api?.getSteamLeaderboard) return { state: 'offline', entries: [], selfSteamId: null };
+export async function fetchLeaderboard({ board, scope = 'Global', count = 10, api = globalThis.window?.electronAPI, web = null } = {}) {
+    if (!api?.getSteamLeaderboard) return web ? fetchGlobalOverHttp({ board, scope, count, ...web }) : { state: 'offline', entries: [], selfSteamId: null };
     try {
         const [result, identity] = await Promise.all([
             api.getSteamLeaderboard(board, scope, count),

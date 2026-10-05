@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { RECORD_BOARDS, availableScopes, createBoardCache, recordsStatus } from './recordsTab.js';
+import { RECORD_BOARDS, availableScopes, createBoardCache, recordsStatus, selfRank } from './recordsTab.js';
 
 describe('Archive → RECORDS logic', () => {
     it('lists the five Steam boards, best run first', () => {
@@ -41,5 +41,12 @@ describe('Archive → RECORDS logic', () => {
             .toBe('ui.records.status:{"board":"ui.records.board_best_run_score","scope":"ui.records.scope_global"}');
         expect(recordsStatus({ state: 'mock', board: 'daily_ops_score', scope: 'Friends' }, t))
             .toBe('ui.records.status_mock:{"board":"ui.records.board_daily_ops_score","scope":"ui.records.scope_friends"}');
+    });
+
+    it('finds your own rank in an Around me result', () => {
+        const result = { state: 'live', selfSteamId: '9', entries: [{ steamId64: '8', rank: 11 }, { steamId64: '9', rank: 12 }] };
+        expect(selfRank(result)).toBe(12);
+        expect(selfRank({ ...result, selfSteamId: null })).toBeNull();
+        expect(selfRank({ state: 'offline', entries: [] })).toBeNull();
     });
 });

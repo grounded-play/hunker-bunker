@@ -28,6 +28,9 @@ test.describe('Game-over leaderboard', () => {
         await expect(page.locator('#game-over-modal')).toBeVisible({ timeout: 30_000 });
         await expect(page.locator('#go-leaderboard-status')).toHaveClass(/go-leaderboard-status--offline/, { timeout: 10_000 });
         await expect(page.locator('#go-leaderboard-status')).toHaveText(/OFFLINE/i);
+        // A fresh save's first ranked run sets personal bests (Archive → RECORDS).
+        await expect(page.locator('#go-personal-best')).toBeVisible();
+        await expect(page.locator('#go-personal-best')).toHaveText(/NEW PERSONAL BEST/);
         await expect(page.locator('#hole-hud-prompt')).toBeHidden();
         await expect(page.locator('#console-hud-prompt')).toBeHidden();
 

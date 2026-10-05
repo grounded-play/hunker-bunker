@@ -151,3 +151,22 @@ describe('formatLeaderboardScore', () => {
         expect(formatLeaderboardScore('best_run_score', 1550)).toBe('1550');
     });
 });
+
+describe('fetchLeaderboard on the web build (Global from the backend)', () => {
+    it('reads Global over HTTP when there is no Steam bridge and the caller allows it', async () => {
+        const { fetchLeaderboard } = await import('./leaderboardUi.js');
+        const http = vi.fn(async () => new Response(JSON.stringify({ ok: true, entries: [{ steamId64: '1', persona: 'A', score: 9, rank: 1 }] })));
+        const result = await fetchLeaderboard({ board: 'best_run_score', scope: 'Global', count: 10, api: null, web: { http, backendUrl: 'https://hb.test' } });
+        expect(http).toHaveBeenCalledWith('https://hb.test/steam/leaderboards/best_run_score?dataRequest=RequestGlobal&count=10', expect.any(Object));
+        expect(result).toEqual({ state: 'live', entries: [{ steamId64: '1', persona: 'A', score: 9, rank: 1 }], selfSteamId: null });
+    });
+
+    it('stays offline for other scopes, failures, or without the opt-in', async () => {
+        const { fetchLeaderboard } = await import('./leaderboardUi.js');
+        const http = vi.fn(async () => new Response('{}', { status: 503 }));
+        expect((await fetchLeaderboard({ board: 'best_run_score', scope: 'Friends', api: null, web: { http, backendUrl: 'https://hb.test' } })).state).toBe('offline');
+        expect((await fetchLeaderboard({ board: 'best_run_score', scope: 'Global', api: null, web: { http, backendUrl: 'https://hb.test' } })).state).toBe('offline');
+        expect((await fetchLeaderboard({ board: 'best_run_score', scope: 'Global', api: null })).state).toBe('offline');
+        expect(http).toHaveBeenCalledTimes(1);
+    });
+});

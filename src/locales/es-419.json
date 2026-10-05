@@ -1947,7 +1947,7 @@
       "camps": "CAMPAMENTOS EN UNA MISIÓN",
       "lore": "REGISTROS",
       "endings": "FINALES",
-      "classes": "CLASES COMPLETADAS",
+      "classes": "CLASES JUGADAS",
       "shells": "CASQUILLOS RECOGIDOS",
       "board_best_run_score": "MEJOR MISIÓN",
       "board_survival_time_seconds": "SUPERVIVENCIA",
@@ -1962,7 +1962,14 @@
       "status": "{board} — {scope}",
       "status_mock": "{board} — {scope} · SIMULACIÓN DEV",
       "open_records": "RÉCORDS ▸",
-      "view_all": "VER TODOS LOS RÉCORDS"
+      "view_all": "VER TODOS LOS RÉCORDS",
+      "section_bests": "MEJORES MARCAS",
+      "section_by_class": "POR CLASE",
+      "timeInCrust": "TIEMPO EN LA CORTEZA",
+      "no_bests": "AÚN SIN MISIÓN CLASIFICADA",
+      "class_line": "{runs} misiones · {wins} victorias · {tier}",
+      "new_best": "NUEVA MEJOR MARCA — {boards}",
+      "rank_suffix": "#{rank}"
     }
   },
   "narrative": {

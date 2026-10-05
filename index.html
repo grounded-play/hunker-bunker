@@ -1583,6 +1583,7 @@
         <div class="go-leaderboard-container" id="go-leaderboard-container">
           <div data-i18n="ui.game_over.leaderboard_results" class="go-leaderboard-header">◈ LEADERBOARD RESULTS</div>
           <div class="go-leaderboard-status" id="go-leaderboard-status">CONNECTING...</div>
+          <div class="go-personal-best hidden" id="go-personal-best" role="status"></div>
           <div class="go-leaderboard-list" id="go-leaderboard-list"></div>
           <button type="button" class="records-link-btn go-records-btn" id="go-records-btn" data-i18n="ui.records.view_all">VIEW ALL RECORDS</button>
         </div>
@@ -3197,7 +3198,7 @@
         <!-- Shared deployment intelligence. Solo uses this as its primary
              briefing; Co-op keeps it visible above relay/roster controls. -->
         <div class="net-deployment-ledger hidden" id="net-deployment-ledger">
-          <section class="net-ledger-panel" aria-labelledby="net-career-ledger-title">
+          <section class="net-ledger-panel net-ledger-panel--summary" aria-labelledby="net-career-ledger-title">
             <div class="net-ledger-head"><div class="net-ledger-title" id="net-career-ledger-title" data-i18n="ui.multiplayer.career_ledger">CAREER LEDGER</div><button type="button" class="records-link-btn" id="net-records-btn" data-i18n="ui.records.open_records">RECORDS ▸</button></div>
             <div class="net-ledger-stats">
               <span><b id="net-career-runs">0</b><small data-i18n="ui.multiplayer.runs">RUNS</small></span>

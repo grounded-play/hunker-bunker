@@ -1947,7 +1947,7 @@
       "camps": "1回の出撃で発見したキャンプ",
       "lore": "記録ログ",
       "endings": "エンディング",
-      "classes": "クリアしたクラス",
+      "classes": "プレイしたクラス",
       "shells": "回収したシェル",
       "board_best_run_score": "ベストラン",
       "board_survival_time_seconds": "生存時間",
@@ -1962,7 +1962,14 @@
       "status": "{board} — {scope}",
       "status_mock": "{board} — {scope} · 開発用モック",
       "open_records": "記録 ▸",
-      "view_all": "すべての記録を見る"
+      "view_all": "すべての記録を見る",
+      "section_bests": "自己ベスト",
+      "section_by_class": "クラス別",
+      "timeInCrust": "地殻での滞在時間",
+      "no_bests": "ランク対象の出撃はまだありません",
+      "class_line": "出撃 {runs} · 勝利 {wins} · {tier}",
+      "new_best": "自己ベスト更新 — {boards}",
+      "rank_suffix": "#{rank}"
     }
   },
   "narrative": {

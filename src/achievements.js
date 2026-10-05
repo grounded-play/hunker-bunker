@@ -1,5 +1,6 @@
 export const ACHIEVEMENT_STORAGE_KEY = 'hb_achievements_v1';
-export const ACHIEVEMENT_SCHEMA_VERSION = 3;
+// 4: totalRunMs and byClass for Archive → RECORDS (older saves start them at 0).
+export const ACHIEVEMENT_SCHEMA_VERSION = 4;
 export const ARCHIVIST_TARGET = 12;
 
 const CLASS_IDS = Object.freeze(['SCOUT', 'TANK', 'ENGINEER']);
@@ -215,6 +216,20 @@ export function createDefaultRunState() {
     };
 }
 
+const PLAYABLE_CLASS_IDS = Object.freeze(['SCOUT', 'TANK', 'ENGINEER']);
+
+function normalizeByClass(raw) {
+    const out = {};
+    if (!raw || typeof raw !== 'object') return out;
+    for (const classType of PLAYABLE_CLASS_IDS) {
+        const record = raw[classType];
+        if (!record || typeof record !== 'object') continue;
+        const n = (value) => Math.max(0, Math.floor(Number(value) || 0));
+        out[classType] = { runs: n(record.runs), victories: n(record.victories), deaths: n(record.deaths), deepestTier: n(record.deepestTier) };
+    }
+    return out;
+}
+
 export function createDefaultAchievementState() {
     return {
         schemaVersion: ACHIEVEMENT_SCHEMA_VERSION,
@@ -236,6 +251,8 @@ export function createDefaultAchievementState() {
             endings: {},
             classesCompleted: {},
             shellsCollected: 0,
+            totalRunMs: 0,
+            byClass: {},
             deathlessReveal: false,
             hiveHarmFreeReveal: false,
             reyesLetterDelivered: false,
@@ -260,7 +277,9 @@ export function migrateAchievements(raw = null, now = Date.now()) {
                 ...raw.stats,
                 loreDropIds: uniqueStrings(raw.stats.loreDropIds),
                 endings: { ...base.stats.endings, ...(raw.stats.endings ?? {}) },
-                classesCompleted: { ...base.stats.classesCompleted, ...(raw.stats.classesCompleted ?? {}) }
+                classesCompleted: { ...base.stats.classesCompleted, ...(raw.stats.classesCompleted ?? {}) },
+                totalRunMs: Math.max(0, Number(raw.stats.totalRunMs) || 0),
+                byClass: normalizeByClass(raw.stats.byClass)
             },
             currentRun: {
                 ...base.currentRun,
@@ -442,6 +461,16 @@ function updateStatsForEvent(state, name, detail = {}) {
             const classType = normalizeClass(detail.classType ?? state.currentRun.classType);
             if (ending) markMapValue(state.stats.endings, ending);
             if (classType) markMapValue(state.stats.classesCompleted, classType);
+            state.stats.totalRunMs = (state.stats.totalRunMs ?? 0) + Math.max(0, Number(detail.runMs) || 0);
+            if (classType) {
+                state.stats.byClass ??= {};
+                const record = state.stats.byClass[classType] ?? { runs: 0, victories: 0, deaths: 0, deepestTier: 0 };
+                record.runs += 1;
+                if (detail.outcome === 'victory') record.victories += 1;
+                if (detail.outcome === 'death') record.deaths += 1;
+                record.deepestTier = Math.max(record.deepestTier, Math.max(0, Math.floor(Number(detail.depthTier) || 0)));
+                state.stats.byClass[classType] = record;
+            }
             break;
         }
         default:

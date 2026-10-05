@@ -17,7 +17,7 @@ test.describe('Archive → RECORDS', () => {
 
         const service = page.locator('#records-service');
         await expect(service).toBeVisible();
-        await expect(service.locator('.records-card')).toHaveCount(4);
+        await expect(service.locator('.records-card')).toHaveCount(6);
         await expect(service.locator('[data-records-row="runs"]')).toHaveText(/^\d[\d,.\s]*$/);
         await expect(service.locator('[data-records-row="lore"]')).toHaveText(/^\d+ \/ \d+$/);
 
@@ -36,6 +36,9 @@ test.describe('Archive → RECORDS', () => {
     });
 
     test('leaderboards show five boards, Global only and offline on the web build', async ({ page }) => {
+        // The web build reads Global boards from the backend; an unreachable
+        // backend is the offline state.
+        await page.route('**/steam/leaderboards/**', (route) => route.abort());
         await page.locator('#archive-btn').click();
         await page.locator('#archive-tab-records').click();
         await page.locator('[data-records-view="boards"]').click();
@@ -47,6 +50,24 @@ test.describe('Archive → RECORDS', () => {
         await page.locator('[data-records-board="fastest_extraction_ms"]').click();
         await expect(page.locator('[data-records-board="fastest_extraction_ms"]')).toHaveAttribute('aria-pressed', 'true');
         await expect(page.locator('[data-records-board="best_run_score"]')).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    test('the web build lists the Global board from the backend', async ({ page }) => {
+        await page.route('**/steam/leaderboards/best_run_score**', (route) => route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            headers: { 'access-control-allow-origin': '*' },
+            body: JSON.stringify({ ok: true, entries: [
+                { steamId64: '1', persona: 'Operator Aegis', score: 1550, rank: 1 },
+                { steamId64: '2', persona: 'Operator Striker', score: 1200, rank: 2 }
+            ] })
+        }));
+        await page.locator('#archive-btn').click();
+        await page.locator('#archive-tab-records').click();
+        await page.locator('[data-records-view="boards"]').click();
+        await expect(page.locator('#records-board-status')).toHaveAttribute('data-state', 'live');
+        await expect(page.locator('#records-board-list .records-board-row')).toHaveCount(2);
+        await expect(page.locator('#records-board-list .records-board-name').first()).toHaveText('Operator Aegis');
     });
 
     test('Escape closes the Archive and focus returns to the opener', async ({ page }) => {

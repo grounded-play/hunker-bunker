@@ -1947,7 +1947,7 @@
       "camps": "ЛАГЕРЕЙ ЗА ВЫЛАЗКУ",
       "lore": "ЗАПИСИ",
       "endings": "КОНЦОВКИ",
-      "classes": "ПРОЙДЕННЫЕ КЛАССЫ",
+      "classes": "СЫГРАННЫЕ КЛАССЫ",
       "shells": "СОБРАНО ГИЛЬЗ",
       "board_best_run_score": "ЛУЧШАЯ ВЫЛАЗКА",
       "board_survival_time_seconds": "ВЫЖИВАНИЕ",
@@ -1962,7 +1962,14 @@
       "status": "{board} — {scope}",
       "status_mock": "{board} — {scope} · DEV-ЗАГЛУШКА",
       "open_records": "РЕКОРДЫ ▸",
-      "view_all": "ВСЕ РЕКОРДЫ"
+      "view_all": "ВСЕ РЕКОРДЫ",
+      "section_bests": "ЛИЧНЫЕ РЕКОРДЫ",
+      "section_by_class": "ПО КЛАССАМ",
+      "timeInCrust": "ВРЕМЯ В КОРЕ",
+      "no_bests": "ЗАСЧИТАННЫХ ВЫЛАЗОК ПОКА НЕТ",
+      "class_line": "вылазок: {runs} · побед: {wins} · {tier}",
+      "new_best": "НОВЫЙ ЛИЧНЫЙ РЕКОРД — {boards}",
+      "rank_suffix": "#{rank}"
     }
   },
   "narrative": {

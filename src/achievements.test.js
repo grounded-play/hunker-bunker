@@ -59,12 +59,43 @@ describe('achievement migration', () => {
             unlockedHardened: true
         }, 1234);
 
-        expect(migrated.schemaVersion).toBe(3);
+        expect(migrated.schemaVersion).toBe(4);
         expect(migrated.stats.totalDeaths).toBe(7);
         expect(migrated.stats.totalKills).toBe(12);
         expect(migrated.stats.maxKillsOneRun).toBe(5);
         expect(migrated.stats.deepTierReachedAlive).toBe(true);
         expect(migrated.unlocked.hardened).toEqual({ unlockedAt: 1234, migrated: true });
+    });
+});
+
+describe('service-record tracking (schema 4)', () => {
+    it('keeps a v3 save and starts the new counters at zero', () => {
+        const v3 = createDefaultAchievementState();
+        v3.schemaVersion = 3;
+        delete v3.stats.totalRunMs;
+        delete v3.stats.byClass;
+        v3.stats.runCount = 9;
+        const migrated = migrateAchievements(v3);
+        expect(migrated.schemaVersion).toBe(4);
+        expect(migrated.stats).toMatchObject({ runCount: 9, totalRunMs: 0, byClass: {} });
+    });
+
+    it('drops malformed per-class records on load', () => {
+        const raw = createDefaultAchievementState();
+        raw.stats.byClass = { SCOUT: { runs: 2, victories: 1, deaths: 1, deepestTier: 2 }, BOGUS: { runs: 5 }, TANK: 'x' };
+        expect(migrateAchievements(raw).stats.byClass).toEqual({ SCOUT: { runs: 2, victories: 1, deaths: 1, deepestTier: 2 } });
+    });
+
+    it('adds run time and per-class runs, wins, deaths and deepest tier at run end', () => {
+        let state = createDefaultAchievementState();
+        state = applyAchievementEvent(state, 'run-end', { outcome: 'death', classType: 'SCOUT', runMs: 60_000, depthTier: 1 }, 1).state;
+        state = applyAchievementEvent(state, 'run-end', { outcome: 'victory', classType: 'SCOUT', runMs: 120_000, depthTier: 3 }, 2).state;
+        state = applyAchievementEvent(state, 'run-end', { outcome: 'death', classType: 'TANK', runMs: 30_000, depthTier: 0 }, 3).state;
+        expect(state.stats.totalRunMs).toBe(210_000);
+        expect(state.stats.byClass).toEqual({
+            SCOUT: { runs: 2, victories: 1, deaths: 1, deepestTier: 3 },
+            TANK: { runs: 1, victories: 0, deaths: 1, deepestTier: 0 }
+        });
     });
 });
 

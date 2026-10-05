@@ -39,13 +39,21 @@ screens link to it instead of growing their own stat panels.
 | 6–13 Strings (7 locales), tab, styles (`src/styles/records.css`), service record, boards, scopes, 60 s cache | Done |
 | 14 E2E | Done: `tests/e2e/records-tab.spec.js` |
 | 15–18 Shortcuts | Done: `openArchiveModal()`, operator menu, Tactical Net, Game Over. The DAILY LEADERBOARD chip is not a shortcut: it sits inside the Daily Ops mode button, and a button cannot hold a button |
-| 19–23 New tracking (save-format bump) | Not started |
-| 24–25 Web Global boards (backend CORS deploy) | Not started |
-| 26–28 Polish | Not started |
+| 19 Personal bests | Done: `src/personalBests.js` (`hb_personal_bests_v1`, server ranking rules, rides the save code and Steam Cloud) |
+| 20 Show personal bests | Done: PERSONAL BESTS card, Steam rank on Best Run when Around me returns one |
+| 21 Per-class records and play time | Done: achievement schema 4 (`totalRunMs`, `byClass`), older saves start at 0 |
+| 22 BY CLASS and TIME IN THE CRUST | Done. CLASSES COMPLETED is now CLASSES PLAYED: the stat marks every class that ended a run |
+| 23 Steam stats for the new numbers | Not done, by design: needs the stats defined in Steamworks first, or `SetStat` fails. Local only |
+| 24 Web Global boards | Done in the client; works once the backend with 25 is deployed |
+| 25 Global reads readable from any origin | Done in code (`server/steamLeaderboards.js`); **needs a backend deploy** |
+| 26 Rank on the ARCHIVE button | Done (Steam builds) |
+| 27 NEW PERSONAL BEST on Game Over | Done |
+| 28 Tactical Net ledger as one summary line | Done (ids kept) |
 
 Calls made on the open questions: no title-screen entry; default board BEST
-RUN (Game Over opens the run's own board); per-class stats stay local when
-built; web build shows an honest offline state; Tactical Net's ledger stays.
+RUN (Game Over opens the run's own board); per-class stats stay local; the
+web build reads Global boards from the backend and shows an honest offline
+state when it cannot; Tactical Net's ledger stays as one summary line.
 
 ## What already exists
 

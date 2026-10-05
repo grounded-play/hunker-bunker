@@ -1947,7 +1947,7 @@
       "camps": "ACAMPAMENTOS EM UMA MISSÃO",
       "lore": "REGISTROS",
       "endings": "FINAIS",
-      "classes": "CLASSES CONCLUÍDAS",
+      "classes": "CLASSES JOGADAS",
       "shells": "CÁPSULAS COLETADAS",
       "board_best_run_score": "MELHOR MISSÃO",
       "board_survival_time_seconds": "SOBREVIVÊNCIA",
@@ -1962,7 +1962,14 @@
       "status": "{board} — {scope}",
       "status_mock": "{board} — {scope} · SIMULAÇÃO DEV",
       "open_records": "RECORDES ▸",
-      "view_all": "VER TODOS OS RECORDES"
+      "view_all": "VER TODOS OS RECORDES",
+      "section_bests": "MELHORES MARCAS",
+      "section_by_class": "POR CLASSE",
+      "timeInCrust": "TEMPO NA CROSTA",
+      "no_bests": "NENHUMA MISSÃO RANQUEADA AINDA",
+      "class_line": "{runs} missões · {wins} vitórias · {tier}",
+      "new_best": "NOVA MELHOR MARCA — {boards}",
+      "rank_suffix": "#{rank}"
     }
   },
   "narrative": {

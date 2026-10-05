@@ -207,3 +207,33 @@
   min-height: 44px;
   margin-top: calc(var(--vu) * 0.8);
 }
+
+/* Game Over: which boards this run set a personal best on. */
+.go-personal-best {
+  margin: calc(var(--vu) * 0.6) 0;
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 1.2);
+  border: 1px solid rgba(46, 196, 182, 0.6);
+  border-radius: 4px;
+  background: rgba(46, 196, 182, 0.12);
+  color: #93eee4;
+  font: 800 max(14px, calc(var(--vu) * 1.4)) "Space Mono", monospace;
+  letter-spacing: 0.06em;
+}
+
+.go-personal-best.hidden {
+  display: none;
+}
+
+/* Tactical Net: the career numbers are one summary line now; the full record
+   lives in Archive → RECORDS (RECORDS ▸). */
+.net-ledger-panel--summary .net-ledger-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--vu) * 0.4) calc(var(--vu) * 1.6);
+}
+
+.net-ledger-panel--summary .net-ledger-stats > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4em;
+}

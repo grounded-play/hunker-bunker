@@ -1947,7 +1947,7 @@
       "camps": "单次出击发现营地",
       "lore": "传说日志",
       "endings": "结局",
-      "classes": "完成职业",
+      "classes": "已玩职业",
       "shells": "收集弹壳",
       "board_best_run_score": "最佳出击",
       "board_survival_time_seconds": "生存时间",
@@ -1962,7 +1962,14 @@
       "status": "{board} — {scope}",
       "status_mock": "{board} — {scope} · 开发模拟",
       "open_records": "战绩 ▸",
-      "view_all": "查看全部战绩"
+      "view_all": "查看全部战绩",
+      "section_bests": "个人最佳",
+      "section_by_class": "按职业",
+      "timeInCrust": "地壳中的时间",
+      "no_bests": "尚无计入排行的出击",
+      "class_line": "{runs} 次出击 · {wins} 次胜利 · {tier}",
+      "new_best": "刷新个人最佳 — {boards}",
+      "rank_suffix": "#{rank}"
     }
   },
   "narrative": {

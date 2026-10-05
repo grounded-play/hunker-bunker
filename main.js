@@ -89,7 +89,8 @@ import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
 import { campaignLedger } from './src/campaignLedger.js';
-import { createRecordsTab } from './src/recordsTab.js';
+import { boardLabelKey, createRecordsTab } from './src/recordsTab.js';
+import { personalBests } from './src/personalBests.js';
 import { campaignWorldStore, deriveExpeditionSeed } from './src/campaignWorld.js';
 import { clearMultiplayerSession } from './src/gameController.js';
 import { playerTradeManager, TRADEABLE_RESOURCES } from './src/playerTrade.js';
@@ -244,6 +245,28 @@ syncLoadingCursorSuppression();
 
 const ACTIVE_CLASS_KEY = 'hb_active_class_v1';
 const PLAYABLE_CLASSES = Object.freeze(['SCOUT', 'TANK', 'ENGINEER']);
+
+// Created early: the operator menu's status refresh asks it for the Best Run
+// rank during startup. Everything it reads is looked up lazily.
+// Archive → RECORDS (docs/planning/records-and-leaderboards-popup-plan-2026-10-05.md).
+const recordsTab = createRecordsTab({
+    getStats: () => achievementEngine.getState().stats,
+    getLedger: () => campaignLedger.getState(),
+    getTotals: () => {
+        const endings = buildEndingArchive(window.game?.act2?.getState?.() ?? act2Manager.getState(), achievementEngine.getState().unlocked);
+        return {
+            lore: ALL_LORE_KEYS.length,
+            loreFound: new Set(getWorldMemory().logsFound ?? []).size,
+            endings: endings.length,
+            endingsFound: endings.filter((ending) => ending.discovered).length,
+            classes: PLAYABLE_CLASSES.length,
+            tierNames: DEPTH_TIER_NAMES
+        };
+    },
+    getBests: () => personalBests.getState(),
+    getLocale,
+    t
+});
 
 function getSavedHeroType() {
     try {
@@ -5407,6 +5430,17 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
 
     // The finalized-event listener (desktop only) starts the submit
     // synchronously and parks its promise here, so the board is read after it.
+    // Personal bests use the server's own ranking rules, so a NEW PERSONAL
+    // BEST here is a run the board would also count (Archive → RECORDS).
+    const { improved: improvedBoards } = personalBests.recordRun(steamRunPayload);
+    const personalBestLine = document.getElementById('go-personal-best');
+    if (personalBestLine) {
+        personalBestLine.textContent = improvedBoards.length
+            ? t('ui.records.new_best', { boards: improvedBoards.map((board) => t(boardLabelKey(board))).join(' · ') })
+            : '';
+        personalBestLine.classList.toggle('hidden', !improvedBoards.length);
+    }
+
     latestRunSubmission = null;
     dispatchSteamRunScoreFinalized(steamRunPayload, window);
     void renderGameOverLeaderboard(steamRunPayload, { submission: latestRunSubmission });
@@ -6171,7 +6205,12 @@ function updateMenuCommandStatuses() {
     const foundLogs = new Set(getWorldMemory().logsFound ?? []).size;
     const printed = FAB_RECIPES.filter((recipe) => fabricator.isFabricated(recipe.id)).length;
 
-    setText('archive-command-status', t('ui.hub.status_logs', { found: foundLogs, total: ALL_LORE_KEYS.length }));
+    const archiveStatus = t('ui.hub.status_logs', { found: foundLogs, total: ALL_LORE_KEYS.length });
+    setText('archive-command-status', archiveStatus);
+    // Your Steam Best Run rank rides on the ARCHIVE button once known.
+    void recordsTab.bestRunRank().then((rank) => {
+        if (rank) setText('archive-command-status', `${archiveStatus} · ${t('ui.records.rank_suffix', { rank })}`);
+    }).catch(() => {});
     setText('codex-command-status', t('ui.hub.status_intel', { found: codexStore.getDiscoveredCount(), total: CODEX_TOTAL }));
     setText('fab-command-status', t('ui.hub.status_printed', { printed, total: FAB_RECIPES.length }));
 }
@@ -13062,24 +13101,6 @@ for (const tab of document.querySelectorAll('[data-archive-tab]')) {
     });
 }
 
-// Archive → RECORDS (docs/planning/records-and-leaderboards-popup-plan-2026-10-05.md).
-const recordsTab = createRecordsTab({
-    getStats: () => achievementEngine.getState().stats,
-    getLedger: () => campaignLedger.getState(),
-    getTotals: () => {
-        const endings = buildEndingArchive(window.game?.act2?.getState?.() ?? act2Manager.getState(), achievementEngine.getState().unlocked);
-        return {
-            lore: ALL_LORE_KEYS.length,
-            loreFound: new Set(getWorldMemory().logsFound ?? []).size,
-            endings: endings.length,
-            endingsFound: endings.filter((ending) => ending.discovered).length,
-            classes: PLAYABLE_CLASSES.length,
-            tierNames: DEPTH_TIER_NAMES
-        };
-    },
-    getLocale,
-    t
-});
 
 /**
  * The one way into the Archive. `overlay` lifts it above the screen that

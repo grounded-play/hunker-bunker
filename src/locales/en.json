@@ -1947,7 +1947,7 @@
       "camps": "CAMPS IN ONE RUN",
       "lore": "LORE LOGS",
       "endings": "ENDINGS",
-      "classes": "CLASSES COMPLETED",
+      "classes": "CLASSES PLAYED",
       "shells": "SHELLS COLLECTED",
       "board_best_run_score": "BEST RUN",
       "board_survival_time_seconds": "SURVIVAL",
@@ -1962,7 +1962,14 @@
       "status": "{board} — {scope}",
       "status_mock": "{board} — {scope} · DEV MOCK",
       "open_records": "RECORDS ▸",
-      "view_all": "VIEW ALL RECORDS"
+      "view_all": "VIEW ALL RECORDS",
+      "section_bests": "PERSONAL BESTS",
+      "section_by_class": "BY CLASS",
+      "timeInCrust": "TIME IN THE CRUST",
+      "no_bests": "NO RANKED RUN YET",
+      "class_line": "{runs} runs · {wins} wins · {tier}",
+      "new_best": "NEW PERSONAL BEST — {boards}",
+      "rank_suffix": "#{rank}"
     }
   },
   "narrative": {

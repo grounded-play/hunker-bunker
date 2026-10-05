@@ -1947,7 +1947,7 @@
       "camps": "LAGER IN EINEM EINSATZ",
       "lore": "LORE-LOGS",
       "endings": "ENDEN",
-      "classes": "KLASSEN ABGESCHLOSSEN",
+      "classes": "GESPIELTE KLASSEN",
       "shells": "GESAMMELTE HÜLSEN",
       "board_best_run_score": "BESTER EINSATZ",
       "board_survival_time_seconds": "ÜBERLEBEN",
@@ -1962,7 +1962,14 @@
       "status": "{board} — {scope}",
       "status_mock": "{board} — {scope} · DEV-MOCK",
       "open_records": "REKORDE ▸",
-      "view_all": "ALLE REKORDE"
+      "view_all": "ALLE REKORDE",
+      "section_bests": "PERSÖNLICHE BESTWERTE",
+      "section_by_class": "NACH KLASSE",
+      "timeInCrust": "ZEIT IN DER KRUSTE",
+      "no_bests": "NOCH KEIN GEWERTETER EINSATZ",
+      "class_line": "{runs} Einsätze · {wins} Siege · {tier}",
+      "new_best": "NEUER PERSÖNLICHER BESTWERT — {boards}",
+      "rank_suffix": "#{rank}"
     }
   },
   "narrative": {
