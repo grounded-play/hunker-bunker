@@ -402,12 +402,19 @@ umbilicals ([`umbilicalAttacker.js`](../../src/3d/umbilicalAttacker.js)) come on
 from the giger theme's `prop_biomech_spore_umbilical_cable_rigged` signature prop.
 Nothing yet affects an umbilical.
 
-- [ ] `UmbilicalAttacker` gains a stun state; a cryo rupture within range stuns
-  it for 4 s (no attacks; a visible frost state).
-- [ ] Bile spray applies a timed armour-weakening status to snails, in addition to
-  its current damage. Define the multiplier and duration in data.
-- [ ] Spatial breathing/tension cue when the player enters an umbilical's 7 m
-  detection radius, using the existing sound keys.
+- [x] `UmbilicalAttacker` gains a stun state; a cryo rupture within range stuns
+  it for 4 s (no attacks; a visible frost state). `b8abf652` (non-stacking
+  `STUNNED`, frost visual, cleanup) and `1c040947` (rupture stuns live umbilicals
+  within 5 m for `BIOMECH_SYNERGY_TUNING.cryoStunSeconds` = 4).
+- [x] Bile spray applies a timed armour-weakening status to snails, in addition to
+  its current damage. Define the multiplier and duration in data. `1c040947`:
+  `STATUS_EFFECT.CHITIN_VULNERABILITY`, 1.25× damage taken for 6 s
+  (`STATUS_DEFAULTS` in [`statusEffects.js`](../../src/statusEffects.js)); reapplying
+  refreshes to the greater remaining time, never stacks.
+- [x] Spatial breathing/tension cue when the player enters an umbilical's 7 m
+  detection radius, using the existing sound keys. `b8abf652`: a one-shot
+  `onDetectionEnter` at `detectionRadius` 7.0 plays the existing `enemy_alert_snail`
+  key positionally (`audioAt`) at a low, per-attacker pitch (0.66–0.76).
 
 **Accept:** [`umbilicalAttacker.test.js`](../../src/umbilicalAttacker.test.js) and
 [`propInteractions.test.js`](../../src/propInteractions.test.js) cover stun timing,
@@ -434,6 +441,27 @@ refreshes to the greater remaining duration rather than adding durations or
 multipliers; a stable prop scatter key deduplicates co-op replay. Damage scaling will
 occur after the existing host-authoritative hit-routing boundary. Status, interaction,
 co-op damage-path, and full-suite tests are the commit gate.
+
+**Verified (2026-10-04):** the acceptance tests cover stun timing and expiry
+(`umbilicalAttacker.test.js` "stuns without stacking, expires to idle…"), the
+rupture stun inside versus outside range and the deduplicated bile vulnerability
+(`propInteractions.test.js`), status expiry (`statusEffects.test.js`), and the
+one-shot detection cue (`onDetectionEnter` called once). 22 focused tests pass,
+and the full suite passes with 4,991 tests at `1c040947`.
+
+### Handed off (human gates)
+
+Agents cannot complete these, and they stay unchecked:
+
+- **M3 [Deck]:** a paired Steam Deck capture with `hb_area_room_density` on and
+  off. Presented p95 must not regress and the destruction-burst window must improve
+  on 152 ms before the flag defaults on. First decide whether to keep the
+  formula: it returns 8 for every current authored room (see M3 Result).
+- **M4 [Deck]:** a p95 check with the anchor practical lights in play.
+- **M5 [Art]:** art-direction sign-off on the wall-shell spike images. If it is
+  approved, the four in-game blockers in the M5 Result must be solved before
+  `hb_modular_wall_shells` does anything in play.
+- **Art requests (M4):** emissive maps for the six key-art anchors listed in M4.
 
 ### Milestones
 
