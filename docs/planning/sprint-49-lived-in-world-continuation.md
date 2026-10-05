@@ -238,6 +238,14 @@ dressing and the RNG draw count. Checks: 17 population tests, full suite 4,958
 passed, 500-seed sweep 0 failures. The renderer needed no change: grounding
 placements take the existing non-blocking floor-overlay path.
 
+Concurrency note: another agent landed a second M2 pass (`ANCHOR_GROUND_DRESSING_TABLE`)
+in the working tree at the same time, and it was swept into `8c7a5ef0`. It is removed
+in the follow-up commit because it placed wall decals (`decal_water_stain`,
+`decal_rust_bleed_*`, `decal_spore_stain_*`) on the floor, consumed the shared RNG
+(reshuffling later rooms), and reserved cells without removing them from the
+candidate pool. Its anchor coverage (eyewash/decon, heat exchanger, docking gantry)
+was folded into `GROUNDING_RULES`.
+
 ### Goal 3 — density scaling (M3, measure first)
 
 **Now:** `const roomObjectLimit = 5` in `roomPopulation.js`. Fractured debris is

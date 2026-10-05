@@ -325,6 +325,13 @@ describe('room population', () => {
             expect(groundingRuleFor('prop_biomech_incubator').decals).toContain('scatter_slime_puddle');
             expect(groundingRuleFor('prop_liturgical_terminal_lectern').piece).toBe('prop_floor_conduit_bridge');
             expect(groundingRuleFor('prop_bunker_supplies').decals).toContain('decal_oil_spill_patch');
+            // Anchors with their own pairings in the key art.
+            expect(groundingRuleFor('prop_autopsy_dissection_slab').piece).toBe('prop_floor_drainage_sump_trough');
+            expect(groundingRuleFor('prop_decon_eyewash_shower_station').decals).toContain('scatter_coolant_puddle');
+            expect(groundingRuleFor('prop_pipe_organ_heat_exchanger').piece).toBe('prop_floor_conduit_bridge');
+            expect(groundingRuleFor('prop_exosuit_docking_gantry').piece).toBe('prop_floor_conduit_bridge');
+            expect(groundingRuleFor('prop_biomech_sphincter_hatch_vent').decals).toContain('scatter_slime_puddle');
+            expect(groundingRuleFor('prop_votive_candle_shrine').decals[0]).toMatch(/^decal_floor_medallion_/);
             expect(groundingRuleFor('mystery_object')).toBeNull();
         });
 
