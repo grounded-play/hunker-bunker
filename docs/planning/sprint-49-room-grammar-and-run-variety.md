@@ -93,6 +93,109 @@ Follow the existing key-art review's anchor → infrastructure → traces of hab
 hierarchy; new captures must demonstrate structural differences, not only clutter.
 Track asset coverage across a seed portfolio; do not force every prefab into every room.
 
+## Larger rooms and finished visual targets
+
+Owner scope expansion, 2026-10-04: larger, more detailed and inhabited spaces are
+part of G0–G6, not an optional dressing pass after generation is finished.
+
+Current architectural width parameters are 11–13 and depth parameters 10–13;
+inclusive bounds and carved shapes mean these are not exact usable dimensions.
+The current chunk is 49×49. Cathedral patterns range from 13×9 to 21×11 or 17×13.
+Test larger footprints inside existing chunks before changing world coordinates,
+chunk constants, movement speed, model scale or base camera zoom.
+
+| Tier | Proposed envelope in grid cells | Purpose |
+|---|---|---|
+| Compact support | 11×11 to 15×13 | Storage, refuge and service alcoves; preserve spatial contrast |
+| Standard occupied | 19×15 to 23×19 | Workshop/ward, three functional subzones and a bypass |
+| Major destination | 27×19 to 31×25 | Nave, fabrication hall or camp court, four–five subzones |
+| Landmark prototype | Up to 35×27 | Rare single-chunk showcase, conditional on camera/budget proof |
+
+These are proposed bounding envelopes, not meters or guaranteed walkable area.
+Validate against actual reservations and approach lanes. Start with the standard
+tier and one major destination. Generate larger motifs instead of stretching old
+blueprints: offset wings, paired chambers, machinery islands, perimeter loops and
+recessed galleries. Retain the existing boundary margins and socket authority.
+
+Every larger room needs an arrival/read zone, a recognizable work or ritual center,
+a service/storage edge and a quiet or disrupted human-use corner. Major rooms
+should offer a main aisle and a slower flanking/service route where progression
+permits. Large empty crossing distances fail acceptance even if prop counts pass.
+Measure route time, cover spacing, sightlines and companion clearance in G0/G1.
+
+### Branch key art inspected for this expansion
+
+These are close-up references. Translate their functional relationships and
+material language to gameplay scale; do not copy their density onto every tile.
+
+| Reference | Observed composition | Room implementation target |
+|---|---|---|
+| [Heat exchanger](../../public/keyart/keyart_prop_pipe_organ_heat_exchanger.jpg) | Parallel pipes, broad manifold, amber gauges, cyan readouts, leaks and drain | Machinery wall with supply/return runs, maintenance clearance and drainage below leaks |
+| [Autopsy slab](../../public/keyart/keyart_prop_autopsy_dissection_slab.jpg) | Task lamp, worn slab, straps, tool tray, specimen jars, dense wall services | Medical work island, reachable storage, lamp support, dirty/clean sides and open circulation |
+| [Sector gateway](../../public/keyart/keyart_room_bulkhead_sector_gateway.jpg) | Thick ribs, embedded cables/screens, signage, cyan/amber contrast, drips | Deep entrance composition, readable destination marker, recessed panels and clear threshold |
+| [Maintenance cart](../../public/keyart/keyart_prop_maintenance_tool_cart.jpg) | Sorted tools, cloth, replacement fittings, cans, cable reels and wear | Repair vignette beside the machine it services, showing an interrupted task |
+
+Detail must read at three scales: room silhouette/landmark on entry, equipment
+clusters during combat, small tools/wear on approach. Reuse existing models first;
+missing pipe joins/support brackets become specific asset requests. Keep material
+scale and wear coherent; avoid identical oversized stains on every wall panel.
+
+### Finished room briefs
+
+- **Maintenance hall:** an offset exchanger/gantry creates two routes. A crane
+  aligns over a work bay; cables terminate at equipment. Tools, removed panels and
+  spare parts tell one repair story. Coolant drains toward a sump with a safe bypass.
+- **Medical ward:** paired treatment bays flank an off-center slab. An observation
+  pocket breaks the outline. Lamps focus on work surfaces; privacy partitions break
+  sightlines without hiding all enemies. Decontamination leads toward treatment.
+- **Machine nave:** an entrance view ends at an exchanger/reliquary. Ribbed side
+  bays, asymmetric votive clusters and a maintenance route create depth. Overhead
+  ribs suggest height but cut away before obscuring aim or exits. Restrained light
+  and machinery sound distinguish it from the surrounding corridors.
+- **Camp court:** beds, food, shared heat, repair and radio form separate activity
+  areas joined by supply paths. Personal effects and improvised repairs convey
+  occupation. NPC paths avoid entrances; services remain usable after destruction.
+- **Arrival site:** ship damage explains the approach; a lit safe pocket frames
+  the console and first exit. Traces of occupation establish the area's identity
+  immediately, while multiplayer arrival positions stay uncluttered.
+
+Assign a coherent environmental story state: maintained, abandoned mid-task,
+quarantined or reclaimed. That state selects compatible vignettes, wear and sound.
+Do not independently shuffle every object. These are environmental stories, not
+new mandatory quests or reward multipliers.
+
+### Detail, readability and performance
+
+Reserve playable space first; concentrate detail around work clusters and room
+edges. Add recessed machinery, wall bays, bulkhead transitions and supported
+overhead fixtures to vary depth and silhouette as well as textures. Ground decals
+at their source. Pool practical lights; an emissive fixture need not add a dynamic
+light. Avoid constant loud loops and synchronized blinking.
+
+Test cutaway behavior from every supported camera heading and at the center of
+large rooms. More floor area does not authorize proportional growth in costly
+GLBs: retain hard triangle/type/light/debris caps until profiling supports changes.
+Use lightweight repeated modules and visual detail tiers without removing gameplay
+collision or damage targets at lower quality settings. Review intact, occupied,
+combat and heavily destroyed states, including attachment cleanup and wreck access.
+
+### Added implementation gates
+
+- [ ] **G0:** record actual room envelopes, usable area, travel time and model
+  budgets; compare reference art with baseline gameplay captures.
+- [ ] **G1:** standard occupied tier and one major motif, with functional subzones,
+  large-setpiece reservations, bypass routes and connected entrances.
+- [ ] **G2/G4:** finish one maintenance-hall vertical slice: structural variation,
+  connected infrastructure, story-state dressing, sound and practical lighting.
+  Review it before extending the same contracts to medical and biomech families.
+- [ ] **G3:** destroy every physical module class in the slice; verify collision,
+  attachment cleanup, service recovery, co-op and saved destruction state.
+- [ ] **G5:** one inhabited camp court and one safe arrival variant using the same
+  subzone contracts; then expand to the remaining planned starting scenarios.
+- [ ] **G6:** matched entrance, center, side-route and destruction captures at
+  gameplay zoom. Record silhouette, function, infrastructure, habitation,
+  navigation and performance findings separately. Bigger alone does not pass.
+
 ## Destruction is part of the layout contract
 
 Target: all physical interior props, setpieces and wall modules in the new grammar

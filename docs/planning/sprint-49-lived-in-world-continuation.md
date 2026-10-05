@@ -15,6 +15,14 @@ plan for milestone scope, dependencies, verification gates, and definition of do
 
 ### Room grammar scope handoff — 2026-10-04
 
+- [x] Expanded the scope with larger room tiers and finished-room briefs after
+  visually inspecting heat-exchanger, autopsy-slab, sector-gateway and tool-cart
+  key art. Concrete reference links and observations live in the grammar plan.
+- [ ] G0/G1 now includes larger footprints within current chunks; first finished
+  slice is an occupied maintenance hall with functional subzones, connected
+  infrastructure, readable routes and destructible modules. No runtime size change
+  is included in this scope update; retain legacy generation until pilot validation.
+
 - [x] Inspected current geometry: the maze structure path discards WFC geometry;
   Markov detail rules only erode edges; authored selection still uses the old catalog.
 - [x] Added the [G0–G6 scope](sprint-49-room-grammar-and-run-variety.md), including

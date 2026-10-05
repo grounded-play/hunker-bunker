@@ -533,6 +533,12 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
 
 ### S49-20 — world variety that preserves navigation and purpose
 
+- [ ] Build larger occupied rooms through the [size tiers and key-art briefs](sprint-49-room-grammar-and-run-variety.md#larger-rooms-and-finished-visual-targets):
+  pilot 19×15–23×19 envelopes, then a 27×19–31×25 destination; validate actual
+  floor area, circulation, combat readability and budgets before enabling.
+- [ ] Complete a maintenance-hall visual/gameplay slice with connected infrastructure,
+  functional subzones, story-state dressing and destruction; then medical/nave/camp/start variants.
+
 - [x] Scope layered room/corridor grammars, area identity, destruction and camp/start
   variety in the [room grammar plan](sprint-49-room-grammar-and-run-variety.md).
 - [ ] **G0–G1:** measure current structural repetition and implement a pure seeded

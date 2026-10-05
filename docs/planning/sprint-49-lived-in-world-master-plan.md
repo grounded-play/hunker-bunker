@@ -10,6 +10,13 @@ non-breaking commits.
 
 ## Outcome
 
+The owner's larger-room expansion is specified in the
+[size tiers and finished-room briefs](sprint-49-room-grammar-and-run-variety.md#larger-rooms-and-finished-visual-targets).
+G1 must demonstrate larger functional subzones; G2/G4 must deliver one finished
+maintenance-hall slice guided by the inspected branch key art before broad rollout.
+Room size, habitation and structural variation are acceptance criteria alongside
+socket safety, destruction correctness and frame pacing.
+
 The [room grammar and run-variety extension](sprint-49-room-grammar-and-run-variety.md)
 scopes the next structural generation work (G0–G6): room-local module solving,
 purposeful rewrites, asymmetric corridors/junctions, area profiles and camp/start
