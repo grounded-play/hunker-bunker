@@ -12,7 +12,7 @@ describe('3D corpses', () => {
             corpses: [],
             scatterMaterials: {
                 cybersnail_dead: new THREE.SpriteMaterial({ opacity: 1 }),
-                cryosnail_dead: new THREE.SpriteMaterial({ opacity: 1 })
+                boss_sporesnail_dead: new THREE.SpriteMaterial({ opacity: 1 })
             },
             createWorld3dModel,
             getFogOfWarVisibility: () => 1,
@@ -64,7 +64,7 @@ describe('3D corpses', () => {
 
     it('keeps the billboard for corpses without a model, and when loading fails', async () => {
         const game = makeGame(vi.fn(async () => null));
-        game.spawnEnemyCorpse(enemy('cryosnail'));
+        game.spawnEnemyCorpse(enemy('boss_sporesnail'));
         expect(game.createWorld3dModel).not.toHaveBeenCalled();
         expect(game.corpses[0].material.visible).toBe(true);
 

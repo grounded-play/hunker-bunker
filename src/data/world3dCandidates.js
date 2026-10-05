@@ -8,6 +8,9 @@
  *   debug museum's "2D -> 3D REVIEW" row shows each sprite beside each of its
  *   candidates, so the decision is made by eye, not by name.
  *
+ * Resolved by new art (2026-10-05 gap batch, own GLBs now): cave spores, spore
+ * colony, lichen, wounded hive wall.
+ *
  * Every camp and hive signature-prop sprite (.jpg) is a ~10 KB placeholder
  * tile (dashed box + initials), so for those any fitting model is an upgrade.
  *
@@ -25,14 +28,10 @@ export const WORLD_3D_CANDIDATES = Object.freeze([
     // junction box bolted on, and the vent is a purple alien bloom.
     { type: 'prop_cyber_junction', sprite: '/prop_cyber_junction.png', site: 'scatter', status: 'review', candidates: ['prop_diagnostic_console', 'prop_terminal_ruptured', 'prop_conduit_junction_box'] },
     { type: 'prop_alien_respiratory_vent', sprite: '/prop_alien_respiratory_vent.png', site: 'scatter', status: 'review', candidates: ['prop_biomech_sphincter_hatch_vent', 'prop_biomech_respirator'] },
-    { type: 'prop_cave_spores', sprite: '/prop_cave_spores.png', site: 'scatter', status: 'review', candidates: ['prop_fungal_spore_dispenser'] },
-    { type: 'prop_spore_colony', sprite: '/prop_spore_colony.png', site: 'scatter', status: 'review', candidates: ['prop_fungal_spore_dispenser'] },
-    { type: 'prop_cave_lichen', sprite: '/prop_cave_lichen.png', site: 'scatter', status: 'review', candidates: ['state_growth_overrun_1', 'state_growth_overrun_2'] },
     { type: 'prop_biomech_pillar_left', sprite: '/prop_biomech_pillar_left.png', site: 'scatter', status: 'review', candidates: ['arch_pillar_buttress_01', 'prop_biomech_arch'] },
     { type: 'prop_biomech_pillar_right', sprite: '/prop_biomech_pillar_right.png', site: 'scatter', status: 'review', candidates: ['arch_pillar_buttress_02', 'prop_biomech_arch'] },
     { type: 'scatter_bio_pod', sprite: '/scatter_bio_pod.png', site: 'scatter', status: 'review', candidates: ['prop_biomech_incubator'] },
     { type: 'prop_cryo_sleep_pod', sprite: '/prop_cryo_sleep_pod.png', site: 'scatter', status: 'review', candidates: ['prop_icey_thermal_pod', 'prop_flesh_steel_coffin'] },
-    { type: 'prop_cave_hive_wounded', sprite: '/prop_cave_hive_wounded.png', site: 'scatter', status: 'review', candidates: ['prop_hive_resin_sac'] },
     { type: 'lore_terminal', sprite: '/console.png', site: 'scatter', status: 'review', candidates: ['prop_terminal_ruptured', 'prop_liturgical_terminal_lectern'] },
 
     { type: 'prop_hive_chitin_hatchery', sprite: '/prop_hive_chitin_hatchery.jpg', site: 'hive', status: 'review', candidates: ['prop_biomech_incubator'] },

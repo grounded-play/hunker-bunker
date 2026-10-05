@@ -40,6 +40,7 @@ const LEADER_BOSS_SPRITESHEETS = {
 //   Vesper   / Briggs  -- turrets, ammunition, a ledger of the dead. Iron.
 export const CAMP_DRESSING_MODELS = Object.freeze({
     camp_meridian: Object.freeze([
+        { type: 'prop_camp_meridian_radio', x: 1.7, z: 2.15, yaw: -0.5 },
         { type: 'prop_conduit_junction_box', x: -3.1, z: 2.4, yaw: 0.6 },
         { type: 'prop_light_cluster_dripping', x: 3.0, z: -2.7, yaw: -0.4 },
         { type: 'prop_conduit_hub', x: 2.8, z: 2.7, yaw: 0.8 },
@@ -57,6 +58,18 @@ export const CAMP_DRESSING_MODELS = Object.freeze({
         { type: 'prop_ammo_crate_stack', x: 2.8, z: -2.9, yaw: 1.4 },
         { type: 'prop_security_barricade', x: -2.9, z: 2.7, yaw: -0.3 }
     ])
+});
+
+// The model each camp prop sprite draws as (ThreeGame.syncSiteProps3d).
+export const CAMP_PROP_MODELS = Object.freeze({
+    cookfireLit: 'prop_camp_cookfire_lit',
+    cookfireDoused: 'prop_camp_cookfire',
+    crates: 'prop_camp_crates',
+    placard: 'prop_camp_warning_placard',
+    shutter: 'prop_camp_shutter_lockdown',
+    laundry: 'prop_camp_laundry',
+    bedrolls: 'prop_camp_bedrolls',
+    sandbags: 'prop_camp_sandbags'
 });
 
 export const CAMP_SIGNATURE_PROPS = Object.freeze({
@@ -718,6 +731,22 @@ export class SurvivorCamp {
             this.sandbagSprites.push(spriteSandbags);
         }
 
+        // The 3D model each prop sprite stands for. ThreeGame.syncSiteProps3d
+        // draws the model instead of the billboard and follows the sprite's
+        // visibility and this field as camp state changes (updatePropVisuals).
+        spriteFire.userData.model3d = CAMP_PROP_MODELS.cookfireLit;
+        spriteCrates.userData.model3d = CAMP_PROP_MODELS.crates;
+        spritePlacard.userData.model3d = CAMP_PROP_MODELS.placard;
+        spriteShutter.userData.model3d = CAMP_PROP_MODELS.shutter;
+        spriteLaundry.userData.model3d = CAMP_PROP_MODELS.laundry;
+        spriteBedrolls.userData.model3d = CAMP_PROP_MODELS.bedrolls;
+        // Graves stay 2D: the 2026-10-05 prop_camp_grave_fresh upload came back
+        // as a few scattered items with no mound or marker (raw kept in
+        // art/source/3d/raw-masters-2026-10-05 pending a regenerate), and there
+        // is no old-grave model yet.
+        spriteGrave.userData.model3d = null;
+        for (const sandbags of this.sandbagSprites) sandbags.userData.model3d = CAMP_PROP_MODELS.sandbags;
+
         // Faction signature props (docs/sprint-23-room-juice-and-dressing-assets.md §4).
         this.signatureProps = {};
         for (const spec of CAMP_SIGNATURE_PROPS[this.id] ?? []) {
@@ -1034,6 +1063,7 @@ export class SurvivorCamp {
         if (this.propSprites.cookfire) {
             this.propSprites.cookfire.material.map = lit ? this.texCookfireLit : this.texCookfireDoused;
             this.propSprites.cookfire.material.needsUpdate = true;
+            this.propSprites.cookfire.userData.model3d = lit ? CAMP_PROP_MODELS.cookfireLit : CAMP_PROP_MODELS.cookfireDoused;
         }
 
         if (this.propSprites.crates) {

@@ -31,6 +31,15 @@ const HIVE_SIGNAL_HEIGHT = 8;
 // signature props per hive, distinct from the shared cave-prop dressing
 // (eggs/spores/webs/wounded below). Art is queued, not rendered yet; see
 // camp.js's CAMP_SIGNATURE_PROPS for why wiring ahead of the asset is safe.
+// The model each hive cave-prop sprite draws as (ThreeGame.syncSiteProps3d).
+export const HIVE_PROP_MODELS = Object.freeze({
+    eggsIntact: 'prop_cave_eggs_intact',
+    eggsHatched: 'prop_cave_eggs_hatched',
+    spores: 'prop_cave_spores',
+    webs: 'prop_cave_webs',
+    wounded: 'prop_cave_hive_wounded'
+});
+
 export const HIVE_SIGNATURE_PROPS = Object.freeze({
     hive_suture: [
         { id: 'suture_organ', path: '/prop_hive_suture_organ.jpg', x: -1.55, z: 1.0, y: 0.55, scale: 1.3 },
@@ -42,7 +51,7 @@ export const HIVE_SIGNATURE_PROPS = Object.freeze({
     ],
     hive_carapace: [
         { id: 'chitin_hatchery', path: '/prop_hive_chitin_hatchery.jpg', x: 1.6, z: 1.05, y: 0.5, scale: 1.2 },
-        { id: 'carapace_molt', path: '/prop_hive_carapace_molt.jpg', x: -1.6, z: -1.1, y: 0.45, scale: 1.25 }
+        { id: 'carapace_molt', path: '/prop_hive_carapace_molt.jpg', x: -1.6, z: -1.1, y: 0.45, scale: 1.25, model: 'prop_hive_carapace_molt' }
     ]
 });
 
@@ -367,6 +376,7 @@ export class HiveSite {
         spriteSpores.position.set(1.4, 0.5, 1.2);
         spriteSpores.scale.set(0.9, 0.9, 1);
         group.add(spriteSpores);
+        this.propSprites.spores = spriteSpores;
 
         // Resin Webs
         const matWebs = new THREE.SpriteMaterial({ map: this.texWebs, transparent: true, alphaTest: 0.05, depthWrite: false });
@@ -374,6 +384,7 @@ export class HiveSite {
         spriteWebs.position.set(-1.1, 0.6, 1.3);
         spriteWebs.scale.set(1.1, 0.9, 1);
         group.add(spriteWebs);
+        this.propSprites.webs = spriteWebs;
 
         // Wounded membrane leak (only visible if mined or wounded)
         const matWounded = new THREE.SpriteMaterial({ map: this.texWounded, transparent: true, alphaTest: 0.05, depthWrite: false });
@@ -383,6 +394,12 @@ export class HiveSite {
         spriteWounded.visible = false;
         group.add(spriteWounded);
         this.propSprites.wounded = spriteWounded;
+        // The 3D model each sprite stands for; ThreeGame.syncSiteProps3d draws
+        // it in place of the billboard and follows visibility and state.
+        spriteEggs.userData.model3d = HIVE_PROP_MODELS.eggsIntact;
+        spriteSpores.userData.model3d = HIVE_PROP_MODELS.spores;
+        spriteWebs.userData.model3d = HIVE_PROP_MODELS.webs;
+        spriteWounded.userData.model3d = HIVE_PROP_MODELS.wounded;
 
         // Faction signature props (docs/sprint-23-room-juice-and-dressing-assets.md §5).
         this.signatureProps = {};
@@ -402,7 +419,7 @@ export class HiveSite {
             const sprite = new THREE.Sprite(material);
             sprite.position.set(spec.x, spec.y, spec.z);
             sprite.scale.set(spec.scale, spec.scale, 1);
-            sprite.userData = { kind: 'hive-signature-prop', hiveId: this.id, propId: spec.id };
+            sprite.userData = { kind: 'hive-signature-prop', hiveId: this.id, propId: spec.id, model3d: spec.model ?? null };
             group.add(sprite);
             this.signatureProps[spec.id] = sprite;
         }
@@ -486,6 +503,7 @@ export class HiveSite {
         if (this.propSprites.eggs) {
             this.propSprites.eggs.material.map = isHurt ? this.texEggsHatched : this.texEggsIntact;
             this.propSprites.eggs.material.needsUpdate = true;
+            this.propSprites.eggs.userData.model3d = isHurt ? HIVE_PROP_MODELS.eggsHatched : HIVE_PROP_MODELS.eggsIntact;
             this.propSprites.eggs.visible = !vacated;
         }
 

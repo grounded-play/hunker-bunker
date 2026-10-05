@@ -81,7 +81,10 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // Raised 3020->3040 MiB for the developer's own voice on the 12 commentary
 // cards and 10 Development History chapters in seven languages (154 MP3s,
 // ~7 MiB) and the WebP sprite copies; the measured payload reached 3021 MiB.
-const PUBLIC_BUDGET = 3040 * 1024 * 1024;
+// Raised 3040->3080 MiB for the 2026-10-05 2D->3D gap batch: 19 runtime GLBs
+// (cave/hive floor, camp props, four corpses) at ~1-2 MB each with WebP
+// textures (~37 MiB; PNG would have been ~85); measured payload ~3065 MiB.
+const PUBLIC_BUDGET = 3080 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus

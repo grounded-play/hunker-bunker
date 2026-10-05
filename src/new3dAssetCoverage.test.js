@@ -34,7 +34,14 @@ const NEW_ASSETS = [
     'prop_maintenance_tool_cart', 'prop_overhead_cage_fluorescent',
     'prop_oxygen_bottle_cascade_rack', 'prop_pipe_organ_heat_exchanger',
     'prop_vertebral_cable_riser', 'prop_votive_candle_shrine',
-    'prop_wall_cable_tray_swag'
+    'prop_wall_cable_tray_swag',
+    // 2D -> 3D gap batch 2026-10-05
+    'prop_cave_eggs_hatched', 'prop_cave_eggs_intact', 'scatter_hive_eggs', 'prop_cave_webs',
+    'prop_cave_hive_wounded', 'prop_cave_spores', 'prop_spore_colony', 'prop_cave_lichen',
+    'prop_hive_carapace_molt', 'prop_camp_meridian_radio',
+    'prop_camp_laundry', 'prop_camp_shutter_lockdown', 'prop_camp_warning_placard',
+    'prop_camp_bedrolls', 'prop_camp_cookfire_lit',
+    'cryosnail_dead', 'sporesnail_dead', 'boss_cybersnail_dead', 'boss_cryosnail_dead'
 ];
 
 describe('new 3D replacement asset coverage', () => {

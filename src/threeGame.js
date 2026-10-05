@@ -7309,6 +7309,66 @@ export class ThreeGame {
         return root;
     }
 
+    // Camp and hive prop sprites name their model in userData.model3d and keep
+    // owning visibility (camp.updatePropVisuals, hive.syncFromRecord flip
+    // sprite.visible and the model name with state: lit/doused fire,
+    // intact/hatched eggs, lockdown placard). The billboard never draws; the
+    // model follows the sprite every frame and is swapped when the name
+    // changes. These sprites are not scatterSprites, so the scatter sync loop
+    // never saw them: a one-shot replacement froze the model's visibility at
+    // load and let the billboard reappear inside it on the next state change.
+    syncSiteProps3d() {
+        for (const site of [...(this.camps ?? []), ...(this.hives ?? [])]) {
+            if (!site?.built) continue;
+            const sprites = [
+                ...Object.values(site.propSprites ?? {}),
+                ...(site.sandbagSprites ?? []),
+                ...Object.values(site.signatureProps ?? {})
+            ];
+            for (const sprite of sprites) this.syncSiteProp3d(sprite);
+        }
+    }
+
+    syncSiteProp3d(sprite) {
+        const wanted = sprite?.userData?.model3d;
+        if (!wanted || !sprite.material) return;
+        const modelType = world3dModelTypeFor(wanted);
+        if (!hasWorld3dModel(modelType)) return;
+        const state = (sprite.userData.site3d ??= { type: null, root: null, token: 0, failed: null });
+        if (state.failed === modelType) {
+            sprite.material.visible = true;
+            return;
+        }
+        sprite.material.visible = false;
+        if (state.type !== modelType) {
+            state.root?.removeFromParent();
+            state.root = null;
+            state.type = modelType;
+            const token = ++state.token;
+            Promise.resolve()
+                .then(() => this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType))
+                .then((root) => {
+                    if (token !== state.token) return;
+                    if (!root || !sprite.parent) {
+                        state.failed = modelType;
+                        return;
+                    }
+                    root.position.set(sprite.position.x, 0, sprite.position.z);
+                    root.rotation.y = WORLD_3D_FACING_YAW;
+                    root.userData.siteProp3dSource = sprite;
+                    sprite.parent.add(root);
+                    state.root = root;
+                    root.visible = sprite.visible;
+                })
+                .catch((error) => {
+                    if (token !== state.token) return;
+                    console.warn(`[site-prop-3d] ${modelType} unavailable; keeping sprite`, error);
+                    state.failed = modelType;
+                });
+        }
+        if (state.root) state.root.visible = sprite.visible;
+    }
+
     deferWorld3dReplacement(source, requestedType) {
         const modelType = world3dModelTypeFor(requestedType);
         if (!source?.userData || !hasWorld3dModel(modelType)) return;
@@ -17452,15 +17512,8 @@ export class ThreeGame {
                 const modelType = camp.npcSprite.userData?.world3dModelType || 'npc_martha';
                 this.setupWorld3dReplacement(camp.npcSprite, modelType, { owner: camp, ownerKey: 'npc3d' });
             }
-            if (camp.propSprites?.crates) {
-                this.setupWorld3dReplacement(camp.propSprites.crates, 'prop_camp_crates');
-            }
-            if (camp.propSprites?.cookfire) {
-                this.setupWorld3dReplacement(camp.propSprites.cookfire, 'prop_camp_cookfire');
-            }
-            for (const sb of camp.sandbagSprites ?? []) {
-                this.setupWorld3dReplacement(sb, 'prop_camp_sandbags');
-            }
+            // Prop sprites (cookfire, crates, sandbags, laundry...) declare their
+            // model in userData.model3d; syncSiteProps3d draws and swaps them.
 
             return camp;
         });
@@ -37486,6 +37539,8 @@ export class ThreeGame {
                 this._threatAudioTimer = 0.5;
             }
         }
+
+        this.syncSiteProps3d();
 
         this._scatter3dScanTimer = (this._scatter3dScanTimer ?? 0) + delta;
         const shouldScan3dReplacements = this._scatter3dScanTimer >= 0.12;

@@ -142,6 +142,12 @@ export const WORLD_3D_MODELS = Object.freeze({
     prop_body_empty_exosuit: { url: '/3d/runtime/new3ds/prop_body_empty_exosuit.glb', height: 0.75, yaw: 0 },
     prop_body_human_frozen: { url: '/3d/runtime/new3ds/prop_body_human_frozen.glb', height: 0.55, yaw: 0 },
     cybersnail_dead: { url: '/3d/runtime/new3ds/cybersnail_dead.glb', height: 0.50, yaw: 0 },
+    // 2D -> 3D gap batch 2026-10-05 (docs/planning/3d-gap-generation-prompts-2026-10-05.md).
+    // Corpses draw through ThreeGame.attachCorpse3d; bosses lie at twice the size.
+    cryosnail_dead: { url: '/3d/runtime/new3ds/cryosnail_dead.glb', height: 0.50, yaw: 0 },
+    sporesnail_dead: { url: '/3d/runtime/new3ds/sporesnail_dead.glb', height: 0.50, yaw: 0 },
+    boss_cybersnail_dead: { url: '/3d/runtime/new3ds/boss_cybersnail_dead.glb', height: 0.80, yaw: 0 },
+    boss_cryosnail_dead: { url: '/3d/runtime/new3ds/boss_cryosnail_dead.glb', height: 1.00, yaw: 0 },
     npc_alien_rhun: { url: '/3d/runtime/new3ds/npc_alien_rhun.glb', height: 1.95, yaw: 0 },
     npc_alien_vey: { url: '/3d/runtime/new3ds/npc_alien_vey.glb', height: 1.70, yaw: 0 },
     npc_civilian_miner: { url: '/3d/runtime/new3ds/npc_civilian_miner.glb', height: 1.80, yaw: 0 },
@@ -165,6 +171,23 @@ export const WORLD_3D_MODELS = Object.freeze({
     prop_camp_cot: { url: '/3d/runtime/new3ds/prop_camp_cot.glb', height: 0.65, yaw: 0 },
     prop_camp_crate: { url: '/3d/runtime/new3ds/prop_camp_crate.glb', height: 0.75, yaw: 0 },
     prop_hive_resin_sac: { url: '/3d/runtime/new3ds/prop_hive_resin_sac.glb', height: 1.10, yaw: 0 },
+    // 2D -> 3D gap batch 2026-10-05. Heights give each model the footprint its
+    // billboard had (low, wide pieces like lichen and egg clutches are short).
+    prop_cave_eggs_hatched: { url: '/3d/runtime/new3ds/prop_cave_eggs_hatched.glb', height: 0.36, yaw: 0 },
+    prop_cave_eggs_intact: { url: '/3d/runtime/new3ds/prop_cave_eggs_intact.glb', height: 0.41, yaw: 0 },
+    scatter_hive_eggs: { url: '/3d/runtime/new3ds/scatter_hive_eggs.glb', height: 0.21, yaw: 0 },
+    prop_cave_webs: { url: '/3d/runtime/new3ds/prop_cave_webs.glb', height: 0.77, yaw: 0 },
+    prop_cave_hive_wounded: { url: '/3d/runtime/new3ds/prop_cave_hive_wounded.glb', height: 1.00, yaw: 0 },
+    prop_cave_spores: { url: '/3d/runtime/new3ds/prop_cave_spores.glb', height: 0.85, yaw: 0 },
+    prop_spore_colony: { url: '/3d/runtime/new3ds/prop_spore_colony.glb', height: 0.28, yaw: 0 },
+    prop_cave_lichen: { url: '/3d/runtime/new3ds/prop_cave_lichen.glb', height: 0.12, yaw: 0 },
+    prop_hive_carapace_molt: { url: '/3d/runtime/new3ds/prop_hive_carapace_molt.glb', height: 0.85, yaw: 0 },
+    prop_camp_meridian_radio: { url: '/3d/runtime/new3ds/prop_camp_meridian_radio.glb', height: 1.20, yaw: 0 },
+    prop_camp_laundry: { url: '/3d/runtime/new3ds/prop_camp_laundry.glb', height: 1.50, yaw: 0 },
+    prop_camp_shutter_lockdown: { url: '/3d/runtime/new3ds/prop_camp_shutter_lockdown.glb', height: 1.40, yaw: 0 },
+    prop_camp_warning_placard: { url: '/3d/runtime/new3ds/prop_camp_warning_placard.glb', height: 1.05, yaw: 0 },
+    prop_camp_bedrolls: { url: '/3d/runtime/new3ds/prop_camp_bedrolls.glb', height: 0.35, yaw: 0 },
+    prop_camp_cookfire_lit: { url: '/3d/runtime/new3ds/prop_camp_cookfire_lit.glb', height: 0.85, yaw: 0 },
     scatter_bolts: { url: '/3d/runtime/new3ds/scatter_bolts.glb', height: 0.25, yaw: 0 },
     scatter_cable_coil: { url: '/3d/runtime/new3ds/scatter_cable_coil.glb', height: 0.30, yaw: 0 },
     state_barricade_improvised_1: { url: '/3d/runtime/new3ds/state_barricade_improvised_1.glb', height: 0.85, yaw: 0 },
@@ -468,7 +491,7 @@ const SCATTER_BODY_VARIANTS = Object.freeze({
  * 2D scatter types whose subject already ships as a GLB under another name.
  * The swap funnel (ThreeGame.deferWorld3dReplacement) resolves these so the
  * prop renders in 3D instead of as its legacy billboard. Only exact matches:
- * a lit cookfire is NOT aliased to the flameless prop_camp_cookfire.
+ * a lit cookfire has its own model (prop_camp_cookfire_lit), not the doused one.
  */
 export const WORLD_3D_MODEL_ALIASES = Object.freeze({
     body_human_frozen_suit: 'prop_body_human_frozen',

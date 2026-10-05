@@ -4,6 +4,8 @@ import { WORLD_3D_MODELS } from './world3dOverlay.js';
 import { ROOM_THEME_CATALOG } from './roomThemes.js';
 import { PROP_VARIANT_GROUPS } from './propVariants.js';
 import { PROP_INTERACTION_SPECS } from './propInteractions.js';
+import { CAMP_PROP_MODELS, CAMP_DRESSING_MODELS } from './camp.js';
+import { HIVE_PROP_MODELS, HIVE_SIGNATURE_PROPS } from './hiveSite.js';
 
 const SPECIAL_SET_PIECE_PROPS = Object.freeze([
     // Purpose-built placements: random room dressing would weaken their read.
@@ -46,6 +48,10 @@ function themedPropTypes() {
     for (const variants of Object.values(PROP_VARIANT_GROUPS)) {
         for (const type of variants) types.add(type);
     }
+    // Camps and hives place these themselves (camp.js / hiveSite.js builders).
+    for (const type of [...Object.values(CAMP_PROP_MODELS), ...Object.values(HIVE_PROP_MODELS)]) types.add(type);
+    for (const specs of Object.values(CAMP_DRESSING_MODELS)) for (const spec of specs) types.add(spec.type);
+    for (const specs of Object.values(HIVE_SIGNATURE_PROPS)) for (const spec of specs) if (spec.model) types.add(spec.model);
     return types;
 }
 

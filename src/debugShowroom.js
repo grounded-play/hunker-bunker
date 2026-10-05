@@ -196,7 +196,34 @@ export const SHOWROOM_CATEGORIES = Object.freeze({
         'prop_camp_sandbags',
         'prop_camp_cot',
         'prop_camp_crate',
+        'prop_camp_cookfire_lit',
+        'prop_camp_bedrolls',
+        'prop_camp_laundry',
+        'prop_camp_warning_placard',
+        'prop_camp_shutter_lockdown',
+        'prop_camp_meridian_radio',
         'prop_hive_resin_sac'
+    ],
+    // 2D -> 3D gap batch 2026-10-05: the cave floor around hives, and the
+    // hive signature molt.
+    HIVE_CAVE_PROPS: [
+        'prop_cave_eggs_intact',
+        'prop_cave_eggs_hatched',
+        'scatter_hive_eggs',
+        'prop_cave_webs',
+        'prop_cave_hive_wounded',
+        'prop_cave_spores',
+        'prop_spore_colony',
+        'prop_cave_lichen',
+        'prop_hive_carapace_molt'
+    ],
+    // Dead enemies as they lie on the floor (ThreeGame.attachCorpse3d).
+    CORPSES: [
+        'cybersnail_dead',
+        'cryosnail_dead',
+        'sporesnail_dead',
+        'boss_cybersnail_dead',
+        'boss_cryosnail_dead'
     ],
     // Easter-egg assets. Only reachable in a live run by finding them, which
     // makes them the hardest things in the game to visually verify -- and the
