@@ -542,7 +542,10 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
 - [x] G3 maintenance-hall presentation: key-art asset integration, wall-mount heights,
   engineering role grammar pairing, and showroom breach visualization implemented.
   [Evidence](../reports/room-grammar-maintenance-hall-2026-10-05.md).
-- [ ] Finish remaining service-recovery gates and area profiles;
+- [x] G3 critical-service recovery: accessible non-blocking wreck lifecycle, preserved interaction
+  handlers, dynamic interactionSpec dispatch, and persistence serialization implemented.
+  [Evidence](../reports/critical-service-recovery-2026-10-05.md).
+- [ ] Finish G4 area profiles and camp/start variants;
   room grammar stays opt-in pending gameplay and hardware acceptance.
 
 - [x] G3 persistence: dressing break IDs survive maze snapshots and unloaded remote

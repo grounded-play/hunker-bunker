@@ -534,7 +534,7 @@ export function findNearestInteractableProp(game, maxDist = 2.5) {
     for (const sprite of game.scatterSprites) {
         if (!sprite || sprite.userData?.burstTriggered) continue;
         const propKey = sprite.userData?.type || sprite.userData?.modelKey || sprite.userData?.propKey;
-        const spec = PROP_INTERACTION_SPECS[propKey];
+        const spec = sprite.userData?.interactionSpec || PROP_INTERACTION_SPECS[propKey];
         if (!spec || !spec.canInteract) continue;
 
         const d = Math.hypot(sprite.position.x - px, sprite.position.z - pz);

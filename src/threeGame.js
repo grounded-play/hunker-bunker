@@ -37,6 +37,7 @@ import {
 } from './propInteractions.js';
 import { resolvePropVariant } from './propVariants.js';
 import { UmbilicalAttacker } from './3d/umbilicalAttacker.js';
+import { handleCriticalServiceDestruction } from './criticalServiceRecovery.js';
 
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -34294,6 +34295,7 @@ export class ThreeGame {
         if (propKey) {
             handleCustomPropDestruction(this, propKey, sprite.position, sprite);
         }
+        handleCriticalServiceDestruction(this, sprite);
 
         // Dense dressing adds breakable scenery, not dozens of new ammo rolls.
         this.spawnDestructiblePropDrops(sprite, plannedDrops ?? (sprite.userData.isRoomDressingCollider ? [] : null));

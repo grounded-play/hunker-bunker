@@ -29,8 +29,11 @@ plan for milestone scope, dependencies, verification gates, and definition of do
   assets, wall-mount heights, engineering role integration, breached showroom view
   with support-dressing disposal, and verified co-op damage state tracking.
   [Implementation and evidence](../reports/room-grammar-maintenance-hall-2026-10-05.md).
-- [ ] **Next commit:** critical-service recovery behavior for functional setpieces
-  and broader area profiles (medical/cryo and machine naves).
+- [x] **G3 critical-service recovery slice (2026-10-05):** accessible, non-blocking
+  wreck spawning on prop destruction, preserved interaction prompts/handlers, dynamic
+  interactionSpec resolution, and persistence serialization.
+  [Implementation and evidence](../reports/critical-service-recovery-2026-10-05.md).
+- [ ] **Next commit:** broader G4 area profiles (cryo-medical triage ward and biomech naves).
 
 - [x] **G3 persistence slice (2026-10-05):** added sanitized map-local dressing
   break records to maze snapshots, legacy-safe restore, and new-map reset. Remote
