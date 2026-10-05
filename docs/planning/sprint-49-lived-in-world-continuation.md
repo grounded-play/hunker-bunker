@@ -15,6 +15,14 @@ plan for milestone scope, dependencies, verification gates, and definition of do
 
 ### Room grammar scope handoff — 2026-10-04
 
+- [x] **G2 adapter slice (2026-10-05):** `roomGrammarChunk.js` centers the local
+  pilot in a 49-cell chunk, routes external doglegs to exact three-cell doors,
+  preserves declared edge seams and emits metadata from the final grid.
+  Adapter tests cover 360 seed/entrance cases, extreme portal offsets, both tiers,
+  connectivity, metadata and serialization. No live selection in this commit.
+- [ ] **Next commit:** persist interior version on new maps and select the adapter
+  for eligible optional rooms; keep old saves, authored sites and co-op unchanged.
+
 - [x] Baseline slice committed as `73a96f20`.
 - [x] G1 pure planner added in `src/roomGrammar.js` with data profiles and tests.
   Three industrial motifs, standard/major envelopes, bounded asymmetric module
