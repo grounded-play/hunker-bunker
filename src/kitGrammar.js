@@ -278,8 +278,15 @@ export function wallShellPlacements(grid, room, biome) {
     const interior = new Set((room.interior ?? []).map(({ x, y }) => `${x},${y}`));
     const doorCells = (room.doors ?? []).flatMap((door) => door.cells ?? []);
     const nearDoor = (cell) => doorCells.some((door) => Math.max(Math.abs(door.x - cell.x), Math.abs(door.y - cell.y)) <= 1);
+    const excludedCells = new Set([
+        ...(room.objectiveCells ?? []),
+        ...(room.protectedCells ?? []),
+        ...(room.structuralCells ?? []),
+        ...(room.navigation?.reserved ?? [])
+    ].map(({ x, y }) => `${x},${y}`));
     const lineOf = { n: bounds.top - 1, s: bounds.bottom + 1, w: bounds.left - 1, e: bounds.right + 1 };
     const placements = [];
+    const roomKey = room.id ?? `${bounds.left},${bounds.top}-${bounds.right},${bounds.bottom}`;
 
     for (const [side, spec] of Object.entries(SHELL_SIDES)) {
         const horizontal = side === 'n' || side === 's';
@@ -287,18 +294,28 @@ export function wallShellPlacements(grid, room, biome) {
         const eligible = (t) => {
             const cell = horizontal ? { x: t, y: lineOf[side] } : { x: lineOf[side], y: t };
             const inside = `${cell.x - spec.step[0]},${cell.y - spec.step[1]}`;
-            return grid[cell.y]?.[cell.x] === '#' && interior.has(inside) && !nearDoor(cell) ? cell : null;
+            return grid[cell.y]?.[cell.x] === '#' && interior.has(inside)
+                && !nearDoor(cell) && !excludedCells.has(`${cell.x},${cell.y}`) ? cell : null;
         };
         let run = [];
         const flush = () => {
             const pieces = Math.floor(run.length / WALL_SHELL_SPAN);
             const start = Math.floor((run.length - pieces * WALL_SHELL_SPAN) / 2);
+            const first = run[0];
+            const last = run[run.length - 1];
+            const runId = pieces > 0 ? `${roomKey}:${side}:${first.x},${first.y}-${last.x},${last.y}` : null;
             for (let i = 0; i < pieces; i += 1) {
                 const cells = run.slice(start + i * WALL_SHELL_SPAN, start + (i + 1) * WALL_SHELL_SPAN);
                 const middle = cells[1];
                 placements.push({
+                    id: `${runId}:piece-${i}`,
+                    runId,
                     type: `kit_${skin}_template_wall`,
                     side,
+                    inwardNormal: {
+                        x: spec.step[0] === 0 ? 0 : -spec.step[0],
+                        y: spec.step[1] === 0 ? 0 : -spec.step[1]
+                    },
                     x: middle.x + spec.face[0],
                     y: middle.y + spec.face[1],
                     rotationSteps: spec.rotationSteps,
@@ -318,3 +335,31 @@ export function wallShellPlacements(grid, room, biome) {
     return placements;
 }
 
+/**
+ * Pure handoff contract for a future renderer integration. The suppression mask
+ * affects presentation only; callers must retain the original tile grid for
+ * collision, destruction, doors, and navigation.
+ */
+export function analyzeWallShellRuns(grid, room, biome) {
+    const placements = wallShellPlacements(grid, room, biome);
+    const byRun = new Map();
+    for (const placement of placements) {
+        let run = byRun.get(placement.runId);
+        if (!run) {
+            run = {
+                id: placement.runId,
+                side: placement.side,
+                type: placement.type,
+                inwardNormal: placement.inwardNormal,
+                rotationSteps: placement.rotationSteps,
+                pieceIds: [],
+                cells: []
+            };
+            byRun.set(placement.runId, run);
+        }
+        run.pieceIds.push(placement.id);
+        run.cells.push(...placement.cells);
+    }
+    const suppressionMask = new Set(placements.flatMap(({ cells }) => cells.map(({ x, y }) => `${x},${y}`)));
+    return { runs: [...byRun.values()], placements, suppressionMask };
+}

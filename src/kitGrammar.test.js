@@ -5,7 +5,8 @@ import { KIT_SCALE } from './kitMaterials.js';
 import { PROCEDURAL_DOOR_SLAB_THICKNESS } from './proceduralDoors.js';
 import {
     KIT_SKINS, SHARED_ROLES, SKIN_ONLY_ROLES, GATE_MODEL_HALF_DEPTH, GATEWAY_ROOM_INSET,
-    skinForBiome, kitPieceFor, chooseKitPiece, corridorKitPlacement, roomGatewayKitPlacement, wallShellPlacements
+    skinForBiome, kitPieceFor, chooseKitPiece, corridorKitPlacement, roomGatewayKitPlacement,
+    analyzeWallShellRuns, wallShellPlacements
 } from './kitGrammar.js';
 import { ROOM_BUILD_CATALOG, stampRoomBuild } from './roomBuilds.js';
 
@@ -318,5 +319,43 @@ describe('wall shell substitution grammar (M5 spike)', () => {
         }
         expect(shells.length).toBeGreaterThan(0);
     });
-});
 
+    it('returns stable run and piece IDs, inward normals, and an exact suppression mask', () => {
+        const build = ROOM_BUILD_CATALOG[0];
+        const { grid, room } = stamped(build);
+        room.id = 'stable-room';
+        const first = analyzeWallShellRuns(grid, room, 'active');
+        const second = analyzeWallShellRuns(grid, room, 'active');
+
+        expect(first).toEqual(second);
+        expect(first.runs.length).toBeGreaterThan(0);
+        expect(new Set(first.runs.map(({ id }) => id)).size).toBe(first.runs.length);
+        expect(new Set(first.placements.map(({ id }) => id)).size).toBe(first.placements.length);
+        expect(first.suppressionMask.size).toBe(first.placements.length * 3);
+        for (const placement of first.placements) {
+            expect(placement.id).toContain(placement.runId);
+            expect(placement.inwardNormal).toEqual({
+                n: { x: 0, y: 1 }, s: { x: 0, y: -1 },
+                e: { x: -1, y: 0 }, w: { x: 1, y: 0 }
+            }[placement.side]);
+            for (const { x, y } of placement.cells) expect(first.suppressionMask.has(`${x},${y}`)).toBe(true);
+        }
+    });
+
+    it('splits runs around protected and objective wall cells', () => {
+        const grid = Array.from({ length: 7 }, (_, y) => Array.from({ length: 11 }, (_, x) => (
+            x === 0 || y === 0 || x === 10 || y === 6 ? '#' : '.'
+        )));
+        const interior = [];
+        for (let y = 1; y <= 5; y += 1) for (let x = 1; x <= 9; x += 1) interior.push({ x, y });
+        const room = {
+            id: 'excluded-room', interior,
+            bounds: { left: 1, right: 9, top: 1, bottom: 5 }, doors: [],
+            objectiveCells: [{ x: 4, y: 0 }], protectedCells: [{ x: 8, y: 0 }]
+        };
+        const analysis = analyzeWallShellRuns(grid, room, 'cave');
+        expect(analysis.suppressionMask.has('4,0')).toBe(false);
+        expect(analysis.suppressionMask.has('8,0')).toBe(false);
+        expect(analysis.placements.filter(({ side }) => side === 'n')).toHaveLength(2);
+    });
+});

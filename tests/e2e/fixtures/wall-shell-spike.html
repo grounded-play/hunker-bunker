@@ -22,7 +22,7 @@
   <script type="module">
     import * as THREE from 'three';
     import { ROOM_BUILD_CATALOG, stampRoomBuild } from '/src/roomBuilds.js';
-    import { wallShellPlacements } from '/src/kitGrammar.js';
+    import { analyzeWallShellRuns } from '/src/kitGrammar.js';
     import { createWorld3dModel } from '/src/world3dOverlay.js';
 
     const params = new URLSearchParams(location.search);
@@ -35,8 +35,9 @@
       openings: Object.fromEntries(build.sockets.map((socket) => [LONG[socket.side], { open: true, offset: 8 }]))
     });
     const room = { interior: stamp.interior, bounds: stamp.bounds, doors: stamp.doors };
-    const shells = wallShellPlacements(stamp.grid, room, biome);
-    const shellCells = new Set(shells.flatMap(({ cells }) => cells.map(({ x, y }) => `${x},${y}`)));
+    const analysis = analyzeWallShellRuns(stamp.grid, room, biome);
+    const shells = analysis.placements;
+    const shellCells = analysis.suppressionMask;
     const kitType = shells[0]?.type;
     const kitModel = kitType ? await createWorld3dModel(kitType) : null;
 
