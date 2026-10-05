@@ -238,7 +238,9 @@
    up to 4K displays without ever requiring a scrollbar or overlapping. */
 
 #armory-screen .armory-header {
-  padding-right: calc(var(--corner-settings-size, calc(var(--vu) * 4.4)) + calc(var(--vu) * 1.6));
+  /* Clear the whole corner slot (CHAT + gear), not just the gear: the class
+     tabs and [Q / E CYCLE] hint used to run under the CHAT button. */
+  padding-right: calc(var(--corner-settings-size, calc(var(--vu) * 4.4)) + var(--corner-chat-width, 72px) + 8px + calc(var(--vu) * 1.6));
 }
 
 #armory-screen .armory-corner-settings {

@@ -167,12 +167,13 @@ test.describe('complete menu keyboard and Steam Deck reachability', () => {
         await bootToTitleSplash(page);
         await expect(page.locator('#title-newrun-btn')).toBeFocused();
 
+        // Title order: NEW RUN, MULTIPLAYER, ACHIEVEMENTS, SETTINGS, ABOUT, QUIT.
         await page.keyboard.press('KeyS');
-        await expect(page.locator('#title-achievements-btn')).toBeFocused();
+        await expect(page.locator('#title-multiplayer-btn')).toBeFocused();
         await page.keyboard.press('ArrowDown');
-        await expect(page.locator('#title-settings-btn')).toBeFocused();
-        await page.keyboard.press('KeyW');
         await expect(page.locator('#title-achievements-btn')).toBeFocused();
+        await page.keyboard.press('KeyW');
+        await expect(page.locator('#title-multiplayer-btn')).toBeFocused();
         await page.keyboard.press('ArrowUp');
         await expect(page.locator('#title-newrun-btn')).toBeFocused();
 

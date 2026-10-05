@@ -1656,6 +1656,14 @@ document.addEventListener('keydown', (event) => {
     } else if (event.code === 'Enter' || event.code === 'Space') {
         event.preventDefault();
         activateControllerFocusedElement();
+    } else if ((event.code === 'KeyQ' || event.code === 'KeyE') && !activeTextInput
+        && !event.ctrlKey && !event.metaKey && !event.altKey
+        && root.id !== 'armory-screen') {
+        // Keyboard twin of LB/RB: previous/next tab on any tabbed surface
+        // (Settings, Archive, Vault, Foundry, Dossier, Terminal); on the
+        // operator menu it cycles the class cards, as the Armory does with its
+        // own Q/E handler. Gameplay never gets here unless a modal owns focus.
+        if (handleControllerTabNavigation(root, event.code === 'KeyQ' ? -1 : 1)) event.preventDefault();
     } else if (activeTextInput) {
         // A text field reached through menu navigation is only selected, not
         // editing. Confirm/A explicitly enters editing or opens Deck input.
@@ -2097,12 +2105,12 @@ function handleControllerTabNavigation(root, direction) {
     if (!root) return false;
     const selector = root.id === 'menu'
         ? '.char-selection .char-card'
-        : '.tab-btn, .vault-tab-btn, .terminal-tab-btn, [role="tab"], .category-btn, .sub-tab-btn, .rgb-path-btn, .class-tab';
+        : '.tab-btn, .vault-tab-btn, .terminal-tab-btn, .season-pass-tab-btn, [role="tab"], .category-btn, .sub-tab-btn, .rgb-path-btn, .class-tab';
     const tabs = Array.from(root.querySelectorAll(selector))
         .filter((el) => isElementVisible(el) && !el.disabled);
     if (tabs.length < 2) return false;
 
-    let activeIndex = tabs.findIndex((el) => el.classList.contains('active') || el.classList.contains('selected') || el.getAttribute('aria-selected') === 'true' || el === document.activeElement);
+    let activeIndex = tabs.findIndex((el) => el.classList.contains('active') || el.classList.contains('is-active') || el.classList.contains('selected') || el.getAttribute('aria-selected') === 'true' || el === document.activeElement);
     if (activeIndex < 0) activeIndex = 0;
 
     const nextIndex = (activeIndex + direction + tabs.length) % tabs.length;
@@ -6174,6 +6182,15 @@ function buildArchiveModal() {
         { label: 'RECENT CONTAINMENT OPERATIONS', keys: recentKeys }
     ];
 
+    // Field-drop logs carry internal keys (drop_horizon_badge). Show them as
+    // LOG-D01.. like the authored logs, and by their item title once found.
+    let dropIndex = 0;
+    const archiveLogLabel = (key, isFound) => {
+        if (!String(key).startsWith('drop_')) return t('ui.lore.log_key', { key });
+        dropIndex += 1;
+        if (isFound) return window.game?.getLoreTitle?.(key) ?? t('ui.lore.log_key', { key: `D${String(dropIndex).padStart(2, '0')}` });
+        return t('ui.lore.log_key', { key: `D${String(dropIndex).padStart(2, '0')}` });
+    };
     for (const section of sections) {
         const sectionEl = document.createElement('section');
         sectionEl.className = 'archive-section';
@@ -6192,7 +6209,7 @@ function buildArchiveModal() {
             entry.className = `archive-log-entry ${isFound ? '' : 'archive-log-entry--undiscovered'}`;
             if (isFound) {
                 entry.type = 'button';
-                entry.setAttribute('aria-label', t('ui.lore.open_log', { key }));
+                entry.setAttribute('aria-label', t('ui.lore.open_log', { key: String(key).startsWith('drop_') ? (window.game?.getLoreTitle?.(key) ?? key) : key }));
                 entry.addEventListener('click', () => openArchiveLogDetail(key));
             }
 
@@ -6219,7 +6236,7 @@ function buildArchiveModal() {
 
             const keyEl = document.createElement('div');
             keyEl.className = 'archive-log-key';
-            keyEl.textContent = t('ui.lore.log_key', { key });
+            keyEl.textContent = archiveLogLabel(key, isFound);
 
             const textEl = document.createElement('div');
             textEl.className = `archive-log-text ${isFound ? '' : 'archive-log-text--locked'}`;
@@ -12655,18 +12672,18 @@ document.addEventListener('keydown', (event) => {
 
     if (event.code === 'KeyT') {
         const activeTag = document.activeElement?.tagName?.toLowerCase();
-        if (activeTag !== 'input' && activeTag !== 'textarea') {
-            const tradeModal = document.getElementById('player-trade-modal');
-            if (tradeModal && !tradeModal.classList.contains('hidden')) {
+        const tradeModal = document.getElementById('player-trade-modal');
+        const tradeOpen = Boolean(tradeModal && !tradeModal.classList.contains('hidden'));
+        const remotes = window.game?.remotePlayers;
+        // T is also the tactical ping (threeGame.js). Barter only exists with a
+        // real squadmate: solo play used to open a trade window with a made-up
+        // "SQUAD-OPERATIVE" on every ping.
+        if (activeTag !== 'input' && activeTag !== 'textarea' && (tradeOpen || remotes?.size > 0)) {
+            if (tradeOpen) {
                 playerTradeManager.closeTrade();
             } else {
                 setupPlayerTradeEvents();
-                const remotes = window.game?.remotePlayers;
-                let nearest = null;
-                if (remotes && remotes.size > 0) {
-                    nearest = Array.from(remotes.values())[0];
-                }
-                playerTradeManager.openTrade(nearest || { id: 'squad-peer', callsign: 'SQUAD-OPERATIVE', opClass: 'SCOUT' });
+                playerTradeManager.openTrade(Array.from(remotes.values())[0]);
             }
             event.preventDefault();
             return;
@@ -15613,6 +15630,25 @@ function initTacticalCursor() {
         if (e.pointerType === 'touch') hideCursorForTouch();
     });
 
+    // Keyboard has the same stationary-pointer problem as the controller guard
+    // below: a mouse resting over a tab when a popup closes re-fires
+    // pointerover and took focus from the dropdown the picker had just
+    // restored it to. Hover only claims focus once the pointer has really
+    // moved since the last key press.
+    let lastPointerMoveTime = 0;
+    let lastKeyNavigationTime = 0;
+    let lastPointerX = null;
+    let lastPointerY = null;
+    document.addEventListener('keydown', () => {
+        lastKeyNavigationTime = performance.now();
+    }, { capture: true });
+    const notePointerMovement = (e) => {
+        if (e.clientX === lastPointerX && e.clientY === lastPointerY) return;
+        lastPointerX = e.clientX;
+        lastPointerY = e.clientY;
+        lastPointerMoveTime = performance.now();
+    };
+
     function handleHoverTargetSync(rawTarget, { playBlip = false } = {}) {
         if (document.documentElement.classList.contains('presentation-cursor-hidden')) {
             currentHoverTarget = null;
@@ -15643,11 +15679,14 @@ function initTacticalCursor() {
     }
 
     document.addEventListener('pointerover', (e) => {
+        if (lastKeyNavigationTime > lastPointerMoveTime) return;
         handleHoverTargetSync(e.target, { playBlip: true });
     });
 
     document.addEventListener('pointermove', (e) => {
         if (e.pointerType && e.pointerType !== 'mouse' && e.pointerType !== 'pen') return;
+        notePointerMovement(e);
+        if (lastKeyNavigationTime > lastPointerMoveTime) return;
         handleHoverTargetSync(e.target, { playBlip: false });
     });
 

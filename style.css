@@ -47,6 +47,8 @@
   --hb-safe-hud: calc(32 * var(--stage-px, 1px));
   --hb-safe-text: calc(48 * var(--stage-px, 1px));
   --hb-text-floor: calc(18 * var(--stage-px, 1px));
+  /* Width of the CHAT button in every corner settings slot. */
+  --corner-chat-width: 72px;
 }
 
 * {
@@ -24758,14 +24760,19 @@ html.phase-gameplay #tactical-telemeter-box {
   margin: 0 !important;
 }
 
-/* Chat button in corner settings slots: auto width with readable typography */
+/* Chat button in corner settings slots: one fixed width beside the gear on
+   every screen (menu, Armory, deployment console, HUD), so it sits in the same
+   place and headers can reserve room for it (--corner-chat-width). Every
+   locale's label fits ("CHAT", "ЧАТ", "チャット", "聊天"). */
 #game-viewport .hud-corner-settings [data-player-chat-open],
 #game-viewport .menu-corner-settings [data-player-chat-open],
 #game-viewport .armory-corner-settings [data-player-chat-open],
+#game-viewport .net-corner-settings [data-player-chat-open],
 #armory-screen .armory-corner-settings [data-player-chat-open],
+#multiplayer-modal .net-corner-settings [data-player-chat-open],
 #ui .hud-corner-settings [data-player-chat-open] {
-  width: auto !important;
-  min-width: 60px !important;
+  width: var(--corner-chat-width) !important;
+  min-width: var(--corner-chat-width) !important;
   height: var(--corner-settings-hit) !important;
   padding: 0 10px !important;
   font-family: inherit !important;
@@ -24777,7 +24784,8 @@ html.phase-gameplay #tactical-telemeter-box {
 #multiplayer-modal .net-header .close-modal {
   position: absolute !important;
   top: var(--corner-settings-top) !important;
-  right: calc(var(--corner-settings-right) + var(--corner-settings-hit) + var(--vu) * 1) !important;
+  /* Left of the corner slot: gear, gap, CHAT, then this close button. */
+  right: calc(var(--corner-settings-right) + var(--corner-settings-hit) + 8px + var(--corner-chat-width) + var(--vu) * 1) !important;
   width: var(--corner-settings-hit) !important;
   height: var(--corner-settings-hit) !important;
   min-width: var(--corner-settings-hit) !important;
@@ -24816,9 +24824,13 @@ html.phase-gameplay #tactical-telemeter-box {
     gap: 4px !important;
     margin-top: calc(var(--vu) * 0.4) !important;
   }
+  /* This block also matches the Deck (800 tall), so it must not shrink the
+     title below a usable size: it measured 22px buttons with 12px text.
+     30px / 14px still fits the column above the 32px safe frame. */
   .title-menu-btn {
-    min-height: calc(var(--vu) * 3.1) !important;
-    font-size: max(calc(var(--vu-text) * 1.25), 12px) !important;
+    height: auto !important;
+    min-height: max(calc(var(--vu) * 3.1), 30px) !important;
+    font-size: max(calc(var(--vu-text) * 1.25), 14px) !important;
     padding: calc(var(--vu) * 0.2) calc(var(--vu) * 0.6) !important;
   }
   #menu .map-box {

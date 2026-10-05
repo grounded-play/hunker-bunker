@@ -542,7 +542,7 @@ function renderSeasonPassBody() {
         <div class="dispatch-body">${dispatch.text}</div>
     </details>
     ${deliveryMessage ? `<div class="season-delivery-alert" role="status">◈ ${deliveryMessage}</div>` : ''}
-    <div class="season-pass-tabs">${[['tiers', t('ui.dossier.tab_tiers')], ['bounties', t('ui.dossier.tab_bounties')], ['workshop', t('ui.dossier.tab_workshop')]].map(([id, label]) => `<button class="season-pass-tab-btn ${activeTab === id ? 'active' : ''}" data-tab="${id}">${label}</button>`).join('')}</div>`;
+    <div class="season-pass-tabs">${[['tiers', t('ui.dossier.tab_tiers')], ['bounties', t('ui.dossier.tab_bounties')], ['workshop', t('ui.dossier.tab_workshop')]].map(([id, label]) => `<button class="season-pass-tab-btn ${activeTab === id ? 'active' : ''}" data-tab="${id}" role="tab" aria-selected="${activeTab === id}">${label}</button>`).join('')}</div>`;
 
     summary.querySelectorAll('[data-tab]').forEach(btn => btn.addEventListener('click', () => { activeTab = btn.dataset.tab; renderSeasonPassBody(); }));
 
