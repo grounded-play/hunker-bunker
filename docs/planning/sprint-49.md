@@ -533,6 +533,10 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
 
 ### S49-20 — world variety that preserves navigation and purpose
 
+- [x] G3 persistence: dressing break IDs survive maze snapshots and unloaded remote
+  delivery, clear on new maps and never resolve to an unrelated nearby prop.
+  [Scope and remaining gates](../reports/room-dressing-persistence-2026-10-05.md).
+
 - [x] G2 chunk adapter (`dbf9c378`) and persisted opt-in live single-player path
   implemented; legacy maps keep interior version 0. Full suite: 5,067 tests passed.
 - [ ] G3 destruction and key-art presentation; full-world/co-op/Deck acceptance

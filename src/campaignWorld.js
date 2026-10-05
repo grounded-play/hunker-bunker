@@ -57,6 +57,7 @@ export function carryStoryToNewMap(mazeState) {
     kept.worldChanges = {
         destroyedWalls: [],
         destroyedExteriorWalls: [],
+        brokenRoomDressing: [],
         discoveredChunks: [],
         discoveredRooms: [],
         discoveredCells: []

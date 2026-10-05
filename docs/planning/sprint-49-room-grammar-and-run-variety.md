@@ -278,6 +278,10 @@ Co-op peers must agree on version and plan digest before mounting geometry.
 - [ ] **G3 — destructible module runtime.** Add instanced-prop identity/removal,
   partition breach and attachment handling. Test collision, save/reload, late join,
   duplicate hits and critical-service recovery before enabling generated partitions.
+- [x] **G3 persistence subtask:** map-local dressing break snapshots, replacement
+  restore, new-map clearing and exact-ID remote replay handling implemented; see
+  [persistence notes](../reports/room-dressing-persistence-2026-10-05.md).
+  Renderer integration, ID versioning, partial HP and breach contracts remain open.
 - [ ] **G4 — area and corridor vocabulary.** Add cryo/medical and biomech profiles,
   hallway motifs and asymmetric junctions; measure normalized layout repetition.
   Expand assets only where the coverage audit identifies an actual missing module.

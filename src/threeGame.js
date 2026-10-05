@@ -262,6 +262,7 @@ import { createPropDebrisPrewarmQueue } from './propDebrisPrewarm.js';
 import { isAreaRoomDensityEnabled } from './featureFlags.js';
 import { roomPracticalLightPlacement } from './anchorPracticalLight.js';
 import { planRoomDressing } from './roomDressing.js';
+import { isRoomDressingId, serializeBrokenRoomDressing, restoreBrokenRoomDressing } from './roomDressingPersistence.js';
 import { buildRoomDressingGroup, loadKeyedDecalTexture } from './roomDressingRenderer.js';
 import { registerTinaHit, TINA_TOTAL_HITS } from './mayorTinaCombat.js';
 import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
@@ -23143,6 +23144,7 @@ export class ThreeGame {
         this.reachableGeneratedChunkKeys = new Set();
         this.mazeAccessState = createAccessState();
         this.destroyedWallKeys.clear();
+        this.brokenPropScatterKeys = new Set();
         this.destroyedExteriorWallKeys?.clear();
         this._wallInstanceIndex?.clear();
         this.pendingChunkMounts = [];
@@ -34250,6 +34252,20 @@ export class ThreeGame {
 
     // The prop a squadmate broke: same key, else the nearest prop at that spot.
     applyRemotePropBroken(detail = {}) {
+        // A keyed dressing event must never fall back to a nearby unrelated
+        // prop. Retain the break even if its chunk/model has not loaded yet.
+        if (isRoomDressingId(detail.scatterKey)) {
+            this.brokenPropScatterKeys ??= new Set();
+            if (this.brokenPropScatterKeys.has(detail.scatterKey)) return false;
+            const dressing = (this.scatterSprites ?? []).find(candidate =>
+                candidate.userData?.isRoomDressingCollider
+                && candidate.userData.scatterKey === detail.scatterKey
+                && !candidate.userData.burstTriggered);
+            this.brokenPropScatterKeys.add(detail.scatterKey);
+            if (!dressing) return true;
+            dressing.userData.propHp = 0;
+            return this.breakScatterProp(dressing, { plannedDrops: Array.isArray(detail.drops) ? detail.drops : [], fromRemote: true });
+        }
         const sprite = (this.scatterSprites ?? []).find((candidate) => (
             detail.scatterKey && candidate.userData?.scatterKey === detail.scatterKey && !candidate.userData?.burstTriggered
         )) ?? (this.scatterSprites ?? []).find((candidate) => (
@@ -40327,6 +40343,7 @@ export class ThreeGame {
             worldChanges: {
                 destroyedWalls: [...(this.destroyedWallKeys ?? [])],
                 destroyedExteriorWalls: [...(this.destroyedExteriorWallKeys ?? [])],
+                brokenRoomDressing: serializeBrokenRoomDressing(this.brokenPropScatterKeys),
                 discoveredChunks: [...(this.discoveredMapChunkKeys ?? [])],
                 discoveredRooms: [...(this.discoveredMapRoomKeys ?? [])],
                 discoveredCells: [...(this.discoveredMapCellKeys ?? [])]
@@ -40345,6 +40362,9 @@ export class ThreeGame {
         if (!raw || raw.generationVersion !== 2) return false;
         this.mazeAccessState = createAccessState(raw.access);
         this.proceduralDoorStates = restoreDoorStates(raw.doors);
+        // Replace, never merge: restoring a legacy/fresh map must not retain
+        // another map's destroyed objects in a reused game instance.
+        this.brokenPropScatterKeys = restoreBrokenRoomDressing(raw.worldChanges?.brokenRoomDressing);
         if (raw.worldChanges && typeof raw.worldChanges === 'object') {
             const strings = (values) => new Set(Array.isArray(values)
                 ? values.filter((value) => typeof value === 'string') : []);

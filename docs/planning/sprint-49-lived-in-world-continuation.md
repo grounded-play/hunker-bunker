@@ -15,6 +15,15 @@ plan for milestone scope, dependencies, verification gates, and definition of do
 
 ### Room grammar scope handoff — 2026-10-04
 
+- [x] **G3 persistence slice (2026-10-05):** added sanitized map-local dressing
+  break records to maze snapshots, legacy-safe restore, and new-map reset. Remote
+  dressing events use exact identity, survive unloaded chunks and ignore replay.
+  [Evidence and remaining gates](../reports/room-dressing-persistence-2026-10-05.md).
+  Shared renderer/hit-target edits are a separate contributor's in-progress work.
+- [ ] **Next G3 slice:** review/integrate renderer lifecycle and stable versioned
+  IDs; verify partial HP, late join and unloaded drops before claiming co-op parity.
+  Interior breaches and finished maintenance-hall visuals remain open.
+
 - [x] **G2 persistence/live slice (2026-10-05):** adapter commit `dbf9c378` is now
   selected by `ThreeGame.buildChunk` for opted-in optional rooms. Map seed and
   `interiorVersion` persist across retries/reloads; changing the version requires
