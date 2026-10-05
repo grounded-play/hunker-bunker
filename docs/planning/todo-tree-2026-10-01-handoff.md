@@ -47,8 +47,8 @@ Commit: `473794a1`.
   Documentation audit: **516 documents / 417 enforced Markdown files**, no current
   errors and 407 preserved archive warnings; inventory regenerated. `git diff --check`
   passed. These counts include concurrently developed, passing backend tests.
-- [ ] No live-account, installed-candidate, full-game or hardware acceptance is
-  claimed. This fixes a prerequisite; it does not close the large sprint tickets.
+No live-account, installed-candidate, full-game or hardware acceptance is claimed.
+This fixes a prerequisite; it does not close the large sprint tickets.
 
 API reference: [Steam GetInventory](https://partner.steamgames.com/doc/webapi/IInventoryService#GetInventory).
 
@@ -97,18 +97,13 @@ API reference: [Steam ExchangeItem](https://partner.steamgames.com/doc/webapi/II
 
 ## Next implementation order
 
-1. **S49-08/32, economy P5:** correct remaining inventory mutation contracts in
-   `server/steamTradeUp.js` and `server/steamInventory.js`. ConsumeItem currently
-   trusts HTTP 200; textual request IDs are not uint64; TriggerItemDrop still reads
-   `item_list`. Fixed/cache ExchangeItem is corrected above. Add failure fixtures
-   first. A lost response is
-   ambiguous, not proof that nothing was consumed/granted: never blindly refund
-   or reroll it. Persist an immutable exchange plan and outcome journal.
-2. **S49-08:** extract paid fulfillment into a shared service with the existing
-   durable request identity and canonical order lock, then let the report worker
-   recover known, identity-matched settled orders. Keep unknown orders and legacy
-   grant holds explicit; preserve item-level reversal/review evidence. Coordinate
-   store edits with the current pricing/region lane before touching that file.
+1. **S49-08/32, economy P5:** mutation response contracts and durable exchange
+   journals are implemented (Iteration 5). Next implement audited operator
+   dispositions for ambiguous, consumed, traded and reversed items. A lost response
+   is ambiguous: never blindly refund, reroll or clear a hold.
+2. **S49-08:** shared paid fulfillment and durable retry identity are implemented.
+   Finish unattended recovery for identity-matched settlements, with restart and
+   duplicate-report fixtures. Keep unknown orders and legacy grant holds explicit.
 3. **S49-32/03:** durable chat-report retention/access and operational fault drills.
 4. Continue the full source backlog by ticket ID: multiplayer/controller/reviewer
    evidence; gameplay, presentation, save and performance acceptance; then P2
@@ -134,7 +129,9 @@ sequence 552, retained gameplay average 58.51 ms. No guest-side acceptance infer
   emits its DOM event once, not twice.
 - [x] Full regression checkpoint: 548 suites / 4,848 tests passed; scoped/new
   regressions and lint passed before the final full run.
-- [x] Diagnose why connections churn using both clients and relay disconnect logs.
+- [x] Add connection-churn diagnostics and one-sided session analysis.
+- [ ] Diagnose connection churn using paired clients and relay disconnect logs;
+  instrumentation alone does not establish the cause.
 - [x] Add hit rejection diagnostics and authoritative health/resume tests.
 - [x] Decide duel versus survival-skirmish rules before altering ship/environment
   deaths; synchronize round completion and rematch instead of unilateral retry.
@@ -143,9 +140,8 @@ sequence 552, retained gameplay average 58.51 ms. No guest-side acceptance infer
 - [ ] Test host migration and simultaneous manual door actions; this increment
   stops competing automatic decisions, not a full server-authoritative door protocol.
 
-Next safe observability increment: make the session analyzer report repeated joins,
-roster/avatar mismatch and presented frame pacing, and distinguish poison from PvP
-damage. Remaining economy order above is unchanged; no financial policy changes.
+The proposed session-analyzer increment was completed in Iteration 4 below.
+Next collect paired-client/relay evidence; the economy order above remains open.
 
 ## Iteration 4 — actionable one-sided session diagnostics
 
@@ -158,7 +154,8 @@ damage. Remaining economy order above is unchanged; no financial policy changes.
 - [x] Lobby connection diagnostics include old/new connection IDs and allowlisted
   disconnect reasons, never serialized transport errors or authentication payloads.
 - [x] Targeted analyzer/lobby/reconnect run: 3 suites / 58 tests passed.
-- [ ] Two-client fault drill and relay-side rejected-hit reasons still needed.
+- [x] Relay-side rejected-hit reason codes implemented in Iteration 6.
+- [ ] Run the paired two-client fault drill and retain both clients' and relay evidence.
 
 Iteration 3 commit: `cd43420d`. No PvP rules, prices, inventory mutations, deployments
 or Steam submissions changed. Keep the source tickets open pending full acceptance.
@@ -213,9 +210,9 @@ The game-development state guidance keeps campaign and PvP mitigation separate.
   lifecycle, i-frame and spawn guards, while relay `weaponHit` has no matching
   spawn-protection deadline. Move protection into the relay with deployment-ready
   timing and round IDs before bypassing local protection on accepted hits.
-- [ ] Environmental damage/healing and unilateral TRY AGAIN remain separate
-  synchronization gaps. Do not overwrite local HP with a higher server value:
-  the relay currently does not know those environmental losses.
+- [x] Shared rematch/TRY AGAIN synchronization implemented in Iteration 9.
+- [ ] Environmental damage/healing synchronization remains open. Do not overwrite
+  local HP with a higher server value before accounting for environmental losses.
 - [ ] Next commit should define the shared deployment-ready/protected/alive/dead
   contract and test loading delays, reconnects, environmental deaths and rematches.
 
@@ -237,9 +234,10 @@ PvP relay/client diagnostics, tests, and the linked TODO documentation.
   Rate-limited rejection counts are explicitly not exhaustive or packet-loss rates.
 - [x] Targeted relay/vitals/teardown run: 3 suites / 17 tests passed, including
   real Socket.IO invalid-impact/missing-target/range/dead-attacker and flood cases.
-- [ ] Next: authoritative local health/death/redeploy contract, shared round ID,
-  reason-tagged disconnect drill and paired Deck captures. Do not claim the
-  44 reports / four confirmations in the old log are fully explained by this fix.
+- [x] Shared round IDs and reason-tagged disconnect diagnostics implemented in later iterations.
+- [ ] Next: authoritative local health/death/redeploy contract, paired disconnect
+  drill and Deck captures. The old log's 44 reports / four confirmations are not
+  fully explained by one-sided diagnostics.
 
 Verification: lint, docs audit and generated presubmit passed; retail reports
 refreshed. Full run: 550 suites / 4,863 tests passed, with one additional concurrent

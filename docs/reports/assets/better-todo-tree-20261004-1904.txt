@@ -1,6 +1,6 @@
 TODO tree reconciliation — 2026-10-04 19:11 PDT
 Branch: dev/sprint-49
-Evidence head reviewed: 44484597
+Original evidence checkpoint: 44484597; source reconciliation includes ddb1bfaf and 5cab35a0.
 
 Legend
   [x] Verified complete in repository code/tests or completed local evidence.
@@ -11,8 +11,8 @@ Legend
       tooling and runbooks, but must not claim or perform the external action.
 
 Notes
-  - This report reconciles the old unchecked-tree snapshot; it does not silently
-    change the acceptance boxes in the source plans.
+  - All five referenced source plans have been reconciled in place. Completed
+    implementation and remaining acceptance are separate TODOs in those files.
   - Stale line numbers were replaced with stable section/ticket names.
   - A passing unit suite is not treated as a Steamworks, Deck, native-language,
     real-account, or independent-playtest acceptance result.
@@ -37,14 +37,14 @@ Notes
    │  ├─ [x] All 20 are registered in src/world3dOverlay.js with authored height/yaw.
    │  ├─ [x] Debug museum coverage is generated from WORLD_3D_MODELS and guarded by
    │  │      debugMuseumPlan/new3d asset coverage tests.
-   │  ├─ [ ] The eight specifically named cathedral blueprints in this plan are not
-   │  │      the current 12-entry ROOM_BUILD_CATALOG; do not mark them complete by proxy.
+   │  ├─ [x] Eight named cathedral blueprints authored in src/data/cathedralBlueprints.js.
+   │  ├─ [ ] Verify live generator selection; ALL_ROOM_BUILDS export is not sufficient.
    │  ├─ [~] World hookup is substantial: theme pools, bounded room dressing,
-   │  │      grounded floor traces/support pieces, destructibility, gateways,
-   │  │      practical lights, and furnished-room evidence are complete.
-   │  ├─ [ ] Dedicated wall-hugging and ceiling attachment contracts for cable trays,
-   │  │      pipe organs, oxygen racks, cage lamps, and crane hoists remain distinct
-   │  │      from the completed generic/grounded placement work.
+   │  │      grounded floor traces/support pieces, gateways and practical lights.
+   │  ├─ [ ] New ordinary instanced dressing props need damage targets, stable IDs,
+   │  │      removal, co-op and save/reload coverage before all props are destructible.
+   │  ├─ [x] Selected cable trays and cage lamps have wall-facing/elevated placement.
+   │  ├─ [ ] Pipe-organ/oxygen-rack wall contracts and ceiling/crane anchors remain.
    │  ├─ [~] Ground alignment for conduit bridges and sumps is implemented and tested.
    │  ├─ [~] The cathedral crypt panorama is installed by environment lighting;
    │  │      sector-specific visual acceptance remains unverified.
@@ -57,7 +57,7 @@ Notes
    │  ├─ [x] M1 gateways, M2 grounding, M3 reversible density experiment, M4 practical
    │  │      light budget, M6 reactive biomech synergies, and the M5 showroom grammar
    │  │      are implemented, tested, documented, and committed.
-   │  ├─ [x] Integrated checks: 564 files / 4,996 tests, generated presubmit, and
+   │  ├─ [x] Historical checks at 44484597: 564 files / 4,996 tests, generated presubmit, and
    │  │      5,000 seeds with zero validity/spacing/manifest/determinism failures.
    │  ├─ [H] M3/M4 paired Steam Deck performance captures remain open.
    │  └─ [H] M5 art-direction approval remains open; wall shells stay default-off and
@@ -158,8 +158,11 @@ Codex takeover outline
      host loss/rejoin, simultaneous manual doors, shared rewards, death, and rematch.
    - Fix only failures reproduced by those tests; preserve relay authority and event IDs.
 
-4. World follow-up — cathedral attachment contract
-   - Add pure wall/ceiling anchor planning for the five remaining attachment families.
+4. World follow-up — destructible dressing, live coverage, then attachments
+   - First add stable instance IDs, damage/removal, co-op and save/reload contracts
+     for ordinary instanced props; the current dressing renderer cannot take damage.
+   - Verify live selection of all eight cathedral blueprints and prop/prefab coverage.
+   - Extend existing wall-facing placement to missing wall and ceiling families.
    - Keep tile collision authoritative, structural pieces protected, ordinary props
      destructible, scale/yaw authored, and generation stable for a seed.
    - Verify with focused placement tests, furnished-room captures, full suite, and
@@ -177,7 +180,13 @@ Suggested commit order
   C. feat(economy): add audited operator resolution workflow
   D. refactor(store): extract purchase presentation lifecycle
   E. test(multiplayer): cover shared deployment/host-migration contracts
-  F. feat(world): add pure wall/ceiling attachment planning
+  F. feat(world): integrate destructible instanced dressing and live catalog coverage
+  G. feat(world): finish wall/ceiling attachment planning
+
+Between commits
+  Update the owning source ticket and continuation journal with implementation,
+  checks, commit reference, remaining gates and the next bounded change. Refresh
+  this index when status changes; historical test counts retain their checkpoint.
 
 Stop/ask boundaries
   - Any production flag, deployment, Steam purchase, refund, chargeback, inventory

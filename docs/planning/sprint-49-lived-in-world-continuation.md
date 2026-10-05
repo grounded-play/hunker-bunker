@@ -468,8 +468,9 @@ Agents cannot complete these, and they stay unchecked:
 
 ### Agent implementation close (2026-10-04)
 
-All safe, agent-completable Sprint 49 lived-in-world work is committed on
-`dev/sprint-49`. Final checks on the integrated tree:
+The original M1–M6 implementation lane was committed on `dev/sprint-49`.
+Checks below describe checkpoint `44484597`; subsequent additions reopen the
+follow-up work listed below and are not covered by these historical results:
 
 - `npm test -- --run`: 564 files, 4,996 tests passed.
 - `npm run audit:world-seeds:sweep`: 5,000 seeds, zero validity, spacing,
@@ -485,6 +486,27 @@ All safe, agent-completable Sprint 49 lived-in-world work is committed on
 The Thursday Deck log remains the comparison baseline: 16.51 ms average GPU,
 76.5 ms presented p95, and 152 ms destruction-window p95. No local test substitutes
 for the outstanding M3/M4 Deck measurements or the M5 Art decision listed above.
+
+### Follow-up implementation queue (2026-10-04)
+
+- [x] Eight cathedral blueprints authored and exported (`ddb1bfaf`,
+  `src/data/cathedralBlueprints.js`); dedicated validation tests and captures exist.
+- [x] Deterministic, budgeted instanced room dressing added (`5cab35a0`), including
+  selected wall-facing props and elevated lamps.
+- [ ] **Next commit — destructible dressing:** ordinary instanced props currently
+  have no damage handling in `src/roomDressingRenderer.js`. Define stable instance
+  IDs, damage/removal and authority contracts; cover repeated hits, co-op, save/load
+  and teardown. Keep decorative decals distinct from physical props.
+- [ ] **Following commit — live coverage:** wire/verify cathedral blueprint selection
+  and audit every prop/prefab through generation, placement and destruction. An
+  exported catalog or museum entry alone is not live gameplay coverage.
+- [ ] **Following commit — attachments:** complete pipe-organ/oxygen-rack wall
+  placement and ceiling/crane anchoring with doorway, route and clearance checks.
+- [ ] After each slice, record files, commit, checks and the next unfinished step
+  here and in S49-20 before handing off. Preserve save/network compatibility.
+- [ ] Repeat the Thursday destruction-window comparison after damage integration;
+  retain 76.5 ms presented p95 / 152 ms destruction-window p95 as the measured
+  baseline, and leave physical Deck/art gates open until new evidence exists.
 
 ### Milestones
 

@@ -112,18 +112,22 @@ A unit test and a presubmit check enforce:
 - any stat-bearing effect a player owns was earned in play (Foundry, rig modules,
   attunement, achievements).
 
-Today this rule fails for charms 4130–4139 (P1).
+The original P1 finding for charms 4130–4139 is resolved by the cosmetic/earned
+attunement split in S49-23 (`src/s49-23-earnedPowerFairness.test.js`). Keep this
+guard for future catalog additions; the historical finding above is not an open task.
 
 ## 7. Compliance checklist
 
 - [x] Odds shown before every random purchase (the Vault has an odds table; keep it
       current with every collection; served via /steam/store/catalog and rendered in #vault-store-odds-table).
 - [H] Direct-purchase alternative for every collection item (R1). Product/catalog decision remains open.
-- [x] Region handling for paid random items (Belgium at minimum); ratings updated with
-      "Includes Random Items" (implemented in server/steamStore.js, steamVaultUi.js, steamStoreCatalog.js, all 7 locales).
-- [~] Microtransactions: `GetReport` reconciliation running, durable cursors, restart
-      recovery, and idempotent paid-grant retry are implemented. P5 is not closed:
-      unattended recovery and explicit item-level reversal dispositions remain.
+- [x] Repository region handling and random-item disclosure implemented in
+      server/steamStore.js, steamVaultUi.js, steamStoreCatalog.js and all 7 locales.
+- [ ] **Publisher:** confirm submitted ratings and live store disclosures include random items.
+- [x] Microtransactions: `GetReport` reconciliation, durable cursors, restart
+      recovery and idempotent paid-grant retry implemented.
+- [ ] **P5:** finish unattended recovery and audited item-level reversal dispositions,
+      including consumed/traded items and ambiguous outcomes; preserve unresolved holds.
 - [H] Steam store page: declaration, live Item Store, reviewer route, production flags,
       and real purchases require publisher authority/evidence.
 - [H] No sales to accounts flagged as minors where platform rules require it (remains a
@@ -165,8 +169,8 @@ economy work.
 
 ## 10. Decisions for the owner
 
-1. **Charms (P1):** split into cosmetic (tradeable) plus earned perk, or make charms
-   non-marketable?
+1. **Charms (P1), resolved:** cosmetic tradeable charms plus earned attunement;
+   S49-23 guards the separation. No new owner choice is required for this split.
 2. **Cache contents (P2):** approve cosmetic-only caches with pity every 10 openings?
 3. **Prices:** confirm the `VLV` categories, and set the key, pack and pass prices.
 4. **Market fee:** the publisher fee percentage (the default of 10% is common).

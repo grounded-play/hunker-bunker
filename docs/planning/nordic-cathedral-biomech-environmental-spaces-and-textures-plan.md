@@ -393,21 +393,25 @@ All panoramas are authored at 2048 × 1024 (2:1 equirectangular) and convolved v
 - [x] Props 06–10 exist as authored GLBs in `public/3d/runtime/new3ds/` (Coolant Drums, Tracheal Pipes, Saint Reliquaries, Oxygen Racks, Terminal Lecterns).
 - [x] Props 11–15 exist as authored GLBs in `public/3d/runtime/new3ds/` (Umbilical Cables, Decon Showers, Spine Risers, Cage Lamps, Sump Troughs).
 - [x] Props 16–20 exist as authored GLBs in `public/3d/runtime/new3ds/` (Sphincter Vents, Tool Carts, Exosuit Gantries, Autopsy Slabs, Exhaust Fans).
-- [x] All 20 props are registered in `src/world3dOverlay.js` with authored height, collision boxes, and yaw offsets.
+- [x] All 20 props are registered in `src/world3dOverlay.js` with authored height and yaw offsets. Registration does not supply collision boxes.
 - [x] Debug museum coverage is generated from `WORLD_3D_MODELS` and guarded by debugMuseumPlan/new3d asset coverage tests.
 
 ### Phase 3: Prebuilt Room Assembly & World Generator Hookup
 
 - [x] The eight specifically named cathedral blueprints are authored in `src/data/cathedralBlueprints.js` (`CATHEDRAL_ROOM_BLUEPRINTS`) and exported through `ALL_ROOM_BUILDS`, verified with `src/cathedralBlueprints.test.js`.
-- [~] World hookup is substantial: theme pools, bounded room dressing, grounded floor traces/support pieces, destructibility, gateways, practical lights, and furnished-room evidence are complete.
-- [ ] Dedicated wall-hugging and ceiling attachment contracts for cable trays, pipe organs, oxygen racks, cage lamps, and crane hoists remain distinct from the completed generic/grounded placement work.
+- [x] Theme pools, bounded dressing, grounded floor traces/support pieces, gateways and practical lights implemented.
+- [ ] Integrate and verify selection of the eight cathedral blueprints in live generation; exporting `ALL_ROOM_BUILDS` alone does not establish reachability.
+- [x] `roomDressing.js` and `roomDressingKits.js` provide wall-facing placement for selected cable trays and elevated cage lamps.
+- [ ] Finish wall attachment coverage for pipe organs/oxygen racks and actual ceiling/crane-hoist anchoring, with clearance tests.
+- [ ] Make ordinary instanced props destructible: `roomDressingRenderer.js` currently provides no damage targets. Add stable instance identity, hit resolution, removal, save/reload and co-op parity before claiming all props destructible.
 - [~] Ground alignment for conduit bridges and sumps is implemented and tested.
 - [~] The cathedral crypt panorama is installed by environment lighting (`cinematic_cathedral_crypt_panorama.jpg`); sector-specific visual acceptance remains unverified.
 - [x] Room connectivity/anchor tests, full Vitest, museum audits, retail asset checks, and 12 furnished-room showroom captures are present.
 
 ### Phase 4: Verification, Visual Polish & Museum Acceptance
 
-- [x] Full Vitest suite (`npm test`) passes cleanly across map generation, room containment, and kit materials.
-- [x] Launch debug museum and showroom captures to visually inspect all 20 props, new textures, and environment reflection maps.
+- [x] Historical integrated checkpoint at `44484597`: 564 Vitest files / 4,996 tests passed. This is not a certification of subsequent commits.
+- [x] Automated museum coverage and furnished-room showroom captures exist.
+- [ ] **Art:** inspect all 20 props, new textures and reflection maps in the museum and gameplay; record visual sign-off.
 - [H] Real gameplay frame pacing, GPU memory/VRAM, and Deck acceptance remain.
 - [~] Local handoff and retail reports are current; final art acceptance remains.

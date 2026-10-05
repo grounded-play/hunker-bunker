@@ -131,6 +131,9 @@ Legend: `[x]` Verified complete in repository code/tests or local evidence · `[
 
 ### S49-02 — real lobby and in-game text chat
 
+- [x] Authenticated relay, channel UI and reconnect history implemented.
+- [ ] **Remaining:** Record deployed two-account acceptance, including reconnect and channel isolation.
+
 Implementation checkpoint (v2.4.14-beta): authenticated room relay and filtering
 landed in `e8cc0a16`; client/UI, virtual keyboard fallback, mute/block/report, and
 browser E2E tests landed in `82501e4f`; backend container packaging deployed in
@@ -160,6 +163,9 @@ cause is still unknown: relay `DISCONNECT` reasons (`d3cb667c`) are not deployed
 
 ### S49-03 — multilingual filtering with explicit failure handling
 
+- [x] Seven-language filter baseline and failure handling implemented.
+- [ ] **Remaining:** Complete native-language evasion and false-positive review.
+
 Implementation checkpoint (v2.4.14-beta): the shared [filter](../../src/chatFilter.js)
 runs on relay delivery and recipient display (`e8cc0a16`). Seven dictionaries
 (`src/data/chatFilterTerms.js`) have automated fixtures; unsupported scripts fail
@@ -186,6 +192,9 @@ also influence filtering. Treat native filtering as one layer, not proof that th
 survey's promise is met. [Steam text-filter API](https://partner.steamgames.com/doc/api/ISteamUtils#InitFilterText).
 
 ### S49-04 — usable chat, mute/report and controller text entry
+
+- [x] Chat UI, mute/report and controller entry implemented.
+- [ ] **Remaining:** Verify Deck placement and deployed chat; establish durable report retention and staffed moderation.
 
 Implementation checkpoint (v2.4.14-beta): [client UI](../../src/playerChatUi.js) and
 [browser checks](../../tests/e2e/player-chat.spec.js) landed in `82501e4f`, covering
@@ -279,6 +288,9 @@ below is met once the rendered lines ship in the candidate build.
 
 ### S49-07 — consistent products, quantities and Steam Wallet prices
 
+- [x] Authoritative catalog/quantity/price adapter implemented.
+- [ ] **Remaining:** Publisher: verify live currency pricing and both checkout routes.
+
 Implementation checkpoint (v2.4.14-beta): authoritative catalog adapter, quantity/price
 formatting, and Vault reconciliation landed in `58b115d7` (`src/steamStoreCatalog.js`).
 Public USD MicroTxn catalog quotes are separated from the hosted Item Store checkout.
@@ -298,6 +310,9 @@ Acceptance remaining: live Steam Item Store & MicroTxn verification with real cu
   purchase; hosted Item Store and MicroTxn paths are each exercised.
 
 ### S49-08 — settlement reconciliation that recovers and accounts for every order
+
+- [x] Report reconciliation, durable cursor, restart recovery and shared idempotent paid fulfillment implemented.
+- [ ] **Remaining:** Finish unattended recovery and audited item-level reversal/review dispositions; retain ambiguous holds.
 
 Implementation checkpoint (v2.4.14-beta): Slices 1–4 are committed (`07f86986`,
 `6d871747`, `063db076`, `c7f0cf8c`). Classification safety flags pending grants and
@@ -517,6 +532,19 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
   using real state fields; all four named gaps have an explicit disposition.
 
 ### S49-20 — world variety that preserves navigation and purpose
+
+- [x] M1–M6 implementation checkpoints: gateways, grounding, reversible density
+  experiment, practical lights, wall-shell showroom spike and biomech synergies.
+- [x] Eight cathedral blueprints authored (`ddb1bfaf`); deterministic instanced
+  dressing and selected wall-facing mounts added (`5cab35a0`).
+- [ ] **Next implementation:** make ordinary instanced dressing props destructible
+  with stable IDs, co-op authority and save/reload coverage. Current renderer has
+  no damage targets; earlier prop destruction does not cover these new instances.
+- [ ] Verify live cathedral selection and all prop/prefab coverage; complete wall
+  and ceiling attachment contracts. Follow the commit sequence in
+  [the continuation journal](sprint-49-lived-in-world-continuation.md#follow-up-implementation-queue-2026-10-04).
+- [ ] Record three route playthroughs and paired Deck density/destruction results;
+  Thursday's 76.5 ms presented p95 / 152 ms destruction p95 remains the baseline.
 
 - [ ] **Owner: world design + gameplay · Size: L.** Use the existing seed portfolio
   to tune room scale, corridor rhythm, camp/hive identity, reward placement and
@@ -785,6 +813,9 @@ and comprehensive turnaround generation prompts for 2D-to-3D pipeline documented
 
 ### S49-38 — reduce integration debt at the seams being changed
 
+- [x] Chat, commentary and Fabrication Bay extraction recorded in the implementation checkpoints below.
+- [ ] **Remaining:** Extract remaining purchase presentation with behavior-preserving integration checks.
+
 - [ ] **Owner: maintainers · Size: L.** Extract chat, commentary, field crafting and
   purchase presentation into bounded modules with explicit lifecycle ownership;
   prevent new additions from further entangling the large entry/runtime/style files.
@@ -892,11 +923,12 @@ Resume notes and remaining work: [iteration handoff](todo-tree-2026-10-01-handof
   Evidence: [route regressions](../../server/steamInventory.test.js) and
   [reader tests](../../server/steamInventoryRead.test.js); 4 focused suites /
   80 tests passed, scoped ESLint passed. No live Steam mutation was performed.
-- [ ] **Next: exchange and reversal correctness.** Verify ConsumeItem, ExchangeItem
-  and TriggerItemDrop response contracts; make uncertain exchange outcomes
-  recoverable without duplicate refunds/rewards; then finish unattended paid-grant
-  recovery and item-level reversal dispositions. This subtask does not close
-  S49-08, S49-09, S49-23 or S49-32 or certify deployed/hardware acceptance.
+- [x] **Exchange contracts:** ConsumeItem, ExchangeItem and TriggerItemDrop response
+  handling, durable request identity and ambiguity journals implemented; see
+  Iteration 5 of the [handoff](todo-tree-2026-10-01-handoff.md).
+- [ ] **Next: reversal correctness:** finish audited operator dispositions and
+  unattended paid-grant recovery without duplicate refunds/rewards. Keep S49-08/09
+  and deployed acceptance open until their remaining evidence is recorded.
 
 ### Iteration 2 — S49-32 / S49-08 crafting boundary
 
