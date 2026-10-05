@@ -24,6 +24,28 @@ compares boxes with the stage and with scroll parents only. It cannot see paint
 order, a painted frame's alpha, pseudo-element lines, wrapped one-line labels
 or anything at sizes it did not run.
 
+## Status (2026-10-05, evening)
+
+Guarded by `tests/e2e/ui-layout-contract.spec.js` (paint-order occlusion,
+painted-frame alpha, card overlap, corner-slot bracket, dock tiles in their
+housings, text inside the housing frame and its panel, vitals rows, HUD safe
+frame, visor brackets, pause row gap). Passes at 1280×800, 1920×1080 and
+1280×720 (`HB_CONTRACT_SIZE=WxH`); `hud-readability.spec.js` passes again.
+
+| Item | State |
+| --- | --- |
+| C1 bezel bracket on ⚙ | Fixed: `#cabinet-bezel::after` removed |
+| M1, M2 class cards | Fixed: stack padded 3 vu clear of the frame chamfers, no scale on hover/focus/select, focus ring inset, 1 vu gap |
+| H1, H2 corner slot in play | Fixed: right rail starts below the corner slot; class ability back in the dock |
+| H3 dash / melee / radar tiles | Fixed: `--dock-bottom` defined; dash and melee taken out of flow and stacked in the arms housing; arms slots rebalanced inside the frame |
+| H4 vitals | Fixed: hearts, O₂ and hull in three 16 u rows inside the frame; 11 px floor restored |
+| H5 arms text | Fixed: clip and cache share a row; weapon name inside the frame |
+| H6 visor brackets | Fixed: bottom brackets hidden in the dock layout |
+| H7 safe frame | Fixed: `--hud-margin` ≥ 4 vu (32 stage px) |
+| P1 pause row | Fixed: 1.5 vu gap in `.setting-item` |
+| K3 | Not a defect (see table) |
+| Open | Second radio card clipped by the rail's max-height; hearts glyph 11 px (target 16); A1–A4, N1–N2, K1–K2, P2, T1, M3–M4, H8; Phases 1, 3, 6 |
+
 ## What is wrong today
 
 Captured 2026-10-05 with a temporary probe (`tests/e2e/probes/zz-ui-overlap-tmp.spec.js`)
@@ -69,7 +91,7 @@ Screenshots: [`docs/reports/ui-overhaul-2026-10-05/`](../reports/ui-overhaul-202
 | --- | --- | --- |
 | K1 | Header pills wrap ("08:43 · / DAY", "TANK BASE STATUS [ACTIVE / EXOSUIT]", "CYCLE HOLD — TERMINAL / ACTIVE"); class-skills counter is ~8 px. | Long labels in fixed-width pills. |
 | K2 | The bottom quarter of Base System is empty while the goal ladder is hidden (doc §5). | Layout sized for one card. |
-| K3 | Inside the terminal, the corner CHAT and ⚙ are covered by `.terminal-header` and `#terminal-class-badge`. | The modal header spans the full width above the corner slot. |
+| ~~K3~~ | ~~Inside the terminal, the corner CHAT and ⚙ are covered by the header.~~ Not a defect: the opaque terminal modal covers the whole slot by design (as Settings does) and has its own ✕. The probe's forced hit-test reported it. | — |
 
 ### Pause (Settings → Session)
 
@@ -146,7 +168,7 @@ Goal: a failing report that lists every item above before any fix lands.
    transmission, three objectives.
 7. Fold this into `tests/e2e/probes/ui-surface-audit.spec.js`; delete the temp probe.
 
-**Exit:** the report flags M1, M2, C1, A1, A2, A4, K1, K3, P1, T1, H1–H7. Commit the
+**Exit:** the report flags M1, M2, C1, A1, A2, A4, K1, P1, T1, H1–H7. Commit the
 failing baseline under `docs/reports/ui-surface-audit/`.
 
 ## Phase 1 — One true 1280×800 stage
@@ -223,7 +245,7 @@ with an audit run and a browser test.
 | Operator menu | Phase 3 fit; left command column as a 2×3 grid of 44 px buttons with status underneath; RETURN as a real 32 px+ button; chassis slots show the loadout's icons or are removed. | M1–M4 gone. |
 | Armory | Header in one row: title · class tabs · `[Q/E]` hint, ending before the corner slot. Right column scrolls inside its own panel. Slot grid with one-line labels and aligned rows. LIVE STAGE PREVIEW becomes a compact strip under the platform, or goes (open question 3). Weapon render stays below the header line. | A1–A4 gone; right column fits at 1280×800 with ~0 px to spare (existing assert). |
 | Tactical Net | ✕ inside the panel header, right of the status pill; sections fill the height; ledger text ≥ 14 px; DEPLOY in the advance slot. | N1–N2 gone. |
-| Terminal | Two-row header (title + close; then time · survived · status pills, one line each) that ends before the corner slot. Goal ladder in the free space (doc §7 P3). Counter text ≥ 12 px. | K1–K3 gone. |
+| Terminal | Two-row header (title + close; then time · survived · status pills, one line each). Goal ladder in the free space (doc §7 P3). Counter text ≥ 12 px. | K1–K2 gone. |
 | Pause | A real pause screen: RESUME (focused first), Settings, Room Chat, Abort, Quit. Settings opens from it. Rows get a min gap. | P1–P2 gone; Esc / ☰ lands on RESUME. |
 | Settings, Foundry, Archive, Codex, Dossier, Achievements | Fix whatever the Phase 0 matrix flags; hit-target token `--hb-hit-min` (32 px menu, 44 px primary/corner). | `smallTargets` empty on the main path. |
 

@@ -23771,12 +23771,15 @@ body.contrast-max .hud-panel {
   display: none !important;
 }
 
+/* The class stack sits in the frame's right window, whose corners are cut
+   at 45° about 30 stage px deep (menu_frame_overlay.webp): 3 vu top and
+   bottom keeps every card clear of them. */
 #menu .char-selection {
-  padding: calc(var(--vu) * 1.5) calc(var(--vu) * 0.95) calc(var(--vu) * 0.5);
+  padding: calc(var(--vu) * 3) calc(var(--vu) * 0.95);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: calc(var(--vu) * 0.35);
+  gap: calc(var(--vu) * 1);
 }
 
 #menu .char-selection .char-card {
@@ -23785,12 +23788,35 @@ body.contrast-max .hud-panel {
   margin: 0;
 }
 
-#menu .char-card[data-type="SCOUT"] {
-  clip-path: polygon(calc(var(--vu) * 2.8) 0%, 100% 0%, 100% 100%, 0% 100%, 0% calc(var(--vu) * 2.8));
+/* Stacked cards never grow into each other: no scale on hover, focus or
+   select, and the focus ring is drawn inside the card. */
+#menu .char-selection .char-card,
+#menu .char-selection .char-card:hover,
+#menu .char-selection .char-card:focus,
+#menu .char-selection .char-card:focus-visible,
+#menu .char-selection .char-card.selected {
+  transform: none !important;
 }
-
-#menu .char-card[data-type="SCOUT"] .char-header-row {
-  padding-left: calc(var(--vu) * 1.6);
+#menu .char-selection .char-card:focus,
+#menu .char-selection .char-card:focus-visible {
+  outline-offset: -3px !important;
+}
+#menu .char-selection .char-card.selected {
+  animation-name: hero-card-throb-flat;
+}
+@keyframes hero-card-throb-flat {
+  0%, 100% {
+    box-shadow:
+      0 0 10px rgba(var(--class-color-rgb, 255, 159, 28), 0.30),
+      inset 3px 0 0 var(--class-color, var(--accent-primary)),
+      inset 0 0 24px rgba(var(--class-color-rgb, 255, 159, 28), 0.10);
+  }
+  50% {
+    box-shadow:
+      0 0 14px rgba(var(--class-color-rgb, 255, 159, 28), 0.5),
+      inset 4px 0 0 var(--class-color, var(--accent-primary)),
+      inset 0 0 34px rgba(var(--class-color-rgb, 255, 159, 28), 0.24);
+  }
 }
 
 /* Foreground non-clickable biomechanical frame overlay.
@@ -24744,7 +24770,8 @@ html.phase-gameplay #tactical-telemeter-box {
   border: 1px solid rgba(0, 229, 255, 0.28) !important;
   border-radius: 6px !important;
   box-shadow: 0 0 16px rgba(0, 0, 0, 0.85), inset 0 0 10px rgba(0, 229, 255, 0.05) !important;
-  backdrop-filter: blur(8px) !important;
+  /* no backdrop-filter: it costs GPU over the WebGL canvas on Deck and
+     re-anchors fixed descendants (shared corner slot) */
   z-index: 17200 !important;
 }
 
