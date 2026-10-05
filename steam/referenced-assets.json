@@ -352,10 +352,13 @@
     "DoorIntro.mp4",
     "DoorIntro.webm",
     "Eng.Full_v2.png",
-    "Eng.walk_v4.png",
+    "Eng.Full_v2.webp",
+    "Eng.walk_v4.webp",
     "Scout.full_v2.png",
+    "Scout.full_v2.webp",
     "Tank.full_v2.png",
-    "Tank.walk_v4.png",
+    "Tank.full_v2.webp",
+    "Tank.walk_v4.webp",
     "ach_archivist.png",
     "ach_ending_alien_exodus.jpg",
     "ach_ending_empty_husk.jpg",
@@ -587,6 +590,7 @@
     "civilian_miner_walk.png",
     "civilian_researcher_walk.png",
     "console.png",
+    "console.webp",
     "crash_site_broken_floor_v1.png",
     "cryo_base_frost.png",
     "cryo_grunge_rime.png",
@@ -680,17 +684,18 @@
     "door.png",
     "door.webp",
     "door_alien_keyart_v2.webp",
-    "door_bio.png",
+    "door_bio.webp",
     "door_bio_keyart_v2.webp",
     "door_bio_keyart_var2.jpg",
     "door_bio_keyart_var3.jpg",
     "door_biomech_keyart_v2.webp",
     "door_biomechanical.png",
-    "door_cryo.png",
+    "door_biomechanical.webp",
+    "door_cryo.webp",
     "door_cryo_keyart_v2.webp",
     "door_cryo_keyart_var2.jpg",
     "door_cryo_keyart_var3.jpg",
-    "door_nuclear.png",
+    "door_nuclear.webp",
     "door_nuclear_keyart_v2.webp",
     "door_nuclear_keyart_var2.jpg",
     "door_nuclear_keyart_var3.jpg",
@@ -1235,6 +1240,7 @@
     "scout_ship_broken.png",
     "scout_ship_healed.png",
     "ship_wreckage.png",
+    "ship_wreckage.webp",
     "site_floor_material_atlas_v1.png",
     "sky/cinematic_cathedral_crypt_panorama.jpg",
     "sky/fx_comet_longtail.png",
@@ -1253,7 +1259,7 @@
     "tank_ship.png",
     "tank_ship_broken.png",
     "tank_ship_healed.png",
-    "title_key_art_v2.png",
+    "title_key_art_v2.webp",
     "ui/dock/engineer-arms.webp",
     "ui/dock/engineer-map.webp",
     "ui/dock/engineer-status.webp",
@@ -3321,8 +3327,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "Eng.Full_v2.webp",
+      "bytes": 338638,
+      "classification": "runtime-required"
+    },
+    {
       "path": "Eng.walk_v4.png",
       "bytes": 1516521,
+      "classification": "unknown"
+    },
+    {
+      "path": "Eng.walk_v4.webp",
+      "bytes": 1000832,
       "classification": "runtime-required"
     },
     {
@@ -3336,6 +3352,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "Scout.full_v2.webp",
+      "bytes": 326516,
+      "classification": "runtime-required"
+    },
+    {
       "path": "Tank.full.jpeg",
       "bytes": 753161,
       "classification": "unknown"
@@ -3346,8 +3367,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "Tank.full_v2.webp",
+      "bytes": 438502,
+      "classification": "runtime-required"
+    },
+    {
       "path": "Tank.walk_v4.png",
       "bytes": 2019325,
+      "classification": "unknown"
+    },
+    {
+      "path": "Tank.walk_v4.webp",
+      "bytes": 1332604,
       "classification": "runtime-required"
     },
     {
@@ -6021,6 +6052,116 @@
       "classification": "runtime-required"
     },
     {
+      "path": "audio/voice/lines/de/narrative.commentary.achievement.body.mp3",
+      "bytes": 142853,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.commentary.black_box_recovered.body.mp3",
+      "bytes": 170911,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.commentary.black_box_signal.body.mp3",
+      "bytes": 161445,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.commentary.commentary_on.body.mp3",
+      "bytes": 172487,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.commentary.leaderboard.body.mp3",
+      "bytes": 182250,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.commentary.queen_fight.body.mp3",
+      "bytes": 162295,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.commentary.queen_killed.body.mp3",
+      "bytes": 108898,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.commentary.room_agent_wreckage.body.mp3",
+      "bytes": 203152,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.commentary.room_armory.body.mp3",
+      "bytes": 161976,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.commentary.room_the_nest.body.mp3",
+      "bytes": 118725,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.commentary.run_start.body.mp3",
+      "bytes": 210350,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.commentary.steam_vault.body.mp3",
+      "bytes": 111554,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.devHistory.day_one.body.mp3",
+      "bytes": 149394,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.devHistory.engine.body.mp3",
+      "bytes": 224663,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.devHistory.languages.body.mp3",
+      "bytes": 111422,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.devHistory.lessons.body.mp3",
+      "bytes": 222427,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.devHistory.loop.body.mp3",
+      "bytes": 168708,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.devHistory.maze.body.mp3",
+      "bytes": 171522,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.devHistory.steam.body.mp3",
+      "bytes": 163915,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.devHistory.story.body.mp3",
+      "bytes": 120286,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.devHistory.together.body.mp3",
+      "bytes": 154951,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/de/narrative.devHistory.voices.body.mp3",
+      "bytes": 150126,
+      "classification": "runtime-required"
+    },
+    {
       "path": "audio/voice/lines/de/narrative.dialogue.corporate.blackBoxRecovery.0.mp3",
       "bytes": 50035,
       "classification": "runtime-required"
@@ -7451,13 +7592,113 @@
       "classification": "runtime-required"
     },
     {
+      "path": "audio/voice/lines/en/narrative.commentary.achievement.body.mp3",
+      "bytes": 80903,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.commentary.black_box_recovered.body.mp3",
+      "bytes": 137122,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.commentary.black_box_signal.body.mp3",
+      "bytes": 164341,
+      "classification": "runtime-required"
+    },
+    {
       "path": "audio/voice/lines/en/narrative.commentary.commentary_on.body.mp3",
       "bytes": 132341,
       "classification": "runtime-required"
     },
     {
+      "path": "audio/voice/lines/en/narrative.commentary.leaderboard.body.mp3",
+      "bytes": 169716,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.commentary.queen_fight.body.mp3",
+      "bytes": 152835,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.commentary.queen_killed.body.mp3",
+      "bytes": 68867,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.commentary.room_agent_wreckage.body.mp3",
+      "bytes": 122388,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.commentary.room_armory.body.mp3",
+      "bytes": 143539,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.commentary.room_the_nest.body.mp3",
+      "bytes": 100821,
+      "classification": "runtime-required"
+    },
+    {
       "path": "audio/voice/lines/en/narrative.commentary.run_start.body.mp3",
       "bytes": 169781,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.commentary.steam_vault.body.mp3",
+      "bytes": 118174,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.devHistory.day_one.body.mp3",
+      "bytes": 127829,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.devHistory.engine.body.mp3",
+      "bytes": 153471,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.devHistory.languages.body.mp3",
+      "bytes": 102363,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.devHistory.lessons.body.mp3",
+      "bytes": 164252,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.devHistory.loop.body.mp3",
+      "bytes": 125339,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.devHistory.maze.body.mp3",
+      "bytes": 176691,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.devHistory.steam.body.mp3",
+      "bytes": 133371,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.devHistory.story.body.mp3",
+      "bytes": 113687,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.devHistory.together.body.mp3",
+      "bytes": 102191,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/en/narrative.devHistory.voices.body.mp3",
+      "bytes": 152644,
       "classification": "runtime-required"
     },
     {
@@ -8888,6 +9129,116 @@
     {
       "path": "audio/voice/lines/es-419/narrative.classWreckageLogs.TANK.payload.mp3",
       "bytes": 136914,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.commentary.achievement.body.mp3",
+      "bytes": 165016,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.commentary.black_box_recovered.body.mp3",
+      "bytes": 166647,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.commentary.black_box_signal.body.mp3",
+      "bytes": 167696,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.commentary.commentary_on.body.mp3",
+      "bytes": 169228,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.commentary.leaderboard.body.mp3",
+      "bytes": 226927,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.commentary.queen_fight.body.mp3",
+      "bytes": 188446,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.commentary.queen_killed.body.mp3",
+      "bytes": 98266,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.commentary.room_agent_wreckage.body.mp3",
+      "bytes": 195590,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.commentary.room_armory.body.mp3",
+      "bytes": 178324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.commentary.room_the_nest.body.mp3",
+      "bytes": 143910,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.commentary.run_start.body.mp3",
+      "bytes": 236436,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.commentary.steam_vault.body.mp3",
+      "bytes": 120351,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.devHistory.day_one.body.mp3",
+      "bytes": 162127,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.devHistory.engine.body.mp3",
+      "bytes": 181248,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.devHistory.languages.body.mp3",
+      "bytes": 127856,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.devHistory.lessons.body.mp3",
+      "bytes": 226283,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.devHistory.loop.body.mp3",
+      "bytes": 219352,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.devHistory.maze.body.mp3",
+      "bytes": 186615,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.devHistory.steam.body.mp3",
+      "bytes": 208113,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.devHistory.story.body.mp3",
+      "bytes": 153934,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.devHistory.together.body.mp3",
+      "bytes": 149815,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/lines/es-419/narrative.devHistory.voices.body.mp3",
+      "bytes": 184151,
       "classification": "runtime-required"
     },
     {
@@ -11737,7 +12088,7 @@
     },
     {
       "path": "audio/voice/lines/manifest.json",
-      "bytes": 104982,
+      "bytes": 107915,
       "classification": "runtime-required"
     },
     {
@@ -16386,6 +16737,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "console.webp",
+      "bytes": 201506,
+      "classification": "runtime-required"
+    },
+    {
       "path": "crash_site_broken_floor_v1.png",
       "bytes": 2018708,
       "classification": "runtime-required"
@@ -16846,6 +17202,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "cybersnail.webp",
+      "bytes": 160818,
+      "classification": "unknown"
+    },
+    {
       "path": "cybersnail_dead.png",
       "bytes": 717088,
       "classification": "runtime-required"
@@ -17181,6 +17542,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "door_alien.webp",
+      "bytes": 292760,
+      "classification": "runtime-required"
+    },
+    {
       "path": "door_alien_keyart_v2.webp",
       "bytes": 188336,
       "classification": "runtime-required"
@@ -17188,6 +17554,11 @@
     {
       "path": "door_bio.png",
       "bytes": 964619,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door_bio.webp",
+      "bytes": 386534,
       "classification": "runtime-required"
     },
     {
@@ -17221,8 +17592,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "door_biomechanical.webp",
+      "bytes": 298110,
+      "classification": "runtime-required"
+    },
+    {
       "path": "door_cryo.png",
       "bytes": 1079569,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door_cryo.webp",
+      "bytes": 495928,
       "classification": "runtime-required"
     },
     {
@@ -17246,6 +17627,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "door_nuclear.webp",
+      "bytes": 235802,
+      "classification": "runtime-required"
+    },
+    {
       "path": "door_nuclear_keyart_v2.webp",
       "bytes": 162820,
       "classification": "runtime-required"
@@ -17263,6 +17649,11 @@
     {
       "path": "door_rust.png",
       "bytes": 1024412,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door_rust.webp",
+      "bytes": 435854,
       "classification": "runtime-required"
     },
     {
@@ -19069,6 +19460,11 @@
       "path": "engineer_ship.png",
       "bytes": 632429,
       "classification": "runtime-required"
+    },
+    {
+      "path": "engineer_ship.webp",
+      "bytes": 703198,
+      "classification": "unknown"
     },
     {
       "path": "engineer_ship_broken.png",
@@ -21306,6 +21702,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "scout_ship.webp",
+      "bytes": 637516,
+      "classification": "unknown"
+    },
+    {
       "path": "scout_ship_broken.png",
       "bytes": 554256,
       "classification": "runtime-required"
@@ -21328,6 +21729,11 @@
     {
       "path": "ship_wreckage.png",
       "bytes": 516510,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ship_wreckage.webp",
+      "bytes": 119568,
       "classification": "runtime-required"
     },
     {
@@ -21686,6 +22092,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "tank_ship.webp",
+      "bytes": 716652,
+      "classification": "unknown"
+    },
+    {
       "path": "tank_ship_broken.png",
       "bytes": 626294,
       "classification": "runtime-required"
@@ -21713,6 +22124,11 @@
     {
       "path": "title_key_art_v2.png",
       "bytes": 1710466,
+      "classification": "unknown"
+    },
+    {
+      "path": "title_key_art_v2.webp",
+      "bytes": 251600,
       "classification": "runtime-required"
     },
     {

@@ -78,7 +78,10 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // Russian narrative voice lines in public/audio/voice/ (~46 MiB payload).
 // Raised 2985->3020 MiB for the Japanese (ja) and Chinese (zh-CN) narrative voice
 // packs and 8-suite PBR room wall texture atlases (~35 MiB payload).
-const PUBLIC_BUDGET = 3020 * 1024 * 1024;
+// Raised 3020->3040 MiB for the developer's own voice on the 12 commentary
+// cards and 10 Development History chapters in seven languages (154 MP3s,
+// ~7 MiB) and the WebP sprite copies; the measured payload reached 3021 MiB.
+const PUBLIC_BUDGET = 3040 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus

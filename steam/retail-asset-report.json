@@ -1,21 +1,21 @@
 {
   "version": 1,
   "budgets": {
-    "publicBytes": 3166699520,
+    "publicBytes": 3187671040,
     "appAsarBytes": 996147200,
     "unknownAssets": 160,
     "codecMismatches": 140,
     "duplicateGroups": 15
   },
   "measured": {
-    "publicBytes": 3149707152,
-    "publicFileCount": 4112
+    "publicBytes": 3168094208,
+    "publicFileCount": 4194
   },
   "classifications": {
-    "runtime-required": 3763,
+    "runtime-required": 3838,
     "source-reference": 23,
     "generated-intermediate": 208,
-    "unknown": 118
+    "unknown": 125
   },
   "missingReferences": [],
   "invalidMedia": [],
