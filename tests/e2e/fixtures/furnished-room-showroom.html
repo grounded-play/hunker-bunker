@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Game asset URLs are page-relative (Electron file://); resolve them from the root. -->
+  <base href="/">
+  <title>Furnished room showroom</title>
+  <style>
+    html, body { margin: 0; background: #07090b; color: #dfe8e6; font: 14px monospace; }
+    .label { position: absolute; padding: 4px 8px; background: #000b; }
+  </style>
+</head>
+<body>
+  <!--
+    Furnished-room showroom (lived-in world review). One authored prefab room,
+    built the way ThreeGame.buildChunk builds it -- stamped from
+    ROOM_BUILD_CATALOG with its socket doors, themed (assignRoomThemes), content
+    bound (bindRoomContent) and populated (planRoomPopulation, including the M2
+    floor grounding) -- then dressed with the game's real assets:
+      - biome terrain textures on floor, wall sides and wall tops, with a faint
+        outline on wall edges so the architecture reads;
+      - M5 kit wall shells on eligible boundary runs (wallShellPlacements);
+      - M1 gateway frame at each door (roomGatewayKitPlacement), door open;
+      - every planned GLB prop through createWorld3dModel, wall-backed props
+        turned to their wall like syncWorld3dReplacement;
+      - floor decals and sprites keyed like loadKeyedSpriteTexture;
+      - the M4 practical light on the signature anchor.
+    Not the game renderer: no wall shader blending, fog, shadows or post FX.
+    Query: ?build=<id>&biome=active|cryo|bio|cave&seed=<n>
+  -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { ROOM_BUILD_CATALOG, stampRoomBuild, buildRoomInstanceFromBuild } from '/src/roomBuilds.js';
+    import { assignRoomThemes } from '/src/roomThemes.js';
+    import { bindRoomContent } from '/src/roomContent.js';
+    import { planRoomPopulation } from '/src/roomPopulation.js';
+    import { wallShellPlacements, roomGatewayKitPlacement } from '/src/kitGrammar.js';
+    import { createWorld3dModel, WORLD_3D_MODELS, WORLD_3D_FACING_YAW } from '/src/world3dOverlay.js';
+    import { roomPracticalLightPlacement } from '/src/anchorPracticalLight.js';
+    import { applyBlackChromaKey, applyGreenChromaKey } from '/src/textureKeying.js';
+
+    const params = new URLSearchParams(location.search);
+    const build = ROOM_BUILD_CATALOG.find((b) => b.id === params.get('build')) ?? ROOM_BUILD_CATALOG[0];
+    const biome = ['active', 'cryo', 'bio', 'cave'].includes(params.get('biome')) ? params.get('biome') : 'active';
+    let state = Number(params.get('seed')) || 11;
+    const random = () => (state = (state * 16807) % 2147483647) / 2147483647;
+
+    // ---- the room, exactly as buildChunk plans it ---------------------------
+    const LONG = { n: 'north', s: 'south', e: 'east', w: 'west' };
+    const stamp = stampRoomBuild(build, random, {
+      openings: Object.fromEntries(build.sockets.map((socket) => [LONG[socket.side], { open: true, offset: 8 }]))
+    });
+    const [themed] = assignRoomThemes([buildRoomInstanceFromBuild(build, stamp)], { biome, depthTier: 1, random });
+    const room = { ...themed, contentPlan: bindRoomContent(themed, build, { chunkSize: stamp.grid.length, activeQuests: [] }) };
+    const plan = planRoomPopulation(room, stamp.grid, random);
+    const shells = wallShellPlacements(stamp.grid, room, biome);
+    const shellCells = new Set(shells.flatMap(({ cells }) => cells.map(({ x, y }) => `${x},${y}`)));
+    const gateways = room.doors.map((door) => roomGatewayKitPlacement(door, biome)).filter(Boolean);
+    const practical = roomPracticalLightPlacement(plan.placements);
+
+    // ---- textures -----------------------------------------------------------
+    const TERRAIN = {
+      active: { floor: '/bunker_base_metal.png', wall: '/bunker_wall_metal.png', top: '/bunker_base_metal.png' },
+      cryo: { floor: '/cryo_base_frost.png', wall: '/cryo_wall_conduit.png', top: '/cryo_base_frost.png' },
+      bio: { floor: '/bio_base_growth.png', wall: '/bio_wall_veins.png', top: '/bio_base_growth.png' }
+    }[biome === 'cave' ? 'bio' : biome];
+    const textureLoader = new THREE.TextureLoader();
+    const tiled = (path, repeatX = 1, repeatY = 1) => {
+      const texture = textureLoader.load(path);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(repeatX, repeatY);
+      texture.anisotropy = 8;
+      return texture;
+    };
+    async function keyedTexture(path) {
+      const image = await new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = path;
+      });
+      if (!image) return null;
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(image, 0, 0);
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      // As loadKeyedSpriteTexture: art without its own alpha is keyed green, then black.
+      let hasAlpha = false;
+      for (let i = 3; i < data.data.length; i += 4) { if (data.data[i] < 255) { hasAlpha = true; break; } }
+      if (!hasAlpha) {
+        applyGreenChromaKey(data);
+        applyBlackChromaKey(data, { threshold: 14 });
+      }
+      ctx.putImageData(data, 0, 0);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      return { texture, aspect: canvas.width / Math.max(1, canvas.height) };
+    }
+
+    // ---- scene --------------------------------------------------------------
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x07090b);
+    scene.add(new THREE.HemisphereLight(0xb5c6d8, 0x2a2118, 1.7));
+    const key = new THREE.DirectionalLight(0xfff1dd, 2.3);
+    const { left, right, top, bottom } = stamp.bounds;
+    const cx = (left + right) / 2;
+    const cz = (top + bottom) / 2;
+    key.position.set(cx - 6, 14, cz + 9);
+    scene.add(key);
+
+    const spanX = right - left + 7;
+    const spanZ = bottom - top + 7;
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(spanX, spanZ),
+      new THREE.MeshStandardMaterial({ map: tiled(TERRAIN.floor, spanX / 3, spanZ / 3), roughness: 0.85, metalness: 0.2 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.set(cx, 0, cz);
+    scene.add(floor);
+
+    const WALL_HEIGHT = 2.8;
+    const wallSide = new THREE.MeshStandardMaterial({ map: tiled(TERRAIN.wall, 1, WALL_HEIGHT / 2), roughness: 0.76, metalness: 0.26 });
+    const wallTop = new THREE.MeshStandardMaterial({ map: tiled(TERRAIN.top, 0.5, 0.5), roughness: 0.8, metalness: 0.2 });
+    const wallMaterials = [wallSide, wallSide, wallTop, wallTop, wallSide, wallSide];
+    const wallGeo = new THREE.BoxGeometry(1, WALL_HEIGHT, 1);
+    const edgeGeo = new THREE.EdgesGeometry(wallGeo);
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x0b0d0f, transparent: true, opacity: 0.55 });
+    for (let y = top - 1; y <= bottom + 1; y += 1) {
+      for (let x = left - 1; x <= right + 1; x += 1) {
+        if (stamp.grid[y]?.[x] !== '#' || shellCells.has(`${x},${y}`)) continue;
+        const wall = new THREE.Mesh(wallGeo, wallMaterials);
+        wall.position.set(x, WALL_HEIGHT / 2, y);
+        scene.add(wall);
+        const edges = new THREE.LineSegments(edgeGeo, edgeMat);
+        edges.position.copy(wall.position);
+        scene.add(edges);
+      }
+    }
+
+    // Kit pieces: shells and gateway frames.
+    const kitCache = new Map();
+    const kit = async (type) => {
+      if (!kitCache.has(type)) kitCache.set(type, createWorld3dModel(type));
+      const model = await kitCache.get(type);
+      return model ? model.clone(true) : null;
+    };
+    for (const piece of [...shells, ...gateways]) {
+      const root = await kit(piece.type);
+      if (!root) continue;
+      root.position.set(piece.x, 0, piece.y);
+      root.rotation.y = piece.rotationSteps * (Math.PI / 2);
+      root.scale.multiplyScalar(piece.modelScale ?? 1);
+      scene.add(root);
+    }
+
+    // Planned room props.
+    const missing = [];
+    let props = 0;
+    let decals = 0;
+    for (const placement of plan.placements) {
+      if (placement.kind === 'pickup') continue;
+      const wn = placement.wallNormal;
+      if (WORLD_3D_MODELS[placement.type]) {
+        const root = await kit(placement.type);
+        if (!root) { missing.push(placement.type); continue; }
+        root.position.set(placement.x, 0, placement.y);
+        if (wn && (wn.x || wn.z)) {
+          root.rotation.y = Math.atan2(wn.x, wn.z);
+          root.position.x -= wn.x * 0.22;
+          root.position.z -= wn.z * 0.22;
+        } else {
+          root.rotation.y = WORLD_3D_FACING_YAW;
+        }
+        scene.add(root);
+        props += 1;
+        continue;
+      }
+      const sprite = await keyedTexture(`/${placement.type}.png`);
+      if (!sprite) { missing.push(placement.type); continue; }
+      const flat = placement.type.startsWith('decal_') || placement.type.startsWith('scatter_')
+        || placement.kind === 'grounding-decal';
+      if (flat) {
+        const quad = new THREE.Mesh(
+          new THREE.PlaneGeometry(1.1 * sprite.aspect, 1.1),
+          new THREE.MeshStandardMaterial({ map: sprite.texture, transparent: true, alphaTest: 0.05, depthWrite: false, roughness: 0.9 })
+        );
+        quad.rotation.x = -Math.PI / 2;
+        quad.position.set(placement.x, 0.035, placement.y);
+        scene.add(quad);
+        decals += 1;
+      } else {
+        const billboard = new THREE.Sprite(new THREE.SpriteMaterial({ map: sprite.texture, transparent: true, alphaTest: 0.05 }));
+        billboard.center.set(0.5, 0);
+        billboard.scale.set(1.4 * sprite.aspect, 1.4, 1);
+        billboard.position.set(placement.x, 0, placement.y);
+        scene.add(billboard);
+        props += 1;
+      }
+    }
+
+    // M4 practical on the signature anchor.
+    if (practical) {
+      const anchor = plan.placements.find(({ id }) => id === practical.placementId);
+      const { color, intensity, distance, decay } = practical.light;
+      const light = new THREE.PointLight(color, intensity * 1.6, distance * 1.3, decay);
+      light.position.set(anchor.x, 1.45, anchor.y);
+      scene.add(light);
+    }
+
+    // ---- render: overview (game-style iso) + interior three-quarter view -----
+    const width = 1600;
+    const height = 900;
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(width, height);
+    renderer.setScissorTest(true);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.35;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    document.body.append(renderer.domElement);
+
+    const overview = new THREE.PerspectiveCamera(38, (width * 0.58) / height, 0.1, 300);
+    overview.position.set(cx + 9, 21, cz + 17);
+    overview.lookAt(cx, 0, cz);
+    // Close-up on the room's focal object: the signature anchor, else the first
+    // authored interaction/structural piece. The camera stands on the room-centre
+    // side of it so it never starts inside a wall.
+    const focusKinds = ['signature', 'interaction', 'structural', 'large', 'reward'];
+    const signature = focusKinds.map((kind) => plan.placements.find((p) => p.kind === kind)).find(Boolean) ?? { x: cx, y: cz };
+    const toCentre = new THREE.Vector2(cx - signature.x, cz - signature.y);
+    if (toCentre.lengthSq() < 0.01) toCentre.set(1, 1);
+    toCentre.normalize();
+    const close = new THREE.PerspectiveCamera(50, (width * 0.42) / height, 0.1, 300);
+    close.position.set(signature.x + toCentre.x * 4.2, 3.6, signature.y + toCentre.y * 4.2);
+    close.lookAt(signature.x, 0.9, signature.y);
+
+    const renderAll = () => {
+      renderer.setViewport(0, 0, width * 0.58, height);
+      renderer.setScissor(0, 0, width * 0.58, height);
+      renderer.render(scene, overview);
+      renderer.setViewport(width * 0.58, 0, width * 0.42, height);
+      renderer.setScissor(width * 0.58, 0, width * 0.42, height);
+      renderer.render(scene, close);
+    };
+    renderAll();
+    await new Promise((resolve) => { THREE.DefaultLoadingManager.onLoad = resolve; setTimeout(resolve, 6000); });
+    renderAll();
+
+    const label = document.createElement('div');
+    label.className = 'label';
+    label.style.left = '8px';
+    label.style.top = '8px';
+    label.textContent = `${build.id} · ${biome} · theme ${room.theme} · ${props} props, ${decals} decals, `
+      + `${shells.length} wall shells, ${gateways.length} gateway${gateways.length === 1 ? '' : 's'}`
+      + `${practical ? ` · ${practical.light.palette} practical` : ''}`;
+    document.body.append(label);
+    const detail = document.createElement('div');
+    detail.className = 'label';
+    detail.style.left = `${width * 0.58 + 8}px`;
+    detail.style.top = '8px';
+    const onWalls = plan.placements.filter((p) => p.kind === 'structural' && stamp.grid[p.y]?.[p.x] === '#').length;
+    detail.textContent = `focus: ${signature.kind ?? '-'} ${String(signature.type ?? '-').replace('prop_', '')}`
+      + `${plan.degraded ? ' · NO SIGNATURE (cap full)' : ''}${onWalls ? ` · ${onWalls} structural on wall cells` : ''}`;
+    document.body.append(detail);
+    window.__showroom = { ready: true, theme: room.theme, props, decals, shells: shells.length, gateways: gateways.length, missing, degraded: plan.degraded, onWalls };
+  </script>
+</body>
+</html>
