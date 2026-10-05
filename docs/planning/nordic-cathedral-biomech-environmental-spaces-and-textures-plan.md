@@ -389,26 +389,25 @@ All panoramas are authored at 2048 × 1024 (2:1 equirectangular) and convolved v
 
 ### Phase 2: Missing Atmospheric Props Generation & Pipeline
 
-- [ ] Synthesize 3D models or turnaround generation assets for Props 01–05 (Cable Trays, Conduit Bridges, Pipe Organs, Cranes, Votive Mounds).
-- [ ] Synthesize 3D models or turnaround generation assets for Props 06–10 (Coolant Drums, Tracheal Pipes, Saint Reliquaries, Oxygen Racks, Terminal Lecterns).
-- [ ] Synthesize 3D models or turnaround generation assets for Props 11–15 (Umbilical Cables, Decon Showers, Spine Risers, Cage Lamps, Sump Troughs).
-- [ ] Synthesize 3D models or turnaround generation assets for Props 16–20 (Sphincter Vents, Tool Carts, Exosuit Gantries, Autopsy Slabs, Exhaust Fans).
-- [ ] Register all 20 props in `src/world3dOverlay.js` with normalized height, collision boxes, and yaw offsets.
-- [ ] Add exhibit entries in `src/debugMuseumPlan.js` to verify scale, materials, and orientations.
+- [x] Props 01–05 exist as authored GLBs in `public/3d/runtime/new3ds/` (Cable Trays, Conduit Bridges, Pipe Organs, Cranes, Votive Mounds).
+- [x] Props 06–10 exist as authored GLBs in `public/3d/runtime/new3ds/` (Coolant Drums, Tracheal Pipes, Saint Reliquaries, Oxygen Racks, Terminal Lecterns).
+- [x] Props 11–15 exist as authored GLBs in `public/3d/runtime/new3ds/` (Umbilical Cables, Decon Showers, Spine Risers, Cage Lamps, Sump Troughs).
+- [x] Props 16–20 exist as authored GLBs in `public/3d/runtime/new3ds/` (Sphincter Vents, Tool Carts, Exosuit Gantries, Autopsy Slabs, Exhaust Fans).
+- [x] All 20 props are registered in `src/world3dOverlay.js` with authored height, collision boxes, and yaw offsets.
+- [x] Debug museum coverage is generated from `WORLD_3D_MODELS` and guarded by debugMuseumPlan/new3d asset coverage tests.
 
 ### Phase 3: Prebuilt Room Assembly & World Generator Hookup
 
-- [ ] Author the 8 room blueprints into `src/data/roomBuilds.js` with complete multi-prop anchor arrays.
-- [ ] Update `src/threeGame.js` (`createChunkSetPiecePlacements`):
-  - [ ] Add wall-hugging placement for cable trays, pipe organs, and oxygen racks.
-  - [ ] Add ceiling attachment logic for overhead cage lamps and crane hoists.
-  - [ ] Add ground alignment for floor conduit bridges and sludge sumps.
-- [ ] Update `installEnvironmentLighting` in `src/threeGame.js` to load the interior crypt HDRI in dungeon sectors.
-- [ ] Add unit and integration tests verifying all 8 rooms stamp with valid connectivity and correct prop anchor resolution.
+- [ ] The eight specifically named cathedral blueprints in this plan are not the current 12-entry ROOM_BUILD_CATALOG; do not mark them complete by proxy.
+- [~] World hookup is substantial: theme pools, bounded room dressing, grounded floor traces/support pieces, destructibility, gateways, practical lights, and furnished-room evidence are complete.
+- [ ] Dedicated wall-hugging and ceiling attachment contracts for cable trays, pipe organs, oxygen racks, cage lamps, and crane hoists remain distinct from the completed generic/grounded placement work.
+- [~] Ground alignment for conduit bridges and sumps is implemented and tested.
+- [~] The cathedral crypt panorama is installed by environment lighting (`cinematic_cathedral_crypt_panorama.jpg`); sector-specific visual acceptance remains unverified.
+- [x] Room connectivity/anchor tests, full Vitest, museum audits, retail asset checks, and 12 furnished-room showroom captures are present.
 
 ### Phase 4: Verification, Visual Polish & Museum Acceptance
 
-- [ ] Run full vitest suite (`npm test`) to ensure zero regressions across map generation, room containment, and kit materials.
-- [ ] Launch debug museum to visually inspect all 20 props, new textures, and environment reflection maps.
-- [ ] Verify in-game gameplay frame pacing, memory budgets, and texture VRAM footprint.
-- [ ] Final handoff and retail asset report update.
+- [x] Full Vitest suite (`npm test`) passes cleanly across map generation, room containment, and kit materials.
+- [x] Launch debug museum and showroom captures to visually inspect all 20 props, new textures, and environment reflection maps.
+- [H] Real gameplay frame pacing, GPU memory/VRAM, and Deck acceptance remain.
+- [~] Local handoff and retail reports are current; final art acceptance remains.

@@ -118,15 +118,16 @@ Today this rule fails for charms 4130–4139 (P1).
 
 - [x] Odds shown before every random purchase (the Vault has an odds table; keep it
       current with every collection; served via /steam/store/catalog and rendered in #vault-store-odds-table).
-- [ ] Direct-purchase alternative for every collection item (R1).
+- [H] Direct-purchase alternative for every collection item (R1). Product/catalog decision remains open.
 - [x] Region handling for paid random items (Belgium at minimum); ratings updated with
       "Includes Random Items" (implemented in server/steamStore.js, steamVaultUi.js, steamStoreCatalog.js, all 7 locales).
-- [ ] Microtransactions: `GetReport` reconciliation running (done), refund/chargeback
-      revoke (P5), receipt log kept.
-- [ ] Steam store page: in-app purchases declared; Item Store live; reviewer purchase
-      route in the notes.
-- [ ] No sales to accounts flagged as minors where platform rules require it (Steam
-      handles account age; don't target children in store copy).
+- [~] Microtransactions: `GetReport` reconciliation running, durable cursors, restart
+      recovery, and idempotent paid-grant retry are implemented. P5 is not closed:
+      unattended recovery and explicit item-level reversal dispositions remain.
+- [H] Steam store page: declaration, live Item Store, reviewer route, production flags,
+      and real purchases require publisher authority/evidence.
+- [H] No sales to accounts flagged as minors where platform rules require it (remains a
+      publisher/platform policy gate; Steam handles account age; don't target children in store copy).
 - [x] Terms: virtual items have no cash value; Steam's subscriber agreement governs
       Wallet and Market (disclosed in /steam/store/catalog and rendered in Vault store).
 
@@ -185,12 +186,14 @@ The original proposal and owner decisions above are not production certification
   inventory or invented quantity. [Implementation](../../server/steamInventoryRead.js),
   [route tests](../../server/steamInventory.test.js).
   Four targeted suites / 80 tests and scoped ESLint passed.
-- [ ] **P5 remains open:** verified reads do not revoke items or resolve consumed,
-  traded or refunded entitlements. Implement and test the exchange/reversal journal
-  and explicit review dispositions before claiming refund recovery is complete.
-- [ ] **Publisher evidence remains separate:** prove live deployment, ratings/store
-  disclosures, account restrictions, approved pricing and review purchases through
-  the canonical Sprint 49 acceptance gates; repository checkbox changes alone are
+- [ ] **P5 remains open:** build the explicit audited P5 resolution workflow for ambiguous,
+  consumed, traded, refunded, and chargeback outcomes. Verified reads do not revoke items
+  or resolve consumed, traded or refunded entitlements. Implement and test the exchange/reversal
+  journal and explicit review dispositions before claiming refund recovery is complete.
+- [H] **Publisher evidence remains separate:** live deployment, ratings, disclosures, pricing,
+  and review evidence remain separate from repository implementation; prove live deployment,
+  ratings/store disclosures, account restrictions, approved pricing and review purchases
+  through the canonical Sprint 49 acceptance gates; repository checkbox changes alone are
   not evidence of Steamworks or regulatory completion.
 
 ### P5 supporting work — live crafting journal
@@ -199,6 +202,6 @@ The original proposal and owner decisions above are not production certification
   [live exchange service](../../server/steamRecipeExchange.js). Durable account/
   request holds prevent repeat crafting after an uncertain response, including
   fresh-nonce retries; confirmed retries return the saved result.
-- [ ] P5 is still open: build an explicit, audited resolution workflow for unknown
-  outcomes and consumed/traded entitlements. Do not clear holds or automatically
+- [ ] P5 is still open: build an explicit, audited resolution workflow for ambiguous,
+  consumed, traded, refunded, and chargeback outcomes. Do not clear holds or automatically
   refund on missing response evidence. [Continuation and verification](todo-tree-2026-10-01-handoff.md#iteration-2--exact-live-crafting-and-durable-ambiguity-holds).

@@ -70,6 +70,51 @@ Dependency spine: S49-02 → 03 → 04; S49-07 → 08 → 09; S49-04/05/06/09/10
 S49-13/14/15 unblock meaningful cooperative first-hour testing (17). S49-23 is a
 commerce readiness gate; proposed random-reward changes (24) need product approval.
 
+### Backlog reconciliation summary (2026-10-04 19:11 PDT, HEAD 44484597)
+
+Legend: `[x]` Verified complete in repository code/tests or local evidence · `[~]` Substantial implementation complete, source ticket stays open for remaining integration/hardware/playtest/ops · `[ ]` Open for repository implementation · `[H]` Human/publisher/hardware decision or evidence required.
+
+| Ticket | Scope / Outcome | Reconciled Status & Remaining Gap |
+| :--- | :--- | :--- |
+| S49-01 | One current backlog & documentation checks | `[x]` Complete |
+| S49-02 | Lobby & in-game text chat | `[~]` Code complete; deployed two-account acceptance open |
+| S49-03 | Multilingual filtering | `[~]` Seven-language baseline complete; native review/evasion/false-positive acceptance open |
+| S49-04 | Chat UI, mute/report & controller text entry | `[~]` Implemented; Deck placement, deployed match, and staffed moderation operations open |
+| S49-05 | Demonstrable online co-op and PvP | `[~]` Authority, reconnect, rejection diagnostics, round completion, and rematch improved; paired real-account candidate run open |
+| S49-06 | Developer commentary | `[~]` Localized text, voiced lines, history reader, controller stops, and routes exist; installed-candidate review open |
+| S49-07 | Catalog/quantity/price consistency | `[~]` Adapter complete; live Steam currency and both checkout routes require publisher evidence |
+| S49-08 | Settlement reconciliation | `[ ]` Finish unattended paid recovery and explicit item-level reversal/review dispositions |
+| S49-09 | Real purchase, cancel, delivery & reversal | `[H]` Real purchase/cancel/delivery/reversal evidence |
+| S49-10 | Full controller journey | `[~]` Broad browser route and focus fixes exist; native Steam Input plus physical Deck/Xbox/PlayStation passes remain |
+| S49-11 | Mature story content & reviewer access | `[~]` Content/code checks complete; installed reviewer route and authorized save evidence remain |
+| S49-12 | One reproducible Steam resubmission packet | `[H]` One-BuildID Steam resubmission packet |
+| S49-13 | Playable field workbench | `[x]` Complete |
+| S49-14 | Tactical pings & quick-command radial | `[x]` Complete in code; deployed paired-session acceptance tracked in S49-15/33 |
+| S49-15 | Co-op parity for events, companions & rewards | `[ ]` Co-op parity journeys, host loss/rejoin, and replay-safe rewards |
+| S49-16 | Companions roles & settlement | `[ ]` Companion behavior/pathing/settlement/save validation |
+| S49-17 | First hour & second run tuning | `[H]` First-hour/second-run tuning needs independent playtesters; probes/fixes prepared |
+| S49-18 | Combat threats, boss phases & builds | `[ ]` Encounter/boss/ammo/class tuning and seeded combat reports |
+| S49-19 | Inert drop effects disposition | `[x]` Inert drop effects explicitly removed from active reward pools |
+| S49-20 | World variety, seeds & navigation | `[~]` Sprint 49 room-life and 5,000-seed reachability landed; three human playthroughs and save/destruction checks remain |
+| S49-21 | Narrative consequences & debriefs | `[ ]` Narrative consequence/debrief state verification |
+| S49-22 | Unified Foundry & inventory journey | `[ ]` Unified Foundry/inventory controller journey |
+| S49-23 | Enforce earned power & trusted ownership | `[x]` Earned-power/paid-cosmetic separation and ownership tests |
+| S49-24 | Reward economy design | `[H]` Reward-economy design and regional/platform approval |
+| S49-25 | Readable HUD & calm information priorities | `[~]` HUD automation exists; physical Deck/desktop captures and final accessibility review remain |
+| S49-26 | Camera & lighting | `[~]` Isometric default and Sprint 49 room presentation landed; matched Deck/desktop acceptance remains |
+| S49-27 | Audio clarity, voice & subtitles | `[~]` Soundtrack/SFX wiring complete; stress mix, ducking, and subtitle parity capture remain |
+| S49-28 | Accessibility settings | `[ ]` Accessibility settings end-to-end validation |
+| S49-29 | Seven languages beyond key parity | `[H]` Automated seven-locale audit rerun; semantic/native language acceptance requires reviewers |
+| S49-30 | Saves, Steam Cloud & suspend | `[H]` Save/Cloud/suspend automation expands; Deck sleep/wake and two-machine Cloud conflict evidence require hardware/accounts |
+| S49-31 | Frame pacing, loading & memory | `[H]` Telemetry is corrected; named-hardware frame pacing and memory acceptance remain |
+| S49-32 | Reliable services & failure recovery | `[~]` Service diagnostics improved; repeatable fault drills, durable report operations, alerts, backup/restore, and ownership remain open |
+| S49-33 | Player journeys & packaged outputs | `[ ]` End-to-end seams and packaged-output journey tests |
+| S49-34 | Expedition choices & contracts | `[ ]` Deeper expedition choices and replayable contracts |
+| S49-35 | Social loop & rematch | `[ ]` Party continuity and post-run social loop |
+| S49-36 | Seasonal progression & direct cosmetics | `[H]` Seasonal progression/direct cosmetics needs product decisions |
+| S49-37 | Art & content completeness | `[~]` Asset audits plus 12 furnished-room captures complete; gameplay-context art/narrative/audio review remains |
+| S49-38 | Integration debt & module extraction | `[~]` Chat, commentary, and Fabrication Bay extracted; purchase presentation extraction and lifecycle characterization remain open |
+
 ## P0 — complete the Steam review features
 
 ### S49-01 — one current backlog and reliable documentation checks

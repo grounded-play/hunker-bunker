@@ -294,8 +294,9 @@ per room (`renderer.info` is only read by `rewardPreview.js`).
   prop's model family when its 3D model attaches, and fractures one family per
   idle period with at least 30 ms of idle time. It has no timeout fallback, so a
   device that never idles keeps today's behaviour instead of hitching at random.
-- [ ] **[Deck]** Paired capture, flag on vs off: presented p95 does not regress and
+- [H] **[Deck]** Paired capture, flag on vs off: presented p95 does not regress and
   the destruction-burst window improves on 152 ms. Only then default the flag on.
+  M3/M4 paired Steam Deck performance captures remain open.
 
 **Accept (agent):** baseline report committed; formula unit-tested at 4×4, 6×6,
 8×8, 10×10 and 14×14; flag off by default.
@@ -368,7 +369,9 @@ over existing walls was ruled out (z-fighting, double draw).
   render it replaces. The showroom probe
   ([`wall-shell-spike.spec.js`](../../tests/e2e/probes/wall-shell-spike.spec.js))
   stamps a real build with its socket doors and draws it before and after.
-- [ ] **[Art]** Art-direction sign-off on the spike before it reaches normal play.
+- [H] **[Art]** Art-direction sign-off on the spike before it reaches normal play.
+  M5 art-direction approval remains open; wall shells stay default-off and
+  showroom-only until destruction, cutaway, height, and depth blockers resolve.
 
 **Accept (agent):** spike screenshots plus a 500-seed sweep with the spike flag on;
 no default-on change without the art sign-off.

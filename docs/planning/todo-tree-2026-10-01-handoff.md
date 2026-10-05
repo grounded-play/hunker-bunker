@@ -255,3 +255,15 @@ was not present yet. No live relay deployment or whole-branch CI claim is made.
 - [x] Ambiguous transport failures (e.g. network timeout / abort during consume or grant) no longer trigger blind refunds or double-grants; they return status 502 with `exchange_outcome_requires_review` and preserve state for manual review.
 - [x] Corrected `TriggerItemDrop`: live route parses `item_json` using `decodeSteamInventory` with a 15-second timeout and key redaction; supports backward-compatible `item_list` arrays and rejects Steam failures explicitly (`steam_inventory_rejected`).
 - [x] Full backend test suite checkpoint: **35 files / 329 tests passed** (including resolved `server/steamTradeUp.test.js` cases). Scoped ESLint passed with 0 errors.
+
+## Iteration 10 — TODO tree reconciliation snapshot (2026-10-04 19:11 PDT)
+
+Reconciliation head: `44484597`, branch: `dev/sprint-49`. Reconciles the historical snapshot against verified code/tests, distinguishing verified implementation from hardware, publisher, and native-review gates. Reference: [better-todo-tree-20261004-1904.txt](../reports/assets/better-todo-tree-20261004-1904.txt).
+
+- [x] Inventory decoding, exact recipe exchange, durable ambiguity holds, mutation response parsing, numeric request IDs, and no-blind-refund rules.
+- [x] Reconnect roster cleanup, host-only automatic doors, hit rejection reasons, remote-health snapshots, disconnect diagnostics, authoritative PvP round completion, and synchronized rematch.
+- [ ] Define and enforce a shared deployment-ready/spawn-protected/alive/dead contract at the relay boundary; test loading delay and reconnect edges.
+- [ ] Test host migration plus simultaneous manual door actions.
+- [H] Run the two-client relay fault drill and paired Deck capture.
+- [H] Measure post-fix CPU/presented-frame/shadow/resource behavior on hardware.
+- [ ] Finish the explicit operator resolution workflow for ambiguous inventory outcomes; existing holds must never be manually cleared without evidence.

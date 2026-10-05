@@ -5441,6 +5441,17 @@ export class ThreeGame {
             if (distance <= 1.05 && now >= (encounter.hostileAttackReadyAt || 0)) {
                 encounter.hostileAttackReadyAt = now + 1200;
                 this.takeDamage?.(1, 'mayor-tina', root.position.x, root.position.z);
+                this.spawnPhysicalBurst?.(root.position.x, root.position.z, { color: 0xff3344, count: 8, upward: 0.25 });
+                this.triggerCameraShake?.(0.04, 0.16);
+                window.AudioManager?.play?.('enemy_hit_hard', (this.audioAt?.(root.position.x, root.position.z, { volume: 0.6 }) ?? { volume: 0.6 }));
+                if (Math.random() < 0.35 && now - (encounter.lastAttackBarkAt || 0) > 4500) {
+                    encounter.lastAttackBarkAt = now;
+                    const barks = [
+                        'MAYOR TINA: YOU SHOULD HAVE LEFT WELL ENOUGH ALONE!',
+                        'MAYOR TINA: THE PROTOCOL WILL EXECUTE YOU!'
+                    ];
+                    this.showBunkerLine?.(barks[encounter.barkIndex = ((encounter.barkIndex || 0) + 1) % barks.length]);
+                }
             }
             return;
         }
@@ -27208,6 +27219,16 @@ export class ThreeGame {
             if (window.AudioManager?.activeVoice?.speakerName?.toUpperCase?.().includes('TINA')) {
                 window.AudioManager.stopActiveVoice?.(0.05);
             }
+        } else if (result.outcome === 'damaged') {
+            this.spawnPhysicalBurst?.(root.position.x, root.position.z, { color: 0xffaa44, count: 12, upward: 0.25 });
+            this.triggerCameraShake?.(0.04, 0.12);
+            const lines = [
+                'MAYOR TINA: A SCRATCH. IS THAT YOUR BEST?',
+                'MAYOR TINA: YOU ARE COMMITTED NOW, OPERATIVE!',
+                'MAYOR TINA: THE BUNKER DOES NOT FORGIVE!'
+            ];
+            const line = lines[(result.hitsRemaining || 0) % lines.length];
+            window.dispatchEvent(new CustomEvent('bunker-line', { detail: { text: line } }));
         }
 
         if (result.outcome !== 'killed') return;
