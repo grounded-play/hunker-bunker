@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LOCALES, VOICE_LINE_RULES, extractVoiceLines } from './extract-voice-lines.mjs';
+import { LOCALES, VOICE_LINE_RULES, extractVoiceLines, speakChineseNumbers } from './extract-voice-lines.mjs';
 import { ROLE_IDS } from './build-voice-cast.mjs';
 
 const lines = extractVoiceLines();
@@ -49,5 +49,14 @@ describe('voice line extraction', () => {
 
     it('lists its rules, so a new catalog is a deliberate addition', () => {
         expect(VOICE_LINE_RULES.map((r) => r.catalog)).toContain('leaderDialogue');
+    });
+
+    it('speaks Chinese numbers as Chinese numerals, never Arabic digits', () => {
+        expect(speakChineseNumbers('黑匣子在 2026 年 6 月第一周加入')).toBe('黑匣子在二〇二六年六月第一周加入');
+        expect(speakChineseNumbers('2026年5月14日')).toBe('二〇二六年五月十四日');
+        expect(speakChineseNumbers('正因如此，0047')).toBe('正因如此，〇〇四七');
+        expect(speakChineseNumbers('第 29 天，有 105 个')).toBe('第二十九天，有一百零五个');
+        const zh = extractVoiceLines().filter((line) => line.locale === 'zh-CN');
+        expect(zh.filter((line) => /\d/.test(line.spoken)).map((line) => line.key)).toEqual([]);
     });
 });

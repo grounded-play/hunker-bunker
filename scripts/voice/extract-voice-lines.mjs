@@ -17,6 +17,32 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanPerformanceText } from './build-voice-cast.mjs';
 
+// Mixed-script numerals derail the TTS: a zh-CN commentary line with
+// "2026 年 6 月" rendered 35 s of babble on all three seeds (2026-10-05).
+// Spoken Chinese gets Chinese numerals: four-digit years and zero-led codes
+// ("0047") digit by digit, every other integer as a number word.
+const ZH_DIGITS = '〇一二三四五六七八九';
+function zhNumber(n) {
+    if (n === 0) return '零';
+    const units = ['', '十', '百', '千'];
+    let out = '';
+    let pendingZero = false;
+    const digits = String(n).split('').map(Number);
+    digits.forEach((d, i) => {
+        const place = digits.length - 1 - i;
+        if (d === 0) { pendingZero = out !== ''; return; }
+        if (pendingZero) { out += '零'; pendingZero = false; }
+        out += (d === 1 && place === 1 && out === '' ? '' : '零一二三四五六七八九'[d]) + units[place];
+    });
+    return out;
+}
+export function speakChineseNumbers(text) {
+    return String(text)
+        .replace(/\s*(\d{4})\s*年\s*/g, (m, y) => [...y].map((d) => ZH_DIGITS[d]).join('') + '年')
+        .replace(/\s*(\d+)\s*(?=[月日号周天个次年])/g, (m, n) => (n.length > 1 && n[0] === '0' ? [...n].map((d) => ZH_DIGITS[d]).join('') : (n.length <= 4 ? zhNumber(Number(n)) : [...n].map((d) => ZH_DIGITS[d]).join(''))))
+        .replace(/\d+/g, (n) => (n[0] === '0' || n.length > 4 ? [...n].map((d) => ZH_DIGITS[d]).join('') : zhNumber(Number(n))));
+}
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OUT = path.join(ROOT, 'scripts/voice/voice-lines.json');
 export const LOCALES = ['en', 'de', 'es-419', 'ja', 'pt-BR', 'ru', 'zh-CN'];
@@ -66,7 +92,8 @@ export function extractVoiceLines(localesDir = path.join(ROOT, 'src/locales')) {
                 if (!assigned) continue;
                 const key = `narrative.${rule.catalog}.${parts.join('.')}`;
                 const prefixed = SPEAKER_PREFIX.test(englishText.get(key) ?? '');
-                const spoken = cleanPerformanceText(text, { stripLocalizedPrefix: locale !== 'en' && prefixed });
+                const cleaned = cleanPerformanceText(text, { stripLocalizedPrefix: locale !== 'en' && prefixed });
+                const spoken = locale === 'zh-CN' ? speakChineseNumbers(cleaned) : cleaned;
                 if (!spoken) continue;
                 lines.push({ key, locale, ...assigned, display: text, spoken });
             }
