@@ -174,6 +174,7 @@ import {
 import { bindRoomContent } from './roomContent.js';
 import { buildMazeChunkStructure, buildHallwayConnectorChunkStructure } from './chunkStructure.js';
 import { buildGrammarRoomChunk } from './roomGrammarChunk.js';
+import { grammarWallExterior } from './roomGrammarBreach.js';
 import {
     MILESTONE_BOSS_STATES,
     MILESTONE_BOSS_EVENT_TYPES,
@@ -262,8 +263,9 @@ import { createPropDebrisPrewarmQueue } from './propDebrisPrewarm.js';
 import { isAreaRoomDensityEnabled } from './featureFlags.js';
 import { roomPracticalLightPlacement } from './anchorPracticalLight.js';
 import { planRoomDressing } from './roomDressing.js';
+import { resolveRoomDressingIdentity } from './roomDressingIdentity.js';
 import { isRoomDressingId, serializeBrokenRoomDressing, restoreBrokenRoomDressing } from './roomDressingPersistence.js';
-import { buildRoomDressingGroup, loadKeyedDecalTexture } from './roomDressingRenderer.js';
+import { buildRoomDressingGroup, loadKeyedDecalTexture, hideRoomDressingItem, hideRoomDressingSupport } from './roomDressingRenderer.js';
 import { registerTinaHit, TINA_TOTAL_HITS } from './mayorTinaCombat.js';
 import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
@@ -2107,6 +2109,7 @@ export class ThreeGame {
         // it also meant a stale client could re-report a hit against a key
         // the world had already reused for a different live enemy.
         this.killedEnemyScatterKeys = new Set();
+        this.brokenPropScatterKeys = new Set();
         // docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #1 --
         // "environmental" PointLights (terminal/status/beacon/O2-safe/lore-terminal
         // lights, etc, registered via registerEnvLight below) accumulate as the
@@ -29133,27 +29136,41 @@ export class ThreeGame {
         const originX = chunkX * this.chunkSize;
         const originZ = chunkY * this.chunkSize;
         const items = [];
+        this.brokenPropScatterKeys = this.brokenPropScatterKeys || new Set();
         for (const room of metadata?.roomInstances ?? []) {
             const plan = room.populationPlan;
             if (!plan || !room.interior?.length) continue;
-            const dressing = planRoomDressing(room, grid, { reserved: plan.reserved, occupied: plan.placements });
-            for (const item of dressing.items) items.push({ ...item, x: item.x + originX, y: item.y + originZ });
+            const dressing = planRoomDressing(room, metadata.dressingGrid ?? grid, { reserved: plan.reserved, occupied: plan.placements });
+            for (const item of dressing.items) {
+                item.id = resolveRoomDressingIdentity(item, this.brokenPropScatterKeys, { multiplayer: this.isMultiplayer });
+                const isDestroyed = this.brokenPropScatterKeys.has(item.id);
+                const supportCell = item.supportCell ? { x: item.supportCell.x + originX, y: item.supportCell.y + originZ } : null;
+                const supportBroken = supportCell && this.destroyedWallKeys?.has(this.getWallKey?.(supportCell.x, supportCell.y));
+                items.push({ ...item, x: item.x + originX, y: item.y + originZ, supportCell, isDestroyed: isDestroyed || Boolean(supportBroken) });
+            }
         }
         if (items.length === 0) return null;
 
         for (const item of items) {
-            if (!item.blocking) continue;
+            if (item.isDestroyed) continue;
+            if (!item.blocking && !item.destructible) continue;
             const collider = new THREE.Object3D();
             collider.position.set(item.x, 0, item.y);
             collider.userData = {
                 isScatter: true,
-                isSolidProp: true,
-                isDestructibleProp: false,
+                isSolidProp: Boolean(item.blocking),
+                isDestructibleProp: Boolean(item.destructible),
                 isRoomDressingCollider: true,
-                collisionRadius: 0.34,
-                type: 'room_dressing_collider',
-                groupType: 'dressing'
+                collisionRadius: item.blocking ? 0.34 : 0.4,
+                type: item.type,
+                groupType: 'dressing',
+                scatterKey: item.id,
+                dressingId: item.id,
+                propHp: item.hp ?? 3,
+                maxPropHp: item.hp ?? 3,
+                dressingItem: item
             };
+            item.collider = collider;
             group.add(collider);
             this.scatterSprites.push(collider);
         }
@@ -29162,7 +29179,8 @@ export class ThreeGame {
         group.userData.roomDressingToken = token;
         buildRoomDressingGroup(items, {
             loadModel: (type) => createWorld3dModel(type),
-            loadDecalTexture: (type) => loadKeyedDecalTexture(type)
+            loadDecalTexture: (type) => loadKeyedDecalTexture(type),
+            isDestroyed: (id) => this.brokenPropScatterKeys?.has(id)
         }).then((dressing) => {
             // The chunk may have unloaded while models streamed in.
             if (!group.parent || group.userData.roomDressingToken !== token) {
@@ -29170,7 +29188,20 @@ export class ThreeGame {
                 return;
             }
             group.add(dressing);
-        }).catch((error) => console.warn('[room-dressing] could not dress chunk', error));
+            for (const item of items) {
+                const supportBroken = item.supportCell && this.destroyedWallKeys?.has(this.getWallKey?.(item.supportCell.x, item.supportCell.y));
+                if (this.brokenPropScatterKeys?.has(item.id) || supportBroken) {
+                    hideRoomDressingItem(item);
+                    item.collider?.parent?.remove(item.collider);
+                    if (item.collider) this.scatterSprites = this.scatterSprites.filter(s => s !== item.collider);
+                }
+            }
+        }).catch((error) => {
+            const failedColliders = new Set(items.map(item => item.collider).filter(Boolean));
+            for (const collider of failedColliders) collider.parent?.remove(collider);
+            this.scatterSprites = this.scatterSprites.filter(sprite => !failedColliders.has(sprite));
+            console.warn('[room-dressing] could not dress chunk', error);
+        });
         return token;
     }
 
@@ -29579,6 +29610,8 @@ export class ThreeGame {
         const coord = this.getChunkLocalFromWorld(worldX, worldZ);
         const grid = this.chunkCache?.get?.(coord.key);
         if (!grid?.[coord.localY] || grid[coord.localY][coord.localX] !== '#') return false;
+        const grammarExterior = grammarWallExterior(this.wfcMetadataCache?.get?.(coord.key), coord.localX, coord.localY);
+        if (grammarExterior !== null) return grammarExterior;
         const isWalkableRoomCell = (x, y) => {
             const value = grid[y]?.[x];
             return value === '.' || value === 'D'
@@ -29682,6 +29715,13 @@ export class ThreeGame {
         }
         this._chunkRoomTypeCache?.delete(coord.key);
         this._chunkTemplateCache?.delete(coord.key);
+        const chunkGroup = this.chunkMeshes?.get?.(coord.key);
+        for (const child of chunkGroup?.children ?? []) {
+            for (const item of hideRoomDressingSupport(child, coord.tileX, coord.tileZ)) {
+                item.collider?.parent?.remove(item.collider);
+                if (item.collider && this.scatterSprites) this.scatterSprites = this.scatterSprites.filter(s => s !== item.collider);
+            }
+        }
         return { ...coord, exterior };
     }
 
@@ -34188,7 +34228,7 @@ export class ThreeGame {
             sprite.material.color.setHex(0xffaa44);
             setTimeout(() => { sprite.material?.color?.setHex(0xffffff); }, 90);
         }
-        window.AudioManager?.play('enemy_hit_soft', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.35 }) ?? { volume: 0.35 }));
+        globalThis.window?.AudioManager?.play?.('enemy_hit_soft', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.35 }) ?? { volume: 0.35 }));
 
         if (sprite.userData.propHp <= 0) return this.breakScatterProp(sprite);
         return false;
@@ -34198,7 +34238,19 @@ export class ThreeGame {
     // drops once and tells the squad, which breaks the same prop with the same
     // drops (2026-09-24 QA: nothing in co-op may differ between screens).
     breakScatterProp(sprite, { plannedDrops = null, fromRemote = false } = {}) {
+        if (!sprite?.userData || sprite.userData.burstTriggered) return false;
         sprite.userData.burstTriggered = true;
+        if (sprite.userData?.isRoomDressingCollider) {
+            hideRoomDressingItem(sprite.userData.dressingItem);
+            const key = sprite.userData.dressingId ?? sprite.userData.scatterKey;
+            if (key) {
+                this.brokenPropScatterKeys = this.brokenPropScatterKeys || new Set();
+                this.brokenPropScatterKeys.add(key);
+            }
+        } else if (sprite.userData?.scatterKey) {
+            this.brokenPropScatterKeys = this.brokenPropScatterKeys || new Set();
+            this.brokenPropScatterKeys.add(sprite.userData.scatterKey);
+        }
         const practicalLight = sprite.userData.practicalLight;
         if (practicalLight) {
             practicalLight.userData.envLightEnabled = false;
@@ -34220,14 +34272,15 @@ export class ThreeGame {
             this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, isBio ? 'bio_spores' : 'bunker_junk');
         }
         if (isBio) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
-        window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 1.85, force: true });
+        globalThis.window?.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 1.85, force: true });
 
         const propKey = sprite.userData?.type || sprite.userData?.modelKey || sprite.userData?.propKey;
         if (propKey) {
             handleCustomPropDestruction(this, propKey, sprite.position, sprite);
         }
 
-        this.spawnDestructiblePropDrops(sprite, plannedDrops);
+        // Dense dressing adds breakable scenery, not dozens of new ammo rolls.
+        this.spawnDestructiblePropDrops(sprite, plannedDrops ?? (sprite.userData.isRoomDressingCollider ? [] : null));
         if (!fromRemote && coopRole(this) !== COOP_ROLE.SOLO) {
             this.broadcastSharedWorldEvent?.('prop-broken', {
                 scatterKey: sprite.userData.scatterKey ?? null,
@@ -40442,6 +40495,10 @@ export class ThreeGame {
             this.applyExpeditionObstacles?.(rawGrid, chunkX, chunkY);
             this.applyCrossingBridgeTiles?.(rawGrid, chunkX, chunkY);
             const landform = rawGrid.landform ?? LANDFORMS.MAZE;
+            // Dressing must use the original layout on every mount; otherwise
+            // a breached wall changes RNG consumption and moves surviving props.
+            const dressingMetadata = this.wfcMetadataCache?.get?.(key);
+            if (dressingMetadata?.roomInstances?.length) dressingMetadata.dressingGrid = rawGrid.map(row => row.join(''));
             const grid = this.applyDestroyedWallsToGrid(rawGrid, chunkX, chunkY);
             grid.heightmap = generateHeightmapGrid(grid, landform);
             this.chunkCache.set(key, grid);

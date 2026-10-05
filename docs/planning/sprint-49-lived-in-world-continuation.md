@@ -15,6 +15,16 @@ plan for milestone scope, dependencies, verification gates, and definition of do
 
 ### Room grammar scope handoff — 2026-10-04
 
+- [x] **G3 renderer/identity/breach slice (2026-10-05):** integrated physical
+  dressing hit targets, multi-mesh removal and late-load handling; added stable
+  v2 placement IDs with legacy migration, original-grid dressing planning, wall
+  support cleanup and thick-module interior breach classification.
+  Repeated breaks are harmless and dressing adds no default loot rolls.
+  [Implementation and evidence](../reports/room-dressing-integration-2026-10-05.md).
+- [ ] **Next commit:** finished key-art maintenance-hall presentation with matched
+  intact/breached captures. Co-op identity/HP/drop acceptance remains separate;
+  preserve the opt-in rollout until those gates and performance checks pass.
+
 - [x] **G3 persistence slice (2026-10-05):** added sanitized map-local dressing
   break records to maze snapshots, legacy-safe restore, and new-map reset. Remote
   dressing events use exact identity, survive unloaded chunks and ignore replay.

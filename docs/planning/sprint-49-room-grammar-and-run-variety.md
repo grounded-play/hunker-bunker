@@ -278,6 +278,11 @@ Co-op peers must agree on version and plan digest before mounting geometry.
 - [ ] **G3 — destructible module runtime.** Add instanced-prop identity/removal,
   partition breach and attachment handling. Test collision, save/reload, late join,
   duplicate hits and critical-service recovery before enabling generated partitions.
+- [x] **G3 implemented subcontracts:** multi-mesh dressing removal, late-load/failure
+  cleanup, stable v2 placement IDs and legacy migration, support removal, original-grid
+  remount planning, thick interior module breaches and persisted wall replay.
+  [Evidence](../reports/room-dressing-integration-2026-10-05.md). General service
+  recovery and co-op identity/partial-HP acceptance keep the parent gate open.
 - [x] **G3 persistence subtask:** map-local dressing break snapshots, replacement
   restore, new-map clearing and exact-ID remote replay handling implemented; see
   [persistence notes](../reports/room-dressing-persistence-2026-10-05.md).

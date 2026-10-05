@@ -31,20 +31,36 @@ describe('ThreeGame room dressing (lived-in rooms)', () => {
             warn.mockRestore();
         }
 
-        const expected = planRoomDressing(room, grid, { reserved: room.populationPlan.reserved, occupied: room.populationPlan.placements })
-            .items.filter((item) => item.blocking);
-        expect(expected.length).toBeGreaterThan(0);
-        expect(game.scatterSprites).toHaveLength(expected.length);
-        const first = game.scatterSprites[0];
+        const allItems = planRoomDressing(room, grid, { reserved: room.populationPlan.reserved, occupied: room.populationPlan.placements }).items;
+        const expectedBlocking = allItems.filter((item) => item.blocking);
+        const expectedTotal = allItems.filter((item) => item.blocking || item.destructible);
+        expect(expectedBlocking.length).toBeGreaterThan(0);
+        expect(game.scatterSprites).toHaveLength(expectedTotal.length);
+        const blockingSprites = game.scatterSprites.filter((s) => s.userData.isSolidProp);
+        expect(blockingSprites).toHaveLength(expectedBlocking.length);
+        const first = blockingSprites[0];
         expect(first.parent).toBe(group);
-        expect(first.userData).toMatchObject({ isSolidProp: true, isDestructibleProp: false, isRoomDressingCollider: true });
-        expect(first.position.x).toBeCloseTo(expected[0].x + 2 * grid.length);
-        expect(first.position.z).toBeCloseTo(expected[0].y - grid.length);
+        expect(first.userData).toMatchObject({ isSolidProp: true, isDestructibleProp: true, isRoomDressingCollider: true });
+        expect(first.position.x).toBeCloseTo(expectedBlocking[0].x + 2 * grid.length);
+        expect(first.position.z).toBeCloseTo(expectedBlocking[0].y - grid.length);
     });
 
     it('does nothing for a chunk without authored rooms', () => {
         const game = { chunkSize: 48, scatterSprites: [], scatterTextures: {} };
         expect(ThreeGame.prototype.addRoomDressing.call(game, new THREE.Group(), 0, 0, { roomInstances: [] }, [])).toBeNull();
         expect(game.scatterSprites).toEqual([]);
+    });
+
+    it('keeps physical identities stable when the live grid has a wall breach', () => {
+        const { room, grid } = chunkRoom();
+        const metadata = { roomInstances: [room], dressingGrid: grid.map(row => row.join('')) };
+        const mount = liveGrid => {
+            const game = { chunkSize: grid.length, scatterSprites: [], scatterTextures: {} };
+            ThreeGame.prototype.addRoomDressing.call(game, new THREE.Group(), 2, -1, metadata, liveGrid);
+            return game.scatterSprites.map(s => s.userData.scatterKey);
+        };
+        const before = mount(grid);
+        const damaged = grid.map(row => row.map(c => c === '#' ? '.' : c));
+        expect(mount(damaged)).toEqual(before);
     });
 });

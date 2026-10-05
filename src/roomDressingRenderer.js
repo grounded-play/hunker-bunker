@@ -1,9 +1,9 @@
 /**
  * Draws a room dressing plan (roomDressing.js) as static instanced batches:
  * one InstancedMesh per (model type x mesh) for 3D pieces and one per decal
- * type for flat decals. Nothing here ticks per frame, collides, or takes
- * damage, so a room stuffed with sixty pieces costs a dozen or so draw calls
- * and no main-thread work after it is built.
+ * type for flat decals. Gameplay hit targets own damage; per-item batch handles
+ * let them hide all model meshes without splitting the draw batches or disposing
+ * shared assets. There is no per-frame dressing update.
  *
  * Shared by ThreeGame.addRoomDressing and the furnished-room showroom, so the
  * review images show exactly what the game draws.
@@ -54,7 +54,27 @@ export function loadKeyedDecalTexture(type) {
 }
 
 const MODEL_LAYERS = new Set(['wallProp', 'clutter', 'corner', 'vignette']);
+const HIDDEN_INSTANCE = new THREE.Matrix4().makeScale(0, 0, 0);
+
+export function hideRoomDressingItem(item) {
+    if (!item) return;
+    item.isDestroyed = true;
+    for (const { batch, index } of item.batchInstances ?? []) {
+        batch.setMatrixAt(index, HIDDEN_INSTANCE);
+        batch.instanceMatrix.needsUpdate = true;
+    }
+}
+
 const UNIT_PLANE = new THREE.PlaneGeometry(1, 1);
+export function hideRoomDressingSupport(group, worldX, worldZ) {
+    const removed = [];
+    for (const item of group?.userData?.roomDressingItems ?? []) {
+        if (item.supportCell?.x !== worldX || item.supportCell?.y !== worldZ) continue;
+        hideRoomDressingItem(item);
+        removed.push(item);
+    }
+    return removed;
+}
 const decalMaterialCache = new Map();
 
 function decalMaterial(texture) {
@@ -87,10 +107,18 @@ const textureAspect = (texture) => {
  * @param {(type: string) => THREE.Texture|null|Promise<THREE.Texture|null>} deps.loadDecalTexture
  * @returns {Promise<THREE.Group>} group.userData.drawCalls counts the batches
  */
-export async function buildRoomDressingGroup(items, { loadModel, loadDecalTexture }) {
+export async function buildRoomDressingGroup(items, { loadModel, loadDecalTexture, isDestroyed = null } = {}) {
     const group = new THREE.Group();
     group.name = 'room-dressing';
     group.userData.isRoomDressing = true;
+    group.userData.roomDressingItems = items ?? [];
+    const load = async (loader, type) => {
+        try { return await loader(type); }
+        catch (error) {
+            group.traverse(node => { if (node.isInstancedMesh) node.dispose(); });
+            throw error;
+        }
+    };
     const byType = new Map();
     for (const item of items ?? []) {
         if (!byType.has(item.type)) byType.set(item.type, []);
@@ -98,6 +126,7 @@ export async function buildRoomDressingGroup(items, { loadModel, loadDecalTextur
     }
 
     const matrix = new THREE.Matrix4();
+    const zeroMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
     const position = new THREE.Vector3();
     const quaternion = new THREE.Quaternion();
     const scale = new THREE.Vector3();
@@ -106,7 +135,7 @@ export async function buildRoomDressingGroup(items, { loadModel, loadDecalTextur
 
     for (const [type, list] of byType) {
         if (MODEL_LAYERS.has(list[0].layer)) {
-            const root = await loadModel(type);
+            const root = await load(loadModel, type);
             if (!root) continue;
             root.updateMatrixWorld(true);
             const toRoot = new THREE.Matrix4().copy(root.matrixWorld).invert();
@@ -118,12 +147,22 @@ export async function buildRoomDressingGroup(items, { loadModel, loadDecalTextur
                 const local = new THREE.Matrix4().multiplyMatrices(toRoot, mesh.matrixWorld);
                 const batch = new THREE.InstancedMesh(mesh.geometry, mesh.material, list.length);
                 list.forEach((item, index) => {
-                    position.set(item.x, item.mountY ?? 0, item.y);
-                    quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, item.yaw ?? 0);
-                    const s = item.scale ?? 1;
-                    scale.set(s, s, s);
-                    matrix.compose(position, quaternion, scale).multiply(local);
-                    batch.setMatrixAt(index, matrix);
+                    item.batchInstances = item.batchInstances || [];
+                    item.batchInstances.push({ batch, index });
+                    if (item.collider?.userData) {
+                        item.collider.userData.dressingBatch = batch;
+                        item.collider.userData.dressingIndex = index;
+                    }
+                    if (item.isDestroyed || (item.id && isDestroyed?.(item.id))) {
+                        batch.setMatrixAt(index, zeroMatrix);
+                    } else {
+                        position.set(item.x, item.mountY ?? 0, item.y);
+                        quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, item.yaw ?? 0);
+                        const s = item.scale ?? 1;
+                        scale.set(s, s, s);
+                        matrix.compose(position, quaternion, scale).multiply(local);
+                        batch.setMatrixAt(index, matrix);
+                    }
                 });
                 batch.instanceMatrix.needsUpdate = true;
                 batch.castShadow = false;
@@ -136,11 +175,17 @@ export async function buildRoomDressingGroup(items, { loadModel, loadDecalTextur
             continue;
         }
 
-        const texture = await loadDecalTexture(type);
+        const texture = await load(loadDecalTexture, type);
         if (!texture) continue;
         const aspect = textureAspect(texture);
         const batch = new THREE.InstancedMesh(UNIT_PLANE, decalMaterial(texture), list.length);
         list.forEach((item, index) => {
+            item.batchInstances = item.batchInstances || [];
+            item.batchInstances.push({ batch, index });
+            if (item.isDestroyed) {
+                batch.setMatrixAt(index, HIDDEN_INSTANCE);
+                return;
+            }
             const size = item.size ?? 1;
             if (item.layer === 'wallDecal') {
                 position.set(item.x, item.height ?? 1.4, item.y);

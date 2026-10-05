@@ -5,8 +5,8 @@
  * Walls carry decals at eye height and wall-mounted fixtures; the ring of
  * floor cells along the walls fills with small clutter; concave corners take
  * heavier pieces; the floor gets a few clusters of story decals. Everything
- * comes from the room's kit (roomDressingKits.js) and is decorative: no
- * collision, no hit points, drawn instanced by ThreeGame.addRoomDressing.
+ * comes from the room's kit (roomDressingKits.js). Physical props have gameplay
+ * hit targets; blocking vignettes retain collision. Visuals stay instanced.
  *
  * Deterministic from the room id through a private generator, so it never
  * draws from the shared world RNG and every co-op peer dresses a room the
@@ -16,6 +16,7 @@
  */
 import { dressingKitFor, vignettesFor, WALL_MOUNT_HEIGHT } from './roomDressingKits.js';
 import { DRESSING_TRIANGLES } from './data/dressingTriangles.js';
+import { roomDressingIdentity } from './roomDressingIdentity.js';
 
 export const DRESSING_LIMITS = Object.freeze({
     // Distinct types per room, per layer: the instanced renderer draws one
@@ -129,6 +130,7 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [] } = 
                     x: cell.x + dx * 0.49,
                     y: cell.y + dy * 0.49,
                     normal: { x: -dx, z: -dy },
+                    supportCell: { x: cell.x + dx, y: cell.y + dy },
                     height: 0.85 + random() * 1.05,
                     size: 1.05 + random() * 0.75,
                     roll: (random() - 0.5) * 0.5
@@ -165,6 +167,7 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [] } = 
                 y: cell.y + wy * 0.28,
                 yaw: Math.atan2(-wx, -wy),
                 mountY: WALL_MOUNT_HEIGHT[type] ?? 0,
+                supportCell: { x: cell.x + wx, y: cell.y + wy },
                 scale: 1
             });
             taken.add(key);
@@ -292,7 +295,27 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [] } = 
         }
     }
 
+    items.forEach((item, index) => {
+        item.legacyId = `${room?.id ?? 'room'}:dressing:${item.layer}:${index}`;
+        item.id = roomDressingIdentity(room?.id ?? 'room', item);
+        if (isDestructibleDressingType(item.type, item.layer)) {
+            item.destructible = true;
+            item.hp = 3;
+        }
+    });
+
     return { family: kitFamilyLabel(room?.theme), types, items, triangles: spent.perimeter + spent.vignettes };
+}
+
+export function isDestructibleDressingType(type, layer) {
+    if (layer === 'wallDecal' || layer === 'floorDecal') return false;
+    if (typeof type !== 'string') return false;
+    if (type.startsWith('arch_') || type.startsWith('gate_') || type === 'state_column_shattered') return false;
+    if (type.includes('terminal') && !type.includes('ruptured')) return false;
+    return type.startsWith('prop_')
+        || type.startsWith('bunker_junk_')
+        || type.startsWith('state_barricade_')
+        || type.startsWith('scatter_');
 }
 
 function kitFamilyLabel(themeId) {

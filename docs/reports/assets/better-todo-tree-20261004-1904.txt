@@ -139,6 +139,8 @@ Notes
 Codex takeover outline
 
 Current world-design scope: docs/planning/sprint-49-room-grammar-and-run-variety.md.
+[x] G3 renderer, v2 placement IDs, legacy migration, support cleanup and interior breaches.
+[ ] Next: maintenance-hall art/captures; co-op identity/HP/service recovery gates remain.
 [x] G3 persistence subtask: dressing break snapshots/reset and exact remote identity.
 [ ] Renderer integration, versioned IDs, late-join/drop parity and wall breaches remain.
 [x] G2 connected chunk adapter (dbf9c378) and saved opt-in live single-player path.
