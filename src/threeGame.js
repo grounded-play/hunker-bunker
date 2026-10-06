@@ -5370,6 +5370,7 @@ export class ThreeGame {
                 ],
                 ...classVisuals[overlayType]
             });
+            await this.prewarmLateModel?.(overlay.root);
             if (this.player !== playerRoot || this.playerType !== overlayType) {
                 overlay.dispose();
                 return;
@@ -6197,6 +6198,7 @@ export class ThreeGame {
                 wearableOverclocks: equipment.overclockIds,
                 ...classVisuals[remote.opClass]
             });
+            await this.prewarmLateModel?.(overlay.root);
             if (this.remotePlayers?.get(remote.id) !== remote || !remote.mesh.parent || remote.overlayGeneration !== generation) {
                 overlay.dispose();
                 return;
@@ -7256,6 +7258,7 @@ export class ThreeGame {
             try {
                 const root = await (this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType));
                 if (!root) this.revealWorld3dFallback?.(source);
+                if (root) await this.prewarmLateModel?.(root);
                 if (!root || !source.parent) return null;
                 root.position.copy(source.position);
                 // Must match syncWorld3dReplacement, which adds WORLD_3D_FACING_YAW.
@@ -7369,7 +7372,8 @@ export class ThreeGame {
             const token = ++state.token;
             Promise.resolve()
                 .then(() => this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType))
-                .then((root) => {
+                .then(async (root) => {
+                    if (root) await this.prewarmLateModel?.(root);
                     if (token !== state.token) return;
                     if (!root || !sprite.parent) {
                         state.failed = modelType;
@@ -11274,6 +11278,7 @@ export class ThreeGame {
                 weaponEnabled: false,
                 allowStatic: false
             });
+            await this.prewarmLateModel?.(overlay.root);
             if (!marker?.parent || (marker !== this._blackBoxMarker && !marker.userData?.isRemoteDeathMarker)) {
                 overlay.dispose();
                 return false;
@@ -34749,10 +34754,36 @@ export class ThreeGame {
     // the gameplay owner (shell pickup, fade, fog), as with every 3D prop; the
     // model mirrors it each frame in syncCorpse3d. Materials are cloned because
     // a corpse fades on its own and template materials are shared.
+    // Late-loading models (corpses, swapped-in props, a squadmate's chassis)
+    // compile their shader programs the first time they draw. On Windows,
+    // Chrome runs WebGL on Direct3D 11, where a program for this scene's light
+    // count can take 10+ s to compile synchronously: killing the Cyber Snail
+    // boss on PC froze two frames for 13.9 s and 11.4 s as its corpse and a
+    // chassis skin first drew (session 2026-10-06; the Deck's driver was
+    // fine). Compile in the background first, as preloadEnemy3dTemplates
+    // already does for enemies. Bounded, so a compile that never settles
+    // cannot keep a model out of the world; a late corpse beats a frozen game.
+    async prewarmLateModel(root, timeoutMs = 30000) {
+        const renderer = this.renderer;
+        if (!root || typeof renderer?.compileAsync !== 'function' || !this.camera || !this.scene) return;
+        let timer = null;
+        try {
+            await Promise.race([
+                renderer.compileAsync(root, this.camera, this.scene),
+                new Promise((resolve) => { timer = setTimeout(resolve, timeoutMs); })
+            ]);
+        } catch {
+            // A failed prewarm only means the first draw compiles, as before.
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
     async attachCorpse3d(corpse, modelType, enemySprite) {
         corpse.material.visible = false;
         try {
             const root = await (this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType));
+            if (root) await this.prewarmLateModel?.(root);
             if (!root || !corpse.parent || !this.corpses?.includes(corpse)) {
                 if (!root) corpse.material.visible = true;
                 return;
