@@ -1761,6 +1761,10 @@ export function isRoomGatewayFrameEligible(room, door, metadata = {}) {
     return true;
 }
 
+// Co-op guests create host enemies they lack (handleEnemyStateSnapshot).
+const REMOTE_ENEMY_MATERIALIZE_PER_SNAPSHOT = 4;
+const REMOTE_REPLICA_STALE_MS = 3000;
+
 export class ThreeGame {
     constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null, cameraMode = 'isometric', gameplayTiltShiftBlurEnabled = false } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
@@ -6909,6 +6913,39 @@ export class ThreeGame {
         return handle.applyRemoteFormation?.(detail) === true;
     }
 
+    materializeRemoteEnemy(state) {
+        if (state?.isBoss) return this.materializeRemoteBoss(state);
+        if (!state?.scatterKey || !state.enemyType || !this.scatterMaterials?.[state.enemyType]) return null;
+        if (!Number.isFinite(state.x) || !Number.isFinite(state.z)) return null;
+        const group = this.chunkMeshes?.get(`${Math.floor(state.x / this.chunkSize)},${Math.floor(state.z / this.chunkSize)}`);
+        if (!group) return null; // Chunk not mounted here yet; a later snapshot retries.
+        const enemy = this.createScatterInstance({
+            x: state.x,
+            z: state.z,
+            type: state.enemyType,
+            scatterKey: state.scatterKey,
+            scale: Number.isFinite(state.scale) ? state.scale : 1,
+            rotation: 0,
+            tiltX: 0,
+            tiltZ: 0,
+            elevation: 0.1,
+            groupType: 'enemy',
+            phase: 0,
+            opacity: 1,
+            isBoss: false
+        });
+        if (!enemy) return null;
+        enemy.userData.isRemoteReplica = true;
+        enemy.userData.lastNetUpdate = Date.now();
+        if (Number.isFinite(state.hp)) {
+            enemy.userData.hp = state.hp;
+            enemy.userData.maxHp = Math.max(state.hp, enemy.userData.maxHp ?? state.hp);
+        }
+        group.add(enemy);
+        this.scatterSprites.push(enemy);
+        return enemy;
+    }
+
     materializeRemoteBoss(state) {
         if (!state?.scatterKey || !state.enemyType || !this.scatterMaterials?.[state.enemyType]) return null;
         if (!Number.isFinite(state.x) || !Number.isFinite(state.z)) return null;
@@ -6948,12 +6985,19 @@ export class ThreeGame {
         if (this.isMultiplayerHost || this.multiplayerMode === 'pvp') return false;
         if (!Array.isArray(data?.enemies) && !Array.isArray(data?.companions)) return false;
         let applied = 0;
+        let materialized = 0;
         if (Array.isArray(data?.enemies)) {
             for (const state of data.enemies) {
                 if (!state?.scatterKey) continue;
                 let sprite = (this.scatterSprites ?? []).find((candidate) => candidate.userData?.scatterKey === state.scatterKey);
-                if (!sprite?.userData && state.isBoss && !state.burstTriggered) {
-                    sprite = this.materializeRemoteBoss?.(state) ?? null;
+                // Any live host enemy this guest lacks (one spawned or pulled in
+                // on the host, not only a boss) is created here. Before, the host
+                // chased the guest with a snail the guest could not see or be hurt
+                // by (co-op session 2026-10-06). Capped per snapshot so a burst of
+                // spawns cannot hitch the guest; the rest arrive 100 ms later.
+                if (!sprite?.userData && !state.burstTriggered && (state.hp ?? 1) > 0 && materialized < REMOTE_ENEMY_MATERIALIZE_PER_SNAPSHOT) {
+                    sprite = this.materializeRemoteEnemy?.(state) ?? null;
+                    if (sprite) materialized += 1;
                 }
                 if (!sprite?.userData) continue;
                 if (Number.isFinite(state.x) && Number.isFinite(state.z)) {
@@ -6981,11 +7025,28 @@ export class ThreeGame {
                 applied += 1;
             }
         }
+        if (Array.isArray(data?.enemies)) this.pruneRemoteReplicas?.(data.enemies);
         if (Array.isArray(data?.companions)) {
             this.handleRemoteCompanionsSnapshot?.(data.companions);
             applied += data.companions.length;
         }
         return applied > 0;
+    }
+
+    // A replica exists only because the host reported it. Once the host stops
+    // (it died off-screen, despawned, or its chunk unloaded there), drop it
+    // rather than leave a ghost the guest can see but nobody can hit.
+    // Deterministic enemies the guest spawned itself are never touched.
+    pruneRemoteReplicas(reported, now = Date.now(), staleMs = REMOTE_REPLICA_STALE_MS) {
+        const live = new Set(reported.map((state) => state?.scatterKey).filter(Boolean));
+        this.scatterSprites = (this.scatterSprites ?? []).filter((sprite) => {
+            const data = sprite?.userData;
+            if (!data?.isRemoteReplica || data.isBoss || live.has(data.scatterKey)) return true;
+            if (now - (data.lastNetUpdate ?? now) < staleMs) return true;
+            sprite.parent?.remove(sprite);
+            sprite.material?.dispose?.();
+            return false;
+        });
     }
 
     handleRemoteCompanionsSnapshot(remoteCompanions) {
@@ -7182,7 +7243,13 @@ export class ThreeGame {
                 // Smooth rotation lerp
                 const yawDelta = wrapAngle(remote.targetYaw - remote.currentYaw);
                 remote.currentYaw += yawDelta * Math.min(1.0, delta * 14);
-                mesh.rotation.y = remote.currentYaw;
+                // A 3D chassis turns itself toward travel and aim in world
+                // space (player3dOverlay.update), exactly as the local one does.
+                // Rotating its parent to the yaw as well turned a squadmate by
+                // their facing twice (co-op session 2026-10-06). The 2D sprite
+                // fallback faces by frame row, so it never needed the rotation.
+                mesh.rotation.y = remote.overlay ? 0 : remote.currentYaw;
+                const remoteAim = aimVectorFromYaw(remote.currentYaw);
 
                 // Walk-cycle animation, driven by the vx/vz/animState already
                 // broadcast in playerMove -- mirrors updatePlayerSpriteAnimation
@@ -7200,12 +7267,14 @@ export class ThreeGame {
                     isMoving,
                     isSprinting: remote.animState === 'run' || speedSq > 8.0,
                     isInjured: remote.hp < remote.maxHp * 0.4,
-                    hasAim: false,
+                    // Their broadcast yaw is where they aim, so a squadmate standing
+                    // still turns toward their aim like the local player does.
+                    hasAim: true,
                     idleActionName: 'idle',
                     moveX: moveDirX,
                     moveZ: moveDirZ,
-                    aimX: moveDirX,
-                    aimZ: moveDirZ,
+                    aimX: remoteAim.x,
+                    aimZ: remoteAim.z,
                     groundSpeed
                 });
                 if (isMoving) {

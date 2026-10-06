@@ -108,6 +108,8 @@ describe('remote boss materialization', () => {
                 return o;
             }),
             materializeRemoteBoss: ThreeGame.prototype.materializeRemoteBoss,
+            materializeRemoteEnemy: ThreeGame.prototype.materializeRemoteEnemy,
+            pruneRemoteReplicas: ThreeGame.prototype.pruneRemoteReplicas,
             damageSnail: vi.fn(),
             group
         };
