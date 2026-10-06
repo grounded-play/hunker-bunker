@@ -395,6 +395,7 @@
     "alien_proto_spitter_walk_v2.png",
     "alien_rhun_walk.png",
     "alien_vey_walk.png",
+    "apple-touch-icon.png",
     "art-remaster/enemy-v5/snails/final/boss-cryosnail-walk-v5.png",
     "art-remaster/enemy-v5/snails/final/boss-cybersnail-walk-v5.png",
     "art-remaster/enemy-v5/snails/final/boss-sporesnail-walk-v5.png",
@@ -705,19 +706,13 @@
     "door_alien_keyart_v2.webp",
     "door_bio.webp",
     "door_bio_keyart_v2.webp",
-    "door_bio_keyart_var2.jpg",
-    "door_bio_keyart_var3.jpg",
     "door_biomech_keyart_v2.webp",
     "door_biomechanical.png",
     "door_biomechanical.webp",
     "door_cryo.webp",
     "door_cryo_keyart_v2.webp",
-    "door_cryo_keyart_var2.jpg",
-    "door_cryo_keyart_var3.jpg",
     "door_nuclear.webp",
     "door_nuclear_keyart_v2.webp",
-    "door_nuclear_keyart_var2.jpg",
-    "door_nuclear_keyart_var3.jpg",
     "door_rust_keyart_v2.webp",
     "drop_black_flask.png",
     "drop_child_drawing.png",
@@ -4018,6 +4013,11 @@
     {
       "path": "alien_vey_walk.png",
       "bytes": 680088,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "apple-touch-icon.png",
+      "bytes": 32340,
       "classification": "runtime-required"
     },
     {
@@ -20116,6 +20116,16 @@
       "classification": "unknown"
     },
     {
+      "path": "icon-maskable-192.png",
+      "bytes": 24509,
+      "classification": "unknown"
+    },
+    {
+      "path": "icon-maskable-512.png",
+      "bytes": 131360,
+      "classification": "unknown"
+    },
+    {
       "path": "icon_cull.png",
       "bytes": 608272,
       "classification": "unknown"
@@ -20992,7 +21002,7 @@
     },
     {
       "path": "manifest.json",
-      "bytes": 676,
+      "bytes": 955,
       "classification": "runtime-required"
     },
     {
@@ -22613,6 +22623,11 @@
     {
       "path": "survivor_vessel.png",
       "bytes": 441016,
+      "classification": "unknown"
+    },
+    {
+      "path": "sw.js",
+      "bytes": 1494,
       "classification": "unknown"
     },
     {

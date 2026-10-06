@@ -1,4 +1,5 @@
 import { createControllerPressGate } from './src/controllerPressGate.js';
+import { registerWebServiceWorker } from './src/serviceWorkerRegistration.js';
 import { initPlayerChatUI } from './src/playerChatUi.js';
 import { crossingGuidance, expeditionDebrief } from './src/expeditionFeedback.js';
 import { runO2MilestoneChoreography } from './src/o2CinematicDoors.js';
@@ -129,6 +130,9 @@ import { installNativeTooltipGuard } from './src/nativeTooltipGuard.js';
 import { installAccessibilitySettings } from './src/accessibilitySettings.js';
 import { recordCollectedPickup, recordDebugResourceGrant, resetRunResourceTelemetry } from './src/runTelemetry.js';
 import { loaderBuildLabel, versionLabel } from './src/buildLabels.js';
+
+// Installable PWA on the deployed web build only (never Electron or the dev server).
+registerWebServiceWorker();
 
 // These galleries are explicit developer destinations. Keeping their modules
 // out of the boot graph prevents QA scene code (and its transitive catalogs)
@@ -14994,17 +14998,14 @@ function getDoorImage(key) {
 }
 
 function preloadDoorAssets() {
+    // Only the art getDoorImage can show. The var2/var3 JPEG alternates were
+    // preloaded here but never displayed: 5.5 MB on every boot (Lighthouse
+    // "serve images in next-gen formats", 2026-10-06).
     const doorImages = [
         '/door_biomech_keyart_v2.webp',
         '/door_bio_keyart_v2.webp',
-        '/door_bio_keyart_var2.jpg',
-        '/door_bio_keyart_var3.jpg',
         '/door_nuclear_keyart_v2.webp',
-        '/door_nuclear_keyart_var2.jpg',
-        '/door_nuclear_keyart_var3.jpg',
         '/door_cryo_keyart_v2.webp',
-        '/door_cryo_keyart_var2.jpg',
-        '/door_cryo_keyart_var3.jpg',
         '/door_alien_keyart_v2.webp',
         '/door_rust_keyart_v2.webp',
         '/door_bio.webp',

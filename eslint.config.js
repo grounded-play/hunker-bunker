@@ -20,6 +20,17 @@ export default [
     },
   },
   {
+    // The web build's service worker (src/serviceWorkerRegistration.js).
+    files: ['public/sw.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'script',
+      globals: {
+        ...globals.serviceworker,
+      },
+    },
+  },
+  {
     files: ['server/**/*.js'],
     languageOptions: {
       ecmaVersion: 'latest',

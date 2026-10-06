@@ -21,6 +21,14 @@
     Content-Security-Policy = "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' blob: data: ws://localhost:* wss://* http://localhost:* https://*.netlify.app; object-src 'none';"
 
 [[headers]]
+  # Service worker - never cached, so a new build's worker is picked up on the next visit
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+    Service-Worker-Allowed = "/"
+
+[[headers]]
   # Manifest - No caching so updates to PWA registration are picked up immediately
   for = "/manifest.json"
   [headers.values]
