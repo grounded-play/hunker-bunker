@@ -1056,11 +1056,13 @@
     "engineer_ship_broken.png",
     "engineer_ship_healed.png",
     "favicon.png",
+    "favicon.svg",
     "fungal_spore_vent.png",
     "fx_spark_burst.svg",
     "fx_steam_puff.svg",
     "ice_base_rock.png",
     "ice_wall_glacier.png",
+    "icon-192.png",
     "interstitials/int_02_kaelen_s_sleeping_machine_key_v1.mp4",
     "interstitials/int_04_warmth_beneath_the_ice_key_v1.mp4",
     "interstitials/int_06_briggs_keeps_the_ledger_key_v1.mp4",
@@ -20028,7 +20030,7 @@
     {
       "path": "favicon.svg",
       "bytes": 9523,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "fungal_spore_vent.png",
@@ -20108,7 +20110,7 @@
     {
       "path": "icon-192.png",
       "bytes": 39297,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "icon-512.png",

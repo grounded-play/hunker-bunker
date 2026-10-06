@@ -19,7 +19,8 @@
   <link rel="stylesheet" href="/src/styles/foundryHub.css">
   <link rel="stylesheet" href="/src/styles/fieldWorkbench.css">
   <link rel="stylesheet" href="/src/styles/quickCommandRadial.css">
-  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
   <title data-i18n="ui.misc.hunker_bunker_tactical_command">HUNKER BUNKER | TACTICAL COMMAND</title>
 
   <!-- SEO Metadata -->
@@ -352,7 +353,7 @@
 
         <div class="credits-footer">
           <span data-i18n="ui.about.thank_you_for_deploying" class="credits-footer-thankyou">THANK YOU FOR DEPLOYING</span>
-          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.15-BETA // ACTIVE</span>
+          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.16-BETA // ACTIVE</span>
         </div>
       </div>
     </div>
@@ -441,7 +442,7 @@
             <div class="preview-box">
               <div class="hero-identity-block">
                 <div class="char-preview-stage" aria-hidden="true">
-                  <img id="char-preview-fallback" class="char-preview-fallback" src="/Tank.full_v2.png" alt="" />
+                  <img loading="lazy" id="char-preview-fallback" class="char-preview-fallback" src="/Tank.full_v2.png" alt="" />
                   <canvas id="char-preview-sprite" width="256" height="256"></canvas>
                   <canvas id="char-preview-3d" class="hidden" width="480" height="480"></canvas>
                   <div id="char-preview-door" class="char-preview-door">
@@ -779,7 +780,7 @@
           <div class="vault-right-column">
             <div class="vault-details-panel" id="vault-details-panel">
               <div class="vault-details-art">
-                <img id="vault-details-img" src="/favicon.png" alt="" />
+                <img loading="lazy" id="vault-details-img" src="/favicon.png" alt="" />
               </div>
               <div class="vault-details-name" id="vault-details-name">SELECT AN ITEM</div>
               <div class="vault-details-rarity" id="vault-details-rarity">—</div>
@@ -912,7 +913,7 @@
             <!-- Final Revealed Item Card -->
             <div class="vault-reveal-card" id="vault-reveal-card">
               <div class="vault-reveal-card__art">
-                <img id="vault-reveal-img" src="/favicon.png" data-i18n-alt="ui.vault_reveal.alt_reward" alt="Reward" />
+                <img loading="lazy" id="vault-reveal-img" src="/favicon.png" data-i18n-alt="ui.vault_reveal.alt_reward" alt="Reward" />
               </div>
               <div class="vault-reveal-card__rarity" id="vault-reveal-rarity-pill">LEGENDARY REWARD</div>
               <div class="vault-reveal-card__name" id="vault-reveal-name">QUEEN SLAYER EMBLEM</div>
@@ -1741,7 +1742,7 @@
       <div class="hud-notification-stack">
         <div id="radio-transmission-prompt" class="radio-transmission-prompt hidden" aria-live="polite">
           <div class="radio-transmission-prompt__avatar">
-            <img id="radio-avatar-img" src="/lore_portraits/survivor_08.webp" data-i18n-alt="ui.radio.alt_sender_portrait" alt="Sender Portrait" />
+            <img loading="lazy" id="radio-avatar-img" src="/lore_portraits/survivor_08.webp" data-i18n-alt="ui.radio.alt_sender_portrait" alt="Sender Portrait" />
             <div class="radio-transmission-prompt__scanline"></div>
           </div>
           <div class="radio-transmission-prompt__body">
@@ -3025,7 +3026,7 @@
         <button data-i18n-aria-label="ui.leader_conversation.aria_label_leave_conversation" type="button" id="leader-conversation-close" class="close-modal leader-conversation-close" aria-label="Leave conversation">×</button>
         <section data-i18n-aria-label="ui.leader_conversation.aria_label_speaker" class="leader-conversation-visual" aria-label="Speaker">
           <canvas id="leader-conversation-canvas" class="leader-conversation-canvas"></canvas>
-          <img id="leader-conversation-portrait" class="leader-conversation-portrait" src="/lore_portraits/survivor_00.webp" alt="">
+          <img loading="lazy" id="leader-conversation-portrait" class="leader-conversation-portrait" src="/lore_portraits/survivor_00.webp" alt="">
           <div class="leader-conversation-scanlines" aria-hidden="true"></div>
         </section>
         <section class="leader-conversation-content">
@@ -3053,14 +3054,14 @@
         <div class="snail-encounter-stage" id="snail-encounter-stage">
           <div class="snail-combatant snail-combatant--player" id="snail-encounter-player-card">
             <div class="snail-combatant-avatar-wrap">
-              <img id="snail-encounter-player-img" src="/Scout.full_v2.png" data-i18n-alt="ui.snail.alt_player_chassis" alt="Player Chassis" class="snail-combatant-img" />
+              <img loading="lazy" id="snail-encounter-player-img" src="/Scout.full_v2.png" data-i18n-alt="ui.snail.alt_player_chassis" alt="Player Chassis" class="snail-combatant-img" />
             </div>
             <span id="snail-encounter-player-name" class="snail-combatant-name">OPERATOR</span>
           </div>
           <div data-i18n="ui.snail_encounter.vs" class="snail-encounter-vs">VS</div>
           <div class="snail-combatant snail-combatant--enemy" id="snail-encounter-enemy-card">
             <div class="snail-combatant-avatar-wrap">
-              <img id="snail-encounter-enemy-img" src="/cybersnail.png" data-i18n-alt="ui.snail.alt_snail_combatant" alt="Snail Combatant" class="snail-combatant-img" />
+              <img loading="lazy" id="snail-encounter-enemy-img" src="/cybersnail.png" data-i18n-alt="ui.snail.alt_snail_combatant" alt="Snail Combatant" class="snail-combatant-img" />
             </div>
             <span id="snail-encounter-enemy-name" class="snail-combatant-name">CYBERSNAIL</span>
           </div>
