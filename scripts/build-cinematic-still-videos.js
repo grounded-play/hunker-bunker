@@ -44,7 +44,8 @@ const JOBS = [
     ['event-foundry-discovered', EVENT_CINEMATICS.foundry_discovered],
     ['event-black-box-recovered', EVENT_CINEMATICS.black_box_recovered],
     ['event-queen-encounter', EVENT_CINEMATICS.queen_encounter],
-    ['event-o2-generator-upgraded', EVENT_CINEMATICS.o2_generator_upgraded],
+    // event-o2-generator-upgraded is a real voiced film now (8 s, with audio,
+    // encoded from its .mp4); regenerating it from stills would overwrite it.
     ['event-boss-encounter-cryosnail', EVENT_CINEMATICS.boss_encounter_cryosnail],
     ['event-boss-encounter-cybersnail', EVENT_CINEMATICS.boss_encounter_cybersnail],
     ['event-boss-encounter-sporesnail', EVENT_CINEMATICS.boss_encounter_sporesnail]
