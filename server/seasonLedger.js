@@ -10,7 +10,7 @@
 // never grants twice. Supply bundles are the game's own bank, so the client
 // banks them and acks.
 import { createHash, randomUUID } from 'node:crypto';
-import { SeasonPassManager, STORAGE_KEY } from '../src/seasonPass.js';
+import { SeasonPassManager, STORAGE_KEY, onboardingStage } from '../src/seasonPass.js';
 import { SEASON_ONE, releasedSeasonWeeks, seasonDirectives } from '../src/data/seasonOneConfig.js';
 import { getMicroTxnCheckpoint, saveMicroTxnCheckpoint } from './db.js';
 import { grantItemToPlayer } from './steamGrant.js';
@@ -275,9 +275,10 @@ export function createSeasonLedger({
             const rules = seasonRules();
             return transact(steamId, ctx, (doc) => {
                 if (onboarding) {
-                    if (!['target', 'fabricated', 'equipped'].includes(onboarding)) return reject(doc.server, 'invalid_onboarding');
+                    const stage = onboardingStage(onboarding);
+                    if (!stage) return reject(doc.server, 'invalid_onboarding');
                     const pinned = target && Number.isSafeInteger(Number(target.itemdefid)) ? { itemdefid: Number(target.itemdefid) } : null;
-                    const result = evaluate(doc, rules, now(), (manager) => manager.completeOnboarding(onboarding, pinned));
+                    const result = evaluate(doc, rules, now(), (manager) => manager.completeOnboarding(stage, pinned));
                     if (result.rejected) return reject(doc.server, result.rejected);
                     return { accepted: true, award: result.award };
                 }

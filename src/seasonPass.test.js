@@ -194,3 +194,29 @@ describe('SeasonPassManager (Beta Season 1)', () => {
         expect(manager.isClaimed(1, 'free')).toBe(false);
     });
 });
+
+// CodeQL (remote property injection): the backend runs these rules on values
+// from the request, so no client string may become a property name.
+describe('season rules never write a client-chosen property name', () => {
+    const memory = () => {
+        const map = new Map();
+        return { getItem: (k) => map.get(k) ?? null, setItem: (k, v) => map.set(k, v) };
+    };
+
+    it('refuses onboarding stages, tracks and run ids it does not define', () => {
+        const pass = new SeasonPassManager({ storage: memory() });
+        for (const stage of ['__proto__', 'constructor', 'toString', 'hasOwnProperty', 'usefulLoop', 'objective']) {
+            expect(pass.completeOnboarding(stage).xpAwarded).toBe(0);
+            expect(Object.hasOwn(pass.state.onboarding, stage)).toBe(false);
+        }
+        expect(pass.completeOnboarding('target', { itemdefid: 4120 }).xpAwarded).toBeGreaterThan(0);
+        expect(pass.claimKey(3, '__proto__')).toBe('rank:3:invalid');
+        expect(pass.claim(1, '__proto__')).toBeNull();
+        for (const runId of ['__proto__', 'hasOwnProperty', 'constructor']) {
+            expect(pass.recordEvent({ runId, kind: 'objective', id: 'o1' }).xpAwarded).toBe(0);
+            expect(pass.settleRun(runId, 'extracted').xpAwarded).toBe(0);
+        }
+        expect({}.status).toBeUndefined();
+        expect({}.objectives).toBeUndefined();
+    });
+});
