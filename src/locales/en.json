@@ -1313,7 +1313,9 @@
       "recover_black_box": "RECOVER BLACK BOX",
       "recover_final": "RECOVER FINAL COMPONENT",
       "interact": "INTERACT",
-      "rest_end_day": "REST — END DAY {day}"
+      "rest_end_day": "REST — END DAY {day}",
+      "rest_blocked_quest": "Finish your active contract before you sleep.",
+      "rest_blocked_unsafe": "Not safe to sleep here right now."
     },
     "telemeter": {
       "passive_scan": "SURFACE SCAN // PASSIVE",

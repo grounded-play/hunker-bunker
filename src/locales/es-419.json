@@ -1313,7 +1313,9 @@
       "recover_black_box": "RECUPERAR CAJA NEGRA",
       "recover_final": "RECUPERAR COMPONENTE FINAL",
       "interact": "INTERACTUAR",
-      "rest_end_day": "DESCANSAR — TERMINAR DÍA {day}"
+      "rest_end_day": "DESCANSAR — TERMINAR DÍA {day}",
+      "rest_blocked_quest": "Termina tu contrato activo antes de dormir.",
+      "rest_blocked_unsafe": "Ahora no es seguro dormir aquí."
     },
     "telemeter": {
       "passive_scan": "ESCANEO DE SUPERFICIE // PASIVO",

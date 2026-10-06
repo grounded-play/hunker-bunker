@@ -4528,6 +4528,44 @@ export class ThreeGame {
             material.map = tex;
             material.needsUpdate = true;
         });
+        void this.attachBunkerCot3d?.();
+    }
+
+    // The cot as the same 3D camp cot the camps use; the sprite stays the
+    // position/visibility owner and the fallback if the model cannot load.
+    async attachBunkerCot3d() {
+        if (!hasWorld3dModel('prop_camp_cot')) return;
+        try {
+            const root = await (this.createWorld3dModel?.('prop_camp_cot') ?? createWorld3dModel('prop_camp_cot'));
+            if (!root || !this.bunkerCotSprite || !this.scene) return;
+            await this.prewarmLateModel?.(root);
+            root.rotation.y = WORLD_3D_FACING_YAW;
+            this.scene.add(root);
+            this.bunkerCot3d = root;
+            this.bunkerCotSprite.material.visible = false;
+            this.syncBunkerCot();
+        } catch (error) {
+            console.warn('[bunker-cot] 3D cot unavailable; keeping the sprite', error);
+        }
+    }
+
+    // setupBunkerCot runs once, at construction, on the menu profile, where the
+    // spawn tile is the empty showroom chunk: the cot used to stay there while
+    // the rest trigger sat, invisible, beside the real spawn (session
+    // 2026-10-06, "I don't see a bed"). Keep it on the rest point instead --
+    // a new run or a co-op crash site moves the spawn, and the cot with it.
+    syncBunkerCot() {
+        const sprite = this.bunkerCotSprite;
+        if (!sprite) return;
+        if (this.performanceProfile === 'gameplay') {
+            const point = this.getBunkerRestPoint();
+            if (sprite.position.x !== point.x || sprite.position.z !== point.z) sprite.position.set(point.x, 0.7, point.z);
+        }
+        const root = this.bunkerCot3d;
+        if (root) {
+            root.position.set(sprite.position.x, 0, sprite.position.z);
+            root.visible = sprite.visible;
+        }
     }
 
     setupCrashedShips() {
@@ -10200,6 +10238,7 @@ export class ThreeGame {
         }
         if (this.bunkerCotSprite) {
             this.bunkerCotSprite.visible = nextProfile === 'gameplay';
+            this.syncBunkerCot?.();
         }
         if (nextProfile === 'menu' && this.darknessOverlay) {
             this.darknessOverlay.style.opacity = '0';
@@ -19154,6 +19193,7 @@ export class ThreeGame {
      * action prompt rather than adding a second prompt surface.
      */
     updateRestPrompt() {
+        this.syncBunkerCot?.();
         if (typeof document === 'undefined') return;
         const promptEl = document.getElementById('console-hud-prompt');
         if (!promptEl) return;
@@ -19161,6 +19201,18 @@ export class ThreeGame {
         const point = this.player && this.isGameplayInputActive?.()
             ? this.getRestPointAt(this.player.position.x, this.player.position.z)
             : null;
+
+        // At the bed but not allowed to sleep: say why rather than stay silent.
+        const refusal = !point && this.player && this.isGameplayInputActive?.()
+            ? this.getRestRefusalAt?.(this.player.position.x, this.player.position.z)
+            : null;
+        if (refusal && actionText) {
+            actionText.textContent = refusal === 'active_quest' ? t('ui.prompt.rest_blocked_quest') : t('ui.prompt.rest_blocked_unsafe');
+            actionText.dataset.restPrompt = '1';
+            promptEl.classList.add('visible');
+            promptEl.classList.remove('hidden');
+            return;
+        }
 
         if (point) {
             if (actionText) {
@@ -19184,6 +19236,20 @@ export class ThreeGame {
             promptEl.classList.add('hidden');
             promptEl.classList.remove('visible');
         }
+    }
+
+    /**
+     * Within reach of the cot but refused for a reason the player can act on
+     * (an active contract, an unsafe camp, hostiles); null otherwise. The
+     * mid-sleep "already resting" refusal is not one of them.
+     */
+    getRestRefusalAt(x, z) {
+        if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
+        const cot = this.getBunkerRestPoint();
+        if (Math.hypot(cot.x - x, cot.z - z) > BUNKER_COT_REACH) return null;
+        const check = this.canRestAt(cot, { status: 'alive', safeSpace: true });
+        if (check.allowed) return null;
+        return ['active_quest', 'camp-unsafe', 'hostiles_nearby'].includes(check.reason) ? check.reason : null;
     }
 
     /** Where the bunker cot stands, in world coordinates. */

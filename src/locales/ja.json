@@ -1313,7 +1313,9 @@
       "recover_black_box": "ブラックボックスを回収",
       "recover_final": "最終コンポーネントを回収",
       "interact": "調べる",
-      "rest_end_day": "休息 — {day}日目を終える"
+      "rest_end_day": "休息 — {day}日目を終える",
+      "rest_blocked_quest": "眠る前に進行中の契約を終えてください。",
+      "rest_blocked_unsafe": "今ここで眠るのは安全ではありません。"
     },
     "telemeter": {
       "passive_scan": "地表スキャン // パッシブ",

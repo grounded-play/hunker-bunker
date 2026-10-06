@@ -1313,7 +1313,9 @@
       "recover_black_box": "BLACKBOX BERGEN",
       "recover_final": "LETZTE KOMPONENTE BERGEN",
       "interact": "INTERAGIEREN",
-      "rest_end_day": "RASTEN — TAG {day} BEENDEN"
+      "rest_end_day": "RASTEN — TAG {day} BEENDEN",
+      "rest_blocked_quest": "Schließe deinen aktiven Auftrag ab, bevor du schläfst.",
+      "rest_blocked_unsafe": "Hier ist es gerade nicht sicher zu schlafen."
     },
     "telemeter": {
       "passive_scan": "OBERFLÄCHENSCAN // PASSIV",

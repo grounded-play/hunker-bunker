@@ -1313,7 +1313,9 @@
       "recover_black_box": "回收黑匣子",
       "recover_final": "回收最终组件",
       "interact": "交互",
-      "rest_end_day": "休息 — 结束第 {day} 天"
+      "rest_end_day": "休息 — 结束第 {day} 天",
+      "rest_blocked_quest": "先完成进行中的委托再睡觉。",
+      "rest_blocked_unsafe": "现在在这里睡觉不安全。"
     },
     "telemeter": {
       "passive_scan": "地表扫描 // 被动",

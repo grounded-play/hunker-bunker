@@ -1313,7 +1313,9 @@
       "recover_black_box": "RECUPERAR CAIXA-PRETA",
       "recover_final": "RECUPERAR COMPONENTE FINAL",
       "interact": "INTERAGIR",
-      "rest_end_day": "DESCANSAR — ENCERRAR DIA {day}"
+      "rest_end_day": "DESCANSAR — ENCERRAR DIA {day}",
+      "rest_blocked_quest": "Conclua seu contrato ativo antes de dormir.",
+      "rest_blocked_unsafe": "Não é seguro dormir aqui agora."
     },
     "telemeter": {
       "passive_scan": "VARREDURA DE SUPERFÍCIE // PASSIVA",
