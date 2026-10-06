@@ -5,11 +5,11 @@ and worklogs are evidence or history; they do not override this file. Update a
 row when its implementation or acceptance state changes and link to evidence
 instead of duplicating it here.
 
-Current implementation branch: `dev/sprint-49`, package `2.4.14-beta`, opened from
+Current implementation branch: `dev/sprint-49` (merged as `v2.4.14-beta`), package `2.4.15-beta` (dependency maintenance), opened from
 `95ff7285` on 2026-10-01. [Sprint 49](docs/planning/sprint-49.md) and its
 [handoff](docs/planning/sprint-49-implementation-handoff.md) own current work.
 
-Last release reconciliation: 2026-10-01 · source baseline `dev/sprint-49` (release candidate `v2.4.14-beta`, PR into `mothership` pending). `v2.4.13-beta` is released on `mothership` (`95ff7285`, PR #96) and on the Steam `beta` branch. The trusted backend runs `7783278f` (deployed 2026-10-01).
+Last release reconciliation: 2026-10-06 · `v2.4.14-beta` is released on `mothership` (`1030cbc5`, PR #100, [release](https://github.com/grounded-play/hunker-bunker/releases/tag/v2.4.14-beta)) and runs on the Steam `beta` branch. The trusted backend runs `970f17af` (deployed 2026-10-06). `2.4.15-beta` is dependency maintenance on `deps/2026-10-06-security-and-minor`.
 
 The older subsystem rows below retain their stated evidence dates. Current audit
 corrections: field crafting is **partially integrated** (event with no UI consumer),
