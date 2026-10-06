@@ -20,23 +20,44 @@
 
 🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord Server](https://discord.gg/XXwwz3rauu)** • 📚 **[Documentation Map](docs/README.md)**
 
-> **Status (2026-10-04):** Sprint 49 is on `dev/sprint-49` at `v2.4.14-beta`, in a release PR into `mothership`. `v2.4.13-beta` is live on the Steam `beta` branch, and the relay server already runs this branch's backend (`91477067`). This release adds:
-> - **Filtered player chat** in co-op and PvP, in seven languages, with mute, block and report.
-> - **Developer commentary** that tells the real history of the game, in seven languages.
-> - **Controller fixes** found by a new pad-only walk through every review screen.
-> - **3D overhaul:**
->   - The 80 modular cave and space kit pieces now load, with seamless custom surfaces that line up on their socket grid.
->   - 35 environment props are restored to full detail.
->   - New models: the cryosnail, corrupted Kaelen, both Ghost Runner bodies, the Mycelium Stalker, the Proto Spitter and a real camp cookfire.
->   - The debug museum exhibits every shipped model at in-game size and facing.
-> - **Economy compliance:** Belgium paid-key restriction, the store priced at Steam tiers, purchase reconciliation that never reports false success, and verified zero pay-to-win stats.
-> - **Multiplayer fixes:**
->   - Co-op: the 2026-09-30 playtest fixes and a same-build lobby check.
->   - PvP: hits count only once both players have loaded, then after a short spawn protection; rival damage is kept apart from campaign defences.
->   - Reconnects keep the roster in sync.
-> - **Isometric camera** as the default for new players.
+> **Status (2026-10-06):** Sprint 49 is ready to merge: `dev/sprint-49` at `v2.4.14-beta`, release PR #100 into `mothership`. The Steam `beta` branch runs this release (`f9093289`), and so does the relay server.
 >
-> See [`docs/releases/v2.4.14-beta.md`](docs/releases/v2.4.14-beta.md).
+> New since 2026-10-04:
+> - **The Steam store works end to end.**
+>   - BUY opens Steam's approval dialog, the keys land in your inventory, and every outcome shows under the buttons.
+>   - Beta builds buy through Valve's no-charge sandbox, for listed testers only.
+>   - Verified live: a cancel, then two purchases granting 16 keys.
+> - **Season 1 is held by the server.** Dossier ranks, directives and fragments are tracked by the backend per Steam account, so rank rewards reach Steam inventory instead of staying "Pending". Verified live: an imported Rank 12 granted its five rank items and three rare fragments. The Dossier opens on your rank, and the Fragment Workshop crafts through Steam.
+> - **Records & Leaderboards:** Archive → RECORDS shows a service record, personal bests and per-class records, plus the five Steam boards.
+> - **Fixes:**
+>   - walls that were invisible on many Windows PCs
+>   - a black gameplay screen
+>   - placeholder props that are now 3D models
+>   - interactable props that paid out on every press
+>   - the cache reveal, which played in a hidden window
+>   - tab bars that skipped tabs
+>   - the PvP winner screen
+>
+> Already in this release:
+> - **Voiced narrative** in seven languages, with developer commentary in the developer's own voice.
+> - **Filtered player chat** in co-op and PvP, with mute, block and report.
+> - **Lived-in rooms:** modular gateways, dense instanced dressing that can be destroyed (and stays destroyed), and cathedral, cryo-medical and biomech room grammar.
+> - **3D overhaul:**
+>   - 80 modular kit pieces
+>   - 35 restored props
+>   - new rigged enemies
+>   - hive leaders in 3D
+>   - camps, hives and corpses as models
+> - **Economy compliance:** Belgium paid-key restriction, Steam price tiers, `GetReport` reconciliation, durable paid grants, and 7-day trade holds.
+> - **Co-op and PvP fixes,** and the isometric camera as the default.
+>
+> **Still open:**
+> - a completed two-account co-op expedition (#85)
+> - PvP certification (#51), which includes a remote-health drift found on 2026-10-06
+> - a physical Deck controller-only route (#53)
+> - frame pacing (#52)
+>
+> See [`docs/releases/v2.4.14-beta.md`](docs/releases/v2.4.14-beta.md) and PR #100.
 >
 > `v2.4.13-beta` answered Steam build review 25475189 in code:
 > - **Multiplayer:** now on the title menu.
