@@ -127,6 +127,10 @@ async function requestSteamBackend(path, { method = 'GET', body = null, headers 
                 method,
                 headers: Object.keys(requestHeaders).length > 0 ? requestHeaders : undefined,
                 body: body ? JSON.stringify(body) : undefined,
+                // Live account data: never revalidate against a cached copy.
+                // The backend answered /steam/inventory, /store/catalog and
+                // /market/eligibility with 304s, and only 2xx counts as ok here.
+                cache: 'no-store',
                 signal: controller.signal
             });
         } finally {

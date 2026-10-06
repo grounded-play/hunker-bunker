@@ -276,11 +276,14 @@ function applyLocalSeasonInventory(items) {
 }
 
 export function deliverLocalSeasonReward(reward, receiptId) {
-    if (window.electronAPI) return { ok: false, reason: 'verified_service_required' };
+    // Supply bundles are the game's own TECH / COIN / MED bank, so they land
+    // on every build. Refusing them on Steam builds left every one of them
+    // "Pending — retry" forever (session logs 2026-10-06).
     if (reward.kind === 'supply_bundle') {
         return window.bankManager?.depositSeasonReward({ tech: reward.tech, coin: reward.coin, med: reward.med }, receiptId)
             ?? { ok: false, reason: 'bank_unavailable' };
     }
+    if (window.electronAPI) return { ok: false, reason: 'verified_service_required' };
     const result = new LocalVaultLedger(window.localStorage).grant(reward.itemdefid, reward.qty ?? 1, receiptId);
     if (result.ok) applyLocalSeasonInventory(result.items);
     return result;
@@ -429,11 +432,7 @@ export function initSteamVaultUI() {
 
     tabStore?.addEventListener('click', async () => {
         activateTab(tabStore, storeLayout);
-        await loadStoreCatalog();
-        renderStoreSkuGrid();
-        renderHostedItemStoreCta();
-        renderOddsTable();
-        updateOpenCacheAvailability();
+        await renderStorePanel();
     });
 
     tabSmelter?.addEventListener('click', () => {
@@ -768,6 +767,20 @@ function formatStoreDisabledReason(reason) {
     if (reason === 'steam_store_disabled') return 'PURCHASES OFFLINE';
     if (reason === 'catalog_unavailable') return 'CATALOG OFFLINE';
     return 'UNAVAILABLE';
+}
+
+/**
+ * The whole store: key bundles, Steam Item Store link, odds and the cache
+ * opener. Shared by the Vault's STORE tab and the Foundry hub's, which borrows
+ * the same layout; the hub used to show it empty because only the Vault's tab
+ * drew it (session logs 2026-10-06).
+ */
+export async function renderStorePanel() {
+    await loadStoreCatalog();
+    renderStoreSkuGrid();
+    renderHostedItemStoreCta();
+    renderOddsTable();
+    updateOpenCacheAvailability();
 }
 
 export function renderStoreSkuGrid() {
