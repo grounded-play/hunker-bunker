@@ -196,8 +196,14 @@ describe('browser gamepad mapping', () => {
 
         expect(press(12).toggleMap).toBe(true);  // up    -> Tactical Map
         expect(press(13).scan).toBe(true);       // down  -> Scan
-        expect(press(14).reload).toBe(true);     // left  -> Reload
-        expect(press(15).ability).toBe(true);    // right -> Smash
+        expect(press(14).tacticalPing).toBe(true); // left  -> Ping / Squad Trade (T)
+        expect(press(15).quickCommand).toBe(true); // right -> Squad Commands (G)
+        // X and Y alone own reload and smash, so a D-pad press never also
+        // reloads or swings.
+        expect(press(14).reload).toBe(false);
+        expect(press(15).ability).toBe(false);
+        expect(press(15).active).toBe(true);
+        expect(press(11).cycleInteract).toBe(true); // R3 -> Next Target (C)
     });
 
     it('keeps the left stick as the only movement source', () => {

@@ -102,6 +102,9 @@
                 "sprint" "#ActionSprint"
                 "pause" "#ActionPause"
                 "toggle_map" "#ActionToggleMap"
+                "tactical_ping" "#ActionTacticalPing"
+                "quick_command" "#ActionQuickCommand"
+                "cycle_interact" "#ActionCycleInteract"
             }
         }
         "archive"
@@ -154,6 +157,9 @@
             "ActionSprint" "Sprint"
             "ActionPause" "Pause"
             "ActionToggleMap" "Tactical Map"
+            "ActionTacticalPing" "Ping / Squad Trade"
+            "ActionQuickCommand" "Squad Commands"
+            "ActionCycleInteract" "Next Target"
             "ActionArchiveFocus" "Move Focus"
             "ActionArchiveConfirm" "Inspect / Confirm"
             "ActionArchiveInventory" "Inventory"

@@ -1,5 +1,22 @@
 const loggedAtlasLayouts = new Set();
 
+/**
+ * Clears the chroma-green background the generated sheets were painted on, in
+ * place. The menu previews and the pre-cut title portraits
+ * (scripts/build-title-portraits.mjs) share it, so both draw the same pixels.
+ */
+export function clearChromaGreen(data) {
+    for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        if (data[i + 3] > 0 && r < 140 && b < 140 && g > 90 && g > r * 1.4 && g > b * 1.4) {
+            data[i + 3] = 0;
+        }
+    }
+    return data;
+}
+
 function findActiveRuns(length, isActive) {
     const runs = [];
     let start = -1;

@@ -458,6 +458,9 @@ function initSteam() {
                 scan: steamClient.input.getDigitalAction('scan'),
                 sprint: steamClient.input.getDigitalAction('sprint'),
                 toggleMap: steamClient.input.getDigitalAction('toggle_map'),
+                tacticalPing: steamClient.input.getDigitalAction('tactical_ping'),
+                quickCommand: steamClient.input.getDigitalAction('quick_command'),
+                cycleInteract: steamClient.input.getDigitalAction('cycle_interact'),
                 archiveFocus: steamClient.input.getAnalogAction('archive_focus'),
                 archiveConfirm: steamClient.input.getDigitalAction('archive_confirm'),
                 archiveInventory: steamClient.input.getDigitalAction('archive_inventory'),
@@ -612,6 +615,9 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
             scan: isValidActionHandle(actionHandles.scan) ? controller.isDigitalActionPressed(actionHandles.scan) : false,
             sprint: isValidActionHandle(actionHandles.sprint) ? controller.isDigitalActionPressed(actionHandles.sprint) : false,
             toggleMap: isValidActionHandle(actionHandles.toggleMap) ? controller.isDigitalActionPressed(actionHandles.toggleMap) : false,
+            tacticalPing: isValidActionHandle(actionHandles.tacticalPing) ? controller.isDigitalActionPressed(actionHandles.tacticalPing) : false,
+            quickCommand: isValidActionHandle(actionHandles.quickCommand) ? controller.isDigitalActionPressed(actionHandles.quickCommand) : false,
+            cycleInteract: isValidActionHandle(actionHandles.cycleInteract) ? controller.isDigitalActionPressed(actionHandles.cycleInteract) : false,
             pause: isValidActionHandle(actionHandles.pause) ? controller.isDigitalActionPressed(actionHandles.pause) : false
         }
         : phase === 'archive'

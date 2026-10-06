@@ -26,5 +26,21 @@ describe('getControllerGlyphLabel', () => {
         expect(getControllerGlyphLabel('customAction', 'GenericGamepad')).toBe('CUSTOM ACTION');
         expect(getControllerGlyphLabel('', 'GenericGamepad', 'E')).toBe('E');
     });
-});
 
+    // The glyphs must name the buttons scripts/build-steam-input-configs.js
+    // actually binds: sprint is the left trigger and scan the left bumper
+    // (B is dodge), and the commands that used to be keyboard-only (T, G, C)
+    // sit on the D-pad and the aim-stick click.
+    it('names the buttons the shipped controller layout binds', () => {
+        expect(getControllerGlyphLabel('sprint', 'SteamDeckController')).toBe('LT');
+        expect(getControllerGlyphLabel('scan', 'SteamDeckController')).toBe('LB');
+        expect(getControllerGlyphLabel('sprint', 'PS5Controller')).toBe('L2');
+        expect(getControllerGlyphLabel('scan', 'PS5Controller')).toBe('L1');
+        expect(getControllerGlyphLabel('sprint', 'SwitchProController')).toBe('ZL');
+        expect(getControllerGlyphLabel('scan', 'SwitchProController')).toBe('L');
+        expect(getControllerGlyphLabel('tacticalPing', 'SteamDeckController')).toBe('D-PAD ←');
+        expect(getControllerGlyphLabel('quickCommand', 'PS5Controller')).toBe('D-PAD →');
+        expect(getControllerGlyphLabel('cycleInteract', 'SteamDeckController')).toBe('RS');
+        expect(getControllerGlyphLabel('cycleInteract', 'PS5Controller')).toBe('R3');
+    });
+});

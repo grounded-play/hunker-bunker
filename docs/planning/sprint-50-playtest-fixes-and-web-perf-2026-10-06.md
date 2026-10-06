@@ -18,6 +18,8 @@ Also the Netlify Lighthouse report: mobile Performance 38.
 4. "I also think the rotation is off for the other player."
 5. "The UI is getting clipped and I want things more on the lower part of the screen."
 6. Improve the Lighthouse score (#106).
+7. "The night sleep isn't working, I don't see a bed, I can't interact with it."
+8. "We need more of the currencies and trade-ups and melting materials to be present and working: look at what's there but not actualized, add them to the plan and into the game now."
 
 ## 1. Host enemies a guest could not see — fixed (`7686fbc7`)
 
@@ -77,8 +79,63 @@ Also the Netlify Lighthouse report: mobile Performance 38.
   - The six were ~330 KB gzipped of boot JavaScript.
   - In the browser: every language boots and live switching works (`tests/e2e/i18n-localization.spec.js`, 9/9).
 
-**Remaining**, in #106's order: Three.js out of the boot graph, chunk config, fonts, critical CSS, deferred sprite sheets, and a mobile Lighthouse check in CI.
+- **Three.js out of the boot graph, and the chunk config** (steps 2–3).
+  - The armory, hero preview, leader conversation, enemy-template preload and reward preview now load on first use. Their model URL tables moved to a Three.js-free module (`src/data/operatorModelUrls.js`).
+  - The hand-written `manualChunks` groups are gone. Rolldown pulls each group's dependencies into it, so the "debug-tools" chunk was really 2.3 MB of Three.js and the locales, all on the boot path.
+  - Boot JavaScript is now 462 KiB (1032 KiB before step 1, 705 KiB after it).
+  - Lighthouse 9.6.8 mobile (local preview, three runs): **Performance 52–53** (was 42–46); FCP 2.5–3.0 s, LCP 7.9–8.3 s, TBT ~500 ms, TTI 7.1–7.7 s.
+
+**Remaining**, in #106's order: fonts, critical CSS, deferred sprite sheets, and a mobile Lighthouse check in CI.
+
+What still costs the most:
+- **TBT.** `main.js` evaluation is ~1.8 s of main-thread time, including one 576 ms task. A 522 ms task runs in the `presentationTelemetry` chunk. The next step is splitting `main.js`'s top-level setup into idle-time work.
+- **LCP.** The title art paints after the boot JavaScript.
+
+## 7. Night sleep: the bed was somewhere else — fixed
+
+- **Cause.** The bunker cot is placed once, when the game is constructed. At that moment the game is on the menu profile, whose spawn tile is the showroom chunk at (100, 100). So the cot stood about 3,200 units away, while the rest trigger sat at the real spawn: a prompt with no bed, or no prompt at all.
+- **Fix.**
+  - `syncBunkerCot()` moves the cot (sprite and 3D model) to the live rest point whenever the gameplay profile starts, and every frame the rest prompt runs, so it follows a moved spawn.
+  - The cot now has a 3D model (`prop_camp_cot`), with its shaders compiled in the background.
+  - Standing at the cot when rest is refused now says why: an active quest, or hostiles or an unsafe camp nearby (`ui.prompt.rest_blocked_quest`, `ui.prompt.rest_blocked_unsafe`, all 7 languages).
+- **Tests:** `src/threeGame.restPoint.test.js` (cot at the rest point; follows a spawn change; 3D model mirrors it; refusal reason).
+- **Verify in game:** start a run, return to the bunker at night, see the cot by the spawn, press the prompt, and the night skips.
+
+## 8. Currencies, trade-ups and smelting: what exists vs. what works
+
+The design is `docs/season-zero-protocol/05-crafting-matrix-and-salvage-economy.md`. Audit, 2026-10-06:
+
+| Thing | Exists | Worked before | Now |
+|---|---|---|---|
+| Scrap from props (9 props: siphon, salvage, pry…) | `game.addScrap?.(n)` in `src/propInteractions.js`, "+N SCRAP" text | **No.** ThreeGame had no `addScrap`; the optional call did nothing | **Fixed.** Scrap banks as tech, which the bank already treats as scrap. A test fails if any prop hook is missing from ThreeGame. |
+| Duplicate protection (doc 05 §3) | `DUPLICATE_SHARD_BONUS`, `resolveDuplicateGrant` | **No.** Never called. Steam gave nothing for a duplicate; the sandbox *replaced* the item with shards from a different table | **Fixed.** A cache roll the player already owns grants the item **plus** shards (epic +40, legendary +100). It's the same table on the server and in the sandbox. |
+| Deep Core Shards 4159 (Dispensary currency) | Dispensary redeem is live on Steam | Spendable, but **no Steam source** | Source added: cache duplicates. |
+| "Partial grant" after every Steam cache open | `adaptSteamCacheResult` | Required 3 rewards; a Steam cache gives 1 | **Fixed.** One reward is a complete open. |
+| Smelter 5→1 trade-up | live on Steam (`/steam/inventory/trade-up`) | yes | unchanged |
+| Fragment crafts 2100/2200 | live on Steam | yes | unchanged |
+| Cryo-Alloy Ingot 4156 | Quartermaster pack (400 tech), sandbox only | Source in sandbox only; **no sink anywhere** | needs a decision (below) |
+| Sub-Core Matrix 4157, Ambergris 4158 | itemdefs, sandbox cache drops | **No source on Steam, no sink anywhere** | needs a decision |
+| Earned Relic Key 4154 | itemdef, non-marketable | **Unusable.** The cache generator (4002) only accepts the paid key 4001 | needs a decision |
+| Key Master Pack 4155 | itemdef | Superseded by the store's 4005/4015 key bundles | retire |
+
+**Needs a decision before it can be built** (each touches real Steam items):
+
+- [ ] **Earned keys.** Boss kills grant the *paid, marketable* key 4001, so free keys can be sold on the Community Market. Proposal:
+  - Boss kills grant 4154 instead.
+  - Add `4000x1,4154x1` as a second exchange on generator 4002 in `steam/inventory_schema_hunker_bunker.json`.
+  - Accept either key in `server/steamRecipeExchange.js` and `src/steamVaultUi.js`.
+  - Owner uploads the schema.
+- [ ] **Quartermaster shards → reagents** (doc 05 §4): Matrix 35 shards (max 3/week), Ambergris 50 (max 2/week), Earned Key 75 (max 1/week).
+  - Server route on the existing `commitExchange`, with weekly caps held server-side.
+  - Only worth building once reagents have a sink.
+- [ ] **A sink for ingots and reagents.** Doc 05 §6 overclock assembly needs components that aren't real items (Micro-Capacitor, Coolant Line…) and Scrap, which lives in the client-side bank and can't be charged on the server. Proposal: assemble overclocks 4140–4147 from ingots + matrices + ambergris only (the doc's quantities, components dropped).
+- [ ] **A Steam source for ingots.** The Quartermaster pack is paid in tech, which the server can't verify, so it stays sandbox-only. Proposal: ingots ride on the existing server-verified boss-kill milestone.
+- [ ] **Retire 4155** from the schema (owner upload).
+- [ ] **Duplicate shards whose grant failed.** The cache reward stands and the response says `duplicateBonus.ok: false`, but nothing retries it. Add a sweep that re-sends the shard grant from the journal (the AddItem request id is stable, so a retry can't double-grant).
+
+**Owner steps for what shipped here:** deploy the backend (cache-open duplicate shards are server-side). No schema change is needed: shards 4159 already exist and are granted with AddItem.
 
 ## Status log
 
 - 2026-10-06: items 1, 2 and 4 fixed with tests; item 6 step 1 done; this plan written. Items 3 (remaining), 5 and 6 (remaining) open.
+- 2026-10-06 (later): item 6 steps 2–3 (Performance 52–53); item 7 (bed) fixed; item 8 audited, with scrap, duplicate shards and the Steam partial-open message fixed and four economy decisions listed.

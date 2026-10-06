@@ -7,7 +7,10 @@
   <meta name="theme-color" content="#07090b" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Not render-blocking (issue #106): text paints in the fallback face and
+       swaps when the webfont arrives (display=swap). -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"></noscript>
   <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="/src/styles/expeditionHud.css">
   <link rel="stylesheet" href="/src/styles/hudDockHousings.css">
@@ -208,7 +211,7 @@
       </aside>
       <div class="loader-content">
         <div class="loader-briefing-avatar hidden" id="loader-briefing-avatar">
-          <img id="loader-briefing-avatar-img" src="/lore_portraits/survivor_08.webp" alt="" />
+          <img id="loader-briefing-avatar-img" loading="lazy" decoding="async" src="/lore_portraits/survivor_08.webp" alt="" />
           <div class="loader-briefing-avatar__scanline"></div>
         </div>
         <div data-i18n="ui.loading.initializing_systems" class="loader-title">INITIALIZING SYSTEMS</div>

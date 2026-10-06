@@ -1765,6 +1765,10 @@ export function isRoomGatewayFrameEligible(room, door, metadata = {}) {
 const REMOTE_ENEMY_MATERIALIZE_PER_SNAPSHOT = 4;
 const REMOTE_REPLICA_STALE_MS = 3000;
 
+// Keyboard keys named in target prompts -> the controller action that does
+// the same thing (src/inputGlyphs.js, scripts/build-steam-input-configs.js).
+const PROMPT_KEY_ACTIONS = Object.freeze({ E: 'interact', T: 'tacticalPing', C: 'cycleInteract', G: 'quickCommand', R: 'reload' });
+
 export class ThreeGame {
     constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null, cameraMode = 'isometric', gameplayTiltShiftBlurEnabled = false } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
@@ -11664,6 +11668,18 @@ export class ThreeGame {
         }
     }
 
+    // The button that does what this keyboard key does, on the player's
+    // current device: target-panel badges used to print E and T on a Deck.
+    getPromptKeyGlyph(defaultKey = 'E', action = PROMPT_KEY_ACTIONS[defaultKey] ?? 'interact') {
+        const isGamepad = Boolean(
+            this.isGamepadActive?.()
+            || this.activeInputDevice === 'gamepad'
+            || (typeof window !== 'undefined' && window.state?.inputMode === 'gamepad')
+        );
+        if (isGamepad) return getControllerGlyphLabel(action, this.activeControllerType ?? 'SteamDeckController', defaultKey);
+        return (typeof window !== 'undefined' && window.HunkerInputState?.getPromptKeyText?.(defaultKey)) || defaultKey;
+    }
+
     getPromptKeyLabel(defaultKey = 'E', action = 'interact') {
         const isGamepad = Boolean(
             this.isGamepadActive?.()
@@ -12542,7 +12558,7 @@ export class ThreeGame {
                         return {
                             type: 'interact',
                             targetId: 'trade_peer',
-                            badgeLabel: `[T] LINK // BARTER WITH ${(remote.callsign || 'SQUADMATE').toUpperCase()}`,
+                            badgeLabel: `LINK // BARTER WITH ${(remote.callsign || 'SQUADMATE').toUpperCase()}`,
                             kicker: 'SQUADMATE COMM // TRADE',
                             title: (remote.callsign || 'SQUADMATE').toUpperCase(),
                             subtitle: `CLASS: ${(remote.playerType || 'OPERATIVE').toUpperCase()}`,
@@ -13149,7 +13165,7 @@ export class ThreeGame {
         if (actionPrompt && actionKey && actionText) {
             if (target.promptKey && target.promptText) {
                 actionPrompt.classList.remove('hidden');
-                actionKey.textContent = target.promptKey;
+                actionKey.textContent = this.getPromptKeyGlyph(target.promptKey);
                 actionText.textContent = target.promptText;
             } else {
                 actionPrompt.classList.add('hidden');

@@ -79,7 +79,7 @@ import {
 } from './src/inputActions.js';
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
 import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSpriteLayouts.js';
-import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
+import { clearChromaGreen, repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { createArmoryUi } from './src/armoryUi.js';
 import { initSteamVaultUI, isVaultExchangeAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, renderStorePanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
 import { createFoundryHub, isFoundryHubEnabled } from './src/foundryHub.js';
@@ -2590,6 +2590,24 @@ debugLog.subscribe((entry) => {
     updateGameplayCrosshair(lastReticleClientX, lastReticleClientY, lastReticleVisibleIntent);
 });
 
+// The tactical map opened mid-run, on a controller: the keyboard's
+// WASD/arrows, +/- and H/P/R. Sticks pan, RT/LT zoom in/out, A centres on the
+// player, Y on home, X resets the view (B, View or Menu close it).
+function handleControllerTacticalMap(controller, prev) {
+    const stick = (value) => (Math.abs(Number(value) || 0) > 0.18 ? Number(value) || 0 : 0);
+    const panX = stick(controller.move?.x) || stick(controller.camera?.x);
+    const panY = stick(controller.move?.y) || stick(controller.camera?.y);
+    if (panX || panY) {
+        tacticalMapState.panX -= panX * 7;
+        tacticalMapState.panY -= panY * 7;
+    }
+    if (controller.fire) adjustTacticalMapZoom(0.02);
+    if (controller.sprint) adjustTacticalMapZoom(-0.02);
+    if (controller.interact && !prev.interact) focusTacticalMapOnPlayer();
+    if (controller.ability && !prev.ability) focusTacticalMapOnHome();
+    if (controller.reload && !prev.reload) resetTacticalMapView();
+}
+
 function handleSteamGameplayInput(controller) {
     const prev = steamInputPrevControllers.get(controller.handle) ?? {};
     const tacticalMapModal = document.getElementById('tactical-map-modal');
@@ -2597,12 +2615,17 @@ function handleSteamGameplayInput(controller) {
     if (isMapOpen) {
         if (performance.now() - lastTacticalMapToggleTimestamp >= 250 && ((controller.dash && !prev.dash) || (controller.toggleMap && !prev.toggleMap) || (controller.pause && !prev.pause))) {
             toggleTacticalMapModal(false);
+        } else {
+            handleControllerTacticalMap(controller, prev);
         }
         updateControllerInputMemory(controller, {
             ...prev,
             dash: Boolean(controller.dash),
             toggleMap: Boolean(controller.toggleMap),
-            pause: Boolean(controller.pause)
+            pause: Boolean(controller.pause),
+            interact: Boolean(controller.interact),
+            ability: Boolean(controller.ability),
+            reload: Boolean(controller.reload)
         });
         return;
     }
@@ -2671,11 +2694,16 @@ function handleSteamGameplayInput(controller) {
         window.quickCommandRadial.handleDirectionInput(aimX, aimY);
         if ((controller.fire && !prev.fire) || (controller.interact && !prev.interact) || (controller.tacticalPing && !prev.tacticalPing)) {
             window.quickCommandRadial.confirmSelection();
-        } else if ((controller.menuBack && !prev.menuBack) || (controller.dash && !prev.dash)) {
+        } else if ((controller.menuBack && !prev.menuBack) || (controller.dash && !prev.dash)
+            || (controller.quickCommand && !prev.quickCommand)) {
             window.quickCommandRadial.close();
         }
+    } else if (controller.quickCommand && !prev.quickCommand) {
+        // Keyboard G: the squad command radial.
+        window.dispatchEvent(new CustomEvent('open-quick-command-radial'));
     } else if (controller.tacticalPing && !prev.tacticalPing) {
-        window.game?.triggerTacticalPing?.();
+        // Keyboard T: trade with a squadmate when there is one, else a ping.
+        if (!toggleSquadTrade()) window.game?.triggerTacticalPing?.();
     }
 
     if (controller.pause && !prev.pause) {
@@ -2697,6 +2725,7 @@ function handleSteamGameplayInput(controller) {
         dash: Boolean(controller.dash),
         scan: Boolean(controller.scan),
         tacticalPing: Boolean(controller.tacticalPing),
+        quickCommand: Boolean(controller.quickCommand),
         pause: Boolean(controller.pause),
         toggleMap: Boolean(controller.toggleMap),
         sprint: Boolean(controller.sprint),
@@ -3455,11 +3484,35 @@ function refreshCareerStats() {
     }
 }
 
+// The pre-cut frame (scripts/build-title-portraits.mjs): ~40 KB, where the
+// full walk sheet was 1.3 MB plus a chroma-key pass over 4.2M pixels on the
+// main thread during boot (issue #106). Same pixels.
+function loadTitlePortraitImage(playerType) {
+    const key = String(PLAYER_SPRITE_LAYOUTS[playerType] ? playerType : 'TANK').toLowerCase();
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.decoding = 'async';
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = assetUrl(`/portraits/title_${key}.png`);
+    });
+}
+
 async function renderTitleProfilePortrait(playerType) {
     const portraitCanvas = document.getElementById('title-profile-portrait');
     const layout = PLAYER_SPRITE_LAYOUTS[playerType] ?? PLAYER_SPRITE_LAYOUTS.TANK;
     const context = portraitCanvas?.getContext?.('2d');
     if (!portraitCanvas || !context || !layout) return;
+
+    const portrait = await loadTitlePortraitImage(playerType).catch(() => null);
+    if (portrait) {
+        portraitCanvas.width = portrait.width;
+        portraitCanvas.height = portrait.height;
+        context.clearRect(0, 0, portrait.width, portrait.height);
+        context.imageSmoothingEnabled = false;
+        context.drawImage(portrait, 0, 0);
+        return;
+    }
 
     const image = await getPreviewSpriteImage(layout.path, layout).catch(() => null);
     if (!image) return;
@@ -12697,6 +12750,24 @@ function toggleTacticalMapModal(forceState) {
 document.getElementById('close-tactical-map-modal')?.addEventListener('click', () => toggleTacticalMapModal(false));
 setupClickOutside('tactical-map-modal', () => toggleTacticalMapModal(false));
 
+// T, and D-pad left on a controller. Barter only exists with a real
+// squadmate: solo play used to open a trade window with a made-up
+// "SQUAD-OPERATIVE" on every ping, so with no squadmate this returns false
+// and the press stays a tactical ping (threeGame.js).
+function toggleSquadTrade() {
+    const tradeModal = document.getElementById('player-trade-modal');
+    const tradeOpen = Boolean(tradeModal && !tradeModal.classList.contains('hidden'));
+    const remotes = window.game?.remotePlayers;
+    if (!tradeOpen && !(remotes?.size > 0)) return false;
+    if (tradeOpen) {
+        playerTradeManager.closeTrade();
+    } else {
+        setupPlayerTradeEvents();
+        playerTradeManager.openTrade(Array.from(remotes.values())[0]);
+    }
+    return true;
+}
+
 // Global Key Listener for Modals & Dev Console
 document.addEventListener('keydown', (event) => {
     if (event.defaultPrevented) return;
@@ -12759,19 +12830,7 @@ document.addEventListener('keydown', (event) => {
 
     if (event.code === 'KeyT') {
         const activeTag = document.activeElement?.tagName?.toLowerCase();
-        const tradeModal = document.getElementById('player-trade-modal');
-        const tradeOpen = Boolean(tradeModal && !tradeModal.classList.contains('hidden'));
-        const remotes = window.game?.remotePlayers;
-        // T is also the tactical ping (threeGame.js). Barter only exists with a
-        // real squadmate: solo play used to open a trade window with a made-up
-        // "SQUAD-OPERATIVE" on every ping.
-        if (activeTag !== 'input' && activeTag !== 'textarea' && (tradeOpen || remotes?.size > 0)) {
-            if (tradeOpen) {
-                playerTradeManager.closeTrade();
-            } else {
-                setupPlayerTradeEvents();
-                playerTradeManager.openTrade(Array.from(remotes.values())[0]);
-            }
+        if (activeTag !== 'input' && activeTag !== 'textarea' && toggleSquadTrade()) {
             event.preventDefault();
             return;
         }
@@ -15028,17 +15087,26 @@ function preloadDoorAssets() {
         '/door_cryo_keyart_v2.webp',
         '/door_alien_keyart_v2.webp',
         '/door_rust_keyart_v2.webp',
-        '/door_bio.webp',
-        '/door_nuclear.webp',
-        '/door_cryo.webp',
-        '/door_biomechanical.webp',
         '/ship_wreckage.webp'
     ];
+    // door_bio/nuclear/cryo/biomechanical.webp were preloaded here too but
+    // nothing displays them: 1.4 MB per boot (Lighthouse, issue #106).
 
-    for (const src of doorImages) {
-        const img = new Image();
-        img.src = assetUrl(src);
-    }
+    // The art is first needed when a door closes, which takes a click; fetch
+    // it once the page has loaded and gone idle, so it no longer competes
+    // with the boot scripts for bandwidth.
+    const fetchDoors = () => {
+        for (const src of doorImages) {
+            const img = new Image();
+            img.decoding = 'async';
+            img.src = assetUrl(src);
+        }
+    };
+    const whenIdle = () => (typeof window.requestIdleCallback === 'function'
+        ? window.requestIdleCallback(fetchDoors, { timeout: 4000 })
+        : setTimeout(fetchDoors, 1500));
+    if (document.readyState === 'complete') whenIdle();
+    else window.addEventListener('load', whenIdle, { once: true });
 
     try {
         AudioManager.preload?.(['ui_boot1', 'door_slam_vertical', 'door_gears_spin', 'door_slide_horiz']);
@@ -15265,21 +15333,7 @@ function getPreviewSpriteImage(path, layout) {
             ctx.drawImage(image, 0, 0);
 
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imgData.data;
-
-            // Remove chroma green border/background pixels
-            for (let i = 0; i < data.length; i += 4) {
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-                const a = data[i + 3];
-                if (a > 0) {
-                    if (r < 140 && b < 140 && g > 90 && g > r * 1.4 && g > b * 1.4) {
-                        data[i + 3] = 0; // Make transparent
-                    }
-                }
-            }
-
+            clearChromaGreen(imgData.data);
             ctx.putImageData(imgData, 0, 0);
 
             const runtimeCanvas = repackGeneratedSpriteAtlas(canvas, layout);
