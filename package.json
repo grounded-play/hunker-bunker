@@ -1,6 +1,6 @@
 {
   "name": "hunker-bunker",
-  "version": "2.4.14-beta",
+  "version": "2.4.15-beta",
   "description": "A biomechanical survival roguelike set beneath the frozen surface of Cocytus IV.",
   "author": "Tuesday Cinema Club",
   "private": true,
@@ -126,16 +126,16 @@
     "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.63.0",
     "@types/three": "^0.186.0",
-    "@vitest/coverage-v8": "^5.0.2",
+    "@vitest/coverage-v8": "^5.0.3",
     "concurrently": "^10.0.3",
     "cross-env": "^10.1.0",
     "electron": "^44.4.0",
     "electron-builder": "^26.15.3",
-    "eslint": "^10.11.0",
-    "globals": "^17.12.0",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
     "vite": "^8.1.5",
-    "vitest": "^5.0.2",
-    "wait-on": "^9.1.0"
+    "vitest": "^5.0.3",
+    "wait-on": "^9.5.1"
   },
   "dependencies": {
     "electron-debug": "^5.0.0",
@@ -158,6 +158,7 @@
     "@puppeteer/browsers": "^3.2.1",
     "axios": "^1.20.0",
     "basic-ftp": "^6.2.2",
-    "engine.io": "^6.6.11"
+    "engine.io": "^6.6.11",
+    "shell-quote": "^1.12.0"
   }
 }
