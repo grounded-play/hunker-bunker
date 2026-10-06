@@ -1,8 +1,9 @@
 import { checkIdempotency, saveIdempotency } from './db.js';
 import { createHash } from 'node:crypto';
 import { fetchSteamInventory, decodeSteamInventory } from './steamInventoryRead.js';
-import { OPEN_CACHE_RECIPE_ID, DEEP_RELIC_CACHE_DROP_TABLE } from './lootTables.js';
-import { withPlayerLock } from './steamTradeUp.js';
+import { OPEN_CACHE_RECIPE_ID, DEEP_RELIC_CACHE_DROP_TABLE, SHARD_ITEMDEFID, cacheDuplicateShardBonus } from './lootTables.js';
+import { withPlayerLock, deriveNumericRequestId } from './steamTradeUp.js';
+import { grantItemToPlayer } from './steamGrant.js';
 
 const RECIPES = { 2100: { 1000: 5 }, 2200: { 1000: 10, 1100: 2 }, [OPEN_CACHE_RECIPE_ID]: { 4000: 1, 4001: 1 } };
 const failure = (reason, status = 400) => ({ status, body: { ok: false, reason } });
@@ -75,7 +76,7 @@ export function performSteamRecipeExchange(options) {
 }
 
 async function performLockedRecipeExchange({ steamId, recipeId, materials, requestId, key, appId,
-    fetchImpl = fetch, read = readJournal, save = saveJournal, now = Date.now }) {
+    fetchImpl = fetch, read = readJournal, save = saveJournal, now = Date.now, grantImpl = grantItemToPlayer }) {
     if (typeof requestId !== 'string' || !requestId || requestId.length > 256) return failure('missing_request_id');
     if (!Array.isArray(materials) || materials.some((id) => typeof id !== 'string')) return failure('invalid_exchange_parameters');
     const journalKey = recipeExchangeJournalKey({ appId, steamId, requestId });
@@ -138,5 +139,28 @@ async function performLockedRecipeExchange({ steamId, recipeId, materials, reque
     } catch {
         return uncertain();
     }
+    const shards = recipeId === OPEN_CACHE_RECIPE_ID ? cacheDuplicateShardBonus(result.body.granted, loaded.inventory) : 0;
+    if (shards > 0) result = await grantDuplicateShards({ steamId, journalKey, shards, result, pending, save, grantImpl });
     return result;
+}
+
+// Runs after the exchange is journaled as completed, so a shard failure can
+// never put the opened reward under review. The AddItem request id is derived
+// from the journal key, and a replay returns the journal, so it is sent once.
+async function grantDuplicateShards({ steamId, journalKey, shards, result, pending, save, grantImpl }) {
+    let grant;
+    try {
+        grant = await grantImpl({ steamId, itemdefid: SHARD_ITEMDEFID, quantity: shards, isDevMode: false,
+            source: 'cache_duplicate', mode: 'stack', requestId: deriveNumericRequestId(journalKey, 'duplicate-shards') });
+    } catch {
+        grant = { ok: false };
+    }
+    const ok = Boolean(grant?.ok);
+    const granted = ok ? [...result.body.granted, ...(grant.granted ?? [])] : result.body.granted;
+    const next = { ...result, body: { ...result.body, granted, duplicateBonus: { itemdefid: SHARD_ITEMDEFID, quantity: shards, ok } } };
+    if (!ok) console.warn('[steam] cache duplicate shard grant failed', { steamId, shards });
+    try {
+        await save(journalKey, { ...pending, ...next, state: 'completed' });
+    } catch { /* the completed journal above already stands */ }
+    return next;
 }

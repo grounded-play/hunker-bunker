@@ -13535,6 +13535,15 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('salvage-cache-opened', { detail: { tech, coin, med } }));
     }
 
+    // Props (src/propInteractions.js) pay out "+N SCRAP". The bank has always
+    // read scrap as tech (normalizeInventory), so scrap banks as tech.
+    addScrap(amount = 0) {
+        const qty = Math.floor(Number(amount));
+        if (!Number.isFinite(qty) || qty <= 0) return false;
+        this.bank.deposit({ tech: qty });
+        return true;
+    }
+
     // Dev-console `give <resource> <qty>` (src/debugConsole.js). Routes into
     // the real bank rather than a field the bank never reads.
     addRunResource(resource = 'tech', amount = 50) {

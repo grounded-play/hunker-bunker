@@ -1320,7 +1320,7 @@ export function playCacheRevealAnimation(openingOrReward, onClaim) {
                 return `<div class="vault-reveal-bundle__item" style="--rarity-color:${color}">
                     <span class="vault-reveal-bundle__slot">${String(entry.slot || 'reward').toUpperCase()}</span>
                     <strong>${entry.label || catalog?.name || `ITEM #${entry.itemdefid}`}</strong>
-                    <span>x${entry.quantity ?? 1}${entry.duplicate ? ' // DUPLICATE CONVERTED' : ''}</span>
+                    <span>x${entry.quantity ?? 1}${entry.duplicate ? ' // DUPLICATE' : ''}</span>
                 </div>`;
             }).join('');
             cardEl.insertBefore(bundle, claimBtn);

@@ -177,3 +177,60 @@ describe('live fixed/cache recipe exchange', () => {
         expect(f.save).not.toHaveBeenCalled();
     });
 });
+
+// Doc 05 §3 duplicate protection: a cache that rolls a cosmetic the player
+// already owns still grants it, plus Deep Core Shards by rarity. Before this,
+// shards (the Dispensary's currency) had no source on Steam at all.
+describe('cache-open duplicate shards', () => {
+    const cacheInput = { ...input, requestId: 'open-1', recipeId: 4100, materials: ['11', '12'] };
+    function cacheFixture({ owned = [], rolled, grantImpl } = {}) {
+        const records = new Map();
+        const inventory = [{ itemid: '11', itemdefid: 4000, quantity: 1 }, { itemid: '12', itemdefid: 4001, quantity: 1 }, ...owned];
+        const fetchImpl = vi.fn(async (url) => {
+            if (url.includes('/GetInventory/')) return reply(inventory);
+            return reply([{ itemid: '11', state: 'removed' }, { itemid: '12', state: 'removed' }, rolled]);
+        });
+        return {
+            records,
+            read: (key) => records.get(key),
+            save: vi.fn(async (key, record) => { records.set(key, structuredClone(record)); }),
+            fetchImpl,
+            grantImpl: grantImpl ?? vi.fn(async ({ itemdefid, quantity }) => ({ ok: true, granted: [{ itemId: 'shards', itemdefid, quantity }] }))
+        };
+    }
+
+    it('grants the duplicate plus 100 shards for an owned legendary, once, with a stable request id', async () => {
+        const f = cacheFixture({ owned: [{ itemid: '13', itemdefid: 2200, quantity: 1 }], rolled: { itemid: '14', itemdefid: 2200, quantity: 1 } });
+        const result = await performSteamRecipeExchange({ ...cacheInput, ...f });
+        expect(result.status).toBe(200);
+        expect(result.body.granted.map((item) => item.itemdefid)).toEqual([2200, 4159]);
+        expect(result.body.duplicateBonus).toEqual({ itemdefid: 4159, quantity: 100, ok: true });
+        expect(f.grantImpl).toHaveBeenCalledTimes(1);
+        const grant = f.grantImpl.mock.calls[0][0];
+        expect(grant).toMatchObject({ steamId: input.steamId, itemdefid: 4159, quantity: 100, mode: 'stack', source: 'cache_duplicate' });
+        expect(grant.requestId).toMatch(/^\d+$/);
+        expect(await performSteamRecipeExchange({ ...cacheInput, ...f })).toMatchObject(result);
+        expect(f.grantImpl).toHaveBeenCalledTimes(1);
+    });
+
+    it('grants no shards for a first copy or for fragments', async () => {
+        for (const rolled of [{ itemid: '14', itemdefid: 2100, quantity: 1 }, { itemid: '14', itemdefid: 1100, quantity: 1 }]) {
+            const f = cacheFixture({ owned: [{ itemid: '15', itemdefid: 1100, quantity: 4 }], rolled });
+            const result = await performSteamRecipeExchange({ ...cacheInput, ...f });
+            expect(result.status).toBe(200);
+            expect(result.body.duplicateBonus).toBeUndefined();
+            expect(f.grantImpl).not.toHaveBeenCalled();
+        }
+    });
+
+    it('keeps the opened reward when the shard grant fails, and says so', async () => {
+        const f = cacheFixture({
+            owned: [{ itemid: '13', itemdefid: 2100, quantity: 1 }],
+            rolled: { itemid: '14', itemdefid: 2100, quantity: 1 },
+            grantImpl: vi.fn(async () => ({ ok: false, reason: 'steam_api_error' }))
+        });
+        const result = await performSteamRecipeExchange({ ...cacheInput, ...f });
+        expect(result).toMatchObject({ status: 200, body: { ok: true, duplicateBonus: { itemdefid: 4159, quantity: 40, ok: false } } });
+        expect(result.body.granted.map((item) => item.itemdefid)).toEqual([2100]);
+    });
+});

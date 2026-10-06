@@ -1,4 +1,5 @@
 import { getCatalogEntry } from './itemOwnership.js';
+import { DUPLICATE_SHARD_BONUS } from './craftingMatrix.js';
 
 export const CACHE_OPENING_VERSION = 1;
 export const CACHE_ITEMDEFID = 4000;
@@ -13,7 +14,6 @@ const COSMETIC_IDS = Object.freeze([
 ]);
 const POWER_UP_IDS = Object.freeze([4140, 4141, 4142, 4143, 4144, 4145, 4146, 4147]);
 const MATERIAL_IDS = Object.freeze([1000, 1100, 4156, 4157, 4158, 4159]);
-const DUPLICATE_SHARDS_BY_RARITY = Object.freeze({ common: 10, uncommon: 20, rare: 40, epic: 80, legendary: 150 });
 
 function normalizeSeed(seed) {
     if (Number.isFinite(Number(seed))) return Number(seed) >>> 0;
@@ -36,27 +36,27 @@ function pick(pool, random) {
     return pool[Math.min(pool.length - 1, Math.floor(random() * pool.length))];
 }
 
+// Doc 05 §3, the rule the Steam server applies (server/lootTables.js): an
+// owned cosmetic is still granted, plus Deep Core Shards by its rarity.
 function rewardFor(slot, itemdefid, quantity = 1, inventoryIds = new Set()) {
     const entry = getCatalogEntry(itemdefid);
-    const duplicate = slot === 'cosmetic' && inventoryIds.has(itemdefid);
-    if (duplicate) {
-        const convertedQuantity = DUPLICATE_SHARDS_BY_RARITY[entry?.rarity] ?? 20;
-        return {
-            slot,
-            itemdefid: SHARD_ITEMDEFID,
-            quantity: convertedQuantity,
-            rarity: entry?.rarity ?? 'uncommon',
-            label: `DUPLICATE CONVERTED // ${convertedQuantity} DEEP CORE SHARDS`,
-            duplicate: true,
-            convertedFrom: itemdefid
-        };
-    }
     return {
         slot,
         itemdefid,
         quantity,
         rarity: entry?.rarity ?? 'common',
         label: entry?.name ?? `ITEM #${itemdefid}`,
+        duplicate: slot === 'cosmetic' && inventoryIds.has(itemdefid)
+    };
+}
+
+function duplicateBonusReward(quantity, rarity) {
+    return {
+        slot: 'duplicate-bonus',
+        itemdefid: SHARD_ITEMDEFID,
+        quantity,
+        rarity: rarity ?? 'uncommon',
+        label: `DUPLICATE BONUS // ${quantity} DEEP CORE SHARDS`,
         duplicate: false
     };
 }
@@ -67,29 +67,40 @@ export function createCacheOpeningResult({ seed = Date.now(), inventory = [], op
     const cosmeticId = pick(COSMETIC_IDS, random);
     const powerUpId = pick(POWER_UP_IDS, random);
     const materialId = pick(MATERIAL_IDS, random);
+    const cosmetic = rewardFor('cosmetic', cosmeticId, 1, inventoryIds);
+    const bonusShards = cosmetic.duplicate ? (DUPLICATE_SHARD_BONUS[cosmetic.rarity] ?? 0) : 0;
     return {
         version: CACHE_OPENING_VERSION,
         source: 'dev',
         openingId: openingId ?? `dev-cache-${Date.now()}-${Math.floor(random() * 1e6)}`,
         consumed: { cache: CACHE_ITEMDEFID, key: CACHE_KEY_ITEMDEFID, quantity: 1 },
         rewards: [
-            rewardFor('cosmetic', cosmeticId, 1, inventoryIds),
+            cosmetic,
             rewardFor('power-up', powerUpId, 1, inventoryIds),
-            rewardFor('currency-material', materialId, materialId === SHARD_ITEMDEFID ? 25 : (materialId === 1000 ? 3 : 1), inventoryIds)
+            rewardFor('currency-material', materialId, materialId === SHARD_ITEMDEFID ? 25 : (materialId === 1000 ? 3 : 1), inventoryIds),
+            ...(bonusShards > 0 ? [duplicateBonusReward(bonusShards, cosmetic.rarity)] : [])
         ]
     };
 }
 
 export function adaptSteamCacheResult(result, openingId = null) {
     const granted = Array.isArray(result?.granted) ? result.granted : [];
-    const rewards = granted.map((item) => rewardFor('cosmetic', Number(item.itemdefid), Number(item.quantity) || 1));
+    const bonus = result?.duplicateBonus?.ok ? result.duplicateBonus : null;
+    const bonusIndex = bonus ? granted.findIndex((item) => Number(item.itemdefid) === bonus.itemdefid) : -1;
+    const rewards = granted.map((item, index) => (index === bonusIndex
+        ? null
+        : { ...rewardFor('cosmetic', Number(item.itemdefid), Number(item.quantity) || 1), duplicate: bonusIndex >= 0 }))
+        .filter(Boolean);
+    if (bonusIndex >= 0) rewards.push(duplicateBonusReward(bonus.quantity, rewards[0]?.rarity));
     return {
         version: CACHE_OPENING_VERSION,
         source: 'steam',
         openingId: openingId ?? result?.openingId ?? null,
         consumed: result?.consumed ?? null,
         rewards,
-        complete: rewards.length >= 3,
+        // A Steam cache grants one reward (server/lootTables.js), not the
+        // sandbox's three lanes.
+        complete: rewards.length > 0,
         reason: rewards.length === 0 ? 'steam_returned_no_grant' : null
     };
 }

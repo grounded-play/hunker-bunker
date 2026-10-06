@@ -8,6 +8,8 @@
  * "real" for the rest of the local Steam Vault simulation rather than faking a server call.
  */
 
+import { DUPLICATE_SHARD_BONUS } from '../server/lootTables.js';
+
 export const RARITY_TIERS = Object.freeze(['uncommon', 'rare', 'epic', 'legendary']);
 
 const NEXT_TIER = Object.freeze({
@@ -18,13 +20,9 @@ const NEXT_TIER = Object.freeze({
 
 export const SMELT_INPUT_COUNT = 5;
 
-// docs/season-zero-protocol/05 §3 duplicate-protection table
-export const DUPLICATE_SHARD_BONUS = Object.freeze({
-    uncommon: 5,
-    rare: 15,
-    epic: 40,
-    legendary: 100
-});
+// docs/season-zero-protocol/05 §3 duplicate-protection table. One table for
+// the sandbox and the Steam server, which grants these on a cache open.
+export { DUPLICATE_SHARD_BONUS };
 
 // docs/season-zero-protocol/05 §3 dispensary exchange-rate table
 export const DISPENSARY_COST_BY_RARITY = Object.freeze({

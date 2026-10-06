@@ -35,3 +35,14 @@ describe('lootTables', () => {
         }
     });
 });
+
+describe('cache duplicate shard bonus (doc 05 §3)', () => {
+    it('pays by the rolled cosmetic\'s rarity only when it was already owned', async () => {
+        const { cacheDuplicateShardBonus } = await import('./lootTables.js');
+        expect(cacheDuplicateShardBonus([{ itemdefid: 2200, quantity: 1 }], [{ itemdefid: 2200, quantity: 1 }])).toBe(100);
+        expect(cacheDuplicateShardBonus([{ itemdefid: 2100, quantity: 1 }], [{ itemdefid: 2100, quantity: 2 }])).toBe(40);
+        expect(cacheDuplicateShardBonus([{ itemdefid: 2100, quantity: 1 }], [])).toBe(0);
+        expect(cacheDuplicateShardBonus([{ itemdefid: 1000, quantity: 3 }], [{ itemdefid: 1000, quantity: 9 }])).toBe(0);
+        expect(cacheDuplicateShardBonus([{ itemdefid: 2100, quantity: 1 }], [{ itemdefid: 2100, quantity: 0 }])).toBe(0);
+    });
+});

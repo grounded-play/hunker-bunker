@@ -10,7 +10,9 @@ import {
     OPEN_CACHE_RECIPE_ID,
     DEEP_RELIC_CACHE_ITEMDEFID,
     CACHE_KEY_ITEMDEFID,
-    rollDeepRelicCache
+    rollDeepRelicCache,
+    SHARD_ITEMDEFID,
+    cacheDuplicateShardBonus
 } from './lootTables.js';
 import { grantItemToPlayer } from './steamGrant.js';
 import { commitExchange, planRedeem, planTradeUp, withPlayerLock } from './steamTradeUp.js';
@@ -328,6 +330,7 @@ export function attachSteamInventoryRoutes(app) {
 
         if (req.isDevMode) {
             const inv = getMockInventory(req.steamId);
+            const ownedBefore = inv.map((item) => ({ itemdefid: item.itemdefid, quantity: item.quantity }));
             const materialItems = inv.filter((item) => materials.includes(item.itemId));
 
             // Verify they have all specified materials
@@ -390,6 +393,15 @@ export function attachSteamInventoryRoutes(app) {
                 status: 200,
                 body: { ok: true, consumed: materials, granted: grant.granted }
             };
+            // Doc 05 §3 duplicate shards, as the live path grants them
+            // (server/steamRecipeExchange.js).
+            const shards = isCacheOpen ? cacheDuplicateShardBonus(grant.granted, ownedBefore) : 0;
+            if (shards > 0) {
+                const bonus = await grantItemToPlayer({ steamId: req.steamId, itemdefid: SHARD_ITEMDEFID, quantity: shards,
+                    isDevMode: true, source: 'cache_duplicate', mode: 'stack' });
+                result.body.granted = [...grant.granted, ...(bonus.granted ?? [])];
+                result.body.duplicateBonus = { itemdefid: SHARD_ITEMDEFID, quantity: shards, ok: Boolean(bonus.ok) };
+            }
         }
 
         await saveIdempotency(requestId, result);

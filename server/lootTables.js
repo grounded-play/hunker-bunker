@@ -43,3 +43,21 @@ export function rollDeepRelicCache(rollFn = Math.random) {
     const last = DEEP_RELIC_CACHE_DROP_TABLE[DEEP_RELIC_CACHE_DROP_TABLE.length - 1];
     return { itemdefid: last.itemdefid, quantity: last.quantity, rarity: last.rarity };
 }
+
+// Doc 05 §3 duplicate protection. A cache that rolls a cosmetic the player
+// already owns still grants it, plus Deep Core Shards (4159, the Dispensary's
+// currency) by rarity. Fragments are stackable materials, never duplicates.
+// The client sandbox (src/craftingMatrix.js) uses this same table.
+export const SHARD_ITEMDEFID = 4159;
+export const DUPLICATE_SHARD_BONUS = Object.freeze({ uncommon: 5, rare: 15, epic: 40, legendary: 100 });
+const DUPLICATE_PROTECTED_REWARDS = new Set([2100, 2200]);
+
+export function cacheDuplicateShardBonus(granted = [], inventoryBefore = []) {
+    const owned = new Set(inventoryBefore.filter((item) => Number(item?.quantity) > 0).map((item) => Number(item.itemdefid)));
+    return granted.reduce((total, item) => {
+        const itemdefid = Number(item?.itemdefid);
+        if (!DUPLICATE_PROTECTED_REWARDS.has(itemdefid) || !owned.has(itemdefid)) return total;
+        const rarity = DEEP_RELIC_CACHE_DROP_TABLE.find((row) => row.itemdefid === itemdefid)?.rarity;
+        return total + (DUPLICATE_SHARD_BONUS[rarity] ?? 0);
+    }, 0);
+}
