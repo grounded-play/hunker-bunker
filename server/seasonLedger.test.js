@@ -152,6 +152,43 @@ describe('server season ledger', () => {
         expect(await ledger.importLocal(STEAM_ID, { state: local })).toMatchObject({ accepted: true, state: { xp: 3000 } });
     });
 
+    // CodeQL (remote property injection / prototype-polluting assignment):
+    // run ids and import receipt keys arrive from the client.
+    it('only accepts run ids the server issued to this account', async () => {
+        const { ledger, advance } = harness();
+        const { runId } = await ledger.beginRun(STEAM_ID);
+        advance(60 * SEC);
+        for (const forged of ['__proto__', 'constructor', 'prototype', 'hasOwnProperty', 'season-run:not-a-uuid', runId.toUpperCase(), 42]) {
+            expect(await ledger.recordEvent(STEAM_ID, { runId: forged, kind: 'objective', id: 'o1', atMs: 30 * SEC }))
+                .toMatchObject({ accepted: false, reason: 'unknown_run' });
+            expect(await ledger.settleRun(STEAM_ID, { runId: forged, outcome: 'extracted', atMs: 30 * SEC }))
+                .toMatchObject({ accepted: false, reason: 'unknown_run' });
+        }
+        expect(Object.prototype.lastAtMs).toBeUndefined();
+        expect(Object.prototype.settled).toBeUndefined();
+        const other = harness();
+        await other.ledger.beginRun('76561198000000001');
+        expect(await other.ledger.recordEvent(STEAM_ID, { runId, kind: 'objective', id: 'o1', atMs: 0 }))
+            .toMatchObject({ accepted: false, reason: 'unknown_run' });
+    });
+
+    it('imports only receipts the season defines as supply bundles, rebuilt from its own table', async () => {
+        const { ledger } = harness({ importAllowed: () => true });
+        const receipts = JSON.parse(`{
+            "__proto__": { "status": "confirmed", "reward": { "kind": "supply_bundle", "tech": 999 } },
+            "rank:2:free": { "id": "forged", "status": "confirmed", "reward": { "kind": "supply_bundle", "tech": 999999 } },
+            "rank:1:free": { "status": "confirmed", "reward": { "kind": "supply_bundle", "tech": 5 } },
+            "anything": { "status": "confirmed", "reward": { "kind": "supply_bundle" } }
+        }`);
+        const result = await ledger.importLocal(STEAM_ID, { state: { seasonId: 'deep-crust-beta-1', version: 1, xp: 3000, directives: {}, receipts, onboarding: {}, fragments: {} } });
+        expect(result.accepted).toBe(true);
+        const kept = result.state.receipts;
+        expect(Object.keys(kept).filter((key) => !key.startsWith('rank:1:') && !key.startsWith('rank:3:'))).toEqual(['rank:2:free']);
+        expect(kept['rank:2:free']).toMatchObject({ id: 'deep-crust-beta-1:rank:2:free', status: 'confirmed', reward: { kind: 'supply_bundle', tech: 5, coin: 2, med: 1 } });
+        expect(Object.prototype.status).toBeUndefined();
+        expect({}.reward).toBeUndefined();
+    });
+
     it('refuses an import from an account that is not a tester', async () => {
         const { ledger } = harness();
         const local = { seasonId: 'deep-crust-beta-1', version: 1, xp: 45000, directives: {}, receipts: {}, fragments: {} };

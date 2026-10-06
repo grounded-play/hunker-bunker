@@ -48,6 +48,18 @@ export function seasonGrantRequestId(steamId, receiptId) {
     return String(value || 1n);
 }
 
+const SERVER_RUN_ID = /^season-run:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const isServerRunId = (runId) => typeof runId === 'string' && SERVER_RUN_ID.test(runId);
+
+// Receipt keys an import may carry, for rewards that are supply bundles in the
+// season's own table. The receipt is rebuilt from that table, never copied.
+function importableSupplyReceipt(key, manager) {
+    const match = /^rank:(\d{1,2}):(free|premium)$/.exec(key);
+    const reward = match ? manager.getReward(Number(match[1]), match[2]) : null;
+    if (reward?.kind !== 'supply_bundle') return null;
+    return { id: `${SEASON_ONE.id}:${key}`, key, tier: Number(match[1]), track: match[2], reward: copy(reward), status: 'confirmed' };
+}
+
 function emptyServer() {
     return { runs: {}, weeks: {}, activityDays: {}, imported: false, audit: { accepted: 0, rejected: {} } };
 }
@@ -183,6 +195,10 @@ export function createSeasonLedger({
     }
 
     function runAt(doc, rules, runId, atMs) {
+        // Only an id this server issued to this account names a run. Anything
+        // else (`__proto__`, `hasOwnProperty`, a forged id) must never reach a
+        // property lookup or write on the stored document.
+        if (!isServerRunId(runId) || !Object.hasOwn(doc.server.runs, runId)) return { rejected: 'unknown_run' };
         const run = doc.server.runs[runId];
         if (!run || run.settled) return { rejected: 'unknown_run' };
         const elapsed = now() - run.startedAt;
@@ -314,12 +330,13 @@ export function createSeasonLedger({
                     const value = Number(state.directives?.[entry.id]);
                     if (Number.isSafeInteger(value) && value > 0) directives[entry.id] = Math.min(value, entry.target);
                 }
-                const banked = {};
-                for (const [key, receipt] of Object.entries(state.receipts ?? {})) {
-                    // Supply bundles were banked locally already; items never
-                    // reached Steam, so the server claims and grants them anew.
-                    if (receipt?.status === 'confirmed' && receipt.reward?.kind === 'supply_bundle') banked[key] = copy(receipt);
-                }
+                // Supply bundles were banked locally already; items never
+                // reached Steam, so the server claims and grants them anew.
+                const table = managerOver(null, now());
+                const banked = Object.fromEntries(Object.entries(state.receipts ?? {})
+                    .filter(([, receipt]) => receipt?.status === 'confirmed')
+                    .map(([key]) => [key, importableSupplyReceipt(key, table)])
+                    .filter(([, receipt]) => receipt));
                 const onboarding = {};
                 for (const stage of ['objective', 'target', 'fabricated', 'equipped', 'usefulLoop']) if (state.onboarding?.[stage] === true) onboarding[stage] = true;
                 doc.state = {
