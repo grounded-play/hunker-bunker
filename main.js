@@ -15820,8 +15820,17 @@ function initTacticalCursor() {
 // docs/sprint28plan.md Lane D: if a run-in-progress checkpoint is still on
 // disk at boot, the previous session never reached a graceful end (death,
 // extraction, or a fresh NEW RUN all clear it -- see src/threeGame.js's
-// Initial State Setup
-document.addEventListener('DOMContentLoaded', async () => {
+// Initial State Setup. src/boot.js imports this module after the player's
+// language has loaded, which can be after DOMContentLoaded has already fired;
+// a plain listener would then never run and boot would stall on the loading
+// screen. If the document is already parsed, start on a microtask: still after
+// this whole module has evaluated (the handler reads bindings declared below
+// it), as it always was.
+function whenDocumentParsed(start) {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
+    else queueMicrotask(start);
+}
+whenDocumentParsed(async () => {
     traceBootPhase('dom-content-loaded', {
         electron: Boolean(window.electronAPI),
         devicePixelRatio: window.devicePixelRatio

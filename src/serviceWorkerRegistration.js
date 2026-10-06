@@ -26,6 +26,10 @@ export function registerWebServiceWorker() {
         electron: Boolean(window.electronAPI)
     };
     if (!shouldRegisterServiceWorker(environment)) return;
-    // After load, so registration never competes with boot for bandwidth.
-    window.addEventListener('load', () => { void registerServiceWorker(navigator.serviceWorker, environment); }, { once: true });
+    // After load, so registration never competes with boot for bandwidth. The
+    // game's modules start after the player's language loads (src/boot.js),
+    // which can be after `load` has already fired.
+    const register = () => { void registerServiceWorker(navigator.serviceWorker, environment); };
+    if (document.readyState === 'complete') register();
+    else window.addEventListener('load', register, { once: true });
 }
