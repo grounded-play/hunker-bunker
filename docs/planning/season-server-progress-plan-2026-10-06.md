@@ -1,6 +1,6 @@
 # Server-held Season progress (Tactical Dossier) — plan
 
-Status: in progress | Branch: `dev/sprint-49` | Decided 2026-10-06 (user chose
+Status: built, awaiting deploy | Branch: `dev/sprint-49` | Decided 2026-10-06 (user chose
 "server-verified XP first" over tester-only or capped client claims)
 
 ## Problem
@@ -134,4 +134,17 @@ counted in `ledger.audit`.
 
 ## Status log
 
-- 2026-10-06: plan written. Steps 1–7 pending.
+- 2026-10-06: plan written.
+- 2026-10-06: steps 1–3 done (`ebd81f95`): `server/seasonLedger.js` (9 rule tests),
+  `server/seasonRoutes.js` (route tests), Dockerfile copies the season rule files.
+- 2026-10-06: steps 4–6 done: `src/seasonServerSync.js` mirror, outbox and import,
+  tested against the real ledger in-process (5 tests); `seasonPassUi.js` routes
+  every verb through it on Steam builds; preload `getSeasonState` /
+  `seasonAction`; e2e `tests/e2e/season-dossier.spec.js`. Found on the way: the
+  Dossier's open-time focus (and main.js's controller focus pick) focused rank
+  1's button, which scrolled the list back to the top; both now pick the
+  current rank's row.
+- Step 7 (candidate image + user deploy) next. Offline note: an outbox replay
+  is only accepted if its offsets fit inside the time the server has seen pass
+  since the run began, so a run whose begin never reached the server earns
+  nothing.

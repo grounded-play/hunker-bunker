@@ -372,6 +372,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     redeemSteamItem: (itemdefid, requestId) => withSteamSession('/steam/inventory/redeem', { itemdefid, requestId }),
     getSteamMarketEligibility: () => withSteamSessionGet('/steam/market/eligibility'),
     getSteamStoreCatalog: () => requestSteamBackend('/steam/store/catalog'),
+    // Server-held Dossier progress (server/seasonRoutes.js). Only these verbs.
+    getSeasonState: () => withSteamSessionGet('/steam/season/state'),
+    seasonAction: (verb, body = {}) => {
+        const path = { begin: 'run/begin', event: 'run/event', settle: 'run/settle', activity: 'activity', claim: 'claim', ack: 'ack', import: 'import' }[verb];
+        return path ? withSteamSession(`/steam/season/${path}`, body) : Promise.resolve({ ok: false, reason: 'unknown_season_verb' });
+    },
     // A beta/QA build never takes real money: it asks the backend for Valve's
     // no-charge sandbox, which the backend grants only to allowlisted testers
     // (HB_STEAM_SANDBOX_STEAM_IDS) and otherwise refuses. Finalize follows the

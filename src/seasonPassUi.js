@@ -12,11 +12,25 @@ import { SEASON_ONE, WEEKLY_DISPATCHES } from './data/seasonOneConfig.js';
 import { getSeasonOneCosmetic, SEASON_ONE_CLASS_CHOICES } from './data/seasonOneCatalog.js';
 import { DETERMINISTIC_RECIPES, getItemCount } from './craftingMatrix.js';
 import { getItemCatalogEntry, deliverLocalSeasonReward, craftSeasonRecipe, getSeasonWorkshopInventory, loadVaultData } from './steamVaultUi.js';
+import { createSeasonServerSync } from './seasonServerSync.js';
 import { assetUrl } from './assetUrl.js';
 import { t, onLocaleChange } from './i18n.js';
 
 export const seasonPass = new SeasonPassManager();
 if (typeof window !== 'undefined') window.seasonPass = seasonPass;
+
+// Steam builds: the backend holds the Dossier and grants its items
+// (docs/planning/season-server-progress-plan-2026-10-06.md); this copy only
+// mirrors it. The browser build keeps local progress.
+const serverSync = typeof window !== 'undefined' && typeof window.electronAPI?.seasonAction === 'function'
+    ? createSeasonServerSync({
+        api: window.electronAPI,
+        manager: seasonPass,
+        bank: { depositSeasonReward: (amounts, receiptId) => window.bankManager?.depositSeasonReward(amounts, receiptId) },
+        storage: window.localStorage
+    })
+    : null;
+const season = (verb, ...args) => (serverSync ? serverSync[verb](...args) : seasonPass[verb](...args));
 
 // Legacy bounties keep their own save; Season 1 has exactly 24 finite directives.
 export const bountyManager = seasonPass;
@@ -26,10 +40,19 @@ let deliveryMessage = '';
 
 function runSeasonAction(action) {
     return withSeasonLock(async () => {
-        const result = await action?.();
+        const itemsBefore = confirmedItemCount();
+        const result = await (action ?? (serverSync ? () => serverSync.sync() : null))?.();
         if (result?.xpAwarded) presentXp(result);
-        const deliveries = await seasonPass.settleRewards(deliverLocalSeasonReward);
-        deliveryMessage = deliveries.some(entry => !entry.ok) ? 'Delivery pending — progress is saved. Retry from this Dossier.' : '';
+        if (serverSync) {
+            // The backend granted and confirmed what it could; anything still
+            // pending is a grant in flight or an unreachable backend.
+            deliveryMessage = seasonPass.getPendingClaims().length || serverSync.pendingCount()
+                ? 'Delivery pending — progress is saved. Retry from this Dossier.' : '';
+            if (confirmedItemCount() > itemsBefore) void loadVaultData().catch(() => {});
+        } else {
+            const deliveries = await seasonPass.settleRewards(deliverLocalSeasonReward);
+            deliveryMessage = deliveries.some(entry => !entry.ok) ? 'Delivery pending — progress is saved. Retry from this Dossier.' : '';
+        }
         updateMenuStatus();
         updatePinnedObjective();
         if (isModalOpen()) renderSeasonPassBody();
@@ -40,9 +63,13 @@ function runSeasonAction(action) {
     });
 }
 
+function confirmedItemCount() {
+    return Object.values(seasonPass.state.receipts).filter(entry => entry.status === 'confirmed' && entry.reward?.kind === 'item').length;
+}
+
 export function beginSeasonRun(runId, initialDepth = 0) {
     currentRunId = String(runId);
-    return runSeasonAction(() => seasonPass.beginRun(String(runId), initialDepth));
+    return runSeasonAction(() => season('beginRun', String(runId), initialDepth));
 }
 
 export function getSeasonRunSummary() {
@@ -213,6 +240,10 @@ const rewardRevealFlow = createRewardRevealFlow({
         return withSeasonLock(async () => {
             const reward = seasonPass.state.receipts[seasonPass.claimKey(tier, track)]?.reward ?? seasonPass.getReward(tier, track);
             if (seasonPass.isClaimed(tier, track)) return { ok: true, reward };
+            if (serverSync) {
+                await serverSync.claim(tier, track);
+                return seasonPass.isClaimed(tier, track) ? { ok: true, reward } : { ok: false, reason: 'delivery_pending', reward };
+            }
             const intent = seasonPass.claim(tier, track);
             if (!intent) return { ok: false, reason: 'choice-or-entitlement-required' };
             const result = await deliverLocalSeasonReward(intent, intent.receiptId);
@@ -384,7 +415,7 @@ export function wireSeasonPassXpEvents() {
     const record = detail => {
         if (window.game?.performanceProfile !== 'gameplay' || window.game?.isPlayerDead || window.game?.loadingPaused || !currentRunId) return;
         const runId = currentRunId;
-        void runSeasonAction(() => seasonPass.recordEvent({ runId, ...detail }));
+        void runSeasonAction(() => season('recordEvent', { runId, ...detail }));
     };
     window.addEventListener('season-objective-complete', ({ detail }) => {
         if (!['mission', 'story', 'camp-quest', 'black-box', 'survivor'].includes(detail?.source)) return;
@@ -406,7 +437,7 @@ export function wireSeasonPassXpEvents() {
         window.addEventListener(event, () => {
             if (!currentRunId) return;
             const runId = currentRunId;
-            void runSeasonAction(() => seasonPass.settleRun(runId, outcome));
+            void runSeasonAction(() => season('settleRun', runId, outcome));
         });
     }
     window.addEventListener('season-companion-stage-complete', ({ detail }) => {
@@ -414,13 +445,13 @@ export function wireSeasonPassXpEvents() {
     });
     window.addEventListener('fabrication-complete', ({ detail }) => {
         if (!detail?.id) return;
-        void runSeasonAction(() => seasonPass.completeOnboarding('fabricated'));
+        void runSeasonAction(() => season('completeOnboarding', 'fabricated'));
         if (window.fabricator?.isFabricated(detail.id)) {
-            void runSeasonAction(() => seasonPass.recordActivity(`fabrication:${detail.id}`));
+            void runSeasonAction(() => season('recordActivity', `fabrication:${detail.id}`));
         }
     });
     window.addEventListener('fabricated-weapon-equipped', () => {
-        void runSeasonAction(() => seasonPass.completeOnboarding('equipped'));
+        void runSeasonAction(() => season('completeOnboarding', 'equipped'));
     });
     window.addEventListener('storage', () => {
         void runSeasonAction(() => seasonPass.refresh());
@@ -601,11 +632,11 @@ function renderSeasonPassBody() {
     }));
     body.querySelectorAll('[data-retry]').forEach(btn => btn.addEventListener('click', () => { void runSeasonAction(); }));
     body.querySelectorAll('[data-pin]').forEach(btn => btn.addEventListener('click', () => {
-        void runSeasonAction(() => seasonPass.completeOnboarding('target', { itemdefid: Number(btn.dataset.pin) }));
+        void runSeasonAction(() => season('completeOnboarding', 'target', { itemdefid: Number(btn.dataset.pin) }));
     }));
     body.querySelectorAll('[data-choice]').forEach(btn => btn.addEventListener('click', () => {
         btn.disabled = true;
-        void runSeasonAction(() => seasonPass.claim(15, 'free', { selectedChoice: Number(btn.dataset.choice), ownedChoices: SEASON_ONE_CLASS_CHOICES.filter(id => window.itemOwnership?.isOwned(id)) }));
+        void runSeasonAction(() => season('claim', 15, 'free', { selectedChoice: Number(btn.dataset.choice), ownedChoices: SEASON_ONE_CLASS_CHOICES.filter(id => window.itemOwnership?.isOwned(id)) }));
     }));
     body.querySelectorAll('[data-craft]').forEach(btn => btn.addEventListener('click', () => {
         btn.disabled = true;
@@ -622,18 +653,23 @@ function renderSeasonPassBody() {
 // "stuck at the first level" (session 2026-10-06). Open on where they are:
 // the current rank, or the earliest week with directives left to finish.
 // Only on open and tab switch, so a re-render never yanks a scrolled list.
+function seasonProgressAnchor() {
+    const body = document.getElementById('season-pass-body');
+    if (activeTab === 'tiers') {
+        const tier = Math.max(1, Math.min(TOTAL_TIERS, seasonPass.getCurrentTier()));
+        return body?.querySelector(`[data-tier="${tier}"]`) ?? null;
+    }
+    if (activeTab === 'bounties') {
+        const open = seasonPass.getActiveWeeklies().find(d => !d.completed);
+        return body?.querySelector(`[data-week="${open?.week ?? seasonPass.getReleasedWeeks()}"]`) ?? null;
+    }
+    return null;
+}
+
 function scrollSeasonBodyToProgress() {
     const body = document.getElementById('season-pass-body');
     if (!body) return;
-    let target = null;
-    if (activeTab === 'tiers') {
-        const tier = Math.max(1, Math.min(TOTAL_TIERS, seasonPass.getCurrentTier()));
-        target = body.querySelector(`[data-tier="${tier}"]`);
-    } else if (activeTab === 'bounties') {
-        const open = seasonPass.getActiveWeeklies().find(d => !d.completed);
-        const week = open?.week ?? seasonPass.getReleasedWeeks();
-        target = body.querySelector(`[data-week="${week}"]`);
-    }
+    const target = seasonProgressAnchor();
     if (!target) { body.scrollTop = 0; return; }
     requestAnimationFrame(() => target.scrollIntoView?.({ block: 'start' }));
 }
@@ -649,12 +685,15 @@ export function openSeasonPassModal() {
     flushQueuedSeasonPassToasts();
     if (!progressionCeremonyActive) showNextProgressionReward();
 
-    // Auto-focus preferred controller/keyboard target
+    // Auto-focus preferred controller/keyboard target: a button on the
+    // current rank, without scrolling. Focusing rank 1's button used to pull
+    // the list straight back to the top after it had opened on the player's
+    // rank (session 2026-10-06).
     requestAnimationFrame(() => {
-        const target = modal.querySelector('.season-pass-claim-btn')
+        const target = seasonProgressAnchor()?.querySelector('.season-pass-claim-btn')
             || modal.querySelector('.season-pass-tab-btn.active')
             || modal.querySelector('#close-season-pass-modal');
-        target?.focus?.();
+        target?.focus?.({ preventScroll: true });
     });
 }
 
@@ -713,6 +752,7 @@ export function initSeasonPassUI() {
     window.addEventListener('keydown', handleSeasonPassKeyDown);
     wireSeasonPassXpEvents();
     if (!window.electronAPI) void loadVaultData().then(() => runSeasonAction()).catch(() => { deliveryMessage = 'Local inventory unavailable — delivery will retry from Dossier.'; });
+    else if (serverSync) void runSeasonAction();
     updateMenuStatus();
 }
 

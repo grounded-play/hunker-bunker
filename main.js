@@ -1080,7 +1080,11 @@ function getPreferredControllerFocusTarget(root, focusables) {
             ?? focusables[0];
     }
     if (root?.id === 'season-pass-modal') {
-        return focusables.find((element) => element.classList?.contains('season-pass-claim-btn'))
+        // The current rank's row first: rank 1's button would scroll the
+        // Dossier back to the top after it opened on the player's rank.
+        const currentTier = String(Math.max(1, window.seasonPass?.getCurrentTier?.() ?? 1));
+        return focusables.find((element) => element.classList?.contains('season-pass-claim-btn') && element.closest?.('[data-tier]')?.dataset.tier === currentTier)
+            ?? focusables.find((element) => element.classList?.contains('season-pass-claim-btn'))
             ?? focusables.find((element) => element.classList?.contains('season-pass-tab-btn') && element.classList.contains('active'))
             ?? focusables.find((element) => element.id === 'close-season-pass-modal')
             ?? focusables[0];
