@@ -74,19 +74,19 @@ export const CAMP_PROP_MODELS = Object.freeze({
 
 export const CAMP_SIGNATURE_PROPS = Object.freeze({
     camp_meridian: [
-        { id: 'radio', path: '/prop_camp_meridian_radio.jpg', x: 1.7, z: 2.15, y: 0.42, scale: 1.1, color: 0xffb347 },
-        { id: 'battery_bank', path: '/prop_camp_meridian_battery_bank.jpg', x: -1.85, z: -2.3, y: 0.32, scale: 0.95, color: 0xffb347 },
-        { id: 'repair_rig', path: '/prop_camp_meridian_repair_rig.jpg', x: 3.35, z: 1.35, y: 0.4, scale: 1.2, color: 0xffb347 }
+        { id: 'radio', path: '/prop_camp_meridian_radio.jpg', model: 'prop_camp_meridian_radio', x: 1.7, z: 2.15, y: 0.42, scale: 1.1, color: 0xffb347 },
+        { id: 'battery_bank', path: '/prop_camp_meridian_battery_bank.jpg', model: 'prop_camp_meridian_battery_bank', x: -1.85, z: -2.3, y: 0.32, scale: 0.95, color: 0xffb347 },
+        { id: 'repair_rig', path: '/prop_camp_meridian_repair_rig.jpg', model: 'prop_camp_meridian_repair_rig', x: 3.35, z: 1.35, y: 0.4, scale: 1.2, color: 0xffb347 }
     ],
     camp_tallow: [
-        { id: 'still', path: '/prop_camp_tallow_still.jpg', x: 1.5, z: 1.95, y: 0.4, scale: 1.05, color: 0x6ee66e },
-        { id: 'spore_trays', path: '/prop_camp_tallow_spore_trays.jpg', x: -2.05, z: -1.75, y: 0.38, scale: 1.15, color: 0x6ee66e },
-        { id: 'resin_urn', path: '/prop_camp_tallow_resin_urn.jpg', x: 2.6, z: -2.35, y: 0.3, scale: 0.75, color: 0x6ee66e }
+        { id: 'still', path: '/prop_camp_tallow_still.jpg', model: 'prop_camp_tallow_still', x: 1.5, z: 1.95, y: 0.4, scale: 1.05, color: 0x6ee66e },
+        { id: 'spore_trays', path: '/prop_camp_tallow_spore_trays.jpg', model: 'prop_camp_tallow_spore_trays', x: -2.05, z: -1.75, y: 0.38, scale: 1.15, color: 0x6ee66e },
+        { id: 'resin_urn', path: '/prop_camp_tallow_resin_urn.jpg', model: 'prop_camp_tallow_resin_urn', x: 2.6, z: -2.35, y: 0.3, scale: 0.75, color: 0x6ee66e }
     ],
     camp_vesper: [
-        { id: 'turret', path: '/prop_camp_vesper_turret.jpg', x: 0, z: -3.4, y: 0.46, scale: 1.3, color: 0xff5c4d },
-        { id: 'ammo_press', path: '/prop_camp_vesper_ammo_press.jpg', x: -2.6, z: 1.75, y: 0.36, scale: 1.0, color: 0xff5c4d },
-        { id: 'shield_rack', path: '/prop_camp_vesper_shield_rack.jpg', x: 2.45, z: 2.55, y: 0.4, scale: 1.1, color: 0xff5c4d }
+        { id: 'turret', path: '/prop_camp_vesper_turret.jpg', model: 'prop_camp_vesper_turret', x: 0, z: -3.4, y: 0.46, scale: 1.3, color: 0xff5c4d },
+        { id: 'ammo_press', path: '/prop_camp_vesper_ammo_press.jpg', model: 'prop_camp_vesper_ammo_press', x: -2.6, z: 1.75, y: 0.36, scale: 1.0, color: 0xff5c4d },
+        { id: 'shield_rack', path: '/prop_camp_vesper_shield_rack.jpg', model: 'prop_camp_vesper_shield_rack', x: 2.45, z: 2.55, y: 0.4, scale: 1.1, color: 0xff5c4d }
     ]
 });
 
@@ -765,7 +765,7 @@ export class SurvivorCamp {
             const sprite = new THREE.Sprite(material);
             sprite.position.set(spec.x, spec.y, spec.z);
             sprite.scale.set(spec.scale, spec.scale, 1);
-            sprite.userData = { kind: 'camp-signature-prop', campId: this.id, propId: spec.id };
+            sprite.userData = { kind: 'camp-signature-prop', campId: this.id, propId: spec.id, model3d: spec.model ?? null };
             group.add(sprite);
             this.signatureProps[spec.id] = sprite;
         }

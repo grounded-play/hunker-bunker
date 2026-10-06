@@ -521,6 +521,19 @@ export function handleCustomPropDestruction(game, propKey, propPosition, propObj
 }
 
 /**
+ * The catalogue key a prop behaves as. A 2D type with no spec of its own that
+ * draws as a catalogue model (WORLD_3D_MODEL_ALIASES, e.g. a camp repair rig
+ * drawn as the maintenance tool cart) takes that model's interaction, so it
+ * acts like what the player sees.
+ */
+export function interactionSpecKeyFor(data) {
+    const key = data?.type || data?.modelKey || data?.propKey;
+    if (key && PROP_INTERACTION_SPECS[key]) return key;
+    const model = data?.world3dModelType;
+    return model && PROP_INTERACTION_SPECS[model] ? model : key;
+}
+
+/**
  * Finds the nearest interactable prop to the player.
  */
 export function findNearestInteractableProp(game, maxDist = 2.5) {
@@ -533,9 +546,10 @@ export function findNearestInteractableProp(game, maxDist = 2.5) {
 
     for (const sprite of game.scatterSprites) {
         if (!sprite || sprite.userData?.burstTriggered) continue;
-        const propKey = sprite.userData?.type || sprite.userData?.modelKey || sprite.userData?.propKey;
+        const propKey = interactionSpecKeyFor(sprite.userData);
         const spec = sprite.userData?.interactionSpec || PROP_INTERACTION_SPECS[propKey];
         if (!spec || !spec.canInteract) continue;
+        if (isSpentProp(game, sprite)) continue;
 
         const d = Math.hypot(sprite.position.x - px, sprite.position.z - pz);
         if (d < minDist) {
@@ -557,6 +571,20 @@ export function interactWithCustomProp(game, nearestInfo) {
     const success = nearestInfo.spec.onInteract(game, nearestInfo.sprite);
     if (success) {
         nearestInfo.sprite.userData.hasBeenInteracted = true;
+        const key = nearestInfo.sprite.userData.scatterKey;
+        if (!nearestInfo.sprite.userData.interactionSpec && key) {
+            (game.spentPropScatterKeys ??= new Set()).add(key);
+        }
     }
     return success;
+}
+
+// A catalogue prop (PROP_INTERACTION_SPECS) pays out once: it is a cache of
+// scrap, oxygen or ammo, not a vending machine, and its key outlives the
+// chunk so walking away and back does not refill it. A prop that carries its
+// own interactionSpec (a critical-service wreck) is a service and stays usable.
+function isSpentProp(game, sprite) {
+    const data = sprite.userData ?? {};
+    if (data.interactionSpec) return false;
+    return Boolean(data.hasBeenInteracted || (data.scatterKey && game.spentPropScatterKeys?.has(data.scatterKey)));
 }

@@ -13831,7 +13831,11 @@ window.addEventListener('camp-prompt-nearby', (event) => {
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
     if (key) setPromptKeyLabel(key);
-    if (text) text.textContent = event?.detail?.label ?? t('ui.prompt.interact');
+    // Prop prompts are written "[E] SEARCH TOOL DRAWERS", but the key chip
+    // already says PRESS E (or the pad glyph), so the bracket read twice and
+    // named the wrong button on a controller.
+    const label = event?.detail?.label?.replace(/^\s*\[[A-Z0-9]{1,6}\]\s*/, '');
+    if (text) text.textContent = label || t('ui.prompt.interact');
     prompt?.classList.remove('hidden');
 });
 window.addEventListener('camp-prompt-clear', () => {

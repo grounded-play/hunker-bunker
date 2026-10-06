@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { ThreeGame } from './threeGame.js';
-import { WORLD_3D_MODEL_ALIASES, hasWorld3dModel, resolveScatterWorld3dType } from './world3dOverlay.js';
+import { WORLD_3D_MODEL_ALIASES, hasWorld3dModel, resolveScatterWorld3dType, world3dModelTypeFor } from './world3dOverlay.js';
 
 // 2026-10-05: the game is 3D. A prop with a model never draws its 2D sprite;
 // the sprite keeps owning gameplay state, and only reappears if the model fails.
@@ -77,7 +77,15 @@ describe('no 2D stand-ins for props with 3D models', () => {
         ['prop_fusion_generator', 'fusion_generator'],
         ['prop_camp_cookfire_doused', 'prop_camp_cookfire'],
         ['prop_camp_vesper_turret', 'prop_base_defense_turret'],
-        ['bunker_junk_legendary', 'bunker_junk_rare']
+        ['bunker_junk_legendary', 'bunker_junk_rare'],
+        // Session 2026-10-06: still flat in rooms on PC and Deck.
+        ['prop_cyber_junction', 'prop_diagnostic_console'],
+        ['prop_biomech_pillar_left', 'prop_biomech_arch'],
+        ['prop_biomech_pillar_right', 'prop_biomech_arch'],
+        ['prop_cryo_sleep_pod', 'prop_flesh_steel_coffin'],
+        ['prop_camp_meridian_repair_rig', 'prop_maintenance_tool_cart'],
+        ['prop_engineering_bench', 'prop_fabricator_workstation'],
+        ['prop_ruptured_coolant_pump', 'prop_icey_frost_manifold']
     ])('a spawned %s prop renders as %s, not its billboard', (type, model) => {
         const sprite = spawn(type);
         expect(sprite.userData.world3dModelType).toBe(model);
@@ -97,6 +105,30 @@ describe('2D -> 3D candidate list', () => {
             for (const model of entry.candidates) expect(hasWorld3dModel(model), `${entry.type} -> ${model}`).toBe(true);
             if (entry.status === 'wired') expect(WORLD_3D_MODEL_ALIASES[entry.type]).toBe(entry.candidates[0]);
             else expect(WORLD_3D_MODEL_ALIASES[entry.type], `${entry.type} is aliased but still marked review`).toBeUndefined();
+        }
+    });
+});
+
+// Camp and hive signature and service props ship as ~10 KB placeholder tiles
+// (a dashed box with initials). Territory rooms spawn them as room props and
+// camp.js / hiveSite.js build them as site sprites; both must draw a model.
+describe('camp and hive signature props', () => {
+    it('every territory signature and service type draws a model', async () => {
+        const { TERRITORY_SITE_PROFILES } = await import('./territoryStructures.js');
+        for (const profile of Object.values(TERRITORY_SITE_PROFILES)) {
+            for (const type of [profile.signature, profile.service]) {
+                expect(hasWorld3dModel(world3dModelTypeFor(type)), type).toBe(true);
+            }
+        }
+    });
+
+    it('every camp and hive site signature prop names a model', async () => {
+        const { CAMP_SIGNATURE_PROPS } = await import('./camp.js');
+        const { HIVE_SIGNATURE_PROPS } = await import('./hiveSite.js');
+        const specs = [...Object.values(CAMP_SIGNATURE_PROPS), ...Object.values(HIVE_SIGNATURE_PROPS)].flat();
+        for (const spec of specs) {
+            expect(spec.model, spec.id).toBeTruthy();
+            expect(hasWorld3dModel(world3dModelTypeFor(spec.model)), `${spec.id} -> ${spec.model}`).toBe(true);
         }
     });
 });

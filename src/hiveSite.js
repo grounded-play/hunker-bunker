@@ -42,15 +42,15 @@ export const HIVE_PROP_MODELS = Object.freeze({
 
 export const HIVE_SIGNATURE_PROPS = Object.freeze({
     hive_suture: [
-        { id: 'suture_organ', path: '/prop_hive_suture_organ.jpg', x: -1.55, z: 1.0, y: 0.55, scale: 1.3 },
-        { id: 'wound_cauterizer', path: '/prop_hive_wound_cauterizer.jpg', x: 1.5, z: -1.05, y: 0.4, scale: 0.9 }
+        { id: 'suture_organ', path: '/prop_hive_suture_organ.jpg', model: 'prop_hive_suture_organ', x: -1.55, z: 1.0, y: 0.55, scale: 1.3 },
+        { id: 'wound_cauterizer', path: '/prop_hive_wound_cauterizer.jpg', model: 'prop_hive_wound_cauterizer', x: 1.5, z: -1.05, y: 0.4, scale: 0.9 }
     ],
     hive_relay: [
-        { id: 'relay_antenna', path: '/prop_hive_relay_antenna.jpg', x: 0, z: 1.7, y: 0.75, scale: 1.4 },
-        { id: 'synaptic_web', path: '/prop_hive_synaptic_web.jpg', x: -1.4, z: -1.2, y: 0.5, scale: 1.1 }
+        { id: 'relay_antenna', path: '/prop_hive_relay_antenna.jpg', model: 'prop_hive_relay_antenna', x: 0, z: 1.7, y: 0.75, scale: 1.4 },
+        { id: 'synaptic_web', path: '/prop_hive_synaptic_web.jpg', model: 'prop_hive_synaptic_web', x: -1.4, z: -1.2, y: 0.5, scale: 1.1 }
     ],
     hive_carapace: [
-        { id: 'chitin_hatchery', path: '/prop_hive_chitin_hatchery.jpg', x: 1.6, z: 1.05, y: 0.5, scale: 1.2 },
+        { id: 'chitin_hatchery', path: '/prop_hive_chitin_hatchery.jpg', model: 'prop_hive_chitin_hatchery', x: 1.6, z: 1.05, y: 0.5, scale: 1.2 },
         { id: 'carapace_molt', path: '/prop_hive_carapace_molt.jpg', x: -1.6, z: -1.1, y: 0.45, scale: 1.25, model: 'prop_hive_carapace_molt' }
     ]
 });

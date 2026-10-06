@@ -3,6 +3,7 @@ import {
     BIOMECH_SYNERGY_TUNING,
     BILE_ARMOR_WEAKEN,
     findNearestInteractableProp,
+    interactionSpecKeyFor,
     handleCustomPropDestruction,
     interactWithCustomProp,
     PROP_INTERACTION_SPECS
@@ -192,5 +193,42 @@ describe('propInteractions', () => {
         expect(success).toBe(true);
         expect(mockGame.adjustOxygen).toHaveBeenCalledWith(15);
         expect(nearestInfo.sprite.userData.hasBeenInteracted).toBe(true);
+    });
+    // Session 2026-10-06: every press on the same tool cart paid +15 scrap and
+    // a full magazine again, and an O2 rack refilled 15% per press, forever.
+    it('a scavenged prop is spent: no prompt, no second payout, even after its chunk reloads', () => {
+        const rack = () => ({ position: { x: 1, z: 0 }, userData: { type: 'prop_oxygen_bottle_cascade_rack', scatterKey: 'room-4:rack' } });
+        const game = {
+            player: { position: { x: 0, z: 0 } },
+            scatterSprites: [rack()],
+            adjustOxygen: vi.fn(),
+            showBunkerLine: vi.fn(),
+            spawnPhysicalBurst: vi.fn()
+        };
+        expect(interactWithCustomProp(game, findNearestInteractableProp(game, 2.5))).toBe(true);
+        expect(findNearestInteractableProp(game, 2.5)).toBeNull();
+
+        game.scatterSprites = [rack()];
+        expect(findNearestInteractableProp(game, 2.5)).toBeNull();
+        expect(game.adjustOxygen).toHaveBeenCalledTimes(1);
+    });
+
+    it('a prop carrying its own interaction (a service wreck) stays usable', () => {
+        const onInteract = vi.fn(() => true);
+        const wreck = { position: { x: 1, z: 0 }, userData: { type: 'wreck', scatterKey: 'wreck:shop', interactionSpec: { canInteract: true, onInteract } } };
+        const game = { player: { position: { x: 0, z: 0 } }, scatterSprites: [wreck] };
+        interactWithCustomProp(game, findNearestInteractableProp(game, 2.5));
+        expect(findNearestInteractableProp(game, 2.5)?.sprite).toBe(wreck);
+    });
+    // A 2D placeholder type that draws as a catalogue model (a Meridian repair
+    // rig drawn as the tool cart) behaves like the model the player sees.
+    it('a prop drawn as a catalogue model takes that model\'s interaction', () => {
+        const rig = { position: { x: 1, z: 0 }, userData: { type: 'prop_camp_meridian_repair_rig', world3dModelType: 'prop_maintenance_tool_cart', scatterKey: 'rig' } };
+        const game = { player: { position: { x: 0, z: 0 } }, scatterSprites: [rig] };
+        const nearest = findNearestInteractableProp(game, 2.5);
+        expect(nearest?.spec).toBe(PROP_INTERACTION_SPECS.prop_maintenance_tool_cart);
+        expect(interactionSpecKeyFor(rig.userData)).toBe('prop_maintenance_tool_cart');
+        expect(interactionSpecKeyFor({ type: 'prop_oxygen_bottle_cascade_rack', world3dModelType: 'prop_oxygen_bottle_cascade_rack' })).toBe('prop_oxygen_bottle_cascade_rack');
+        expect(interactionSpecKeyFor({ type: 'prop_rock' })).toBe('prop_rock');
     });
 });

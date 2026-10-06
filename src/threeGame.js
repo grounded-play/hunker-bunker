@@ -31,6 +31,7 @@ import {
 } from './tacticalPingContract.js';
 import {
     handleCustomPropDestruction,
+    interactionSpecKeyFor,
     findNearestInteractableProp,
     interactWithCustomProp,
     PROP_INTERACTION_SPECS
@@ -2113,6 +2114,7 @@ export class ThreeGame {
         // the world had already reused for a different live enemy.
         this.killedEnemyScatterKeys = new Set();
         this.brokenPropScatterKeys = new Set();
+        this.spentPropScatterKeys = new Set();
         // docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #1 --
         // "environmental" PointLights (terminal/status/beacon/O2-safe/lore-terminal
         // lights, etc, registered via registerEnvLight below) accumulate as the
@@ -23164,6 +23166,7 @@ export class ThreeGame {
         this.mazeAccessState = createAccessState();
         this.destroyedWallKeys.clear();
         this.brokenPropScatterKeys = new Set();
+        this.spentPropScatterKeys = new Set();
         this.destroyedExteriorWallKeys?.clear();
         this._dressingManifest = new Map();
         this._dressingHp = new Map();
@@ -34304,7 +34307,7 @@ export class ThreeGame {
         if (isBio) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
         globalThis.window?.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 1.85, force: true });
 
-        const propKey = sprite.userData?.type || sprite.userData?.modelKey || sprite.userData?.propKey;
+        const propKey = interactionSpecKeyFor(sprite.userData);
         if (propKey) {
             handleCustomPropDestruction(this, propKey, sprite.position, sprite);
         }
