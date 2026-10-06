@@ -40,6 +40,7 @@ import { UmbilicalAttacker } from './3d/umbilicalAttacker.js';
 import { handleCriticalServiceDestruction } from './criticalServiceRecovery.js';
 
 import * as THREE from 'three';
+import { fitWallShaderSamplerBudget, INSTANCED_WORLD_POSITION } from './wallShaderCompatibility.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { createFrameProfiler } from './frameProfiler.js';
 import { createFrameIntervalTracker } from './frameIntervalTracker.js';
@@ -2695,7 +2696,7 @@ export class ThreeGame {
                 '#include <worldpos_vertex>',
                 `
                 #include <worldpos_vertex>
-                vWorldPos = (modelMatrix * vec4( transformed, 1.0 )).xyz;
+                ${INSTANCED_WORLD_POSITION}
                 `
             );
 
@@ -2866,8 +2867,8 @@ export class ThreeGame {
                 '#include <worldpos_vertex>',
                 `
                 #include <worldpos_vertex>
-                vWorldPos = (modelMatrix * vec4( transformed, 1.0 )).xyz;
-                vWorldNormal = normalize( (modelMatrix * vec4( normal, 0.0 )).xyz );
+                ${INSTANCED_WORLD_POSITION}
+                vWorldNormal = inverseTransformDirection(transformedNormal, viewMatrix);
                 `
             );
 
@@ -3087,6 +3088,12 @@ export class ThreeGame {
                 `
             );
         };
+        const compileWallShader = this.wallMaterial.onBeforeCompile;
+        this.wallMaterial.onBeforeCompile = (shader) => {
+            compileWallShader(shader);
+            fitWallShaderSamplerBudget(shader, this.renderer?.capabilities?.maxTextures ?? 16);
+        };
+        this.wallMaterial.customProgramCacheKey = () => `wall-samplers:${this.renderer?.capabilities?.maxTextures ?? 16}`;
         this.playerMaterials = Object.fromEntries(
             Object.entries(this.playerTextures).map(([type, texture]) => {
                 const material = new THREE.SpriteMaterial({
