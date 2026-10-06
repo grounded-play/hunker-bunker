@@ -28,7 +28,8 @@ function stubSteamStore(page, purchase) {
         const answers = {
             getSteamIdentity: { active: true, steamId64: '76561198000000099', persona: 'Tester' },
             getSteamMarketEligibility: { ok: true, allowed: true },
-            refreshSteamInventory: { ok: true, inventory: [], capabilities: [] },
+            refreshSteamInventory: { ok: true, inventory: purchase?.inventory ?? [], capabilities: [] },
+            openSteamCache: purchase?.openCache,
             getSteamStoreCatalog: catalog,
             purchaseSteamKeys: purchase?.init,
             finalizeSteamPurchase: purchase?.finalize
@@ -103,4 +104,29 @@ test('a refused purchase says why, next to the BUY buttons', async ({ page }) =>
     await expect(status).toHaveAttribute('data-tone', 'error');
     await expect(status).toContainText('tester list');
     await expect(status).toBeInViewport();
+});
+
+// Session 2026-10-06 (Deck): a cache opened from the hub granted its items, but
+// the decryptor reveal played inside the hidden Steam Vault window, so the
+// player saw nothing happen.
+test('opening a cache from the hub plays the reveal on screen', async ({ page }) => {
+    await stubSteamStore(page, {
+        inventory: [
+            { itemId: 'cache-1', itemdefid: 4000, quantity: 3 },
+            { itemId: 'key-1', itemdefid: 4001, quantity: 5 }
+        ],
+        openCache: { ok: true, granted: [{ itemId: 'frag-1', itemdefid: 1000, quantity: 3 }] }
+    });
+    await openStoreTab(page);
+    await page.locator('#foundry-hub-modal #vault-store-open-btn').click();
+
+    const reveal = page.locator('#vault-reveal-overlay');
+    await expect(reveal).toBeVisible();
+    await expect(reveal).toBeInViewport();
+    expect(await reveal.evaluate((el) => Boolean(el.closest('#foundry-hub-modal')))).toBe(true);
+    const onTop = await page.evaluate(() => {
+        const r = document.getElementById('vault-reveal-overlay').getBoundingClientRect();
+        return Boolean(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('#vault-reveal-overlay'));
+    });
+    expect(onTop).toBe(true);
 });

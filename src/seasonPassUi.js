@@ -11,7 +11,7 @@ import { SeasonPassManager, TIER_REWARDS, TOTAL_TIERS, XP_PER_TIER, PASS_CHAPTER
 import { SEASON_ONE, WEEKLY_DISPATCHES } from './data/seasonOneConfig.js';
 import { getSeasonOneCosmetic, SEASON_ONE_CLASS_CHOICES } from './data/seasonOneCatalog.js';
 import { DETERMINISTIC_RECIPES, getItemCount } from './craftingMatrix.js';
-import { getItemCatalogEntry, deliverLocalSeasonReward, craftLocalSeasonRecipe, getLocalSeasonInventory, loadVaultData } from './steamVaultUi.js';
+import { getItemCatalogEntry, deliverLocalSeasonReward, craftSeasonRecipe, getSeasonWorkshopInventory, loadVaultData } from './steamVaultUi.js';
 import { assetUrl } from './assetUrl.js';
 import { t, onLocaleChange } from './i18n.js';
 
@@ -513,7 +513,7 @@ function renderTierCard(tier) {
         return `<div class="season-pass-slot season-pass-slot--${track} season-pass-slot--${claimed ? 'claimed' : available ? 'claimable' : 'locked'}">
             <div class="season-pass-slot__reward">${renderRewardVisual(reward)}<div><div class="season-pass-slot__label">${reward.label}</div><div class="season-one-note">${compatibilityText(reward)}</div></div></div>${action}</div>`;
     };
-    return `<div class="season-pass-tier-row ${tier <= seasonPass.getCurrentTier() ? 'unlocked' : ''}"><div class="season-pass-tier-number">${tier}</div>${slot('free')}${slot('premium')}</div>`;
+    return `<div class="season-pass-tier-row ${tier <= seasonPass.getCurrentTier() ? 'unlocked' : ''}" data-tier="${tier}"><div class="season-pass-tier-number">${tier}</div>${slot('free')}${slot('premium')}</div>`;
 }
 
 function renderSeasonPassBody() {
@@ -544,19 +544,26 @@ function renderSeasonPassBody() {
     ${deliveryMessage ? `<div class="season-delivery-alert" role="status">◈ ${deliveryMessage}</div>` : ''}
     <div class="season-pass-tabs">${[['tiers', t('ui.dossier.tab_tiers')], ['bounties', t('ui.dossier.tab_bounties')], ['workshop', t('ui.dossier.tab_workshop')]].map(([id, label]) => `<button class="season-pass-tab-btn ${activeTab === id ? 'active' : ''}" data-tab="${id}" role="tab" aria-selected="${activeTab === id}">${label}</button>`).join('')}</div>`;
 
-    summary.querySelectorAll('[data-tab]').forEach(btn => btn.addEventListener('click', () => { activeTab = btn.dataset.tab; renderSeasonPassBody(); }));
+    summary.querySelectorAll('[data-tab]').forEach(btn => btn.addEventListener('click', () => {
+        activeTab = btn.dataset.tab;
+        renderSeasonPassBody();
+        scrollSeasonBodyToProgress();
+        if (activeTab === 'workshop' && window.electronAPI) {
+            void loadVaultData().then(() => { if (isModalOpen() && activeTab === 'workshop') renderSeasonPassBody(); }).catch(() => {});
+        }
+    }));
 
     if (activeTab === 'tiers') {
         body.innerHTML = `<div class="season-pass-tier-list">${PASS_CHAPTERS.map(chapter => `<h3 class="season-one-chapter">${chapter.name} · ${chapter.startTier}–${chapter.endTier}</h3><div class="season-pass-tier-header-row"><div>RANK</div><div>FREE TRACK</div><div>CLASSIFIED TRACK</div></div>${Array.from({ length: 10 }, (_, i) => renderTierCard(chapter.startTier + i)).join('')}`).join('')}</div>`;
     } else if (activeTab === 'bounties') {
         body.innerHTML = `<div class="season-tab-telemetry-bar">
-            <span class="telemetry-pill">${t('ui.dossier.directives')} <strong>${week * 3} / 24</strong></span>
+            <span class="telemetry-pill">${t('ui.dossier.directives')} <strong>${seasonPass.getActiveWeeklies().filter(d => d.completed).length} / ${week * 3}</strong></span>
             <span class="telemetry-pill">${t('ui.dossier.settlement')} <strong>${t('ui.dossier.settlement_auto')}</strong></span>
             <span class="telemetry-pill">${t('ui.dossier.expiration')} <strong>${t('ui.dossier.expiration_permanent')}</strong></span>
         </div>`
-            + Array.from({ length: week }, (_, index) => `<h3 class="season-one-chapter">Week ${index + 1} · ${WEEKLY_DISPATCHES[index].title}</h3><div class="bounty-grid">${seasonPass.getActiveWeeklies().filter(d => d.week === index + 1).map(d => `<div class="bounty-card ${d.completed ? 'completed' : ''}"><div class="bounty-card__header"><div class="bounty-card__title">${d.title}</div><span class="bounty-xp-badge">${d.completed ? '1,000 XP ✓' : '+1,000 XP'}</span></div><p class="bounty-card__desc">${d.desc}</p><div class="bounty-card__meter-wrap"><div class="bounty-card__meter"><div class="bounty-card__fill" style="width:${Math.min(100, Math.round((d.progress / d.target) * 100))}%"></div></div><span class="bounty-card__count">${d.progress} / ${d.target}</span></div></div>`).join('')}</div>`).join('');
+            + Array.from({ length: week }, (_, index) => `<h3 class="season-one-chapter" data-week="${index + 1}">Week ${index + 1} · ${WEEKLY_DISPATCHES[index].title}</h3><div class="bounty-grid">${seasonPass.getActiveWeeklies().filter(d => d.week === index + 1).map(d => `<div class="bounty-card ${d.completed ? 'completed' : ''}"><div class="bounty-card__header"><div class="bounty-card__title">${d.title}</div><span class="bounty-xp-badge">${d.completed ? '1,000 XP ✓' : '+1,000 XP'}</span></div><p class="bounty-card__desc">${d.desc}</p><div class="bounty-card__meter-wrap"><div class="bounty-card__meter"><div class="bounty-card__fill" style="width:${Math.min(100, Math.round((d.progress / d.target) * 100))}%"></div></div><span class="bounty-card__count">${d.progress} / ${d.target}</span></div></div>`).join('')}</div>`).join('');
     } else {
-        const inventory = getLocalSeasonInventory();
+        const inventory = getSeasonWorkshopInventory();
         const commonCount = getItemCount(inventory.items, 1000);
         const rareCount = getItemCount(inventory.items, 1100);
         body.innerHTML = `<div class="fragment-ledger-bar">
@@ -584,7 +591,7 @@ function renderSeasonPassBody() {
                         <span class="recipe-cost-pill">${cost}</span>
                     </div>
                     <p class="bounty-card__desc">${compatibilityText({ itemdefid: recipe.outputItemdefid })} · Once per season</p>
-                    <button class="season-pass-claim-btn" data-craft="${recipe.id}" data-owned="${owned}" ${crafted || missing || window.electronAPI ? 'disabled' : ''}>${crafted ? 'Crafted ✓' : window.electronAPI ? 'Service required' : missing ? 'Missing fragments' : owned ? 'Craft duplicate' : 'Craft cosmetic'}</button>
+                    <button class="season-pass-claim-btn" data-craft="${recipe.id}" data-owned="${owned}" ${crafted || missing ? 'disabled' : ''}>${crafted ? 'Crafted ✓' : missing ? 'Missing fragments' : owned ? 'Craft duplicate' : 'Craft cosmetic'}</button>
                 </div>`;
             }).join('')}</div>`;
     }
@@ -602,12 +609,33 @@ function renderSeasonPassBody() {
     }));
     body.querySelectorAll('[data-craft]').forEach(btn => btn.addEventListener('click', () => {
         btn.disabled = true;
-        void runSeasonAction(() => craftLocalSeasonRecipe(Number(btn.dataset.craft), { confirmOwned: btn.dataset.owned === 'true' }));
+        void runSeasonAction(() => craftSeasonRecipe(Number(btn.dataset.craft), { confirmOwned: btn.dataset.owned === 'true' }));
     }));
     body.querySelectorAll('[data-reveal]').forEach(btn => btn.addEventListener('click', () => {
         progressionCeremonyQueue.push({ tier: Number(btn.dataset.reveal), track: btn.dataset.track });
         if (!progressionCeremonyActive) showNextProgressionReward();
     }));
+}
+
+// The Dossier and Directives lists start at rank 1 and week 1, so a player at
+// rank 12 in week 4 opened onto progress they had long passed and read it as
+// "stuck at the first level" (session 2026-10-06). Open on where they are:
+// the current rank, or the earliest week with directives left to finish.
+// Only on open and tab switch, so a re-render never yanks a scrolled list.
+function scrollSeasonBodyToProgress() {
+    const body = document.getElementById('season-pass-body');
+    if (!body) return;
+    let target = null;
+    if (activeTab === 'tiers') {
+        const tier = Math.max(1, Math.min(TOTAL_TIERS, seasonPass.getCurrentTier()));
+        target = body.querySelector(`[data-tier="${tier}"]`);
+    } else if (activeTab === 'bounties') {
+        const open = seasonPass.getActiveWeeklies().find(d => !d.completed);
+        const week = open?.week ?? seasonPass.getReleasedWeeks();
+        target = body.querySelector(`[data-week="${week}"]`);
+    }
+    if (!target) { body.scrollTop = 0; return; }
+    requestAnimationFrame(() => target.scrollIntoView?.({ block: 'start' }));
 }
 
 export function openSeasonPassModal() {
@@ -616,6 +644,7 @@ export function openSeasonPassModal() {
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
     renderSeasonPassBody();
+    scrollSeasonBodyToProgress();
     void runSeasonAction();
     flushQueuedSeasonPassToasts();
     if (!progressionCeremonyActive) showNextProgressionReward();

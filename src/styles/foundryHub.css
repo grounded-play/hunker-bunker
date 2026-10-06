@@ -21,6 +21,8 @@
 
 .foundry-hub__content {
   --fab-glow-rgb: var(--hub-accent-rgb);
+  /* Anchors the cache reveal overlay (position: absolute; inset: 0). */
+  position: relative;
   display: flex;
   flex-direction: column;
   width: min(96vw, calc(var(--vu) * 152));

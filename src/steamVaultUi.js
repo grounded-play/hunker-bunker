@@ -8,6 +8,7 @@ import { getItemView } from './data/itemCatalog.js';
 import { TRADE_UP_ITEMS } from '../server/tradeUpCatalog.js';
 import { CATALOG_ITEMS } from './armoryUi.js';
 import {
+    DETERMINISTIC_RECIPES,
     DISPENSARY_COST_BY_RARITY,
     INGOT_PACK_COST,
     INGOT_PACK_QUANTITY,
@@ -295,6 +296,48 @@ export function craftLocalSeasonRecipe(recipeId, options) {
     const result = new LocalVaultLedger(window.localStorage).craft(recipeId, options);
     if (result.ok) applyLocalSeasonInventory(result.items);
     return result;
+}
+
+// The Fragment Workshop's view of what the player owns: the Steam inventory
+// on a Steam build, the local ledger on the browser build. It used to read
+// only the local ledger, so on Steam it showed 0 fragments and every recipe
+// said "Service required" (session 2026-10-06).
+export function getSeasonWorkshopInventory() {
+    return window.electronAPI ? { items: vaultItems, receipts: {} } : getLocalSeasonInventory();
+}
+
+// Fewest stacks, in inventory order, that cover every ingredient; null when
+// the player is short. The backend draws the quantities from these stacks.
+export function pickRecipeMaterials(items, ingredients) {
+    const picked = [];
+    for (const { itemdefid, quantity } of ingredients) {
+        let needed = quantity;
+        for (const item of items) {
+            if (needed <= 0) break;
+            if (Number(item.itemdefid) !== itemdefid || !(Number(item.quantity) > 0)) continue;
+            picked.push(item.itemId);
+            needed -= Number(item.quantity);
+        }
+        if (needed > 0) return null;
+    }
+    return picked;
+}
+
+// Steam: the schema's own exchange recipe (2100 / 2200), run by the backend.
+export async function craftSeasonRecipe(recipeId, options) {
+    if (!window.electronAPI) return craftLocalSeasonRecipe(recipeId, options);
+    const recipe = DETERMINISTIC_RECIPES[recipeId];
+    if (!recipe) return { ok: false, reason: 'invalid_recipe_id' };
+    const materials = pickRecipeMaterials(vaultItems, recipe.ingredients);
+    if (!materials) return { ok: false, reason: 'missing_fragments' };
+    const result = await window.electronAPI.exchangeSteamInventory(recipeId, materials)
+        .catch((err) => ({ ok: false, reason: err?.message ?? 'exchange_failed' }));
+    storeLog(result?.ok ? 'info' : 'warn', 'workshop-craft', { recipeId, ok: Boolean(result?.ok), reason: result?.reason ?? null });
+    if (result?.ok) {
+        await loadVaultData().catch(() => {});
+        for (const item of result.granted ?? []) showSteamDropToast(Number(item.itemdefid), Number(item.quantity) || 1);
+    }
+    return result?.ok ? { ok: true, granted: result.granted ?? [] } : { ok: false, reason: result?.reason ?? 'exchange_failed' };
 }
 
 // Adds an item to the local sandbox inventory (same pattern as openDeepRelicCache()'s
@@ -1133,6 +1176,18 @@ function applyCacheOpeningRewards(result) {
     }
 }
 
+// The reveal lives in the Steam Vault window, but caches are now opened from
+// the Foundry hub's STORE tab while that window stays hidden, so the whole
+// decryptor sequence played out of sight (session 2026-10-06). Mount it in
+// whichever of the two windows is open before it starts.
+function mountRevealOverlay(overlay) {
+    const hub = document.getElementById('foundry-hub-modal');
+    const host = hub && !hub.classList.contains('hidden')
+        ? hub.querySelector('.modal-content')
+        : document.querySelector('#steam-vault-modal .modal-content');
+    if (host && overlay.parentElement !== host) host.appendChild(overlay);
+}
+
 export function playCacheRevealAnimation(openingOrReward, onClaim) {
     const overlay = document.getElementById('vault-reveal-overlay');
     const titleEl = document.getElementById('vault-reveal-title');
@@ -1150,6 +1205,7 @@ export function playCacheRevealAnimation(openingOrReward, onClaim) {
         if (typeof onClaim === 'function') onClaim();
         return;
     }
+    mountRevealOverlay(overlay);
 
     const rewards = Array.isArray(openingOrReward?.rewards)
         ? openingOrReward.rewards
