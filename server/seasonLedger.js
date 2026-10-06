@@ -302,7 +302,9 @@ export function createSeasonLedger({
         importLocal(steamId, { state } = {}, ctx = {}) {
             return transact(steamId, ctx, (doc) => {
                 if (!importAllowed(steamId)) return reject(doc.server, 'import_not_allowed');
-                if (doc.server.imported || doc.state.xp > 0 || Object.keys(doc.server.runs).length) return reject(doc.server, 'ledger_not_empty');
+                // A run that earned nothing yet (e.g. the first sync was offline)
+                // does not block the carry-over; any server-earned XP does.
+                if (doc.server.imported || doc.state.xp > 0) return reject(doc.server, 'ledger_not_empty');
                 if (state?.seasonId !== SEASON_ONE.id || state.version !== SEASON_ONE.version || !Number.isSafeInteger(state.xp) || state.xp < 0) {
                     return reject(doc.server, 'invalid_import');
                 }

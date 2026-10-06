@@ -145,6 +145,13 @@ describe('server season ledger', () => {
         expect(await ledger.importLocal(STEAM_ID, { state: local })).toMatchObject({ accepted: false, reason: 'ledger_not_empty' });
     });
 
+    it('still imports after a run began on the server but earned nothing', async () => {
+        const { ledger } = harness({ importAllowed: () => true });
+        await ledger.beginRun(STEAM_ID);
+        const local = { seasonId: 'deep-crust-beta-1', version: 1, xp: 3000, directives: {}, receipts: {}, onboarding: {}, fragments: {} };
+        expect(await ledger.importLocal(STEAM_ID, { state: local })).toMatchObject({ accepted: true, state: { xp: 3000 } });
+    });
+
     it('refuses an import from an account that is not a tester', async () => {
         const { ledger } = harness();
         const local = { seasonId: 'deep-crust-beta-1', version: 1, xp: 45000, directives: {}, receipts: {}, fragments: {} };
