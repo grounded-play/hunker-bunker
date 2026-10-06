@@ -47,18 +47,12 @@ export default defineConfig({
     // The remaining index chunk is the single-page game's boot graph, which is
     // required up front and is loaded locally by the Steam file:// build.
     chunkSizeWarningLimit: 1600,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules/three')) {
-            return 'vendor-three';
-          }
-          if (id.includes('/src/debug') || id.includes('/src/sessionLogSink')) {
-            return 'debug-tools';
-          }
-        }
-      }
-    }
+    // No manualChunks: under Vite 8 (Rolldown) a manual group drags in its
+    // members' dependencies, so the old `debug-tools` group (which holds the
+    // boot-time logger) carried Three.js, all seven locales and several menus
+    // into the boot download as one 2.3 MB chunk, and `vendor-three` held 15 KB.
+    // Dynamic imports now decide the split: Three.js arrives with the game
+    // engine and the 3D previews, after first paint (issue #106).
   },
   plugins: [{
     // Dev-only log sink. The in-game console's EXPORT SESSION used to have one

@@ -1,6 +1,8 @@
 import { getCatalogEntry } from './itemOwnership.js';
-import { WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES, CHASSIS_SKIN_MODELS } from './player3dOverlay.js';
-import { CHARM_GLB_MAP, MOD_GLB_MAP } from './armoryScene.js';
+// Data only: importing these from player3dOverlay/armoryScene pulled Three.js
+// into the boot download through the Armory and Vault menus (issue #106).
+import { WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES, CHASSIS_SKIN_MODELS, MOD_GLB_MAP } from './data/operatorModelUrls.js';
+import { CHARM_GLB_MAP } from './charmModels.js';
 import { CLASS_ARCHETYPES, CLASS_CHASSIS_SKINS, ARCHETYPE_SKINS } from './loadout.js';
 import { deriveIconFromModelUrl } from './armoryPicker.js';
 import { ARMORY_PREVIEWS } from './data/armoryPreviews.js';

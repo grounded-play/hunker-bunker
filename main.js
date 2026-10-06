@@ -80,13 +80,10 @@ import {
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
 import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSpriteLayouts.js';
 import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
-import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
-import { createArmoryScene } from './src/armoryScene.js';
 import { createArmoryUi } from './src/armoryUi.js';
 import { initSteamVaultUI, isVaultExchangeAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, renderStorePanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
 import { createFoundryHub, isFoundryHubEnabled } from './src/foundryHub.js';
 import { initSeasonPassUI, cancelXpFeedback, beginSeasonRun, getSeasonRunSummary, openSeasonPassModal, seasonPass } from './src/seasonPassUi.js';
-import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
 import { campaignLedger } from './src/campaignLedger.js';
@@ -113,7 +110,6 @@ import { getResolution, previewCampLeaderLinchpin } from './src/storyLinchpins.j
 import { buildEndingArchive, getLeaderReaction } from './src/storyArchive.js';
 import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
-import { LeaderConversation3d } from './src/leaderConversation3d.js';
 import { getLocale, setLocale, t, t as i18nT, getAvailableLocales } from './src/i18n.js';
 import { createDeveloperCommentary } from './src/developerCommentary.js';
 import { createVoiceLineLibrary, VOICE_LINES_ROOT } from './src/voiceLines.js';
@@ -9413,7 +9409,8 @@ function ensureScoutHeroPreview() {
     const canvas = document.getElementById('char-preview-3d');
     if (!canvas) return Promise.resolve(null);
     if (!scoutHeroPreviewPromise) {
-        scoutHeroPreviewPromise = createScoutHeroPreview(canvas)
+        // 3D previews load with their screen, not at boot (issue #106).
+        scoutHeroPreviewPromise = import('./src/scoutHeroPreview.js').then(({ createScoutHeroPreview }) => createScoutHeroPreview(canvas))
             .then((preview) => {
                 scoutHeroPreview = preview;
                 preview.setOperatorPolish(getSelectedPolish?.()?.color ?? 0xffffff);
@@ -9489,6 +9486,7 @@ function ensureArmoryInitialized() {
         armoryInitPromise = (async () => {
             const canvas = document.getElementById('armory-canvas');
             const hudContainer = document.getElementById('armory-hud-overlay');
+            const { createArmoryScene } = await import('./src/armoryScene.js');
             armorySceneInstance = await createArmoryScene(canvas);
             // setOperatorPolish/setDecal are already wired to the in-run
             // player and (polish only) the title-screen hero preview -- the
@@ -14225,7 +14223,29 @@ const leaderConversationGuidance = document.getElementById('leader-conversation-
 const leaderConversationContinue = document.getElementById('leader-conversation-continue');
 const leaderConversationLeave = document.getElementById('leader-conversation-leave');
 const leaderConversationClose = document.getElementById('leader-conversation-close');
-const leaderConversation3d = new LeaderConversation3d(leaderConversationCanvas);
+// The 3D leader portrait loads with the first camp conversation, not at boot
+// (issue #106): react/hide are no-ops until show() has created it.
+// A hide() that lands while the module is still loading cancels that show().
+let leaderConversation3dInstance = null;
+let leaderConversation3dShowToken = 0;
+const leaderConversation3d = {
+    async show(identity) {
+        const token = ++leaderConversation3dShowToken;
+        if (!leaderConversation3dInstance) {
+            // A failed load keeps the 2D portrait, as a failed 3D show does.
+            const module = await import('./src/leaderConversation3d.js').catch(() => null);
+            if (!module) return false;
+            leaderConversation3dInstance ??= new module.LeaderConversation3d(leaderConversationCanvas);
+            if (token !== leaderConversation3dShowToken) return false;
+        }
+        return leaderConversation3dInstance.show(identity);
+    },
+    react(reaction) { leaderConversation3dInstance?.react(reaction); },
+    hide() {
+        leaderConversation3dShowToken += 1;
+        leaderConversation3dInstance?.hide();
+    }
+};
 let leaderConversationLines = [];
 let leaderConversationLineIndex = 0;
 let leaderConversationIdentity = null;
@@ -16782,7 +16802,7 @@ function finishBootDiagnostics() {
     // also pre-warm each type's shader program (renderer.compileAsync), not
     // just parse the model -- see the function's own comment for why that's
     // a second, separate cost.
-    preloadEnemy3dTemplates(window.game).catch(() => {});
+    import('./src/enemy3dOverlay.js').then(({ preloadEnemy3dTemplates }) => preloadEnemy3dTemplates(window.game)).catch(() => {});
 }
 
 // Boot's observer stops at boot-ready, so nothing recorded *why* a frame
