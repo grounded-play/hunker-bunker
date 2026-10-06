@@ -29,6 +29,7 @@ import {
 } from './cacheOpening.js';
 import { t, getLocale, onLocaleChange } from './i18n.js';
 import { adaptStoreCatalogResponse, formatStorePrice } from './steamStoreCatalog.js';
+import { finishPendingPurchases, runSteamKeyPurchase } from './steamStorePurchase.js';
 
 export { STEAM_ITEM_CATALOG };
 
@@ -781,6 +782,7 @@ export async function renderStorePanel() {
     renderHostedItemStoreCta();
     renderOddsTable();
     updateOpenCacheAvailability();
+    void finishPendingStorePurchases();
 }
 
 export function renderStoreSkuGrid() {
@@ -956,20 +958,12 @@ export function renderOddsTable() {
 export async function purchaseKeys(sku) {
     const skuInfo = storeCatalog?.find((row) => row.sku === sku);
     if (!storePurchasesEnabled || !skuInfo) {
-        const statusEl = document.getElementById('vault-store-open-status');
-        if (statusEl) {
-            statusEl.classList.remove('hidden');
-            statusEl.textContent = t('ui.vault.purchases_offline');
-        }
+        showStorePurchaseStatus({ key: 'offline', tone: 'error' });
         return;
     }
 
     if (storeKeysRestricted || skuInfo.restricted) {
-        const statusEl = document.getElementById('vault-store-open-status');
-        if (statusEl) {
-            statusEl.classList.remove('hidden');
-            statusEl.textContent = t('ui.vault.purchases_region_restricted');
-        }
+        showStorePurchaseStatus({ key: 'region_restricted', tone: 'error' });
         return { ok: false, reason: 'region_restricted' };
     }
 
@@ -998,42 +992,98 @@ export async function purchaseKeys(sku) {
         return;
     }
 
+    if (purchaseInFlight) return;
+    purchaseInFlight = true;
+    setBuyButtonsBusy(true);
     storeLog('info', 'purchase-start', { sku });
-    const result = await window.electronAPI.purchaseSteamKeys(sku).catch((err) => ({ ok: false, message: err?.message }));
-
-    if (result?.reason === 'qa_test_mode_no_charge') {
-        const statusEl = document.getElementById('vault-store-open-status');
-        if (statusEl) {
-            statusEl.classList.remove('hidden');
-            statusEl.textContent = t('ui.vault.purchases_disabled');
-        }
-        return;
-    }
-
-    if (result?.ok && result.mode === 'mock') {
-        await loadVaultData();
-        updateOpenCacheAvailability();
-        return;
-    }
-
-    if (result?.ok && result.requiresConfirmation && result.confirmUrl) {
-        storeLog('info', 'purchase-confirm-overlay', { sku, transId: result.transId ?? null });
-        await window.electronAPI.openSteamOverlayToUrl(result.confirmUrl);
-        const finalized = await window.electronAPI.finalizeSteamPurchase(result.transId).catch(() => null);
-        storeLog(finalized?.ok && finalized.status === 'completed' ? 'info' : 'warn', 'purchase-finalized', {
-            sku, transId: result.transId ?? null, ok: Boolean(finalized?.ok), status: finalized?.status ?? null, reason: finalized?.reason ?? null
+    try {
+        const outcome = await runSteamKeyPurchase({
+            api: window.electronAPI,
+            sku,
+            pending: pendingStorePurchases,
+            onStatus: (status) => {
+                storeLog(status.tone === 'error' ? 'warn' : 'info', `purchase-${status.key}`, { sku, reason: status.reason ?? null });
+                showStorePurchaseStatus(status, { count: skuInfo.keyCount });
+            }
         });
-        if (finalized?.ok && finalized.status === 'completed') {
+        if (outcome.state === 'completed') {
             await loadVaultData();
             updateOpenCacheAvailability();
-        } else {
-            console.warn('[steam-store] purchase not yet completed:', finalized);
+            showSteamDropToast(4001, skuInfo.keyCount);
         }
-        return;
+        return outcome;
+    } finally {
+        purchaseInFlight = false;
+        setBuyButtonsBusy(false);
     }
+}
 
-    storeLog('error', 'purchase-failed', { sku, reason: result?.reason ?? null, status: result?.status ?? null });
-    console.error('[steam-store] purchase failed:', result);
+let purchaseInFlight = false;
+
+// Approved-but-unsettled Steam transactions, finished on the next store visit.
+const PENDING_STORE_PURCHASES_KEY = 'hb_store_pending_txns';
+const pendingStorePurchases = {
+    list() {
+        try {
+            const ids = JSON.parse(window.localStorage?.getItem(PENDING_STORE_PURCHASES_KEY) ?? '[]');
+            return Array.isArray(ids) ? ids.filter((id) => typeof id === 'string') : [];
+        } catch {
+            return [];
+        }
+    },
+    write(ids) {
+        try {
+            if (ids.length) window.localStorage?.setItem(PENDING_STORE_PURCHASES_KEY, JSON.stringify(ids));
+            else window.localStorage?.removeItem(PENDING_STORE_PURCHASES_KEY);
+        } catch { /* best effort */ }
+    },
+    add(id) { this.write([...new Set([...this.list(), id])]); },
+    remove(id) { this.write(this.list().filter((entry) => entry !== id)); }
+};
+
+function setBuyButtonsBusy(busy) {
+    for (const button of document.querySelectorAll('.vault-store-buy-btn')) {
+        if (busy) {
+            button.dataset.busyWasDisabled = button.disabled ? '1' : '';
+            button.disabled = true;
+        } else if (button.dataset.busyWasDisabled !== undefined) {
+            button.disabled = button.dataset.busyWasDisabled === '1';
+            delete button.dataset.busyWasDisabled;
+        }
+    }
+}
+
+// The answer to a BUY press, right under the buttons. It used to land in the
+// cache decryptor's status line at the bottom of the panel, off screen on the
+// Deck, so a refused purchase looked like a button that did nothing.
+function showStorePurchaseStatus(status, { count = 0 } = {}) {
+    const el = document.getElementById('vault-store-purchase-status');
+    if (!el) return;
+    const messages = {
+        awaiting_approval: () => t('ui.vault.purchase_awaiting_approval'),
+        awaiting_sandbox: () => t('ui.vault.purchase_awaiting_sandbox'),
+        declined: () => t('ui.vault.purchase_declined'),
+        completed: () => t('ui.vault.purchase_complete', { count }),
+        pending: () => t('ui.vault.purchase_pending'),
+        sandbox_not_allowed: () => t('ui.vault.purchases_disabled'),
+        offline: () => t('ui.vault.purchases_offline'),
+        region_restricted: () => t('ui.vault.purchases_region_restricted'),
+        failed: () => t('ui.vault.purchase_failed_reason', { reason: String(status.reason ?? 'unknown').replace(/_/g, ' ') })
+    };
+    el.textContent = (messages[status.key] ?? messages.failed)();
+    el.dataset.tone = status.tone ?? 'info';
+    el.classList.remove('hidden');
+}
+
+async function finishPendingStorePurchases() {
+    if (!window.electronAPI?.finalizeSteamPurchase || pendingStorePurchases.list().length === 0) return;
+    const { completed } = await finishPendingPurchases({ api: window.electronAPI, pending: pendingStorePurchases });
+    if (completed > 0) {
+        storeLog('info', 'purchase-recovered', { completed });
+        await loadVaultData();
+        updateOpenCacheAvailability();
+        showStorePurchaseStatus({ key: 'completed', tone: 'success' }, { count: completed });
+    }
 }
 
 export function updateKeyCacheCounts() {

@@ -1209,7 +1209,7 @@
       "purchases_region_restricted": "A compra de chaves não está disponível na sua região de acordo com os regulamentos locais.",
       "region_restricted": "REGIÃO RESTRITA",
       "qa_grant": "Concessão sintética de QA: +{count} chave(s) de relíquia não negociáveis. Nenhuma compra foi iniciada.",
-      "purchases_disabled": "As compras estão desativadas nesta beta. Use QA GRANT TEST KIT no arsenal para itens de teste não negociáveis.",
+      "purchases_disabled": "Compras beta usam o sandbox de testes da Steam, e esta conta não está na lista de testadores. Use QA GRANT TEST KIT no Arsenal para itens de teste.",
       "key_and_cache_required": "Chave e cache são necessários para descriptografar.",
       "decrypting": "DESCRIPTOGRAFANDO CACHE DE RELÍQUIAS",
       "spinning_cipher": "GIRANDO A MATRIZ DE CIFRA...",
@@ -1231,7 +1231,12 @@
       "cache_partial": "Troca de cache concluída com concessão parcial da Steam.",
       "cache_failed": "Falha ao abrir o cache — verifique sua conexão e tente novamente.",
       "buy_on_steam": "◈ COMPRAR NA STEAM",
-      "cache_pending_review": "Uma abertura de cache anterior ainda está sendo verificada com a Steam. Tente de novo em alguns minutos."
+      "cache_pending_review": "Uma abertura de cache anterior ainda está sendo verificada com a Steam. Tente de novo em alguns minutos.",
+      "purchase_awaiting_approval": "Aprove a compra no overlay da Steam para receber suas chaves.",
+      "purchase_awaiting_sandbox": "Compra de teste beta: aprove no overlay da Steam. Sandbox da Steam, sem cobrança.",
+      "purchase_declined": "Compra cancelada na Steam. Nada foi cobrado.",
+      "purchase_complete": "+{count} chave(s) de cache adicionada(s) ao seu inventário.",
+      "purchase_pending": "A Steam ainda não confirmou o pagamento. Suas chaves chegam na próxima vez que você abrir a loja."
     },
     "lobby": {
       "connecting": "CONECTANDO...",

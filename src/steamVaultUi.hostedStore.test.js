@@ -31,7 +31,7 @@ describe('Steam store catalog through the Vault UI', () => {
         };
         api = {
             getSteamStoreCatalog: vi.fn(async () => response),
-            purchaseSteamKeys: vi.fn(async () => ({ reason: 'qa_test_mode_no_charge' })),
+            purchaseSteamKeys: vi.fn(async () => ({ ok: false, reason: 'sandbox_not_allowed' })),
             openSteamOverlayToUrl: vi.fn(async () => {}),
         };
         vi.stubGlobal('window', { electronAPI: api, addEventListener: vi.fn() });
@@ -39,6 +39,7 @@ describe('Steam store catalog through the Vault UI', () => {
             createElement: () => element(),
             getElementById: (id) => ({ 'vault-store-sku-grid': grid, 'vault-store-odds-table': oddsTable })[id] ?? null,
             querySelector: () => null,
+            querySelectorAll: () => [],
         });
     });
 

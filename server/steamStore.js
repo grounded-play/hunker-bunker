@@ -72,8 +72,28 @@ function getStoreIdempotencyTtlMs() {
     return Math.min(7 * 24 * 60 * 60, Math.max(60, Math.floor(raw))) * 1000;
 }
 
-function getMicroTxnBaseUrl() {
-    return process.env.HB_STEAM_MICROTXN_SANDBOX === '1'
+// HB_STEAM_MICROTXN_SANDBOX=1 sends every purchase to Valve's sandbox. Beta
+// testers instead ask for it per purchase, and only the SteamIDs listed in
+// HB_STEAM_SANDBOX_STEAM_IDS get it: the server cannot see which branch a
+// client runs, and a sandbox purchase still grants real inventory keys.
+function globalSandbox() {
+    return process.env.HB_STEAM_MICROTXN_SANDBOX === '1';
+}
+
+function sandboxAllowed(steamId) {
+    return String(process.env.HB_STEAM_SANDBOX_STEAM_IDS ?? '')
+        .split(',')
+        .map((id) => id.trim())
+        .includes(String(steamId));
+}
+
+// Purchases record their mode at init; older records predate that field.
+function purchaseUsesSandbox(purchase) {
+    return typeof purchase?.sandbox === 'boolean' ? purchase.sandbox : globalSandbox();
+}
+
+function getMicroTxnBaseUrl(sandbox = globalSandbox()) {
+    return sandbox
         ? STEAM_MICROTXN_SANDBOX_URL
         : STEAM_MICROTXN_URL;
 }
@@ -376,11 +396,11 @@ export async function fulfillPurchasedKeys(purchase) {
         return { status: 409, body: { ok: false, reason: 'legacy_grant_requires_review', purchaseStatus: 'pending', nextAction: 'show_error' } };
     }
     const grantIntent = purchase.grantIntent ?? createPurchaseGrantIntent(purchase, {
-        appId: getSteamAppId(), sandbox: process.env.HB_STEAM_MICROTXN_SANDBOX === '1',
+        appId: getSteamAppId(), sandbox: purchaseUsesSandbox(purchase),
         itemdefid: CACHE_KEY_ITEMDEFID, quantity: sku.keyCount
     });
     if (grantIntent.appId !== getSteamAppId()
-        || grantIntent.sandbox !== (process.env.HB_STEAM_MICROTXN_SANDBOX === '1')
+        || grantIntent.sandbox !== purchaseUsesSandbox(purchase)
         || grantIntent.itemdefid !== CACHE_KEY_ITEMDEFID) {
         return { status: 409, body: { ok: false, reason: 'purchase_grant_context_mismatch', purchaseStatus: 'pending', nextAction: 'show_error' } };
     }
@@ -496,6 +516,16 @@ export function attachSteamStoreRoutes(app) {
             });
         }
 
+        const sandbox = globalSandbox() || req.body?.sandbox === true;
+        if (sandbox && !globalSandbox() && !sandboxAllowed(req.steamId)) {
+            return res.status(403).json({
+                ok: false,
+                reason: 'sandbox_not_allowed',
+                purchaseStatus: 'disabled',
+                nextAction: 'show_error'
+            });
+        }
+
         let result;
         const availability = getStoreAvailability();
         const existingPurchase = requestId ? findPurchaseByRequestId(requestId) : null;
@@ -559,7 +589,7 @@ export function attachSteamStoreRoutes(app) {
                 params.append('amount[0]', String(sku.priceUsdCents));
                 params.append('description[0]', sku.label);
 
-                const response = await fetch(`${getMicroTxnBaseUrl()}InitTxn/v3/`, {
+                const response = await fetch(`${getMicroTxnBaseUrl(sandbox)}InitTxn/v3/`, {
                     method: 'POST',
                     headers: { 'content-type': 'application/x-www-form-urlencoded' },
                     body: params
@@ -589,6 +619,7 @@ export function attachSteamStoreRoutes(app) {
                         transId: String(transId),
                         status: 'pending_confirmation',
                         priceUsdCents: sku.priceUsdCents,
+                        sandbox,
                         confirmUrl: steamParams.steamurl ?? null,
                         steamResult: data?.response?.result ?? null
                     });
@@ -601,10 +632,13 @@ export function attachSteamStoreRoutes(app) {
                             orderId: String(steamParams.orderid ?? orderId),
                             status: 'pending_confirmation',
                             purchaseStatus: 'pending',
-                            nextAction: 'open_overlay',
+                            sandbox,
+                            // usersession=client: Steam shows the approval dialog in
+                            // the game's own overlay and returns no URL; the client
+                            // waits for MicroTxnAuthorizationResponse, then finalizes.
+                            // A web session returns steamurl to open instead.
+                            nextAction: steamParams.steamurl ? 'open_overlay' : 'await_steam_approval',
                             requiresConfirmation: true,
-                            // Client should open this via electronAPI.openSteamOverlayToUrl
-                            // so the player confirms payment in the Steam overlay.
                             confirmUrl: steamParams.steamurl ?? null
                         }
                     };
@@ -660,7 +694,7 @@ export function attachSteamStoreRoutes(app) {
         finalizingPurchases.add(lockKey);
         try {
             if (purchase.grantIntent && (purchase.grantIntent.appId !== getSteamAppId()
-                || purchase.grantIntent.sandbox !== (process.env.HB_STEAM_MICROTXN_SANDBOX === '1'))) {
+                || purchase.grantIntent.sandbox !== purchaseUsesSandbox(purchase))) {
                 return res.status(409).json({ ok: false, reason: 'purchase_grant_context_mismatch', purchaseStatus: 'pending', nextAction: 'show_error' });
             }
             // Mock purchases already granted at init time — finalize is a no-op
@@ -713,7 +747,7 @@ export function attachSteamStoreRoutes(app) {
                     orderid: purchase.orderId ?? purchase.transId,
                     transid: purchase.transId
                 });
-                const queryResp = await fetch(`${getMicroTxnBaseUrl()}QueryTxn/v3/?${queryParams.toString()}`, { signal: AbortSignal.timeout(15_000) });
+                const queryResp = await fetch(`${getMicroTxnBaseUrl(purchaseUsesSandbox(purchase))}QueryTxn/v3/?${queryParams.toString()}`, { signal: AbortSignal.timeout(15_000) });
                 const queryData = await readSteamJson(queryResp);
                 if (!queryResp.ok) {
                     await savePurchaseState({
@@ -807,7 +841,7 @@ export function attachSteamStoreRoutes(app) {
                     appid: String(getSteamAppId()),
                     orderid: purchase.orderId ?? purchase.transId
                 });
-                const finalizeResp = await fetch(`${getMicroTxnBaseUrl()}FinalizeTxn/v2/`, {
+                const finalizeResp = await fetch(`${getMicroTxnBaseUrl(purchaseUsesSandbox(purchase))}FinalizeTxn/v2/`, {
                     method: 'POST',
                     headers: { 'content-type': 'application/x-www-form-urlencoded' },
                     body: finalizeParams,

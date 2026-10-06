@@ -1209,7 +1209,7 @@
       "purchases_region_restricted": "根据当地法规，您所在的地区无法购买付费钥匙。",
       "region_restricted": "区域限制",
       "qa_grant": "合成 QA 发放：+{count} 个不可交易的遗物钥匙。未发起任何购买。",
-      "purchases_disabled": "本测试版已禁用购买。请使用军械库的 QA GRANT TEST KIT 获取不可交易的测试物品。",
+      "purchases_disabled": "Beta 购买在 Steam 测试沙盒中进行，而此账号不在测试人员名单上。请使用军械库的 QA GRANT TEST KIT 获取测试物品。",
       "key_and_cache_required": "解密需要钥匙与宝箱。",
       "decrypting": "正在解密遗物宝箱",
       "spinning_cipher": "密码矩阵运转中…",
@@ -1231,7 +1231,12 @@
       "cache_partial": "宝箱兑换已完成，但 Steam 仅部分发放。",
       "cache_failed": "宝箱开启失败 — 请检查网络后重试。",
       "buy_on_steam": "◈ 在 STEAM 上购买",
-      "cache_pending_review": "上一次开启补给箱仍在与 Steam 核验中。请几分钟后再试。"
+      "cache_pending_review": "上一次开启补给箱仍在与 Steam 核验中。请几分钟后再试。",
+      "purchase_awaiting_approval": "请在 Steam 界面中确认购买以领取钥匙。",
+      "purchase_awaiting_sandbox": "Beta 测试购买：请在 Steam 界面中确认。Steam 沙盒，不会扣款。",
+      "purchase_declined": "已在 Steam 中取消购买，未产生任何扣款。",
+      "purchase_complete": "已向你的库存添加 {count} 把缓存钥匙。",
+      "purchase_pending": "Steam 尚未确认付款。下次打开商店时钥匙将会到账。"
     },
     "lobby": {
       "connecting": "正在连接…",

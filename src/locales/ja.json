@@ -1209,7 +1209,7 @@
       "purchases_region_restricted": "現地の規制により、この地域では有料キーの購入をご利用いただけません。",
       "region_restricted": "地域制限",
       "qa_grant": "QA 合成付与：取引不可のレリックキー +{count} 個。購入は行われていません。",
-      "purchases_disabled": "このベータでは購入は無効です。取引不可のテストアイテムはアーモリーの QA GRANT TEST KIT を使用してください。",
+      "purchases_disabled": "ベータの購入は Steam のテストサンドボックスで行われますが、このアカウントはテスター一覧にありません。テスト用アイテムはアーモリーの QA GRANT TEST KIT を使用してください。",
       "key_and_cache_required": "復号にはキーとキャッシュが必要です。",
       "decrypting": "レリックキャッシュを復号中",
       "spinning_cipher": "暗号マトリクス回転中...",
@@ -1231,7 +1231,12 @@
       "cache_partial": "キャッシュ交換は完了しましたが、Steam の付与は一部のみです。",
       "cache_failed": "キャッシュを開けませんでした — 接続を確認して再試行してください。",
       "buy_on_steam": "◈ STEAMで購入",
-      "cache_pending_review": "前回のキャッシュ開封をSteamで確認中です。数分後にもう一度お試しください。"
+      "cache_pending_review": "前回のキャッシュ開封をSteamで確認中です。数分後にもう一度お試しください。",
+      "purchase_awaiting_approval": "キーを受け取るには Steam オーバーレイで購入を承認してください。",
+      "purchase_awaiting_sandbox": "ベータのテスト購入：Steam オーバーレイで承認してください。Steam サンドボックスのため請求はありません。",
+      "purchase_declined": "Steam で購入がキャンセルされました。請求はありません。",
+      "purchase_complete": "キャッシュキー +{count} 個がインベントリに追加されました。",
+      "purchase_pending": "Steam はまだ支払いを確認していません。次にストアを開いたときにキーが届きます。"
     },
     "lobby": {
       "connecting": "接続中...",

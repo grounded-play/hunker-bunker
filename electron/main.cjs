@@ -525,6 +525,19 @@ function initSteam() {
         } catch (err) {
             recordSteamDiagnostic('warn', 'steam_lobby_callback_failed', 'Could not register GameLobbyJoinRequested callback', serializeError(err));
         }
+        // An in-game purchase (InitTxn with usersession=client) is approved or
+        // declined in Steam's own overlay dialog; this callback is the only
+        // signal that the player answered, so the store waits for it before
+        // asking the backend to finalize.
+        try {
+            steamClient.callback.register(steam.SteamCallback.MicroTxnAuthorizationResponse, ({ app_id, order_id, authorized }) => {
+                const detail = { appId: Number(app_id), orderId: String(order_id), authorized: Boolean(authorized) };
+                recordSteamDiagnostic('info', 'steam_microtxn_authorization', 'MicroTxnAuthorizationResponse callback', detail);
+                if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('hb:microTxnAuthorization', detail);
+            });
+        } catch (err) {
+            recordSteamDiagnostic('warn', 'steam_microtxn_callback_failed', 'Could not register MicroTxnAuthorizationResponse callback', serializeError(err));
+        }
 
         return true;
     } catch (err) {

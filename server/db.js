@@ -187,6 +187,11 @@ function mergePurchaseRecord(existing, input = {}, now = Date.now()) {
         next.granted = existing.granted;
     }
 
+    // Sandbox or live is fixed at init: later saves never move a payment
+    // to the other endpoint.
+    if (typeof existing?.sandbox === 'boolean') next.sandbox = existing.sandbox;
+    else if (typeof input.sandbox === 'boolean') next.sandbox = input.sandbox;
+
     const grantIntent = mergePurchaseGrantIntent(existing, input, next);
     if (grantIntent) next.grantIntent = grantIntent;
     if (typeof input.grantReplayed === 'boolean') next.grantReplayed = input.grantReplayed;

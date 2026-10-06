@@ -88,7 +88,7 @@ let cachedSteamSession = null;
 let pendingSteamSession = null;
 let pendingSteamSessionIdentity = null;
 
-async function rejectChargeInQaBuild() {
+async function isQaBuild() {
     try {
         return Boolean(await ipcRenderer.invoke('hb:qaToolsEnabled'));
     } catch {
@@ -372,13 +372,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
     redeemSteamItem: (itemdefid, requestId) => withSteamSession('/steam/inventory/redeem', { itemdefid, requestId }),
     getSteamMarketEligibility: () => withSteamSessionGet('/steam/market/eligibility'),
     getSteamStoreCatalog: () => requestSteamBackend('/steam/store/catalog'),
+    // A beta/QA build never takes real money: it asks the backend for Valve's
+    // no-charge sandbox, which the backend grants only to allowlisted testers
+    // (HB_STEAM_SANDBOX_STEAM_IDS) and otherwise refuses. Finalize follows the
+    // mode the backend recorded for that transaction.
     purchaseSteamKeys: async (sku, requestId = `store-${Date.now()}-${Math.random().toString(36).slice(2)}`) => {
-        if (await rejectChargeInQaBuild()) return { ok: false, reason: 'qa_test_mode_no_charge', purchaseStatus: 'disabled' };
-        return withSteamSession('/steam/store/purchase/init', { sku, requestId });
+        const sandbox = await isQaBuild();
+        return withSteamSession('/steam/store/purchase/init', { sku, requestId, ...(sandbox ? { sandbox: true } : {}) });
     },
-    finalizeSteamPurchase: async (transId) => {
-        if (await rejectChargeInQaBuild()) return { ok: false, reason: 'qa_test_mode_no_charge', purchaseStatus: 'disabled' };
-        return withSteamSession('/steam/store/purchase/finalize', { transId });
+    finalizeSteamPurchase: (transId) => withSteamSession('/steam/store/purchase/finalize', { transId }),
+    onMicroTxnAuthorization: (handler) => {
+        const listener = (_event, detail) => handler(detail);
+        ipcRenderer.on('hb:microTxnAuthorization', listener);
+        return () => ipcRenderer.removeListener('hb:microTxnAuthorization', listener);
     },
     openSteamCache: (cacheItemId, keyItemId, requestId = `cache-${Date.now()}-${Math.random().toString(36).slice(2)}`) => (
         withSteamSession('/steam/inventory/exchange', { recipeId: 4100, materials: [cacheItemId, keyItemId], requestId })

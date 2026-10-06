@@ -1209,7 +1209,7 @@
       "purchases_region_restricted": "Paid key purchases are unavailable in your region in accordance with local regulations.",
       "region_restricted": "REGION RESTRICTED",
       "qa_grant": "Synthetic QA grant: +{count} non-tradable Relic Key(s). No purchase was initiated.",
-      "purchases_disabled": "Purchases are disabled in this beta. Use Armory QA GRANT TEST KIT for non-tradable test items.",
+      "purchases_disabled": "Beta purchases run in the Steam test sandbox, and this account is not on the tester list. Use Armory QA GRANT TEST KIT for test items.",
       "key_and_cache_required": "Key & Cache required for decryption.",
       "decrypting": "DECRYPTING RELIC CACHE",
       "spinning_cipher": "SPINNING CIPHER MATRIX...",
@@ -1231,7 +1231,12 @@
       "cache_partial": "Cache exchange completed with a partial Steam grant.",
       "cache_failed": "Cache open failed — check your connection and try again.",
       "buy_on_steam": "◈ BUY ON STEAM",
-      "cache_pending_review": "A previous cache open is still being verified with Steam. Try again in a few minutes."
+      "cache_pending_review": "A previous cache open is still being verified with Steam. Try again in a few minutes.",
+      "purchase_awaiting_approval": "Approve the purchase in the Steam overlay to receive your keys.",
+      "purchase_awaiting_sandbox": "Beta test purchase: approve it in the Steam overlay. Steam sandbox, no charge.",
+      "purchase_declined": "Purchase cancelled in Steam. Nothing was charged.",
+      "purchase_complete": "+{count} Cache Key(s) added to your inventory.",
+      "purchase_pending": "Steam has not confirmed the payment yet. Your keys arrive the next time you open the store."
     },
     "lobby": {
       "connecting": "CONNECTING...",

@@ -16494,6 +16494,28 @@ body.cutscene-video-active .tactical-overlay {
   text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
 }
 
+.vault-store-purchase-status {
+  margin-top: calc(var(--vu) * 8);
+  padding: calc(var(--vu) * 8) calc(var(--vu) * 12);
+  border: 1px solid rgba(176, 216, 248, 0.35);
+  border-left-width: calc(var(--vu) * 4);
+  background: rgba(10, 22, 36, 0.85);
+  color: #d6ecff;
+  font-family: 'Space Mono', monospace;
+  font-size: var(--font-md);
+  line-height: 1.35;
+}
+
+.vault-store-purchase-status[data-tone="success"] {
+  border-color: rgba(110, 230, 110, 0.6);
+  color: #c9f7c9;
+}
+
+.vault-store-purchase-status[data-tone="error"] {
+  border-color: rgba(255, 92, 77, 0.7);
+  color: #ffd0cb;
+}
+
 .vault-store-open-status {
   color: #b0d8f8 !important;
   font-family: 'Space Mono', monospace;

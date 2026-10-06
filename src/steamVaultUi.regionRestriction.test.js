@@ -22,6 +22,7 @@ function element() {
             insertBefore(child, _ref) { this.children.unshift(child); }
         },
         classList: { add: vi.fn(), remove: vi.fn(), toggle: vi.fn() },
+        dataset: {},
         style: {},
         get innerHTML() { return html; },
         set innerHTML(value) { html = value; this.children = []; },
@@ -69,7 +70,8 @@ describe('Steam Vault UI - Region Restriction and Statutory Terms', () => {
             createElement: () => element(),
             getElementById: (id) => ({
                 'vault-store-sku-grid': grid,
-                'vault-store-open-status': statusEl
+                // The answer to a BUY press shows under the buttons.
+                'vault-store-purchase-status': statusEl
             })[id] ?? null,
             querySelector: () => null
         });

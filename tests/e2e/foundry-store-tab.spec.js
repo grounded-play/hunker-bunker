@@ -5,8 +5,8 @@ import { bootToOperatorMenu } from './helpers.js';
 // STORE tab opened onto an empty panel. It borrows the Vault's store layout
 // but only the old Vault's own STORE tab drew the key bundles, odds and cache
 // opener, so on the hub there was nothing to buy.
-test('Foundry → STORE lists the key bundles with BUY buttons', async ({ page }) => {
-    await page.addInitScript(() => {
+function stubSteamStore(page, purchase) {
+    return page.addInitScript((purchase) => {
         const catalog = {
             ok: true,
             purchasesEnabled: true,
@@ -29,27 +29,78 @@ test('Foundry → STORE lists the key bundles with BUY buttons', async ({ page }
             getSteamIdentity: { active: true, steamId64: '76561198000000099', persona: 'Tester' },
             getSteamMarketEligibility: { ok: true, allowed: true },
             refreshSteamInventory: { ok: true, inventory: [], capabilities: [] },
-            getSteamStoreCatalog: catalog
+            getSteamStoreCatalog: catalog,
+            purchaseSteamKeys: purchase?.init,
+            finalizeSteamPurchase: purchase?.finalize
         };
+        window.__purchaseCalls = [];
         window.electronAPI = new Proxy({}, {
             get(_target, prop) {
+                // Steam answers the overlay's approval dialog for the order.
+                if (prop === 'onMicroTxnAuthorization') {
+                    return (handler) => {
+                        if (purchase?.authorized !== undefined) setTimeout(() => handler({ orderId: purchase.init.orderId, authorized: purchase.authorized }), 50);
+                        return () => {};
+                    };
+                }
                 if (typeof prop === 'string' && prop.startsWith('on')) return () => {};
+                if (prop === 'purchaseSteamKeys' || prop === 'finalizeSteamPurchase') {
+                    return async (...args) => { window.__purchaseCalls.push([prop, ...args]); return structuredClone(answers[prop]); };
+                }
                 if (prop === 'setStat' || prop === 'setSteamInputPhase') return () => {};
                 if (Object.hasOwn(answers, prop)) return async () => structuredClone(answers[prop]);
                 return async () => ({ ok: false, reason: 'stubbed' });
             }
         });
-    });
-    await bootToOperatorMenu(page);
+    }, purchase ?? null);
+}
 
+async function openStoreTab(page) {
+    await bootToOperatorMenu(page);
     await page.locator('#steam-vault-btn').click();
     await expect(page.locator('#foundry-hub-modal')).toBeVisible();
     const storeTab = page.locator('#foundry-hub-tabs [data-hub-tab="store"], #foundry-hub-tabs button:has-text("STORE")').first();
     await expect(storeTab).toBeVisible({ timeout: 15_000 });
     await storeTab.click();
+}
+
+test('Foundry → STORE lists the key bundles with BUY buttons', async ({ page }) => {
+    await stubSteamStore(page);
+    await openStoreTab(page);
 
     const buy = page.locator('#foundry-hub-modal .vault-store-buy-btn');
     await expect(buy).toHaveCount(3);
     for (const button of await buy.all()) await expect(button).toBeEnabled();
     await expect(page.locator('#foundry-hub-modal #vault-store-sku-grid')).not.toContainText('STORE CATALOG UNAVAILABLE');
+});
+
+// Session log 2026-10-06 (Deck, beta 2.4.14): BUY VIA STEAM pressed 22 times,
+// each logging purchase-start and nothing else on screen.
+test('a beta purchase waits for Steam approval, then shows the keys, under the buttons', async ({ page }) => {
+    await stubSteamStore(page, {
+        init: { ok: true, requiresConfirmation: true, transId: 'sbx-1', orderId: '777', sandbox: true, confirmUrl: null },
+        authorized: true,
+        finalize: { ok: true, status: 'completed', purchaseStatus: 'completed' }
+    });
+    await openStoreTab(page);
+    await page.locator('#foundry-hub-modal .vault-store-buy-btn').first().click();
+
+    const status = page.locator('#foundry-hub-modal #vault-store-purchase-status');
+    await expect(status).toHaveAttribute('data-tone', 'success');
+    await expect(status).toContainText('+1');
+    await expect(status).toBeInViewport();
+    expect(await page.evaluate(() => window.__purchaseCalls.map(([name, arg]) => [name, arg])))
+        .toEqual([['purchaseSteamKeys', 'key_1'], ['finalizeSteamPurchase', 'sbx-1']]);
+    for (const button of await page.locator('#foundry-hub-modal .vault-store-buy-btn').all()) await expect(button).toBeEnabled();
+});
+
+test('a refused purchase says why, next to the BUY buttons', async ({ page }) => {
+    await stubSteamStore(page, { init: { ok: false, reason: 'sandbox_not_allowed', purchaseStatus: 'disabled' } });
+    await openStoreTab(page);
+    await page.locator('#foundry-hub-modal .vault-store-buy-btn').first().click();
+
+    const status = page.locator('#foundry-hub-modal #vault-store-purchase-status');
+    await expect(status).toHaveAttribute('data-tone', 'error');
+    await expect(status).toContainText('tester list');
+    await expect(status).toBeInViewport();
 });

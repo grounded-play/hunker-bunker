@@ -330,8 +330,9 @@ describe('Steam Store API endpoints', () => {
             orderId: '9001001',
             status: 'pending_confirmation',
             purchaseStatus: 'pending',
-            nextAction: 'open_overlay',
-            requiresConfirmation: true
+            nextAction: 'await_steam_approval',
+            requiresConfirmation: true,
+            sandbox: false
         });
 
         const purchase = listPurchases({ limit: 20 }).find((row) => row.transId === '7001001');
@@ -558,6 +559,86 @@ describe('Steam Store API endpoints', () => {
         expect(cleanup.removed).toBeGreaterThanOrEqual(1);
         expect(checkIdempotency(expiringKey)).toBeNull();
         expect(checkIdempotency(permanentKey)?.body).toMatchObject({ kind: 'permanent' });
+    });
+});
+
+// Beta testers buy through Valve's no-charge sandbox (2026-10-06): the beta
+// client asks for it, and only SteamIDs on HB_STEAM_SANDBOX_STEAM_IDS get it.
+describe('per-purchase sandbox for beta testers', () => {
+    const TESTER = '76561198000000077';
+
+    async function initSandbox(steamId, reqId = `sbx-${Math.random()}`) {
+        const res = await fetch(`${baseUrl}/steam/store/purchase/init`, {
+            method: 'POST',
+            headers: liveAuthHeaders(steamId),
+            body: JSON.stringify({ requestId: reqId, sku: 'key_1', sandbox: true })
+        });
+        return { status: res.status, body: await res.json() };
+    }
+
+    it('refuses a sandbox purchase from an account not on the allowlist, without charging', async () => {
+        enableLiveStoreEnv();
+        process.env.HB_STEAM_SANDBOX_STEAM_IDS = TESTER;
+        mockExternalFetch(async (url) => { throw new Error(`unexpected fetch ${url}`); });
+        const result = await initSandbox('76561198000000000');
+        expect(result).toMatchObject({ status: 403, body: { ok: false, reason: 'sandbox_not_allowed', purchaseStatus: 'disabled' } });
+        expect(externalFetchCallCount()).toBe(0);
+    });
+
+    it('runs an allowlisted tester\'s purchase through the sandbox from init to grant', async () => {
+        enableLiveStoreEnv();
+        process.env.HB_STEAM_SANDBOX_STEAM_IDS = ` 76561198000000001, ${TESTER} `;
+        const urls = [];
+        mockExternalFetch(async (url, options) => {
+            const text = String(url);
+            urls.push(text);
+            if (text.includes('/InitTxn/')) {
+                const orderid = new URLSearchParams(String(options.body)).get('orderid');
+                return jsonResponse({ response: { result: 'OK', params: { orderid, transid: 'sbx-trans-1' } } });
+            }
+            if (text.includes('/QueryTxn/')) {
+                const purchase = listPurchases({ limit: 50 }).find((row) => row.transId === 'sbx-trans-1');
+                return jsonResponse({ response: { result: 'OK', params: { orderid: purchase.orderId, transid: 'sbx-trans-1', steamid: TESTER, status: 'Approved' } } });
+            }
+            if (text.includes('/FinalizeTxn/')) {
+                const purchase = listPurchases({ limit: 50 }).find((row) => row.transId === 'sbx-trans-1');
+                return jsonResponse({ response: { result: 'OK', params: { orderid: purchase.orderId, transid: 'sbx-trans-1' } } });
+            }
+            if (text.includes('/IInventoryService/AddItem/v1/')) {
+                return jsonResponse({ response: { success: true, item_json: JSON.stringify([{ itemid: '991', itemdefid: '4001', quantity: '1' }]) } });
+            }
+            throw new Error(`unexpected fetch ${text}`);
+        });
+
+        const init = await initSandbox(TESTER);
+        expect(init).toMatchObject({ status: 200, body: { ok: true, sandbox: true, requiresConfirmation: true, nextAction: 'await_steam_approval' } });
+        expect(listPurchases({ limit: 50 }).find((row) => row.transId === 'sbx-trans-1')).toMatchObject({ sandbox: true });
+
+        const res = await fetch(`${baseUrl}/steam/store/purchase/finalize`, {
+            method: 'POST',
+            headers: liveAuthHeaders(TESTER),
+            body: JSON.stringify({ transId: 'sbx-trans-1' })
+        });
+        expect(res.status).toBe(200);
+        expect(await res.json()).toMatchObject({ ok: true, purchaseStatus: 'completed' });
+        const microTxn = urls.filter((url) => /(Init|Query|Finalize)Txn/.test(url));
+        expect(microTxn).toHaveLength(3);
+        for (const url of microTxn) expect(url).toContain('/ISteamMicroTxnSandbox/');
+    });
+
+    it('keeps an ordinary purchase live while sandbox testers exist', async () => {
+        enableLiveStoreEnv();
+        process.env.HB_STEAM_SANDBOX_STEAM_IDS = TESTER;
+        mockExternalFetch(async (url) => {
+            expect(String(url)).toContain('/ISteamMicroTxn/InitTxn/v3/');
+            return jsonResponse({ response: { result: 'OK', params: { orderid: '1', transid: 'live-trans-1' } } });
+        });
+        const res = await fetch(`${baseUrl}/steam/store/purchase/init`, {
+            method: 'POST',
+            headers: liveAuthHeaders(TESTER),
+            body: JSON.stringify({ requestId: `live-${Math.random()}`, sku: 'key_1' })
+        });
+        expect(await res.json()).toMatchObject({ ok: true, sandbox: false });
     });
 });
 

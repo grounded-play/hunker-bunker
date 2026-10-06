@@ -1209,7 +1209,7 @@
       "purchases_region_restricted": "Las compras de llaves no están disponibles en tu región según las regulaciones locales.",
       "region_restricted": "REGIÓN RESTRINGIDA",
       "qa_grant": "Concesión sintética de QA: +{count} llave(s) de reliquia no intercambiables. No se inició ninguna compra.",
-      "purchases_disabled": "Las compras están desactivadas en esta beta. Usa QA GRANT TEST KIT en la armería para objetos de prueba no intercambiables.",
+      "purchases_disabled": "Las compras beta usan el sandbox de pruebas de Steam y esta cuenta no está en la lista de testers. Usa QA GRANT TEST KIT en la Armería para objetos de prueba.",
       "key_and_cache_required": "Se requieren llave y alijo para descifrar.",
       "decrypting": "DESCIFRANDO ALIJO DE RELIQUIAS",
       "spinning_cipher": "GIRANDO LA MATRIZ DE CIFRADO...",
@@ -1231,7 +1231,12 @@
       "cache_partial": "Intercambio de alijo completado con una concesión parcial de Steam.",
       "cache_failed": "Error al abrir el alijo: comprueba tu conexión e inténtalo de nuevo.",
       "buy_on_steam": "◈ COMPRAR EN STEAM",
-      "cache_pending_review": "Una apertura de caché anterior aún se está verificando con Steam. Inténtalo de nuevo en unos minutos."
+      "cache_pending_review": "Una apertura de caché anterior aún se está verificando con Steam. Inténtalo de nuevo en unos minutos.",
+      "purchase_awaiting_approval": "Aprueba la compra en el overlay de Steam para recibir tus llaves.",
+      "purchase_awaiting_sandbox": "Compra de prueba beta: apruébala en el overlay de Steam. Sandbox de Steam, sin cargo.",
+      "purchase_declined": "Compra cancelada en Steam. No se cobró nada.",
+      "purchase_complete": "+{count} llave(s) de caché añadida(s) a tu inventario.",
+      "purchase_pending": "Steam aún no ha confirmado el pago. Tus llaves llegarán la próxima vez que abras la tienda."
     },
     "lobby": {
       "connecting": "CONECTANDO...",

@@ -1209,7 +1209,7 @@
       "purchases_region_restricted": "Käufe von Schlüsseln sind in Ihrer Region aufgrund lokaler Vorschriften nicht verfügbar.",
       "region_restricted": "REGION EINGESCHRÄNKT",
       "qa_grant": "Synthetische QA-Vergabe: +{count} nicht handelbare Relikt-Schlüssel. Es wurde kein Kauf ausgelöst.",
-      "purchases_disabled": "Käufe sind in dieser Beta deaktiviert. Nutze QA GRANT TEST KIT in der Waffenkammer für nicht handelbare Testgegenstände.",
+      "purchases_disabled": "Beta-Käufe laufen in der Steam-Test-Sandbox, und dieses Konto steht nicht auf der Testerliste. Nutze QA GRANT TEST KIT in der Waffenkammer für Testgegenstände.",
       "key_and_cache_required": "Für die Entschlüsselung werden Schlüssel und Cache benötigt.",
       "decrypting": "RELIKT-CACHE WIRD ENTSCHLÜSSELT",
       "spinning_cipher": "CHIFFRIERMATRIX DREHT...",
@@ -1231,7 +1231,12 @@
       "cache_partial": "Cache-Tausch mit teilweiser Steam-Vergabe abgeschlossen.",
       "cache_failed": "Cache konnte nicht geöffnet werden – Verbindung prüfen und erneut versuchen.",
       "buy_on_steam": "◈ AUF STEAM KAUFEN",
-      "cache_pending_review": "Eine frühere Cache-Öffnung wird noch mit Steam geprüft. Versuche es in ein paar Minuten erneut."
+      "cache_pending_review": "Eine frühere Cache-Öffnung wird noch mit Steam geprüft. Versuche es in ein paar Minuten erneut.",
+      "purchase_awaiting_approval": "Bestätige den Kauf im Steam-Overlay, um deine Schlüssel zu erhalten.",
+      "purchase_awaiting_sandbox": "Beta-Testkauf: Bestätige ihn im Steam-Overlay. Steam-Sandbox, keine Abbuchung.",
+      "purchase_declined": "Kauf in Steam abgebrochen. Es wurde nichts abgebucht.",
+      "purchase_complete": "+{count} Cache-Schlüssel zu deinem Inventar hinzugefügt.",
+      "purchase_pending": "Steam hat die Zahlung noch nicht bestätigt. Deine Schlüssel kommen beim nächsten Öffnen des Shops an."
     },
     "lobby": {
       "connecting": "VERBINDE...",
