@@ -9,7 +9,7 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "no-referrer-when-downgrade"
     # Enforced CSP to secure the application against XSS while allowing fonts, inline styles, or Socket.io connections
-    Content-Security-Policy = "default-src 'self' https:; script-src 'self' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' https:; connect-src 'self' ws://localhost:* wss://* http://localhost:* https://*.netlify.app; object-src 'none';"
+    Content-Security-Policy = "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' blob: data: ws://localhost:* wss://* http://localhost:* https://*.netlify.app; object-src 'none';"
 
 [[headers]]
   for = "/index.html"
@@ -18,7 +18,7 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "no-referrer-when-downgrade"
-    Content-Security-Policy = "default-src 'self' https:; script-src 'self' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' https:; connect-src 'self' ws://localhost:* wss://* http://localhost:* https://*.netlify.app; object-src 'none';"
+    Content-Security-Policy = "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' blob: data: ws://localhost:* wss://* http://localhost:* https://*.netlify.app; object-src 'none';"
 
 [[headers]]
   # Manifest - No caching so updates to PWA registration are picked up immediately

@@ -55,6 +55,23 @@ function reachableFloorCount(grid) {
 }
 
 describe('buildChunk — WFC MAZE generation', () => {
+    it('mounts an opted-in grammar room through the live chunk path without erosion', () => {
+        const fake = makeFakeGame(91, {
+            chunkSize: 49, chunkCellCount: 24, authoredWorldTiles: true,
+            isInTutorialRing: () => false,
+            getRoomGrammarConfig: () => ({ seed: 91, version: 1 }),
+            getEdgeOpening: () => ({ open: true, offset: 12 }),
+            getRadialMazePlan: () => ({ radii: [200], blockers: [],
+                topology: { routeChunks: [{ chunkX: 5, chunkY: 5, roles: ['ring'] }] } })
+        });
+        const grid = ThreeGame.prototype.buildChunk.call(fake, 5, 5);
+        const metadata = fake.wfcMetadataCache.get('5,5');
+        expect(metadata.generatorId).toBe('grammar-room');
+        expect(metadata.roomInstances[0].interior.length).toBeGreaterThan(169);
+        for (const p of metadata.roomInstances[0].wallCells) expect(grid[p.y][p.x]).toBe('#');
+        expect(reachableFloorCount(grid).reachable).toBe(reachableFloorCount(grid).floorCount);
+    });
+
     it('produces a fully reachable 19x19 grid for a MAZE chunk', () => {
         for (let runEntropy = 0; runEntropy < 20; runEntropy += 1) {
             const game = makeFakeGame(runEntropy);

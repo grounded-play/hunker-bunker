@@ -147,6 +147,11 @@ Representative Scout/Tank/Engineer human passes plus package performance under c
 - Act/faction/camp/hive modules hold narrative state and choice logic.
 - `src/threeGame.js` / UI controllers surface encounters and consequences.
 - ending/manifest systems consume accumulated state.
+- Developer commentary (opt-in explanatory cards and the Read All list) is owned by
+  [`src/developerCommentary.js`](../../src/developerCommentary.js): catalog, cards,
+  once-per-run memory, the wait-for-gameplay hold, and `dispose()` cleanup. `main.js`
+  only supplies the setting, the HUD deck and focus, and calls it from game events
+  (extracted 2026-10-04, S49-38).
 
 ### Rule
 
@@ -184,6 +189,11 @@ Do not call `advanceQuest()` from arbitrary UI clicks or introduce a second ques
 - progression/reward data modules;
 - Sprint 29 `rewardPreview.js` / XP feedback / weapon-charm presentation modules;
 - Steam Vault/Inventory UI for Steam-owned item surfaces.
+- The Fabrication Bay (field print, Foundry activation, recipe grid, print ticker,
+  roll reveal, camp-rest session) is owned by
+  [`src/fabricationBay.js`](../../src/fabricationBay.js); `FabricatorManager`
+  (`src/fabricator.js`) owns the state. `main.js` creates the bay, opens it from the
+  menu, Foundry hub and camp rest, and keeps thin wrappers (extracted 2026-10-04, S49-38).
 
 ### Rule
 

@@ -52,7 +52,7 @@ Numbers marked *illustrative* are planning assumptions, not measurements.
 | P3 | **Two prices for one key.** The store catalog says $0.99 / $3.99 / $9.99 (`server/steamStore.js`); the schema's price categories are `VLV100` / `VLV400` / `VLV1000`. | The price shown in the Vault must equal what Steam charges, in every currency. | One source: the Item Store price categories are the truth, and the Vault shows Steam's localized price. Confirm the `VLV` mapping in Steamworks before launch. |
 | P4 | **Paid loot boxes and the law.** Keys that open random items are regulated or banned in some regions (Belgium; parts of the Netherlands' guidance), need an "In-Game Purchases (Includes Random Items)" rating label (PEGI/ESRB), and invite scrutiny elsewhere. | Store removal or a fine in affected regions; ratings must match. | Always offer a **direct-purchase** route for each collection's items; region-disable key purchase where required; keep odds disclosure; declare random items in ratings. |
 | P5 | **Refunds and chargebacks don't revoke anything.** | Refund-then-keep fraud. | `GetReport` already flags `reversedButGranted`; add a revoke step (consume the granted item, or mark the account) plus a manual review queue. |
-| P6 | **No trade holds.** | New items (especially bought ones) can be flipped instantly: fraud and bots. | Set itemdef `market_tradable_restriction` / `market_marketable_restriction` (for example 7 days) on purchased and cache-granted items. |
+| P6 | **No trade holds (resolved).** | New items (especially bought ones) can be flipped instantly: fraud and bots. | Set itemdef `market_tradable_restriction: 7` and `market_marketable_restriction: 7` on purchased keys (4001, 4005, 4015), caches (4000), and marketable cache-granted cosmetics (4100+) in `steam/inventory_schema_hunker_bunker.json`. Guarded by `scripts/build-steam-item-catalog.test.js`. |
 
 ## 4. Revenue streams, in order of trust and effort
 
@@ -112,23 +112,35 @@ A unit test and a presubmit check enforce:
 - any stat-bearing effect a player owns was earned in play (Foundry, rig modules,
   attunement, achievements).
 
-Today this rule fails for charms 4130–4139 (P1).
+The original P1 finding for charms 4130–4139 is resolved by the cosmetic/earned
+attunement split in S49-23 (`src/s49-23-earnedPowerFairness.test.js`). Keep this
+guard for future catalog additions; the historical finding above is not an open task.
 
 ## 7. Compliance checklist
 
-- [ ] Odds shown before every random purchase (the Vault has an odds table; keep it
-      current with every collection).
-- [ ] Direct-purchase alternative for every collection item (R1).
-- [ ] Region handling for paid random items (Belgium at minimum); ratings updated with
-      "Includes Random Items".
-- [ ] Microtransactions: `GetReport` reconciliation running (done), refund/chargeback
-      revoke (P5), receipt log kept.
-- [ ] Steam store page: in-app purchases declared; Item Store live; reviewer purchase
-      route in the notes.
-- [ ] No sales to accounts flagged as minors where platform rules require it (Steam
-      handles account age; don't target children in store copy).
-- [ ] Terms: virtual items have no cash value; Steam's subscriber agreement governs
-      Wallet and Market.
+- [x] Odds shown before every random purchase (the Vault has an odds table; keep it
+      current with every collection; served via /steam/store/catalog and rendered in #vault-store-odds-table).
+- [H] Direct-purchase alternative for every collection item (R1). Product/catalog decision remains open.
+- [x] Repository region handling and random-item disclosure implemented in
+      server/steamStore.js, steamVaultUi.js, steamStoreCatalog.js and all 7 locales.
+- [ ] **Publisher:** confirm submitted ratings and live store disclosures include random items.
+- [x] Microtransactions: `GetReport` reconciliation, durable cursors, restart
+      recovery and idempotent paid-grant retry implemented.
+- [x] **P5:** unattended recovery and audited item-level reversal dispositions implemented
+      in [steamMicroTxnReport.js](../../server/steamMicroTxnReport.js) (`recoverPaidOrders`,
+      `applyReversalDisposition`, `processOrderReversal`, `processOrderReversals`, `REVERSAL_DISPOSITIONS`);
+      handles `items_revoked` (via `ConsumeItem`), `items_already_consumed`, `items_traded_or_transferred`,
+      `held_for_review`, and `operator_settled`; unresolved holds keep reconciliation visibly unhealthy (`ok: false`).
+- [x] **P6:** 7-day trade and market restrictions (`market_tradable_restriction: 7`, `market_marketable_restriction: 7`)
+      added to purchased keys (4001, 4005, 4015), caches (4000), and marketable cache-granted cosmetics (4100+)
+      in [inventory_schema_hunker_bunker.json](../../steam/inventory_schema_hunker_bunker.json); non-marketable items
+      and legacy earnable patches strictly protected; guarded by [build-steam-item-catalog.test.js](../../scripts/build-steam-item-catalog.test.js).
+- [H] Steam store page: declaration, live Item Store, reviewer route, production flags,
+      and real purchases require publisher authority/evidence.
+- [H] No sales to accounts flagged as minors where platform rules require it (remains a
+      publisher/platform policy gate; Steam handles account age; don't target children in store copy).
+- [x] Terms: virtual items have no cash value; Steam's subscriber agreement governs
+      Wallet and Market (disclosed in /steam/store/catalog and rendered in Vault store).
 
 ## 8. Metrics to run the economy
 
@@ -164,11 +176,45 @@ economy work.
 
 ## 10. Decisions for the owner
 
-1. **Charms (P1):** split into cosmetic (tradeable) plus earned perk, or make charms
-   non-marketable?
+1. **Charms (P1), resolved:** cosmetic tradeable charms plus earned attunement;
+   S49-23 guards the separation. No new owner choice is required for this split.
 2. **Cache contents (P2):** approve cosmetic-only caches with pity every 10 openings?
 3. **Prices:** confirm the `VLV` categories, and set the key, pack and pass prices.
 4. **Market fee:** the publisher fee percentage (the default of 10% is common).
 5. **Random items by region:** disable key purchase in Belgium, or remove keys there
    entirely?
 6. **Season Pass price** and premium-track contents for Season 2.
+
+## 11. Implementation evidence from the 2026-10-01 14:42 TODO tree
+
+Follow the [iteration handoff](todo-tree-2026-10-01-handoff.md) and
+[requested snapshot](../../public/3d/runtime/kits/modular-cave-kit/better-todo-tree-20261001-1442.txt).
+The original proposal and owner decisions above are not production certification.
+
+- [x] **Inventory evidence prerequisite for P5:** the live inventory loader now
+  reads Steam's documented encoded item array and preserves exact item IDs and
+  quantities; rejected/malformed responses remain failures, never an empty
+  inventory or invented quantity. [Implementation](../../server/steamInventoryRead.js),
+  [route tests](../../server/steamInventory.test.js).
+  Four targeted suites / 80 tests and scoped ESLint passed.
+- [x] **P5 completed (2026-10-05):** built the explicit audited P5 resolution workflow for ambiguous,
+  consumed, traded, refunded, and chargeback outcomes in [steamMicroTxnReport.js](../../server/steamMicroTxnReport.js).
+  `processOrderReversal` revokes owned items via `ConsumeItem`, while preserving persistent review holds
+  (`status: 'reversal_review_required'`) for consumed, traded, or ambiguous items without silently clearing holds.
+  Unattended paid recovery is implemented via `recoverPaidOrders` with idempotent request IDs. Covered by 33 unit
+  tests in [steamMicroTxnReport.test.js](../../server/steamMicroTxnReport.test.js).
+- [H] **Publisher evidence remains separate:** live deployment, ratings, disclosures, pricing,
+  and review evidence remain separate from repository implementation; prove live deployment,
+  ratings/store disclosures, account restrictions, approved pricing and review purchases
+  through the canonical Sprint 49 acceptance gates; repository checkbox changes alone are
+  not evidence of Steamworks or regulatory completion.
+
+### P5 supporting work — live crafting journal
+
+- [x] Exact recipe consumption and reward evidence are now enforced by the
+  [live exchange service](../../server/steamRecipeExchange.js). Durable account/
+  request holds prevent repeat crafting after an uncertain response, including
+  fresh-nonce retries; confirmed retries return the saved result.
+- [x] **P5 reversal & recovery completed (2026-10-05):** explicit, audited resolution workflow for ambiguous,
+  consumed, traded, refunded, and chargeback outcomes implemented and verified. Holds are preserved; unresolved
+  cases leave reconciliation reports visibly unhealthy (`ok: false`). [Continuation and verification](todo-tree-2026-10-01-handoff.md#iteration-2--exact-live-crafting-and-durable-ambiguity-holds).

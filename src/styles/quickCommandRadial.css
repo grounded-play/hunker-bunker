@@ -1,0 +1,129 @@
+/* Quick Command Radial Wheel HUD Overlay */
+
+.quick-command-radial-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 1050;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.15s ease;
+    user-select: none;
+}
+
+.quick-command-radial-container.is-active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.quick-command-radial-center {
+    position: absolute;
+    width: 260px;
+    height: 260px;
+    margin-left: -130px;
+    margin-top: -130px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(15, 23, 42, 0.92) 0%, rgba(10, 15, 26, 0.96) 65%, rgba(6, 11, 19, 0.98) 100%);
+    border: 2px solid rgba(56, 189, 248, 0.35);
+    box-shadow: 0 0 25px rgba(56, 189, 248, 0.2), inset 0 0 15px rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transform: scale(0.9);
+    transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.quick-command-radial-container.is-active .quick-command-radial-center {
+    transform: scale(1);
+}
+
+.quick-command-radial-reticle {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    border: 2px dashed rgba(56, 189, 248, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    font-family: monospace;
+    text-transform: uppercase;
+    transition: all 0.15s ease;
+    pointer-events: none;
+}
+
+.quick-command-radial-reticle.has-selection {
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.15);
+    color: #f0f9ff;
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.4);
+}
+
+.quick-command-slice {
+    position: absolute;
+    width: 90px;
+    height: 64px;
+    margin-left: -45px;
+    margin-top: -32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(30, 41, 59, 0.85);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+    pointer-events: auto;
+}
+
+.quick-command-slice:hover,
+.quick-command-slice.is-highlighted {
+    background: rgba(14, 116, 144, 0.9);
+    border-color: #38bdf8;
+    color: #ffffff;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.5), inset 0 0 8px rgba(56, 189, 248, 0.3);
+    transform: scale(1.12);
+}
+
+.quick-command-slice-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+    margin-bottom: 2px;
+}
+
+.quick-command-slice-label {
+    font-size: max(0.75rem, 12px);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 82px;
+}
+
+.quick-command-slice-key {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #0f172a;
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    border-radius: 4px;
+    font-size: max(0.68rem, 11px);
+    color: #38bdf8;
+    padding: 1px 4px;
+    font-family: monospace;
+    font-weight: bold;
+}

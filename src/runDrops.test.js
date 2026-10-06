@@ -369,7 +369,6 @@ describe('runDrops', () => {
         });
         expect(bioKill.o2Restored).toBe(8);
         expect(bioKill.heartRestored).toBe(1);
-        expect(bioKill.batteryRestored).toBe(15);
     });
 
     it('resolves turret elemental inheritance at 50% potency', () => {
@@ -386,5 +385,34 @@ describe('runDrops', () => {
         expect(bioTurret.element).toBe('bio');
         expect(bioTurret.potency).toBe(0.5);
         expect(bioTurret.tickDamage).toBe(1);
+    });
+
+    // S49-19: the four effects nothing in the runtime enforces stay out of
+    // every reward roll until they are built (their disposition), and an
+    // obtainable relic promises only what the game actually applies.
+    describe('S49-19 drop dispositions', () => {
+        const INERT = ['plasma_bounce', 'tesla_thrusters', 'pheromone_aura', 'synapse_pulse'];
+
+        it('never rolls the four unimplemented effects, at any rarity or ring', () => {
+            const all = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS];
+            for (const id of INERT) expect(all.find((item) => item.id === id)?.implemented, id).toBe(false);
+            const rolled = new Set();
+            for (let i = 0; i < 4000; i += 1) {
+                const r = ((i * 7919) % 4000) / 4000;
+                let calls = 0;
+                const random = () => { calls += 1; return calls === 1 ? r : ((i * 104729 + calls * 31) % 1000) / 1000; };
+                const drop = rollEnemyLootDrop(random, { isElite: i % 3 === 0, isBoss: i % 11 === 0, ring: 1 + (i % 5) });
+                if (drop?.id) rolled.add(drop.id);
+            }
+            expect(rolled.size).toBeGreaterThan(5);
+            for (const id of INERT) expect(rolled.has(id), id).toBe(false);
+        });
+
+        it('Bio-Vampiric Membrane promises only O2 and a heart, which the death handler applies', () => {
+            const relic = SUIT_RELICS.find((item) => item.id === 'bio_vampirism');
+            expect(Object.keys(relic.stats).sort()).toEqual(['heartRestore', 'o2Restore']);
+            expect(relic.description).not.toMatch(/battery/i);
+            expect(relic.description).toMatch(/corroded/i);
+        });
     });
 });

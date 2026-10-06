@@ -13,6 +13,9 @@
  * resolves to null rather than silently substituting the wrong one.
  */
 
+import { KIT_SCALE } from './kitMaterials.js';
+import { PROCEDURAL_DOOR_SLAB_THICKNESS } from './proceduralDoors.js';
+
 export const KIT_SKINS = Object.freeze({ CAVE: 'cave', SPACE: 'space' });
 
 /**
@@ -39,6 +42,9 @@ export const SHARED_ROLES = Object.freeze({
     corridorCross: 'corridor_intersection',
     corridorWide: 'corridor_wide',
     corridorWideCorner: 'corridor_wide_corner',
+    corridorWideEnd: 'corridor_wide_end',
+    corridorWideT: 'corridor_wide_junction',
+    corridorWideCross: 'corridor_wide_intersection',
     corridorTransition: 'corridor_transition',
     roomSmall: 'room_small',
     roomWide: 'room_wide',
@@ -128,43 +134,232 @@ export function chooseKitPiece(role, biome, random = Math.random) {
     };
 }
 
+// Which sides each base module leaves open at rotation 0, measured from the
+// kit GLBs' wall faces (2026-10-01; the wide pieces match the narrow ones).
+// The old hand-written table assumed north/south straights and the opposite
+// turn direction, so straights, corners and dead ends all faced wrong.
+const BASE_OPENINGS = Object.freeze({
+    corridor: ['e', 'w'],
+    corridorCorner: ['n', 'w'],
+    corridorEnd: ['e'],
+    corridorT: ['e', 'n', 'w'],
+    corridorCross: ['e', 'n', 's', 'w']
+});
+// rotationSteps are three.js yaw steps of +PI/2: east -> north -> west -> south.
+const TURN = Object.freeze({ e: 'n', n: 'w', w: 's', s: 'e' });
+const WIDE_ROLES = Object.freeze({
+    corridor: 'corridorWide',
+    corridorCorner: 'corridorWideCorner',
+    corridorEnd: 'corridorWideEnd',
+    corridorT: 'corridorWideT',
+    corridorCross: 'corridorWideCross'
+});
+// Module widths in world units: 4 and 8 Kenney units at the kit's uniform scale.
+const MODULE_WIDTH = Object.freeze({ narrow: 4 * KIT_SCALE, wide: 8 * KIT_SCALE });
+
+function stepsToOpen(role, open) {
+    const want = [...open].sort().join('');
+    let dirs = BASE_OPENINGS[role];
+    for (let steps = 0; steps < 4; steps += 1) {
+        if ([...dirs].sort().join('') === want) return steps;
+        dirs = dirs.map((d) => TURN[d]);
+    }
+    return 0;
+}
+
 /**
  * Resolve a carved hallway cell to a socket-safe module and orientation.
  * Corridor pieces may vary by skin, but their rotation is topology, not
  * decoration: random cardinal turns still produce walls across the route.
+ *
+ * `width` is the carve radius the hallway generator used (2*width+1 cells
+ * across). Topology is read just past the carve, since every cell beside a
+ * marker inside a wide corridor is open; corridors five or more cells across
+ * take the wide modules, and `modelScale` fits the module to the carve.
  */
-export function corridorKitPlacement(grid, x, y, biome) {
+export function corridorKitPlacement(grid, x, y, biome, { width = 0 } = {}) {
     if (!Array.isArray(grid) || grid[y]?.[x] !== '.') return null;
-    const open = {
-        n: grid[y - 1]?.[x] === '.',
-        e: grid[y]?.[x + 1] === '.',
-        s: grid[y + 1]?.[x] === '.',
-        w: grid[y]?.[x - 1] === '.'
+    const reach = Math.max(0, Math.floor(Number(width) || 0)) + 1;
+    const open = ['n', 'e', 's', 'w'].filter((direction) => {
+        const [dx, dy] = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] }[direction];
+        return grid[y + dy * reach]?.[x + dx * reach] === '.';
+    });
+    let role;
+    if (open.length >= 4) role = 'corridorCross';
+    else if (open.length === 3) role = 'corridorT';
+    else if (open.length === 2) role = (open.includes('n') && open.includes('s')) || (open.includes('e') && open.includes('w')) ? 'corridor' : 'corridorCorner';
+    else role = 'corridorEnd';
+    // A lone cell opens nowhere; treat it as a dead end facing east.
+    const rotationSteps = open.length ? stepsToOpen(role, open) : 0;
+
+    const wide = reach - 1 >= 2;
+    const carved = 2 * (reach - 1) + 1;
+    const modelScale = reach > 1 ? carved / (wide ? MODULE_WIDTH.wide : MODULE_WIDTH.narrow) : 1;
+    const placedRole = wide ? WIDE_ROLES[role] : role;
+    const type = kitPieceFor(placedRole, biome);
+    return type ? { type, role: placedRole, rotationSteps, modelScale } : null;
+}
+
+/** Both skins' gate.glb are 1.4 units deep before KIT_SCALE (front/back +-0.7). */
+export const GATE_MODEL_HALF_DEPTH = 0.7;
+
+/**
+ * How far into the room the gateway frame stands from the threshold line.
+ * The closed procedural blast door is a slab centred on that line which sinks
+ * into the floor to open; a frame centred there, or inset only half a cell,
+ * encloses the slab and its posts cut through it (gateway-orientation probe,
+ * 2026-10-04). Clear the slab's room-side face by a few centimetres instead.
+ */
+export const GATEWAY_ROOM_INSET = GATE_MODEL_HALF_DEPTH * KIT_SCALE
+    + PROCEDURAL_DOOR_SLAB_THICKNESS / 2
+    + 0.035;
+
+/**
+ * Turn an authored three-cell room threshold into an open modular gateway.
+ *
+ * The base `gate.glb` in each skin is a frame, unlike the skin-only door,
+ * rock and laser variants which communicate a closed or hazardous route.
+ * One frame per room makes the kit visible in ordinary authored-room runs
+ * without changing the tile collision or procedural-door state.
+ */
+export function roomGatewayKitPlacement(door, biome) {
+    const cells = Array.isArray(door?.cells) ? door.cells : [];
+    if (cells.length === 0 || !['n', 'e', 's', 'w'].includes(door?.side)) return null;
+    const valid = cells.filter((cell) => Number.isFinite(cell?.x) && Number.isFinite(cell?.y));
+    if (valid.length === 0) return null;
+    const skin = skinForBiome(biome);
+    const transform = {
+        n: { x: 0, y: GATEWAY_ROOM_INSET, rotationSteps: 0 },
+        e: { x: -GATEWAY_ROOM_INSET, y: 0, rotationSteps: 1 },
+        s: { x: 0, y: -GATEWAY_ROOM_INSET, rotationSteps: 2 },
+        w: { x: GATEWAY_ROOM_INSET, y: 0, rotationSteps: 3 }
+    }[door.side];
+    return {
+        type: `kit_${skin}_gate`,
+        x: valid.reduce((sum, cell) => sum + cell.x, 0) / valid.length + transform.x,
+        y: valid.reduce((sum, cell) => sum + cell.y, 0) / valid.length + transform.y,
+        rotationSteps: transform.rotationSteps,
+        modelScale: 1
     };
-    const directions = Object.entries(open).filter(([, value]) => value).map(([key]) => key);
-    let role = 'corridor';
-    let rotationSteps = 0;
+}
 
-    if (directions.length >= 4) {
-        role = 'corridorCross';
-    } else if (directions.length === 3) {
-        role = 'corridorT';
-        // Base T opens N/E/W; rotate until the missing socket matches.
-        const missing = ['n', 'e', 's', 'w'].find((direction) => !open[direction]);
-        rotationSteps = ({ s: 0, w: 1, n: 2, e: 3 })[missing] ?? 0;
-    } else if (directions.length === 2 && !((open.n && open.s) || (open.e && open.w))) {
-        role = 'corridorCorner';
-        // Base corner opens N/E.
-        const key = directions.sort().join('');
-        rotationSteps = ({ en: 0, es: 1, sw: 2, nw: 3 })[key] ?? 0;
-    } else if (directions.length <= 1) {
-        role = 'corridorEnd';
-        // Base end opens north.
-        rotationSteps = ({ n: 0, e: 1, s: 2, w: 3 })[directions[0]] ?? 0;
-    } else if (open.e && open.w) {
-        rotationSteps = 1;
+/** Grid cells covered by one kit wall piece: 4 kit units at KIT_SCALE 0.75 = 3 tiles. */
+export const WALL_SHELL_SPAN = 3;
+
+const SHELL_SIDES = Object.freeze({
+    // step: from an interior floor cell to its boundary wall; face: the wall's
+    // room-side face from the wall cell centre; rotationSteps turn the piece's
+    // +z front toward the room.
+    n: { step: [0, -1], face: [0, 0.5], rotationSteps: 0 },
+    s: { step: [0, 1], face: [0, -0.5], rotationSteps: 2 },
+    e: { step: [1, 0], face: [-0.5, 0], rotationSteps: 3 },
+    w: { step: [-1, 0], face: [0.5, 0], rotationSteps: 1 }
+});
+
+/**
+ * Lived-in world M5 spike (showroom only; docs/planning/sprint-49-lived-in-world-continuation.md):
+ * kit wall pieces for straight runs of an authored room's boundary wall.
+ *
+ * A run is consecutive `#` cells on one boundary line, one cell outside the
+ * stamped pattern's bounds (room.bounds, where doors are also cut), whose
+ * room-side neighbour is interior floor, so interior obstruction blocks never
+ * qualify, and that stays more than one cell from every door. Each run is
+ * covered by as many whole WALL_SHELL_SPAN pieces as fit, centred; leftover
+ * cells keep the procedural wall. Each placement lists the wall cells whose
+ * procedural render it replaces. Collision stays with the tile grid.
+ *
+ * Not wired into play: in-game walls are destructible and cut away toward the
+ * camera, and a shell would have to follow both (see the journal).
+ */
+export function wallShellPlacements(grid, room, biome) {
+    const bounds = room?.bounds;
+    if (!Array.isArray(grid) || !bounds) return [];
+    const skin = skinForBiome(biome);
+    const interior = new Set((room.interior ?? []).map(({ x, y }) => `${x},${y}`));
+    const doorCells = (room.doors ?? []).flatMap((door) => door.cells ?? []);
+    const nearDoor = (cell) => doorCells.some((door) => Math.max(Math.abs(door.x - cell.x), Math.abs(door.y - cell.y)) <= 1);
+    const excludedCells = new Set([
+        ...(room.objectiveCells ?? []),
+        ...(room.protectedCells ?? []),
+        ...(room.structuralCells ?? []),
+        ...(room.navigation?.reserved ?? [])
+    ].map(({ x, y }) => `${x},${y}`));
+    const lineOf = { n: bounds.top - 1, s: bounds.bottom + 1, w: bounds.left - 1, e: bounds.right + 1 };
+    const placements = [];
+    const roomKey = room.id ?? `${bounds.left},${bounds.top}-${bounds.right},${bounds.bottom}`;
+
+    for (const [side, spec] of Object.entries(SHELL_SIDES)) {
+        const horizontal = side === 'n' || side === 's';
+        const [from, to] = horizontal ? [bounds.left, bounds.right] : [bounds.top, bounds.bottom];
+        const eligible = (t) => {
+            const cell = horizontal ? { x: t, y: lineOf[side] } : { x: lineOf[side], y: t };
+            const inside = `${cell.x - spec.step[0]},${cell.y - spec.step[1]}`;
+            return grid[cell.y]?.[cell.x] === '#' && interior.has(inside)
+                && !nearDoor(cell) && !excludedCells.has(`${cell.x},${cell.y}`) ? cell : null;
+        };
+        let run = [];
+        const flush = () => {
+            const pieces = Math.floor(run.length / WALL_SHELL_SPAN);
+            const start = Math.floor((run.length - pieces * WALL_SHELL_SPAN) / 2);
+            const first = run[0];
+            const last = run[run.length - 1];
+            const runId = pieces > 0 ? `${roomKey}:${side}:${first.x},${first.y}-${last.x},${last.y}` : null;
+            for (let i = 0; i < pieces; i += 1) {
+                const cells = run.slice(start + i * WALL_SHELL_SPAN, start + (i + 1) * WALL_SHELL_SPAN);
+                const middle = cells[1];
+                placements.push({
+                    id: `${runId}:piece-${i}`,
+                    runId,
+                    type: `kit_${skin}_template_wall`,
+                    side,
+                    inwardNormal: {
+                        x: spec.step[0] === 0 ? 0 : -spec.step[0],
+                        y: spec.step[1] === 0 ? 0 : -spec.step[1]
+                    },
+                    x: middle.x + spec.face[0],
+                    y: middle.y + spec.face[1],
+                    rotationSteps: spec.rotationSteps,
+                    modelScale: 1,
+                    cells
+                });
+            }
+            run = [];
+        };
+        for (let t = from; t <= to; t += 1) {
+            const cell = eligible(t);
+            if (cell) run.push(cell);
+            else flush();
+        }
+        flush();
     }
+    return placements;
+}
 
-    const type = kitPieceFor(role, biome);
-    return type ? { type, role, rotationSteps } : null;
+/**
+ * Pure handoff contract for a future renderer integration. The suppression mask
+ * affects presentation only; callers must retain the original tile grid for
+ * collision, destruction, doors, and navigation.
+ */
+export function analyzeWallShellRuns(grid, room, biome) {
+    const placements = wallShellPlacements(grid, room, biome);
+    const byRun = new Map();
+    for (const placement of placements) {
+        let run = byRun.get(placement.runId);
+        if (!run) {
+            run = {
+                id: placement.runId,
+                side: placement.side,
+                type: placement.type,
+                inwardNormal: placement.inwardNormal,
+                rotationSteps: placement.rotationSteps,
+                pieceIds: [],
+                cells: []
+            };
+            byRun.set(placement.runId, run);
+        }
+        run.pieceIds.push(placement.id);
+        run.cells.push(...placement.cells);
+    }
+    const suppressionMask = new Set(placements.flatMap(({ cells }) => cells.map(({ x, y }) => `${x},${y}`)));
+    return { runs: [...byRun.values()], placements, suppressionMask };
 }

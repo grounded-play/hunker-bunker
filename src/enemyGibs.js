@@ -343,7 +343,11 @@ export function spawnGibsFor(game, sprite, { direction = null, isBoss = false, o
     const root = sprite.userData?.enemy3dVisual?.root ?? sprite.userData?.world3dRoot ?? null;
     if (!root) return false;
 
-    const type = sprite.userData.modelVariant ?? sprite.userData.scatterKey ?? sprite.userData.type;
+    // Cache by rendered model family, never by the per-instance scatter key.
+    // A unique key here made every destructible prop pay the ~100ms runtime
+    // fracture cost once, which matches the Thursday Deck log's worst frame
+    // window at `event:destructible-prop-broken`.
+    const type = sprite.userData.modelVariant ?? sprite.userData.type ?? sprite.userData.scatterKey;
     let source = null;
     const chunks = getGibChunks(type, () => {
         source = extractGibSource(root);

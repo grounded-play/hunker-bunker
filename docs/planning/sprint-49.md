@@ -2,10 +2,12 @@
 
 Status: active plan | Owner: repository maintainers | Updated: 2026-09-30 | Review: every completed ticket and release candidate
 
-Baseline branch: `dev/sprint-48`
-Baseline version: `2.4.13-beta`
-Source commit: `379f87e1`. Sprint 49 planning is recorded on the existing branch;
-this document does not imply that a new branch, release, or Steam upload exists.
+Baseline branch: `dev/sprint-49`
+Baseline version: `2.4.14-beta` (Sprint 49 opened at `2.4.13-beta`; `2.4.14-beta` is its first release slice)
+Implementation baseline: `ba9298df` (2026-10-01, v2.4.14-beta slice). The initial audit used `379f87e1`
+on Sprint 48. Implementation proceeds on `dev/sprint-49`; first release slice deployed
+to backend (`7783278f`). Read the [implementation handoff](sprint-49-implementation-handoff.md)
+and [Claude lane handoff](sprint-49-claude-lane-handoff.md) before continuing work.
 
 ## Product direction
 
@@ -23,9 +25,9 @@ Feature count is useful only when a player can discover and use those features.
 
 ## Evidence and how to use this TODO
 
-- Documentation and Steam review audit (`docs/reports/documentation-audit-2026-09-30.md`, not yet committed)
+- [Documentation and Steam review audit](../reports/documentation-audit-2026-09-30.md)
   records the seven failures, contradictions, and review boundaries.
-- Full documentation inventory (`docs/reports/documentation-audit-inventory-2026-09-30.json`, not yet committed)
+- [Full documentation inventory](../reports/documentation-audit-inventory-2026-09-30.json)
   records every scanned document, its lifecycle classification, markers, and links.
 - [Product State](../../PRODUCT_STATE.md) records implementation truth.
 - [Previous review remediation](steam-review-build-25475189-fix-plan-2026-09-30.md)
@@ -68,11 +70,56 @@ Dependency spine: S49-02 → 03 → 04; S49-07 → 08 → 09; S49-04/05/06/09/10
 S49-13/14/15 unblock meaningful cooperative first-hour testing (17). S49-23 is a
 commerce readiness gate; proposed random-reward changes (24) need product approval.
 
+### Backlog reconciliation summary (2026-10-05 10:10 PDT, dev/sprint-49)
+
+Legend: `[x]` Verified complete in repository code/tests or local evidence · `[~]` Substantial implementation complete, source ticket stays open for remaining integration/hardware/playtest/ops · `[ ]` Open for repository implementation · `[H]` Human/publisher/hardware decision or evidence required.
+
+| Ticket | Scope / Outcome | Reconciled Status & Remaining Gap |
+| :--- | :--- | :--- |
+| S49-01 | One current backlog & documentation checks | `[x]` Complete |
+| S49-02 | Lobby & in-game text chat | `[~]` Code complete; deployed two-account acceptance open |
+| S49-03 | Multilingual filtering | `[~]` Seven-language baseline complete; native review/evasion/false-positive acceptance open |
+| S49-04 | Chat UI, mute/report & controller text entry | `[~]` Implemented; Deck placement, deployed match, and staffed moderation operations open |
+| S49-05 | Demonstrable online co-op and PvP | `[~]` Authority, reconnect, rejection diagnostics, round completion, and rematch improved; paired real-account candidate run open |
+| S49-06 | Developer commentary | `[~]` Localized text, voiced lines, history reader, controller stops, and routes exist; installed-candidate review open |
+| S49-07 | Catalog/quantity/price consistency | `[~]` Adapter complete; live Steam currency and both checkout routes require publisher evidence |
+| S49-08 | Settlement reconciliation | `[x]` Unattended paid recovery and audited item-level reversal/review dispositions implemented |
+| S49-09 | Real purchase, cancel, delivery & reversal | `[H]` Real purchase/cancel/delivery/reversal evidence |
+| S49-10 | Full controller journey | `[~]` Broad browser route and focus fixes exist; native Steam Input plus physical Deck/Xbox/PlayStation passes remain |
+| S49-11 | Mature story content & reviewer access | `[~]` Content/code checks complete; installed reviewer route and authorized save evidence remain |
+| S49-12 | One reproducible Steam resubmission packet | `[H]` One-BuildID Steam resubmission packet |
+| S49-13 | Playable field workbench | `[x]` Complete |
+| S49-14 | Tactical pings & quick-command radial | `[x]` Complete in code; deployed paired-session acceptance tracked in S49-15/33 |
+| S49-15 | Co-op parity for events, companions & rewards | `[ ]` Co-op parity journeys, host loss/rejoin, and replay-safe rewards |
+| S49-16 | Companions roles & settlement | `[ ]` Companion behavior/pathing/settlement/save validation |
+| S49-17 | First hour & second run tuning | `[H]` First-hour/second-run tuning needs independent playtesters; probes/fixes prepared |
+| S49-18 | Combat threats, boss phases & builds | `[ ]` Encounter/boss/ammo/class tuning and seeded combat reports |
+| S49-19 | Inert drop effects disposition | `[x]` Inert drop effects explicitly removed from active reward pools |
+| S49-20 | World variety, seeds & navigation | `[~]` G1–G4 complete (live room grammar opt-in, 20-build authored catalog in chunkStructure, 5 G3 destruction/reconciliation subcontracts, multi-family area profiles, 20 interactive props); G5 camp/start variants and G6 Deck acceptance open |
+| S49-21 | Narrative consequences & debriefs | `[ ]` Narrative consequence/debrief state verification |
+| S49-22 | Unified Foundry & inventory journey | `[ ]` Unified Foundry/inventory controller journey |
+| S49-23 | Enforce earned power & trusted ownership | `[x]` Earned-power/paid-cosmetic separation and ownership tests |
+| S49-24 | Reward economy design | `[H]` Reward-economy design and regional/platform approval |
+| S49-25 | Readable HUD & calm information priorities | `[~]` HUD automation and 1280×800 safe-frame layout overhaul implemented; physical Deck/desktop captures remain |
+| S49-26 | Camera & lighting | `[~]` Isometric default and Sprint 49 room presentation landed; matched Deck/desktop acceptance remains |
+| S49-27 | Audio clarity, voice & subtitles | `[~]` Soundtrack/SFX wiring complete; stress mix, ducking, and subtitle parity capture remain |
+| S49-28 | Accessibility settings | `[ ]` Accessibility settings end-to-end validation |
+| S49-29 | Seven languages beyond key parity | `[H]` Automated seven-locale audit rerun; semantic/native language acceptance requires reviewers |
+| S49-30 | Saves, Steam Cloud & suspend | `[H]` Save/Cloud/suspend automation expands; Deck sleep/wake and two-machine Cloud conflict evidence require hardware/accounts |
+| S49-31 | Frame pacing, loading & memory | `[H]` Telemetry is corrected; named-hardware frame pacing and memory acceptance remain |
+| S49-32 | Reliable services & failure recovery | `[~]` Service diagnostics improved; repeatable fault drills, durable report operations, alerts, backup/restore, and ownership remain open |
+| S49-33 | Player journeys & packaged outputs | `[ ]` End-to-end seams and packaged-output journey tests |
+| S49-34 | Expedition choices & contracts | `[ ]` Deeper expedition choices and replayable contracts |
+| S49-35 | Social loop & rematch | `[ ]` Party continuity and post-run social loop |
+| S49-36 | Seasonal progression & direct cosmetics | `[H]` Seasonal progression/direct cosmetics needs product decisions |
+| S49-37 | Art & content completeness | `[~]` Asset audits, 20 optimized/registered props, rigged umbilical attacker, 19 interactive prop specs, and 12 furnished-room captures complete; gameplay-context review remains |
+| S49-38 | Integration debt & module extraction | `[~]` Chat, commentary, and Fabrication Bay extracted; purchase presentation extraction and lifecycle characterization remain open |
+
 ## P0 — complete the Steam review features
 
 ### S49-01 — one current backlog and reliable documentation checks
 
-- [ ] **Owner: maintainers · Size: M · Type: documentation/tooling.** Reconcile the
+- [x] **Owner: maintainers · Size: M · Type: documentation/tooling.** Reconcile the
   stale Sprint 30/45/48 indexes, label the old Sprint 49 plans historical, inventory
   all documentation, repair current portable links, and remove hard-coded sprint
   assertions from the documentation checker.
@@ -83,6 +130,23 @@ commerce readiness gate; proposed random-reward changes (24) need product approv
   has source links and a verifiable outcome.
 
 ### S49-02 — real lobby and in-game text chat
+
+- [x] Authenticated relay, channel UI and reconnect history implemented.
+- [ ] **Remaining:** Record deployed two-account acceptance, including reconnect and channel isolation.
+
+Implementation checkpoint (v2.4.14-beta): authenticated room relay and filtering
+landed in `e8cc0a16`; client/UI, virtual keyboard fallback, mute/block/report, and
+browser E2E tests landed in `82501e4f`; backend container packaging deployed in
+`7783278f`. Transport model, UI, and test-mode sockets are 100% complete in code.
+The channel includes everyone in the room, including PvP opponents, across lobby
+and mission. Deployed two-account Steam acceptance on candidate build remains open.
+
+2026-10-04 reconnect checkpoint (`aed41421`): the 2026-10-02 Deck capture (build
+`e8b92f83`) shows the host's relay socket rejoining 13 times in ~7 minutes while
+alone in the lobby; each drop emptied the room and the relay wiped its chat, so the
+friend who joined later saw nothing. Empty-room history now survives a 5-minute
+grace and clients merge reconnect history instead of replacing it. The churn's own
+cause is still unknown: relay `DISCONNECT` reasons (`d3cb667c`) are not deployed yet.
 
 - [ ] **Owner: backend + client · Size: L · Type: missing feature.** Implement an
   authenticated, room-scoped chat channel through the existing relay. Server assigns
@@ -98,6 +162,15 @@ commerce readiness gate; proposed random-reward changes (24) need product approv
   reconnect delivery and HTML/script strings cannot impersonate or execute.
 
 ### S49-03 — multilingual filtering with explicit failure handling
+
+- [x] Seven-language filter baseline and failure handling implemented.
+- [ ] **Remaining:** Complete native-language evasion and false-positive review.
+
+Implementation checkpoint (v2.4.14-beta): the shared [filter](../../src/chatFilter.js)
+runs on relay delivery and recipient display (`e8cc0a16`). Seven dictionaries
+(`src/data/chatFilterTerms.js`) have automated fixtures; unsupported scripts fail
+closed. Native-speaker review, broader evasion/false-positive coverage and installed-build
+acceptance remain open. Do not equate a lexical baseline with perfect moderation.
 
 - [ ] **Owner: platform + localization + backend · Size: L · Depends: 02.** Define
   and implement filtering for English, German, Latin American Spanish, Japanese,
@@ -120,6 +193,21 @@ survey's promise is met. [Steam text-filter API](https://partner.steamgames.com/
 
 ### S49-04 — usable chat, mute/report and controller text entry
 
+- [x] Chat UI, mute/report and controller entry implemented.
+- [ ] **Remaining:** Verify Deck placement and deployed chat; establish durable report retention and staffed moderation.
+
+Implementation checkpoint (v2.4.14-beta): [client UI](../../src/playerChatUi.js) and
+[browser checks](../../tests/e2e/player-chat.spec.js) landed in `82501e4f`, covering
+local relay delivery, IME, seven locale titles, and the full-game fallback controller
+keyboard. Reports remain temporary relay-memory evidence, not a staffed moderation service.
+Physical hardware, deployed matches and moderation operations remain acceptance gates.
+
+2026-10-04 (`aed41421`): incoming lines now appear on screen in a non-interactive
+feed (last three, 8 s) whenever the panel is closed, in runs, lobby and menus,
+under the existing notifications preference. Before this a line only raised a
+`CHAT (n)` badge. Browser→relay→peer e2e covers it; Deck legibility/placement over
+combat HUD is unverified.
+
 - [ ] **Owner: UI + platform + localization · Size: L · Depends: 02–03.** Add a
   visible chat control in the lobby and field, unread indication, bounded scrollback,
   timestamps/sender labels, send/cancel, mute/block/report, and notification settings.
@@ -136,6 +224,30 @@ survey's promise is met. [Steam text-filter API](https://partner.steamgames.com/
 
 ### S49-05 — demonstrable online co-op and PvP
 
+2026-10-04 local damage checkpoint: PvP rival hits bypass campaign Tank block,
+NPC evasion/armor, run damage multipliers, equipment shields and carapace armor.
+All three operators now lose the unmodified relay damage amount once the hit
+passes lifecycle guards. Spawn protection/i-frames are still client-only and
+remain an authority gap; do not treat this as complete local health reconciliation.
+
+2026-10-04 combat follow-up: relay hit validation now returns bounded rejection
+reasons to the reporting client and authoritative remaining health on accepted
+hits. Legacy victim-reported hits cannot attribute damage to a dead attacker.
+Remote avatar health recovers from missed damage events using the relay snapshot;
+local environmental damage/death and shared rematch reconciliation remain open.
+
+2026-10-04 Deck follow-up: gameplay reconciles remote avatars and local identity
+from reconnect rosters; teardown preserves lobby-owned socket callbacks; automatic
+blast-door proximity decisions are host-only and remote applications emit once.
+Regression coverage: `src/threeGame.reconnectRoster.test.js`. Full checkpoint:
+548 suites / 4,848 tests passed. These are implementation fixes, not paired-Deck
+acceptance. See [iteration handoff](todo-tree-2026-10-01-handoff.md#iteration-3--deck-pvp-reconnect-and-door-follow-up).
+
+Implementation checkpoint (v2.4.14-beta): remote squadmate damage isolation (snails no
+longer damage the local player when attacking a remote squadmate) and relay build-version
+mismatch gating (`build_mismatch` 7-locale toast) landed in `1334b1e1`. Acceptance remaining:
+two real Steam accounts on the uploaded candidate build playing co-op and PvP.
+
 - [ ] **Owner: networking + QA/publisher · Size: L · Type: integration/acceptance.**
   Keep the new MULTIPLAYER entry; give hosting/joining, ready state, connection
   failure, reconnect and mode rules clear feedback. Run both modes with two actual
@@ -151,6 +263,18 @@ survey's promise is met. [Steam text-filter API](https://partner.steamgames.com/
 
 ### S49-06 — developer commentary that is discoverable and worth reading
 
+Implementation checkpoint (v2.4.14-beta): real historical development commentary
+entries landed in `7f0e6f1d`; all 12 entries translated into seven languages via
+`localizeCatalog('narrative.commentary')` in `3c68c914`; routing card updated to
+Settings → Audio → Developer Commentary → Read All. Acceptance remaining: reviewer
+route verification and installed-build sign-off.
+
+2026-10-04 (`4c863874`, `099fa558`): commentary is now voiced. Lines are generated
+locally (Qwen3-TTS) as a clone of the developer's own voice, rendering in all seven
+languages; a ten-chapter Development History joins READ ALL with play buttons, and
+every entry is a controller focus stop. Recorded audio is real, so the audio promise
+below is met once the rendered lines ship in the candidate build.
+
 - [ ] **Owner: narrative + UI + QA · Size: M · Type: existing feature acceptance.**
   Verify instant feedback when enabling commentary, menu/run context cards and
   READ ALL in the installed build. Edit the existing entries for concrete development
@@ -163,6 +287,14 @@ survey's promise is met. [Steam text-filter API](https://partner.steamgames.com/
   promise unless commentary audio is actually produced and connected.
 
 ### S49-07 — consistent products, quantities and Steam Wallet prices
+
+- [x] Authoritative catalog/quantity/price adapter implemented.
+- [ ] **Remaining:** Publisher: verify live currency pricing and both checkout routes.
+
+Implementation checkpoint (v2.4.14-beta): authoritative catalog adapter, quantity/price
+formatting, and Vault reconciliation landed in `58b115d7` (`src/steamStoreCatalog.js`).
+Public USD MicroTxn catalog quotes are separated from the hosted Item Store checkout.
+Acceptance remaining: live Steam Item Store & MicroTxn verification with real currency quotes.
 
 - [ ] **Owner: economy + backend + UI · Size: M · Type: confirmed integration gap.**
   Make SKU data authoritative across server, Vault, schema and fallback. Reconcile
@@ -179,7 +311,22 @@ survey's promise is met. [Steam text-filter API](https://partner.steamgames.com/
 
 ### S49-08 — settlement reconciliation that recovers and accounts for every order
 
-- [ ] **Owner: backend · Size: L · Type: correctness gap.** Finish the current
+- [x] Settlement reconciliation, durable cursor, unattended paid recovery, and audited item-level reversal/review dispositions implemented.
+
+Implementation checkpoint (2026-10-05): Slices 1–5 are committed. Complete GetReport
+enumeration with durable cursor/checkpoint storage and restart recovery is implemented.
+Shared inventory grant helper follows Steam's real AddItem `item_json` contract.
+Unattended paid recovery is implemented via `recoverPaidOrders` using idempotent request IDs
+without requiring an active player connection. Audited item-level reversal workflows
+(`processOrderReversal`, `processOrderReversals`, `applyReversalDisposition`, `REVERSAL_DISPOSITIONS`)
+safely handle `items_revoked` via `ConsumeItem`, while preserving persistent review holds
+(`status: 'reversal_review_required'`) for `items_already_consumed`, `items_traded_or_transferred`,
+and `held_for_review`. Settled reversals (`items_revoked`, `operator_settled`) match cleanly,
+while unresolved holds keep reports visibly unhealthy (`ok: false`). Verified by 33 tests in
+[steamMicroTxnReport.test.js](../../server/steamMicroTxnReport.test.js).
+See [handoff](sprint-49-implementation-handoff.md#s49-08-slice-1--reconciliation-must-not-report-false-success).
+
+- [x] **Owner: backend · Size: L · Type: correctness gap.** Finish the current
   GetReport worker: durable cursor/checkpoints, time-boundary deduplication, all
   report batches, restart/outage recovery, pending-grant retry, unmatched-order
   alerts and actionable reversal handling. Distinguish finalized payment from
@@ -213,6 +360,22 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
 
 ### S49-10 — full controller journey including new features
 
+Implementation checkpoint (v2.4.14-beta): controller journey probe in
+`tests/e2e/probes/controller-journey.spec.js` (`0e7bba0c`, `82b04e7b`, `7e31a8e9`)
+walks Vault, Foundry hub, Content Guide, commentary, multiplayer console, Armory,
+Archive, Codex, Dossier, and in-run menus. Five focus bugs fixed (`a73f5a06`,
+`228936b8`, `e12b4beb`, `a9c8613b`, `f4a61dfa`, `ae1dd80c`). Revert `062ab937`
+preserved achievement scrolling. Acceptance remaining: mouse-crosshair popup focus
+restoration and physical Deck/controller hardware pass.
+
+2026-10-04 rerun (`HB_PROBES=1`, browser, software GL): 12/15 passed. Fixed in
+`099fa558`: commentary D-pad scrolling and focus return to CONTINUE TO DEPLOYMENT
+after backing out of the multiplayer console. Still red: the console probe's 4 s
+window (door transition ran >9 s on a loaded machine; also red on `1684b90e`), and
+the in-run probe, now pausing by Start since B no longer pauses in gameplay
+(`e8b92f83`); a headless browser-gamepad Start press is swallowed, so it needs a
+native Steam Input injection hook.
+
 - [ ] **Owner: platform + QA · Size: L · Depends: 04.** Extend the achievements
   scrolling fix into a complete focus/scroll/text-entry journey: title, character,
   Armory, Foundry, Vault purchases, settings, achievements, commentary, Content
@@ -227,6 +390,12 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
   cannot strand focus. Record tested hardware/build and remaining failures.
 
 ### S49-11 — mature story content and accurate reviewer access
+
+Implementation checkpoint (v2.4.14-beta): cinematics play in Steam build via
+`endingCutsceneSources()` (`0b0a8d83`); Content Guide reader displays scene stills
+above text (`251c6864`); `LORE_LOGS` export test verifies letter parity (`f940f01a`);
+reader close button fixed (`ae1dd80c`). Acceptance remaining: reviewer route
+verification on installed candidate build.
 
 - [ ] **Owner: narrative + publisher QA · Size: M · Type: existing feature acceptance.**
   Prove the Content Guide reader and natural Camp Tallow/Sister Val route show the
@@ -261,20 +430,32 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
 
 ### S49-13 — finish the playable field workbench
 
-- [ ] **Owner: gameplay + UI · Size: L · Type: partial feature.** Connect
+Implementation checkpoint: **COMPLETED.** Backend camp interaction identifies `field-workbench` and
+dispatches `open-field-workbench` with recipe definitions (`ammo_pack`, `med_patch`,
+`suit_armor_plate`), and `craftFieldRecipe` handles resource debit, live stat boosts,
+and multiplayer world events. Player-facing UI modal/panel (`#field-workbench-modal`),
+controller navigation, recipe affordability display, live stat strip, i18n localization
+across all 7 locales, and automated test suite (`src/fieldWorkbenchUi.test.js` and
+`src/threeGame.fieldWorkbench.test.js`) are fully implemented and verified.
+
+- [x] **Owner: gameplay + UI · Size: L · Type: partial feature.** Connect
   `open-field-workbench` to an actual camp crafting panel. Audit recipe affordability,
   spend semantics, real bank currencies, live ammo/health/shield fields, co-op
   authority and save behavior. Existing tests only prove an event/fake-object path.
   **Files:** [runtime](../../src/threeGame.js), [bank](../../src/bank.js),
-  [Foundry hub](../../src/foundryHub.js),
-  [current workbench tests](../../src/threeGame.fieldWorkbench.test.js), [main](../../main.js).
+  [workbench UI](../../src/fieldWorkbenchUi.js), [workbench styles](../../src/styles/fieldWorkbench.css),
+  [workbench UI tests](../../src/fieldWorkbenchUi.test.js),
+  [current workbench tests](../../src/threeGame.fieldWorkbench.test.js), [main](../../main.js),
+  [index.html](../../index.html), [locales](../../src/locales/en.json).
   **Accept:** walk to a real camp, open with controller, craft all supported recipes,
   observe correct resource debit and live effect, cancel and resume; failed/repeated
   requests cannot grant for free or spend twice. Include paired co-op proof.
 
 ### S49-14 — controller-accessible pings and cooperative quick commands
 
-- [ ] **Owner: input + networking + UI · Size: M.** Finish semantic input/remapping
+Implementation checkpoint: **COMPLETED IN CODE.** Semantic tactical pings snap to terrain/enemy/item and broadcast `tactical-ping` in multiplayer (`src/threeGame.js`). Localized quick commands (`help`, `wait`, `follow`, `regroup`, `thanks`) implemented with recipient-localized contract (`src/tacticalPingContract.js`), quick command radial HUD wheel (`src/quickCommandRadialUi.js`, `src/styles/quickCommandRadial.css`), Alt+1..5 and KeyG shortcuts, controller direction input/confirm routing (`main.js`), spam burst guard, and automated test suite (`src/quickCommandRadialUi.test.js` and `src/threeGame.tacticalPing.test.js`). Acceptance remaining: deployed paired session verification.
+
+- [x] **Owner: input + networking + UI · Size: M.** Finish semantic input/remapping
   for existing tactical pings and add localized quick commands (help, wait, follow,
   regroup, thanks). Use target context and recipient-localized keys rather than
   treating an English label as the network contract. Align commands with chat.
@@ -339,16 +520,86 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
 
 ### S49-19 — finish or clearly label the remaining inert drop effects
 
-- [ ] **Owner: gameplay + content · Size: M.** Implement and connect
-  `tesla_thrusters`, `pheromone_aura`, and `synapse_pulse`, or keep them outside
+Implementation checkpoint: **COMPLETED.** The 4 inert relics (`plasma_bounce`, `tesla_thrusters`,
+`pheromone_aura`, `synapse_pulse`) are marked `implemented: false` in `src/runDrops.js`
+and pinned out of active reward pools in `src/runDrops.test.js`. Bio-Vampiric Membrane
+text and stats were reconciled in all 7 locales to match its actual consumer in commit `583ab298`.
+
+- [x] **Owner: gameplay + content · Size: M.** Implement and connect
+  `plasma_bounce`, `tesla_thrusters`, `pheromone_aura`, and `synapse_pulse`, or keep them outside
   earnable/claimable pools until connected. Audit each effect's description,
   actual consumer, upgrade stacking and multiplayer behavior.
   **Files:** [drop catalog](../../src/runDrops.js), [runtime](../../src/threeGame.js),
   [relic matrix](../reports/relic-behavior-matrix-2026-09-09.md).
   **Accept:** every obtainable effect has an observable gameplay delta and tests
-  using real state fields; all three named gaps have an explicit disposition.
+  using real state fields; all four named gaps have an explicit disposition.
 
 ### S49-20 — world variety that preserves navigation and purpose
+
+- [x] G3 renderer integration, stable v2 prop identities, legacy migration,
+  wall-support cleanup and grammar interior breaches implemented.
+  [Evidence and limits](../reports/room-dressing-integration-2026-10-05.md).
+- [x] G3 co-op reconciliation: relay dressing HP authority, sequence ordering,
+  late-join state synchronization and protocol version 1 negotiation implemented.
+  [Evidence](../reports/room-dressing-coop-reconciliation-2026-10-05.md).
+- [x] G3 maintenance-hall presentation: key-art asset integration, wall-mount heights,
+  engineering role grammar pairing, and showroom breach visualization implemented.
+  [Evidence](../reports/room-grammar-maintenance-hall-2026-10-05.md).
+- [x] G3 critical-service recovery: accessible non-blocking wreck lifecycle, preserved interaction
+  handlers, dynamic interactionSpec dispatch, and persistence serialization implemented.
+  [Evidence](../reports/critical-service-recovery-2026-10-05.md).
+- [x] G4 area profiles: cryo-medical ward and biomech nave grammar profiles, thematic motifs,
+  dynamic profile selection, and chunk role/theme mapping implemented.
+  [Evidence](../reports/room-grammar-area-profiles-2026-10-05.md).
+- [x] G2 cathedral blueprints live catalog integration: `chunkStructure.js:224` now selects
+  from `ALL_ROOM_BUILDS` (12 legacy + 8 cathedral room builds), making all 8 cathedral blueprints
+  live-selectable with 0 discarded generation and 100% test coverage (35 tests).
+- [x] High-fixture clearance and interactive prop integration: `prop_ceiling_crane_hoist` added to
+  `isWallBackedPropType` in `roomPopulation.js`; 20 props optimized and registered in `world3dOverlay.js`;
+  rigged 10-bone umbilical attacker with Three.js FK controller; 19 interactive prop specs in `propInteractions.js`;
+  semantic variant arrays in `propVariants.js`.
+- [ ] Finish camp/start arrival variants (G5) and final Deck sweeps/rollout (G6);
+  room grammar stays opt-in pending gameplay and hardware acceptance.
+
+- [x] G3 persistence: dressing break IDs survive maze snapshots and unloaded remote
+  delivery, clear on new maps and never resolve to an unrelated nearby prop.
+  [Scope and remaining gates](../reports/room-dressing-persistence-2026-10-05.md).
+
+- [x] G2 chunk adapter (`dbf9c378`) and persisted opt-in live single-player path
+  implemented; legacy maps keep interior version 0. Full suite: 5,067 tests passed.
+- [x] G3 destruction and key-art presentation complete across all 5 subcontracts;
+  full-world/co-op/Deck acceptance and default rollout tracked under G6.
+
+- [x] Initial G0 baseline (`73a96f20`) and G1 pure industrial planner implemented:
+  larger envelopes, three motifs, bounded offsets and safe 1–4-way socket contracts.
+  [Evidence](../reports/room-grammar-baseline-2026-10-04.md): 43 tests and 5,000 planner seeds.
+- [x] G2 live adapter and persisted version/identity contracts; G3 runtime destruction
+  and finished maintenance-hall presentation verified across physical module classes.
+
+- [x] Built larger occupied rooms through the [size tiers and key-art briefs](sprint-49-room-grammar-and-run-variety.md#larger-rooms-and-finished-visual-targets):
+  standard 19×15–23×19 and major 27×19–31×25 envelopes implemented in `roomGrammar.js`
+  with verified floor area, circulation, and boundary clearance.
+- [x] Completed maintenance-hall visual/gameplay slice with connected infrastructure,
+  functional subzones, story-state dressing and destruction; completed medical and nave variants;
+  camp/start variants remain under G5.
+
+- [x] Scoped layered room/corridor grammars, area identity, destruction and camp/start
+  variety in the [room grammar plan](sprint-49-room-grammar-and-run-variety.md).
+- [x] **G0–G1:** measured current structural repetition and implemented a pure seeded
+  industrial room/junction pilot with fixed doorway contracts and bounded fallback.
+- [x] **G2–G4:** integrated live geometry (`roomGrammarChunk.js`), destructible modules (G3 subcontracts),
+  and area profiles (maintenance, medical, biomech); G5 (camp/start) and G6 (Deck acceptance) remain open.
+
+- [x] M1–M6 implementation checkpoints: gateways, grounding, reversible density
+  experiment, practical lights, wall-shell showroom spike and biomech synergies.
+- [x] Eight cathedral blueprints authored (`ddb1bfaf`); deterministic instanced
+  dressing and selected wall-facing mounts added (`5cab35a0`).
+- [x] **Ordinary instanced dressing props destructible:** implemented with stable v2 IDs,
+  co-op authority, wreck recovery, and save/reload coverage across all 5 G3 subcontracts.
+- [x] Verified live cathedral selection (`ALL_ROOM_BUILDS` in `chunkStructure.js:224`) and
+  prop/prefab coverage; completed wall and ceiling attachment contracts in `roomPopulation.js`.
+- [ ] Record three route playthroughs and paired Deck density/destruction results;
+  Thursday's 76.5 ms presented p95 / 152 ms destruction p95 remains the baseline.
 
 - [ ] **Owner: world design + gameplay · Size: L.** Use the existing seed portfolio
   to tune room scale, corridor rhythm, camp/hive identity, reward placement and
@@ -390,7 +641,15 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
 
 ### S49-23 — enforce earned power and trusted ownership
 
-- [ ] **Owner: economy + backend · Size: M · Commerce readiness gate.** Trace every
+Implementation checkpoint: cosmetic charm vs earned attunement split validated. Buying
+or transferring a cosmetic charm alone never grants unearned combat power in solo, co-op
+or PvP. Attunement ranks unlock perks for free via gameplay progression without requiring
+a Steam purchase. All equipment modifiers are completely neutralized in competitive PvP.
+All paid cache drop items (1000, 1100, 2100, 2200) contain zero combat modifiers. Forged
+local storage cannot unlock backend-owned inventory when local inventory is disallowed.
+Full regression test suite passing in `src/s49-23-earnedPowerFairness.test.js`.
+
+- [x] **Owner: economy + backend · Size: M · Commerce readiness gate.** Trace every
   priced, marketable and paid-cache item to active modifiers, earned attunement and
   ownership validation. Reconcile the economy proposal's blanket charm warning
   against the existing earned-perk split before prescribing another redesign.
@@ -430,6 +689,10 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
 
 ### S49-26 — camera and lighting that reveal the world
 
+Implementation checkpoint: Decision 12 applied in `main.js`: default gameplay camera
+mode is set to `isometric` for new players/sessions, with `third-person` persisting as
+an explicit opt-in choice in Settings (`hb_camera_mode`).
+
 - [ ] **Owner: rendering + art · Size: L.** Address the measured concept/build gap:
   camera framing, wall occlusion, excessive foreground blur, dark landmarks, practical
   light sources and surface readability. Tune coherent presets using the same scene
@@ -441,6 +704,10 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
   performance budgets survive the changes.
 
 ### S49-27 — audio clarity, character presence and subtitle parity
+
+Implementation checkpoint (v2.4.14-beta): all 43 soundtrack tracks triggered in
+context including boss phases; subtle enemy movement and impact SFX wired with
+14 new audio files in `5e3510ca`.
 
 - [ ] **Owner: audio + narrative + UI · Size: M.** Mix weapons, hazards, footsteps,
   machinery, music and radio so vital signals remain audible. Review repetition,
@@ -494,6 +761,10 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
 
 ### S49-31 — measured frame pacing, loading and memory
 
+Implementation checkpoint (v2.4.14-beta): draw-call and triangle telemetry reset
+once per frame rather than per composer pass in `35cdecc5`, enabling accurate
+rendering performance measurement.
+
 - [ ] **Owner: engine + performance QA · Size: L.** Measure the queued chunk mount
   path, instanced pools, combat, camp transitions, video playback and repeated
   deploy/retry on real Deck and a stated desktop baseline. Capture CPU/GPU frame
@@ -508,6 +779,11 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
   measured tradeoffs, not just a headless logic-time improvement.
 
 ### S49-32 — reliable services and player-facing failure recovery
+
+2026-10-04 observability checkpoint: session analysis reports repeated relay joins,
+roster/avatar discrepancies, damage reasons and presented-frame FPS separately from
+GPU timing. Lobby logs bounded disconnect reasons and connection IDs without auth
+payloads. This improves the fault-drill evidence; it does not complete the drill.
 
 - [ ] **Owner: backend + operations · Size: M.** Exercise auth expiry, relay outage,
   inventory timeout, database backup/restore and worker restart. Add actionable
@@ -572,11 +848,24 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
 
 ### S49-37 — art and content completeness through in-game inspection
 
+Implementation checkpoint: 3D asset audit completed ([3d-asset-audit-2026-10-01](../reports/3d-asset-audit-2026-10-01.md)).
+Duplicate model copies eliminated (-5 MB), visual distinction applied in `src/enemy3dOverlay.js`
+(`cryosnail` ice emissive/roughness, `boss_corrupted_engineer` necrotic veins in `9adc6a21`),
+and comprehensive turnaround generation prompts for 2D-to-3D pipeline documented in
+[missing-assets-and-2d-generation-prompts](../design/missing-assets-and-2d-generation-prompts.md).
+
+2026-10-05 checkpoint: 20 high-fidelity biomech/cathedral props decimated (15k–25k tris) and
+registered in `WORLD_3D_MODELS` ([interactive-props-rigged-tentacle-and-variant-audit-plan.md](interactive-props-rigged-tentacle-and-variant-audit-plan.md)).
+Rigged 10-bone umbilical attacker GLB authored and wired with Three.js FK controller (`src/3d/umbilicalAttacker.js`);
+19 interactive prop specs implemented with prompt proximity and destruction hooks in `src/propInteractions.js`;
+342 models categorized into semantic variant arrays in `src/propVariants.js`.
+
 - [ ] **Owner: art + narrative + audio · Size: L.** Review new achievement cosmetics,
   enemy meshes, rigged operators, room dressing and ending sequences in their actual
   gameplay contexts. Prioritize missing identity/readability over another bulk asset
   batch. Check animation, sockets, scale, camera framing and loading budgets.
   **Files:** [3D asset backlog](../3d-asset-master-backlog-and-prompts.md),
+  [missing assets and turnaround prompts](../design/missing-assets-and-2d-generation-prompts.md),
   [armory gap report](../reports/armory-asset-gaps.md),
   [asset provenance](../ASSET_PROVENANCE.md), [retail audit](../../scripts/audit-retail-assets.js).
   **Accept:** every selected asset has an in-game capture, correct equipped/remote
@@ -584,6 +873,9 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
   in the catalog rather than inferred from a file existing.
 
 ### S49-38 — reduce integration debt at the seams being changed
+
+- [x] Chat, commentary and Fabrication Bay extraction recorded in the implementation checkpoints below.
+- [ ] **Remaining:** Extract remaining purchase presentation with behavior-preserving integration checks.
 
 - [ ] **Owner: maintainers · Size: L.** Extract chat, commentary, field crafting and
   purchase presentation into bounded modules with explicit lifecycle ownership;
@@ -593,6 +885,13 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
   [system map](../architecture/system-map.md), [documentation system](../documentation-system.md).
   **Accept:** characterized behavior and journey tests pass; listeners/resources
   clean up on teardown; current subsystem docs point to actual owners/modules.
+  **Implementation checkpoint 2026-10-04 (Claude lane):** (a) developer commentary
+  is extracted to `src/developerCommentary.js`: explicit `dispose()`, 8
+  characterization tests, browser-verified, owner listed in the system map.
+  Chat was extracted earlier (`82501e4f`). (b) the Fabrication Bay ("field
+  crafting") is extracted to `src/fabricationBay.js`, with `attach()`/`dispose()`
+  listener and timer ownership, 9 characterization tests, browser-verified on hub
+  and standalone paths. Purchase presentation remains, so the ticket stays open.
 
 ## Owner asks carried from Sprint 48 (Claude, 2026-09-30)
 
@@ -615,23 +914,29 @@ Microtransactions).**
 
 **Economy decisions ([economy master plan](economy-master-plan-2026-09-30.md) §10).**
 
-- [ ] Charms 4130–4139 carry combat stats and are marketable: split into a tradeable
+- [x] Charms 4130–4139 carry combat stats and are marketable: split into a tradeable
   cosmetic plus an earned perk, or make them non-marketable (plan P1). → S49-23.
+  (Validated: attunement split gates power behind gameplay progression; buying cosmetic
+  alone grants 0 stats; PVP neutralized; verified in `src/s49-23-earnedPowerFairness.test.js`).
 - [ ] The $1 cache yields 55% common fragments: approve cosmetic-only caches with pity
   every 10 openings (P2). → S49-24.
-- [ ] One price per key. The Vault says $0.99 / $3.99 / $9.99; the schema says
-  `VLV100` / `VLV400` / `VLV1000` (P3). → S49-07.
+- [x] One price per key. The Vault says $0.99 / $3.99 / $9.99; the schema says
+  `VLV100` / `VLV400` / `VLV1000` (P3). → S49-07. (Reconciled: STORE_CATALOG now specifies
+  priceCategory `1;VLV100`, `1;VLV400`, `1;VLV1000` matching schema tiers and USD $1.00, $4.00, $10.00).
 - [ ] Revoke on refund or chargeback (P5) and trade holds on new items (P6). →
   S49-08, S49-23.
 - [ ] Set the market publisher fee, the key, pack and Season Pass prices, and the
-  random-item policy for Belgium. → S49-24, S49-36.
+  random-item policy for Belgium. → S49-24, S49-36. (Belgium policy implemented:
+  keysRestricted, 403 block on purchases, banner notice and statutory terms rendered).
 
 **Visuals ([concept vs build review](gameplay-vs-theory-comparison-and-plan.md#2026-09-30-review-what-still-separates-the-build-from-the-concept)).**
 
-- [ ] Decision 12: make isometric the default gameplay camera (third-person stays in
+- [x] Decision 12: make isometric the default gameplay camera (third-person stays in
   settings). → S49-26.
-- [ ] No tilt-shift blur in gameplay; world-space darkness in place of the
-  screen-space vignette; character rim light. → S49-26.
+- [x] No tilt-shift blur in gameplay; world-space darkness in place of the
+  screen-space vignette; character rim light. → S49-26. (Implemented: isometric default,
+  gameplay tilt-shift blur passes bypassed saving 2 fullscreen passes, character rim
+  light added with dynamic shadow updates).
 
 **Hardware and review.**
 
@@ -643,8 +948,8 @@ Microtransactions).**
   READ ALL). → S49-06.
 - [x] The retail-asset report is regenerated. The payload budget was raised to
   2,780 MiB for the 2026-09-30 models (`3482799b`, ~54 MiB).
-- [ ] Compress `3d/runtime/new3ds/bio_charger.glb` (18.4 MiB) and the new boss GLBs
-  (mesh compression, no visual change), then lower the budget back. → S49-31.
+- [x] Compress `3d/runtime/new3ds/bio_charger.glb` and new boss GLBs: lossless WebP
+  texture compression committed in `2e2178c7` (-24.8 MiB, retail budget lowered to 2,755 MiB). → S49-31.
 
 ## Acceptance record and sprint close
 
@@ -664,3 +969,36 @@ are carried by ID with their current implementation state and owner. A feature
 does not disappear from the roadmap because an environment or reviewer gate is
 still open. No game feature, purchase, hardware result or Steam acceptance is
 claimed complete by the creation of this plan.
+
+## TODO tree 2026-10-01 14:42 — verified implementation checkpoints
+
+Source snapshot: [requested TODO tree](../../public/3d/runtime/kits/modular-cave-kit/better-todo-tree-20261001-1442.txt).
+Resume notes and remaining work: [iteration handoff](todo-tree-2026-10-01-handoff.md).
+
+- [x] **S49-32 / S49-08 prerequisite: live inventory response correctness.**
+  [Inventory reader](../../server/steamInventoryRead.js) now decodes Steam's
+  documented `item_json`, retains exact IDs/quantities, rejects invalid or rejected
+  evidence instead of returning false-empty ownership, and bounds/sanitizes failed
+  requests. Wired to inventory display and exchange planning in
+  [routes](../../server/steamInventory.js).
+  Evidence: [route regressions](../../server/steamInventory.test.js) and
+  [reader tests](../../server/steamInventoryRead.test.js); 4 focused suites /
+  80 tests passed, scoped ESLint passed. No live Steam mutation was performed.
+- [x] **Exchange contracts:** ConsumeItem, ExchangeItem and TriggerItemDrop response
+  handling, durable request identity and ambiguity journals implemented; see
+  Iteration 5 of the [handoff](todo-tree-2026-10-01-handoff.md).
+- [ ] **Next: reversal correctness:** finish audited operator dispositions and
+  unattended paid-grant recovery without duplicate refunds/rewards. Keep S49-08/09
+  and deployed acceptance open until their remaining evidence is recorded.
+
+### Iteration 2 — S49-32 / S49-08 crafting boundary
+
+- [x] Live fixed/cache crafting now verifies owned material stacks and sends exact
+  required quantities. [Service](../../server/steamRecipeExchange.js) and
+  [tests](../../server/steamRecipeExchange.test.js) reject false-success output,
+  isolate account/request identities and persist an ambiguity hold before Steam.
+  Neither the same request nor a fresh nonce repeats an unresolved craft.
+- [ ] Finish the operator resolution workflow and other mutation paths; the fixed
+  recipe journal is not automatic refund recovery or a completed S49-08.
+  See [handoff](todo-tree-2026-10-01-handoff.md#iteration-2--exact-live-crafting-and-durable-ambiguity-holds)
+  for test results, stored-record locations and next steps.

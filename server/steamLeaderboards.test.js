@@ -521,6 +521,20 @@ describe('steam leaderboards HTTP routes', () => {
         });
     });
 
+    // The web build (LAN demo) reads Global boards straight from the backend.
+    // A Global read is public and unauthenticated, so any page may read it;
+    // Friends / Around me stay behind the origin allow-list and auth.
+    it('lets any web origin read a Global board, and only a Global board', async () => {
+        const global = await fetch(`${baseUrl}/steam/leaderboards/best_run_score?dataRequest=RequestGlobal&count=2`, {
+            headers: { origin: 'http://192.168.0.29:5173' }
+        });
+        expect(global.headers.get('access-control-allow-origin')).toBe('*');
+        const friends = await fetch(`${baseUrl}/steam/leaderboards/best_run_score?dataRequest=RequestFriends&count=2`, {
+            headers: { origin: 'http://192.168.0.29:5173' }
+        });
+        expect(friends.headers.get('access-control-allow-origin')).toBeNull();
+    });
+
     it('POST /steam/leaderboards/submit-run stores mock scores when Steam is not configured', async () => {
         delete process.env.HB_STEAM_PUBLISHER_KEY;
         delete process.env.STEAM_PUBLISHER_KEY;

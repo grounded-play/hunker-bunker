@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Player chat integration harness</title>
+  <style>
+    body { background: #071013; color: #eef8f5; font: 16px sans-serif; }
+    .modal { position: fixed; inset: 0; display: flex; justify-content: center; align-items: center; background: #000b; }
+    .hidden { display: none !important; }
+    * { box-sizing: border-box; }
+  </style>
+</head>
+<body>
+  <button type="button" data-player-chat-open>CHAT</button>
+  <script type="module">
+    import { io } from 'socket.io-client';
+    import { PlayerChat } from '../../../src/playerChat.js';
+    import { initPlayerChatUI } from '../../../src/playerChatUi.js';
+    import { setLocale } from '../../../src/i18n.js';
+    const chat = new PlayerChat();
+    const ui = initPlayerChatUI({ chat });
+    window.chatHarness = {
+      chat, ui, setLocale,
+      join(url, roomCode, callsign) {
+        chat.socket?.disconnect();
+        const socket = io(url, { reconnection: false });
+        chat.attachSocket(socket, roomCode);
+        socket.on('connect', () => socket.emit('joinRoom', { roomCode, callsign }));
+      }
+    };
+  </script>
+</body>
+</html>

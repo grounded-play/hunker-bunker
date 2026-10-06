@@ -77,4 +77,23 @@ describe('debug museum coverage', () => {
             expect(showroomTypes.has(type), type).toBe(true);
         }
     });
+
+    it('covers the new biomechanical cathedral props specifically', () => {
+        for (const type of [
+            'prop_autopsy_dissection_slab', 'prop_biomech_sphincter_hatch_vent',
+            'prop_biomech_spore_umbilical_cable', 'prop_biomech_spore_umbilical_cable_rigged',
+            'prop_biomech_tracheal_wall_pipe', 'prop_ceiling_crane_hoist',
+            'prop_coolant_drum_leaking_pool', 'prop_corporate_saint_reliquary',
+            'prop_decon_eyewash_shower_station', 'prop_exhaust_blower_fan_hood',
+            'prop_exosuit_docking_gantry', 'prop_floor_conduit_bridge',
+            'prop_floor_drainage_sump_trough', 'prop_liturgical_terminal_lectern',
+            'prop_maintenance_tool_cart', 'prop_overhead_cage_fluorescent',
+            'prop_oxygen_bottle_cascade_rack', 'prop_pipe_organ_heat_exchanger',
+            'prop_vertebral_cable_riser', 'prop_votive_candle_shrine',
+            'prop_wall_cable_tray_swag'
+        ]) {
+            expect(showroomTypes.has(type), type).toBe(true);
+        }
+    });
 });
+

@@ -1,0 +1,5129 @@
+{
+ "escapeFailures": [],
+ "surfaces": [
+  {
+   "name": "01-title",
+   "root": "#splash",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/01-title.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [],
+   "focusables": [
+    {
+     "id": "#splash-steam-badge",
+     "text": "Open Steam profile",
+     "x": 1575,
+     "y": 27,
+     "w": 216,
+     "h": 60,
+     "font": 16
+    },
+    {
+     "id": "#title-newrun-btn",
+     "text": "NEW RUN",
+     "x": 1530,
+     "y": 766,
+     "w": 240,
+     "h": 41,
+     "font": 15.66
+    },
+    {
+     "id": "#title-multiplayer-btn",
+     "text": "MULTIPLAYER",
+     "x": 1530,
+     "y": 813,
+     "w": 240,
+     "h": 41,
+     "font": 15.66
+    },
+    {
+     "id": "#title-achievements-btn",
+     "text": "ACHIEVEMENTS",
+     "x": 1530,
+     "y": 860,
+     "w": 240,
+     "h": 41,
+     "font": 15.66
+    },
+    {
+     "id": "#title-settings-btn",
+     "text": "SETTINGS",
+     "x": 1530,
+     "y": 907,
+     "w": 240,
+     "h": 41,
+     "font": 15.66
+    },
+    {
+     "id": "#title-about-btn",
+     "text": "ABOUT",
+     "x": 1530,
+     "y": 954,
+     "w": 240,
+     "h": 41,
+     "font": 15.66
+    },
+    {
+     "id": "#title-quit-btn",
+     "text": "QUIT GAME",
+     "x": 1530,
+     "y": 1001,
+     "w": 240,
+     "h": 41,
+     "font": 15.66
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "02-title-title-settings-btn--settings-popup",
+   "root": "#settings-popup",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/02-title-title-settings-btn--settings-popup.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.settings-tab.active",
+     "text": "SESSION"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "PROFILE & SAVES"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-settings",
+     "text": "Close system settings",
+     "x": 1686,
+     "y": 57,
+     "w": 59,
+     "h": 59,
+     "font": 32.4
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "SESSION",
+     "x": 171,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO",
+     "x": 435,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS",
+     "x": 700,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD",
+     "x": 964,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY",
+     "x": 1228,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "PROFILE & SAVES",
+     "x": 1493,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.calibrate-btn.settings-action-btn",
+     "text": "CHAT",
+     "x": 774,
+     "y": 320,
+     "w": 151,
+     "h": 45,
+     "font": 22.14
+    },
+    {
+     "id": "#resume-settings",
+     "text": "RESUME",
+     "x": 1545,
+     "y": 320,
+     "w": 151,
+     "h": 45,
+     "font": 22.14
+    },
+    {
+     "id": "#open-quit-confirm",
+     "text": "QUIT GAME",
+     "x": 736,
+     "y": 467,
+     "w": 189,
+     "h": 45,
+     "font": 22.14
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "02-title-title-settings-btn--settings-popup--tab-SESSION",
+   "root": "#settings-popup",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/02-title-title-settings-btn--settings-popup--tab-SESSION.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.settings-tab.active",
+     "text": "SESSION"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "PROFILE & SAVES"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-settings",
+     "text": "Close system settings",
+     "x": 1686,
+     "y": 57,
+     "w": 59,
+     "h": 59,
+     "font": 32.4
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "SESSION",
+     "x": 171,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO",
+     "x": 435,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS",
+     "x": 700,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD",
+     "x": 964,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY",
+     "x": 1228,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "PROFILE & SAVES",
+     "x": 1493,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.calibrate-btn.settings-action-btn",
+     "text": "CHAT",
+     "x": 774,
+     "y": 320,
+     "w": 151,
+     "h": 45,
+     "font": 22.14
+    },
+    {
+     "id": "#resume-settings",
+     "text": "RESUME",
+     "x": 1545,
+     "y": 320,
+     "w": 151,
+     "h": 45,
+     "font": 22.14
+    },
+    {
+     "id": "#open-quit-confirm",
+     "text": "QUIT GAME",
+     "x": 736,
+     "y": 467,
+     "w": 189,
+     "h": 45,
+     "font": 22.14
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "02-title-title-settings-btn--settings-popup--tab-AUDIO",
+   "root": "#settings-popup",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/02-title-title-settings-btn--settings-popup--tab-AUDIO.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION"
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "AUDIO"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "PROFILE & SAVES"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-settings",
+     "text": "Close system settings",
+     "x": 1686,
+     "y": 57,
+     "w": 59,
+     "h": 59,
+     "font": 32.4
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION",
+     "x": 171,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "AUDIO",
+     "x": 435,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS",
+     "x": 700,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD",
+     "x": 964,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY",
+     "x": 1228,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "PROFILE & SAVES",
+     "x": 1493,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "#open-audio-mixer",
+     "text": "OPEN",
+     "x": 774,
+     "y": 320,
+     "w": 151,
+     "h": 45,
+     "font": 22.14
+    },
+    {
+     "id": "#open-commentary-list",
+     "text": "READ ALL",
+     "x": 757,
+     "y": 394,
+     "w": 168,
+     "h": 45,
+     "font": 22.14
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "02-title-title-settings-btn--settings-popup--tab-CONTROLS",
+   "root": "#settings-popup",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/02-title-title-settings-btn--settings-popup--tab-CONTROLS.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO"
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "CONTROLS"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "PROFILE & SAVES"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-settings",
+     "text": "Close system settings",
+     "x": 1686,
+     "y": 57,
+     "w": 59,
+     "h": 59,
+     "font": 32.4
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION",
+     "x": 171,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO",
+     "x": 435,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "CONTROLS",
+     "x": 700,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD",
+     "x": 964,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY",
+     "x": 1228,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "PROFILE & SAVES",
+     "x": 1493,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "#setting-aim-sensitivity",
+     "text": "Right stick aim speed",
+     "x": 626,
+     "y": 320,
+     "w": 299,
+     "h": 53,
+     "font": 27
+    },
+    {
+     "id": "#open-controls",
+     "text": "REMAP",
+     "x": 774,
+     "y": 411,
+     "w": 151,
+     "h": 45,
+     "font": 22.14
+    },
+    {
+     "id": "#setting-aim-assist",
+     "text": "Controller aim assistance",
+     "x": 1233,
+     "y": 407,
+     "w": 463,
+     "h": 53,
+     "font": 27
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "02-title-title-settings-btn--settings-popup--tab-CAMERA & HUD",
+   "root": "#settings-popup",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/02-title-title-settings-btn--settings-popup--tab-CAMERA_HUD.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS"
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "CAMERA & HUD"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "PROFILE & SAVES"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-settings",
+     "text": "Close system settings",
+     "x": 1686,
+     "y": 57,
+     "w": 59,
+     "h": 59,
+     "font": 32.4
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION",
+     "x": 171,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO",
+     "x": 435,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS",
+     "x": 700,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "CAMERA & HUD",
+     "x": 964,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY",
+     "x": 1228,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "PROFILE & SAVES",
+     "x": 1493,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "#setting-camera-mode",
+     "text": "Gameplay camera",
+     "x": 475,
+     "y": 327,
+     "w": 450,
+     "h": 53,
+     "font": 27
+    },
+    {
+     "id": "#setting-camera-distance",
+     "text": "Third-person camera distance",
+     "x": 1486,
+     "y": 327,
+     "w": 210,
+     "h": 53,
+     "font": 27
+    },
+    {
+     "id": "#setting-camera-follow",
+     "text": "Third-person camera follow responsivenes",
+     "x": 573,
+     "y": 414,
+     "w": 352,
+     "h": 53,
+     "font": 27
+    },
+    {
+     "id": "#open-crosshair-color",
+     "text": "OPEN",
+     "x": 1545,
+     "y": 418,
+     "w": 151,
+     "h": 45,
+     "font": 22.14
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "02-title-title-settings-btn--settings-popup--tab-ACCESSIBILITY",
+   "root": "#settings-popup",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/02-title-title-settings-btn--settings-popup--tab-ACCESSIBILITY.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD"
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "ACCESSIBILITY"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "PROFILE & SAVES"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-settings",
+     "text": "Close system settings",
+     "x": 1686,
+     "y": 57,
+     "w": 59,
+     "h": 59,
+     "font": 32.4
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION",
+     "x": 171,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO",
+     "x": 435,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS",
+     "x": 700,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD",
+     "x": 964,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "ACCESSIBILITY",
+     "x": 1228,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "PROFILE & SAVES",
+     "x": 1493,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "#open-language-select",
+     "text": "OPEN",
+     "x": 774,
+     "y": 331,
+     "w": 151,
+     "h": 45,
+     "font": 22.14
+    },
+    {
+     "id": "#setting-ui-scale",
+     "text": "100% (STANDARD) 115% (LARGE) 130% (EXTRA",
+     "x": 1284,
+     "y": 327,
+     "w": 412,
+     "h": 53,
+     "font": 27
+    },
+    {
+     "id": "#setting-text-floor",
+     "text": "16px (COMPACT) 18px (DECK DEFAULT) 20px ",
+     "x": 581,
+     "y": 414,
+     "w": 344,
+     "h": 53,
+     "font": 27
+    },
+    {
+     "id": "#setting-text-speed",
+     "text": "NORMAL FAST INSTANT",
+     "x": 1518,
+     "y": 414,
+     "w": 178,
+     "h": 53,
+     "font": 27
+    },
+    {
+     "id": "#setting-subtitle-size",
+     "text": "SMALL MEDIUM (DEFAULT) LARGE EXTRA LARGE",
+     "x": 1378,
+     "y": 494,
+     "w": 318,
+     "h": 53,
+     "font": 27
+    },
+    {
+     "id": "#setting-subtitle-backdrop",
+     "text": "OFF DIMMED (DEFAULT) SOLID",
+     "x": 606,
+     "y": 574,
+     "w": 319,
+     "h": 53,
+     "font": 27
+    },
+    {
+     "id": "#setting-contrast",
+     "text": "NORMAL (DEFAULT) HIGH MAXIMUM (NO SCANLI",
+     "x": 1277,
+     "y": 574,
+     "w": 419,
+     "h": 53,
+     "font": 27
+    },
+    {
+     "id": "#setting-camera-shake",
+     "text": "Camera shake intensity",
+     "x": 658,
+     "y": 654,
+     "w": 267,
+     "h": 53,
+     "font": 27
+    },
+    {
+     "id": "#open-mature-audit-btn",
+     "text": "OPEN",
+     "x": 1545,
+     "y": 735,
+     "w": 151,
+     "h": 45,
+     "font": 22.14
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "02-title-title-settings-btn--settings-popup--tab-PROFILE & SAVES",
+   "root": "#settings-popup",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/02-title-title-settings-btn--settings-popup--tab-PROFILE_SAVES.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY"
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "PROFILE & SAVES"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-settings",
+     "text": "Close system settings",
+     "x": 1686,
+     "y": 57,
+     "w": 59,
+     "h": 59,
+     "font": 32.4
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION",
+     "x": 171,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO",
+     "x": 435,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS",
+     "x": 700,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD",
+     "x": 964,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY",
+     "x": 1228,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "PROFILE & SAVES",
+     "x": 1493,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "#operator-callsign",
+     "text": "Operator callsign",
+     "x": 687,
+     "y": 320,
+     "w": 238,
+     "h": 55,
+     "font": 27
+    },
+    {
+     "id": "#open-save-data",
+     "text": "OPEN",
+     "x": 1545,
+     "y": 402,
+     "w": 151,
+     "h": 45,
+     "font": 22.14
+    },
+    {
+     "id": "#open-reset-save",
+     "text": "RESET",
+     "x": 752,
+     "y": 475,
+     "w": 173,
+     "h": 45,
+     "font": 22.14
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "02-title-title-achievements-btn--achievements-modal",
+   "root": "#achievements-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/02-title-title-achievements-btn--achievements-modal.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [],
+   "focusables": [
+    {
+     "id": "#close-achievements-modal",
+     "text": "Close Achievements",
+     "x": 1594,
+     "y": 153,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "QUICK STUDY. Lose a run within five seco",
+     "x": 240,
+     "y": 263,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "HUNKERED. 0 / 20. Survive a single run p",
+     "x": 721,
+     "y": 263,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "SCOUT'S HONOR. Reach any ending as the S",
+     "x": 1202,
+     "y": 263,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "TANK COMMANDER. Reach any ending as the ",
+     "x": 240,
+     "y": 392,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "CHIEF ENGINEER. Reach any ending as the ",
+     "x": 721,
+     "y": 392,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 1202,
+     "y": 392,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 240,
+     "y": 520,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 721,
+     "y": 520,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 1202,
+     "y": 520,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 240,
+     "y": 649,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 721,
+     "y": 649,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 1202,
+     "y": 649,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 240,
+     "y": 777,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 721,
+     "y": 777,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 1202,
+     "y": 776,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "CARTOGRAPHER. 0 / 3. Discover all three ",
+     "x": 240,
+     "y": 906,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "#archive-linked-achievement",
+     "text": "ARCHIVIST. 0 / 12. Collect 12 lore drops",
+     "x": 721,
+     "y": 906,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "KIN. 0 / 5. Reach maximum bond with any ",
+     "x": 1202,
+     "y": 906,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 240,
+     "y": 1034,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 721,
+     "y": 1034,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 1202,
+     "y": 1034,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 240,
+     "y": 1163,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "HARDENED. 0 / 5. Die five times and keep",
+     "x": 721,
+     "y": 1163,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "SLAY THE QUEEN. COMING SOON. Defeat the ",
+     "x": 1202,
+     "y": 1163,
+     "w": 466,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "#achievement-copy-save",
+     "text": "Copy a portable save code",
+     "x": 240,
+     "y": 914,
+     "w": 267,
+     "h": 45,
+     "font": 22.14
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "02-title-title-about-btn--about-modal",
+   "root": "#about-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/02-title-title-about-btn--about-modal.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [],
+   "focusables": [
+    {
+     "id": "#close-about",
+     "text": "Close Credits",
+     "x": 1391,
+     "y": 329,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "a.",
+     "text": "TUESDAY CINEMA CLUB",
+     "x": 875,
+     "y": 504,
+     "w": 169,
+     "h": 19,
+     "font": 14
+    },
+    {
+     "id": "a.",
+     "text": "JOIN DISCORD SERVER",
+     "x": 878,
+     "y": 776,
+     "w": 164,
+     "h": 19,
+     "font": 14
+    },
+    {
+     "id": "a.",
+     "text": "GITHUB REPOSITORY",
+     "x": 884,
+     "y": 844,
+     "w": 152,
+     "h": 19,
+     "font": 14
+    }
+   ],
+   "smallTargets": [
+    "a. 169x19",
+    "a. 164x19",
+    "a. 152x19"
+   ],
+   "smallText": []
+  },
+  {
+   "name": "03-operator-menu",
+   "root": "#menu",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/03-operator-menu.png",
+   "rect": [
+    93,
+    -2,
+    1729,
+    1083
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [],
+   "focusables": [
+    {
+     "id": "#steam-vault-btn",
+     "text": "◈ STEAM VAULT",
+     "x": 264,
+     "y": 551,
+     "w": 151,
+     "h": 30,
+     "font": 10.8
+    },
+    {
+     "id": "#fabrication-btn",
+     "text": "◇ FAB BAY",
+     "x": 428,
+     "y": 551,
+     "w": 151,
+     "h": 30,
+     "font": 10.8
+    },
+    {
+     "id": "#archive-btn",
+     "text": "◈ ARCHIVE",
+     "x": 264,
+     "y": 610,
+     "w": 151,
+     "h": 30,
+     "font": 10.8
+    },
+    {
+     "id": "#codex-btn",
+     "text": "❑ CODEX",
+     "x": 428,
+     "y": 610,
+     "w": 151,
+     "h": 30,
+     "font": 10.8
+    },
+    {
+     "id": "#season-pass-btn",
+     "text": "◈ DOSSIER",
+     "x": 264,
+     "y": 668,
+     "w": 315,
+     "h": 30,
+     "font": 10.8
+    },
+    {
+     "id": "#hero-select-back-btn",
+     "text": "← RETURN TO MAIN MENU [ESC]",
+     "x": 260,
+     "y": 836,
+     "w": 325,
+     "h": 28,
+     "font": 11.34
+    },
+    {
+     "id": "#roster-callsign-input",
+     "text": "",
+     "x": 739,
+     "y": 655,
+     "w": 479,
+     "h": 36,
+     "font": 15.12
+    },
+    {
+     "id": "#roster-randomize-btn",
+     "text": "Randomize Callsign",
+     "x": 1222,
+     "y": 655,
+     "w": 34,
+     "h": 36,
+     "font": 19.44
+    },
+    {
+     "id": "#hero-polish-btn",
+     "text": "SUIT POLISH STANDARD ISSUE 1/16",
+     "x": 952,
+     "y": 812,
+     "w": 302,
+     "h": 44,
+     "font": 13.3333
+    },
+    {
+     "id": "div.char-card",
+     "text": "RECON FRAME INFILTRATOR SCOUT ACTIVE: SP",
+     "x": 1333,
+     "y": 242,
+     "w": 326,
+     "h": 205,
+     "font": 16
+    },
+    {
+     "id": "div.char-card.selected",
+     "text": "BULWARK FRAME BREACHER TANK ACTIVE: BRAC",
+     "x": 1330,
+     "y": 449,
+     "w": 333,
+     "h": 209,
+     "font": 16
+    },
+    {
+     "id": "div.char-card",
+     "text": "UTILITY FRAME LOGISTICS ENGINEER ACTIVE:",
+     "x": 1331,
+     "y": 659,
+     "w": 330,
+     "h": 208,
+     "font": 16
+    }
+   ],
+   "smallTargets": [
+    "#steam-vault-btn 151x30",
+    "#fabrication-btn 151x30",
+    "#archive-btn 151x30",
+    "#codex-btn 151x30",
+    "#season-pass-btn 315x30",
+    "#hero-select-back-btn 325x28"
+   ],
+   "smallText": [
+    "#steam-vault-btn 10.8px",
+    "#fabrication-btn 10.8px",
+    "#archive-btn 10.8px",
+    "#codex-btn 10.8px",
+    "#season-pass-btn 10.8px",
+    "#hero-select-back-btn 11.34px",
+    "#hero-polish-btn 13.3333px"
+   ]
+  },
+  {
+   "name": "04-menu-steam-vault-btn--foundry-hub-modal",
+   "root": "#foundry-hub-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-steam-vault-btn--foundry-hub-modal.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.foundry-hub__tab.is-active",
+     "text": "STASH"
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "LOADOUT"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-foundry-hub",
+     "text": "Close the Foundry",
+     "x": 1639,
+     "y": 68,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "button.foundry-hub__tab.is-active",
+     "text": "STASH",
+     "x": 227,
+     "y": 144,
+     "w": 97,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "LOADOUT",
+     "x": 329,
+     "y": 145,
+     "w": 121,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE",
+     "x": 454,
+     "y": 145,
+     "w": 179,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP",
+     "x": 639,
+     "y": 145,
+     "w": 167,
+     "h": 35,
+     "font": 17.1072
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "04-menu-steam-vault-btn--foundry-hub-modal--tab-STASH",
+   "root": "#foundry-hub-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-steam-vault-btn--foundry-hub-modal--tab-STASH.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.foundry-hub__tab.is-active",
+     "text": "STASH"
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "LOADOUT"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-foundry-hub",
+     "text": "Close the Foundry",
+     "x": 1639,
+     "y": 68,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "button.foundry-hub__tab.is-active",
+     "text": "STASH",
+     "x": 227,
+     "y": 144,
+     "w": 97,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "LOADOUT",
+     "x": 329,
+     "y": 145,
+     "w": 121,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE",
+     "x": 454,
+     "y": 145,
+     "w": 179,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP",
+     "x": 639,
+     "y": 145,
+     "w": 167,
+     "h": 35,
+     "font": 17.1072
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "04-menu-steam-vault-btn--foundry-hub-modal--tab-LOADOUT",
+   "root": "#foundry-hub-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-steam-vault-btn--foundry-hub-modal--tab-LOADOUT.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "STASH"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-active",
+     "text": "LOADOUT"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-foundry-hub",
+     "text": "Close the Foundry",
+     "x": 1639,
+     "y": 68,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "STASH",
+     "x": 227,
+     "y": 145,
+     "w": 97,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-active",
+     "text": "LOADOUT",
+     "x": 329,
+     "y": 144,
+     "w": 121,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE",
+     "x": 454,
+     "y": 145,
+     "w": 179,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP",
+     "x": 639,
+     "y": 145,
+     "w": 167,
+     "h": 35,
+     "font": 17.1072
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "04-menu-steam-vault-btn--foundry-hub-modal--tab-🔒 FABRICATE",
+   "root": "#foundry-hub-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-steam-vault-btn--foundry-hub-modal--tab-_FABRICATE.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "STASH"
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "LOADOUT"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-foundry-hub",
+     "text": "Close the Foundry",
+     "x": 1639,
+     "y": 68,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "STASH",
+     "x": 227,
+     "y": 145,
+     "w": 97,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "LOADOUT",
+     "x": 329,
+     "y": 144,
+     "w": 121,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE",
+     "x": 454,
+     "y": 145,
+     "w": 179,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP",
+     "x": 639,
+     "y": 145,
+     "w": 167,
+     "h": 35,
+     "font": 17.1072
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "04-menu-steam-vault-btn--foundry-hub-modal--tab-🔒 TRADE-UP",
+   "root": "#foundry-hub-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-steam-vault-btn--foundry-hub-modal--tab-_TRADE-UP.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "STASH"
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "LOADOUT"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-foundry-hub",
+     "text": "Close the Foundry",
+     "x": 1639,
+     "y": 68,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "STASH",
+     "x": 227,
+     "y": 145,
+     "w": 97,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "LOADOUT",
+     "x": 329,
+     "y": 145,
+     "w": 121,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE",
+     "x": 454,
+     "y": 144,
+     "w": 179,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP",
+     "x": 639,
+     "y": 145,
+     "w": 167,
+     "h": 35,
+     "font": 17.1072
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "04-menu-fabrication-btn--foundry-hub-modal",
+   "root": "#foundry-hub-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-fabrication-btn--foundry-hub-modal.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "STASH"
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "LOADOUT"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-foundry-hub",
+     "text": "Close the Foundry",
+     "x": 1639,
+     "y": 68,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "STASH",
+     "x": 227,
+     "y": 145,
+     "w": 97,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "LOADOUT",
+     "x": 329,
+     "y": 145,
+     "w": 121,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE",
+     "x": 454,
+     "y": 144,
+     "w": 179,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP",
+     "x": 639,
+     "y": 145,
+     "w": 167,
+     "h": 35,
+     "font": 17.1072
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "04-menu-fabrication-btn--foundry-hub-modal--tab-STASH",
+   "root": "#foundry-hub-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-fabrication-btn--foundry-hub-modal--tab-STASH.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.foundry-hub__tab.is-active",
+     "text": "STASH"
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "LOADOUT"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-foundry-hub",
+     "text": "Close the Foundry",
+     "x": 1639,
+     "y": 68,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "button.foundry-hub__tab.is-active",
+     "text": "STASH",
+     "x": 227,
+     "y": 144,
+     "w": 97,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "LOADOUT",
+     "x": 329,
+     "y": 145,
+     "w": 121,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE",
+     "x": 454,
+     "y": 145,
+     "w": 179,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP",
+     "x": 639,
+     "y": 145,
+     "w": 167,
+     "h": 35,
+     "font": 17.1072
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "04-menu-fabrication-btn--foundry-hub-modal--tab-LOADOUT",
+   "root": "#foundry-hub-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-fabrication-btn--foundry-hub-modal--tab-LOADOUT.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "STASH"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-active",
+     "text": "LOADOUT"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-foundry-hub",
+     "text": "Close the Foundry",
+     "x": 1639,
+     "y": 68,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "STASH",
+     "x": 227,
+     "y": 145,
+     "w": 97,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-active",
+     "text": "LOADOUT",
+     "x": 329,
+     "y": 144,
+     "w": 121,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE",
+     "x": 454,
+     "y": 145,
+     "w": 179,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP",
+     "x": 639,
+     "y": 145,
+     "w": 167,
+     "h": 35,
+     "font": 17.1072
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "04-menu-fabrication-btn--foundry-hub-modal--tab-🔒 FABRICATE",
+   "root": "#foundry-hub-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-fabrication-btn--foundry-hub-modal--tab-_FABRICATE.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "STASH"
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "LOADOUT"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-foundry-hub",
+     "text": "Close the Foundry",
+     "x": 1639,
+     "y": 68,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "STASH",
+     "x": 227,
+     "y": 145,
+     "w": 97,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "LOADOUT",
+     "x": 329,
+     "y": 145,
+     "w": 121,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE",
+     "x": 454,
+     "y": 144,
+     "w": 179,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP",
+     "x": 639,
+     "y": 145,
+     "w": 167,
+     "h": 35,
+     "font": 17.1072
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "04-menu-fabrication-btn--foundry-hub-modal--tab-🔒 TRADE-UP",
+   "root": "#foundry-hub-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-fabrication-btn--foundry-hub-modal--tab-_TRADE-UP.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "STASH"
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "LOADOUT"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE"
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-foundry-hub",
+     "text": "Close the Foundry",
+     "x": 1639,
+     "y": 68,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "STASH",
+     "x": 227,
+     "y": 145,
+     "w": 97,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab",
+     "text": "LOADOUT",
+     "x": 329,
+     "y": 145,
+     "w": 121,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 FABRICATE",
+     "x": 454,
+     "y": 145,
+     "w": 179,
+     "h": 35,
+     "font": 17.1072
+    },
+    {
+     "id": "button.foundry-hub__tab.is-locked",
+     "text": "🔒 TRADE-UP",
+     "x": 639,
+     "y": 144,
+     "w": 167,
+     "h": 35,
+     "font": 17.1072
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "04-menu-archive-btn--archive-modal",
+   "root": "#archive-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-archive-btn--archive-modal.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "#archive-tab-lore",
+     "text": "LORE LOGS"
+    },
+    {
+     "id": "#archive-tab-dossier",
+     "text": "◈ DOSSIER"
+    },
+    {
+     "id": "#archive-tab-endings",
+     "text": "STORY ENDINGS"
+    },
+    {
+     "id": "#archive-tab-achievements",
+     "text": "ACHIEVEMENTS"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-archive-modal",
+     "text": "×",
+     "x": 1455,
+     "y": 101,
+     "w": 58,
+     "h": 58,
+     "font": 32.4
+    },
+    {
+     "id": "#archive-tab-lore",
+     "text": "LORE LOGS",
+     "x": 391,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "#archive-tab-dossier",
+     "text": "◈ DOSSIER",
+     "x": 678,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "#archive-tab-endings",
+     "text": "STORY ENDINGS",
+     "x": 964,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "#archive-tab-achievements",
+     "text": "ACHIEVEMENTS",
+     "x": 1251,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "button.archive-lore-achievement-link",
+     "text": "LINKED UNLOCK: ARCHIVIST 0/12",
+     "x": 1262,
+     "y": 297,
+     "w": 241,
+     "h": 38,
+     "font": 11.88
+    }
+   ],
+   "smallTargets": [],
+   "smallText": [
+    "#archive-tab-lore 13px",
+    "#archive-tab-dossier 13px",
+    "#archive-tab-endings 13px",
+    "#archive-tab-achievements 13px",
+    "button.archive-lore-achievement-link 11.88px"
+   ]
+  },
+  {
+   "name": "04-menu-archive-btn--archive-modal--tab-LORE LOGS",
+   "root": "#archive-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-archive-btn--archive-modal--tab-LORE_LOGS.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "#archive-tab-lore",
+     "text": "LORE LOGS"
+    },
+    {
+     "id": "#archive-tab-dossier",
+     "text": "◈ DOSSIER"
+    },
+    {
+     "id": "#archive-tab-endings",
+     "text": "STORY ENDINGS"
+    },
+    {
+     "id": "#archive-tab-achievements",
+     "text": "ACHIEVEMENTS"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-archive-modal",
+     "text": "×",
+     "x": 1455,
+     "y": 101,
+     "w": 58,
+     "h": 58,
+     "font": 32.4
+    },
+    {
+     "id": "#archive-tab-lore",
+     "text": "LORE LOGS",
+     "x": 391,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "#archive-tab-dossier",
+     "text": "◈ DOSSIER",
+     "x": 678,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "#archive-tab-endings",
+     "text": "STORY ENDINGS",
+     "x": 964,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "#archive-tab-achievements",
+     "text": "ACHIEVEMENTS",
+     "x": 1251,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "button.archive-lore-achievement-link",
+     "text": "LINKED UNLOCK: ARCHIVIST 0/12",
+     "x": 1262,
+     "y": 297,
+     "w": 241,
+     "h": 38,
+     "font": 11.88
+    }
+   ],
+   "smallTargets": [],
+   "smallText": [
+    "#archive-tab-lore 13px",
+    "#archive-tab-dossier 13px",
+    "#archive-tab-endings 13px",
+    "#archive-tab-achievements 13px",
+    "button.archive-lore-achievement-link 11.88px"
+   ]
+  },
+  {
+   "name": "04-menu-archive-btn--archive-modal--tab-◈ DOSSIER",
+   "root": "#archive-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-archive-btn--archive-modal--tab-_DOSSIER.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "#archive-tab-lore",
+     "text": "LORE LOGS"
+    },
+    {
+     "id": "#archive-tab-dossier",
+     "text": "◈ DOSSIER"
+    },
+    {
+     "id": "#archive-tab-endings",
+     "text": "STORY ENDINGS"
+    },
+    {
+     "id": "#archive-tab-achievements",
+     "text": "ACHIEVEMENTS"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-archive-modal",
+     "text": "×",
+     "x": 1455,
+     "y": 101,
+     "w": 58,
+     "h": 58,
+     "font": 32.4
+    },
+    {
+     "id": "#archive-tab-lore",
+     "text": "LORE LOGS",
+     "x": 391,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "#archive-tab-dossier",
+     "text": "◈ DOSSIER",
+     "x": 678,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "#archive-tab-endings",
+     "text": "STORY ENDINGS",
+     "x": 964,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "#archive-tab-achievements",
+     "text": "ACHIEVEMENTS",
+     "x": 1251,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "button.start-btn.archive-console-open",
+     "text": "OPEN FULL TACTICAL DOSSIER",
+     "x": 1166,
+     "y": 420,
+     "w": 346,
+     "h": 270,
+     "font": 43.2
+    }
+   ],
+   "smallTargets": [],
+   "smallText": [
+    "#archive-tab-lore 13px",
+    "#archive-tab-dossier 13px",
+    "#archive-tab-endings 13px",
+    "#archive-tab-achievements 13px"
+   ]
+  },
+  {
+   "name": "04-menu-archive-btn--archive-modal--tab-STORY ENDINGS",
+   "root": "#archive-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-archive-btn--archive-modal--tab-STORY_ENDINGS.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "#archive-tab-lore",
+     "text": "LORE LOGS"
+    },
+    {
+     "id": "#archive-tab-dossier",
+     "text": "◈ DOSSIER"
+    },
+    {
+     "id": "#archive-tab-endings",
+     "text": "STORY ENDINGS"
+    },
+    {
+     "id": "#archive-tab-achievements",
+     "text": "ACHIEVEMENTS"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-archive-modal",
+     "text": "×",
+     "x": 1455,
+     "y": 101,
+     "w": 58,
+     "h": 58,
+     "font": 32.4
+    },
+    {
+     "id": "#archive-tab-lore",
+     "text": "LORE LOGS",
+     "x": 391,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "#archive-tab-dossier",
+     "text": "◈ DOSSIER",
+     "x": 678,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "#archive-tab-endings",
+     "text": "STORY ENDINGS",
+     "x": 964,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "#archive-tab-achievements",
+     "text": "ACHIEVEMENTS",
+     "x": 1251,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    }
+   ],
+   "smallTargets": [],
+   "smallText": [
+    "#archive-tab-lore 13px",
+    "#archive-tab-dossier 13px",
+    "#archive-tab-endings 13px",
+    "#archive-tab-achievements 13px"
+   ]
+  },
+  {
+   "name": "04-menu-archive-btn--archive-modal--tab-ACHIEVEMENTS",
+   "root": "#archive-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-archive-btn--archive-modal--tab-ACHIEVEMENTS.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "#archive-tab-lore",
+     "text": "LORE LOGS"
+    },
+    {
+     "id": "#archive-tab-dossier",
+     "text": "◈ DOSSIER"
+    },
+    {
+     "id": "#archive-tab-endings",
+     "text": "STORY ENDINGS"
+    },
+    {
+     "id": "#archive-tab-achievements",
+     "text": "ACHIEVEMENTS"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-archive-modal",
+     "text": "×",
+     "x": 1455,
+     "y": 101,
+     "w": 58,
+     "h": 58,
+     "font": 32.4
+    },
+    {
+     "id": "#archive-tab-lore",
+     "text": "LORE LOGS",
+     "x": 391,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "#archive-tab-dossier",
+     "text": "◈ DOSSIER",
+     "x": 678,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "#archive-tab-endings",
+     "text": "STORY ENDINGS",
+     "x": 964,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "#archive-tab-achievements",
+     "text": "ACHIEVEMENTS",
+     "x": 1251,
+     "y": 209,
+     "w": 278,
+     "h": 47,
+     "font": 13
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "QUICK STUDY. Lose a run within five seco",
+     "x": 393,
+     "y": 311,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "HUNKERED. 0 / 20. Survive a single run p",
+     "x": 953,
+     "y": 311,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "SCOUT'S HONOR. Reach any ending as the S",
+     "x": 393,
+     "y": 440,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "TANK COMMANDER. Reach any ending as the ",
+     "x": 953,
+     "y": 440,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "CHIEF ENGINEER. Reach any ending as the ",
+     "x": 393,
+     "y": 568,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 953,
+     "y": 568,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 393,
+     "y": 697,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 953,
+     "y": 697,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 393,
+     "y": 825,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 953,
+     "y": 825,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 393,
+     "y": 954,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 953,
+     "y": 954,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 393,
+     "y": 1082,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 953,
+     "y": 1082,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 393,
+     "y": 1211,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "CARTOGRAPHER. 0 / 3. Discover all three ",
+     "x": 953,
+     "y": 1211,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "#archive-linked-achievement",
+     "text": "ARCHIVIST. 0 / 12. Collect 12 lore drops",
+     "x": 393,
+     "y": 1339,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "KIN. 0 / 5. Reach maximum bond with any ",
+     "x": 953,
+     "y": 1339,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 393,
+     "y": 1468,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 953,
+     "y": 1468,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 393,
+     "y": 1596,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "???. Hidden record. Unlock to reveal.",
+     "x": 953,
+     "y": 1596,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "HARDENED. 0 / 5. Die five times and keep",
+     "x": 393,
+     "y": 1725,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    },
+    {
+     "id": "div.achievement-card.achievement-card--locked",
+     "text": "SLAY THE QUEEN. COMING SOON. Defeat the ",
+     "x": 953,
+     "y": 1725,
+     "w": 545,
+     "h": 113,
+     "font": 16
+    }
+   ],
+   "smallTargets": [],
+   "smallText": [
+    "#archive-tab-lore 13px",
+    "#archive-tab-dossier 13px",
+    "#archive-tab-endings 13px",
+    "#archive-tab-achievements 13px"
+   ]
+  },
+  {
+   "name": "04-menu-codex-btn--codex-modal",
+   "root": "#codex-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-codex-btn--codex-modal.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [],
+   "focusables": [
+    {
+     "id": "#close-codex-modal",
+     "text": "Close Field Codex",
+     "x": 1594,
+     "y": 156,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "04-menu-season-pass-btn--season-pass-modal",
+   "root": "#season-pass-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-season-pass-btn--season-pass-modal.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.season-pass-tab-btn.active",
+     "text": "Dossier"
+    },
+    {
+     "id": "button.season-pass-tab-btn",
+     "text": "Directives"
+    },
+    {
+     "id": "button.season-pass-tab-btn",
+     "text": "Fragment Workshop"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-season-pass-modal",
+     "text": "Close Tactical Dossier",
+     "x": 1564,
+     "y": 152,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "button.season-pass-tab-btn.active",
+     "text": "Dossier",
+     "x": 646,
+     "y": 287,
+     "w": 138,
+     "h": 36,
+     "font": 18.468
+    },
+    {
+     "id": "button.season-pass-tab-btn",
+     "text": "Directives",
+     "x": 796,
+     "y": 287,
+     "w": 171,
+     "h": 36,
+     "font": 18.468
+    },
+    {
+     "id": "button.season-pass-tab-btn",
+     "text": "Fragment Workshop",
+     "x": 981,
+     "y": 287,
+     "w": 294,
+     "h": 36,
+     "font": 18.468
+    },
+    {
+     "id": "button.season-pass-claim-btn",
+     "text": "Track",
+     "x": 870,
+     "y": 465,
+     "w": 97,
+     "h": 39,
+     "font": 19.44
+    },
+    {
+     "id": "button.season-pass-claim-btn",
+     "text": "Track",
+     "x": 870,
+     "y": 649,
+     "w": 97,
+     "h": 39,
+     "font": 19.44
+    },
+    {
+     "id": "button.season-pass-claim-btn",
+     "text": "Track",
+     "x": 870,
+     "y": 925,
+     "w": 97,
+     "h": 39,
+     "font": 19.44
+    },
+    {
+     "id": "button.season-pass-claim-btn",
+     "text": "Track",
+     "x": 870,
+     "y": 1200,
+     "w": 97,
+     "h": 39,
+     "font": 19.44
+    },
+    {
+     "id": "button.season-pass-claim-btn",
+     "text": "Track",
+     "x": 870,
+     "y": 1563,
+     "w": 97,
+     "h": 39,
+     "font": 19.44
+    },
+    {
+     "id": "button.season-pass-claim-btn",
+     "text": "Track",
+     "x": 870,
+     "y": 2160,
+     "w": 97,
+     "h": 39,
+     "font": 19.44
+    },
+    {
+     "id": "button.season-pass-claim-btn",
+     "text": "Track",
+     "x": 870,
+     "y": 2523,
+     "w": 97,
+     "h": 39,
+     "font": 19.44
+    },
+    {
+     "id": "button.season-pass-claim-btn",
+     "text": "Track",
+     "x": 870,
+     "y": 2891,
+     "w": 97,
+     "h": 39,
+     "font": 19.44
+    },
+    {
+     "id": "button.season-pass-claim-btn",
+     "text": "Track",
+     "x": 870,
+     "y": 3350,
+     "w": 97,
+     "h": 39,
+     "font": 19.44
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "04-menu-season-pass-btn--season-pass-modal--tab-Dossier",
+   "root": "#season-pass-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-season-pass-btn--season-pass-modal--tab-Dossier.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.season-pass-tab-btn.active",
+     "text": "Dossier"
+    },
+    {
+     "id": "button.season-pass-tab-btn",
+     "text": "Directives"
+    },
+    {
+     "id": "button.season-pass-tab-btn",
+     "text": "Fragment Workshop"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-season-pass-modal",
+     "text": "Close Tactical Dossier",
+     "x": 1564,
+     "y": 152,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "button.season-pass-tab-btn.active",
+     "text": "Dossier",
+     "x": 646,
+     "y": 287,
+     "w": 138,
+     "h": 36,
+     "font": 18.468
+    },
+    {
+     "id": "button.season-pass-tab-btn",
+     "text": "Directives",
+     "x": 796,
+     "y": 287,
+     "w": 171,
+     "h": 36,
+     "font": 18.468
+    },
+    {
+     "id": "button.season-pass-tab-btn",
+     "text": "Fragment Workshop",
+     "x": 981,
+     "y": 287,
+     "w": 294,
+     "h": 36,
+     "font": 18.468
+    },
+    {
+     "id": "button.season-pass-claim-btn",
+     "text": "Track",
+     "x": 870,
+     "y": 465,
+     "w": 97,
+     "h": 39,
+     "font": 19.44
+    },
+    {
+     "id": "button.season-pass-claim-btn",
+     "text": "Track",
+     "x": 870,
+     "y": 649,
+     "w": 97,
+     "h": 39,
+     "font": 19.44
+    },
+    {
+     "id": "button.season-pass-claim-btn",
+     "text": "Track",
+     "x": 870,
+     "y": 925,
+     "w": 97,
+     "h": 39,
+     "font": 19.44
+    },
+    {
+     "id": "button.season-pass-claim-btn",
+     "text": "Track",
+     "x": 870,
+     "y": 1200,
+     "w": 97,
+     "h": 39,
+     "font": 19.44
+    },
+    {
+     "id": "button.season-pass-claim-btn",
+     "text": "Track",
+     "x": 870,
+     "y": 1563,
+     "w": 97,
+     "h": 39,
+     "font": 19.44
+    },
+    {
+     "id": "button.season-pass-claim-btn",
+     "text": "Track",
+     "x": 870,
+     "y": 2160,
+     "w": 97,
+     "h": 39,
+     "font": 19.44
+    },
+    {
+     "id": "button.season-pass-claim-btn",
+     "text": "Track",
+     "x": 870,
+     "y": 2523,
+     "w": 97,
+     "h": 39,
+     "font": 19.44
+    },
+    {
+     "id": "button.season-pass-claim-btn",
+     "text": "Track",
+     "x": 870,
+     "y": 2891,
+     "w": 97,
+     "h": 39,
+     "font": 19.44
+    },
+    {
+     "id": "button.season-pass-claim-btn",
+     "text": "Track",
+     "x": 870,
+     "y": 3350,
+     "w": 97,
+     "h": 39,
+     "font": 19.44
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "04-menu-hero-polish-btn--operator-polish-modal",
+   "root": "#operator-polish-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/04-menu-hero-polish-btn--operator-polish-modal.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [],
+   "focusables": [
+    {
+     "id": "#close-operator-polish-modal",
+     "text": "×",
+     "x": 1629,
+     "y": 250,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "button.operator-polish-chip.is-selected",
+     "text": "STANDARD ISSUE",
+     "x": 270,
+     "y": 379,
+     "w": 339,
+     "h": 86,
+     "font": 12.636
+    },
+    {
+     "id": "button.operator-polish-chip.is-locked",
+     "text": "ARCTIC PEARL locked. Clue: Reach the cav",
+     "x": 617,
+     "y": 379,
+     "w": 339,
+     "h": 86,
+     "font": 12.636
+    },
+    {
+     "id": "button.operator-polish-chip.is-locked",
+     "text": "SIGNAL CYAN locked. Clue: Grow the signa",
+     "x": 964,
+     "y": 379,
+     "w": 339,
+     "h": 86,
+     "font": 12.636
+    },
+    {
+     "id": "button.operator-polish-chip.is-locked",
+     "text": "FIELD MINT locked. Clue: Help a survivor",
+     "x": 1312,
+     "y": 379,
+     "w": 339,
+     "h": 86,
+     "font": 12.636
+    },
+    {
+     "id": "button.operator-polish-chip.is-locked",
+     "text": "TOXIC LIME locked. Clue: Turn a survivor",
+     "x": 270,
+     "y": 474,
+     "w": 339,
+     "h": 86,
+     "font": 12.636
+    },
+    {
+     "id": "button.operator-polish-chip.is-locked",
+     "text": "REACTOR GOLD locked. Clue: Reach an endi",
+     "x": 617,
+     "y": 474,
+     "w": 339,
+     "h": 86,
+     "font": 12.636
+    },
+    {
+     "id": "button.operator-polish-chip.is-locked",
+     "text": "EMBER BRASS locked. Clue: Sever the Moth",
+     "x": 964,
+     "y": 474,
+     "w": 339,
+     "h": 86,
+     "font": 12.636
+    },
+    {
+     "id": "button.operator-polish-chip.is-locked",
+     "text": "RESCUE RED locked. Clue: Deliver Reyes’ ",
+     "x": 1312,
+     "y": 474,
+     "w": 339,
+     "h": 86,
+     "font": 12.636
+    },
+    {
+     "id": "button.operator-polish-chip.is-locked",
+     "text": "RUST ROSE locked. Clue: Reach the reveal",
+     "x": 270,
+     "y": 569,
+     "w": 339,
+     "h": 86,
+     "font": 12.636
+    },
+    {
+     "id": "button.operator-polish-chip.is-locked",
+     "text": "HIVE MAGENTA locked. Clue: Reach maximum",
+     "x": 617,
+     "y": 569,
+     "w": 339,
+     "h": 86,
+     "font": 12.636
+    },
+    {
+     "id": "button.operator-polish-chip.is-locked",
+     "text": "VOID VIOLET locked. Clue: Reject the Que",
+     "x": 964,
+     "y": 569,
+     "w": 339,
+     "h": 86,
+     "font": 12.636
+    },
+    {
+     "id": "button.operator-polish-chip.is-locked",
+     "text": "ION BLUE locked. Clue: Reach an ending a",
+     "x": 1312,
+     "y": 569,
+     "w": 339,
+     "h": 86,
+     "font": 12.636
+    },
+    {
+     "id": "button.operator-polish-chip.is-locked",
+     "text": "COBALT STEEL locked. Clue: Reach an endi",
+     "x": 270,
+     "y": 664,
+     "w": 339,
+     "h": 86,
+     "font": 12.636
+    },
+    {
+     "id": "button.operator-polish-chip.is-locked",
+     "text": "ASH CHROME locked. Clue: Defeat the Quee",
+     "x": 617,
+     "y": 664,
+     "w": 339,
+     "h": 86,
+     "font": 12.636
+    },
+    {
+     "id": "button.operator-polish-chip.is-locked",
+     "text": "DARK ALLOY locked. Clue: Survive one run",
+     "x": 964,
+     "y": 664,
+     "w": 339,
+     "h": 86,
+     "font": 12.636
+    },
+    {
+     "id": "button.operator-polish-chip.is-locked",
+     "text": "BLACK ICE locked. Clue: Recover an opera",
+     "x": 1312,
+     "y": 664,
+     "w": 339,
+     "h": 86,
+     "font": 12.636
+    }
+   ],
+   "smallTargets": [],
+   "smallText": [
+    "button.operator-polish-chip.is-selected 12.636px",
+    "button.operator-polish-chip.is-locked 12.636px",
+    "button.operator-polish-chip.is-locked 12.636px",
+    "button.operator-polish-chip.is-locked 12.636px",
+    "button.operator-polish-chip.is-locked 12.636px",
+    "button.operator-polish-chip.is-locked 12.636px",
+    "button.operator-polish-chip.is-locked 12.636px",
+    "button.operator-polish-chip.is-locked 12.636px",
+    "button.operator-polish-chip.is-locked 12.636px",
+    "button.operator-polish-chip.is-locked 12.636px",
+    "button.operator-polish-chip.is-locked 12.636px",
+    "button.operator-polish-chip.is-locked 12.636px",
+    "button.operator-polish-chip.is-locked 12.636px",
+    "button.operator-polish-chip.is-locked 12.636px",
+    "button.operator-polish-chip.is-locked 12.636px",
+    "button.operator-polish-chip.is-locked 12.636px"
+   ]
+  },
+  {
+   "name": "05-armory",
+   "root": "#armory-screen",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/05-armory.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [],
+   "focusables": [
+    {
+     "id": "button.class-tab",
+     "text": "◈ SCOUT",
+     "x": 1042,
+     "y": 31,
+     "w": 103,
+     "h": 35,
+     "font": 15.9408
+    },
+    {
+     "id": "button.class-tab.active",
+     "text": "▰ TANK",
+     "x": 1151,
+     "y": 31,
+     "w": 92,
+     "h": 35,
+     "font": 15.9408
+    },
+    {
+     "id": "button.class-tab",
+     "text": "◆ ENGINEER",
+     "x": 1249,
+     "y": 31,
+     "w": 136,
+     "h": 35,
+     "font": 15.9408
+    },
+    {
+     "id": "#armory-debug-hud-layout-btn",
+     "text": "Toggle HUD Layout: Classic vs Lower Dock",
+     "x": 1394,
+     "y": 35,
+     "w": 110,
+     "h": 26,
+     "font": 12.4416
+    },
+    {
+     "id": "button.calibrate-btn.armory-chat-btn",
+     "text": "CHAT",
+     "x": 1685,
+     "y": 11,
+     "w": 72,
+     "h": 48,
+     "font": 13
+    },
+    {
+     "id": "#armory-settings-btn",
+     "text": "Open Settings",
+     "x": 1766,
+     "y": 11,
+     "w": 48,
+     "h": 48,
+     "font": 23.76
+    },
+    {
+     "id": "#armory-slot-hud",
+     "text": "DEFAULT MONOCHROME CHANGE",
+     "x": 800,
+     "y": 852,
+     "w": 447,
+     "h": 45,
+     "font": 15.552
+    },
+    {
+     "id": "#armory-slot-weapon",
+     "text": "Siege-Breaker 50 Autocannon — FACTORY IS",
+     "x": 1296,
+     "y": 207,
+     "w": 469,
+     "h": 46,
+     "font": 15.552
+    },
+    {
+     "id": "#armory-slot-sheen",
+     "text": "GUNMETAL CHANGE",
+     "x": 1296,
+     "y": 276,
+     "w": 231,
+     "h": 45,
+     "font": 15.552
+    },
+    {
+     "id": "#armory-slot-charm",
+     "text": "NO CHARM CHANGE",
+     "x": 1534,
+     "y": 276,
+     "w": 231,
+     "h": 45,
+     "font": 15.552
+    },
+    {
+     "id": "#armory-slot-tracer",
+     "text": "DEFAULT TRACER CHANGE",
+     "x": 1296,
+     "y": 345,
+     "w": 469,
+     "h": 45,
+     "font": 15.552
+    },
+    {
+     "id": "#armory-slot-mod1",
+     "text": "EMPTY BAY A CHANGE",
+     "x": 1296,
+     "y": 413,
+     "w": 231,
+     "h": 45,
+     "font": 15.552
+    },
+    {
+     "id": "#armory-slot-mod2",
+     "text": "EMPTY BAY B CHANGE",
+     "x": 1534,
+     "y": 413,
+     "w": 231,
+     "h": 45,
+     "font": 15.552
+    },
+    {
+     "id": "#armory-slot-chassis",
+     "text": "STANDARD CHASSIS CHANGE",
+     "x": 1296,
+     "y": 652,
+     "w": 231,
+     "h": 45,
+     "font": 15.552
+    },
+    {
+     "id": "#armory-polish-btn",
+     "text": "OPERATOR SHEENOPEN SUIT TINT MATRIX",
+     "x": 1534,
+     "y": 653,
+     "w": 231,
+     "h": 44,
+     "font": 13.3333
+    },
+    {
+     "id": "#armory-slot-decal",
+     "text": "DEFAULT INSIGNIA CHANGE",
+     "x": 1296,
+     "y": 736,
+     "w": 231,
+     "h": 45,
+     "font": 15.552
+    },
+    {
+     "id": "#armory-slot-voicebank",
+     "text": "DEFAULT COMMS CHANGE",
+     "x": 1534,
+     "y": 720,
+     "w": 231,
+     "h": 45,
+     "font": 15.552
+    },
+    {
+     "id": "#armory-btn-back",
+     "text": "Return to Main Menu Briefing Console",
+     "x": 140,
+     "y": 971,
+     "w": 352,
+     "h": 60,
+     "font": 18
+    },
+    {
+     "id": "#armory-btn-vault",
+     "text": "STEAM VAULT & FAB BAY [V]",
+     "x": 508,
+     "y": 971,
+     "w": 322,
+     "h": 60,
+     "font": 18
+    },
+    {
+     "id": "#armory-btn-embark",
+     "text": "CONTINUE TO DEPLOYMENT >> [ENTER / A]",
+     "x": 1349,
+     "y": 969,
+     "w": 389,
+     "h": 60,
+     "font": 20.412
+    }
+   ],
+   "smallTargets": [
+    "#armory-debug-hud-layout-btn 110x26"
+   ],
+   "smallText": [
+    "#armory-debug-hud-layout-btn 12.4416px",
+    "button.calibrate-btn.armory-chat-btn 13px",
+    "#armory-polish-btn 13.3333px"
+   ]
+  },
+  {
+   "name": "06-deployment-console",
+   "root": "#multiplayer-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/06-deployment-console.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [],
+   "focusables": [
+    {
+     "id": "button.calibrate-btn",
+     "text": "CHAT",
+     "x": 1686,
+     "y": 11,
+     "w": 72,
+     "h": 48,
+     "font": 13
+    },
+    {
+     "id": "#net-settings-btn",
+     "text": "Open Settings",
+     "x": 1766,
+     "y": 11,
+     "w": 48,
+     "h": 48,
+     "font": 23.76
+    },
+    {
+     "id": "#close-multiplayer-modal",
+     "text": "Close Tactical Net",
+     "x": 1581,
+     "y": 53,
+     "w": 48,
+     "h": 48,
+     "font": 28.08
+    },
+    {
+     "id": "#net-mode-solo-btn",
+     "text": "▲ SOLO SOLO OPERATION 1 OPERATIVE // NO ",
+     "x": 142,
+     "y": 128,
+     "w": 400,
+     "h": 229,
+     "font": 13.3333
+    },
+    {
+     "id": "#net-mode-coop-btn",
+     "text": "◈ PVE SQUAD CO-OP EXPEDITION 2-4 OPERATI",
+     "x": 554,
+     "y": 128,
+     "w": 400,
+     "h": 229,
+     "font": 13.3333
+    },
+    {
+     "id": "#net-mode-pvp-btn",
+     "text": "⚔ PVP DUEL PVP SECTOR SKIRMISH CONTESTED",
+     "x": 966,
+     "y": 128,
+     "w": 400,
+     "h": 229,
+     "font": 13.3333
+    },
+    {
+     "id": "#net-mode-daily-btn",
+     "text": "◷ DAILY READY DAILY OPS 1 OPERATIVE // O",
+     "x": 1378,
+     "y": 128,
+     "w": 400,
+     "h": 229,
+     "font": 13.3333
+    },
+    {
+     "id": "#net-back-btn",
+     "text": "← BACK TO ARMORY",
+     "x": 1040,
+     "y": 970,
+     "w": 263,
+     "h": 60,
+     "font": 18.468
+    },
+    {
+     "id": "#net-deploy-btn",
+     "text": "DEPLOY SOLO",
+     "x": 1349,
+     "y": 969,
+     "w": 389,
+     "h": 60,
+     "font": 20.412
+    }
+   ],
+   "smallTargets": [],
+   "smallText": [
+    "button.calibrate-btn 13px",
+    "#net-mode-solo-btn 13.3333px",
+    "#net-mode-coop-btn 13.3333px",
+    "#net-mode-pvp-btn 13.3333px",
+    "#net-mode-daily-btn 13.3333px"
+   ]
+  },
+  {
+   "name": "07-hud",
+   "root": "#ui",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/07-hud.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [],
+   "focusables": [
+    {
+     "id": "#desktop-compass",
+     "text": "Tactical Compass (Click to open map)",
+     "x": 116,
+     "y": 996,
+     "w": 220,
+     "h": 64,
+     "font": 16
+    },
+    {
+     "id": "#weapon-status-panel",
+     "text": "Reload sidearm",
+     "x": 1424,
+     "y": 996,
+     "w": 180,
+     "h": 64,
+     "font": 16
+    },
+    {
+     "id": "#class-ability-panel",
+     "text": "Chance to fully block incoming damage. H",
+     "x": 1604,
+     "y": 0,
+     "w": 70,
+     "h": 64,
+     "font": 16
+    },
+    {
+     "id": "#radar-scan-panel",
+     "text": "Radar Scan [Q]",
+     "x": 116,
+     "y": 0,
+     "w": 118,
+     "h": 64,
+     "font": 16
+    },
+    {
+     "id": "button.calibrate-btn",
+     "text": "CHAT",
+     "x": 1686,
+     "y": 11,
+     "w": 72,
+     "h": 48,
+     "font": 13
+    },
+    {
+     "id": "button.calibrate-btn.open-settings-btn",
+     "text": "⚙",
+     "x": 1766,
+     "y": 11,
+     "w": 48,
+     "h": 48,
+     "font": 23.76
+    }
+   ],
+   "smallTargets": [],
+   "smallText": [
+    "button.calibrate-btn 13px"
+   ]
+  },
+  {
+   "name": "08-terminal",
+   "root": "#console-terminal-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/08-terminal.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "#terminal-tab-base",
+     "text": "◇ BASE SYSTEM"
+    },
+    {
+     "id": "#terminal-tab-skills",
+     "text": "◇ CLASS SKILLS SKL 0/6 · SYS 0/4 · WPN 0"
+    },
+    {
+     "id": "#terminal-tab-objectives",
+     "text": "◇ OBJECTIVE / NIGHT LOG"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-console-terminal",
+     "text": "×",
+     "x": 1697,
+     "y": 66,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "#terminal-tab-base",
+     "text": "◇ BASE SYSTEM",
+     "x": 167,
+     "y": 192,
+     "w": 207,
+     "h": 43,
+     "font": 19.44
+    },
+    {
+     "id": "#terminal-tab-skills",
+     "text": "◇ CLASS SKILLS SKL 0/6 · SYS 0/4 · WPN 0",
+     "x": 385,
+     "y": 192,
+     "w": 418,
+     "h": 43,
+     "font": 19.44
+    },
+    {
+     "id": "#terminal-tab-objectives",
+     "text": "◇ OBJECTIVE / NIGHT LOG",
+     "x": 814,
+     "y": 192,
+     "w": 320,
+     "h": 43,
+     "font": 19.44
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "08-terminal--tab-◇ BASE SYSTEM",
+   "root": "#console-terminal-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/08-terminal--tab-_BASE_SYSTEM.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "#terminal-tab-base",
+     "text": "◇ BASE SYSTEM"
+    },
+    {
+     "id": "#terminal-tab-skills",
+     "text": "◇ CLASS SKILLS SKL 0/6 · SYS 0/4 · WPN 0"
+    },
+    {
+     "id": "#terminal-tab-objectives",
+     "text": "◇ OBJECTIVE / NIGHT LOG"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-console-terminal",
+     "text": "×",
+     "x": 1697,
+     "y": 66,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "#terminal-tab-base",
+     "text": "◇ BASE SYSTEM",
+     "x": 167,
+     "y": 192,
+     "w": 207,
+     "h": 43,
+     "font": 19.44
+    },
+    {
+     "id": "#terminal-tab-skills",
+     "text": "◇ CLASS SKILLS SKL 0/6 · SYS 0/4 · WPN 0",
+     "x": 385,
+     "y": 192,
+     "w": 418,
+     "h": 43,
+     "font": 19.44
+    },
+    {
+     "id": "#terminal-tab-objectives",
+     "text": "◇ OBJECTIVE / NIGHT LOG",
+     "x": 814,
+     "y": 192,
+     "w": 320,
+     "h": 43,
+     "font": 19.44
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "08-terminal--tab-◇ CLASS SKILLS SKL 0/6 ·",
+   "root": "#console-terminal-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/08-terminal--tab-_CLASS_SKILLS_SKL_0_6_.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "#terminal-tab-base",
+     "text": "◇ BASE SYSTEM"
+    },
+    {
+     "id": "#terminal-tab-skills",
+     "text": "◇ CLASS SKILLS SKL 0/6 · SYS 0/4 · WPN 0"
+    },
+    {
+     "id": "#terminal-tab-objectives",
+     "text": "◇ OBJECTIVE / NIGHT LOG"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-console-terminal",
+     "text": "×",
+     "x": 1697,
+     "y": 66,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "#terminal-tab-base",
+     "text": "◇ BASE SYSTEM",
+     "x": 167,
+     "y": 192,
+     "w": 207,
+     "h": 43,
+     "font": 19.44
+    },
+    {
+     "id": "#terminal-tab-skills",
+     "text": "◇ CLASS SKILLS SKL 0/6 · SYS 0/4 · WPN 0",
+     "x": 385,
+     "y": 192,
+     "w": 418,
+     "h": 43,
+     "font": 19.44
+    },
+    {
+     "id": "#terminal-tab-objectives",
+     "text": "◇ OBJECTIVE / NIGHT LOG",
+     "x": 814,
+     "y": 192,
+     "w": 320,
+     "h": 43,
+     "font": 19.44
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "08-terminal--tab-◇ OBJECTIVE / NIGHT LOG",
+   "root": "#console-terminal-modal",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/08-terminal--tab-_OBJECTIVE_NIGHT_LOG.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "#terminal-tab-base",
+     "text": "◇ BASE SYSTEM"
+    },
+    {
+     "id": "#terminal-tab-skills",
+     "text": "◇ CLASS SKILLS SKL 0/6 · SYS 0/4 · WPN 0"
+    },
+    {
+     "id": "#terminal-tab-objectives",
+     "text": "◇ OBJECTIVE / NIGHT LOG"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-console-terminal",
+     "text": "×",
+     "x": 1697,
+     "y": 66,
+     "w": 54,
+     "h": 54,
+     "font": 32.4
+    },
+    {
+     "id": "#terminal-tab-base",
+     "text": "◇ BASE SYSTEM",
+     "x": 167,
+     "y": 192,
+     "w": 207,
+     "h": 43,
+     "font": 19.44
+    },
+    {
+     "id": "#terminal-tab-skills",
+     "text": "◇ CLASS SKILLS SKL 0/6 · SYS 0/4 · WPN 0",
+     "x": 385,
+     "y": 192,
+     "w": 418,
+     "h": 43,
+     "font": 19.44
+    },
+    {
+     "id": "#terminal-tab-objectives",
+     "text": "◇ OBJECTIVE / NIGHT LOG",
+     "x": 814,
+     "y": 192,
+     "w": 320,
+     "h": 43,
+     "font": 19.44
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "09-pause--settings-popup",
+   "root": "#settings-popup",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/09-pause--settings-popup.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY"
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "PROFILE & SAVES"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-settings",
+     "text": "Close system settings",
+     "x": 1686,
+     "y": 57,
+     "w": 59,
+     "h": 59,
+     "font": 32.4
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION",
+     "x": 171,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO",
+     "x": 435,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS",
+     "x": 700,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD",
+     "x": 964,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY",
+     "x": 1228,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "PROFILE & SAVES",
+     "x": 1493,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "#operator-callsign",
+     "text": "Operator callsign",
+     "x": 687,
+     "y": 320,
+     "w": 238,
+     "h": 55,
+     "font": 27
+    },
+    {
+     "id": "#open-save-data",
+     "text": "OPEN",
+     "x": 1545,
+     "y": 402,
+     "w": 151,
+     "h": 45,
+     "font": 22.14
+    },
+    {
+     "id": "#open-reset-save",
+     "text": "RESET",
+     "x": 752,
+     "y": 475,
+     "w": 173,
+     "h": 45,
+     "font": 22.14
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "09-pause--settings-popup--tab-SESSION",
+   "root": "#settings-popup",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/09-pause--settings-popup--tab-SESSION.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY"
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "PROFILE & SAVES"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-settings",
+     "text": "Close system settings",
+     "x": 1686,
+     "y": 57,
+     "w": 59,
+     "h": 59,
+     "font": 32.4
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION",
+     "x": 171,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO",
+     "x": 435,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS",
+     "x": 700,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD",
+     "x": 964,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY",
+     "x": 1228,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "PROFILE & SAVES",
+     "x": 1493,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "#operator-callsign",
+     "text": "Operator callsign",
+     "x": 687,
+     "y": 320,
+     "w": 238,
+     "h": 55,
+     "font": 27
+    },
+    {
+     "id": "#open-save-data",
+     "text": "OPEN",
+     "x": 1545,
+     "y": 402,
+     "w": 151,
+     "h": 45,
+     "font": 22.14
+    },
+    {
+     "id": "#open-reset-save",
+     "text": "RESET",
+     "x": 752,
+     "y": 475,
+     "w": 173,
+     "h": 45,
+     "font": 22.14
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "09-pause--settings-popup--tab-AUDIO",
+   "root": "#settings-popup",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/09-pause--settings-popup--tab-AUDIO.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY"
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "PROFILE & SAVES"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-settings",
+     "text": "Close system settings",
+     "x": 1686,
+     "y": 57,
+     "w": 59,
+     "h": 59,
+     "font": 32.4
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION",
+     "x": 171,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO",
+     "x": 435,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS",
+     "x": 700,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD",
+     "x": 964,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY",
+     "x": 1228,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "PROFILE & SAVES",
+     "x": 1493,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "#operator-callsign",
+     "text": "Operator callsign",
+     "x": 687,
+     "y": 320,
+     "w": 238,
+     "h": 55,
+     "font": 27
+    },
+    {
+     "id": "#open-save-data",
+     "text": "OPEN",
+     "x": 1545,
+     "y": 402,
+     "w": 151,
+     "h": 45,
+     "font": 22.14
+    },
+    {
+     "id": "#open-reset-save",
+     "text": "RESET",
+     "x": 752,
+     "y": 475,
+     "w": 173,
+     "h": 45,
+     "font": 22.14
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "09-pause--settings-popup--tab-CONTROLS",
+   "root": "#settings-popup",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/09-pause--settings-popup--tab-CONTROLS.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY"
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "PROFILE & SAVES"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-settings",
+     "text": "Close system settings",
+     "x": 1686,
+     "y": 57,
+     "w": 59,
+     "h": 59,
+     "font": 32.4
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION",
+     "x": 171,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO",
+     "x": 435,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS",
+     "x": 700,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD",
+     "x": 964,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY",
+     "x": 1228,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "PROFILE & SAVES",
+     "x": 1493,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "#operator-callsign",
+     "text": "Operator callsign",
+     "x": 687,
+     "y": 320,
+     "w": 238,
+     "h": 55,
+     "font": 27
+    },
+    {
+     "id": "#open-save-data",
+     "text": "OPEN",
+     "x": 1545,
+     "y": 402,
+     "w": 151,
+     "h": 45,
+     "font": 22.14
+    },
+    {
+     "id": "#open-reset-save",
+     "text": "RESET",
+     "x": 752,
+     "y": 475,
+     "w": 173,
+     "h": 45,
+     "font": 22.14
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "09-pause--settings-popup--tab-CAMERA & HUD",
+   "root": "#settings-popup",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/09-pause--settings-popup--tab-CAMERA_HUD.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY"
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "PROFILE & SAVES"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-settings",
+     "text": "Close system settings",
+     "x": 1686,
+     "y": 57,
+     "w": 59,
+     "h": 59,
+     "font": 32.4
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION",
+     "x": 171,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO",
+     "x": 435,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS",
+     "x": 700,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD",
+     "x": 964,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY",
+     "x": 1228,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "PROFILE & SAVES",
+     "x": 1493,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "#operator-callsign",
+     "text": "Operator callsign",
+     "x": 687,
+     "y": 320,
+     "w": 238,
+     "h": 55,
+     "font": 27
+    },
+    {
+     "id": "#open-save-data",
+     "text": "OPEN",
+     "x": 1545,
+     "y": 402,
+     "w": 151,
+     "h": 45,
+     "font": 22.14
+    },
+    {
+     "id": "#open-reset-save",
+     "text": "RESET",
+     "x": 752,
+     "y": 475,
+     "w": 173,
+     "h": 45,
+     "font": 22.14
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "09-pause--settings-popup--tab-ACCESSIBILITY",
+   "root": "#settings-popup",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/09-pause--settings-popup--tab-ACCESSIBILITY.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY"
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "PROFILE & SAVES"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-settings",
+     "text": "Close system settings",
+     "x": 1686,
+     "y": 57,
+     "w": 59,
+     "h": 59,
+     "font": 32.4
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION",
+     "x": 171,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO",
+     "x": 435,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS",
+     "x": 700,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD",
+     "x": 964,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY",
+     "x": 1228,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "PROFILE & SAVES",
+     "x": 1493,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "#operator-callsign",
+     "text": "Operator callsign",
+     "x": 687,
+     "y": 320,
+     "w": 238,
+     "h": 55,
+     "font": 27
+    },
+    {
+     "id": "#open-save-data",
+     "text": "OPEN",
+     "x": 1545,
+     "y": 402,
+     "w": 151,
+     "h": 45,
+     "font": 22.14
+    },
+    {
+     "id": "#open-reset-save",
+     "text": "RESET",
+     "x": 752,
+     "y": 475,
+     "w": 173,
+     "h": 45,
+     "font": 22.14
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  },
+  {
+   "name": "09-pause--settings-popup--tab-PROFILE & SAVES",
+   "root": "#settings-popup",
+   "screenshot": "docs/reports/ui-surface-audit/1920x1080/09-pause--settings-popup--tab-PROFILE_SAVES.png",
+   "rect": [
+    96,
+    0,
+    1728,
+    1080
+   ],
+   "offStage": [],
+   "clipped": [],
+   "truncated": [],
+   "tabs": [
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD"
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY"
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "PROFILE & SAVES"
+    }
+   ],
+   "focusables": [
+    {
+     "id": "#close-settings",
+     "text": "Close system settings",
+     "x": 1686,
+     "y": 57,
+     "w": 59,
+     "h": 59,
+     "font": 32.4
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "SESSION",
+     "x": 171,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "AUDIO",
+     "x": 435,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CONTROLS",
+     "x": 700,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "CAMERA & HUD",
+     "x": 964,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab",
+     "text": "ACCESSIBILITY",
+     "x": 1228,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "button.settings-tab.active",
+     "text": "PROFILE & SAVES",
+     "x": 1493,
+     "y": 145,
+     "w": 256,
+     "h": 44,
+     "font": 18
+    },
+    {
+     "id": "#operator-callsign",
+     "text": "Operator callsign",
+     "x": 687,
+     "y": 320,
+     "w": 238,
+     "h": 55,
+     "font": 27
+    },
+    {
+     "id": "#open-save-data",
+     "text": "OPEN",
+     "x": 1545,
+     "y": 402,
+     "w": 151,
+     "h": 45,
+     "font": 22.14
+    },
+    {
+     "id": "#open-reset-save",
+     "text": "RESET",
+     "x": 752,
+     "y": 475,
+     "w": 173,
+     "h": 45,
+     "font": 22.14
+    }
+   ],
+   "smallTargets": [],
+   "smallText": []
+  }
+ ]
+}

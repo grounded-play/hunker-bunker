@@ -92,6 +92,10 @@ test.describe('complete menu keyboard and Steam Deck reachability', () => {
                     }
                 };
 
+                // Left/Right on a tab now selects the neighbouring tab (one
+                // handler for every tab bar), so walking a surface changes its
+                // open panel. Put the original tab back before activation.
+                const openTab = root.querySelector('[role="tab"][aria-selected="true"]');
                 document.activeElement?.blur?.();
                 document.dispatchEvent(new KeyboardEvent('keydown', {
                     key: 'ArrowDown', code: 'ArrowDown', bubbles: true, cancelable: true
@@ -113,6 +117,7 @@ test.describe('complete menu keyboard and Steam Deck reachability', () => {
                     .filter((target) => !reached.has(target.dataset.menuAuditKey))
                     .map((target) => target.id || target.getAttribute('aria-label') || target.textContent.trim().replace(/\s+/g, ' ').slice(0, 60));
 
+                openTab?.click();
                 const activationFailures = [];
                 for (const target of targets.filter((element) => element.matches('button, a[href], [role="button"]'))) {
                     let clicked = null;
@@ -167,12 +172,13 @@ test.describe('complete menu keyboard and Steam Deck reachability', () => {
         await bootToTitleSplash(page);
         await expect(page.locator('#title-newrun-btn')).toBeFocused();
 
+        // Title order: NEW RUN, MULTIPLAYER, ACHIEVEMENTS, SETTINGS, ABOUT, QUIT.
         await page.keyboard.press('KeyS');
-        await expect(page.locator('#title-achievements-btn')).toBeFocused();
+        await expect(page.locator('#title-multiplayer-btn')).toBeFocused();
         await page.keyboard.press('ArrowDown');
-        await expect(page.locator('#title-settings-btn')).toBeFocused();
-        await page.keyboard.press('KeyW');
         await expect(page.locator('#title-achievements-btn')).toBeFocused();
+        await page.keyboard.press('KeyW');
+        await expect(page.locator('#title-multiplayer-btn')).toBeFocused();
         await page.keyboard.press('ArrowUp');
         await expect(page.locator('#title-newrun-btn')).toBeFocused();
 

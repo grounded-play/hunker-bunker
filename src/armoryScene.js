@@ -17,6 +17,7 @@ import { getWeaponScaleForBounds, getWeaponCalibration } from './weaponCalibrati
 export { MOD_GLB_MAP } from './operatorEquipmentSockets.js';
 
 import { CHARM_GLB_MAP } from './charmModels.js';
+import { decodeChassisChoice, resolveChassisModelUrl } from './chassisBodies.js';
 export { CHARM_GLB_MAP } from './charmModels.js';
 
 export const CHASSIS_SKIN_GLB_MAP = CHASSIS_SKIN_MODELS;
@@ -305,9 +306,9 @@ export async function createArmoryScene(canvas) {
         };
 
         const baseConfig = configs[normalized] || configs.SCOUT;
-        const customModel = chassisSkinId && CHASSIS_SKIN_GLB_MAP[chassisSkinId]
-            ? CHASSIS_SKIN_GLB_MAP[chassisSkinId]
-            : null;
+        // `chassisSkinId` may carry a body (`5001:male`, see src/chassisBodies.js).
+        const chassisChoice = decodeChassisChoice(chassisSkinId);
+        const customModel = resolveChassisModelUrl(chassisChoice.id, chassisChoice.body, CHASSIS_SKIN_GLB_MAP);
         const config = customModel ? {
             ...baseConfig,
             modelUrl: customModel,

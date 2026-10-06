@@ -1,6 +1,11 @@
 # Steam Backend Admin Runbook
 
-Last updated: 2026-07-28
+Last updated: 2026-10-05
+
+Production checkpoint: Microtransactions enabled on backend `cf9f49671ed4`,
+with mocks/sandbox off, durable storage, a verified restore backup, and healthy
+initial reconciliation. Hosted Item Store and real checkout acceptance are not
+verified. See [enablement evidence and rollback handoff](reports/steam-commerce-enablement-2026-10-05.md).
 
 This runbook covers the trusted backend rail for Hunker Bunker's Steam
 leaderboards, inventory grants, and Store purchases. It is for operators and
@@ -46,8 +51,9 @@ HB_DB_SQLITE_PATH=/app/server/data/hunker-bunker.sqlite
 
 If `HB_DB_BACKEND=sqlite` is set and `HB_DB_SQLITE_PATH` is omitted, the
 backend stores SQLite data beside `HB_DB_STORAGE_PATH` when that path exists,
-or at `server/data/hunker-bunker.sqlite` by default. JSON remains the default
-storage backend for local development and old deploys.
+or at `server/data/hunker-bunker.sqlite` by default. Runtimes with `node:sqlite`
+available select SQLite by default; use `HB_DB_BACKEND=json` explicitly for the
+legacy JSON store. Check `getDbStatus()` before choosing which file to back up.
 
 Live Store additions:
 
@@ -55,6 +61,9 @@ Live Store additions:
 HB_STEAM_STORE_ENABLED=1
 HB_STEAM_MICROTXN_ENABLED=1
 HB_STEAM_STORE_MOCK_PURCHASES=0
+# Choose a UTC time before the application's first possible real purchase.
+# Required only to initialize a missing reconciliation stream checkpoint.
+HB_STEAM_REPORT_START_TIME=<RFC3339 UTC first-sale boundary>
 ```
 
 Optional:
@@ -155,6 +164,7 @@ Common ledger statuses:
 - `pending_confirmation`: Steam order exists, user has not completed approval.
 - `approved`: Steam reports the user approved the order; backend should
   finalize.
+- `payment_succeeded`: QueryTxn confirms payment, but inventory is not yet delivered.
 - `finalized_pending_grant`: Steam capture succeeded; inventory grant is next.
 - `completed`: item grant completed. Repeated finalization returns
   `alreadyGranted`.
@@ -164,8 +174,10 @@ Common ledger statuses:
 - `query_failed`: backend could not query Steam; retry is safe.
 - `finalize_failed`: backend could not finalize; retry is safe unless Steam
   later reports a terminal status.
-- `grant_failed`: payment was finalized but inventory grant failed; retry
-  `/steam/store/purchase/finalize`.
+- `grant_failed`: delivery did not return usable evidence; retry the same purchase
+  only with its saved `grantIntent` (see recovery below).
+- `grant_review_required`: ambiguous legacy attempt or inconsistent grant/payment
+  evidence; no automatic delivery retry. Inspect `reason` and retained receipts.
 
 Client-facing response hooks:
 
@@ -178,6 +190,109 @@ Client-facing response hooks:
 - `purchaseStatus: "failed"` or `"reversed"` with `nextAction: "show_error"`
   means do not grant and show a recoverable error state.
 - `purchaseStatus: "disabled"` means hide or disable purchase controls.
+
+## Durable GetReport reconciliation
+
+The [worker](../server/steamMicroTxnReport.js) runs at startup and every six hours
+when MicroTxn and a publisher key are configured. It is **read-only against
+Steam entitlements**: it does not charge, grant, refund or revoke. Do not interpret
+its presence as completion of paid-grant recovery or reversal processing.
+
+Before first deployment, set `HB_STEAM_REPORT_START_TIME` to a known UTC boundary
+before the first possible purchase (for example, the application commerce testing
+start). An absent checkpoint without that setting reports
+`initial_report_time_required`; it never silently limits history to 48 hours.
+After initialization, restarts use the saved cursor, even after a multi-day outage.
+Changing the environment boundary does **not** rewind an existing checkpoint.
+
+Storage is part of the same backed-up purchase database:
+
+- JSON: `microTxnCheckpoints` in `HB_DB_STORAGE_PATH`.
+- SQLite: `microtxn_checkpoints(scope, revision, body_json)`.
+- Scope is `<appid>.<live|sandbox>.<report type>`. Sandbox evidence never advances
+  a production cursor. A compare-and-swap revision rejects stale writers.
+- Each successful batch persists its cursor **with** accumulated latest-order
+  evidence before the next request. Earlier unresolved orders remain in subsequent
+  comparisons even after newer transactions move the cursor forward.
+- Complete local-ledger pages are read synchronously; both database adapters
+  support stable 1,000-row pages. Continue using one backend writer per database.
+
+Enumeration follows update timestamps through short pages and overlap duplicates;
+only an empty page finishes a scan. It does not increment a stuck timestamp to
+skip ahead. This follows the [GetReport contract](https://partner.steamgames.com/doc/webapi/ISteamMicroTxn#GetReport).
+Contradictory same-time statuses require review, rather than choosing a clean sale.
+
+The default scan budget is 100 API pages per run. `report_page_limit` is unhealthy,
+but already-persisted batches allow the next run to resume. A repeated unchanged
+boundary reports `report_cursor_stalled`; preserve evidence and investigate the API
+response before changing any cursor. Each request has a 15-second timeout.
+
+The beta ledger has an explicit 100,000-order evidence/local-read safety limit;
+it fails unhealthy at that limit and never discards old unsettled orders. Plan a
+streamed per-order database/archival migration before approaching that volume.
+Raw evidence includes account and purchase data: restrict database and backup
+access. There is no public endpoint exposing the ledger or publisher key.
+
+Trusted operator commands (run only with the intended backend environment):
+
+```bash
+# Independent report window: does not alter the worker checkpoint.
+node server/scripts/microtxn-report.js --since 2026-09-30T00:00:00Z
+
+# Resume the worker stream; initialize from the configured boundary if absent.
+node server/scripts/microtxn-report.js --resume
+```
+
+Stop/coordinate the background worker before running `--resume` from another
+process, especially with JSON storage. The CLI saves every request descriptor
+(without the key) and raw response under `server/data/microtxn-reports/`, with
+new evidence files mode 0600. Output `ok` and exit status cover both enumeration
+and reconciliation; a successful API fetch alone cannot produce a healthy result.
+The final raw response is usually the empty terminator; use `pages` for the actual
+transaction evidence. Share reviewer evidence privately, never in a public issue.
+
+Investigate `[microtxn-report] UNHEALTHY` and checkpoint `health`:
+
+- `paidNotGranted`: settled payment without confirmed inventory delivery.
+- `notInReport`: local grant absent from this report history; investigate, do not
+  assume nonpayment or automatically revoke.
+- `reversedButGranted`: refund/chargeback with current or historical grant evidence.
+- `needsReview`: ownership/identifier conflict, unknown status, contradictory
+  report evidence, or inventory granted without a settled payment.
+- Fetch, persistence, malformed-page and scan-limit failures remain unhealthy.
+
+### Paid-grant recovery and review holds
+
+Authenticated `/steam/store/purchase/finalize` retries persist `grantIntent`
+before issuing AddItem: immutable uint64 request ID plus account, order,
+transaction, SKU, app, sandbox/live, itemdef and quantity. Both DB adapters retain
+it across restarts; do not clear it, change its payload, or invent a new request
+ID to retry a purchase. Keep the existing one-backend-instance deployment rule.
+An in-process order lock prevents overlapping finalize calls; Steam's saved
+request ID handles ambiguous grant responses and crash-before-completion writes.
+
+Each unfinished retry rechecks QueryTxn and account/order/transaction identity.
+A refund blocks a new grant. HTTP failures and uncertain delivery stay pending;
+`completed` is reserved for a validated delivery/replay. Paid AddItem requests set
+`trade_restriction=1`. See the [Steam Inventory contract](https://partner.steamgames.com/doc/webapi/IInventoryService#AddItem).
+
+Steam replay describes **current** affected items, not original delivery amounts.
+`grantIntent.quantity` is the purchased amount; `granted` is returned item evidence;
+`grantReplayed` indicates a retry recognized by Steam; `grantDelivered` preserves
+delivery evidence even after consumption and bounded event-history expiry. Zero
+remaining items on a valid replay do not authorize replacement keys.
+
+`grant_review_required` must not be cleared by a routine retry. Reasons include
+`legacy_grant_requires_review` (older attempts with no saved idempotency identity),
+`steam_inventory_grant_requires_review` (wrong initial receipt), and
+`grant_without_settled_payment`. Preserve evidence, investigate Steam's order and
+inventory records, and obtain an explicit publisher disposition. Do not assume
+missing local receipts mean no grant occurred. These holds keep reconciliation
+unhealthy even when the report has no matching row.
+
+GetReport currently **does not invoke delivery**: player/session retries are
+implemented, unattended recovery and item-level reversal dispositions are the
+next S49-08 slice. Do not advertise automatic recovery/clawback yet.
 
 ## Market eligibility and hosted Item Store links
 
@@ -229,19 +344,23 @@ References:
 3. Read `status`, `reason`, `steamState`, `steamErrorCode`, and `events`.
 4. If the status is `pending_confirmation`, ask the player to retry or restart
    the Steam overlay flow.
-5. If the status is `approved`, `query_failed`, `finalize_failed`, or
-   `grant_failed`, retry `/steam/store/purchase/finalize` for that transaction
-   after confirming the backend is healthy.
+5. For `approved`, `payment_succeeded`, `query_failed`, `finalize_failed`, or a
+   pending/failed grant **with a saved `grantIntent`**, retry the same transaction
+   after confirming backend health. A legacy attempt without that intent is
+   quarantined for review; never mint a replacement ID to bypass the hold.
 6. If the status is `failed`, do not manually grant. Check the Steam error code.
 7. If the status is `reversed`, start entitlement review/clawback.
 8. If the status is `completed`, do not grant again. Repeated finalize requests
    should return `alreadyGranted`.
+9. For `grant_review_required`, follow the evidence/review procedure above;
+   ordinary retries return the hold without changing inventory.
 
 To refresh Steam state for a locally completed purchase, call
 `/steam/store/purchase/finalize` with `reconcile: true`. This forces a
 `QueryTxn` call and can move the ledger to `reversed` if Steam later reports a
-refund or chargeback. A completed purchase that still reports `Approved` or
-`Succeeded` remains completed and does not grant again.
+refund or chargeback. A completed purchase still reporting `Succeeded` remains
+completed without another grant; one reporting only `Approved` requires review
+because approval is not settled payment.
 
 ## Idempotency cleanup
 
@@ -275,7 +394,7 @@ For JSON-on-volume beta:
    ```
 
 4. Confirm it has `inventories`, `leaderboards`, `idempotency`, `receipts`, and
-   `purchases`.
+   `purchases`, and (after the worker initializes) `microTxnCheckpoints`.
 5. Restart one backend instance only.
 
 Do not run multiple writers against the same JSON file. Atomic file replacement
@@ -306,7 +425,7 @@ For SQLite-on-volume beta:
 5. Confirm `getDbStatus()` / health output reports `storageBackend: "sqlite"`.
 
 SQLite uses WAL mode and schema tables for inventories, leaderboard mirrors,
-idempotency, run receipts, purchase state, and purchase events. It is a better
+idempotency, run receipts, purchase state/events, and reconciliation checkpoints. It is a better
 single-machine beta store than JSON, but it is still not a multi-region or
 multi-writer production database.
 

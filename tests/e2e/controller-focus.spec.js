@@ -565,6 +565,10 @@ test.describe('controller-ready modal focus', () => {
         await bootToTitleSplash(page);
         await expect(page.locator('#title-newrun-btn')).toBeFocused();
 
+        // MULTIPLAYER sits under NEW RUN since the 2026-09 review fixes.
+        await page.keyboard.press('ArrowDown');
+        await expect(page.locator('#title-multiplayer-btn')).toBeFocused();
+
         await page.keyboard.press('ArrowDown');
         await expect(page.locator('#title-achievements-btn')).toBeFocused();
 

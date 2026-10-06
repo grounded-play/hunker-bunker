@@ -1,0 +1,239 @@
+/* Archive → RECORDS (src/recordsTab.js). Deck stage 1280×800: 18 px body
+   floor, 44 px chips. Shares the Archive palette (--archive-glow-rgb). */
+
+#archive-modal .archive-console-tabs {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.records-panel {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1.4);
+}
+
+.records-panel.hidden {
+  display: none !important;
+}
+
+.records-views,
+.records-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--vu) * 0.8);
+}
+
+.records-chip {
+  min-height: 44px;
+  padding: 0 calc(var(--vu) * 1.6);
+  border: 1px solid rgba(var(--archive-glow-rgb), 0.3);
+  border-radius: 5px;
+  background: rgba(9, 13, 17, 0.9);
+  color: rgba(255, 224, 181, 0.72);
+  font: 800 max(14px, calc(var(--vu) * 1.5)) "Space Mono", monospace;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.records-chip[aria-pressed="true"] {
+  color: #fff0d5;
+  border-color: rgba(var(--archive-glow-rgb), 0.8);
+  background: rgba(var(--archive-glow-rgb), 0.18);
+}
+
+.records-chip:hover,
+.records-chip:focus-visible {
+  border-color: rgba(var(--archive-glow-rgb), 0.9);
+  outline: 2px solid rgba(46, 196, 182, 0.85);
+  outline-offset: -3px;
+}
+
+.records-views .records-chip {
+  flex: 1 1 0;
+}
+
+.records-service {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(var(--vu) * 1.4);
+}
+
+.records-service.hidden,
+.records-boards.hidden {
+  display: none !important;
+}
+
+.records-card {
+  min-width: 0;
+  border: 1px solid rgba(var(--archive-glow-rgb), 0.32);
+  border-radius: 7px;
+  padding: calc(var(--vu) * 1.6) calc(var(--vu) * 2);
+  background: linear-gradient(145deg, rgba(var(--archive-glow-rgb), 0.09), rgba(8, 12, 15, 0.92));
+}
+
+.records-card__title {
+  margin: 0 0 calc(var(--vu) * 1);
+  color: #f4a62f;
+  font: 800 max(14px, calc(var(--vu) * 1.5)) "Space Mono", monospace;
+  letter-spacing: 0.08em;
+}
+
+.records-card__rows {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: calc(var(--vu) * 1.4);
+  row-gap: calc(var(--vu) * 0.6);
+  margin: 0;
+}
+
+.records-card__rows dt {
+  min-width: 0;
+  color: rgba(224, 232, 240, 0.78);
+  font-size: var(--hb-text-floor, 18px);
+  overflow-wrap: anywhere;
+}
+
+.records-card__rows dd {
+  margin: 0;
+  color: #fff4df;
+  font: 800 var(--hb-text-floor, 18px) "Space Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.records-boards {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1);
+}
+
+.records-board-status {
+  color: #f4a62f;
+  font: 800 max(14px, calc(var(--vu) * 1.4)) "Space Mono", monospace;
+  letter-spacing: 0.06em;
+}
+
+.records-board-status[data-state="offline"] {
+  color: rgba(224, 232, 240, 0.72);
+}
+
+.records-board-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.records-board-row {
+  display: grid;
+  grid-template-columns: calc(var(--vu) * 7) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: calc(var(--vu) * 1.2);
+  min-height: 40px;
+  padding: 0 calc(var(--vu) * 1.4);
+  border: 1px solid rgba(var(--archive-glow-rgb), 0.16);
+  border-radius: 4px;
+  background: rgba(9, 13, 17, 0.72);
+  font-size: var(--hb-text-floor, 18px);
+}
+
+.records-board-row.player-self {
+  border-color: rgba(46, 196, 182, 0.7);
+  background: rgba(46, 196, 182, 0.12);
+}
+
+.records-board-row--separator,
+.records-board-row--empty {
+  justify-content: center;
+  display: flex;
+  color: rgba(224, 232, 240, 0.6);
+}
+
+.records-board-rank,
+.records-board-score {
+  font: 800 var(--hb-text-floor, 18px) "Space Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  color: #f4a62f;
+}
+
+.records-board-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #fff4df;
+}
+
+.records-board-score {
+  color: #fff4df;
+  text-align: right;
+}
+
+/* Opened as a shortcut over Tactical Net or Game Over (openArchiveModal). */
+#archive-modal.archive-modal--overlay {
+  z-index: 100002;
+}
+
+.homebase-telemetry__head,
+.net-ledger-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--vu) * 1);
+}
+
+.records-link-btn {
+  min-height: 32px;
+  padding: 0 calc(var(--vu) * 1.1);
+  border: 1px solid rgba(46, 196, 182, 0.5);
+  border-radius: 4px;
+  background: rgba(46, 196, 182, 0.08);
+  color: #93eee4;
+  font: 800 max(12px, calc(var(--vu) * 1.2)) "Space Mono", monospace;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.records-link-btn:hover,
+.records-link-btn:focus-visible {
+  border-color: rgba(46, 196, 182, 0.95);
+  background: rgba(46, 196, 182, 0.18);
+  outline: 2px solid rgba(46, 196, 182, 0.85);
+  outline-offset: 2px;
+}
+
+.go-records-btn {
+  align-self: flex-end;
+  min-height: 44px;
+  margin-top: calc(var(--vu) * 0.8);
+}
+
+/* Game Over: which boards this run set a personal best on. */
+.go-personal-best {
+  margin: calc(var(--vu) * 0.6) 0;
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 1.2);
+  border: 1px solid rgba(46, 196, 182, 0.6);
+  border-radius: 4px;
+  background: rgba(46, 196, 182, 0.12);
+  color: #93eee4;
+  font: 800 max(14px, calc(var(--vu) * 1.4)) "Space Mono", monospace;
+  letter-spacing: 0.06em;
+}
+
+.go-personal-best.hidden {
+  display: none;
+}
+
+/* Tactical Net: the career numbers are one summary line now; the full record
+   lives in Archive → RECORDS (RECORDS ▸). */
+.net-ledger-panel--summary .net-ledger-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--vu) * 0.4) calc(var(--vu) * 1.6);
+}
+
+.net-ledger-panel--summary .net-ledger-stats > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4em;
+}

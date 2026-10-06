@@ -13,6 +13,45 @@ function getSteamAppId() {
     return Number(process.env.HB_STEAM_APPID ?? 4957040);
 }
 
+// AddItem returns a JSON-encoded item array, not GetInventory's historical
+// item_list fixture shape. A 200 response alone is not evidence of a grant.
+// https://partner.steamgames.com/doc/webapi/IInventoryService#AddItem
+function decodeGrant(response, requestId) {
+    if (response?.success !== undefined && response.success !== true) {
+        return { ok: false, reason: 'steam_inventory_grant_rejected' };
+    }
+    const invalid = { ok: false, reason: 'steam_inventory_grant_invalid_response' };
+    if (typeof response?.item_json !== 'string') return invalid;
+    if (response.replayed !== undefined && typeof response.replayed !== 'boolean') return invalid;
+    const replayed = response.replayed === true;
+    if (replayed && !requestId) return invalid;
+    let rows;
+    try { rows = JSON.parse(response.item_json); } catch { return invalid; }
+    if (!Array.isArray(rows) || (!rows.length && !replayed)) return invalid;
+    const granted = [];
+    const seen = new Set();
+    for (const row of rows) {
+        if (!row || typeof row.itemid !== 'string' || !/^[1-9]\d{0,19}$/.test(row.itemid)
+            || BigInt(row.itemid) > 18446744073709551615n || seen.has(row.itemid)) return invalid;
+        const itemdefid = Number(row.itemdefid);
+        const quantity = Number(row.quantity);
+        if (!['string', 'number'].includes(typeof row.itemdefid)
+            || (typeof row.itemdefid === 'string' && !/^\d+$/.test(row.itemdefid))
+            || !Number.isSafeInteger(itemdefid) || itemdefid <= 0
+            || !['string', 'number'].includes(typeof row.quantity)
+            || (typeof row.quantity === 'string' && !/^\d+$/.test(row.quantity))
+            || !Number.isSafeInteger(quantity) || quantity < (replayed ? 0 : 1)) return invalid;
+        seen.add(row.itemid);
+        granted.push({
+            itemId: row.itemid, itemdefid, quantity,
+            ...(typeof row.state === 'string' && row.state ? { state: row.state } : {})
+        });
+    }
+    // A replay describes CURRENT inventory, not the original delivered amount.
+    // Zero/removed items must never become a fresh grant on the next retry.
+    return { ok: true, granted, replayed };
+}
+
 // Shared by every route that grants a Steam Inventory item (trigger-drop,
 // grant-promo, exchange's crafting/cache-open, store key purchases,
 // milestone grants) so dev-mode mock-inventory bookkeeping and the real
@@ -43,8 +82,12 @@ export async function grantItemToPlayer({
     isDevMode,
     source = 'grant',
     mode = 'unique',
-    requestId = null
+    requestId = null,
+    tradeRestriction = false
 }) {
+    if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 1000) {
+        return { ok: false, reason: 'invalid_grant_quantity' };
+    }
     if (isDevMode) {
         const inv = getMockInventory(steamId);
 
@@ -77,8 +120,10 @@ export async function grantItemToPlayer({
         params.append('key', getSteamPublisherKey());
         params.append('appid', String(getSteamAppId()));
         params.append('steamid', steamId);
-        params.append('itemdefid[0]', String(itemdefid));
-        params.append('quantity[0]', String(quantity));
+        for (let index = 0; index < quantity; index += 1) {
+            params.append(`itemdefid[${index}]`, String(itemdefid));
+        }
+        if (tradeRestriction) params.append('trade_restriction', '1');
         if (requestId) {
             params.append('requestid', String(requestId));
         }
@@ -86,7 +131,8 @@ export async function grantItemToPlayer({
         const response = await fetch(`${STEAM_INVENTORY_URL}AddItem/v1/`, {
             method: 'POST',
             headers: { 'content-type': 'application/x-www-form-urlencoded' },
-            body: params
+            body: params,
+            signal: AbortSignal.timeout(15_000)
         });
 
         if (!response.ok) {
@@ -94,13 +140,8 @@ export async function grantItemToPlayer({
         }
 
         const data = await response.json();
-        const items = (data?.response?.item_list ?? []).map((item) => ({
-            itemId: String(item.itemid),
-            itemdefid: Number(item.itemdefid),
-            quantity: Number(item.quantity) || 1
-        }));
-        return { ok: true, granted: items };
-    } catch (err) {
-        return { ok: false, reason: 'steam_request_failed', message: err.message };
+        return decodeGrant(data?.response, requestId);
+    } catch {
+        return { ok: false, reason: 'steam_request_failed' };
     }
 }

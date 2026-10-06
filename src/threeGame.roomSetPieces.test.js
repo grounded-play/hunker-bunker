@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ThreeGame } from './threeGame.js';
+import { ThreeGame, isRoomGatewayFrameEligible } from './threeGame.js';
+import { GATEWAY_ROOM_INSET } from './kitGrammar.js';
 
 // A grid with two solid 5x3 floor blocks, far enough apart that neither has
 // any "doorway" cell (wall-floor-wall on one axis) — isolates the "Room Set
@@ -80,6 +81,100 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
         expect(placements.map(({ scatterKey }) => scatterKey)).toEqual(['room_plan:far']);
     });
 
+    // Lived-in world M4: the key-art practical lights the signature anchor
+    // only -- at most one pooled source per room, whatever else it holds.
+    it('marks only the signature anchor of each room for a practical light', () => {
+        const game = makeFakeGame();
+        game.wfcMetadataCache = new Map([['0,0', {
+            roomInstances: [
+                {
+                    id: 'cathedral',
+                    populationPlan: {
+                        placements: [
+                            { id: 'cathedral:signature:0', x: 13, y: 3, kind: 'signature', type: 'prop_oxygen_bottle_cascade_rack' },
+                            { id: 'cathedral:large:1', x: 11, y: 2, kind: 'large', type: 'prop_liturgical_terminal_lectern' },
+                            { id: 'cathedral:large:2', x: 12, y: 4, kind: 'large', type: 'prop_biomech_incubator' }
+                        ]
+                    }
+                },
+                {
+                    id: 'storeroom',
+                    populationPlan: {
+                        placements: [
+                            { id: 'storeroom:signature:0', x: 5, y: 3, kind: 'signature', type: 'prop_bunker_supplies' }
+                        ]
+                    }
+                }
+            ]
+        }]]);
+
+        const placements = ThreeGame.prototype.createChunkSetPiecePlacements.call(game, 0, 0, buildTwoBlockGrid(17));
+        const lit = placements.filter(({ practicalLight }) => practicalLight);
+        expect(lit).toHaveLength(1);
+        expect(lit[0]).toMatchObject({ scatterKey: 'room_plan:cathedral:signature:0', practicalLight: { palette: 'cyan' } });
+    });
+
+    it('gives authored rooms one open kit gateway without changing collision authority', () => {
+        const game = makeFakeGame();
+        game.getBiomeKeyForWorldPosition = () => 'active';
+        game.wfcMetadataCache = new Map([['0,0', {
+            generatorId: 'authored-room',
+            roomInstances: [{
+                id: 'medical-bay',
+                doors: [{
+                    id: 'entry',
+                    side: 'e',
+                    cells: [{ x: 14, y: 7 }, { x: 14, y: 8 }, { x: 14, y: 9 }]
+                }],
+                populationPlan: { placements: [] }
+            }]
+        }]]);
+
+        const placements = ThreeGame.prototype.createChunkSetPiecePlacements.call(
+            game,
+            0,
+            0,
+            buildTwoBlockGrid(17)
+        );
+        const gateway = placements.find(({ scatterKey }) => scatterKey.startsWith('room-gateway:'));
+
+        expect(gateway).toMatchObject({
+            x: 14 - GATEWAY_ROOM_INSET,
+            z: 8,
+            type: 'kit_space_gate',
+            rotation: Math.PI / 2,
+            socketed: true,
+            modelScale: 1,
+            hp: Infinity,
+            groupType: 'architecture',
+            isSolidProp: false
+        });
+    });
+
+    it.each([
+        ['locked procedural gate', { doors: [{ id: 'entry', lock: { type: 'power' } }] }, {}],
+        ['ring crossing', { ringCrossingId: 'ring-2' }, {}],
+        ['authored structural gateway', {}, { roomBuild: { id: 'ring_crossing_landmark', family: 'gate' } }],
+        ['content-plan bulkhead', {}, { contentPlan: { structural: [{ type: 'arch_bulkhead_frame' }] } }]
+    ])('does not double-frame a %s', (_label, metadata, roomPatch) => {
+        const door = { id: 'entry', side: 'n', cells: [{ x: 7, y: 2 }] };
+        const room = { id: 'room', doors: [door], populationPlan: { placements: [] }, ...roomPatch };
+        const game = makeFakeGame();
+        game.getBiomeKeyForWorldPosition = () => 'active';
+        game.wfcMetadataCache = new Map([['0,0', { roomInstances: [room], ...metadata }]]);
+
+        expect(isRoomGatewayFrameEligible(room, door, { roomInstances: [room], ...metadata })).toBe(false);
+        const placements = ThreeGame.prototype.createChunkSetPiecePlacements.call(
+            game, 0, 0, buildTwoBlockGrid(17)
+        );
+        expect(placements.some(({ scatterKey }) => scatterKey.startsWith('room-gateway:'))).toBe(false);
+    });
+
+    it('keeps an ordinary legacy door without an id eligible for a presentation frame', () => {
+        const door = { side: 'w', cells: [{ x: 2, y: 4 }, { x: 2, y: 5 }, { x: 2, y: 6 }] };
+        expect(isRoomGatewayFrameEligible({ id: 'legacy-room', doors: [door] }, door)).toBe(true);
+    });
+
     it('turns hallway route markers into biome-skinned, cardinal kit architecture', () => {
         const game = makeFakeGame();
         game.getBiomeKeyForWorldPosition = () => 'bio';
@@ -104,13 +199,33 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
         );
         const kit = placements.find((placement) => placement.scatterKey.startsWith('hallway-kit:'));
 
+        // An east-west route: the base corridor module already runs east-west
+        // (measured from the kit's walls), so no turn.
         expect(kit).toMatchObject({
             type: 'kit_cave_corridor',
-            rotation: Math.PI / 2,
+            rotation: 0,
+            socketed: true,
+            modelScale: 1,
             groupType: 'architecture',
             isSolidProp: false,
             dressingKit: 'pipes_and_cable_trays',
             lightingRhythm: 'dim'
         });
+    });
+
+    it('fits a wide hallway with the wide module, turned along a north-south route', () => {
+        const game = makeFakeGame();
+        game.getBiomeKeyForWorldPosition = () => 'active';
+        game.wfcMetadataCache = new Map([['0,0', {
+            generatorId: 'hallway-connector',
+            roomInstances: [],
+            wayfindingMarkers: [{ x: 8, y: 8, width: 3, dressingKit: 'gate_staging', lightingRhythm: 'dim' }]
+        }]]);
+        const connectorGrid = Array.from({ length: 17 }, () => Array(17).fill('#'));
+        for (let y = 0; y < 17; y += 1) for (let x = 5; x <= 11; x += 1) connectorGrid[y][x] = '.';
+        const placements = ThreeGame.prototype.createChunkSetPiecePlacements.call(game, 0, 0, connectorGrid);
+        const kit = placements.find((placement) => placement.scatterKey.startsWith('hallway-kit:'));
+        expect(kit).toMatchObject({ type: 'kit_space_corridor_wide', rotation: Math.PI / 2, socketed: true });
+        expect(kit.modelScale).toBeCloseTo(7 / 6, 5);
     });
 });

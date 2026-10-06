@@ -46,6 +46,75 @@
     "elite_contact": "SUIT: ELITE CONTACT. REINFORCED HOSTILE — KEEP AN ESCAPE ROUTE."
   },
   "ui": {
+    "workbench": {
+      "aria_close": "Close field workbench",
+      "kicker": "CAMP WORKBENCH // FIELD FABRICATION",
+      "title": "FIELD WORKBENCH",
+      "copy": "Synthesize field supplies using banked materials. Effects apply immediately to your current expedition.",
+      "craft": "CRAFT",
+      "close": "EXIT WORKBENCH",
+      "ammo_pack_name": "Standard Munitions Pack",
+      "ammo_pack_desc": "Refills 30 kinetic ammunition and reloads active weapon clip.",
+      "med_patch_name": "Emergency Bio-Suture",
+      "med_patch_desc": "Synthesizes antiseptic bio-tissue sealant, restoring 40 HP.",
+      "suit_armor_plate_name": "Reinforced Suit Plating",
+      "suit_armor_plate_desc": "Installs ablative composite plating, repairing armor and adding +25 shield."
+    },
+    "chat": {
+      "title": "ROOM CHAT",
+      "open": "CHAT",
+      "close": "CLOSE",
+      "scope": "Lobby and mission share this room channel. Everyone in the room can read it, including PvP opponents. The world keeps running while you type.",
+      "history": "Room message history",
+      "empty": "No messages yet.",
+      "compose": "Message (up to 400 characters)",
+      "placeholder": "Type a message… Enter sends; Shift+Enter adds a line.",
+      "send": "SEND",
+      "sending": "Sending…",
+      "disconnected": "Join an online room to chat. Waiting for an accepted relay connection.",
+      "connected": "Connected to {room}. Select a message for moderation.",
+      "rateLimited": "Too many actions. Wait 10 seconds and try again.",
+      "filterError": "Text could not be safely filtered. Use the supported game languages and remove unusual control characters.",
+      "sendError": "Not sent or not confirmed. Check the 400-character limit and connection, then retry; unchanged retries are deduplicated.",
+      "notifications": "Show new messages on screen and unread badges",
+      "privacy": "Only filtered text is delivered. Chat stays in relay memory (50 messages per room); reports stay up to 24 hours / 100 reports and are lost on restart. No automatic staff response.",
+      "selectMessage": "Select a message to mute, block or report its sender.",
+      "mute": "MUTE",
+      "unmute": "UNMUTE",
+      "block": "BLOCK",
+      "unblock": "UNBLOCK",
+      "report": "REPORT",
+      "reportReason": "Report reason",
+      "reported": "Report recorded in this relay's temporary moderation queue.",
+      "player": "Player",
+      "quick": {
+        "help": "Need help!",
+        "wait": "Hold position / Wait here.",
+        "regroup": "Regroup here.",
+        "follow": "Follow me.",
+        "thanks": "Thanks!"
+      },
+      "reasons": {
+        "harassment": "Harassment",
+        "hate": "Hate",
+        "spam": "Spam",
+        "sexual": "Sexual content",
+        "threat": "Threat",
+        "other": "Other"
+      }
+    },
+    "ping": {
+      "point": "TACTICAL PING",
+      "target": "TARGET: {target}",
+      "supplies": "SUPPLIES: {item}",
+      "help": "NEED ASSISTANCE!",
+      "wait": "HOLD POSITION",
+      "follow": "FOLLOW LEAD",
+      "regroup": "REGROUP ON BEACON",
+      "thanks": "AFFIRMED / THANKS",
+      "aria_radial": "Tactical Quick Commands",
+      "reticle": "PING"
+    },
     "encounters": {
       "locked_crossfire": {
         "name": "Locked Crossfire"
@@ -277,6 +346,8 @@
       "stage_eyebrow": "◈ LIVE STAGE PREVIEW",
       "weapon_label": "WEAPON:",
       "chassis_label": "CHASSIS:",
+      "body_female": "FEMALE",
+      "body_male": "MALE",
       "sheen_kicker": "OPERATOR SHEEN",
       "sheen_cta": "OPEN SUIT TINT MATRIX",
       "stage_hint": "DRAG 3D STAGE TO INSPECT OPERATOR & WEAPON",
@@ -401,15 +472,11 @@
       "log_asset": "> {message}...",
       "log_booting_webgl": "> BOOTING TACTICAL WEBGL CORE...",
       "log_preloading_cinematic": "> PRELOADING CINEMATIC FEED (DoorIntro)...",
-      "log_assets_loaded": "> ALL ASSETS LOADED — OPENING AIRLOCK...",
-      "initializing_core": "> INITIALIZING TACTICAL EXOSUIT CORE... ({percent}%)"
+      "log_assets_loaded": "> ALL ASSETS LOADED — OPENING AIRLOCK..."
     },
     "splash_steam_badge": {
       "title_click_to_open": "Click to open Steam Overlay profile",
       "aria_label_open_steam_profile": "Open Steam profile"
-    },
-    "splash": {
-      "tactical_command_v2_0": "TACTICAL COMMAND v2.0"
     },
     "title_profile_hud": {
       "aria_label_current_operator_profile": "Current operator profile",
@@ -500,8 +567,6 @@
     },
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ COMBAT CITATIONS // DEEP CRUST COMMENDATIONS",
-      "title_copy_a_portable": "Copy a portable save code",
-      "copy_save_code": "COPY SAVE CODE",
       "title": "OPERATIVE CITATIONS",
       "accent_archive": "// ARCHIVE"
     },
@@ -712,7 +777,8 @@
       "pts": "PTS",
       "world_seed": "WORLD SEED:",
       "leaderboard_results": "◈ LEADERBOARD RESULTS",
-      "try_again": "TRY AGAIN"
+      "try_again": "TRY AGAIN",
+      "rematch_requested": "REMATCH REQUESTED…"
     },
     "game_over_main_menu": {
       "main_menu": "MAIN MENU"
@@ -797,6 +863,21 @@
       "med_conversion": "MED CONVERSION",
       "convert_10_med_1_heart": "CONVERT 10 MED → ♥ 1 HEART RESTORED",
       "convert_10_med": "CONVERT 10 MED → ♥",
+      "tag_sys_01": "SYS-01 // LIFE SUPPORT",
+      "tag_sys_02": "SYS-02 // FRAME ARMOR",
+      "tag_sys_03": "SYS-03 // TELEMETRY",
+      "tag_sys_04": "SYS-04 // POWER CORE",
+      "tag_bio_restore": "BIO-RESTORE PROTOCOL",
+      "pill_o2_bubble": "+O₂ SANCTUARY BUBBLE",
+      "pill_safe_zone": "EXPEDITION SAFE ZONE",
+      "pill_hull_heart": "+1 MAX HEART (4♥ TOTAL)",
+      "pill_hull_integrity": "STRUCTURAL INTEGRITY",
+      "pill_radar_compass": "COMPASS SUPPLY TRACKER",
+      "pill_radar_cluster": "CACHE CLUSTER PING",
+      "pill_reactor_refill": "2× O₂ REFILL RATE",
+      "pill_reactor_drain": "-20% O₂ DRAIN RATE",
+      "pill_medkit_heart": "+1 HEART RESTORED",
+      "pill_medkit_cost": "COST: 10 MED",
       "optional_field_opportunity": "OPTIONAL FIELD OPPORTUNITY",
       "o2_generator_module": "O₂ GENERATOR MODULE",
       "field_stabilizer": "FIELD STABILIZER",
@@ -1125,8 +1206,10 @@
       "wallet_direct": "STEAM WALLET DIRECT",
       "store_offline": "STEAM ITEM STORE OFFLINE",
       "purchases_offline": "Steam Store purchases are offline for this build.",
+      "purchases_region_restricted": "Paid key purchases are unavailable in your region in accordance with local regulations.",
+      "region_restricted": "REGION RESTRICTED",
       "qa_grant": "Synthetic QA grant: +{count} non-tradable Relic Key(s). No purchase was initiated.",
-      "purchases_disabled": "Purchases are disabled in this beta. Use Armory QA GRANT TEST KIT for non-tradable test items.",
+      "purchases_disabled": "Beta purchases run in the Steam test sandbox, and this account is not on the tester list. Use Armory QA GRANT TEST KIT for test items.",
       "key_and_cache_required": "Key & Cache required for decryption.",
       "decrypting": "DECRYPTING RELIC CACHE",
       "spinning_cipher": "SPINNING CIPHER MATRIX...",
@@ -1147,7 +1230,13 @@
       "cache_opened": "Cache bundle opened.",
       "cache_partial": "Cache exchange completed with a partial Steam grant.",
       "cache_failed": "Cache open failed — check your connection and try again.",
-      "buy_on_steam": "◈ BUY ON STEAM"
+      "buy_on_steam": "◈ BUY ON STEAM",
+      "cache_pending_review": "A previous cache open is still being verified with Steam. Try again in a few minutes.",
+      "purchase_awaiting_approval": "Approve the purchase in the Steam overlay to receive your keys.",
+      "purchase_awaiting_sandbox": "Beta test purchase: approve it in the Steam overlay. Steam sandbox, no charge.",
+      "purchase_declined": "Purchase cancelled in Steam. Nothing was charged.",
+      "purchase_complete": "+{count} Cache Key(s) added to your inventory.",
+      "purchase_pending": "Steam has not confirmed the payment yet. Your keys arrive the next time you open the store."
     },
     "lobby": {
       "connecting": "CONNECTING...",
@@ -1179,7 +1268,8 @@
       "black_box_clear": "NO ACTIVE RECOVERY SIGNAL",
       "no_tracked_objectives": "NO TRACKED OBJECTIVES",
       "surface": "SURFACE",
-      "story_prelude": "ACT I // HUMAN PRELUDE"
+      "story_prelude": "ACT I // HUMAN PRELUDE",
+      "build_mismatch": "HOST IS ON {host}, YOU ARE ON {client} — UPDATE OR SWITCH YOUR STEAM BETA BRANCH TO MATCH"
     },
     "dossier": {
       "title": "TACTICAL DOSSIER",
@@ -1368,7 +1458,11 @@
     "commentary": {
       "kicker": "DEVELOPER COMMENTARY",
       "close_list": "Close developer commentary",
-      "list_intro": "Notes from the developers on why the game works the way it does. With Commentary Mode on, each also appears in play when you reach it."
+      "list_intro": "Notes from the developers on why the game works the way it does. With Commentary Mode on, each also appears in play when you reach it.",
+      "play": "▶ PLAY",
+      "play_aria": "Play {title}",
+      "history_heading": "DEVELOPMENT HISTORY",
+      "history_intro": "How the game got here, in order, read by the developer."
     },
     "radio": {
       "online": "ONLINE",
@@ -1409,7 +1503,10 @@
         "item_unlock": "Unlocked: {label}",
         "item_faction": "Standing: {label}",
         "item_lead": "Lead: {label}"
-      }
+      },
+      "rival_eliminated": "RIVAL ELIMINATED",
+      "pvp_duel_won": "> DUEL WON. THE SECTOR IS YOURS — FOR NOW.",
+      "rival_down": "RIVAL DOWN: {callsign}"
     },
     "ach": {
       "unlocked_kicker": "ACHIEVEMENT UNLOCKED",
@@ -1418,9 +1515,7 @@
       "unlocked": "UNLOCKED",
       "summary_unlocked": "{unlocked} / {total} UNLOCKED"
     },
-    "save": {
-      "code_unavailable": "SAVE CODE UNAVAILABLE"
-    },
+    "save": {},
     "objective": {
       "blocked": "BLOCKED",
       "next": "NEXT OBJECTIVE",
@@ -1741,7 +1836,7 @@
       },
       "bio_vampirism": {
         "name": "Bio-Vampiric Membrane",
-        "description": "Slaying bio enemies restores O2 vitals and suit battery."
+        "description": "Slaying a corroded bio enemy restores up to 8% O₂ and, if you are hurt, one heart."
       }
     },
     "cache": {
@@ -1830,6 +1925,56 @@
       "tab_tradeup": "TRADE-UP",
       "tab_store": "STORE",
       "loadout_hint": "Change what each class carries in the Armory."
+    },
+    "records": {
+      "tab": "RECORDS",
+      "service_record": "SERVICE RECORD",
+      "leaderboards": "LEADERBOARDS",
+      "aria_views": "Records view",
+      "aria_boards": "Leaderboard",
+      "aria_scopes": "Leaderboard scope",
+      "section_career": "CAREER",
+      "section_combat": "COMBAT",
+      "section_exploration": "EXPLORATION",
+      "section_story": "STORY",
+      "runs": "RUNS",
+      "victories": "VICTORIES",
+      "deaths": "DEATHS",
+      "longestRun": "LONGEST RUN",
+      "since": "SERVING SINCE",
+      "hostiles": "HOSTILES",
+      "mostInRun": "MOST IN ONE RUN",
+      "queen": "QUEEN DEFEATED",
+      "yes": "YES",
+      "not_yet": "NOT YET",
+      "deepest": "DEEPEST TIER",
+      "distance": "DISTANCE",
+      "camps": "CAMPS IN ONE RUN",
+      "lore": "LORE LOGS",
+      "endings": "ENDINGS",
+      "classes": "CLASSES PLAYED",
+      "shells": "SHELLS COLLECTED",
+      "board_best_run_score": "BEST RUN",
+      "board_survival_time_seconds": "SURVIVAL",
+      "board_deepest_depth_score": "DEEPEST",
+      "board_fastest_extraction_ms": "FASTEST EXTRACTION",
+      "board_daily_ops_score": "DAILY OPS",
+      "scope_global": "GLOBAL",
+      "scope_friends": "FRIENDS",
+      "scope_around": "AROUND ME",
+      "loading": "RETRIEVING…",
+      "offline": "LEADERBOARDS NEED STEAM — YOUR SCORES ARE BANKED LOCALLY",
+      "status": "{board} — {scope}",
+      "status_mock": "{board} — {scope} · DEV MOCK",
+      "open_records": "RECORDS ▸",
+      "view_all": "VIEW ALL RECORDS",
+      "section_bests": "PERSONAL BESTS",
+      "section_by_class": "BY CLASS",
+      "timeInCrust": "TIME IN THE CRUST",
+      "no_bests": "NO RANKED RUN YET",
+      "class_line": "{runs} runs · {wins} wins · {tier}",
+      "new_best": "NEW PERSONAL BEST — {boards}",
+      "rank_suffix": "#{rank}"
     }
   },
   "narrative": {
@@ -3512,6 +3657,98 @@
         "rail_marksman": "Rail Marksman",
         "neon_smg": "Neon SMG",
         "cryo_lance": "Cryo Lance"
+      }
+    },
+    "commentary": {
+      "commentary_on": {
+        "title": "Developer Commentary",
+        "body": "Commentary is on. Cards like this one appear as you reach the moments they talk about: your first run, black boxes, special rooms, the Queen. Every entry can also be read from Settings > Audio > Developer Commentary > Read All."
+      },
+      "run_start": {
+        "title": "The Run Loop",
+        "body": "Oxygen, banking and the generator repair loop arrived together, in one commit on 28 May 2026. Before that nothing carried over between runs. The O2 clock is what turns \"one more room\" into a decision: deploy, read the threat, bank what matters, and get back before the air runs out."
+      },
+      "black_box_signal": {
+        "title": "Failure Becomes Map Data",
+        "body": "Black boxes went in during the first week of June 2026, and a day later the base began showing a previous contractor's box. A failed run stays on the map as a breadcrumb with its salvage still inside, rather than being wiped by a reload."
+      },
+      "black_box_recovered": {
+        "title": "Recoverable Consequences",
+        "body": "Recovering a box returns the salvage that run was carrying. In co-op every box has an owner: a September 2026 playtest showed one player's box being \"recovered\" when the other player died, so ownership is now sent over the network with the box."
+      },
+      "room_armory": {
+        "title": "Armory Rooms",
+        "body": "Armories were one of the first five authored room templates, added on 29 May 2026. They break the procedural rhythm on purpose: a hand-made room inside a generated map reads as meaningful before any UI does."
+      },
+      "room_the_nest": {
+        "title": "Nest Rooms",
+        "body": "The nest came from the same 29 May template pass. It is an authored danger shape inside generated terrain, so it says that something lives here, not that the dice rolled badly."
+      },
+      "room_agent_wreckage": {
+        "title": "Three Wrecks",
+        "body": "The wreckage rooms tie the three operators to one crash: one ship carried the tracking signal, one the relay and one the weapon. The wreck art was redrawn on 22 May 2026, one of the first art passes in the project."
+      },
+      "queen_fight": {
+        "title": "Queen Fight",
+        "body": "The Queen moves through three phases, brood, fury and desperation, and her armor only fully drops during weakpoint windows. Automated tests run every class through the fight, so none can skip the escalation and even the lowest-damage class still chips through her armor."
+      },
+      "queen_killed": {
+        "title": "The Queen Can Die",
+        "body": "Combat kills and narrative rejection are tracked separately. The story cares whether you defeated her body or only refused her offer."
+      },
+      "achievement": {
+        "title": "Steam Achievements",
+        "body": "Achievement tracking was added on 29 May 2026, alongside personal bests. They mark story milestones and should read like field records, not chores."
+      },
+      "leaderboard": {
+        "title": "Trusted Scores",
+        "body": "Scores are recomputed on our server from a run receipt; the client never just submits a number. In September 2026 that check silently rejected every Deck and PC score for six days, because the client and server tests used separate fixtures. One contract test now pins both."
+      },
+      "steam_vault": {
+        "title": "Steam Vault",
+        "body": "The Vault arrived with the Steam backend in July 2026. Tradable and marketable items live in Steam's inventory; the game only shows what Steam has verified you own."
+      }
+    },
+    "devHistory": {
+      "day_one": {
+        "title": "Day One",
+        "body": "The first commit landed on the fourteenth of May, 2026. It was a menu, a settings screen and a bunker door that slid shut between scenes. Hunker Bunker started as a phone game you played with your thumbs, and that door is still in the game today."
+      },
+      "engine": {
+        "title": "Four Days In",
+        "body": "On day four I threw out the engine. The first build ran on Phaser, a 2D framework, and I wanted light, depth and a world you look down into, so I moved everything to Three.js. The same week brought seeded procedural maps, wall collision and the first character sprites."
+      },
+      "loop": {
+        "title": "Finding the Loop",
+        "body": "For the first two weeks nothing carried over between runs. At the end of May oxygen, banking and the generator repair went in together, and the hand-made rooms arrived the next day. That was the moment it stopped being a toy and became a game: every room became a question of whether you could afford it."
+      },
+      "story": {
+        "title": "The Story Shows Up",
+        "body": "In July the story arrived all at once: the cave reveal, the hives, the human camps and the leaders who talk back. Ten endings came out of one long night of wiring, and the Queen fight followed a week later."
+      },
+      "steam": {
+        "title": "Built for the Deck",
+        "body": "In mid July the game moved into a desktop shell and a Steam build pipeline. On the twenty-fourth I deleted touch controls entirely and rebuilt the screen around the Steam Deck, sixteen by ten, controller first. Three days later the first two-point-oh beta was tagged."
+      },
+      "maze": {
+        "title": "The Maze, Rebuilt",
+        "body": "The underground is generated with wave function collapse, a technique that fits tiles together like a jigsaw. The first version made beautiful mazes you could not always finish. I rebuilt it again and again over one week, until the maze grew outward from the centre like a tree and every room had a way through."
+      },
+      "together": {
+        "title": "Together, and Against",
+        "body": "Co-op and versus arrived in August. Most of the work was not the fighting, it was the dull parts: what happens when the host leaves, who owns a black box, and making sure the server, not your machine, decides who won a round."
+      },
+      "languages": {
+        "title": "Seven Languages",
+        "body": "In September every word in the game was moved into seven languages, menus and story alike. An audit runs with the tests and fails the build if a new piece of English slips in untranslated."
+      },
+      "lessons": {
+        "title": "What Broke",
+        "body": "Plenty broke. Scores from Deck and PC were rejected for six days without anyone noticing. Frame rate was lost to things you never see, like rays fired at walls. I kept redrawing a player sprite that never came right, and in the end built the character in 3D instead. The rule I kept: never make the game look worse to make it run faster."
+      },
+      "voices": {
+        "title": "The Voices",
+        "body": "The cast you hear was generated on my own machine with an open voice model, then checked line by line by a speech recogniser. The voice reading this history is mine, cloned from a recording of me speaking. Thank you for playing, and for listening this far."
       }
     }
   }

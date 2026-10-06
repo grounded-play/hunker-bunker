@@ -1,5 +1,12 @@
 import { Server } from 'socket.io';
+import { createDressingAuthority } from './dressingAuthority.js';
 import { verifySteamSessionToken, isSteamAuthDevFallbackAllowed } from './steamAuth.js';
+import { createChatPolicy } from './chatPolicy.js';
+
+// How long an empty room keeps its chat history (see releaseRoomChat).
+export const CHAT_ROOM_GRACE_MS = 5 * 60 * 1000;
+import { randomUUID } from 'node:crypto';
+import { beginPvpRound, markPvpReady, pvpReadinessRejection, PVP_SPAWN_PROTECTION_MS } from './pvpReadiness.js';
 
 // Movement & ballistics hardening: reject non-finite values, clamp to a sane world range,
 // and rate-limit updates to protect the relay from flooding.
@@ -196,8 +203,10 @@ export function isAllowedRelayOrigin(origin, allowedOrigins = []) {
     return allowedOrigins.includes(origin) || isEquivalentLoopbackOrigin(origin, allowedOrigins);
 }
 
-export function attachRelay(server, { allowedOrigins = [] } = {}) {
+export function attachRelay(server, { allowedOrigins = [], chatPolicy = createChatPolicy(), chatRoomGraceMs = CHAT_ROOM_GRACE_MS } = {}) {
     const io = new Server(server, {
+        pingTimeout: 30000,
+        pingInterval: 25000,
         cors: {
             origin: (origin, callback) => {
                 callback(null, isAllowedRelayOrigin(origin, allowedOrigins));
@@ -208,8 +217,37 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
 
     // Map: socketId -> playerState
     const players = new Map();
+    const dressingAuthority = createDressingAuthority();
     // Map: roomCode -> Set of socketIds
     const rooms = new Map();
+    // Trusted backend access only: there is deliberately no socket event
+    // exposing another player's moderation report or private chat evidence.
+    io.getChatReports = () => chatPolicy.getReports();
+    // A room's chat outlives a moment of emptiness: a solo host whose socket
+    // drops and reconnects (Deck playtest 2026-10-02) must not wipe what it
+    // wrote before a friend joins. Cleared only if still empty after the grace.
+    const chatClearTimers = new Map();
+    const releaseRoomChat = (roomCode) => {
+        clearTimeout(chatClearTimers.get(roomCode));
+        const timer = setTimeout(() => {
+            chatClearTimers.delete(roomCode);
+            if (!rooms.get(roomCode)?.size) {
+                chatPolicy.clearRoom(roomCode);
+                dressingAuthority.clear(roomCode);
+            }
+        }, chatRoomGraceMs);
+        timer.unref?.();
+        chatClearTimers.set(roomCode, timer);
+    };
+    const getChatParticipant = (socketId) => {
+        const current = players.get(socketId);
+        if (!current || !rooms.get(current.roomCode)?.has(socketId)) return null;
+        return {
+            roomCode: current.roomCode,
+            senderId: current.steamId64 || socketId,
+            senderName: current.callsign
+        };
+    };
     // Map: roomCode -> 'coop' | 'pvp'. A reconnect gets an entirely fresh
     // socket.id and therefore a fresh `player` object (mode defaults back to
     // 'coop' below) -- without this, a reconnect mid-PvP-match silently
@@ -221,6 +259,8 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
     // decision (respawn-on-reconnect vs. exact-HP-restore) this fix doesn't
     // attempt.
     const roomModes = new Map();
+    const pvpRounds = new Map();
+    const pvpRematchVotes = new Map();
     // Map: roomCode -> { timeout }. Set when a host's matchDeploy passes the
     // ready-up gate below; the actual mode/HP arm + matchStarted broadcast
     // is deferred to when this timer fires, giving every client the same
@@ -251,6 +291,13 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
     // same reconnect reason) -- only ever overwritten if the room's host
     // reclaims with a different password.
     const roomPasswordHashes = new Map();
+
+    // A room is locked to its host's build. Co-op messages change between
+    // releases, and two builds in one room silently disagree about who is
+    // down, what dropped and who owns what (QA 2026-09-30: a 2.4.9 guest in a
+    // 2.4.13 host's room). Clients older than this gate send no build; they
+    // count as their own "unknown" build, so two of them can still play.
+    const roomBuildVersions = new Map();
 
     const getStableClientKey = (p) => p.steamId64 || p.profileId || null;
 
@@ -310,6 +357,7 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
     });
 
     io.on('connection', (socket) => {
+        socket.connectedAt = Date.now();
         sessionTelemetry.totalConnections += 1;
         logRelayEvent('CONNECT', { socketId: socket.id, steamId64: socket.steamAuth?.steamId64 ?? null, isDevMode: Boolean(socket.steamAuth?.isDevMode) });
         const player = {
@@ -362,6 +410,7 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             if (player.roomCode && rooms.has(player.roomCode)) {
                 socket.leave(player.roomCode);
                 rooms.get(player.roomCode).delete(socket.id);
+                if (rooms.get(player.roomCode).size === 0) releaseRoomChat(player.roomCode);
                 socket.to(player.roomCode).emit('playerDisconnected', socket.id);
             }
 
@@ -449,6 +498,19 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             // than what's recorded is trusted to update it -- they own the
             // room, not an attacker impersonating them, since reclaim itself
             // already required stableKey === recordedHostKey above.
+            const clientBuild = sanitizeString(data.buildVersion, 64, '') || null;
+            if (player.isHost) {
+                roomBuildVersions.set(roomCode, clientBuild);
+            } else if (roomBuildVersions.has(roomCode) && roomBuildVersions.get(roomCode) !== clientBuild) {
+                socket.emit('joinRejected', {
+                    reason: 'build_mismatch',
+                    hostBuild: roomBuildVersions.get(roomCode),
+                    clientBuild
+                });
+                player.roomCode = null;
+                return;
+            }
+
             const suppliedPasswordHash = typeof data.passwordHash === 'string' && data.passwordHash.length <= 128
                 ? data.passwordHash
                 : null;
@@ -468,11 +530,58 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
 
             rooms.get(roomCode).add(socket.id);
             socket.join(roomCode);
+            player.pvpReadinessVersion = data.pvpReadinessVersion === 1 ? 1 : 0;
+            player.dressingProtocolVersion = data.dressingProtocolVersion === 1 ? 1 : 0;
+            dressingAuthority.clear(roomCode);
+            io.to(roomCode).emit('worldEventBroadcast', { event: 'dressing-protocol', originId: 'relay',
+                detail: { version: 1, enabled: [...rooms.get(roomCode)].every(id => players.get(id)?.dressingProtocolVersion === 1) } });
+            if (pvpRounds.has(roomCode)) {
+                beginPvpRound(player, pvpRounds.get(roomCode));
+                socket.emit('pvpRoundState', { roundId: player.pvpRoundId });
+            }
 
             // Send current roster in this room to the joining player
             socket.emit('currentPlayers', getRoomPlayers(roomCode));
+            const participant = getChatParticipant(socket.id);
+            socket.emit('chatHistory', chatPolicy.getHistory(participant));
+            socket.emit('chatModerationState', chatPolicy.getModerationState(participant.senderId));
             // Notify other peers in this room
             socket.to(roomCode).emit('newPlayer', getPublicPlayer(player));
+        });
+
+        socket.on('sendChat', (data, acknowledge) => {
+            const reply = typeof acknowledge === 'function' ? acknowledge : () => {};
+            const participant = getChatParticipant(socket.id);
+            if (!participant) return reply({ ok: false, reason: 'not_in_room' });
+            const result = chatPolicy.send(participant, data);
+            if (result.ok && !result.duplicate) {
+                for (const peerId of rooms.get(participant.roomCode)) {
+                    const peer = getChatParticipant(peerId);
+                    if (peer && chatPolicy.canReceive(peer.senderId, participant.senderId)) {
+                        io.to(peerId).emit('chatMessage', result.message);
+                    }
+                }
+            }
+            reply(result);
+        });
+
+        socket.on('chatModeration', (data, acknowledge) => {
+            const reply = typeof acknowledge === 'function' ? acknowledge : () => {};
+            const participant = getChatParticipant(socket.id);
+            if (!participant) return reply({ ok: false, reason: 'not_in_room' });
+            const peers = [...rooms.get(participant.roomCode)].map(getChatParticipant).filter(Boolean);
+            const result = chatPolicy.moderate(participant, data, peers.map((peer) => peer.senderId));
+            if (result.ok && data.action !== 'report') {
+                // Refresh both sides after a block; recipient filtering applies
+                // to history as well as all future live messages.
+                for (const peerId of rooms.get(participant.roomCode)) {
+                    const peer = getChatParticipant(peerId);
+                    if (!peer) continue;
+                    io.to(peerId).emit('chatHistory', chatPolicy.getHistory(peer));
+                    io.to(peerId).emit('chatModerationState', chatPolicy.getModerationState(peer.senderId));
+                }
+            }
+            reply(result);
         });
 
         // Ready-up gate: previously there was no readiness concept at all --
@@ -526,12 +635,19 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             const seed = matchData.seed || 'SECTOR-7';
             const crashPlan = matchData.crashPlan || null;
             const startedBy = socket.id;
+            const roundId = mode === 'pvp' && matchData.pvpReadinessVersion === 1 ? randomUUID() : null;
+            if (roundId && [...(rooms.get(roomCode) ?? [])].some((id) => players.get(id)?.pvpReadinessVersion !== 1)) {
+                socket.emit('matchDeployRejected', { reason: 'build_mismatch' });
+                return;
+            }
 
             io.to(roomCode).emit('matchCountdown', { durationMs: MATCH_COUNTDOWN_MS });
 
             const timeout = setTimeout(() => {
                 roomCountdowns.delete(roomCode);
                 roomModes.set(roomCode, mode);
+                if (roundId) pvpRounds.set(roomCode, roundId);
+                else pvpRounds.delete(roomCode);
 
                 // Sprint 24 Milestone A: (re)arm server-authoritative HP for
                 // every player in the room at the start of a fresh match, not
@@ -546,16 +662,26 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
                         p.hp = PVP_DEFAULT_MAX_HP;
                         p.maxHp = PVP_DEFAULT_MAX_HP;
                         p.ready = false;
+                        beginPvpRound(p, roundId);
                     });
                 }
 
                 sessionTelemetry.matchesDeployed += 1;
                 logRelayEvent('MATCH_DEPLOY', { roomCode, mode, seed, startedBy });
 
-                io.to(roomCode).emit('matchStarted', { seed, mode, crashPlan, startedBy, timestamp: Date.now() });
+                dressingAuthority.clear(roomCode);
+                io.to(roomCode).emit('matchStarted', { seed, mode, crashPlan, startedBy, timestamp: Date.now(), roundId });
             }, MATCH_COUNTDOWN_MS);
 
             roomCountdowns.set(roomCode, { timeout });
+        });
+
+        socket.on('pvpGameplayReady', (data = {}) => {
+            if (player.mode !== 'pvp' || !markPvpReady(player, data?.roundId)) return;
+            socket.emit('pvpReadyAccepted', {
+                roundId: player.pvpRoundId,
+                protectionRemainingMs: Math.max(0, player.pvpReadyAt + PVP_SPAWN_PROTECTION_MS - Date.now())
+            });
         });
 
         // Player movement relay
@@ -649,6 +775,15 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             if (!player.roomCode || !payload || typeof payload !== 'object') return;
             const eventName = sanitizeString(payload.event, 64, '');
             if (!eventName) return;
+            if (eventName === 'dressing-protocol') return;
+            if (eventName === 'dressing-protocol-request') {
+                socket.emit('worldEventBroadcast', { event: 'dressing-protocol', originId: 'relay', detail: {
+                    version: 1, enabled: [...(rooms.get(player.roomCode) ?? [])].every(id => players.get(id)?.dressingProtocolVersion === 1)
+                } });
+                return;
+            }
+            if (eventName.startsWith('dressing-') && ![...(rooms.get(player.roomCode) ?? [])]
+                .every(id => players.get(id)?.dressingProtocolVersion === 1)) return;
 
             const now = Date.now();
             // Cheap flood guard: a world beat is a rare, deliberate thing;
@@ -667,6 +802,9 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
                 if (encoded.length <= WORLD_EVENT_MAX_DETAIL_BYTES) detail = JSON.parse(encoded);
             } catch { detail = null; }
 
+            if (dressingAuthority.handle(player, eventName, detail, (peerId, state) => {
+                io.to(peerId).emit('worldEventBroadcast', { event: 'dressing-state', detail: state, originId: 'relay', timestamp: now });
+            })) return;
             logRelayEvent('WORLD_EVENT', { roomCode: player.roomCode, originId: socket.id, event: eventName });
             io.to(player.roomCode).emit('worldEventBroadcast', {
                 event: eventName,
@@ -674,6 +812,18 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
                 originId: socket.id,
                 timestamp: now
             });
+
+            if (player.mode === 'pvp' && eventName === 'player-died') {
+                player.hp = 0;
+                const roomIds = rooms.get(player.roomCode);
+                const opponentId = roomIds ? [...roomIds].find((id) => id !== socket.id && (players.get(id)?.hp ?? 0) > 0) : null;
+                io.to(player.roomCode).emit('pvpRoundCompleted', {
+                    winnerId: opponentId ?? null,
+                    loserId: socket.id,
+                    roundId: player.pvpRoundId ?? null,
+                    reason: detail?.reason || 'hazard'
+                });
+            }
         });
 
         // Friendly fire in co-op shoves a squadmate instead of hurting them.
@@ -930,28 +1080,41 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
         // proximity of the reported impact to the target's known position.
         // Legacy victim-side reports remain accepted for rolling clients.
         socket.on('weaponHit', (hitData) => {
+            // Reply only to the reporter; never disclose another room's roster
+            // or serialize attacker-controlled payloads. Bound diagnostic spam.
+            const reject = (reason) => {
+                const now = Date.now();
+                player.hitDiagnosticTimes = (player.hitDiagnosticTimes ?? []).filter((at) => now - at < 1000);
+                if (player.hitDiagnosticTimes.length >= 5) return;
+                player.hitDiagnosticTimes.push(now);
+                socket.emit('weaponHitRejected', { reason });
+            };
             if (!hitData || typeof hitData !== 'object') return;
-            if (player.mode !== 'pvp') return;
-            if (player.hp <= 0) return;
+            if (player.mode !== 'pvp') return reject('not_pvp');
+            if (player.hp <= 0) return reject('reporter_dead');
 
             const reportedTargetId = sanitizeString(hitData.targetId, 64, '');
             const legacyAttackerId = sanitizeString(hitData.attackerId, 64, '');
             const attacker = reportedTargetId ? player : players.get(legacyAttackerId);
             const target = reportedTargetId ? players.get(reportedTargetId) : player;
-            if (!attacker || !target || attacker.id === target.id) return;
-            if (!attacker.roomCode || attacker.roomCode !== target.roomCode) return;
-            if (attacker.mode !== 'pvp' || target.mode !== 'pvp' || target.hp <= 0) return;
+            if (!attacker || !target || attacker.id === target.id) return reject('participant_unavailable');
+            if (!attacker.roomCode || attacker.roomCode !== target.roomCode) return reject('participant_unavailable');
+            if (attacker.mode !== 'pvp' || target.mode !== 'pvp') return reject('not_pvp');
+            if (attacker.hp <= 0) return reject('attacker_dead');
+            if (target.hp <= 0) return reject('target_dead');
 
             const now = Date.now();
-            if (now - (attacker.lastWeaponHitAt || 0) < PVP_MIN_HIT_INTERVAL_MS) return;
+            if (now - (attacker.lastWeaponHitAt || 0) < PVP_MIN_HIT_INTERVAL_MS) return reject('hit_cadence');
+            const readiness = pvpReadinessRejection(attacker, now) || pvpReadinessRejection(target, now);
+            if (readiness) return reject(readiness);
 
             const originX = sanitizeCoord(hitData.originX);
             const originZ = sanitizeCoord(hitData.originZ);
-            if (originX === null || originZ === null) return;
+            if (originX === null || originZ === null) return reject('invalid_impact');
             const dist = Math.hypot(originX - attacker.x, originZ - attacker.z);
-            if (dist > PVP_WEAPON_RANGE) return;
+            if (dist > PVP_WEAPON_RANGE) return reject('out_of_range');
             const targetDist = Math.hypot(originX - target.x, originZ - target.z);
-            if (targetDist > PVP_HIT_REPORT_RADIUS) return;
+            if (targetDist > PVP_HIT_REPORT_RADIUS) return reject('target_miss');
 
             attacker.lastWeaponHitAt = now;
 
@@ -962,6 +1125,12 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             if (isFatal) {
                 sessionTelemetry.fatalHits += 1;
                 logRelayEvent('FATAL_HIT', { roomCode: attacker.roomCode, attackerId: attacker.id, targetId: target.id, damage });
+                io.to(attacker.roomCode).emit('pvpRoundCompleted', {
+                    winnerId: attacker.id,
+                    loserId: target.id,
+                    roundId: player.pvpRoundId ?? null,
+                    reason: 'combat'
+                });
             }
             logRelayEvent('WEAPON_HIT', { roomCode: attacker.roomCode, attackerId: attacker.id, targetId: target.id, damage, isFatal });
 
@@ -969,7 +1138,9 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
                 attackerId: attacker.id,
                 targetId: target.id,
                 damage,
-                isFatal
+                isFatal,
+                remainingHp: target.hp,
+                roundId: player.pvpRoundId ?? null
             });
         });
 
@@ -1021,13 +1192,58 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             }
         });
 
-        socket.on('disconnect', () => {
+        socket.on('pvpRematchVote', () => {
+            if (player.mode !== 'pvp' || !player.roomCode) return;
             const roomCode = player.roomCode;
+            let votes = pvpRematchVotes.get(roomCode);
+            if (!votes) {
+                votes = new Set();
+                pvpRematchVotes.set(roomCode, votes);
+            }
+            votes.add(socket.id);
+            const roomSocketIds = rooms.get(roomCode);
+            const requiredVotes = roomSocketIds ? roomSocketIds.size : 1;
+            io.to(roomCode).emit('pvpRematchVoteProgress', {
+                votedCount: votes.size,
+                requiredCount: requiredVotes
+            });
+            if (votes.size >= requiredVotes && requiredVotes > 0) {
+                pvpRematchVotes.delete(roomCode);
+                const nextSeed = `rematch-${randomUUID().slice(0, 8)}`;
+                const nextRoundId = `round-${randomUUID()}`;
+                pvpRounds.set(roomCode, nextRoundId);
+                if (roomSocketIds) {
+                    roomSocketIds.forEach((id) => {
+                        const p = players.get(id);
+                        if (!p) return;
+                        p.hp = PVP_DEFAULT_MAX_HP;
+                        p.maxHp = PVP_DEFAULT_MAX_HP;
+                        p.ready = false;
+                        beginPvpRound(p, nextRoundId);
+                    });
+                }
+                io.to(roomCode).emit('matchStarted', {
+                    seed: nextSeed,
+                    mode: 'pvp',
+                    startedBy: socket.id,
+                    timestamp: Date.now(),
+                    roundId: nextRoundId
+                });
+            }
+        });
+
+        socket.on('disconnect', (reason) => {
+            const roomCode = player.roomCode;
+            const durationMs = Date.now() - (socket.connectedAt || Date.now());
+            logRelayEvent('DISCONNECT', { socketId: socket.id, roomCode, reason, durationMs });
             players.delete(socket.id);
 
             if (roomCode && rooms.has(roomCode)) {
                 const roomSet = rooms.get(roomCode);
                 roomSet.delete(socket.id);
+                if (pvpRematchVotes.has(roomCode)) {
+                    pvpRematchVotes.get(roomCode).delete(socket.id);
+                }
                 // A disconnect mid-countdown means the room that was
                 // confirmed all-ready no longer matches who's actually
                 // still here -- cancel rather than deploy without them.
@@ -1039,6 +1255,9 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
                 if (roomSet.size === 0) {
                     rooms.delete(roomCode);
                     roomModes.delete(roomCode);
+                    pvpRounds.delete(roomCode);
+                    pvpRematchVotes.delete(roomCode);
+                    releaseRoomChat(roomCode);
                     // roomHostKeys is deliberately NOT cleared here -- it
                     // must survive a room going momentarily empty so a solo
                     // host's reconnect can still reclaim (see joinRoom's

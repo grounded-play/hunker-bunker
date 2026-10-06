@@ -1,8 +1,8 @@
+import { loadGltfTemplate } from './gltfTemplateCache.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { assetUrl } from './assetUrl.js';
 import { prewarmEnemyGibs } from './enemyGibs.js';
 
 // docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
@@ -13,8 +13,9 @@ function createGltfLoader() {
 
 const MODEL_CONFIG = {
     cybersnail: { url: '/3d/runtime/cyber-snail.glb', height: 0.72, yaw: -Math.PI / 2 },
-    cryosnail: { url: '/3d/runtime/cyber-snail.glb', height: 0.76, yaw: -Math.PI / 2, tint: 0x9bdcff },
-    sporesnail: { url: '/3d/runtime/new3ds/sporesnail.glb', height: 0.78, yaw: -Math.PI / 2 },
+    // Owner-supplied Regular Cryosnail (art/raw/incoming_3d_20261001), 1.5M -> 25k tris.
+    cryosnail: { url: '/3d/runtime/new3ds/cryosnail.glb', height: 0.76, yaw: -Math.PI / 2 },
+    sporesnail: { url: '/3d/runtime/new3ds/sporesnail.glb', height: 0.78, yaw: Math.PI / 2 },
     fungal_spore_vent: { url: '/3d/runtime/new3ds/fungal_spore_vent.glb', height: 0.82, yaw: 0 },
     spore_mortar: { url: '/3d/runtime/new3ds/spore_mortar.glb', height: 1.05, yaw: 0 },
     // Boss exports face opposite their travel axis, so turn their model roots
@@ -33,18 +34,29 @@ const MODEL_CONFIG = {
     // without touching it (the same trick cryosnail plays on the cybersnail
     // mesh). Shape differences live in the GLB, colour differences live here.
     alien_proto_crawler_A: { url: '/3d/runtime/new3ds/alien_proto_crawler_A.glb', height: 0.98, yaw: 0, tint: 0xc2a887 },
-    alien_proto_spitter: { url: '/3d/runtime/new3ds/alien_proto_crawler_A.glb', height: 0.95, yaw: 0 },
+    // The crawler body with the 2D design's glowing acid sac on its back
+    // (scripts/blender/build_spitter.py). The sac adds ~44% to the height, so
+    // the normalised height is raised to keep the body crawler-sized.
+    alien_proto_spitter: { url: '/3d/runtime/new3ds/alien_proto_spitter.glb', height: 1.35, yaw: 0 },
     sentinel: { url: '/3d/runtime/new3ds/sentinel.glb', height: 1.25, yaw: 0 },
     // Lighter, faster scout variant (4 HP vs sentinel_B's 5) -- rendered a
     // touch shorter as well, so the weight difference reads before it is shot.
     sentinel_A: { url: '/3d/runtime/new3ds/sentinel_A.glb', height: 1.18, yaw: 0, tint: 0x9fc4dd },
     // Heavy variant: biggest of the three, warm rust cast against _A's cold one.
     sentinel_B: { url: '/3d/runtime/new3ds/sentinel_B.glb', height: 1.32, yaw: 0, tint: 0xd8b48c },
-    mycelium_stalker: { url: '/3d/runtime/community/scout_xeno_stalker.glb', height: 1.35, yaw: 0 },
-    bio_charger: { url: '/3d/runtime/new3ds/bio_charger.glb', height: 1.45, yaw: 0 },
-    boss_corrupted_scout: { url: '/3d/runtime/new3ds/boss_corrupted_scout.glb', height: 1.45, yaw: 0 },
-    boss_corrupted_tank: { url: '/3d/runtime/new3ds/boss_corrupted_tank.glb', height: 1.65, yaw: 0 },
-    boss_corrupted_engineer: { url: '/3d/runtime/new3ds/boss_corrupted_engineer.glb', height: 1.45, yaw: 0, tint: 0xa87766 },
+    // Owner-supplied Mycelium Stalker quadruped (art/raw/incoming_3d_20261001),
+    // rigged with idle/walk/run clips by scripts/blender/rig_quadruped_stalker.py.
+    // Its head points down -X, hence the quarter turn. The charger is the same
+    // beast, a size up, galloping instead of stalking.
+    mycelium_stalker: { url: '/3d/runtime/new3ds/mycelium_stalker.glb', height: 0.95, yaw: Math.PI / 2, travelClip: 'walk' },
+    // The corrupted operators use the corrupted camp leaders they became
+    // (Briggs, Martha, Kaelen); paths point at the originals, not copies.
+    bio_charger: { url: '/3d/runtime/new3ds/mycelium_stalker.glb', height: 1.05, yaw: Math.PI / 2, travelClip: 'run' },
+    boss_corrupted_scout: { url: '/3d/runtime/new3ds/boss_corrupted_martha.glb', height: 1.45, yaw: 0 },
+    boss_corrupted_tank: { url: '/3d/runtime/new3ds/boss_corrupted_briggs.glb', height: 1.65, yaw: 0 },
+    // Owner-supplied Corrupted Engineer Kaelen (art/raw/incoming_3d_20261001), rigged onto
+    // npc_kaelen's skeleton by scripts/blender/rig_by_weight_transfer.py.
+    boss_corrupted_engineer: { url: '/3d/runtime/new3ds/boss_corrupted_engineer.glb', height: 1.45, yaw: 0 },
     boss_queen: { url: '/3d/runtime/queen.glb', height: 2.35, yaw: Math.PI }
 };
 
@@ -56,9 +68,17 @@ export const ENEMY_3D_MODELS = MODEL_CONFIG;
 const templates = new Map();
 const LOCOMOTION_URL = '/3d/scouting-scout/Scout.game.glb';
 const RIGGED_LOCOMOTION_TYPES = new Set([
-    'crawler', 'mycelium_stalker', 'bio_charger',
+    'crawler',
     'boss_corrupted_scout', 'boss_corrupted_tank', 'boss_corrupted_engineer'
 ]);
+
+// A model with its own idle and travel clips (the quadruped stalker) blends
+// them by ground speed, the same way the retargeted humanoids do.
+export function selectEmbeddedLocomotionClips(animations, travelName) {
+    const idle = animations?.find((clip) => clip.name === 'idle');
+    const travel = animations?.find((clip) => clip.name === travelName);
+    return idle && travel ? { idle, travel } : null;
+}
 
 export function hasEnemy3dModel(type) {
     return Boolean(MODEL_CONFIG[type]);
@@ -109,9 +129,8 @@ export async function preloadEnemy3dTemplates(game = null) {
         const url = MODEL_CONFIG[type]?.url;
         try {
             if (url) await loadTemplate(url);
-            // crawler and stalker monsters fall back to this shared run-cycle when their GLB
-            // has no embedded clip (see createEnemy3dVisual) -- preload it too.
-            if (type === 'crawler' || type === 'mycelium_stalker') await loadTemplate(LOCOMOTION_URL);
+            // The crawler borrows this shared run-cycle (see createEnemy3dVisual) -- preload it too.
+            if (usesRiggedEnemyLocomotion(type)) await loadTemplate(LOCOMOTION_URL);
         } catch (err) {
             console.warn(`[enemy-3d-overlay] preload failed for ${type}`, err);
         }
@@ -136,13 +155,8 @@ export async function preloadEnemy3dTemplates(game = null) {
 }
 
 function loadTemplate(url) {
-    if (!templates.has(url)) {
-        const promise = createGltfLoader().loadAsync(assetUrl(url)).catch((err) => {
-            templates.delete(url);
-            throw err;
-        });
-        templates.set(url, promise);
-    }
+    // Shared with the player overlay: Scout.game.glb is both (gltfTemplateCache.js).
+    if (!templates.has(url)) templates.set(url, loadGltfTemplate(url, { createLoader: createGltfLoader }));
     return templates.get(url);
 }
 
@@ -177,9 +191,20 @@ export async function createEnemy3dVisual(type) {
         object.castShadow = true;
         object.receiveShadow = false;
         object.frustumCulled = false;
-        if (config.tint && object.material) {
+        if ((config.tint || config.emissive !== undefined || config.roughness !== undefined || config.metalness !== undefined) && object.material) {
             object.material = object.material.clone();
-            object.material.color?.multiply(new THREE.Color(config.tint));
+            if (config.tint && object.material.color) {
+                object.material.color.multiply(new THREE.Color(config.tint));
+            }
+            if (config.emissive !== undefined && object.material.emissive) {
+                object.material.emissive.setHex(config.emissive);
+            }
+            if (config.roughness !== undefined && 'roughness' in object.material) {
+                object.material.roughness = config.roughness;
+            }
+            if (config.metalness !== undefined && 'metalness' in object.material) {
+                object.material.metalness = config.metalness;
+            }
         }
     });
     root.scale.setScalar(0.05);
@@ -187,9 +212,9 @@ export async function createEnemy3dVisual(type) {
     let idleAction = null;
     let locomotionAction = null;
 
-    // The hole-spawned stalker model contains only a "hangingIdle" clip. It
-    // shares the player's Mixamo skeleton, so selecting that embedded clip as
-    // its locomotion left the legs dangling while the enemy slid at the
+    // The humanoid monsters' models carry at most a "hangingIdle" clip. They
+    // share the player's Mixamo skeleton, so selecting that embedded clip as
+    // locomotion left the legs dangling while the enemy slid at the
     // player. Retarget the same authored idle/run pack used by the player's
     // rig, and blend it from rest to travel based on actual world movement.
     if (isHumanoidMonster && locomotion) {
@@ -218,6 +243,21 @@ export async function createEnemy3dVisual(type) {
             if (idleClip) idleAction = mixer.clipAction(idleClip).setEffectiveWeight(1).play();
             if (travelClip) locomotionAction = mixer.clipAction(travelClip).setEffectiveWeight(0).play();
             if (!idleAction && !locomotionAction) mixer = null;
+        } catch {
+            mixer = null;
+            idleAction = null;
+            locomotionAction = null;
+        }
+    }
+
+    const embeddedPair = !mixer && config.travelClip
+        ? selectEmbeddedLocomotionClips(gltf.animations, config.travelClip)
+        : null;
+    if (embeddedPair) {
+        try {
+            mixer = new THREE.AnimationMixer(model);
+            idleAction = mixer.clipAction(embeddedPair.idle).setEffectiveWeight(1).play();
+            locomotionAction = mixer.clipAction(embeddedPair.travel).setEffectiveWeight(0).play();
         } catch {
             mixer = null;
             idleAction = null;

@@ -40,6 +40,7 @@ const LEADER_BOSS_SPRITESHEETS = {
 //   Vesper   / Briggs  -- turrets, ammunition, a ledger of the dead. Iron.
 export const CAMP_DRESSING_MODELS = Object.freeze({
     camp_meridian: Object.freeze([
+        { type: 'prop_camp_meridian_radio', x: 1.7, z: 2.15, yaw: -0.5 },
         { type: 'prop_conduit_junction_box', x: -3.1, z: 2.4, yaw: 0.6 },
         { type: 'prop_light_cluster_dripping', x: 3.0, z: -2.7, yaw: -0.4 },
         { type: 'prop_conduit_hub', x: 2.8, z: 2.7, yaw: 0.8 },
@@ -59,21 +60,33 @@ export const CAMP_DRESSING_MODELS = Object.freeze({
     ])
 });
 
+// The model each camp prop sprite draws as (ThreeGame.syncSiteProps3d).
+export const CAMP_PROP_MODELS = Object.freeze({
+    cookfireLit: 'prop_camp_cookfire_lit',
+    cookfireDoused: 'prop_camp_cookfire',
+    crates: 'prop_camp_crates',
+    placard: 'prop_camp_warning_placard',
+    shutter: 'prop_camp_shutter_lockdown',
+    laundry: 'prop_camp_laundry',
+    bedrolls: 'prop_camp_bedrolls',
+    sandbags: 'prop_camp_sandbags'
+});
+
 export const CAMP_SIGNATURE_PROPS = Object.freeze({
     camp_meridian: [
-        { id: 'radio', path: '/prop_camp_meridian_radio.jpg', x: 1.7, z: 2.15, y: 0.42, scale: 1.1, color: 0xffb347 },
-        { id: 'battery_bank', path: '/prop_camp_meridian_battery_bank.jpg', x: -1.85, z: -2.3, y: 0.32, scale: 0.95, color: 0xffb347 },
-        { id: 'repair_rig', path: '/prop_camp_meridian_repair_rig.jpg', x: 3.35, z: 1.35, y: 0.4, scale: 1.2, color: 0xffb347 }
+        { id: 'radio', path: '/prop_camp_meridian_radio.jpg', model: 'prop_camp_meridian_radio', x: 1.7, z: 2.15, y: 0.42, scale: 1.1, color: 0xffb347 },
+        { id: 'battery_bank', path: '/prop_camp_meridian_battery_bank.jpg', model: 'prop_camp_meridian_battery_bank', x: -1.85, z: -2.3, y: 0.32, scale: 0.95, color: 0xffb347 },
+        { id: 'repair_rig', path: '/prop_camp_meridian_repair_rig.jpg', model: 'prop_camp_meridian_repair_rig', x: 3.35, z: 1.35, y: 0.4, scale: 1.2, color: 0xffb347 }
     ],
     camp_tallow: [
-        { id: 'still', path: '/prop_camp_tallow_still.jpg', x: 1.5, z: 1.95, y: 0.4, scale: 1.05, color: 0x6ee66e },
-        { id: 'spore_trays', path: '/prop_camp_tallow_spore_trays.jpg', x: -2.05, z: -1.75, y: 0.38, scale: 1.15, color: 0x6ee66e },
-        { id: 'resin_urn', path: '/prop_camp_tallow_resin_urn.jpg', x: 2.6, z: -2.35, y: 0.3, scale: 0.75, color: 0x6ee66e }
+        { id: 'still', path: '/prop_camp_tallow_still.jpg', model: 'prop_camp_tallow_still', x: 1.5, z: 1.95, y: 0.4, scale: 1.05, color: 0x6ee66e },
+        { id: 'spore_trays', path: '/prop_camp_tallow_spore_trays.jpg', model: 'prop_camp_tallow_spore_trays', x: -2.05, z: -1.75, y: 0.38, scale: 1.15, color: 0x6ee66e },
+        { id: 'resin_urn', path: '/prop_camp_tallow_resin_urn.jpg', model: 'prop_camp_tallow_resin_urn', x: 2.6, z: -2.35, y: 0.3, scale: 0.75, color: 0x6ee66e }
     ],
     camp_vesper: [
-        { id: 'turret', path: '/prop_camp_vesper_turret.jpg', x: 0, z: -3.4, y: 0.46, scale: 1.3, color: 0xff5c4d },
-        { id: 'ammo_press', path: '/prop_camp_vesper_ammo_press.jpg', x: -2.6, z: 1.75, y: 0.36, scale: 1.0, color: 0xff5c4d },
-        { id: 'shield_rack', path: '/prop_camp_vesper_shield_rack.jpg', x: 2.45, z: 2.55, y: 0.4, scale: 1.1, color: 0xff5c4d }
+        { id: 'turret', path: '/prop_camp_vesper_turret.jpg', model: 'prop_camp_vesper_turret', x: 0, z: -3.4, y: 0.46, scale: 1.3, color: 0xff5c4d },
+        { id: 'ammo_press', path: '/prop_camp_vesper_ammo_press.jpg', model: 'prop_camp_vesper_ammo_press', x: -2.6, z: 1.75, y: 0.36, scale: 1.0, color: 0xff5c4d },
+        { id: 'shield_rack', path: '/prop_camp_vesper_shield_rack.jpg', model: 'prop_camp_vesper_shield_rack', x: 2.45, z: 2.55, y: 0.4, scale: 1.1, color: 0xff5c4d }
     ]
 });
 
@@ -441,6 +454,13 @@ export class SurvivorCamp {
         }
     }
 
+    setWorkersVisible(visible = true) {
+        this.workersVisible = Boolean(visible);
+        for (const worker of this.campWorkers ?? []) {
+            if (worker.mesh) worker.mesh.visible = this.workersVisible && this.status !== 'culled';
+        }
+    }
+
     build(x, z, groundY = 0) {
         if (this.built) {
             this.pos = { x, z };
@@ -711,6 +731,22 @@ export class SurvivorCamp {
             this.sandbagSprites.push(spriteSandbags);
         }
 
+        // The 3D model each prop sprite stands for. ThreeGame.syncSiteProps3d
+        // draws the model instead of the billboard and follows the sprite's
+        // visibility and this field as camp state changes (updatePropVisuals).
+        spriteFire.userData.model3d = CAMP_PROP_MODELS.cookfireLit;
+        spriteCrates.userData.model3d = CAMP_PROP_MODELS.crates;
+        spritePlacard.userData.model3d = CAMP_PROP_MODELS.placard;
+        spriteShutter.userData.model3d = CAMP_PROP_MODELS.shutter;
+        spriteLaundry.userData.model3d = CAMP_PROP_MODELS.laundry;
+        spriteBedrolls.userData.model3d = CAMP_PROP_MODELS.bedrolls;
+        // Graves stay 2D: the 2026-10-05 prop_camp_grave_fresh upload came back
+        // as a few scattered items with no mound or marker (raw kept in
+        // art/source/3d/raw-masters-2026-10-05 pending a regenerate), and there
+        // is no old-grave model yet.
+        spriteGrave.userData.model3d = null;
+        for (const sandbags of this.sandbagSprites) sandbags.userData.model3d = CAMP_PROP_MODELS.sandbags;
+
         // Faction signature props (docs/sprint-23-room-juice-and-dressing-assets.md §4).
         this.signatureProps = {};
         for (const spec of CAMP_SIGNATURE_PROPS[this.id] ?? []) {
@@ -729,7 +765,7 @@ export class SurvivorCamp {
             const sprite = new THREE.Sprite(material);
             sprite.position.set(spec.x, spec.y, spec.z);
             sprite.scale.set(spec.scale, spec.scale, 1);
-            sprite.userData = { kind: 'camp-signature-prop', campId: this.id, propId: spec.id };
+            sprite.userData = { kind: 'camp-signature-prop', campId: this.id, propId: spec.id, model3d: spec.model ?? null };
             group.add(sprite);
             this.signatureProps[spec.id] = sprite;
         }
@@ -1027,6 +1063,7 @@ export class SurvivorCamp {
         if (this.propSprites.cookfire) {
             this.propSprites.cookfire.material.map = lit ? this.texCookfireLit : this.texCookfireDoused;
             this.propSprites.cookfire.material.needsUpdate = true;
+            this.propSprites.cookfire.userData.model3d = lit ? CAMP_PROP_MODELS.cookfireLit : CAMP_PROP_MODELS.cookfireDoused;
         }
 
         if (this.propSprites.crates) {
@@ -1050,8 +1087,9 @@ export class SurvivorCamp {
         if (this.propSprites.laundry) this.propSprites.laundry.visible = occupiedByHumans;
         if (this.propSprites.bedrolls) this.propSprites.bedrolls.visible = occupiedByHumans && this.status !== 'robbed';
         if (this.propSprites.grave) this.propSprites.grave.visible = this.status === 'culled';
+        const has3dDressing = Boolean(this.dressingModels?.length > 0);
         for (const sprite of Object.values(this.signatureProps ?? {})) {
-            sprite.visible = lit && this.status !== 'robbed';
+            sprite.visible = !has3dDressing && lit && this.status !== 'robbed';
         }
 
         if (this.sandbagSprites) {
@@ -1178,16 +1216,24 @@ export class SurvivorCamp {
                 console.warn(`[camp] dressing model ${spec.type} unavailable`, err);
             }
         }
+        if (this.dressingModels.length > 0 && this.signatureProps) {
+            for (const sprite of Object.values(this.signatureProps)) {
+                sprite.visible = false;
+            }
+        }
         return this.dressingModels.length;
     }
 
     setDestroyed(destroyed = true) {
         this.destroyed = Boolean(destroyed);
         if (this.npcSprite) {
-            this.npcSprite.visible = !this.destroyed;
+            this.npcSprite.visible = !this.destroyed && !this.npcSprite.userData?.world3dRoot;
+            if (this.npcSprite.userData?.world3dRoot) {
+                this.npcSprite.userData.world3dRoot.visible = !this.destroyed;
+            }
         }
         for (const worker of this.campWorkers) {
-            if (worker.mesh) worker.mesh.visible = !this.destroyed;
+            if (worker.mesh) worker.mesh.visible = !this.destroyed && this.workersVisible !== false;
         }
         if (!this.destroyed) return;
         this.status = 'culled';
@@ -1381,13 +1427,27 @@ export class SurvivorCamp {
         }
 
         // NPC movement pathfinding and animation update loop
-        if (this.npcSprite && this.npcSprite.visible) {
+        // Decouple from this.npcSprite.visible: when replaced by a 3D model,
+        // npcSprite.visible is set to false (replacedBy3d = true), but pathing,
+        // position updates, facing yaw, and syncWorld3dReplacement must continue!
+        const isNpcActive = Boolean(
+            this.npcSprite &&
+            !this.destroyed &&
+            this.status !== 'culled' &&
+            (this.npcSprite.visible || this.npcSprite.userData?.world3dRoot || this.npcSprite.userData?.replacedBy3d)
+        );
+        if (isNpcActive) {
             // When close to player, pause patrol to converse/react
-            const pausingForPlayer = distToPlayer < 3.2 && !this.destroyed && this.status !== 'culled';
+            const pausingForPlayer = distToPlayer < 3.2;
             this.isInteractingWithPlayer = pausingForPlayer;
 
             if (pausingForPlayer) {
                 this.npcAction = this.status === 'turned' ? 'turned_stare' : this.isLockedDown ? 'wary_standoff' : 'attentive_idle';
+                if (typeof window !== 'undefined' && window.game?.player?.position) {
+                    const toPlayerX = window.game.player.position.x - this.npcPos.x;
+                    const toPlayerZ = window.game.player.position.z - this.npcPos.z;
+                    this.npcSprite.userData.yaw = Math.atan2(toPlayerX, toPlayerZ);
+                }
             } else if (this.npcAction !== 'walking') {
                 this.npcActionTimer -= delta;
                 if (this.npcActionTimer <= 0) {
@@ -1417,6 +1477,7 @@ export class SurvivorCamp {
                     } else {
                         this.npcFacingRow = dz > 0 ? 0 : 1; // South / North
                     }
+                    this.npcSprite.userData.yaw = Math.atan2(dx, dz);
                 }
             }
 
@@ -1437,7 +1498,7 @@ export class SurvivorCamp {
             } else {
                 this.npcSprite.rotation.z = 0;
             }
-            syncWorld3dReplacement(this.npcSprite);
+            syncWorld3dReplacement(this.npcSprite, { delta });
         }
 
         // docs/human-ai-activation-plan.md Slice 3: per-worker (not
@@ -1465,7 +1526,7 @@ export class SurvivorCamp {
             const worker = this.campWorkers[index];
             worker.humanState = workerHumanStates[index];
             if (!worker.mesh) continue;
-            worker.mesh.visible = this.status !== 'culled';
+            worker.mesh.visible = this.status !== 'culled' && this.workersVisible !== false;
             if (!worker.mesh.visible) continue;
             const humanVisual = campWorkerVisualForHumanState(worker.humanState);
             const t = this.elapsed * worker.speed * humanVisual.speedMult + worker.phase;

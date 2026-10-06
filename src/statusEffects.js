@@ -13,7 +13,8 @@ export const STATUS_IDS = Object.freeze({
     CRYO: 'cryo',
     CORROSION: 'corrosion',
     CAUSTIC: 'caustic',
-    BIO: 'bio'
+    BIO: 'bio',
+    CHITIN_VULNERABILITY: 'chitin_vulnerability'
 });
 
 export const STATUS_DEFAULTS = Object.freeze({
@@ -26,7 +27,9 @@ export const STATUS_DEFAULTS = Object.freeze({
     thawRetainedStacks: 50,
     corrosionDuration: 3.0,
     corrosionTickDamage: 2,
-    corrosionTickInterval: 0.5
+    corrosionTickInterval: 0.5,
+    chitinVulnerabilityDuration: 6.0,
+    chitinDamageMultiplier: 1.25
 });
 
 /**
@@ -43,7 +46,10 @@ export function createTargetStatusState(initial = {}) {
         corrosionTickDamage: Number(initial.corrosionTickDamage) || STATUS_DEFAULTS.corrosionTickDamage,
         corrosionTickInterval: Number(initial.corrosionTickInterval) || STATUS_DEFAULTS.corrosionTickInterval,
         isCorroded: Boolean(initial.isCorroded),
-        corrodedBy: initial.corrodedBy ?? null
+        corrodedBy: initial.corrodedBy ?? null,
+        chitinVulnerabilityTimer: Math.max(0, Number(initial.chitinVulnerabilityTimer) || 0),
+        chitinDamageMultiplier: Math.max(1, Number(initial.chitinDamageMultiplier) || 1),
+        lastChitinVulnerabilityEventId: initial.lastChitinVulnerabilityEventId ?? null
     };
 }
 
@@ -56,6 +62,38 @@ export function getTargetStatusContainer(target) {
         return (target.userData.statusEffects ??= createTargetStatusState());
     }
     return (target.statusEffects ??= createTargetStatusState());
+}
+
+/**
+ * Applies the bounded bile/chitin vulnerability. Repeated sources refresh the
+ * longer remaining duration; a repeated stable event ID is ignored entirely.
+ */
+export function applyChitinVulnerability(target, options = {}) {
+    const state = getTargetStatusContainer(target);
+    if (!state) return false;
+    const eventId = options.eventId ?? null;
+    if (eventId && state.lastChitinVulnerabilityEventId === eventId) return false;
+
+    const duration = Math.max(0, Number(options.duration ?? STATUS_DEFAULTS.chitinVulnerabilityDuration) || 0);
+    const multiplier = Math.max(1, Math.min(
+        STATUS_DEFAULTS.chitinDamageMultiplier,
+        Number(options.multiplier ?? STATUS_DEFAULTS.chitinDamageMultiplier) || 1
+    ));
+    if (duration <= 0 || multiplier <= 1) return false;
+
+    state.chitinVulnerabilityTimer = Math.max(state.chitinVulnerabilityTimer, duration);
+    state.chitinDamageMultiplier = Math.max(state.chitinDamageMultiplier, multiplier);
+    state.lastChitinVulnerabilityEventId = eventId;
+    if (target.userData && typeof target.userData === 'object') {
+        target.userData.chitinVulnerabilityTimer = state.chitinVulnerabilityTimer;
+        target.userData.chitinDamageMultiplier = state.chitinDamageMultiplier;
+    }
+    return true;
+}
+
+export function getDamageTakenMultiplier(target) {
+    const state = getTargetStatusContainer(target);
+    return state?.chitinVulnerabilityTimer > 0 ? state.chitinDamageMultiplier : 1;
 }
 
 /**
@@ -212,6 +250,21 @@ export function tickStatusEffects(target, delta, callbacks = {}, tuning = {}) {
     const decayRate = tuning.freezeDecayRate ?? STATUS_DEFAULTS.freezeDecayRate;
     const thawStacks = tuning.thawRetainedStacks ?? STATUS_DEFAULTS.thawRetainedStacks;
 
+    if (state.chitinVulnerabilityTimer > 0) {
+        state.chitinVulnerabilityTimer = Math.max(0, state.chitinVulnerabilityTimer - delta);
+        if (target.userData && typeof target.userData === 'object') {
+            target.userData.chitinVulnerabilityTimer = state.chitinVulnerabilityTimer;
+        }
+        if (state.chitinVulnerabilityTimer <= 0) {
+            state.chitinDamageMultiplier = 1;
+            state.lastChitinVulnerabilityEventId = null;
+            if (target.userData && typeof target.userData === 'object') {
+                target.userData.chitinDamageMultiplier = 1;
+            }
+            callbacks.onChitinVulnerabilityExpired?.(target, state);
+        }
+    }
+
     // 1. Freeze & chill handling
     if (state.isFrozen) {
         state.freezeTimer = Math.max(0, state.freezeTimer - delta);
@@ -285,7 +338,10 @@ export function serializeTargetStatuses(target) {
         corrosionTickDamage: state.corrosionTickDamage,
         corrosionTickInterval: state.corrosionTickInterval,
         isCorroded: state.isCorroded,
-        corrodedBy: state.corrodedBy
+        corrodedBy: state.corrodedBy,
+        chitinVulnerabilityTimer: Math.round(state.chitinVulnerabilityTimer * 100) / 100,
+        chitinDamageMultiplier: state.chitinDamageMultiplier,
+        lastChitinVulnerabilityEventId: state.lastChitinVulnerabilityEventId
     };
 }
 
@@ -301,6 +357,8 @@ export function deserializeTargetStatuses(target, data) {
         target.userData.frozen = state.isFrozen;
         target.userData.frozenTimer = state.freezeTimer;
         target.userData.corroded = state.isCorroded;
+        target.userData.chitinVulnerabilityTimer = state.chitinVulnerabilityTimer;
+        target.userData.chitinDamageMultiplier = state.chitinDamageMultiplier;
     }
     return state;
 }

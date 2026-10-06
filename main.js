@@ -1,4 +1,5 @@
 import { createControllerPressGate } from './src/controllerPressGate.js';
+import { initPlayerChatUI } from './src/playerChatUi.js';
 import { crossingGuidance, expeditionDebrief } from './src/expeditionFeedback.js';
 import { runO2MilestoneChoreography } from './src/o2CinematicDoors.js';
 import { compactPerformanceSnapshot, compactPerfPhase, createLongTaskReporter } from './src/longTaskDiagnostics.js';
@@ -19,14 +20,14 @@ import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { ExpeditionReceipt } from './src/economyReceipt.js';
 import { renderReturnManifest } from './src/returnManifest.js';
 import { renderLoadoutStrip } from './src/itemCard.js';
-import { describeFieldWeapon } from './src/fieldWeapon.js';
-import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, describeRecipe, getFabricatedOutputIds, getFabricationOdds } from './src/fabricator.js';
+import { FabricatorManager, FAB_RECIPES, getFabricatedOutputIds } from './src/fabricator.js';
+import { createFabricationBay, fabMissingResourceText as fabMissingResourceTextFor } from './src/fabricationBay.js';
 import { ProfileManager, exportSaveCode, importSaveCode, resetAllDataFactory, startNewCampaign } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
 import { DEPTH_TIER_NAMES } from './src/data/loot.js';
 import { getVoiceAudioManifest } from './src/data/voiceBanks.js';
-import { GAMEPLAY_FOLEY_MANIFEST } from './src/data/gameSoundsets.js';
+import { GAMEPLAY_FOLEY_MANIFEST, GAMEPLAY_ENEMY_MANIFEST } from './src/data/gameSoundsets.js';
 import { getDeathCinematicSpec, getEventCinematicSpec, normalizeCinematicStillSpec, shouldPlayAuthoredEventCinematic } from './src/cinematicFallback.js';
 import { DialogueManager, resolveEffectiveVoicePackId } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
@@ -81,13 +82,15 @@ import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { createArmoryScene } from './src/armoryScene.js';
 import { createArmoryUi } from './src/armoryUi.js';
-import { initSteamVaultUI, isVaultExchangeAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
+import { initSteamVaultUI, isVaultExchangeAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, renderStorePanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
 import { createFoundryHub, isFoundryHubEnabled } from './src/foundryHub.js';
 import { initSeasonPassUI, cancelXpFeedback, beginSeasonRun, getSeasonRunSummary, openSeasonPassModal, seasonPass } from './src/seasonPassUi.js';
 import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
 import { campaignLedger } from './src/campaignLedger.js';
+import { boardLabelKey, createRecordsTab } from './src/recordsTab.js';
+import { personalBests } from './src/personalBests.js';
 import { campaignWorldStore, deriveExpeditionSeed } from './src/campaignWorld.js';
 import { clearMultiplayerSession } from './src/gameController.js';
 import { playerTradeManager, TRADEABLE_RESOURCES } from './src/playerTrade.js';
@@ -95,7 +98,9 @@ import { npcDialogueTreeManager, NPC_DIALOGUE_TREES } from './src/npcDialogueTre
 import { sideStoryManager, SIDE_STORIES_CONFIG, SIDE_STORY_STATUS } from './src/sideStorySystem.js';
 import { matureContentAudit } from './src/matureContentAudit.js';
 import { progressionWalkthrough } from './src/progressionWalkthrough.js';
-import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
+import { getGameOverLeaderboardBoard, renderGameOverLeaderboard } from './src/leaderboardUi.js';
+import { createFieldWorkbenchUi } from './src/fieldWorkbenchUi.js';
+import { createQuickCommandRadialUi } from './src/quickCommandRadialUi.js';
 import { flushPendingRunSubmits, submitRunWithRetryQueue } from './src/steam/runSubmitQueue.js';
 import { FATIGUE_STATE_KEY, describeScars, normalizeFatigueState } from './src/fatigue.js';
 import { unlockSheenForMilestone, reconcileSheenUnlocks, unlockAllSheens } from './src/weaponSheens.js';
@@ -109,6 +114,9 @@ import { SongInterstitialController, selectCampInterstitial } from './src/songIn
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
 import { LeaderConversation3d } from './src/leaderConversation3d.js';
 import { getLocale, setLocale, t, t as i18nT, getAvailableLocales } from './src/i18n.js';
+import { createDeveloperCommentary } from './src/developerCommentary.js';
+import { createVoiceLineLibrary, VOICE_LINES_ROOT } from './src/voiceLines.js';
+import { trackStartupStages } from './src/perfPhases.js';
 import {
     computeTopologyDistances,
     findConflictingChunkReservations,
@@ -120,6 +128,7 @@ import { installSettingsWheelGuard } from './src/settingsWheelGuard.js';
 import { installNativeTooltipGuard } from './src/nativeTooltipGuard.js';
 import { installAccessibilitySettings } from './src/accessibilitySettings.js';
 import { recordCollectedPickup, recordDebugResourceGrant, resetRunResourceTelemetry } from './src/runTelemetry.js';
+import { loaderBuildLabel, versionLabel } from './src/buildLabels.js';
 
 // These galleries are explicit developer destinations. Keeping their modules
 // out of the boot graph prevents QA scene code (and its transitive catalogs)
@@ -237,6 +246,28 @@ syncLoadingCursorSuppression();
 const ACTIVE_CLASS_KEY = 'hb_active_class_v1';
 const PLAYABLE_CLASSES = Object.freeze(['SCOUT', 'TANK', 'ENGINEER']);
 
+// Created early: the operator menu's status refresh asks it for the Best Run
+// rank during startup. Everything it reads is looked up lazily.
+// Archive → RECORDS (docs/planning/records-and-leaderboards-popup-plan-2026-10-05.md).
+const recordsTab = createRecordsTab({
+    getStats: () => achievementEngine.getState().stats,
+    getLedger: () => campaignLedger.getState(),
+    getTotals: () => {
+        const endings = buildEndingArchive(window.game?.act2?.getState?.() ?? act2Manager.getState(), achievementEngine.getState().unlocked);
+        return {
+            lore: ALL_LORE_KEYS.length,
+            loreFound: new Set(getWorldMemory().logsFound ?? []).size,
+            endings: endings.length,
+            endingsFound: endings.filter((ending) => ending.discovered).length,
+            classes: PLAYABLE_CLASSES.length,
+            tierNames: DEPTH_TIER_NAMES
+        };
+    },
+    getBests: () => personalBests.getState(),
+    getLocale,
+    t
+});
+
 function getSavedHeroType() {
     try {
         const saved = localStorage.getItem(ACTIVE_CLASS_KEY);
@@ -286,12 +317,8 @@ function formatBuildTimestamp(raw) {
 
 const buildCommitLabel = `${buildInfo.commit}${buildInfo.dirty ? '-dirty' : ''}`;
 const pipelineBuildLabel = buildInfo.steamBuild ? ` // PIPELINE ${buildInfo.steamBuild}` : '';
-const branchName = buildInfo.branch ? buildInfo.branch.replace(/^dev\//i, '').toUpperCase() : '';
-const sprintLabel = branchName
-    ? (branchName.startsWith('SPRINT') ? branchName.replace('-', ' ') : branchName)
-    : '';
 const buildTimestampLabel = formatBuildTimestamp(buildInfo.builtAt);
-const loadingVersionText = `${sprintLabel ? `${sprintLabel} // ` : ''}${buildCommitLabel}${pipelineBuildLabel}`;
+const loadingVersionText = loaderBuildLabel(buildInfo);
 const canonicalVersionText = `BUILD ${buildInfo.version} // ${buildCommitLabel} // ${buildInfo.branch}${pipelineBuildLabel}${buildTimestampLabel ? ` // ${buildTimestampLabel}` : ''}`;
 if (loaderVersionTag) {
     loaderVersionTag.textContent = loadingVersionText;
@@ -302,6 +329,12 @@ if (loaderBuildTime) {
     loaderBuildTime.title = `Built ${buildInfo.builtAt ?? 'unknown time'}`;
 } else if (loaderSystemInfoLabel && buildTimestampLabel) {
     loaderSystemInfoLabel.textContent = `SYSTEM BUILD // ${buildTimestampLabel}`;
+}
+// The title showed a fixed "v2.0"; it now shows the shipped package version.
+const splashVersion = document.getElementById('splash-version');
+if (splashVersion) {
+    splashVersion.textContent = versionLabel(buildInfo);
+    splashVersion.title = canonicalVersionText;
 }
 const aboutSysVer = document.getElementById('about-modal-sys-ver');
 if (aboutSysVer) {
@@ -463,6 +496,7 @@ window.isGameplayReady = isGameplayReady;
 
 function notifyGameplayReady() {
     if (typeof window === 'undefined') return;
+    window.game?.notifyPvpGameplayReady?.();
     window.dispatchEvent(new CustomEvent('gameplay-ready', {
         detail: {
             timestamp: Date.now(),
@@ -612,56 +646,6 @@ function closeModalWithAnimation(modal, onComplete, { exitClass = '', duration =
 }
 window.closeModalWithAnimation = closeModalWithAnimation;
 
-const COMMENTARY_ENTRIES = Object.freeze({
-    commentary_on: {
-        title: 'Developer Commentary',
-        body: 'Commentary is on. Cards like this one appear as you reach the moments they talk about: your first run, black boxes, special rooms, the Queen. Every entry can also be read from Settings > Commentary > Read All.'
-    },
-    run_start: {
-        title: 'The Run Loop',
-        body: 'The bunker is built around short pressure cycles: deploy, read the threat, bank what matters, and decide whether one more room is worth it.'
-    },
-    black_box_signal: {
-        title: 'Failure Becomes Map Data',
-        body: 'Black boxes make death persistent without making it punitive. A failed run becomes a breadcrumb, a banked lesson, and a reason to go back in.'
-    },
-    black_box_recovered: {
-        title: 'Recoverable Consequences',
-        body: 'The black box is meant to feel like contract work, not a reload button. You are collecting evidence from your own mistakes.'
-    },
-    room_armory: {
-        title: 'Armory Rooms',
-        body: 'Armories are deliberately loud rewards. They break the procedural rhythm so players can spot a meaningful room before reading any UI.'
-    },
-    room_the_nest: {
-        title: 'Nest Rooms',
-        body: 'The nest is an authored danger shape inside a generated map. It says: this was not just rolled, something lives here.'
-    },
-    room_agent_wreckage: {
-        title: 'Three Wrecks',
-        body: 'The class wreckage rooms connect the three operators to the larger crash mystery: tracking signal, relay, and weapon, scattered through one disaster.'
-    },
-    queen_fight: {
-        title: 'Queen Fight',
-        body: 'The Queen fight uses vulnerability windows so the arena is about reading intent, not only pouring damage into a large health bar.'
-    },
-    queen_killed: {
-        title: 'The Queen Can Die',
-        body: 'Combat kills and narrative rejection are tracked separately. The story cares whether you defeated her body or only refused her offer.'
-    },
-    achievement: {
-        title: 'Steam Achievements',
-        body: 'Achievements mirror fiction-first milestones. They should read like field records, not chores.'
-    },
-    leaderboard: {
-        title: 'Trusted Scores',
-        body: 'Leaderboard scores are recomputed server-side so the client submits a run receipt, not a number we blindly trust.'
-    },
-    steam_vault: {
-        title: 'Steam Vault',
-        body: 'The Vault is intentionally read-heavy. Tradable and marketable value belongs in Steam systems; the game renders verified ownership.'
-    }
-});
 
 const steamInputState = {
     available: false,
@@ -874,6 +858,8 @@ function getVisibleControllerFocusables(root = document) {
     ].join(', ');
     const elements = Array.from(root.querySelectorAll(selector));
     if (root.id === 'menu') {
+        const chatBtn = document.querySelector('.menu-corner-settings [data-player-chat-open]');
+        if (chatBtn && !elements.includes(chatBtn)) elements.push(chatBtn);
         const settingsBtn = document.querySelector('.menu-corner-settings .open-settings-btn');
         if (settingsBtn && !elements.includes(settingsBtn)) elements.push(settingsBtn);
         const startGame = document.getElementById('start-game');
@@ -1094,7 +1080,11 @@ function getPreferredControllerFocusTarget(root, focusables) {
             ?? focusables[0];
     }
     if (root?.id === 'season-pass-modal') {
-        return focusables.find((element) => element.classList?.contains('season-pass-claim-btn'))
+        // The current rank's row first: rank 1's button would scroll the
+        // Dossier back to the top after it opened on the player's rank.
+        const currentTier = String(Math.max(1, window.seasonPass?.getCurrentTier?.() ?? 1));
+        return focusables.find((element) => element.classList?.contains('season-pass-claim-btn') && element.closest?.('[data-tier]')?.dataset.tier === currentTier)
+            ?? focusables.find((element) => element.classList?.contains('season-pass-claim-btn'))
             ?? focusables.find((element) => element.classList?.contains('season-pass-tab-btn') && element.classList.contains('active'))
             ?? focusables.find((element) => element.id === 'close-season-pass-modal')
             ?? focusables[0];
@@ -1108,6 +1098,18 @@ function getPreferredControllerFocusTarget(root, focusables) {
     if (root?.id === 'steam-vault-modal') {
         return focusables.find((element) => element.classList?.contains('vault-tab-btn') && element.classList.contains('active'))
             ?? focusables.find((element) => element.id === 'close-steam-vault-modal')
+            ?? focusables[0];
+    }
+    if (root?.id === 'achievements-modal') {
+        return focusables.find((element) => element.classList?.contains('achievement-card'))
+            ?? focusables.find((element) => element.id === 'close-achievements-modal')
+            ?? focusables[0];
+    }
+    if (root?.id === 'console-terminal-modal') {
+        return focusables.find((element) => element.id === 'terminal-btn-o2-generator' && !element.disabled)
+            ?? focusables.find((element) => element.classList?.contains('terminal-action-btn') && !element.disabled)
+            ?? focusables.find((element) => element.classList?.contains('terminal-tab-btn') && element.classList.contains('active'))
+            ?? focusables.find((element) => element.id === 'close-terminal')
             ?? focusables[0];
     }
     if (root?.id === 'mothership-dialogue') {
@@ -1281,11 +1283,83 @@ function scrollFocuslessRegion(root, code) {
     return true;
 }
 
+function moveAchievementsDirectionalFocus(code) {
+    const modal = document.getElementById('achievements-modal');
+    const active = document.activeElement;
+    if (!modal || !modal.contains(active)) return false;
+    const cards = Array.from(modal.querySelectorAll('#achievements-grid .achievement-card'));
+    if (!cards.length) return false;
+
+    const isCard = active?.classList?.contains('achievement-card');
+    const isClose = active?.id === 'close-achievements-modal';
+
+    if (isClose) {
+        if (code === 'ArrowDown' || code === 'KeyS' || code === 'ArrowRight' || code === 'KeyD') {
+            return focusControllerTarget(cards[0], { playHover: true });
+        }
+        return false;
+    }
+
+
+    if (!isCard) return false;
+
+    const currentIndex = cards.indexOf(active);
+    if (currentIndex < 0) return false;
+
+    let columns = 1;
+    if (cards.length > 1) {
+        const firstTop = cards[0].offsetTop;
+        for (let i = 1; i < cards.length; i += 1) {
+            if (cards[i].offsetTop === firstTop) {
+                columns += 1;
+            } else {
+                break;
+            }
+        }
+    }
+
+    if (code === 'ArrowDown' || code === 'KeyS') {
+        const nextIndex = currentIndex + columns;
+        if (nextIndex < cards.length) {
+            return focusControllerTarget(cards[nextIndex], { playHover: true });
+        }
+        return true;
+    }
+
+    if (code === 'ArrowUp' || code === 'KeyW') {
+        const prevIndex = currentIndex - columns;
+        if (prevIndex >= 0) {
+            return focusControllerTarget(cards[prevIndex], { playHover: true });
+        }
+        return focusControllerTarget(document.getElementById('close-achievements-modal') || cards[0], { playHover: true });
+    }
+
+    if (code === 'ArrowRight' || code === 'KeyD') {
+        const nextIndex = currentIndex + 1;
+        if (nextIndex < cards.length) {
+            return focusControllerTarget(cards[nextIndex], { playHover: true });
+        }
+        return true;
+    }
+
+    if (code === 'ArrowLeft' || code === 'KeyA') {
+        const prevIndex = currentIndex - 1;
+        if (prevIndex >= 0) {
+            return focusControllerTarget(cards[prevIndex], { playHover: true });
+        }
+        return true;
+    }
+
+    return false;
+}
+
 // One directional step in a menu, shared by the Steam Input poll and the
 // gamepad-menu-nav event so both behave the same.
 function moveControllerDirectional(root, code, backward) {
     if (root?.id === 'menu') return moveMenuDirectionalFocus(code);
     if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(code)) return true;
+    if (moveTabBarSelection(document.activeElement, code)) return true;
+    if (root?.id === 'achievements-modal' && moveAchievementsDirectionalFocus(code)) return true;
     if (scrollFocuslessRegion(root, code)) return true;
     if (moveSpatialControllerFocus(root, code)) return true;
     return moveControllerFocus(backward ? -1 : 1);
@@ -1299,7 +1373,11 @@ const SPATIAL_FOCUS_ROOT_IDS = new Set([
     'fabrication-modal',
     'archive-modal',
     'codex-modal',
-    'multiplayer-modal'
+    'multiplayer-modal',
+    'console-terminal-modal',
+    'field-workbench-modal',
+    'mature-content-audit-modal',
+    'season-pass-modal'
 ]);
 
 function moveSpatialControllerFocus(root, code) {
@@ -1318,6 +1396,24 @@ function moveSpatialControllerFocus(root, code) {
     return focusControllerTarget(focusables[nextIndex], { playHover: true });
 }
 
+// Left / right (arrows, A / D, D-pad) on a focused tab selects its neighbour
+// in the same tab bar, wrapping at the ends. Tab bars that also handle keys
+// themselves check defaultPrevented, so one press is one tab.
+function moveTabBarSelection(active, code) {
+    const step = (code === 'ArrowRight' || code === 'KeyD') ? 1 : (code === 'ArrowLeft' || code === 'KeyA') ? -1 : 0;
+    if (!step || !active?.matches?.('[role="tab"]')) return false;
+    const bar = active.closest('[role="tablist"]') ?? active.parentElement;
+    const tabs = [...(bar?.querySelectorAll('[role="tab"]') ?? [])]
+        .filter((tab) => !tab.disabled && tab.offsetParent !== null);
+    const index = tabs.indexOf(active);
+    if (index < 0 || tabs.length < 2) return false;
+    const next = tabs[(index + step + tabs.length) % tabs.length];
+    next.click();
+    next.focus({ preventScroll: true });
+    window.AudioManager?.play?.('ui_hover', { volume: 0.12, varyPitch: true });
+    return true;
+}
+
 function moveSettingsDirectionalFocus(code) {
     const popup = document.getElementById('settings-popup');
     const active = document.activeElement;
@@ -1328,6 +1424,17 @@ function moveSettingsDirectionalFocus(code) {
         const panel = popup.querySelector(`[data-settings-panel="${tab.dataset.settingsTab}"]:not(.hidden)`);
         const target = getVisibleControllerFocusables(panel)[0];
         return target ? focusControllerTarget(target, { playHover: true }) : true;
+    }
+    // Left / right on a tab selects the neighbouring tab, wrapping at the ends.
+    // Spatial focus used to move first and the tab bar then stepped again from
+    // there, so one press skipped a tab.
+    const step = (code === 'ArrowRight' || code === 'KeyD') ? 1 : (code === 'ArrowLeft' || code === 'KeyA') ? -1 : 0;
+    if (tab && step) {
+        const tabs = [...popup.querySelectorAll('[data-settings-tab]')];
+        const next = tabs[(tabs.indexOf(tab) + step + tabs.length) % tabs.length];
+        selectSettingsTab(next.dataset.settingsTab, { focus: true });
+        window.AudioManager?.play?.('ui_hover', { volume: 0.12, varyPitch: true });
+        return true;
     }
 
     return false;
@@ -1348,6 +1455,7 @@ function moveHeroSelectPanelFocus(code) {
     const previewRail = active?.closest?.('.preview-box');
     const initializeButton = active?.id === 'start-game';
     const settingsButton = active?.closest?.('.menu-corner-settings .open-settings-btn');
+    const chatButton = active?.closest?.('.menu-corner-settings [data-player-chat-open]');
     const selectedHero = document.querySelector('.char-selection .char-card.selected')
         ?? document.querySelector('.char-selection .char-card');
     const heroBackBtn = document.getElementById('hero-select-back-btn');
@@ -1366,9 +1474,18 @@ function moveHeroSelectPanelFocus(code) {
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
 
+    if (chatButton) {
+        const target = isRight
+            ? document.querySelector('.menu-corner-settings .open-settings-btn')
+            : isLeft
+                ? document.getElementById('hero-polish-btn')
+                : (isDown ? selectedHero : null);
+        return target ? focusControllerTarget(target, { playHover: true }) : true;
+    }
+
     if (settingsButton) {
         const target = isLeft
-            ? document.getElementById('hero-polish-btn')
+            ? (document.querySelector('.menu-corner-settings [data-player-chat-open]') ?? document.getElementById('hero-polish-btn'))
             : (isDown ? selectedHero : null);
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
@@ -1514,6 +1631,17 @@ function moveOperatorPolishGridFocus(code) {
 
 function moveMenuCommandGridFocus(code) {
     const active = document.activeElement;
+    // CAREER TELEMETRY's RECORDS ▸ sits above the command grid.
+    const recordsBtn = document.getElementById('homebase-records-btn');
+    if (active === recordsBtn) {
+        const commands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
+        const target = (code === 'KeyS' || code === 'ArrowDown')
+            ? commands[0]
+            : (code === 'KeyD' || code === 'ArrowRight')
+                ? (document.getElementById('hero-polish-btn') ?? document.querySelector('.char-selection .char-card.selected'))
+                : null;
+        return target ? focusControllerTarget(target, { playHover: true }) : true;
+    }
     if (active?.id === 'start-game') {
         if (code !== 'KeyW' && code !== 'ArrowUp') return false;
         const visibleCommands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
@@ -1536,7 +1664,9 @@ function moveMenuCommandGridFocus(code) {
     let target = null;
 
     if (code === 'KeyW' || code === 'ArrowUp') {
-        target = index >= columnCount ? commands[index - columnCount] : commands[index];
+        target = index >= columnCount
+            ? commands[index - columnCount]
+            : (recordsBtn && isElementVisible(recordsBtn) ? recordsBtn : commands[index]);
     } else if (code === 'KeyS' || code === 'ArrowDown') {
         if (index + columnCount >= commands.length) {
             lastHeroMenuCommandFocus = active;
@@ -1583,6 +1713,7 @@ document.addEventListener('keydown', (event) => {
         if (root.id === 'operator-polish-modal' && moveOperatorPolishGridFocus(event.code)) return;
         if (root.id === 'menu' && moveMenuDirectionalFocus(event.code)) return;
         if (root.id === 'settings-popup' && moveSettingsDirectionalFocus(event.code)) return;
+        if (moveTabBarSelection(document.activeElement, event.code)) return;
         const horizontal = ['KeyA', 'KeyD', 'ArrowLeft', 'ArrowRight'].includes(event.code);
         const active = document.activeElement;
         const adjusted = horizontal && (
@@ -1593,6 +1724,14 @@ document.addEventListener('keydown', (event) => {
     } else if (event.code === 'Enter' || event.code === 'Space') {
         event.preventDefault();
         activateControllerFocusedElement();
+    } else if ((event.code === 'KeyQ' || event.code === 'KeyE') && !activeTextInput
+        && !event.ctrlKey && !event.metaKey && !event.altKey
+        && root.id !== 'armory-screen') {
+        // Keyboard twin of LB/RB: previous/next tab on any tabbed surface
+        // (Settings, Archive, Vault, Foundry, Dossier, Terminal); on the
+        // operator menu it cycles the class cards, as the Armory does with its
+        // own Q/E handler. Gameplay never gets here unless a modal owns focus.
+        if (handleControllerTabNavigation(root, event.code === 'KeyQ' ? -1 : 1)) event.preventDefault();
     } else if (activeTextInput) {
         // A text field reached through menu navigation is only selected, not
         // editing. Confirm/A explicitly enters editing or opens Deck input.
@@ -1864,6 +2003,7 @@ function dispatchControllerEscape() {
         bubbles: true,
         cancelable: true
     });
+    escapeEvent.isControllerBack = true;
     document.dispatchEvent(escapeEvent);
 
     // Some newer and developer-only overlays predate the centralized Escape
@@ -1903,17 +2043,22 @@ function getControllerBackTarget(root) {
 let lastModalCloseTimestamp = 0;
 let lastTacticalMapToggleTimestamp = 0;
 
+function noteModalClosed(_source = 'general') {
+    lastModalCloseTimestamp = performance.now();
+    controllerPressGate.claim(['menuBack', 'dash', 'toggleMap', 'pause', 'sprint']);
+    window.game?.clearGameplayInputState?.();
+    window.game?.setVirtualInputSprint?.(false);
+}
+
 function triggerControllerPauseAction() {
     const settingsPopup = document.getElementById('settings-popup');
     if (settingsPopup && !settingsPopup.classList.contains('hidden')) {
-        dispatchControllerEscape();
-        lastModalCloseTimestamp = performance.now();
+        closeSettingsModal();
         return true;
     }
     const tacticalMapModal = document.getElementById('tactical-map-modal');
     if (tacticalMapModal && !tacticalMapModal.classList.contains('hidden')) {
         toggleTacticalMapModal(false);
-        lastModalCloseTimestamp = performance.now();
         return true;
     }
     const activeModal = STEAM_INPUT_FOCUS_ROOT_IDS
@@ -1922,7 +2067,7 @@ function triggerControllerPauseAction() {
         .find((element) => element && !element.classList.contains('hidden') && element !== settingsPopup);
     if (activeModal) {
         dispatchControllerEscape();
-        lastModalCloseTimestamp = performance.now();
+        noteModalClosed('pause-active-modal');
         return true;
     }
     if (performance.now() - lastModalCloseTimestamp < 350) {
@@ -2028,12 +2173,12 @@ function handleControllerTabNavigation(root, direction) {
     if (!root) return false;
     const selector = root.id === 'menu'
         ? '.char-selection .char-card'
-        : '.tab-btn, .vault-tab-btn, .terminal-tab-btn, [role="tab"], .category-btn, .sub-tab-btn, .rgb-path-btn, .class-tab';
+        : '.tab-btn, .vault-tab-btn, .terminal-tab-btn, .season-pass-tab-btn, [role="tab"], .category-btn, .sub-tab-btn, .rgb-path-btn, .class-tab';
     const tabs = Array.from(root.querySelectorAll(selector))
         .filter((el) => isElementVisible(el) && !el.disabled);
     if (tabs.length < 2) return false;
 
-    let activeIndex = tabs.findIndex((el) => el.classList.contains('active') || el.classList.contains('selected') || el.getAttribute('aria-selected') === 'true' || el === document.activeElement);
+    let activeIndex = tabs.findIndex((el) => el.classList.contains('active') || el.classList.contains('is-active') || el.classList.contains('selected') || el.getAttribute('aria-selected') === 'true' || el === document.activeElement);
     if (activeIndex < 0) activeIndex = 0;
 
     const nextIndex = (activeIndex + direction + tabs.length) % tabs.length;
@@ -2522,6 +2667,16 @@ function handleSteamGameplayInput(controller) {
     if (controller.scan && !prev.scan) {
         window.game?.triggerRadarScan?.();
     }
+    if (window.quickCommandRadial?.isOpen()) {
+        window.quickCommandRadial.handleDirectionInput(aimX, aimY);
+        if ((controller.fire && !prev.fire) || (controller.interact && !prev.interact) || (controller.tacticalPing && !prev.tacticalPing)) {
+            window.quickCommandRadial.confirmSelection();
+        } else if ((controller.menuBack && !prev.menuBack) || (controller.dash && !prev.dash)) {
+            window.quickCommandRadial.close();
+        }
+    } else if (controller.tacticalPing && !prev.tacticalPing) {
+        window.game?.triggerTacticalPing?.();
+    }
 
     if (controller.pause && !prev.pause) {
         triggerControllerPauseAction();
@@ -2541,6 +2696,7 @@ function handleSteamGameplayInput(controller) {
         ability: Boolean(controller.ability),
         dash: Boolean(controller.dash),
         scan: Boolean(controller.scan),
+        tacticalPing: Boolean(controller.tacticalPing),
         pause: Boolean(controller.pause),
         toggleMap: Boolean(controller.toggleMap),
         sprint: Boolean(controller.sprint),
@@ -2640,9 +2796,11 @@ function markBrowserGamepadInput(controller) {
 }
 
 function clearBrowserGamepadGameplayInput() {
-    if (!browserGamepadOwnedVirtualInput) return;
-    window.game?.setVirtualInput?.(0, 0);
-    browserGamepadOwnedVirtualInput = false;
+    if (browserGamepadOwnedVirtualInput) {
+        window.game?.setVirtualInput?.(0, 0);
+        browserGamepadOwnedVirtualInput = false;
+    }
+    window.game?.setVirtualInputSprint?.(false);
 }
 
 function handleBrowserGamepadFallbackFrame() {
@@ -2767,7 +2925,7 @@ const state = {
         textFloor: [16, 18, 20, 22, 24].includes(Number(localStorage.getItem('hb_text_floor')))
             ? Number(localStorage.getItem('hb_text_floor'))
             : 18,
-        cameraMode: localStorage.getItem('hb_camera_mode') === 'isometric' ? 'isometric' : 'third-person',
+        cameraMode: localStorage.getItem('hb_camera_mode') === 'third-person' ? 'third-person' : 'isometric',
         cameraDistance: ['close', 'standard', 'wide'].includes(localStorage.getItem('hb_camera_distance'))
             ? localStorage.getItem('hb_camera_distance')
             : 'close',
@@ -4254,7 +4412,6 @@ let hudNotificationTopTimer = null;
 let hudNotificationTopCard = null;
 let hudNotificationDeckHoldUntil = 0;
 let hudCardSeq = 0;
-const commentarySeenThisRun = new Set();
 
 const RADIO_REPEAT_SUPPRESSION_MS = 6500;
 
@@ -4414,144 +4571,59 @@ function dismissHudNotificationCard(card) {
 }
 window.dismissHudNotificationCard = dismissHudNotificationCard;
 
+// Generated narrative voice lines (scripts/voice/, src/voiceLines.js): exact
+// lines play when recorded for the current language; keyword clips otherwise.
+AudioManager.voiceLines = createVoiceLineLibrary({
+    fetchJson: async () => {
+        const response = await fetch(assetUrl(`${VOICE_LINES_ROOT}/manifest.json`));
+        if (!response.ok) throw new Error(`voice line manifest ${response.status}`);
+        return response.json();
+    },
+    getLocale: () => getLocale(),
+    translate: (key) => t(key)
+});
+
+// Developer commentary lives in src/developerCommentary.js (S49-38); main.js
+// supplies the settings flag, the HUD deck and controller focus. The thin
+// wrappers keep the game-event call sites below unchanged.
+const developerCommentary = createDeveloperCommentary({
+    t,
+    isEnabled: () => Boolean(state.settings.commentary),
+    isGameplayActive: () => isGameplayPhase() && isGameplayHudActive(),
+    isGameplayReady: () => (typeof window.isGameplayReady === 'function'
+        ? window.isGameplayReady()
+        : (isGameplayPhase() && isGameplayHudActive())),
+    getHudStack: () => document.querySelector('.hud-notification-stack'),
+    nextCardSeq: () => hudCardSeq++,
+    dismissCard: (card) => dismissHudNotificationCard(card),
+    updateDeck: () => updateHudNotificationDeck(),
+    focusTarget: (target) => focusControllerTarget(target),
+    // Generated commentary reads (scripts/voice/), when recorded for this language.
+    speak: (key) => AudioManager.playVoiceLine(`narrative.commentary.${key}.body`, { priority: 2 }),
+    // Read All's play buttons (commentary cards and the Development History).
+    hasVoice: (key) => Boolean(AudioManager.voiceLines.urlFor(key)),
+    playVoice: (key) => AudioManager.playVoiceLine(key, { priority: 1 }),
+    loadVoices: () => AudioManager.voiceLines.load()
+});
+
 function resetCommentaryRunState() {
-    commentarySeenThisRun.clear();
+    developerCommentary.resetRun();
 }
 
-function isCommentaryModeEnabled() {
-    return Boolean(state.settings.commentary);
+function showDeveloperCommentary(key, detail = {}, options = {}) {
+    return developerCommentary.show(key, detail, options);
 }
 
-// Commentary used to require the live gameplay HUD, so entries fired from
-// menus (Vault, Armory) or during the run intro were silently dropped and a
-// reviewer who switched it on saw nothing (Valve review 2026-09). Outside
-// gameplay, cards now go to a small stack over the menus.
-function getMenuCommentaryStack() {
-    let host = document.getElementById('menu-commentary-stack');
-    if (!host) {
-        host = document.createElement('div');
-        host.id = 'menu-commentary-stack';
-        host.className = 'menu-commentary-stack';
-        document.body.appendChild(host);
-    }
-    return host;
-}
-
-function showDeveloperCommentary(key, detail = {}, { once = true } = {}) {
-    if (!isCommentaryModeEnabled()) return false;
-    const entry = COMMENTARY_ENTRIES[key];
-    if (!entry) return false;
-    const commentaryKey = `${key}:${detail?.template ?? detail?.id ?? ''}`;
-    if (once && commentarySeenThisRun.has(commentaryKey)) return false;
-
-    const inGameplay = isGameplayPhase() && isGameplayHudActive();
-    const hudStack = inGameplay ? document.querySelector('.hud-notification-stack') : null;
-    const stack = hudStack ?? getMenuCommentaryStack();
-
-    commentarySeenThisRun.add(commentaryKey);
-
-    const card = document.createElement('div');
-    card.className = 'commentary-toast hud-stack-card hidden';
-    card.setAttribute('aria-live', 'polite');
-    card.dataset.notificationPriority = '22';
-    card.dataset.seq = String(hudCardSeq++);
-    card.dataset.autoDismissMs = String(Math.max(6200, Math.min(11000, entry.body.length * 62)));
-    card.dataset.removeDelayMs = '320';
-
-    const icon = document.createElement('div');
-    icon.className = 'commentary-toast__icon';
-    icon.textContent = 'DC';
-
-    const body = document.createElement('div');
-    body.className = 'commentary-toast__body';
-
-    const kicker = document.createElement('div');
-    kicker.className = 'commentary-toast__kicker';
-    kicker.textContent = t('ui.commentary.kicker');
-
-    const title = document.createElement('div');
-    title.className = 'commentary-toast__title';
-    title.textContent = entry.title;
-
-    const blurb = document.createElement('div');
-    blurb.className = 'commentary-toast__blurb';
-    blurb.textContent = entry.body;
-
-    body.append(kicker, title, blurb);
-    card.append(icon, body);
-    card.addEventListener('pointerdown', (event) => {
-        event.preventDefault();
-        dismissHudNotificationCard(card);
-    });
-
-    stack.append(card);
-    card.classList.remove('hidden');
-    if (hudStack) {
-        updateHudNotificationDeck();
-        requestAnimationFrame(() => {
-            card.classList.add('visible');
-            updateHudNotificationDeck();
-        });
-    } else {
-        // The menu stack has no HUD deck to time it out, so it times itself.
-        requestAnimationFrame(() => card.classList.add('visible'));
-        window.setTimeout(() => {
-            card.classList.remove('visible');
-            window.setTimeout(() => card.remove(), 320);
-        }, Number(card.dataset.autoDismissMs) || 8000);
-    }
-    return true;
-}
-
-// Run-start commentary fires while the intro is still playing; hold it until
-// the player is actually in control, then show it (gives up after 2 minutes).
 function showDeveloperCommentaryWhenPlaying(key) {
-    if (!isCommentaryModeEnabled()) return;
-    const deadline = Date.now() + 120_000;
-    const tick = () => {
-        const ready = typeof window.isGameplayReady === 'function' ? window.isGameplayReady() : (isGameplayPhase() && isGameplayHudActive());
-        if (ready) {
-            showDeveloperCommentary(key);
-            return;
-        }
-        if (Date.now() < deadline) window.setTimeout(tick, 500);
-    };
-    tick();
-}
-
-function renderCommentaryList() {
-    const list = document.getElementById('commentary-list');
-    if (!list) return;
-    list.innerHTML = '';
-    for (const entry of Object.values(COMMENTARY_ENTRIES)) {
-        const item = document.createElement('article');
-        item.className = 'commentary-list__item';
-        const title = document.createElement('h3');
-        title.className = 'commentary-list__title';
-        title.textContent = entry.title;
-        const body = document.createElement('p');
-        body.className = 'commentary-list__body';
-        body.textContent = entry.body;
-        item.append(title, body);
-        list.appendChild(item);
-    }
+    developerCommentary.showWhenPlaying(key);
 }
 
 function openCommentaryList() {
-    const modal = document.getElementById('commentary-list-modal');
-    if (!modal) return;
-    renderCommentaryList();
-    modal.classList.remove('hidden');
-    modal.setAttribute('aria-hidden', 'false');
-    requestAnimationFrame(() => focusControllerTarget(document.getElementById('close-commentary-list')));
+    developerCommentary.openList();
 }
 
 function closeCommentaryList() {
-    const modal = document.getElementById('commentary-list-modal');
-    if (!modal || modal.classList.contains('hidden')) return false;
-    modal.classList.add('hidden');
-    modal.setAttribute('aria-hidden', 'true');
-    return true;
+    return developerCommentary.closeList();
 }
 
 function dismissRadioPrompt(radioPrompt) {
@@ -5268,11 +5340,14 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     // Title / subtitle
     const title = document.querySelector('.game-over-title');
     const subtitle = document.querySelector('.game-over-subtitle');
-    if (title) title.textContent = isVictory ? t('ui.go.extraction_complete') : t('ui.go.exosuit_failure');
+    const pvpWin = isVictory && deathReason === 'pvp-win';
+    if (title) title.textContent = pvpWin ? t('ui.go.rival_eliminated') : (isVictory ? t('ui.go.extraction_complete') : t('ui.go.exosuit_failure'));
     if (subtitle) {
-        const outcomeReport = isVictory
-            ? `> MISSION: ${stats.missionLabel ?? 'COMPLETE'}. RETURNING TO MOTHERSHIP.`
-            : generateDeathReport(stats, deathReason);
+        const outcomeReport = pvpWin
+            ? t('ui.go.pvp_duel_won')
+            : isVictory
+                ? `> MISSION: ${stats.missionLabel ?? 'COMPLETE'}. RETURNING TO MOTHERSHIP.`
+                : generateDeathReport(stats, deathReason);
         const report = `${outcomeReport}\n\n${expeditionDebrief({
             victory: isVictory, reason: deathReason,
             buildCount: (window.game?.runRelics?.length ?? 0) + (window.game?.runOverclocks?.length ?? 0)
@@ -5359,9 +5434,23 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
 
     // The finalized-event listener (desktop only) starts the submit
     // synchronously and parks its promise here, so the board is read after it.
+    // Personal bests use the server's own ranking rules, so a NEW PERSONAL
+    // BEST here is a run the board would also count (Archive → RECORDS).
+    const { improved: improvedBoards } = personalBests.recordRun(steamRunPayload);
+    const personalBestLine = document.getElementById('go-personal-best');
+    if (personalBestLine) {
+        personalBestLine.textContent = improvedBoards.length
+            ? t('ui.records.new_best', { boards: improvedBoards.map((board) => t(boardLabelKey(board))).join(' · ') })
+            : '';
+        personalBestLine.classList.toggle('hidden', !improvedBoards.length);
+    }
+
     latestRunSubmission = null;
     dispatchSteamRunScoreFinalized(steamRunPayload, window);
     void renderGameOverLeaderboard(steamRunPayload, { submission: latestRunSubmission });
+    // VIEW ALL RECORDS opens Archive → RECORDS on the board this run counted for.
+    const recordsLink = document.getElementById('go-records-btn');
+    if (recordsLink) recordsLink.dataset.board = getGameOverLeaderboardBoard(steamRunPayload);
 
     const scoreVal = document.getElementById('go-score-val');
     const ratingBadge = document.getElementById('go-rating-badge');
@@ -6080,6 +6169,25 @@ window.addEventListener('player-extracted', (event) => {
     }, 600);
 });
 
+// PvP: the relay names the round's winner (pvpRoundCompleted). The loser
+// reaches Game Over through their own death; the winner used to get no screen
+// at all, so they could neither see the result nor vote for the rematch.
+window.addEventListener('pvp-round-completed', (event) => {
+    if (!event?.detail?.isLocalWinner || appPhase === 'gameover') return;
+    window.game?.setInputEnabled?.(false);
+    const stats = window.game?.getRunStats?.() ?? {};
+    window.setTimeout(() => {
+        triggerDoorTransition(
+            () => {
+                showGameOverScreen(stats, { isVictory: true, deathReason: 'pvp-win' });
+                window.game?.setInputEnabled?.(false);
+            },
+            null,
+            'win'
+        );
+    }, 900);
+});
+
 // ── Bunker Archive ────────────────────────────────────────────
 const ALL_LORE_KEYS = [
     'A01','A02','A03','A04','A05','A06','A07','A08','A09','A10','A11','A12',
@@ -6101,7 +6209,12 @@ function updateMenuCommandStatuses() {
     const foundLogs = new Set(getWorldMemory().logsFound ?? []).size;
     const printed = FAB_RECIPES.filter((recipe) => fabricator.isFabricated(recipe.id)).length;
 
-    setText('archive-command-status', t('ui.hub.status_logs', { found: foundLogs, total: ALL_LORE_KEYS.length }));
+    const archiveStatus = t('ui.hub.status_logs', { found: foundLogs, total: ALL_LORE_KEYS.length });
+    setText('archive-command-status', archiveStatus);
+    // Your Steam Best Run rank rides on the ARCHIVE button once known.
+    void recordsTab.bestRunRank().then((rank) => {
+        if (rank) setText('archive-command-status', `${archiveStatus} · ${t('ui.records.rank_suffix', { rank })}`);
+    }).catch(() => {});
     setText('codex-command-status', t('ui.hub.status_intel', { found: codexStore.getDiscoveredCount(), total: CODEX_TOTAL }));
     setText('fab-command-status', t('ui.hub.status_printed', { printed, total: FAB_RECIPES.length }));
 }
@@ -6178,6 +6291,15 @@ function buildArchiveModal() {
         { label: 'RECENT CONTAINMENT OPERATIONS', keys: recentKeys }
     ];
 
+    // Field-drop logs carry internal keys (drop_horizon_badge). Show them as
+    // LOG-D01.. like the authored logs, and by their item title once found.
+    let dropIndex = 0;
+    const archiveLogLabel = (key, isFound) => {
+        if (!String(key).startsWith('drop_')) return t('ui.lore.log_key', { key });
+        dropIndex += 1;
+        if (isFound) return window.game?.getLoreTitle?.(key) ?? t('ui.lore.log_key', { key: `D${String(dropIndex).padStart(2, '0')}` });
+        return t('ui.lore.log_key', { key: `D${String(dropIndex).padStart(2, '0')}` });
+    };
     for (const section of sections) {
         const sectionEl = document.createElement('section');
         sectionEl.className = 'archive-section';
@@ -6196,7 +6318,7 @@ function buildArchiveModal() {
             entry.className = `archive-log-entry ${isFound ? '' : 'archive-log-entry--undiscovered'}`;
             if (isFound) {
                 entry.type = 'button';
-                entry.setAttribute('aria-label', t('ui.lore.open_log', { key }));
+                entry.setAttribute('aria-label', t('ui.lore.open_log', { key: String(key).startsWith('drop_') ? (window.game?.getLoreTitle?.(key) ?? key) : key }));
                 entry.addEventListener('click', () => openArchiveLogDetail(key));
             }
 
@@ -6223,7 +6345,7 @@ function buildArchiveModal() {
 
             const keyEl = document.createElement('div');
             keyEl.className = 'archive-log-key';
-            keyEl.textContent = t('ui.lore.log_key', { key });
+            keyEl.textContent = archiveLogLabel(key, isFound);
 
             const textEl = document.createElement('div');
             textEl.className = `archive-log-text ${isFound ? '' : 'archive-log-text--locked'}`;
@@ -6317,8 +6439,13 @@ function renderArchiveAchievements() {
     renderAchievementCards(document.getElementById('archive-achievements-grid'), state);
 }
 
+// Tab ids come from the markup ([data-archive-tab]), so a new tab needs no edit here.
+function getArchiveTabNames() {
+    return [...document.querySelectorAll('#archive-modal [data-archive-tab]')].map((button) => button.dataset.archiveTab);
+}
+
 function setArchiveTab(tab, { focus = false } = {}) {
-    const known = ['lore', 'dossier', 'endings', 'achievements'];
+    const known = getArchiveTabNames();
     activeArchiveTab = known.includes(tab) ? tab : 'lore';
     for (const name of known) {
         const button = document.getElementById(`archive-tab-${name}`);
@@ -6332,6 +6459,7 @@ function setArchiveTab(tab, { focus = false } = {}) {
     if (activeArchiveTab === 'dossier') renderArchiveDossier();
     if (activeArchiveTab === 'endings') renderArchiveEndings();
     if (activeArchiveTab === 'achievements') renderArchiveAchievements();
+    if (activeArchiveTab === 'records') recordsTab.render();
     if (focus) document.getElementById(`archive-tab-${activeArchiveTab}`)?.focus?.();
 }
 
@@ -6535,9 +6663,7 @@ function renderAchievementsModal() {
     const state = achievementEngine.getState();
     const grid = document.getElementById('achievements-grid');
     const summary = document.getElementById('achievements-summary');
-    const status = document.getElementById('achievements-save-status');
     if (summary) summary.textContent = t('ui.ach.summary_unlocked', { unlocked: getAchievementUnlockCount(state), total: getLiveAchievementCount() });
-    if (status) status.textContent = '';
     renderAchievementCards(grid, state);
 }
 
@@ -6547,6 +6673,7 @@ function openAchievementsModal() {
     if (modal) {
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
+        syncControllerFocusBoundary();
     }
 }
 
@@ -6555,36 +6682,7 @@ function closeAchievementsModal() {
     if (modal) {
         modal.classList.add('hidden');
         modal.setAttribute('aria-hidden', 'true');
-    }
-}
-
-async function copyAchievementSaveCode() {
-    const code = exportSaveCode();
-    const status = document.getElementById('achievements-save-status');
-    if (!code) {
-        if (status) status.textContent = t('ui.save.code_unavailable');
-        window.AudioManager?.play?.('ui_error', { volume: 0.5 });
-        return;
-    }
-    let copied = false;
-    try {
-        await navigator.clipboard?.writeText(code);
-        copied = true;
-    } catch {
-        // clipboard blocked
-    }
-    if (status) {
-        status.textContent = copied
-            ? 'SAVE CODE COPIED'
-            : 'SAVE CODE READY IN SAVE DATA PANEL';
-    }
-    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
-    if (!copied) {
-        setSaveDataOpen(true);
-        if (saveDataCode) {
-            saveDataCode.value = code;
-            saveDataCode.select();
-        }
+        syncControllerFocusBoundary();
     }
 }
 
@@ -6592,7 +6690,6 @@ function installAchievementsUi() {
     updateAchievementsMenuButton({ shine: hasAnyUnlock(achievementEngine.getState()) });
     document.getElementById('achievements-btn')?.addEventListener('click', openAchievementsModal);
     document.getElementById('close-achievements-modal')?.addEventListener('click', closeAchievementsModal);
-    document.getElementById('achievement-copy-save')?.addEventListener('click', copyAchievementSaveCode);
     document.getElementById('achievements-modal')?.addEventListener('click', (event) => {
         if (event.target?.id === 'achievements-modal') closeAchievementsModal();
     });
@@ -7459,7 +7556,26 @@ function updateMusicTension() {
 
     // ── Track context (drives which stem plays) ──
     let nextContext;
-    if (bossActive || _distressModeActive) {
+    if (bossActive) {
+        const bossType = window.game?.activeBoss?.userData?.type ?? window.game?.activeBossType;
+        if (bossType === 'boss_cybersnail') {
+            nextContext = 'boss_cybersnail';
+        } else if (bossType === 'boss_cryosnail') {
+            nextContext = 'boss_cryosnail';
+        } else if (bossType === 'boss_sporesnail') {
+            nextContext = 'boss_sporesnail';
+        } else if (bossType === 'boss_queen') {
+            nextContext = 'boss_queen';
+        } else if (bossType === 'boss_corrupted_scout') {
+            nextContext = 'boss_scout';
+        } else if (bossType === 'boss_corrupted_tank') {
+            nextContext = 'boss_tank';
+        } else if (bossType === 'boss_corrupted_engineer') {
+            nextContext = 'boss_engineer';
+        } else {
+            nextContext = 'combat';
+        }
+    } else if (_distressModeActive) {
         nextContext = 'combat';
     } else if (nextTension === 'safe') {
         nextContext = 'safe_ship';
@@ -7588,6 +7704,12 @@ const gameOverMainMenu = document.getElementById('game-over-main-menu');
 
 if (gameOverTryAgain) {
     gameOverTryAgain.addEventListener('click', () => {
+        if (window.game?.isMultiplayer && window.game?.multiplayerMode === 'pvp') {
+            gameOverTryAgain.disabled = true;
+            gameOverTryAgain.textContent = t('ui.game_over.rematch_requested');
+            window.game.requestPvpRematch?.();
+            return;
+        }
         triggerDoorTransition(
             () => {
                 hideGameOverScreen();
@@ -8095,7 +8217,9 @@ async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
     const wasLoadingPaused = Boolean(game.loadingPaused);
 
     let announcedStage = '';
+    const startupStages = trackStartupStages();
     const announceDeploymentStage = (stage, status, progress) => {
+        startupStages.enter(stage);
         showRunLoadingScreen(status, progress, { overDoor: loaderOverDoor });
         if (announcedStage !== stage) {
             announcedStage = stage;
@@ -8129,6 +8253,7 @@ async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
         announceDeploymentStage('READY', 'DEPLOYMENT READY — TRANSFERRING CONTROL', 100);
         await new Promise((resolve) => window.setTimeout(resolve, loaderOverDoor ? 220 : 120));
     } finally {
+        startupStages.end();
         game.setLoadingPaused?.(wasLoadingPaused);
         await hideRunLoadingScreen({ fade: loaderOverDoor });
     }
@@ -8579,7 +8704,6 @@ function playCutsceneVideo(base, options = {}) {
         }
 
         const CUTSCENE_UPGRADE_MAP = {
-            'event-o2-generator-upgraded': 'int_04_warmth_beneath_the_ice',
             'event-boss-encounter-cybersnail': 'int_13_a_snail_blocks_the_hallway',
             'event-boss-encounter-cryosnail': 'int_26_absolute_zero_has_a_shell',
             'event-boss-encounter-sporesnail': 'int_27_the_bloom_that_hunts',
@@ -8600,7 +8724,7 @@ function playCutsceneVideo(base, options = {}) {
             const cleanSlug = resolvedBase.replace(/(_key_v1|_motion_v1)?\.(mp4|webm)$/, '').replace(/(_key_v1|_motion_v1)$/, '');
             overlay.style.setProperty('--class-intro-poster', `url('${assetUrl(`/interstitials/${cleanSlug}_key_v1.webp`)}')`);
         } else {
-            const posterUrl = resolvedBase.includes('/') || resolvedBase.endsWith('.mp4') ? '/title_key_art_v2.png' : `/cutscenes/${resolvedBase}-poster.jpg`;
+            const posterUrl = resolvedBase.includes('/') || resolvedBase.endsWith('.mp4') ? '/title_key_art_v2.webp' : `/cutscenes/${resolvedBase}-poster.jpg`;
             overlay.style.setProperty('--class-intro-poster', `url('${assetUrl(posterUrl)}')`);
         }
 
@@ -9036,10 +9160,18 @@ window.addEventListener('foundry-discovered', (event) => {
     });
 });
 window.addEventListener('black-box-recovered', () => {
+    window.AudioManager?.playOST?.(32, { volume: 0.58, loop: false });
     playAuthoredEventOnce('black_box_recovered', { videoBase: 'event-black-box-recovered' });
 });
 window.addEventListener('queen-fight-started', () => {
+    window.AudioManager?.playOST?.(31, { volume: 0.65, loop: true });
     playAuthoredEventOnce('queen_encounter', { videoBase: 'event-queen-encounter' });
+});
+window.addEventListener('enemy-first-spotted', (event) => {
+    const trackNum = event?.detail?.trackNum;
+    if (trackNum) {
+        window.AudioManager?.playOST?.(trackNum, { volume: 0.50, loop: false });
+    }
 });
 
 // ── Act 2 run intro: the queen replaces the Mothership handshake ──
@@ -9082,6 +9214,9 @@ async function runAct2IntroSequence(game, playerType) {
     document.body.classList.remove('hud-hidden');
 
     const lines = alreadyBegun ? ACT2_LINES.resume : ACT2_LINES.intro;
+    if (!alreadyBegun) {
+        window.AudioManager?.playOST?.(33, { volume: 0.55, loop: true });
+    }
     await dialogueManager?.openBriefTransmission({ playerType, lines: [...lines] });
     // Post-reveal HUD: the cover meter joins the vitals panel.
     const infectedState = act2Manager.getState();
@@ -9267,7 +9402,40 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
     }
 }
 
+let scoutHeroPreview = null;
+let scoutHeroPreviewPromise = null;
+
+function ensureScoutHeroPreview() {
+    const canvas = document.getElementById('char-preview-3d');
+    if (!canvas) return Promise.resolve(null);
+    if (!scoutHeroPreviewPromise) {
+        scoutHeroPreviewPromise = createScoutHeroPreview(canvas)
+            .then((preview) => {
+                scoutHeroPreview = preview;
+                preview.setOperatorPolish(getSelectedPolish?.()?.color ?? 0xffffff);
+                const targetType = (typeof activePreviewType !== 'undefined' ? activePreviewType : null)
+                    ?? document.querySelector('.char-card.selected')?.getAttribute('data-type')
+                    ?? 'SCOUT';
+                void preview.setType(targetType);
+                preview.setVisible(true);
+                const sprite = document.getElementById('char-preview-sprite');
+                const fallback = document.getElementById('char-preview-fallback');
+                sprite?.classList.add('hidden');
+                fallback?.classList.add('hidden');
+                return preview;
+            })
+            .catch((error) => {
+                console.warn('[scout-hero-preview] keeping 2D fallback', error);
+                return null;
+            });
+    }
+    return scoutHeroPreviewPromise;
+}
+
 const transitionFromTitleToMenu = (afterClosed = null) => {
+    ensureScoutHeroPreview();
+    const currentSelectedType = document.querySelector('.char-card.selected')?.getAttribute('data-type') || 'SCOUT';
+    warmClassIntroMedia?.(currentSelectedType);
     triggerDoorTransition(
         () => {
             if (splash) splash.classList.add('hidden');
@@ -9518,7 +9686,15 @@ if (startBtn) {
                     triggerDoorTransition(
                         () => {
                             multiplayerLobby.closeModal();
-                            void openArmoryGate(openDeploymentBriefing, { skipDoor: true });
+                            // Back on the Armory, a controller lands on the button it
+                            // left from. The screen is hidden mid-door, so the focus
+                            // boundary loses the invoker and the pad used to start
+                            // from nothing (S49-10 journey probe).
+                            void openArmoryGate(openDeploymentBriefing, { skipDoor: true }).then(() => {
+                                if (isSteamControllerInputActive()) {
+                                    focusControllerTarget(document.getElementById('armory-btn-embark'));
+                                }
+                            });
                         },
                         undefined,
                         playerType
@@ -10597,6 +10773,8 @@ window.__DEBUG__ = {
     // career readout and progress bars without playing a full expedition.
     recordRunEnd: (stats = {}) => recordAchievementRunEnd(stats).state,
     closeMuseum: () => closeDebugMuseum(window.game),
+    // One row per museum exhibit: load ok/error, measured size, triangles.
+    museumReport: () => window.game?.scene?.getObjectByName('debug-museum')?.userData?.museumReport ?? null,
     getState: () => ({
         appPhase,
         playerType: window.game?.playerType,
@@ -10947,7 +11125,10 @@ function organizeSettingsPanels() {
         ['setting-camera-shake', 'accessibility'],
         ['setting-aim-assist', 'controls'],
         ['setting-reduced-pressure', 'accessibility'],
-        ['setting-gore-toggle', 'accessibility']
+        ['setting-gore-toggle', 'accessibility'],
+        // The mature-content reader sits with the gore toggle: a reviewer told
+        // "Settings > Content Guide" found it stranded under CONTROLS (S49-10/11).
+        ['open-mature-audit-btn', 'accessibility']
     ].forEach(([id, target]) => moveControl(id, target));
 }
 organizeSettingsPanels();
@@ -10980,6 +11161,9 @@ settingsPopup?.querySelector('.settings-tabs')?.addEventListener('click', (event
 });
 
 settingsPopup?.querySelector('.settings-tabs')?.addEventListener('keydown', (event) => {
+    // The capture-phase menu handler (moveSettingsDirectionalFocus) already
+    // moved: stepping again here skipped a tab per press.
+    if (event.defaultPrevented) return;
     if (event.key === 'ArrowDown') {
         event.preventDefault();
         moveSettingsDirectionalFocus(event.key);
@@ -11382,17 +11566,23 @@ if (confirmYes) {
         }
     });
 }
+function closeSettingsModal() {
+    if (!settingsPopup) return;
+    settingsPopup.classList.add('hidden');
+    noteModalClosed('settings');
+    syncSteamInputPhase();
+    draftAudioMix = cloneAudioMix(state.settings.audioMix);
+    AudioManager.setMix(state.settings.audioMix);
+    setAudioMixerOpen(false);
+    setSaveDataOpen(false);
+    setResetSaveConfirmOpen(false);
+    setCrosshairColorOpen(false);
+    setLanguageSelectOpen(false);
+}
+
 if (closeSettings && settingsPopup) {
     closeSettings.addEventListener('click', () => {
-        settingsPopup.classList.add('hidden');
-        syncSteamInputPhase();
-        draftAudioMix = cloneAudioMix(state.settings.audioMix);
-        AudioManager.setMix(state.settings.audioMix);
-        setAudioMixerOpen(false);
-        setSaveDataOpen(false);
-        setResetSaveConfirmOpen(false);
-        setCrosshairColorOpen(false);
-        setLanguageSelectOpen(false);
+        closeSettingsModal();
     });
 }
 
@@ -11883,7 +12073,8 @@ function pollTacticalMapGamepadInput() {
                 controllerPressGate.claim([
                     ...(pad.buttons?.[1]?.pressed ? ['menuBack', 'dash'] : []),
                     ...(pad.buttons?.[8]?.pressed ? ['toggleMap'] : []),
-                    ...(pad.buttons?.[9]?.pressed ? ['pause'] : [])
+                    ...(pad.buttons?.[9]?.pressed ? ['pause'] : []),
+                    'sprint'
                 ], `browser-gamepad:${pad.index ?? 0}`);
                 toggleTacticalMapModal(false);
                 return;
@@ -12492,6 +12683,7 @@ function toggleTacticalMapModal(forceState) {
     } else {
         modal.classList.add('hidden');
         modal.setAttribute('aria-hidden', 'true');
+        noteModalClosed('tactical-map');
         if (tacticalMapAnimFrame) {
             cancelAnimationFrame(tacticalMapAnimFrame);
             tacticalMapAnimFrame = null;
@@ -12565,18 +12757,18 @@ document.addEventListener('keydown', (event) => {
 
     if (event.code === 'KeyT') {
         const activeTag = document.activeElement?.tagName?.toLowerCase();
-        if (activeTag !== 'input' && activeTag !== 'textarea') {
-            const tradeModal = document.getElementById('player-trade-modal');
-            if (tradeModal && !tradeModal.classList.contains('hidden')) {
+        const tradeModal = document.getElementById('player-trade-modal');
+        const tradeOpen = Boolean(tradeModal && !tradeModal.classList.contains('hidden'));
+        const remotes = window.game?.remotePlayers;
+        // T is also the tactical ping (threeGame.js). Barter only exists with a
+        // real squadmate: solo play used to open a trade window with a made-up
+        // "SQUAD-OPERATIVE" on every ping.
+        if (activeTag !== 'input' && activeTag !== 'textarea' && (tradeOpen || remotes?.size > 0)) {
+            if (tradeOpen) {
                 playerTradeManager.closeTrade();
             } else {
                 setupPlayerTradeEvents();
-                const remotes = window.game?.remotePlayers;
-                let nearest = null;
-                if (remotes && remotes.size > 0) {
-                    nearest = Array.from(remotes.values())[0];
-                }
-                playerTradeManager.openTrade(nearest || { id: 'squad-peer', callsign: 'SQUAD-OPERATIVE', opClass: 'SCOUT' });
+                playerTradeManager.openTrade(Array.from(remotes.values())[0]);
             }
             event.preventDefault();
             return;
@@ -12704,14 +12896,21 @@ document.addEventListener('keydown', (event) => {
 
         const settingsPopup = document.getElementById('settings-popup');
         if (settingsPopup && !settingsPopup.classList.contains('hidden')) {
-            settingsPopup.classList.add('hidden');
-            draftAudioMix = cloneAudioMix(state.settings.audioMix);
-            AudioManager.setMix(state.settings.audioMix);
-            setAudioMixerOpen(false);
-            setSaveDataOpen(false);
-            setResetSaveConfirmOpen(false);
-            setCrosshairColorOpen(false);
-            setLanguageSelectOpen(false);
+            // A surface opened from Settings and drawn above it (the Content
+            // Guide, the walkthrough) closes on its own; one Back press used to
+            // close it AND Settings behind it, dropping the reviewer out of
+            // Settings entirely (S49-10/11).
+            const surfaceAbove = getControllerFocusRoot();
+            if (surfaceAbove && surfaceAbove !== settingsPopup && isModalFocusRoot(surfaceAbove)) {
+                const back = getControllerBackTarget(surfaceAbove);
+                if (back) {
+                    back.click();
+                    noteModalClosed('settings-subsurface');
+                    event.preventDefault();
+                    return;
+                }
+            }
+            closeSettingsModal();
             event.preventDefault();
             return;
         }
@@ -12719,6 +12918,7 @@ document.addEventListener('keydown', (event) => {
         const aboutModal = document.getElementById('about-modal');
         if (aboutModal && !aboutModal.classList.contains('hidden')) {
             closeAboutModal();
+            noteModalClosed('about');
             event.preventDefault();
             return;
         }
@@ -12726,6 +12926,7 @@ document.addEventListener('keydown', (event) => {
         const consoleModal = document.getElementById('console-terminal-modal');
         if (consoleModal && !consoleModal.classList.contains('hidden')) {
             window.game?.closeConsoleModal?.();
+            noteModalClosed('console');
             event.preventDefault();
             return;
         }
@@ -12733,6 +12934,7 @@ document.addEventListener('keydown', (event) => {
         const o2GeneratorModal = document.getElementById('o2-generator-modal');
         if (o2GeneratorModal && !o2GeneratorModal.classList.contains('hidden')) {
             window.game?.closeO2GeneratorModal?.();
+            noteModalClosed('o2');
             event.preventDefault();
             return;
         }
@@ -12740,12 +12942,14 @@ document.addEventListener('keydown', (event) => {
         const loreModal = document.getElementById('lore-modal');
         if (loreModal && !loreModal.classList.contains('hidden')) {
             closeLoreModalAndResume();
+            noteModalClosed('lore');
             event.preventDefault();
             return;
         }
 
         if (foundryHub.isOpen()) {
             foundryHub.close();
+            noteModalClosed('foundry');
             event.preventDefault();
             return;
         }
@@ -12753,6 +12957,7 @@ document.addEventListener('keydown', (event) => {
         const fabricationModal = document.getElementById('fabrication-modal');
         if (fabricationModal && !fabricationModal.classList.contains('hidden')) {
             closeFabricationModal();
+            noteModalClosed('fabrication');
             event.preventDefault();
             return;
         }
@@ -12760,15 +12965,15 @@ document.addEventListener('keydown', (event) => {
         const archiveLogDetail = document.getElementById('archive-log-detail-modal');
         if (archiveLogDetail && !archiveLogDetail.classList.contains('hidden')) {
             closeArchiveLogDetail();
+            noteModalClosed('archive-detail');
             event.preventDefault();
             return;
         }
 
         const archiveModal = document.getElementById('archive-modal');
         if (archiveModal && !archiveModal.classList.contains('hidden')) {
-            closeArchiveLogDetail();
-            archiveModal.classList.add('hidden');
-            archiveModal.setAttribute('aria-hidden', 'true');
+            closeArchiveModal();
+            noteModalClosed('archive');
             event.preventDefault();
             return;
         }
@@ -12776,6 +12981,7 @@ document.addEventListener('keydown', (event) => {
         const codexDetailModal = document.getElementById('codex-detail-modal');
         if (codexDetailModal && !codexDetailModal.classList.contains('hidden')) {
             closeCodexDetailModal();
+            noteModalClosed('codex-detail');
             event.preventDefault();
             return;
         }
@@ -12783,6 +12989,7 @@ document.addEventListener('keydown', (event) => {
         const codexModal = document.getElementById('codex-modal');
         if (codexModal && !codexModal.classList.contains('hidden')) {
             closeCodexModal();
+            noteModalClosed('codex');
             event.preventDefault();
             return;
         }
@@ -12790,6 +12997,7 @@ document.addEventListener('keydown', (event) => {
         const achievementsModal = document.getElementById('achievements-modal');
         if (achievementsModal && !achievementsModal.classList.contains('hidden')) {
             document.getElementById('close-achievements-modal')?.click();
+            noteModalClosed('achievements');
             event.preventDefault();
             return;
         }
@@ -12797,6 +13005,7 @@ document.addEventListener('keydown', (event) => {
         const seasonPassModal = document.getElementById('season-pass-modal');
         if (seasonPassModal && !seasonPassModal.classList.contains('hidden')) {
             document.getElementById('close-season-pass-modal')?.click();
+            noteModalClosed('season-pass');
             event.preventDefault();
             return;
         }
@@ -12804,6 +13013,7 @@ document.addEventListener('keydown', (event) => {
         const steamVaultModal = document.getElementById('steam-vault-modal');
         if (steamVaultModal && !steamVaultModal.classList.contains('hidden')) {
             document.getElementById('close-steam-vault-modal')?.click();
+            noteModalClosed('steam-vault');
             event.preventDefault();
             return;
         }
@@ -12811,6 +13021,7 @@ document.addEventListener('keydown', (event) => {
         const operatorPolishModal = document.getElementById('operator-polish-modal');
         if (operatorPolishModal && !operatorPolishModal.classList.contains('hidden')) {
             setOperatorPolishModalOpen(false);
+            noteModalClosed('operator-polish');
             event.preventDefault();
             return;
         }
@@ -12818,6 +13029,7 @@ document.addEventListener('keydown', (event) => {
         const armoryScreen = document.getElementById('armory-screen');
         if (armoryScreen && !armoryScreen.classList.contains('hidden')) {
             document.getElementById('armory-btn-back')?.click();
+            noteModalClosed('armory');
             event.preventDefault();
             return;
         }
@@ -12828,11 +13040,16 @@ document.addEventListener('keydown', (event) => {
             : null;
         if (fallbackBackTarget) {
             fallbackBackTarget.click();
+            noteModalClosed('fallback-back');
             event.preventDefault();
             return;
         }
 
         if (isGameplayPhase()) {
+            if (event.isControllerBack || (performance.now() - lastModalCloseTimestamp < 350)) {
+                event.preventDefault();
+                return;
+            }
             openSettingsModal();
             event.preventDefault();
             return;
@@ -12864,17 +13081,22 @@ function closeArchiveModal() {
     const modal = document.getElementById('archive-modal');
     closeArchiveLogDetail();
     if (modal) {
+        modal.classList.remove('archive-modal--overlay');
         modal.classList.add('hidden');
         modal.setAttribute('aria-hidden', 'true');
     }
+    // Hands focus back to whatever opened the Archive.
+    syncControllerFocusBoundary();
 }
 
 for (const tab of document.querySelectorAll('[data-archive-tab]')) {
     tab.addEventListener('click', () => setArchiveTab(tab.dataset.archiveTab, { focus: true }));
     tab.addEventListener('keydown', (event) => {
+        // Left / right are handled once by moveTabBarSelection (capture phase).
+        if (event.defaultPrevented) return;
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
         event.preventDefault();
-        const tabs = ['lore', 'dossier', 'endings', 'achievements'];
+        const tabs = getArchiveTabNames();
         const current = tabs.indexOf(activeArchiveTab);
         const next = event.key === 'Home' ? 0
             : event.key === 'End' ? tabs.length - 1
@@ -12883,15 +13105,37 @@ for (const tab of document.querySelectorAll('[data-archive-tab]')) {
     });
 }
 
-document.getElementById('archive-btn')?.addEventListener('click', () => {
+
+/**
+ * The one way into the Archive. `overlay` lifts it above the screen that
+ * opened it (Tactical Net, Game Over), which share its z-index but come later
+ * in the page.
+ */
+function openArchiveModal({ tab = activeArchiveTab, view = null, board = null, overlay = false } = {}) {
     buildArchiveModal();
-    setArchiveTab(activeArchiveTab);
     const modal = document.getElementById('archive-modal');
+    modal?.classList.toggle('archive-modal--overlay', overlay);
     if (modal) {
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
     }
-});
+    // Sync before focusing the tab: the boundary records the opener (still
+    // focused outside the Archive) and gives focus back to it on close.
+    syncControllerFocusBoundary();
+    if (tab === 'records' && view) recordsTab.show({ view, board });
+    setArchiveTab(tab, { focus: true });
+}
+window.openArchiveModal = openArchiveModal;
+
+document.getElementById('archive-btn')?.addEventListener('click', () => openArchiveModal());
+document.getElementById('homebase-records-btn')?.addEventListener('click', () => openArchiveModal({ tab: 'records', view: 'service' }));
+document.getElementById('net-records-btn')?.addEventListener('click', () => openArchiveModal({ tab: 'records', view: 'service', overlay: true }));
+document.getElementById('go-records-btn')?.addEventListener('click', () => openArchiveModal({
+    tab: 'records',
+    view: 'boards',
+    board: document.getElementById('go-records-btn')?.dataset.board || null,
+    overlay: true
+}));
 document.getElementById('close-archive-modal')?.addEventListener('click', () => {
     closeArchiveModal();
 });
@@ -12901,419 +13145,40 @@ setupClickOutside('archive-modal', () => {
 document.getElementById('close-archive-log-detail')?.addEventListener('click', closeArchiveLogDetail);
 setupClickOutside('archive-log-detail-modal', closeArchiveLogDetail);
 
-// ── Fabrication Bay ───────────────────────────────────────────
-// Spend banked salvage to print gear (recipe art reused from mothership's item
-// cards). The Bay button unlocks once the O2 station powers the base (Beat 4 /
-// .claude_work/01-feature-port-from-mothership.md §A).
-function fabCostMarkup(cost) {
-    const parts = [];
-    if (cost.tech) parts.push(`<span class="fab-cost-chip">⬢ ${cost.tech}</span>`);
-    if (cost.coin) parts.push(`<span class="fab-cost-chip">◎ ${cost.coin}</span>`);
-    if (cost.med) parts.push(`<span class="fab-cost-chip">✚ ${cost.med}</span>`);
-    return parts.join('');
-}
-
-function getBankResourceAmount(bank, key) {
-    const value = Number(bank?.[key]);
-    return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
-}
-
-function fabCostText(cost, bank = bankManager.getState(), { showHaveNeed = false } = {}) {
-    const parts = [];
-    for (const [key, label] of [['tech', 'TECH'], ['coin', 'COIN'], ['med', 'MED']]) {
-        const need = Number(cost?.[key] ?? 0);
-        if (!Number.isFinite(need) || need <= 0) continue;
-        const normalizedNeed = Math.floor(need);
-        const have = getBankResourceAmount(bank, key);
-        parts.push(showHaveNeed ? `${label} ${have}/${normalizedNeed}` : `${normalizedNeed} ${label}`);
-    }
-    return parts.length ? parts.join(' / ') : 'NO COST';
-}
+// ── Fabrication Bay (src/fabricationBay.js, S49-38) ─────────────
+// Spend banked salvage to print gear. The bay module owns its DOM, timers and
+// listeners; main.js supplies the managers, focus, prompts and the hub, and
+// keeps these thin wrappers so the menu, hub and camp-rest call sites stay put.
+const fabricationBay = createFabricationBay({
+    t,
+    fabricator,
+    bankManager,
+    loadout,
+    getGame: () => window.game,
+    playSound: (sound, options) => window.AudioManager?.play?.(sound, options),
+    playLoot: (kind, rarity) => window.AudioManager?.playProceduralLoot?.(kind, rarity),
+    log: (event, detail) => debugLog.info('FOUNDRY', event, detail),
+    focus: (target) => focusControllerTarget(target),
+    getPreferredFocus: (modal) => getPreferredControllerFocusTarget(modal, getVisibleControllerFocusables(modal)),
+    updateMenuStatuses: () => updateMenuCommandStatuses(),
+    syncEquippedWeaponLabel: () => syncEquippedWeaponLabel(),
+    syncOutputOwnership: () => syncFabricatorOutputOwnership(),
+    showPrompt: (text) => showBiomePrompt(text),
+    onFoundryActivated: () => refreshFabAccess(),
+    isHubEnabled: () => isFoundryHubEnabled(),
+    openHub: (tab) => foundryHub.open(tab)
+});
+fabricationBay.attach();
 
 function fabMissingResourceText(cost, bank = bankManager.getState()) {
-    const missing = [];
-    for (const [key, label] of [['tech', 'TECH'], ['coin', 'COIN'], ['med', 'MED']]) {
-        const need = Number(cost?.[key] ?? 0);
-        if (!Number.isFinite(need) || need <= 0) continue;
-        const delta = Math.max(0, Math.floor(need) - getBankResourceAmount(bank, key));
-        if (delta > 0) missing.push(`${delta} ${label}`);
-    }
-    return missing.length ? `NEED ${missing.join(' / ')}` : '';
+    return fabMissingResourceTextFor(cost, bank);
 }
-
-// What a recipe prints, as the shared item catalog shows it. A fabricated
-// weapon is a firing profile fitted to the active class's gun, so it wears
-// that gun's picture.
-function fabItemOptions() {
-    const classId = loadout.activeClassId;
-    return { classId, frameId: `frame:${loadout.getClassLoadout(classId)?.archetypeId ?? ''}` };
-}
-
-function fabItemView(recipe) {
-    const view = describeRecipe(recipe, fabItemOptions());
-    return { id: view?.id ?? null, name: view?.name ?? recipe?.name ?? '', icon: view?.icon ?? '/favicon.png' };
-}
-
-// A Foundry weapon's effect on the class gun, as chips: the multipliers
-// combat applies (src/fieldWeapon.js), so every weapon card reads differently
-// even though they all fit the same gun.
-function fabWeaponStatsMarkup(recipe) {
-    const stats = recipe?.output?.kind === 'weapon' ? describeFieldWeapon(recipe.id) : null;
-    if (!stats) return '';
-    const mult = (value) => (Math.round(value * 100) / 100).toFixed(2).replace(/0$/, '');
-    const tone = (value) => (value > 1.001 ? 'up' : value < 0.999 ? 'down' : 'flat');
-    const chip = (key, value, vars) => `<span class="fab-stat fab-stat--${tone(value)}">${t(key, vars)}</span>`;
-    return `<div class="fab-stats">${[
-        chip('ui.fab.stat_damage', stats.damage, { value: mult(stats.damage) }),
-        chip('ui.fab.stat_rate', stats.fireRate, { value: mult(stats.fireRate) }),
-        chip('ui.fab.stat_range', stats.range, { value: mult(stats.range) }),
-        stats.projectiles > 1 ? chip('ui.fab.stat_shots', 2, { count: stats.projectiles }) : ''
-    ].join('')}</div>`;
-}
-
-function logFoundry(event, recipe, extra = {}) {
-    const view = recipe ? fabItemView(recipe) : null;
-    debugLog.info('FOUNDRY', event, { recipeId: recipe?.id ?? null, item: view?.id ?? null, itemName: view?.name ?? null, rarity: recipe?.rarity ?? null, icon: view?.icon ?? null, classId: loadout.activeClassId, ...extra });
-}
-
-window.addEventListener('fabrication-started', (event) => logFoundry('print-started', event.detail?.recipe));
-window.addEventListener('fabrication-complete', (event) => logFoundry('print-complete', event.detail?.recipe));
-window.addEventListener('fabrication-rolled', (event) => logFoundry('roll-revealed', event.detail?.recipe, { duplicate: Boolean(event.detail?.duplicate), objectiveHit: Boolean(event.detail?.objectiveHit), broken: Boolean(event.detail?.broken) }));
-
-function renderFieldPrint(grid, bank) {
-    const recipe = FAB_RECIPES.find(entry => entry.id === 'scatter_rep');
-    const cost = fabricator.getEffectiveCost(recipe);
-    const fabricated = fabricator.isFabricated(recipe.id);
-    const printing = fabricator.isPrinting(recipe.id);
-    const equipped = loadout.getEquippedId() === recipe.id;
-    const panel = document.createElement('div');
-    panel.className = 'fab-activation-panel';
-    panel.innerHTML = `<div class="fab-activation-panel__kicker">GUARANTEED FIELD PRINT · ALL CLASSES</div>
-        <div class="fab-activation-panel__title">${t('ui.fab.scatter_repeater')}</div>
-        <p>Three close-range projectiles per shot; shorter reach. Equip for your next deployment. No Foundry activation needed for this field schematic.</p>
-        <div class="fab-activation-panel__cost">${fabCostText(cost, bank, { showHaveNeed: !bankManager.canAfford(cost) })}</div>`;
-    const button = document.createElement('button');
-    button.id = 'season-field-print';
-    button.className = 'fab-card__btn';
-    button.textContent = fabricated ? (equipped ? t('ui.fab.equipped_next_run') : t('ui.fab.equip_scatter')) : printing ? t('ui.fab.printing') : bankManager.canAfford(cost) ? 'PRINT SCATTER REPEATER' : fabMissingResourceText(cost, bank);
-    button.disabled = printing || equipped || (!fabricated && !bankManager.canAfford(cost));
-    button.addEventListener('click', () => {
-        try {
-            if (fabricated) { loadout.equip(recipe.id, fabricator); syncEquippedWeaponLabel(); }
-            else { fabricator.startPrint(recipe.id, bankManager); startFabTicker(); }
-            renderFabricationModal();
-        } catch { button.textContent = t('ui.fab.save_pending'); }
-    });
-    panel.appendChild(button);
-    grid.appendChild(panel);
-}
-
-function renderFoundryActivationPanel(grid, bank) {
-    const activated = bankManager.isFoundryActivated();
-    if (activated) return false;
-
-    const canActivate = bankManager.canActivateFoundry();
-    const missingText = fabMissingResourceText(FOUNDRY_ACTIVATION_COST, bank);
-    const panel = document.createElement('div');
-    panel.className = 'fab-activation-panel';
-    panel.innerHTML = `
-        <div class="fab-activation-panel__kicker">${t('ui.fab.foundry_required')}</div>
-        <div class="fab-activation-panel__title">${t('ui.fab.activate_bay')}</div>
-        <div class="fab-activation-panel__desc">${t('ui.fab.bring_online')}</div>
-        <div class="fab-activation-panel__cost">${fabCostText(FOUNDRY_ACTIVATION_COST, bank, { showHaveNeed: !canActivate })}</div>
-        <div class="fab-activation-panel__hint">${canActivate ? 'READY TO ACTIVATE' : missingText}</div>
-    `;
-    const btn = document.createElement('button');
-    btn.id = 'fab-activate-btn';
-    btn.className = 'fab-card__btn';
-    btn.disabled = !canActivate;
-    btn.textContent = canActivate ? t('ui.fab.activate_foundry') : missingText;
-    if (!canActivate) btn.classList.add('fab-card__btn--locked');
-    btn.addEventListener('click', () => {
-        if (bankManager.activateFoundry()) {
-            window.AudioManager?.play?.('class_lock', { volume: 0.55 });
-            renderFabricationModal();
-            refreshFabAccess();
-            requestAnimationFrame(() => focusControllerTarget(document.getElementById('fab-roll-btn')));
-        } else {
-            window.AudioManager?.play?.('ui_error', { volume: 0.5 });
-            renderFabricationModal();
-        }
-    });
-    panel.appendChild(btn);
-    grid.appendChild(panel);
-    return true;
-}
-
-function renderFabricationModal() {
-    const grid = document.getElementById('fab-recipe-grid');
-    if (!grid) return;
-    const bank = bankManager.getState();
-    updateMenuCommandStatuses();
-    const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    setTxt('fab-bank-tech', bank.tech ?? 0);
-    setTxt('fab-bank-coin', bank.coin ?? 0);
-    setTxt('fab-bank-med', bank.med ?? 0);
-    setTxt('fab-bank-shells', bank.shells ?? 0);
-
-    const rollPanel = document.getElementById('fab-roll-panel');
-    grid.innerHTML = '';
-    if (!bankManager.isFoundryActivated()) renderFieldPrint(grid, bank);
-    if (renderFoundryActivationPanel(grid, bank)) {
-        rollPanel?.classList.add('hidden');
-        setTxt('fab-summary', `FOUNDRY ACTIVATION: ${fabCostText(FOUNDRY_ACTIVATION_COST, bank, { showHaveNeed: !bankManager.canActivateFoundry() })}`);
-        return;
-    }
-
-    // Bay is online → show the gamba roll panel and sync the roll button.
-    rollPanel?.classList.remove('hidden');
-    const rollBtn = document.getElementById('fab-roll-btn');
-    if (rollBtn && !fabRollSpinning) {
-        const canRoll = fabricator.canRoll(bankManager);
-        const objective = fabricator.getObjectiveState();
-        rollBtn.disabled = !canRoll;
-        rollBtn.classList.toggle('fab-roll-btn--locked', !canRoll);
-        rollBtn.innerHTML = canRoll
-            ? `FABRICATE TARGET &nbsp;·&nbsp; ${fabCostMarkup(FAB_SPIN_COST)}`
-            : objective.siteUsesRemaining <= 0
-                ? 'FABRICATOR BROKEN — FOLLOW NEXT SIGNAL'
-                : `INSUFFICIENT SALVAGE &nbsp;·&nbsp; ${fabCostText(FAB_SPIN_COST, bank, { showHaveNeed: true })}`;
-    }
-
-    // The odds the roll uses, shown before the player spends (decision 10).
-    const oddsEl = document.getElementById('fab-odds');
-    if (oddsEl) {
-        oddsEl.innerHTML = `<span class="fab-odds__label">${t('ui.fab.odds')}</span>`
-            + getFabricationOdds().map(({ rarity, chance }) => `<span class="fab-odds__tier fab-odds__tier--${rarity.toLowerCase()}">${t(`rarity.${rarity.toLowerCase()}`)} ${Math.round(chance * 100)}%</span>`).join('');
-    }
-
-    for (const recipe of FAB_RECIPES) {
-        const fabricated = fabricator.isFabricated(recipe.id);
-
-        // These are real current-run outputs, not concept collection cards.
-        const rarity = (recipe.rarity ?? 'COMMON').toLowerCase();
-        const card = document.createElement('div');
-        card.className = ['fab-card', `fab-card--${rarity}`, fabricated ? 'fab-card--done' : 'fab-card--locked'].filter(Boolean).join(' ');
-
-        const art = document.createElement('div');
-        art.className = 'fab-card__art';
-        const img = document.createElement('img');
-        const view = fabItemView(recipe);
-        img.loading = 'lazy'; img.decoding = 'async'; img.alt = view.name; img.src = assetUrl(view.icon);
-        img.addEventListener('error', () => { img.src = assetUrl('/bunker_junk_rare.png'); }, { once: true });
-        art.appendChild(img);
-        const rarityTag = document.createElement('span');
-        rarityTag.className = 'fab-card__rarity';
-        rarityTag.textContent = recipe.rarity ?? t('ui.fab.common');
-        art.appendChild(rarityTag);
-        card.appendChild(art);
-
-        const name = document.createElement('div');
-        name.className = 'fab-card__name';
-        name.innerHTML = `<span class="fab-card__klass">${recipe.klass}</span>${view.name}`;
-        card.appendChild(name);
-
-        const description = document.createElement('div');
-        description.className = 'fab-card__description';
-        description.textContent = recipe.blurb;
-        card.appendChild(description);
-        const stats = fabWeaponStatsMarkup(recipe);
-        if (stats) card.insertAdjacentHTML('beforeend', stats);
-
-        const status = document.createElement('div');
-        status.className = 'fab-card__status';
-        status.textContent = fabricated ? t('ui.fab.ready_to_apply') : fabricator.isPrinting(recipe.id)
-            ? `PRINTING ${Math.round(fabricator.getPrintProgress(recipe.id) * 100)}%`
-            : `PRINT COST · ${fabCostText(fabricator.getEffectiveCost(recipe), bank)}`;
-        card.appendChild(status);
-
-        const addApplyButton = (label, replaceSlot = null) => {
-            const button = document.createElement('button');
-            button.className = 'fab-card__btn';
-            button.textContent = label;
-            button.addEventListener('click', () => {
-                syncFabricatorOutputOwnership();
-                const result = applyFabricatedRecipeOutput(recipe, {
-                    fabricator,
-                    loadout,
-                    game: window.game,
-                    classId: loadout.activeClassId,
-                    replaceSlot
-                });
-                logFoundry(result.ok ? 'output-applied' : 'output-rejected', recipe, { granted: result.id ?? result.itemdefid ?? null, slot: result.slot ?? null, reason: result.reason ?? null });
-                if (result.ok) {
-                    window.AudioManager?.play?.('class_lock', { volume: 0.55 });
-                    syncEquippedWeaponLabel();
-                    renderFabricationModal();
-                } else {
-                    button.textContent = result.reason === 'slot_conflict' ? t('ui.fab.choose_bay') : t('ui.fab.apply_failed');
-                    window.AudioManager?.play?.('ui_error', { volume: 0.5 });
-                }
-            });
-            card.appendChild(button);
-        };
-
-        if (fabricated) {
-            const output = recipe.output ?? { kind: 'weapon' };
-            const current = loadout.getClassLoadout(loadout.activeClassId);
-            if (output.kind === 'weapon') {
-                const equipped = loadout.getEquippedId(loadout.activeClassId) === recipe.id;
-                if (!equipped) addApplyButton('EQUIP NOW');
-                else status.textContent = t('ui.fab.equipped_current');
-            } else if (output.kind === 'charm') {
-                const equipped = String(current.charmId ?? '') === String(output.itemdefid);
-                if (!equipped) addApplyButton(current.charmId ? `REPLACE CHARM ${current.charmId}` : 'MOUNT CHARM NOW');
-                else status.textContent = t('ui.fab.mounted_current');
-            } else if (output.kind === 'mod') {
-                const equippedSlot = [current.mod1Id, current.mod2Id].findIndex((id) => String(id ?? '') === String(output.itemdefid));
-                if (equippedSlot >= 0) status.textContent = t('ui.fab.active_in_bay', { bay: equippedSlot === 0 ? 'A' : 'B' });
-                else if (!current.mod1Id || !current.mod2Id) addApplyButton(`INSTALL IN OPEN BAY`);
-                else {
-                    addApplyButton(`REPLACE BAY A · ${current.mod1Id}`, 1);
-                    addApplyButton(`REPLACE BAY B · ${current.mod2Id}`, 2);
-                }
-            }
-        } else {
-            const cost = fabricator.getEffectiveCost(recipe);
-            const printing = fabricator.isPrinting(recipe.id);
-            const button = document.createElement('button');
-            button.className = 'fab-card__btn';
-            button.disabled = printing || !fabricator.canFabricate(recipe.id, bankManager);
-            button.textContent = printing ? t('ui.fab.printing') : bankManager.canAfford(cost) ? t('ui.fab.print_output') : fabMissingResourceText(cost, bank);
-            button.addEventListener('click', () => {
-                if (!fabricator.startPrint(recipe.id, bankManager)) return;
-                startFabTicker();
-                renderFabricationModal();
-            });
-            card.appendChild(button);
-        }
-
-        grid.appendChild(card);
-    }
-    const objective = fabricator.getObjectiveState();
-    const targetName = objective.targetRecipe ? fabItemView(objective.targetRecipe).name : 'ALL TARGETS COMPLETE';
-    const pct = Math.round((objective.chance ?? 1) * 100);
-    setTxt('fab-summary', objective.complete
-        ? `SCHEMATICS FABRICATED: ${fabricator.getFabricatedCount()} / ${FAB_RECIPES.length}`
-        : `TARGET: ${targetName} · ODDS ${pct}% · USES ${objective.siteUsesRemaining}/${FABRICATOR_SITE_MAX_USES}`);
-}
-
-let fabTicker = null;
-function startFabTicker() {
-    if (fabTicker) return;
-    fabTicker = setInterval(() => {
-        fabricator.tickPrints();
-        renderFabricationModal();
-        if (!FAB_RECIPES.some((r) => fabricator.isPrinting(r.id))) stopFabTicker();
-    }, 500);
-}
-function stopFabTicker() { if (fabTicker) { clearInterval(fabTicker); fabTicker = null; } }
-
-// ── Fabricator gamba reveal (T7) ──────────────────────────────
-const RARITY_TILES = ['COMMON', 'UNCOMMON', 'RARE', 'COMMON', 'RARE', 'EPIC', 'RARE', 'UNCOMMON', 'EPIC', 'LEGENDARY'];
-let fabRollSpinning = false;
-
-function runFabricatorRoll() {
-    if (fabRollSpinning) return;
-    const result = fabricator.rollFabrication(bankManager);
-    if (!result) { window.AudioManager?.play?.('ui_error', { volume: 0.5 }); return; }
-
-    fabRollSpinning = true;
-    const reveal = document.getElementById('fab-reveal');
-    const strip = document.getElementById('fab-reveal-strip');
-    const cardEl = document.getElementById('fab-reveal-card');
-    const rollBtn = document.getElementById('fab-roll-btn');
-    if (rollBtn) { rollBtn.disabled = true; rollBtn.textContent = t('ui.fab.fabricating'); }
-    window.AudioManager?.play?.('door_gears_spin', { volume: 0.4 });
-
-    // Build a long strip of rarity tiles; the winner lands under the marker.
-    const WIN_INDEX = 42;
-    const tiles = [];
-    for (let i = 0; i < 58; i++) {
-        tiles.push(i === WIN_INDEX ? result.rarity : RARITY_TILES[Math.floor(Math.random() * RARITY_TILES.length)]);
-    }
-    if (strip) {
-        strip.innerHTML = tiles.map((r) => `<div class="fab-tile fab-tile--${r.toLowerCase()}">${r}</div>`).join('');
-        strip.style.transition = 'none';
-        strip.style.transform = 'translateX(0)';
-        strip.offsetWidth; // Force synchronous layout reflow for accurate measurements
-    }
-    if (reveal) reveal.dataset.state = 'spinning';
-    if (cardEl) cardEl.innerHTML = '';
-
-    // Kick the animation on the next frame so the transition applies.
-    requestAnimationFrame(() => {
-        if (!strip) return;
-        const wrap = document.getElementById('fab-reveal-strip-wrap');
-        const firstTile = strip.firstElementChild;
-        const tileRect = firstTile?.getBoundingClientRect?.();
-        const computedStyle = window.getComputedStyle(strip);
-        const tileWidth = tileRect?.width ?? 92;
-        const tileGap = parseFloat(computedStyle.columnGap || computedStyle.gap || '0') || 0;
-        const paddingLeft = parseFloat(computedStyle.paddingLeft || '0') || 0;
-        const center = (wrap?.clientWidth ?? 320) / 2;
-        const step = tileWidth + tileGap;
-        const target = center - (paddingLeft + (WIN_INDEX * step) + (tileWidth / 2));
-        strip.style.transition = 'transform 3.2s cubic-bezier(0.12, 0.8, 0.18, 1)';
-        strip.style.transform = `translateX(${target}px)`;
-    });
-
-    setTimeout(() => {
-        const r = result.rarity;
-        const rec = result.recipe;
-        const view = fabItemView(rec);
-        if (reveal) reveal.dataset.state = 'revealed';
-        if (cardEl) {
-            cardEl.className = `fab-reveal__card fab-reveal__card--${r.toLowerCase()}`;
-            cardEl.innerHTML =
-                `<img class="fab-reveal__art" src="${assetUrl(view.icon)}" alt="${view.name}" onerror="this.src='/bunker_junk_rare.png'">` +
-                `<div class="fab-reveal__rarity">${r}${result.duplicate ? ' · DUPLICATE' : ''}</div>` +
-                `<div class="fab-reveal__name">${view.name}</div>` +
-                fabWeaponStatsMarkup(rec) +
-                `<div class="fab-reveal__klass">${rec.klass}${result.objectiveHit ? ' · OBJECTIVE FABRICATED' : result.duplicate ? ' · ALREADY OWNED' : ' · SCHEMATIC UNLOCKED'}${result.broken ? ' · FABRICATOR BROKE' : ''}</div>`;
-        }
-        window.AudioManager?.playProceduralLoot?.('weapon', r.toLowerCase());
-        if (result.objectiveHit) showBiomePrompt(`> FABRICATOR: ${view.name} OBJECTIVE PRINT COMPLETE.`);
-        if (result.broken) {
-            showBiomePrompt('> FABRICATOR: PRINT HEAD FAILURE. PARTIAL REFUND ISSUED. FOLLOW NEW SIGNAL.');
-            window.game?.revealFoundry?.({ randomEdge: true });
-        }
-        fabRollSpinning = false;
-        renderFabricationModal();
-    }, 3300);
-}
-
-document.getElementById('fab-roll-btn')?.addEventListener('click', runFabricatorRoll);
-
-function openFabricationModal() {
-    if (isFoundryHubEnabled()) {
-        foundryHub.open('fabricate');
-        return;
-    }
-    fabricator.tickPrints();
-    renderFabricationModal();
-    const modal = document.getElementById('fabrication-modal');
-    if (modal) { modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false'); }
-    requestAnimationFrame(() => {
-        const focusables = getVisibleControllerFocusables(modal);
-        focusControllerTarget(getPreferredControllerFocusTarget(modal, focusables));
-    });
-    if (FAB_RECIPES.some((r) => fabricator.isPrinting(r.id))) startFabTicker();
-}
-let campRestSessionOpen = false;
-// Leaving the Fab Bay, or the Foundry hub that shows it, ends a camp rest.
-function finishFabricationSession() {
-    stopFabTicker();
-    if (campRestSessionOpen) {
-        campRestSessionOpen = false;
-        window.game?.finishCampRest?.();
-    }
-}
-function closeFabricationModal() {
-    const modal = document.getElementById('fabrication-modal');
-    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
-    finishFabricationSession();
-}
+function renderFabricationModal() { fabricationBay.render(); }
+function startFabTicker() { fabricationBay.startTicker(); }
+function stopFabTicker() { fabricationBay.stopTicker(); }
+function openFabricationModal() { fabricationBay.open(); }
+function finishFabricationSession() { fabricationBay.finishSession(); }
+function closeFabricationModal() { fabricationBay.close(); }
 
 // ── Foundry hub (src/foundryHub.js; on unless hb_foundry_hub=0) ─
 // Stash, Trade-up and Store show the Vault's panels; Fabricate shows the Fab
@@ -13345,7 +13210,7 @@ const foundryHub = createFoundryHub({
             renderSmelterPanel();
             showVaultPanels(renderSmelterPanel);
         },
-        store: () => showVaultPanels()
+        store: () => showVaultPanels(renderStorePanel)
     },
     renderLoadout: (container) => {
         if (!container) return;
@@ -13387,7 +13252,7 @@ setupClickOutside('fabrication-modal', closeFabricationModal);
 window.addEventListener('o2-generator-upgraded', refreshFabAccess);
 window.addEventListener('bank-updated', () => {
     const modal = document.getElementById('fabrication-modal');
-    if (modal && !modal.classList.contains('hidden') && !fabRollSpinning) renderFabricationModal();
+    if (modal && !modal.classList.contains('hidden') && !fabricationBay.isRolling()) renderFabricationModal();
 });
 refreshFabAccess();
 
@@ -13736,7 +13601,7 @@ dayRestWarningConfirm?.addEventListener('click', () => {
 });
 window.addEventListener('day-rest-open', (event) => {
     const detail = event?.detail ?? {};
-    campRestSessionOpen = true;
+    fabricationBay.beginCampRest();
     showBiomePrompt(`> DAY ${detail.day} // ${detail.campLabel ?? 'CAMP'} REST CYCLE COMPLETE // THREAT ${Number(detail.difficulty ?? 1).toFixed(2)}×`);
     if (detail.expired?.length) {
         showBiomePrompt(`> MISSED SIGNALS CLOSED: ${detail.expired.join(', ').replaceAll('_', ' ').toUpperCase()}`);
@@ -13970,7 +13835,11 @@ window.addEventListener('camp-prompt-nearby', (event) => {
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
     if (key) setPromptKeyLabel(key);
-    if (text) text.textContent = event?.detail?.label ?? t('ui.prompt.interact');
+    // Prop prompts are written "[E] SEARCH TOOL DRAWERS", but the key chip
+    // already says PRESS E (or the pad glyph), so the bracket read twice and
+    // named the wrong button on a controller.
+    const label = event?.detail?.label?.replace(/^\s*\[[A-Z0-9]{1,6}\]\s*/, '');
+    if (text) text.textContent = label || t('ui.prompt.interact');
     prompt?.classList.remove('hidden');
 });
 window.addEventListener('camp-prompt-clear', () => {
@@ -14832,6 +14701,20 @@ async function runAct2DepartureSequence(detail = {}) {
         playerType: classType,
         lines: [...getAct2EndingLines(ending)]
     });
+    const endingSongMap = {
+        empty_husk: 34,
+        scorched_sky: 34,
+        failed_carrier: 34,
+        carriers_bargain: 35,
+        mixed_crew: 36,
+        full_brood: 36,
+        mothership_infection: 36,
+        alien_exodus: 36,
+        clean_escape: 37,
+        outed_escape: 37
+    };
+    const endingTrackId = endingSongMap[ending] ?? 38;
+    AudioManager?.playOST?.(endingTrackId, { loop: false, volume: 0.65 });
     await playCinematicBeat({
         videoBase,
         fallback: {
@@ -15124,11 +15007,11 @@ function preloadDoorAssets() {
         '/door_cryo_keyart_var3.jpg',
         '/door_alien_keyart_v2.webp',
         '/door_rust_keyart_v2.webp',
-        '/door_bio.png',
-        '/door_nuclear.png',
-        '/door_cryo.png',
-        '/door_biomechanical.png',
-        '/ship_wreckage.png'
+        '/door_bio.webp',
+        '/door_nuclear.webp',
+        '/door_cryo.webp',
+        '/door_biomechanical.webp',
+        '/ship_wreckage.webp'
     ];
 
     for (const src of doorImages) {
@@ -15323,24 +15206,11 @@ let previewFrameIndex = 0;
 let previewAnimationTimer = null;
 let previewDoorTimer = null;
 let pendingPreviewType = null;
-let scoutHeroPreview = null;
-void createScoutHeroPreview(preview3dCanvas)
-    .then((preview) => {
-        scoutHeroPreview = preview;
-        preview.setOperatorPolish(getSelectedPolish().color);
-        void preview.setType(activePreviewType);
-        preview.setVisible(true);
-        previewSprite?.classList.add('hidden');
-        previewFallback?.classList.add('hidden');
-    })
-    .catch((error) => {
-        console.warn('[scout-hero-preview] keeping 2D fallback', error);
-    });
 const previewSpriteImages = new Map();
 const PREVIEW_PORTRAITS = Object.freeze({
-    SCOUT: '/Scout.full_v2.png',
-    TANK: '/Tank.full_v2.png',
-    ENGINEER: '/Eng.Full_v2.png'
+    SCOUT: '/Scout.full_v2.webp',
+    TANK: '/Tank.full_v2.webp',
+    ENGINEER: '/Eng.Full_v2.webp'
 });
 
 charCards.forEach((card) => {
@@ -15874,12 +15744,37 @@ function initTacticalCursor() {
         if (e.pointerType === 'touch') hideCursorForTouch();
     });
 
+    // Keyboard has the same stationary-pointer problem as the controller guard
+    // below: a mouse resting over a tab when a popup closes re-fires
+    // pointerover and took focus from the dropdown the picker had just
+    // restored it to. Hover only claims focus once the pointer has really
+    // moved since the last key press.
+    let lastPointerMoveTime = 0;
+    let lastKeyNavigationTime = 0;
+    let lastPointerX = null;
+    let lastPointerY = null;
+    document.addEventListener('keydown', () => {
+        lastKeyNavigationTime = performance.now();
+    }, { capture: true });
+    const notePointerMovement = (e) => {
+        if (e.clientX === lastPointerX && e.clientY === lastPointerY) return;
+        lastPointerX = e.clientX;
+        lastPointerY = e.clientY;
+        lastPointerMoveTime = performance.now();
+    };
+
     function handleHoverTargetSync(rawTarget, { playBlip = false } = {}) {
         if (document.documentElement.classList.contains('presentation-cursor-hidden')) {
             currentHoverTarget = null;
             cursor.classList.remove('cursor-hovering');
             return null;
         }
+        // A pointer that has not moved since the controller took over is not
+        // the player's: closing a modal re-fires pointerover on whatever now
+        // sits under it, and that stole controller focus from the button the
+        // modal had just returned it to (S49-10). Real movement switches the
+        // input mode back first (capture-phase pointermove), so hover still works.
+        if (isSteamControllerInputActive()) return null;
         const target = resolveInteractiveFocusTarget(rawTarget);
         if (!target) return null;
         if (currentHoverTarget !== target || document.activeElement !== target) {
@@ -15898,11 +15793,14 @@ function initTacticalCursor() {
     }
 
     document.addEventListener('pointerover', (e) => {
+        if (lastKeyNavigationTime > lastPointerMoveTime) return;
         handleHoverTargetSync(e.target, { playBlip: true });
     });
 
     document.addEventListener('pointermove', (e) => {
         if (e.pointerType && e.pointerType !== 'mouse' && e.pointerType !== 'pen') return;
+        notePointerMovement(e);
+        if (lastKeyNavigationTime > lastPointerMoveTime) return;
         handleHoverTargetSync(e.target, { playBlip: false });
     });
 
@@ -16029,17 +15927,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             '/door_cryo_keyart_v2.webp',
             '/door_alien_keyart_v2.webp',
             '/door_rust_keyart_v2.webp',
-            '/title_key_art_v2.png',
+            '/title_key_art_v2.webp',
             '/menu_bg.webp',
-            '/ship_wreckage.png',
+            '/ship_wreckage.webp',
             '/scout_ship.png',
             '/tank_ship.png',
             '/engineer_ship.png',
-            '/console.png',
-            '/module_o2_generator.png',
-            '/module_hull_matrix.png',
-            '/module_radar_dish.png',
-            '/module_reactor_compressor.png',
+            '/console.webp',
             PLAYER_SPRITE_LAYOUTS.SCOUT.path,
             PLAYER_SPRITE_LAYOUTS.TANK.path,
             PLAYER_SPRITE_LAYOUTS.ENGINEER.path
@@ -16116,7 +16010,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const initialType = initialSelected?.getAttribute('data-type') || savedHeroType;
     setActiveAmmoCapacity(initialType, { clampExisting: true });
     if (initialSelected && heroData[initialType]) {
-        warmClassIntroMedia(initialType);
+        // Class intro videos are not warmed here: boot already streams the
+        // DoorIntro cinematic. They warm on menu entry and on class pick,
+        // both well ahead of New Run's playClassIntroSequence.
         syncHeroPreview(initialType);
         updateHeroStats(initialType);
     }
@@ -16341,6 +16237,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ],
                 audio: [
                     ...GAMEPLAY_FOLEY_MANIFEST,
+                    ...GAMEPLAY_ENEMY_MANIFEST,
+                    { key: 'impactSoft_medium_000', url: '/audio/enemies/impactSoft_medium_000.ogg' },
+                    { key: 'impactSoft_medium_001', url: '/audio/enemies/impactSoft_medium_001.ogg' },
+                    { key: 'impactSoft_medium_002', url: '/audio/enemies/impactSoft_medium_002.ogg' },
+                    { key: 'impactSoft_medium_003', url: '/audio/enemies/impactSoft_medium_003.ogg' },
+                    { key: 'impactSoft_medium_004', url: '/audio/enemies/impactSoft_medium_004.ogg' },
+                    { key: 'impactSoft_heavy_000', url: '/audio/enemies/impactSoft_heavy_000.ogg' },
+                    { key: 'impactSoft_heavy_001', url: '/audio/enemies/impactSoft_heavy_001.ogg' },
+                    { key: 'impactSoft_heavy_002', url: '/audio/enemies/impactSoft_heavy_002.ogg' },
+                    { key: 'impactSoft_heavy_003', url: '/audio/enemies/impactSoft_heavy_003.ogg' },
+                    { key: 'impactSoft_heavy_004', url: '/audio/enemies/impactSoft_heavy_004.ogg' },
+                    { key: 'creak1', url: '/audio/enemies/creak1.ogg' },
+                    { key: 'creak2', url: '/audio/enemies/creak2.ogg' },
+                    { key: 'creak3', url: '/audio/enemies/creak3.ogg' },
+                    { key: 'metalClick', url: '/audio/enemies/metalClick.ogg' },
                     { key: 'music_safe_ship', url: '/audio/ost/Safe Haven (Ship Sanctuary).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },
                     { key: 'music_cryo_explore', url: '/audio/ost/Glacial Depths (Cryo Biome).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },
                     { key: 'music_bio_explore', url: '/audio/ost/Overgrown Bio-Sphere (Bio Biome).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },
@@ -16494,11 +16405,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ]
             };
 
+            // Same log and bar as the core assets: this used to overwrite the
+            // log with a second "(NN%)" line that repeated asset messages and
+            // disagreed with the bar.
             await AudioManager.loadAssets(gameplayManifest, (progress, itemName) => {
-                if (loaderStatus && itemName) {
-                    const msg = getLoadingMessageForAsset(itemName);
-                    loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1s infinite ease-in-out;">${t('ui.loading.initializing_core', { percent: Math.round(progress) })}<br><span style="font-size: var(--font-xs); color: var(--text-muted);">> ${msg}...</span></div>`;
-                }
+                if (loaderBar) loaderBar.style.width = `${65 + Math.round(progress * 0.2)}%`;
+                if (itemName) renderLoaderLogs(t('ui.loading.log_asset', { message: getLoadingMessageForAsset(itemName) }));
             });
             traceBootPhase('gameplay-assets-ready', {
                 images: gameplayManifest.images.length,
@@ -16540,7 +16452,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const loaderStatusEl = document.querySelector('.loader-status');
                 if (loaderTitle) loaderTitle.textContent = t('ui.loader.init_failed');
                 if (loaderStatusEl) {
-                    loaderStatusEl.innerHTML = `<div style="color: var(--accent-secondary); font-size: var(--font-xs);">${err?.message ?? 'UNKNOWN ERROR — WebGL may be unavailable'}</div>`;
+                    const errorBox = document.createElement('div');
+                    errorBox.style.color = 'var(--accent-secondary)';
+                    errorBox.style.fontSize = 'var(--font-xs)';
+                    errorBox.textContent = err?.message ?? t('ui.loading.log_unknown_error');
+                    loaderStatusEl.replaceChildren(errorBox);
                 }
                 const loadingScreen = document.getElementById('loading-screen');
                 if (loadingScreen) loadingScreen.classList.remove('hidden');
@@ -16581,11 +16497,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 logs.pop();
             }
         }
-        loaderStatus.innerHTML = logs.map((log, distance) => {
+        loaderStatus.replaceChildren(...logs.map((log, distance) => {
             const opacities = [1.0, 0.6, 0.35, 0.18, 0.06];
             const opacity = opacities[distance] ?? 0.04;
-            return `<div style="opacity: ${opacity}; line-height: 1.4; transition: opacity 0.2s ease, transform 0.2s ease;">${log}</div>`;
-        }).join('');
+            const logItem = document.createElement('div');
+            logItem.style.opacity = String(opacity);
+            logItem.style.lineHeight = '1.4';
+            logItem.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+            logItem.textContent = log;
+            return logItem;
+        }));
     };
 
     renderLoaderLogs();
@@ -17332,10 +17253,13 @@ initSteamVaultUI();
 initSeasonPassUI();
 initVoiceCallouts();
 multiplayerLobby.init();
+initPlayerChatUI({ onBoundaryChange: () => syncSteamInputPhase() });
 matureContentAudit.init();
 progressionWalkthrough.init();
 initVirtualKeyboard();
 setupNpcDialogueEvents();
+createFieldWorkbenchUi();
+createQuickCommandRadialUi();
 
 // Keep the title art alive at rest while making pointer movement feel like a
 // reflection travelling across damp metal. Motion is deliberately tiny so the

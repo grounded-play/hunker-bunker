@@ -41,15 +41,37 @@ export function buildRendererCatalog(schema) {
         }));
 }
 
+// Steam `bundle` syntax: `defid[xN]` joined by `;` (N is a quantity in a
+// bundle and a weight in a generator).
+function parseSteamBundle(raw) {
+    return String(raw ?? '').split(';').map((part) => {
+        const match = /^\s*(\d+)(?:x(\d+))?\s*$/.exec(part);
+        if (!match) throw new Error(`Invalid Steam bundle entry "${part}".`);
+        return { itemdefid: Number(match[1]), n: match[2] === undefined ? 1 : Number(match[2]) };
+    });
+}
+
+/**
+ * ItemDef 4002 must be an exchange generator (cache 4000 + key 4001) whose
+ * weighted entries equal the server's disclosed drop table. An entry may
+ * point at a hidden one-item bundle to grant a quantity above one.
+ */
 export function validateResolverOdds(schema, dropTable = DEEP_RELIC_CACHE_DROP_TABLE) {
-    const resolver = schema.items.find((entry) => entry.itemdefid === 4002);
+    const byId = new Map(schema.items.map((entry) => [entry.itemdefid, entry]));
+    const resolver = byId.get(4002);
     if (!resolver?.bundle) throw new Error('ItemDef 4002 resolver bundle is missing.');
-    const parts = resolver.bundle.split(',').map(Number);
-    const configured = [];
-    for (let index = 0; index < parts.length; index += 2) {
-        configured.push({ itemdefid: parts[index], weight: parts[index + 1] });
-    }
-    const expected = dropTable.map(({ itemdefid, weight }) => ({ itemdefid, weight }));
+    if (resolver.type !== 'generator') throw new Error('ItemDef 4002 must be a generator for ExchangeItem.');
+    if (resolver.exchange !== '4000x1,4001x1') throw new Error('ItemDef 4002 exchange must be 4000x1,4001x1.');
+    const configured = parseSteamBundle(resolver.bundle).map(({ itemdefid, n: weight }) => {
+        const target = byId.get(itemdefid);
+        if (target?.type === 'bundle') {
+            const contents = parseSteamBundle(target.bundle);
+            if (contents.length !== 1) throw new Error(`Reward bundle ${itemdefid} must hold one item type.`);
+            return { itemdefid: contents[0].itemdefid, quantity: contents[0].n, weight };
+        }
+        return { itemdefid, quantity: 1, weight };
+    });
+    const expected = dropTable.map(({ itemdefid, quantity, weight }) => ({ itemdefid, quantity, weight }));
     if (JSON.stringify(configured) !== JSON.stringify(expected)) {
         throw new Error(`ItemDef 4002 bundle does not match DEEP_RELIC_CACHE_DROP_TABLE.`);
     }

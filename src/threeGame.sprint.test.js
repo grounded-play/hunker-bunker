@@ -73,3 +73,26 @@ describe('setVirtualInputSprint — gamepad/touch hold state', () => {
         expect(fakeThis.sprinting).toBe(false);
     });
 });
+
+describe('clearGameplayInputState — reset on menu open/close', () => {
+    it('resets sprinting to false', () => {
+        const fakeThis = {
+            keys: { up: true, down: true, left: true, right: true, shift: true },
+            sprinting: true,
+            virtualInput: { x: 1, z: 1 },
+            isMoving: true,
+            mouseAimActive: true,
+            _mouseEdgeTurnInput: 1,
+            _cameraTurnVelocity: 1,
+            endHeldFire: () => {},
+            _aimResetTimer: 10,
+            lastMouseClientX: 100,
+            lastMouseClientY: 100
+        };
+        ThreeGame.prototype.clearGameplayInputState.call(fakeThis);
+        expect(fakeThis.sprinting).toBe(false);
+        expect(fakeThis.keys.shift).toBe(false);
+        expect(fakeThis.virtualInput.x).toBe(0);
+    });
+});
+

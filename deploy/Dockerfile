@@ -12,6 +12,22 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 COPY server ./server
+# Client modules the server shares (the chat filter is applied on both
+# sides). Keep this list in step with server/deployImageContents.test.js,
+# which fails when the server imports a file the image does not contain.
+COPY src/chatFilter.js ./src/chatFilter.js
+COPY src/data/chatFilterTerms.js ./src/data/chatFilterTerms.js
+COPY src/roomDressingPersistence.js ./src/roomDressingPersistence.js
+# Season rules: the backend runs the same SeasonPassManager the client does
+# (server/seasonLedger.js), and its reward labels pull the item catalog.
+COPY src/seasonPass.js ./src/seasonPass.js
+COPY src/data/seasonOneConfig.js ./src/data/seasonOneConfig.js
+COPY src/data/seasonOneCatalog.js ./src/data/seasonOneCatalog.js
+COPY src/data/steamItemCatalog.js ./src/data/steamItemCatalog.js
+COPY src/data/armoryPreviews.js ./src/data/armoryPreviews.js
+COPY src/i18nCatalog.js ./src/i18nCatalog.js
+COPY src/i18n.js ./src/i18n.js
+COPY src/locales ./src/locales
 
 ENV NODE_ENV=production
 ENV PORT=3001

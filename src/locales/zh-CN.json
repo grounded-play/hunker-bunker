@@ -46,6 +46,75 @@
     "elite_contact": "机甲：接触精英目标。重装敌方单位——注意保留撤退路线。"
   },
   "ui": {
+    "workbench": {
+      "aria_close": "关闭野外工作台",
+      "kicker": "营地工作台 // 野外制造链接",
+      "title": "野外工作台",
+      "copy": "使用储存物资合成野外补给。效果将立即应用于当前远征。",
+      "craft": "制造",
+      "close": "退出工作台",
+      "ammo_pack_name": "标准弹药包",
+      "ammo_pack_desc": "补充30发动能弹药并装填当前弹匣。",
+      "med_patch_name": "应急生物缝合剂",
+      "med_patch_desc": "合成抗菌生物组织封闭剂，恢复40点生命值。",
+      "suit_armor_plate_name": "强化防护服甲片",
+      "suit_armor_plate_desc": "安装烧蚀复合装甲片，修复护甲并增加25点护盾值。"
+    },
+    "chat": {
+      "title": "房间聊天",
+      "open": "聊天",
+      "close": "关闭",
+      "scope": "大厅与任务共用此频道。房间内的所有人都可查看，包括PvP对手。输入期间游戏世界仍将继续运行。",
+      "history": "房间消息历史",
+      "empty": "暂无消息。",
+      "compose": "消息（最多400字）",
+      "placeholder": "输入消息… 回车发送；Shift+回车换行。",
+      "send": "发送",
+      "sending": "发送中…",
+      "disconnected": "加入在线房间即可聊天。等待中继连接接受。",
+      "connected": "已连接至 {room}。请选择一条消息进行管理。",
+      "rateLimited": "操作过于频繁。请等待10秒后再试。",
+      "filterError": "文本无法通过安全审查。请使用受支持的语言并移除特殊控制字符。",
+      "sendError": "未发送或未确认。请检查400字限制及网络连接后重试；未修改的重试不会重复提交。",
+      "notifications": "在屏幕上显示新消息和未读标记",
+      "privacy": "仅传递经过审查的文本。聊天信息保留于中继内存中（每个房间50条）；举报记录最多保留24小时或100条。服务重启后清空。",
+      "selectMessage": "选择一条消息以静音、屏蔽或举报该发送者。",
+      "mute": "静音",
+      "unmute": "取消静音",
+      "block": "屏蔽",
+      "unblock": "取消屏蔽",
+      "report": "举报",
+      "reportReason": "举报原因",
+      "reported": "举报已记录至当前中继的临时审查队列中。",
+      "player": "玩家",
+      "quick": {
+        "help": "需要援助！",
+        "wait": "在此等待 / 暂缓推进。",
+        "regroup": "在此集结。",
+        "follow": "跟我来。",
+        "thanks": "多谢！"
+      },
+      "reasons": {
+        "harassment": "骚扰",
+        "hate": "仇恨言论",
+        "spam": "垃圾信息",
+        "sexual": "不良内容",
+        "threat": "威胁恐吓",
+        "other": "其他"
+      }
+    },
+    "ping": {
+      "point": "战术标记",
+      "target": "目标: {target}",
+      "supplies": "补给: {item}",
+      "help": "请求支援！",
+      "wait": "坚守位置",
+      "follow": "跟紧队长",
+      "regroup": "在信标集合",
+      "thanks": "收到 / 感谢",
+      "aria_radial": "战术快捷指令",
+      "reticle": "标记"
+    },
     "encounters": {
       "locked_crossfire": {
         "name": "封锁交叉火力"
@@ -277,6 +346,8 @@
       "stage_eyebrow": "◈ 实时舞台预览",
       "weapon_label": "武器：",
       "chassis_label": "机体：",
+      "body_female": "女性",
+      "body_male": "男性",
       "sheen_kicker": "操作员光泽",
       "sheen_cta": "打开装甲色调矩阵",
       "stage_hint": "拖动 3D 舞台以查看操作员与武器",
@@ -401,15 +472,11 @@
       "log_asset": "> {message}…",
       "log_booting_webgl": "> 正在启动战术 WebGL 核心…",
       "log_preloading_cinematic": "> 正在预载过场影像（DoorIntro）…",
-      "log_assets_loaded": "> 所有资源已载入 — 正在开启气闸…",
-      "initializing_core": "> 正在初始化战术外骨骼核心…（{percent}%）"
+      "log_assets_loaded": "> 所有资源已载入 — 正在开启气闸…"
     },
     "splash_steam_badge": {
       "title_click_to_open": "点击打开 Steam 界面档案",
       "aria_label_open_steam_profile": "打开 Steam 档案"
-    },
-    "splash": {
-      "tactical_command_v2_0": "战术指挥 v2.0"
     },
     "title_profile_hud": {
       "aria_label_current_operator_profile": "当前操作员档案",
@@ -500,8 +567,6 @@
     },
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ 战斗嘉奖 // 深层地壳表彰",
-      "title_copy_a_portable": "复制便携存档代码",
-      "copy_save_code": "复制存档代码",
       "title": "特工嘉奖",
       "accent_archive": "// 档案"
     },
@@ -712,7 +777,8 @@
       "pts": "分",
       "world_seed": "世界种子：",
       "leaderboard_results": "◈ 排行榜结果",
-      "try_again": "再试一次"
+      "try_again": "再试一次",
+      "rematch_requested": "已请求再战…"
     },
     "game_over_main_menu": {
       "main_menu": "主菜单"
@@ -797,6 +863,21 @@
       "med_conversion": "医疗转换",
       "convert_10_med_1_heart": "消耗 10 医疗 → ♥ 恢复 1 颗心",
       "convert_10_med": "消耗 10 医疗 → ♥",
+      "tag_sys_01": "SYS-01 // 生命维持系统",
+      "tag_sys_02": "SYS-02 // 机体装甲矩阵",
+      "tag_sys_03": "SYS-03 // 战术遥测",
+      "tag_sys_04": "SYS-04 // 反应堆核心",
+      "tag_bio_restore": "生物修复协议",
+      "pill_o2_bubble": "+O₂安全避难气泡",
+      "pill_safe_zone": "远征安全区域",
+      "pill_hull_heart": "+1 最大生命 (共4♥)",
+      "pill_hull_integrity": "结构完整性强化",
+      "pill_radar_compass": "罗盘补给追踪器",
+      "pill_radar_cluster": "资源集群信号探测",
+      "pill_reactor_refill": "2倍O₂回充速率",
+      "pill_reactor_drain": "O₂消耗降低20%",
+      "pill_medkit_heart": "+1 恢复生命",
+      "pill_medkit_cost": "消耗: 10医疗",
       "optional_field_opportunity": "可选野外机会",
       "o2_generator_module": "O₂ 发生器模块",
       "field_stabilizer": "力场稳定器",
@@ -1125,8 +1206,10 @@
       "wallet_direct": "Steam 钱包直购",
       "store_offline": "Steam 物品商店离线",
       "purchases_offline": "本版本的 Steam 商店购买功能已离线。",
+      "purchases_region_restricted": "根据当地法规，您所在的地区无法购买付费钥匙。",
+      "region_restricted": "区域限制",
       "qa_grant": "合成 QA 发放：+{count} 个不可交易的遗物钥匙。未发起任何购买。",
-      "purchases_disabled": "本测试版已禁用购买。请使用军械库的 QA GRANT TEST KIT 获取不可交易的测试物品。",
+      "purchases_disabled": "Beta 购买在 Steam 测试沙盒中进行，而此账号不在测试人员名单上。请使用军械库的 QA GRANT TEST KIT 获取测试物品。",
       "key_and_cache_required": "解密需要钥匙与宝箱。",
       "decrypting": "正在解密遗物宝箱",
       "spinning_cipher": "密码矩阵运转中…",
@@ -1147,7 +1230,13 @@
       "cache_opened": "宝箱礼包已开启。",
       "cache_partial": "宝箱兑换已完成，但 Steam 仅部分发放。",
       "cache_failed": "宝箱开启失败 — 请检查网络后重试。",
-      "buy_on_steam": "◈ 在 STEAM 上购买"
+      "buy_on_steam": "◈ 在 STEAM 上购买",
+      "cache_pending_review": "上一次开启补给箱仍在与 Steam 核验中。请几分钟后再试。",
+      "purchase_awaiting_approval": "请在 Steam 界面中确认购买以领取钥匙。",
+      "purchase_awaiting_sandbox": "Beta 测试购买：请在 Steam 界面中确认。Steam 沙盒，不会扣款。",
+      "purchase_declined": "已在 Steam 中取消购买，未产生任何扣款。",
+      "purchase_complete": "已向你的库存添加 {count} 把缓存钥匙。",
+      "purchase_pending": "Steam 尚未确认付款。下次打开商店时钥匙将会到账。"
     },
     "lobby": {
       "connecting": "正在连接…",
@@ -1179,7 +1268,8 @@
       "black_box_clear": "无活动回收信号",
       "no_tracked_objectives": "无追踪目标",
       "surface": "地表",
-      "story_prelude": "第一幕 // 人类序章"
+      "story_prelude": "第一幕 // 人类序章",
+      "build_mismatch": "主机版本为 {host}，你的版本为 {client} — 请更新或切换 Steam 测试分支以保持一致"
     },
     "dossier": {
       "title": "战术档案",
@@ -1368,7 +1458,11 @@
     "commentary": {
       "kicker": "开发者评论",
       "close_list": "关闭开发者评论",
-      "list_intro": "开发者关于游戏为何如此设计的说明。开启评论模式后，到达相应时刻时也会显示。"
+      "list_intro": "开发者关于游戏为何如此设计的说明。开启评论模式后，到达相应时刻时也会显示。",
+      "play": "▶ 播放",
+      "play_aria": "播放{title}",
+      "history_heading": "开发历程",
+      "history_intro": "这款游戏一路走来的经过，按时间顺序，由开发者亲自讲述。"
     },
     "radio": {
       "online": "在线",
@@ -1409,7 +1503,10 @@
         "item_unlock": "解锁：{label}",
         "item_faction": "声望：{label}",
         "item_lead": "线索：{label}"
-      }
+      },
+      "rival_eliminated": "对手已清除",
+      "pvp_duel_won": "> 决斗胜利。这片区域暂时归你了。",
+      "rival_down": "对手倒下：{callsign}"
     },
     "ach": {
       "unlocked_kicker": "成就解锁",
@@ -1418,9 +1515,7 @@
       "unlocked": "已解锁",
       "summary_unlocked": "已解锁 {unlocked} / {total}"
     },
-    "save": {
-      "code_unavailable": "存档代码不可用"
-    },
+    "save": {},
     "objective": {
       "blocked": "受阻",
       "next": "下一个目标",
@@ -1741,7 +1836,7 @@
       },
       "bio_vampirism": {
         "name": "生化吸血薄膜",
-        "description": "击杀生化敌人恢复氧气与防护服电量。"
+        "description": "击杀被腐蚀的生物敌人可恢复最多 8% 的 O₂，若你受伤还会恢复一颗心。"
       }
     },
     "cache": {
@@ -1830,6 +1925,56 @@
       "tab_tradeup": "升级",
       "tab_store": "商店",
       "loadout_hint": "在军械库中更改各职业的装备。"
+    },
+    "records": {
+      "tab": "战绩",
+      "service_record": "服役记录",
+      "leaderboards": "排行榜",
+      "aria_views": "战绩视图",
+      "aria_boards": "排行榜",
+      "aria_scopes": "排行榜范围",
+      "section_career": "生涯",
+      "section_combat": "战斗",
+      "section_exploration": "探索",
+      "section_story": "剧情",
+      "runs": "出击次数",
+      "victories": "胜利",
+      "deaths": "阵亡",
+      "longestRun": "最长出击",
+      "since": "服役起始",
+      "hostiles": "击杀敌人",
+      "mostInRun": "单次出击最多击杀",
+      "queen": "击败女王",
+      "yes": "是",
+      "not_yet": "尚未",
+      "deepest": "最深层级",
+      "distance": "行进距离",
+      "camps": "单次出击发现营地",
+      "lore": "传说日志",
+      "endings": "结局",
+      "classes": "已玩职业",
+      "shells": "收集弹壳",
+      "board_best_run_score": "最佳出击",
+      "board_survival_time_seconds": "生存时间",
+      "board_deepest_depth_score": "最深",
+      "board_fastest_extraction_ms": "最快撤离",
+      "board_daily_ops_score": "每日行动",
+      "scope_global": "全球",
+      "scope_friends": "好友",
+      "scope_around": "我的附近",
+      "loading": "正在获取…",
+      "offline": "排行榜需要 Steam —— 你的分数已保存在本地",
+      "status": "{board} — {scope}",
+      "status_mock": "{board} — {scope} · 开发模拟",
+      "open_records": "战绩 ▸",
+      "view_all": "查看全部战绩",
+      "section_bests": "个人最佳",
+      "section_by_class": "按职业",
+      "timeInCrust": "地壳中的时间",
+      "no_bests": "尚无计入排行的出击",
+      "class_line": "{runs} 次出击 · {wins} 次胜利 · {tier}",
+      "new_best": "刷新个人最佳 — {boards}",
+      "rank_suffix": "#{rank}"
     }
   },
   "narrative": {
@@ -3512,6 +3657,98 @@
         "rail_marksman": "轨道神射手",
         "neon_smg": "霓虹冲锋枪",
         "cryo_lance": "冷冻长枪"
+      }
+    },
+    "commentary": {
+      "commentary_on": {
+        "title": "开发者评论",
+        "body": "开发者评论已开启。当你到达相关时刻时，会出现这样的卡片：你的第一次出击、黑匣子、特殊房间、女王。所有条目也可以在 系统设置 > 音频 > 开发者评论 > 全部阅读 中查看。"
+      },
+      "run_start": {
+        "title": "出击循环",
+        "body": "氧气、银行和发电机维修循环是一起加入的，来自 2026 年 5 月 28 日的同一次提交。在那之前，出击之间什么都不会保留。正是 O2 倒计时把“再多一个房间”变成了一个决定：出击、判断威胁、存下要紧的东西，并在空气耗尽前返回。"
+      },
+      "black_box_signal": {
+        "title": "失败变成地图",
+        "body": "黑匣子在 2026 年 6 月第一周加入，一天后基地开始显示前一位承包人的黑匣子。失败的出击会作为线索留在地图上，里面的物资还在，而不是被一次读档抹掉。"
+      },
+      "black_box_recovered": {
+        "title": "可以找回的后果",
+        "body": "回收黑匣子会取回那次出击携带的物资。合作模式中每个黑匣子都有主人：2026 年 9 月的一次试玩显示，一名玩家的黑匣子在另一名玩家死亡时被“回收”，所以现在所有权会随黑匣子一起通过网络发送。"
+      },
+      "room_armory": {
+        "title": "军械库房间",
+        "body": "军械库是 2026 年 5 月 29 日加入的最早五个手工房间模板之一。它们故意打破程序生成的节奏：生成地图里的一间手工房间，在界面说明之前就显得意义重大。"
+      },
+      "room_the_nest": {
+        "title": "巢穴房间",
+        "body": "巢穴来自同一批 5 月 29 日的模板。它是生成地形中精心设计的危险形态，传达的是“这里住着东西”，而不是“骰子运气不好”。"
+      },
+      "room_agent_wreckage": {
+        "title": "三处残骸",
+        "body": "残骸房间把三名特工和同一次坠毁联系在一起：一艘船载着追踪信号，一艘载着中继器，一艘载着武器。残骸美术在 2026 年 5 月 22 日重绘，是项目最早的美术工作之一。"
+      },
+      "queen_fight": {
+        "title": "女王之战",
+        "body": "女王会经历三个阶段：育巢、狂怒和绝望，她的护甲只有在弱点窗口期间才会完全失效。自动化测试让每个职业都打完这场战斗，确保没有职业能跳过升级，而且即使伤害最低的职业也能磨穿她的护甲。"
+      },
+      "queen_killed": {
+        "title": "女王可以被杀死",
+        "body": "战斗击杀和剧情上的拒绝是分开记录的。故事在意你是击败了她的肉体，还是只是拒绝了她的提议。"
+      },
+      "achievement": {
+        "title": "Steam 成就",
+        "body": "成就记录在 2026 年 5 月 29 日与个人最佳成绩一起加入。成就标记的是剧情里程碑，读起来应该像战地记录，而不是杂务。"
+      },
+      "leaderboard": {
+        "title": "可信的分数",
+        "body": "分数会在我们的服务器上根据出击凭据重新计算；客户端从不只提交一个数字。2026 年 9 月，这项检查连续六天悄无声息地拒绝了 Deck 和 PC 的所有分数，因为客户端和服务器的测试使用了不同的测试数据。现在一个合同测试同时约束两者。"
+      },
+      "steam_vault": {
+        "title": "Steam 保险库",
+        "body": "保险库在 2026 年 7 月随 Steam 后端一起上线。可交易和可在市场出售的物品存放在 Steam 库存中；游戏只显示 Steam 已确认归你所有的物品。"
+      }
+    },
+    "devHistory": {
+      "day_one": {
+        "title": "第一天",
+        "body": "第一次提交是在2026年5月14日。只有一个菜单、一个设置界面，还有一扇在场景之间关上的地堡门。Hunker Bunker 最初是一款用拇指玩的手机游戏，而那扇门至今还在游戏里。"
+      },
+      "engine": {
+        "title": "第四天",
+        "body": "第四天，我把引擎扔掉了。最初的版本跑在二维框架 Phaser 上，而我想要光影、纵深和一个可以俯视的世界，于是把一切都搬到了 Three.js。同一周里，有了带种子的程序生成地图、墙体碰撞，以及第一批角色精灵。"
+      },
+      "loop": {
+        "title": "找到循环",
+        "body": "最初两周，每次出击之间什么都不会保留。五月底，氧气、存储和发电机维修一起加入，第二天又有了手工设计的房间。就在那一刻，它从玩具变成了游戏：每个房间都变成了一个问题，你承担得起吗？"
+      },
+      "story": {
+        "title": "故事登场",
+        "body": "七月，故事一下子全来了：洞穴里的真相、巢穴、人类营地，还有会跟你顶嘴的首领。十种结局在一个漫长的夜晚里接通，一周后又有了女王之战。"
+      },
+      "steam": {
+        "title": "为 Deck 而生",
+        "body": "七月中旬，游戏搬进了桌面外壳和 Steam 构建流程。二十四日，我彻底删掉了触屏操作，围绕 Steam Deck 重做了画面，十六比十，手柄优先。三天后，第一个二点零测试版打上了标签。"
+      },
+      "maze": {
+        "title": "迷宫，重建",
+        "body": "地下世界用波函数坍缩生成，这种技术像拼图一样把图块拼在一起。第一版做出的迷宫很漂亮，却不一定走得通。我在一周里一遍又一遍地重做，直到迷宫像树一样从中心向外生长，每个房间都有出路。"
+      },
+      "together": {
+        "title": "并肩，与对决",
+        "body": "合作和对战在八月加入。大部分工作不在战斗，而在那些枯燥的部分：房主离开会怎样，黑匣子归谁，以及确保由服务器而不是你的电脑来决定谁赢了一局。"
+      },
+      "languages": {
+        "title": "七种语言",
+        "body": "九月，游戏里的每一个字都有了七种语言，从菜单到故事。审查会和测试一起运行，只要有新的英文没翻译就混进来，构建就会失败。"
+      },
+      "lessons": {
+        "title": "坏掉的东西",
+        "body": "坏掉的东西很多。来自 Deck 和电脑的分数被拒收了六天，却没有人发现。帧率损失在你看不见的地方，比如射向墙壁的射线。我一次又一次重画一个怎么也画不对的玩家精灵，最后改用三维来做角色。我一直坚守的规则是：绝不为了跑得更快而让游戏变丑。"
+      },
+      "voices": {
+        "title": "声音",
+        "body": "你听到的这些声音，是在我自己的电脑上用开源语音模型生成的，再由语音识别逐句检查。朗读这段历程的声音是我的，是从我的一段录音克隆而来。谢谢你来玩，也谢谢你听到这里。"
       }
     }
   }

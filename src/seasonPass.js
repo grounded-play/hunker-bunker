@@ -86,7 +86,29 @@ export const TIER_REWARDS = Object.freeze([
 
 
 const copy = value => JSON.parse(JSON.stringify(value));
-const validTrack = track => track === 'free' || track === 'premium';
+// The backend runs these rules on values from a request (server/seasonLedger.js),
+// so a client string must never become a property name: stages and tracks map
+// to the literals defined here, and run ids must be the document's own keys.
+function trackOf(track) {
+    switch (track) {
+        case 'free': return 'free';
+        case 'premium': return 'premium';
+        default: return null;
+    }
+}
+const validTrack = track => trackOf(track) !== null;
+export function onboardingStage(stage) {
+    switch (stage) {
+        case 'target': return 'target';
+        case 'fabricated': return 'fabricated';
+        case 'equipped': return 'equipped';
+        default: return null;
+    }
+}
+const isPlainKey = key => typeof key === 'string' && key !== '' && key !== '__proto__' && key !== 'constructor' && key !== 'prototype';
+function ownRun(next, runId) {
+    return isPlainKey(runId) && Object.hasOwn(next.runs, runId) ? next.runs[runId] : null;
+}
 const noAward = source => ({ xpAwarded: 0, source, tiersCrossed: [] });
 function createDefaultState() {
     return { seasonId: SEASON_ONE.id, version: SEASON_ONE.version, xp: 0,
@@ -161,10 +183,10 @@ export class SeasonPassManager {
         });
     }
     beginRun(runId, initialDepth = 0) {
-        if (typeof runId !== 'string' || !runId) return false;
+        if (!isPlainKey(runId)) return false;
         return this.mutate(next => {
-            if (next.runs[runId]) return false;
-            const previous = next.runs[next.activeRunId];
+            if (Object.hasOwn(next.runs, runId)) return false;
+            const previous = ownRun(next, next.activeRunId);
             if (previous?.status === 'active') previous.status = 'abandoned';
             next.activeRunId = runId;
             next.runs[runId] = { status: 'active', objectives: [], depths: [], bosses: [],
@@ -202,7 +224,7 @@ export class SeasonPassManager {
     recordEvent({ runId, kind, id, tier, crossing = false } = {}) {
         if (!['objective', 'depth', 'boss', 'activity'].includes(kind) || typeof id !== 'string' || !id) return noAward(kind);
         return this.mutate(next => {
-            const run = next.runs[runId];
+            const run = ownRun(next, runId);
             if (!run || run.status !== 'active' || next.activeRunId !== runId) return noAward(kind);
             const eventKey = `${runId}:${kind}:${id}`;
             if (next.events.includes(eventKey)) return noAward(kind);
@@ -235,7 +257,7 @@ export class SeasonPassManager {
     settleRun(runId, outcome) {
         if (!['extracted', 'failed', 'abandoned'].includes(outcome)) return noAward('settlement');
         return this.mutate(next => {
-            const run = next.runs[runId];
+            const run = ownRun(next, runId);
             if (!run || run.status !== 'active') return noAward('settlement');
             const qualifying = outcome === 'extracted' && run.objectives.length >= 3;
             run.status = outcome;
@@ -249,8 +271,9 @@ export class SeasonPassManager {
             return result;
         });
     }
-    completeOnboarding(stage, target = null) {
-        if (!['target', 'fabricated', 'equipped'].includes(stage)) return noAward('onboarding');
+    completeOnboarding(requestedStage, target = null) {
+        const stage = onboardingStage(requestedStage);
+        if (!stage) return noAward('onboarding');
         return this.mutate(next => {
             if (stage === 'target' && target) next.pinnedTarget = target;
             if (next.onboarding[stage]) return noAward('onboarding');
@@ -274,7 +297,7 @@ export class SeasonPassManager {
         if (tier === 0 && track === 'premium') return PURCHASE_GRANT;
         return TIER_REWARDS[tier - 1]?.[track] ?? null;
     }
-    claimKey(tier, track) { return `rank:${tier}:${track}`; }
+    claimKey(tier, track) { return `rank:${Number.isInteger(tier) ? tier : 0}:${trackOf(track) ?? 'invalid'}`; }
     isClaimed(tier, track) { return this.state.receipts[this.claimKey(tier, track)]?.status === 'confirmed'; }
     canClaim(tier, track) {
         return Boolean(this.getReward(tier, track)) && tier <= this.getCurrentTier()

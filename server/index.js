@@ -6,6 +6,7 @@ import { attachSteamAuthRoutes } from './steamAuth.js';
 import { attachSteamLeaderboardRoutes } from './steamLeaderboards.js';
 import { attachSteamInventoryRoutes } from './steamInventory.js';
 import { attachSteamStoreRoutes } from './steamStore.js';
+import { attachSeasonRoutes } from './seasonRoutes.js';
 import { startMicroTxnReconciliation } from './steamMicroTxnReport.js';
 import { attachSessionLogRoutes } from './sessionLogs.js';
 import { auditSteamBackendEnv, formatBackendEnvIssue } from './backendEnvAudit.js';
@@ -91,6 +92,7 @@ attachSteamAuthRoutes(app);
 attachSteamLeaderboardRoutes(app);
 attachSteamInventoryRoutes(app);
 attachSteamStoreRoutes(app);
+attachSeasonRoutes(app);
 attachRelay(server, { allowedOrigins: ALLOWED_ORIGINS });
 
 const PORT = process.env.PORT || 3001;

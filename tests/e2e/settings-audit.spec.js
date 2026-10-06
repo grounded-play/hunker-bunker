@@ -47,13 +47,18 @@ test.describe('player settings audit', () => {
         for (const selector of [
             '#setting-resolution',
             '#setting-shake-toggle',
-            '#setting-difficulty-val',
-            '#open-mature-audit-btn'
+            '#setting-difficulty-val'
         ]) {
             await expect(page.locator(selector)).toHaveCount(0);
         }
         await expect(page.locator('#debug-overlay-setting-row')).toBeVisible();
         await expect(page.locator('#main-debug-toggle')).toBeEnabled();
         await expect(page.locator('#setting-steam-cloud-status')).toHaveText('NOT AVAILABLE (WEB BUILD)');
+
+        // The Content Guide stopped being QA-only in ddff1018 (Steam review:
+        // every reviewed feature reachable); main.js moves its row next to the
+        // gore toggle under Accessibility (S49-10/11).
+        await page.locator('#settings-popup [data-settings-tab="accessibility"]').click();
+        await expect(page.locator('#open-mature-audit-btn')).toBeVisible();
     });
 });

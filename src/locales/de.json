@@ -46,6 +46,75 @@
     "elite_contact": "ANZUG: Elite-Kontakt. Verstärkter Feind — Rückzugsweg freihalten."
   },
   "ui": {
+    "workbench": {
+      "aria_close": "Feldwerkbank schließen",
+      "kicker": "LAGER-WERKBANK // FELDFABRIKATION",
+      "title": "FELDWERKBANK",
+      "copy": "Stelle Feldnachschub aus gebankten Materialien her. Effekte wirken sofort auf deine aktuelle Expedition.",
+      "craft": "HERSTELLEN",
+      "close": "WERKBANK VERLASSEN",
+      "ammo_pack_name": "Standard-Munitionspaket",
+      "ammo_pack_desc": "Füllt 30 Schuss kinetische Munition auf und lädt das aktive Magazin nach.",
+      "med_patch_name": "Notfall-Bionaht",
+      "med_patch_desc": "Synthetisiert antiseptisches Gewebedichtmittel und stellt 40 TP wieder her.",
+      "suit_armor_plate_name": "Verstärkte Anzugpanzerung",
+      "suit_armor_plate_desc": "Installiert abtragende Verbundplatten, repariert Rüstung und gewährt +25 Schild."
+    },
+    "chat": {
+      "title": "RAUMCHAT",
+      "open": "CHAT",
+      "close": "SCHLIESSEN",
+      "scope": "Lobby und Mission teilen diesen Kanal. Alle im Raum können mitlesen, auch PvP-Gegner. Die Welt läuft beim Schreiben weiter.",
+      "history": "Nachrichten im Raum",
+      "empty": "Noch keine Nachrichten.",
+      "compose": "Nachricht (bis zu 400 Zeichen)",
+      "placeholder": "Nachricht eingeben… Enter sendet; Umschalt+Enter fügt eine Zeile hinzu.",
+      "send": "SENDEN",
+      "sending": "Wird gesendet…",
+      "disconnected": "Tritt einem Online-Raum bei. Warte auf eine bestätigte Relay-Verbindung.",
+      "connected": "Verbunden mit {room}. Nachricht für Moderation auswählen.",
+      "rateLimited": "Zu viele Aktionen. Warte 10 Sekunden und versuche es erneut.",
+      "filterError": "Der Text konnte nicht sicher gefiltert werden. Nutze die unterstützten Spielsprachen und entferne ungewöhnliche Steuerzeichen.",
+      "sendError": "Nicht gesendet oder nicht bestätigt. Prüfe das Limit von 400 Zeichen und die Verbindung. Unveränderte Wiederholungen werden nicht doppelt zugestellt.",
+      "notifications": "Neue Nachrichten im Bild und Ungelesen-Markierungen anzeigen",
+      "privacy": "Nur gefilterter Text wird zugestellt. Chat bleibt im Relay-Speicher (50 Nachrichten pro Raum), Meldungen bis zu 24 Stunden / 100 Meldungen. Neustart löscht alles. Keine automatische Antwort des Teams.",
+      "selectMessage": "Wähle eine Nachricht zum Stummschalten, Blockieren oder Melden.",
+      "mute": "STUMM",
+      "unmute": "LAUT",
+      "block": "BLOCKIEREN",
+      "unblock": "FREIGEBEN",
+      "report": "MELDEN",
+      "reportReason": "Meldegrund",
+      "reported": "Meldung in der temporären Warteschlange dieses Relays gespeichert.",
+      "player": "Spieler",
+      "quick": {
+        "help": "Brauche Hilfe!",
+        "wait": "Stellung halten / Warten.",
+        "regroup": "Hier sammeln.",
+        "follow": "Folgt mir.",
+        "thanks": "Danke!"
+      },
+      "reasons": {
+        "harassment": "Belästigung",
+        "hate": "Hass",
+        "spam": "Spam",
+        "sexual": "Sexuelle Inhalte",
+        "threat": "Drohung",
+        "other": "Sonstiges"
+      }
+    },
+    "ping": {
+      "point": "TAKTIK-SIGNAL",
+      "target": "ZIEL: {target}",
+      "supplies": "VORRÄTE: {item}",
+      "help": "BRAUCHE UNTERSTÜTZUNG!",
+      "wait": "STELLUNG HALTEN",
+      "follow": "FOLGEN",
+      "regroup": "BEI SIGNAL SAMMELN",
+      "thanks": "VERSTANDEN / DANKE",
+      "aria_radial": "Taktische Schnellbefehle",
+      "reticle": "SIGNAL"
+    },
     "encounters": {
       "locked_crossfire": {
         "name": "Kreuzfeuer-Sperre"
@@ -277,6 +346,8 @@
       "stage_eyebrow": "◈ LIVE-VORSCHAU",
       "weapon_label": "WAFFE:",
       "chassis_label": "CHASSIS:",
+      "body_female": "WEIBLICH",
+      "body_male": "MÄNNLICH",
       "sheen_kicker": "OPERATOR-GLANZ",
       "sheen_cta": "FARBMATRIX ÖFFNEN",
       "stage_hint": "3D-BÜHNE ZIEHEN, UM OPERATOR & WAFFE ZU PRÜFEN",
@@ -401,15 +472,11 @@
       "log_asset": "> {message}...",
       "log_booting_webgl": "> TAKTISCHER WEBGL-KERN WIRD GESTARTET...",
       "log_preloading_cinematic": "> CINEMATIC-FEED WIRD VORGELADEN (DoorIntro)...",
-      "log_assets_loaded": "> ALLE ASSETS GELADEN – LUFTSCHLEUSE WIRD GEÖFFNET...",
-      "initializing_core": "> TAKTISCHER EXOANZUG-KERN WIRD INITIALISIERT... ({percent}%)"
+      "log_assets_loaded": "> ALLE ASSETS GELADEN – LUFTSCHLEUSE WIRD GEÖFFNET..."
     },
     "splash_steam_badge": {
       "title_click_to_open": "Klicken, um Steam-Overlay-Profil zu öffnen",
       "aria_label_open_steam_profile": "Steam-Profil öffnen"
-    },
-    "splash": {
-      "tactical_command_v2_0": "TAKTISCHES KOMMANDO v2.0"
     },
     "title_profile_hud": {
       "aria_label_current_operator_profile": "Aktuelles Operator-Profil",
@@ -500,8 +567,6 @@
     },
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ GEFECHTSAUSZEICHNUNGEN // TIEFENKRUSTEN-EHRUNGEN",
-      "title_copy_a_portable": "Portablen Speichercode kopieren",
-      "copy_save_code": "SPEICHERCODE KOPIEREN",
       "title": "OPERATIVEN-AUSZEICHNUNGEN",
       "accent_archive": "// ARCHIV"
     },
@@ -712,7 +777,8 @@
       "pts": "PKT",
       "world_seed": "WELT-SEED:",
       "leaderboard_results": "◈ BESTENLISTEN-ERGEBNISSE",
-      "try_again": "NOCHMAL VERSUCHEN"
+      "try_again": "NOCHMAL VERSUCHEN",
+      "rematch_requested": "REVANCHE ANGEFRAGT…"
     },
     "game_over_main_menu": {
       "main_menu": "HAUPTMENÜ"
@@ -797,6 +863,21 @@
       "med_conversion": "MED-UMWANDLUNG",
       "convert_10_med_1_heart": "10 MED UMWANDELN → ♥ 1 HERZ WIEDERHERGESTELLT",
       "convert_10_med": "10 MED UMWANDELN → ♥",
+      "tag_sys_01": "SYS-01 // LEBENSERHALTUNG",
+      "tag_sys_02": "SYS-02 // CHASSIS-PANZERUNG",
+      "tag_sys_03": "SYS-03 // TELEMETRIE",
+      "tag_sys_04": "SYS-04 // ENERGIEKERN",
+      "tag_bio_restore": "BIO-REPARATUR-PROTOKOLL",
+      "pill_o2_bubble": "+O₂-ZUFLUCHTSBLASE",
+      "pill_safe_zone": "EXPEDITIONS-SICHERHEITSZONE",
+      "pill_hull_heart": "+1 MAX-HERZ (GESAMT 4♥)",
+      "pill_hull_integrity": "STRUKTURELLE INTEGRITÄT",
+      "pill_radar_compass": "KOMPASS-VORRATSTRACKER",
+      "pill_radar_cluster": "VORRATSKLUMPEN-PING",
+      "pill_reactor_refill": "2× O₂-FÜLLRATE",
+      "pill_reactor_drain": "-20% O₂-VERBRAUCH",
+      "pill_medkit_heart": "+1 HERZ WIEDERHERGESTELLT",
+      "pill_medkit_cost": "KOSTEN: 10 MED",
       "optional_field_opportunity": "OPTIONALE FELDGELEGENHEIT",
       "o2_generator_module": "O₂-GENERATORMODUL",
       "field_stabilizer": "FELDSTABILISATOR",
@@ -1125,8 +1206,10 @@
       "wallet_direct": "STEAM-GUTHABEN DIREKT",
       "store_offline": "STEAM-ITEM-SHOP OFFLINE",
       "purchases_offline": "Steam-Shop-Käufe sind in diesem Build offline.",
+      "purchases_region_restricted": "Käufe von Schlüsseln sind in Ihrer Region aufgrund lokaler Vorschriften nicht verfügbar.",
+      "region_restricted": "REGION EINGESCHRÄNKT",
       "qa_grant": "Synthetische QA-Vergabe: +{count} nicht handelbare Relikt-Schlüssel. Es wurde kein Kauf ausgelöst.",
-      "purchases_disabled": "Käufe sind in dieser Beta deaktiviert. Nutze QA GRANT TEST KIT in der Waffenkammer für nicht handelbare Testgegenstände.",
+      "purchases_disabled": "Beta-Käufe laufen in der Steam-Test-Sandbox, und dieses Konto steht nicht auf der Testerliste. Nutze QA GRANT TEST KIT in der Waffenkammer für Testgegenstände.",
       "key_and_cache_required": "Für die Entschlüsselung werden Schlüssel und Cache benötigt.",
       "decrypting": "RELIKT-CACHE WIRD ENTSCHLÜSSELT",
       "spinning_cipher": "CHIFFRIERMATRIX DREHT...",
@@ -1147,7 +1230,13 @@
       "cache_opened": "Cache-Paket geöffnet.",
       "cache_partial": "Cache-Tausch mit teilweiser Steam-Vergabe abgeschlossen.",
       "cache_failed": "Cache konnte nicht geöffnet werden – Verbindung prüfen und erneut versuchen.",
-      "buy_on_steam": "◈ AUF STEAM KAUFEN"
+      "buy_on_steam": "◈ AUF STEAM KAUFEN",
+      "cache_pending_review": "Eine frühere Cache-Öffnung wird noch mit Steam geprüft. Versuche es in ein paar Minuten erneut.",
+      "purchase_awaiting_approval": "Bestätige den Kauf im Steam-Overlay, um deine Schlüssel zu erhalten.",
+      "purchase_awaiting_sandbox": "Beta-Testkauf: Bestätige ihn im Steam-Overlay. Steam-Sandbox, keine Abbuchung.",
+      "purchase_declined": "Kauf in Steam abgebrochen. Es wurde nichts abgebucht.",
+      "purchase_complete": "+{count} Cache-Schlüssel zu deinem Inventar hinzugefügt.",
+      "purchase_pending": "Steam hat die Zahlung noch nicht bestätigt. Deine Schlüssel kommen beim nächsten Öffnen des Shops an."
     },
     "lobby": {
       "connecting": "VERBINDE...",
@@ -1179,7 +1268,8 @@
       "black_box_clear": "KEIN AKTIVES BERGUNGSSIGNAL",
       "no_tracked_objectives": "KEINE VERFOLGTEN ZIELE",
       "surface": "OBERFLÄCHE",
-      "story_prelude": "AKT I // MENSCHLICHES VORSPIEL"
+      "story_prelude": "AKT I // MENSCHLICHES VORSPIEL",
+      "build_mismatch": "HOST NUTZT {host}, DU NUTZT {client} — AKTUALISIERE ODER WECHSLE DEINEN STEAM-BETA-ZWEIG"
     },
     "dossier": {
       "title": "TAKTISCHES DOSSIER",
@@ -1368,7 +1458,11 @@
     "commentary": {
       "kicker": "ENTWICKLERKOMMENTAR",
       "close_list": "Entwicklerkommentar schließen",
-      "list_intro": "Anmerkungen der Entwickler dazu, warum das Spiel so funktioniert, wie es funktioniert. Mit aktiviertem Kommentarmodus erscheinen sie auch im Spiel, sobald du die Stelle erreichst."
+      "list_intro": "Anmerkungen der Entwickler dazu, warum das Spiel so funktioniert, wie es funktioniert. Mit aktiviertem Kommentarmodus erscheinen sie auch im Spiel, sobald du die Stelle erreichst.",
+      "play": "▶ ABSPIELEN",
+      "play_aria": "{title} abspielen",
+      "history_heading": "ENTWICKLUNGSGESCHICHTE",
+      "history_intro": "Wie das Spiel entstanden ist, der Reihe nach, gelesen vom Entwickler."
     },
     "radio": {
       "online": "ONLINE",
@@ -1409,7 +1503,10 @@
         "item_unlock": "Freigeschaltet: {label}",
         "item_faction": "Ansehen: {label}",
         "item_lead": "Spur: {label}"
-      }
+      },
+      "rival_eliminated": "RIVALE AUSGESCHALTET",
+      "pvp_duel_won": "> DUELL GEWONNEN. DER SEKTOR GEHÖRT DIR — VORERST.",
+      "rival_down": "RIVALE AM BODEN: {callsign}"
     },
     "ach": {
       "unlocked_kicker": "ERFOLG FREIGESCHALTET",
@@ -1418,9 +1515,7 @@
       "unlocked": "FREIGESCHALTET",
       "summary_unlocked": "{unlocked} / {total} FREIGESCHALTET"
     },
-    "save": {
-      "code_unavailable": "SPEICHERCODE NICHT VERFÜGBAR"
-    },
+    "save": {},
     "objective": {
       "blocked": "BLOCKIERT",
       "next": "NÄCHSTES ZIEL",
@@ -1741,7 +1836,7 @@
       },
       "bio_vampirism": {
         "name": "Bio-Vampirische Membran",
-        "description": "Das Töten von Bio-Feinden stellt O₂-Werte und Anzugbatterie wieder her."
+        "description": "Ein korrodierter Bio-Feind stellt beim Tod bis zu 8 % O₂ und, wenn du verletzt bist, ein Herz wieder her."
       }
     },
     "cache": {
@@ -1830,6 +1925,56 @@
       "tab_tradeup": "AUFWERTEN",
       "tab_store": "LADEN",
       "loadout_hint": "Was jede Klasse trägt, änderst du in der Waffenkammer."
+    },
+    "records": {
+      "tab": "REKORDE",
+      "service_record": "DIENSTAKTE",
+      "leaderboards": "BESTENLISTEN",
+      "aria_views": "Rekordansicht",
+      "aria_boards": "Bestenliste",
+      "aria_scopes": "Bereich der Bestenliste",
+      "section_career": "LAUFBAHN",
+      "section_combat": "KAMPF",
+      "section_exploration": "ERKUNDUNG",
+      "section_story": "GESCHICHTE",
+      "runs": "EINSÄTZE",
+      "victories": "SIEGE",
+      "deaths": "TODE",
+      "longestRun": "LÄNGSTER EINSATZ",
+      "since": "IM DIENST SEIT",
+      "hostiles": "FEINDE",
+      "mostInRun": "MEISTE IN EINEM EINSATZ",
+      "queen": "KÖNIGIN BESIEGT",
+      "yes": "JA",
+      "not_yet": "NOCH NICHT",
+      "deepest": "TIEFSTE STUFE",
+      "distance": "STRECKE",
+      "camps": "LAGER IN EINEM EINSATZ",
+      "lore": "LORE-LOGS",
+      "endings": "ENDEN",
+      "classes": "GESPIELTE KLASSEN",
+      "shells": "GESAMMELTE HÜLSEN",
+      "board_best_run_score": "BESTER EINSATZ",
+      "board_survival_time_seconds": "ÜBERLEBEN",
+      "board_deepest_depth_score": "TIEFSTE",
+      "board_fastest_extraction_ms": "SCHNELLSTE EXTRAKTION",
+      "board_daily_ops_score": "TAGESEINSATZ",
+      "scope_global": "GLOBAL",
+      "scope_friends": "FREUNDE",
+      "scope_around": "UM MICH",
+      "loading": "WIRD ABGERUFEN…",
+      "offline": "BESTENLISTEN BRAUCHEN STEAM — DEINE PUNKTE SIND LOKAL GESICHERT",
+      "status": "{board} — {scope}",
+      "status_mock": "{board} — {scope} · DEV-MOCK",
+      "open_records": "REKORDE ▸",
+      "view_all": "ALLE REKORDE",
+      "section_bests": "PERSÖNLICHE BESTWERTE",
+      "section_by_class": "NACH KLASSE",
+      "timeInCrust": "ZEIT IN DER KRUSTE",
+      "no_bests": "NOCH KEIN GEWERTETER EINSATZ",
+      "class_line": "{runs} Einsätze · {wins} Siege · {tier}",
+      "new_best": "NEUER PERSÖNLICHER BESTWERT — {boards}",
+      "rank_suffix": "#{rank}"
     }
   },
   "narrative": {
@@ -3512,6 +3657,98 @@
         "rail_marksman": "Schienen-Präzisionsgewehr",
         "neon_smg": "Neon-MP",
         "cryo_lance": "Kryolanze"
+      }
+    },
+    "commentary": {
+      "commentary_on": {
+        "title": "Entwicklerkommentar",
+        "body": "Der Kommentar ist an. Karten wie diese erscheinen, sobald du die Momente erreichst, um die es geht: dein erster Einsatz, Blackboxen, besondere Räume, die Königin. Jeder Eintrag lässt sich auch unter Systemeinstellungen > Audio > Entwicklerkommentar > Alle lesen nachlesen."
+      },
+      "run_start": {
+        "title": "Die Einsatzschleife",
+        "body": "Sauerstoff, das Konto und die Reparaturschleife des Generators kamen gemeinsam, in einem Commit am 28. Mai 2026. Davor blieb zwischen den Einsätzen nichts erhalten. Erst die O2-Uhr macht aus „noch ein Raum“ eine Entscheidung: ausrücken, die Bedrohung lesen, sichern, was zählt, und zurück sein, bevor die Luft ausgeht."
+      },
+      "black_box_signal": {
+        "title": "Scheitern wird Kartendaten",
+        "body": "Blackboxen kamen in der ersten Juniwoche 2026 ins Spiel, und einen Tag später zeigte die Basis erstmals die Blackbox eines früheren Auftragnehmers. Ein gescheiterter Einsatz bleibt als Spur auf der Karte, samt Bergungsgut, statt von einem Neuladen gelöscht zu werden."
+      },
+      "black_box_recovered": {
+        "title": "Bergbare Folgen",
+        "body": "Wer eine Blackbox birgt, bekommt das Bergungsgut zurück, das jener Einsatz bei sich trug. Im Koop gehört jede Blackbox jemandem: Ein Playtest im September 2026 zeigte, wie die Box des einen Spielers „geborgen“ wurde, als der andere starb. Seitdem wird der Besitz mit der Box über das Netzwerk gesendet."
+      },
+      "room_armory": {
+        "title": "Waffenkammern",
+        "body": "Waffenkammern gehörten zu den ersten fünf handgebauten Raumvorlagen, eingeführt am 29. Mai 2026. Sie brechen den prozeduralen Rhythmus mit Absicht: Ein handgebauter Raum in einer generierten Karte wirkt bedeutsam, noch bevor die Oberfläche etwas sagt."
+      },
+      "room_the_nest": {
+        "title": "Nesträume",
+        "body": "Das Nest stammt aus demselben Vorlagen-Durchgang vom 29. Mai. Es ist eine gebaute Gefahrenform in generiertem Gelände und sagt damit: Hier lebt etwas, nicht bloß: Die Würfel fielen schlecht."
+      },
+      "room_agent_wreckage": {
+        "title": "Drei Wracks",
+        "body": "Die Wrackräume verbinden die drei Operatoren mit einem einzigen Absturz: Ein Schiff trug das Peilsignal, eines das Relais und eines die Waffe. Die Wrackgrafik wurde am 22. Mai 2026 neu gezeichnet, einer der ersten Grafikdurchgänge des Projekts."
+      },
+      "queen_fight": {
+        "title": "Kampf gegen die Königin",
+        "body": "Die Königin durchläuft drei Phasen, Brut, Raserei und Verzweiflung, und ihre Panzerung fällt nur in Schwachstellenfenstern ganz. Automatisierte Tests schicken jede Klasse durch den Kampf, damit keine die Eskalation überspringt und selbst die schwächste Klasse ihre Panzerung noch ankratzt."
+      },
+      "queen_killed": {
+        "title": "Die Königin kann sterben",
+        "body": "Siege im Kampf und erzählerische Ablehnung werden getrennt erfasst. Die Geschichte unterscheidet, ob du ihren Körper besiegt oder nur ihr Angebot abgelehnt hast."
+      },
+      "achievement": {
+        "title": "Steam-Errungenschaften",
+        "body": "Das Errungenschafts-Tracking kam am 29. Mai 2026, zusammen mit den persönlichen Bestwerten. Errungenschaften markieren Meilensteine der Geschichte und sollen sich wie Einsatzprotokolle lesen, nicht wie Pflichtaufgaben."
+      },
+      "leaderboard": {
+        "title": "Vertrauenswürdige Punktzahlen",
+        "body": "Punktzahlen werden auf unserem Server aus einem Einsatzbeleg neu berechnet; der Client schickt nie einfach eine Zahl. Im September 2026 verwarf genau diese Prüfung sechs Tage lang stillschweigend jede Punktzahl von Deck und PC, weil Client- und Servertests unterschiedliche Testdaten nutzten. Heute bindet ein einziger Vertragstest beide."
+      },
+      "steam_vault": {
+        "title": "Steam-Tresor",
+        "body": "Der Tresor kam im Juli 2026 mit dem Steam-Backend. Handel- und marktfähige Gegenstände liegen im Steam-Inventar; das Spiel zeigt nur, was Steam als dein Eigentum bestätigt hat."
+      }
+    },
+    "devHistory": {
+      "day_one": {
+        "title": "Tag eins",
+        "body": "Der erste Commit kam am vierzehnten Mai 2026. Er bestand aus einem Menü, einem Einstellungsbildschirm und einer Bunkertür, die sich zwischen den Szenen schloss. Hunker Bunker begann als Handyspiel, das man mit den Daumen spielte, und diese Tür ist bis heute im Spiel."
+      },
+      "engine": {
+        "title": "Vier Tage später",
+        "body": "An Tag vier habe ich die Engine weggeworfen. Die erste Version lief auf Phaser, einem 2D-Framework, und ich wollte Licht, Tiefe und eine Welt, auf die man hinabblickt. Also habe ich alles auf Three.js umgestellt. In derselben Woche kamen prozedurale Karten mit Seeds, Wandkollision und die ersten Figuren-Sprites."
+      },
+      "loop": {
+        "title": "Die Schleife finden",
+        "body": "In den ersten zwei Wochen wurde nichts von einem Einsatz in den nächsten übernommen. Ende Mai kamen Sauerstoff, das Einlagern und die Generatorreparatur zusammen ins Spiel, und am nächsten Tag die handgebauten Räume. Das war der Moment, in dem aus einem Spielzeug ein Spiel wurde: Jeder Raum wurde zur Frage, ob man ihn sich leisten kann."
+      },
+      "story": {
+        "title": "Die Geschichte taucht auf",
+        "body": "Im Juli kam die Geschichte auf einen Schlag: die Enthüllung in der Höhle, die Nester, die Lager der Menschen und die Anführer, die widersprechen. Zehn Enden entstanden in einer langen Nacht, und der Kampf gegen die Königin folgte eine Woche später."
+      },
+      "steam": {
+        "title": "Gebaut für das Deck",
+        "body": "Mitte Juli zog das Spiel in eine Desktop-Hülle und eine Steam-Build-Pipeline um. Am vierundzwanzigsten habe ich die Touch-Steuerung komplett gelöscht und den Bildschirm um das Steam Deck herum neu gebaut, sechzehn zu zehn, Controller zuerst. Drei Tage später wurde die erste Beta der Version zwei-null markiert."
+      },
+      "maze": {
+        "title": "Das Labyrinth, neu gebaut",
+        "body": "Die Unterwelt wird mit Wave Function Collapse erzeugt, einer Technik, die Kacheln wie ein Puzzle zusammenfügt. Die erste Version erzeugte wunderschöne Labyrinthe, die man nicht immer schaffen konnte. Ich habe es eine Woche lang immer wieder neu gebaut, bis das Labyrinth wie ein Baum aus der Mitte wuchs und jeder Raum einen Weg hindurch hatte."
+      },
+      "together": {
+        "title": "Miteinander und gegeneinander",
+        "body": "Koop und Versus kamen im August. Die meiste Arbeit steckte nicht im Kämpfen, sondern in den langweiligen Teilen: was passiert, wenn der Host geht, wem eine Blackbox gehört, und dass der Server, nicht dein Rechner, entscheidet, wer eine Runde gewonnen hat."
+      },
+      "languages": {
+        "title": "Sieben Sprachen",
+        "body": "Im September wurde jedes Wort des Spiels in sieben Sprachen übertragen, Menüs wie Geschichte. Eine Prüfung läuft mit den Tests und lässt den Build scheitern, wenn sich ein neues Stück Englisch unübersetzt einschleicht."
+      },
+      "lessons": {
+        "title": "Was kaputtging",
+        "body": "Vieles ging kaputt. Punktzahlen von Deck und PC wurden sechs Tage lang abgelehnt, ohne dass es jemand bemerkte. Bildrate ging an Dingen verloren, die man nie sieht, etwa an Strahlen, die auf Wände geschossen werden. Ich habe ein Spieler-Sprite immer wieder neu gezeichnet, das nie richtig wurde, und die Figur am Ende in 3D gebaut. Die Regel, an die ich mich gehalten habe: Das Spiel nie schlechter aussehen lassen, damit es schneller läuft."
+      },
+      "voices": {
+        "title": "Die Stimmen",
+        "body": "Die Stimmen, die du hörst, wurden auf meinem eigenen Rechner mit einem offenen Sprachmodell erzeugt und dann Zeile für Zeile von einer Spracherkennung geprüft. Die Stimme, die diese Geschichte liest, ist meine, geklont aus einer Aufnahme von mir. Danke fürs Spielen und fürs Zuhören bis hierher."
       }
     }
   }

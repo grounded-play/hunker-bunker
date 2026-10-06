@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-09-30T17:28:33.830Z",
-  "total": 128,
+  "timestamp": "2026-10-05T02:20:50.184Z",
+  "total": 129,
   "missingName": 0,
   "missingIcon": 0,
   "missingModel": 0,
@@ -681,6 +681,30 @@
         "skinCount": 1,
         "jointCount": 41,
         "embeddedAnimationCount": 1,
+        "rigReady": true
+      },
+      "rigReady": true,
+      "needsModelRedo": false,
+      "previewSource": "model-render",
+      "greenRatio": 0,
+      "greenSuspect": false,
+      "allowlistedGreen": false
+    },
+    {
+      "group": "chassis",
+      "id": "skin_scout_mayor_tina",
+      "name": "Scout: Mayor Tina",
+      "missingName": false,
+      "icon": "/lore_portraits/mayor_tina.webp",
+      "iconExists": true,
+      "missingIcon": false,
+      "model": "/3d/runtime/secrets/mayor-tina-rigged.glb",
+      "missingModel": false,
+      "modelRequired": true,
+      "rig": {
+        "skinCount": 1,
+        "jointCount": 65,
+        "embeddedAnimationCount": 0,
         "rigReady": true
       },
       "rigReady": true,

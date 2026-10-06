@@ -1,10 +1,11 @@
 # Planning
 
 Status: canonical process index · Owner: repository maintainers · Updated:
-2026-09-29 · Review: every sprint open and close
+2026-10-01 · Review: every sprint open and close
 
 - [Sprint Backlog Remediation and Clearance Plan](sprint-backlog-remediation-and-clearance-plan-2026-09-29.md) audits all 14 open GitHub issues, maps their implementation and verification across dedicated test suites (#78, #79, #80, #81, #82, #83, #84, #66), and outlines target hardware clearance steps.
-- [Sprint 49](sprint-49.md) is the next sprint plan: finish and demonstrate the Steam-reviewed features (chat, online, commentary, purchases, controller, mature content), then improve the whole game. It carries the owner asks deferred from Sprint 48.
+- [Sprint 49](sprint-49.md) is the active sprint plan: finish and demonstrate the Steam-reviewed features (chat, online, commentary, purchases, controller, mature content), then improve the whole game. It carries the owner asks deferred from Sprint 48.
+- [Implementation handoff](sprint-49-implementation-handoff.md) records each commit, verification and next action.
 - [Economy master plan](economy-master-plan-2026-09-30.md): the free-to-play, cosmetics-only economy (drops, seasonal collections, market, Item Store + Microtransactions).
 - [Steam review 25475189 plan](steam-review-build-25475189-fix-plan-2026-09-30.md): root causes, code fixes and reviewer notes.
 - [Sprint 48](sprint-48-plan.md) is the sprint being released as `v2.4.13-beta`: hardware acceptance first, then co-op authority, HUD dock readability recovery (R0–R2), the unified Foundry's first slice, companion escort and the Proof Run.

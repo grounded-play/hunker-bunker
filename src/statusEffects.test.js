@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+    applyChitinVulnerability,
     applyStatus,
     clearStatus,
     createTargetStatusState,
     deserializeTargetStatuses,
     getStatus,
+    getDamageTakenMultiplier,
     grantRunDrop,
     serializeTargetStatuses,
     STATUS_DEFAULTS,
@@ -120,6 +122,22 @@ describe('statusEffects module (Sprint 47 Lane 3)', () => {
 
         clearStatus(target, 'corrosion');
         expect(getStatus(target, 'corrosion').active).toBe(false);
+    });
+
+    it('refreshes bounded chitin vulnerability, deduplicates events, and expires', () => {
+        const target = { userData: {} };
+        expect(applyChitinVulnerability(target, { duration: 6, multiplier: 1.25, eventId: 'bile:prop-1' })).toBe(true);
+        expect(getDamageTakenMultiplier(target)).toBe(1.25);
+
+        tickStatusEffects(target, 2);
+        expect(applyChitinVulnerability(target, { duration: 6, multiplier: 1.25, eventId: 'bile:prop-1' })).toBe(false);
+        expect(target.userData.statusEffects.chitinVulnerabilityTimer).toBe(4);
+        expect(applyChitinVulnerability(target, { duration: 6, multiplier: 2, eventId: 'bile:prop-2' })).toBe(true);
+        expect(target.userData.statusEffects.chitinVulnerabilityTimer).toBe(6);
+        expect(getDamageTakenMultiplier(target)).toBe(1.25);
+
+        tickStatusEffects(target, 6);
+        expect(getDamageTakenMultiplier(target)).toBe(1);
     });
 
     it('serializes and deserializes target status without state loss', () => {

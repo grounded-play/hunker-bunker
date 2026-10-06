@@ -57,6 +57,7 @@ export function carryStoryToNewMap(mazeState) {
     kept.worldChanges = {
         destroyedWalls: [],
         destroyedExteriorWalls: [],
+        brokenRoomDressing: [],
         discoveredChunks: [],
         discoveredRooms: [],
         discoveredCells: []
@@ -81,6 +82,9 @@ function normalize(raw) {
         // The map the current run is played on. Saves from before per-run maps
         // keep the campaign's map until their next run starts.
         mapSeed: isSeed(raw.mapSeed) ? raw.mapSeed : raw.seed,
+        // Missing fields belong to the legacy interior generator. Preserve
+        // future versions so an older client cannot silently redraw that map.
+        interiorVersion: Number.isSafeInteger(raw.interiorVersion) && raw.interiorVersion >= 0 ? raw.interiorVersion : 0,
         // Saves from before layout generations were recorded were built
         // with the legacy generator, and must keep that geography.
         layoutVersion: Number.isSafeInteger(raw.layoutVersion) && raw.layoutVersion >= LEGACY_ROUTE_LAYOUT_VERSION
@@ -147,9 +151,10 @@ export function createCampaignWorldStore({
         return clone(state);
     }
 
-    function getOrCreate({ seed } = {}) {
+    function getOrCreate({ seed, interiorVersion = 0 } = {}) {
         const current = read();
         if (current) return current;
+        if (![0, 1].includes(interiorVersion)) throw new Error('Unsupported interior version');
         const candidate = isSeed(seed) ? seed : createSeed();
         const campaignSeed = isSeed(candidate) ? candidate : createFreshRunEntropy();
         const activeExpedition = createExpeditionProfile(campaignSeed, 0);
@@ -157,6 +162,7 @@ export function createCampaignWorldStore({
             version: CAMPAIGN_WORLD_VERSION,
             seed: campaignSeed,
             mapSeed: campaignSeed,
+            interiorVersion,
             layoutVersion: ROUTE_LAYOUT_VERSION,
             expeditionIndex: 0,
             expeditionSeed: activeExpedition.expeditionSeed,
@@ -196,12 +202,15 @@ export function createCampaignWorldStore({
         // shortcuts), all keyed by what they are, not where. What belongs to
         // the old map (destroyed walls, doors, explored areas, the authored
         // world's identity) does not.
-        beginNewRun({ mapSeed = null } = {}) {
+        beginNewRun({ mapSeed = null, interiorVersion } = {}) {
             const current = getOrCreate();
+            const nextInteriorVersion = interiorVersion ?? current.interiorVersion;
+            if (![0, 1].includes(nextInteriorVersion)) throw new Error('Unsupported interior version');
             const next = isSeed(mapSeed) ? mapSeed : createSeed(current.mapSeed);
             return write({
                 ...current,
                 mapSeed: isSeed(next) ? next : createFreshRunEntropy(current.mapSeed),
+                interiorVersion: nextInteriorVersion,
                 layoutVersion: ROUTE_LAYOUT_VERSION,
                 mazeState: carryStoryToNewMap(current.mazeState)
             });

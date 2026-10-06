@@ -1,0 +1,339 @@
+{
+  "generatedBy": "scripts/room-density-probe.mjs",
+  "mode": "area-budget",
+  "method": "content-cost estimate from asset data; not a GPU measurement",
+  "seedsPerBuildAndBiome": 50,
+  "biomes": [
+    "active",
+    "cryo",
+    "bio",
+    "cave"
+  ],
+  "overall": {
+    "rooms": 2400,
+    "floorCells": {
+      "min": 99,
+      "max": 209
+    },
+    "objects": {
+      "mean": 6.64,
+      "max": 8
+    },
+    "areaLimit": {
+      "min": 8,
+      "max": 8
+    },
+    "drawCalls": {
+      "mean": 8.6,
+      "p95": 10,
+      "max": 10
+    },
+    "triangles": {
+      "mean": 92710,
+      "p95": 146502,
+      "max": 164502
+    }
+  },
+  "byBuild": {
+    "medical_triage": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 130,
+        "max": 130
+      },
+      "objects": {
+        "mean": 7,
+        "max": 7
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 9,
+        "p95": 9,
+        "max": 9
+      },
+      "triangles": {
+        "mean": 134050,
+        "p95": 157497,
+        "max": 157497
+      }
+    },
+    "armory_cage": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 127,
+        "max": 127
+      },
+      "objects": {
+        "mean": 7,
+        "max": 7
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 9,
+        "p95": 9,
+        "max": 9
+      },
+      "triangles": {
+        "mean": 98006,
+        "p95": 113002,
+        "max": 113002
+      }
+    },
+    "o2_scrubber": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 134,
+        "max": 134
+      },
+      "objects": {
+        "mean": 7.17,
+        "max": 8
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 9.2,
+        "p95": 10,
+        "max": 10
+      },
+      "triangles": {
+        "mean": 85236,
+        "p95": 110507,
+        "max": 122506
+      }
+    },
+    "field_fabricator": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 111,
+        "max": 111
+      },
+      "objects": {
+        "mean": 7,
+        "max": 7
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 9,
+        "p95": 9,
+        "max": 9
+      },
+      "triangles": {
+        "mean": 83635,
+        "p95": 104504,
+        "max": 115501
+      }
+    },
+    "power_puzzle": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 143,
+        "max": 143
+      },
+      "objects": {
+        "mean": 6.2,
+        "max": 7
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 8.2,
+        "p95": 9,
+        "max": 9
+      },
+      "triangles": {
+        "mean": 54285,
+        "p95": 72009,
+        "max": 84009
+      }
+    },
+    "trap_vault": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 117,
+        "max": 117
+      },
+      "objects": {
+        "mean": 4.14,
+        "max": 5
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 6.1,
+        "p95": 7,
+        "max": 7
+      },
+      "triangles": {
+        "mean": 99261,
+        "p95": 116499,
+        "max": 128499
+      }
+    },
+    "reward_cache": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 99,
+        "max": 99
+      },
+      "objects": {
+        "mean": 3.2,
+        "max": 4
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 5.2,
+        "p95": 6,
+        "max": 6
+      },
+      "triangles": {
+        "mean": 67884,
+        "p95": 83000,
+        "max": 96002
+      }
+    },
+    "ring_crossing_landmark": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 209,
+        "max": 209
+      },
+      "objects": {
+        "mean": 8,
+        "max": 8
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 10,
+        "p95": 10,
+        "max": 10
+      },
+      "triangles": {
+        "mean": 99593,
+        "p95": 116506,
+        "max": 125003
+      }
+    },
+    "reactor_vent_station": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 139,
+        "max": 139
+      },
+      "objects": {
+        "mean": 7,
+        "max": 7
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 9,
+        "p95": 9,
+        "max": 9
+      },
+      "triangles": {
+        "mean": 131279,
+        "p95": 148999,
+        "max": 164502
+      }
+    },
+    "hull_fabrication_bay": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 157,
+        "max": 157
+      },
+      "objects": {
+        "mean": 8,
+        "max": 8
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 10,
+        "p95": 10,
+        "max": 10
+      },
+      "triangles": {
+        "mean": 61877,
+        "p95": 79504,
+        "max": 95006
+      }
+    },
+    "radar_alignment_post": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 182,
+        "max": 182
+      },
+      "objects": {
+        "mean": 7,
+        "max": 7
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 9,
+        "p95": 9,
+        "max": 9
+      },
+      "triangles": {
+        "mean": 92828,
+        "p95": 109501,
+        "max": 109501
+      }
+    },
+    "reactor_compressor_hall": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 208,
+        "max": 208
+      },
+      "objects": {
+        "mean": 8,
+        "max": 8
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 10,
+        "p95": 10,
+        "max": 10
+      },
+      "triangles": {
+        "mean": 104590,
+        "p95": 119004,
+        "max": 134506
+      }
+    }
+  }
+}

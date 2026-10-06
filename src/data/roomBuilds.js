@@ -12,7 +12,10 @@
 // seal into an unreachable pocket; this keeps every build mechanically
 // guaranteed connected, and `roomBuilds.js`'s validator still checks it.
 
+import { CATHEDRAL_ROOM_BLUEPRINTS } from './cathedralBlueprints.js';
+
 export const ROOM_BUILD_VERSION = 1;
+export { CATHEDRAL_ROOM_BLUEPRINTS };
 
 function rectRoomPattern(width, height, obstructions = []) {
     const pattern = Array.from({ length: height }, () => Array(width).fill('.'));
@@ -479,3 +482,5 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         contentBudget: { structuralLarge: 2, activityZones: 2, pickupsMin: 1, enemiesMax: 5 }
     })
 ]);
+
+export const ALL_ROOM_BUILDS = Object.freeze([...ROOM_BUILD_CATALOG, ...CATHEDRAL_ROOM_BLUEPRINTS]);

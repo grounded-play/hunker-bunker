@@ -33,6 +33,16 @@ function game() {
 afterEach(() => { vi.restoreAllMocks(); campaignWorldStore.reset(); });
 
 describe('live campaign world integration', () => {
+    it('reads persisted map identity and excludes multiplayer/fixed worlds from the interior pilot', () => {
+        campaignWorldStore.getOrCreate({ seed: 71, interiorVersion: 1 });
+        campaignWorldStore.beginNewRun({ mapSeed: 99 });
+        const config = ThreeGame.prototype.getRoomGrammarConfig;
+        expect(config.call({ _campaignWorldSeed: 71 })).toEqual({ seed: 99, version: 1 });
+        expect(config.call({ _campaignWorldSeed: 71, isMultiplayer: true })).toBeNull();
+        expect(config.call({ _campaignWorldSeed: 71, fixedRunEntropy: true })).toBeNull();
+        expect(config.call({ _campaignWorldSeed: 70 })).toBeNull();
+    });
+
     it('keeps geography on retries and reloads while changing expedition challenges', () => {
         campaignWorldStore.reset();
         campaignWorldStore.getOrCreate({ seed: 8128 });

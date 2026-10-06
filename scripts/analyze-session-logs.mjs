@@ -6,6 +6,7 @@
 
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { sessionLogFindings } from './session-log-findings.mjs';
 
 const files = process.argv.slice(2).filter((arg) => !arg.startsWith('-'));
 if (!files.length) {
@@ -60,6 +61,7 @@ for (const filename of files) {
     const signals = Object.fromEntries(
         Object.entries(signalPatterns).map(([name, pattern]) => [name, pattern.test(joined)])
     );
+    const findings = sessionLogFindings(capture);
     const longTaskWindows = entries.map(parseLongTask).filter(Boolean);
     const longTaskCount = longTaskWindows.reduce((sum, task) => sum + task.count, 0);
     const errors = entries.filter((entry) => String(entry?.level).toLowerCase() === 'error');
@@ -85,7 +87,12 @@ for (const filename of files) {
     console.log(`  hardware: deck=${yes(perf.hardware?.isSteamDeck)} controller=${input.primaryControllerType ?? 'none'} controllers=${input.controllerCount ?? 0}`);
     console.log(`  stage: ${state.stage?.stageWidth ?? '?'}x${state.stage?.stageHeight ?? '?'} phase=${state.appPhase ?? 'unknown'} class=${state.playerType ?? 'unknown'}`);
     console.log(`  multiplayer: join=${yes(signals.relayJoin)} twoPlayerRoster=${yes(signals.twoPlayerRoster)} ready=${yes(signals.ready)} deployed=${yes(signals.deployed)} remote3d=${yes(signals.remote3d)} pvp=${yes(signals.pvp)}`);
-    console.log(`  completion: playerDamage=${yes(signals.playerDamage)} pvpDamage=${yes(signals.pvp && signals.playerDamage)} death/results=${yes(signals.deathOrResults)} extraction=${yes(signals.extraction)} reconnect=${yes(signals.reconnect)} suspend/resume=${yes(signals.suspendResume)}`);
+    console.log(`  completion: playerDamage=${yes(signals.playerDamage)} pvpDamage=${yes(Boolean(findings.damageReasons['pvp-rival']) || findings.hitConfirmations > 0)} death/results=${yes(signals.deathOrResults)} extraction=${yes(signals.extraction)} reconnectMention=${yes(signals.reconnect)} suspend/resume=${yes(signals.suspendResume)}`);
+    console.log(`  relay: joins=${findings.joins} repeatedJoins=${yes(findings.repeatedJoins)} latestRoster=${findings.latestRosterSize ?? '?'} finalRemoteAvatars=${findings.finalRemotePlayers ?? '?'} possibleStaleAvatars=${yes(findings.possibleStaleAvatars)}`);
+    console.log(`  captured disconnects: ${JSON.stringify(findings.disconnectReasons)}`);
+    console.log(`  combat: hitReports=${findings.hitReports} confirmations=${findings.hitConfirmations} damageReasons=${JSON.stringify(findings.damageReasons)} (not a packet-loss measurement)`);
+    console.log(`  captured hit rejections: ${JSON.stringify(findings.hitRejectionReasons)} (rate-limited diagnostics, not exhaustive totals)`);
+    console.log(`  presented gameplay: average=${findings.gameplayAverageMs ?? '?'}ms p95=${findings.gameplayP95Ms ?? '?'}ms approximateFps=${findings.approximateFps ?? '?'} (retained frame intervals, not GPU timing)`);
     console.log(`  coverage: settings=${yes(signals.settings)} achievements=${yes(signals.achievements)} cloudAvailable=${yes(signals.cloudAvailable)}`);
     console.log(`  performance: gpuAvg=${gpu.averageMs ?? '?'}ms gpuMax=${gpu.maxMs ?? '?'}ms samples=${gpu.samples ?? 0} dropped=${gpu.droppedFrames ?? 0} memory=${memory.estimatedBytes ? `${(memory.estimatedBytes / 1024 / 1024).toFixed(1)}MiB` : '?'} adaptive=${yes(perf.adaptiveGameplayPerformanceMode)}`);
     console.log(`  timeline: samples=${timelineSamples.length} dropped=${timeline.droppedSamples ?? 0} interval=${timeline.sampleIntervalMs ?? '?'}ms peakHeap=${peakTimelineHeap ? `${(peakTimelineHeap / 1024 / 1024).toFixed(1)}MiB` : '?'} peakGpu=${peakTimelineGpu ? `${(peakTimelineGpu / 1024 / 1024).toFixed(1)}MiB` : '?'}`);

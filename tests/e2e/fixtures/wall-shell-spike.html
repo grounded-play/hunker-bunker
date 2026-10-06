@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Game asset URLs are page-relative (Electron file://); resolve them from the root. -->
+  <base href="/">
+  <title>Wall shell spike</title>
+  <style>
+    html, body { margin: 0; background: #0b1013; color: #dfe8e6; font: 14px monospace; }
+    .label { position: absolute; padding: 4px 8px; background: #000a; }
+  </style>
+</head>
+<body>
+  <!--
+    S49 lived-in world M5 spike (showroom only, design-gated): an authored room
+    stamped from ROOM_BUILD_CATALOG with its socket doors, rendered with the
+    procedural 1 x 2.8 x 1 wall boxes (left) and with wallShellPlacements()
+    swapping eligible boundary runs for kit template walls (right). The wall
+    boxes under a shell are not drawn; collision would stay with the tile grid.
+    Query: ?build=<id>&biome=active|cave.
+  -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { ROOM_BUILD_CATALOG, stampRoomBuild } from '/src/roomBuilds.js';
+    import { analyzeWallShellRuns } from '/src/kitGrammar.js';
+    import { createWorld3dModel } from '/src/world3dOverlay.js';
+
+    const params = new URLSearchParams(location.search);
+    const build = ROOM_BUILD_CATALOG.find((b) => b.id === params.get('build')) ?? ROOM_BUILD_CATALOG[0];
+    const biome = params.get('biome') === 'cave' ? 'cave' : 'active';
+    const LONG = { n: 'north', s: 'south', e: 'east', w: 'west' };
+    let state = 7;
+    const random = () => (state = (state * 16807) % 2147483647) / 2147483647;
+    const stamp = stampRoomBuild(build, random, {
+      openings: Object.fromEntries(build.sockets.map((socket) => [LONG[socket.side], { open: true, offset: 8 }]))
+    });
+    const room = { interior: stamp.interior, bounds: stamp.bounds, doors: stamp.doors };
+    const analysis = analyzeWallShellRuns(stamp.grid, room, biome);
+    const shells = analysis.placements;
+    const shellCells = analysis.suppressionMask;
+    const kitType = shells[0]?.type;
+    const kitModel = kitType ? await createWorld3dModel(kitType) : null;
+
+    const { left, right, top, bottom } = stamp.bounds;
+    const cx = (left + right) / 2, cz = (top + bottom) / 2;
+    const width = 1280, height = 800;
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(width, height);
+    renderer.setScissorTest(true);
+    document.body.append(renderer.domElement);
+    const wallGeo = new THREE.BoxGeometry(1, 2.8, 1);
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x6b6f73, roughness: 0.9 });
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x33393e, roughness: 0.95 });
+
+    function scene(withShells) {
+      const s = new THREE.Scene();
+      s.background = new THREE.Color(0x0b1013);
+      s.add(new THREE.HemisphereLight(0xcfe3ff, 0x2a2420, 1.4));
+      const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+      sun.position.set(cx + 8, 14, cz + 10);
+      s.add(sun);
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(right - left + 5, bottom - top + 5), floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.set(cx, 0, cz);
+      s.add(floor);
+      for (let y = top - 1; y <= bottom + 1; y += 1) {
+        for (let x = left - 1; x <= right + 1; x += 1) {
+          if (stamp.grid[y]?.[x] !== '#') continue;
+          if (withShells && shellCells.has(`${x},${y}`)) continue;
+          const box = new THREE.Mesh(wallGeo, wallMat);
+          box.position.set(x, 1.4, y);
+          s.add(box);
+        }
+      }
+      if (withShells && kitModel) {
+        for (const shell of shells) {
+          const piece = kitModel.clone(true);
+          piece.position.set(shell.x, 0, shell.y);
+          piece.rotation.y = shell.rotationSteps * (Math.PI / 2);
+          piece.scale.multiplyScalar(shell.modelScale);
+          s.add(piece);
+        }
+      }
+      return s;
+    }
+
+    const camera = new THREE.PerspectiveCamera(45, (width / 2) / height, 0.1, 200);
+    camera.position.set(cx + 6, 17, cz + 15);
+    camera.lookAt(cx, 0, cz);
+    const scenes = [scene(false), scene(true)];
+    const renderAll = () => scenes.forEach((s, i) => {
+      const vx = i * width / 2;
+      renderer.setViewport(vx, 0, width / 2, height);
+      renderer.setScissor(vx, 0, width / 2, height);
+      renderer.render(s, camera);
+    });
+    renderAll();
+    // Kit materials fetch their textures asynchronously; render again once they land.
+    await new Promise((resolve) => { THREE.DefaultLoadingManager.onLoad = resolve; setTimeout(resolve, 5000); });
+    renderAll();
+    [false, true].forEach((withShells, i) => {
+      const vx = i * width / 2;
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.style.left = `${vx + 8}px`;
+      label.style.top = '8px';
+      label.textContent = `${build.id} · ${biome} · ${withShells ? `after: ${shells.length} kit wall pieces` : 'before: procedural walls'}`;
+      document.body.append(label);
+    });
+    window.__wallShellSpike = { ready: true, shells: shells.length, loaded: Boolean(kitModel) };
+  </script>
+</body>
+</html>

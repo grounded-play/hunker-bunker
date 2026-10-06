@@ -4,14 +4,15 @@ Start here instead of searching every Markdown file. The repository contains a
 large historical record; only the documents in **Current truth** and **Current
 planning** are expected to describe today without qualification.
 
-Last reviewed: 2026-09-10 · Owner: repository maintainers · Baseline: Sprint 34 (`dev/sprint-34`, `v2.4.0-beta`)
+Last reviewed: 2026-10-01 · Owner: repository maintainers · Baseline: Sprint 49 (`dev/sprint-49`, `v2.4.13-beta`)
 
 ## Current truth
 
 | Question | Canonical document |
 | --- | --- |
 | What works, and what is merely code-complete? | [Product State](../PRODUCT_STATE.md) |
-| What are we doing now? | [Sprint 30 plan](planning/sprint-30.md) |
+| What are we doing now? | [Sprint 49 plan](planning/sprint-49.md) |
+| Where should implementation resume? | [Sprint 49 handoff](planning/sprint-49-implementation-handoff.md) |
 | What comes after this sprint? | [Repository roadmap](planning/repository-roadmap.md) |
 | Who owns each runtime boundary? | [Runtime system map](architecture/system-map.md) |
 | Which deployment path is active? | [Deployment topology](architecture/deployment-topology.md) |
@@ -53,8 +54,8 @@ place until a link-preserving archive pass moves them.
   reconciles original commitments with their highest honest evidence state.
 - [Pre-Sprint-30 technical-debt audit](pre-sprint-30-technical-debt-audit-2026-08-24.md)
   measures branch residue, test gaps, stale feature gates, and root clutter.
-- [Current Steam review status](reports/steam-review-current-status-2026-08-24.md)
-  maps Valve feedback to current evidence and explicit resubmission gates.
+- [Current documentation and Steam review audit](reports/documentation-audit-2026-09-30.md)
+  maps BuildID 25475189 feedback to code evidence and Sprint 49 acceptance gates.
 - [Documentation migration inventory](reports/documentation-inventory-and-migration-plan-2026-08-24.md)
   sequences the remaining loose-file cleanup without breaking links.
 

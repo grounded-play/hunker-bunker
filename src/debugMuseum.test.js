@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { openDebugMuseum, closeDebugMuseum, buildMuseumAudioCatalog, setMuseumSpecimenState } from './debugMuseum.js';
+import { openDebugMuseum, closeDebugMuseum, buildMuseumAudioCatalog, setMuseumSpecimenState, spawnAudioValidationConsole } from './debugMuseum.js';
 import { SHOWROOM_CATEGORIES, createDebugWallDecalDisplay } from './debugShowroom.js';
+import { MUSEUM_OPERATOR_HEIGHT, buildMuseumExhibitPlan } from './debugMuseumPlan.js';
 
 describe('Debug Hallway Museum', () => {
     let mockGame;
@@ -219,6 +220,84 @@ describe('Debug Hallway Museum', () => {
         expect(damaged.every((child) => !child.visible)).toBe(true);
     });
 
+    it('reports a load result for every planned exhibit, failures included', async () => {
+        GLTFLoader.prototype.loadAsync.mockImplementation(async (url) => {
+            if (String(url).includes('tank-rigged')) throw new Error('404');
+            return { scene: new THREE.Group() };
+        });
+        await openDebugMuseum(mockGame);
+        const report = scene.getObjectByName('debug-museum').userData.museumReport;
+        const planned = buildMuseumExhibitPlan().reduce((n, c) => n + c.entries.length, 0);
+        expect(report).toHaveLength(planned);
+        const tank = report.find((row) => row.url === '/3d/runtime/tank-rigged.glb');
+        expect(tank).toMatchObject({ ok: false, category: 'OPERATOR BODIES' });
+        expect(tank.error).toBeTruthy();
+    });
+
+    it('stands operator bodies at the in-game player height on the pedestal, facing +Z', async () => {
+        GLTFLoader.prototype.loadAsync.mockImplementation(async () => {
+            const sceneRoot = new THREE.Group();
+            sceneRoot.add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 3, 0.4), new THREE.MeshBasicMaterial()));
+            return { scene: sceneRoot, animations: [] };
+        });
+        await openDebugMuseum(mockGame);
+        const report = scene.getObjectByName('debug-museum').userData.museumReport;
+        const scout = report.find((row) => row.url === '/3d/scouting-scout/Scout.game.glb');
+        expect(scout.ok).toBe(true);
+        expect(scout.size.y).toBeCloseTo(MUSEUM_OPERATOR_HEIGHT, 3);
+        expect(scout.minY).toBeCloseTo(0.6, 3);
+        expect(scout.yaw).toBe(0);
+    });
+
+    it('turns scene fog off so large exhibits are not washed out, and restores it on close', async () => {
+        const fog = new THREE.Fog(0x888888, 5, 40);
+        scene.fog = fog;
+        await openDebugMuseum(mockGame);
+        expect(scene.fog).toBeNull();
+        closeDebugMuseum(mockGame);
+        expect(scene.fog).toBe(fog);
+    });
+
+    it('stands floor-level wings (modular kits) without a plinth', async () => {
+        mockGame.createWorld3dModel = vi.fn(async () => {
+            const g = new THREE.Group();
+            g.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()));
+            return g;
+        });
+        await openDebugMuseum(mockGame);
+        const report = scene.getObjectByName('debug-museum').userData.museumReport;
+        const kit = report.find((row) => row.type === 'kit_cave_corridor');
+        expect(kit.ok).toBe(true);
+        expect(kit.minY).toBeCloseTo(-0.5, 3);
+        const prop = report.find((row) => row.type === 'prop_camp_crate');
+        expect(prop.minY).toBeCloseTo(0.1, 3);
+    });
+
+    // A category used to start every load at once: 56 chassis GLBs of
+    // 10-30 MB each, which dropped fetches ("Failed to fetch") and reported
+    // healthy models as broken.
+    it('loads a category a few exhibits at a time and retries a dropped fetch once', async () => {
+        let inFlight = 0;
+        let peak = 0;
+        const attempts = new Map();
+        GLTFLoader.prototype.loadAsync.mockImplementation(async (url) => {
+            inFlight += 1;
+            peak = Math.max(peak, inFlight);
+            await new Promise((resolve) => setTimeout(resolve, 1));
+            inFlight -= 1;
+            const n = (attempts.get(url) ?? 0) + 1;
+            attempts.set(url, n);
+            if (String(url).includes('tank-rigged') && n === 1) throw new TypeError('Failed to fetch');
+            const sceneRoot = new THREE.Group();
+            sceneRoot.add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 2, 0.4), new THREE.MeshBasicMaterial()));
+            return { scene: sceneRoot, animations: [] };
+        });
+        await openDebugMuseum(mockGame);
+        expect(peak).toBeLessThanOrEqual(6);
+        const report = scene.getObjectByName('debug-museum').userData.museumReport;
+        expect(report.find((row) => row.url === '/3d/runtime/tank-rigged.glb').ok).toBe(true);
+    });
+
     it('catalogs every song and alternate VO take without gameplay triggers', () => {
         const buffers = {
             music_menu: {},
@@ -233,6 +312,52 @@ describe('Debug Hallway Museum', () => {
         expect(catalog.voice.some((row) => row.key.endsWith('2'))).toBe(true);
         expect(catalog.effects.map((row) => row.key)).toContain('gunshot');
         expect(catalog.music.map((row) => row.key)).toContain('music_menu');
+        expect(catalog.music.some((row) => row.key === 'music_safe_ship')).toBe(true);
+        expect(catalog.effects.some((row) => row.key === 'footstep_concrete_000')).toBe(true);
+        expect(catalog.voice.some((row) => row.key === 'voice_commander_reloading' && row.source)).toBe(true);
+    });
+
+    it('spawns the audio validation console near the entrance and keeps the jukebox hidden until triggered', async () => {
+        const group = new THREE.Group();
+        spawnAudioValidationConsole(mockGame, group, 8998, 8998.5);
+        expect(group.userData.audioConsolePosition).toBeDefined();
+        expect(group.userData.audioConsolePosition.x).toBe(8998);
+        expect(group.getObjectByName('debug-audio-validation-console')).toBeDefined();
+
+        const rootEl = {
+            id: '',
+            style: {},
+            classList: new Set(),
+            setAttribute: vi.fn(),
+            querySelector: vi.fn(() => ({ addEventListener: vi.fn() })),
+            addEventListener: vi.fn()
+        };
+        rootEl.classList.add = (c) => rootEl.classList.add(c);
+        rootEl.classList.remove = (c) => rootEl.classList.delete(c);
+        rootEl.classList.contains = (c) => rootEl.classList.has(c);
+
+        globalThis.document.body = { appendChild: vi.fn() };
+        globalThis.document.createElement = vi.fn((tag) => {
+            if (tag === 'section') return rootEl;
+            return {
+                style: {},
+                classList: { add: vi.fn(), remove: vi.fn(), contains: vi.fn(() => false) },
+                setAttribute: vi.fn(),
+                querySelector: vi.fn(),
+                addEventListener: vi.fn(),
+                replaceChildren: vi.fn(),
+                appendChild: vi.fn()
+            };
+        });
+
+        await openDebugMuseum(mockGame);
+        const museumGroup = scene.getObjectByName('debug-museum');
+        expect(museumGroup).toBeDefined();
+        expect(museumGroup.getObjectByName('debug-audio-validation-console')).toBeDefined();
+        expect(typeof museumGroup.userData.openJukebox).toBe('function');
+        expect(typeof museumGroup.userData.closeJukebox).toBe('function');
+
+        closeDebugMuseum(mockGame);
     });
 
     it('survives a game without the optional debug hooks', async () => {

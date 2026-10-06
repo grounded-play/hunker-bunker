@@ -141,6 +141,29 @@ export const SHOWROOM_CATEGORIES = Object.freeze({
         'prop_flesh_steel_cradle',
         'prop_flesh_steel_inhaler'
     ],
+    BIOMECH_CATHEDRAL_PROPS: [
+        'prop_autopsy_dissection_slab',
+        'prop_biomech_sphincter_hatch_vent',
+        'prop_biomech_spore_umbilical_cable',
+        'prop_biomech_spore_umbilical_cable_rigged',
+        'prop_biomech_tracheal_wall_pipe',
+        'prop_ceiling_crane_hoist',
+        'prop_coolant_drum_leaking_pool',
+        'prop_corporate_saint_reliquary',
+        'prop_decon_eyewash_shower_station',
+        'prop_exhaust_blower_fan_hood',
+        'prop_exosuit_docking_gantry',
+        'prop_floor_conduit_bridge',
+        'prop_floor_drainage_sump_trough',
+        'prop_liturgical_terminal_lectern',
+        'prop_maintenance_tool_cart',
+        'prop_overhead_cage_fluorescent',
+        'prop_oxygen_bottle_cascade_rack',
+        'prop_pipe_organ_heat_exchanger',
+        'prop_vertebral_cable_riser',
+        'prop_votive_candle_shrine',
+        'prop_wall_cable_tray_swag'
+    ],
     FUNGAL_PROPS: [
         'prop_fungal_mycelium_loom',
         'prop_fungal_resin_basin',
@@ -173,7 +196,34 @@ export const SHOWROOM_CATEGORIES = Object.freeze({
         'prop_camp_sandbags',
         'prop_camp_cot',
         'prop_camp_crate',
+        'prop_camp_cookfire_lit',
+        'prop_camp_bedrolls',
+        'prop_camp_laundry',
+        'prop_camp_warning_placard',
+        'prop_camp_shutter_lockdown',
+        'prop_camp_meridian_radio',
         'prop_hive_resin_sac'
+    ],
+    // 2D -> 3D gap batch 2026-10-05: the cave floor around hives, and the
+    // hive signature molt.
+    HIVE_CAVE_PROPS: [
+        'prop_cave_eggs_intact',
+        'prop_cave_eggs_hatched',
+        'scatter_hive_eggs',
+        'prop_cave_webs',
+        'prop_cave_hive_wounded',
+        'prop_cave_spores',
+        'prop_spore_colony',
+        'prop_cave_lichen',
+        'prop_hive_carapace_molt'
+    ],
+    // Dead enemies as they lie on the floor (ThreeGame.attachCorpse3d).
+    CORPSES: [
+        'cybersnail_dead',
+        'cryosnail_dead',
+        'sporesnail_dead',
+        'boss_cybersnail_dead',
+        'boss_cryosnail_dead'
     ],
     // Easter-egg assets. Only reachable in a live run by finding them, which
     // makes them the hardest things in the game to visually verify -- and the
@@ -500,6 +550,10 @@ export async function buildShowroomScene(threeGame) {
     const allItems = [
         ...SHOWROOM_CATEGORIES.TACTICAL_PROPS.map((id) => ({ id, type: 'prop', category: 'TACTICAL' })),
         ...SHOWROOM_CATEGORIES.BIOMECH_PROPS.map((id) => ({ id, type: 'prop', category: 'BIOMECH' })),
+        ...SHOWROOM_CATEGORIES.BIOMECH_CATHEDRAL_PROPS.map((id) => ({ id, type: 'prop', category: 'BIOMECH_CATHEDRAL' })),
+        ...SHOWROOM_CATEGORIES.FUNGAL_PROPS.map((id) => ({ id, type: 'prop', category: 'FUNGAL' })),
+        ...SHOWROOM_CATEGORIES.CRYO_PROPS.map((id) => ({ id, type: 'prop', category: 'CRYO' })),
+        ...SHOWROOM_CATEGORIES.RUINED_INDUSTRIAL_PROPS.map((id) => ({ id, type: 'prop', category: 'INDUSTRIAL' })),
         ...SHOWROOM_CATEGORIES.CAMP_PROPS.map((id) => ({ id, type: 'prop', category: 'CAMP' })),
         ...SHOWROOM_CATEGORIES.SECRETS.map((id) => ({ id, type: 'prop', category: 'SECRETS' })),
         ...SHOWROOM_CATEGORIES.AFTERMATH_STATES.map((id) => ({ id, type: 'prop', category: 'AFTERMATH' })),

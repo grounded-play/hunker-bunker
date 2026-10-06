@@ -1,9 +1,13 @@
 # Sprint 49 Feature Backlog & Hanging Systems
 
-**Status:** Completed Sprint Backlog  
+**Status:** historical implementation checklist  
 **Generated:** 2026-09-30  
 **Baseline:** Post-Sprint 48 Milestone (Commit `f0676af3` / `v2.4.12-beta`)  
 **Scope:** Actionable gameplay, multiplayer, world, and presentation features (excluding pure QA/verification playthroughs).
+
+The [canonical Sprint 49 plan](sprint-49.md) supersedes this checklist. Checked
+items below describe earlier implementation claims; the audit found partial
+integration and acceptance gaps, particularly crafting, pings and companions.
 
 ---
 

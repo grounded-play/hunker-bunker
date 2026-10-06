@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Game asset URLs (kit textures) are page-relative (Electron file://); resolve them from the root. -->
+  <base href="/">
+  <title>Gateway orientation probe</title>
+  <style>
+    html, body { margin: 0; background: #0b1013; color: #dfe8e6; font: 14px monospace; }
+    canvas { display: block; }
+    .label { position: absolute; padding: 4px 8px; background: #000a; }
+  </style>
+</head>
+<body>
+  <!--
+    S49 lived-in world M1: renders roomGatewayKitPlacement() for a north, east,
+    south and west authored threshold with the game's real measurements --
+    tile grid at integer coordinates, 2.8-unit walls, the procedural blast door
+    (wall box scaled 3.35 x 1.72 x 0.58 around the centre cell, sinking into
+    the floor to open) and the biome's gate.glb at KIT_SCALE with kit
+    materials. Query: ?skin=cave|space&door=closed|open.
+  -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+    import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+    import { roomGatewayKitPlacement } from '../../../src/kitGrammar.js';
+    import { KIT_SCALE, applyKitMaterials } from '../../../src/kitMaterials.js';
+
+    const params = new URLSearchParams(location.search);
+    const skin = params.get('skin') === 'space' ? 'space' : 'cave';
+    const biome = skin === 'space' ? 'active' : 'cave';
+    const doorOpen = params.get('door') === 'open';
+    const WALL_HEIGHT = 2.8;
+    const DOOR_HEIGHT = WALL_HEIGHT * 1.72;
+    const HALF = 4; // 9x9 room: interior -3..3, wall ring at +-4.
+
+    const width = 1280, height = 800;
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(width, height);
+    renderer.setScissorTest(true);
+    document.body.append(renderer.domElement);
+
+    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    const gltf = await loader.loadAsync(`/3d/runtime/kits/modular-${skin}-kit/gate.glb`);
+
+    function doorFor(side) {
+      const cells = [-1, 0, 1].map((t) => (
+        side === 'n' ? { x: t, y: -HALF } : side === 's' ? { x: t, y: HALF }
+          : side === 'e' ? { x: HALF, y: t } : { x: -HALF, y: t }
+      ));
+      return { id: `door:${side}`, side, cells };
+    }
+
+    function buildScene(side) {
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0b1013);
+      scene.add(new THREE.HemisphereLight(0xcfe3ff, 0x2a2420, 1.6));
+      const sun = new THREE.DirectionalLight(0xffffff, 1.8);
+      sun.position.set(6, 12, 4);
+      scene.add(sun);
+
+      const door = doorFor(side);
+      const doorKeys = new Set(door.cells.map((c) => `${c.x},${c.y}`));
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(2 * HALF + 9, 2 * HALF + 9), new THREE.MeshStandardMaterial({ color: 0x39434a }));
+      floor.rotation.x = -Math.PI / 2;
+      scene.add(floor);
+      // Threshold cells, tinted, so the frame's footprint reads against them.
+      for (const c of door.cells) {
+        const tile = new THREE.Mesh(new THREE.PlaneGeometry(0.96, 0.96), new THREE.MeshBasicMaterial({ color: 0x2f7d6d }));
+        tile.rotation.x = -Math.PI / 2;
+        tile.position.set(c.x, 0.01, c.y);
+        scene.add(tile);
+      }
+      const wallMat = new THREE.MeshStandardMaterial({ color: 0x6b6f73, transparent: true, opacity: 0.55 });
+      const wallGeo = new THREE.BoxGeometry(1, WALL_HEIGHT, 1);
+      for (let x = -HALF; x <= HALF; x += 1) {
+        for (let y = -HALF; y <= HALF; y += 1) {
+          if (Math.abs(x) !== HALF && Math.abs(y) !== HALF) continue;
+          if (doorKeys.has(`${x},${y}`)) continue;
+          const wall = new THREE.Mesh(wallGeo, wallMat);
+          wall.position.set(x, WALL_HEIGHT / 2, y);
+          scene.add(wall);
+        }
+      }
+
+      // Procedural blast door, as threeGame builds it.
+      const horizontal = side === 'n' || side === 's';
+      const centre = door.cells[1];
+      const slab = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0xc9772c, transparent: true, opacity: 0.6 }));
+      slab.scale.set(horizontal ? 3.35 : 0.58, DOOR_HEIGHT, horizontal ? 0.58 : 3.35);
+      slab.position.set(centre.x, doorOpen ? -DOOR_HEIGHT / 2 : DOOR_HEIGHT / 2, centre.y);
+      scene.add(slab);
+
+      const placement = roomGatewayKitPlacement(door, biome);
+      const gate = gltf.scene.clone(true);
+      applyKitMaterials(gate, placement.type);
+      gate.scale.setScalar(KIT_SCALE * placement.modelScale);
+      gate.position.set(placement.x, 0, placement.y);
+      gate.rotation.y = placement.rotationSteps * (Math.PI / 2);
+      scene.add(gate);
+
+      // Look from inside the room toward the door, elevated three-quarter view.
+      const inward = { n: [0, 1], s: [0, -1], e: [-1, 0], w: [1, 0] }[side];
+      const camera = new THREE.PerspectiveCamera(45, (width / 2) / (height / 2), 0.1, 100);
+      camera.position.set(centre.x + inward[0] * 7 + (horizontal ? 3 : 0), 6.5, centre.y + inward[1] * 7 + (horizontal ? 0 : 3));
+      camera.lookAt(centre.x, 1.6, centre.y);
+      return { scene, camera, placement };
+    }
+
+    const sides = ['n', 'e', 's', 'w'];
+    const panels = sides.map(buildScene);
+    const renderAll = () => panels.forEach(({ scene, camera }, i) => {
+      const vx = (i % 2) * (width / 2);
+      const vy = (i < 2 ? 1 : 0) * (height / 2);
+      renderer.setViewport(vx, vy, width / 2, height / 2);
+      renderer.setScissor(vx, vy, width / 2, height / 2);
+      renderer.render(scene, camera);
+    });
+    renderAll();
+    // Kit materials fetch their textures asynchronously; render again once they land.
+    await new Promise((resolve) => { THREE.DefaultLoadingManager.onLoad = resolve; setTimeout(resolve, 5000); });
+    renderAll();
+    panels.forEach(({ placement }, i) => {
+      const vx = (i % 2) * (width / 2);
+      const vy = (i < 2 ? 1 : 0) * (height / 2);
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.style.left = `${vx + 8}px`;
+      label.style.top = `${height - vy - height / 2 + 8}px`;
+      label.textContent = `${skin} · door ${sides[i].toUpperCase()} (${doorOpen ? 'open' : 'closed'}) · gate at (${placement.x.toFixed(2)}, ${placement.y.toFixed(2)}) rot ${placement.rotationSteps}`;
+      document.body.append(label);
+    });
+    window.__gatewayProbe = { ready: true, placements: panels.map((p) => p.placement) };
+  </script>
+</body>
+</html>

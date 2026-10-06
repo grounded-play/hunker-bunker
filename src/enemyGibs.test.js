@@ -283,12 +283,12 @@ describe('spawnPropDebris', () => {
     function fakeGame() {
         return { scene: new THREE.Group(), transientEffects: [], spawnTextureBurstEffect: vi.fn() };
     }
-    function fakeProp() {
+    function fakeProp({ scatterKey = 'storage-drum:1', type = 'prop_storage_drum_dented', withMesh = true } = {}) {
         const root = new THREE.Group();
-        root.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()));
+        if (withMesh) root.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()));
         root.updateMatrixWorld(true);
         // Props carry world3dRoot rather than enemy3dVisual.
-        return { userData: { scatterKey: 'prop_storage_drum', world3dRoot: root } };
+        return { userData: { type, scatterKey, world3dRoot: root } };
     }
 
     beforeEach(() => {
@@ -311,6 +311,15 @@ describe('spawnPropDebris', () => {
         const game = fakeGame();
         expect(spawnPropDebris(game, fakeProp())).toBe(true);
         expect(game.transientEffects).toHaveLength(1);
+    });
+
+    it('reuses one fracture across separate instances of the same prop model', () => {
+        const game = fakeGame();
+        expect(spawnPropDebris(game, fakeProp({ scatterKey: 'drum:room-a' }))).toBe(true);
+        // This second instance deliberately has no mesh to fracture. It can
+        // still break only if the first instance warmed the type-level cache.
+        expect(spawnPropDebris(game, fakeProp({ scatterKey: 'drum:room-b', withMesh: false }))).toBe(true);
+        expect(game.transientEffects).toHaveLength(2);
     });
 
     it('but enemies still respect the gore setting', () => {

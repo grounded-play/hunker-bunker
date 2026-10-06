@@ -1,0 +1,261 @@
+/* Field Workbench Modal & Crafting UI (Sprint 49 S49-13) */
+.field-workbench-modal {
+  z-index: 16200;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 170, 0, 0.12), rgba(0, 0, 0, 0.88) 50%),
+    rgba(0, 0, 0, 0.90);
+  backdrop-filter: blur(8px);
+}
+
+.field-workbench-panel {
+  width: min(calc(var(--vu, 10px) * 96), 94%);
+  max-height: min(92vh, calc(var(--vu, 10px) * 88));
+  border: 1px solid rgba(255, 170, 0, 0.75);
+  background:
+    linear-gradient(180deg, rgba(20, 18, 12, 0.98), rgba(8, 8, 10, 0.98)),
+    var(--bg-panel, #111);
+  box-shadow:
+    0 0 0 1px rgba(255, 170, 0, 0.20) inset,
+    0 0 54px rgba(0, 0, 0, 0.94),
+    0 0 32px rgba(255, 170, 0, 0.15);
+  border-radius: 4px;
+  padding: calc(var(--vu, 10px) * 3);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  position: relative;
+}
+
+.field-workbench-kicker {
+  font-family: monospace;
+  font-size: calc(var(--vu, 10px) * 1.35);
+  color: #ffaa00;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  margin-bottom: calc(var(--vu, 10px) * 0.8);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu, 10px) * 1);
+}
+
+.field-workbench-kicker::before {
+  content: '◇';
+  color: #ffaa00;
+}
+
+.field-workbench-title {
+  color: #ffe082;
+  font-family: 'Outfit', sans-serif;
+  font-size: calc(var(--vu, 10px) * 3);
+  font-weight: 700;
+  margin-bottom: calc(var(--vu, 10px) * 1.5);
+  text-align: left;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.field-workbench-stats-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--vu, 10px) * 14), 1fr));
+  gap: calc(var(--vu, 10px) * 1);
+  margin-bottom: calc(var(--vu, 10px) * 2);
+  padding: calc(var(--vu, 10px) * 1.2);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 170, 0, 0.25);
+  border-radius: 3px;
+}
+
+.field-workbench-stat-pill {
+  font-family: monospace;
+  font-size: calc(var(--vu, 10px) * 1.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.field-workbench-stat-pill__label {
+  font-size: calc(var(--vu, 10px) * 1.05);
+  color: var(--text-muted, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.field-workbench-stat-pill__val {
+  font-size: calc(var(--vu, 10px) * 1.5);
+  font-weight: 700;
+  color: #ffea00;
+}
+
+.field-workbench-stat-pill__val.stat--health {
+  color: #ff5252;
+}
+
+.field-workbench-stat-pill__val.stat--shield {
+  color: #40c4ff;
+}
+
+.field-workbench-stat-pill__val.stat--ammo {
+  color: #ffab40;
+}
+
+.field-workbench-copy {
+  margin: 0 0 calc(var(--vu, 10px) * 2.2);
+  color: var(--text-main, #e0e0e0);
+  font-family: monospace;
+  font-size: calc(var(--vu, 10px) * 1.4);
+  line-height: 1.5;
+}
+
+.field-workbench-recipes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--vu, 10px) * 28), 1fr));
+  gap: calc(var(--vu, 10px) * 1.8);
+  margin-bottom: calc(var(--vu, 10px) * 2.5);
+}
+
+.field-workbench-card {
+  background: rgba(16, 20, 18, 0.92);
+  border: 1px solid rgba(255, 170, 0, 0.35);
+  border-radius: 4px;
+  padding: calc(var(--vu, 10px) * 2);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.field-workbench-card:hover,
+.field-workbench-card:focus-within {
+  border-color: rgba(255, 200, 50, 0.9);
+  box-shadow: 0 0 20px rgba(255, 170, 0, 0.25);
+}
+
+.field-workbench-card.is-unaffordable {
+  border-color: rgba(255, 80, 80, 0.3);
+  opacity: 0.85;
+}
+
+.field-workbench-card__header {
+  margin-bottom: calc(var(--vu, 10px) * 1.2);
+}
+
+.field-workbench-card__title {
+  font-family: 'Outfit', sans-serif;
+  font-size: calc(var(--vu, 10px) * 1.8);
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: calc(var(--vu, 10px) * 0.5);
+  letter-spacing: 0.04em;
+}
+
+.field-workbench-card__effect {
+  font-family: monospace;
+  font-size: calc(var(--vu, 10px) * 1.2);
+  color: #a7ffeb;
+  letter-spacing: 0.05em;
+  margin-bottom: calc(var(--vu, 10px) * 0.8);
+}
+
+.field-workbench-card__desc {
+  font-size: calc(var(--vu, 10px) * 1.2);
+  color: #aaa;
+  line-height: 1.45;
+  margin-bottom: calc(var(--vu, 10px) * 1.5);
+}
+
+.field-workbench-card__cost-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--vu, 10px) * 0.8);
+  margin-bottom: calc(var(--vu, 10px) * 1.6);
+  padding: calc(var(--vu, 10px) * 0.8);
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 3px;
+}
+
+.field-workbench-cost-tag {
+  font-family: monospace;
+  font-size: calc(var(--vu, 10px) * 1.15);
+  padding: 3px 8px;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.field-workbench-cost-tag.is-met {
+  background: rgba(141, 255, 112, 0.15);
+  border: 1px solid rgba(141, 255, 112, 0.45);
+  color: #b9ff78;
+}
+
+.field-workbench-cost-tag.is-missing {
+  background: rgba(255, 80, 80, 0.2);
+  border: 1px solid rgba(255, 80, 80, 0.6);
+  color: #ff8a80;
+}
+
+.field-workbench-craft-btn {
+  width: 100%;
+  padding: calc(var(--vu, 10px) * 1.4) calc(var(--vu, 10px) * 2);
+  font-family: monospace;
+  font-size: calc(var(--vu, 10px) * 1.4);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: linear-gradient(180deg, #ffaa00, #cc7a00);
+  color: #000;
+  border: none;
+  box-shadow: 0 0 12px rgba(255, 170, 0, 0.35);
+}
+
+.field-workbench-craft-btn:not(:disabled):hover,
+.field-workbench-craft-btn:not(:disabled):focus {
+  background: linear-gradient(180deg, #ffc107, #ff9100);
+  box-shadow: 0 0 20px rgba(255, 200, 50, 0.6);
+  outline: 2px solid #fff;
+  transform: translateY(-1px);
+}
+
+.field-workbench-craft-btn:disabled {
+  background: rgba(40, 40, 40, 0.6);
+  color: #777;
+  border: 1px solid rgba(80, 80, 80, 0.4);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.field-workbench-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: calc(var(--vu, 10px) * 1.5);
+  margin-top: auto;
+  padding-top: calc(var(--vu, 10px) * 1.5);
+  border-top: 1px solid rgba(255, 170, 0, 0.25);
+}
+
+.field-workbench-close-btn {
+  padding: calc(var(--vu, 10px) * 1.2) calc(var(--vu, 10px) * 2.5);
+  font-family: monospace;
+  font-size: calc(var(--vu, 10px) * 1.3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 170, 0, 0.45);
+  color: #ffaa00;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 3px;
+}
+
+.field-workbench-close-btn:hover,
+.field-workbench-close-btn:focus {
+  background: rgba(255, 170, 0, 0.15);
+  border-color: #ffc107;
+  color: #fff;
+  outline: 2px solid #ffaa00;
+}

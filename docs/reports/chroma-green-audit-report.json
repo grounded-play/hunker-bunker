@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-09-30T19:44:15.518Z",
-  "scannedCount": 62,
+  "timestamp": "2026-10-05T06:33:16.030Z",
+  "scannedCount": 65,
   "unallowedCount": 0,
-  "allowlistCount": 103,
+  "allowlistCount": 106,
   "unallowed": [],
   "findings": [
     {
@@ -186,6 +186,12 @@
       "height": 512
     },
     {
+      "file": "public/Eng.Full_v2.webp",
+      "ratio": 0.8697,
+      "width": 1024,
+      "height": 1024
+    },
+    {
       "file": "public/prop_o2_filter_vat.jpg",
       "ratio": 0.5295,
       "width": 1024,
@@ -258,6 +264,12 @@
       "height": 1024
     },
     {
+      "file": "public/Tank.full_v2.webp",
+      "ratio": 0.7795,
+      "width": 1024,
+      "height": 1024
+    },
+    {
       "file": "public/prop_blood_trail.png",
       "ratio": 0.5032,
       "width": 1024,
@@ -320,6 +332,12 @@
     {
       "file": "public/scatter_broken_drone.png",
       "ratio": 0.425,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/Scout.full_v2.webp",
+      "ratio": 0.8767,
       "width": 1024,
       "height": 1024
     },

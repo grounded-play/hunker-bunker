@@ -1,0 +1,339 @@
+{
+  "generatedBy": "scripts/room-density-probe.mjs",
+  "mode": "fixed-cap-5",
+  "method": "content-cost estimate from asset data; not a GPU measurement",
+  "seedsPerBuildAndBiome": 50,
+  "biomes": [
+    "active",
+    "cryo",
+    "bio",
+    "cave"
+  ],
+  "overall": {
+    "rooms": 2400,
+    "floorCells": {
+      "min": 99,
+      "max": 209
+    },
+    "objects": {
+      "mean": 4.85,
+      "max": 6
+    },
+    "areaLimit": {
+      "min": 8,
+      "max": 8
+    },
+    "drawCalls": {
+      "mean": 6.8,
+      "p95": 8,
+      "max": 8
+    },
+    "triangles": {
+      "mean": 66907,
+      "p95": 110499,
+      "max": 124998
+    }
+  },
+  "byBuild": {
+    "medical_triage": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 130,
+        "max": 130
+      },
+      "objects": {
+        "mean": 5,
+        "max": 5
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 7,
+        "p95": 7,
+        "max": 7
+      },
+      "triangles": {
+        "mean": 108751,
+        "p95": 124998,
+        "max": 124998
+      }
+    },
+    "armory_cage": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 127,
+        "max": 127
+      },
+      "objects": {
+        "mean": 5,
+        "max": 5
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 7,
+        "p95": 7,
+        "max": 7
+      },
+      "triangles": {
+        "mean": 51081,
+        "p95": 67501,
+        "max": 67501
+      }
+    },
+    "o2_scrubber": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 134,
+        "max": 134
+      },
+      "objects": {
+        "mean": 5,
+        "max": 5
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 7,
+        "p95": 7,
+        "max": 7
+      },
+      "triangles": {
+        "mean": 61418,
+        "p95": 77003,
+        "max": 95002
+      }
+    },
+    "field_fabricator": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 111,
+        "max": 111
+      },
+      "objects": {
+        "mean": 5,
+        "max": 5
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 7,
+        "p95": 7,
+        "max": 7
+      },
+      "triangles": {
+        "mean": 61902,
+        "p95": 77001,
+        "max": 97498
+      }
+    },
+    "power_puzzle": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 143,
+        "max": 143
+      },
+      "objects": {
+        "mean": 4,
+        "max": 4
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 6,
+        "p95": 6,
+        "max": 6
+      },
+      "triangles": {
+        "mean": 48007,
+        "p95": 48007,
+        "max": 48007
+      }
+    },
+    "trap_vault": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 117,
+        "max": 117
+      },
+      "objects": {
+        "mean": 4,
+        "max": 4
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 6,
+        "p95": 6,
+        "max": 6
+      },
+      "triangles": {
+        "mean": 97371,
+        "p95": 110499,
+        "max": 112997
+      }
+    },
+    "reward_cache": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 99,
+        "max": 99
+      },
+      "objects": {
+        "mean": 3.2,
+        "max": 4
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 5.2,
+        "p95": 6,
+        "max": 6
+      },
+      "triangles": {
+        "mean": 67884,
+        "p95": 83000,
+        "max": 96002
+      }
+    },
+    "ring_crossing_landmark": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 209,
+        "max": 209
+      },
+      "objects": {
+        "mean": 5,
+        "max": 5
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 7,
+        "p95": 7,
+        "max": 7
+      },
+      "triangles": {
+        "mean": 45446,
+        "p95": 62506,
+        "max": 62506
+      }
+    },
+    "reactor_vent_station": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 139,
+        "max": 139
+      },
+      "objects": {
+        "mean": 5,
+        "max": 5
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 7,
+        "p95": 7,
+        "max": 7
+      },
+      "triangles": {
+        "mean": 102005,
+        "p95": 102005,
+        "max": 102005
+      }
+    },
+    "hull_fabrication_bay": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 157,
+        "max": 157
+      },
+      "objects": {
+        "mean": 6,
+        "max": 6
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 8,
+        "p95": 8,
+        "max": 8
+      },
+      "triangles": {
+        "mean": 37504,
+        "p95": 37504,
+        "max": 37504
+      }
+    },
+    "radar_alignment_post": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 182,
+        "max": 182
+      },
+      "objects": {
+        "mean": 5,
+        "max": 5
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 7,
+        "p95": 7,
+        "max": 7
+      },
+      "triangles": {
+        "mean": 44507,
+        "p95": 44507,
+        "max": 44507
+      }
+    },
+    "reactor_compressor_hall": {
+      "rooms": 200,
+      "floorCells": {
+        "min": 208,
+        "max": 208
+      },
+      "objects": {
+        "mean": 6,
+        "max": 6
+      },
+      "areaLimit": {
+        "min": 8,
+        "max": 8
+      },
+      "drawCalls": {
+        "mean": 8,
+        "p95": 8,
+        "max": 8
+      },
+      "triangles": {
+        "mean": 77004,
+        "p95": 77004,
+        "max": 77004
+      }
+    }
+  }
+}

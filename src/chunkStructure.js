@@ -1,7 +1,7 @@
 import { CHUNK_SIZE } from './tileCatalog.js';
 import { collapseChunkLattice, extractChunkWfcMetadata } from './wfcGenerator.js';
 import { generateArchitecturalMazeChunk } from './architecturalMaze.js';
-import { ROOM_BUILD_CATALOG, selectRoomBuild, rotateRoomBuild, stampRoomBuild, buildRoomInstanceFromBuild } from './roomBuilds.js';
+import { ALL_ROOM_BUILDS, selectRoomBuild, rotateRoomBuild, stampRoomBuild, buildRoomInstanceFromBuild } from './roomBuilds.js';
 import { HALLWAY_BUILD_CATALOG, selectHallwayArchetype, realizeHallwayConnector } from './hallwayConnector.js';
 import { createTerritoryRoomBuild } from './territoryStructures.js';
 
@@ -221,7 +221,7 @@ export function buildAuthoredRoomChunkStructure(random, {
     roll = 0,
     roomBuild = null
 } = {}) {
-    const catalogBuild = roomBuild ?? selectRoomBuild(ROOM_BUILD_CATALOG, { family, tier, biome, roles, roll });
+    const catalogBuild = roomBuild ?? selectRoomBuild(ALL_ROOM_BUILDS, { family, tier, biome, roles, roll });
     if (!catalogBuild) return null;
     const build = rotateRoomBuild(catalogBuild, rotationSteps);
     const stamped = stampRoomBuild(build, random, { size: chunkSize, openings });

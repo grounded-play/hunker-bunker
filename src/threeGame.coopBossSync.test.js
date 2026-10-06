@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
 import { createBossFight, CORRUPTED_SCOUT_FIGHT_DEF, QUEEN_FIGHT_DEF } from './bossPhases.js';
+import { applyChitinVulnerability } from './statusEffects.js';
 
 // GAP-MP-01: a guest's hit on a boss used to land only on the guest's copy and
 // was erased by the host's next snapshot, so a guest could never hurt a boss.
@@ -53,6 +54,22 @@ describe('co-op boss fights are host-authoritative', () => {
         g.applyPlayerDamageToEnemy(snail, 3, { fromNetwork: true });
         expect(emitted).toEqual([]);
         expect(g.damageSnail).toHaveBeenCalledWith(snail, 3);
+    });
+
+    it('applies chitin vulnerability once after co-op damage routing', () => {
+        const host = peer({ host: true });
+        const hostSnail = { position: { x: 0, z: 0 }, userData: { type: 'cybersnail', scatterKey: 'snail-1', hp: 20 } };
+        applyChitinVulnerability(hostSnail, { eventId: 'bile:room-1' });
+        host.g.applyPlayerDamageToEnemy(hostSnail, 4, { reporterId: 'guest' });
+        expect(host.emitted[0]).toMatchObject({ event: 'enemyDamage', payload: { damage: 4 } });
+        expect(host.g.damageSnail).toHaveBeenCalledWith(hostSnail, 5);
+
+        const guest = peer({ host: false });
+        const guestSnail = { position: { x: 0, z: 0 }, userData: { type: 'cybersnail', scatterKey: 'snail-1', hp: 20 } };
+        applyChitinVulnerability(guestSnail, { eventId: 'bile:room-1' });
+        guest.g.applyPlayerDamageToEnemy(guestSnail, 4, { fromNetwork: true });
+        expect(guest.emitted).toEqual([]);
+        expect(guest.g.damageSnail).toHaveBeenCalledWith(guestSnail, 5);
     });
 
     it('moves a peer\'s fight to the host\'s HP so its phase follows', () => {

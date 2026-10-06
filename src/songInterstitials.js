@@ -126,7 +126,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         image: '/interstitials/int_kaelen_diagnostic_cradle_key_v1.webp',
         motion: '/interstitials/int_02_kaelen_s_sleeping_machine_key_v1.mp4',
         motionWebm: '/interstitials/motion/int_02_kaelen_s_sleeping_machine_motion_v1.webm',
-        audio: '/audio/ost/Kaelens Sleeping Machine.mp3',
+        audio: "/audio/ost/Kaelen's Sleeping Machine.mp3",
         musicKey: 'music_interstitial_02',
         alt: 'Overseer Kaelen at the cyan neural diagnostic cradle'
     }),

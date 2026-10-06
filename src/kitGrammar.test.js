@@ -1,9 +1,37 @@
 import { describe, expect, it } from 'vitest';
+import fs from 'node:fs';
 import { WORLD_3D_MODELS } from './world3dOverlay.js';
+import { KIT_SCALE } from './kitMaterials.js';
+import { PROCEDURAL_DOOR_SLAB_THICKNESS } from './proceduralDoors.js';
 import {
-    KIT_SKINS, SHARED_ROLES, SKIN_ONLY_ROLES,
-    skinForBiome, kitPieceFor, chooseKitPiece, corridorKitPlacement
+    KIT_SKINS, SHARED_ROLES, SKIN_ONLY_ROLES, GATE_MODEL_HALF_DEPTH, GATEWAY_ROOM_INSET,
+    skinForBiome, kitPieceFor, chooseKitPiece, corridorKitPlacement, roomGatewayKitPlacement,
+    analyzeWallShellRuns, wallShellPlacements
 } from './kitGrammar.js';
+import { ROOM_BUILD_CATALOG, stampRoomBuild } from './roomBuilds.js';
+
+// Z extent (depth across the threshold) of every mesh in a GLB, from its
+// POSITION accessor bounds through the node translations. Enough for the
+// kit gate, whose nodes are translated but not rotated or scaled.
+function glbDepthExtent(path) {
+    const buffer = fs.readFileSync(path);
+    const json = JSON.parse(buffer.subarray(20, 20 + buffer.readUInt32LE(12)).toString('utf8'));
+    let min = Infinity;
+    let max = -Infinity;
+    const visit = (index, offsetZ) => {
+        const node = json.nodes[index];
+        expect(node.rotation ?? [0, 0, 0, 1]).toEqual([0, 0, 0, 1]);
+        const z = offsetZ + (node.translation?.[2] ?? 0);
+        for (const primitive of json.meshes[node.mesh]?.primitives ?? []) {
+            const accessor = json.accessors[primitive.attributes.POSITION];
+            min = Math.min(min, z + accessor.min[2]);
+            max = Math.max(max, z + accessor.max[2]);
+        }
+        for (const child of node.children ?? []) visit(child, z);
+    };
+    for (const root of json.scenes[json.scene ?? 0].nodes) visit(root, 0);
+    return { min, max };
+}
 
 describe('biome skinning', () => {
     it('routes rock biomes to the cave kit and fabricated ones to space', () => {
@@ -21,11 +49,66 @@ describe('biome skinning', () => {
 describe('corridor topology placement', () => {
     const grid = (rows) => rows.map((row) => [...row]);
 
-    it('aligns straight modules to north/south and east/west routes', () => {
+    // Rotation is three.js yaw (rotationSteps * PI/2, counter-clockwise from
+    // above), which turns east to north, north to west, west to south and south
+    // to east. Openings rotate the same way.
+    const turn = { e: 'n', n: 'w', w: 's', s: 'e' };
+    const rotate = (dirs, steps) => {
+        let out = [...dirs];
+        for (let i = 0; i < steps; i += 1) out = out.map((d) => turn[d]);
+        return out.sort().join('');
+    };
+    // The kit pieces' own wall layout, measured from the source GLBs
+    // (2026-10-01): which sides each base piece leaves open at rotation 0.
+    const BASE_OPEN = { corridor: ['e', 'w'], corridorCorner: ['n', 'w'], corridorEnd: ['e'], corridorT: ['e', 'n', 'w'], corridorCross: ['e', 'n', 's', 'w'] };
+    const opensTo = (placement) => rotate(BASE_OPEN[placement.role.replace('Wide', '')], placement.rotationSteps);
+
+    it('turns straight modules along the route (the base piece runs east/west)', () => {
         const vertical = corridorKitPlacement(grid(['#.#', '#.#', '#.#']), 1, 1, 'active');
         const horizontal = corridorKitPlacement(grid(['###', '...', '###']), 1, 1, 'active');
-        expect(vertical).toMatchObject({ type: 'kit_space_corridor', rotationSteps: 0 });
-        expect(horizontal).toMatchObject({ type: 'kit_space_corridor', rotationSteps: 1 });
+        expect(vertical).toMatchObject({ type: 'kit_space_corridor', rotationSteps: 1 });
+        expect(horizontal).toMatchObject({ type: 'kit_space_corridor', rotationSteps: 0 });
+    });
+
+    it('opens every module exactly toward its open neighbours', () => {
+        const cases = {
+            ens: ['#.#', '#..', '#.#'],
+            enw: ['#.#', '...', '###'],
+            ensw: ['#.#', '...', '#.#'],
+            en: ['#.#', '#..', '###'],
+            nw: ['#.#', '..#', '###'],
+            sw: ['###', '..#', '#.#'],
+            es: ['###', '#..', '#.#'],
+            n: ['#.#', '#.#', '###'],
+            e: ['###', '#..', '###'],
+            s: ['###', '#.#', '#.#'],
+            w: ['###', '..#', '###']
+        };
+        for (const [open, rows] of Object.entries(cases)) {
+            const placement = corridorKitPlacement(grid(rows), 1, 1, 'bio');
+            expect(opensTo(placement), `${open} -> ${placement.role} x${placement.rotationSteps}`).toBe(open);
+        }
+    });
+
+    // The hallway generator carves corridors 2*width+1 cells across, so every
+    // cell next to a marker is open; topology has to be read past the carve.
+    it('reads topology past a wide carve and fits a wide module to it', () => {
+        const rows = [
+            '#########',
+            '#########',
+            '.........',
+            '.........',
+            '.........',
+            '.........',
+            '.........',
+            '#########',
+            '#########'
+        ];
+        const placement = corridorKitPlacement(grid(rows), 4, 4, 'active', { width: 2 });
+        expect(placement).toMatchObject({ type: 'kit_space_corridor_wide', rotationSteps: 0 });
+        // 5 carved cells across a 6-unit wide module (8 Kenney units at 0.75).
+        expect(placement.modelScale).toBeCloseTo(5 / 6, 5);
+        expect(corridorKitPlacement(grid(['###', '...', '###']), 1, 1, 'active').modelScale).toBe(1);
     });
 
     it('selects corner, junction, and intersection silhouettes from connectivity', () => {
@@ -86,6 +169,37 @@ describe('role resolution', () => {
     });
 });
 
+describe('authored room gateway placement', () => {
+    it.each([
+        ['n', [{ x: 3, y: 2 }, { x: 4, y: 2 }, { x: 5, y: 2 }], 4, 2 + GATEWAY_ROOM_INSET, 0],
+        ['e', [{ x: 8, y: 4 }, { x: 8, y: 5 }, { x: 8, y: 6 }], 8 - GATEWAY_ROOM_INSET, 5, 1],
+        ['s', [{ x: 3, y: 8 }, { x: 4, y: 8 }, { x: 5, y: 8 }], 4, 8 - GATEWAY_ROOM_INSET, 2],
+        ['w', [{ x: 2, y: 4 }, { x: 2, y: 5 }, { x: 2, y: 6 }], 2 + GATEWAY_ROOM_INSET, 5, 3]
+    ])('insets and turns the %s frame toward the room', (side, cells, x, y, rotationSteps) => {
+        expect(roomGatewayKitPlacement({ side, cells }, 'bio')).toEqual({
+            type: 'kit_cave_gate', x, y, rotationSteps, modelScale: 1
+        });
+    });
+
+    // Gateway probe 2026-10-04: a half-cell inset left the closed blast door
+    // (a slab centred on the threshold line) running through both posts.
+    it.each(['cave', 'space'])('stands the %s frame clear of the closed blast door', (skin) => {
+        const { min, max } = glbDepthExtent(`public/3d/runtime/kits/modular-${skin}-kit/gate.glb`);
+        const halfDepth = Math.max(-min, max);
+        expect(halfDepth).toBeLessThanOrEqual(GATE_MODEL_HALF_DEPTH + 1e-6);
+        const frameBackFace = GATEWAY_ROOM_INSET - halfDepth * KIT_SCALE;
+        const slabRoomFace = PROCEDURAL_DOOR_SLAB_THICKNESS / 2;
+        expect(frameBackFace).toBeGreaterThan(slabRoomFace);
+        // ...but not so far that the frame floats in the room: under a tenth of a cell.
+        expect(frameBackFace - slabRoomFace).toBeLessThan(0.1);
+    });
+
+    it('rejects malformed thresholds', () => {
+        expect(roomGatewayKitPlacement({ side: 'n', cells: [] }, 'active')).toBeNull();
+        expect(roomGatewayKitPlacement({ side: 'up', cells: [{ x: 1, y: 1 }] }, 'active')).toBeNull();
+    });
+});
+
 describe('grid breaking', () => {
     it('is deterministic for a given seeded roll', () => {
         const a = chooseKitPiece('roomLarge', 'bio', () => 0.3);
@@ -141,5 +255,107 @@ describe('hostile input', () => {
     it('clamps a random source that returns out of range', () => {
         const piece = chooseKitPiece('corridor', 'active', () => 5);
         expect([0, 1, 2, 3]).toContain(piece.rotationSteps);
+    });
+});
+
+// Lived-in world M5 spike (showroom only, design-gated): replace straight
+// runs of a room's boundary wall with 3-cell kit wall pieces.
+describe('wall shell substitution grammar (M5 spike)', () => {
+    const LONG_SIDE = { n: 'north', s: 'south', e: 'east', w: 'west' };
+    const FACE = { n: [0, 0.5, 0], s: [0, -0.5, 2], e: [-0.5, 0, 3], w: [0.5, 0, 1] };
+
+    function stamped(build, seed = 7) {
+        let state = seed;
+        const random = () => (state = (state * 16807) % 2147483647) / 2147483647;
+        const openings = Object.fromEntries(build.sockets.map((socket) => [LONG_SIDE[socket.side], { open: true, offset: 8 }]));
+        const stamp = stampRoomBuild(build, random, { openings });
+        return { grid: stamp.grid, room: { interior: stamp.interior, bounds: stamp.bounds, doors: stamp.doors } };
+    }
+
+    it('covers a plain wall run with whole 3-cell kit pieces, centred, facing the room', () => {
+        // 9x9: boundary walls on the border, interior 1..7, no doors.
+        const grid = Array.from({ length: 9 }, (_, y) => Array.from({ length: 9 }, (_, x) => (
+            x === 0 || y === 0 || x === 8 || y === 8 ? '#' : '.'
+        )));
+        const interior = [];
+        for (let y = 1; y <= 7; y += 1) for (let x = 1; x <= 7; x += 1) interior.push({ x, y });
+        const shells = wallShellPlacements(grid, { interior, bounds: { left: 1, right: 7, top: 1, bottom: 7 }, doors: [] }, 'active');
+        const north = shells.filter(({ side }) => side === 'n');
+        expect(north.map(({ cells }) => cells.map(({ x }) => x))).toEqual([[1, 2, 3], [4, 5, 6]]);
+        expect(north[0]).toMatchObject({ type: 'kit_space_template_wall', x: 2, y: 0.5, rotationSteps: 0, modelScale: 1 });
+        expect(shells.filter(({ side }) => side === 'e')[0]).toMatchObject({ x: 7.5, rotationSteps: 3 });
+        expect(shells).toHaveLength(8);
+    });
+
+    it.each(ROOM_BUILD_CATALOG.map((build) => [build.id, build]))('stays on boundary walls and clear of doors in %s', (_id, build) => {
+        const { grid, room } = stamped(build);
+        const shells = wallShellPlacements(grid, room, 'cave');
+        const doorCells = room.doors.flatMap(({ cells }) => cells);
+        const used = new Set();
+        const interior = new Set(room.interior.map(({ x, y }) => `${x},${y}`));
+        for (const shell of shells) {
+            expect(shell.type).toBe('kit_cave_template_wall');
+            expect(shell.modelScale).toBe(1);
+            expect(shell.cells).toHaveLength(3);
+            const [dx, dy, rotationSteps] = FACE[shell.side];
+            expect(shell.rotationSteps).toBe(rotationSteps);
+            expect(shell.x).toBeCloseTo(shell.cells[1].x + dx);
+            expect(shell.y).toBeCloseTo(shell.cells[1].y + dy);
+            // Boundary walls sit one cell outside the stamped pattern's bounds.
+            const onLine = { n: ({ y }) => y === room.bounds.top - 1, s: ({ y }) => y === room.bounds.bottom + 1,
+                w: ({ x }) => x === room.bounds.left - 1, e: ({ x }) => x === room.bounds.right + 1 }[shell.side];
+            for (const cell of shell.cells) {
+                const key = `${cell.x},${cell.y}`;
+                expect(grid[cell.y][cell.x]).toBe('#');
+                expect(onLine(cell)).toBe(true);
+                expect(used.has(key)).toBe(false);
+                used.add(key);
+                const inward = { n: [0, 1], s: [0, -1], e: [-1, 0], w: [1, 0] }[shell.side];
+                expect(interior.has(`${cell.x + inward[0]},${cell.y + inward[1]}`)).toBe(true);
+                for (const door of doorCells) {
+                    expect(Math.max(Math.abs(door.x - cell.x), Math.abs(door.y - cell.y))).toBeGreaterThan(1);
+                }
+            }
+        }
+        expect(shells.length).toBeGreaterThan(0);
+    });
+
+    it('returns stable run and piece IDs, inward normals, and an exact suppression mask', () => {
+        const build = ROOM_BUILD_CATALOG[0];
+        const { grid, room } = stamped(build);
+        room.id = 'stable-room';
+        const first = analyzeWallShellRuns(grid, room, 'active');
+        const second = analyzeWallShellRuns(grid, room, 'active');
+
+        expect(first).toEqual(second);
+        expect(first.runs.length).toBeGreaterThan(0);
+        expect(new Set(first.runs.map(({ id }) => id)).size).toBe(first.runs.length);
+        expect(new Set(first.placements.map(({ id }) => id)).size).toBe(first.placements.length);
+        expect(first.suppressionMask.size).toBe(first.placements.length * 3);
+        for (const placement of first.placements) {
+            expect(placement.id).toContain(placement.runId);
+            expect(placement.inwardNormal).toEqual({
+                n: { x: 0, y: 1 }, s: { x: 0, y: -1 },
+                e: { x: -1, y: 0 }, w: { x: 1, y: 0 }
+            }[placement.side]);
+            for (const { x, y } of placement.cells) expect(first.suppressionMask.has(`${x},${y}`)).toBe(true);
+        }
+    });
+
+    it('splits runs around protected and objective wall cells', () => {
+        const grid = Array.from({ length: 7 }, (_, y) => Array.from({ length: 11 }, (_, x) => (
+            x === 0 || y === 0 || x === 10 || y === 6 ? '#' : '.'
+        )));
+        const interior = [];
+        for (let y = 1; y <= 5; y += 1) for (let x = 1; x <= 9; x += 1) interior.push({ x, y });
+        const room = {
+            id: 'excluded-room', interior,
+            bounds: { left: 1, right: 9, top: 1, bottom: 5 }, doors: [],
+            objectiveCells: [{ x: 4, y: 0 }], protectedCells: [{ x: 8, y: 0 }]
+        };
+        const analysis = analyzeWallShellRuns(grid, room, 'cave');
+        expect(analysis.suppressionMask.has('4,0')).toBe(false);
+        expect(analysis.suppressionMask.has('8,0')).toBe(false);
+        expect(analysis.placements.filter(({ side }) => side === 'n')).toHaveLength(2);
     });
 });

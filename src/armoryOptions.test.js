@@ -111,4 +111,33 @@ describe('buildEquipOptions', () => {
         });
         expect(opts.map((o) => o.id)).toEqual([4114, 4112, 4113]);
     });
+
+    it('masks unearned secret skins and reveals them once owned or unlocked', () => {
+        const store = createOwnershipStore({ storage: null });
+        const lockedOpts = buildEquipOptions({
+            ids: ['skin_scout_mayor_tina'],
+            ownership: store
+        });
+        expect(lockedOpts[0]).toMatchObject({
+            id: 'skin_scout_mayor_tina',
+            name: '??? [SECRET EXOSUIT]',
+            owned: false,
+            disabled: true
+        });
+        expect(lockedOpts[0].label).toContain('??? [SECRET EXOSUIT]');
+        expect(lockedOpts[0].label).toMatch(/LOCKED/);
+
+        store.grantSecret('skin_scout_mayor_tina');
+        const unlockedOpts = buildEquipOptions({
+            ids: ['skin_scout_mayor_tina'],
+            ownership: store
+        });
+        expect(unlockedOpts[0]).toMatchObject({
+            id: 'skin_scout_mayor_tina',
+            name: 'Scout: Mayor Tina',
+            owned: true,
+            disabled: false
+        });
+        expect(unlockedOpts[0].label).toBe('Scout: Mayor Tina (LEGENDARY)');
+    });
 });

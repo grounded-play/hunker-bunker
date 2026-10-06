@@ -22,6 +22,7 @@ import { ACHIEVEMENT_COSMETICS } from './data/achievementCosmetics.js';
 export const DEV_GRANTS_STORAGE_KEY = 'hb_dev_item_grants_v1';
 export const UNLOCK_ALL_STORAGE_KEY = 'hb_dev_unlock_all_cosmetics_v1';
 export const QA_GRANT_RECEIPTS_STORAGE_KEY = 'hb_qa_inventory_receipts_v1';
+export const SECRET_GRANTS_STORAGE_KEY = 'hb_secret_unlocks_v1';
 
 export const ITEM_TYPE = Object.freeze({
     SKIN: 'skin',
@@ -161,6 +162,28 @@ for (const mod of RIG_MODULE_DEFS) {
 DEFAULT_OWNED.add(4148);
 DEFAULT_OWNED.add(4149);
 
+// Secret / Easter Egg unlockable cosmetics (Mayor Tina Scout Skin, etc.)
+export const SECRET_COSMETICS = Object.freeze([
+    {
+        itemdefid: 'skin_scout_mayor_tina',
+        name: 'Scout: Mayor Tina',
+        rarity: 'legendary',
+        type: ITEM_TYPE.CHASSIS,
+        source: 'secret',
+        classId: 'scout',
+        desc: 'Uncanny, charismatic municipal authority of the deep subterranean tunnels. Tea not included.',
+        glbUrl: '/3d/runtime/secrets/mayor-tina-rigged.glb',
+        localImg: '/lore_portraits/mayor_tina.webp',
+        isSecret: true
+    }
+]);
+
+for (const secret of SECRET_COSMETICS) {
+    const id = toId(secret.itemdefid);
+    if (id === null || MERGED_CATALOG.has(id)) continue;
+    MERGED_CATALOG.set(id, Object.freeze(secret));
+}
+
 export function getCatalogEntry(itemdefid) {
     const id = toId(itemdefid);
     if (id === null) return null;
@@ -207,6 +230,7 @@ export function createOwnershipStore({ storage = null, allowLocalInventory = tru
     // others. Not persisted: the owning subsystem stays authoritative, exactly
     // as the Steam inventory does.
     let externalOwnership = new Map();
+    let secretUnlocks = new Set();
     const subscribers = new Set();
 
     function hydrateLocalInventory() {
@@ -224,6 +248,17 @@ export function createOwnershipStore({ storage = null, allowLocalInventory = tru
         }
         }
         unlockAll = readJson(storage, UNLOCK_ALL_STORAGE_KEY) === true;
+
+        const persistedSecrets = readJson(storage, SECRET_GRANTS_STORAGE_KEY)
+            || readJson(storage, 'hb_secret_item_grants_v1');
+        if (Array.isArray(persistedSecrets)) {
+            for (const raw of persistedSecrets) {
+                const id = toId(raw);
+                if (id !== null && MERGED_CATALOG.has(id)) {
+                    secretUnlocks.add(id);
+                }
+            }
+        }
     }
     hydrateLocalInventory();
 
@@ -233,6 +268,15 @@ export function createOwnershipStore({ storage = null, allowLocalInventory = tru
             storage.setItem(DEV_GRANTS_STORAGE_KEY, JSON.stringify(Object.fromEntries(devQuantities)));
         } catch {
             // Quota/private-mode failures are not worth breaking a grant over.
+        }
+    }
+
+    function persistSecretGrants() {
+        if (!storage) return;
+        try {
+            storage.setItem(SECRET_GRANTS_STORAGE_KEY, JSON.stringify([...secretUnlocks]));
+        } catch {
+            // Quota/private-mode failures
         }
     }
 
@@ -356,10 +400,26 @@ export function createOwnershipStore({ storage = null, allowLocalInventory = tru
             return (steamQuantities.get(id) ?? 0) + (devQuantities.get(id) ?? 0);
         },
 
+        grantSecret(itemdefid) {
+            const id = toId(itemdefid);
+            if (id === null || !MERGED_CATALOG.has(id)) return false;
+            secretUnlocks.add(id);
+            persistSecretGrants();
+            notify();
+            return true;
+        },
+
+        isSecretUnlocked(itemdefid) {
+            const id = toId(itemdefid);
+            if (id === null) return false;
+            return secretUnlocks.has(id);
+        },
+
         isOwned(itemdefid) {
             const id = toId(itemdefid);
             if (id === null) return false;
             if (DEFAULT_OWNED.has(id)) return true;
+            if (secretUnlocks.has(id)) return true;
             for (const set of externalOwnership.values()) {
                 if (set.has(id)) return true;
             }
@@ -408,12 +468,14 @@ export function createOwnershipStore({ storage = null, allowLocalInventory = tru
             devQuantities = new Map();
             steamQuantities = new Map();
             externalOwnership = new Map();
+            secretUnlocks = new Set();
             unlockAll = false;
             if (storage) {
                 try {
                     storage.removeItem(DEV_GRANTS_STORAGE_KEY);
                     storage.removeItem(UNLOCK_ALL_STORAGE_KEY);
                     storage.removeItem(QA_GRANT_RECEIPTS_STORAGE_KEY);
+                    storage.removeItem(SECRET_GRANTS_STORAGE_KEY);
                 } catch {
                     // best-effort
                 }

@@ -1,0 +1,75 @@
+{
+  "_note": "Chosen audition per role: {\"take\": n, \"by\": \"...\", \"date\": \"YYYY-MM-DD\", \"notes\": \"...\"}. Auditions: art/source/voice/auditions/<role>/take_<n>.wav (scripts/voice/qwen_voice.py design). developer = a recording of the developer, not a design.",
+  "mothership": {
+    "take": 1,
+    "by": "auto-qa",
+    "date": "2026-10-04",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.000); confirm by listening"
+  },
+  "system": {
+    "take": 2,
+    "by": "auto-qa",
+    "date": "2026-10-04",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.085); confirm by listening"
+  },
+  "bunker": {
+    "take": 1,
+    "by": "auto-qa",
+    "date": "2026-10-04",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.000); confirm by listening"
+  },
+  "queen": {
+    "take": 1,
+    "by": "auto-qa",
+    "date": "2026-10-04",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.000); confirm by listening"
+  },
+  "martha": {
+    "take": 1,
+    "by": "auto-qa",
+    "date": "2026-10-04",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.000); confirm by listening"
+  },
+  "briggs": {
+    "take": 1,
+    "by": "auto-qa",
+    "date": "2026-10-04",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.000); confirm by listening"
+  },
+  "kaelen": {
+    "take": 1,
+    "by": "auto-qa",
+    "date": "2026-10-04",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.000); confirm by listening"
+  },
+  "okonkwo": {
+    "take": 1,
+    "by": "auto-qa",
+    "date": "2026-10-04",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.000); confirm by listening"
+  },
+  "nahl": {
+    "take": 1,
+    "by": "auto-qa",
+    "date": "2026-10-04",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.006); confirm by listening"
+  },
+  "vey": {
+    "take": 1,
+    "by": "auto-qa",
+    "date": "2026-10-04",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.006); confirm by listening"
+  },
+  "rhun": {
+    "take": 2,
+    "by": "auto-qa",
+    "date": "2026-10-04",
+    "notes": "provisional: most intelligible of 2 takes (CER 0.000); confirm by listening"
+  },
+  "developer": {
+    "take": 1,
+    "by": "developer",
+    "date": "2026-10-04",
+    "notes": "developer's own voice: 37.9 s public-comment read cut from YouTube 6NJbX_XMhzc at 36:03.8; full 3-min source kept in art/source/voice/sources/developer"
+  }
+}

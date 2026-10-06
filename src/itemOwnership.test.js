@@ -5,7 +5,8 @@ import {
     getCatalogIds,
     ITEM_TYPE,
     DEV_GRANTS_STORAGE_KEY,
-    UNLOCK_ALL_STORAGE_KEY
+    UNLOCK_ALL_STORAGE_KEY,
+    SECRET_GRANTS_STORAGE_KEY
 } from './itemOwnership.js';
 
 function memoryStorage(seed = {}) {
@@ -328,5 +329,49 @@ describe('Steam ownership excludes browser inventory', () => {
         store.setSteamInventory([]);
         expect(store.isOwned(4120)).toBe(false);
         expect(data.has('hb_dev_item_grants_v1')).toBe(true);
+    });
+});
+
+describe('secret unlockable cosmetics', () => {
+    it('registers secret items with isSecret and proper metadata', () => {
+        const entry = getCatalogEntry('skin_scout_mayor_tina');
+        expect(entry).not.toBeNull();
+        expect(entry.name).toBe('Scout: Mayor Tina');
+        expect(entry.type).toBe(ITEM_TYPE.CHASSIS);
+        expect(entry.rarity).toBe('legendary');
+        expect(entry.isSecret).toBe(true);
+    });
+
+    it('defaults to locked until granted via grantSecret', () => {
+        const store = createOwnershipStore({ storage: null });
+        expect(store.isOwned('skin_scout_mayor_tina')).toBe(false);
+        expect(store.canEquip('skin_scout_mayor_tina')).toBe(false);
+
+        expect(store.grantSecret('skin_scout_mayor_tina')).toBe(true);
+        expect(store.isSecretUnlocked('skin_scout_mayor_tina')).toBe(true);
+        expect(store.isOwned('skin_scout_mayor_tina')).toBe(true);
+        expect(store.canEquip('skin_scout_mayor_tina')).toBe(true);
+    });
+
+    it('persists secret grants across store reloads', () => {
+        const storage = memoryStorage();
+        const store = createOwnershipStore({ storage });
+        store.grantSecret('skin_scout_mayor_tina');
+        expect(storage.getItem(SECRET_GRANTS_STORAGE_KEY)).toContain('skin_scout_mayor_tina');
+
+        const reloaded = createOwnershipStore({ storage });
+        expect(reloaded.isOwned('skin_scout_mayor_tina')).toBe(true);
+        expect(reloaded.isSecretUnlocked('skin_scout_mayor_tina')).toBe(true);
+    });
+
+    it('resets secret grants on store reset', () => {
+        const storage = memoryStorage();
+        const store = createOwnershipStore({ storage });
+        store.grantSecret('skin_scout_mayor_tina');
+        expect(store.isOwned('skin_scout_mayor_tina')).toBe(true);
+
+        store.reset();
+        expect(store.isOwned('skin_scout_mayor_tina')).toBe(false);
+        expect(store.isSecretUnlocked('skin_scout_mayor_tina')).toBe(false);
     });
 });

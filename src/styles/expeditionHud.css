@@ -833,13 +833,13 @@
   z-index: 17000 !important;
   pointer-events: none !important;
   max-width: 86vw !important;
-  box-sizing: border-box !important;
   animation: directive-pulse 3s infinite alternate ease-in-out !important;
+  will-change: transform, opacity;
 }
 
 @keyframes directive-pulse {
-  from { box-shadow: 0 0 16px rgba(0, 229, 255, 0.2), inset 0 0 8px rgba(0, 229, 255, 0.08); }
-  to { box-shadow: 0 0 28px rgba(0, 229, 255, 0.4), inset 0 0 14px rgba(0, 229, 255, 0.18); }
+  from { opacity: 0.88; transform: translateX(-50%) scale(0.995); }
+  to { opacity: 1; transform: translateX(-50%) scale(1); }
 }
 
 .loop-step-hud__chevron {
@@ -1052,6 +1052,7 @@
   --hud-scale: 1;
   --u: calc(var(--hud-u) * var(--hud-scale));
   --hud-margin: calc(20 * var(--u));
+  --dock-bottom: var(--hud-margin);
 }
 
 /* Every dock rule is scoped to P = html[data-hud-layout="dock"] #game-viewport #ui
@@ -1159,57 +1160,60 @@ html[data-hud-layout="dock"] #game-viewport #ui #vitals-panel {
 }
 html[data-hud-layout="dock"] #game-viewport #ui #vitals-panel .vitals-panel__title { display: none !important; }
 html[data-hud-layout="dock"] #game-viewport #ui #vitals-hearts {
-  position: absolute !important; left: calc(12 * var(--u)) !important; top: calc(5 * var(--u)) !important;
+  position: absolute !important; left: calc(12 * var(--u)) !important; top: calc(4 * var(--u)) !important;
   display: flex !important; justify-content: flex-start !important; gap: calc(3 * var(--u)) !important;
-  font-size: calc(17 * var(--u)) !important; line-height: calc(22 * var(--u)) !important;
+  font-size: calc(15 * var(--u)) !important; line-height: calc(18 * var(--u)) !important;
 }
 html[data-hud-layout="dock"] #game-viewport #ui #vitals-hearts .heart {
-  line-height: calc(22 * var(--u)) !important;
+  line-height: calc(18 * var(--u)) !important;
 }
-/* O₂ row (and cover row, which only shows when relevant) */
+/* O₂ row: Life support meter in middle row, clear of hearts above and hull below */
 html[data-hud-layout="dock"] #game-viewport #ui #vitals-panel .vitals-panel__o2-row {
   position: absolute !important; left: calc(12 * var(--u)) !important; right: calc(12 * var(--u)) !important;
-  top: calc(28 * var(--u)) !important; height: calc(12 * var(--u)) !important;
-  width: auto !important; /* the classic row carries its own clamp() width */
-  display: flex !important; align-items: center !important; gap: calc(6 * var(--u)) !important;
-  font-size: calc(14 * var(--u)) !important; line-height: 1 !important; margin: 0 !important;
+  top: calc(23 * var(--u)) !important; height: calc(14 * var(--u)) !important;
+  width: auto !important;
+  display: flex !important; align-items: center !important; gap: calc(8 * var(--u)) !important;
+  font-size: calc(11 * var(--u)) !important; line-height: 1 !important; margin: 0 !important;
 }
-html[data-hud-layout="dock"] #game-viewport #ui #vitals-panel .vitals-panel__o2-bar-track { flex: 1 1 auto !important; width: auto !important; max-width: none !important; height: calc(5 * var(--u)) !important; }
+html[data-hud-layout="dock"] #game-viewport #ui #vitals-panel .vitals-panel__o2-bar-track { flex: 1 1 auto !important; width: auto !important; max-width: none !important; height: calc(4 * var(--u)) !important; border-radius: 2px !important; }
 html[data-hud-layout="dock"] #game-viewport #ui #vitals-panel .vitals-panel__o2-label,
 html[data-hud-layout="dock"] #game-viewport #ui #vitals-panel .vitals-panel__o2-pct {
-  font-size: calc(14 * var(--u)) !important;
-  line-height: calc(16 * var(--u)) !important;
+  font-size: calc(11 * var(--u)) !important;
+  line-height: calc(13 * var(--u)) !important;
+  font-weight: 800 !important;
 }
 /* fatigue / cover: small tags at the right of the hearts row, only when shown */
 html[data-hud-layout="dock"] #game-viewport #ui #vitals-fatigue-row,
 html[data-hud-layout="dock"] #game-viewport #ui #vitals-cover-row {
-  position: absolute !important; right: calc(12 * var(--u)) !important; top: calc(6 * var(--u)) !important;
-  left: auto !important; width: auto !important; height: calc(14 * var(--u)) !important;
-  font-size: calc(14 * var(--u)) !important;
+  position: absolute !important; right: calc(12 * var(--u)) !important; top: calc(4 * var(--u)) !important;
+  left: auto !important; width: auto !important; height: calc(16 * var(--u)) !important;
+  font-size: calc(11 * var(--u)) !important;
 }
 html[data-hud-layout="dock"] #game-viewport #ui #vitals-fatigue-row.hidden,
 html[data-hud-layout="dock"] #game-viewport #ui #vitals-cover-row.hidden { display: none !important; }
-/* hull: a thin line along the bottom of the vitals area */
+/* hull: dedicated bottom track in vitals area, completely clear of O2 above */
 html[data-hud-layout="dock"] #game-viewport #ui #ship-status-panel {
   position: absolute !important; z-index: 2 !important;
-  left: calc(50% - 248 * var(--u)) !important; right: auto !important; top: auto !important;
-  bottom: calc(var(--hud-margin) + 3 * var(--u)) !important;
-  width: calc(324 * var(--u)) !important; height: calc(18 * var(--u)) !important; min-height: 0 !important;
-  margin: 0 !important; padding: 0 !important; gap: calc(6 * var(--u)) !important;
+  left: calc(50% - 248 * var(--u)) !important; right: auto !important; top: calc(43 * var(--u)) !important;
+  bottom: auto !important;
+  width: calc(324 * var(--u)) !important; height: calc(16 * var(--u)) !important; min-height: 0 !important;
+  margin: 0 !important; padding: 0 !important; gap: calc(8 * var(--u)) !important;
   display: flex !important; align-items: center !important;
   background: none !important; border: 0 !important; box-shadow: none !important;
   backdrop-filter: none !important;
-  font-size: calc(14 * var(--u)) !important; line-height: 1 !important;
+  font-size: calc(11 * var(--u)) !important; line-height: 1 !important;
 }
 html[data-hud-layout="dock"] #game-viewport #ui #ship-status-panel .ship-status-panel__title {
-  font-size: calc(14 * var(--u)) !important; line-height: calc(16 * var(--u)) !important;
-  max-width: calc(140 * var(--u)) !important;
+  font-size: calc(10 * var(--u)) !important; line-height: calc(12 * var(--u)) !important;
+  font-weight: 800 !important;
+  max-width: calc(120 * var(--u)) !important;
   white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important;
 }
-html[data-hud-layout="dock"] #game-viewport #ui #ship-status-panel .ship-status-panel__track { flex: 1 1 auto !important; width: auto !important; height: calc(4 * var(--u)) !important; }
+html[data-hud-layout="dock"] #game-viewport #ui #ship-status-panel .ship-status-panel__track { flex: 1 1 auto !important; width: auto !important; height: calc(4 * var(--u)) !important; border-radius: 2px !important; }
 html[data-hud-layout="dock"] #game-viewport #ui #ship-status-panel .ship-status-panel__value {
-  font-size: calc(14 * var(--u)) !important;
-  line-height: calc(16 * var(--u)) !important;
+  font-size: calc(11 * var(--u)) !important;
+  line-height: calc(13 * var(--u)) !important;
+  font-weight: 800 !important;
 }
 /* loot: 2 × 2 chips; TOTAL dropped (it only repeats the sum) */
 html[data-hud-layout="dock"] #game-viewport #ui #pickup-counter-panel {
@@ -1240,23 +1244,29 @@ html[data-hud-layout="dock"] #game-viewport #ui #weapon-status-panel {
   border-radius: calc(6 * var(--u)) 0 0 calc(6 * var(--u)) !important;
 }
 html[data-hud-layout="dock"] #game-viewport #ui #class-ability-panel,
+html[data-hud-layout="dock"] #game-viewport #ui #radar-scan-panel,
 html[data-hud-layout="dock"] #game-viewport #ui #dash-cooldown-panel,
 html[data-hud-layout="dock"] #game-viewport #ui #melee-cooldown-panel {
   left: auto !important;
   display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;
-  gap: calc(3 * var(--u)) !important; text-align: center !important;
+  gap: calc(2 * var(--u)) !important; text-align: center !important;
   border: calc(1 * var(--u)) solid rgba(249, 148, 21, 0.4) !important; border-left: 0 !important;
   height: calc(64 * var(--u)) !important;
   bottom: var(--dock-bottom) !important;
   padding: calc(4 * var(--u)) !important;
   box-sizing: border-box !important;
 }
-html[data-hud-layout="dock"] #game-viewport #ui #class-ability-panel {
+html[data-hud-layout="dock"] #game-viewport #ui #radar-scan-panel {
   right: calc(var(--hud-margin) + 130 * var(--u)) !important;
   width: calc(70 * var(--u)) !important;
+  border-color: rgba(0, 210, 255, 0.4) !important;
+}
+html[data-hud-layout="dock"] #game-viewport #ui #class-ability-panel {
+  right: calc(var(--hud-margin) + 65 * var(--u)) !important;
+  width: calc(65 * var(--u)) !important;
 }
 html[data-hud-layout="dock"] #game-viewport #ui #dash-cooldown-panel {
-  right: calc(var(--hud-margin) + 65 * var(--u)) !important;
+  right: var(--hud-margin) !important;
   width: calc(65 * var(--u)) !important;
   border-color: rgba(34, 211, 238, 0.4) !important;
 }
@@ -1279,22 +1289,21 @@ html[data-hud-layout="dock"] #game-viewport #ui #melee-cooldown-panel .class-abi
   line-height: calc(12 * var(--u)) !important;
   letter-spacing: 0.08em !important;
 }
+html[data-hud-layout="dock"] #game-viewport #ui #radar-scan-panel .class-ability-panel__name {
+  color: #00d2ff !important;
+  font-size: calc(11 * var(--u)) !important;
+  line-height: calc(12 * var(--u)) !important;
+  letter-spacing: 0.08em !important;
+}
+html[data-hud-layout="dock"] #game-viewport #ui :is(#class-ability-panel, #radar-scan-panel, #dash-cooldown-panel, #melee-cooldown-panel) .class-ability-panel__key {
+  font-size: calc(14 * var(--u)) !important;
+  line-height: 1 !important;
+}
 html[data-hud-layout="dock"] #game-viewport #ui #dash-cooldown-panel .class-ability-panel__bar-track,
-html[data-hud-layout="dock"] #game-viewport #ui #melee-cooldown-panel .class-ability-panel__bar-track {
+html[data-hud-layout="dock"] #game-viewport #ui #melee-cooldown-panel .class-ability-panel__bar-track,
+html[data-hud-layout="dock"] #game-viewport #ui #radar-scan-panel .class-ability-panel__bar-track {
   width: 82% !important;
   height: calc(4 * var(--u)) !important;
-}
-/* Tactical map radar ring: radar scan sits directly above the map disc bezel */
-html[data-hud-layout="dock"] #game-viewport #ui #radar-scan-panel {
-  left: var(--hud-margin) !important;
-  right: auto !important;
-  bottom: calc(var(--dock-bottom) + 68 * var(--u)) !important;
-  width: calc(220 * var(--u)) !important;
-  border-radius: calc(6 * var(--u)) !important;
-  border-color: rgba(0, 210, 255, 0.45) !important;
-  background: rgba(8, 14, 21, 0.92) !important;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(0, 210, 255, 0.1) !important;
-  backdrop-filter: blur(8px) !important;
 }
 
 html[data-hud-layout="dock"] #game-viewport #ui .desktop-compass__ring::after {
@@ -1406,7 +1415,7 @@ html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui #ship-statu
 }
 html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui #weapon-status-panel {
   flex-direction: column !important; align-items: center !important; justify-content: center !important;
-  gap: calc(2 * var(--u)) !important; padding: calc(2 * var(--u)) !important;
+  gap: calc(2 * var(--u)) !important; padding: calc(9 * var(--u)) calc(4 * var(--u)) calc(3 * var(--u)) !important;
 }
 html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui #weapon-status-panel .weapon-status-panel__ammo {
   flex-direction: column !important; align-items: center !important; gap: 0 !important;
@@ -1417,7 +1426,7 @@ html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui #weapon-sta
   line-height: calc(16 * var(--u)) !important;
 }
 html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui #weapon-status-panel .weapon-status-panel__reload-track { width: 80% !important; }
-html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui #vitals-panel .vitals-panel__o2-row { top: auto !important; bottom: calc(18 * var(--u)) !important; }
+html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui #vitals-panel .vitals-panel__o2-row { top: calc(23 * var(--u)) !important; bottom: auto !important; }
 html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui #pickup-counter-panel { padding: calc(3 * var(--u)) calc(6 * var(--u)) !important; row-gap: 0 !important; column-gap: calc(6 * var(--u)) !important; }
 /* inside a painted window the loot reads as icon + count; the words are in the icons */
 html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui #pickup-counter-panel .pickup-counter-panel__label [data-i18n] { display: none !important; }

@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/grounded-play/hunker-bunker/actions/workflows/presubmit.yml?query=branch%3Amothership"><img src="https://img.shields.io/github/actions/workflow/status/grounded-play/hunker-bunker/presubmit.yml?branch=mothership&label=tests%20%2B%20coverage&logo=vitest" alt="Tests and coverage status on mothership"></a>
   <a href="https://github.com/grounded-play/hunker-bunker/actions/workflows/steam-build.yml?query=branch%3Amothership"><img src="https://github.com/grounded-play/hunker-bunker/actions/workflows/steam-build.yml/badge.svg?branch=mothership" alt="Steam package status on mothership"></a>
-  <a href="https://github.com/grounded-play/hunker-bunker/actions/workflows/codeql.yml?query=branch%3Amothership"><img src="https://github.com/grounded-play/hunker-bunker/actions/workflows/codeql.yml/badge.svg?branch=mothership" alt="CodeQL status on mothership"></a>
+  <a href="https://github.com/grounded-play/hunker-bunker/actions/workflows/codeql.yml?query=branch%3Amothership"><img src="https://github.com/grounded-play/hunker-bunker/actions/workflows/codeql.yml/badge.svg?branch=mothership" alt="CodeQL status on mothership"></a><br>
   <a href="https://github.com/grounded-play/hunker-bunker/actions/workflows/lighthouse.yml?query=branch%3Amothership"><img src="https://github.com/grounded-play/hunker-bunker/actions/workflows/lighthouse.yml/badge.svg?branch=mothership" alt="Lighthouse status on mothership"></a>
   <a href="https://app.netlify.com/projects/hunkerbunker/deploys"><img src="https://api.netlify.com/api/v1/badges/3d99b6f8-2e77-4a86-8292-1fffe5c9c308/deploy-status" alt="Netlify Status"></a>
   <a href="https://discord.gg/XXwwz3rauu"><img src="https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white" alt="Discord Server"></a>
@@ -20,7 +20,46 @@
 
 🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord Server](https://discord.gg/XXwwz3rauu)** • 📚 **[Documentation Map](docs/README.md)**
 
-> **Status (2026-09-30):** Sprint 48 is on `dev/sprint-48` at `v2.4.13-beta`, in a release PR into `mothership`. `v2.4.12-beta` is live on the Steam `beta` branch. This release answers Steam build review 25475189 in code:
+> **Status (2026-10-06):** Sprint 49 is ready to merge: `dev/sprint-49` at `v2.4.14-beta`, release PR #100 into `mothership`. The Steam `beta` branch runs this release (`f9093289`), and so does the relay server.
+>
+> New since 2026-10-04:
+> - **The Steam store works end to end.**
+>   - BUY opens Steam's approval dialog, the keys land in your inventory, and every outcome shows under the buttons.
+>   - Beta builds buy through Valve's no-charge sandbox, for listed testers only.
+>   - Verified live: a cancel, then two purchases granting 16 keys.
+> - **Season 1 is held by the server.** Dossier ranks, directives and fragments are tracked by the backend per Steam account, so rank rewards reach Steam inventory instead of staying "Pending". Verified live: an imported Rank 12 granted its five rank items and three rare fragments. The Dossier opens on your rank, and the Fragment Workshop crafts through Steam.
+> - **Records & Leaderboards:** Archive → RECORDS shows a service record, personal bests and per-class records, plus the five Steam boards.
+> - **Fixes:**
+>   - walls that were invisible on many Windows PCs
+>   - a black gameplay screen
+>   - placeholder props that are now 3D models
+>   - interactable props that paid out on every press
+>   - the cache reveal, which played in a hidden window
+>   - tab bars that skipped tabs
+>   - the PvP winner screen
+>
+> Already in this release:
+> - **Voiced narrative** in seven languages, with developer commentary in the developer's own voice.
+> - **Filtered player chat** in co-op and PvP, with mute, block and report.
+> - **Lived-in rooms:** modular gateways, dense instanced dressing that can be destroyed (and stays destroyed), and cathedral, cryo-medical and biomech room grammar.
+> - **3D overhaul:**
+>   - 80 modular kit pieces
+>   - 35 restored props
+>   - new rigged enemies
+>   - hive leaders in 3D
+>   - camps, hives and corpses as models
+> - **Economy compliance:** Belgium paid-key restriction, Steam price tiers, `GetReport` reconciliation, durable paid grants, and 7-day trade holds.
+> - **Co-op and PvP fixes,** and the isometric camera as the default.
+>
+> **Still open:**
+> - a completed two-account co-op expedition (#85)
+> - PvP certification (#51), which includes a remote-health drift found on 2026-10-06
+> - a physical Deck controller-only route (#53)
+> - frame pacing (#52)
+>
+> See [`docs/releases/v2.4.14-beta.md`](docs/releases/v2.4.14-beta.md) and PR #100.
+>
+> `v2.4.13-beta` answered Steam build review 25475189 in code:
 > - **Multiplayer:** now on the title menu.
 > - **Developer commentary:** you can see it, and read all of it.
 > - **Controller:** the whole menu set works with a controller, Achievements included.
@@ -80,8 +119,9 @@ All store and library art lives in [`steam/store/`](steam/store/) (English slots
 - **Online Co-op & PvP**: Title menu → **MULTIPLAYER**. Steam lobbies (public list, friend invites, room codes) over our relay server; the host runs companions, Ring 1 events and drops, and tactical pings work from a controller. Solo runs stay fully offline-capable.
 - **The Foundry**: One window for your stash, loadout, fabrication, 5→1 trade-ups and the store. One item catalog means every item looks and reads the same on every screen, and trade-ups on your Steam inventory are decided by the server.
 - **Steamworks Integration**: Code-backed support for trusted leaderboards, Steam Cloud saves, Steam lobbies, 24 achievements, and a cosmetic-only Steam Vault economy. That economy covers inventory drops, trade-ups, the Steam Item Store and Microtransactions checkout with `GetReport` reconciliation. It is free to play and never pay to win ([economy plan](docs/planning/economy-master-plan-2026-09-30.md)). Production acceptance varies by feature and is tracked in [Product State](PRODUCT_STATE.md).
-- **Developer Commentary**: Settings → Commentary Mode shows designer notes as you reach the moments they discuss; Settings → Developer Commentary → Read All lists every note.
+- **Developer Commentary**: Settings → Audio → Developer Commentary shows designer notes as you reach the moments they discuss, over the menus as well as in a run; **Read All** lists every note.
 - **In-Game Dev & QA Console (`~`)**: Real-time diagnostic telemetry, event interceptors, audio/network monitors, and QA cheat commands (`resetachievements`).
+- **3D Asset Museum**: `window.__DEBUG__.openMuseum()` lays out every shipped 3D model at its in-game size and facing (weapons, chassis, NPCs, props, kits, enemies); `window.__DEBUG__.museumReport()` lists each exhibit's load result and measured size.
 
 ---
 
@@ -96,16 +136,55 @@ All store and library art lives in [`steam/store/`](steam/store/) (English slots
 
 ## 🕹️ Controls
 
-| Action | Keyboard / Mouse | Gamepad / Touch |
+Full map of every menu, sub-menu and tab, the input model and the UI
+improvement plan: [`docs/design/ui-surfaces-menu-map-and-controller-navigation.md`](docs/design/ui-surfaces-menu-map-and-controller-navigation.md).
+
+### Gameplay Controls
+
+| Action | Keyboard / Mouse | Steam Deck / Gamepad (official layout) |
 | --- | --- | --- |
-| **Move** | `WASD` / Arrow Keys | Left Stick / Touch Joystick |
-| **Aim & Fire** | Mouse Aim + Left Click | Right Stick / Fire Trigger |
-| **Interact** | `E` | Action / Confirm Button |
-| **Reload** | `R` | Reload Button |
-| **Class Ability** | `F` | Special Ability Button |
-| **Radar Scan** | `Q` | Sub-weapon / Scan |
-| **Sprint** | `Shift` | Left Stick Click / Sprint Toggle |
-| **Dev Telemetry** | `~` (Tilde) | Open Diagnostic Overlay |
+| **Move** | `WASD` / Arrow keys | Left stick |
+| **Aim & Fire** | Mouse + left click | Right stick or trackpad + **RT** |
+| **Interact** | `E` (or `Enter`) | **A** |
+| **Dodge** | — | **B** |
+| **Reload** | `R` | **X** / D-pad ◀ |
+| **Smash / Class Ability** | `F` | **Y** / D-pad ▶ |
+| **Scan** | `Q` | **LB** / D-pad ▼ |
+| **Tactical Map** | `M` or `Tab` | **RB** / D-pad ▲ / View |
+| **Sprint** | `Shift` | Left stick click |
+| **Melee** | `V` | — |
+| **Tactical Ping** | `T` (with a squadmate in the room, `T` also opens trade) | — |
+| **Pause / Settings** | `Esc` | ☰ Menu |
+| **Chat** | HUD **CHAT** button, or Pause → Settings → Session → Room Chat | Pause → Settings → Session → Room Chat |
+| **Dev Telemetry** | `~` | — |
+
+### 🎮 Controller Navigation & Menu Accessibility
+
+Every menu is built for the Steam Deck stage (1280×800) and driven by one
+focus system shared by the pad, the keyboard and the mouse. Every surface is
+registered in `MENU_FOCUS_ROOT_IDS` (`src/inputActions.js`) and covered by the
+`menu-reachability`, `controller-focus` and `menu-tab-switching` browser suites.
+
+| Action | Steam Deck / Gamepad | Keyboard | Function |
+| :--- | :--- | :--- | :--- |
+| **Navigate** | D-pad / left stick | `W` `A` `S` `D` or arrows | Spatial focus across buttons, cards and slots; wraps at the edges. |
+| **Activate** | **A** or **RT** | `Enter` / `Space` | Equips gear, buys upgrades, selects an operative; A on a dropdown opens its full list. |
+| **Back / Close** | **B** | `Esc` | Closes the topmost surface and returns focus to the button that opened it. |
+| **Switch Tabs** | **LB** / **RB** (also **X** / **Y**) | `Q` / `E` | Settings, Archive, Foundry hub / Vault, Dossier, ship terminal; class cards on the operator menu and in the Armory. |
+| **Adjust Values** | D-pad ◀ ▶ (focused) | `A` / `D` or ◀ ▶ | Sliders, volume, UI scale, dropdowns. |
+| **Scroll Text** | D-pad ▲ ▼ | `W` / `S` or ▲ ▼ | Scrolls lore, codex detail and commentary text that has nothing to focus. |
+| **Enter Text** | **A** (Steam keyboard; in-game keyboard fallback) | type | Callsign and chat. |
+| **Pointer** | Right trackpad / stick cursor + **A** | Mouse | Optional; never the only way to reach a control. |
+
+--- | :--- | :--- | :--- |
+| **Navigate Menus & Grids** | **D-Pad** / **Left Stick** | `W`, `A`, `S`, `D` or Arrows | Visual spatial roving focus across buttons, cards, and slots. |
+| **Activate / Select** | **A** or **Right Trigger (RT)** | `Enter` or `Space` | Equips gear, confirms upgrades, selects operative. |
+| **Back / Cancel** | **B** | `Escape` | Closes topmost modal or returns to previous briefing screen. |
+| **Switch Tabs** | **Left Bumper (LB)** / **Right Bumper (RB)** | `Q` / `E` | Cycles tabs in Settings, Armory, Archives, and Terminals. |
+| **Adjust Values** | **D-Pad Left** / **Right** (focused) | `Left` / `Right` Arrows | Adjusts sliders, audio volume, UI scale, and dropdown options. |
+| **Scroll Text Panels** | **D-Pad Up** / **Down** (text views) | `Page Up` / `Page Down` | Scrolls lore logs, transcripts, and commentary text. |
+| **Open Chat** | **View / Select** (or HUD Chat button) | `Enter` or `T` (in gameplay) | Opens the filtered in-game and lobby tactical chat. |
+| **Tactical Pointer** | **Right Stick** + **A** click | Mouse Move + Left Click | Optional virtual mouse cursor for freeform pointing. |
 
 ---
 

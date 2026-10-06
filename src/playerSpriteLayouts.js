@@ -16,7 +16,7 @@ const V4_DIRECTION_CELLS = Object.freeze(
 export const PLAYER_SPRITE_LAYOUTS = Object.freeze({
     SCOUT: Object.freeze({
         name: 'SCOUT',
-        path: '/Scout.full_v2.png',
+        path: '/Scout.full_v2.webp',
         columns: 4,
         rows: 4,
         walkFrames: 2,
@@ -27,7 +27,7 @@ export const PLAYER_SPRITE_LAYOUTS = Object.freeze({
     }),
     TANK: Object.freeze({
         name: 'TANK',
-        path: '/Tank.walk_v4.png',
+        path: '/Tank.walk_v4.webp',
         columns: 8,
         rows: 8,
         walkFrames: 8,
@@ -41,7 +41,7 @@ export const PLAYER_SPRITE_LAYOUTS = Object.freeze({
     }),
     ENGINEER: Object.freeze({
         name: 'ENGINEER',
-        path: '/Eng.walk_v4.png',
+        path: '/Eng.walk_v4.webp',
         // This generated source contains 9 poses across 7 authored rows.
         // North-west temporarily shares the rear row until replacement art
         // supplies a distinct eighth direction.

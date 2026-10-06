@@ -235,6 +235,37 @@ describe('LoadoutManager', () => {
     });
 });
 
+describe('chassis body choice', () => {
+    it('stores the 5001 body beside the item id and persists it', () => {
+        const storage = makeStorage();
+        const lo = new LoadoutManager({ storage });
+        lo.equipChassisSkin('5001', 'male');
+        expect(lo.getEquippedChassisSkinId()).toBe('5001');
+        expect(lo.getEquippedChassisBody()).toBe('male');
+        expect(lo.getEquippedChassisChoice()).toBe('5001:male');
+        const reloaded = new LoadoutManager({ storage });
+        expect(reloaded.getEquippedChassisChoice()).toBe('5001:male');
+    });
+
+    it('accepts an encoded picker value and drops a body the item does not have', () => {
+        const lo = new LoadoutManager({ storage: makeStorage() });
+        lo.equipChassisSkin('5001:male');
+        expect(lo.getEquippedChassisSkinId()).toBe('5001');
+        expect(lo.getEquippedChassisBody()).toBe('male');
+        lo.equipChassisSkin('5003', 'male');
+        expect(lo.getEquippedChassisBody()).toBeNull();
+        expect(lo.getEquippedChassisChoice()).toBe('5003');
+    });
+
+    it('clears the body when ownership reconciliation unequips the chassis', () => {
+        const lo = new LoadoutManager({ storage: makeStorage() });
+        lo.equipChassisSkin('5001', 'male');
+        lo.reconcileOwnership([]);
+        expect(lo.getEquippedChassisSkinId()).toBeNull();
+        expect(lo.getEquippedChassisBody()).toBeNull();
+    });
+});
+
 describe('reconcileOwnership', () => {
     let storage;
     beforeEach(() => {

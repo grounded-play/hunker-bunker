@@ -124,4 +124,32 @@ describe('env light budget', () => {
         expect(game.envLightPool.every((slot) => slot.visible)).toBe(true);
         expect(game.envLightPool.every((slot) => slot.intensity === 0)).toBe(true);
     });
+
+    it('gives only the nearest room-anchor practical a pooled slot', () => {
+        const ordinary = addLight(game, 3);
+        ordinary.color.set(0xffffff);
+        const nearAnchor = addLight(game, 1);
+        nearAnchor.color.set(0x5fe3ff);
+        nearAnchor.userData.isAnchorPracticalLight = true;
+        const farAnchor = addLight(game, 20);
+        farAnchor.color.set(0xffa648);
+        farAnchor.userData.isAnchorPracticalLight = true;
+
+        game._envLightBudgetTimer = 0;
+        game.updateEnvLightBudget(1);
+        let litColors = game.envLightPool.filter(({ intensity }) => intensity > 0)
+            .map(({ color }) => color.getHex());
+        expect(litColors).toContain(0x5fe3ff);
+        expect(litColors).toContain(0xffffff);
+        expect(litColors).not.toContain(0xffa648);
+
+        game.camera.position.set(22, 0, 0);
+        game._envLightBudgetTimer = 0;
+        game.updateEnvLightBudget(1);
+        litColors = game.envLightPool.filter(({ intensity }) => intensity > 0)
+            .map(({ color }) => color.getHex());
+        expect(litColors).toContain(0xffa648);
+        expect(litColors).not.toContain(0x5fe3ff);
+        expect(visibleLightCount(game.scene)).toBe(8);
+    });
 });

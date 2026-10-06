@@ -9,6 +9,7 @@ import { createFreshRunEntropy } from './runEntropy.js';
 import { clearMultiplayerSession, startMultiplayerRun } from './gameController.js';
 import { getSelectedPolish } from './operatorPolishes.js';
 import { t, onLocaleChange } from './i18n.js';
+import { playerChat } from './playerChat.js';
 import { RUN_GRADE_BANDS } from './runRating.js';
 import {
     createSteamLobby,
@@ -164,6 +165,7 @@ export function getLocalLoadoutSummary(opClass, mode = 'deployment') {
     const classLoadout = window.loadout.getClassLoadout?.(opClass) ?? {};
     const hasCharm = Boolean(equipment?.charmId ?? window.loadout.getEquippedCharmId?.(opClass));
     const chassisSkinId = window.loadout.getEquippedChassisSkinId?.() ?? null;
+    const chassisBody = window.loadout.getEquippedChassisBody?.() ?? null;
     const polishColor = getSelectedPolish(window.localStorage).color;
     const summary = {
         weapon,
@@ -178,6 +180,7 @@ export function getLocalLoadoutSummary(opClass, mode = 'deployment') {
         )) ?? []
     };
     if (chassisSkinId) summary.chassisSkinId = chassisSkinId;
+    if (chassisSkinId && chassisBody) summary.chassisBody = chassisBody;
     if (polishColor) summary.polishColor = polishColor;
     return summary;
 }
@@ -215,6 +218,23 @@ export function getLocalCallsign() {
         : '';
     const callsign = String(profileCallsign || inputCallsign || '').trim().toUpperCase();
     return callsign || 'AGENT';
+}
+
+// The relay locks a room to its host's build (server/relay.js
+// roomBuildVersions), so every join carries this client's build.
+export function getLocalBuildVersion(buildInfo = globalThis.__HB_BUILD_INFO__) {
+    return typeof buildInfo?.version === 'string' && buildInfo.version ? buildInfo.version : null;
+}
+
+export function describeJoinRejection({ reason, hostBuild, clientBuild } = {}) {
+    if (reason === 'incorrect_password') return 'INCORRECT LOBBY PASSWORD';
+    if (reason === 'build_mismatch') {
+        return t('ui.lobby.build_mismatch', {
+            host: hostBuild || '?',
+            client: clientBuild || '?'
+        });
+    }
+    return 'COULD NOT JOIN LOBBY';
 }
 
 export function filterDiscoverableSteamLobbies(lobbies = [], localSteamId64 = null) {
@@ -471,12 +491,20 @@ export class MultiplayerLobby {
             if (typeof window !== 'undefined') {
                 const sessionToken = await fetchMultiplayerSessionToken(this.serverUrl, callsign);
                 this.socket = connectSocketIo(this.serverUrl, {
-                    timeout: 4000,
-                    reconnectionAttempts: 2,
+                    timeout: 10000,
+                    reconnectionAttempts: 5,
                     auth: { sessionToken }
                 });
+                playerChat.attachSocket(this.socket, (this.roomCode.trim().slice(0, 24) || 'SECTOR-7').toUpperCase());
 
+                let previousConnectionId = null;
                 this.socket.on('connect', () => {
+                    logMultiplayerEvent('relay-connected', {
+                        connectionId: this.socket.id,
+                        previousConnectionId,
+                        roomCode: this.roomCode
+                    });
+                    previousConnectionId = this.socket.id;
                     this.connected = true;
                     this.usingRelay = true;
                     // A reconnect re-fires 'connect' with a brand-new
@@ -499,7 +527,9 @@ export class MultiplayerLobby {
                         // like the same anonymous peer.
                         profileId: window.profile?.getProfileId?.() || null,
                         passwordHash,
-                        loadout
+                        loadout,
+                        buildVersion: getLocalBuildVersion()
+                        , pvpReadinessVersion: 1, dressingProtocolVersion: 1
                     };
                     logMultiplayerEvent('relay-join-sent', {
                         roomCode: this.roomCode,
@@ -523,6 +553,17 @@ export class MultiplayerLobby {
                     this.updateUiState();
                 });
 
+                this.socket.on('disconnect', (reason) => {
+                    // Do not serialize transport errors/auth payloads into logs.
+                    const knownReasons = ['io server disconnect', 'io client disconnect',
+                        'ping timeout', 'transport close', 'transport error'];
+                    logMultiplayerEvent('relay-disconnected', {
+                        connectionId: previousConnectionId,
+                        reason: knownReasons.includes(reason) ? reason : 'unknown',
+                        roomCode: this.roomCode
+                    });
+                });
+
                 this.socket.on('currentPlayers', (serverPlayers) => {
                     // Sprint 24 Milestone A item 5 (docs/sprint24-multiplayer-runtime-2026-08-19.md):
                     // this is the only point in the connection lifecycle where
@@ -535,6 +576,7 @@ export class MultiplayerLobby {
                     this.syncServerRoster(serverPlayers);
                     logMultiplayerEvent('relay-roster-received', {
                         players: Object.values(serverPlayers).map((player) => ({
+                            id: player.id,
                             callsign: player.callsign,
                             opClass: player.opClass,
                             ready: Boolean(player.ready),
@@ -613,6 +655,7 @@ export class MultiplayerLobby {
 
                 this.socket.on('matchDeployRejected', ({ reason } = {}) => {
                     logMultiplayerEvent('relay-deploy-rejected', { reason: reason || 'unknown' });
+                    if (reason === 'build_mismatch') window.showToastNotification?.(describeJoinRejection({ reason }));
                     const el = document.getElementById('net-status-pill');
                     if (!el) return;
                     const original = el.textContent;
@@ -643,12 +686,9 @@ export class MultiplayerLobby {
                 // joinRoom before adding this socket to the room at all --
                 // there's no roster/ready state to clean up, just tell the
                 // player and let them retry.
-                this.socket.on('joinRejected', ({ reason } = {}) => {
+                this.socket.on('joinRejected', (detail = {}) => {
                     this.disconnect();
-                    const message = reason === 'incorrect_password'
-                        ? 'INCORRECT LOBBY PASSWORD'
-                        : 'COULD NOT JOIN LOBBY';
-                    window.showToastNotification?.(message);
+                    window.showToastNotification?.(describeJoinRejection(detail));
                 });
 
                 this.socket.on('connect_error', (err) => {
@@ -940,6 +980,7 @@ export class MultiplayerLobby {
     }
 
     disconnect() {
+        playerChat.attachSocket(null);
         if (this.socket) {
             try { this.socket.disconnect(); } catch { /* ignore */ }
             this.socket = null;
@@ -1136,6 +1177,7 @@ export class MultiplayerLobby {
             this.socket.emit('matchDeploy', {
                 seed,
                 mode: this.currentMode,
+                pvpReadinessVersion: 1,
                 crashPlan
             });
             return;
@@ -1149,7 +1191,8 @@ export class MultiplayerLobby {
         this.finalizeDeploy({
             mode: data.mode || this.currentMode,
             seed: data.seed || this.roomCode,
-            crashPlan: data.crashPlan || null
+            crashPlan: data.crashPlan || null,
+            roundId: data.roundId || null
         });
     }
 
@@ -1160,11 +1203,12 @@ export class MultiplayerLobby {
     // twice: once instantly and redundantly from its own deployMatch, and
     // again moments later reacting to its own matchStarted echo from the
     // server (io.to() includes the sender). Consolidated to one place.
-    finalizeDeploy({ mode, seed, crashPlan }) {
+    finalizeDeploy({ mode, seed, crashPlan, roundId = null }) {
         this.activeMatch = {
             roomCode: this.roomCode,
             mode,
             seed,
+            roundId,
             crashPlan: crashPlan || null,
             isMultiplayer: true,
             isHost: Boolean(this.isLocalPlayerHost),

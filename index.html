@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#07090b" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -11,10 +12,13 @@
   <link rel="stylesheet" href="/src/styles/expeditionHud.css">
   <link rel="stylesheet" href="/src/styles/hudDockHousings.css">
   <link rel="stylesheet" href="/src/styles/hudInformationArchitecture.css">
+  <link rel="stylesheet" href="/src/styles/records.css">
   <link rel="stylesheet" href="/src/styles/suitCondition.css">
   <link rel="stylesheet" href="/src/styles/armory.css">
   <link rel="stylesheet" href="/src/styles/itemCard.css">
   <link rel="stylesheet" href="/src/styles/foundryHub.css">
+  <link rel="stylesheet" href="/src/styles/fieldWorkbench.css">
+  <link rel="stylesheet" href="/src/styles/quickCommandRadial.css">
   <link rel="icon" type="image/png" href="/favicon.png" />
   <title data-i18n="ui.misc.hunker_bunker_tactical_command">HUNKER BUNKER | TACTICAL COMMAND</title>
 
@@ -197,7 +201,7 @@
           <span data-i18n="ui.loading.system_build">SYSTEM BUILD</span>
           <span class="loader-system-info__time" id="loader-build-time"></span>
         </div>
-        <div class="loader-version-tag" id="loader-version-tag">BUILD DEV // LOADING REVISION…</div>
+        <div class="loader-version-tag" id="loader-version-tag"></div>
         <div class="loader-debug-hint"><kbd>~</kbd><span data-i18n="ui.loading.dev_console">DEV CONSOLE</span></div>
       </aside>
       <div class="loader-content">
@@ -263,7 +267,7 @@
 
       <div class="splash-content">
         <div class="splash-title"><span>HUNKER</span><span>BUNKER</span></div>
-        <div data-i18n="ui.splash.tactical_command_v2_0" class="splash-subtitle">TACTICAL COMMAND v2.0</div>
+        <div class="splash-subtitle"><span data-i18n="ui.about.tactical_command">TACTICAL COMMAND</span> <span class="splash-version" id="splash-version"></span></div>
 
         <section data-i18n-aria-label="ui.title_profile_hud.aria_label_current_operator_profile" id="title-profile-hud" class="title-profile-hud hidden" aria-label="Current operator profile">
           <canvas id="title-profile-portrait" class="title-profile-hud__portrait" width="128" height="128" aria-hidden="true"></canvas>
@@ -347,7 +351,7 @@
 
         <div class="credits-footer">
           <span data-i18n="ui.about.thank_you_for_deploying" class="credits-footer-thankyou">THANK YOU FOR DEPLOYING</span>
-          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.13-BETA // ACTIVE</span>
+          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.14-BETA // ACTIVE</span>
         </div>
       </div>
     </div>
@@ -379,7 +383,10 @@
                 </div>
               </div>
               <section class="homebase-telemetry" id="roster-run-telemetry" aria-labelledby="homebase-telemetry-title">
-                <div class="homebase-section-kicker" id="homebase-telemetry-title" data-i18n="ui.roster.telemetry_title">CAREER TELEMETRY</div>
+                <div class="homebase-telemetry__head">
+                  <div class="homebase-section-kicker" id="homebase-telemetry-title" data-i18n="ui.roster.telemetry_title">CAREER TELEMETRY</div>
+                  <button type="button" class="records-link-btn" id="homebase-records-btn" data-i18n="ui.records.open_records">RECORDS ▸</button>
+                </div>
                 <div class="homebase-telemetry__grid">
                   <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.deepest_sector">DEEPEST SECTOR:</span> <b data-i18n="ui.roster.sector_0" id="roster-stat-depth">SECTOR 0</b></div>
                   <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.total_distance">TOTAL DISTANCE:</span> <b id="roster-stat-distance">0u</b></div>
@@ -574,6 +581,7 @@
          the mouse moved. Same stage slot as the Armory and HUD gears
          (style.css "Settings gear: one slot, every screen"). -->
     <div class="menu-corner-settings">
+      <button type="button" class="calibrate-btn menu-chat-btn" data-player-chat-open data-i18n="ui.chat.open">CHAT</button>
       <button class="calibrate-btn open-settings-btn">⚙</button>
     </div>
 
@@ -605,6 +613,7 @@
           <button id="archive-tab-dossier" class="archive-console-tab" type="button" role="tab" aria-selected="false" aria-controls="archive-panel-dossier" data-archive-tab="dossier" data-i18n="ui.hub.dossier">DOSSIER</button>
           <button id="archive-tab-endings" class="archive-console-tab" type="button" role="tab" aria-selected="false" aria-controls="archive-panel-endings" data-archive-tab="endings" data-i18n="ui.archive.story_endings">STORY ENDINGS</button>
           <button id="archive-tab-achievements" class="archive-console-tab" type="button" role="tab" aria-selected="false" aria-controls="archive-panel-achievements" data-archive-tab="achievements" data-i18n="ui.hub.achievements">ACHIEVEMENTS</button>
+          <button id="archive-tab-records" class="archive-console-tab" type="button" role="tab" aria-selected="false" aria-controls="archive-panel-records" data-archive-tab="records" data-i18n="ui.records.tab">RECORDS</button>
         </div>
         <div class="archive-console-body">
           <section id="archive-panel-lore" class="archive-console-panel" role="tabpanel" aria-labelledby="archive-tab-lore">
@@ -619,6 +628,20 @@
           <section id="archive-panel-achievements" class="archive-console-panel hidden" role="tabpanel" aria-labelledby="archive-tab-achievements">
             <div id="archive-achievements-summary" class="archive-console-section-summary"></div>
             <div id="archive-achievements-grid" class="achievements-grid archive-achievements-grid"></div>
+          </section>
+          <!-- Archive → RECORDS: src/recordsTab.js fills both views. -->
+          <section id="archive-panel-records" class="archive-console-panel records-panel hidden" role="tabpanel" aria-labelledby="archive-tab-records">
+            <div class="records-views" role="group" data-i18n-aria-label="ui.records.aria_views" aria-label="Records view">
+              <button type="button" class="records-chip records-view-chip" data-records-view="service" aria-pressed="true" data-i18n="ui.records.service_record">SERVICE RECORD</button>
+              <button type="button" class="records-chip records-view-chip" data-records-view="boards" aria-pressed="false" data-i18n="ui.records.leaderboards">LEADERBOARDS</button>
+            </div>
+            <div id="records-service" class="records-service"></div>
+            <div id="records-boards" class="records-boards hidden">
+              <div id="records-board-chips" class="records-chip-row" role="group" data-i18n-aria-label="ui.records.aria_boards" aria-label="Leaderboard"></div>
+              <div id="records-scope-chips" class="records-chip-row" role="group" data-i18n-aria-label="ui.records.aria_scopes" aria-label="Leaderboard scope"></div>
+              <div id="records-board-status" class="records-board-status" role="status" aria-live="polite"></div>
+              <div id="records-board-list" class="records-board-list"></div>
+            </div>
           </section>
         </div>
       </div>
@@ -704,10 +727,6 @@
           <div id="achievements-summary" class="achievements-summary">0 / 0 UNLOCKED</div>
         </div>
         <div id="achievements-grid" class="achievements-grid"></div>
-        <div class="achievements-footer">
-          <button data-i18n="ui.achievements.copy_save_code" data-i18n-title="ui.achievements.title_copy_a_portable" type="button" class="settings-action-btn settings-action-btn--save" id="achievement-copy-save" title="Copy a portable save code">COPY SAVE CODE</button>
-          <div class="achievements-save-status" id="achievements-save-status" role="status" aria-live="polite"></div>
-        </div>
       </div>
     </div>
 
@@ -795,6 +814,7 @@
               <span data-i18n="ui.steam_vault.steam_wallet_direct" class="vault-store-section-sub">STEAM WALLET DIRECT</span>
             </div>
             <div class="vault-store-grid" id="vault-store-sku-grid"></div>
+            <div class="vault-store-purchase-status hidden" id="vault-store-purchase-status" role="status" aria-live="polite"></div>
 
             <div class="vault-store-hosted hidden" id="vault-store-hosted">
               <div class="vault-store-hosted-info">
@@ -1429,6 +1449,7 @@
       </div>
       <!-- Settings gear: pinned to top-right corner, never part of any flex layout -->
       <div class="hud-corner-settings">
+        <button type="button" class="calibrate-btn" data-player-chat-open data-i18n="ui.chat.open">CHAT</button>
         <button class="calibrate-btn open-settings-btn">⚙</button>
       </div>
       <div id="pickup-counter-panel" class="pickup-counter-panel" aria-live="polite">
@@ -1563,7 +1584,9 @@
         <div class="go-leaderboard-container" id="go-leaderboard-container">
           <div data-i18n="ui.game_over.leaderboard_results" class="go-leaderboard-header">◈ LEADERBOARD RESULTS</div>
           <div class="go-leaderboard-status" id="go-leaderboard-status">CONNECTING...</div>
+          <div class="go-personal-best hidden" id="go-personal-best" role="status"></div>
           <div class="go-leaderboard-list" id="go-leaderboard-list"></div>
+          <button type="button" class="records-link-btn go-records-btn" id="go-records-btn" data-i18n="ui.records.view_all">VIEW ALL RECORDS</button>
         </div>
 
         <div class="game-over-actions">
@@ -1969,8 +1992,18 @@
                 <div data-i18n="ui.console_terminal.field_medkit" class="terminal-section-title">FIELD MEDKIT</div>
                 <div class="action-card action-card--medkit" data-goal-card="medkit">
                   <div class="action-card-header">
-                    <span data-i18n="ui.console_terminal.med_conversion" class="action-title">MED CONVERSION</span>
+                    <div class="action-card-title-group">
+                      <span class="action-card-icon action-card-icon--medkit" aria-hidden="true">✚</span>
+                      <div>
+                        <span data-i18n="ui.console_terminal.tag_bio_restore" class="action-card-tech-tag">BIO-RESTORE PROTOCOL</span>
+                        <span data-i18n="ui.console_terminal.med_conversion" class="action-title">MED CONVERSION</span>
+                      </div>
+                    </div>
                     <span class="action-cost" id="terminal-medkit-status">OFFLINE</span>
+                  </div>
+                  <div class="action-card-deltas">
+                    <span data-i18n="ui.console_terminal.pill_medkit_heart" class="stat-delta-pill stat-delta-pill--emerald">+1 HEART RESTORED</span>
+                    <span data-i18n="ui.console_terminal.pill_medkit_cost" class="stat-delta-pill stat-delta-pill--cyan">COST: 10 MED</span>
                   </div>
                   <p data-i18n="ui.console_terminal.convert_10_med_1_heart" class="action-desc" id="terminal-medkit-desc">CONVERT 10 MED → ♥ 1 HEART RESTORED</p>
                   <p class="action-desc action-desc--hint" id="terminal-medkit-hint">USE BANKED MED SUPPLIES TO REPAIR EXOSUIT INTEGRITY.</p>
@@ -1998,8 +2031,18 @@
             <div data-i18n="ui.console_terminal.o2_generator_module" class="terminal-section-title">O₂ GENERATOR MODULE</div>
             <div class="action-card action-card--generator" data-goal-card="o2Generator">
               <div class="action-card-header">
-                <span data-i18n="ui.console_terminal.field_stabilizer" class="action-title">FIELD STABILIZER</span>
+                <div class="action-card-title-group">
+                  <span class="action-card-icon action-card-icon--o2" aria-hidden="true">🫧</span>
+                  <div>
+                    <span data-i18n="ui.console_terminal.tag_sys_01" class="action-card-tech-tag">SYS-01 // LIFE SUPPORT</span>
+                    <span data-i18n="ui.console_terminal.field_stabilizer" class="action-title">FIELD STABILIZER</span>
+                  </div>
+                </div>
                 <span class="action-cost" id="terminal-o2-generator-status">OFFLINE // REPAIR REQUIRED</span>
+              </div>
+              <div class="action-card-deltas">
+                <span data-i18n="ui.console_terminal.pill_o2_bubble" class="stat-delta-pill stat-delta-pill--cyan">+O₂ SANCTUARY BUBBLE</span>
+                <span data-i18n="ui.console_terminal.pill_safe_zone" class="stat-delta-pill stat-delta-pill--emerald">EXPEDITION SAFE ZONE</span>
               </div>
               <p class="action-desc" id="terminal-o2-generator-cost">NEXT COST: 10 TECH / 5 MED / 5 COIN</p>
               <p class="action-desc" id="terminal-o2-generator-field">FIELD RADIUS 0.0u // REFILL OFFLINE</p>
@@ -2012,8 +2055,18 @@
             <div data-i18n="ui.console_terminal.goal_2" class="terminal-section-title">GOAL 2</div>
             <div class="action-card" data-goal-card="hullExpansion">
               <div class="action-card-header">
-                <span data-i18n="ui.console_terminal.hull_expansion_matrix" class="action-title">HULL EXPANSION MATRIX</span>
+                <div class="action-card-title-group">
+                  <span class="action-card-icon action-card-icon--hull" aria-hidden="true">⛨</span>
+                  <div>
+                    <span data-i18n="ui.console_terminal.tag_sys_02" class="action-card-tech-tag">SYS-02 // FRAME ARMOR</span>
+                    <span data-i18n="ui.console_terminal.hull_expansion_matrix" class="action-title">HULL EXPANSION MATRIX</span>
+                  </div>
+                </div>
                 <span data-i18n="ui.console_terminal.locked_repair_o2_generator_first" class="action-cost" id="terminal-hull-status">LOCKED — REPAIR O₂ GENERATOR FIRST</span>
+              </div>
+              <div class="action-card-deltas">
+                <span data-i18n="ui.console_terminal.pill_hull_heart" class="stat-delta-pill stat-delta-pill--cyan">+1 MAX HEART (4♥ TOTAL)</span>
+                <span data-i18n="ui.console_terminal.pill_hull_integrity" class="stat-delta-pill stat-delta-pill--amber">STRUCTURAL INTEGRITY</span>
               </div>
               <p data-i18n="ui.console_terminal.reinforce_exterior_hull_increases_max" class="action-desc">Reinforce exterior hull. Increases max exosuit integrity to 4 hearts.</p>
               <p data-i18n="ui.console_terminal.cost_50_tech_20_med" class="action-desc action-desc--cost" id="terminal-hull-cost">COST: 50 TECH / 20 MED</p>
@@ -2025,8 +2078,18 @@
             <div data-i18n="ui.console_terminal.goal_3" class="terminal-section-title">GOAL 3</div>
             <div class="action-card" data-goal-card="radarNode">
               <div class="action-card-header">
-                <span data-i18n="ui.console_terminal.communication_radar_node" class="action-title">COMMUNICATION RADAR NODE</span>
+                <div class="action-card-title-group">
+                  <span class="action-card-icon action-card-icon--radar" aria-hidden="true">📡</span>
+                  <div>
+                    <span data-i18n="ui.console_terminal.tag_sys_03" class="action-card-tech-tag">SYS-03 // TELEMETRY</span>
+                    <span data-i18n="ui.console_terminal.communication_radar_node" class="action-title">COMMUNICATION RADAR NODE</span>
+                  </div>
+                </div>
                 <span data-i18n="ui.console_terminal.locked_install_hull_matrix_first" class="action-cost" id="terminal-radar-status">LOCKED — INSTALL HULL MATRIX FIRST</span>
+              </div>
+              <div class="action-card-deltas">
+                <span data-i18n="ui.console_terminal.pill_radar_compass" class="stat-delta-pill stat-delta-pill--cyan">COMPASS SUPPLY TRACKER</span>
+                <span data-i18n="ui.console_terminal.pill_radar_cluster" class="stat-delta-pill stat-delta-pill--emerald">CACHE CLUSTER PING</span>
               </div>
               <p data-i18n="ui.console_terminal.establish_long_range_tactical_feeds" class="action-desc">Establish long-range tactical feeds. Compass tracks nearest supply cache cluster.</p>
               <p data-i18n="ui.console_terminal.cost_150_tech_30_coin" class="action-desc action-desc--cost" id="terminal-radar-cost">COST: 150 TECH / 30 COIN</p>
@@ -2038,8 +2101,18 @@
             <div data-i18n="ui.console_terminal.goal_4" class="terminal-section-title">GOAL 4</div>
             <div class="action-card" data-goal-card="reactorCompressor">
               <div class="action-card-header">
-                <span data-i18n="ui.console_terminal.reactor_compressor" class="action-title">REACTOR COMPRESSOR</span>
+                <div class="action-card-title-group">
+                  <span class="action-card-icon action-card-icon--reactor" aria-hidden="true">⚛</span>
+                  <div>
+                    <span data-i18n="ui.console_terminal.tag_sys_04" class="action-card-tech-tag">SYS-04 // POWER CORE</span>
+                    <span data-i18n="ui.console_terminal.reactor_compressor" class="action-title">REACTOR COMPRESSOR</span>
+                  </div>
+                </div>
                 <span data-i18n="ui.console_terminal.locked_install_radar_node_first" class="action-cost" id="terminal-reactor-status">LOCKED — INSTALL RADAR NODE FIRST</span>
+              </div>
+              <div class="action-card-deltas">
+                <span data-i18n="ui.console_terminal.pill_reactor_refill" class="stat-delta-pill stat-delta-pill--cyan">2× O₂ REFILL RATE</span>
+                <span data-i18n="ui.console_terminal.pill_reactor_drain" class="stat-delta-pill stat-delta-pill--amber">-20% O₂ DRAIN RATE</span>
               </div>
               <p data-i18n="ui.console_terminal.increase_generator_efficiency_o2_refill" class="action-desc">Increase generator efficiency. O₂ refill rate doubles. Drain rate slows 20%.</p>
               <p data-i18n="ui.console_terminal.cost_300_tech_100_coin" class="action-desc action-desc--cost" id="terminal-reactor-cost">COST: 300 TECH / 100 COIN</p>
@@ -2309,6 +2382,20 @@
       </div>
     </div>
 
+    <div id="field-workbench-modal" class="modal field-workbench-modal hidden" aria-hidden="true">
+      <div class="modal-content field-workbench-panel">
+        <button data-i18n-aria-label="ui.workbench.aria_close" class="close-modal field-workbench-close" id="close-field-workbench" aria-label="Close field workbench">×</button>
+        <div data-i18n="ui.workbench.kicker" class="field-workbench-kicker" id="field-workbench-kicker">CAMP WORKBENCH // FIELD FABRICATION</div>
+        <h2 data-i18n="ui.workbench.title" class="modal-title field-workbench-title" id="field-workbench-title">FIELD WORKBENCH</h2>
+        <div class="field-workbench-stats-strip" id="field-workbench-stats-strip"></div>
+        <p data-i18n="ui.workbench.copy" class="field-workbench-copy" id="field-workbench-copy">Synthesize field supplies using banked materials. Effects apply immediately to your current expedition.</p>
+        <div class="field-workbench-recipes-grid" id="field-workbench-recipes-grid"></div>
+        <div class="field-workbench-footer">
+          <button data-i18n="ui.workbench.close" type="button" class="field-workbench-close-btn" id="field-workbench-footer-close">EXIT WORKBENCH</button>
+        </div>
+      </div>
+    </div>
+
     <div id="song-interstitial" class="song-interstitial hidden" aria-hidden="true">
       <div class="song-interstitial__placeholder" aria-hidden="true"></div>
       <img id="song-interstitial-image" class="song-interstitial__media" alt="" hidden>
@@ -2372,6 +2459,10 @@
           <!-- Section 1: Display & Graphics -->
         <div class="settings-category-group" data-settings-panel="session">
           <div data-i18n="ui.settings.session_display" class="settings-category-header">SESSION &amp; DISPLAY</div>
+          <div class="setting-item setting-item--action">
+            <span data-i18n="ui.chat.title">ROOM CHAT</span>
+            <button type="button" class="calibrate-btn settings-action-btn" data-player-chat-open data-i18n="ui.chat.open">CHAT</button>
+          </div>
           <div class="setting-item setting-item--action">
             <span data-i18n="ui.settings.return_to_game">RETURN TO GAME</span>
             <button data-i18n="ui.settings.resume" type="button" class="calibrate-btn settings-action-btn" id="resume-settings">RESUME</button>
@@ -2996,6 +3087,7 @@
     <!-- Tactical Net: Multiplayer PVP & Co-Op Modal -->
     <div id="multiplayer-modal" class="modal hidden" aria-hidden="true">
       <div class="net-corner-settings">
+        <button type="button" class="calibrate-btn" data-player-chat-open data-i18n="ui.chat.open">CHAT</button>
         <button type="button" class="calibrate-btn open-settings-btn net-settings-btn" id="net-settings-btn" title="Open Settings" aria-label="Open Settings" data-i18n-title="ui.armory.aria_settings" data-i18n-aria-label="ui.armory.aria_settings">⚙</button>
       </div>
       <div class="modal-content net-modal-content">
@@ -3107,8 +3199,8 @@
         <!-- Shared deployment intelligence. Solo uses this as its primary
              briefing; Co-op keeps it visible above relay/roster controls. -->
         <div class="net-deployment-ledger hidden" id="net-deployment-ledger">
-          <section class="net-ledger-panel" aria-labelledby="net-career-ledger-title">
-            <div class="net-ledger-title" id="net-career-ledger-title" data-i18n="ui.multiplayer.career_ledger">CAREER LEDGER</div>
+          <section class="net-ledger-panel net-ledger-panel--summary" aria-labelledby="net-career-ledger-title">
+            <div class="net-ledger-head"><div class="net-ledger-title" id="net-career-ledger-title" data-i18n="ui.multiplayer.career_ledger">CAREER LEDGER</div><button type="button" class="records-link-btn" id="net-records-btn" data-i18n="ui.records.open_records">RECORDS ▸</button></div>
             <div class="net-ledger-stats">
               <span><b id="net-career-runs">0</b><small data-i18n="ui.multiplayer.runs">RUNS</small></span>
               <span><b id="net-career-deaths">0</b><small data-i18n="ui.multiplayer.deaths">DEATHS</small></span>

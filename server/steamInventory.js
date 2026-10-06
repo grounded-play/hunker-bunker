@@ -15,6 +15,8 @@ import {
 import { grantItemToPlayer } from './steamGrant.js';
 import { commitExchange, planRedeem, planTradeUp, withPlayerLock } from './steamTradeUp.js';
 import { createRateLimitOptions } from './rateLimit.js';
+import { fetchSteamInventory, decodeSteamInventory } from './steamInventoryRead.js';
+import { performSteamRecipeExchange } from './steamRecipeExchange.js';
 
 const STEAM_INVENTORY_URL = 'https://partner.steam-api.com/IInventoryService/';
 const STEAM_ECON_MARKET_URL = 'https://partner.steam-api.com/IEconMarketService/';
@@ -82,25 +84,7 @@ export function attachSteamInventoryRoutes(app) {
     // The player's inventory, from the mock store in dev mode or Steam.
     async function loadInventory(req) {
         if (req.isDevMode) return { ok: true, inventory: getMockInventory(req.steamId) };
-        try {
-            const params = new URLSearchParams({
-                key: getSteamPublisherKey(),
-                appid: String(getSteamAppId()),
-                steamid: req.steamId
-            });
-            const response = await fetch(`${STEAM_INVENTORY_URL}GetInventory/v1/?${params.toString()}`);
-            if (!response.ok) return { ok: false, status: response.status, reason: 'steam_api_error' };
-            const data = await response.json();
-            const items = (data?.response?.item_list ?? []).map((item) => ({
-                itemId: String(item.itemid),
-                itemdefid: Number(item.itemdefid),
-                quantity: Number(item.quantity) || 1,
-                acquiredAt: item.acquired ? Date.parse(item.acquired) : Date.now()
-            }));
-            return { ok: true, inventory: items };
-        } catch (err) {
-            return { ok: false, status: 502, reason: 'steam_request_failed', message: err.message };
-        }
+        return fetchSteamInventory({ steamId: req.steamId, key: getSteamPublisherKey(), appId: getSteamAppId() });
     }
 
     // 1. Get Inventory. `capabilities` tells the client which exchanges this
@@ -185,7 +169,8 @@ export function attachSteamInventoryRoutes(app) {
                 const response = await fetch(`${STEAM_INVENTORY_URL}TriggerItemDrop/v1/`, {
                     method: 'POST',
                     headers: { 'content-type': 'application/x-www-form-urlencoded' },
-                    body: params
+                    body: params,
+                    signal: AbortSignal.timeout(15_000)
                 });
 
                 if (!response.ok) {
@@ -195,21 +180,46 @@ export function attachSteamInventoryRoutes(app) {
                     };
                 } else {
                     const data = await response.json();
-                    const items = (data?.response?.item_list ?? []).map((item) => ({
-                        itemId: String(item.itemid),
-                        itemdefid: Number(item.itemdefid),
-                        quantity: Number(item.quantity) || 1,
-                        acquiredAt: Date.now()
-                    }));
-                    result = {
-                        status: 200,
-                        body: { ok: true, granted: items }
-                    };
+                    if (data?.response?.success !== undefined && data.response.success !== true) {
+                        result = {
+                            status: 502,
+                            body: { ok: false, reason: 'steam_inventory_rejected' }
+                        };
+                    } else if (typeof data?.response?.item_json === 'string') {
+                        const decoded = decodeSteamInventory(data);
+                        if (!decoded.ok) {
+                            result = {
+                                status: decoded.status || 502,
+                                body: { ok: false, reason: decoded.reason }
+                            };
+                        } else {
+                            result = {
+                                status: 200,
+                                body: { ok: true, granted: decoded.inventory }
+                            };
+                        }
+                    } else if (Array.isArray(data?.response?.item_list)) {
+                        const items = data.response.item_list.map((item) => ({
+                            itemId: String(item.itemid),
+                            itemdefid: Number(item.itemdefid),
+                            quantity: Number(item.quantity) || 1,
+                            acquiredAt: Date.now()
+                        }));
+                        result = {
+                            status: 200,
+                            body: { ok: true, granted: items }
+                        };
+                    } else {
+                        result = {
+                            status: 502,
+                            body: { ok: false, reason: 'steam_inventory_invalid_response' }
+                        };
+                    }
                 }
-            } catch (err) {
+            } catch {
                 result = {
                     status: 502,
-                    body: { ok: false, reason: 'steam_request_failed', message: err.message }
+                    body: { ok: false, reason: 'steam_request_failed' }
                 };
             }
         }
@@ -297,6 +307,14 @@ export function attachSteamInventoryRoutes(app) {
         const recipeId = Number(req.body?.recipeId);
         const materials = req.body?.materials; // array of itemId strings
 
+        if (!req.isDevMode) {
+            const result = await performSteamRecipeExchange({
+                steamId: req.steamId, recipeId, materials, requestId,
+                key: getSteamPublisherKey(), appId: getSteamAppId()
+            });
+            return res.status(result.status).json(result.body);
+        }
+
         const cached = checkIdempotency(requestId);
         if (cached) {
             return res.status(cached.status).json(cached.body);
@@ -372,58 +390,6 @@ export function attachSteamInventoryRoutes(app) {
                 status: 200,
                 body: { ok: true, consumed: materials, granted: grant.granted }
             };
-        } else {
-            try {
-                // recipeId doubles as the Steam-side outputitemdefid for fixed
-                // recipes (2100/2200 are both recipe id and reward id). The
-                // cache-open recipe has no reward itemdefid of its own — it
-                // targets a hidden Steamworks bundle/generator item (4002)
-                // configured to resolve the same weights as lootTables.js.
-                // Verify this mapping against live Steamworks Inventory admin
-                // before shipping; the exact generator item type/behavior is
-                // configured on Valve's side, not in this code.
-                const outputItemdefid = recipeId === OPEN_CACHE_RECIPE_ID ? 4002 : recipeId;
-                const params = new URLSearchParams();
-                params.append('key', getSteamPublisherKey());
-                params.append('appid', String(getSteamAppId()));
-                params.append('steamid', req.steamId);
-                params.append('outputitemdefid', String(outputItemdefid));
-
-                materials.forEach((matId, index) => {
-                    params.append(`materialsitemid[${index}]`, String(matId));
-                    params.append(`materialsquantity[${index}]`, '1');
-                });
-
-                const response = await fetch(`${STEAM_INVENTORY_URL}ExchangeItem/v1/`, {
-                    method: 'POST',
-                    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-                    body: params
-                });
-
-                if (!response.ok) {
-                    result = {
-                        status: response.status,
-                        body: { ok: false, reason: 'steam_api_error' }
-                    };
-                } else {
-                    const data = await response.json();
-                    const items = (data?.response?.item_list ?? []).map((item) => ({
-                        itemId: String(item.itemid),
-                        itemdefid: Number(item.itemdefid),
-                        quantity: Number(item.quantity) || 1,
-                        acquiredAt: Date.now()
-                    }));
-                    result = {
-                        status: 200,
-                        body: { ok: true, granted: items }
-                    };
-                }
-            } catch (err) {
-                result = {
-                    status: 502,
-                    body: { ok: false, reason: 'steam_request_failed', message: err.message }
-                };
-            }
         }
 
         await saveIdempotency(requestId, result);

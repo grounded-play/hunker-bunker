@@ -2,6 +2,7 @@ import { AudioManager } from './audio.js';
 import { t, applyStaticTranslations } from './i18n.js';
 import { assetUrl } from './assetUrl.js';
 import { buildEquipOptions } from './armoryOptions.js';
+import { decodeChassisChoice, expandChassisBodyOptions } from './chassisBodies.js';
 import { buildPickerTiles, calculatePickerLayout } from './armoryPicker.js';
 import { getArmoryIcon, ARMORY_WEAPON_NAMES } from './armoryAssets.js';
 import {
@@ -105,6 +106,8 @@ export const CATALOG_ITEMS = Object.freeze({
  * icon), with the Armory's own icon lookup for an id the catalog lacks art for.
  */
 export function armoryItemView(id) {
+    // A chassis body choice (`5001:male`) shows its item's art and rarity.
+    id = decodeChassisChoice(id).id ?? id;
     const view = getItemView(id);
     const icon = view?.icon ?? getArmoryIcon(id, CATALOG_ITEMS[id]?.icon);
     return view ? { ...view, icon } : null;
@@ -166,6 +169,17 @@ export function createArmoryUi({
         return armoryItemView(id)?.name
             ?? getCatalogEntry(id)?.name
             ?? 'UNKNOWN EQUIPMENT';
+    }
+
+    function chassisBodyLabel(body) {
+        // Literal keys so the i18n audit can see them.
+        return body === 'male' ? t('ui.armory.body_male') : t('ui.armory.body_female');
+    }
+
+    function chassisChoiceName(choice, fallback) {
+        const { id, body } = decodeChassisChoice(choice);
+        const name = nameForItem(id, fallback);
+        return body ? `${name} — ${chassisBodyLabel(body)}` : name;
     }
 
     function iconForItem(id) {
@@ -330,9 +344,16 @@ export function createArmoryUi({
                 subtitle: 'OPERATOR SHELL // WORN ON DEPLOYMENT',
                 noneLabel: 'STANDARD CHASSIS',
                 ids: () => CLASS_CHASSIS_SKINS[cls] || [],
-                current: () => (loadoutManager.getEquippedChassisSkinId() ? String(loadoutManager.getEquippedChassisSkinId()) : ''),
-                currentName: () => nameForItem(loadoutManager.getEquippedChassisSkinId(), 'STANDARD CHASSIS'),
-                apply: (value) => equipGuard(value || null, (v) => loadoutManager.equipChassisSkin(v)),
+                // Items with more than one body (5001 Ghost Runner) get a tile per body.
+                options: () => expandChassisBodyOptions(
+                    buildEquipOptions({ ids: CLASS_CHASSIS_SKINS[cls] || [], selectedId: loadoutManager.getEquippedChassisSkinId(), ownership }),
+                    loadoutManager.getEquippedChassisChoice(),
+                    chassisBodyLabel
+                ),
+                current: () => loadoutManager.getEquippedChassisChoice(),
+                currentName: () => chassisChoiceName(loadoutManager.getEquippedChassisChoice(), 'STANDARD CHASSIS'),
+                // Ownership is checked on the item; the body rides along.
+                apply: (value) => equipGuard(decodeChassisChoice(value).id, () => loadoutManager.equipChassisSkin(value || null)),
                 sound: 'sfx_overclock_socket',
                 after: (value) => armoryScene?.setChassisSkin?.(value || null, cls)
             },
@@ -596,6 +617,7 @@ export function createArmoryUi({
                 </header>
 
                 <div class="armory-corner-settings">
+                    <button type="button" class="calibrate-btn armory-chat-btn" data-player-chat-open data-i18n="ui.chat.open">CHAT</button>
                     <button type="button" class="calibrate-btn open-settings-btn armory-settings-btn" id="armory-settings-btn" title="Open Settings" aria-label="Open Settings" data-i18n-title="ui.armory.aria_settings" data-i18n-aria-label="ui.armory.aria_settings">⚙</button>
                 </div>
 
@@ -610,13 +632,23 @@ export function createArmoryUi({
                                     <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.weapon_label">WEAPON:</b> ${selectedWeapon}</span>
                                     <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_sheen">WEAPON SHEEN:</b> ${selectedSheen}</span>
                                     <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.sheen_kicker">OPERATOR SHEEN:</b> ${selectedPolish}</span>
-                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.chassis_label">CHASSIS:</b> ${nameForItem(chassisSkinId, 'STANDARD')}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.chassis_label">CHASSIS:</b> ${chassisChoiceName(loadoutManager.getEquippedChassisChoice?.() ?? chassisSkinId, 'STANDARD')}</span>
                                     <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_charm">CHARM:</b> ${fields.charm.currentName()}</span>
                                     <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_bay_a">BAY A:</b> ${fields.mod1.currentName()}</span>
                                     <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_bay_b">BAY B:</b> ${fields.mod2.currentName()}</span>
                                     <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_patch">PATCH:</b> ${fields.decal.currentName()}</span>
                                     <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_hud">HUD:</b> ${fields.hud.currentName()}</span>
                                     <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_voicebank">RADIO:</b> ${fields.voicebank.currentName()}</span>
+                                </div>
+                            </div>
+                            <div class="armory-stage-readout__systems">
+                                <div class="bench-field">
+                                    <label data-i18n="ui.armory.f_hud">TACTICAL HUD THEME</label>
+                                    ${slotHtml('hud')}
+                                </div>
+                                <div class="armory-hud-theme-preview" data-hud-theme="${hudTheme?.id ?? 'default'}" data-hud-shape="${hudTheme?.shape ?? 'default'}" style="${hudThemeStyle}" aria-label="Equipped HUD preview">
+                                    <span class="armory-hud-theme-preview__map" aria-hidden="true">⌁</span>
+                                    <span class="armory-hud-theme-preview__copy"><b>${hudTheme?.name ?? 'Default Monochrome'}</b><small>♥♥♥ · O₂ 96% · LIVE PREVIEW</small></span>
                                 </div>
                             </div>
                             <div class="armory-stage-readout__hint" data-i18n="ui.armory.stage_hint">DRAG 3D STAGE TO INSPECT OPERATOR &amp; WEAPON</div>
@@ -719,16 +751,6 @@ export function createArmoryUi({
                                 <div class="bench-field">
                                     <label data-i18n="ui.armory.f_voicebank">ALT RADIO VOICE BANK</label>
                                     ${slotHtml('voicebank')}
-                                </div>
-                            </div>
-                            <div class="bench-row-two-col armory-systems-row">
-                                <div class="bench-field" style="grid-column: 1 / -1;">
-                                    <label data-i18n="ui.armory.f_hud">TACTICAL HUD THEME</label>
-                                    ${slotHtml('hud')}
-                                    <div class="armory-hud-theme-preview" data-hud-theme="${hudTheme?.id ?? 'default'}" data-hud-shape="${hudTheme?.shape ?? 'default'}" style="${hudThemeStyle}" aria-label="Equipped HUD preview">
-                                        <span class="armory-hud-theme-preview__map" aria-hidden="true">⌁</span>
-                                        <span class="armory-hud-theme-preview__copy"><b>${hudTheme?.name ?? 'Default Monochrome'}</b><small>♥♥♥ · O₂ 96% · LIVE PREVIEW</small></span>
-                                    </div>
                                 </div>
                             </div>
                         </section>
@@ -989,7 +1011,7 @@ export function createArmoryUi({
         loadoutManager.setActiveClass(activeClass);
         const chassisSkinId = loadoutManager.getEquippedChassisSkinId?.();
         const compatibleChassisSkin = (CLASS_CHASSIS_SKINS[activeClass] || []).includes(chassisSkinId)
-            ? chassisSkinId
+            ? (loadoutManager.getEquippedChassisChoice?.() || chassisSkinId)
             : null;
         closePickerModal();
         armoryScene?.setClass(activeClass, compatibleChassisSkin);

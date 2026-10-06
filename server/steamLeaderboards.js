@@ -675,6 +675,10 @@ export function attachSteamLeaderboardRoutes(app) {
 
     app.get('/steam/leaderboards/:board', steamRouteRateLimit, async (req, res) => {
         const dataRequest = normalizeDataRequest(req.query.dataRequest ?? req.query.type ?? 'RequestGlobal');
+        // A Global board is public, unauthenticated data: any page (the web /
+        // LAN build on whatever host it runs) may read it. Friends and Around
+        // me need a session and stay behind the origin allow-list.
+        if (dataRequest === 'RequestGlobal') res.setHeader('Access-Control-Allow-Origin', '*');
         let steamId64 = null;
         if (dataRequest !== 'RequestGlobal' && (getSteamAuthConfig().configured || hasBearerAuth(req))) {
             const auth = await authenticateSteamRequest(req);

@@ -3,7 +3,13 @@ import path from 'node:path';
 import fs from 'node:fs';
 import express from 'express';
 import { afterEach, beforeAll, afterAll, describe, expect, it, vi } from 'vitest';
-import { attachSteamStoreRoutes } from './steamStore.js';
+import {
+    attachSteamStoreRoutes,
+    isRegionRestrictedForRandomPurchases,
+    extractClientCountry,
+    getRestrictedRandomPurchaseRegions
+} from './steamStore.js';
+import * as purchaseDb from './db.js';
 import {
     initDb,
     setMockInventory,
@@ -109,8 +115,12 @@ describe('Steam Store API endpoints', () => {
             publicUrl: 'https://store.steampowered.com/itemstore/4957040/',
             betaUrl: 'https://store.steampowered.com/itemstore/4957040/?beta=1'
         });
-        expect(body.catalog.length).toBeGreaterThan(0);
-        expect(body.catalog[0]).toMatchObject({ sku: expect.any(String), priceUsdCents: expect.any(Number) });
+        expect(body.catalog.length).toBe(3);
+        expect(body.catalog).toEqual([
+            { sku: 'key_1', keyCount: 1, priceCategory: '1;VLV100', priceUsdCents: 100, label: '1x Cache Key', restricted: false },
+            { sku: 'key_5', keyCount: 5, priceCategory: '1;VLV400', priceUsdCents: 400, label: '5x Cache Key', restricted: false },
+            { sku: 'key_15', keyCount: 15, priceCategory: '1;VLV1000', priceUsdCents: 1000, label: '15x Cache Key', restricted: false }
+        ]);
 
         const oddsTotal = body.deepRelicCacheOdds.reduce((sum, row) => sum + row.percent, 0);
         expect(oddsTotal).toBeCloseTo(100, 1);
@@ -320,8 +330,9 @@ describe('Steam Store API endpoints', () => {
             orderId: '9001001',
             status: 'pending_confirmation',
             purchaseStatus: 'pending',
-            nextAction: 'open_overlay',
-            requiresConfirmation: true
+            nextAction: 'await_steam_approval',
+            requiresConfirmation: true,
+            sandbox: false
         });
 
         const purchase = listPurchases({ limit: 20 }).find((row) => row.transId === '7001001');
@@ -351,7 +362,7 @@ describe('Steam Store API endpoints', () => {
             return jsonResponse({
                 response: {
                     result: 'OK',
-                    params: { orderid: `order-${transId}`, transid: transId, status: 'Init' }
+                    params: { orderid: `order-${transId}`, transid: transId, steamid: '76561198000000000', status: 'Init' }
                 }
             });
         });
@@ -397,7 +408,7 @@ describe('Steam Store API endpoints', () => {
                 return jsonResponse({
                     response: {
                         result: 'OK',
-                        params: { orderid: orderId, transid: transId, status: 'Approved' }
+                        params: { orderid: orderId, transid: transId, steamid: '76561198000000000', status: 'Approved' }
                     }
                 });
             }
@@ -412,9 +423,10 @@ describe('Steam Store API endpoints', () => {
             if (text.includes('/IInventoryService/AddItem/v1/')) {
                 return jsonResponse({
                     response: {
-                        item_list: [
-                            { itemid: 'steam-key-stack-1', itemdefid: '4001', quantity: '5' }
-                        ]
+                        success: true,
+                        item_json: JSON.stringify([
+                            { itemid: '17209346500926339', itemdefid: '4001', quantity: '5' }
+                        ])
                     }
                 });
             }
@@ -436,7 +448,7 @@ describe('Steam Store API endpoints', () => {
             nextAction: 'refresh_inventory',
             transId,
             orderId,
-            granted: [{ itemId: 'steam-key-stack-1', itemdefid: 4001, quantity: 5 }]
+            granted: [{ itemId: '17209346500926339', itemdefid: 4001, quantity: 5 }]
         });
 
         const purchase = listPurchases({ limit: 20 }).find((row) => row.transId === transId);
@@ -471,7 +483,7 @@ describe('Steam Store API endpoints', () => {
             return jsonResponse({
                 response: {
                     result: 'OK',
-                    params: { orderid: `order-${transId}`, transid: transId, status: 'Failed' }
+                    params: { orderid: `order-${transId}`, transid: transId, steamid: '76561198000000000', status: 'Failed' }
                 }
             });
         });
@@ -512,7 +524,7 @@ describe('Steam Store API endpoints', () => {
             return jsonResponse({
                 response: {
                     result: 'OK',
-                    params: { orderid: `order-${transId}`, transid: transId, status: 'Refunded' }
+                    params: { orderid: `order-${transId}`, transid: transId, steamid: '76561198000000000', status: 'Refunded' }
                 }
             });
         });
@@ -547,5 +559,386 @@ describe('Steam Store API endpoints', () => {
         expect(cleanup.removed).toBeGreaterThanOrEqual(1);
         expect(checkIdempotency(expiringKey)).toBeNull();
         expect(checkIdempotency(permanentKey)?.body).toMatchObject({ kind: 'permanent' });
+    });
+});
+
+// Beta testers buy through Valve's no-charge sandbox (2026-10-06): the beta
+// client asks for it, and only SteamIDs on HB_STEAM_SANDBOX_STEAM_IDS get it.
+describe('per-purchase sandbox for beta testers', () => {
+    const TESTER = '76561198000000077';
+
+    async function initSandbox(steamId, reqId = `sbx-${Math.random()}`) {
+        const res = await fetch(`${baseUrl}/steam/store/purchase/init`, {
+            method: 'POST',
+            headers: liveAuthHeaders(steamId),
+            body: JSON.stringify({ requestId: reqId, sku: 'key_1', sandbox: true })
+        });
+        return { status: res.status, body: await res.json() };
+    }
+
+    it('refuses a sandbox purchase from an account not on the allowlist, without charging', async () => {
+        enableLiveStoreEnv();
+        process.env.HB_STEAM_SANDBOX_STEAM_IDS = TESTER;
+        mockExternalFetch(async (url) => { throw new Error(`unexpected fetch ${url}`); });
+        const result = await initSandbox('76561198000000000');
+        expect(result).toMatchObject({ status: 403, body: { ok: false, reason: 'sandbox_not_allowed', purchaseStatus: 'disabled' } });
+        expect(externalFetchCallCount()).toBe(0);
+    });
+
+    it('runs an allowlisted tester\'s purchase through the sandbox from init to grant', async () => {
+        enableLiveStoreEnv();
+        process.env.HB_STEAM_SANDBOX_STEAM_IDS = ` 76561198000000001, ${TESTER} `;
+        const urls = [];
+        mockExternalFetch(async (url, options) => {
+            const text = String(url);
+            urls.push(text);
+            if (text.includes('/InitTxn/')) {
+                const orderid = new URLSearchParams(String(options.body)).get('orderid');
+                return jsonResponse({ response: { result: 'OK', params: { orderid, transid: 'sbx-trans-1' } } });
+            }
+            if (text.includes('/QueryTxn/')) {
+                const purchase = listPurchases({ limit: 50 }).find((row) => row.transId === 'sbx-trans-1');
+                return jsonResponse({ response: { result: 'OK', params: { orderid: purchase.orderId, transid: 'sbx-trans-1', steamid: TESTER, status: 'Approved' } } });
+            }
+            if (text.includes('/FinalizeTxn/')) {
+                const purchase = listPurchases({ limit: 50 }).find((row) => row.transId === 'sbx-trans-1');
+                return jsonResponse({ response: { result: 'OK', params: { orderid: purchase.orderId, transid: 'sbx-trans-1' } } });
+            }
+            if (text.includes('/IInventoryService/AddItem/v1/')) {
+                return jsonResponse({ response: { success: true, item_json: JSON.stringify([{ itemid: '991', itemdefid: '4001', quantity: '1' }]) } });
+            }
+            throw new Error(`unexpected fetch ${text}`);
+        });
+
+        const init = await initSandbox(TESTER);
+        expect(init).toMatchObject({ status: 200, body: { ok: true, sandbox: true, requiresConfirmation: true, nextAction: 'await_steam_approval' } });
+        expect(listPurchases({ limit: 50 }).find((row) => row.transId === 'sbx-trans-1')).toMatchObject({ sandbox: true });
+
+        const res = await fetch(`${baseUrl}/steam/store/purchase/finalize`, {
+            method: 'POST',
+            headers: liveAuthHeaders(TESTER),
+            body: JSON.stringify({ transId: 'sbx-trans-1' })
+        });
+        expect(res.status).toBe(200);
+        expect(await res.json()).toMatchObject({ ok: true, purchaseStatus: 'completed' });
+        const microTxn = urls.filter((url) => /(Init|Query|Finalize)Txn/.test(url));
+        expect(microTxn).toHaveLength(3);
+        for (const url of microTxn) expect(url).toContain('/ISteamMicroTxnSandbox/');
+    });
+
+    it('keeps an ordinary purchase live while sandbox testers exist', async () => {
+        enableLiveStoreEnv();
+        process.env.HB_STEAM_SANDBOX_STEAM_IDS = TESTER;
+        mockExternalFetch(async (url) => {
+            expect(String(url)).toContain('/ISteamMicroTxn/InitTxn/v3/');
+            return jsonResponse({ response: { result: 'OK', params: { orderid: '1', transid: 'live-trans-1' } } });
+        });
+        const res = await fetch(`${baseUrl}/steam/store/purchase/init`, {
+            method: 'POST',
+            headers: liveAuthHeaders(TESTER),
+            body: JSON.stringify({ requestId: `live-${Math.random()}`, sku: 'key_1' })
+        });
+        expect(await res.json()).toMatchObject({ ok: true, sandbox: false });
+    });
+});
+
+describe('paid grant recovery', () => {
+    let counter = 0;
+    async function seed(status = 'pending_confirmation') {
+        enableLiveStoreEnv();
+        counter += 1;
+        const record = {
+            steamId64: '76561198000000000',
+            sku: 'key_5',
+            transId: `recover-${counter}`,
+            orderId: `recover-order-${counter}`,
+            status,
+            priceUsdCents: 399
+        };
+        await savePurchaseState(record);
+        return record;
+    }
+    async function finalize(purchase, extra = {}) {
+        const transId = String(purchase?.transId || '');
+        const response = await fetch(`${baseUrl}/steam/store/purchase/finalize`, {
+            method: 'POST',
+            headers: liveAuthHeaders(),
+            body: JSON.stringify({ transId, ...extra })
+        });
+        return { status: response.status, body: await response.json() };
+    }
+    function query(purchase, status = 'Succeeded', extra = {}) {
+        return jsonResponse({ response: { result: 'OK', params: {
+            orderid: purchase.orderId, transid: purchase.transId, steamid: purchase.steamId64, status, ...extra
+        } } });
+    }
+    function delivered(replayed = false, quantity = 5, itemdefid = '4001') {
+        return jsonResponse({ response: { success: true, replayed, item_json: JSON.stringify([
+            { itemid: '17209346500926339', itemdefid, quantity }
+        ]) } });
+    }
+
+    it.each(['lost_response', 'lost_completion_write'])('reuses durable uint64 identity after %s and never grants twice', async (failure) => {
+        const purchase = await seed();
+        const ids = [];
+        const grants = new Set();
+        let queryCount = 0;
+        if (failure === 'lost_completion_write') {
+            const save = purchaseDb.savePurchaseState;
+            let fail = true;
+            vi.spyOn(purchaseDb, 'savePurchaseState').mockImplementation(async (row) => {
+                if (row.status === 'completed' && fail) { fail = false; throw new Error('disk unavailable'); }
+                return save(row);
+            });
+        }
+        mockExternalFetch(async (url, options) => {
+            if (String(url).includes('/QueryTxn/')) { queryCount += 1; return query(purchase); }
+            expect(String(url)).toContain('/AddItem/');
+            const id = options.body.get('requestid');
+            expect(id).toMatch(/^[1-9]\d{0,19}$/);
+            expect(BigInt(id)).toBeLessThanOrEqual(18446744073709551615n);
+            expect(options.body.get('trade_restriction')).toBe('1');
+            const saved = purchaseDb.findPurchaseByTransId(purchase.transId);
+            expect(saved.status).toBe('finalized_pending_grant');
+            expect(saved.grantIntent).toMatchObject({ requestId: id, quantity: 5, itemdefid: 4001 });
+            ids.push(id);
+            const replayed = grants.has(id);
+            grants.add(id);
+            if (!replayed && failure === 'lost_response') throw new Error('response lost');
+            // By retry time the original keys may already have been consumed.
+            return delivered(replayed, replayed ? 0 : 5);
+        });
+        expect((await finalize(purchase)).status).toBe(502);
+        const result = await finalize(purchase);
+        expect(result).toMatchObject({ status: 200, body: { purchaseStatus: 'completed', grantReplayed: true } });
+        expect(ids).toHaveLength(2);
+        expect(new Set(ids).size).toBe(1);
+        expect(grants.size).toBe(1);
+        expect(queryCount).toBe(2);
+        expect(purchaseDb.findPurchaseByTransId(purchase.transId)).toMatchObject({ status: 'completed', grantReplayed: true });
+    });
+
+    it('cannot issue AddItem before the grant intent is persisted', async () => {
+        const purchase = await seed();
+        const save = purchaseDb.savePurchaseState;
+        vi.spyOn(purchaseDb, 'savePurchaseState').mockImplementation(async (row) => {
+            if (row.grantIntent) throw new Error('disk unavailable');
+            return save(row);
+        });
+        mockExternalFetch(async (url) => {
+            expect(String(url)).toContain('/QueryTxn/');
+            return query(purchase);
+        });
+        expect((await finalize(purchase)).status).toBe(502);
+        expect(externalFetchCallCount()).toBe(1);
+        expect(purchaseDb.findPurchaseByTransId(purchase.transId).status).not.toBe('completed');
+    });
+
+    it('serializes simultaneous finalize attempts including the order-ID alias', async () => {
+        const purchase = await seed();
+        let entered;
+        let release;
+        const atGrant = new Promise((resolve) => { entered = resolve; });
+        const gate = new Promise((resolve) => { release = resolve; });
+        let adds = 0;
+        mockExternalFetch(async (url) => {
+            if (String(url).includes('/QueryTxn/')) return query(purchase);
+            adds += 1;
+            entered();
+            await gate;
+            return delivered();
+        });
+        const first = finalize(purchase);
+        await atGrant;
+        let second;
+        try { second = await finalize({ transId: purchase.orderId }); } finally { release(); }
+        expect((await first).status).toBe(200);
+        expect(second).toMatchObject({ status: 409, body: { reason: 'purchase_finalize_in_progress' } });
+        expect(adds).toBe(1);
+        expect((await finalize(purchase)).body.alreadyGranted).toBe(true);
+    });
+
+    it.each(['grant_failed', 'finalized_pending_grant'])('does not blindly repeat an old non-idempotent %s grant', async (status) => {
+        const purchase = await seed(status);
+        mockExternalFetch(async (url) => {
+            expect(String(url)).toContain('/QueryTxn/');
+            return query(purchase);
+        });
+        expect(await finalize(purchase)).toMatchObject({ status: 409, body: { reason: 'legacy_grant_requires_review' } });
+        expect(externalFetchCallCount()).toBe(0);
+    });
+
+    it('rechecks pending delivery against a refund before retrying inventory', async () => {
+        const purchase = await seed();
+        let adds = 0;
+        mockExternalFetch(async (url) => {
+            if (String(url).includes('/QueryTxn/')) return query(purchase, adds ? 'Refunded' : 'Succeeded');
+            adds += 1;
+            throw new Error('response lost');
+        });
+        expect((await finalize(purchase)).status).toBe(502);
+        expect(await finalize(purchase)).toMatchObject({ status: 409, body: { purchaseStatus: 'reversed' } });
+        expect(adds).toBe(1);
+    });
+
+    it.each([{ steamid: '76561198000000001' }, { orderid: 'another-order' }, { transid: undefined }])('rejects mismatched or missing Steam identity: %j', async (extra) => {
+        const purchase = await seed();
+        mockExternalFetch(async (url) => {
+            expect(String(url)).toContain('/QueryTxn/');
+            return query(purchase, 'Succeeded', extra);
+        });
+        expect(await finalize(purchase)).toMatchObject({ status: 409, body: { reason: 'steam_purchase_identity_mismatch' } });
+        expect(externalFetchCallCount()).toBe(1);
+    });
+
+    it.each([[1, '4001'], [5, '9999']])('does not complete an incorrect initial grant receipt (%s, %s)', async (quantity, itemdefid) => {
+        const purchase = await seed();
+        mockExternalFetch(async (url) => String(url).includes('/QueryTxn/') ? query(purchase) : delivered(false, quantity, itemdefid));
+        expect(await finalize(purchase)).toMatchObject({ status: 409, body: { reason: 'steam_inventory_grant_requires_review' } });
+        const calls = externalFetchCallCount();
+        expect((await finalize(purchase)).status).toBe(409);
+        expect(externalFetchCallCount()).toBe(calls);
+        expect(purchaseDb.findPurchaseByTransId(purchase.transId).status).toBe('grant_review_required');
+    });
+
+    it('cannot retry pending inventory with MicroTxn disabled or in a different environment', async () => {
+        const purchase = await seed();
+        mockExternalFetch(async (url) => {
+            if (String(url).includes('/QueryTxn/')) return query(purchase);
+            throw new Error('response lost');
+        });
+        expect((await finalize(purchase)).status).toBe(502);
+        const count = externalFetchCallCount();
+        process.env.HB_STEAM_MICROTXN_ENABLED = '0';
+        expect((await finalize(purchase)).status).toBe(503);
+        process.env.HB_STEAM_MICROTXN_ENABLED = '1';
+        process.env.HB_STEAM_MICROTXN_SANDBOX = '1';
+        expect(await finalize(purchase)).toMatchObject({ status: 409, body: { reason: 'purchase_grant_context_mismatch' } });
+        expect(externalFetchCallCount()).toBe(count);
+    });
+
+    it('requires fresh settlement proof after FinalizeTxn reports already committed', async () => {
+        const purchase = await seed();
+        let queried = 0;
+        mockExternalFetch(async (url) => {
+            if (String(url).includes('/QueryTxn/')) return query(purchase, queried++ ? 'Refunded' : 'Approved');
+            expect(String(url)).toContain('/FinalizeTxn/');
+            return jsonResponse({ response: { result: 'Failure', error: { errorcode: 6 } } });
+        });
+        expect(await finalize(purchase)).toMatchObject({ status: 409, body: { nextAction: 'retry_finalize' } });
+        expect(await finalize(purchase)).toMatchObject({ status: 409, body: { purchaseStatus: 'reversed' } });
+        expect(externalFetchCallCount()).toBe(3);
+    });
+
+    it('rejects FinalizeTxn success for a different transaction', async () => {
+        const purchase = await seed();
+        mockExternalFetch(async (url) => {
+            if (String(url).includes('/QueryTxn/')) return query(purchase, 'Approved');
+            expect(String(url)).toContain('/FinalizeTxn/');
+            return jsonResponse({ response: { result: 'OK', params: { orderid: purchase.orderId, transid: 'another-trans' } } });
+        });
+        expect(await finalize(purchase)).toMatchObject({ status: 409, body: { reason: 'steam_purchase_identity_mismatch' } });
+        expect(externalFetchCallCount()).toBe(2);
+    });
+
+    it('keeps completed inventory separate from a later unsettled payment', async () => {
+        const purchase = await seed('completed');
+        mockExternalFetch(async (url) => {
+            expect(String(url)).toContain('/QueryTxn/');
+            return query(purchase, 'Approved');
+        });
+        const result = await finalize(purchase, { reconcile: true });
+        expect(result.status).toBe(409);
+        expect(result.body).toMatchObject({ reason: 'grant_without_settled_payment' });
+        expect(externalFetchCallCount()).toBe(1);
+    });
+
+    describe('Region restriction for paid random items (Belgium)', () => {
+        it('identifies restricted regions correctly with default Belgium (BE/BEL)', () => {
+            expect(getRestrictedRandomPurchaseRegions().has('BE')).toBe(true);
+            expect(getRestrictedRandomPurchaseRegions().has('BEL')).toBe(true);
+            expect(isRegionRestrictedForRandomPurchases('BE')).toBe(true);
+            expect(isRegionRestrictedForRandomPurchases('be')).toBe(true);
+            expect(isRegionRestrictedForRandomPurchases('BEL')).toBe(true);
+            expect(isRegionRestrictedForRandomPurchases('US')).toBe(false);
+            expect(isRegionRestrictedForRandomPurchases('DE')).toBe(false);
+            expect(isRegionRestrictedForRandomPurchases(null)).toBe(false);
+        });
+
+        it('extracts client country from request body, query, or headers', () => {
+            expect(extractClientCountry({ body: { country: 'be' } })).toBe('BE');
+            expect(extractClientCountry({ query: { country: 'bel' } })).toBe('BEL');
+            expect(extractClientCountry({ headers: { 'cf-ipcountry': 'us' } })).toBe('US');
+            expect(extractClientCountry({ headers: { 'x-country-code': 'de' } })).toBe('DE');
+            expect(extractClientCountry({})).toBeNull();
+        });
+
+        it('discloses statutory terms in GET /steam/store/catalog', async () => {
+            const res = await fetch(`${baseUrl}/steam/store/catalog`);
+            expect(res.status).toBe(200);
+            const body = await res.json();
+            expect(body.legalTerms).toContain('Virtual items have no cash value');
+            expect(body.legalTerms).toContain('Steam Subscriber Agreement');
+            expect(body.legalTerms).toContain('Includes Random Items');
+        });
+
+        it('flags keysRestricted and restrictedRegionNotice when requested from Belgium', async () => {
+            const res = await fetch(`${baseUrl}/steam/store/catalog?country=BE`);
+            expect(res.status).toBe(200);
+            const body = await res.json();
+            expect(body.keysRestricted).toBe(true);
+            expect(body.country).toBe('BE');
+            expect(body.restrictedRegionReason).toBe('region_compliance_belgium');
+            expect(body.restrictedRegionNotice).toBeTruthy();
+            expect(body.catalog.every((sku) => sku.restricted === true)).toBe(true);
+        });
+
+        it('leaves keys enabled for non-restricted regions (e.g. US)', async () => {
+            const res = await fetch(`${baseUrl}/steam/store/catalog?country=US`);
+            expect(res.status).toBe(200);
+            const body = await res.json();
+            expect(body.keysRestricted).toBe(false);
+            expect(body.country).toBe('US');
+            expect(body.restrictedRegionNotice).toBeNull();
+            expect(body.catalog.every((sku) => !sku.restricted)).toBe(true);
+        });
+
+        it('rejects POST /steam/store/purchase/init with 403 region_restricted from Belgium', async () => {
+            enableLiveStoreEnv();
+            const res = await fetch(`${baseUrl}/steam/store/purchase/init`, {
+                method: 'POST',
+                headers: liveAuthHeaders(),
+                body: JSON.stringify({
+                    sku: 'key_1',
+                    requestId: `test-belgium-${Date.now()}`,
+                    country: 'BE'
+                })
+            });
+            expect(res.status).toBe(403);
+            const body = await res.json();
+            expect(body.ok).toBe(false);
+            expect(body.reason).toBe('region_restricted');
+            expect(body.purchaseStatus).toBe('disabled');
+            expect(body.message).toContain('Belgium');
+        });
+
+        it('rejects POST /steam/store/purchase/init via cf-ipcountry header', async () => {
+            enableLiveStoreEnv();
+            const headers = {
+                ...liveAuthHeaders(),
+                'cf-ipcountry': 'BE'
+            };
+            const res = await fetch(`${baseUrl}/steam/store/purchase/init`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    sku: 'key_1',
+                    requestId: `test-belgium-header-${Date.now()}`
+                })
+            });
+            expect(res.status).toBe(403);
+            const body = await res.json();
+            expect(body.reason).toBe('region_restricted');
+        });
     });
 });

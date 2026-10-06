@@ -193,8 +193,13 @@ export function createFoundryHub({
         renderTabs();
     }
 
+    // Whatever had focus when the hub opened (the Vault or Foundry button)
+    // gets it back on close, so a controller player is not left on nothing.
+    let opener = null;
+
     function open(tab = 'stash') {
         if (!modal) return null;
+        if (!isOpen()) opener = doc?.activeElement ?? null;
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
         const shown = select(tab);
@@ -214,6 +219,9 @@ export function createFoundryHub({
         refreshTimer = null;
         log('close', {});
         onClose();
+        const returnTo = opener;
+        opener = null;
+        if (returnTo?.isConnected && returnTo !== doc?.body) focus(returnTo);
     }
 
     function cycle(direction) {

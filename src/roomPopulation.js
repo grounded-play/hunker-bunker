@@ -49,20 +49,110 @@ function findCellWallNormal(cell, grid) {
     return null;
 }
 
-function pickCandidate(candidates, random, grid, center) {
+export function isWallBackedPropType(type) {
+    return type === 'prop_fungal_tendril_altar'
+        || type === 'prop_flesh_steel_cradle'
+        || type === 'prop_shrine_plinth_broken'
+        || type === 'prop_biomech_sphincter_hatch_vent'
+        || type === 'prop_biomech_tracheal_wall_pipe'
+        || type === 'prop_decon_eyewash_shower_station'
+        || type === 'prop_exhaust_blower_fan_hood'
+        || type === 'prop_wall_cable_tray_swag'
+        || type === 'prop_vertebral_cable_riser'
+        || type === 'prop_oxygen_bottle_cascade_rack'
+        || type === 'prop_pipe_organ_heat_exchanger'
+        || type === 'prop_ceiling_crane_hoist';
+}
+
+function pickCandidate(candidates, random, grid, center, wallOnly = false) {
     if (candidates.length === 0) return null;
     // Props belong at the perimeter: keep the room center open for the player,
-    // ship consoles, mission fixtures, and readable combat lanes. Randomness
-    // only breaks ties between equally wall-adjacent cells.
-    const scored = candidates.map((cell) => ({
+    // ship consoles, mission fixtures, and readable combat lanes. Wall-backed
+    // props (like altars and cradles) strictly require an adjacent wall tile.
+    let pool = wallOnly
+        ? candidates.filter((cell) => findCellWallNormal(cell, grid) !== null)
+        : candidates;
+    if (pool.length === 0 && wallOnly) pool = candidates;
+    const scored = pool.map((cell) => ({
         cell,
         score: wallAdjacency(cell, grid) * 100
             + Math.hypot(cell.x - center.x, cell.y - center.y)
             + random() * 0.01
     })).sort((a, b) => b.score - a.score);
     const selected = scored[0].cell;
-    candidates.splice(candidates.indexOf(selected), 1);
+    const indexInCandidates = candidates.indexOf(selected);
+    if (indexInCandidates >= 0) candidates.splice(indexInCandidates, 1);
     return selected;
+}
+
+// Lived-in world M2 (docs/planning/sprint-49-lived-in-world-continuation.md):
+// the key art ties each functional anchor to the floor with run-off, residue
+// and service runs. Rules match anchor families by name, first match wins.
+// Decals must stay inside threeGame's FLOOR_OVERLAY_TYPES (drawn flat); the
+// rust/water/spore stains are wall decals and would stand upright.
+export const GROUNDING_RULES = Object.freeze([
+    {
+        match: /cryo|coolant|oxygen|o2_|frost|icey|thermal|eyewash|decon/,
+        decals: ['scatter_coolant_puddle', 'decal_frost_bloom_1', 'decal_condensation_run'],
+        piece: 'prop_floor_drainage_sump_trough'
+    },
+    {
+        match: /autopsy|dissection|surgical|medical|specimen|vital|diagnostic|triage/,
+        decals: ['decal_bio_sample_spill', 'decal_fluid_seep'],
+        piece: 'prop_floor_drainage_sump_trough'
+    },
+    {
+        match: /biomech|flesh|hive|spore|fungal|alien|egg|incubator|umbilical|mycelium/,
+        decals: ['scatter_slime_puddle', 'decal_spore_growth_patch', 'decal_fluid_seep'],
+        piece: null
+    },
+    {
+        match: /lectern|terminal|conduit|junction|console|fabricator|engineering|generator|tesla|cyber|exchanger|gantry/,
+        decals: ['decal_grease_pool', 'scatter_cable_coil', 'decal_floor_grate_01'],
+        piece: 'prop_floor_conduit_bridge'
+    },
+    {
+        match: /votive|reliquary|shrine|saint|altar/,
+        decals: ['decal_floor_medallion_01', 'decal_floor_medallion_02', 'decal_floor_medallion_03', 'decal_floor_medallion_04'],
+        piece: null
+    },
+    {
+        match: /supplies|ammo|locker|crate|drum|storage/,
+        decals: ['decal_oil_spill_patch', 'scatter_bolts'],
+        piece: null
+    }
+]);
+
+/**
+ * Lived-in world M3: a room's object budget from its usable floor instead of
+ * the fixed five, clamp(floor(floorCells / 12) + 2, 3, 8). Off by default
+ * (`planRoomPopulation(..., { areaBudget: true })`, behind
+ * featureFlags.isAreaRoomDensityEnabled); it stays off until a paired Deck
+ * capture shows presented p95 does not regress.
+ */
+export function areaRoomObjectLimit(floorCells) {
+    const cells = Number.isFinite(floorCells) ? Math.max(0, floorCells) : 0;
+    return Math.min(8, Math.max(3, Math.floor(cells / 12) + 2));
+}
+
+/** Flat grounding decals per room. They sit outside the five-object cap. */
+export const GROUNDING_DECAL_LIMIT = 2;
+const GROUNDED_ANCHOR_KINDS = ['signature', 'large', 'ammo-cache', 'structural', 'interaction', 'reward', 'lore'];
+
+export function groundingRuleFor(type) {
+    const name = String(type ?? '');
+    return GROUNDING_RULES.find((rule) => rule.match.test(name)) ?? null;
+}
+
+// FNV-1a: grounding choices come from the room and anchor, not the shared RNG,
+// so adding them never reshuffles anything planned after this room.
+function stableHash(text) {
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < text.length; i += 1) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 0x01000193) >>> 0;
+    }
+    return hash;
 }
 
 function propFrom(list, random, fallback) {
@@ -70,7 +160,7 @@ function propFrom(list, random, fallback) {
     return source[Math.floor(random() * source.length)];
 }
 
-export function planRoomPopulation(room, grid, random) {
+export function planRoomPopulation(room, grid, random, { grounding = true, areaBudget = false } = {}) {
     const budget = normalizePopulationBudget(room.populationBudget);
     const doorLanes = room.navigation?.doorLanes ?? [];
     const fixtureCells = room.navigation?.reserved ?? [];
@@ -124,12 +214,21 @@ export function planRoomPopulation(room, grid, random) {
     const placements = [];
     const theme = room.themeConfig ?? {};
     const center = roomCenter;
-    const propLimit = room.role === 'medical' || room.role === 'cryo-lab' ? 3 : 2;
+    // Keep the authored gameplay anchors legible, then spend the remaining
+    // budget on non-blocking edge dressing. Five is deliberate: the Thursday
+    // Deck capture showed prop destruction on the worst frame window, so room
+    // life comes from a bounded mix of one small prop, one decal and an
+    // occasional rare landmark rather than an unbounded scatter pass.
+    const floorCells = (room.interior ?? []).filter(({ x, y }) => grid?.[y]?.[x] === '.').length;
+    const roomObjectLimit = areaBudget ? areaRoomObjectLimit(floorCells) : 5;
+    const budgetedObjectCount = () => placements.filter((placement) => (
+        placement.kind !== 'grounding-decal'
+    )).length;
 
     const reservePlacement = (kind, type, blocking = false) => {
-        if (placements.length >= 3) return false;
-        if (kind !== 'pickup' && placements.filter((placement) => placement.kind !== 'pickup').length >= propLimit) return false;
-        const cell = pickCandidate(candidates, random, grid, center);
+        if (kind !== 'signature' && budgetedObjectCount() >= roomObjectLimit) return false;
+        const wallOnly = isWallBackedPropType(type);
+        const cell = pickCandidate(candidates, random, grid, center, wallOnly);
         if (!cell) return false;
         reserved.add(cellKey(cell));
         const wallNormal = findCellWallNormal(cell, grid);
@@ -233,6 +332,82 @@ export function planRoomPopulation(room, grid, random) {
     }
     if (budget.pickup.min > 0) reservePlacement('pickup', 'room-biased', false);
 
+    if (grounding) {
+        // Ground anchors before optional edge dressing so a GLB service piece
+        // spends the ambient portion of the five-object budget rather than
+        // losing its slot to an unrelated small prop.
+        const free = new Map(candidates.map((cell) => [cellKey(cell), cell]));
+        const anchors = GROUNDED_ANCHOR_KINDS.flatMap((kind) => placements.filter((placement) => placement.kind === kind));
+        let decals = 0;
+        let pieceUsed = false;
+        for (const anchor of anchors) {
+            const rule = groundingRuleFor(anchor.type);
+            if (!rule) continue;
+            const hash = stableHash(`${room.id}:${anchor.x},${anchor.y}:${anchor.type}`);
+            const take = (offset) => {
+                const beside = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+                    .map(([dx, dy]) => free.get(`${anchor.x + dx},${anchor.y + dy}`))
+                    .filter(Boolean);
+                if (beside.length === 0) return null;
+                const cell = beside[(hash + offset) % beside.length];
+                free.delete(cellKey(cell));
+                const index = candidates.indexOf(cell);
+                if (index >= 0) candidates.splice(index, 1);
+                reserved.add(cellKey(cell));
+                return cell;
+            };
+            if (decals < GROUNDING_DECAL_LIMIT && rule.decals.length) {
+                const cell = take(0);
+                if (cell) {
+                    placements.push({
+                        id: `${room.id}:grounding:${placements.length}`,
+                        roomId: room.id,
+                        anchorPlacementId: anchor.id,
+                        x: cell.x,
+                        y: cell.y,
+                        kind: 'grounding-decal',
+                        type: rule.decals[(hash >>> 8) % rule.decals.length],
+                        blocking: false,
+                        wallNormal: null
+                    });
+                    decals += 1;
+                }
+            }
+            if (rule.piece && !pieceUsed && budgetedObjectCount() < roomObjectLimit) {
+                const cell = take(3);
+                if (cell) {
+                    placements.push({
+                        id: `${room.id}:grounding:${placements.length}`,
+                        roomId: room.id,
+                        anchorPlacementId: anchor.id,
+                        x: cell.x,
+                        y: cell.y,
+                        kind: 'grounding',
+                        type: rule.piece,
+                        blocking: false,
+                        wallNormal: null
+                    });
+                    pieceUsed = true;
+                }
+            }
+        }
+    }
+
+    // The theme catalog has always carried small, ambient and rare pools, but
+    // the population planner previously ignored all three. That left finished
+    // props and environmental-story decals unused while rooms stopped after
+    // two large objects. These additions never block navigation and retain the
+    // same doorway apron, fixture reservation and center-lane exclusions.
+    if (budget.small.min > 0 && theme.smallProps?.length) {
+        reservePlacement('small', propFrom(theme.smallProps, random, 'scatter_bolts'), false);
+    }
+    if (theme.rareProps?.length && random() < 0.2) {
+        reservePlacement('rare', propFrom(theme.rareProps, random, theme.rareProps[0]), false);
+    }
+    if (budget.small.min > 1 && theme.ambientProps?.length) {
+        reservePlacement('ambient', propFrom(theme.ambientProps, random, theme.ambientProps[0]), false);
+    }
+
     const signaturePlaced = placements.some((placement) => placement.kind === 'signature');
 
     return {
@@ -245,6 +420,6 @@ export function planRoomPopulation(room, grid, random) {
     };
 }
 
-export function planChunkRoomPopulation(rooms, grid, random) {
-    return (rooms ?? []).map((room) => planRoomPopulation(room, grid, random));
+export function planChunkRoomPopulation(rooms, grid, random, options = {}) {
+    return (rooms ?? []).map((room) => planRoomPopulation(room, grid, random, options));
 }

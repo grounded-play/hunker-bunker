@@ -19,10 +19,12 @@ describe('world 3D replacement catalog', () => {
         expect(WORLD_3D_MODELS.frozen_tanker.url).toBe('/3d/runtime/frozen-tanker.glb');
     });
 
-    it('keeps every model normalized to a positive gameplay height', () => {
-        for (const config of Object.values(WORLD_3D_MODELS)) {
-            expect(config.url.endsWith('.glb')).toBe(true);
-            expect(config.height).toBeGreaterThan(0);
+    // Modular kit pieces take one uniform scale instead (src/kitMaterials.js):
+    // per-piece height normalization broke their shared socket grid.
+    it('sizes every model by a positive gameplay height or a uniform kit scale', () => {
+        for (const [type, config] of Object.entries(WORLD_3D_MODELS)) {
+            expect(config.url.endsWith('.glb'), type).toBe(true);
+            expect(config.height ?? config.scale, type).toBeGreaterThan(0);
         }
     });
 
@@ -70,6 +72,21 @@ describe('world 3D replacement catalog', () => {
         expect(root.visible).toBe(true);
     });
 
+    // Modular kit pieces carry their topology rotation and carve-fit scale on
+    // the anchor: no billboard facing offset, which would turn a corner's
+    // openings away from the route it was chosen for.
+    it('places a socketed kit anchor at its exact rotation and fitted scale', () => {
+        const anchor = new THREE.Object3D();
+        const root = new THREE.Group();
+        anchor.userData = { world3dRoot: root, world3dDesiredVisible: true, socketRotation: Math.PI / 2, modelScale: 1.25 };
+        anchor.position.set(2, 0, 5);
+        expect(syncWorld3dReplacement(anchor)).toBe(true);
+        expect(root.rotation.y).toBeCloseTo(Math.PI / 2);
+        expect(root.scale.toArray()).toEqual([1.25, 1.25, 1.25]);
+        expect(syncWorld3dReplacement(anchor, { scale: 0.5 })).toBe(true);
+        expect(root.scale.x).toBeCloseTo(0.625);
+    });
+
     // A sprite and its 3D replacement must never both be drawable. When the
     // O2 generator's flat sprite stayed visible after the GLB was parented, the
     // billboard rendered *inside* the model. sync is the one funnel every
@@ -106,6 +123,21 @@ describe('world 3D replacement catalog', () => {
         }
     });
 
+    it('orients and offsets wall-backed props against their adjacent wall', () => {
+        const source = new THREE.Sprite(new THREE.SpriteMaterial());
+        const root = new THREE.Group();
+        source.userData.world3dRoot = root;
+        source.userData.world3dDesiredVisible = true;
+        source.userData.wallNormal = { x: 0, z: 1 };
+        source.userData.isWallBackedProp = true;
+        source.position.set(5, 0, 10);
+
+        expect(syncWorld3dReplacement(source)).toBe(true);
+        expect(root.rotation.y).toBeCloseTo(0);
+        expect(root.position.x).toBeCloseTo(5);
+        expect(root.position.z).toBeCloseTo(10 - 0.22);
+    });
+
     it('exposes preload list with valid model types and safely runs preload', async () => {
         const { COMMON_WORLD_3D_MODEL_TYPES, preloadWorld3dModels } = await import('./world3dOverlay.js');
         expect(COMMON_WORLD_3D_MODEL_TYPES.length).toBeGreaterThan(10);
@@ -114,4 +146,42 @@ describe('world 3D replacement catalog', () => {
         }
         await expect(preloadWorld3dModels([])).resolves.not.toThrow();
     });
+
+    // Museum turntable QA 2026-10-01: these sources author their front along
+    // X, so at yaw 0 they stood edge-on to the viewer and, wall-backed,
+    // side-on to the room (syncWorld3dReplacement points +Z off the wall).
+    it('turns side-authored props so their front faces +Z', () => {
+        expect(WORLD_3D_MODELS.prop_flesh_steel_inhaler.yaw).toBeCloseTo(-Math.PI / 2);
+        expect(WORLD_3D_MODELS.prop_locker_bulged.yaw).toBeCloseTo(-Math.PI / 2);
+        expect(WORLD_3D_MODELS.prop_light_cluster_dripping.yaw).toBeCloseTo(-Math.PI / 2);
+        expect(WORLD_3D_MODELS.prop_biomech_respirator.yaw).toBeCloseTo(Math.PI / 2);
+        expect(WORLD_3D_MODELS.radar.yaw).toBeCloseTo(-Math.PI / 2);
+    });
+
+    it('renders the camp cookfire as a cookfire, not the fabricator workstation', () => {
+        expect(WORLD_3D_MODELS.prop_camp_cookfire.url).toBe('/3d/runtime/new3ds/prop_camp_cookfire.glb');
+        expect(WORLD_3D_MODELS.prop_camp_cookfire.url).not.toBe(WORLD_3D_MODELS.prop_fabricator_workstation.url);
+    });
+
+    it('binds an AnimationMixer and plays idle animation clip on character models', async () => {
+        const { prepareWorld3dModel } = await import('./world3dOverlay.js');
+        const model = new THREE.Group();
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshBasicMaterial());
+        model.add(mesh);
+        const idleTrack = new THREE.VectorKeyframeTrack('.position', [0, 1], [0, 0, 0, 0, 1, 0]);
+        const clip = new THREE.AnimationClip('Armature|mixamo.com|Layer0', 1, [idleTrack]);
+
+        const root = prepareWorld3dModel(model, 'npc_martha', { height: 1.75, yaw: 0 }, [clip]);
+        expect(root.name).toBe('World3d:npc_martha');
+        expect(root.userData.mixer).toBeInstanceOf(THREE.AnimationMixer);
+        expect(root.userData.animations).toEqual([clip]);
+
+        // delta tick updates the mixer
+        const source = new THREE.Sprite();
+        source.userData.world3dRoot = root;
+        source.userData.yaw = 1.25;
+        expect(syncWorld3dReplacement(source, { delta: 0.016 })).toBe(true);
+        expect(root.rotation.y).toBeCloseTo(1.25);
+    });
 });
+
