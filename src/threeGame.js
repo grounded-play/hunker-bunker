@@ -862,15 +862,19 @@ const ROOM_WALL_STYLE_ID = Object.freeze({
     'bunker-standard': 1,
     'bunker-utility': 1,
     'bunker-medical': 6,
-    'bunker-security': 1,
+    'bunker-security': 8,
     'bunker-storage': 1,
+    'bunker-armory': 8,
     'cryo-rough': 2,
     'cryo-clean': 2,
     'cryo-lab': 2,
     'bio-resin': 3,
     'bio-hive': 3,
-    'bio-nest': 3,
+    'bio-nest': 4,
     'camp-fortified': 1,
+    'giger-cathedral': 6,
+    'shrine': 5,
+    'canyon': 7,
     // Direct PBR suites (1 to 8):
     'bunker': 1,
     'cryo_deck': 2,
@@ -3034,6 +3038,30 @@ export class ThreeGame {
                     }
                     finalWallColor = landformTintColor;
 
+                    // Ring skins sampled from modular PBR suite atlas (W1):
+                    // Active (bunker): rivets, conduits, amber accent
+                    // Cryo: cryo_deck, cyan accent
+                    // Bio: biomech, shading into giger deeper in, green accent
+                    vec2 localRingWallUv = (abs(vWorldNormal.y) > 0.5)
+                        ? fract(vWorldPos.xz * (1.0 / 3.0))
+                        : fract((abs(vWorldNormal.x) > abs(vWorldNormal.z) ? vWorldPos.zy : vWorldPos.xy) * vec2(1.0 / 3.0, 1.0 / 2.8));
+
+                    vec2 uvPbrBunker = vec2((0.0 + localRingWallUv.x) * 0.25, (1.0 + localRingWallUv.y) * 0.5);
+                    vec2 uvPbrCryo   = vec2((1.0 + localRingWallUv.x) * 0.25, (1.0 + localRingWallUv.y) * 0.5);
+                    vec2 uvPbrBio    = vec2((2.0 + localRingWallUv.x) * 0.25, (1.0 + localRingWallUv.y) * 0.5);
+                    vec2 uvPbrGiger  = vec2((3.0 + localRingWallUv.x) * 0.25, (1.0 + localRingWallUv.y) * 0.5);
+
+                    vec3 pbrBunkerCol = texture2D(tRoomWallColorAtlas, uvPbrBunker).rgb;
+                    vec3 pbrCryoCol = texture2D(tRoomWallColorAtlas, uvPbrCryo).rgb;
+                    float deepBio = smoothstep(${(BIOME_THRESHOLD_BIO + 60.0).toFixed(1)}, ${(BIOME_THRESHOLD_BIO + 180.0).toFixed(1)}, distFromShip);
+                    vec3 pbrBioCol = mix(texture2D(tRoomWallColorAtlas, uvPbrBio).rgb, texture2D(tRoomWallColorAtlas, uvPbrGiger).rgb, deepBio);
+
+                    vec3 pbrRingCol = mix(pbrBunkerCol, pbrCryoCol, cryoMix);
+                    pbrRingCol = mix(pbrRingCol, pbrBioCol, bioMix);
+
+                    // Blend PBR ring skins into unthemed wall diffuse (W1)
+                    finalWallColor = mix(finalWallColor, pbrRingCol, 0.78);
+
                     // Dedicated authored room materials using the 8 PBR texture suites;
                     // unthemed walls (uRoomStyleId == 0) retain biome blending.
                     hbWallEmissive = vec3(0.0);
@@ -3063,6 +3091,21 @@ export class ThreeGame {
                             }
                         }
                         hbWallEmissive = pbrEmiss;
+                    } else {
+                        // Ambient PBR emissive accents per ring (W1): amber (bunker), cyan (cryo), emerald (bio/giger)
+                        vec3 pbrBioEmiss = mix(texture2D(tRoomWallEmissiveAtlas, uvPbrBio).rgb, texture2D(tRoomWallEmissiveAtlas, uvPbrGiger).rgb, deepBio);
+                        vec3 ringEmissAccent = mix(vec3(0.96, 0.55, 0.10) * 0.10, vec3(0.12, 0.82, 0.95) * 0.12, cryoMix);
+                        ringEmissAccent = mix(ringEmissAccent, pbrBioEmiss * 0.80 + vec3(0.06, 0.75, 0.42) * 0.15, bioMix);
+                        hbWallEmissive += ringEmissAccent;
+                    }
+
+                    // W3: Wall tops and trims (darker band where wall meets floor, top cap shading)
+                    if (abs(vWorldNormal.y) <= 0.5) {
+                        float wallBaseDist = clamp(vWorldPos.y * 1.7, 0.0, 1.0);
+                        float trimDarken = smoothstep(0.0, 0.45, wallBaseDist);
+                        finalWallColor *= mix(0.55, 1.0, trimDarken);
+                    } else {
+                        finalWallColor *= 0.88;
                     }
 
                     // Per-tile wear jitter breaks the "one flat slab" read
@@ -3079,6 +3122,12 @@ export class ThreeGame {
                         float bioWallRough = mix(0.22, 0.58, bioMask);
                         hbWallRoughness = mix(bunkerWallRough, cryoWallRough, cryoMix);
                         hbWallRoughness = mix(hbWallRoughness, bioWallRough, bioMix);
+
+                        float pbrBunkerRough = texture2D(tRoomWallRoughAtlas, uvPbrBunker).r;
+                        float pbrCryoRough = texture2D(tRoomWallRoughAtlas, uvPbrCryo).r;
+                        float pbrBioRough = mix(texture2D(tRoomWallRoughAtlas, uvPbrBio).r, texture2D(tRoomWallRoughAtlas, uvPbrGiger).r, deepBio);
+                        float pbrRingRough = mix(pbrBunkerRough, mix(pbrCryoRough, pbrBioRough, bioMix), cryoMix);
+                        hbWallRoughness = mix(hbWallRoughness, pbrRingRough, 0.65);
 
                         // Phase B1: Derived surface normal perturbation from luminance
                         float wallLum = dot(finalWallColor, vec3(0.299, 0.587, 0.114));

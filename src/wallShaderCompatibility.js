@@ -6,8 +6,8 @@ export function fitWallShaderSamplerBudget(shader, maxTextures = 16) {
     if (maxTextures > 16) return;
     delete shader.uniforms.tRoomWallNormalAtlas;
     shader.fragmentShader = shader.fragmentShader
-        .replace('uniform sampler2D tRoomWallNormalAtlas;', '')
-        .replace('texture2D(tRoomWallNormalAtlas, atlasUv).rgb * 2.0 - 1.0', 'vec3(0.0, 0.0, 1.0)');
+        .replace(/uniform sampler2D tRoomWallNormalAtlas;\s*/g, '')
+        .replace(/texture2D\(\s*tRoomWallNormalAtlas\s*,\s*[^)]+\)\.rgb\s*\*\s*2\.0\s*-\s*1\.0/g, 'vec3(0.0, 0.0, 1.0)');
 }
 
 // transformed is still object-local here; the standard worldpos chunk is
