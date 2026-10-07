@@ -114,6 +114,7 @@ import { SongInterstitialController, selectCampInterstitial } from './src/songIn
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
 import { getLocale, setLocale, t, t as i18nT, getAvailableLocales, applyStaticTranslations } from './src/i18n.js';
 import { mountDeferredMarkup, onDeferredMarkupMounted, setDeferredMarkupDecorator, watchDeferredMarkup } from './src/deferredMarkup.js';
+import { planDeckVisibility } from './src/hudDeck.js';
 import { createDeveloperCommentary } from './src/developerCommentary.js';
 import { createVoiceLineLibrary, VOICE_LINES_ROOT } from './src/voiceLines.js';
 import { trackStartupStages } from './src/perfPhases.js';
@@ -4671,6 +4672,19 @@ function updateHudNotificationDeck() {
         card.style.zIndex = String(17090 - index);
         card.classList.toggle('is-top-card', index === 0);
     });
+    // Docked layout: the deck has a height cap, so a card shows whole or
+    // waits its turn, never cut off at the cap (src/hudDeck.js).
+    if (document.documentElement.dataset.hudLayout === 'dock') {
+        cards.forEach((card) => card.classList.remove('is-deck-queued'));
+        const style = getComputedStyle(stack);
+        const available = parseFloat(style.maxHeight);
+        if (Number.isFinite(available)) {
+            const visible = planDeckVisibility(cards.map((card) => card.getBoundingClientRect().height), available, {
+                gap: parseFloat(style.rowGap) || 0
+            });
+            cards.forEach((card, index) => card.classList.toggle('is-deck-queued', !visible[index]));
+        }
+    }
     stack.classList.toggle('has-decked-cards', hasCards);
     document.querySelector('.hud-mission-stack')?.classList.toggle('is-below-notifications', hasCards);
     scheduleTopHudNotificationTimer();
