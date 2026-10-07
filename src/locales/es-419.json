@@ -2022,6 +2022,59 @@
         "unmarked": "PASAJE SIN MARCAR"
       },
       "unscanned": "??? · ESCANEA PARA IDENTIFICAR"
+    },
+    "equipment": {
+      "effect": {
+        "4130": "Los efectos crio duran un 5 % más.",
+        "4131": "Los proyectiles atraviesan +1 objetivo.",
+        "4132": "Daño de esporas y gas −8 %.",
+        "4133": "Cadencia de fuego +8 %.",
+        "4134": "Cargador +1 bala.",
+        "4135": "Detecta rutas y alijos ocultos a 10 m.",
+        "4136": "+5 % de daño a hostiles que no son jefes.",
+        "4137": "Curación recibida +10 %.",
+        "4138": "Radio de atracción de objetos +12 %.",
+        "4139": "Valor de chatarra +10 %.",
+        "4140": "Duración crio +8 %.",
+        "4141": "Radio de atracción de objetos +20 %.",
+        "4142": "Daño de esporas y gas −12 %.",
+        "4143": "Los proyectiles cinéticos atraviesan +1 objetivo.",
+        "4144": "Retraso de recarga del escudo −10 %.",
+        "4145": "Detecta rutas ocultas a 15 m.",
+        "4146": "+15 % de velocidad con menos del 25 % de salud.",
+        "4147": "Cinco bajas rápidas recargan el impulso.",
+        "4160": "+2 de salud máxima; −15 % de velocidad.",
+        "4161": "Los objetos destruidos sueltan chatarra; −10 % de cadencia.",
+        "4162": "+25 % de daño a jefes; −10 % al resto.",
+        "4163": "Los hallazgos de lore dan chatarra; −1 bala de cargador.",
+        "4164": "+1 nivel de rareza de reliquias; −10 % de O₂ máximo.",
+        "4165": "Las reliquias duplicadas se vuelven fragmentos; −15 % de valor de chatarra.",
+        "4166": "El O₂ baja un 25 % más lento; −40 % de curación recibida.",
+        "4167": "Cruzar anillos no cuesta O₂, pero aparece un élite."
+      },
+      "weapon_profile": {
+        "mk1_sidearm": "Perfil de pistola estable y eficiente.",
+        "pulse_carbine": "Pulso rápido de media distancia con menos impacto.",
+        "scatter_rep": "Tres proyectiles de corto alcance por disparo.",
+        "rail_marksman": "Perforador lento y pesado de largo alcance.",
+        "neon_smg": "Alta cadencia con balas más ligeras.",
+        "cryo_lance": "Proyectil criogénico preciso y duradero."
+      },
+      "frame": "Arma de fábrica. Monta un perfil de la Fundición para cambiar cómo dispara.",
+      "cosmetic": "Cosmético: solo cambia el aspecto.",
+      "summary": "QUÉ HACE ESTE EQUIPO",
+      "none": "Aún no hay nada equipado. Elige una ranura.",
+      "change": "Elige una ranura para cambiarla."
+    },
+    "unlock": {
+      "buy_shells": "COMPRAR POR {shells} CASQUILLOS",
+      "slay_the_queen": "SE OBTIENE AL MATAR A LA REINA",
+      "archivist": "SE OBTIENE CON EL LOGRO ARCHIVISTA",
+      "reach_depth": "SE OBTIENE AL LLEGAR A PROFUNDIDAD {depth}",
+      "class_runs": "SE OBTIENE TRAS {runs} PARTIDAS DE {cls}",
+      "achievement": "SE OBTIENE CON UN LOGRO",
+      "confirm_buy": "HAZ CLIC DE NUEVO PARA COMPRAR",
+      "not_enough_shells": "NO TIENES SUFICIENTES CASQUILLOS"
     }
   },
   "narrative": {

@@ -2022,6 +2022,59 @@
         "unmarked": "UNMARKED PASSAGE"
       },
       "unscanned": "??? · SCAN TO IDENTIFY"
+    },
+    "equipment": {
+      "effect": {
+        "4130": "Cryo effects last 5% longer.",
+        "4131": "Projectiles gain +1 pierce.",
+        "4132": "Spore and gas damage −8%.",
+        "4133": "Fire rate +8%.",
+        "4134": "Magazine +1 round.",
+        "4135": "Detects hidden routes and caches within 10 m.",
+        "4136": "+5% damage to non-boss hostiles.",
+        "4137": "Healing received +10%.",
+        "4138": "Pickup magnet radius +12%.",
+        "4139": "Salvage value +10%.",
+        "4140": "Cryo duration +8%.",
+        "4141": "Pickup magnet radius +20%.",
+        "4142": "Spore and gas damage −12%.",
+        "4143": "Kinetic projectiles +1 pierce.",
+        "4144": "Shield recharge delay −10%.",
+        "4145": "Detects hidden routes within 15 m.",
+        "4146": "+15% speed below 25% health.",
+        "4147": "Five rapid kills refund Dash.",
+        "4160": "+2 max health; −15% movement speed.",
+        "4161": "Destroyed props drop salvage; −10% fire rate.",
+        "4162": "+25% boss damage; −10% other damage.",
+        "4163": "Lore drops grant salvage; −1 magazine round.",
+        "4164": "+1 relic rarity tier; −10% max O₂.",
+        "4165": "Duplicate relics become shards; −15% salvage value.",
+        "4166": "O₂ drains 25% slower; −40% healing received.",
+        "4167": "Ring crossings cost no O₂ but spawn an elite."
+      },
+      "weapon_profile": {
+        "mk1_sidearm": "Stable, efficient sidearm profile.",
+        "pulse_carbine": "Fast mid-range pulse with reduced impact.",
+        "scatter_rep": "Three close-range projectiles per shot.",
+        "rail_marksman": "Slow heavy penetrator with extended reach.",
+        "neon_smg": "High fire rate with lighter rounds.",
+        "cryo_lance": "Precise long-life cryogenic projectile."
+      },
+      "frame": "Factory weapon. Fit a Foundry profile to change how it fires.",
+      "cosmetic": "Cosmetic: changes the look only.",
+      "summary": "WHAT THIS LOADOUT DOES",
+      "none": "Nothing fitted yet. Click a slot to choose.",
+      "change": "Click a slot to change it."
+    },
+    "unlock": {
+      "buy_shells": "BUY FOR {shells} SHELLS",
+      "slay_the_queen": "EARNED BY KILLING THE QUEEN",
+      "archivist": "EARNED BY THE ARCHIVIST ACHIEVEMENT",
+      "reach_depth": "EARNED BY REACHING DEPTH {depth}",
+      "class_runs": "EARNED AFTER {runs} {cls} RUNS",
+      "achievement": "EARNED BY AN ACHIEVEMENT",
+      "confirm_buy": "CLICK AGAIN TO BUY",
+      "not_enough_shells": "NOT ENOUGH SHELLS"
     }
   },
   "narrative": {

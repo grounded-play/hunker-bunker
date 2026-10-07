@@ -62,3 +62,10 @@ The owner, 2026-10-06:
   - Achievement rewards, Rig Modules (achievements, depth, shell purchases) and community skins are derived from the saved achievement record and `hb_rig_purchases_v1`, both cleared by a reset.
   - Also fixes a Steam bug: achievement reward skins (5001–5012) were granted with `grantDev`, which is off on the Steam build, so Steam players lost them on reload.
   - The shell purchase button arrives with the slot picker (B).
+- A and B done:
+  - **Cards show what items do:** `src/itemEffects.js`, translated effect lines for every charm, Rig Module and Foundry profile.
+  - **The Foundry LOADOUT tab** gains "What this loadout does".
+  - **Every slot opens a picker:** filled or empty, in the Foundry and on hero select. It's the Armory's own picker in a picker-only mode (`#loadout-picker-modal`), so ownership, locked tiles and equipping follow one set of rules.
+  - **Locked tiles say how to earn them;** shell-priced Rig Modules buy with two clicks.
+  - Tests: `src/itemCard.test.js`, `tests/e2e/loadout-slot-picker.spec.js`.
+

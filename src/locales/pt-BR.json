@@ -2022,6 +2022,59 @@
         "unmarked": "PASSAGEM SEM MARCAÇÃO"
       },
       "unscanned": "??? · ESCANEIE PARA IDENTIFICAR"
+    },
+    "equipment": {
+      "effect": {
+        "4130": "Efeitos crio duram 5% a mais.",
+        "4131": "Projéteis perfuram +1 alvo.",
+        "4132": "Dano de esporos e gás −8%.",
+        "4133": "Cadência de tiro +8%.",
+        "4134": "Carregador +1 bala.",
+        "4135": "Detecta rotas e esconderijos ocultos a 10 m.",
+        "4136": "+5% de dano em hostis que não são chefes.",
+        "4137": "Cura recebida +10%.",
+        "4138": "Raio de atração de itens +12%.",
+        "4139": "Valor de sucata +10%.",
+        "4140": "Duração crio +8%.",
+        "4141": "Raio de atração de itens +20%.",
+        "4142": "Dano de esporos e gás −12%.",
+        "4143": "Projéteis cinéticos perfuram +1 alvo.",
+        "4144": "Atraso de recarga do escudo −10%.",
+        "4145": "Detecta rotas ocultas a 15 m.",
+        "4146": "+15% de velocidade abaixo de 25% de vida.",
+        "4147": "Cinco abates rápidos recarregam o avanço.",
+        "4160": "+2 de vida máxima; −15% de velocidade.",
+        "4161": "Objetos destruídos soltam sucata; −10% de cadência.",
+        "4162": "+25% de dano em chefes; −10% no resto.",
+        "4163": "Achados de lore dão sucata; −1 bala no carregador.",
+        "4164": "+1 nível de raridade de relíquias; −10% de O₂ máximo.",
+        "4165": "Relíquias duplicadas viram fragmentos; −15% de valor de sucata.",
+        "4166": "O₂ cai 25% mais devagar; −40% de cura recebida.",
+        "4167": "Cruzar anéis não custa O₂, mas surge um elite."
+      },
+      "weapon_profile": {
+        "mk1_sidearm": "Perfil de pistola estável e eficiente.",
+        "pulse_carbine": "Pulso rápido de média distância com menos impacto.",
+        "scatter_rep": "Três projéteis de curto alcance por disparo.",
+        "rail_marksman": "Perfurador lento e pesado de longo alcance.",
+        "neon_smg": "Alta cadência com balas mais leves.",
+        "cryo_lance": "Projétil criogênico preciso e duradouro."
+      },
+      "frame": "Arma de fábrica. Instale um perfil da Fundição para mudar como ela atira.",
+      "cosmetic": "Cosmético: muda só a aparência.",
+      "summary": "O QUE ESTE EQUIPAMENTO FAZ",
+      "none": "Nada equipado ainda. Escolha um espaço.",
+      "change": "Escolha um espaço para trocá-lo."
+    },
+    "unlock": {
+      "buy_shells": "COMPRAR POR {shells} CÁPSULAS",
+      "slay_the_queen": "OBTIDO AO MATAR A RAINHA",
+      "archivist": "OBTIDO COM A CONQUISTA ARQUIVISTA",
+      "reach_depth": "OBTIDO AO ALCANÇAR A PROFUNDIDADE {depth}",
+      "class_runs": "OBTIDO APÓS {runs} PARTIDAS DE {cls}",
+      "achievement": "OBTIDO COM UMA CONQUISTA",
+      "confirm_buy": "CLIQUE DE NOVO PARA COMPRAR",
+      "not_enough_shells": "CÁPSULAS INSUFICIENTES"
     }
   },
   "narrative": {

@@ -20,7 +20,7 @@ import { ObjectiveRegistry } from './src/objectiveRegistry.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { ExpeditionReceipt } from './src/economyReceipt.js';
 import { renderReturnManifest } from './src/returnManifest.js';
-import { renderLoadoutStrip } from './src/itemCard.js';
+import { loadoutCardViews, loadoutEffectSummaryHtml, renderLoadoutStrip } from './src/itemCard.js';
 import { FabricatorManager, FAB_RECIPES, getFabricatedOutputIds } from './src/fabricator.js';
 import { createFabricationBay, fabMissingResourceText as fabMissingResourceTextFor } from './src/fabricationBay.js';
 import { ProfileManager, exportSaveCode, importSaveCode, resetAllDataFactory, startNewCampaign } from './src/profile.js';
@@ -13392,16 +13392,7 @@ const foundryHub = createFoundryHub({
         },
         store: () => showVaultPanels(renderStorePanel)
     },
-    renderLoadout: (container) => {
-        if (!container) return;
-        container.innerHTML = `<div class="item-card-strip" id="foundry-hub-loadout-strip"></div><p class="foundry-hub__hint">${t('ui.foundry_hub.loadout_hint')}</p>`;
-        const classId = loadout.activeClassId;
-        const chassisId = loadout.getEquippedChassisSkinId();
-        renderLoadoutStrip(container.querySelector('#foundry-hub-loadout-strip'), loadout.getClassLoadout(classId), {
-            classId,
-            chassisId: loadout.isChassisSupportedForClass(classId, chassisId) ? chassisId : null
-        });
-    },
+    renderLoadout: (container) => renderFoundryLoadout(container),
     onClose: () => finishFabricationSession(),
     log: (event, detail) => debugLog.info('FOUNDRY', `hub-${event}`, detail)
 });
@@ -15014,9 +15005,83 @@ function renderHeroLoadoutStrip(type = activePreviewType) {
     const chassisId = loadout.getEquippedChassisSkinId();
     renderLoadoutStrip(document.getElementById('hero-loadout-strip'), loadout.getClassLoadout(classId), {
         classId,
-        chassisId: loadout.isChassisSupportedForClass(classId, chassisId) ? chassisId : null
+        chassisId: loadout.isChassisSupportedForClass(classId, chassisId) ? chassisId : null,
+        interactive: true
     });
 }
+
+// The Foundry LOADOUT tab (Sprint 51): what each slot does, a summary of the
+// whole loadout, and every slot -- empty ones too -- opens its picker.
+function renderFoundryLoadout(container = document.getElementById('foundry-hub-loadout')) {
+    if (!container) return;
+    const classId = String(loadout.activeClassId ?? 'scout').toLowerCase();
+    const chassisId = loadout.getEquippedChassisSkinId();
+    const options = {
+        classId,
+        chassisId: loadout.isChassisSupportedForClass(classId, chassisId) ? chassisId : null,
+        interactive: true
+    };
+    container.innerHTML = `<div class="item-card-strip" id="foundry-hub-loadout-strip"></div>`
+        + loadoutEffectSummaryHtml(loadoutCardViews(loadout.getClassLoadout(classId), options))
+        + `<p class="foundry-hub__hint">${t('ui.equipment.change')}</p>`;
+    renderLoadoutStrip(container.querySelector('#foundry-hub-loadout-strip'), loadout.getClassLoadout(classId), options);
+}
+
+// One slot picker for the Foundry and the hero screen: the Armory's own
+// (src/armoryUi.js) in picker-only mode, so ownership, locked tiles, unlock
+// hints and equipping all follow the Armory's rules.
+const LOADOUT_SLOT_FIELDS = Object.freeze({ weapon: 'weapon', charm: 'charm', bay_a: 'mod1', bay_b: 'mod2', chassis: 'chassis' });
+let loadoutSlotPicker = null;
+let loadoutPickerReturnFocus = null;
+
+function getLoadoutSlotPicker() {
+    if (loadoutSlotPicker) return loadoutSlotPicker;
+    const host = document.createElement('div');
+    host.id = 'loadout-picker-host';
+    host.className = 'hidden';
+    (document.getElementById('game-viewport') ?? document.body).appendChild(host);
+    loadoutSlotPicker = {
+        host,
+        ui: createArmoryUi({
+            container: host,
+            loadoutManager: loadout,
+            armoryScene: null,
+            ownership: getOwnershipStore(),
+            pickerOnly: true,
+            onEquip: () => {
+                renderHeroLoadoutStrip();
+                if (window.foundryHub?.isOpen?.()) renderFoundryLoadout();
+                if (activePreviewType) void syncHeroPreview(activePreviewType);
+            },
+            onPickerClose: () => {
+                host.classList.add('hidden');
+                loadoutPickerReturnFocus?.focus?.({ preventScroll: true });
+                loadoutPickerReturnFocus = null;
+            }
+        })
+    };
+    return loadoutSlotPicker;
+}
+
+function openLoadoutSlotPicker(slot, classId, returnFocus = null) {
+    const field = LOADOUT_SLOT_FIELDS[slot];
+    if (!field) return;
+    const picker = getLoadoutSlotPicker();
+    loadoutPickerReturnFocus = returnFocus;
+    picker.host.classList.remove('hidden');
+    AudioManager.play('ui_click', { volume: 0.5 });
+    picker.ui.openSlot(field, String(classId ?? loadout.activeClassId ?? 'scout').toLowerCase());
+}
+
+document.addEventListener('click', (event) => {
+    const card = event.target?.closest?.('button.item-card[data-slot]');
+    if (!card) return;
+    if (card.closest('#hero-loadout-strip')) {
+        openLoadoutSlotPicker(card.dataset.slot, activePreviewType ?? loadout.activeClassId, card);
+    } else if (card.closest('#foundry-hub-loadout-strip')) {
+        openLoadoutSlotPicker(card.dataset.slot, loadout.activeClassId, card);
+    }
+});
 
 function syncEquippedWeaponLabel() {
     const titleEl = document.querySelector('#weapon-status-panel .weapon-status-panel__title');

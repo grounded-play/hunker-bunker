@@ -2022,6 +2022,59 @@
         "unmarked": "UNMARKIERTER GANG"
       },
       "unscanned": "??? · ZUM IDENTIFIZIEREN SCANNEN"
+    },
+    "equipment": {
+      "effect": {
+        "4130": "Kryo-Effekte halten 5 % länger.",
+        "4131": "Projektile durchschlagen +1 Ziel.",
+        "4132": "Sporen- und Gasschaden −8 %.",
+        "4133": "Feuerrate +8 %.",
+        "4134": "Magazin +1 Schuss.",
+        "4135": "Entdeckt verborgene Wege und Verstecke im Umkreis von 10 m.",
+        "4136": "+5 % Schaden gegen Gegner, die keine Bosse sind.",
+        "4137": "Erhaltene Heilung +10 %.",
+        "4138": "Aufsammelradius +12 %.",
+        "4139": "Bergungswert +10 %.",
+        "4140": "Kryo-Dauer +8 %.",
+        "4141": "Aufsammelradius +20 %.",
+        "4142": "Sporen- und Gasschaden −12 %.",
+        "4143": "Kinetische Projektile durchschlagen +1 Ziel.",
+        "4144": "Schild-Aufladeverzögerung −10 %.",
+        "4145": "Entdeckt verborgene Wege im Umkreis von 15 m.",
+        "4146": "+15 % Tempo unter 25 % Gesundheit.",
+        "4147": "Fünf schnelle Kills erstatten den Dash.",
+        "4160": "+2 max. Gesundheit; −15 % Bewegungstempo.",
+        "4161": "Zerstörte Objekte lassen Bergungsgut fallen; −10 % Feuerrate.",
+        "4162": "+25 % Bossschaden; −10 % sonstiger Schaden.",
+        "4163": "Lore-Funde gewähren Bergungsgut; −1 Magazinschuss.",
+        "4164": "+1 Relikt-Seltenheitsstufe; −10 % max. O₂.",
+        "4165": "Doppelte Relikte werden zu Splittern; −15 % Bergungswert.",
+        "4166": "O₂ sinkt 25 % langsamer; −40 % erhaltene Heilung.",
+        "4167": "Ringübergänge kosten kein O₂, rufen aber einen Elitegegner."
+      },
+      "weapon_profile": {
+        "mk1_sidearm": "Stabiles, effizientes Seitenwaffenprofil.",
+        "pulse_carbine": "Schneller Mitteldistanz-Puls mit weniger Wucht.",
+        "scatter_rep": "Drei Nahbereichsprojektile pro Schuss.",
+        "rail_marksman": "Langsamer, schwerer Durchschlag mit großer Reichweite.",
+        "neon_smg": "Hohe Feuerrate mit leichteren Geschossen.",
+        "cryo_lance": "Präzises, langlebiges Kryo-Projektil."
+      },
+      "frame": "Werkswaffe. Ein Foundry-Profil ändert, wie sie feuert.",
+      "cosmetic": "Kosmetisch: ändert nur das Aussehen.",
+      "summary": "WAS DIESE AUSRÜSTUNG BEWIRKT",
+      "none": "Noch nichts angelegt. Wähle einen Platz aus.",
+      "change": "Wähle einen Platz, um ihn zu ändern."
+    },
+    "unlock": {
+      "buy_shells": "FÜR {shells} HÜLSEN KAUFEN",
+      "slay_the_queen": "FREIGESCHALTET DURCH DEN SIEG ÜBER DIE KÖNIGIN",
+      "archivist": "FREIGESCHALTET DURCH DEN ERFOLG „ARCHIVAR“",
+      "reach_depth": "FREIGESCHALTET AB TIEFE {depth}",
+      "class_runs": "FREIGESCHALTET NACH {runs} {cls}-EINSÄTZEN",
+      "achievement": "FREIGESCHALTET DURCH EINEN ERFOLG",
+      "confirm_buy": "ZUM KAUFEN ERNEUT KLICKEN",
+      "not_enough_shells": "NICHT GENUG HÜLSEN"
     }
   },
   "narrative": {

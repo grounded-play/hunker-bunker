@@ -658,7 +658,7 @@
 }
 
 /* ── Equal Cards Sized by calculatePickerLayout ───────────────────── */
-#armory-picker-modal .armory-picker-modal-content {
+:is(#armory-picker-modal, #loadout-picker-modal) .armory-picker-modal-content {
   width: fit-content;
   max-width: calc(100vw - 48px);
   max-height: calc(100vh - 32px);
@@ -671,24 +671,24 @@
   border: 1px solid var(--armory-accent, #00e5ff) !important;
 }
 
-#armory-picker-modal .armory-picker-title {
+:is(#armory-picker-modal, #loadout-picker-modal) .armory-picker-title {
   font-size: calc(var(--font-sm) * 1.1);
   line-height: 1.2;
   padding-right: 32px;
 }
 
-#armory-picker-modal .armory-picker-subtitle {
+:is(#armory-picker-modal, #loadout-picker-modal) .armory-picker-subtitle {
   font-size: calc(var(--font-xs) * 0.72);
   margin: calc(var(--vu) * 0.8) 0 calc(var(--vu) * 1.6);
   line-height: 1.3;
 }
 
-#armory-picker-modal .armory-picker {
+:is(#armory-picker-modal, #loadout-picker-modal) .armory-picker {
   gap: calc(var(--vu) * 0.8);
   grid-template-columns: repeat(var(--picker-cols), calc(var(--picker-art) + 12px));
 }
 
-#armory-picker-modal .armory-tile {
+:is(#armory-picker-modal, #loadout-picker-modal) .armory-tile {
   padding: calc(var(--vu) * 0.5);
   gap: calc(var(--vu) * 0.5);
   min-width: 0;
@@ -697,24 +697,24 @@
   border-radius: 4px;
 }
 
-#armory-picker-modal .armory-tile__art {
+:is(#armory-picker-modal, #loadout-picker-modal) .armory-tile__art {
   width: var(--picker-art);
   height: var(--picker-art);
   aspect-ratio: auto;
 }
 
-#armory-picker-modal .armory-tile__name {
+:is(#armory-picker-modal, #loadout-picker-modal) .armory-tile__name {
   height: calc(var(--vu) * 3);
   min-height: calc(var(--vu) * 3);
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
 
-#armory-picker-modal .armory-tile__badge {
+:is(#armory-picker-modal, #loadout-picker-modal) .armory-tile__badge {
   font-size: calc(var(--font-xs) * 0.5);
 }
 
-#armory-picker-modal .armory-picker-readout {
+:is(#armory-picker-modal, #loadout-picker-modal) .armory-picker-readout {
   max-width: 100%;
   min-height: calc(var(--vu) * 4);
   gap: calc(var(--vu) * 0.8);
@@ -735,11 +735,11 @@
   font-size: calc(var(--font-xs) * 0.65);
 }
 
-#armory-picker-modal .armory-tile.is-selected {
+:is(#armory-picker-modal, #loadout-picker-modal) .armory-tile.is-selected {
   border-color: var(--armory-accent, #00e5ff);
 }
 
-#armory-picker-modal .armory-tile__swatch {
+:is(#armory-picker-modal, #loadout-picker-modal) .armory-tile__swatch {
   background: linear-gradient(140deg, #ffffff55, transparent 45%, #00000099), var(--tile-swatch);
 }
 
@@ -747,7 +747,7 @@
   justify-content: center;
 }
 
-#armory-picker-modal .close-modal {
+:is(#armory-picker-modal, #loadout-picker-modal) .close-modal {
   top: 12px;
   right: 12px;
   width: 28px;
@@ -775,7 +775,30 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #armory-picker-modal .armory-tile, #armory-screen .armory-slot {
+  :is(#armory-picker-modal, #loadout-picker-modal) .armory-tile, #armory-screen .armory-slot {
     transition: none;
   }
+}
+
+/* ── Loadout picker outside the Armory (Sprint 51) ────────────────────
+   The Foundry LOADOUT tab and the hero screen open the Armory's own slot
+   picker through a picker-only instance: only its modal shows, above the
+   Foundry hub (both are .modal layers; the host comes later in the DOM). */
+#loadout-picker-host {
+  position: absolute;
+  inset: 0;
+  z-index: 100001;
+  pointer-events: none;
+}
+
+#loadout-picker-host.hidden {
+  display: none;
+}
+
+.armory-ui--picker-only > :not(.armory-picker-modal) {
+  display: none !important;
+}
+
+#loadout-picker-host .armory-picker-modal {
+  pointer-events: auto;
 }
