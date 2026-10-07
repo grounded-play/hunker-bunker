@@ -2125,6 +2125,19 @@
         "1": "昨夜、壁がもたなかった。あるもので継ぎ当てしてる。",
         "2": "仲間が二人戻らなかった。お願い、守りを固めるのを手伝って。"
       }
+    },
+    "input_hint": {
+      "pad": {
+        "map_pan": "[左スティック / 十字キー] 移動",
+        "map_zoom": "[LB / RB] ズーム",
+        "map_operator": "[A] オペレーター",
+        "map_close": "[B] / [VIEW] 閉じる",
+        "dialogue_choose": "十字キーで選択 • [A] 決定 • [B] 退く",
+        "compass_map": "[VIEW]",
+        "radar_scan": "レーダースキャン [LB]",
+        "armory_cycle": "[LB / RB 切替]",
+        "menu_back": "[B]"
+      }
     }
   },
   "narrative": {

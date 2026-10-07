@@ -2125,6 +2125,19 @@
         "1": "The wall did not hold last night. We are patching it with whatever we have.",
         "2": "Two of ours did not make it back in. Please, help us shore this up."
       }
+    },
+    "input_hint": {
+      "pad": {
+        "map_pan": "[L-STICK / D-PAD] PAN",
+        "map_zoom": "[LB / RB] ZOOM",
+        "map_operator": "[A] OPERATOR",
+        "map_close": "[B] / [VIEW] CLOSE",
+        "dialogue_choose": "D-PAD TO CHOOSE • [A] SELECT • [B] WITHDRAW",
+        "compass_map": "[VIEW]",
+        "radar_scan": "Radar Scan [LB]",
+        "armory_cycle": "[LB / RB CYCLE]",
+        "menu_back": "[B]"
+      }
     }
   },
   "narrative": {

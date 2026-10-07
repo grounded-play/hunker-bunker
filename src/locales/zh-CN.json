@@ -2125,6 +2125,19 @@
         "1": "昨晚墙没撑住。我们正用手头的一切修补。",
         "2": "我们有两个人没回来。求你，帮我们把这里加固。"
       }
+    },
+    "input_hint": {
+      "pad": {
+        "map_pan": "[左摇杆 / 方向键] 平移",
+        "map_zoom": "[LB / RB] 缩放",
+        "map_operator": "[A] 操作员",
+        "map_close": "[B] / [VIEW] 关闭",
+        "dialogue_choose": "方向键选择 • [A] 确认 • [B] 撤退",
+        "compass_map": "[VIEW]",
+        "radar_scan": "雷达扫描 [LB]",
+        "armory_cycle": "[LB / RB 切换]",
+        "menu_back": "[B]"
+      }
     }
   },
   "narrative": {

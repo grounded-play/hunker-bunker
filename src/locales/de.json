@@ -2125,6 +2125,19 @@
         "1": "Die Mauer hat letzte Nacht nicht gehalten. Wir flicken sie mit allem, was wir haben.",
         "2": "Zwei von uns sind nicht zurückgekommen. Bitte hilf uns, das zu befestigen."
       }
+    },
+    "input_hint": {
+      "pad": {
+        "map_pan": "[L-STICK / STEUERKREUZ] SCHWENKEN",
+        "map_zoom": "[LB / RB] ZOOM",
+        "map_operator": "[A] OPERATOR",
+        "map_close": "[B] / [VIEW] SCHLIESSEN",
+        "dialogue_choose": "STEUERKREUZ ZUM WÄHLEN • [A] AUSWÄHLEN • [B] ZURÜCKZIEHEN",
+        "compass_map": "[VIEW]",
+        "radar_scan": "Radarscan [LB]",
+        "armory_cycle": "[LB / RB WECHSELN]",
+        "menu_back": "[B]"
+      }
     }
   },
   "narrative": {

@@ -807,6 +807,7 @@ export function createArmoryUi({
         // while a non-English locale is active is localised immediately. Later
         // locale changes are picked up by the global locale-changed listener.
         applyStaticTranslations(container);
+        globalThis.applyInputHints?.(container);
 
         bindEvents();
         if (pickerOnly) {

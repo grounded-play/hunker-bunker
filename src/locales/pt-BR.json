@@ -2125,6 +2125,19 @@
         "1": "O muro não aguentou ontem à noite. Estamos remendando com o que temos.",
         "2": "Dois dos nossos não voltaram. Por favor, ajude a reforçar isto aqui."
       }
+    },
+    "input_hint": {
+      "pad": {
+        "map_pan": "[ANALÓGICO ESQ. / D-PAD] MOVER",
+        "map_zoom": "[LB / RB] ZOOM",
+        "map_operator": "[A] OPERADOR",
+        "map_close": "[B] / [VIEW] FECHAR",
+        "dialogue_choose": "D-PAD PARA ESCOLHER • [A] SELECIONAR • [B] RECUAR",
+        "compass_map": "[VIEW]",
+        "radar_scan": "Varredura de radar [LB]",
+        "armory_cycle": "[LB / RB ALTERNAR]",
+        "menu_back": "[B]"
+      }
     }
   },
   "narrative": {

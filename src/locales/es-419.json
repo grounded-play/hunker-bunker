@@ -2125,6 +2125,19 @@
         "1": "El muro no aguantó anoche. Lo estamos parchando con lo que tenemos.",
         "2": "Dos de los nuestros no volvieron. Por favor, ayúdanos a reforzar esto."
       }
+    },
+    "input_hint": {
+      "pad": {
+        "map_pan": "[STICK IZQ. / CRUCETA] MOVER",
+        "map_zoom": "[LB / RB] ZOOM",
+        "map_operator": "[A] OPERADOR",
+        "map_close": "[B] / [VIEW] CERRAR",
+        "dialogue_choose": "CRUCETA PARA ELEGIR • [A] SELECCIONAR • [B] RETIRARSE",
+        "compass_map": "[VIEW]",
+        "radar_scan": "Escaneo de radar [LB]",
+        "armory_cycle": "[LB / RB CAMBIAR]",
+        "menu_back": "[B]"
+      }
     }
   },
   "narrative": {

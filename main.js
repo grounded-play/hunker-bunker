@@ -80,6 +80,7 @@ import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSprite
 import { clearChromaGreen, repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { PRESENTATION_LAYER_SELECTOR, isPresentationMutation } from './src/presentationLayer.js';
 import { resolveAmmoPickup } from './src/ammoSurplus.js';
+import { applyInputHints } from './src/inputHints.js';
 import { computeProgressionUnlocks, loadRigPurchases } from './src/progressionUnlocks.js';
 import { createArmoryUi } from './src/armoryUi.js';
 import { initSteamVaultUI, isVaultExchangeAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, renderStorePanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
@@ -674,6 +675,9 @@ window.HunkerTriggerBoot = () => {
     }
 };
 
+// Re-apply keyboard/pad hint text to freshly rendered markup (src/inputHints.js).
+window.applyInputHints = (root = document) => applyInputHints(root, isSteamControllerInputActive(), t);
+
 window.HunkerInputState = {
     getPromptKeyText,
     isControllerPrompt: () => isSteamControllerInputActive(),
@@ -784,6 +788,7 @@ function setLastInputMode(mode, { refresh = true } = {}) {
     }
 
     if (changed && refresh) refreshInteractivePromptKeys();
+    if (changed) applyInputHints(document, isController, t);
     if (changed && isController) ensureControllerMenuFocus();
     if (changed) {
         debugLog.info('INPUT', 'input-mode-changed', {
@@ -2319,8 +2324,11 @@ function handleSteamMenuInput(actions) {
             tacticalMapState.panX -= panX * 7;
             tacticalMapState.panY -= panY * 7;
         }
-        if (actions.menuTabLeft) adjustTacticalMapZoom(-0.02);
-        if (actions.menuTabRight) adjustTacticalMapZoom(0.02);
+        // The menu actions are named tabLeft/tabRight; reading menuTab* here
+        // meant controller zoom never worked on the map (Sprint 51).
+        if (actions.tabLeft || actions.menuTabLeft) adjustTacticalMapZoom(-0.25);
+        if (actions.tabRight || actions.menuTabRight) adjustTacticalMapZoom(0.25);
+        if (actions.confirm) focusTacticalMapOnPlayer();
         return;
     }
 
