@@ -1,6 +1,6 @@
 # Sprint 53 — A world that varies, names itself, goes dark, and sleeps
 
-Status: **plan for owner review**, nothing started. Branch: `dev/sprint-51` (local only).
+Status: **approved 2026-10-07** ("all correct proceed"), in progress. Branch: `dev/sprint-51` (local only).
 
 ## The owner, 2026-10-07
 
@@ -497,13 +497,14 @@ Each style has three keyframe stills (for image-to-video, or for `npm run cinema
 6. **V5–V7, filler, mystery boxes, quest objects.** Systems first, wired to existing models; each model is swapped in as it arrives from the A list.
 7. **S, sleep cutscenes.** Wiring and reset first, with a black-fade placeholder until the videos arrive.
 
-## Decisions for you
+## Decisions (owner, 2026-10-07: "all correct proceed")
 
-1. **Night darkness:** is a ~20% ambient night right, or darker still (key-art black, the suit light only)?
-2. **Mystery boxes:** are the ambush (10%) and hazard (5%) rolls in, or loot and lore only?
-3. **Geyser heat damage:** in, or cosmetic only?
-4. **Hallway title cards:** a small card each time, or rooms only (hallways named in the corner line)?
-5. **Sleep cutscene length:** 6–8 s every rest, or the full video the first time and a 2 s fade after?
+The plan as written:
+1. Night is about 20% ambient.
+2. Mystery boxes include ambush (10%) and hazard (5%) rolls.
+3. Geysers deal brief, telegraphed heat damage.
+4. Hallways get a small card; rooms get the larger one.
+5. The full 6–8 s sleep cutscene plays on every rest, and is skippable.
 
 ## Verification
 
