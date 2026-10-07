@@ -1,4 +1,5 @@
 import { LocalVaultLedger } from './localVaultLedger.js';
+import { mountDeferredMarkup, onDeferredMarkupMounted } from './deferredMarkup.js';
 /**
  * Steam Vault & Store UI Frontend Implementation
  * Extracted from main.js for modular UI architecture.
@@ -203,6 +204,7 @@ export function openSteamVaultModal() {
         window.hbLog('STEAM', 'info', 'Steam Vault modal opened');
     }
     initSteamVaultUI();
+    ensureVaultMarkup();
     const modal = document.getElementById('steam-vault-modal');
     if (!modal) return;
     modal.classList.remove('hidden');
@@ -377,9 +379,23 @@ export function renderSteamMilestoneGrants(grants = []) {
     grantNote.classList.remove('hidden');
 }
 
+// The Vault's markup is built on first open (src/deferredMarkup.js). Every
+// path that shows or animates it builds it first.
+function ensureVaultMarkup() {
+    if (typeof document !== 'undefined') mountDeferredMarkup('steam-vault-modal');
+}
+
+// Whether the Store tab shows: decided by the store catalog, which loads at
+// boot, before the tab itself may exist.
+let storeTabVisible = true;
+export function isVaultStoreAvailable() {
+    return storeTabVisible;
+}
+
+let vaultMarkupWiringRegistered = false;
+
 export function initSteamVaultUI() {
     const vaultBtn = document.getElementById('steam-vault-btn');
-    const closeBtn = document.getElementById('close-steam-vault-modal');
     const modal = document.getElementById('steam-vault-modal');
 
     if (!modal) return;
@@ -387,6 +403,7 @@ export function initSteamVaultUI() {
     if (vaultBtn && !vaultBtn.dataset.bound) {
         vaultBtn.dataset.bound = 'true';
         vaultBtn.addEventListener('click', async () => {
+            ensureVaultMarkup();
             modal.classList.remove('hidden');
             modal.setAttribute('aria-hidden', 'false');
             if (typeof window.showDeveloperCommentary === 'function') {
@@ -401,11 +418,6 @@ export function initSteamVaultUI() {
         modal.setAttribute('aria-hidden', 'true');
     };
 
-    if (closeBtn && !closeBtn.dataset.bound) {
-        closeBtn.dataset.bound = 'true';
-        closeBtn.addEventListener('click', closeModal);
-    }
-
     if (!modal.dataset.escBound) {
         modal.dataset.escBound = 'true';
         window.addEventListener('keydown', (e) => {
@@ -416,6 +428,9 @@ export function initSteamVaultUI() {
                 closeModal();
                 return;
             }
+            const tabInventory = document.getElementById('vault-tab-inventory');
+            const tabStore = document.getElementById('vault-tab-store');
+            const tabSmelter = document.getElementById('vault-tab-smelter');
             if (e.code === 'KeyQ') {
                 e.preventDefault();
                 const tabs = [tabInventory, tabStore, tabSmelter].filter((tab) => tab && !tab.classList.contains('hidden'));
@@ -437,9 +452,41 @@ export function initSteamVaultUI() {
         });
     }
 
-    if (typeof window.setupClickOutside === 'function') {
+    if (typeof window.setupClickOutside === 'function' && !modal.dataset.clickOutsideBound) {
+        modal.dataset.clickOutsideBound = 'true';
         window.setupClickOutside('steam-vault-modal', closeModal);
     }
+
+    // The Store tab shows whenever keys can actually be bought: through
+    // Steam's hosted Item Store (Steam Inventory items; Steam runs checkout
+    // and the Wallet) or the Microtransactions checkout. With neither, it is
+    // removed, so no priced surface appears that can't complete a purchase.
+    // Re-checked on every open; applied to the tab whenever it exists.
+    loadStoreCatalog().then(() => {
+        storeTabVisible = Boolean(storePurchasesEnabled || hostedItemStoreEnabled());
+        applyStoreVisibility();
+    }).catch(() => {
+        storeTabVisible = false;
+        applyStoreVisibility();
+    });
+
+    if (vaultMarkupWiringRegistered) return;
+    vaultMarkupWiringRegistered = true;
+    onDeferredMarkupMounted('steam-vault-modal', () => wireVaultMarkup({ closeModal }));
+}
+
+function applyStoreVisibility() {
+    const tabStore = document.getElementById('vault-tab-store');
+    const storeLayout = document.getElementById('vault-store-layout');
+    tabStore?.classList.toggle('hidden', !storeTabVisible);
+    if (!storeTabVisible) {
+        storeLayout?.classList.add('hidden');
+        if (tabStore?.classList.contains('active')) document.getElementById('vault-tab-inventory')?.click();
+    }
+}
+
+function wireVaultMarkup({ closeModal }) {
+    document.getElementById('close-steam-vault-modal')?.addEventListener('click', closeModal);
 
     const tabInventory = document.getElementById('vault-tab-inventory');
     const tabStore = document.getElementById('vault-tab-store');
@@ -454,22 +501,6 @@ export function initSteamVaultUI() {
         activeBtn?.classList.add('active');
         activeLayout?.classList.remove('hidden');
     };
-
-    // The Store tab shows whenever keys can actually be bought: through
-    // Steam's hosted Item Store (Steam Inventory items; Steam runs checkout
-    // and the Wallet) or the Microtransactions checkout. With neither, it is
-    // removed, so no priced surface appears that can't complete a purchase.
-    loadStoreCatalog().then(() => {
-        const storeVisible = storePurchasesEnabled || hostedItemStoreEnabled();
-        tabStore?.classList.toggle('hidden', !storeVisible);
-        if (!storeVisible) {
-            storeLayout?.classList.add('hidden');
-            if (tabStore?.classList.contains('active')) activateTab(tabInventory, inventoryLayout);
-        }
-    }).catch(() => {
-        tabStore?.classList.add('hidden');
-        storeLayout?.classList.add('hidden');
-    });
 
     tabInventory?.addEventListener('click', () => {
         activateTab(tabInventory, inventoryLayout);
@@ -492,6 +523,7 @@ export function initSteamVaultUI() {
         if (!window.electronAPI?.openSteamOverlayToUrl) return;
         window.electronAPI.openSteamOverlayToUrl('https://steamcommunity.com/market/search?appid=4957040');
     });
+    applyStoreVisibility();
 }
 
 function isMarketEligibilityAllowed(result) {
@@ -1002,6 +1034,7 @@ export function renderOddsTable() {
 }
 
 export async function purchaseKeys(sku) {
+    ensureVaultMarkup();
     const skuInfo = storeCatalog?.find((row) => row.sku === sku);
     if (!storePurchasesEnabled || !skuInfo) {
         showStorePurchaseStatus({ key: 'offline', tone: 'error' });
@@ -1196,6 +1229,7 @@ function mountRevealOverlay(overlay) {
 }
 
 export function playCacheRevealAnimation(openingOrReward, onClaim) {
+    ensureVaultMarkup();
     const overlay = document.getElementById('vault-reveal-overlay');
     const titleEl = document.getElementById('vault-reveal-title');
     const statusEl = document.getElementById('vault-reveal-status');
@@ -1723,6 +1757,7 @@ function handleDispensaryRedeem(targetItemdefid) {
 }
 
 export async function openDeepRelicCache() {
+    ensureVaultMarkup();
     if (cacheOpeningBusy) return;
     cacheOpeningBusy = true;
     if (!window.electronAPI?.openSteamCache && isDevInfiniteCacheMode()) {

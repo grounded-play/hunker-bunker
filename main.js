@@ -83,7 +83,7 @@ import { resolveAmmoPickup } from './src/ammoSurplus.js';
 import { applyInputHints } from './src/inputHints.js';
 import { computeProgressionUnlocks, loadRigPurchases } from './src/progressionUnlocks.js';
 import { createArmoryUi } from './src/armoryUi.js';
-import { initSteamVaultUI, isVaultExchangeAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, renderStorePanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
+import { initSteamVaultUI, isVaultExchangeAvailable, isVaultStoreAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, renderStorePanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
 import { createFoundryHub, isFoundryHubEnabled } from './src/foundryHub.js';
 import { initSeasonPassUI, cancelXpFeedback, beginSeasonRun, getSeasonRunSummary, openSeasonPassModal, seasonPass } from './src/seasonPassUi.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
@@ -112,7 +112,8 @@ import { getResolution, previewCampLeaderLinchpin } from './src/storyLinchpins.j
 import { buildEndingArchive, getLeaderReaction } from './src/storyArchive.js';
 import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
-import { getLocale, setLocale, t, t as i18nT, getAvailableLocales } from './src/i18n.js';
+import { getLocale, setLocale, t, t as i18nT, getAvailableLocales, applyStaticTranslations } from './src/i18n.js';
+import { mountDeferredMarkup, onDeferredMarkupMounted, setDeferredMarkupDecorator, watchDeferredMarkup } from './src/deferredMarkup.js';
 import { createDeveloperCommentary } from './src/developerCommentary.js';
 import { createVoiceLineLibrary, VOICE_LINES_ROOT } from './src/voiceLines.js';
 import { trackStartupStages } from './src/perfPhases.js';
@@ -677,6 +678,15 @@ window.HunkerTriggerBoot = () => {
 
 // Re-apply keyboard/pad hint text to freshly rendered markup (src/inputHints.js).
 window.applyInputHints = (root = document) => applyInputHints(root, isSteamControllerInputActive(), t);
+
+// Screens built on first open (src/deferredMarkup.js) get the same
+// translation and hint pass the boot gave everything else.
+setDeferredMarkupDecorator((root) => {
+    applyStaticTranslations(root);
+    window.applyInputHints(root);
+});
+watchDeferredMarkup();
+window.mountDeferredMarkup = mountDeferredMarkup;
 
 window.HunkerInputState = {
     getPromptKeyText,
@@ -10992,7 +11002,6 @@ function populateDevAchievementDropdowns() {
 document.getElementById('debug-open-console')?.addEventListener('click', openDevConsoleModal);
 document.getElementById('debug-launch-rgb')?.addEventListener('click', () => launchRgb());
 document.getElementById('debug-open-showroom')?.addEventListener('click', () => openDebugShowroom());
-document.getElementById('dev-btn-open-showroom')?.addEventListener('click', () => openDebugShowroom());
 document.getElementById('debug-achievement-select')?.addEventListener('change', (e) => {
     const key = e.target.value;
     if (key) {
@@ -11002,122 +11011,126 @@ document.getElementById('debug-achievement-select')?.addEventListener('change', 
     }
 });
 
-document.getElementById('close-dev-console')?.addEventListener('click', closeDevConsoleModal);
-
-document.getElementById('dev-btn-unlock-ach')?.addEventListener('click', () => {
-    const select = document.getElementById('dev-ach-dropdown');
-    if (select?.value) {
-        const res = devUnlockAchievement(select.value);
-        logDevConsole(res, 'success');
-    } else {
-        logDevConsole('Please select an achievement from the dropdown.', 'error');
-    }
-});
 document.getElementById('debug-unlock-all-ach')?.addEventListener('click', () => {
     const res = devUnlockAllAchievements();
     showBiomePrompt(`> DEBUG: ${res}`);
 });
+
 document.getElementById('debug-unlock-all-codex')?.addEventListener('click', () => {
     const res = devUnlockAllCodex();
     showBiomePrompt(`> DEBUG: ${res}`);
 });
+
 document.getElementById('debug-unlock-all-skins')?.addEventListener('click', () => {
     const res = devSetCosmeticUnlockAll('1');
     showBiomePrompt(`> DEBUG: ${res}`);
 });
-document.getElementById('dev-btn-unlock-all-ach')?.addEventListener('click', () => {
-    const res = devUnlockAllAchievements();
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-btn-unlock-all-codex')?.addEventListener('click', () => {
-    const res = devUnlockAllCodex();
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-btn-unlock-all-skins')?.addEventListener('click', () => {
-    const res = devSetCosmeticUnlockAll('1');
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-btn-reset-save')?.addEventListener('click', () => {
-    closeDevConsoleModal();
-    openFullSaveResetConfirm();
-});
-document.getElementById('dev-btn-launch-rgb')?.addEventListener('click', () => {
-    const res = devLaunchRgb();
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-btn-jump-rgb-chapter')?.addEventListener('click', () => {
-    const select = document.getElementById('dev-rgb-chapter-select');
-    const res = devLaunchRgb(select?.value || null);
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-btn-god')?.addEventListener('click', () => {
-    const res = devToggleGodMode();
-    logDevConsole(res, 'system');
-});
-document.getElementById('dev-btn-noclip')?.addEventListener('click', () => {
-    const res = devToggleNoclip();
-    logDevConsole(res, 'system');
-});
-document.getElementById('dev-btn-open-nexus')?.addEventListener('click', () => {
-    closeDevConsoleModal();
-    openQaNexusModal();
-});
-document.getElementById('dev-btn-open-museum')?.addEventListener('click', () => {
-    closeDevConsoleModal();
-    logDevConsole('Opening Debug Museum at (9000, 9000)...', 'system');
-    void window.__DEBUG__.openMuseum();
-});
-document.getElementById('dev-tp-select')?.addEventListener('change', (e) => {
-    const target = e.target.value;
-    if (!target) return;
-    executeDevCommand(`tp ${target}`);
-    e.target.value = '';
-});
-document.getElementById('dev-btn-resources')?.addEventListener('click', () => {
-    const res = devGrantResources();
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-btn-heal')?.addEventListener('click', () => {
-    const res = devHealPlayer();
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-btn-nuke')?.addEventListener('click', () => {
-    const res = devKillSnails();
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-res-select')?.addEventListener('change', (e) => {
-    const res = devSetResolution(e.target.value);
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-uiscale-select')?.addEventListener('change', (e) => {
-    const res = devSetUiScale(e.target.value);
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-textfloor-select')?.addEventListener('change', (e) => {
-    const res = devSetTextFloor(e.target.value);
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-btn-layout')?.addEventListener('click', () => {
-    const res = devGetLayoutMetrics();
-    logDevConsole(res, 'system');
-});
 
-const devConsoleInput = document.getElementById('dev-console-input');
-const devConsoleSubmit = document.getElementById('dev-console-submit');
-
-devConsoleSubmit?.addEventListener('click', () => {
-    if (devConsoleInput) {
-        executeDevCommand(devConsoleInput.value);
-        devConsoleInput.value = '';
-    }
-});
-
-devConsoleInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        executeDevCommand(devConsoleInput.value);
-        devConsoleInput.value = '';
-    }
+// The legacy dev console modal is built on first open (src/deferredMarkup.js);
+// the tilde console (src/debugConsole.js) is what openDevConsoleModal shows.
+onDeferredMarkupMounted('dev-console-modal', () => {
+    document.getElementById('dev-btn-open-showroom')?.addEventListener('click', () => openDebugShowroom());
+    document.getElementById('close-dev-console')?.addEventListener('click', closeDevConsoleModal);
+    document.getElementById('dev-btn-unlock-ach')?.addEventListener('click', () => {
+        const select = document.getElementById('dev-ach-dropdown');
+        if (select?.value) {
+            const res = devUnlockAchievement(select.value);
+            logDevConsole(res, 'success');
+        } else {
+            logDevConsole('Please select an achievement from the dropdown.', 'error');
+        }
+    });
+    document.getElementById('dev-btn-unlock-all-ach')?.addEventListener('click', () => {
+        const res = devUnlockAllAchievements();
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-btn-unlock-all-codex')?.addEventListener('click', () => {
+        const res = devUnlockAllCodex();
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-btn-unlock-all-skins')?.addEventListener('click', () => {
+        const res = devSetCosmeticUnlockAll('1');
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-btn-reset-save')?.addEventListener('click', () => {
+        closeDevConsoleModal();
+        openFullSaveResetConfirm();
+    });
+    document.getElementById('dev-btn-launch-rgb')?.addEventListener('click', () => {
+        const res = devLaunchRgb();
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-btn-jump-rgb-chapter')?.addEventListener('click', () => {
+        const select = document.getElementById('dev-rgb-chapter-select');
+        const res = devLaunchRgb(select?.value || null);
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-btn-god')?.addEventListener('click', () => {
+        const res = devToggleGodMode();
+        logDevConsole(res, 'system');
+    });
+    document.getElementById('dev-btn-noclip')?.addEventListener('click', () => {
+        const res = devToggleNoclip();
+        logDevConsole(res, 'system');
+    });
+    document.getElementById('dev-btn-open-nexus')?.addEventListener('click', () => {
+        closeDevConsoleModal();
+        openQaNexusModal();
+    });
+    document.getElementById('dev-btn-open-museum')?.addEventListener('click', () => {
+        closeDevConsoleModal();
+        logDevConsole('Opening Debug Museum at (9000, 9000)...', 'system');
+        void window.__DEBUG__.openMuseum();
+    });
+    document.getElementById('dev-tp-select')?.addEventListener('change', (e) => {
+        const target = e.target.value;
+        if (!target) return;
+        executeDevCommand(`tp ${target}`);
+        e.target.value = '';
+    });
+    document.getElementById('dev-btn-resources')?.addEventListener('click', () => {
+        const res = devGrantResources();
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-btn-heal')?.addEventListener('click', () => {
+        const res = devHealPlayer();
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-btn-nuke')?.addEventListener('click', () => {
+        const res = devKillSnails();
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-res-select')?.addEventListener('change', (e) => {
+        const res = devSetResolution(e.target.value);
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-uiscale-select')?.addEventListener('change', (e) => {
+        const res = devSetUiScale(e.target.value);
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-textfloor-select')?.addEventListener('change', (e) => {
+        const res = devSetTextFloor(e.target.value);
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-btn-layout')?.addEventListener('click', () => {
+        const res = devGetLayoutMetrics();
+        logDevConsole(res, 'system');
+    });
+    const devConsoleInput = document.getElementById('dev-console-input');
+    const devConsoleSubmit = document.getElementById('dev-console-submit');
+    devConsoleSubmit?.addEventListener('click', () => {
+        if (devConsoleInput) {
+            executeDevCommand(devConsoleInput.value);
+            devConsoleInput.value = '';
+        }
+    });
+    devConsoleInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            executeDevCommand(devConsoleInput.value);
+            devConsoleInput.value = '';
+        }
+    });
 });
 
 if (fpsDisplay) {
@@ -11876,6 +11889,7 @@ function updatePlayerTradeUi(state) {
         return;
     }
 
+    mountDeferredMarkup('player-trade-modal');
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
 
@@ -11940,44 +11954,47 @@ function setupPlayerTradeEvents() {
 
     playerTradeManager.onStateChanged = updatePlayerTradeUi;
 
-    // Local Steppers
-    const bindStepper = (minusId, plusId, key, step, maxSupplier) => {
-        document.getElementById(minusId)?.addEventListener('click', () => {
-            const current = playerTradeManager.myOffer[key] || 0;
-            playerTradeManager.setOfferItem(key, Math.max(0, current - step));
-            window.AudioManager?.play?.('ui_click', { volume: 0.25 });
+    // The trade window's markup is built on first open (src/deferredMarkup.js).
+    onDeferredMarkupMounted('player-trade-modal', () => {
+        // Local Steppers
+        const bindStepper = (minusId, plusId, key, step, maxSupplier) => {
+            document.getElementById(minusId)?.addEventListener('click', () => {
+                const current = playerTradeManager.myOffer[key] || 0;
+                playerTradeManager.setOfferItem(key, Math.max(0, current - step));
+                window.AudioManager?.play?.('ui_click', { volume: 0.25 });
+            });
+            document.getElementById(plusId)?.addEventListener('click', () => {
+                const current = playerTradeManager.myOffer[key] || 0;
+                const maxVal = maxSupplier();
+                playerTradeManager.setOfferItem(key, Math.min(maxVal, current + step));
+                window.AudioManager?.play?.('ui_click', { volume: 0.25 });
+            });
+        };
+
+        const inv = () => getCurrentInventoryForTrade();
+        bindStepper('trade-self-shells-minus', 'trade-self-shells-plus', TRADEABLE_RESOURCES.SHELLS, 10, () => inv().shells);
+        bindStepper('trade-self-ammo-minus', 'trade-self-ammo-plus', TRADEABLE_RESOURCES.AMMO, 10, () => inv().ammo);
+        bindStepper('trade-self-meds-minus', 'trade-self-meds-plus', TRADEABLE_RESOURCES.MEDKITS, 1, () => inv().medkits);
+        bindStepper('trade-self-o2-minus', 'trade-self-o2-plus', TRADEABLE_RESOURCES.O2, 1, () => inv().o2Canisters);
+
+        document.getElementById('close-player-trade-modal')?.addEventListener('click', () => {
+            playerTradeManager.closeTrade();
+            window.AudioManager?.play?.('ui_click', { volume: 0.3 });
         });
-        document.getElementById(plusId)?.addEventListener('click', () => {
-            const current = playerTradeManager.myOffer[key] || 0;
-            const maxVal = maxSupplier();
-            playerTradeManager.setOfferItem(key, Math.min(maxVal, current + step));
-            window.AudioManager?.play?.('ui_click', { volume: 0.25 });
+        document.getElementById('trade-cancel-btn')?.addEventListener('click', () => {
+            playerTradeManager.closeTrade();
+            window.AudioManager?.play?.('ui_click', { volume: 0.3 });
         });
-    };
 
-    const inv = () => getCurrentInventoryForTrade();
-    bindStepper('trade-self-shells-minus', 'trade-self-shells-plus', TRADEABLE_RESOURCES.SHELLS, 10, () => inv().shells);
-    bindStepper('trade-self-ammo-minus', 'trade-self-ammo-plus', TRADEABLE_RESOURCES.AMMO, 10, () => inv().ammo);
-    bindStepper('trade-self-meds-minus', 'trade-self-meds-plus', TRADEABLE_RESOURCES.MEDKITS, 1, () => inv().medkits);
-    bindStepper('trade-self-o2-minus', 'trade-self-o2-plus', TRADEABLE_RESOURCES.O2, 1, () => inv().o2Canisters);
-
-    document.getElementById('close-player-trade-modal')?.addEventListener('click', () => {
-        playerTradeManager.closeTrade();
-        window.AudioManager?.play?.('ui_click', { volume: 0.3 });
-    });
-    document.getElementById('trade-cancel-btn')?.addEventListener('click', () => {
-        playerTradeManager.closeTrade();
-        window.AudioManager?.play?.('ui_click', { volume: 0.3 });
-    });
-
-    document.getElementById('trade-confirm-btn')?.addEventListener('click', () => {
-        const invState = getCurrentInventoryForTrade();
-        const success = playerTradeManager.acceptTrade(invState);
-        if (success) {
-            window.AudioManager?.play?.('fx_menu_confirm', { volume: 0.4 });
-        } else {
-            window.AudioManager?.play?.('ui_error', { volume: 0.35 });
-        }
+        document.getElementById('trade-confirm-btn')?.addEventListener('click', () => {
+            const invState = getCurrentInventoryForTrade();
+            const success = playerTradeManager.acceptTrade(invState);
+            if (success) {
+                window.AudioManager?.play?.('fx_menu_confirm', { volume: 0.4 });
+            } else {
+                window.AudioManager?.play?.('ui_error', { volume: 0.35 });
+            }
+        });
     });
 
     window.openPlayerTradeWith = (peerData) => {
@@ -13317,7 +13334,9 @@ window.openArchiveModal = openArchiveModal;
 
 document.getElementById('archive-btn')?.addEventListener('click', () => openArchiveModal());
 document.getElementById('homebase-records-btn')?.addEventListener('click', () => openArchiveModal({ tab: 'records', view: 'service' }));
-document.getElementById('net-records-btn')?.addEventListener('click', () => openArchiveModal({ tab: 'records', view: 'service', overlay: true }));
+onDeferredMarkupMounted('multiplayer-modal', () => {
+    document.getElementById('net-records-btn')?.addEventListener('click', () => openArchiveModal({ tab: 'records', view: 'service', overlay: true }));
+});
 document.getElementById('go-records-btn')?.addEventListener('click', () => openArchiveModal({
     tab: 'records',
     view: 'boards',
@@ -13384,7 +13403,10 @@ const foundryHub = createFoundryHub({
     getBank: () => bankManager.getState(),
     getClassId: () => loadout.activeClassId,
     isFoundryActivated: () => bankManager.isFoundryActivated(),
-    isStoreAvailable: () => !document.getElementById('vault-tab-store')?.classList.contains('hidden'),
+    isStoreAvailable: () => isVaultStoreAvailable(),
+    preparePanels: (ids) => {
+        if (ids.some((id) => id.startsWith('vault-'))) mountDeferredMarkup('steam-vault-modal');
+    },
     isTradeUpAvailable: () => isVaultExchangeAvailable(),
     focus: (element) => { if (element) focusControllerTarget(element); },
     onTabShown: {
