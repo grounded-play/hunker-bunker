@@ -105,7 +105,7 @@ Every prompt below and every lighting change is checked against this list.
   - a workbench with a stool, a tool cart and loose cables;
   - a bed with a footlocker and a lamp;
   - a crate with spilled cans and a torn tarp.
-- [ ] **V4. More signature props per theme:** at least 4 per theme, from the new assets in A1–A5.
+- [x] **V4. More signature props per theme:** at least 4 per theme, from the new assets in A1–A5.
 - [x] **V5. Filler layer.** Low, cheap, non-blocking floor clutter (cables, debris, papers, cans, bones, frost shards, resin drips), placed along walls and in corners at a density each biome sets. Filler never blocks movement (`propBehavior` floor style) and is drawn as instanced batches.
 - [ ] **V6. Mystery boxes.** A new interactable container family. Hold E to open (Engineers open faster; some need a keycard). What's inside is rolled when opened, from a table by biome and depth:
 

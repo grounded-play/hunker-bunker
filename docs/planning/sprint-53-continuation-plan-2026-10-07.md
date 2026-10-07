@@ -118,7 +118,19 @@ Evidence regenerated in `docs/reports/assets/furnished-rooms/`:
 - 32 focused room-dressing, renderer, integration and real-night tests passed.
 - The live WebGL sky probe passed at noon and midnight; midnight retains dark room edges, readable warm suit light and no full-screen cream haze.
 
-Known asset gaps reported by the showroom remain explicit rather than silently substituted: `lore_terminal`, `scatter_horizon_black_box` and `prop_hydraulic_piston_actuator`. These are the highest-value model replacements alongside V4's remaining signature props.
+### Signature coverage checkpoint
+
+V4 now has a hard test: every room theme exposes at least four distinct signature silhouettes. Existing hero models were promoted into the thin theme pools, including cryo pods and vents, medical carts, security barricades, fungal machinery, camp cots and cathedral relics.
+
+The last three missing showroom references now use explicit, documented aliases while retaining their gameplay-facing ids:
+
+| Authored id | Reviewed model | Purpose |
+|---|---|---|
+| `lore_terminal` | `prop_terminal_ruptured` | keeps lore metadata, interaction and glow on a physical terminal |
+| `scatter_horizon_black_box` | `prop_camp_meridian_radio` | turns the recovery signal into a substantial beacon silhouette |
+| `prop_hydraulic_piston_actuator` | `prop_exosuit_docking_gantry` | gives the hull fabrication bay two monumental industrial frames |
+
+The production scatter path and furnished-room showroom both resolve these aliases. A second 20-room Chromium matrix passed with no missing-model warnings. Dedicated final models can replace the aliases later without changing room builds or gameplay state.
 
 ## On-screen check, 2026-10-07 afternoon (Claude session, `20257ba9`)
 
