@@ -8,8 +8,9 @@
 // - `landmark`: a single prop marking where a quest happens when its targets
 //   are enemies or a person (the armory pack, the holdout, the lost cultist).
 // `standIn` is a shipped model used until the quest's own A3 model (`model`)
-// arrives; swap it in here, nowhere else. `accent` colours the objective
-// beacon.
+// arrives; swap it in here, nowhere else. Until then the stand-in wears the
+// special variant named `variant` (default: `model`) from
+// src/specialVariants.js. `accent` colours the objective beacon.
 
 import * as THREE from 'three';
 
@@ -35,7 +36,10 @@ const ARCHIVE_CHAPTER_ACCENTS = Object.freeze({ hive_archive_ch1: 0x10b981, hive
 
 export function questObjectFor(questId) {
     if (Object.hasOwn(ARCHIVE_CHAPTER_ACCENTS, questId)) {
-        return { ...QUEST_OBJECTS.hive_archive, accent: ARCHIVE_CHAPTER_ACCENTS[questId] };
+        const chapter = questId.slice(-3);
+        const target = { ...QUEST_OBJECTS.hive_archive.target };
+        if (chapter !== 'ch1') target.variant = `${target.model}_${chapter}`;
+        return { ...QUEST_OBJECTS.hive_archive, accent: ARCHIVE_CHAPTER_ACCENTS[questId], target };
     }
     return Object.hasOwn(QUEST_OBJECTS, questId) ? QUEST_OBJECTS[questId] : null;
 }

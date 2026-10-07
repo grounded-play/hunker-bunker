@@ -486,6 +486,7 @@ import { shouldEnemyRepath } from './enemyRepath.js';
 import { skipMatrixPassWhileHidden } from './chunkMatrices.js';
 import { pickSleepCutsceneStyle } from './sleepCutscene.js';
 import { attachQuestBeacon, questObjectFor, removeCampQuestEntity } from './questObjects.js';
+import { applySpecialVariant } from './specialVariants.js';
 import { MYSTERY_BOX_KINDS, MYSTERY_OUTCOME_LINE_KEYS, mysteryBoxChance, mysteryOpenSeconds, mysteryRewardDrops, pickMysteryBoxKind, rollMysteryOutcome, seededRandom } from './mysteryBoxes.js';
 import { createTrackField, slimeColorFor, stepBoots, trackSurfaceForType } from './trackField.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
@@ -7586,6 +7587,9 @@ export class ThreeGame {
             try {
                 const root = await (this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType));
                 if (!root) this.revealWorld3dFallback?.(source);
+                // Quest objects and mystery boxes recolour their stand-in
+                // model (src/specialVariants.js) before its shaders warm up.
+                if (root && source.userData?.specialVariant) applySpecialVariant(root, source.userData.specialVariant);
                 if (root) await this.prewarmLateModel?.(root);
                 if (!root || !source.parent) return null;
                 root.position.copy(source.position);
@@ -18649,6 +18653,7 @@ export class ThreeGame {
         const questObject = questObjectFor(sprite.userData.campQuestKey);
         if (questObject?.target && (type === 'quest_prop' || type === 'quest_mold')) {
             sprite.userData.questObjectModel = questObject.target.model;
+            sprite.userData.specialVariant = questObject.target.variant ?? questObject.target.model;
             this.deferWorld3dReplacement?.(sprite, questObject.target.standIn);
         }
         attachQuestBeacon(sprite, questObject?.accent);
@@ -18665,6 +18670,7 @@ export class ThreeGame {
         if (!sprite) return null;
         sprite.userData.isCampQuestLandmark = true;
         sprite.userData.questObjectModel = landmark.model;
+        sprite.userData.specialVariant = landmark.model;
         this.deferWorld3dReplacement?.(sprite, landmark.standIn);
         aq.landmarks ??= [];
         aq.landmarks.push(sprite);
@@ -18891,6 +18897,7 @@ export class ThreeGame {
             // Opened, not shot open: a mystery box is never a breakable prop.
             sprite.userData.isDestructibleProp = false;
             sprite.userData.mysteryBoxId = id;
+            sprite.userData.specialVariant = MYSTERY_BOX_KINDS[kind].model;
             group.add(sprite);
             this.scatterSprites?.push?.(sprite);
             const marker = this.createMysteryBoxMarker?.(kind) ?? null;

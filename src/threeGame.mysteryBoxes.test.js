@@ -55,6 +55,7 @@ describe('mystery boxes in the world', () => {
         expect(again.game.placeMysteryBoxes(again.group, 3, 2)).toBe(placed);
         for (const box of game.mysteryBoxes) {
             expect(box.sprite.userData.isDestructibleProp).toBe(false);
+            expect(box.sprite.userData.specialVariant).toMatch(/^mystery_/);
             expect(box.sprite.position.x === 3 * 12 + 1 && box.sprite.position.z === 2 * 12 + 1).toBe(false);
         }
         expect(game.placeMysteryBoxes(new THREE.Group(), 0, 0)).toBe(0);

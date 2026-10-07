@@ -16,7 +16,19 @@ test('a mystery box sits in a room and opens when you stand at it', async ({ pag
             for (const [dx, dz] of [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, -1]]) {
                 const box = (game.mysteryBoxes ?? []).find((b) => !b.opened && b.kind !== 'blacksite' && b.sprite?.parent);
                 if (box) return { id: box.id, kind: box.kind, x: box.sprite.position.x, z: box.sprite.position.z };
-                game.player.position.set(dx * ring * game.chunkSize, 0, dz * ring * game.chunkSize);
+                // Only onto floor the operator can stand on -- never a shaft.
+                const cx = dx * ring * game.chunkSize;
+                const cz = dz * ring * game.chunkSize;
+                let spot = null;
+                for (let r = 0; r <= 4 && !spot; r++) {
+                    for (let ox = -r; ox <= r && !spot; ox++) {
+                        for (let oz = -r; oz <= r && !spot; oz++) {
+                            if (game.isSnailTileWalkable(cx + ox, cz + oz) && game.canOccupyPosition(cx + ox, cz + oz)) spot = [cx + ox, cz + oz];
+                        }
+                    }
+                }
+                if (!spot) continue;
+                game.player.position.set(spot[0], 0, spot[1]);
                 game.syncVisibleChunks?.();
                 await new Promise((resolve) => setTimeout(resolve, 400));
             }
@@ -30,7 +42,15 @@ test('a mystery box sits in a room and opens when you stand at it', async ({ pag
     }, found);
     await page.waitForTimeout(800);
     await page.screenshot({ path: 'playwright-report/screenshots/mystery-box-sealed.png' });
-    const started = await page.evaluate(() => window.game.interactWithMysteryBox());
+    const attempt = await page.evaluate((id) => {
+        const game = window.game;
+        const box = game.mysteryBoxes.find((b) => b.id === id);
+        const result = game.interactWithMysteryBox();
+        return { result, player: [game.player.position.x, game.player.position.z], box: [box?.sprite.position.x, box?.sprite.position.z],
+            parent: Boolean(box?.sprite.parent), opened: box?.opened, input: game.isGameplayInputActive?.(), dead: game.isPlayerDead };
+    }, found.id);
+    if (!attempt.result) console.log('MYSTERY-DBG', JSON.stringify(attempt));
+    const started = attempt.result;
     expect(started).toBe(true);
     await page.waitForTimeout(600);
     await expect(page.locator('#foundry-hud-prompt')).toContainText(/OPENING/i);

@@ -89,4 +89,29 @@ describe('quest objects in the world', () => {
         expect(sprite.userData.world3dModelType).toBeUndefined();
         expect(sprite.userData.questBeacon).toBeTruthy();
     });
+
+    it('marks each quest object with its special variant', () => {
+        const valves = makeGame('reactor_venting');
+        expect(valves.game.spawnCampQuestMarkerProp(valves.camp, { type: 'quest_prop', x: 3, z: 3 }).userData.specialVariant).toBe('quest_reactor_valves');
+        const archive = makeGame('hive_archive_ch3', 'pickup');
+        expect(archive.game.spawnCampQuestMarkerProp(archive.camp, { type: 'quest_prop', x: 3, z: 3 }).userData.specialVariant).toBe('quest_hive_archive_node_ch3');
+        const armory = makeGame('armory_breach', 'kill');
+        expect(armory.game.spawnCampQuestLandmark(armory.camp, { x: 5, z: 5 }).userData.specialVariant).toBe('quest_infested_armory_cabinet');
+    });
+
+    it('recolours the stand-in model when it loads', async () => {
+        const { game, group, camp } = makeGame('reactor_venting');
+        const sprite = game.spawnCampQuestMarkerProp(camp, { type: 'quest_prop', x: 3, z: 3 });
+        const template = new THREE.MeshStandardMaterial();
+        game.createWorld3dModel = async () => {
+            const root = new THREE.Group();
+            root.add(new THREE.Mesh(new THREE.BoxGeometry(), template));
+            return root;
+        };
+        const root = await game.setupWorld3dReplacement(sprite, sprite.userData.world3dModelType);
+        expect(root.parent).toBe(group);
+        expect(root.children[0].material).not.toBe(template);
+        expect(root.children[0].material.userData.hbSpecial).toBe('quest_reactor_valves');
+    });
 });
+

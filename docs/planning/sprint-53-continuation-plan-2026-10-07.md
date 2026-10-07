@@ -103,6 +103,16 @@ Perfectly seamless square tileable orthographic PBR base-color wall texture: glo
 - **Beacon:** every quest object carries a pulsing light pillar and a floor ring in its accent colour.
 - **Cleanup:** claiming, shooting and quest reset all go through `removeCampQuestEntity`. Before this, a loaded model was a sibling of its sprite and would have stayed behind.
 - **To swap in an A3 model:** register its GLB in `WORLD_3D_MODELS`, then change `standIn` to it in `src/questObjects.js`.
+- **Special variants (owner, 2026-10-07: "use current models and texture or color change them to make them the specials").**
+  - Each quest object and mystery box stand-in wears a variant from `src/specialVariants.js`, so it no longer reads as the room's ordinary prop of the same model.
+  - A variant has three layers:
+    - its texture is tinted;
+    - its emissive takes the accent colour (in full on an emissive map, faintly at 0.06 without one);
+    - a rim light in the accent colour outlines it.
+  - Variants are keyed by the A3/A2 model they stand in for, so a variant's entry is deleted when that model ships. Materials are copied once per (material, variant), never edited on the shared template, and every variant shares one shader program.
+  - Rim strengths are deliberately low (0.4–0.65, power 3). At 0.9–1.1 the thin bottle rack read as a hologram.
+  - **Evidence:** `src/specialVariants.test.js`, and the GPU captures from `tests/e2e/quest-objects.spec.js`: red-hot valves; the armory rack with its bottles legible under a cyan accent.
+  - The e2e specs now teleport only onto walkable floor. The quest spec stages its quest beside the operator, because outer camps sit past the ring lock, which sends the operator back to the ship.
 - **Evidence:**
   - `src/questObjects.test.js`, `src/threeGame.questObjects.test.js`;
   - `tests/e2e/quest-objects.spec.js` (GPU run: reactor valves under red beacons; armory rack under a cyan beacon; no beacon left after reset).

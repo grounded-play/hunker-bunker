@@ -26,10 +26,10 @@ const WEIGHTS = Object.freeze({
 // Each kind's look until its own model ships (A2 prompts): a stand-in GLB type,
 // how long it takes to open, and whether it needs a keycard (or an Engineer).
 export const MYSTERY_BOX_KINDS = Object.freeze({
-    courier: Object.freeze({ standIn: 'prop_security_locker', labelKey: 'ui.mystery.kind.courier', openSeconds: 1.6, needsKeycard: false, accent: 0xf59e0b }),
-    quarantine: Object.freeze({ standIn: 'prop_flesh_steel_coffin', labelKey: 'ui.mystery.kind.quarantine', openSeconds: 2.2, needsKeycard: false, accent: 0xef4444 }),
-    reliquary: Object.freeze({ standIn: 'prop_corporate_saint_reliquary', labelKey: 'ui.mystery.kind.reliquary', openSeconds: 2.2, needsKeycard: false, accent: 0x10b981 }),
-    blacksite: Object.freeze({ standIn: 'prop_locker_bulged', labelKey: 'ui.mystery.kind.blacksite', openSeconds: 2.8, needsKeycard: true, accent: 0xf59e0b })
+    courier: Object.freeze({ standIn: 'prop_security_locker', labelKey: 'ui.mystery.kind.courier', model: 'mystery_courier_case', openSeconds: 1.6, needsKeycard: false, accent: 0xf59e0b }),
+    quarantine: Object.freeze({ standIn: 'prop_flesh_steel_coffin', labelKey: 'ui.mystery.kind.quarantine', model: 'mystery_quarantine_crate', openSeconds: 2.2, needsKeycard: false, accent: 0xef4444 }),
+    reliquary: Object.freeze({ standIn: 'prop_corporate_saint_reliquary', labelKey: 'ui.mystery.kind.reliquary', model: 'mystery_reliquary_pod', openSeconds: 2.2, needsKeycard: false, accent: 0x10b981 }),
+    blacksite: Object.freeze({ standIn: 'prop_locker_bulged', labelKey: 'ui.mystery.kind.blacksite', model: 'mystery_blacksite_lockbox', openSeconds: 2.8, needsKeycard: true, accent: 0xf59e0b })
 });
 
 const BIOME_KINDS = Object.freeze({
