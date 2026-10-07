@@ -26328,17 +26328,34 @@ export class ThreeGame {
         if (!this.nightVision && performance.now() < (this._lightsOutUntil ?? 0)) {
             dayBlend = 0;
         }
-        this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.72, 1.0, dayBlend);
-        this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.55, 1.0, dayBlend);
-        this.fillLight.intensity = this.baseLightIntensity.fill * lerp(0.72, 1.05, dayBlend);
+        // Sprint 53 (L1): Real night tuning matching key art darkness
+        // Ambient drops to ~20%, directional sun drops to ~10% (cold blue moonlight)
+        this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.20, 1.0, dayBlend);
+        this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.10, 1.0, dayBlend);
+        this.fillLight.intensity = this.baseLightIntensity.fill * lerp(0.20, 1.05, dayBlend);
         if (this.characterRimLight && this.baseLightIntensity?.characterRimLight) {
-            this.characterRimLight.intensity = this.baseLightIntensity.characterRimLight * lerp(0.85, 1.0, dayBlend);
+            // Keep enemy rim light readable in the dark
+            this.characterRimLight.intensity = this.baseLightIntensity.characterRimLight * lerp(0.95, 1.0, dayBlend);
         }
         const weatherLightMult = this.nightVision ? 1.0 : (this.weather?.lightMult ?? 1);
         if (weatherLightMult !== 1) {
             this.ambientLight.intensity *= weatherLightMult;
             this.directionalLight.intensity *= Math.max(0.6, weatherLightMult - 0.05);
             this.fillLight.intensity *= Math.min(1, weatherLightMult + 0.06);
+        }
+
+        // Cold blue moonlight for directional light at night
+        this._nightMoonlightColor ??= new THREE.Color(0x3d6699);
+        if (!this.nightVision && dayBlend < 0.95) {
+            this.directionalLight.color.lerp(this._nightMoonlightColor, (1.0 - dayBlend) * 0.75);
+        }
+
+        // Nights in the bio ring get a faint green bioluminescent floor glow
+        const bioMix = this.biomeMixState?.bioMix ?? 0;
+        if (!this.nightVision && bioMix > 0.1 && dayBlend < 0.8) {
+            this._nightBioGlowColor ??= new THREE.Color(0x113318);
+            const nightBioGlow = (1.0 - dayBlend) * bioMix * 0.45;
+            this.ambientLight.color.lerp(this._nightBioGlowColor, nightBioGlow);
         }
 
         // The deployment's condition tints and (for a grid arc) browns out the
@@ -26369,7 +26386,12 @@ export class ThreeGame {
             this.ambientLight.intensity *= GATE_CHALLENGE_TUNING.blackoutLightMultiplier;
             this.directionalLight.intensity *= GATE_CHALLENGE_TUNING.blackoutLightMultiplier;
         }
-        const minAmbientFloor = blackout ? 0.18 : atmosphere?.sparking ? 0.25 : 0.35;
+        // Settings brightness slider sets a floor so night is never unplayable
+        const userBrightness = Number.isFinite(this.userBrightness)
+            ? this.userBrightness
+            : Number(globalThis.window?.state?.settings?.brightness ?? 1.0);
+        const brightnessScale = THREE.MathUtils.clamp(userBrightness, 0.5, 2.0);
+        const minAmbientFloor = (blackout ? 0.10 : atmosphere?.sparking ? 0.15 : 0.18) * brightnessScale;
         if (this.ambientLight.intensity < minAmbientFloor) {
             this.ambientLight.intensity = minAmbientFloor;
         }
@@ -26380,12 +26402,13 @@ export class ThreeGame {
             this.playerGlow.distance = lerp(13.5, 9.5, dayBlend);
             this.playerGlow.decay = lerp(1.4, 1.7, dayBlend);
         }
+        // L1: Suit light wider and warmer night profile for high player readability
         if (this.suitFillLight) {
             const movePulse = this.isMoving ? 0.14 * (0.5 + 0.5 * Math.sin(performance.now() * 0.011)) : 0;
             const wallGlowDamp = THREE.MathUtils.clamp(((this._lastMinWallDist ?? 2.0) - 0.25) / 1.0, 0.45, 1.0);
-            this.suitFillLight.intensity = SUIT_LIGHT_BASE_INTENSITY * lerp(1.05, 0.68, dayBlend) * (1 + movePulse) * wallGlowDamp;
-            this.suitFillLight.distance = SUIT_LIGHT_BASE_DISTANCE * lerp(1.1, 0.9, dayBlend);
-            this.suitFillLight.decay = lerp(1.2, 1.4, dayBlend);
+            this.suitFillLight.intensity = SUIT_LIGHT_BASE_INTENSITY * lerp(1.35, 0.68, dayBlend) * (1 + movePulse) * wallGlowDamp;
+            this.suitFillLight.distance = SUIT_LIGHT_BASE_DISTANCE * lerp(1.30, 0.9, dayBlend);
+            this.suitFillLight.decay = lerp(1.15, 1.4, dayBlend);
         }
         if (this.playerForwardSpotLight) {
             const pulse = this.isMoving ? 0.08 * (0.5 + 0.5 * Math.sin(performance.now() * 0.013)) : 0;
@@ -26393,9 +26416,19 @@ export class ThreeGame {
             // the spotlight so it provides clean directional illumination instead of blowing out
             // into a blinding white/yellow disc on the wall and player.
             const wallProximityDamp = THREE.MathUtils.clamp(((this._lastMinWallDist ?? 2.0) - 0.25) / 1.25, 0.22, 1.0);
-            this.playerForwardSpotLight.intensity = 3.6 * lerp(1.35, 0.75, dayBlend) * (1 + pulse) * wallProximityDamp;
-            this.playerForwardSpotLight.distance = SUIT_CONE_LIGHT_DISTANCE * lerp(1.2, 0.88, dayBlend);
-            this.playerForwardSpotLight.angle = SUIT_CONE_LIGHT_ANGLE * lerp(1.05, 0.92, dayBlend);
+            this.playerForwardSpotLight.intensity = 3.6 * lerp(1.55, 0.75, dayBlend) * (1 + pulse) * wallProximityDamp;
+            this.playerForwardSpotLight.distance = SUIT_CONE_LIGHT_DISTANCE * lerp(1.35, 0.88, dayBlend);
+            this.playerForwardSpotLight.angle = SUIT_CONE_LIGHT_ANGLE * lerp(1.30, 0.92, dayBlend);
+        }
+        // Warmer suit light profile at night (amber-white work lamp)
+        this._suitDayColor ??= new THREE.Color(SUIT_CONE_LIGHT_COLOR);
+        this._suitWarmNightColor ??= new THREE.Color(0xffe6c4);
+        if (this.playerForwardSpotLight?.color && this.suitFillLight?.color) {
+            const suitWarmBlend = (1.0 - dayBlend) * 0.6;
+            this._currentSuitColor ??= new THREE.Color();
+            this._currentSuitColor.copy(this._suitDayColor).lerp(this._suitWarmNightColor, suitWarmBlend);
+            this.playerForwardSpotLight.color.copy(this._currentSuitColor);
+            this.suitFillLight.color.copy(this._currentSuitColor);
         }
         if (this.playerForwardCone?.material) {
             const wallProximity = THREE.MathUtils.clamp(((this._lastMinWallDist ?? 2.0) - 0.35) / 1.25, 0.12, 1.0);
@@ -26419,8 +26452,17 @@ export class ThreeGame {
         // based in this isometric view, which makes the top of the canvas darker
         // than the bottom and makes "up-screen" flashlight aim feel weaker.
         // Radial darkness handles the suit; tighter atmospheric fog hides distant chunk edges.
-        this.scene.fog.near = this.nightVision ? 1000 : lerp(this.baseFogRange.near * 0.9, this.baseFogRange.near * 1.05, dayBlend);
-        this.scene.fog.far = this.nightVision ? 10000 : lerp(this.baseFogRange.far * 0.95, this.baseFogRange.far * 1.15, dayBlend);
+        this.scene.fog.near = this.nightVision ? 1000 : lerp(this.baseFogRange.near * 0.72, this.baseFogRange.near * 1.05, dayBlend);
+        this.scene.fog.far = this.nightVision ? 10000 : lerp(this.baseFogRange.far * 0.80, this.baseFogRange.far * 1.15, dayBlend);
+
+        // Darker fog color at night
+        if (!this.nightVision && dayBlend < 0.95) {
+            this._nightFogDarkColor ??= new THREE.Color(0x040810);
+            this.scene.fog.color.lerp(this._nightFogDarkColor, (1.0 - dayBlend) * 0.55);
+            if (this.scene.background?.isColor) {
+                this.scene.background.lerp(this._nightFogDarkColor, (1.0 - dayBlend) * 0.55);
+            }
+        }
 
         // Weather can further reduce visibility (applied multiplicatively; day/night
         // resets fog each frame so this never accumulates).
@@ -26432,7 +26474,7 @@ export class ThreeGame {
 
         // Radial darkness around the player. Darkest at night and in heavy weather.
         const weatherDark = this.nightVision ? 0 : ((1 - wMult) * 0.6);
-        let darkAlpha = this.nightVision ? 0 : THREE.MathUtils.clamp(lerp(0.30, 0.02, dayBlend) + weatherDark, 0, 0.55);
+        let darkAlpha = this.nightVision ? 0 : THREE.MathUtils.clamp(lerp(0.42, 0.02, dayBlend) + weatherDark, 0, 0.65);
         const generatorState = this.getO2GeneratorState?.();
         if (generatorState?.isOnline && this.getActiveO2GeneratorDistance() <= generatorState.radius) {
             darkAlpha *= 0.18;
