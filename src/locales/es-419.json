@@ -1977,6 +1977,51 @@
       "class_line": "{runs} misiones · {wins} victorias · {tier}",
       "new_best": "NUEVA MEJOR MARCA — {boards}",
       "rank_suffix": "#{rank}"
+    },
+    "location": {
+      "room": {
+        "junction_hall": "SALA DE ENLACE",
+        "bulkhead_room": "CUARTO DE MAMPAROS",
+        "survey_office": "OFICINA DE TOPOGRAFÍA",
+        "mess_hall": "COMEDOR",
+        "crew_quarters": "DORMITORIO DE TRIPULACIÓN",
+        "relay_room": "SALA DE RELÉS",
+        "pump_house": "CASA DE BOMBAS",
+        "boiler_room": "SALA DE CALDERAS",
+        "switch_room": "SALA DE INTERRUPTORES",
+        "filtration_plant": "PLANTA DE FILTRADO",
+        "med_bay": "ENFERMERÍA",
+        "triage_ward": "SALA DE TRIAJE",
+        "quarantine_cell": "CELDA DE CUARENTENA",
+        "guard_post": "PUESTO DE GUARDIA",
+        "checkpoint": "PUESTO DE CONTROL",
+        "armory": "ARMERÍA",
+        "holding_cells": "CELDAS DE DETENCIÓN",
+        "reactor_annex": "ANEXO DEL REACTOR",
+        "fab_shop": "TALLER DE FABRICACIÓN",
+        "servo_lab": "LABORATORIO DE SERVOS",
+        "turbine_hall": "SALA DE TURBINAS",
+        "supply_depot": "DEPÓSITO DE SUMINISTROS",
+        "cold_store": "CÁMARA FRIGORÍFICA",
+        "cargo_hold": "BODEGA DE CARGA",
+        "strongroom": "CÁMARA ACORAZADA",
+        "vault": "BÓVEDA",
+        "relic_cache": "ALIJO DE RELIQUIAS",
+        "camp_commons": "ÁREA COMÚN DEL CAMPAMENTO",
+        "brood_chamber": "CÁMARA DE CRÍA",
+        "hive_gallery": "GALERÍA DE LA COLMENA",
+        "cryo_lab": "LABORATORIO CRIO"
+      },
+      "hall": {
+        "service_corridor": "PASILLO DE SERVICIO",
+        "maintenance_tunnel": "TÚNEL DE MANTENIMIENTO",
+        "spine_passage": "PASAJE CENTRAL",
+        "cable_run": "CONDUCTO DE CABLES",
+        "drainage_cut": "ZANJA DE DRENAJE",
+        "access_way": "VÍA DE ACCESO",
+        "unmarked": "PASAJE SIN MARCAR"
+      },
+      "unscanned": "??? · ESCANEA PARA IDENTIFICAR"
     }
   },
   "narrative": {

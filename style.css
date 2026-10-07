@@ -6096,6 +6096,26 @@ input:checked+.slider:before {
   transition: color 1.2s ease, text-shadow 1.2s ease;
 }
 
+/* The room or hallway the player stands in, once scanned (src/locationNames.js). */
+.level-indicator__location {
+  font-size: calc(var(--vu) * 1.25);
+  letter-spacing: 1px;
+  color: rgba(255, 214, 140, 0.95);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.level-indicator__location::before {
+  content: '◇ ';
+  opacity: 0.7;
+}
+
+.level-indicator__location.is-unknown {
+  color: rgba(173, 205, 225, 0.55);
+}
+
 .level-indicator__seed {
   font-size: calc(var(--vu) * 1.3);
   letter-spacing: 1px;

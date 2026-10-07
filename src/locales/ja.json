@@ -1977,6 +1977,51 @@
       "class_line": "出撃 {runs} · 勝利 {wins} · {tier}",
       "new_best": "自己ベスト更新 — {boards}",
       "rank_suffix": "#{rank}"
+    },
+    "location": {
+      "room": {
+        "junction_hall": "連絡ホール",
+        "bulkhead_room": "隔壁室",
+        "survey_office": "測量事務所",
+        "mess_hall": "食堂",
+        "crew_quarters": "乗員居住区",
+        "relay_room": "中継室",
+        "pump_house": "ポンプ室",
+        "boiler_room": "ボイラー室",
+        "switch_room": "配電室",
+        "filtration_plant": "ろ過プラント",
+        "med_bay": "医務室",
+        "triage_ward": "トリアージ病棟",
+        "quarantine_cell": "隔離房",
+        "guard_post": "警備詰所",
+        "checkpoint": "検問所",
+        "armory": "武器庫",
+        "holding_cells": "留置房",
+        "reactor_annex": "原子炉別棟",
+        "fab_shop": "製造工房",
+        "servo_lab": "サーボ研究室",
+        "turbine_hall": "タービンホール",
+        "supply_depot": "補給倉庫",
+        "cold_store": "冷蔵庫",
+        "cargo_hold": "貨物庫",
+        "strongroom": "金庫室",
+        "vault": "保管庫",
+        "relic_cache": "遺物の隠し場所",
+        "camp_commons": "キャンプ共用区画",
+        "brood_chamber": "育房",
+        "hive_gallery": "巣のギャラリー",
+        "cryo_lab": "低温研究室"
+      },
+      "hall": {
+        "service_corridor": "サービス通路",
+        "maintenance_tunnel": "保守トンネル",
+        "spine_passage": "基幹通路",
+        "cable_run": "ケーブル坑",
+        "drainage_cut": "排水溝",
+        "access_way": "アクセス通路",
+        "unmarked": "無標識の通路"
+      },
+      "unscanned": "??? · スキャンで識別"
     }
   },
   "narrative": {

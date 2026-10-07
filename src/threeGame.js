@@ -463,6 +463,7 @@ import {
 } from './worldTransformations.js';
 import { createCrossingBridgeMesh } from './crossingBridge.js';
 import { getTerritoryLocation } from './territoryStructures.js';
+import { HALL_SCAN_KEY, ROOM_SCAN_KEY, formatLocationName, hallwayLocationName, roomLocationName } from './locationNames.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
 import { groupDangerZones, lipEdgeQuads } from './dangerZones.js';
 import { GATE_CHALLENGES, GATE_CHALLENGE_TUNING, planGateChallenges } from './gateChallenges.js';
@@ -2072,6 +2073,9 @@ export class ThreeGame {
         this._slowFrameChunkMountTick = 0;
         this.discoveredMapChunkKeys = new Set(['0,0']);
         this.discoveredMapRoomKeys = new Set();
+        // Rooms and hallways a radar pulse has reached: their names are known
+        // (src/locationNames.js). Walking in reveals the map, not the name.
+        this.scannedLocationKeys = new Set();
         this.discoveredMapCellKeys = new Set();
         this.maxChunkMountsPerFrame = 1;
         // The orthographic viewport reaches roughly 11 world units from its
@@ -21799,7 +21803,7 @@ export class ThreeGame {
                     discoveredRoomKeys: this.discoveredMapRoomKeys ?? new Set(),
                     discoveredCellKeys: this.discoveredMapCellKeys ?? new Set()
                 });
-                detailedChunks.push({ key, chunkX, chunkY, cells });
+                detailedChunks.push({ key, chunkX, chunkY, cells, labels: this.getScannedLocationLabels(key, grid) });
             }
             this._cachedDetailedChunks = detailedChunks;
             this._detailedChunksDirty = false;
@@ -21873,6 +21877,7 @@ export class ThreeGame {
         this._lastDiscoveryChunkKey = chunkKey;
         this._lastDiscoveryLocalX = localX;
         this._lastDiscoveryLocalY = localY;
+        this.syncPlayerLocationLabel();
 
         this.discoveredMapChunkKeys ??= new Set();
         if (!this.discoveredMapChunkKeys.has(chunkKey)) {
@@ -23336,6 +23341,9 @@ export class ThreeGame {
         this.worldRouteRecords?.clear();
         this.discoveredMapChunkKeys = new Set(['0,0']);
         this.discoveredMapRoomKeys = new Set();
+        // Rooms and hallways a radar pulse has reached: their names are known
+        // (src/locationNames.js). Walking in reveals the map, not the name.
+        this.scannedLocationKeys = new Set();
         this.discoveredMapCellKeys = new Set();
         this.reachableGeneratedChunkKeys = new Set();
         this.mazeAccessState = createAccessState();
@@ -24116,6 +24124,7 @@ export class ThreeGame {
                             }
                         }
                         this.discoveredMapRoomKeys.add(roomKey);
+                        this.scannedLocationKeys?.add(ROOM_SCAN_KEY(key, room.id));
                     }
 
                     for (let y = 0; y < grid.length; y++) {
@@ -24128,6 +24137,7 @@ export class ThreeGame {
                                 const cellKey = `${worldX},${worldZ}`;
                                 if (!this.discoveredMapCellKeys.has(cellKey)) freshCells.add(cellKey);
                                 this.discoveredMapCellKeys.add(cellKey);
+                                if (Math.hypot(worldX - px, worldZ - pz) <= radius) this.scannedLocationKeys?.add(HALL_SCAN_KEY(key));
                             }
                         }
                     }
@@ -24148,6 +24158,81 @@ export class ThreeGame {
             freshCells
         };
         this.checkMappingMissionComplete();
+        this.syncPlayerLocationLabel?.({ force: true });
+    }
+
+    /**
+     * The named place at a world position: the room whose floor holds it, else
+     * its chunk's hallways. `known` once a radar pulse has reached it.
+     */
+    getLocationAt(x, z) {
+        if (!Number.isFinite(x) || !Number.isFinite(z) || !this.chunkSize) return null;
+        const chunkX = Math.floor(x / this.chunkSize);
+        const chunkY = Math.floor(z / this.chunkSize);
+        const chunkKey = `${chunkX},${chunkY}`;
+        const localX = Math.round(x - chunkX * this.chunkSize);
+        const localY = Math.round(z - chunkY * this.chunkSize);
+        for (const room of this.wfcMetadataCache?.get(chunkKey)?.roomInstances ?? []) {
+            const cells = room.footprint?.length ? room.footprint : (room.interior ?? []);
+            if (cells.some((cell) => cell.x === localX && cell.y === localY)) {
+                const scanKey = ROOM_SCAN_KEY(chunkKey, room.id);
+                return { scanKey, name: roomLocationName(room, chunkKey), known: Boolean(this.scannedLocationKeys?.has(scanKey)) };
+            }
+        }
+        const scanKey = HALL_SCAN_KEY(chunkKey);
+        return { scanKey, name: hallwayLocationName(chunkKey), known: Boolean(this.scannedLocationKeys?.has(scanKey)) };
+    }
+
+    // Map labels for the scanned rooms and hallways of one chunk, in world
+    // coordinates: a room at its floor's centre, the hallways at the middle of
+    // the chunk's walkable cells outside rooms.
+    getScannedLocationLabels(chunkKey, grid = this.chunkCache?.get(chunkKey)) {
+        const scanned = this.scannedLocationKeys;
+        if (!scanned?.size || !grid) return [];
+        const [chunkX, chunkY] = chunkKey.split(',').map(Number);
+        const originX = chunkX * this.chunkSize;
+        const originZ = chunkY * this.chunkSize;
+        const labels = [];
+        const roomCells = new Set();
+        for (const room of this.wfcMetadataCache?.get(chunkKey)?.roomInstances ?? []) {
+            const cells = room.footprint?.length ? room.footprint : (room.interior ?? []);
+            for (const cell of cells) roomCells.add(`${cell.x},${cell.y}`);
+            if (!cells.length || !scanned.has(ROOM_SCAN_KEY(chunkKey, room.id))) continue;
+            const cx = cells.reduce((sum, cell) => sum + cell.x, 0) / cells.length;
+            const cy = cells.reduce((sum, cell) => sum + cell.y, 0) / cells.length;
+            labels.push({ kind: 'room', x: originX + cx, z: originZ + cy, text: formatLocationName(roomLocationName(room, chunkKey), t) });
+        }
+        if (scanned.has(HALL_SCAN_KEY(chunkKey))) {
+            let sx = 0;
+            let sy = 0;
+            let count = 0;
+            for (let y = 0; y < grid.length; y += 1) {
+                for (let x = 0; x < (grid[y]?.length ?? 0); x += 1) {
+                    if (!['.', 'D', 'R', 'B', 'L', 'O'].includes(grid[y][x]) || roomCells.has(`${x},${y}`)) continue;
+                    sx += x;
+                    sy += y;
+                    count += 1;
+                }
+            }
+            if (count > 0) labels.push({ kind: 'hall', x: originX + sx / count, z: originZ + sy / count, text: formatLocationName(hallwayLocationName(chunkKey), t) });
+        }
+        return labels;
+    }
+
+    // Tells the HUD where the player is, only when the place or whether it
+    // has been scanned changes.
+    syncPlayerLocationLabel({ force = false } = {}) {
+        if (!this.player || this.performanceProfile !== 'gameplay') return null;
+        const location = this.getLocationAt(this.player.position.x, this.player.position.z);
+        if (!location) return null;
+        const signature = `${location.scanKey}|${location.known}`;
+        if (!force && signature === this._lastLocationSignature) return location;
+        this._lastLocationSignature = signature;
+        const label = location.known ? formatLocationName(location.name, t) : null;
+        if (typeof window !== 'undefined' && typeof CustomEvent === 'function') {
+            window.dispatchEvent(new CustomEvent('player-location-changed', { detail: { label, known: location.known, kind: location.name?.kind ?? null } }));
+        }
+        return location;
     }
 
     checkMappingMissionComplete() {

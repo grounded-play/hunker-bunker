@@ -1977,6 +1977,51 @@
       "class_line": "{runs} missões · {wins} vitórias · {tier}",
       "new_best": "NOVA MELHOR MARCA — {boards}",
       "rank_suffix": "#{rank}"
+    },
+    "location": {
+      "room": {
+        "junction_hall": "SALÃO DE JUNÇÃO",
+        "bulkhead_room": "SALA DE ANTEPAROS",
+        "survey_office": "ESCRITÓRIO DE LEVANTAMENTO",
+        "mess_hall": "REFEITÓRIO",
+        "crew_quarters": "ALOJAMENTO DA TRIPULAÇÃO",
+        "relay_room": "SALA DE RELÉS",
+        "pump_house": "CASA DE BOMBAS",
+        "boiler_room": "SALA DE CALDEIRAS",
+        "switch_room": "SALA DE CHAVES",
+        "filtration_plant": "ESTAÇÃO DE FILTRAGEM",
+        "med_bay": "ENFERMARIA",
+        "triage_ward": "ALA DE TRIAGEM",
+        "quarantine_cell": "CELA DE QUARENTENA",
+        "guard_post": "POSTO DE GUARDA",
+        "checkpoint": "POSTO DE CONTROLE",
+        "armory": "ARSENAL",
+        "holding_cells": "CELAS DE DETENÇÃO",
+        "reactor_annex": "ANEXO DO REATOR",
+        "fab_shop": "OFICINA DE FABRICAÇÃO",
+        "servo_lab": "LABORATÓRIO DE SERVOS",
+        "turbine_hall": "SALÃO DAS TURBINAS",
+        "supply_depot": "DEPÓSITO DE SUPRIMENTOS",
+        "cold_store": "CÂMARA FRIA",
+        "cargo_hold": "PORÃO DE CARGA",
+        "strongroom": "CASA-FORTE",
+        "vault": "COFRE",
+        "relic_cache": "ESCONDERIJO DE RELÍQUIAS",
+        "camp_commons": "ÁREA COMUM DO ACAMPAMENTO",
+        "brood_chamber": "CÂMARA DE CRIA",
+        "hive_gallery": "GALERIA DA COLMEIA",
+        "cryo_lab": "LABORATÓRIO CRIO"
+      },
+      "hall": {
+        "service_corridor": "CORREDOR DE SERVIÇO",
+        "maintenance_tunnel": "TÚNEL DE MANUTENÇÃO",
+        "spine_passage": "PASSAGEM CENTRAL",
+        "cable_run": "DUTO DE CABOS",
+        "drainage_cut": "VALA DE DRENAGEM",
+        "access_way": "VIA DE ACESSO",
+        "unmarked": "PASSAGEM SEM MARCAÇÃO"
+      },
+      "unscanned": "??? · ESCANEIE PARA IDENTIFICAR"
     }
   },
   "narrative": {

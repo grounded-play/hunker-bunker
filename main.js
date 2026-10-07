@@ -12567,6 +12567,27 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
         ctx.restore();
     }
 
+    // Names of scanned rooms and hallways (src/locationNames.js). Unscanned
+    // places carry no label; the full map only, the minimap stays clean.
+    if (!compact) {
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(2, 6, 11, 0.85)';
+        for (const chunk of detailedChunks) {
+            for (const label of chunk.labels ?? []) {
+                const point = worldToMap(label.x, label.z);
+                if (point.x < -80 || point.x > width + 80 || point.y < -20 || point.y > height + 20) continue;
+                ctx.font = label.kind === 'room' ? 'bold 9px Space Mono, monospace' : '8px Space Mono, monospace';
+                ctx.fillStyle = label.kind === 'room' ? 'rgba(255, 214, 140, 0.92)' : 'rgba(150, 215, 235, 0.7)';
+                ctx.strokeText(label.text, point.x, point.y);
+                ctx.fillText(label.text, point.x, point.y);
+            }
+        }
+        ctx.restore();
+    }
+
     // Landmarks (including Home Base)
     for (const landmark of landmarks) {
         const landmarkKey = `${Math.floor(landmark.x / chunkSize)},${Math.floor(landmark.z / chunkSize)}`;
@@ -12788,6 +12809,27 @@ function toggleTacticalMapModal(forceState) {
 }
 
 document.getElementById('close-tactical-map-modal')?.addEventListener('click', () => toggleTacticalMapModal(false));
+// The room or hallway underfoot, named once a radar pulse has reached it
+// (threeGame.syncPlayerLocationLabel, src/locationNames.js).
+window.addEventListener('player-location-changed', (event) => {
+    const element = document.getElementById('hud-location');
+    if (!element) return;
+    const label = event?.detail?.label;
+    element.classList.toggle('is-unknown', !label);
+    if (label) {
+        element.removeAttribute('data-i18n');
+        element.textContent = label;
+    } else {
+        element.setAttribute('data-i18n', 'ui.location.unscanned');
+        element.textContent = t('ui.location.unscanned');
+    }
+});
+window.addEventListener('locale-changed', () => {
+    if (!window.game) return;
+    window.game._detailedChunksDirty = true; // map labels re-render in the new language
+    window.game.syncPlayerLocationLabel?.({ force: true });
+});
+
 // The on-screen "PRESS E / A" prompts are tappable: on a Steam Deck the
 // touchscreen is the natural way to hit them, and a tap used to do nothing
 // (session 2026-10-06: SETTLE SURVIVOR tapped twice at a camp, no settle).

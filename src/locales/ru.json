@@ -1977,6 +1977,51 @@
       "class_line": "вылазок: {runs} · побед: {wins} · {tier}",
       "new_best": "НОВЫЙ ЛИЧНЫЙ РЕКОРД — {boards}",
       "rank_suffix": "#{rank}"
+    },
+    "location": {
+      "room": {
+        "junction_hall": "УЗЛОВОЙ ЗАЛ",
+        "bulkhead_room": "ОТСЕК ПЕРЕБОРОК",
+        "survey_office": "ГЕОДЕЗИЧЕСКИЙ ПУНКТ",
+        "mess_hall": "СТОЛОВАЯ",
+        "crew_quarters": "КУБРИК ЭКИПАЖА",
+        "relay_room": "РЕЛЕЙНАЯ",
+        "pump_house": "НАСОСНАЯ",
+        "boiler_room": "КОТЕЛЬНАЯ",
+        "switch_room": "РАСПРЕДЕЛИТЕЛЬНАЯ",
+        "filtration_plant": "ФИЛЬТРОВАЛЬНАЯ СТАНЦИЯ",
+        "med_bay": "МЕДОТСЕК",
+        "triage_ward": "СОРТИРОВОЧНАЯ ПАЛАТА",
+        "quarantine_cell": "КАРАНТИННЫЙ БОКС",
+        "guard_post": "КАРАУЛЬНЫЙ ПОСТ",
+        "checkpoint": "КОНТРОЛЬНО-ПРОПУСКНОЙ ПУНКТ",
+        "armory": "ОРУЖЕЙНАЯ",
+        "holding_cells": "КАМЕРЫ СОДЕРЖАНИЯ",
+        "reactor_annex": "ПРИСТРОЙКА РЕАКТОРА",
+        "fab_shop": "СБОРОЧНЫЙ ЦЕХ",
+        "servo_lab": "СЕРВОЛАБОРАТОРИЯ",
+        "turbine_hall": "ТУРБИННЫЙ ЗАЛ",
+        "supply_depot": "СКЛАД СНАБЖЕНИЯ",
+        "cold_store": "ХОЛОДИЛЬНЫЙ СКЛАД",
+        "cargo_hold": "ГРУЗОВОЙ ТРЮМ",
+        "strongroom": "СЕЙФОВАЯ КОМНАТА",
+        "vault": "ХРАНИЛИЩЕ",
+        "relic_cache": "ТАЙНИК РЕЛИКВИЙ",
+        "camp_commons": "ОБЩАЯ ЗОНА ЛАГЕРЯ",
+        "brood_chamber": "ВЫВОДКОВАЯ КАМЕРА",
+        "hive_gallery": "ГАЛЕРЕЯ УЛЬЯ",
+        "cryo_lab": "КРИОЛАБОРАТОРИЯ"
+      },
+      "hall": {
+        "service_corridor": "СЛУЖЕБНЫЙ КОРИДОР",
+        "maintenance_tunnel": "ТЕХНИЧЕСКИЙ ТОННЕЛЬ",
+        "spine_passage": "ГЛАВНЫЙ ПРОХОД",
+        "cable_run": "КАБЕЛЬНЫЙ КАНАЛ",
+        "drainage_cut": "ДРЕНАЖНАЯ ТРАНШЕЯ",
+        "access_way": "ПОДЪЕЗДНОЙ ПУТЬ",
+        "unmarked": "БЕЗЫМЯННЫЙ ПРОХОД"
+      },
+      "unscanned": "??? · ПРОСКАНИРУЙТЕ ДЛЯ ОПОЗНАНИЯ"
     }
   },
   "narrative": {

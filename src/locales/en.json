@@ -1977,6 +1977,51 @@
       "class_line": "{runs} runs · {wins} wins · {tier}",
       "new_best": "NEW PERSONAL BEST — {boards}",
       "rank_suffix": "#{rank}"
+    },
+    "location": {
+      "room": {
+        "junction_hall": "JUNCTION HALL",
+        "bulkhead_room": "BULKHEAD ROOM",
+        "survey_office": "SURVEY OFFICE",
+        "mess_hall": "MESS HALL",
+        "crew_quarters": "CREW QUARTERS",
+        "relay_room": "RELAY ROOM",
+        "pump_house": "PUMP HOUSE",
+        "boiler_room": "BOILER ROOM",
+        "switch_room": "SWITCH ROOM",
+        "filtration_plant": "FILTRATION PLANT",
+        "med_bay": "MED BAY",
+        "triage_ward": "TRIAGE WARD",
+        "quarantine_cell": "QUARANTINE CELL",
+        "guard_post": "GUARD POST",
+        "checkpoint": "CHECKPOINT",
+        "armory": "ARMORY",
+        "holding_cells": "HOLDING CELLS",
+        "reactor_annex": "REACTOR ANNEX",
+        "fab_shop": "FAB SHOP",
+        "servo_lab": "SERVO LAB",
+        "turbine_hall": "TURBINE HALL",
+        "supply_depot": "SUPPLY DEPOT",
+        "cold_store": "COLD STORE",
+        "cargo_hold": "CARGO HOLD",
+        "strongroom": "STRONGROOM",
+        "vault": "VAULT",
+        "relic_cache": "RELIC CACHE",
+        "camp_commons": "CAMP COMMONS",
+        "brood_chamber": "BROOD CHAMBER",
+        "hive_gallery": "HIVE GALLERY",
+        "cryo_lab": "CRYO LAB"
+      },
+      "hall": {
+        "service_corridor": "SERVICE CORRIDOR",
+        "maintenance_tunnel": "MAINTENANCE TUNNEL",
+        "spine_passage": "SPINE PASSAGE",
+        "cable_run": "CABLE RUN",
+        "drainage_cut": "DRAINAGE CUT",
+        "access_way": "ACCESS WAY",
+        "unmarked": "UNMARKED PASSAGE"
+      },
+      "unscanned": "??? · SCAN TO IDENTIFY"
     }
   },
   "narrative": {

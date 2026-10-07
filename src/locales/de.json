@@ -1977,6 +1977,51 @@
       "class_line": "{runs} Einsätze · {wins} Siege · {tier}",
       "new_best": "NEUER PERSÖNLICHER BESTWERT — {boards}",
       "rank_suffix": "#{rank}"
+    },
+    "location": {
+      "room": {
+        "junction_hall": "KNOTENHALLE",
+        "bulkhead_room": "SCHOTTRAUM",
+        "survey_office": "VERMESSUNGSBÜRO",
+        "mess_hall": "MESSE",
+        "crew_quarters": "MANNSCHAFTSQUARTIER",
+        "relay_room": "RELAISRAUM",
+        "pump_house": "PUMPENHAUS",
+        "boiler_room": "KESSELRAUM",
+        "switch_room": "SCHALTRAUM",
+        "filtration_plant": "FILTERANLAGE",
+        "med_bay": "SANITÄTSSTATION",
+        "triage_ward": "TRIAGESTATION",
+        "quarantine_cell": "QUARANTÄNEZELLE",
+        "guard_post": "WACHPOSTEN",
+        "checkpoint": "KONTROLLPUNKT",
+        "armory": "WAFFENKAMMER",
+        "holding_cells": "ARRESTZELLEN",
+        "reactor_annex": "REAKTORANBAU",
+        "fab_shop": "FERTIGUNGSWERKSTATT",
+        "servo_lab": "SERVOLABOR",
+        "turbine_hall": "TURBINENHALLE",
+        "supply_depot": "VERSORGUNGSDEPOT",
+        "cold_store": "KÜHLLAGER",
+        "cargo_hold": "FRACHTRAUM",
+        "strongroom": "TRESORRAUM",
+        "vault": "GEWÖLBE",
+        "relic_cache": "RELIKTLAGER",
+        "camp_commons": "LAGERPLATZ",
+        "brood_chamber": "BRUTKAMMER",
+        "hive_gallery": "STOCKGALERIE",
+        "cryo_lab": "KRYOLABOR"
+      },
+      "hall": {
+        "service_corridor": "VERSORGUNGSGANG",
+        "maintenance_tunnel": "WARTUNGSTUNNEL",
+        "spine_passage": "HAUPTGANG",
+        "cable_run": "KABELSCHACHT",
+        "drainage_cut": "ENTWÄSSERUNGSGRABEN",
+        "access_way": "ZUGANGSWEG",
+        "unmarked": "UNMARKIERTER GANG"
+      },
+      "unscanned": "??? · ZUM IDENTIFIZIEREN SCANNEN"
     }
   },
   "narrative": {
