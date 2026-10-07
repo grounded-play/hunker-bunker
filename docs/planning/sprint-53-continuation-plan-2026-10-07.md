@@ -86,6 +86,27 @@ Perfectly seamless square tileable orthographic PBR base-color wall texture: glo
 - Register A1–A5 assets as they arrive, set behavior/facing/footprint metadata, optimize them into runtime GLBs, and run the museum walk before enabling placement.
 - Acceptance: every active quest has a distinct world silhouette or documented proxy; all new models pass scale, collision and missing-texture checks.
 
+**V7 status 2026-10-07 (Claude): shipped. V8 model swaps stay with Codex.**
+- `src/questObjects.js` maps each of the 12 camp quests to a shipped stand-in model, its future A3 model and an accent colour.
+- **Target quests** (the props you close, pick up or shoot) wear the stand-in through `deferWorld3dReplacement`. The sprite stays the gameplay owner.
+  - Valves: `prop_valve_wheel_fused`.
+  - Probe: `radar`.
+  - Archive: `prop_hive_resin_sac`, tinted emerald, lime or teal by chapter.
+  - Bloom: `prop_fungal_resin_basin`.
+  - Grid covenant: `prop_conduit_junction_box`.
+  - Warm pipes: `prop_pipe_rupture`.
+- **Kill, wave and rescue quests** get one landmark that never counts toward progress.
+  - Armory: `prop_oxygen_bottle_cascade_rack`.
+  - Holdout: `prop_security_barricade`.
+  - Iron ledger: `arch_niche_shrine`.
+  - Cultist: `prop_votive_candle_shrine`, placed beside them.
+- **Beacon:** every quest object carries a pulsing light pillar and a floor ring in its accent colour.
+- **Cleanup:** claiming, shooting and quest reset all go through `removeCampQuestEntity`. Before this, a loaded model was a sibling of its sprite and would have stayed behind.
+- **To swap in an A3 model:** register its GLB in `WORLD_3D_MODELS`, then change `standIn` to it in `src/questObjects.js`.
+- **Evidence:**
+  - `src/questObjects.test.js`, `src/threeGame.questObjects.test.js`;
+  - `tests/e2e/quest-objects.spec.js` (GPU run: reactor valves under red beacons; armory rack under a cyan beacon; no beacon left after reset).
+
 ### 5. S1–S3: sleep presentation and atomic dawn reset
 
 - Treat rest as `confirmed -> presenting sleep -> committing dawn -> morning card -> expedition`, so skip and video failure converge on the same commit path.

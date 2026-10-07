@@ -485,6 +485,7 @@ import { findTilePath } from './snailPath.js';
 import { shouldEnemyRepath } from './enemyRepath.js';
 import { skipMatrixPassWhileHidden } from './chunkMatrices.js';
 import { pickSleepCutsceneStyle } from './sleepCutscene.js';
+import { attachQuestBeacon, questObjectFor, removeCampQuestEntity } from './questObjects.js';
 import { MYSTERY_BOX_KINDS, MYSTERY_OUTCOME_LINE_KEYS, mysteryBoxChance, mysteryOpenSeconds, mysteryRewardDrops, pickMysteryBoxKind, rollMysteryOutcome, seededRandom } from './mysteryBoxes.js';
 import { createTrackField, slimeColorFor, stepBoots, trackSurfaceForType } from './trackField.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
@@ -18235,19 +18236,16 @@ export class ThreeGame {
     clearActiveCampQuestEntities() {
         const questEntities = new Set([
             ...(this._activeCampQuest?.props ?? []),
+            ...(this._activeCampQuest?.landmarks ?? []),
             ...(this.scatterSprites ?? []).filter((sprite) => (
                 sprite?.userData?.campQuestId || sprite?.userData?.campQuestKey
             ))
         ]);
-        for (const sprite of questEntities) {
-            sprite?.parent?.remove?.(sprite);
-            sprite?.material?.dispose?.();
-            if (!sprite?.isSprite) sprite?.geometry?.dispose?.();
+        for (const sprite of questEntities) removeCampQuestEntity(this, sprite);
+        if (this._activeCampQuest) {
+            this._activeCampQuest.props = [];
+            this._activeCampQuest.landmarks = [];
         }
-        if (Array.isArray(this.scatterSprites)) {
-            this.scatterSprites = this.scatterSprites.filter((sprite) => !questEntities.has(sprite));
-        }
-        if (this._activeCampQuest) this._activeCampQuest.props = [];
         return questEntities.size;
     }
 
@@ -18583,6 +18581,14 @@ export class ThreeGame {
             this._activeCampQuest = null;
             return;
         }
+        if (questObjectFor(quest.id)?.landmark) {
+            // Beside the rescue, or across the camp from the first enemies.
+            const person = this._activeCampQuest.kind === 'rescue' ? this._activeCampQuest.props[0] : null;
+            const spot = person
+                ? { x: person.position.x + 0.9, z: person.position.z + 0.4 }
+                : this.findCampQuestSpawnSpot(camp, 1, 2);
+            this.spawnCampQuestLandmark?.(camp, spot);
+        }
         this.act2.setCampQuestActive(camp.id, quest.id);
         window.AudioManager?.play?.('ui_scan_ping', { volume: 0.5, playbackRate: 1.0 });
         window.dispatchEvent(new CustomEvent('camp-quest-progress', {
@@ -18638,6 +18644,30 @@ export class ThreeGame {
         const group = this.chunkMeshes.get(`${chunkX},${chunkY}`) ?? this.scene;
         group.add(sprite);
         this.scatterSprites.push(sprite);
+        // Sprint 53 V7: the quest's own object (src/questObjects.js), not
+        // the shared gold marker, plus a beacon in the quest's colour.
+        const questObject = questObjectFor(sprite.userData.campQuestKey);
+        if (questObject?.target && (type === 'quest_prop' || type === 'quest_mold')) {
+            sprite.userData.questObjectModel = questObject.target.model;
+            this.deferWorld3dReplacement?.(sprite, questObject.target.standIn);
+        }
+        attachQuestBeacon(sprite, questObject?.accent);
+        return sprite;
+    }
+
+    // Where a kill, wave or rescue quest happens: one prop, never a target,
+    // so it never counts toward (or holds up) the quest's progress.
+    spawnCampQuestLandmark(camp, { x, z } = {}) {
+        const aq = this._activeCampQuest;
+        const landmark = questObjectFor(aq?.quest?.id)?.landmark;
+        if (!aq || !landmark || !Number.isFinite(x) || !Number.isFinite(z)) return null;
+        const sprite = this.spawnCampQuestMarkerProp(camp, { type: 'quest_prop', x, z, index: 'landmark', scale: 1 });
+        if (!sprite) return null;
+        sprite.userData.isCampQuestLandmark = true;
+        sprite.userData.questObjectModel = landmark.model;
+        this.deferWorld3dReplacement?.(sprite, landmark.standIn);
+        aq.landmarks ??= [];
+        aq.landmarks.push(sprite);
         return sprite;
     }
 
@@ -19102,11 +19132,8 @@ export class ThreeGame {
             );
             if (dist >= 2.0) continue;
             sprite.userData.questClaimed = true;
-            sprite.parent.remove(sprite);
-            sprite.material?.dispose?.();
-            sprite.geometry?.dispose?.();
-            this.scatterSprites = this.scatterSprites.filter((s) => s !== sprite);
-            window.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 1.15 });
+            removeCampQuestEntity(this, sprite);
+            globalThis.window?.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 1.15 });
             this.advanceCampQuestProgress(1);
             return true;
         }
@@ -19137,11 +19164,8 @@ export class ThreeGame {
         if (!sprite?.userData) return;
         sprite.userData.burstTriggered = true;
         this.spawnPhysicalBurst(sprite.position.x, sprite.position.z, { color: 0xcc2233, count: 5, upward: 0.16 });
-        window.AudioManager?.play?.('enemy_hit_soft', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.4 }) ?? { volume: 0.4 }));
-        sprite.parent?.remove(sprite);
-        sprite.material?.dispose?.();
-        sprite.geometry?.dispose?.();
-        this.scatterSprites = this.scatterSprites.filter((s) => s !== sprite);
+        globalThis.window?.AudioManager?.play?.('enemy_hit_soft', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.4 }) ?? { volume: 0.4 }));
+        removeCampQuestEntity(this, sprite);
         this.advanceCampQuestProgress(1);
     }
 
@@ -19151,6 +19175,11 @@ export class ThreeGame {
     updateCampQuest(_delta) {
         const aq = this._activeCampQuest;
         if (!aq) return;
+        const pulse = 0.24 + Math.sin((typeof performance !== 'undefined' ? performance.now() : Date.now()) / 450) * 0.08;
+        for (const sprite of [...(aq.props ?? []), ...(aq.landmarks ?? [])]) {
+            const pillar = sprite?.userData?.questBeacon?.userData?.pillar;
+            if (pillar) pillar.material.opacity = pulse;
+        }
         if (aq.kind === 'wave') {
             const alive = aq.props.some((sprite) => sprite?.parent && !sprite.userData?.burstTriggered);
             if (alive) return;
