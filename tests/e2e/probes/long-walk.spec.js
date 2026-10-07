@@ -46,6 +46,17 @@ test('long walk: per-system frame cost as the run explores', async ({ page }) =>
                 if (typeof original !== 'function') continue;
                 g[name] = function wrapped(...args) { return g.frameProfiler.measure(`  ${name}`, () => original.apply(this, args)); };
             }
+            // Inside renderFrame: the scene graph's matrix pass, the renderer
+            // itself (one call per composer pass) and the composer.
+            const wrap = (owner, method, label) => {
+                const original = owner?.[method];
+                if (typeof original !== 'function') return;
+                owner[method] = function wrapped(...args) { return g.frameProfiler.measure(label, () => original.apply(this, args)); };
+            };
+            wrap(g.scene, 'updateMatrixWorld', '    scene.updateMatrixWorld');
+            wrap(g.renderer, 'render', '    renderer.render');
+            wrap(g.composer, 'render', '   composer.render');
+            wrap(g.renderer?.shadowMap, 'render', '    shadowMap.render');
         }
         window.__walkFrames = 0;
         const tick = () => { window.__walkFrames += 1; requestAnimationFrame(tick); };

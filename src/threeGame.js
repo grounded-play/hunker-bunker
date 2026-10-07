@@ -469,6 +469,7 @@ import { HALL_SCAN_KEY, ROOM_SCAN_KEY, formatLocationName, hallwayLocationName, 
 import { FLOOR_OVERLAY_TYPES, PROP_COLLISION, archPillarColliders, getPropBehavior } from './propBehavior.js';
 import { findTilePath } from './snailPath.js';
 import { shouldEnemyRepath } from './enemyRepath.js';
+import { skipMatrixPassWhileHidden } from './chunkMatrices.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
 import { groupDangerZones, lipEdgeQuads } from './dangerZones.js';
 import { GATE_CHALLENGES, GATE_CHALLENGE_TUNING, planGateChallenges } from './gateChallenges.js';
@@ -32193,6 +32194,8 @@ export class ThreeGame {
 
         useSinglePassForFlatMaterials(group);
         this.chunkGroups.add(group);
+        // Hidden chunks skip three's per-frame matrix pass (src/chunkMatrices.js).
+        skipMatrixPassWhileHidden(group);
         this.chunkMeshes.set(`${chunkX},${chunkY}`, group);
     }
 
