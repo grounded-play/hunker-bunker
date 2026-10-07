@@ -3,7 +3,6 @@
  * Connects directly to server/relay.js Socket.IO server or local LAN loopback.
  */
 
-import { io as connectSocketIo } from 'socket.io-client';
 import { planMultiplayerCrashSites } from './multiplayerCrashPlanner.js';
 import { createFreshRunEntropy } from './runEntropy.js';
 import { clearMultiplayerSession, startMultiplayerRun } from './gameController.js';
@@ -490,6 +489,9 @@ export class MultiplayerLobby {
         try {
             if (typeof window !== 'undefined') {
                 const sessionToken = await fetchMultiplayerSessionToken(this.serverUrl, callsign);
+                // The socket client (~30 KB gzipped) loads when a player
+                // actually connects, not with every boot (issue #106).
+                const { io: connectSocketIo } = await import('socket.io-client');
                 this.socket = connectSocketIo(this.serverUrl, {
                     timeout: 10000,
                     reconnectionAttempts: 5,

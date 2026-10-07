@@ -8,11 +8,11 @@
     "duplicateGroups": 15
   },
   "measured": {
-    "publicBytes": 3206380799,
-    "publicFileCount": 4302
+    "publicBytes": 3206386718,
+    "publicFileCount": 4309
   },
   "classifications": {
-    "runtime-required": 3946,
+    "runtime-required": 3953,
     "source-reference": 23,
     "generated-intermediate": 208,
     "unknown": 125

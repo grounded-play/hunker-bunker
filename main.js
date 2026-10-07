@@ -61,8 +61,6 @@ import { EVENT_RESPONSE_DESC_KEYS, EVENT_RESPONSE_LABEL_KEYS, EVENT_TEXT_KEYS } 
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized, isRankedRunPayload } from './src/steam/steamEvents.js';
 import { syncSteamStats } from './src/steamStats.js';
 import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb, unlockChapter as unlockRgbChapter, isChapterUnlocked as isRgbChapterUnlocked } from './src/minigames/rgb/save.js';
-import { mountRgb } from './src/minigames/rgb/runtime.js';
-import { ENDINGS as RGB_ENDINGS, CHAPTERS as RGB_CHAPTERS, CHAPTER_ORDER as RGB_CHAPTER_ORDER } from './src/minigames/rgb/content.js';
 import { mapBrowserGamepad, mergeBrowserAnalogFallback } from './src/browserGamepad.js';
 import { getControllerGlyphLabel } from './src/inputGlyphs.js';
 import {
@@ -3102,9 +3100,14 @@ function suspendGameForFullscreenVideo() {
 
 const RGB_ENDING_ORDER = ['system_loop', 'ashes_survival', 'open_hand'];
 
-function openArchiveSimsModal() {
+// The RGB minigame (its runtime and chapter content, ~85 KB) loads with the
+// archive, not at boot (issue #106).
+const loadRgbContent = () => import('./src/minigames/rgb/content.js');
+
+async function openArchiveSimsModal() {
     const modal = document.getElementById('archive-sims-modal');
     if (!modal) return;
+    const { ENDINGS: RGB_ENDINGS, CHAPTERS: RGB_CHAPTERS, CHAPTER_ORDER: RGB_CHAPTER_ORDER } = await loadRgbContent();
     const statusEl = document.getElementById('archive-sim-rgb-status');
     const endingsEl = document.getElementById('archive-sim-rgb-endings');
     const chaptersEl = document.getElementById('archive-sim-rgb-chapters');
@@ -3148,11 +3151,18 @@ function closeArchiveSimsModal() {
     document.getElementById('archive-sims-modal')?.classList.add('hidden');
 }
 
-function launchRgb(chapter = null) {
+async function launchRgb(chapter = null) {
     closeArchiveSimsModal();
-    if (menu) menu.classList.add('hidden');
     const root = document.getElementById('rgb-root');
     if (!root) return;
+    let mountRgb;
+    try {
+        ({ mountRgb } = await import('./src/minigames/rgb/runtime.js'));
+    } catch (error) {
+        console.error('[rgb] could not load the minigame', error);
+        return;
+    }
+    if (menu) menu.classList.add('hidden');
     rgbReturnPhase = appPhase === 'archive' ? 'menu' : appPhase;
     setAppPhase('archive');
     // The archive fully covers the Three.js canvas. Stop both rendering and

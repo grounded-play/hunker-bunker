@@ -98,7 +98,14 @@ Also the Netlify Lighthouse report: mobile Performance 38.
   - **Result** (Lighthouse 9.6.8 mobile, local preview, three runs): **Performance 63–65**, TBT 180–230 ms (was ~600), payload 2.2 MB (was 3.4).
 - **PWA is fine.** The "47" and the earlier "38" were the Performance score; the deploy audits PWA 100.
 
+- **Round 3** (Netlify: Performance 70 on `6ac5a404`):
+  - The title key art is preloaded, and the door art waits for the first input.
+  - The RGB minigame (runtime and chapter content) loads with the archive, and socket.io loads on connect. Boot JS went from 462 to 435 KiB; Lighthouse "unused JavaScript" from 217 to 197 KiB.
+  - The language picker's seven flags are files (`public/flags/`), not inline SVG: DOM went from 2,799 to 2,696 elements.
+  - A loader showing the title art scored 74–77, but the owner preferred the plain loader, so it was reverted.
+
 **Next, in order:**
+- **Split `main.js` per screen.** It is 607 KB raw, and most of the remaining unused JS and DOM size is screens bundled into boot: settings (246 elements), ship console (210), multiplayer lobby (200), Steam Vault (142), dev console (79). Each needs its boot-time wiring moved to first open, then its markup can move to a `<template>` built on first open.
 - **LCP (~8 s, the biggest remaining weight).** The LCP element is the title (`#splash`), which JavaScript reveals late in boot. Paint the title shell from static HTML and CSS, then let the boot fill it in.
 - **`main.js` evaluation** (~1.4 s throttled).
 - Critical CSS (the 96 KB stylesheet is ~90% unused at first paint).

@@ -4764,11 +4764,19 @@ input:checked+.slider:before {
   background: #111;
 }
 
-.language-flag-wrap svg {
+.language-flag-wrap svg,
+.language-flag-wrap img {
   width: 100%;
   height: 100%;
   display: block;
   object-fit: cover;
+}
+
+/* The flags are files (public/flags/) drawn as images, not inline SVG: the
+   inline copies were ~110 DOM nodes (issue #106). `contain` matches how the
+   inline SVG letterboxed itself. */
+.language-flag-wrap img {
+  object-fit: contain;
 }
 
 .language-choice-info {

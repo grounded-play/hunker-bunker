@@ -1053,6 +1053,13 @@
     "engineer_ship_healed.png",
     "favicon.png",
     "favicon.svg",
+    "flags/de.svg",
+    "flags/en.svg",
+    "flags/es-419.svg",
+    "flags/ja.svg",
+    "flags/pt-BR.svg",
+    "flags/ru.svg",
+    "flags/zh-CN.svg",
     "fungal_spore_vent.png",
     "fx_spark_burst.svg",
     "fx_steam_puff.svg",
@@ -20026,6 +20033,41 @@
     {
       "path": "favicon.svg",
       "bytes": 9523,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "flags/de.svg",
+      "bytes": 228,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "flags/en.svg",
+      "bytes": 3517,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "flags/es-419.svg",
+      "bytes": 528,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "flags/ja.svg",
+      "bytes": 167,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "flags/pt-BR.svg",
+      "bytes": 516,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "flags/ru.svg",
+      "bytes": 228,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "flags/zh-CN.svg",
+      "bytes": 735,
       "classification": "runtime-required"
     },
     {
