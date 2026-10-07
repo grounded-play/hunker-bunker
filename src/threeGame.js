@@ -43,7 +43,7 @@ import { handleCriticalServiceDestruction } from './criticalServiceRecovery.js';
 import * as THREE from 'three';
 import { fitWallShaderSamplerBudget, INSTANCED_WORLD_POSITION } from './wallShaderCompatibility.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { createFrameProfiler } from './frameProfiler.js';
+import { createFrameProfiler, summarizeFrameBreakdown } from './frameProfiler.js';
 import { createFrameIntervalTracker } from './frameIntervalTracker.js';
 import { createGpuFrameTimer } from './gpuFrameTimer.js';
 import { beginPerfPhase } from './perfPhases.js';
@@ -467,6 +467,7 @@ import { createCrossingBridgeMesh } from './crossingBridge.js';
 import { getTerritoryLocation } from './territoryStructures.js';
 import { HALL_SCAN_KEY, ROOM_SCAN_KEY, formatLocationName, hallwayLocationName, roomLocationName } from './locationNames.js';
 import { FLOOR_OVERLAY_TYPES, PROP_COLLISION, archPillarColliders, getPropBehavior } from './propBehavior.js';
+import { findTilePath } from './snailPath.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
 import { groupDangerZones, lipEdgeQuads } from './dangerZones.js';
 import { GATE_CHALLENGES, GATE_CHALLENGE_TUNING, planGateChallenges } from './gateChallenges.js';
@@ -1001,6 +1002,7 @@ const WALL_DECAL_TYPES = new Set([
 ]);
 const isFloorOverlayType = (type) => FLOOR_OVERLAY_TYPES.has(type);
 const isWallDecalType = (type) => WALL_DECAL_TYPES.has(type);
+const FRAME_BREAKDOWN_INTERVAL_MS = 10_000;
 const BUNKER_COT_SPRITE_WIDTH = 1.35;
 const BUNKER_COT_SPRITE_HEIGHT = 0.8;
 const PROCEDURAL_DOOR_OPEN_RADIUS = 2.7;
@@ -7403,6 +7405,42 @@ export class ThreeGame {
         return createWorld3dModel(modelType);
     }
 
+    // Sprint 52 A1: during gameplay the frame profiler stays on (about 50
+    // timer reads a frame) and every 10 s the session log gets which systems
+    // the frame time went to, beside the load that drives them.
+    updateFrameBreakdownReport(now = performance.now()) {
+        const fp = this.frameProfiler;
+        if (!fp) return null;
+        if (this.performanceProfile !== 'gameplay') {
+            if (fp.enabled && this._frameBreakdownOwnsProfiler) fp.disable();
+            this._frameBreakdownOwnsProfiler = false;
+            this._frameBreakdownStart = null;
+            return null;
+        }
+        if (!fp.enabled) {
+            fp.enable();
+            fp.reset();
+            this._frameBreakdownOwnsProfiler = true;
+        }
+        this._frameBreakdownStart ??= now;
+        if (now - this._frameBreakdownStart < FRAME_BREAKDOWN_INTERVAL_MS) return null;
+        this._frameBreakdownStart = now;
+        let enemies = 0;
+        for (const sprite of this.scatterSprites ?? []) if (this.isEnemyType?.(sprite.userData?.type)) enemies += 1;
+        const summary = summarizeFrameBreakdown(fp.snapshot(), {
+            enemies,
+            props: (this.scatterSprites?.length ?? 0) - enemies,
+            chunks: this.chunkMeshes?.size ?? 0
+        });
+        fp.reset();
+        if (summary) this.logFrameBreakdown(summary);
+        return summary;
+    }
+
+    logFrameBreakdown(summary) {
+        debugLog.info('PERF', 'frame-breakdown', summary);
+    }
+
     // A walk-through arch (src/propBehavior.js) blocks only at its two posts,
     // placed from the model's measured footprint once it is in the world.
     measureArchPillars(source, root) {
@@ -10771,6 +10809,7 @@ export class ThreeGame {
     // the very first guard.
     render() {
         const fp = this.frameProfiler ?? (this.frameProfiler = createFrameProfiler());
+        this.updateFrameBreakdownReport?.();
         fp.beginFrame();
         try {
             const frameBody = typeof this.renderFrameBody === 'function'
@@ -36002,137 +36041,26 @@ export class ThreeGame {
         };
     }
 
+    // Enemy A*: src/snailPath.js (the same search, cheaper bookkeeping). The
+    // door/safe-zone blocker is built once per frame's containment options
+    // rather than once per search.
     findSnailPath(startTileX, startTileZ, goalTileX, goalTileZ, nodeBudget = SNAIL_PATH_NODE_BUDGET) {
-        const keyOf = (x, z) => `${x},${z}`;
-        const parseKey = (key) => {
-            const [x, z] = key.split(',');
-            return { x: Number(x), z: Number(z) };
-        };
-        const heuristic = (ax, az, bx, bz) => Math.hypot(bx - ax, bz - az);
-        const directions = [
-            { dx: 1, dz: 0, cost: 1 },
-            { dx: -1, dz: 0, cost: 1 },
-            { dx: 0, dz: 1, cost: 1 },
-            { dx: 0, dz: -1, cost: 1 },
-            { dx: 1, dz: 1, cost: Math.SQRT2, diagonal: true },
-            { dx: 1, dz: -1, cost: Math.SQRT2, diagonal: true },
-            { dx: -1, dz: 1, cost: Math.SQRT2, diagonal: true },
-            { dx: -1, dz: -1, cost: Math.SQRT2, diagonal: true }
-        ];
         const containmentOptions = this.getCurrentContainmentOptions?.() ?? {
             containmentZones: this.getActiveContainmentZones?.() ?? [],
             doors: this.getActiveDoors?.() ?? []
         };
-        const blocksAttackPath = createAttackPathBlocker(containmentOptions);
-
-        if (!this.isSnailTileWalkable(startTileX, startTileZ)) {
-            return [{ x: startTileX, z: startTileZ }];
+        if (this._attackPathBlockerOptions !== containmentOptions) {
+            this._attackPathBlockerOptions = containmentOptions;
+            this._attackPathBlocker = createAttackPathBlocker(containmentOptions);
         }
-
-        let resolvedGoalX = goalTileX;
-        let resolvedGoalZ = goalTileZ;
-        if (!this.isSnailTileWalkable(resolvedGoalX, resolvedGoalZ)) {
-            const fallbackOffsets = [
-                [1, 0], [-1, 0], [0, 1], [0, -1],
-                [1, 1], [-1, 1], [1, -1], [-1, -1],
-                [2, 0], [-2, 0], [0, 2], [0, -2]
-            ];
-            let fallback = null;
-            let fallbackDist = Infinity;
-            for (const [dx, dz] of fallbackOffsets) {
-                const nx = resolvedGoalX + dx;
-                const nz = resolvedGoalZ + dz;
-                if (!this.isSnailTileWalkable(nx, nz)) continue;
-                const dist = heuristic(startTileX, startTileZ, nx, nz);
-                if (dist < fallbackDist) {
-                    fallback = { x: nx, z: nz };
-                    fallbackDist = dist;
-                }
-            }
-            if (fallback) {
-                resolvedGoalX = fallback.x;
-                resolvedGoalZ = fallback.z;
-            }
-        }
-
-        const startKey = keyOf(startTileX, startTileZ);
-        const goalKey = keyOf(resolvedGoalX, resolvedGoalZ);
-        if (startKey === goalKey) {
-            return [{ x: startTileX, z: startTileZ }];
-        }
-
-        const openSet = [startKey];
-        const closedSet = new Set();
-        const cameFrom = new Map();
-        const gScore = new Map([[startKey, 0]]);
-        const fScore = new Map([[startKey, heuristic(startTileX, startTileZ, resolvedGoalX, resolvedGoalZ)]]);
-
-        let explored = 0;
-        let bestKey = startKey;
-        let bestDistance = heuristic(startTileX, startTileZ, resolvedGoalX, resolvedGoalZ);
-
-        while (openSet.length > 0 && explored < nodeBudget) {
-            openSet.sort((a, b) => (fScore.get(a) ?? Infinity) - (fScore.get(b) ?? Infinity));
-            const currentKey = openSet.shift();
-            if (!currentKey) break;
-            if (closedSet.has(currentKey)) continue;
-
-            const current = parseKey(currentKey);
-            const distanceToGoal = heuristic(current.x, current.z, resolvedGoalX, resolvedGoalZ);
-            if (distanceToGoal < bestDistance) {
-                bestDistance = distanceToGoal;
-                bestKey = currentKey;
-            }
-
-            if (currentKey === goalKey) {
-                bestKey = currentKey;
-                break;
-            }
-
-            closedSet.add(currentKey);
-            explored += 1;
-            const currentG = gScore.get(currentKey) ?? Infinity;
-
-            for (const dir of directions) {
-                const nx = current.x + dir.dx;
-                const nz = current.z + dir.dz;
-                if (!this.isSnailTileWalkable(nx, nz)) continue;
-                if (blocksAttackPath(
-                    { x: current.x, z: current.z },
-                    { x: nx, z: nz }
-                )) continue;
-                if (dir.diagonal) {
-                    if (!this.isSnailTileWalkable(current.x + dir.dx, current.z) || !this.isSnailTileWalkable(current.x, current.z + dir.dz)) {
-                        continue;
-                    }
-                }
-
-                const neighborKey = keyOf(nx, nz);
-                if (closedSet.has(neighborKey)) continue;
-                const tentativeG = currentG + dir.cost;
-                if (tentativeG >= (gScore.get(neighborKey) ?? Infinity)) continue;
-
-                cameFrom.set(neighborKey, currentKey);
-                gScore.set(neighborKey, tentativeG);
-                const nextF = tentativeG + heuristic(nx, nz, resolvedGoalX, resolvedGoalZ);
-                fScore.set(neighborKey, nextF);
-                if (!openSet.includes(neighborKey)) {
-                    openSet.push(neighborKey);
-                }
-            }
-        }
-
-        const pathKeys = [bestKey];
-        let walkKey = bestKey;
-        while (cameFrom.has(walkKey)) {
-            walkKey = cameFrom.get(walkKey);
-            pathKeys.push(walkKey);
-        }
-        pathKeys.reverse();
-
-        return pathKeys.map((key) => {
-            const point = parseKey(key);
-            return { x: point.x, z: point.z };
+        return findTilePath({
+            startX: startTileX,
+            startZ: startTileZ,
+            goalX: goalTileX,
+            goalZ: goalTileZ,
+            nodeBudget,
+            isWalkable: (x, z) => this.isSnailTileWalkable(x, z),
+            blocksStep: this._attackPathBlocker
         });
     }
 

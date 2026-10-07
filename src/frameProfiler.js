@@ -87,3 +87,16 @@ export function createFrameProfiler({ now = () => performance.now() } = {}) {
         }
     };
 }
+
+// One session-log line (Sprint 52): average frame time, the costliest systems
+// per frame, and the load that drives them (loaded enemies, props, chunks).
+export function summarizeFrameBreakdown(snapshot, load = {}, { top = 8 } = {}) {
+    if (!snapshot || !(snapshot.frames > 0)) return null;
+    const round = (value) => Math.round(value * 100) / 100;
+    return {
+        frames: snapshot.frames,
+        avgFrameMs: round(snapshot.totalMs / snapshot.frames),
+        top: snapshot.sections.slice(0, top).map((entry) => ({ name: entry.name, avgMs: entry.avgMsPerFrame, maxMs: entry.maxMs })),
+        load
+    };
+}
