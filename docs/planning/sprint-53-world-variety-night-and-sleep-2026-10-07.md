@@ -101,12 +101,12 @@ Every prompt below and every lighting change is checked against this list.
   | Beds, benches | long side to the wall |
 
   This goes in `src/propBehavior.js` as a `facing` field (wall, corner, center, free), so each style says how it stands. A test checks no prop faces within 60° of the wall it is against.
-- [ ] **V3. Composition.** Rooms are dressed as small scenes, not scatter. A cluster is one anchor plus 2–3 satellites from a related set:
+- [x] **V3. Composition.** Rooms are dressed as small scenes, not scatter. A cluster is one anchor plus 2–3 satellites from a related set:
   - a workbench with a stool, a tool cart and loose cables;
   - a bed with a footlocker and a lamp;
   - a crate with spilled cans and a torn tarp.
 - [ ] **V4. More signature props per theme:** at least 4 per theme, from the new assets in A1–A5.
-- [ ] **V5. Filler layer.** Low, cheap, non-blocking floor clutter (cables, debris, papers, cans, bones, frost shards, resin drips), placed along walls and in corners at a density each biome sets. Filler never blocks movement (`propBehavior` floor style) and is drawn as instanced batches.
+- [x] **V5. Filler layer.** Low, cheap, non-blocking floor clutter (cables, debris, papers, cans, bones, frost shards, resin drips), placed along walls and in corners at a density each biome sets. Filler never blocks movement (`propBehavior` floor style) and is drawn as instanced batches.
 - [ ] **V6. Mystery boxes.** A new interactable container family. Hold E to open (Engineers open faster; some need a keycard). What's inside is rolled when opened, from a table by biome and depth:
 
   | Roll | Share | What happens |

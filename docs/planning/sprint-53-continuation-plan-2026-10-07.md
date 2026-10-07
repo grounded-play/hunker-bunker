@@ -97,10 +97,30 @@ Differs from the outline above:
 6. S1–S3 sleep presentation and dawn commit.
 7. Visual/performance evidence and Sprint 53 closeout.
 
+## Key-art and lived-in composition pass, 2026-10-07
+
+The title and biome door key art were used as the visual target: monumental silhouettes, dark negative space, selective practical light and restrained accent colour. The furnished-room captures showed plenty of content, but repeated wall marks and evenly distributed clutter made rooms read as procedural scatter instead of inhabited places.
+
+The V3/V5 pass changes the room planner without adding per-frame work:
+
+- Five family profiles now control perimeter, corner, clutter, floor-mark and wall-mark density. Cathedral and cryo spaces hold more negative space; bunker, camp and bio rooms remain busier in distinct ways.
+- Wall marks obey a family-specific spacing radius. Ambient floor marks are limited to one to three separated clusters, kept away from doors, and reduced in scale.
+- Furniture groups now have explicit anchor, support and detail roles. Supports and details face their anchor, use a descending scale hierarchy and share one grounding floor mark.
+- The first composition prefers the room's role-specific vignette, groups rotate before repeating, and selection favours models least used in the current chunk.
+- The vignette triangle allowance is 70k rather than 60k. This admits the existing 62.5k medical set that the former cap silently excluded while preserving a hard per-room budget.
+- Global midnight fog now shapes depth instead of filling the isometric room with a pale veil. Dense low fog remains the responsibility of `FloorFogSystem`; the global fog and background converge much more strongly on near-black.
+
+Evidence regenerated in `docs/reports/assets/furnished-rooms/`:
+
+- 20 deterministic furnished-room showroom cases passed in Chromium.
+- 32 focused room-dressing, renderer, integration and real-night tests passed.
+- The live WebGL sky probe passed at noon and midnight; midnight retains dark room edges, readable warm suit light and no full-screen cream haze.
+
+Known asset gaps reported by the showroom remain explicit rather than silently substituted: `lore_terminal`, `scatter_horizon_black_box` and `prop_hydraulic_piston_actuator`. These are the highest-value model replacements alongside V4's remaining signature props.
+
 ## On-screen check, 2026-10-07 afternoon (Claude session, `20257ba9`)
 
 Bisected against `f2a4ca24` at 1280×800 with a real GPU:
 
 - **Walls:** a flat amber/cyan emissive wash over every ring wall (W1) made them flat tan-orange and hid the PBR texture. Ring accents now come from the skins' emissive maps only. **Do not reintroduce a constant per-ring emissive colour.**
 - **Night:** `updateSky` runs after `updateDayNightCycle` and reset the fog to the horizon colour every frame, so the night darkening never reached the screen: it was a grey-cream haze, brighter than day. `updateSky` now ends with `applyNightFog()`, which uses `_nightDarkness` from the day cycle. The suit light's night boost is cut to a pool (fill ×1.2, cone ×1.25). **Night fog colour changes belong in `applyNightFog`, not only in `updateDayNightCycle`.**
-
