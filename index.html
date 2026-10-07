@@ -11,6 +11,9 @@
        swaps when the webfont arrives (display=swap). -->
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   <noscript><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"></noscript>
+  <!-- The title's key art is the largest paint (#splash and .splash-frost),
+       but CSS only requests it once the boot reveals the title. Fetch it now. -->
+  <link rel="preload" as="image" href="/title_key_art_v2.webp" fetchpriority="high">
   <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="/src/styles/expeditionHud.css">
   <link rel="stylesheet" href="/src/styles/hudDockHousings.css">

@@ -15121,21 +15121,24 @@ function preloadDoorAssets() {
     // door_bio/nuclear/cryo/biomechanical.webp were preloaded here too but
     // nothing displays them: 1.4 MB per boot (Lighthouse, issue #106).
 
-    // The art is first needed when a door closes, which takes a click; fetch
-    // it once the page has loaded and gone idle, so it no longer competes
-    // with the boot scripts for bandwidth.
+    // The art is first needed when a door closes, which takes a click, and
+    // the loading screen's asset manifest already fetches most of it. Start
+    // on the first input (or 15 s in), so it never competes with the title
+    // key art, the largest paint (issue #106).
+    let doorsRequested = false;
+    const interactionEvents = ['pointerdown', 'keydown', 'touchstart'];
     const fetchDoors = () => {
+        if (doorsRequested) return;
+        doorsRequested = true;
+        for (const type of interactionEvents) window.removeEventListener(type, fetchDoors, true);
         for (const src of doorImages) {
             const img = new Image();
             img.decoding = 'async';
             img.src = assetUrl(src);
         }
     };
-    const whenIdle = () => (typeof window.requestIdleCallback === 'function'
-        ? window.requestIdleCallback(fetchDoors, { timeout: 4000 })
-        : setTimeout(fetchDoors, 1500));
-    if (document.readyState === 'complete') whenIdle();
-    else window.addEventListener('load', whenIdle, { once: true });
+    for (const type of interactionEvents) window.addEventListener(type, fetchDoors, { capture: true, passive: true });
+    setTimeout(fetchDoors, 15000);
 
     try {
         AudioManager.preload?.(['ui_boot1', 'door_slam_vertical', 'door_gears_spin', 'door_slide_horiz']);
