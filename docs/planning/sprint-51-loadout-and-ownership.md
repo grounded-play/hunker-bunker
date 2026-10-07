@@ -1,6 +1,6 @@
 # Sprint 51 — Loadout you can read and change anywhere; earn everything
 
-Status: planning | Branch: `dev/sprint-51` (local only until the owner says publish)
+Status: A–D done, second wave done (below) | Branch: `dev/sprint-51` (local only until the owner says publish)
 
 The owner, 2026-10-06:
 - "Fix the Foundry that shows loadout. I want to see what the loadout does."
@@ -73,4 +73,44 @@ The owner, 2026-10-06:
   - **Fix:** each module now snaps to the chassis's own surface. A ray runs inward along the mount's direction, with a per-mount reach so a pauldron isn't mistaken for the helmet. The module faces outward and is sized by the body's thickness there (0.85–1.45×).
   - **Verified:** front contact sheets of all 51 bodies, 4 module pairs each (`scripts/capture-equipment-fit.mjs`).
   - **Outliers:** `skin_scout_mayor_tina` renders crouched (the model's pose), and the 4143 forearm cylinder protrudes; both to review by eye in the Armory.
+
+## Second wave: Sprint 50 carry-overs (owner, 2026-10-07: "next work on")
+
+Decisions (owner, 2026-10-07):
+- **Earned key:** a boss kill grants the earned cache key 4154.
+- **Reagents:** "Full loop". Deep Core Shards trade for reagents weekly, boss kills drop ingots, and ingots + matrices + ambergris assemble the overclock modules.
+- **Co-op:** "if one player unlocks O2 both get it, if one player gets coins both get it in PvE / co-op. PvP it's just they don't share." PvP may get its own ships and map type later (design note below).
+
+| Commit | What |
+|---|---|
+| `44f00b5f` | **Camps:** C / right-stick click cycles every camp action. TALK always works. Each camp's two workers are named residents you can talk to. A settled survivor stays as a resident. The companion no longer relocates into walls. |
+| `8d5c4d06` | **Input hints:** keyboard key hints read as pad hints while a controller is active (`src/inputHints.js`). The tactical map's zoom and "find me" work from a pad. |
+| `051a5334` | **Co-op:** the squad shares ship progress (O2 level, unlocks) and loot at full value (`src/squadProgress.js`); PvP keeps them private. PvP heals reach the relay, so health no longer drifts. |
+| `0d2b599b` | **Earned key:** boss kills grant 4154; caches open with either key (the schema's 4002 exchange has two recipes). 4155 is store-hidden and not marketable. |
+| `db05d7bc` | **Reagent loop:** the Quartermaster trades shards for ambergris (35, 3/week), matrices (50, 2/week) and the earned key (75, 1/week). Boss kills grant 5 ingots. The Assembly Bay builds 4140–4147. Both panels are on the Vault's Trade-up tab. |
+| `3cd1219d` | **Co-op aggro:** the host's snapshot names each enemy's target, and the guest's copy bites and faces that player. Before, a snail chasing the guest never did damage. |
+| `c51a02b8` | **Web perf:** the briefing, Vault, trade window and legacy dev console are built on first open (`src/deferredMarkup.js`). Boot DOM went from ~2,700 to ~2,200 elements. |
+
+Not done:
+- **UI clipping on a 16:9 PC:** needs the owner's screenshot. At 1280×720 the deployment briefing's co-op view runs past the bottom of its frame. A candidate, unconfirmed.
+- **Web perf, next:**
+  - Settings (210 elements) and the ship console (210) are the next deferral candidates. Both are read and written by boot-time settings sync throughout `main.js`, so they need their own pass.
+  - LCP is still the title art painting late, and the owner rejected showing it in the loader.
+- **Legacy dev console modal:** `#dev-console-modal` is never shown. Since `3246ccd5`, `openDevConsoleModal` opens the tilde console. Its markup is now deferred, not deleted (owner's call). `tests/e2e/dev-debug-commands.spec.js` still expects it to open.
+
+### Design note: PvP ships and map type (future)
+
+PvP no longer shares squad progress or world events (`PVP_PRIVATE_WORLD_EVENTS`), but both players still spawn around one crash site and one ship. The owner's idea: each player gets their own ship, on a map type built for two bases, e.g. mirrored halves with a contested middle ring. That needs:
+- a route-layout variant (`ROUTE_LAYOUT_VERSION`; bump, never edit v1);
+- per-player ship state in the relay;
+- a win condition tied to the rival ship.
+
+Not started.
+
+## Owner steps before this ships
+
+1. **Upload the Steam inventory schema** (`steam/inventory_schema_hunker_bunker.json`): the 4002 two-key exchange, and 4155 store-hidden and not marketable. Until then, earned keys (4154) cannot open caches on Steam.
+2. **Deploy the backend:** quartermaster and assemble routes, ingots and keys on boss kills, `quartermaster`/`assemble` capabilities. Deploy before the client, as with the season ledger.
+3. **Deploy the relay:** the PvP `playerHealed` budget, and enemy `targetId`/`mode` in snapshots. An old relay strips the new fields, so guests stay safe from snails until it is updated.
+4. Bump the version (patch, keep `-beta`) when the PR is opened.
 
