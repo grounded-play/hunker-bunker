@@ -2034,6 +2034,36 @@
         "access_way": "ZUGANGSWEG",
         "unmarked": "UNMARKIERTER GANG"
       },
+      "site": {
+        "impact_site": "EINSCHLAGSTELLE",
+        "foundry": "FERTIGUNGSGIESSEREI",
+        "cave_mouth": "UNTERIRDISCHER ABGRUND",
+        "o2_generator": "ATMOSPHÄRISCHER REGENERATOR",
+        "wreck": {
+          "scout": "SCOUT-WRACK",
+          "tank": "PANZER-WRACK",
+          "engineer": "INGENIEUR-WRACK",
+          "infiltrator": "INFILTRATOR-WRACK"
+        }
+      },
+      "role": {
+        "generic": "SEKTOR",
+        "utility": "VERSORGUNG",
+        "medical": "MEDIZIN",
+        "security": "SICHERHEIT",
+        "engineering": "TECHNIK",
+        "storage": "LAGER",
+        "reward": "DEPOT",
+        "camp": "AUSSENPOSTEN",
+        "hive": "STOCK",
+        "nest": "NEST",
+        "cryo_lab": "KRYO-FORSCHUNG",
+        "foundry": "SCHWERINDUSTRIE",
+        "cave": "SEKTOR NULL",
+        "life_support": "LEBENSERHALTUNG",
+        "transit": "TRANSIT",
+        "home": "OBERFLÄCHEN-ANKER"
+      },
       "unscanned": "??? · ZUM IDENTIFIZIEREN SCANNEN"
     },
     "equipment": {

@@ -2034,6 +2034,36 @@
         "access_way": "通行道",
         "unmarked": "无标记通道"
       },
+      "site": {
+        "impact_site": "撞击点",
+        "foundry": "制造工厂",
+        "cave_mouth": "地下深渊",
+        "o2_generator": "大气再生器",
+        "wreck": {
+          "scout": "侦察机残骸",
+          "tank": "坦克残骸",
+          "engineer": "工程师残骸",
+          "infiltrator": "潜入者残骸"
+        }
+      },
+      "role": {
+        "generic": "扇区",
+        "utility": "公用设施",
+        "medical": "医疗",
+        "security": "安保",
+        "engineering": "工程",
+        "storage": "仓储",
+        "reward": "储藏点",
+        "camp": "前哨站",
+        "hive": "虫巢",
+        "nest": "巢穴",
+        "cryo_lab": "冷冻研究",
+        "foundry": "重工业",
+        "cave": "零号扇区",
+        "life_support": "生命保障",
+        "transit": "通道",
+        "home": "地表锚点"
+      },
       "unscanned": "??? · 扫描以识别"
     },
     "equipment": {

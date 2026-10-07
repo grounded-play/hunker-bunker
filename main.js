@@ -7096,16 +7096,39 @@ window.addEventListener('expedition-briefing', (event) => {
 window.addEventListener('location-discovered', (event) => {
     const detail = event?.detail ?? {};
     const card = document.getElementById('compound-location-title');
-    const siteKey = COMPOUND_SITE_KEYS[detail.siteId];
-    const roomKey = COMPOUND_ROOM_KEYS[detail.family]?.[detail.beatKey];
-    if (!card || !siteKey || !roomKey || !isGameplayHudActive()) return;
-    setHudCardText('compound-location-text', t('ui.expedition.location', { site: t(siteKey), room: t(roomKey) }));
+    if (!card || !isGameplayHudActive()) return;
+
+    const siteKey = detail.siteId ? COMPOUND_SITE_KEYS[detail.siteId] : null;
+    const roomKey = (detail.family && detail.beatKey) ? COMPOUND_ROOM_KEYS[detail.family]?.[detail.beatKey] : null;
+
+    let titleText;
+    let subtitleText;
+    const isHallway = detail.kind === 'hall';
+
+    if (siteKey && roomKey) {
+        titleText = t('ui.expedition.location', { site: t(siteKey), room: t(roomKey) });
+        subtitleText = detail.subtitle || '';
+    } else if (detail.title || detail.label) {
+        titleText = detail.title || detail.label;
+        subtitleText = detail.subtitle || '';
+    } else {
+        return;
+    }
+
+    setHudCardText('compound-location-text', titleText);
+    const subtitleEl = document.getElementById('compound-location-subtitle');
+    if (subtitleEl) {
+        subtitleEl.textContent = subtitleText;
+        subtitleEl.classList.toggle('hidden', !subtitleText);
+    }
+    card.classList.toggle('is-hallway', Boolean(isHallway));
     const tag = document.getElementById('compound-location-tag');
     if (tag) {
         tag.textContent = t('ui.expedition.first_visit');
         tag.classList.toggle('hidden', !detail.firstVisit);
     }
-    fadeHudCard(card, COMPOUND_LOCATION_VISIBLE_MS, compoundLocationTimerRef);
+    const duration = isHallway ? 2400 : COMPOUND_LOCATION_VISIBLE_MS;
+    fadeHudCard(card, duration, compoundLocationTimerRef);
 });
 
 const GATE_CHALLENGE_KEYS = Object.freeze({
@@ -9496,6 +9519,7 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
             document.body.classList.remove('mission-intro-active');
         }
         game?.setCinematicLock?.(false);
+        game?.syncPlayerLocationLabel?.({ force: true });
         window.AudioManager?.playVoiceCallout?.('comms_online', { volume: 0.95 });
 
         if (startTutorial) {
@@ -12643,8 +12667,9 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
             for (const label of chunk.labels ?? []) {
                 const point = worldToMap(label.x, label.z);
                 if (point.x < -80 || point.x > width + 80 || point.y < -20 || point.y > height + 20) continue;
-                ctx.font = label.kind === 'room' ? 'bold 9px Space Mono, monospace' : '8px Space Mono, monospace';
-                ctx.fillStyle = label.kind === 'room' ? 'rgba(255, 214, 140, 0.92)' : 'rgba(150, 215, 235, 0.7)';
+                const isHighlight = label.kind === 'room' || label.kind === 'crash_site' || label.kind === 'landmark';
+                ctx.font = isHighlight ? 'bold 9px Space Mono, monospace' : '8px Space Mono, monospace';
+                ctx.fillStyle = label.kind === 'crash_site' ? 'rgba(255, 230, 110, 0.96)' : isHighlight ? 'rgba(255, 214, 140, 0.92)' : 'rgba(150, 215, 235, 0.7)';
                 ctx.strokeText(label.text, point.x, point.y);
                 ctx.fillText(label.text, point.x, point.y);
             }

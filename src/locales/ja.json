@@ -2034,6 +2034,36 @@
         "access_way": "アクセス通路",
         "unmarked": "無標識の通路"
       },
+      "site": {
+        "impact_site": "墜落地点",
+        "foundry": "製造ファウンドリ",
+        "cave_mouth": "地下の深淵",
+        "o2_generator": "大気再生装置",
+        "wreck": {
+          "scout": "偵察機の残骸",
+          "tank": "戦車の残骸",
+          "engineer": "技術班の残骸",
+          "infiltrator": "潜入機の残骸"
+        }
+      },
+      "role": {
+        "generic": "セクター",
+        "utility": "設備",
+        "medical": "医療",
+        "security": "保安",
+        "engineering": "工学",
+        "storage": "保管庫",
+        "reward": "隠し場所",
+        "camp": "前哨基地",
+        "hive": "ハイブ",
+        "nest": "巣",
+        "cryo_lab": "極低温研究",
+        "foundry": "重工業",
+        "cave": "セクター・ゼロ",
+        "life_support": "生命維持",
+        "transit": "通路",
+        "home": "地表アンカー"
+      },
       "unscanned": "??? · スキャンで識別"
     },
     "equipment": {

@@ -9904,7 +9904,8 @@ body.mission-intro-active #game-container canvas {
 
 .expedition-briefing-card.hidden,
 .compound-location-title.hidden,
-.compound-location-title__tag.hidden {
+.compound-location-title__tag.hidden,
+.compound-location-title__subtitle.hidden {
   display: none !important;
 }
 
@@ -9953,18 +9954,18 @@ body.mission-intro-active #game-container canvas {
   /* Below the header row (vitals / sidearm / integrity end near 5.7vu). */
   top: calc(var(--vu) * 7);
   left: 50%;
-  max-width: min(calc(var(--vu) * 64), 80vw);
+  max-width: min(calc(var(--vu) * 72), 88vw);
   display: flex;
   align-items: center;
   gap: calc(var(--vu) * 1.2);
   padding: calc(var(--vu) * 0.7) calc(var(--vu) * 2);
   border-top: 1px solid rgba(133, 208, 255, 0.55);
   border-bottom: 1px solid rgba(133, 208, 255, 0.55);
-  background: linear-gradient(90deg, transparent, rgba(8, 13, 18, 0.82) 18%, rgba(8, 13, 18, 0.82) 82%, transparent);
+  background: linear-gradient(90deg, transparent, rgba(8, 13, 18, 0.86) 18%, rgba(8, 13, 18, 0.86) 82%, transparent);
   z-index: 16900;
   opacity: 0;
   transform: translate(-50%, 0);
-  transition: opacity 420ms ease-out;
+  transition: opacity 420ms ease-out, transform 420ms ease-out;
   pointer-events: none;
   font-family: 'Outfit', sans-serif;
   white-space: nowrap;
@@ -9972,6 +9973,27 @@ body.mission-intro-active #game-container canvas {
 
 .compound-location-title.visible {
   opacity: 1;
+}
+
+.compound-location-title.is-hallway {
+  top: calc(var(--vu) * 7.5);
+  padding: calc(var(--vu) * 0.4) calc(var(--vu) * 1.6);
+  border-top-color: rgba(133, 208, 255, 0.3);
+  border-bottom-color: rgba(133, 208, 255, 0.3);
+  background: linear-gradient(90deg, transparent, rgba(8, 13, 18, 0.72) 20%, rgba(8, 13, 18, 0.72) 80%, transparent);
+}
+
+.compound-location-title.is-hallway .compound-location-title__text {
+  font-size: calc(var(--vu) * 1.35);
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #a5d8f0;
+}
+
+.compound-location-title.is-hallway .compound-location-title__subtitle {
+  font-size: calc(var(--vu) * 0.95);
+  letter-spacing: 1.2px;
+  opacity: 0.75;
 }
 
 .compound-location-title__text {
@@ -9982,6 +10004,16 @@ body.mission-intro-active #game-container canvas {
   text-transform: uppercase;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.compound-location-title__subtitle {
+  font-size: calc(var(--vu) * 1.15);
+  font-weight: 600;
+  letter-spacing: 1.8px;
+  color: #7ec8e3;
+  text-transform: uppercase;
+  border-left: 1px solid rgba(133, 208, 255, 0.35);
+  padding-left: calc(var(--vu) * 0.9);
 }
 
 .compound-location-title__tag {

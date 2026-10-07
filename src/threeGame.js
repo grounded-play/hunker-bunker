@@ -465,7 +465,20 @@ import {
 } from './worldTransformations.js';
 import { createCrossingBridgeMesh } from './crossingBridge.js';
 import { getTerritoryLocation } from './territoryStructures.js';
-import { HALL_SCAN_KEY, ROOM_SCAN_KEY, formatLocationName, hallwayLocationName, roomLocationName } from './locationNames.js';
+import {
+    CAVE_MOUTH_SCAN_KEY,
+    CRASH_SITE_SCAN_KEY,
+    FOUNDRY_SCAN_KEY,
+    HALL_SCAN_KEY,
+    ROOM_SCAN_KEY,
+    caveMouthLocationName,
+    crashSiteLocationName,
+    formatLocationName,
+    formatLocationSubtitle,
+    foundryLocationName,
+    hallwayLocationName,
+    roomLocationName
+} from './locationNames.js';
 import { FLOOR_OVERLAY_TYPES, PROP_COLLISION, archPillarColliders, getPropBehavior } from './propBehavior.js';
 import { findTilePath } from './snailPath.js';
 import { shouldEnemyRepath } from './enemyRepath.js';
@@ -2076,7 +2089,8 @@ export class ThreeGame {
         this.discoveredMapRoomKeys = new Set();
         // Rooms and hallways a radar pulse has reached: their names are known
         // (src/locationNames.js). Walking in reveals the map, not the name.
-        this.scannedLocationKeys = new Set();
+        this.scannedLocationKeys = new Set([CRASH_SITE_SCAN_KEY()]);
+        this.announcedLocationKeys = new Set();
         this.discoveredMapCellKeys = new Set();
         this.maxChunkMountsPerFrame = 1;
         // The orthographic viewport reaches roughly 11 world units from its
@@ -22227,6 +22241,9 @@ export class ThreeGame {
         this._visitedTerritoryLocations ??= new Set();
         const firstVisit = !this._visitedTerritoryLocations.has(key);
         this._visitedTerritoryLocations.add(key);
+        this.announcedLocationKeys ??= new Set();
+        this.announcedLocationKeys.add(key);
+        if (room?.id && room?.chunkKey) this.announcedLocationKeys.add(ROOM_SCAN_KEY(room.chunkKey, room.id));
         window.dispatchEvent(new CustomEvent('location-discovered', { detail: { ...location, firstVisit } }));
         this.recordExpeditionBountyEvent?.({ metric: 'compoundRoom', siteId: location.siteId, roomKey: location.beatKey });
         return true;
@@ -23637,7 +23654,8 @@ export class ThreeGame {
         this.discoveredMapRoomKeys = new Set();
         // Rooms and hallways a radar pulse has reached: their names are known
         // (src/locationNames.js). Walking in reveals the map, not the name.
-        this.scannedLocationKeys = new Set();
+        this.scannedLocationKeys = new Set([CRASH_SITE_SCAN_KEY()]);
+        this.announcedLocationKeys = new Set();
         this.discoveredMapCellKeys = new Set();
         this.reachableGeneratedChunkKeys = new Set();
         this.mazeAccessState = createAccessState();
@@ -23954,10 +23972,11 @@ export class ThreeGame {
                 detail: { reason, airlockPos }
             }));
         }
+        const crashSiteName = this.getCrashSiteLocationName ? formatLocationName(this.getCrashSiteLocationName(), t) : t('ui.expedition.extraction.landmark');
         this.explorationTracker?.registerLandmark?.('extraction_airlock', {
             x: airlockPos.x,
             z: airlockPos.z,
-            label: t('ui.expedition.extraction.landmark'),
+            label: crashSiteName,
             type: 'objective'
         });
         this.showBunkerLine?.(purged
@@ -24439,6 +24458,19 @@ export class ThreeGame {
             }
         }
 
+        if (this.foundry && !this.scannedLocationKeys?.has(FOUNDRY_SCAN_KEY())) {
+            const fPos = this.foundry.getPosition?.();
+            if (fPos && Math.hypot(fPos.x - px, fPos.z - pz) <= radius) {
+                this.scannedLocationKeys?.add(FOUNDRY_SCAN_KEY());
+            }
+        }
+        if (this.caveEntrance && !this.scannedLocationKeys?.has(CAVE_MOUTH_SCAN_KEY())) {
+            const cPos = this.caveEntrance.getPosition?.();
+            if (cPos && Math.hypot(cPos.x - px, cPos.z - pz) <= radius) {
+                this.scannedLocationKeys?.add(CAVE_MOUTH_SCAN_KEY());
+            }
+        }
+
         // The map caches its revealed cells; without this a scan only showed
         // up the next time the carrier happened to step onto a new cell.
         this._detailedChunksDirty = true;
@@ -24453,6 +24485,10 @@ export class ThreeGame {
         };
         this.checkMappingMissionComplete();
         this.syncPlayerLocationLabel?.({ force: true });
+    }
+
+    getCrashSiteLocationName() {
+        return crashSiteLocationName(this.seed ?? 0, this.playerType ?? 'SCOUT');
     }
 
     /**
@@ -24472,6 +24508,25 @@ export class ThreeGame {
                 const scanKey = ROOM_SCAN_KEY(chunkKey, room.id);
                 return { scanKey, name: roomLocationName(room, chunkKey), known: Boolean(this.scannedLocationKeys?.has(scanKey)) };
             }
+        }
+        if (this.foundry?.isRevealed) {
+            const fPos = this.foundry.getPosition?.();
+            if (fPos && Math.hypot(x - fPos.x, z - fPos.z) <= 5.0) {
+                const scanKey = FOUNDRY_SCAN_KEY();
+                return { scanKey, name: foundryLocationName(this.seed ?? 0), known: Boolean(this.scannedLocationKeys?.has(scanKey) || this.foundry.isRevealed) };
+            }
+        }
+        if (this.caveEntrance?.isRevealed) {
+            const cPos = this.caveEntrance.getPosition?.();
+            if (cPos && Math.hypot(x - cPos.x, z - cPos.z) <= 6.0) {
+                const scanKey = CAVE_MOUTH_SCAN_KEY();
+                return { scanKey, name: caveMouthLocationName(this.seed ?? 0), known: Boolean(this.scannedLocationKeys?.has(scanKey) || this.caveEntrance.isRevealed) };
+            }
+        }
+        if (chunkX === 0 && chunkY === 0 && Math.hypot(x - CRASH_SITE_CENTER, z - CRASH_SITE_CENTER) <= 9.0) {
+            const scanKey = CRASH_SITE_SCAN_KEY();
+            const name = this.getCrashSiteLocationName ? this.getCrashSiteLocationName() : crashSiteLocationName(this.seed ?? 0, this.playerType ?? 'SCOUT');
+            return { scanKey, name, known: Boolean(this.scannedLocationKeys?.has(scanKey)) };
         }
         const scanKey = HALL_SCAN_KEY(chunkKey);
         return { scanKey, name: hallwayLocationName(chunkKey), known: Boolean(this.scannedLocationKeys?.has(scanKey)) };
@@ -24496,6 +24551,22 @@ export class ThreeGame {
             const cy = cells.reduce((sum, cell) => sum + cell.y, 0) / cells.length;
             labels.push({ kind: 'room', x: originX + cx, z: originZ + cy, text: formatLocationName(roomLocationName(room, chunkKey), t) });
         }
+        if (chunkX === 0 && chunkY === 0 && scanned.has(CRASH_SITE_SCAN_KEY())) {
+            const name = this.getCrashSiteLocationName ? this.getCrashSiteLocationName() : crashSiteLocationName(this.seed ?? 0, this.playerType ?? 'SCOUT');
+            labels.push({ kind: 'crash_site', x: CRASH_SITE_CENTER, z: CRASH_SITE_CENTER, text: formatLocationName(name, t) });
+        }
+        if (this.foundry?.isRevealed || scanned.has(FOUNDRY_SCAN_KEY())) {
+            const fPos = this.foundry?.getPosition?.();
+            if (fPos && Math.floor(fPos.x / this.chunkSize) === chunkX && Math.floor(fPos.z / this.chunkSize) === chunkY) {
+                labels.push({ kind: 'landmark', x: fPos.x, z: fPos.z, text: formatLocationName(foundryLocationName(this.seed ?? 0), t) });
+            }
+        }
+        if (this.caveEntrance?.isRevealed || scanned.has(CAVE_MOUTH_SCAN_KEY())) {
+            const cPos = this.caveEntrance?.getPosition?.();
+            if (cPos && Math.floor(cPos.x / this.chunkSize) === chunkX && Math.floor(cPos.z / this.chunkSize) === chunkY) {
+                labels.push({ kind: 'landmark', x: cPos.x, z: cPos.z, text: formatLocationName(caveMouthLocationName(this.seed ?? 0), t) });
+            }
+        }
         if (scanned.has(HALL_SCAN_KEY(chunkKey))) {
             let sx = 0;
             let sy = 0;
@@ -24513,6 +24584,34 @@ export class ThreeGame {
         return labels;
     }
 
+    announceLocationCard(location) {
+        if (!location?.scanKey || !location?.known) return false;
+        this.announcedLocationKeys ??= new Set();
+        if (this.announcedLocationKeys.has(location.scanKey)) return false;
+        this.announcedLocationKeys.add(location.scanKey);
+
+        const name = location.name;
+        const title = formatLocationName(name, t);
+        const subtitle = formatLocationSubtitle(name, t);
+        const kind = name?.kind ?? 'room';
+
+        if (typeof window !== 'undefined' && typeof CustomEvent === 'function') {
+            window.dispatchEvent(new CustomEvent('location-discovered', {
+                detail: {
+                    scanKey: location.scanKey,
+                    kind,
+                    title,
+                    subtitle,
+                    siteId: name?.siteId,
+                    family: name?.family,
+                    beatKey: name?.beatKey,
+                    firstVisit: true
+                }
+            }));
+        }
+        return true;
+    }
+
     // Tells the HUD where the player is, only when the place or whether it
     // has been scanned changes.
     syncPlayerLocationLabel({ force = false } = {}) {
@@ -24523,8 +24622,20 @@ export class ThreeGame {
         if (!force && signature === this._lastLocationSignature) return location;
         this._lastLocationSignature = signature;
         const label = location.known ? formatLocationName(location.name, t) : null;
+        const subtitle = location.known ? formatLocationSubtitle(location.name, t) : null;
         if (typeof window !== 'undefined' && typeof CustomEvent === 'function') {
-            window.dispatchEvent(new CustomEvent('player-location-changed', { detail: { label, known: location.known, kind: location.name?.kind ?? null } }));
+            window.dispatchEvent(new CustomEvent('player-location-changed', {
+                detail: {
+                    label,
+                    subtitle,
+                    known: location.known,
+                    kind: location.name?.kind ?? null,
+                    scanKey: location.scanKey
+                }
+            }));
+        }
+        if (location.known) {
+            this.announceLocationCard?.(location);
         }
         return location;
     }

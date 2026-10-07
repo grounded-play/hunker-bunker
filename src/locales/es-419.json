@@ -2034,6 +2034,36 @@
         "access_way": "VÍA DE ACCESO",
         "unmarked": "PASAJE SIN MARCAR"
       },
+      "site": {
+        "impact_site": "SITIO DE IMPACTO",
+        "foundry": "FUNDICIÓN DE FABRICACIÓN",
+        "cave_mouth": "ABISMO SUBTERRÁNEO",
+        "o2_generator": "RECUPERADOR ATMOSFÉRICO",
+        "wreck": {
+          "scout": "RESTOS DE EXPLORADOR",
+          "tank": "RESTOS DE TANQUE",
+          "engineer": "RESTOS DE INGENIERO",
+          "infiltrator": "RESTOS DE INFILTRADO"
+        }
+      },
+      "role": {
+        "generic": "SECTOR",
+        "utility": "SERVICIOS",
+        "medical": "MÉDICO",
+        "security": "SEGURIDAD",
+        "engineering": "INGENIERÍA",
+        "storage": "ALMACÉN",
+        "reward": "DEPÓSITO",
+        "camp": "AVANZADA",
+        "hive": "COLMENA",
+        "nest": "NIDO",
+        "cryo_lab": "INVESTIGACIÓN CRIOGÉNICA",
+        "foundry": "INDUSTRIA PESADA",
+        "cave": "SECTOR CERO",
+        "life_support": "SOPORTE VITAL",
+        "transit": "TRÁNSITO",
+        "home": "ANCLA DE SUPERFICIE"
+      },
       "unscanned": "??? · ESCANEA PARA IDENTIFICAR"
     },
     "equipment": {

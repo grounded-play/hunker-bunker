@@ -2034,6 +2034,36 @@
         "access_way": "ACCESS WAY",
         "unmarked": "UNMARKED PASSAGE"
       },
+      "site": {
+        "impact_site": "IMPACT SITE",
+        "foundry": "FABRICATION FOUNDRY",
+        "cave_mouth": "SUBTERRANEAN CHASM",
+        "o2_generator": "ATMOSPHERIC RECLAIMER",
+        "wreck": {
+          "scout": "SCOUT WRECK",
+          "tank": "TANK WRECK",
+          "engineer": "ENGINEER WRECK",
+          "infiltrator": "INFILTRATOR WRECK"
+        }
+      },
+      "role": {
+        "generic": "SECTOR",
+        "utility": "UTILITY",
+        "medical": "MEDICAL",
+        "security": "SECURITY",
+        "engineering": "ENGINEERING",
+        "storage": "STORAGE",
+        "reward": "CACHE",
+        "camp": "OUTPOST",
+        "hive": "HIVE",
+        "nest": "NEST",
+        "cryo_lab": "CRYO RESEARCH",
+        "foundry": "HEAVY INDUSTRY",
+        "cave": "SECTOR ZERO",
+        "life_support": "LIFE SUPPORT",
+        "transit": "TRANSIT",
+        "home": "SURFACE ANCHOR"
+      },
       "unscanned": "??? · SCAN TO IDENTIFY"
     },
     "equipment": {
