@@ -2188,6 +2188,25 @@
       "morning_title": "第 {day} 天 · 06:00",
       "morning_status": "{site} // 新的一天开始了",
       "skip": "按任意键醒来"
+    },
+    "mystery": {
+      "kind": {
+        "courier": "快递箱",
+        "quarantine": "隔离舱",
+        "reliquary": "虫巢圣物匣",
+        "blacksite": "黑站保险箱"
+      },
+      "open": "打开{box}",
+      "opening": "正在打开{box} · {pct}%",
+      "locked": "{box}需要钥匙卡。工程师也许能撬开。",
+      "outcome": {
+        "supplies": "{box}：里面有补给。",
+        "salvage": "{box}：还能用的废料。",
+        "lore": "{box}：有人留下了记录。",
+        "ambush": "{box}：是个巢穴。后退！",
+        "hazard": "{box}：密封破裂。快离开。",
+        "quest_hook": "{box}：一枚路线芯片。地图上有新线索。"
+      }
     }
   },
   "narrative": {

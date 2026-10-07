@@ -485,6 +485,7 @@ import { findTilePath } from './snailPath.js';
 import { shouldEnemyRepath } from './enemyRepath.js';
 import { skipMatrixPassWhileHidden } from './chunkMatrices.js';
 import { pickSleepCutsceneStyle } from './sleepCutscene.js';
+import { MYSTERY_BOX_KINDS, MYSTERY_OUTCOME_LINE_KEYS, mysteryBoxChance, mysteryOpenSeconds, mysteryRewardDrops, pickMysteryBoxKind, rollMysteryOutcome, seededRandom } from './mysteryBoxes.js';
 import { createTrackField, slimeColorFor, stepBoots, trackSurfaceForType } from './trackField.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
 import { groupDangerZones, lipEdgeQuads } from './dangerZones.js';
@@ -6020,6 +6021,7 @@ export class ThreeGame {
             on('newPlayer', (player) => {
                 this.getOrCreateRemotePlayer(player);
                 this.syncSquadProgress?.({ force: true });
+                this.syncMysteryBoxes?.();
             });
             // Sprint 26: server/relay.js's disconnect handler now promotes a
             // remaining connected player to interim host the instant the
@@ -6853,7 +6855,7 @@ export class ThreeGame {
             // Irreversible co-op transitions carry their own keys.
         } else if (event === 'wall-destroyed') {
             dedupeKey = `${event}:${detail.wallKey ?? `${detail.worldX},${detail.worldZ}`}`;
-        } else if (event === 'bunker-door-toggled' || event === 'procedural-door-toggled' || event === 'bunker-line' || event === 'enemy-projectile-spawned' || event === 'squad-progress') {
+        } else if (event === 'bunker-door-toggled' || event === 'procedural-door-toggled' || event === 'bunker-line' || event === 'enemy-projectile-spawned' || event === 'squad-progress' || event === 'mystery-boxes-sync') {
             // Door toggles are stateful transitions guarded by their respective states below;
             // bunker-line and enemy-projectile-spawned stream continuously without static dedupe blocking.
         } else if (event === 'pickup-collected') {
@@ -6870,6 +6872,8 @@ export class ThreeGame {
             dedupeKey = `${event}:${detail.scatterKey ?? `${Math.round(detail.x)},${Math.round(detail.z)}`}`;
         } else if (event === 'lore-terminal-read') {
             dedupeKey = `${event}:${detail.loreKey}`;
+        } else if (event === 'mystery-box-opened') {
+            dedupeKey = `${event}:${detail.id}`;
         } else {
             dedupeKey = `${event}:${detail.level ?? ''}:${detail.goalKey ?? ''}`;
         }
@@ -6994,6 +6998,10 @@ export class ThreeGame {
             this.removeLootDrop(detail.dropId);
         } else if (event === 'prop-broken') {
             this.applyRemotePropBroken(detail);
+        } else if (event === 'mystery-box-opened') {
+            this.applyRemoteMysteryBoxOpened(detail);
+        } else if (event === 'mystery-boxes-sync') {
+            this.applyRemoteMysteryBoxSync(detail);
         } else if (event === COOP_TRANSITION_EVENTS.MILESTONE_DEFEATED) {
             this.applyRemoteMilestoneDefeat(detail);
         } else if (event === COOP_TRANSITION_EVENTS.ELEVATOR_DESCENDED) {
@@ -8502,6 +8510,7 @@ export class ThreeGame {
         if (!handled) handled = this.interactWithHiveSite();
         if (!handled) handled = this.interactWithBioConduit?.() ?? false;
         if (!handled) handled = this.interactWithObjectivePackage?.() ?? false;
+        if (!handled) handled = this.interactWithMysteryBox?.() ?? false;
         if (!handled) handled = this.interactWithCampQuestObject();
         if (!handled) handled = this.interactWithWanderer();
         if (!handled) handled = this.interactWithHoleTile();
@@ -11187,6 +11196,7 @@ export class ThreeGame {
             fp.measure('updatePickups', () => this.updatePickups(delta, now));
             fp.measure('updateScatter', () => this.updateScatter(delta, now));
             fp.measure('updateUnderfootCrush', () => this.updateUnderfootCrush());
+            fp.measure('updateMysteryBoxes', () => this.updateMysteryBoxes(delta));
             fp.measure('updateBaseDefenseTurret', () => this.updateBaseDefenseTurret(delta));
             fp.measure('updateCorpses', () => this.updateCorpses(delta));
             fp.measure('updateLoreDrops', () => this.updateLoreDrops(delta));
@@ -18808,6 +18818,278 @@ export class ThreeGame {
     // E-press dispatch for interact/pickup/rescue quest props — proximity
     // check only, called from triggerGameplayInteract every frame like every
     // other camp/console/lore interaction in this file.
+    // ── Mystery boxes (Sprint 53 V6, src/mysteryBoxes.js) ──────────────
+    // A few rooms per chunk hold a sealed box, seeded by world, chunk and room
+    // so every co-op screen places the same ones. Stand at one and press
+    // interact; it opens over a second or two (Engineers twice as fast), and
+    // walking away cancels. The roll is seeded by the box too, so a squadmate's
+    // open replays identically here.
+    placeMysteryBoxes(group, chunkX, chunkY) {
+        if (!group || (chunkX === 0 && chunkY === 0)) return 0;
+        const chunkKey = `${chunkX},${chunkY}`;
+        const rooms = this.wfcMetadataCache?.get(chunkKey)?.roomInstances ?? [];
+        const grid = this.chunkCache?.get(chunkKey);
+        if (!rooms.length || !grid) return 0;
+        const originX = chunkX * this.chunkSize;
+        const originZ = chunkY * this.chunkSize;
+        const depthTier = this.getDepthTier?.(chunkX, chunkY) ?? 0;
+        this.openedMysteryBoxes ??= new Set();
+        this.mysteryBoxes ??= [];
+        let placed = 0;
+        rooms.forEach((room, index) => {
+            if (room?.siteId) return;
+            // The world's seed is in the id: a regenerated world is a new box.
+            const id = `mystery:${this.seed ?? 0}:${this.runEntropy ?? 0}:${chunkKey}:${room.id ?? index}`;
+            if (this.openedMysteryBoxes.has(id) || this.mysteryBoxes.some((box) => box.id === id)) return;
+            const random = seededRandom((this.hashTile(chunkX * 7919 + index, chunkY * 104729 + 17) ^ (this.seed ?? 0) ^ (this.runEntropy ?? 0)) >>> 0);
+            if (random() >= mysteryBoxChance(depthTier)) return;
+            const reserved = new Set((room.populationPlan?.placements ?? []).map((p) => `${p.x},${p.y}`));
+            for (const box of this.mysteryBoxes) reserved.add(`${box.sprite.position.x - originX},${box.sprite.position.z - originZ}`);
+            const cells = (room.interior ?? []).filter(({ x, y }) => grid[y]?.[x] === '.'
+                && !reserved.has(`${x},${y}`)
+                && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => grid[y + dy]?.[x + dx] === '#'));
+            if (!cells.length) return;
+            const cell = cells[Math.floor(random() * cells.length)];
+            const x = originX + cell.x;
+            const z = originZ + cell.y;
+            const kind = pickMysteryBoxKind(this.getBiomeKeyForWorldPosition?.(x, z) ?? 'active', random);
+            const sprite = this.createScatterInstance({
+                type: MYSTERY_BOX_KINDS[kind].standIn, x, z, scale: 1, rotation: 0, tiltX: 0, tiltZ: 0,
+                elevation: 0.08, scatterKey: id, groupType: 'prop', opacity: 1, isSolidProp: true
+            });
+            if (!sprite) return;
+            // Opened, not shot open: a mystery box is never a breakable prop.
+            sprite.userData.isDestructibleProp = false;
+            sprite.userData.mysteryBoxId = id;
+            group.add(sprite);
+            this.scatterSprites?.push?.(sprite);
+            const marker = this.createMysteryBoxMarker?.(kind) ?? null;
+            if (marker) {
+                marker.position.set(x, 1.7, z);
+                group.add(marker);
+            }
+            this.mysteryBoxes.push({ id, kind, sprite, marker, opened: false, outcome: null, depthTier, seed: random() * 4294967296 >>> 0 });
+            placed += 1;
+        });
+        return placed;
+    }
+
+    // A small pulsing "?" over a sealed box, in its kind's accent colour.
+    createMysteryBoxMarker(kind) {
+        if (typeof document === 'undefined') return null;
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext?.('2d');
+        if (!ctx) return null;
+        const accent = `#${(MYSTERY_BOX_KINDS[kind]?.accent ?? 0xf59e0b).toString(16).padStart(6, '0')}`;
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(32, 32, 26, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = accent;
+        ctx.font = "700 38px 'Space Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('?', 32, 34);
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        const marker = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }));
+        marker.scale.set(0.42, 0.42, 1);
+        marker.renderOrder = 30;
+        marker.userData.isMysteryMarker = true;
+        return marker;
+    }
+
+    nearestMysteryBox(reach = 1.8) {
+        if (!this.player) return null;
+        let best = null;
+        let bestDistance = reach;
+        for (const box of this.mysteryBoxes ?? []) {
+            if (box.opened || !box.sprite?.parent) continue;
+            const distance = Math.hypot(this.player.position.x - box.sprite.position.x, this.player.position.z - box.sprite.position.z);
+            if (distance <= bestDistance) {
+                best = box;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
+    canOpenMysteryBox(box) {
+        if (!MYSTERY_BOX_KINDS[box?.kind]?.needsKeycard) return true;
+        return String(this.playerType).toUpperCase() === 'ENGINEER' || Boolean(this.hasCampQuestReward?.('substation_keycard'));
+    }
+
+    mysteryBoxLabel(box) {
+        return t(MYSTERY_BOX_KINDS[box.kind]?.labelKey ?? 'ui.mystery.kind.courier');
+    }
+
+    interactWithMysteryBox() {
+        if (!this.isGameplayInputActive?.() || !this.player || this.isPlayerDead) return false;
+        const box = this.nearestMysteryBox();
+        if (!box) return false;
+        if (!this.canOpenMysteryBox(box)) {
+            this.showBunkerLine?.(t('ui.mystery.locked', { box: this.mysteryBoxLabel(box) }));
+            this.playThrottledUiError?.('_lastMysteryLockedCueAt', { volume: 0.3 });
+            return true;
+        }
+        if (this._mysteryOpening?.box === box) return true;
+        this._mysteryOpening = { box, elapsed: 0, duration: mysteryOpenSeconds(box.kind, this.playerType) };
+        globalThis.window?.AudioManager?.play?.('ui_scan_ping', { volume: 0.3, playbackRate: 0.8 });
+        return true;
+    }
+
+    // Per frame: the prompt near a sealed box, the opening progress, and the
+    // "?" bob. Walking out of reach cancels an opening.
+    updateMysteryBoxes(delta = 0) {
+        if (!this.mysteryBoxes?.length) return;
+        this.mysteryBoxes = this.mysteryBoxes.filter((box) => box.sprite?.parent || box === this._mysteryOpening?.box);
+        const time = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+        for (const box of this.mysteryBoxes) {
+            if (box.marker && !box.opened) box.marker.position.y = 1.7 + Math.sin(time * 2.4 + box.seed % 7) * 0.08;
+        }
+        const opening = this._mysteryOpening;
+        if (opening) {
+            const near = opening.box.sprite?.parent && this.player
+                && Math.hypot(this.player.position.x - opening.box.sprite.position.x, this.player.position.z - opening.box.sprite.position.z) <= 2.2;
+            if (!near || this.isPlayerDead) {
+                this._mysteryOpening = null;
+            } else {
+                opening.elapsed += delta;
+                if (opening.elapsed >= opening.duration) {
+                    this._mysteryOpening = null;
+                    this.openMysteryBox(opening.box);
+                }
+            }
+        }
+        const nearby = this.nearestMysteryBox();
+        const prompt = !nearby ? null
+            : this._mysteryOpening?.box === nearby
+                ? t('ui.mystery.opening', { box: this.mysteryBoxLabel(nearby), pct: Math.min(99, Math.floor((this._mysteryOpening.elapsed / this._mysteryOpening.duration) * 100)) })
+                : t('ui.mystery.open', { box: this.mysteryBoxLabel(nearby) });
+        if (prompt !== this._mysteryPrompt && typeof window !== 'undefined' && typeof CustomEvent === 'function') {
+            if (prompt) window.dispatchEvent(new CustomEvent('camp-prompt-nearby', { detail: { label: prompt } }));
+            else if (this._mysteryPrompt) window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+        }
+        this._mysteryPrompt = prompt;
+    }
+
+    // Open a box: roll once (seeded by the box), apply it, tell the squad.
+    openMysteryBox(box, { fromRemote = false, outcome = null } = {}) {
+        if (!box || box.opened) return null;
+        const random = seededRandom(box.seed);
+        box.outcome = outcome ?? rollMysteryOutcome(box.kind, random);
+        box.opened = true;
+        this.openedMysteryBoxes ??= new Set();
+        this.openedMysteryBoxes.add(box.id);
+        if (box.marker) box.marker.visible = false;
+        this.applyMysteryOutcome(box, random, { fromRemote });
+        if (!fromRemote) {
+            this.broadcastSharedWorldEvent?.('mystery-box-opened', { id: box.id, outcome: box.outcome, x: box.sprite.position.x, z: box.sprite.position.z });
+        }
+        return box.outcome;
+    }
+
+    applyRemoteMysteryBoxOpened(detail = {}) {
+        const box = (this.mysteryBoxes ?? []).find((candidate) => candidate.id === detail.id);
+        this.openedMysteryBoxes ??= new Set();
+        this.openedMysteryBoxes.add(detail.id);
+        if (!box) return false;
+        return Boolean(this.openMysteryBox(box, { fromRemote: true, outcome: detail.outcome }));
+    }
+
+    // Opens happen as live events, so a squadmate who joins mid-run missed
+    // them: everyone in the room re-sends the opened ids when someone joins.
+    syncMysteryBoxes() {
+        if (!this.isMultiplayer || this.multiplayerMode === 'pvp' || !this.openedMysteryBoxes?.size) return false;
+        this.broadcastSharedWorldEvent('mystery-boxes-sync', { ids: [...this.openedMysteryBoxes] });
+        return true;
+    }
+
+    // Already-opened boxes close quietly: no loot, no line, no second roll.
+    applyRemoteMysteryBoxSync(detail = {}) {
+        const ids = Array.isArray(detail.ids) ? detail.ids.filter((id) => typeof id === 'string') : [];
+        this.openedMysteryBoxes ??= new Set();
+        for (const id of ids) {
+            this.openedMysteryBoxes.add(id);
+            const box = this.mysteryBoxes?.find((candidate) => candidate.id === id);
+            if (!box || box.opened) continue;
+            box.opened = true;
+            if (box.marker) box.marker.visible = false;
+            if (this._mysteryOpening?.box === box) this._mysteryOpening = null;
+        }
+        return ids.length > 0;
+    }
+
+    applyMysteryOutcome(box, random, { fromRemote = false } = {}) {
+        const { x, z } = box.sprite.position;
+        const outcome = box.outcome;
+        // Loot spills as ordinary pickups, ids tied to the box, so co-op
+        // screens share them like any broken prop's drops.
+        const types = mysteryRewardDrops(outcome, box.depthTier);
+        if (types.length) {
+            const plan = types.map((type, index) => {
+                const angle = (index / types.length) * Math.PI * 2 + random() * 0.4;
+                const radius = 0.55 + random() * 0.3;
+                return { type, x: x + Math.cos(angle) * radius, z: z + Math.sin(angle) * radius };
+            });
+            this.spawnDestructiblePropDrops?.(box.sprite, plan);
+        }
+        if (outcome === 'lore') this.maybeSpawnSiteLoreDrop?.('mystery', box.id, x, z);
+        if (outcome === 'ambush' && !fromRemote) {
+            const biome = this.getBiomeKeyForWorldPosition?.(x, z) ?? 'active';
+            const type = biome === 'bio' ? 'sporesnail' : biome === 'cryo' ? 'cryosnail' : 'crawler';
+            for (let i = 0; i < 2; i++) {
+                const angle = random() * Math.PI * 2;
+                this.spawnEnemyInstance?.(type, x + Math.cos(angle) * 1.4, z + Math.sin(angle) * 1.4);
+            }
+        }
+        if (outcome === 'hazard') {
+            const biome = this.getBiomeKeyForWorldPosition?.(x, z) ?? 'active';
+            if (biome === 'cryo') {
+                this.spawnPhysicalBurst?.(x, z, { color: 0x9bdcff, count: 24, upward: 0.4 });
+                const near = this.player && Math.hypot(this.player.position.x - x, this.player.position.z - z) <= 3;
+                if (near) this.applyPlayerSlow?.(2.5);
+            } else {
+                this.spawnToxicSporePuddle?.(x, z, true);
+            }
+        }
+        if (outcome === 'quest_hook') this.revealMysteryLead?.(x, z);
+        if (!fromRemote || outcome !== 'ambush') {
+            this.showBunkerLine?.(t(MYSTERY_OUTCOME_LINE_KEYS[outcome], { box: this.mysteryBoxLabel(box) }));
+        }
+        globalThis.window?.AudioManager?.play?.(outcome === 'ambush' || outcome === 'hazard' ? 'ui_error' : 'fx_menu_confirm', { volume: 0.4 });
+    }
+
+    // A lead: the nearest unscanned room a little way off is revealed on the
+    // map, name and floor (Sprint 53 names) -- somewhere to go next.
+    revealMysteryLead(x, z) {
+        const chunkX = Math.floor(x / this.chunkSize);
+        const chunkY = Math.floor(z / this.chunkSize);
+        let best = null;
+        for (let dy = -2; dy <= 2; dy++) {
+            for (let dx = -2; dx <= 2; dx++) {
+                const key = `${chunkX + dx},${chunkY + dy}`;
+                for (const room of this.wfcMetadataCache?.get(key)?.roomInstances ?? []) {
+                    const scanKey = ROOM_SCAN_KEY(key, room.id);
+                    if (this.scannedLocationKeys?.has(scanKey) || !room.interior?.length) continue;
+                    const cell = room.interior[Math.floor(room.interior.length / 2)];
+                    const wx = (chunkX + dx) * this.chunkSize + cell.x;
+                    const wz = (chunkY + dy) * this.chunkSize + cell.y;
+                    const distance = Math.hypot(wx - x, wz - z);
+                    if (distance > 6 && (!best || distance < best.distance)) best = { scanKey, distance, wx, wz };
+                }
+            }
+        }
+        if (!best) return false;
+        this.scannedLocationKeys ??= new Set();
+        this.scannedLocationKeys.add(best.scanKey);
+        this.recordRadarScanDiscovery?.(best.wx, best.wz, 3);
+        return true;
+    }
+
     interactWithCampQuestObject() {
         const aq = this._activeCampQuest;
         if (!aq || !['interact', 'pickup', 'rescue'].includes(aq.kind)) return false;
@@ -22730,6 +23012,10 @@ export class ThreeGame {
             }
             if (Array.isArray(this.pickupMeshes)) {
                 this.pickupMeshes = this.pickupMeshes.filter((mesh) => !removedGroups.has(mesh?.parent));
+            }
+            if (Array.isArray(this.mysteryBoxes)) {
+                this.mysteryBoxes = this.mysteryBoxes.filter((box) => !removedGroups.has(box.sprite?.parent));
+                if (this._mysteryOpening && !this.mysteryBoxes.includes(this._mysteryOpening.box)) this._mysteryOpening = null;
             }
             if (Array.isArray(this.pendingChunkMounts)) this.pendingChunkMounts = [];
             this.pendingChunkMountKeys?.clear?.();
@@ -32494,6 +32780,9 @@ export class ThreeGame {
         if (this.floorFogSystem) {
             this.floorFogSystem.buildChunkFloorFog(group, chunkX, chunkY, chunkRoomMetadata, grid, landform, this.campaignExpedition ?? null);
         }
+
+        // Mystery boxes (Sprint 53 V6): placed after the room content.
+        this.placeMysteryBoxes?.(group, chunkX, chunkY);
 
         for (let i = 0; i < group.children.length; i++) {
             const child = group.children[i];

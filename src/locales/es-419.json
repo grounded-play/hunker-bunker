@@ -2188,6 +2188,25 @@
       "morning_title": "DÍA {day} · 06:00",
       "morning_status": "{site} // COMIENZA UN NUEVO DÍA",
       "skip": "Presiona cualquier tecla para despertar"
+    },
+    "mystery": {
+      "kind": {
+        "courier": "CAJA DE MENSAJERÍA",
+        "quarantine": "CÁPSULA DE CUARENTENA",
+        "reliquary": "RELICARIO DE LA COLMENA",
+        "blacksite": "CAJA FUERTE CLASIFICADA"
+      },
+      "open": "ABRIR {box}",
+      "opening": "ABRIENDO {box} · {pct}%",
+      "locked": "{box} está bloqueada con tarjeta. Un Ingeniero podría abrirla.",
+      "outcome": {
+        "supplies": "{box}: hay suministros.",
+        "salvage": "{box}: chatarra útil todavía.",
+        "lore": "{box}: alguien dejó un registro.",
+        "ambush": "{box}: era un nido. ¡Atrás!",
+        "hazard": "{box}: sello roto. Aléjate.",
+        "quest_hook": "{box}: un chip de ruta. Nueva pista en el mapa."
+      }
     }
   },
   "narrative": {

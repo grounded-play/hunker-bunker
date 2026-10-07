@@ -2188,6 +2188,25 @@
       "morning_title": "{day}日目 · 06:00",
       "morning_status": "{site} // 新しい一日が始まる",
       "skip": "いずれかのキーで目覚める"
+    },
+    "mystery": {
+      "kind": {
+        "courier": "運送クレート",
+        "quarantine": "隔離ポッド",
+        "reliquary": "ハイブの聖遺物箱",
+        "blacksite": "機密ロックボックス"
+      },
+      "open": "{box}を開ける",
+      "opening": "{box}を開封中 · {pct}%",
+      "locked": "{box}はキーカードでロックされている。エンジニアなら破れるかもしれない。",
+      "outcome": {
+        "supplies": "{box}：物資が入っていた。",
+        "salvage": "{box}：まだ使える回収品。",
+        "lore": "{box}：誰かが記録を残していた。",
+        "ambush": "{box}：巣だった。下がれ！",
+        "hazard": "{box}：封印が破れた。離れろ。",
+        "quest_hook": "{box}：ルートチップ。マップに新しい手がかり。"
+      }
     }
   },
   "narrative": {

@@ -2188,6 +2188,25 @@
       "morning_title": "DAY {day} · 06:00",
       "morning_status": "{site} // A NEW DAY BEGINS",
       "skip": "Press any key to wake"
+    },
+    "mystery": {
+      "kind": {
+        "courier": "COURIER CRATE",
+        "quarantine": "QUARANTINE POD",
+        "reliquary": "HIVE RELIQUARY",
+        "blacksite": "BLACK-SITE LOCKBOX"
+      },
+      "open": "OPEN {box}",
+      "opening": "OPENING {box} · {pct}%",
+      "locked": "{box} is keycard-locked. An Engineer could crack it.",
+      "outcome": {
+        "supplies": "{box}: supplies inside.",
+        "salvage": "{box}: salvage, still good.",
+        "lore": "{box}: someone left a record.",
+        "ambush": "{box}: it was a nest. Back off!",
+        "hazard": "{box}: seal breach. Get clear.",
+        "quest_hook": "{box}: a route chit. New lead on the map."
+      }
     }
   },
   "narrative": {

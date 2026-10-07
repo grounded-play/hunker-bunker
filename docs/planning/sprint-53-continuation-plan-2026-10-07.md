@@ -63,6 +63,20 @@ Perfectly seamless square tileable orthographic PBR base-color wall texture: glo
 - Implement common courier and quarantine behavior with existing models first; black-site keycard gating follows the same interaction path.
 - Acceptance: exact distribution tests, engineer timing test, open-once co-op test, reconnect test, and no double grant on repeated input.
 
+**Status 2026-10-07 (Claude): shipped.**
+- `src/mysteryBoxes.js` holds the tables and the seeded roll.
+- `ThreeGame.placeMysteryBoxes` puts a box in about 16–28% of rooms, on a wall-adjacent cell no planned prop uses. Placement is seeded by world, chunk and room.
+- Opening is hold-to-open: interact starts it, walking off cancels it, and the prompt shows the progress.
+- Co-op works as follows:
+  - the opener rolls once, and the roll is seeded by the box;
+  - the opener broadcasts `mystery-box-opened`, and peers replay the same outcome;
+  - on `newPlayer`, everyone re-sends `mystery-boxes-sync` (the opened ids), so a late joiner sees opened boxes as shut, with no loot.
+- **Ruling:** this is the same live-event model walls and props use, not a relay-authoritative snapshot. A snapshot needs a relay deploy. **Cost if wrong:** a box opened while *every* player was disconnected can reopen.
+- **Stand-ins:** courier `prop_security_locker`, quarantine `prop_flesh_steel_coffin`, reliquary `prop_corporate_saint_reliquary`, black-site `prop_locker_bulged`.
+- **Evidence:**
+  - `src/mysteryBoxes.test.js`, `src/threeGame.mysteryBoxes.test.js`;
+  - `tests/e2e/mystery-boxes.spec.js` (GPU run: the "?" marker, OPENING QUARANTINE POD · 27%, a hazard roll).
+
 ### 4. V7–V8: quest silhouettes and model swaps
 
 - Replace the generic quest node through a quest-id-to-prop registry. Missing A3 models keep an explicit proxy and the objective beacon.

@@ -2188,6 +2188,25 @@
       "morning_title": "TAG {day} · 06:00",
       "morning_status": "{site} // EIN NEUER TAG BEGINNT",
       "skip": "Beliebige Taste zum Aufwachen"
+    },
+    "mystery": {
+      "kind": {
+        "courier": "KURIERKISTE",
+        "quarantine": "QUARANTÄNEKAPSEL",
+        "reliquary": "SCHWARMRELIQUIAR",
+        "blacksite": "BLACK-SITE-SCHLIESSFACH"
+      },
+      "open": "{box} ÖFFNEN",
+      "opening": "{box} WIRD GEÖFFNET · {pct}%",
+      "locked": "{box} ist per Keycard gesperrt. Ein Engineer könnte es knacken.",
+      "outcome": {
+        "supplies": "{box}: Vorräte darin.",
+        "salvage": "{box}: Bergungsgut, noch brauchbar.",
+        "lore": "{box}: Jemand hat eine Aufzeichnung hinterlassen.",
+        "ambush": "{box}: Das war ein Nest. Zurück!",
+        "hazard": "{box}: Siegelbruch. Weg hier.",
+        "quest_hook": "{box}: Ein Routenchip. Neue Spur auf der Karte."
+      }
     }
   },
   "narrative": {
