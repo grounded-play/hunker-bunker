@@ -1,6 +1,6 @@
 # Sprint 52 — Smooth the whole run; walk-through world, footprints, popups
 
-Status: **approved 2026-10-07**, in progress on `dev/sprint-51` (local only).
+Status: **done 2026-10-07** on `dev/sprint-51` (local only), awaiting a Deck run. See the status log at the end.
 
 ## The owner, 2026-10-07, after a Deck playthrough
 
@@ -214,3 +214,37 @@ Order: performance first (it affects everything), then the quick collision fixes
   - unit tests per item;
   - e2e walks for B;
   - screenshots for C and F at 1280×800.
+
+## Status log (2026-10-07)
+
+| Commit | Item | What |
+|---|---|---|
+| `8c0d7292` | B, C, H | **Behavior table and scale.** `src/propBehavior.js`: grand archways and the biomech arch block only at their two posts (measured from the placed model); floor pieces never block; low fungus is crushable. The museum walk (`tests/e2e/probes/museum-walk.spec.js`) found three models sprawling from height sizing: the frost vent (6.5 across), the thermal pod (5.2) and the drainage trough (9.8); `maxSpan` caps them. The bunker cot's 2D fallback shrank from 2.1 × 1.4 to the 3D cot's size. The museum hides scene-level world entities, and its placards say WALK UNDER / FLOOR / CRUSHES UNDERFOOT. |
+| `6e986f2e` | D | **Fungus crushes underfoot**: a puff, a squish and a stain. Cosmetic, persistent, synced in co-op. |
+| `db289d80` | (owner, mid-sprint) | **"Machine cult in purple and just boxes."** Five world textures were 64 px placeholder cards. Four now draw real art (dogtags, machinery shrine, wall breach, and the Horizon survey probe standing in for the black box). The herb cache has no art, so it is no longer placed. A test fails on any placeholder-sized world texture. |
+| `01fb17d8` | (owner, mid-sprint) | **Raised floor steps** wore the wall texture and read as grey crates; they now use the floor plates. |
+| `2b78cda3` | F | **Popups.** The docked deck's 176 px cap cut a second card, and a long developer-commentary card even on its own. Cards now show whole or wait their turn. Verified at 1280×800 (`tests/e2e/hud-popup-deck.spec.js`). |
+| `1072606e` | A1 | **Measured the slowdown.** Gameplay writes a per-system `frame-breakdown` to the session log every 10 s. The long-walk probe (real GPU) traced it to enemy A*: 15–35 ms a frame. `src/snailPath.js` runs the same search with cheap bookkeeping; the old implementation is kept in a test, and the two return identical paths on 720 randomized searches. |
+| `efabbd82` | A2, A3 | **Offscreen enemies stay static** (owner decision). Props in hidden chunks skip per-frame work. Hunters re-plan on their own timer instead of every tile the player crosses; searches per frame had climbed from 1.7 to 10. |
+| `ace9181f` | A5 | **Hidden chunks skip the matrix pass**, which had grown from 2.0 to 5.2 ms with loaded chunks; it is now flat. |
+| `c7dc4350` | A6 | **The deploy stall** no longer sets the resolution for the whole run: a 12 s grace period, recovery after steady high FPS, and no flapping. |
+| `23337070` | E | **Footprints and trails** (`src/trackField.js`): one pooled field. Prints change with the surface (dust, snow, water, blood, slime, oil); boots carry wet surfaces for about 11 steps; squadmates leave prints. Snails leave slime streaks tinted by type, bosses a wake, walkers claw prints. This replaces the per-mark meshes and the per-frame puddle scan. |
+| `d5bc4b9c` | B | **e2e:** a real grand archway in a live run: the opening is walkable, the posts are solid. |
+
+**Long-walk benchmark** (desktop RTX 2070, 4 rings, frame time excluding vsync):
+
+| | Before | After |
+|---|---|---|
+| Frame time at the far end | ~51 ms, climbing | ~22 ms, flat |
+| Pathfinding | 15–55 ms | ~1–3 ms |
+| Matrix pass | grows with chunks | flat ~4 ms |
+
+**Not changed, with reasons:**
+- **A4, GPU memory on unload:** probed by teleporting across seven areas at a constant 16 chunks. Geometries stayed flat (150–170), so nothing leaks there. Textures rose as new prop types were first loaded (the model cache), and scene counts plateaued. `chunkResidentPadding` stays at 3.
+- **G, cryo hazard one-shot:** already fixed. Last night's co-op run used a build (`c2e1619`) older than the Sprint 50 siphon fix (`7e3007a0`, 10 damage became 1 heart); the Steam build `02710831` has it.
+- **Walls** are textured blocks in one metal set for every biome. The kit PBR sets (cave, space, cathedral, bunker, biomech, giger, reliquary, cryo deck) exist but never reach the tile walls. Re-skinning walls by biome is an art-direction call for the owner.
+
+**Owner steps:**
+1. Play a Deck run of 20 minutes or more on this build and upload the log. The `PERF frame-breakdown` lines show whether frames stay flat on Deck hardware.
+2. Decide on per-biome wall textures (above).
+
