@@ -64,11 +64,61 @@ export const BIOMECH_ROOM_PROFILE = Object.freeze({
     ])
 });
 
+export const CAMP_COURT_ROOM_PROFILE = Object.freeze({
+    id: 'camp-court',
+    anchorRoles: Object.freeze(['arrival', 'hearth', 'services', 'sleep']),
+    tiers: Object.freeze({
+        standard: Object.freeze([[21, 17], [23, 19]].map(Object.freeze)),
+        major: Object.freeze([[27, 19], [29, 23], [31, 25]].map(Object.freeze))
+    }),
+    motifs: Object.freeze([
+        Object.freeze({ id: 'inhabited-hearth-court', blocks: Object.freeze([
+            Object.freeze({ role: 'sheltered-bunks', x: 0.24, y: 0.24, w: 0.16, h: 0.30 }),
+            Object.freeze({ role: 'repair-and-radio', x: 0.62, y: 0.46, w: 0.15, h: 0.28 })
+        ]) }),
+        Object.freeze({ id: 'sheltered-crescent-camp', blocks: Object.freeze([
+            Object.freeze({ role: 'windbreak-west', x: 0.23, y: 0.26, w: 0.13, h: 0.42 }),
+            Object.freeze({ role: 'windbreak-north', x: 0.42, y: 0.22, w: 0.30, h: 0.13 })
+        ]) }),
+        Object.freeze({ id: 'occupied-maintenance-alcove', blocks: Object.freeze([
+            Object.freeze({ role: 'service-bay', x: 0.25, y: 0.50, w: 0.24, h: 0.16 }),
+            Object.freeze({ role: 'stores', x: 0.62, y: 0.27, w: 0.14, h: 0.24 })
+        ]) })
+    ])
+});
+
+export const SAFE_ARRIVAL_ROOM_PROFILE = Object.freeze({
+    id: 'safe-arrival',
+    anchorRoles: Object.freeze(['party-spawn', 'ship-console', 'first-exit', 'tutorial']),
+    tiers: Object.freeze({
+        standard: Object.freeze([[21, 17], [23, 19]].map(Object.freeze)),
+        major: Object.freeze([[27, 19], [29, 23]].map(Object.freeze))
+    }),
+    motifs: Object.freeze([
+        Object.freeze({ id: 'sheltered-crash-bay', blocks: Object.freeze([
+            Object.freeze({ role: 'wreck-shelter', x: 0.30, y: 0.25, w: 0.34, h: 0.18 }),
+            Object.freeze({ role: 'supply-screen', x: 0.66, y: 0.56, w: 0.12, h: 0.18 })
+        ]) }),
+        Object.freeze({ id: 'maintenance-landing', blocks: Object.freeze([
+            Object.freeze({ role: 'landing-service', x: 0.23, y: 0.28, w: 0.16, h: 0.40 }),
+            Object.freeze({ role: 'power-island', x: 0.60, y: 0.42, w: 0.17, h: 0.22 })
+        ]) }),
+        Object.freeze({ id: 'breached-cargo-court', blocks: Object.freeze([
+            Object.freeze({ role: 'cargo-stack-west', x: 0.24, y: 0.48, w: 0.18, h: 0.20 }),
+            Object.freeze({ role: 'breached-store-east', x: 0.62, y: 0.28, w: 0.15, h: 0.26 })
+        ]) })
+    ])
+});
+
 export const ROOM_GRAMMAR_PROFILES = Object.freeze({
     industrial: INDUSTRIAL_ROOM_PROFILE,
     'cryo-medical': CRYO_MEDICAL_ROOM_PROFILE,
     medical: CRYO_MEDICAL_ROOM_PROFILE,
-    biomech: BIOMECH_ROOM_PROFILE
+    biomech: BIOMECH_ROOM_PROFILE,
+    'camp-court': CAMP_COURT_ROOM_PROFILE,
+    camp: CAMP_COURT_ROOM_PROFILE,
+    'safe-arrival': SAFE_ARRIVAL_ROOM_PROFILE,
+    arrival: SAFE_ARRIVAL_ROOM_PROFILE
 });
 
 export function getRoomGrammarProfile(areaId = 'industrial') {

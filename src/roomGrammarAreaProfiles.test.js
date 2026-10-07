@@ -3,14 +3,17 @@ import {
     INDUSTRIAL_ROOM_PROFILE,
     CRYO_MEDICAL_ROOM_PROFILE,
     BIOMECH_ROOM_PROFILE,
+    CAMP_COURT_ROOM_PROFILE,
+    SAFE_ARRIVAL_ROOM_PROFILE,
     getRoomGrammarProfile
 } from './data/roomGrammarProfiles.js';
 import { planInterior } from './roomGrammar.js';
 import { buildGrammarRoomChunk } from './roomGrammarChunk.js';
 
-describe('room grammar area profiles (G4)', () => {
+describe('room grammar area profiles (G4-G5)', () => {
     it('provides distinct, well-structured profiles with valid motifs and tiers', () => {
-        const profiles = [INDUSTRIAL_ROOM_PROFILE, CRYO_MEDICAL_ROOM_PROFILE, BIOMECH_ROOM_PROFILE];
+        const profiles = [INDUSTRIAL_ROOM_PROFILE, CRYO_MEDICAL_ROOM_PROFILE, BIOMECH_ROOM_PROFILE,
+            CAMP_COURT_ROOM_PROFILE, SAFE_ARRIVAL_ROOM_PROFILE];
         for (const profile of profiles) {
             expect(profile.id).toBeTypeOf('string');
             expect(profile.tiers.standard.length).toBeGreaterThan(0);
@@ -33,7 +36,33 @@ describe('room grammar area profiles (G4)', () => {
         expect(getRoomGrammarProfile('medical')).toBe(CRYO_MEDICAL_ROOM_PROFILE);
         expect(getRoomGrammarProfile('biomech')).toBe(BIOMECH_ROOM_PROFILE);
         expect(getRoomGrammarProfile('industrial')).toBe(INDUSTRIAL_ROOM_PROFILE);
+        expect(getRoomGrammarProfile('camp')).toBe(CAMP_COURT_ROOM_PROFILE);
+        expect(getRoomGrammarProfile('arrival')).toBe(SAFE_ARRIVAL_ROOM_PROFILE);
         expect(getRoomGrammarProfile('unknown-area')).toBe(INDUSTRIAL_ROOM_PROFILE);
+    });
+
+    it('builds safe G5 camp courts and all three arrival scenarios', () => {
+        const arrivals = new Set();
+        for (let seed = 0; seed < 48; seed += 1) {
+            const arrival = buildGrammarRoomChunk({
+                seed,
+                areaId: 'safe-arrival',
+                openings: { north: { open: true, offset: 7 }, south: { open: true, offset: 7 } }
+            });
+            arrivals.add(arrival.rooms[0].arrivalScenario);
+            expect(arrival.rooms[0]).toMatchObject({ safeZone: true, role: 'generic', theme: 'bunker-standard' });
+            expect(arrival.anchors.map(({ role }) => role)).toEqual(['party-spawn', 'ship-console', 'first-exit', 'tutorial']);
+
+            const camp = buildGrammarRoomChunk({
+                seed,
+                areaId: 'camp-court',
+                tier: 'major',
+                openings: { east: { open: true, offset: 7 }, west: { open: true, offset: 7 } }
+            });
+            expect(camp.rooms[0]).toMatchObject({ safeZone: true, role: 'camp', theme: 'camp-fortified' });
+            expect(camp.anchors.map(({ role }) => role)).toEqual(['arrival', 'hearth', 'services', 'sleep']);
+        }
+        expect(arrivals).toEqual(new Set(['sheltered-crash-bay', 'maintenance-landing', 'breached-cargo-court']));
     });
 
     it('generates valid cryo-medical interiors with quarantine, autopsy, or stasis motifs', () => {

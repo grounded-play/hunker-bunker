@@ -81,7 +81,8 @@ export function planInterior({ seed, areaId = 'industrial', roomId = 'room',
     const corners = [{ x: 3, y: 3 }, { x: width - 4, y: 3 },
         { x: width - 4, y: height - 4 }, { x: 3, y: height - 4 }];
     corners.forEach((p, i) => line(p, corners[(i + 1) % 4]));
-    const anchors = ['arrival', 'work-access', 'storage', 'quiet-corner'].map((role, i) => ({ ...corners[i], role }));
+    const anchorRoles = profile.anchorRoles ?? ['arrival', 'work-access', 'storage', 'quiet-corner'];
+    const anchors = anchorRoles.map((role, i) => ({ ...corners[i], role }));
     const doors = orderedSockets.map(socket => {
         const vertical = socket.side === 'e' || socket.side === 'w';
         const center = vertical ? { x: socket.side === 'w' ? 0 : width - 1, y: socket.offset }

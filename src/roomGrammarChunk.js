@@ -55,12 +55,16 @@ export function buildGrammarRoomChunk({ seed, chunkX = 0, chunkY = 0,
     const assignedRole = role ?? (
         plan.profile === 'cryo-medical' || plan.profile === 'medical' ? 'medical'
         : plan.profile === 'biomech' ? 'nest'
+        : plan.profile === 'camp-court' ? 'camp'
+        : plan.profile === 'safe-arrival' ? 'generic'
         : plan.profile === 'industrial' ? 'engineering'
         : 'generic'
     );
     const assignedTheme = theme ?? (
         plan.profile === 'cryo-medical' || plan.profile === 'medical' ? 'cryo'
         : plan.profile === 'biomech' ? 'bio'
+        : plan.profile === 'camp-court' ? 'camp-fortified'
+        : plan.profile === 'safe-arrival' ? 'bunker-standard'
         : plan.profile === 'industrial' ? 'bunker-utility'
         : null
     );
@@ -69,6 +73,8 @@ export function buildGrammarRoomChunk({ seed, chunkX = 0, chunkY = 0,
         doors, navigation: { doorLanes: doors.flatMap(d => d.cells), primaryRoute: reserved, reserved },
         populationBudget: { signature: 1, large: 1, small: 3, pickup: 1, enemy: 0 },
         gate: null, placements: [], encounter: null,
+        safeZone: plan.profile === 'camp-court' || plan.profile === 'safe-arrival',
+        arrivalScenario: plan.profile === 'safe-arrival' ? plan.diagnostics.motif : null,
         grammar: { version: plan.generatorVersion, motif: plan.diagnostics.motif,
             modules: plan.modules.map(translate), anchors } };
     return { version: 1, chunkKey, generatorId: 'grammar-room', grid, rooms: [room], anchors,
