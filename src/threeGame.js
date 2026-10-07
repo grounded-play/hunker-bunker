@@ -468,6 +468,7 @@ import { getTerritoryLocation } from './territoryStructures.js';
 import { HALL_SCAN_KEY, ROOM_SCAN_KEY, formatLocationName, hallwayLocationName, roomLocationName } from './locationNames.js';
 import { FLOOR_OVERLAY_TYPES, PROP_COLLISION, archPillarColliders, getPropBehavior } from './propBehavior.js';
 import { findTilePath } from './snailPath.js';
+import { shouldEnemyRepath } from './enemyRepath.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
 import { groupDangerZones, lipEdgeQuads } from './dangerZones.js';
 import { GATE_CHALLENGES, GATE_CHALLENGE_TUNING, planGateChallenges } from './gateChallenges.js';
@@ -1003,6 +1004,8 @@ const WALL_DECAL_TYPES = new Set([
 const isFloorOverlayType = (type) => FLOOR_OVERLAY_TYPES.has(type);
 const isWallDecalType = (type) => WALL_DECAL_TYPES.has(type);
 const FRAME_BREAKDOWN_INTERVAL_MS = 10_000;
+// Offscreen enemies within this many tiles of a player still run their AI.
+const ENEMY_SIMULATION_RADIUS = 16;
 const BUNKER_COT_SPRITE_WIDTH = 1.35;
 const BUNKER_COT_SPRITE_HEIGHT = 0.8;
 const PROCEDURAL_DOOR_OPEN_RADIUS = 2.7;
@@ -7403,6 +7406,31 @@ export class ThreeGame {
 
     async createWorld3dModel(modelType) {
         return createWorld3dModel(modelType);
+    }
+
+    // Owner, 2026-10-07: enemies you cannot see stay static until their chunk
+    // is on screen or a player (you or a squadmate) is near. Bosses, ship
+    // raiders and enraged enemies always run, so a raid still reaches the ship.
+    isEnemySimulationActive(sprite) {
+        const data = sprite?.userData ?? {};
+        if (data.isBoss || data.prioritizeShip || data.enraged) return true;
+        if (sprite.parent?.visible !== false) return true;
+        const near = (position) => position
+            && Math.hypot(position.x - sprite.position.x, position.z - sprite.position.z) <= ENEMY_SIMULATION_RADIUS;
+        if (near(this.player?.position)) return true;
+        for (const remote of this.remotePlayers?.values?.() ?? []) {
+            if (near(remote?.mesh?.position ?? remote)) return true;
+        }
+        return false;
+    }
+
+    // A prop in a hidden chunk cannot be seen; its bob, fade and model scan
+    // wait until the chunk shows (they run on that first frame). Enemies are
+    // never skipped here: isEnemySimulationActive decides for them.
+    shouldSkipHiddenScatter(child) {
+        if (child?.parent?.visible !== false) return false;
+        const type = child.userData?.type;
+        return !(this.isEnemyType?.(type) || this.isCrawler?.(type) || this.isSentinel?.(type));
     }
 
     // Sprint 52 A1: during gameplay the frame profiler stays on (about 50
@@ -37397,16 +37425,26 @@ export class ThreeGame {
         const startTileZ = Math.round(sprite.position.z);
         const goalTileX = Math.round(target.goalX);
         const goalTileZ = Math.round(target.goalZ);
-        const targetChanged = data.pathGoalTileX !== goalTileX
-            || data.pathGoalTileZ !== goalTileZ
-            || data.aiMode !== target.mode
-            || data.targetType !== target.type;
-        const noPath = !Array.isArray(data.pathNodes) || data.pathNodes.length === 0 || data.pathIndex >= data.pathNodes.length;
-        const shouldRepath = targetChanged || noPath || data.pathRetargetTimer <= 0;
+        const hasPath = Array.isArray(data.pathNodes) && data.pathNodes.length > 0 && data.pathIndex < data.pathNodes.length;
+        // src/enemyRepath.js: a target drifting a tile no longer forces a
+        // fresh search every frame for every hunter (Sprint 52 perf).
+        const shouldRepath = shouldEnemyRepath({
+            modeChanged: data.aiMode !== target.mode || data.targetType !== target.type,
+            goalDeltaTiles: Number.isFinite(data.pathGoalTileX)
+                ? Math.max(Math.abs(data.pathGoalTileX - goalTileX), Math.abs(data.pathGoalTileZ - goalTileZ))
+                : Infinity,
+            hasPath,
+            atPathEnd: hasPath && (data.pathIndex ?? 0) >= data.pathNodes.length - 1,
+            timerExpired: data.pathRetargetTimer <= 0,
+            lastSearchFailed: Boolean(data.lastPathSearchFailed)
+        });
 
         if (shouldRepath) {
             const previousMode = data.aiMode;
             const pathNodes = this.findSnailPath(startTileX, startTileZ, goalTileX, goalTileZ, SNAIL_PATH_NODE_BUDGET);
+            const pathEnd = pathNodes[pathNodes.length - 1];
+            data.lastPathSearchFailed = !pathEnd
+                || Math.max(Math.abs(pathEnd.x - goalTileX), Math.abs(pathEnd.z - goalTileZ)) > 2;
             data.pathNodes = pathNodes;
             data.pathIndex = pathNodes.length > 1 ? 1 : 0;
             data.pathGoalTileX = goalTileX;
@@ -38163,6 +38201,7 @@ export class ThreeGame {
             // instanced dressing batch draws them. Animating one by its type
             // (bunker_junk_*) threw every frame and blacked out the render.
             if (child.userData.isRoomDressingCollider) continue;
+            if (this.shouldSkipHiddenScatter(child)) continue;
             const baseY = child.userData.elevationOffset ?? 0;
             child.userData.baseY = baseY;
             if (shouldScan3dReplacements) {
@@ -38234,11 +38273,11 @@ export class ThreeGame {
                             globalThis.window?.AudioManager?.play?.('enemy_idle_crawler', (this.audioAt?.(child.position.x, child.position.z, { volume: 0.14, playbackRate: 0.95 + Math.random() * 0.2 }) ?? { volume: 0.14 }));
                         }
                     }
-                    this.updateCrawlerBehavior(child, delta);
+                    if (this.isEnemySimulationActive(child)) this.updateCrawlerBehavior(child, delta);
                 }
             } else if (this.isSentinel(child.userData.type)) {
                 child.position.y = baseY;
-                if (!child.userData.burstTriggered) {
+                if (!child.userData.burstTriggered && this.isEnemySimulationActive(child)) {
                     this.updateSentinelBehavior(child, delta);
                 }
             } else if (this.isEnemyType(child.userData.type)) {
@@ -38258,7 +38297,10 @@ export class ThreeGame {
                 }
                 child.position.y = baseY + Math.sin(time * 4 + (child.userData.phase ?? 0)) * 0.04;
                 child.material.opacity = child.userData.baseOpacity ?? 1;
-                if (child.userData.type === 'fungal_spore_vent') {
+                // Offscreen and far from every player: static (owner, 2026-10-07).
+                if (!this.isEnemySimulationActive(child)) {
+                    // Nothing below may run for a held enemy.
+                } else if (child.userData.type === 'fungal_spore_vent') {
                     this.updateFungalSporeVentBehavior(child, delta);
                 } else if (child.userData.type === 'mycelium_stalker' || child.userData.type === 'bio_charger') {
                     this.updateChargerOrStalkerBehavior(child, delta, { isStalker: child.userData.type === 'mycelium_stalker' });

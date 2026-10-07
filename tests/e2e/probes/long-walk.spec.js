@@ -23,7 +23,9 @@ test('long walk: per-system frame cost as the run explores', async ({ page }) =>
             'updateSnailBehavior', 'findSnailPath', 'selectSnailTarget', 'loadNearbyWorld3dReplacement',
             'updateChargerOrStalkerBehavior', 'updateFungalSporeVentBehavior', 'syncSiteProps3d', 'updateSheetSpriteFrame',
             'spawnVisualSnailTrail', 'canOccupyPosition', 'isSnailTileWalkable', 'updateRemoteEnemyReplica',
-            'faceSpriteFromDir', 'tryEnemyBreachDoor', 'pickSnailWanderTile', 'updateEnemy3dVisual', 'syncEnemy3dVisual'
+            'faceSpriteFromDir', 'tryEnemyBreachDoor', 'pickSnailWanderTile', 'updateEnemy3dVisual', 'syncEnemy3dVisual',
+            'isEnemySimulationActive', 'shouldSkipHiddenScatter', 'updateCrawlerBehavior', 'updateSentinelBehavior',
+            'spawnVisualSnailTrail', 'damageSnail', 'updateBossBehavior', 'updateQueenFightTick'
         ]);
     }
     await bootToOperatorMenu(page);
