@@ -26549,15 +26549,15 @@ export class ThreeGame {
         // based in this isometric view, which makes the top of the canvas darker
         // than the bottom and makes "up-screen" flashlight aim feel weaker.
         // Radial darkness handles the suit; tighter atmospheric fog hides distant chunk edges.
-        this.scene.fog.near = this.nightVision ? 1000 : lerp(this.baseFogRange.near * 0.72, this.baseFogRange.near * 1.05, dayBlend);
-        this.scene.fog.far = this.nightVision ? 10000 : lerp(this.baseFogRange.far * 0.80, this.baseFogRange.far * 1.15, dayBlend);
+        this.scene.fog.near = this.nightVision ? 1000 : lerp(this.baseFogRange.near * 0.85, this.baseFogRange.near * 1.05, dayBlend);
+        this.scene.fog.far = this.nightVision ? 10000 : lerp(this.baseFogRange.far * 0.90, this.baseFogRange.far * 1.15, dayBlend);
 
         // Darker fog color at night
         if (!this.nightVision && dayBlend < 0.95) {
             this._nightFogDarkColor ??= new THREE.Color(0x040810);
-            this.scene.fog.color.lerp(this._nightFogDarkColor, (1.0 - dayBlend) * 0.55);
+            this.scene.fog.color.lerp(this._nightFogDarkColor, (1.0 - dayBlend) * 0.88);
             if (this.scene.background?.isColor) {
-                this.scene.background.lerp(this._nightFogDarkColor, (1.0 - dayBlend) * 0.55);
+                this.scene.background.lerp(this._nightFogDarkColor, (1.0 - dayBlend) * 0.88);
             }
         }
 

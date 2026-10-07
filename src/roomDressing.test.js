@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
-import { DRESSING_KITS, ROLE_DRESSING, ROLE_VIGNETTES, VIGNETTES, WALL_MOUNT_HEIGHT, dressingKitFor, dressingFamilyForTheme } from './roomDressingKits.js';
+import { DRESSING_KITS, DRESSING_PROFILES, ROLE_DRESSING, ROLE_VIGNETTES, VIGNETTES, WALL_MOUNT_HEIGHT, dressingKitFor, dressingFamilyForTheme, dressingProfileFor } from './roomDressingKits.js';
 import { DRESSING_LIMITS, planRoomDressing } from './roomDressing.js';
 import { WORLD_3D_MODELS } from './world3dOverlay.js';
 import { DRESSING_TRIANGLES } from './data/dressingTriangles.js';
@@ -67,6 +67,8 @@ describe('room dressing kits', () => {
         }
         expect(dressingFamilyForTheme('giger-cathedral')).toBe('cathedral');
         expect(dressingKitFor('bunker-standard', 'medical').clutter[0]).toBe('prop_surgical_cart');
+        expect(dressingProfileFor('giger-cathedral')).toMatchObject({ id: 'cathedral', wallDecalSpacing: 4 });
+        expect(Object.keys(DRESSING_PROFILES).sort()).toEqual(['bio', 'bunker', 'camp', 'cathedral', 'cryo']);
     });
 });
 
@@ -91,8 +93,9 @@ describe('room dressing plan', () => {
         const reserved = new Set(plan.reserved);
         const heroCells = new Set(plan.placements.map(({ x, y }) => `${x},${y}`));
 
-        // Lived-in: dozens of pieces, from a bounded set of types per layer.
-        expect(dressing.items.length).toBeGreaterThan(30);
+        // Lived-in but composed: enough layers to tell a story without covering
+        // every surface in uniformly distributed visual noise.
+        expect(dressing.items.length).toBeGreaterThanOrEqual(18);
         // GPU budget: 3D dressing triangles per room stay within perimeter + vignette caps.
         const counted = dressing.items.reduce((sum, item) => sum + (DRESSING_TRIANGLES[item.type] ?? 0), 0);
         expect(counted).toBe(dressing.triangles);
@@ -131,6 +134,16 @@ describe('room dressing plan', () => {
         const after = flood(solid);
         for (const key of before) if (!solid.has(key)) expect(after.has(key), `cut off ${key}`).toBe(true);
         expect(dressing.items.some(({ layer }) => layer === 'vignette')).toBe(true);
+        const compositions = Map.groupBy(
+            dressing.items.filter(({ compositionId }) => compositionId),
+            ({ compositionId }) => compositionId
+        );
+        for (const composition of compositions.values()) {
+            const roles = composition.map(({ compositionRole }) => compositionRole);
+            expect(roles).toContain('anchor');
+            expect(roles).toContain('support');
+            expect(roles).toContain('grounding');
+        }
 
         const floorKeys = new Set();
         const vignetteKeys = new Set();

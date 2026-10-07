@@ -82,6 +82,16 @@ export const DRESSING_KITS = Object.freeze({
     }
 });
 
+// Key-art composition profiles. Density is deliberately uneven: authored
+// negative space and a few strong silhouettes read better than uniform noise.
+export const DRESSING_PROFILES = Object.freeze({
+    bunker: Object.freeze({ wallDecalChance: 0.30, wallPropChance: 0.38, cornerChance: 0.78, clutterChance: 0.36, wallDecalSpacing: 3, floorClusters: [1, 2] }),
+    cryo: Object.freeze({ wallDecalChance: 0.24, wallPropChance: 0.36, cornerChance: 0.72, clutterChance: 0.30, wallDecalSpacing: 3, floorClusters: [1, 2] }),
+    bio: Object.freeze({ wallDecalChance: 0.34, wallPropChance: 0.42, cornerChance: 0.86, clutterChance: 0.40, wallDecalSpacing: 2, floorClusters: [1, 3] }),
+    camp: Object.freeze({ wallDecalChance: 0.24, wallPropChance: 0.34, cornerChance: 0.82, clutterChance: 0.46, wallDecalSpacing: 3, floorClusters: [1, 2] }),
+    cathedral: Object.freeze({ wallDecalChance: 0.20, wallPropChance: 0.34, cornerChance: 0.76, clutterChance: 0.24, wallDecalSpacing: 4, floorClusters: [1, 2] })
+});
+
 /** Role additions layered on the family kit. */
 export const ROLE_DRESSING = Object.freeze({
     medical: { wallProps: ['prop_vital_monitor'], clutter: ['prop_surgical_cart'], floorDecals: ['decal_bio_sample_spill'] },
@@ -112,6 +122,11 @@ export function dressingFamilyForTheme(themeId) {
     if (id.startsWith('cryo')) return 'cryo';
     if (id.startsWith('bio')) return 'bio';
     return 'bunker';
+}
+
+export function dressingProfileFor(themeId) {
+    const family = dressingFamilyForTheme(themeId);
+    return { id: family, ...DRESSING_PROFILES[family] };
 }
 
 /** The full kit for a theme and role (family kit plus role additions, de-duplicated). */

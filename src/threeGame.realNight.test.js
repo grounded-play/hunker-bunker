@@ -115,6 +115,9 @@ describe('ThreeGame L1: Real night tuning', () => {
 
         expect(nightGame.scene.fog.near).toBeLessThan(dayGame.scene.fog.near);
         expect(nightGame.scene.fog.far).toBeLessThan(dayGame.scene.fog.far);
+        // Global fog should shape depth without washing the whole isometric room
+        // into a pale veil; local FloorFogSystem owns the dense floor layer.
+        expect(nightGame.scene.fog.far).toBeGreaterThanOrEqual(nightGame.baseFogRange.far * 0.9);
         // Night fog is darker (lower luminance)
         const nightFogLum = nightGame.scene.fog.color.r + nightGame.scene.fog.color.g + nightGame.scene.fog.color.b;
         const dayFogLum = dayGame.scene.fog.color.r + dayGame.scene.fog.color.g + dayGame.scene.fog.color.b;

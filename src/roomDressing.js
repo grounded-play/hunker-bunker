@@ -14,7 +14,7 @@
  * caller passes the population plan's `reserved` keys), and floor items never
  * share a cell with a planned hero prop (`occupied`).
  */
-import { dressingKitFor, vignettesFor, WALL_MOUNT_HEIGHT } from './roomDressingKits.js';
+import { dressingKitFor, dressingProfileFor, ROLE_VIGNETTES, vignettesFor, WALL_MOUNT_HEIGHT } from './roomDressingKits.js';
 import { DRESSING_TRIANGLES } from './data/dressingTriangles.js';
 import { roomDressingIdentity } from './roomDressingIdentity.js';
 import { computePropFacingYaw, chooseSpacedModel } from './propBehavior.js';
@@ -23,18 +23,13 @@ export const DRESSING_LIMITS = Object.freeze({
     // Distinct types per room, per layer: the instanced renderer draws one
     // batch per type, so this bounds draw calls however dense the room is.
     typesPerLayer: Object.freeze({ wallProps: 3, wallDecals: 4, clutter: 4, corners: 2, floorDecals: 3 }),
-    wallDecalChance: 0.55,
-    wallPropChance: 0.3,
-    cornerChance: 0.9,
-    clutterChance: 0.42,
-    floorClusters: Object.freeze({ min: 3, max: 6 }),
     // GPU budget. The shipped GLBs come in 2.5k/6k/12k/18k/25k/30k-triangle
     // tiers; layers that repeat a model many times only take the light tiers,
     // and each room's 3D dressing is capped (decals are a quad each). Measured
     // in game 2026-10-04: without these caps the visible dressing added
     // 0.8-1.25M triangles, about half the frame.
     maxTrianglesPerModel: Object.freeze({ wallProps: 18000, clutter: 12000, corners: 18000 }),
-    roomTriangles: Object.freeze({ perimeter: 120000, vignettes: 60000 }),
+    roomTriangles: Object.freeze({ perimeter: 120000, vignettes: 70000 }),
     // One vignette per this many open floor cells, within [min, max].
     vignettes: Object.freeze({ cellsPer: 22, min: 2, max: 6 })
 });
@@ -84,6 +79,7 @@ const keyOf = (x, y) => `${x},${y}`;
 export function planRoomDressing(room, grid, { reserved = [], occupied = [], recentModels = null } = {}) {
     const random = seededRandom(stableHash(`${room?.id ?? 'room'}:dressing:v1`));
     const kit = dressingKitFor(room?.theme, room?.role);
+    const profile = dressingProfileFor(room?.theme);
     const types = {};
     for (const [layer, count] of Object.entries(DRESSING_LIMITS.typesPerLayer)) {
         const cap = DRESSING_LIMITS.maxTrianglesPerModel[layer];
@@ -122,6 +118,7 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
         .filter(({ x, y }) => grid?.[y]?.[x] === '.')
         .sort((a, b) => (a.y - b.y) || (a.x - b.x));
     const items = [];
+    const wallDecalCells = [];
 
     for (const cell of floorCells) {
         const key = keyOf(cell.x, cell.y);
@@ -130,7 +127,11 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
         if (walls.length === 0) continue;
 
         for (const [dx, dy] of walls) {
-            if (types.wallDecals.length && random() < DRESSING_LIMITS.wallDecalChance) {
+            const decalCell = { x: cell.x + dx, y: cell.y + dy };
+            const hasNearbyDecal = wallDecalCells.some((placed) => (
+                Math.abs(placed.x - decalCell.x) + Math.abs(placed.y - decalCell.y) < profile.wallDecalSpacing
+            ));
+            if (!hasNearbyDecal && types.wallDecals.length && random() < profile.wallDecalChance) {
                 items.push({
                     layer: 'wallDecal',
                     type: choose(types.wallDecals),
@@ -142,13 +143,14 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
                     size: 1.05 + random() * 0.75,
                     roll: (random() - 0.5) * 0.5
                 });
+                wallDecalCells.push(decalCell);
             }
         }
 
         if (taken.has(key)) continue;
         const corner = walls.length >= 2 && walls.some(([ax, ay]) => walls.some(([bx, by]) => ax * bx + ay * by === 0 && (ax !== bx || ay !== by)));
         const [wx, wy] = walls[0];
-        if (corner && types.corners.length && random() < DRESSING_LIMITS.cornerChance) {
+        if (corner && types.corners.length && random() < profile.cornerChance) {
             const cornerType = chooseLight(types.corners, cell.x, cell.y);
             if (!afford('perimeter', cornerType)) continue;
             const towardX = walls.reduce((sum, [dx]) => sum + dx, 0);
@@ -172,7 +174,7 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
             taken.add(key);
             continue;
         }
-        if (types.wallProps.length && random() < DRESSING_LIMITS.wallPropChance) {
+        if (types.wallProps.length && random() < profile.wallPropChance) {
             const type = chooseLight(types.wallProps, cell.x, cell.y);
             if (!afford('perimeter', type)) continue;
             const yaw = computePropFacingYaw({
@@ -195,7 +197,7 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
             taken.add(key);
             continue;
         }
-        if (types.clutter.length && random() < DRESSING_LIMITS.clutterChance) {
+        if (types.clutter.length && random() < profile.clutterChance) {
             const clutterType = chooseLight(types.clutter, cell.x, cell.y);
             if (!afford('perimeter', clutterType)) continue;
             const yaw = computePropFacingYaw({
@@ -254,6 +256,7 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
         return true;
     };
     const groups = vignettesFor(room?.theme, room?.role);
+    const roleGroups = ROLE_VIGNETTES[room?.role] ?? [];
     const islandCandidates = floorCells.filter(({ x, y }) => {
         const k = keyOf(x, y);
         return !blocked.has(k) && !taken.has(k) && !nearDoor(x, y)
@@ -263,6 +266,8 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
     const { cellsPer, min: vMin, max: vMax } = DRESSING_LIMITS.vignettes;
     const wanted = Math.min(vMax, Math.max(vMin, Math.floor(islandCandidates.length / cellsPer)));
     let placedVignettes = 0;
+    const usedGroups = new Set();
+    const vignetteAnchors = [];
     for (let attempt = 0; attempt < wanted * 16 && placedVignettes < wanted && groups.length; attempt += 1) {
         const anchor = islandCandidates[Math.floor(random() * islandCandidates.length)];
         const [dx, dy] = DIRECTIONS[Math.floor(random() * DIRECTIONS.length)];
@@ -276,7 +281,21 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
             for (const { x, y } of cells) solid.delete(keyOf(x, y));
             continue;
         }
-        const group = groups[Math.floor(random() * groups.length)];
+        const preferred = placedVignettes === 0 && roleGroups.length
+            ? roleGroups
+            : groups.filter((candidate) => !usedGroups.has(candidate.join('|')));
+        const pool = preferred.length ? preferred : groups;
+        const conflictFree = pool.filter((candidate) => candidate.every((type) => !items.some((item) => (
+            item.type === type && Math.hypot(item.x - anchor.x, item.y - anchor.y) < 6
+        ))));
+        const candidates = conflictFree.length ? conflictFree : pool;
+        const leastUsed = Math.min(...candidates.map((candidate) => (
+            candidate.reduce((sum, type) => sum + (chunkModels.get(type) ?? 0), 0)
+        )));
+        const balanced = candidates.filter((candidate) => (
+            candidate.reduce((sum, type) => sum + (chunkModels.get(type) ?? 0), 0) === leastUsed
+        ));
+        const group = balanced[Math.floor(random() * balanced.length)];
         const groupCost = group.reduce((sum, type) => sum + (DRESSING_TRIANGLES[type] ?? 0), 0);
         if (spent.vignettes + groupCost > DRESSING_LIMITS.roomTriangles.vignettes) {
             for (const { x, y } of cells) solid.delete(keyOf(x, y));
@@ -289,6 +308,7 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
                 return d < best.d ? { door, d } : best;
             }, { door: null, d: Infinity }).door
             : null;
+        const compositionId = `${room?.id ?? 'room'}:composition:${placedVignettes}`;
         group.forEach((type, index) => {
             const at = index === 0 ? anchor : index === 1 ? second : anchor;
             // The third piece sits beside the pair, inside the anchor cell
@@ -296,14 +316,9 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
             const spread = index === 2 ? 0.2 : 0.08;
             const px = at.x + (random() - 0.5) * spread + (index === 2 ? dy * 0.3 : 0);
             const py = at.y + (random() - 0.5) * spread + (index === 2 ? -dx * 0.3 : 0);
-            const yaw = computePropFacingYaw({
-                type,
-                x: px,
-                y: py,
-                roomCenter: centre,
-                nearestDoor: nearestDoorCell,
-                random
-            });
+            const yaw = index === 0
+                ? computePropFacingYaw({ type, x: px, y: py, roomCenter: centre, nearestDoor: nearestDoorCell, random })
+                : Math.atan2(anchor.x - px, anchor.y - py);
             chunkModels.set(type, (chunkModels.get(type) ?? 0) + 1);
             items.push({
                 layer: 'vignette',
@@ -311,22 +326,45 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
                 x: px,
                 y: py,
                 yaw,
-                scale: 0.95 + random() * 0.1,
-                blocking: index < 2
+                scale: (index === 0 ? 1.04 : index === 1 ? 0.92 : 0.78) + random() * 0.06,
+                blocking: index < 2,
+                compositionId,
+                compositionRole: index === 0 ? 'anchor' : index === 1 ? 'support' : 'detail'
             });
         });
+        usedGroups.add(group.join('|'));
+        vignetteAnchors.push({ ...anchor, compositionId });
         for (const { x, y } of cells) taken.add(keyOf(x, y));
         placedVignettes += 1;
     }
 
     // Story on the open floor: a few clusters of overlapping decals.
-    const open = floorCells.filter(({ x, y }) => !blocked.has(keyOf(x, y)));
+    const open = floorCells.filter(({ x, y }) => !blocked.has(keyOf(x, y)) && !nearDoor(x, y));
     if (types.floorDecals.length && open.length) {
-        const { min, max } = DRESSING_LIMITS.floorClusters;
+        // Every furniture composition gets one grounding mark, so it reads as a
+        // single lived-in scene rather than unrelated objects on a clean floor.
+        for (const anchor of vignetteAnchors) {
+            items.push({
+                layer: 'floorDecal',
+                type: choose(types.floorDecals),
+                x: anchor.x + (random() - 0.5) * 0.28,
+                y: anchor.y + (random() - 0.5) * 0.28,
+                yaw: random() * Math.PI * 2,
+                size: 0.9 + random() * 0.35,
+                compositionId: anchor.compositionId,
+                compositionRole: 'grounding'
+            });
+        }
+        const [min, max] = profile.floorClusters;
         const clusters = min + Math.floor(random() * (max - min + 1));
+        const clusterCentres = [];
         for (let c = 0; c < clusters; c += 1) {
-            const centre = open[Math.floor(random() * open.length)];
-            const pieces = 1 + Math.floor(random() * 3);
+            const spaced = open.filter((candidate) => clusterCentres.every((placed) => (
+                Math.hypot(candidate.x - placed.x, candidate.y - placed.y) >= 4
+            )));
+            const centre = (spaced.length ? spaced : open)[Math.floor(random() * (spaced.length ? spaced.length : open.length))];
+            clusterCentres.push(centre);
+            const pieces = 1 + Math.floor(random() * 2);
             for (let p = 0; p < pieces; p += 1) {
                 items.push({
                     layer: 'floorDecal',
@@ -334,7 +372,7 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
                     x: centre.x + (random() - 0.5) * 1.2,
                     y: centre.y + (random() - 0.5) * 1.2,
                     yaw: random() * Math.PI * 2,
-                    size: 0.9 + random() * 0.7
+                    size: 0.72 + random() * 0.48
                 });
             }
         }
@@ -349,7 +387,7 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
         }
     });
 
-    return { family: kitFamilyLabel(room?.theme), types, items, triangles: spent.perimeter + spent.vignettes };
+    return { family: kitFamilyLabel(room?.theme), profile: profile.id, types, items, triangles: spent.perimeter + spent.vignettes };
 }
 
 export function isDestructibleDressingType(type, layer) {
