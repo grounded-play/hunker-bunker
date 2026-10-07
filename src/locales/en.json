@@ -2075,6 +2075,56 @@
       "achievement": "EARNED BY AN ACHIEVEMENT",
       "confirm_buy": "CLICK AGAIN TO BUY",
       "not_enough_shells": "NOT ENOUGH SHELLS"
+    },
+    "camp_resident": {
+      "role": {
+        "mechanic": "MECHANIC",
+        "medic": "MEDIC",
+        "lookout": "LOOKOUT",
+        "cook": "COOK",
+        "radio": "RADIO OPERATOR",
+        "scavenger": "SCAVENGER",
+        "settler": "SETTLER"
+      },
+      "mechanic": {
+        "1": "Every hinge in this place squeals. I keep oiling them anyway.",
+        "2": "Bring me scrap and I can keep the generator honest another week.",
+        "3": "That suit of yours is held together by hope. Same as the walls."
+      },
+      "medic": {
+        "1": "Sit still. You are bleeding on my clean floor.",
+        "2": "We are out of everything but stubbornness. Stubbornness heals slow.",
+        "3": "Whatever you breathed out there, do not breathe it in here."
+      },
+      "lookout": {
+        "1": "Movement past the ridge all night. Nothing came closer. Yet.",
+        "2": "I count lights in the dark. Fewer every week.",
+        "3": "If you see a snail the size of a truck, you did not see it from here."
+      },
+      "cook": {
+        "1": "It is broth. It was broth yesterday. It will be broth tomorrow.",
+        "2": "Eat something. Nobody fights well hungry.",
+        "3": "Do not ask what is in it. It is warm. That is the whole recipe."
+      },
+      "radio": {
+        "1": "The relay hums at night. Sometimes it hums back.",
+        "2": "I keep calling the other camps. Some days somebody answers.",
+        "3": "Mothership chatter again. Polite, and not about us."
+      },
+      "scavenger": {
+        "1": "Picked the east tunnels clean. You should try deeper.",
+        "2": "Found a boot with the foot still in it. Kept the boot.",
+        "3": "If it is shiny and not nailed down, it is already in my pack."
+      },
+      "settler": {
+        "1": "Still getting used to sleeping without one eye open. Thank you.",
+        "2": "They gave me a bunk and a job. First time in months I have had either.",
+        "3": "Tell anyone out there: there is a place to come in from the cold."
+      },
+      "worried": {
+        "1": "The wall did not hold last night. We are patching it with whatever we have.",
+        "2": "Two of ours did not make it back in. Please, help us shore this up."
+      }
     }
   },
   "narrative": {

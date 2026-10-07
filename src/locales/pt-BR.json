@@ -2075,6 +2075,56 @@
       "achievement": "OBTIDO COM UMA CONQUISTA",
       "confirm_buy": "CLIQUE DE NOVO PARA COMPRAR",
       "not_enough_shells": "CÁPSULAS INSUFICIENTES"
+    },
+    "camp_resident": {
+      "role": {
+        "mechanic": "MECÂNICO",
+        "medic": "MÉDICA",
+        "lookout": "VIGIA",
+        "cook": "COZINHEIRO",
+        "radio": "OPERADORA DE RÁDIO",
+        "scavenger": "CATADORA",
+        "settler": "COLONO"
+      },
+      "mechanic": {
+        "1": "Toda dobradiça deste lugar range. Eu continuo lubrificando assim mesmo.",
+        "2": "Traga sucata e o gerador aguenta mais uma semana.",
+        "3": "Esse seu traje está inteiro só na base da esperança. Igual às paredes."
+      },
+      "medic": {
+        "1": "Fique parado. Você está sangrando no meu chão limpo.",
+        "2": "Falta tudo aqui menos teimosia. Teimosia cura devagar.",
+        "3": "O que você respirou lá fora, não respire aqui dentro."
+      },
+      "lookout": {
+        "1": "Movimento atrás da crista a noite toda. Nada chegou mais perto. Ainda.",
+        "2": "Eu conto as luzes no escuro. Menos a cada semana.",
+        "3": "Se você vir um caracol do tamanho de um caminhão, não foi daqui que viu."
+      },
+      "cook": {
+        "1": "É caldo. Ontem era caldo. Amanhã vai ser caldo.",
+        "2": "Coma alguma coisa. Ninguém luta bem com fome.",
+        "3": "Não pergunte o que tem dentro. Está quente. Essa é a receita inteira."
+      },
+      "radio": {
+        "1": "O retransmissor zumbe à noite. Às vezes o zumbido responde.",
+        "2": "Continuo chamando os outros acampamentos. Alguns dias alguém atende.",
+        "3": "Conversa da nave-mãe de novo. Educada, e não é sobre nós."
+      },
+      "scavenger": {
+        "1": "Limpei os túneis do leste. Tente mais fundo.",
+        "2": "Achei uma bota com o pé ainda dentro. Fiquei com a bota.",
+        "3": "Se brilha e não está pregado, já está na minha mochila."
+      },
+      "settler": {
+        "1": "Ainda me acostumando a dormir sem um olho aberto. Obrigado.",
+        "2": "Me deram um beliche e um trabalho. Primeira vez em meses que tenho os dois.",
+        "3": "Diga a todos lá fora: existe um lugar para sair do frio."
+      },
+      "worried": {
+        "1": "O muro não aguentou ontem à noite. Estamos remendando com o que temos.",
+        "2": "Dois dos nossos não voltaram. Por favor, ajude a reforçar isto aqui."
+      }
     }
   },
   "narrative": {

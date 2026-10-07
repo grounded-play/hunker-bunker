@@ -206,6 +206,7 @@ import { BaseLights } from './baseLights.js';
 import { FabricationFoundry } from './foundry.js';
 import { CaveEntrance } from './caveEntrance.js';
 import { SurvivorCamp, CAMP_CLEARING_RADIUS, CAMP_DRESSING_MODELS } from './camp.js';
+import { residentLineKey, residentRoleKey } from './data/campResidents.js';
 import {
     ACT2_CAMP_LABELS,
     ACT2_CAMP_MAX_LEVEL,
@@ -1768,6 +1769,28 @@ export function isRoomGatewayFrameEligible(room, door, metadata = {}) {
 // Co-op guests create host enemies they lack (handleEnemyStateSnapshot).
 const REMOTE_ENEMY_MATERIALIZE_PER_SNAPSHOT = 4;
 const REMOTE_REPLICA_STALE_MS = 3000;
+
+// The closest open cell to a point, searched ring by ring (companions).
+function nearestWalkableCell(point, walkable, maxRadius = 4) {
+    const cx = Math.round(point.x);
+    const cz = Math.round(point.z);
+    if (walkable(cx, cz)) return { x: cx, z: cz };
+    for (let radius = 1; radius <= maxRadius; radius += 1) {
+        let best = null;
+        for (let dx = -radius; dx <= radius; dx += 1) {
+            for (let dz = -radius; dz <= radius; dz += 1) {
+                if (Math.max(Math.abs(dx), Math.abs(dz)) !== radius || !walkable(cx + dx, cz + dz)) continue;
+                const distance = Math.hypot(cx + dx - point.x, cz + dz - point.z);
+                if (!best || distance < best.distance) best = { x: cx + dx, z: cz + dz, distance };
+            }
+        }
+        if (best) return { x: best.x, z: best.z };
+    }
+    return null;
+}
+
+// Camp states that are the only thing a camp offers while they last.
+const CAMP_EXCLUSIVE_ACTIONS = new Set(['turret', 'lockdown', 'wait', 'aid', 'cull', 'defense-active', 'choice']);
 
 // Keyboard keys named in target prompts -> the controller action that does
 // the same thing (src/inputGlyphs.js, scripts/build-steam-input-configs.js).
@@ -8475,13 +8498,24 @@ export class ThreeGame {
 
     cycleInteractionTarget(direction = 1) {
         const candidates = this.getPriorityInteractionCandidates();
-        if (candidates.length < 2) return false;
+        if (candidates.length < 2) return this.cycleCampAction(direction);
         this._interactionTargetIndex = ((this._interactionTargetIndex ?? 0) + direction + candidates.length) % candidates.length;
         const selected = candidates[this._interactionTargetIndex];
         this.showBunkerLine(`TARGET ${this._interactionTargetIndex + 1}/${candidates.length}: ${selected.label} — PRESS INTERACT`);
         window.dispatchEvent(new CustomEvent('interaction-target-changed', {
             detail: { id: selected.id, label: selected.label, index: this._interactionTargetIndex, count: candidates.length }
         }));
+        return true;
+    }
+
+    cycleCampAction(direction = 1) {
+        if (!this.player) return false;
+        const actions = this.getCampActionsAt(this.player.position.x, this.player.position.z);
+        if (actions.length < 2) return false;
+        this._campActionIndex = (((this._campActionIndex ?? 0) + direction) % actions.length + actions.length) % actions.length;
+        const selected = actions[this._campActionIndex];
+        this.showBunkerLine?.(`${selected.label} — ${this._campActionIndex + 1}/${actions.length}`);
+        window.AudioManager?.play?.('ui_hover', { volume: 0.3 });
         return true;
     }
 
@@ -16772,7 +16806,13 @@ export class ThreeGame {
         if (this.performanceProfile === 'menu' || !this.act2) return;
         this.ensureAct2Camps();
         const phase = this.act2.getPhase();
-        for (const camp of this.camps) camp.update(delta);
+        for (const camp of this.camps) {
+            camp.update(delta);
+            if (camp.campWorkerGroup && camp._settlersSynced !== (this.getCampRecord?.(camp.id)?.settlers?.length ?? 0)) {
+                this.syncCampSettlers(camp);
+                camp._settlersSynced = this.getCampRecord?.(camp.id)?.settlers?.length ?? 0;
+            }
+        }
 
         // Act 1 perk: a supported camp tops up O2 while you stand in it.
         if (phase === 'dormant' && this.player && !this.isPlayerDead && (this.playerVitals?.o2 ?? 100) < 100) {
@@ -19553,7 +19593,7 @@ export class ThreeGame {
         return true;
     }
 
-    getActionableCampAt(x, z, phase = this.act2?.getPhase()) {
+    getActionableCampAt(x, z, phase = this.act2?.getPhase(), { skip = null } = {}) {
         if (!this.camps) return null;
         for (const camp of this.camps) {
             // Post-reveal, a live defense turret is its own interaction: spoof
@@ -19582,7 +19622,7 @@ export class ThreeGame {
 
             const hasCompanion = (this.companions ?? []).some((c) => c.isWanderer || c.wanderer);
             if (hasCompanion && ['alive', 'robbed'].includes(status)) {
-                return {
+                if (!skip?.has('settle-companion')) return {
                     camp,
                     action: 'settle-companion',
                     label: `SETTLE SURVIVOR AT ${camp.label?.toUpperCase() || 'SAFE HAVEN'}`
@@ -19590,7 +19630,7 @@ export class ThreeGame {
             }
 
             if (['alive', 'robbed'].includes(status) && (camp.isWorkbench || camp.hasWorkbench)) {
-                return {
+                if (!skip?.has('field-workbench')) return {
                     camp,
                     action: 'field-workbench',
                     label: `FIELD WORKBENCH — CRAFT & REPAIR (${camp.label?.toUpperCase() || 'SAFE HAVEN'})`
@@ -19619,7 +19659,7 @@ export class ThreeGame {
             if (phase === 'dormant' && status === 'alive') {
                 const beat = this.peekDialogueBeat('camp', camp, record);
                 if (beat && beat.type !== 'loop') {
-                    return {
+                    if (!skip?.has('talk')) return {
                         camp,
                         action: 'talk',
                         label: `TALK — ${camp.leaderName?.toUpperCase() || 'THE CAMP'}`
@@ -19629,7 +19669,7 @@ export class ThreeGame {
             if (phase === 'dormant' && status === 'alive' && camp.level < ACT2_CAMP_MAX_LEVEL) {
                 // The purchase that raises the defense grid says so up front.
                 const fortifies = !isCampLevelFortified(camp.level) && isCampLevelFortified(camp.level + 1);
-                return {
+                if (!skip?.has('support')) return {
                     camp,
                     action: 'support',
                     label: `${fortifies ? 'FORTIFY PERIMETER' : 'SUPPORT CAMP'} — ${this.getCampSupportCost(camp)} SHELLS`
@@ -19638,7 +19678,7 @@ export class ThreeGame {
             if (phase === 'dormant' && status === 'alive' && !this._activeCampQuest) {
                 const quest = this.getNextCampQuest(camp.id, record);
                 if (quest && !record?.questFlags?.[quest.id]) {
-                    return {
+                    if (!skip?.has('quest-offer')) return {
                         camp,
                         quest,
                         action: 'quest-offer',
@@ -19647,7 +19687,7 @@ export class ThreeGame {
                 }
             }
             if (phase === 'dormant' && status === 'alive' && (record?.bond ?? 0) < ACT2_MAX_BOND) {
-                return {
+                if (!skip?.has('bond')) return {
                     camp,
                     action: 'bond',
                     label: `RUN CAMP FAVOR — ${this.getCampFavorCost(record)} SHELLS`
@@ -19664,7 +19704,7 @@ export class ThreeGame {
                             : gate.reason === 'insufficient_resources' ? ' (NEEDS SUPPLIES)'
                                 : gate.reason === 'camp_overrun' ? ' (CAMP OVERRUN)'
                                     : ' (UNAVAILABLE)';
-                    return { camp, action: 'active-verb', verb, gate, label: `${verb.label}${suffix}` };
+                    if (!skip?.has('active-verb')) return { camp, action: 'active-verb', verb, gate, label: `${verb.label}${suffix}` };
                 }
             }
             // A breached or overrun camp asks for help before anything else:
@@ -19672,7 +19712,7 @@ export class ThreeGame {
             const condition = this.getCampCondition(camp.id);
             const shoreUp = status === 'alive' ? planShoreUp(condition) : null;
             if (shoreUp) {
-                return {
+                if (!skip?.has('shore-up')) return {
                     camp,
                     action: 'shore-up',
                     label: `SHORE UP DEFENCES (${condition.toUpperCase()}) — ${shoreUp.cost} SHELLS`
@@ -19681,7 +19721,7 @@ export class ThreeGame {
             // This campaign's goal package may run through this camp's stores.
             const dealStep = status === 'alive' ? this.getPendingPackageStep?.(`camp:${camp.id}`) : null;
             if (dealStep) {
-                return {
+                if (!skip?.has('package-deal')) return {
                     camp,
                     action: 'package-deal',
                     step: dealStep,
@@ -19695,7 +19735,7 @@ export class ThreeGame {
             if (phase === 'dormant' && status === 'alive' && getCampConditionEffects(condition).medic) {
                 const treatable = nextTreatableScar(this.fatigueState);
                 if (treatable) {
-                    return {
+                    if (!skip?.has('treat-scar')) return {
                         camp,
                         action: 'treat-scar',
                         scarId: treatable.id,
@@ -19709,7 +19749,7 @@ export class ThreeGame {
             // It used to be an inline gate that additionally required an Act 2
             // `dormant` camp, which is why this verb almost never appeared.
             if (['alive', 'robbed'].includes(status) && (phase === 'dormant' || !this.isAct2Active())) {
-                return {
+                if (!skip?.has('field-workbench')) return {
                     camp,
                     action: 'field-workbench',
                     label: `FIELD WORKBENCH — CRAFT & REPAIR (${camp.label?.toUpperCase() || 'SAFE HAVEN'})`
@@ -19718,7 +19758,7 @@ export class ThreeGame {
 
             const restCheck = this.canRestAt(camp, { status });
             if (restCheck.allowed) {
-                return {
+                if (!skip?.has('rest')) return {
                     camp,
                     action: 'rest',
                     label: `SLEEP UNTIL DAY ${restCheck.nextDay}`
@@ -19750,12 +19790,116 @@ export class ThreeGame {
         return null;
     }
 
+    /**
+     * Everything a camp offers here, in priority order (Sprint 51). Only the
+     * first used to be reachable, so settling a survivor or a workbench hid
+     * talking to the leader. Exclusive states (a turret, a lockdown, "go
+     * away", the Act 2 decisions) stay the only option. Talk is always on
+     * the list while the leader will speak, small talk included.
+     */
+    getCampActionsAt(x, z, phase = this.act2?.getPhase()) {
+        const actions = [];
+        const skip = new Set();
+        let blocked = false;
+        for (let guard = 0; guard < 16; guard += 1) {
+            const action = this.getActionableCampAt(x, z, phase, { skip });
+            if (!action || skip.has(action.action)) break;
+            if (CAMP_EXCLUSIVE_ACTIONS.has(action.action)) {
+                if (actions.length === 0) actions.push(action);
+                blocked = true;
+                break;
+            }
+            actions.push(action);
+            skip.add(action.action);
+        }
+        const camp = actions[0]?.camp;
+        const resident = !blocked && camp ? this.getNearbyCampResident(camp, x, z) : null;
+        if (resident) {
+            actions.unshift({
+                camp,
+                action: 'talk-resident',
+                workerIndex: resident.index,
+                label: `TALK — ${resident.resident.name.toUpperCase()} (${t(residentRoleKey(resident.resident.role))})`
+            });
+        }
+        if (camp && !blocked && !actions.some((entry) => entry.action === 'talk')) {
+            const record = this.getCampRecord(camp.id);
+            const status = record?.status ?? camp.status ?? 'alive';
+            if (status === 'alive' && this.peekDialogueBeat('camp', camp, record)) {
+                actions.splice(Math.min(1, actions.length), 0, {
+                    camp,
+                    action: 'talk',
+                    label: `TALK — ${camp.leaderName?.toUpperCase() || 'THE CAMP'}`
+                });
+            }
+        }
+        return actions;
+    }
+
+    // The resident (worker or settler) the player is standing beside, if any.
+    getNearbyCampResident(camp, x, z, reach = 1.6) {
+        let best = null;
+        for (const [index, worker] of (camp?.campWorkers ?? []).entries()) {
+            if (!worker?.resident || !worker.mesh || worker.mesh.visible === false) continue;
+            const position = worker.mesh.getWorldPosition?.(new THREE.Vector3()) ?? worker.mesh.position;
+            const distance = Math.hypot(position.x - x, position.z - z);
+            if (distance <= reach && (!best || distance < best.distance)) best = { index, resident: worker.resident, distance };
+        }
+        return best;
+    }
+
+    // A camp resident says one line: their job's, a settler's, or a worried
+    // one while the camp is breached. Each talk moves on to the next line.
+    talkToCampResident(camp, workerIndex) {
+        const worker = camp?.campWorkers?.[workerIndex];
+        if (!worker?.resident) return false;
+        const record = this.getCampRecord?.(camp.id);
+        const talks = record ? (record.residentTalks ??= {}) : (worker.talks ??= {});
+        const name = worker.resident.name;
+        const key = residentLineKey(worker.resident, { talks: talks[name] ?? 0, condition: this.getCampCondition?.(camp.id) ?? 'intact' });
+        talks[name] = (talks[name] ?? 0) + 1;
+        this.showBunkerLine?.(`${name.toUpperCase()} (${t(residentRoleKey(worker.resident.role))}): "${t(key)}"`);
+        window.AudioManager?.play?.('ui_typing', { volume: 0.25 });
+        window.dispatchEvent?.(new CustomEvent('camp-resident-talked', { detail: { campId: camp.id, name, role: worker.resident.role } }));
+        return true;
+    }
+
+    // Settled survivors are part of the camp record; give each a figure.
+    syncCampSettlers(camp) {
+        const settlers = this.getCampRecord?.(camp.id)?.settlers;
+        if (!settlers?.length || !camp?.addSettlerResident) return;
+        for (const settler of settlers) {
+            if (!camp.campWorkers?.some((worker) => worker.resident?.name === settler.name)) camp.addSettlerResident(settler.name);
+        }
+    }
+
+    // The camp action the prompt shows and interact performs; C / the aim
+    // stick click steps through the rest (cycleInteractionTarget).
+    getSelectedCampAction(x, z, phase = this.act2?.getPhase()) {
+        const actions = this.getCampActionsAt(x, z, phase);
+        if (!actions.length) {
+            this._campActionIndex = 0;
+            this._campActionCampId = null;
+            return null;
+        }
+        if (actions[0].camp?.id !== this._campActionCampId) {
+            this._campActionCampId = actions[0].camp?.id ?? null;
+            this._campActionIndex = 0;
+        }
+        const index = ((this._campActionIndex ?? 0) % actions.length + actions.length) % actions.length;
+        return { ...actions[index], index, count: actions.length };
+    }
+
     updateCampPrompt(phase) {
         const eligible = this.isGameplayInputActive() && this.player && !this.isPlayerDead;
         const actionable = eligible
-            ? this.getActionableCampAt(this.player.position.x, this.player.position.z, phase)
+            ? this.getSelectedCampAction(this.player.position.x, this.player.position.z, phase)
             : null;
-        const label = actionable?.label ?? null;
+        const label = actionable
+            ? (actionable.count > 1
+                ? `${actionable.label}  ·  ${actionable.index + 1}/${actionable.count} ${this.getPromptKeyGlyph('C')} ▸`
+                : actionable.label)
+            : null;
         if (label === this._campPromptLabel) return;
         this._campPromptLabel = label;
         if (label) {
@@ -20209,6 +20353,7 @@ export class ThreeGame {
             });
         }
 
+        camp.addSettlerResident?.(wandererName);
         this.showBunkerLine?.(`${wandererName.toUpperCase()} SAFELY SETTLED AT ${camp.label?.toUpperCase() || 'SAFE HAVEN'}. CAMP BOND STRENGTHENED.`);
         window.AudioManager?.play?.('fx_level_up', { volume: 0.5, playbackRate: 1.1 });
 
@@ -20359,10 +20504,11 @@ export class ThreeGame {
 
     interactWithAct2Camp() {
         if (!this.isGameplayInputActive() || !this.player || !this.act2) return false;
-        const actionable = this.getActionableCampAt(this.player.position.x, this.player.position.z);
+        const actionable = this.getSelectedCampAction(this.player.position.x, this.player.position.z);
         if (!actionable) return false;
         const { camp, action } = actionable;
 
+        if (action === 'talk-resident') return this.talkToCampResident(camp, actionable.workerIndex);
         if (action === 'field-workbench') return this.openFieldWorkbench(camp);
         if (action === 'settle-companion') return this.settleCompanionAtCamp(camp);
         if (action === 'treat-scar') return this.treatScarAtCamp(camp, actionable.scarId);
@@ -36582,12 +36728,21 @@ export class ThreeGame {
         const walkable = (x, z) => this.isSnailTileWalkable(x, z);
         const target = walkable(Math.round(goal.x), Math.round(goal.z)) ? goal : { x: player.x, z: player.z };
         const toGoal = Math.hypot(target.x - root.position.x, target.z - root.position.z);
+        // Onto open ground next to the target, never onto the follow point
+        // itself: when that sat in a wall, a relocate put the companion inside
+        // it, stuck again at once (session 2026-10-06: a repath / relocate
+        // every 5-10 s for the rest of the run).
         const relocate = () => {
-            root.position.set(goal.x, this.getTerrainHeightAt?.(goal.x, goal.z) ?? player.y ?? 0, goal.z);
+            const spot = nearestWalkableCell(target, walkable) ?? { x: player.x, z: player.z };
+            root.position.set(spot.x, this.getTerrainHeightAt?.(spot.x, spot.z) ?? player.y ?? 0, spot.z);
             companion.path = null;
             companion.stuckTime = 0;
-            debugLog.info('PLAYER', 'companion-relocated', { id: companion.wanderer?.id ?? null });
+            debugLog.info('PLAYER', 'companion-relocated', { id: companion.wanderer?.id ?? companion.wanderer?.name ?? null });
         };
+        if (!walkable(Math.round(root.position.x), Math.round(root.position.z))) {
+            relocate();
+            return;
+        }
         if (toGoal > COMPANION_PATH_LIMITS.maxRange - 2) {
             relocate();
             return;
@@ -36628,7 +36783,7 @@ export class ThreeGame {
         if (companion.stuckTime > 1.2 && companion.stuckTime - delta <= 1.2) {
             companion.path = null;
             companion.repathTimer = 0;
-            debugLog.info('PLAYER', 'companion-repath', { id: companion.wanderer?.id ?? null });
+            debugLog.info('PLAYER', 'companion-repath', { id: companion.wanderer?.id ?? companion.wanderer?.name ?? null });
         }
         if (companion.stuckTime > 4 && toGoal > 3) relocate();
     }

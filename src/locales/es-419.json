@@ -2075,6 +2075,56 @@
       "achievement": "SE OBTIENE CON UN LOGRO",
       "confirm_buy": "HAZ CLIC DE NUEVO PARA COMPRAR",
       "not_enough_shells": "NO TIENES SUFICIENTES CASQUILLOS"
+    },
+    "camp_resident": {
+      "role": {
+        "mechanic": "MECÁNICO",
+        "medic": "MÉDICA",
+        "lookout": "VIGÍA",
+        "cook": "COCINERO",
+        "radio": "OPERADORA DE RADIO",
+        "scavenger": "CHATARRERA",
+        "settler": "COLONO"
+      },
+      "mechanic": {
+        "1": "Todas las bisagras de este lugar chirrían. Igual las sigo aceitando.",
+        "2": "Tráeme chatarra y el generador aguanta otra semana.",
+        "3": "Ese traje tuyo se sostiene con pura esperanza. Igual que las paredes."
+      },
+      "medic": {
+        "1": "Quédate quieto. Estás sangrando sobre mi piso limpio.",
+        "2": "Nos falta todo menos la terquedad. La terquedad sana lento.",
+        "3": "Lo que hayas respirado allá afuera, no lo respires aquí adentro."
+      },
+      "lookout": {
+        "1": "Movimiento detrás de la cresta toda la noche. Nada se acercó. Todavía.",
+        "2": "Cuento las luces en la oscuridad. Cada semana hay menos.",
+        "3": "Si ves un caracol del tamaño de un camión, no lo viste desde aquí."
+      },
+      "cook": {
+        "1": "Es caldo. Ayer era caldo. Mañana será caldo.",
+        "2": "Come algo. Nadie pelea bien con hambre.",
+        "3": "No preguntes qué tiene. Está caliente. Esa es toda la receta."
+      },
+      "radio": {
+        "1": "El relé zumba de noche. A veces responde el zumbido.",
+        "2": "Sigo llamando a los otros campamentos. Algunos días alguien contesta.",
+        "3": "Otra vez charla de la nave nodriza. Amable, y no sobre nosotros."
+      },
+      "scavenger": {
+        "1": "Dejé limpios los túneles del este. Prueba más hondo.",
+        "2": "Encontré una bota con el pie todavía adentro. Me quedé la bota.",
+        "3": "Si brilla y no está clavado, ya está en mi mochila."
+      },
+      "settler": {
+        "1": "Todavía me acostumbro a dormir sin un ojo abierto. Gracias.",
+        "2": "Me dieron una litera y un trabajo. Primera vez en meses que tengo ambas cosas.",
+        "3": "Diles a todos allá afuera: hay un lugar donde resguardarse del frío."
+      },
+      "worried": {
+        "1": "El muro no aguantó anoche. Lo estamos parchando con lo que tenemos.",
+        "2": "Dos de los nuestros no volvieron. Por favor, ayúdanos a reforzar esto."
+      }
     }
   },
   "narrative": {

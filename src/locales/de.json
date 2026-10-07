@@ -2075,6 +2075,56 @@
       "achievement": "FREIGESCHALTET DURCH EINEN ERFOLG",
       "confirm_buy": "ZUM KAUFEN ERNEUT KLICKEN",
       "not_enough_shells": "NICHT GENUG HÜLSEN"
+    },
+    "camp_resident": {
+      "role": {
+        "mechanic": "MECHANIKER",
+        "medic": "SANITÄTER",
+        "lookout": "WACHPOSTEN",
+        "cook": "KOCH",
+        "radio": "FUNKER",
+        "scavenger": "PLÜNDERER",
+        "settler": "SIEDLER"
+      },
+      "mechanic": {
+        "1": "Jedes Scharnier hier quietscht. Ich öle sie trotzdem.",
+        "2": "Bring mir Schrott, dann hält der Generator noch eine Woche durch.",
+        "3": "Dein Anzug hält nur noch durch Hoffnung zusammen. Genau wie die Wände."
+      },
+      "medic": {
+        "1": "Halt still. Du blutest auf meinen sauberen Boden.",
+        "2": "Uns fehlt alles außer Sturheit. Sturheit heilt langsam.",
+        "3": "Was du da draußen eingeatmet hast, atme es hier drinnen nicht aus."
+      },
+      "lookout": {
+        "1": "Die ganze Nacht Bewegung hinter dem Grat. Nichts kam näher. Noch nicht.",
+        "2": "Ich zähle die Lichter in der Dunkelheit. Jede Woche weniger.",
+        "3": "Wenn du eine Schnecke so groß wie ein Lastwagen siehst, hast du sie nicht von hier gesehen."
+      },
+      "cook": {
+        "1": "Es ist Brühe. Gestern war es Brühe. Morgen wird es Brühe sein.",
+        "2": "Iss etwas. Hungrig kämpft niemand gut.",
+        "3": "Frag nicht, was drin ist. Es ist warm. Das ist das ganze Rezept."
+      },
+      "radio": {
+        "1": "Das Relais summt nachts. Manchmal summt es zurück.",
+        "2": "Ich rufe die anderen Lager. An manchen Tagen antwortet jemand.",
+        "3": "Wieder Funkverkehr vom Mutterschiff. Höflich, und nicht über uns."
+      },
+      "scavenger": {
+        "1": "Die Osttunnel sind leergeräumt. Versuch es tiefer.",
+        "2": "Hab einen Stiefel gefunden, der Fuß steckte noch drin. Den Stiefel hab ich behalten.",
+        "3": "Wenn es glänzt und nicht festgenagelt ist, ist es schon in meinem Rucksack."
+      },
+      "settler": {
+        "1": "Ich gewöhne mich noch daran, ohne ein offenes Auge zu schlafen. Danke.",
+        "2": "Sie haben mir eine Koje und eine Arbeit gegeben. Seit Monaten das erste Mal beides.",
+        "3": "Sag es allen da draußen: Es gibt einen Ort, an dem man aus der Kälte kommt."
+      },
+      "worried": {
+        "1": "Die Mauer hat letzte Nacht nicht gehalten. Wir flicken sie mit allem, was wir haben.",
+        "2": "Zwei von uns sind nicht zurückgekommen. Bitte hilf uns, das zu befestigen."
+      }
     }
   },
   "narrative": {

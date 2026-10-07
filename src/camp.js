@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { campResidents } from './data/campResidents.js';
 import { getCampClassMapping } from './act2.js';
 import { applyBlackChromaKey } from './textureKeying.js';
 import { assetUrl } from './assetUrl.js';
@@ -433,6 +434,8 @@ export class SurvivorCamp {
             { home: { x: -2.2, z: 1.9 }, radius: 0.72, speed: 0.65, phase: 0.3, scale: 0.95 },
             { home: { x: 2.35, z: -1.7 }, radius: 0.68, speed: 0.85, phase: 2.1, scale: 0.86 }
         ];
+        const residents = campResidents(this.id);
+        this.campWorkerGroup = group;
         this.campWorkers = specs.map((spec, index) => {
             const mesh = this.createCampWorkerFigure(this.leaderColor, spec.scale);
             mesh.position.set(spec.home.x, 0.02, spec.home.z);
@@ -440,8 +443,30 @@ export class SurvivorCamp {
             mesh.userData.campId = this.id;
             mesh.userData.index = index;
             group.add(mesh);
-            return { ...spec, mesh, humanState: 'unaware' };
+            return { ...spec, mesh, humanState: 'unaware', resident: residents[index] ?? null };
         });
+    }
+
+    // A survivor settled here stays (Sprint 51; session 2026-10-06: "I tried
+    // to drop the companion off, but they didn't stay"): a resident figure
+    // that walks the camp and can be talked to.
+    addSettlerResident(name) {
+        const group = this.campWorkerGroup;
+        const label = String(name ?? '').trim();
+        if (!group || !label || this.campWorkers.some((worker) => worker.resident?.name === label)) return null;
+        const slot = this.campWorkers.length;
+        const angle = slot * 2.1;
+        const spec = { home: { x: Math.cos(angle) * 1.9, z: Math.sin(angle) * 1.9 }, radius: 0.6, speed: 0.7, phase: slot * 0.9, scale: 0.9 };
+        const mesh = this.createCampWorkerFigure(this.leaderColor, spec.scale);
+        mesh.position.set(spec.home.x, 0.02, spec.home.z);
+        mesh.userData.kind = 'camp-worker';
+        mesh.userData.campId = this.id;
+        mesh.userData.index = slot;
+        mesh.visible = this.workersVisible !== false && this.status !== 'culled';
+        group.add(mesh);
+        const worker = { ...spec, mesh, humanState: 'unaware', resident: { name: label, role: 'settler' } };
+        this.campWorkers.push(worker);
+        return worker;
     }
 
     setWorkerColors(color = this.leaderColor, emissiveIntensity = 0.06) {

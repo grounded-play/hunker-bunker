@@ -110,6 +110,7 @@ describe('Camp Voice Orchestration & Speech Director', () => {
                 player: { position: { x: 0, z: 0 } },
                 act2: {},
                 getActionableCampAt: () => ({ camp: { id: 'camp_tallow', label: 'TALLOW' }, action: 'talk' }),
+                getSelectedCampAction: () => ({ camp: { id: 'camp_tallow', label: 'TALLOW' }, action: 'talk' }),
                 getCampRecord: () => ({ status: 'alive', bond: 0 }),
                 talkToLeader: () => { leaderTalkInvoked = true; return true; }
             };
