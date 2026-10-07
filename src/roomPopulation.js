@@ -1,3 +1,5 @@
+import { computePropFacingYaw, chooseSpacedModel } from './propBehavior.js';
+
 function cellKey(cell) {
     return `${cell.x},${cell.y}`;
 }
@@ -155,12 +157,21 @@ function stableHash(text) {
     return hash;
 }
 
-function propFrom(list, random, fallback) {
+function propFrom(list, random, fallback, context = null) {
     const source = Array.isArray(list) && list.length > 0 ? list : [fallback];
+    if (context?.placements) {
+        return chooseSpacedModel(source, {
+            x: context.x ?? 0,
+            y: context.y ?? 0,
+            placedItems: context.placements,
+            chunkPlacedCounts: context.recentModels ?? null,
+            random
+        });
+    }
     return source[Math.floor(random() * source.length)];
 }
 
-export function planRoomPopulation(room, grid, random, { grounding = true, areaBudget = false } = {}) {
+export function planRoomPopulation(room, grid, random, { grounding = true, areaBudget = false, recentModels = null } = {}) {
     const budget = normalizePopulationBudget(room.populationBudget);
     const doorLanes = room.navigation?.doorLanes ?? [];
     const fixtureCells = room.navigation?.reserved ?? [];
@@ -232,6 +243,17 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
         if (!cell) return false;
         reserved.add(cellKey(cell));
         const wallNormal = findCellWallNormal(cell, grid);
+        const yaw = computePropFacingYaw({
+            type,
+            x: cell.x,
+            y: cell.y,
+            wallNormal,
+            roomCenter: center,
+            random
+        });
+        if (recentModels && type) {
+            recentModels.set(type, (recentModels.get(type) ?? 0) + 1);
+        }
         placements.push({
             id: `${room.id}:placement:${placements.length}`,
             roomId: room.id,
@@ -240,7 +262,8 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
             kind,
             type,
             blocking,
-            wallNormal
+            wallNormal,
+            yaw
         });
         return true;
     };
@@ -254,6 +277,16 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
         if (!isCellOnGrid(cell, grid) || placedAnchorCells.has(cellKey(cell))) continue;
         placedAnchorCells.add(cellKey(cell));
         reserved.add(cellKey(cell));
+        const wallNormal = findCellWallNormal(cell, grid);
+        const propType = anchor.type ?? 'structural_partition';
+        const yaw = computePropFacingYaw({
+            type: propType,
+            x: cell.x,
+            y: cell.y,
+            wallNormal,
+            roomCenter: center,
+            random
+        });
         placements.push({
             id: `${room.id}:structural:${placements.length}`,
             roomId: room.id,
@@ -261,8 +294,10 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
             x: cell.x,
             y: cell.y,
             kind: 'structural',
-            type: anchor.type ?? 'structural_partition',
-            blocking: anchor.blocking !== false
+            type: propType,
+            blocking: anchor.blocking !== false,
+            wallNormal,
+            yaw
         });
     }
 
@@ -294,6 +329,16 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
             if (!isCellOnGrid(cell, grid) || placedAnchorCells.has(cellKey(cell))) continue;
             placedAnchorCells.add(cellKey(cell));
             reserved.add(cellKey(cell));
+            const wallNormal = findCellWallNormal(cell, grid);
+            const propType = anchor.type ?? group.defaultType;
+            const yaw = computePropFacingYaw({
+                type: propType,
+                x: cell.x,
+                y: cell.y,
+                wallNormal,
+                roomCenter: center,
+                random
+            });
             placements.push({
                 id: `${room.id}:${group.kind}:${placements.length}`,
                 roomId: room.id,
@@ -301,8 +346,10 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
                 x: cell.x,
                 y: cell.y,
                 kind: group.kind,
-                type: anchor.type ?? group.defaultType,
-                blocking: anchor.blocking !== false && (anchor.blocking === true || group.defaultBlocking)
+                type: propType,
+                blocking: anchor.blocking !== false && (anchor.blocking === true || group.defaultBlocking),
+                wallNormal,
+                yaw
             });
         }
     }
@@ -322,12 +369,12 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
         }
     } else {
         if (budget.signature > 0) {
-            reservePlacement('signature', propFrom(theme.signatureProps, random, 'prop_bunker_supplies'), true);
+            reservePlacement('signature', propFrom(theme.signatureProps, random, 'prop_bunker_supplies', { placements, recentModels }), true);
         }
         if (['reward', 'storage', 'security'].includes(room.role)) {
             reservePlacement('ammo-cache', 'prop_bunker_supplies', true);
         } else if (budget.large.min > 0 && theme.largeProps?.length) {
-            reservePlacement('large', propFrom(theme.largeProps, random, 'prop_conduit_hub'), true);
+            reservePlacement('large', propFrom(theme.largeProps, random, 'prop_conduit_hub', { placements, recentModels }), true);
         }
     }
     if (budget.pickup.min > 0) reservePlacement('pickup', 'room-biased', false);
@@ -399,13 +446,13 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
     // two large objects. These additions never block navigation and retain the
     // same doorway apron, fixture reservation and center-lane exclusions.
     if (budget.small.min > 0 && theme.smallProps?.length) {
-        reservePlacement('small', propFrom(theme.smallProps, random, 'scatter_bolts'), false);
+        reservePlacement('small', propFrom(theme.smallProps, random, 'scatter_bolts', { placements, recentModels }), false);
     }
     if (theme.rareProps?.length && random() < 0.2) {
-        reservePlacement('rare', propFrom(theme.rareProps, random, theme.rareProps[0]), false);
+        reservePlacement('rare', propFrom(theme.rareProps, random, theme.rareProps[0], { placements, recentModels }), false);
     }
     if (budget.small.min > 1 && theme.ambientProps?.length) {
-        reservePlacement('ambient', propFrom(theme.ambientProps, random, theme.ambientProps[0]), false);
+        reservePlacement('ambient', propFrom(theme.ambientProps, random, theme.ambientProps[0], { placements, recentModels }), false);
     }
 
     const signaturePlaced = placements.some((placement) => placement.kind === 'signature');
@@ -421,5 +468,6 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
 }
 
 export function planChunkRoomPopulation(rooms, grid, random, options = {}) {
-    return (rooms ?? []).map((room) => planRoomPopulation(room, grid, random, options));
+    const recentModels = options.recentModels ?? new Map();
+    return (rooms ?? []).map((room) => planRoomPopulation(room, grid, random, { ...options, recentModels }));
 }

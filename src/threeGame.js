@@ -29828,10 +29828,15 @@ export class ThreeGame {
         const originZ = chunkY * this.chunkSize;
         const items = [];
         this.brokenPropScatterKeys = this.brokenPropScatterKeys || new Set();
+        const recentModels = new Map();
         for (const room of metadata?.roomInstances ?? []) {
             const plan = room.populationPlan;
             if (!plan || !room.interior?.length) continue;
-            const dressing = planRoomDressing(room, metadata.dressingGrid ?? grid, { reserved: plan.reserved, occupied: plan.placements });
+            const dressing = planRoomDressing(room, metadata.dressingGrid ?? grid, {
+                reserved: plan.reserved,
+                occupied: plan.placements,
+                recentModels
+            });
             for (const item of dressing.items) {
                 item.stableId = item.id;
                 item.id = resolveRoomDressingIdentity(item, this.brokenPropScatterKeys, { multiplayer: this.isMultiplayer });

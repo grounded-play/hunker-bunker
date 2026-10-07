@@ -619,7 +619,11 @@ export function syncWorld3dReplacement(source, { scale = 1, visible, delta } = {
         root.rotation.y = socketRotation;
     } else if (source.userData?.wallNormal) {
         const wn = source.userData.wallNormal;
-        root.rotation.y = Math.atan2(wn.x, wn.z);
+        if (Number.isFinite(source.userData?.yaw)) {
+            root.rotation.y = source.userData.yaw;
+        } else {
+            root.rotation.y = Math.atan2(wn.x, wn.z);
+        }
         if (source.userData.isWallBackedProp) {
             root.position.x -= wn.x * 0.22;
             root.position.z -= wn.z * 0.22;

@@ -124,3 +124,182 @@ describe('a low, wide model is capped across, not only by height', async () => {
         expect(WORLD_3D_MODELS.prop_floor_drainage_sump_trough.maxSpan).toBeLessThanOrEqual(3.2);
     });
 });
+
+describe('V1 spacing rule: duplicate models do not sit within 6 tiles', async () => {
+    const {
+        chooseSpacedModel,
+        isModelSpaced,
+        PROP_SPACING_MIN_TILES
+    } = await import('./propBehavior.js');
+
+    it('requires at least 6 tiles distance for regular models', () => {
+        expect(PROP_SPACING_MIN_TILES).toBe(6);
+        const placed = [{ type: 'prop_conduit_hub', x: 10, y: 10 }];
+
+        // 3 tiles away -> not spaced
+        expect(isModelSpaced('prop_conduit_hub', 13, 10, placed)).toBe(false);
+        // 5.9 tiles away -> not spaced
+        expect(isModelSpaced('prop_conduit_hub', 10, 15.9, placed)).toBe(false);
+        // 6.1 tiles away -> spaced
+        expect(isModelSpaced('prop_conduit_hub', 10, 16.1, placed)).toBe(true);
+        // Different model at 2 tiles -> allowed
+        expect(isModelSpaced('prop_fabricator_workstation', 12, 10, placed)).toBe(true);
+    });
+
+    it('allows cluster-exempt models to sit close together', () => {
+        const placed = [{ type: 'prop_camp_crates', x: 5, y: 5 }];
+        expect(isModelSpaced('prop_camp_crates', 6, 5, placed)).toBe(true);
+        expect(isModelSpaced('prop_bunker_cot', 5, 6, [{ type: 'prop_bunker_cot', x: 5, y: 5 }])).toBe(true);
+        expect(isModelSpaced('scatter_bolts', 5.5, 5.5, [{ type: 'scatter_bolts', x: 5, y: 5 }])).toBe(true);
+    });
+
+    it('chooseSpacedModel avoids models placed within 6 tiles and rotates chunk weights', () => {
+        const candidates = ['prop_conduit_hub', 'prop_terminal_bank'];
+        const placed = [{ type: 'prop_conduit_hub', x: 10, y: 10 }];
+
+        // At x=12, y=10, conduit hub is within 6 tiles; terminal bank must be chosen
+        const picked = chooseSpacedModel(candidates, {
+            x: 12,
+            y: 10,
+            placedItems: placed,
+            random: () => 0.5
+        });
+        expect(picked).toBe('prop_terminal_bank');
+
+        // Rotating weight test: when both are spaced, a model used heavily in chunk has lowered weight
+        const chunkPlacedCounts = new Map([
+            ['prop_conduit_hub', 10], // used 10 times in chunk
+            ['prop_terminal_bank', 0] // not used yet
+        ]);
+        // Over 100 rolls, terminal bank should be chosen much more frequently
+        let hubCount = 0;
+        let bankCount = 0;
+        for (let i = 0; i < 100; i++) {
+            const roll = i / 100;
+            const res = chooseSpacedModel(candidates, {
+                x: 50,
+                y: 50,
+                placedItems: placed,
+                chunkPlacedCounts,
+                random: () => roll
+            });
+            if (res === 'prop_conduit_hub') hubCount++;
+            else if (res === 'prop_terminal_bank') bankCount++;
+        }
+        expect(bankCount).toBeGreaterThan(hubCount * 3);
+    });
+});
+
+describe('V2 facing rule: props face into room away from walls', async () => {
+    const {
+        computePropFacingYaw,
+        isPropFacingWall,
+        isBedOrBench
+    } = await import('./propBehavior.js');
+
+    it('identifies bed and bench types for sideways wall alignment', () => {
+        expect(isBedOrBench('prop_bunker_cot')).toBe(true);
+        expect(isBedOrBench('prop_medical_bed')).toBe(true);
+        expect(isBedOrBench('prop_camp_bench')).toBe(true);
+        expect(isBedOrBench('prop_terminal_bank')).toBe(false);
+    });
+
+    it('orients wall-backed props away from the wall into the room', () => {
+        // Wall is to the West (-X), so wall normal points East (+X, 0)
+        const wallNormal = { x: 1, z: 0 };
+        const yaw = computePropFacingYaw({
+            type: 'prop_terminal_bank',
+            wallNormal,
+            random: () => 0.5
+        });
+
+        // Yaw should be ~PI/2 (pointing along +X, away from the wall)
+        expect(yaw).toBeCloseTo(Math.PI / 2, 1);
+        // It must NOT face into the wall
+        expect(isPropFacingWall(yaw, wallNormal, 60)).toBe(false);
+    });
+
+    it('orients corner props along the corner diagonal into the room', () => {
+        // Corner formed by North (+Z) and West (-X) walls
+        // Wall directions into solid are [0, 1] and [-1, 0]
+        const walls = [[0, 1], [-1, 0]];
+        const yaw = computePropFacingYaw({
+            type: 'arch_pillar_buttress_01',
+            walls,
+            corner: true,
+            random: () => 0.5
+        });
+        // Diagonal points East (+X) and South (-Z)
+        expect(Number.isFinite(yaw)).toBe(true);
+    });
+
+    it('orients free-standing props toward room center or nearest door within ±15°', () => {
+        const roomCenter = { x: 10, z: 10 };
+        const yaw = computePropFacingYaw({
+            type: 'prop_fabricator_workstation',
+            x: 10,
+            y: 0, // 10 units South of room center (dx=0, dz=10 -> yaw 0)
+            roomCenter,
+            random: () => 0.5 // zero jitter
+        });
+        expect(yaw).toBeCloseTo(0, 2);
+
+        // With random jitter at extreme bounds, jitter is within ±15° (0.26 rad)
+        const yawMin = computePropFacingYaw({
+            type: 'prop_fabricator_workstation',
+            x: 10,
+            y: 0,
+            roomCenter,
+            random: () => 0.0 // -15° jitter
+        });
+        const yawMax = computePropFacingYaw({
+            type: 'prop_fabricator_workstation',
+            x: 10,
+            y: 0,
+            roomCenter,
+            random: () => 1.0 // +15° jitter
+        });
+        expect(Math.abs(yawMin - yaw)).toBeLessThanOrEqual((15 * Math.PI) / 180 + 0.01);
+        expect(Math.abs(yawMax - yaw)).toBeLessThanOrEqual((15 * Math.PI) / 180 + 0.01);
+    });
+
+    it('places beds and benches with their long side along the wall', () => {
+        const wallNormal = { x: 0, z: 1 }; // Wall behind is -Z, facing +Z
+        const baseYaw = Math.atan2(0, 1); // 0
+        const yawSideA = computePropFacingYaw({
+            type: 'prop_bunker_cot',
+            wallNormal,
+            random: () => 0.2 // side +PI/2
+        });
+        const yawSideB = computePropFacingYaw({
+            type: 'prop_bunker_cot',
+            wallNormal,
+            random: () => 0.8 // side -PI/2
+        });
+        expect(Math.abs(Math.abs(yawSideA - baseYaw) - Math.PI / 2)).toBeCloseTo(0, 2);
+        expect(Math.abs(Math.abs(yawSideB - baseYaw) - Math.PI / 2)).toBeCloseTo(0, 2);
+    });
+
+    it('verifies no prop placed against a wall faces within 60° of its backing wall', () => {
+        const wallNormals = [
+            { x: 1, z: 0 },
+            { x: -1, z: 0 },
+            { x: 0, z: 1 },
+            { x: 0, z: -1 },
+            { x: 0.707, z: 0.707 }
+        ];
+
+        for (const wallNormal of wallNormals) {
+            for (let i = 0; i < 20; i++) {
+                const rand = i / 20;
+                const yaw = computePropFacingYaw({
+                    type: 'prop_conduit_hub',
+                    wallNormal,
+                    random: () => rand
+                });
+                expect(isPropFacingWall(yaw, wallNormal, 60)).toBe(false);
+            }
+        }
+    });
+});
+

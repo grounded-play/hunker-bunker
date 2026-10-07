@@ -17,6 +17,7 @@
 import { dressingKitFor, vignettesFor, WALL_MOUNT_HEIGHT } from './roomDressingKits.js';
 import { DRESSING_TRIANGLES } from './data/dressingTriangles.js';
 import { roomDressingIdentity } from './roomDressingIdentity.js';
+import { computePropFacingYaw, chooseSpacedModel } from './propBehavior.js';
 
 export const DRESSING_LIMITS = Object.freeze({
     // Distinct types per room, per layer: the instanced renderer draws one
@@ -80,7 +81,7 @@ const keyOf = (x, y) => `${x},${y}`;
  * @param {Array<{x:number,y:number}>} [options.occupied]  hero prop cells
  * @returns {{ family: string, types: object, items: object[] }}
  */
-export function planRoomDressing(room, grid, { reserved = [], occupied = [] } = {}) {
+export function planRoomDressing(room, grid, { reserved = [], occupied = [], recentModels = null } = {}) {
     const random = seededRandom(stableHash(`${room?.id ?? 'room'}:dressing:v1`));
     const kit = dressingKitFor(room?.theme, room?.role);
     const types = {};
@@ -97,16 +98,22 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [] } = 
         return true;
     };
     const choose = (list) => list[Math.floor(random() * list.length)];
-    // 3D layers favour cheap models: weight 1/triangles, so a 2.5k-triangle
-    // crate repeats often and an 18k cable riser appears now and then.
-    const chooseLight = (list) => {
-        const weights = list.map((type) => 1 / Math.max(1000, DRESSING_TRIANGLES[type] ?? 1000));
-        let roll = random() * weights.reduce((sum, w) => sum + w, 0);
-        for (let i = 0; i < list.length; i += 1) {
-            roll -= weights[i];
-            if (roll <= 0) return list[i];
-        }
-        return list[list.length - 1];
+    const chunkModels = recentModels ?? new Map();
+    // 3D layers favour cheap models and enforce spacing (>=6 tiles) and chunk rotation
+    const chooseLight = (list, cellX, cellY) => {
+        const baseWeights = Object.fromEntries(
+            list.map((type) => [type, 1 / Math.max(1000, DRESSING_TRIANGLES[type] ?? 1000)])
+        );
+        const picked = chooseSpacedModel(list, {
+            x: cellX,
+            y: cellY,
+            placedItems: items,
+            chunkPlacedCounts: chunkModels,
+            baseWeights,
+            random
+        });
+        if (picked) chunkModels.set(picked, (chunkModels.get(picked) ?? 0) + 1);
+        return picked;
     };
 
     const blocked = new Set(reserved);
@@ -142,30 +149,45 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [] } = 
         const corner = walls.length >= 2 && walls.some(([ax, ay]) => walls.some(([bx, by]) => ax * bx + ay * by === 0 && (ax !== bx || ay !== by)));
         const [wx, wy] = walls[0];
         if (corner && types.corners.length && random() < DRESSING_LIMITS.cornerChance) {
-            const cornerType = chooseLight(types.corners);
+            const cornerType = chooseLight(types.corners, cell.x, cell.y);
             if (!afford('perimeter', cornerType)) continue;
             const towardX = walls.reduce((sum, [dx]) => sum + dx, 0);
             const towardY = walls.reduce((sum, [, dy]) => sum + dy, 0);
+            const yaw = computePropFacingYaw({
+                type: cornerType,
+                x: cell.x,
+                y: cell.y,
+                walls,
+                corner: true,
+                random
+            });
             items.push({
                 layer: 'corner',
                 type: cornerType,
                 x: cell.x + Math.sign(towardX) * 0.18,
                 y: cell.y + Math.sign(towardY) * 0.18,
-                yaw: Math.atan2(-Math.sign(towardX), -Math.sign(towardY)),
+                yaw,
                 scale: 0.95 + random() * 0.15
             });
             taken.add(key);
             continue;
         }
         if (types.wallProps.length && random() < DRESSING_LIMITS.wallPropChance) {
-            const type = chooseLight(types.wallProps);
+            const type = chooseLight(types.wallProps, cell.x, cell.y);
             if (!afford('perimeter', type)) continue;
+            const yaw = computePropFacingYaw({
+                type,
+                x: cell.x,
+                y: cell.y,
+                walls: [[wx, wy]],
+                random
+            });
             items.push({
                 layer: 'wallProp',
                 type,
                 x: cell.x + wx * 0.28,
                 y: cell.y + wy * 0.28,
-                yaw: Math.atan2(-wx, -wy),
+                yaw,
                 mountY: WALL_MOUNT_HEIGHT[type] ?? 0,
                 supportCell: { x: cell.x + wx, y: cell.y + wy },
                 scale: 1
@@ -174,14 +196,21 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [] } = 
             continue;
         }
         if (types.clutter.length && random() < DRESSING_LIMITS.clutterChance) {
-            const clutterType = chooseLight(types.clutter);
+            const clutterType = chooseLight(types.clutter, cell.x, cell.y);
             if (!afford('perimeter', clutterType)) continue;
+            const yaw = computePropFacingYaw({
+                type: clutterType,
+                x: cell.x,
+                y: cell.y,
+                walls: [[wx, wy]],
+                random
+            });
             items.push({
                 layer: 'clutter',
                 type: clutterType,
                 x: cell.x + wx * 0.22 + (wx === 0 ? (random() - 0.5) * 0.4 : 0),
                 y: cell.y + wy * 0.22 + (wy === 0 ? (random() - 0.5) * 0.4 : 0),
-                yaw: random() * Math.PI * 2,
+                yaw,
                 scale: 0.85 + random() * 0.3
             });
             taken.add(key);
@@ -254,18 +283,34 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [] } = 
             continue;
         }
         spent.vignettes += groupCost;
-        const facing = random() * Math.PI * 2;
+        const nearestDoorCell = doorCells.length
+            ? doorCells.reduce((best, door) => {
+                const d = Math.hypot(door.x - anchor.x, door.y - anchor.y);
+                return d < best.d ? { door, d } : best;
+            }, { door: null, d: Infinity }).door
+            : null;
         group.forEach((type, index) => {
             const at = index === 0 ? anchor : index === 1 ? second : anchor;
             // The third piece sits beside the pair, inside the anchor cell
             // (offset + jitter stay under half a cell).
             const spread = index === 2 ? 0.2 : 0.08;
+            const px = at.x + (random() - 0.5) * spread + (index === 2 ? dy * 0.3 : 0);
+            const py = at.y + (random() - 0.5) * spread + (index === 2 ? -dx * 0.3 : 0);
+            const yaw = computePropFacingYaw({
+                type,
+                x: px,
+                y: py,
+                roomCenter: centre,
+                nearestDoor: nearestDoorCell,
+                random
+            });
+            chunkModels.set(type, (chunkModels.get(type) ?? 0) + 1);
             items.push({
                 layer: 'vignette',
                 type,
-                x: at.x + (random() - 0.5) * spread + (index === 2 ? dy * 0.3 : 0),
-                y: at.y + (random() - 0.5) * spread + (index === 2 ? -dx * 0.3 : 0),
-                yaw: facing + (random() - 0.5) * 0.6,
+                x: px,
+                y: py,
+                yaw,
                 scale: 0.95 + random() * 0.1,
                 blocking: index < 2
             });
