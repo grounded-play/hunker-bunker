@@ -2586,6 +2586,8 @@ export class ThreeGame {
         const bioTerrainTextures = this.biomeTerrainTextures[BIOME_KEYS.BIO];
 
         const baseMetalTex = activeTerrainTextures.floorBase;
+        // Raised floor steps wear the floor plates (addTerrainStepDressing).
+        this.terrainFloorPlateTexture = baseMetalTex;
         const grungeRustTex = activeTerrainTextures.floorGrunge;
         const techScratchesTex = activeTerrainTextures.floorDetail;
         this.crashSiteFloorTexture = this.loadKeyedSpriteTexture('/crash_site_broken_floor_v1.png', 14);
@@ -29137,7 +29139,12 @@ export class ThreeGame {
         }
 
         if (stepMatrices.length > 0) {
-            const instancedSteps = new THREE.InstancedMesh(this.terrainStepGeometry, this.wallMaterial, stepMatrices.length);
+            // Floor plates, not wall blocks: in the wall texture these read as
+            // grey crates on the floor (playthrough 2026-10-07, "just boxes").
+            this.terrainStepMaterial ??= this.terrainFloorPlateTexture
+                ? new THREE.MeshStandardMaterial({ map: this.terrainFloorPlateTexture, color: 0xa7aeb4, roughness: 0.72, metalness: 0.34 })
+                : this.wallMaterial;
+            const instancedSteps = new THREE.InstancedMesh(this.terrainStepGeometry, this.terrainStepMaterial, stepMatrices.length);
             stepMatrices.forEach((m, idx) => instancedSteps.setMatrixAt(idx, m));
             instancedSteps.instanceMatrix.needsUpdate = true;
             instancedSteps.castShadow = false;
@@ -42333,6 +42340,7 @@ export class ThreeGame {
         this.floorGeometry?.dispose();
         this.chunkFloorGeometry?.dispose();
         this.terrainStepGeometry?.dispose();
+        if (this.terrainStepMaterial && this.terrainStepMaterial !== this.wallMaterial) this.terrainStepMaterial.dispose();
         this.rewardGlowGeometry?.dispose();
         for (const material of this.rewardGlowMaterials?.values?.() ?? []) {
             material.dispose?.();
