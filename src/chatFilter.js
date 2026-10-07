@@ -57,25 +57,34 @@ function escapePattern(character) {
     return character.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-const RULES = [];
-const seenRules = new Set();
-for (const dictionary of Object.values(CHAT_FILTER_TERMS)) {
-    for (const [kind, terms] of Object.entries(dictionary)) {
-        for (const term of terms) {
-            const canonical = canonicalText(term);
-            const key = `${kind}:${canonical}`;
-            if (seenRules.has(key)) continue;
-            seenRules.add(key);
-            const pattern = [...canonical]
-                .map((character) => LETTER_PATTERNS[character] ?? escapePattern(character))
-                .join(SEPARATOR);
-            RULES.push({
-                pattern: new RegExp(pattern, 'gu'),
-                bounded: kind === 'words',
-                cjk: CJK_CHARACTER.test(term)
-            });
+// Compiled on first use: building every term's pattern at import cost ~150 ms
+// of main thread during boot (~600 ms at Lighthouse's mobile throttle, issue
+// #106), and nothing filters chat until a message is sent or received.
+let compiledRules = null;
+function getRules() {
+    if (compiledRules) return compiledRules;
+    const rules = [];
+    const seenRules = new Set();
+    for (const dictionary of Object.values(CHAT_FILTER_TERMS)) {
+        for (const [kind, terms] of Object.entries(dictionary)) {
+            for (const term of terms) {
+                const canonical = canonicalText(term);
+                const key = `${kind}:${canonical}`;
+                if (seenRules.has(key)) continue;
+                seenRules.add(key);
+                const pattern = [...canonical]
+                    .map((character) => LETTER_PATTERNS[character] ?? escapePattern(character))
+                    .join(SEPARATOR);
+                rules.push({
+                    pattern: new RegExp(pattern, 'gu'),
+                    bounded: kind === 'words',
+                    cjk: CJK_CHARACTER.test(term)
+                });
+            }
         }
     }
+    compiledRules = rules;
+    return rules;
 }
 
 function isAdjacentWordCharacter(character, cjkTerm) {
@@ -131,7 +140,7 @@ export function filterChatText(input) {
         for (let unit = 0; unit < mapped.length; unit += 1) offsets.push(index);
     });
     const masked = new Set();
-    for (const rule of RULES) {
+    for (const rule of getRules()) {
         rule.pattern.lastIndex = 0;
         for (const match of canonical.matchAll(rule.pattern)) {
             const first = offsets[match.index];

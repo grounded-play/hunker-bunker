@@ -80,6 +80,7 @@ import {
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
 import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSpriteLayouts.js';
 import { clearChromaGreen, repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
+import { PRESENTATION_LAYER_SELECTOR, isPresentationMutation } from './src/presentationLayer.js';
 import { createArmoryUi } from './src/armoryUi.js';
 import { initSteamVaultUI, isVaultExchangeAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, renderStorePanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
 import { createFoundryHub, isFoundryHubEnabled } from './src/foundryHub.js';
@@ -820,8 +821,13 @@ function refreshInteractivePromptKeys() {
     }
 }
 
+// Rendered at all, i.e. no display:none on it or an ancestor. checkVisibility()
+// answers that from style alone; getClientRects() forced a full layout, and the
+// focus-root scan asks ~60 times a frame while the DOM changes (issue #106).
 function isElementVisible(element) {
-    return Boolean(element && element.getClientRects().length > 0);
+    if (!element) return false;
+    if (typeof element.checkVisibility === 'function') return element.checkVisibility();
+    return element.getClientRects().length > 0;
 }
 
 // A focus root only counts as open when it is actually on screen. Several
@@ -1796,15 +1802,43 @@ function syncFocusRootAriaHidden(records) {
     }
 }
 
+// Finding the open focus root measures ~60 surfaces (getClientRects forces a
+// layout), and this observer sees every class change in the document. Run per
+// mutation batch, boot spent ~1 s re-laying-out the page while the loader and
+// HUD toggled classes (Lighthouse TBT, issue #106). Once per frame gives the
+// same answer, at the layout the frame does anyway.
+let controllerFocusSyncQueued = false;
+function runQueuedControllerFocusSync() {
+    controllerFocusSyncQueued = false;
+    const root = getControllerFocusRoot();
+    syncSteamInputPhase();
+    if (root !== activeControllerFocusRoot || (steamInputState.lastInputMode === 'controller' && (isSteamControllerInputActive() || isModalFocusRoot(root)))) {
+        syncControllerFocusBoundary();
+    }
+}
+// Whether a focus root is open can only change when a class or aria-hidden
+// changes on a root or on an ancestor of one. Changes inside a root matter
+// only to a controller user, whose focus the boundary sync keeps on a live
+// element. Everything else (HUD and title stats animating every frame) cannot
+// change the result, and ran the full scan once a frame for nothing.
+function isFocusRootMutation(record) {
+    const target = record?.target;
+    if (!target || target === document.body || target === document.documentElement) return true;
+    if (target.id === 'tactical-map-modal') return true;
+    const controllerMode = steamInputState.lastInputMode === 'controller';
+    for (const id of STEAM_INPUT_FOCUS_ROOT_IDS) {
+        const root = document.getElementById(id);
+        if (!root) continue;
+        if (target === root || target.contains(root)) return true;
+        if (controllerMode && root.contains(target)) return true;
+    }
+    return false;
+}
 const controllerFocusObserver = new MutationObserver((records) => {
     syncFocusRootAriaHidden(records);
-    queueMicrotask(() => {
-        const root = getControllerFocusRoot();
-        syncSteamInputPhase();
-        if (root !== activeControllerFocusRoot || (steamInputState.lastInputMode === 'controller' && (isSteamControllerInputActive() || isModalFocusRoot(root)))) {
-            syncControllerFocusBoundary();
-        }
-    });
+    if (controllerFocusSyncQueued || !records.some(isFocusRootMutation)) return;
+    controllerFocusSyncQueued = true;
+    requestAnimationFrame(runQueuedControllerFocusSync);
 });
 controllerFocusObserver.observe(document.body, {
     subtree: true,
@@ -2217,18 +2251,6 @@ function ensureVirtualGamepadCursor() {
     return virtualGamepadCursor;
 }
 
-// Every full-screen presentation layer: movies (boss, class and interstitial
-// videos all play in .class-intro-overlay), still cinematics, the crash
-// cutscene, RGB cinematics and the blast-door transition. No pointer of any
-// kind belongs on top of these.
-const PRESENTATION_LAYER_SELECTOR = '.fullscreen-video-overlay:not(.hidden), '
-    + '.cinematic-overlay:not(.hidden), '
-    + '.class-intro-overlay:not(.is-closing), '
-    + '.cinematic-still-overlay:not(.is-closing), '
-    + '#cutscene-overlay.is-active, '
-    + '.rgb-cinematic--visible, '
-    + '#transition-overlay.active';
-
 function isPresentationLayerActive() {
     return Boolean(document.querySelector(PRESENTATION_LAYER_SELECTOR));
 }
@@ -2258,10 +2280,16 @@ function syncPresentationCursor() {
     }
 }
 if (typeof MutationObserver !== 'undefined' && document.body) {
-    new MutationObserver(syncPresentationCursor).observe(document.body, {
+    // Only records that can change the answer run the document-wide query
+    // (src/presentationLayer.js); still straight from the observer, so the
+    // pointer never flashes over a movie's first frames.
+    new MutationObserver((records) => {
+        if (records.some(isPresentationMutation)) syncPresentationCursor();
+    }).observe(document.body, {
         subtree: true,
         childList: true,
         attributes: true,
+        attributeOldValue: true,
         attributeFilter: ['class']
     });
 }
@@ -7978,8 +8006,9 @@ function installHudCompass() {
         updateHudCompass();
         const now = performance.now();
         // Cards slide and chips wrap without firing resize; keep the columns
-        // clear on the same light cadence as the minimap.
-        if (now - (step.lastHudLayout ?? 0) >= 250) {
+        // clear on the same light cadence as the minimap. The HUD only shows
+        // in a run; measuring it behind the title cost boot time (#106).
+        if (appPhase === 'gameplay' && now - (step.lastHudLayout ?? 0) >= 250) {
             syncHudColumnLayout();
             step.lastHudLayout = now;
         }
@@ -15351,6 +15380,12 @@ function getPreviewSpriteImage(path, layout) {
 async function renderPreviewFrame(type, frameIndex = previewFrameIndex) {
     const data = heroData[type];
     if (!data || !previewSprite || !previewSpriteContext) return;
+    // The preview is on the loadout screen (#menu). Drawing it anywhere else
+    // decoded and chroma-keyed a 2048x2048 sheet during boot, behind the
+    // title (issue #106), and redrew it every 110 ms through a whole run. The
+    // interval draws the first frame within a tick of the menu opening; the
+    // fallback portrait covers that tick, as it does a slow load.
+    if (appPhase !== 'menu') return;
 
     const image = await getPreviewSpriteImage(data.path, data).catch(() => null);
     if (!image || !heroData[type] || heroData[type].path !== data.path) {

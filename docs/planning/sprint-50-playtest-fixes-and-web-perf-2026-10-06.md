@@ -20,6 +20,7 @@ Also the Netlify Lighthouse report: mobile Performance 38.
 6. Improve the Lighthouse score (#106).
 7. "The night sleep isn't working, I don't see a bed, I can't interact with it."
 8. "We need more of the currencies and trade-ups and melting materials to be present and working: look at what's there but not actualized, add them to the plan and into the game now."
+9. "Make sure that every command maps to something on the Steam Deck out of the box; a bunch doesn't right now, like press T to trade."
 
 ## 1. Host enemies a guest could not see — fixed (`7686fbc7`)
 
@@ -85,7 +86,24 @@ Also the Netlify Lighthouse report: mobile Performance 38.
   - Boot JavaScript is now 462 KiB (1032 KiB before step 1, 705 KiB after it).
   - Lighthouse 9.6.8 mobile (local preview, three runs): **Performance 52–53** (was 42–46); FCP 2.5–3.0 s, LCP 7.9–8.3 s, TBT ~500 ms, TTI 7.1–7.7 s.
 
-**Remaining**, in #106's order: fonts, critical CSS, deferred sprite sheets, and a mobile Lighthouse check in CI.
+- **Round 2**, from the deploy reports of 2026-10-06 (Performance 47, then 55), profiled with a 4× CPU-throttled boot of an unminified build. Every fix leaves the output unchanged.
+  - **Title portrait:** the title profile drew one frame from the 2048×2048 walk sheet, so boot downloaded 1.3 MB (TANK) and chroma-keyed 4.2M pixels on the main thread. It now draws a pre-cut ~40 KB frame cut by the game's own code (`scripts/build-title-portraits.mjs`, `public/portraits/`).
+  - **Loadout preview:** it now draws only on the loadout screen. It used to decode a sheet behind the title and redraw every 110 ms for a whole run.
+  - **Door art:** four door images that nothing displays (1.4 MB) are no longer preloaded. The rest load once the page is idle.
+  - **Chat filter:** every term's pattern is compiled on first use, not at import. That was ~600 ms of throttled boot.
+  - **Focus-root scan:** it runs once a frame, only for mutations that can change the result, and uses `checkVisibility()` instead of a forced layout. It ran per mutation batch over ~60 surfaces: ~650 ms.
+  - **Presentation-cursor observer:** it queries the document only when an overlay changes. It used to run a 7-part selector over 2,700 elements for every class change and loader line: ~380 ms.
+  - **HUD column layout:** it measures only during a run.
+  - **Webfont stylesheet:** no longer render-blocking. The loader avatar is lazy.
+  - **Result** (Lighthouse 9.6.8 mobile, local preview, three runs): **Performance 63–65**, TBT 180–230 ms (was ~600), payload 2.2 MB (was 3.4).
+- **PWA is fine.** The "47" and the earlier "38" were the Performance score; the deploy audits PWA 100.
+
+**Next, in order:**
+- **LCP (~8 s, the biggest remaining weight).** The LCP element is the title (`#splash`), which JavaScript reveals late in boot. Paint the title shell from static HTML and CSS, then let the boot fill it in.
+- **`main.js` evaluation** (~1.4 s throttled).
+- Critical CSS (the 96 KB stylesheet is ~90% unused at first paint).
+- A mobile Lighthouse check in CI.
+- **Note:** `main.js` has a Lighthouse-only boot path (`isLighthouse`, `c030269d`) that skips the loading screen and asset manifest. Scores therefore describe a boot real players don't get. Decide whether to keep it.
 
 What still costs the most:
 - **TBT.** `main.js` evaluation is ~1.8 s of main-thread time, including one 576 ms task. A 522 ms task runs in the `presentationTelemetry` chunk. The next step is splitting `main.js`'s top-level setup into idle-time work.
@@ -99,7 +117,7 @@ What still costs the most:
   - The cot now has a 3D model (`prop_camp_cot`), with its shaders compiled in the background.
   - Standing at the cot when rest is refused now says why: an active quest, or hostiles or an unsafe camp nearby (`ui.prompt.rest_blocked_quest`, `ui.prompt.rest_blocked_unsafe`, all 7 languages).
 - **Tests:** `src/threeGame.restPoint.test.js` (cot at the rest point; follows a spawn change; 3D model mirrors it; refusal reason).
-- **Verify in game:** start a run, return to the bunker at night, see the cot by the spawn, press the prompt, and the night skips.
+- **Verified in the browser:** `tests/e2e/bunker-cot.spec.js` starts a run, stands at the cot, sees "PRESS E · REST — END DAY 2" and starts the rest.
 
 ## 8. Currencies, trade-ups and smelting: what exists vs. what works
 
@@ -135,7 +153,32 @@ The design is `docs/season-zero-protocol/05-crafting-matrix-and-salvage-economy.
 
 **Owner steps for what shipped here:** deploy the backend (cache-open duplicate shards are server-side). No schema change is needed: shards 4159 already exist and are granted with AddItem.
 
+## 9. Every command on the Steam Deck — done
+
+- **Cause.** On the Deck, input comes from Steam Input's action manifest, and its gameplay set had no action for:
+  - T: tactical ping, or trade with a squadmate;
+  - G: the squad command radial (and Alt+1–5);
+  - C: next interaction target.
+
+  A Deck player couldn't trade at all. The open tactical map only closed from a controller (no pan, zoom, home or "find me"). The target panel printed keyboard keys ("E", "T"). The glyphs named sprint "LS" and scan "B", while the layout binds LT and LB.
+- **Fix.**
+  - **Three new manifest actions,** bound on every bundled layout (`scripts/build-steam-input-configs.js`, layout revision 11 so existing players get it), read natively in `electron/main.cjs`, and mirrored in the browser-gamepad map:
+    - `tactical_ping` on D-pad ←;
+    - `quick_command` on D-pad → (both previously repeated X and Y);
+    - `cycle_interact` on aim-stick click.
+  - **D-pad ← does what T does:** trade when a squadmate is present, otherwise ping (one `toggleSquadTrade()` for both).
+  - **Tactical map on a controller:** sticks pan, RT/LT zoom, A centres on you, Y on home, X resets.
+  - **Prompts** name the controller button when a pad is in use, and the glyph table matches the layout.
+- **Tests:**
+  - `scripts/build-steam-input-configs.test.js`: every layout binds every manifest action; Electron reads every gameplay action.
+  - `src/browserGamepad.test.js`, `src/inputGlyphs.test.js`, `src/threeGame.controllerPrompts.test.js`.
+- **Owner steps.** The manifest and layouts ship in the Steam build (depot upload). The Steamworks Steam Input page may need the official layout re-published for revision 11.
+- **Not done:**
+  - [ ] Keyboard key hints in authored text: "Radar Scan [Q]", "BREACH CACHE [F]", "PRESS [M] / [TAB] TO TOGGLE TACTICAL MAP", "PRESS [1-4]". These need device-aware text.
+  - [ ] Verify on the Deck: trade with a squadmate from D-pad ←, the squad radial from D-pad →, and pan the map with the stick.
+
 ## Status log
 
 - 2026-10-06: items 1, 2 and 4 fixed with tests; item 6 step 1 done; this plan written. Items 3 (remaining), 5 and 6 (remaining) open.
 - 2026-10-06 (later): item 6 steps 2–3 (Performance 52–53); item 7 (bed) fixed; item 8 audited, with scrap, duplicate shards and the Steam partial-open message fixed and four economy decisions listed.
+- 2026-10-06 (evening): item 9 (Deck controls) done; item 6 round 2 (Performance 63–65 locally). Open e2e failures not from this work: `camp-quests` (the bounty chip wins the objective lane over an accepted quest, `515f42fe`) and `foundry-lifecycle` (exact float compare of the player's Y).
