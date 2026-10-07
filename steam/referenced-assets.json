@@ -704,14 +704,10 @@
     "door.png",
     "door.webp",
     "door_alien_keyart_v2.webp",
-    "door_bio.webp",
     "door_bio_keyart_v2.webp",
     "door_biomech_keyart_v2.webp",
     "door_biomechanical.png",
-    "door_biomechanical.webp",
-    "door_cryo.webp",
     "door_cryo_keyart_v2.webp",
-    "door_nuclear.webp",
     "door_nuclear_keyart_v2.webp",
     "door_rust_keyart_v2.webp",
     "drop_black_flask.png",
@@ -21661,6 +21657,21 @@
       "path": "pit_hole.png",
       "bytes": 1509390,
       "classification": "runtime-required"
+    },
+    {
+      "path": "portraits/title_engineer.png",
+      "bytes": 29388,
+      "classification": "unknown"
+    },
+    {
+      "path": "portraits/title_scout.png",
+      "bytes": 31412,
+      "classification": "unknown"
+    },
+    {
+      "path": "portraits/title_tank.png",
+      "bytes": 43127,
+      "classification": "unknown"
     },
     {
       "path": "prop_alien_feeding_basin.png",
