@@ -177,7 +177,7 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         ],
         smallProps: ['prop_cave_spores', 'prop_cave_webs', 'decal_tallow_symbol', 'fixture_sconce_vine'],
         ambientProps: LIVED_IN_DECALS.bio,
-        rareProps: ['decal_tallow_herb_cache', 'prop_fungal_tendril_altar'],
+        rareProps: ['prop_fungal_tendril_altar'],
         encounterProfile: 'bio-standard'
     },
     {
@@ -335,7 +335,7 @@ export const ROOM_THEME_CATALOG = Object.freeze([
             'decal_footprints_mud', 'decal_meridian_stencil'
         ],
         ambientProps: LIVED_IN_DECALS.camp,
-        rareProps: ['decal_tallow_herb_cache', 'prop_iron_guild_dogtags', 'arch_niche_shrine'],
+        rareProps: ['prop_iron_guild_dogtags', 'arch_niche_shrine'],
         encounterProfile: 'safe'
     },
     {
@@ -465,7 +465,7 @@ export const PRESENTATION_STATE_MODIFIERS = Object.freeze({
     infested: Object.freeze({ propPrefix: 'prop_hive_', decal: 'decal_spore_growth_patch' }),
     looted: Object.freeze({ propPrefix: 'scatter_', decal: 'decal_wall_breach' }),
     wounded: Object.freeze({ propPrefix: 'prop_', decal: 'prop_blood_trail' }),
-    bonded: Object.freeze({ propPrefix: 'prop_', decal: 'decal_tallow_herb_cache' }),
+    bonded: Object.freeze({ propPrefix: 'prop_', decal: 'decal_growth_creep_1' }),
     culled: Object.freeze({ propPrefix: 'scatter_', decal: 'decal_barricade_last_stand' }),
     turned: Object.freeze({ propPrefix: 'prop_hive_', decal: 'decal_spore_growth_patch' })
 });

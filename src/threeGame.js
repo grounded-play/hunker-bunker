@@ -3309,11 +3309,13 @@ export class ThreeGame {
             decal_childlike_cave_map: this.loadKeyedSpriteTexture('/decal_childlike_cave_map.png', 14),
             decal_bio_sample_spill: this.loadKeyedSpriteTexture('/decal_bio_sample_spill.png', 14),
             decal_worker_sleep_roll: this.loadKeyedSpriteTexture('/decal_worker_sleep_roll.png', 14),
-            decal_machine_cult_shrine: this.loadKeyedSpriteTexture('/decal_machine_cult_shrine.png', 14),
-            decal_pod_312_breach: this.loadKeyedSpriteTexture('/decal_pod_312_breach.png', 14),
-            decal_tallow_herb_cache: this.loadKeyedSpriteTexture('/decal_tallow_herb_cache.png', 14),
-            scatter_horizon_black_box: this.loadKeyedSpriteTexture('/scatter_horizon_black_box.png', 14),
-            prop_iron_guild_dogtags: this.loadKeyedSpriteTexture('/prop_iron_guild_dogtags.png', 14),
+            // These five were 64x64 placeholder cards (owner, 2026-10-07: "machine
+            // cult in purple"). Each now draws the closest real art; the herb
+            // cache has none yet, so nothing places it.
+            decal_machine_cult_shrine: this.loadKeyedSpriteTexture('/decal_maintenance_shrine.png', 14),
+            decal_pod_312_breach: this.loadKeyedSpriteTexture('/decal_wall_breach.png', 14),
+            scatter_horizon_black_box: this.loadKeyedSpriteTexture('/drop_survey_probe.png', 14),
+            prop_iron_guild_dogtags: this.loadKeyedSpriteTexture('/drop_dogtags.png', 14),
 
             prop_camp_cookfire_lit: this.loadKeyedSpriteTexture('/prop_camp_cookfire_lit.png', 14),
 

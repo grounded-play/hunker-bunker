@@ -676,12 +676,10 @@
     "decal_lacquer_blister_01.png",
     "decal_lacquer_blister_02.png",
     "decal_lacquer_blister_03.png",
-    "decal_machine_cult_shrine.png",
     "decal_maintenance_shrine.png",
     "decal_meridian_stencil.png",
     "decal_mirror_tarnished.png",
     "decal_oil_spill_patch.png",
-    "decal_pod_312_breach.png",
     "decal_rust_bleed_1.png",
     "decal_rust_bleed_2.png",
     "decal_scars.png",
@@ -690,7 +688,6 @@
     "decal_spore_stain_01.png",
     "decal_spore_stain_02.png",
     "decal_spore_stain_03.png",
-    "decal_tallow_herb_cache.png",
     "decal_tallow_symbol.png",
     "decal_vine_iron_shadow_1.png",
     "decal_vine_iron_shadow_2.png",
@@ -1217,7 +1214,6 @@
     "prop_icey_frost_manifold.png",
     "prop_icey_frost_vent.png",
     "prop_icey_thermal_pod.png",
-    "prop_iron_guild_dogtags.png",
     "prop_laser_trap_emitter.jpg",
     "prop_light_cluster_dripping.png",
     "prop_locker_bulged.png",
@@ -1253,7 +1249,6 @@
     "scatter_cryo_shards.png",
     "scatter_gravel.png",
     "scatter_hive_eggs.png",
-    "scatter_horizon_black_box.png",
     "scatter_ice_stalagmite.png",
     "scatter_slime_puddle.png",
     "scout_ship.png",
@@ -17957,11 +17952,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "decal_machine_cult_shrine.png",
-      "bytes": 1099,
-      "classification": "runtime-required"
-    },
-    {
       "path": "decal_maintenance_shrine.png",
       "bytes": 478869,
       "classification": "runtime-required"
@@ -17979,11 +17969,6 @@
     {
       "path": "decal_oil_spill_patch.png",
       "bytes": 171759,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "decal_pod_312_breach.png",
-      "bytes": 1100,
       "classification": "runtime-required"
     },
     {
@@ -18024,11 +18009,6 @@
     {
       "path": "decal_spore_stain_03.png",
       "bytes": 19593,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "decal_tallow_herb_cache.png",
-      "bytes": 1127,
       "classification": "runtime-required"
     },
     {
@@ -22097,11 +22077,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "prop_iron_guild_dogtags.png",
-      "bytes": 1017,
-      "classification": "runtime-required"
-    },
-    {
       "path": "prop_laser_trap_emitter.jpg",
       "bytes": 616875,
       "classification": "runtime-required"
@@ -22289,11 +22264,6 @@
     {
       "path": "scatter_hive_eggs.png",
       "bytes": 1867427,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "scatter_horizon_black_box.png",
-      "bytes": 1061,
       "classification": "runtime-required"
     },
     {

@@ -74,7 +74,7 @@ export const DRESSING_KITS = Object.freeze({
         wallProps: ['arch_niche_shrine', 'arch_window_stained', 'prop_vertebral_cable_riser', 'fixture_sconce_vine',
             'prop_biomech_tracheal_wall_pipe', 'prop_overhead_cage_fluorescent'],
         wallDecals: ['decal_wall_panel_relief', 'decal_lacquer_blister_01', 'decal_lacquer_blister_02', 'decal_lacquer_blister_03',
-            'decal_mirror_tarnished', 'decal_machine_cult_shrine', 'decal_vine_iron_shadow_1', 'decal_rust_bleed_2'],
+            'decal_mirror_tarnished', 'decal_maintenance_shrine', 'decal_vine_iron_shadow_1', 'decal_rust_bleed_2'],
         clutter: ['scatter_bolts', 'scatter_cable_coil', 'bunker_junk_rare', 'prop_cave_bones'],
         corners: ['arch_pillar_buttress_01', 'arch_pillar_buttress_02', 'arch_pillar_buttress_03', 'arch_pillar_buttress_04'],
         floorDecals: ['decal_floor_medallion_01', 'decal_floor_medallion_02', 'decal_floor_medallion_03', 'decal_floor_medallion_04',
