@@ -1236,7 +1236,20 @@
       "purchase_awaiting_sandbox": "Beta 测试购买：请在 Steam 界面中确认。Steam 沙盒，不会扣款。",
       "purchase_declined": "已在 Steam 中取消购买，未产生任何扣款。",
       "purchase_complete": "已向你的库存添加 {count} 把缓存钥匙。",
-      "purchase_pending": "Steam 尚未确认付款。下次打开商店时钥匙将会到账。"
+      "purchase_pending": "Steam 尚未确认付款。下次打开商店时钥匙将会到账。",
+      "quartermaster_title": "军需官",
+      "quartermaster_sub": "用碎片换取试剂 · 每周限量",
+      "assembly_title": "组装舱",
+      "assembly_sub": "锭 + 试剂 → 超频模块",
+      "trade": "交换",
+      "assemble": "组装",
+      "week_count": "本周 {used}/{max}",
+      "shard_cost": "{cost} 碎片",
+      "traded": "已获得{item}。",
+      "assembled": "已组装{item}。",
+      "trade_failed": "交换失败：{reason}。",
+      "assemble_failed": "组装失败：{reason}。",
+      "reagents_owned": "锭 {ingots} · 矩阵 {matrix} · 龙涎香 {ambergris}"
     },
     "lobby": {
       "connecting": "正在连接…",

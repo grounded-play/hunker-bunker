@@ -604,6 +604,8 @@ describe('POST /steam/inventory/grant-milestone (Tier B)', () => {
 
         const inv = getMockInventory(testId);
         expect(inv.find((i) => i.itemdefid === 4154)?.quantity).toBe(1);
+        // Sprint 51: a boss kill also yields 5 ingots, once per run.
+        expect(inv.find((i) => i.itemdefid === 4156)?.quantity).toBe(5);
     });
 
     it('rejects boss_kill without a runKey', async () => {

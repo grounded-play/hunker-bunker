@@ -1236,7 +1236,20 @@
       "purchase_awaiting_sandbox": "Beta test purchase: approve it in the Steam overlay. Steam sandbox, no charge.",
       "purchase_declined": "Purchase cancelled in Steam. Nothing was charged.",
       "purchase_complete": "+{count} Cache Key(s) added to your inventory.",
-      "purchase_pending": "Steam has not confirmed the payment yet. Your keys arrive the next time you open the store."
+      "purchase_pending": "Steam has not confirmed the payment yet. Your keys arrive the next time you open the store.",
+      "quartermaster_title": "QUARTERMASTER",
+      "quartermaster_sub": "SHARDS FOR REAGENTS · WEEKLY LIMITS",
+      "assembly_title": "ASSEMBLY BAY",
+      "assembly_sub": "INGOTS + REAGENTS → OVERCLOCK MODULES",
+      "trade": "TRADE",
+      "assemble": "ASSEMBLE",
+      "week_count": "THIS WEEK {used}/{max}",
+      "shard_cost": "{cost} SHARDS",
+      "traded": "{item} ACQUIRED.",
+      "assembled": "{item} ASSEMBLED.",
+      "trade_failed": "Trade failed: {reason}.",
+      "assemble_failed": "Assembly failed: {reason}.",
+      "reagents_owned": "INGOTS {ingots} · MATRIX {matrix} · AMBERGRIS {ambergris}"
     },
     "lobby": {
       "connecting": "CONNECTING...",

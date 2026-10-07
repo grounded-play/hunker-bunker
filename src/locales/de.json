@@ -1236,7 +1236,20 @@
       "purchase_awaiting_sandbox": "Beta-Testkauf: Bestätige ihn im Steam-Overlay. Steam-Sandbox, keine Abbuchung.",
       "purchase_declined": "Kauf in Steam abgebrochen. Es wurde nichts abgebucht.",
       "purchase_complete": "+{count} Cache-Schlüssel zu deinem Inventar hinzugefügt.",
-      "purchase_pending": "Steam hat die Zahlung noch nicht bestätigt. Deine Schlüssel kommen beim nächsten Öffnen des Shops an."
+      "purchase_pending": "Steam hat die Zahlung noch nicht bestätigt. Deine Schlüssel kommen beim nächsten Öffnen des Shops an.",
+      "quartermaster_title": "QUARTIERMEISTER",
+      "quartermaster_sub": "SPLITTER GEGEN REAGENZIEN · WÖCHENTLICHE LIMITS",
+      "assembly_title": "MONTAGEBUCHT",
+      "assembly_sub": "BARREN + REAGENZIEN → ÜBERTAKTUNGSMODULE",
+      "trade": "TAUSCHEN",
+      "assemble": "MONTIEREN",
+      "week_count": "DIESE WOCHE {used}/{max}",
+      "shard_cost": "{cost} SPLITTER",
+      "traded": "{item} ERHALTEN.",
+      "assembled": "{item} MONTIERT.",
+      "trade_failed": "Tausch fehlgeschlagen: {reason}.",
+      "assemble_failed": "Montage fehlgeschlagen: {reason}.",
+      "reagents_owned": "BARREN {ingots} · MATRIX {matrix} · AMBRA {ambergris}"
     },
     "lobby": {
       "connecting": "VERBINDE...",

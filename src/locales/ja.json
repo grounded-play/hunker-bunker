@@ -1236,7 +1236,20 @@
       "purchase_awaiting_sandbox": "ベータのテスト購入：Steam オーバーレイで承認してください。Steam サンドボックスのため請求はありません。",
       "purchase_declined": "Steam で購入がキャンセルされました。請求はありません。",
       "purchase_complete": "キャッシュキー +{count} 個がインベントリに追加されました。",
-      "purchase_pending": "Steam はまだ支払いを確認していません。次にストアを開いたときにキーが届きます。"
+      "purchase_pending": "Steam はまだ支払いを確認していません。次にストアを開いたときにキーが届きます。",
+      "quartermaster_title": "補給係",
+      "quartermaster_sub": "シャードで試薬と交換 · 週ごとの上限",
+      "assembly_title": "組立ベイ",
+      "assembly_sub": "インゴット + 試薬 → オーバークロックモジュール",
+      "trade": "交換",
+      "assemble": "組み立て",
+      "week_count": "今週 {used}/{max}",
+      "shard_cost": "{cost} シャード",
+      "traded": "{item} を入手。",
+      "assembled": "{item} を組み立てた。",
+      "trade_failed": "交換に失敗: {reason}。",
+      "assemble_failed": "組み立てに失敗: {reason}。",
+      "reagents_owned": "インゴット {ingots} · マトリクス {matrix} · アンバーグリス {ambergris}"
     },
     "lobby": {
       "connecting": "接続中...",

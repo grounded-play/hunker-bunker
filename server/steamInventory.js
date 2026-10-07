@@ -19,13 +19,16 @@ import { commitExchange, planRedeem, planTradeUp, withPlayerLock } from './steam
 import { createRateLimitOptions } from './rateLimit.js';
 import { fetchSteamInventory, decodeSteamInventory } from './steamInventoryRead.js';
 import { performSteamRecipeExchange } from './steamRecipeExchange.js';
+import { QUARTERMASTER_OFFERS, isoWeekKey, planAssembly, planQuartermasterTrade } from './quartermaster.js';
 
 const STEAM_INVENTORY_URL = 'https://partner.steam-api.com/IInventoryService/';
 const STEAM_ECON_MARKET_URL = 'https://partner.steam-api.com/IEconMarketService/';
 const DEFAULT_PLAYTIME_DROP_COOLDOWN_MS = 60 * 1000;
 const EARNED_CACHE_KEY_ITEMDEFID = 4154;
+const INGOT_ITEMDEFID = 4156;
+const BOSS_KILL_INGOTS = 5;
 
-export const INVENTORY_CAPABILITIES = Object.freeze(['trade-up', 'redeem']);
+export const INVENTORY_CAPABILITIES = Object.freeze(['trade-up', 'redeem', 'quartermaster', 'assemble']);
 
 function getSteamPublisherKey() {
     return process.env.HB_STEAM_PUBLISHER_KEY
@@ -105,7 +108,7 @@ export function attachSteamInventoryRoutes(app) {
     // 1b. Smelter trade-up and Dispensary redemption (server/steamTradeUp.js).
     // The client names only the tier or the target; the server chooses what
     // to consume. A requestId is required so a retry never trades twice.
-    function attachExchangeRoute(route, plan, source) {
+    function attachExchangeRoute(route, plan, source, { afterCommit = null } = {}) {
         app.post(route, steamRouteRateLimit, steamAuthMiddleware, async (req, res) => {
             const requestId = typeof req.body?.requestId === 'string' ? req.body.requestId : '';
             if (!requestId) return res.status(400).json({ ok: false, reason: 'missing_request_id' });
@@ -116,9 +119,10 @@ export function attachSteamInventoryRoutes(app) {
             const result = await withPlayerLock(req.steamId, async () => {
                 const loaded = await loadInventory(req);
                 if (!loaded.ok) return { status: loaded.status, body: { ok: false, reason: loaded.reason } };
-                const planned = plan(req.body ?? {}, loaded.inventory);
+                const planned = plan(req.body ?? {}, loaded.inventory, req);
                 if (!planned.ok) return { status: 400, body: planned };
                 const committed = await commitExchange({ steamId: req.steamId, plan: planned, isDevMode: req.isDevMode, requestId: idempotencyKey, source });
+                if (committed.ok) await afterCommit?.(req, planned);
                 return { status: committed.ok ? 200 : 502, body: committed };
             });
             if (result.status !== 409) await saveIdempotency(idempotencyKey, result);
@@ -127,6 +131,27 @@ export function attachSteamInventoryRoutes(app) {
     }
     attachExchangeRoute('/steam/inventory/trade-up', (body, inventory) => planTradeUp({ inventory, rarity: String(body.rarity ?? '') }), 'trade_up');
     attachExchangeRoute('/steam/inventory/redeem', (body, inventory) => planRedeem({ inventory, itemdefid: Number(body.itemdefid) }), 'dispensary');
+
+    // Sprint 51 reagent loop (server/quartermaster.js): shards buy reagents a
+    // few a week -- the weekly count lives here, never trusted from a client
+    // -- and ingots + matrices + ambergris assemble overclock modules.
+    const quartermasterWeekKey = (steamId, itemdefid) => `quartermaster-week:${steamId}:${isoWeekKey()}:${itemdefid}`;
+    const quartermasterWeekCount = (steamId, itemdefid) => Number(checkIdempotency(quartermasterWeekKey(steamId, itemdefid))?.body?.count) || 0;
+    attachExchangeRoute('/steam/inventory/quartermaster', (body, inventory, req) => planQuartermasterTrade({
+        inventory,
+        itemdefid: Number(body.itemdefid),
+        weeklyCount: quartermasterWeekCount(req.steamId, Number(body.itemdefid))
+    }), 'quartermaster', {
+        afterCommit: (req, planned) => saveIdempotency(quartermasterWeekKey(req.steamId, planned.outputItemdefid), {
+            status: 200,
+            body: { count: quartermasterWeekCount(req.steamId, planned.outputItemdefid) + 1 }
+        })
+    });
+    attachExchangeRoute('/steam/inventory/assemble', (body, inventory) => planAssembly({ inventory, itemdefid: Number(body.itemdefid) }), 'assembly');
+    app.get('/steam/inventory/quartermaster-week', steamRouteRateLimit, steamAuthMiddleware, (req, res) => {
+        res.json({ ok: true, week: isoWeekKey(), counts: Object.fromEntries(Object.keys(QUARTERMASTER_OFFERS)
+            .map((id) => [id, quartermasterWeekCount(req.steamId, Number(id))])) });
+    });
 
     // 2. Playtime Drops (TriggerItemDrop)
     app.post('/steam/inventory/trigger-drop', steamRouteRateLimit, steamAuthMiddleware, async (req, res) => {
@@ -462,6 +487,12 @@ export function attachSteamInventoryRoutes(app) {
             source: `milestone:${milestone}`,
             mode
         });
+        // A boss kill also yields Cryo-Alloy Ingots for overclock assembly
+        // (Sprint 51), under the same per-run idempotency key.
+        if (grant.ok && milestone === 'boss_kill') {
+            const ingots = await grantItemToPlayer({ steamId: req.steamId, itemdefid: INGOT_ITEMDEFID, quantity: BOSS_KILL_INGOTS, isDevMode: req.isDevMode, source: 'milestone:boss_kill', mode: 'stack' });
+            if (ingots.ok) grant.granted = [...(grant.granted ?? []), ...(ingots.granted ?? [])];
+        }
         const result = { status: grant.ok ? 200 : (grant.status ?? 502), body: grant };
 
         await saveIdempotency(idempotencyKey, result);

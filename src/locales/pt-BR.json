@@ -1236,7 +1236,20 @@
       "purchase_awaiting_sandbox": "Compra de teste beta: aprove no overlay da Steam. Sandbox da Steam, sem cobrança.",
       "purchase_declined": "Compra cancelada na Steam. Nada foi cobrado.",
       "purchase_complete": "+{count} chave(s) de cache adicionada(s) ao seu inventário.",
-      "purchase_pending": "A Steam ainda não confirmou o pagamento. Suas chaves chegam na próxima vez que você abrir a loja."
+      "purchase_pending": "A Steam ainda não confirmou o pagamento. Suas chaves chegam na próxima vez que você abrir a loja.",
+      "quartermaster_title": "INTENDENTE",
+      "quartermaster_sub": "FRAGMENTOS POR REAGENTES · LIMITES SEMANAIS",
+      "assembly_title": "BAIA DE MONTAGEM",
+      "assembly_sub": "LINGOTES + REAGENTES → MÓDULOS DE OVERCLOCK",
+      "trade": "TROCAR",
+      "assemble": "MONTAR",
+      "week_count": "ESTA SEMANA {used}/{max}",
+      "shard_cost": "{cost} FRAGMENTOS",
+      "traded": "{item} OBTIDO.",
+      "assembled": "{item} MONTADO.",
+      "trade_failed": "A troca falhou: {reason}.",
+      "assemble_failed": "A montagem falhou: {reason}.",
+      "reagents_owned": "LINGOTES {ingots} · MATRIZ {matrix} · ÂMBAR CINZENTO {ambergris}"
     },
     "lobby": {
       "connecting": "CONECTANDO...",

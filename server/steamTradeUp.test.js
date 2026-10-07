@@ -135,10 +135,39 @@ describe('POST /steam/inventory/trade-up (dev mode)', () => {
         expect(count(after, (i) => i.itemdefid === 4100)).toBe(1);
     });
 
+    // Sprint 51 reagent loop: shards buy reagents a few a week, counted on
+    // the server; reagents assemble overclock modules.
+    it('sells reagents for shards up to the weekly limit', async () => {
+        devMode();
+        await setMockInventory(DEV_ID, [{ itemId: 's', itemdefid: SHARD_ITEMDEFID, quantity: 200 }]);
+        const before = await (await fetch(`${baseUrl}/steam/inventory/quartermaster-week?${TICKET}`)).json();
+        const already = Number(before.counts['4158']) || 0;
+        for (let i = already; i < 2; i += 1) {
+            expect((await post('/steam/inventory/quartermaster', { requestId: nextId(), itemdefid: 4158 })).status).toBe(200);
+        }
+        const refused = await post('/steam/inventory/quartermaster', { requestId: nextId(), itemdefid: 4158 });
+        expect(refused.status).toBe(400);
+        expect((await refused.json()).reason).toBe('weekly_limit');
+        const week = await (await fetch(`${baseUrl}/steam/inventory/quartermaster-week?${TICKET}`)).json();
+        expect(week.counts['4158']).toBe(2);
+        expect(count(getMockInventory(DEV_ID), (i) => i.itemdefid === 4158)).toBe(2 - already);
+    });
+
+    it('assembles an overclock from ingots and a matrix', async () => {
+        devMode();
+        await setMockInventory(DEV_ID, [{ itemId: 'i', itemdefid: 4156, quantity: 45 }, { itemId: 'm', itemdefid: 4157, quantity: 1 }]);
+        const response = await post('/steam/inventory/assemble', { requestId: nextId(), itemdefid: 4143 });
+        expect(response.status).toBe(200);
+        const after = getMockInventory(DEV_ID);
+        expect(count(after, (i) => i.itemdefid === 4156)).toBe(5);
+        expect(count(after, (i) => i.itemdefid === 4157)).toBe(0);
+        expect(count(after, (i) => i.itemdefid === 4143)).toBe(1);
+    });
+
     it('advertises the exchanges on GET /steam/inventory', async () => {
         devMode();
         const response = await fetch(`${baseUrl}/steam/inventory?${TICKET}`);
-        expect((await response.json()).capabilities).toEqual(['trade-up', 'redeem']);
+        expect((await response.json()).capabilities).toEqual(['trade-up', 'redeem', 'quartermaster', 'assemble']);
     });
 });
 

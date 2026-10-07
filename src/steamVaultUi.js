@@ -6,6 +6,7 @@ import { LocalVaultLedger } from './localVaultLedger.js';
 import { STEAM_ITEM_CATALOG } from './data/steamItemCatalog.js';
 import { getItemView } from './data/itemCatalog.js';
 import { TRADE_UP_ITEMS } from '../server/tradeUpCatalog.js';
+import { ASSEMBLY_RECIPES, QUARTERMASTER_OFFERS, isoWeekKey, planAssembly, planQuartermasterTrade } from '../server/quartermaster.js';
 import { CATALOG_ITEMS } from './armoryUi.js';
 import {
     DETERMINISTIC_RECIPES,
@@ -550,6 +551,7 @@ export async function loadVaultData() {
         if (result?.ok && Array.isArray(result.inventory)) {
             vaultSource = 'steam';
             steamCapabilities = new Set(Array.isArray(result.capabilities) ? result.capabilities : []);
+            void refreshSteamQuartermasterWeek();
             vaultItems = result.inventory;
             // Feed the unified ownership store (src/itemOwnership.js) so the
             // Armory gates on the same entitlements the Vault renders. Only the
@@ -1421,6 +1423,7 @@ export function renderSmelterPanel() {
             dispensaryGrid.appendChild(card);
         }
     }
+    renderReagentPanels();
 }
 
 function handleIngotPackPurchase() {
@@ -1462,6 +1465,119 @@ function exchangeMode() {
     if (isBrowserSandbox() && vaultSource === 'local') return 'local';
     if (vaultSource === 'steam' && steamCapabilities.has('trade-up') && typeof window.electronAPI?.tradeUpSteamInventory === 'function') return 'steam';
     return null;
+}
+
+// The Sprint 51 reagent loop runs only where the backend advertises it.
+function reagentExchangeMode(capability, method) {
+    if (isBrowserSandbox() && vaultSource === 'local') return 'local';
+    if (vaultSource === 'steam' && steamCapabilities.has(capability) && typeof window.electronAPI?.[method] === 'function') return 'steam';
+    return null;
+}
+
+const LOCAL_QUARTERMASTER_KEY = 'hb_quartermaster_week_v1';
+let steamQuartermasterWeek = { week: null, counts: {} };
+
+function quartermasterWeekCounts() {
+    const week = isoWeekKey();
+    if (reagentExchangeMode('quartermaster', 'quartermasterTrade') === 'steam') {
+        return steamQuartermasterWeek.week === week ? steamQuartermasterWeek.counts : {};
+    }
+    try {
+        const stored = JSON.parse(window.localStorage?.getItem(LOCAL_QUARTERMASTER_KEY) ?? 'null');
+        return stored?.week === week ? stored.counts ?? {} : {};
+    } catch {
+        return {};
+    }
+}
+
+function recordLocalQuartermasterTrade(itemdefid) {
+    const counts = { ...quartermasterWeekCounts() };
+    counts[itemdefid] = (Number(counts[itemdefid]) || 0) + 1;
+    try {
+        window.localStorage?.setItem(LOCAL_QUARTERMASTER_KEY, JSON.stringify({ week: isoWeekKey(), counts }));
+    } catch { /* the trade stands; only the weekly count is not kept */ }
+}
+
+async function refreshSteamQuartermasterWeek() {
+    if (reagentExchangeMode('quartermaster', 'quartermasterTrade') !== 'steam') return;
+    const result = await window.electronAPI.getQuartermasterWeek?.().catch(() => null);
+    if (result?.ok) {
+        steamQuartermasterWeek = { week: result.week, counts: result.counts ?? {} };
+        renderReagentPanels();
+    }
+}
+
+const reagentCount = (items, itemdefid) => items
+    .filter((item) => Number(item.itemdefid) === itemdefid)
+    .reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+
+function renderReagentPanels() {
+    const qmGrid = document.getElementById('vault-quartermaster-grid');
+    const asmGrid = document.getElementById('vault-assembly-grid');
+    const items = vaultItems;
+    if (qmGrid) {
+        const mode = reagentExchangeMode('quartermaster', 'quartermasterTrade');
+        const counts = quartermasterWeekCounts();
+        const shards = getShardBalance(items);
+        qmGrid.innerHTML = '';
+        for (const [id, offer] of Object.entries(QUARTERMASTER_OFFERS)) {
+            const itemdefid = Number(id);
+            const cat = getItemCatalogEntry(itemdefid);
+            const used = Number(counts[id]) || 0;
+            const enabled = mode && !exchangeBusy && shards >= offer.shards && used < offer.weeklyMax;
+            const card = document.createElement('div');
+            card.className = 'vault-smelter-card';
+            card.innerHTML = `
+                <div class="vault-smelter-card__title" style="color:${getRarityColor(cat?.rarity ?? 'rare')}">${cat?.name ?? `ITEM #${id}`}</div>
+                <div class="vault-smelter-card__sub">${t('ui.vault.shard_cost', { cost: offer.shards })} · ${t('ui.vault.week_count', { used, max: offer.weeklyMax })}</div>
+                <button class="vault-smelter-card__btn" ${enabled ? '' : 'disabled'} data-qm-id="${itemdefid}">${t('ui.vault.trade')}</button>
+            `;
+            card.querySelector('button')?.addEventListener('click', () => handleQuartermasterTrade(itemdefid));
+            qmGrid.appendChild(card);
+        }
+    }
+    if (asmGrid) {
+        const mode = reagentExchangeMode('assemble', 'assembleOverclock');
+        const owned = { ingots: reagentCount(items, 4156), matrix: reagentCount(items, 4157), ambergris: reagentCount(items, 4158) };
+        asmGrid.innerHTML = '';
+        for (const [id, recipe] of Object.entries(ASSEMBLY_RECIPES)) {
+            const itemdefid = Number(id);
+            const cat = getItemCatalogEntry(itemdefid);
+            const enabled = mode && !exchangeBusy && planAssembly({ inventory: items, itemdefid }).ok;
+            const card = document.createElement('div');
+            card.className = 'vault-smelter-card';
+            card.innerHTML = `
+                <div class="vault-smelter-card__title" style="color:${getRarityColor(cat?.rarity ?? 'uncommon')}">${cat?.name ?? `ITEM #${id}`}</div>
+                <div class="vault-smelter-card__sub">${t('ui.vault.reagents_owned', { ingots: `${owned.ingots}/${recipe[4156] ?? 0}`, matrix: `${owned.matrix}/${recipe[4157] ?? 0}`, ambergris: `${owned.ambergris}/${recipe[4158] ?? 0}` })}</div>
+                <button class="vault-smelter-card__btn" ${enabled ? '' : 'disabled'} data-assemble-id="${itemdefid}">${t('ui.vault.assemble')}</button>
+            `;
+            card.querySelector('button')?.addEventListener('click', () => handleAssembly(itemdefid));
+            asmGrid.appendChild(card);
+        }
+    }
+}
+
+function handleQuartermasterTrade(itemdefid) {
+    return runExchange({
+        kind: 'quartermaster',
+        modeFn: () => reagentExchangeMode('quartermaster', 'quartermasterTrade'),
+        localPlan: (items) => planQuartermasterTrade({ inventory: items, itemdefid, weeklyCount: Number(quartermasterWeekCounts()[itemdefid]) || 0 }),
+        steamCall: (requestId) => window.electronAPI.quartermasterTrade(itemdefid, requestId),
+        failedKey: 'ui.vault.trade_failed',
+        onSuccessText: (item) => t('ui.vault.traded', { item }),
+        onCommitted: (mode) => (mode === 'local' ? recordLocalQuartermasterTrade(itemdefid) : refreshSteamQuartermasterWeek())
+    });
+}
+
+function handleAssembly(itemdefid) {
+    return runExchange({
+        kind: 'assembly',
+        modeFn: () => reagentExchangeMode('assemble', 'assembleOverclock'),
+        localPlan: (items) => planAssembly({ inventory: items, itemdefid }),
+        steamCall: (requestId) => window.electronAPI.assembleOverclock(itemdefid, requestId),
+        failedKey: 'ui.vault.assemble_failed',
+        onSuccessText: (item) => t('ui.vault.assembled', { item })
+    });
 }
 
 /** Whether trade-ups and redemptions can run on the inventory the Vault shows. */
@@ -1534,9 +1650,9 @@ function exchangeFailureText(key, reason) {
     return t(key, { reason: String(reason ?? 'unknown').replace(/_/g, ' ') });
 }
 
-async function runExchange({ kind, localPlan, steamCall, failedKey, onSuccessText }) {
+async function runExchange({ kind, localPlan, steamCall, failedKey, onSuccessText, modeFn = exchangeMode, onCommitted = null }) {
     const statusEl = document.getElementById('vault-smelter-status');
-    const mode = exchangeMode();
+    const mode = modeFn();
     if (!mode) {
         logExchange('warn', `${kind} unavailable on this build`, {});
         if (statusEl) statusEl.textContent = t('ui.vault.exchange_needs_service');
@@ -1563,6 +1679,7 @@ async function runExchange({ kind, localPlan, steamCall, failedKey, onSuccessTex
             window.AudioManager?.play?.('ui_error', { volume: 0.5 });
             return;
         }
+        await onCommitted?.(mode);
         const reward = getItemCatalogEntry(result.grantedItemdefid);
         if (statusEl) statusEl.textContent = onSuccessText(reward?.name ?? result.grantedItemdefid);
         if (result.grantedItemdefid != null) showSteamDropToast(result.grantedItemdefid, 1);

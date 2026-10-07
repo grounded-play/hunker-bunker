@@ -1236,7 +1236,20 @@
       "purchase_awaiting_sandbox": "Тестовая покупка в бете: подтвердите её в оверлее Steam. Песочница Steam, без списания.",
       "purchase_declined": "Покупка отменена в Steam. Ничего не списано.",
       "purchase_complete": "+{count} ключ(ей) тайника добавлено в инвентарь.",
-      "purchase_pending": "Steam ещё не подтвердил оплату. Ключи придут, когда вы в следующий раз откроете магазин."
+      "purchase_pending": "Steam ещё не подтвердил оплату. Ключи придут, когда вы в следующий раз откроете магазин.",
+      "quartermaster_title": "КВАРТИРМЕЙСТЕР",
+      "quartermaster_sub": "ОСКОЛКИ ЗА РЕАГЕНТЫ · НЕДЕЛЬНЫЕ ЛИМИТЫ",
+      "assembly_title": "СБОРОЧНЫЙ ОТСЕК",
+      "assembly_sub": "СЛИТКИ + РЕАГЕНТЫ → МОДУЛИ РАЗГОНА",
+      "trade": "ОБМЕНЯТЬ",
+      "assemble": "СОБРАТЬ",
+      "week_count": "НА ЭТОЙ НЕДЕЛЕ {used}/{max}",
+      "shard_cost": "{cost} ОСКОЛКОВ",
+      "traded": "{item}: ПОЛУЧЕНО.",
+      "assembled": "{item}: СОБРАНО.",
+      "trade_failed": "Обмен не удался: {reason}.",
+      "assemble_failed": "Сборка не удалась: {reason}.",
+      "reagents_owned": "СЛИТКИ {ingots} · МАТРИЦЫ {matrix} · АМБРА {ambergris}"
     },
     "lobby": {
       "connecting": "ПОДКЛЮЧЕНИЕ...",
