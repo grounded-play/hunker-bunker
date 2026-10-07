@@ -34017,6 +34017,9 @@ export class ThreeGame {
                 baseOpacity: 1,
                 phase: placement.phase ?? 0
             };
+            // Keep the terminal sprite as the interaction/state owner while
+            // presenting the reviewed terminal GLB, as other aliased props do.
+            this.deferWorld3dReplacement(sprite, placement.type);
             return sprite;
         }
 

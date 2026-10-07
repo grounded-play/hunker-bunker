@@ -68,6 +68,10 @@ describe('no 2D stand-ins for props with 3D models', () => {
         const game = {
             deferWorld3dReplacement: ThreeGame.prototype.deferWorld3dReplacement,
             hashTile: () => 1,
+            getBiomeKeyForWorldPosition: () => 'active',
+            isCrawler: () => false,
+            isSentinel: () => false,
+            isEnemyType: () => false,
             scatterMaterials: { [type]: new THREE.SpriteMaterial() }
         };
         return ThreeGame.prototype.createScatterInstance.call(game, { type, x: 2, z: 3, scale: 1, scatterKey: 'k' });
@@ -85,7 +89,10 @@ describe('no 2D stand-ins for props with 3D models', () => {
         ['prop_cryo_sleep_pod', 'prop_flesh_steel_coffin'],
         ['prop_camp_meridian_repair_rig', 'prop_maintenance_tool_cart'],
         ['prop_engineering_bench', 'prop_fabricator_workstation'],
-        ['prop_ruptured_coolant_pump', 'prop_icey_frost_manifold']
+        ['prop_ruptured_coolant_pump', 'prop_icey_frost_manifold'],
+        ['lore_terminal', 'prop_terminal_ruptured'],
+        ['scatter_horizon_black_box', 'prop_camp_meridian_radio'],
+        ['prop_hydraulic_piston_actuator', 'prop_exosuit_docking_gantry']
     ])('a spawned %s prop renders as %s, not its billboard', (type, model) => {
         const sprite = spawn(type);
         expect(sprite.userData.world3dModelType).toBe(model);

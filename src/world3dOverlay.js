@@ -519,6 +519,11 @@ export const WORLD_3D_MODEL_ALIASES = Object.freeze({
     prop_alien_respiratory_vent: 'prop_biomech_sphincter_hatch_vent',
     prop_engineering_bench: 'prop_fabricator_workstation',
     prop_ruptured_coolant_pump: 'prop_icey_frost_manifold',
+    // Authored interaction ids keep their gameplay meaning while reviewed
+    // stand-ins remove the last flat/missing anchors from furnished rooms.
+    lore_terminal: 'prop_terminal_ruptured',
+    scatter_horizon_black_box: 'prop_camp_meridian_radio',
+    prop_hydraulic_piston_actuator: 'prop_exosuit_docking_gantry',
     // Camp and hive signature/service props: their sprites are placeholder
     // tiles (dashed box + initials), so any fitting model is an upgrade.
     prop_camp_meridian_repair_rig: 'prop_maintenance_tool_cart',

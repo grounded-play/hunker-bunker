@@ -32,7 +32,6 @@ export const FLOOR_OVERLAY_TYPES = new Set([
     'scatter_coolant_puddle',
     'scatter_slime_puddle',
     'scatter_bio_moss',
-    'scatter_horizon_black_box',
     'prop_camp_bedrolls',
     'prop_blood_trail',
     'prop_iron_guild_dogtags',

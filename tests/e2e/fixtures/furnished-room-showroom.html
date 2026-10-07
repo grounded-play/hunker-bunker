@@ -35,7 +35,7 @@
     import { bindRoomContent } from '/src/roomContent.js';
     import { planRoomPopulation } from '/src/roomPopulation.js';
     import { wallShellPlacements, roomGatewayKitPlacement } from '/src/kitGrammar.js';
-    import { createWorld3dModel, WORLD_3D_MODELS, WORLD_3D_FACING_YAW } from '/src/world3dOverlay.js';
+    import { createWorld3dModel, WORLD_3D_MODELS, WORLD_3D_FACING_YAW, world3dModelTypeFor } from '/src/world3dOverlay.js';
     import { roomPracticalLightPlacement } from '/src/anchorPracticalLight.js';
     import { applyBlackChromaKey, applyGreenChromaKey } from '/src/textureKeying.js';
     import { planRoomDressing } from '/src/roomDressing.js';
@@ -238,8 +238,9 @@
     for (const placement of plan.placements) {
       if (placement.kind === 'pickup') continue;
       const wn = placement.wallNormal;
-      if (WORLD_3D_MODELS[placement.type]) {
-        const root = await kit(placement.type);
+      const modelType = world3dModelTypeFor(placement.type);
+      if (WORLD_3D_MODELS[modelType]) {
+        const root = await kit(modelType);
         if (!root) { missing.push(placement.type); continue; }
         root.position.set(placement.x, 0, placement.y);
         if (wn && (wn.x || wn.z)) {
