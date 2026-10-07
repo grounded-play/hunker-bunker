@@ -29,6 +29,12 @@ if (!gotSingleInstanceLock) {
 // identity; Electron's generic fallback can otherwise leave that overlay up
 // even though the renderer and audio are already running.
 app.setName('Hunker Bunker');
+// Windows groups taskbar buttons (and picks their icon) by AppUserModelID.
+// The packaged build gets the builder's appId; a dev run (`npm run
+// electron:dev`) otherwise shows up as electron.exe, with Electron's icon.
+if (process.platform === 'win32') {
+    app.setAppUserModelId('com.icecave.hunkerbunker');
+}
 if (process.platform === 'linux') {
     app.setDesktopName('hunker-bunker.desktop');
     app.commandLine.appendSwitch('class', 'hunker-bunker');
@@ -1164,7 +1170,8 @@ function createWindow() {
         minHeight: 600,
         backgroundColor: '#0a0c0e',
         title: 'Hunker Bunker',
-        icon: path.join(__dirname, 'icon.png'),
+        // The multi-size .ico keeps the Windows taskbar and Alt-Tab icons sharp.
+        icon: path.join(__dirname, process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
         autoHideMenuBar: true,
         focusable: true,
         frame: false,
