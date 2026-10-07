@@ -2181,6 +2181,13 @@
         "armory_cycle": "[LB / RB WECHSELN]",
         "menu_back": "[B]"
       }
+    },
+    "sleep": {
+      "night_falls": "DIE NACHT BRICHT HEREIN",
+      "night_body": "Der Operator schläft. Etwas da draußen nicht.",
+      "morning_title": "TAG {day} · 06:00",
+      "morning_status": "{site} // EIN NEUER TAG BEGINNT",
+      "skip": "Beliebige Taste zum Aufwachen"
     }
   },
   "narrative": {

@@ -484,6 +484,7 @@ import { FLOOR_OVERLAY_TYPES, PROP_COLLISION, archPillarColliders, getPropBehavi
 import { findTilePath } from './snailPath.js';
 import { shouldEnemyRepath } from './enemyRepath.js';
 import { skipMatrixPassWhileHidden } from './chunkMatrices.js';
+import { pickSleepCutsceneStyle } from './sleepCutscene.js';
 import { createTrackField, slimeColorFor, stepBoots, trackSurfaceForType } from './trackField.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
 import { groupDangerZones, lipEdgeQuads } from './dangerZones.js';
@@ -19608,6 +19609,18 @@ export class ThreeGame {
         }
     }
 
+    // Which sleep cutscene this rest plays (src/sleepCutscene.js).
+    getSleepCutsceneStyle(camp) {
+        const stage = this.act2?.getState?.()?.infectionStage;
+        return pickSleepCutsceneStyle({
+            campId: camp?.id ?? null,
+            coopPlayers: this.isMultiplayer === false ? 0 : (this.remotePlayers?.size ?? 0),
+            hiveBonded: (this._bondedHiveSpeedMultiplier ?? 1) > 1,
+            infected: ['symptomatic', 'outed', 'ascendant'].includes(stage),
+            biome: this.currentBiomeKey ?? 'active'
+        });
+    }
+
     beginCampRest(camp, { confirmed = false } = {}) {
         const closing = deadlinesClosingTonight(this.dayState);
         if (!confirmed && closing.length > 0) {
@@ -19656,7 +19669,9 @@ export class ThreeGame {
                 // rather than re-deriving what happened.
                 ledger: night?.ledger ?? [],
                 threat: night?.threat ?? null,
-                safeSpace: enteredRestSpace ? 'foundry-interior' : 'camp-exterior'
+                safeSpace: enteredRestSpace ? 'foundry-interior' : 'camp-exterior',
+                sleepStyle: this.getSleepCutsceneStyle?.(camp) ?? 'bunker',
+                crashSiteName: this.getCrashSiteLocationName?.() ?? null
             }
         }));
         return true;

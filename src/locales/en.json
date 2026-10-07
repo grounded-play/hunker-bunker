@@ -2181,6 +2181,13 @@
         "armory_cycle": "[LB / RB CYCLE]",
         "menu_back": "[B]"
       }
+    },
+    "sleep": {
+      "night_falls": "NIGHT FALLS",
+      "night_body": "The operator sleeps. Something out there does not.",
+      "morning_title": "DAY {day} · 06:00",
+      "morning_status": "{site} // A NEW DAY BEGINS",
+      "skip": "Press any key to wake"
     }
   },
   "narrative": {

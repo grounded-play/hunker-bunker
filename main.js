@@ -114,6 +114,8 @@ import { SongInterstitialController, selectCampInterstitial } from './src/songIn
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
 import { getLocale, setLocale, t, t as i18nT, getAvailableLocales, applyStaticTranslations } from './src/i18n.js';
 import { mountDeferredMarkup, onDeferredMarkupMounted, setDeferredMarkupDecorator, watchDeferredMarkup } from './src/deferredMarkup.js';
+import { isSleepCutsceneShipped, sleepCutsceneBase } from './src/sleepCutscene.js';
+import { formatLocationName } from './src/locationNames.js';
 import { planDeckVisibility } from './src/hudDeck.js';
 import { createDeveloperCommentary } from './src/developerCommentary.js';
 import { createVoiceLineLibrary, VOICE_LINES_ROOT } from './src/voiceLines.js';
@@ -13839,8 +13841,57 @@ dayRestWarningConfirm?.addEventListener('click', () => {
     closeDayRestWarning();
     confirm?.();
 });
+// Sleep (Sprint 53 S1-S3): the rest has already reset the world to morning;
+// the sleep cutscene plays over that change, then the morning card, then the
+// overnight debrief and the Bay. Until a style's video ships
+// (src/sleepCutscene.js SHIPPED_SLEEP_CUTSCENES) a short night card plays.
+const SLEEP_INTERSTITIAL_MS = 2600;
+function playSleepInterstitial() {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'sleep-interstitial';
+        overlay.setAttribute('role', 'presentation');
+        for (const [part, key] of [['title', 'ui.sleep.night_falls'], ['body', 'ui.sleep.night_body'], ['skip', 'ui.sleep.skip']]) {
+            const line = document.createElement('div');
+            line.className = `sleep-interstitial__${part}`;
+            line.textContent = t(key);
+            overlay.appendChild(line);
+        }
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.classList.add('is-visible'));
+        let done = false;
+        const finish = () => {
+            if (done) return;
+            done = true;
+            window.removeEventListener('keydown', onKey, true);
+            overlay.classList.remove('is-visible');
+            window.setTimeout(() => { overlay.remove(); resolve(); }, 450);
+        };
+        const onKey = (event) => { event.preventDefault(); finish(); };
+        window.addEventListener('keydown', onKey, true);
+        overlay.addEventListener('pointerup', finish);
+        window.setTimeout(finish, SLEEP_INTERSTITIAL_MS);
+    });
+}
+async function playSleepCutscene(style) {
+    if (isSleepCutsceneShipped(style)) {
+        await playCutsceneVideo(sleepCutsceneBase(style), { tone: 'event' });
+        return;
+    }
+    await playSleepInterstitial();
+}
 window.addEventListener('day-rest-open', (event) => {
     const detail = event?.detail ?? {};
+    void playSleepCutscene(detail.sleepStyle).then(() => openMorningAfterRest(detail));
+});
+function openMorningAfterRest(detail) {
+    const site = detail.crashSiteName ? formatLocationName(detail.crashSiteName, t) : '';
+    showTacticalOverlay({
+        title: t('ui.sleep.morning_title', { day: detail.day ?? 1 }),
+        status: site ? t('ui.sleep.morning_status', { site }) : '',
+        progress: 100,
+        duration: 2600
+    });
     fabricationBay.beginCampRest();
     showBiomePrompt(`> DAY ${detail.day} // ${detail.campLabel ?? 'CAMP'} REST CYCLE COMPLETE // THREAT ${Number(detail.difficulty ?? 1).toFixed(2)}×`);
     if (detail.expired?.length) {
@@ -13856,7 +13907,7 @@ window.addEventListener('day-rest-open', (event) => {
         showBiomePrompt(`> ${t('ui.camp.scar_gained', { scar: String(detail.gainedScar).replaceAll('_', ' ') })}`);
     }
     openFabricationModal();
-});
+}
 
 function updateCampaignCycleIndicator(detail = {}) {
     const host = document.querySelector('.level-indicator');

@@ -25056,3 +25056,32 @@ html.phase-gameplay #tactical-telemeter-box {
     display: none;
   }
 }
+
+/* Sleep (Sprint 53 S1): the night card that plays until a sleep video ships. */
+.sleep-interstitial {
+  position: fixed;
+  inset: 0;
+  z-index: 30000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  background: radial-gradient(ellipse at 50% 60%, rgba(30, 22, 12, 0.92) 0%, #000 70%);
+  color: #f0e6d2;
+  font-family: 'Space Mono', monospace;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  pointer-events: auto;
+}
+.sleep-interstitial.is-visible { opacity: 1; }
+.sleep-interstitial__title {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(22px, 4vw, 44px);
+  font-weight: 800;
+  letter-spacing: 0.35em;
+  color: #f59e0b;
+}
+.sleep-interstitial__body { font-size: clamp(12px, 1.6vw, 17px); opacity: 0.8; max-width: 36rem; }
+.sleep-interstitial__skip { position: absolute; bottom: 8%; font-size: 12px; letter-spacing: 0.2em; opacity: 0.45; text-transform: uppercase; }

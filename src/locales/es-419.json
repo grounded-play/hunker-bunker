@@ -2181,6 +2181,13 @@
         "armory_cycle": "[LB / RB CAMBIAR]",
         "menu_back": "[B]"
       }
+    },
+    "sleep": {
+      "night_falls": "CAE LA NOCHE",
+      "night_body": "El operador duerme. Algo allá afuera no.",
+      "morning_title": "DÍA {day} · 06:00",
+      "morning_status": "{site} // COMIENZA UN NUEVO DÍA",
+      "skip": "Presiona cualquier tecla para despertar"
     }
   },
   "narrative": {

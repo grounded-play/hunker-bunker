@@ -2181,6 +2181,13 @@
         "armory_cycle": "[LB / RB 切替]",
         "menu_back": "[B]"
       }
+    },
+    "sleep": {
+      "night_falls": "夜が訪れる",
+      "night_body": "オペレーターは眠る。外の何かは眠らない。",
+      "morning_title": "{day}日目 · 06:00",
+      "morning_status": "{site} // 新しい一日が始まる",
+      "skip": "いずれかのキーで目覚める"
     }
   },
   "narrative": {

@@ -2181,6 +2181,13 @@
         "armory_cycle": "[LB / RB 切换]",
         "menu_back": "[B]"
       }
+    },
+    "sleep": {
+      "night_falls": "夜幕降临",
+      "night_body": "操作员睡着了。外面的某些东西没有。",
+      "morning_title": "第 {day} 天 · 06:00",
+      "morning_status": "{site} // 新的一天开始了",
+      "skip": "按任意键醒来"
     }
   },
   "narrative": {
