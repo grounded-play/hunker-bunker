@@ -59,7 +59,9 @@ function escapePattern(character) {
 
 // Compiled on first use: building every term's pattern at import cost ~150 ms
 // of main thread during boot (~600 ms at Lighthouse's mobile throttle, issue
-// #106), and nothing filters chat until a message is sent or received.
+// #106), and nothing filters chat until a message is sent or received. The
+// relay compiles up front (warmChatFilter) so no room's first message stalls
+// the server.
 let compiledRules = null;
 function getRules() {
     if (compiledRules) return compiledRules;
@@ -85,6 +87,10 @@ function getRules() {
     }
     compiledRules = rules;
     return rules;
+}
+
+export function warmChatFilter() {
+    return getRules().length;
 }
 
 function isAdjacentWordCharacter(character, cjkTerm) {
