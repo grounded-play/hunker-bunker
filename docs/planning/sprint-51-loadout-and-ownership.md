@@ -109,8 +109,8 @@ Not started.
 
 ## Owner steps before this ships
 
-1. **Upload the Steam inventory schema** (`steam/inventory_schema_hunker_bunker.json`): the 4002 two-key exchange, and 4155 store-hidden and not marketable. Until then, earned keys (4154) cannot open caches on Steam.
-2. **Deploy the backend:** quartermaster and assemble routes, ingots and keys on boss kills, `quartermaster`/`assemble` capabilities. Deploy before the client, as with the season ledger.
-3. **Deploy the relay:** the PvP `playerHealed` budget, and enemy `targetId`/`mode` in snapshots. An old relay strips the new fields, so guests stay safe from snails until it is updated.
+1. Done 2026-10-07 07:08 (4002 and 4155 at revision 3). **Upload the Steam inventory schema** (`steam/inventory_schema_hunker_bunker.json`): the 4002 two-key exchange, and 4155 store-hidden and not marketable. Until then, earned keys (4154) cannot open caches on Steam.
+2. Done 2026-10-07 07:14, image `candidate-02710831`; rollback is `candidate-970f17af`. Until the Sprint 51 client ships, boss-kill keys (4154) are invisible in the live client's Vault. **Deploy the backend:** quartermaster and assemble routes, ingots and keys on boss kills, `quartermaster`/`assemble` capabilities. Deploy before the client, as with the season ledger.
+3. Done with the backend; the relay runs in the same container. **Deploy the relay:** the PvP `playerHealed` budget, and enemy `targetId`/`mode` in snapshots. An old relay strips the new fields, so guests stay safe from snails until it is updated.
 4. Bump the version (patch, keep `-beta`) when the PR is opened.
 
