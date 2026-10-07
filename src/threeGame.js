@@ -466,6 +466,7 @@ import {
 import { createCrossingBridgeMesh } from './crossingBridge.js';
 import { getTerritoryLocation } from './territoryStructures.js';
 import { HALL_SCAN_KEY, ROOM_SCAN_KEY, formatLocationName, hallwayLocationName, roomLocationName } from './locationNames.js';
+import { FLOOR_OVERLAY_TYPES, PROP_COLLISION, archPillarColliders, getPropBehavior } from './propBehavior.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
 import { groupDangerZones, lipEdgeQuads } from './dangerZones.js';
 import { GATE_CHALLENGES, GATE_CHALLENGE_TUNING, planGateChallenges } from './gateChallenges.js';
@@ -964,46 +965,6 @@ const GENERATED_ROOM_PROP_PATHS = Object.freeze({
     prop_valve_wheel_fused: '/prop_valve_wheel_fused.png',
     prop_vent_grate_exploded: '/prop_vent_grate_exploded.png'
 });
-const FLOOR_OVERLAY_TYPES = new Set([
-    'decal_oil_spill_patch',
-    'decal_footprints_mud',
-    'decal_tallow_symbol',
-    'decal_bio_sample_spill',
-    'decal_childlike_cave_map',
-    'decal_hive_growth',
-    'decal_spore_growth_patch',
-    'decal_abandoned_meal_tray',
-    'decal_failed_decon_kit',
-    'decal_worker_sleep_roll',
-    'decal_tallow_herb_cache',
-    'scatter_bolts',
-    'scatter_cable_coil',
-    'scatter_coolant_puddle',
-    'scatter_slime_puddle',
-    'scatter_bio_moss',
-    'scatter_horizon_black_box',
-    'prop_camp_bedrolls',
-    'prop_blood_trail',
-    'prop_iron_guild_dogtags',
-    'decal_grease_pool',
-    'decal_growth_creep_1',
-    'decal_growth_creep_2',
-    'decal_frost_bloom_1',
-    'decal_frost_bloom_2',
-    'decal_scorch_bloom',
-    'decal_floor_medallion_01',
-    'decal_floor_medallion_02',
-    'decal_floor_medallion_03',
-    'decal_floor_medallion_04',
-    'decal_floor_grate_01',
-    'decal_floor_grate_02',
-    'decal_floor_grate_03',
-    'decal_floor_grate_04',
-    'decal_friction_burn',
-    'decal_flesh_press',
-    'decal_fluid_seep',
-    'decal_condensation_run'
-]);
 const WALL_DECAL_TYPES = new Set([
     'decal_wall_breach',
     'decal_hazard_stripes',
@@ -1040,6 +1001,8 @@ const WALL_DECAL_TYPES = new Set([
 ]);
 const isFloorOverlayType = (type) => FLOOR_OVERLAY_TYPES.has(type);
 const isWallDecalType = (type) => WALL_DECAL_TYPES.has(type);
+const BUNKER_COT_SPRITE_WIDTH = 1.35;
+const BUNKER_COT_SPRITE_HEIGHT = 0.8;
 const PROCEDURAL_DOOR_OPEN_RADIUS = 2.7;
 const PROCEDURAL_DOOR_CLOSE_RADIUS = 3.6;
 const BOSS_WALL_BREAK_COOLDOWN = 0.42;
@@ -4554,8 +4517,10 @@ export class ThreeGame {
             depthTest: true
         });
         const sprite = new THREE.Sprite(material);
-        sprite.scale.set(2.1, 1.4, 1);
-        sprite.position.set(point.x, 0.7, point.z);
+        // The 3D camp cot's size (0.65 tall, about 1.3 long), so the fallback
+        // never shows a bed bigger than the operator (playthrough 2026-10-07).
+        sprite.scale.set(BUNKER_COT_SPRITE_WIDTH, BUNKER_COT_SPRITE_HEIGHT, 1);
+        sprite.position.set(point.x, BUNKER_COT_SPRITE_HEIGHT / 2, point.z);
         sprite.visible = this.performanceProfile === 'gameplay';
         sprite.userData = { isBunkerCot: true };
         this.bunkerCotSprite = sprite;
@@ -4595,7 +4560,7 @@ export class ThreeGame {
         if (!sprite) return;
         if (this.performanceProfile === 'gameplay') {
             const point = this.getBunkerRestPoint();
-            if (sprite.position.x !== point.x || sprite.position.z !== point.z) sprite.position.set(point.x, 0.7, point.z);
+            if (sprite.position.x !== point.x || sprite.position.z !== point.z) sprite.position.set(point.x, BUNKER_COT_SPRITE_HEIGHT / 2, point.z);
         }
         const root = this.bunkerCot3d;
         if (root) {
@@ -7434,6 +7399,21 @@ export class ThreeGame {
         return createWorld3dModel(modelType);
     }
 
+    // A walk-through arch (src/propBehavior.js) blocks only at its two posts,
+    // placed from the model's measured footprint once it is in the world.
+    measureArchPillars(source, root) {
+        const behavior = getPropBehavior(source?.userData?.type);
+        if (behavior.collision !== PROP_COLLISION.PILLARS || !root) return null;
+        root.updateMatrixWorld?.(true);
+        const box = new THREE.Box3().setFromObject(root);
+        if (box.isEmpty()) return null;
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        source.userData.propBehavior = behavior;
+        source.userData.pillarColliders = archPillarColliders({ x: center.x, z: center.z, width: size.x, depth: size.z });
+        return source.userData.pillarColliders;
+    }
+
     async setupWorld3dReplacement(source, modelType, { owner = null, ownerKey = null } = {}) {
         if (!source || source.userData?.world3dRoot) return source?.userData?.world3dRoot ?? null;
         if (source.userData?.world3dPromise) return source.userData.world3dPromise;
@@ -7461,6 +7441,7 @@ export class ThreeGame {
                 source.userData.replacedBy3d = true;
                 source.visible = false;
                 syncWorld3dReplacement(source);
+                this.measureArchPillars(source, root);
                 this.propDebrisPrewarm?.enqueue(source, root);
                 if (root.userData?.mixer) {
                     this.world3dMixers = this.world3dMixers || new Set();
@@ -38963,9 +38944,13 @@ export class ThreeGame {
                 || this._solidCollisionPropsLength !== this.scatterSprites.length) {
                 this._solidCollisionPropsSource = this.scatterSprites;
                 this._solidCollisionPropsLength = this.scatterSprites.length;
-                this._solidCollisionProps = this.scatterSprites.filter(
-                    (prop) => Boolean(prop?.userData?.isSolidProp)
-                );
+                // The prop's style decides (src/propBehavior.js): floor pieces
+                // and fungus never block, arches block only at their posts.
+                this._solidCollisionProps = this.scatterSprites.filter((prop) => {
+                    if (!prop?.userData?.isSolidProp) return false;
+                    prop.userData.propBehavior ??= getPropBehavior(prop.userData.type);
+                    return prop.userData.propBehavior.collision !== PROP_COLLISION.NONE;
+                });
             }
             for (const prop of this._solidCollisionProps ?? []) {
                 // The source sprite retains authoritative gameplay state after
@@ -38979,6 +38964,14 @@ export class ThreeGame {
                     if (!prop.userData?.replacedBy3d || !root3d || !root3d.parent || root3d.visible === false) {
                         continue;
                     }
+                }
+                if (prop.userData.propBehavior?.collision === PROP_COLLISION.PILLARS) {
+                    // Until its model is measured an arch has no posts yet,
+                    // and its opening is never a wall.
+                    for (const post of prop.userData.pillarColliders ?? []) {
+                        if (Math.hypot(x - post.x, z - post.z) < post.radius + this.playerRadius) return false;
+                    }
+                    continue;
                 }
                 const collisionRadius = prop.userData.collisionRadius ?? 0.38;
                 if (Math.hypot(x - prop.position.x, z - prop.position.z) < collisionRadius + this.playerRadius) {

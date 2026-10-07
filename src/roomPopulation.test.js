@@ -2,14 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
     GROUNDING_DECAL_LIMIT, GROUNDING_RULES, areaRoomObjectLimit, groundingRuleFor, normalizePopulationBudget, planRoomPopulation
 } from './roomPopulation.js';
-import fs from 'node:fs';
+import { FLOOR_OVERLAY_TYPES } from './propBehavior.js';
 
-// The renderer's flat floor-overlay set (threeGame.js FLOOR_OVERLAY_TYPES).
+// The renderer's flat floor-overlay set (src/propBehavior.js FLOOR_OVERLAY_TYPES).
 // Anything else is drawn upright, so grounding must stay inside this set.
 function rendererFloorOverlayTypes() {
-    const source = fs.readFileSync(new URL('./threeGame.js', import.meta.url), 'utf8');
-    const body = source.match(/const FLOOR_OVERLAY_TYPES = new Set\(\[([\s\S]*?)\]\);/)?.[1] ?? '';
-    return new Set([...body.matchAll(/'([^']+)'/g)].map((match) => match[1]));
+    return FLOOR_OVERLAY_TYPES;
 }
 
 describe('room population', () => {

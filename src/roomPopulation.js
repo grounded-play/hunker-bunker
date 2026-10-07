@@ -88,7 +88,7 @@ function pickCandidate(candidates, random, grid, center, wallOnly = false) {
 // Lived-in world M2 (docs/planning/sprint-49-lived-in-world-continuation.md):
 // the key art ties each functional anchor to the floor with run-off, residue
 // and service runs. Rules match anchor families by name, first match wins.
-// Decals must stay inside threeGame's FLOOR_OVERLAY_TYPES (drawn flat); the
+// Decals must stay inside src/propBehavior.js's FLOOR_OVERLAY_TYPES (drawn flat); the
 // rust/water/spore stains are wall decals and would stand upright.
 export const GROUNDING_RULES = Object.freeze([
     {

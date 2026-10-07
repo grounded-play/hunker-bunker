@@ -159,6 +159,25 @@ describe('Debug Hallway Museum', () => {
         expect(mockGame.chunkGroups.visible).toBe(true);
     });
 
+    // Owner, 2026-10-07: "make sure enemies are static / not placed". Camp
+    // NPCs, enemies, trails and drops that sit straight on the scene (not in a
+    // chunk) used to stand in the hall; only the exhibits should.
+    it('hides world entities on the scene itself, keeps the player, and restores them on close', async () => {
+        const enemy = new THREE.Sprite();
+        enemy.userData = { type: 'cybersnail' };
+        const civilian = new THREE.Sprite();
+        civilian.userData = { isCampCivilian: true, type: 'npc_civilian_miner' };
+        mockGame.scene.add(enemy, civilian);
+        await openDebugMuseum(mockGame);
+        expect(enemy.visible).toBe(false);
+        expect(civilian.visible).toBe(false);
+        expect(mockGame.player.visible).not.toBe(false);
+        closeDebugMuseum(mockGame);
+        expect(enemy.visible).toBe(true);
+        expect(civilian.visible).toBe(true);
+        mockGame.scene.remove(enemy, civilian);
+    });
+
     it('hides the biome sky rig so the backdrop is flat, and restores it on close', async () => {
         scene.background = new THREE.Color(0x336699);
         await openDebugMuseum(mockGame);
@@ -364,5 +383,15 @@ describe('Debug Hallway Museum', () => {
         const bare = { scene, player, createScatterInstance: mockGame.createScatterInstance };
         await expect(openDebugMuseum(bare)).resolves.toBe(true);
         expect(() => closeDebugMuseum(bare)).not.toThrow();
+    });
+});
+
+describe('museum placards say how each exhibit acts', async () => {
+    const { museumBehaviorTag } = await import('./debugMuseum.js');
+    it('tags arches, floor pieces and fungus', () => {
+        expect(museumBehaviorTag('arch_deco_archway_grand_01')).toBe('WALK UNDER');
+        expect(museumBehaviorTag('prop_floor_drainage_sump_trough')).toBe('FLOOR');
+        expect(museumBehaviorTag('prop_cave_spores')).toBe('CRUSHES UNDERFOOT');
+        expect(museumBehaviorTag('prop_camp_crate')).toBe('');
     });
 });

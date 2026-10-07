@@ -226,8 +226,8 @@ export const WORLD_3D_MODELS = Object.freeze({
     prop_fungal_spore_dispenser: { url: '/3d/runtime/new3ds/prop_fungal_spore_dispenser.glb', height: 1.25, yaw: 0 },
     prop_fungal_tendril_altar: { url: '/3d/runtime/new3ds/prop_fungal_tendril_altar.glb', height: 2.10, yaw: 0 },
     prop_icey_frost_manifold: { url: '/3d/runtime/new3ds/prop_icey_frost_manifold.glb', height: 1.20, yaw: 0 },
-    prop_icey_frost_vent: { url: '/3d/runtime/new3ds/prop_icey_frost_vent.glb', height: 1.10, yaw: 0 },
-    prop_icey_thermal_pod: { url: '/3d/runtime/new3ds/prop_icey_thermal_pod.glb', height: 1.40, yaw: 0 },
+    prop_icey_frost_vent: { url: '/3d/runtime/new3ds/prop_icey_frost_vent.glb', height: 1.10, yaw: 0, maxSpan: 2.2 },
+    prop_icey_thermal_pod: { url: '/3d/runtime/new3ds/prop_icey_thermal_pod.glb', height: 1.40, yaw: 0, maxSpan: 2.6 },
     prop_light_cluster_dripping: { url: '/3d/runtime/new3ds/prop_light_cluster_dripping.glb', height: 1.20, yaw: -Math.PI / 2 },
     prop_locker_bulged: { url: '/3d/runtime/new3ds/prop_locker_bulged.glb', height: 1.35, yaw: -Math.PI / 2 },
     prop_pipe_rupture: { url: '/3d/runtime/new3ds/prop_pipe_rupture.glb', height: 0.85, yaw: 0 },
@@ -249,7 +249,7 @@ export const WORLD_3D_MODELS = Object.freeze({
     prop_exhaust_blower_fan_hood: { url: '/3d/runtime/new3ds/prop_exhaust_blower_fan_hood.glb', height: 2.20, yaw: 0 },
     prop_exosuit_docking_gantry: { url: '/3d/runtime/new3ds/prop_exosuit_docking_gantry.glb', height: 2.40, yaw: 0 },
     prop_floor_conduit_bridge: { url: '/3d/runtime/new3ds/prop_floor_conduit_bridge.glb', height: 0.25, yaw: 0 },
-    prop_floor_drainage_sump_trough: { url: '/3d/runtime/new3ds/prop_floor_drainage_sump_trough.glb', height: 0.30, yaw: 0 },
+    prop_floor_drainage_sump_trough: { url: '/3d/runtime/new3ds/prop_floor_drainage_sump_trough.glb', height: 0.30, yaw: 0, maxSpan: 3.0 },
     prop_liturgical_terminal_lectern: { url: '/3d/runtime/new3ds/prop_liturgical_terminal_lectern.glb', height: 1.25, yaw: 0 },
     prop_maintenance_tool_cart: { url: '/3d/runtime/new3ds/prop_maintenance_tool_cart.glb', height: 0.85, yaw: 0 },
     prop_overhead_cage_fluorescent: { url: '/3d/runtime/new3ds/prop_overhead_cage_fluorescent.glb', height: 0.65, yaw: 0 },
@@ -365,7 +365,12 @@ export function prepareWorld3dModel(model, type, config, animations = null) {
     model.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(model);
     const size = bounds.getSize(new THREE.Vector3());
-    model.scale.multiplyScalar(config.height / Math.max(size.y, 1e-6));
+    // Sized by height; a low, wide model can then sprawl across a room
+    // (the frost vent measured 6.5 units), so `maxSpan` caps it across too.
+    const heightScale = config.height / Math.max(size.y, 1e-6);
+    const span = Math.max(size.x, size.z) * heightScale;
+    const spanScale = Number.isFinite(config.maxSpan) && span > config.maxSpan ? config.maxSpan / span : 1;
+    model.scale.multiplyScalar(heightScale * spanScale);
     model.updateMatrixWorld(true);
     const scaled = new THREE.Box3().setFromObject(model);
     const center = scaled.getCenter(new THREE.Vector3());
