@@ -365,10 +365,14 @@ describe('createArmoryUi ownership gating', () => {
 
     it('still offers community chassis skins, which live outside the Steam catalog', () => {
         mount();
-        // All 30 comm_* skins ship unlocked, so they must render enabled --
+        // Earned with runs (Sprint 51), so a fresh save lists them locked --
         // a catalog-only lookup would have dropped them from the list entirely.
-        const html = openSlotHtml(container, 'chassis');
+        let html = openSlotHtml(container, 'chassis');
         expect(html).toContain('comm_scout_foxhole_shadow');
+        expect(html).toMatch(/data-value="comm_scout_foxhole_shadow"[^>]*aria-disabled/);
+        ownership.setExternalOwnership('progression', ['comm_scout_foxhole_shadow']);
+        mount();
+        html = openSlotHtml(container, 'chassis');
         expect(html).not.toMatch(/data-value="comm_scout_foxhole_shadow"[^>]*aria-disabled/);
     });
 

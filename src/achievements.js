@@ -521,6 +521,10 @@ export function recordEvent(name, detail = {}, { storage = null, now = Date.now(
             const itemdefid = ACHIEVEMENT_COSMETIC_REWARDS[unlock.key];
             if (itemdefid) window.dispatchEvent(new CustomEvent('achievement-cosmetic-unlocked', { detail: { achievementKey: unlock.key, itemdefid } }));
         }
+        // Progress-derived unlocks (src/progressionUnlocks.js) recompute on this.
+        if (typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+            window.dispatchEvent(new CustomEvent('achievement-state-changed', { detail: { event: name } }));
+        }
     }
     return result;
 }

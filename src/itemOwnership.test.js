@@ -256,10 +256,16 @@ describe('non-Steam item sources', () => {
         expect(getCatalogEntry('comm_not_a_real_skin')).toBeNull();
     });
 
-    it('treats default-unlocked community skins as owned without any grant', () => {
+    // Sprint 51: a fresh or reset save owns nothing it has not earned. Skins
+    // and Rig Modules come from progress (src/progressionUnlocks.js).
+    it('does not own community skins or rig modules until they are earned', () => {
         const store = createOwnershipStore({ storage: null });
-        expect(store.isOwned('comm_scout_foxhole_shadow')).toBe(true);
+        expect(store.isOwned('comm_scout_foxhole_shadow')).toBe(false);
+        expect(store.canEquip('comm_scout_foxhole_shadow')).toBe(false);
+        for (const id of [4160, 4161, 4162, 4163, 4164, 4165, 4166, 4167]) expect(store.isOwned(id)).toBe(false);
+        store.setExternalOwnership('progression', ['comm_scout_foxhole_shadow', '4160']);
         expect(store.canEquip('comm_scout_foxhole_shadow')).toBe(true);
+        expect(store.isOwned(4160)).toBe(true);
     });
 
     it('does not treat achievement rewards as owned until the achievement unlocks them', () => {
@@ -308,8 +314,10 @@ describe('non-Steam item sources', () => {
         store.setExternalOwnership('achievements', ['5001']);
         store.reset();
         expect(store.isOwned('5001')).toBe(false);
-        // Default-unlocked is a property of the catalog, not earned state.
-        expect(store.isOwned('comm_scout_foxhole_shadow')).toBe(true);
+        // Default-unlocked is a property of the catalog, not earned state:
+        // only the voice packs ship that way now.
+        expect(store.isOwned(4148)).toBe(true);
+        expect(store.isOwned('comm_scout_foxhole_shadow')).toBe(false);
     });
 });
 

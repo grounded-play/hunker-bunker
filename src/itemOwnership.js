@@ -125,7 +125,9 @@ for (const [achievementKey, rewardId] of Object.entries(ACHIEVEMENT_COSMETIC_REW
     }));
 }
 
-// Community chassis skins (comm_*), 30 of them, all shipping unlocked.
+// Community chassis skins (comm_*), 30 of them. Earned with runs as their
+// class (src/progressionUnlocks.js), not owned by default: a fresh or reset
+// save starts with each class's factory look.
 for (const skin of COMMUNITY_SKINS ?? []) {
     const id = toId(skin?.id);
     if (id === null || MERGED_CATALOG.has(id)) continue;
@@ -138,7 +140,6 @@ for (const skin of COMMUNITY_SKINS ?? []) {
         classId: skin.classId ?? null,
         glbUrl: skin.glbUrl ?? null
     }));
-    if (skin?.isUnlockedDefault !== false) DEFAULT_OWNED.add(id);
 }
 
 // Earned Rig Modules (4160-4167) — Track A hardware, earned in-game, never sold on Steam Market
@@ -153,9 +154,10 @@ export const RIG_MODULE_DEFS = Object.freeze([
     { itemdefid: 4167, name: 'Deep Anchor', rarity: 'legendary', type: ITEM_TYPE.MOD, source: 'depth', unlockPath: 'depth:6', requiredDepth: 6, desc: 'Ring Crossings Free O₂, Spawns Elite', localImg: '/economy/mod_deep_anchor.png', glbUrl: '/3d/runtime/new3ds/mod_deep_anchor.glb' }
 ]);
 
+// Earned, never owned by default: purchases, achievements and depth grant them
+// through src/progressionUnlocks.js.
 for (const mod of RIG_MODULE_DEFS) {
     MERGED_CATALOG.set(mod.itemdefid, Object.freeze(mod));
-    DEFAULT_OWNED.add(mod.itemdefid);
 }
 
 // Tactical voice packs (4148 Soviet Sub-Commander, 4149 AURA) unlocked by default

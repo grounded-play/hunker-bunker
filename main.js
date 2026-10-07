@@ -80,6 +80,7 @@ import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSprite
 import { clearChromaGreen, repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { PRESENTATION_LAYER_SELECTOR, isPresentationMutation } from './src/presentationLayer.js';
 import { resolveAmmoPickup } from './src/ammoSurplus.js';
+import { computeProgressionUnlocks, loadRigPurchases } from './src/progressionUnlocks.js';
 import { createArmoryUi } from './src/armoryUi.js';
 import { initSteamVaultUI, isVaultExchangeAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, renderStorePanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
 import { createFoundryHub, isFoundryHubEnabled } from './src/foundryHub.js';
@@ -3332,6 +3333,20 @@ function syncFabricatorOutputOwnership() {
     getOwnershipStore().setExternalOwnership('fabricator', getFabricatedOutputIds(fabricator));
 }
 syncFabricatorOutputOwnership();
+
+// What this save has earned (src/progressionUnlocks.js): achievement rewards,
+// Rig Modules and community skins, derived from the saved progress. Set before
+// the Vault's first ownership reconcile, so earned items are never stripped.
+// Works on Steam too, where local item grants are off.
+function syncProgressionOwnership() {
+    getOwnershipStore().setExternalOwnership('progression', computeProgressionUnlocks(
+        achievementEngine.getState(),
+        { purchases: loadRigPurchases() }
+    ));
+}
+syncProgressionOwnership();
+window.addEventListener('achievement-state-changed', syncProgressionOwnership);
+window.addEventListener('rig-module-purchased', syncProgressionOwnership);
 
 const loadout = new LoadoutManager();
 window.loadout = loadout;
