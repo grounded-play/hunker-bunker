@@ -56,6 +56,8 @@ Perfectly seamless square tileable orthographic PBR base-color wall texture: glo
 
 ### 3. V6: mystery boxes as authoritative interactions
 
+**Claimed 2026-10-07 14:52 by the Claude session (V6 and V7). Please skip V6 and V7; V4 and V8 stay with you.**
+
 - Define the six roll outcomes and biome/depth tables in a pure module with deterministic seeded tests.
 - Persist `unopened/opening/opened` state in the host-authoritative shared-world snapshot. Roll once on completion of hold-E, then broadcast the result.
 - Implement common courier and quarantine behavior with existing models first; black-site keycard gating follows the same interaction path.
