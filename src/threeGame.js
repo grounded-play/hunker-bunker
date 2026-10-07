@@ -207,6 +207,7 @@ import { FabricationFoundry } from './foundry.js';
 import { CaveEntrance } from './caveEntrance.js';
 import { SurvivorCamp, CAMP_CLEARING_RADIUS, CAMP_DRESSING_MODELS } from './camp.js';
 import { residentLineKey, residentRoleKey } from './data/campResidents.js';
+import { extractSquadProgress, squadProgressSignature } from './squadProgress.js';
 import {
     ACT2_CAMP_LABELS,
     ACT2_CAMP_MAX_LEVEL,
@@ -1125,6 +1126,7 @@ const AUDIO_OBSTRUCTION_BACKOFF = 0.75;
 const PLAYER_HITBOX_PADDING = 0.18;     // forgiving hitbox for player shots only
 const PVP_PRIVATE_WORLD_EVENTS = new Set([
     'pickup-collected',
+    'squad-progress',
     'o2-generator-upgraded',
     'black-box-recovered',
     'lore-terminal-read',
@@ -5934,6 +5936,11 @@ export class ThreeGame {
             on('playerMoved', (data) => this.handleRemotePlayerMoved(data));
             on('playerFired', (data) => this.handleRemotePlayerFired(data));
             on('playerDamaged', (data) => this.handleRemotePlayerDamaged(data));
+            // A rival's heal, as the relay accepted it.
+            on('playerHealthSync', (data) => {
+                const remote = this.remotePlayers?.get(data?.playerId);
+                if (remote && Number.isFinite(Number(data.hp))) remote.hp = Math.min(remote.maxHp ?? Number(data.hp), Number(data.hp));
+            });
             on('weaponHitRejected', (data) => {
                 const reasons = ['not_pvp', 'reporter_dead', 'participant_unavailable',
                     'attacker_dead', 'target_dead', 'hit_cadence', 'invalid_impact', 'out_of_range', 'target_miss',
@@ -5952,7 +5959,10 @@ export class ThreeGame {
             this.netSocket?.emit?.('worldEvent', { event: 'dressing-protocol-request', detail: { version: 1 } });
             on('playerNudged', (data) => this.handlePlayerNudged(data));
             on('playerDisconnected', (id) => this.removeRemotePlayer(id));
-            on('newPlayer', (player) => this.getOrCreateRemotePlayer(player));
+            on('newPlayer', (player) => {
+                this.getOrCreateRemotePlayer(player);
+                this.syncSquadProgress?.({ force: true });
+            });
             // Sprint 26: server/relay.js's disconnect handler now promotes a
             // remaining connected player to interim host the instant the
             // current host drops mid-match (see its own comment), rather
@@ -6781,7 +6791,7 @@ export class ThreeGame {
             // Irreversible co-op transitions carry their own keys.
         } else if (event === 'wall-destroyed') {
             dedupeKey = `${event}:${detail.wallKey ?? `${detail.worldX},${detail.worldZ}`}`;
-        } else if (event === 'bunker-door-toggled' || event === 'procedural-door-toggled' || event === 'bunker-line' || event === 'enemy-projectile-spawned') {
+        } else if (event === 'bunker-door-toggled' || event === 'procedural-door-toggled' || event === 'bunker-line' || event === 'enemy-projectile-spawned' || event === 'squad-progress') {
             // Door toggles are stateful transitions guarded by their respective states below;
             // bunker-line and enemy-projectile-spawned stream continuously without static dedupe blocking.
         } else if (event === 'pickup-collected') {
@@ -6868,6 +6878,12 @@ export class ThreeGame {
             if (typeof detail.text === 'string' && detail.text) {
                 this.showBunkerLine(detail.text, { fromRemote: true });
             }
+        } else if (event === 'squad-progress') {
+            // Ship and base progress is the squad's (src/squadProgress.js).
+            if (!isEcho && this.multiplayerMode !== 'pvp' && detail.progress && this.bank?.applySquadProgress?.(detail.progress)) {
+                this._lastSquadProgressSignature = squadProgressSignature(this.bank.getState());
+                this.showBunkerLine?.('SQUAD PROGRESS SYNCED // SHARED UPGRADES ONLINE');
+            }
         } else if (event === 'pickup-collected') {
             const px = Number(detail.x);
             const pz = Number(detail.z);
@@ -6884,6 +6900,10 @@ export class ThreeGame {
                     this.disposePickup?.(target);
                 }
             }
+            // Co-op loot is shared (owner, 2026-10-07: "if one player gets
+            // coins both get it"): the forward below re-dispatches this as a
+            // local pickup-collected, now carrying the squadmate's amount.
+            // PvP never gets here (PVP_PRIVATE_WORLD_EVENTS).
         } else if (event === 'maze-access-granted') {
             if (detail.requirement && this.mazeAccessState) {
                 grantAccess(this.mazeAccessState, detail.requirement);
@@ -7284,7 +7304,22 @@ export class ThreeGame {
         this.remotePlayers.delete(id);
     }
 
+    // Send this squad member's ship and base progress when it changes (and
+    // to anyone who joins), so an upgrade bought by one is everyone's.
+    syncSquadProgress({ force = false } = {}) {
+        if (!this.isMultiplayer || this.multiplayerMode === 'pvp' || !this.bank) return false;
+        const signature = squadProgressSignature(this.bank.getState());
+        if (!force && signature === this._lastSquadProgressSignature) return false;
+        this._lastSquadProgressSignature = signature;
+        return this.broadcastSharedWorldEvent('squad-progress', { progress: extractSquadProgress(this.bank.getState()) });
+    }
+
     updateMultiplayer(delta, now) {
+        this._squadProgressTimer = (this._squadProgressTimer ?? 0) - delta;
+        if (this._squadProgressTimer <= 0) {
+            this._squadProgressTimer = 1;
+            this.syncSquadProgress?.();
+        }
         if (!this.isMultiplayer) return;
 
         // 1. Broadcast local position periodically (~30Hz)
@@ -22173,6 +22208,11 @@ export class ThreeGame {
         if (this.playerVitals.hp === previousHp) return;
 
         this.emitHealthState();
+        // PvP: the relay keeps its own copy of our health and never saw heals,
+        // so rivals saw it drift low (Sprint 51). Report it; the relay budgets it.
+        if (this.isMultiplayer && this.multiplayerMode === 'pvp') {
+            this.netSocket?.emit?.('playerHealed', { amount: this.playerVitals.hp - previousHp, hp: this.playerVitals.hp });
+        }
         window.dispatchEvent(new CustomEvent('health-restored', {
             detail: {
                 amount: this.playerVitals.hp - previousHp,
@@ -34472,7 +34512,8 @@ export class ThreeGame {
                                 z: pickup.position.z,
                                 pickupId: pickup.userData.pickupId ?? null,
                                 type: pickupType,
-                                rarity
+                                rarity,
+                                amount: pickup.userData?.amount ?? null
                             });
                         }
 

@@ -115,3 +115,50 @@ describe('host enemies a guest does not have', () => {
         expect(game.scatterSprites).toContain(local);
     });
 });
+
+// Owner, 2026-10-07: "if one player unlocks O2 both get it, if one player
+// gets coins both get it in PvE / co-op. PvP it's just they don't share."
+describe('a co-op squad shares loot and ship progress', () => {
+    const makePeer = ({ mode = 'coop' } = {}) => {
+        const events = [];
+        const bank = { applySquadProgress: vi.fn(() => true), getState: () => ({ o2GeneratorLevel: 2 }) };
+        const game = {
+            isMultiplayer: true,
+            multiplayerMode: mode,
+            multiplayerLocalPlayerId: 'me',
+            pickupMeshes: [],
+            bank,
+            showBunkerLine: vi.fn(),
+            handleSharedWorldEvent: ThreeGame.prototype.handleSharedWorldEvent
+        };
+        const originalWindow = globalThis.window;
+        globalThis.window = { dispatchEvent: (event) => events.push(event) };
+        return { game, events, bank, restore: () => { globalThis.window = originalWindow; } };
+    };
+
+    it("gives you a squadmate's pickup, but not your own echo", () => {
+        const { game, events, restore } = makePeer();
+        try {
+            game.handleSharedWorldEvent({ event: 'pickup-collected', originId: 'them', detail: { pickupId: 'p1', x: 1, z: 1, type: 'coin', amount: 2 } });
+            game.handleSharedWorldEvent({ event: 'pickup-collected', originId: 'me', detail: { pickupId: 'p2', x: 2, z: 2, type: 'coin', amount: 1 } });
+            const shared = events.filter((event) => event.type === 'pickup-collected');
+            expect(shared).toHaveLength(1);
+            expect(shared[0].detail).toMatchObject({ type: 'coin', amount: 2, fromRemote: true });
+        } finally { restore(); }
+    });
+
+    it('takes squad progress in co-op, not in PvP', () => {
+        const coop = makePeer();
+        try {
+            coop.game.handleSharedWorldEvent({ event: 'squad-progress', originId: 'them', detail: { progress: { o2GeneratorLevel: 2 } } });
+            expect(coop.bank.applySquadProgress).toHaveBeenCalledWith({ o2GeneratorLevel: 2 });
+        } finally { coop.restore(); }
+        const pvp = makePeer({ mode: 'pvp' });
+        try {
+            pvp.game.handleSharedWorldEvent({ event: 'squad-progress', originId: 'them', detail: { progress: { o2GeneratorLevel: 2 } } });
+            pvp.game.handleSharedWorldEvent({ event: 'pickup-collected', originId: 'them', detail: { pickupId: 'p3', x: 1, z: 1, type: 'coin' } });
+            expect(pvp.bank.applySquadProgress).not.toHaveBeenCalled();
+            expect(pvp.events.filter((event) => event.type === 'pickup-collected')).toHaveLength(0);
+        } finally { pvp.restore(); }
+    });
+});

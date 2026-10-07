@@ -145,4 +145,50 @@ describe('Server Relay: PvP 4-Heart Authority Contract (GAP-PV-01)', () => {
         expect(replies).toHaveLength(5);
         expect(replies.every((reply) => JSON.stringify(reply) === '{"reason":"not_pvp"}')).toBe(true);
     });
+
+    // Sprint 50 playtest (PvP pair, 10-06): the relay lowered its copy of a
+    // player's health on every hit but never saw a heal, so both sides
+    // recorded a final hit at "0 HP" while the rival had 2. Heals are now
+    // reported, within a refilling budget, and shared with the room.
+    it('takes reported heals within a budget, so health does not drift', async () => {
+        ({ httpServer, url } = await startTestServer());
+        const roomCode = 'PVP-HEAL-SYNC-TEST';
+        const p1 = await connectClient(url);
+        const p2 = await connectClient(url);
+        sockets.push(p1, p2);
+        p1.emit('joinRoom', { roomCode, callsign: 'ATTACKER', opClass: 'SCOUT' });
+        await waitForEvent(p1, 'currentPlayers');
+        p2.emit('joinRoom', { roomCode, callsign: 'DEFENDER', opClass: 'TANK' });
+        await waitForEvent(p2, 'currentPlayers');
+        p1.emit('playerReady', { ready: true });
+        p2.emit('playerReady', { ready: true });
+        await waitForEvent(p1, 'playerReadyChanged');
+        await waitForEvent(p1, 'playerReadyChanged');
+        const started = waitForEvent(p2, 'matchStarted', 5000);
+        p1.emit('matchDeploy', { mode: 'pvp', seed: 'heal-seed' });
+        expect((await started)?.mode).toBe('pvp');
+
+        const damage = [];
+        p1.on('playerDamaged', (data) => damage.push(data));
+        for (let i = 0; i < 2; i += 1) {
+            await sleep(140);
+            p1.emit('weaponHit', { targetId: p2.id, originX: 9, originZ: 9 });
+            await sleep(50);
+        }
+        expect(damage.map((event) => event.remainingHp)).toEqual([3, 2]);
+
+        const synced = waitForEvent(p1, 'playerHealthSync');
+        p2.emit('playerHealed', { amount: 1, hp: 3 });
+        expect(await synced).toEqual({ playerId: p2.id, hp: 3 });
+
+        // An immediate second heal is over budget; a claim above max is capped.
+        const refused = waitForEvent(p1, 'playerHealthSync', 300);
+        p2.emit('playerHealed', { amount: 4, hp: 99 });
+        expect(await refused).toBeNull();
+
+        await sleep(140);
+        p1.emit('weaponHit', { targetId: p2.id, originX: 9, originZ: 9 });
+        await sleep(80);
+        expect(damage.at(-1).remainingHp).toBe(2);
+    }, 10000);
 });
