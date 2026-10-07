@@ -234,3 +234,19 @@ describe('cache-open duplicate shards', () => {
         expect(result.body.granted.map((item) => item.itemdefid)).toEqual([2100]);
     });
 });
+
+// Sprint 51: boss kills grant the non-marketable earned key 4154, and the
+// cache generator (4002) accepts either key.
+describe('either key opens a cache', () => {
+    it('plans a cache open with the earned key', () => {
+        expect(planSteamRecipe(4100, ['a', 'b'], [{ itemId: 'a', itemdefid: 4000, quantity: 1 }, { itemId: 'b', itemdefid: 4154, quantity: 2 }]))
+            .toMatchObject({ ok: true, outputItemdefid: 4002, consumed: [{ itemdefid: 4000, quantity: 1 }, { itemdefid: 4154, quantity: 1 }] });
+    });
+
+    it('refuses two keys at once', () => {
+        expect(planSteamRecipe(4100, ['a', 'b', 'c'], [
+            { itemId: 'a', itemdefid: 4000, quantity: 1 }, { itemId: 'b', itemdefid: 4154, quantity: 1 }, { itemId: 'c', itemdefid: 4001, quantity: 1 }
+        ])).toMatchObject({ ok: false });
+    });
+});
+

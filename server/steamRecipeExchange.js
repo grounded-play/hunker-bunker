@@ -6,6 +6,15 @@ import { withPlayerLock, deriveNumericRequestId } from './steamTradeUp.js';
 import { grantItemToPlayer } from './steamGrant.js';
 
 const RECIPES = { 2100: { 1000: 5 }, 2200: { 1000: 10, 1100: 2 }, [OPEN_CACHE_RECIPE_ID]: { 4000: 1, 4001: 1 } };
+// The cache generator (4002) also takes the earned, non-marketable key 4154
+// that boss kills grant (Sprint 51; schema exchange "4000x1,4001x1;4000x1,4154x1").
+const EARNED_KEY_ITEMDEFID = 4154;
+
+function recipeFor(recipeId, materials, inventory) {
+    if (recipeId !== OPEN_CACHE_RECIPE_ID) return RECIPES[recipeId];
+    const usesEarnedKey = materials.some((id) => inventory.find((row) => row.itemId === id)?.itemdefid === EARNED_KEY_ITEMDEFID);
+    return usesEarnedKey ? { 4000: 1, [EARNED_KEY_ITEMDEFID]: 1 } : RECIPES[recipeId];
+}
 const failure = (reason, status = 400) => ({ status, body: { ok: false, reason } });
 const uncertain = () => failure('exchange_outcome_requires_review', 409);
 
@@ -28,7 +37,7 @@ function saveJournal(key, { signature, plan, state, createdAt, journalKey, relea
 }
 
 export function planSteamRecipe(recipeId, materials, inventory) {
-    const recipe = RECIPES[recipeId];
+    const recipe = Array.isArray(materials) ? recipeFor(recipeId, materials, inventory) : RECIPES[recipeId];
     if (!recipe) return { ok: false, reason: 'invalid_recipe_id' };
     if (!Array.isArray(materials) || !materials.length || materials.length > 64
         || materials.some((id) => typeof id !== 'string') || new Set(materials).size !== materials.length) {

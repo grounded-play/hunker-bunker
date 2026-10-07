@@ -252,7 +252,7 @@
       "tradable": false,
       "marketable": false,
       "store_hidden": true,
-      "exchange": "4000x1,4001x1"
+      "exchange": "4000x1,4001x1;4000x1,4154x1"
     },
     {
       "itemdefid": 4003,
@@ -1250,11 +1250,12 @@
       "background_color": "0c4a6e",
       "name_color": "00c8ff",
       "tradable": true,
-      "marketable": true,
+      "marketable": false,
       "item_slot": "Bundle",
       "tags": "rarity:rare;class:all;slot:reagent;season:0",
       "market_tradable_restriction": 7,
-      "market_marketable_restriction": 7
+      "market_marketable_restriction": 7,
+      "store_hidden": true
     },
     {
       "itemdefid": 4156,

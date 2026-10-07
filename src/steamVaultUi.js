@@ -137,6 +137,7 @@ let marketEligibility = 'unknown';
 let hudCardSeq = 0;
 let cacheOpeningBusy = false;
 const DEV_VAULT_STORAGE_KEY = 'hb_dev_vault_inventory_v1';
+const EARNED_KEY_ITEMDEFID = 4154;
 const DEV_INFINITE_CACHE_STORAGE_KEY = 'hb_dev_infinite_cache_v1';
 
 function isBrowserSandbox() {
@@ -1131,9 +1132,11 @@ async function finishPendingStorePurchases() {
 
 export function updateKeyCacheCounts() {
     const cache = vaultItems.find((i) => i.itemdefid === 4000);
-    const key = vaultItems.find((i) => i.itemdefid === 4001);
     const cacheQty = cache ? Number(cache.quantity) || 0 : 0;
-    const keyQty = key ? Number(key.quantity) || 0 : 0;
+    // Bought (4001) and earned (4154) keys both open caches.
+    const keyQty = vaultItems
+        .filter((i) => i.itemdefid === 4001 || i.itemdefid === EARNED_KEY_ITEMDEFID)
+        .reduce((sum, i) => sum + (Number(i.quantity) || 0), 0);
 
     const cacheEl = document.getElementById('vault-cache-count');
     const keyEl = document.getElementById('vault-key-count');
@@ -1146,9 +1149,11 @@ export function updateKeyCacheCounts() {
     if (storeKeyEl) storeKeyEl.textContent = String(keyQty);
 }
 
+// The earned key (4154, from boss kills) is spent before a bought one.
 function findOwnedCacheAndKey() {
-    const cache = vaultItems.find((i) => i.itemdefid === 4000);
-    const key = vaultItems.find((i) => i.itemdefid === 4001);
+    const cache = vaultItems.find((i) => i.itemdefid === 4000 && Number(i.quantity) > 0);
+    const key = vaultItems.find((i) => i.itemdefid === EARNED_KEY_ITEMDEFID && Number(i.quantity) > 0)
+        ?? vaultItems.find((i) => i.itemdefid === 4001 && Number(i.quantity) > 0);
     return cache && key ? { cache, key } : null;
 }
 

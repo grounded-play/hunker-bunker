@@ -23,6 +23,8 @@ import { performSteamRecipeExchange } from './steamRecipeExchange.js';
 const STEAM_INVENTORY_URL = 'https://partner.steam-api.com/IInventoryService/';
 const STEAM_ECON_MARKET_URL = 'https://partner.steam-api.com/IEconMarketService/';
 const DEFAULT_PLAYTIME_DROP_COOLDOWN_MS = 60 * 1000;
+const EARNED_CACHE_KEY_ITEMDEFID = 4154;
+
 export const INVENTORY_CAPABILITIES = Object.freeze(['trade-up', 'redeem']);
 
 function getSteamPublisherKey() {
@@ -344,7 +346,8 @@ export function attachSteamInventoryRoutes(app) {
                 // is rolled from lootTables.js so disclosed odds always match
                 // the actual roll — do not special-case this recipe's output.
                 const hasCache = materialItems.some((i) => i.itemdefid === DEEP_RELIC_CACHE_ITEMDEFID);
-                const hasKey = materialItems.some((i) => i.itemdefid === CACHE_KEY_ITEMDEFID);
+                // Either the bought key or the earned one (4154) opens it.
+                const hasKey = materialItems.some((i) => i.itemdefid === CACHE_KEY_ITEMDEFID || i.itemdefid === EARNED_CACHE_KEY_ITEMDEFID);
                 if (!hasCache || !hasKey || materialItems.length !== 2) {
                     return res.status(400).json({ ok: false, reason: 'cache_open_requires_one_cache_and_one_key' });
                 }
@@ -371,7 +374,10 @@ export function attachSteamInventoryRoutes(app) {
             // Consume exactly the recipe's required quantity of each
             // itemdefid from the referenced stacks (see
             // consumeMaterialsForRecipe above).
-            const remaining = consumeMaterialsForRecipe(inv, materialItems, RECIPE_MATERIAL_REQUIREMENTS[recipeId]);
+            const requirements = recipeId === OPEN_CACHE_RECIPE_ID && materialItems.some((i) => i.itemdefid === EARNED_CACHE_KEY_ITEMDEFID)
+                ? { [DEEP_RELIC_CACHE_ITEMDEFID]: 1, [EARNED_CACHE_KEY_ITEMDEFID]: 1 }
+                : RECIPE_MATERIAL_REQUIREMENTS[recipeId];
+            const remaining = consumeMaterialsForRecipe(inv, materialItems, requirements);
 
             await setMockInventory(req.steamId, remaining);
 
@@ -427,7 +433,9 @@ export function attachSteamInventoryRoutes(app) {
             if (!runKey) {
                 return res.status(400).json({ ok: false, reason: 'missing_run_key' });
             }
-            itemdefid = CACHE_KEY_ITEMDEFID;
+            // The earned key: opens caches like 4001 but is not marketable,
+            // so free keys cannot be sold on the Community Market (Sprint 51).
+            itemdefid = EARNED_CACHE_KEY_ITEMDEFID;
             mode = 'stack';
             idempotencyKey = `boss-kill-${req.steamId}-${runKey}`;
         } else if (milestone === 'achievement:slay_the_queen') {
