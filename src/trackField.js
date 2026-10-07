@@ -54,20 +54,57 @@ export function slimeColorFor(type = '') {
     return 0x2fb8e0;
 }
 
+// A right boot print, toe up: a rounded toe, a wide ball, a narrow arch on
+// the inner side and a separate heel, with tread lugs cut through so the floor
+// shows between them. Left prints are this mirrored (TrackLayer `mirror`).
 function soleTexture() {
     if (typeof document === 'undefined') return null;
     const canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 64;
+    canvas.width = 64;
+    canvas.height = 128;
     const ctx = canvas.getContext?.('2d');
     if (!ctx) return null;
     ctx.fillStyle = '#fff';
+    // Forefoot: toe to the end of the arch, outer edge fuller than the inner.
     ctx.beginPath();
-    ctx.ellipse(16, 22, 12, 18, 0, 0, Math.PI * 2);
+    ctx.moveTo(30, 4);
+    ctx.bezierCurveTo(46, 4, 56, 16, 57, 32);
+    ctx.bezierCurveTo(58, 48, 54, 62, 49, 74);
+    ctx.bezierCurveTo(46, 81, 40, 84, 34, 84);
+    ctx.bezierCurveTo(28, 84, 25, 78, 22, 70);
+    ctx.bezierCurveTo(16, 58, 7, 44, 8, 28);
+    ctx.bezierCurveTo(9, 13, 18, 4, 30, 4);
+    ctx.closePath();
     ctx.fill();
+    // Heel: a separate rounded block below the arch gap.
     ctx.beginPath();
-    ctx.ellipse(16, 52, 9, 10, 0, 0, Math.PI * 2);
+    ctx.moveTo(19, 94);
+    ctx.bezierCurveTo(19, 90, 23, 89, 32, 89);
+    ctx.bezierCurveTo(42, 89, 47, 90, 47, 95);
+    ctx.lineTo(47, 110);
+    ctx.bezierCurveTo(47, 120, 41, 124, 33, 124);
+    ctx.bezierCurveTo(24, 124, 19, 119, 19, 110);
+    ctx.closePath();
     ctx.fill();
+    // Tread: chevron lugs across the forefoot, bars across the heel, cut out
+    // inside a rim so the outline stays whole.
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    for (let y = 16; y <= 72; y += 9) {
+        ctx.beginPath();
+        ctx.moveTo(16, y + 5);
+        ctx.lineTo(32, y);
+        ctx.lineTo(48, y + 5);
+        ctx.stroke();
+    }
+    for (let y = 97; y <= 116; y += 7) {
+        ctx.beginPath();
+        ctx.moveTo(24, y);
+        ctx.lineTo(42, y);
+        ctx.stroke();
+    }
+    ctx.globalCompositeOperation = 'source-over';
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
     return texture;
@@ -109,10 +146,14 @@ class TrackLayer {
     constructor({ width, depth, capacity, texture, name }) {
         const geometry = new THREE.PlaneGeometry(width, depth);
         geometry.rotateX(-Math.PI / 2);
+        // The texture's top (a print's toe) points along the walking direction.
+        geometry.rotateY(Math.PI);
         const material = withInstanceAlpha(new THREE.MeshBasicMaterial({
             map: texture ?? null,
             transparent: true,
             depthWrite: false,
+            // Mirrored (left) prints flip the faces; draw both sides.
+            side: THREE.DoubleSide,
             polygonOffset: true,
             polygonOffsetFactor: -2,
             polygonOffsetUnits: -2
@@ -142,13 +183,13 @@ class TrackLayer {
         this._color = new THREE.Color();
     }
 
-    add({ x, z, yaw = 0, scale = 1, stretch = 1, color, alpha, life, now }) {
+    add({ x, z, yaw = 0, scale = 1, stretch = 1, mirror = false, color, alpha, life, now }) {
         const slot = this.next;
         this.next = (this.next + 1) % this.capacity;
         this._euler.set(0, yaw, 0);
         this._quat.setFromEuler(this._euler);
         this._pos.set(x, 0.043, z);
-        this._scale.set(scale, 1, scale * stretch);
+        this._scale.set(mirror ? -scale : scale, 1, scale * stretch);
         this._matrix.compose(this._pos, this._quat, this._scale);
         this.mesh.setMatrixAt(slot, this._matrix);
         this.mesh.setColorAt(slot, this._color.setHex(color));
@@ -184,7 +225,7 @@ class TrackLayer {
 }
 
 export function createTrackField({ printCapacity = 360, smearCapacity = 320 } = {}) {
-    const prints = new TrackLayer({ width: 0.17, depth: 0.3, capacity: printCapacity, texture: soleTexture(), name: 'track-field:prints' });
+    const prints = new TrackLayer({ width: 0.15, depth: 0.32, capacity: printCapacity, texture: soleTexture(), name: 'track-field:prints' });
     const smears = new TrackLayer({ width: 0.5, depth: 0.5, capacity: smearCapacity, texture: smearTexture(), name: 'track-field:smears' });
     const group = new THREE.Group();
     group.name = 'track-field';
@@ -208,6 +249,8 @@ export function createTrackField({ printCapacity = 360, smearCapacity = 320 } = 
                 z: z - fz * 0.12 + fx * side * 0.12,
                 yaw: Math.atan2(fx, fz),
                 scale,
+                // Left and right boots mirror each other.
+                mirror: side < 0,
                 color: color ?? look.color,
                 alpha: look.alpha * strength,
                 life: look.life,
