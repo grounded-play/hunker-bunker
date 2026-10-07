@@ -68,4 +68,9 @@ The owner, 2026-10-06:
   - **Every slot opens a picker:** filled or empty, in the Foundry and on hero select. It's the Armory's own picker in a picker-only mode (`#loadout-picker-modal`), so ownership, locked tiles and equipping follow one set of rules.
   - **Locked tiles say how to earn them;** shell-priced Rig Modules buy with two clicks.
   - Tests: `src/itemCard.test.js`, `tests/e2e/loadout-slot-picker.spec.js`.
+- C done (`fitEquipmentToSurface` in `src/operatorEquipmentSockets.js`):
+  - **Cause:** offsets were in each bone's own axes at a fixed distance. On the calibrated Tank, the shoulder, both forearm, helmet and one waist module were buried in its armor. Also, `findBone` matched the parent `RightArm` before `RightForeArm`, so forearm modules went on the upper arm.
+  - **Fix:** each module now snaps to the chassis's own surface. A ray runs inward along the mount's direction, with a per-mount reach so a pauldron isn't mistaken for the helmet. The module faces outward and is sized by the body's thickness there (0.85–1.45×).
+  - **Verified:** front contact sheets of all 51 bodies, 4 module pairs each (`scripts/capture-equipment-fit.mjs`).
+  - **Outliers:** `skin_scout_mayor_tina` renders crouched (the model's pose), and the 4143 forearm cylinder protrudes; both to review by eye in the Armory.
 

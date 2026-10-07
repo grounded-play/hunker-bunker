@@ -722,6 +722,14 @@ export async function createArmoryScene(canvas) {
             currentDecalId = decalItemdefId || null;
             applyDecalSprite(currentDecalId);
         },
+        // Tooling (scripts/capture-equipment-fit.mjs): face the operator and
+        // read its root, to check how equipment sits on every chassis.
+        setOperatorYaw(yaw = 0) {
+            if (currentOverlay?.root) currentOverlay.root.rotation.y = Number(yaw) || 0;
+        },
+        getOperatorRoot() {
+            return currentOverlay?.root ?? null;
+        },
         updateFromLoadout(loadoutManager, classType = activeClass) {
             const cls = String(classType).toLowerCase();
             const lo = loadoutManager.getClassLoadout(cls);
