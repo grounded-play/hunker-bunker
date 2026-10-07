@@ -470,6 +470,7 @@ import { FLOOR_OVERLAY_TYPES, PROP_COLLISION, archPillarColliders, getPropBehavi
 import { findTilePath } from './snailPath.js';
 import { shouldEnemyRepath } from './enemyRepath.js';
 import { skipMatrixPassWhileHidden } from './chunkMatrices.js';
+import { createTrackField, slimeColorFor, stepBoots, trackSurfaceForType } from './trackField.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
 import { groupDangerZones, lipEdgeQuads } from './dangerZones.js';
 import { GATE_CHALLENGES, GATE_CHALLENGE_TUNING, planGateChallenges } from './gateChallenges.js';
@@ -1057,7 +1058,6 @@ const RAIN_PUDDLE_SPAWN_MIN = 0.45;
 const RAIN_PUDDLE_SPAWN_MAX = 0.95;
 const RAIN_SPLASH_COOLDOWN = 0.03;
 const RAIN_SPLASH_IMPACT_CHANCE = 0.6;
-const WET_FOOTPRINT_TRAIL_SECONDS = 5.2;
 const WEATHER_PROFILES = Object.freeze({
     clear:       { count: 0,   size: 0.1,  color: 0xffffff, opacity: 0,    fall: [0, 0],       drift: 0,    fogFarMult: 1.0 },
     snow:        { count: 220, size: 0.17, color: 0xcfe4ff, opacity: 0.85, fall: [1.2, 2.1],    drift: 0.6,  fogFarMult: 0.88 },
@@ -2179,8 +2179,6 @@ export class ThreeGame {
             activeRainPuddles: 0
         };
         this.dynamicPuddles = [];
-        this.wetFootprintTrailTime = 0;
-        this.wetFootstepSide = 1;
         this.isMoving = false;
         this.playerForwardDir = new THREE.Vector2(0, 1);
         this._playerForwardDirTarget = new THREE.Vector2(0, 1);
@@ -2318,6 +2316,9 @@ export class ThreeGame {
         };
 
         this.scene = new THREE.Scene();
+        // Footprints and trails (src/trackField.js): one pooled field for the run.
+        this.trackField = createTrackField();
+        this.scene.add(this.trackField.group);
         this.scene.background = new THREE.Color(0x0b0d0f);
         this.scene.fog = new THREE.Fog(0x0b0d0f, 18, 40);
         // Create all eight renderer-visible slots before the loading-screen
@@ -7336,6 +7337,7 @@ export class ThreeGame {
 
                 // Smooth position lerp
                 mesh.position.lerp(remote.targetPos, Math.min(1.0, delta * 12));
+                this.trackRemoteSteps?.(remote);
 
                 // Smooth rotation lerp
                 const yawDelta = wrapAngle(remote.targetYaw - remote.currentYaw);
@@ -11074,6 +11076,7 @@ export class ThreeGame {
         fp.measure('updateCompanions', () => this.updateCompanions(delta));
         fp.measure('updateEnvLightBudget', () => this.updateEnvLightBudget?.(delta));
         fp.measure('updateTransientEffects', () => this.updateTransientEffects(delta, now));
+        fp.measure('updateTrackField', () => this.trackField?.update(now / 1000));
         this.killstreakFeedback?.update(delta);
         fp.measure('updateHiddenPlayerMarker', () => this.updateHiddenPlayerMarker(now));
         fp.measure('updateVitals', () => this.updateVitals(delta));
@@ -25352,12 +25355,6 @@ export class ThreeGame {
         this.updatePlayerForwardLight(delta, { directionX: lightDirX, directionZ: lightDirZ });
         this.playerMarker.position.set(this.player.position.x, this.playerMarkerHeight, this.player.position.z);
         this.updateDirectionalShadowFrustum();
-        if (this.isPositionInPuddle(this.player.position.x, this.player.position.z)) {
-            this.wetFootprintTrailTime = WET_FOOTPRINT_TRAIL_SECONDS;
-        } else {
-            this.wetFootprintTrailTime = Math.max(0, this.wetFootprintTrailTime - delta);
-        }
-
         if (isMoving) {
             this.footstepTimer += delta;
             const stepInterval = 0.38 + (this.moveSpeed > 4 ? -0.08 : this.moveSpeed < 3 ? 0.08 : 0);
@@ -25371,9 +25368,7 @@ export class ThreeGame {
                         chance: 0.25,
                         minGapMs: 1800
                     });
-                    if (this.wetFootprintTrailTime > 0.04) {
-                        this.spawnWetFootprint(this.player.position.x, this.player.position.z, moveDirX, moveDirZ);
-                    }
+                    this.leaveBootPrint(this.player.position.x, this.player.position.z, moveDirX, moveDirZ);
                     if (this.isRainWeatherActive()) {
                         this.spawnRainSplash(
                             this.player.position.x + (Math.random() - 0.5) * 0.24,
@@ -26950,71 +26945,79 @@ export class ThreeGame {
         if (RAIN_PUDDLE_MAX_COUNT < 0 || RAIN_PUDDLE_SPAWN_MIN < 0 || RAIN_PUDDLE_SPAWN_MAX < 0) return;
     }
 
-    isPositionInPuddle(x, z) {
-        for (const sprite of this.scatterSprites) {
-            const type = sprite?.userData?.type;
-            if (typeof type !== 'string' || !type.includes('puddle')) continue;
-            const radius = Math.max(
-                0.42,
-                Math.max(sprite.userData.baseScaleX ?? sprite.scale.x ?? 0.5, sprite.userData.baseScaleY ?? sprite.scale.y ?? 0.5) * 0.42
-            );
-            if (Math.hypot(x - sprite.position.x, z - sprite.position.z) <= radius) {
-                return true;
+    // What the floor at a point leaves on your boots (src/trackField.js):
+    // 'water', 'slime', 'blood', 'oil', 'snow', or null for plain floor.
+    // Liquids come from a cached subset of the scatter, rebuilt only when the
+    // scatter list changes, not a scan of every prop each frame.
+    getTrackSurfaceAt(x, z) {
+        if (this._trackLiquidsSource !== this.scatterSprites || this._trackLiquidsLength !== this.scatterSprites?.length) {
+            this._trackLiquidsSource = this.scatterSprites;
+            this._trackLiquidsLength = this.scatterSprites?.length ?? 0;
+            this._trackLiquids = [];
+            for (const sprite of this.scatterSprites ?? []) {
+                const surface = trackSurfaceForType(sprite?.userData?.type);
+                if (!surface) continue;
+                const radius = Math.max(0.42, Math.max(sprite.userData.baseScaleX ?? 0.5, sprite.userData.baseScaleY ?? 0.5) * 0.42);
+                this._trackLiquids.push({ sprite, surface, radius });
             }
         }
-        for (const puddle of this.dynamicPuddles) {
-            if (!puddle?.active) continue;
-            if (Math.hypot(x - puddle.x, z - puddle.z) <= puddle.radius) {
-                return true;
-            }
+        for (const { sprite, surface, radius } of this._trackLiquids) {
+            if (sprite.userData?.burstTriggered) continue;
+            if (Math.hypot(x - sprite.position.x, z - sprite.position.z) <= radius) return surface;
         }
-        return false;
+        for (const puddle of this.dynamicPuddles ?? []) {
+            if (puddle?.active && Math.hypot(x - puddle.x, z - puddle.z) <= puddle.radius) return 'slime';
+        }
+        for (const corpse of this.corpses ?? []) {
+            const position = corpse?.position;
+            if (position && Math.hypot(x - position.x, z - position.z) <= 0.6) return 'blood';
+        }
+        if (this.currentBiome === 'cryo' || this.isOutdoors?.()) return 'snow';
+        return null;
     }
 
-    spawnWetFootprint(x, z, dirX, dirZ) {
-        if (!this.scene) return;
-        const len = Math.hypot(dirX, dirZ) || 1;
-        const fx = dirX / len;
-        const fz = dirZ / len;
-        const side = this.wetFootstepSide || 1;
-        this.wetFootstepSide = -side;
-        const px = -fz;
-        const pz = fx;
+    // An enemy's mark each stride (about 0.42 tiles), not each frame.
+    trackEnemyStep(sprite) {
+        const data = sprite?.userData;
+        if (!data || data.burstTriggered) return false;
+        const lastX = data.lastTrailX;
+        const lastZ = data.lastTrailZ;
+        const dx = lastX === undefined ? 0 : sprite.position.x - lastX;
+        const dz = lastZ === undefined ? 0 : sprite.position.z - lastZ;
+        if (lastX !== undefined && Math.hypot(dx, dz) < 0.42) return false;
+        data.lastTrailX = sprite.position.x;
+        data.lastTrailZ = sprite.position.z;
+        this.spawnVisualSnailTrail(sprite.position.x, sprite.position.z, data.type ?? '', Boolean(data.isBoss), { dirX: dx, dirZ: dz });
+        return true;
+    }
 
-        const footprint = new THREE.Mesh(
-            new THREE.PlaneGeometry(0.11, 0.2),
-            new THREE.MeshBasicMaterial({
-                color: 0x5f6764,
-                transparent: true,
-                opacity: 0.38,
-                depthWrite: false,
-                side: THREE.DoubleSide
-            })
-        );
-        footprint.rotation.x = -Math.PI / 2;
-        footprint.rotation.z = Math.atan2(fx, fz);
-        footprint.position.set(
-            x - fx * 0.2 + px * side * 0.11,
-            0.041,
-            z - fz * 0.2 + pz * side * 0.11
-        );
-        footprint.renderOrder = 19;
-        this.scene.add(footprint);
+    // A squadmate's boot prints, drawn here from their synced position.
+    trackRemoteSteps(remote, nowSeconds = performance.now() / 1000) {
+        const position = remote?.mesh?.position;
+        if (!position || !this.trackField) return false;
+        if (remote.lastPrintX === undefined) {
+            remote.lastPrintX = position.x;
+            remote.lastPrintZ = position.z;
+            return false;
+        }
+        const dx = position.x - remote.lastPrintX;
+        const dz = position.z - remote.lastPrintZ;
+        const moved = Math.hypot(dx, dz);
+        if (moved < 0.55) return false;
+        remote.lastPrintX = position.x;
+        remote.lastPrintZ = position.z;
+        const { print, boots } = stepBoots(remote.bootTracks, this.getTrackSurfaceAt(position.x, position.z));
+        remote.bootTracks = boots;
+        this.trackField.addPrint({ x: position.x, z: position.z, dirX: dx / moved, dirZ: dz / moved, surface: print.surface, strength: print.strength, now: nowSeconds });
+        return true;
+    }
 
-        const duration = 2.7 + Math.random() * 1.7;
-        registerTransientEffect(this, {
-            mesh: footprint,
-            age: 0,
-            duration,
-            update: (_dt, age) => {
-                const t = Math.min(age / duration, 1);
-                footprint.material.opacity = 0.38 * (1 - t * t);
-            },
-            dispose: () => {
-                footprint.geometry?.dispose();
-                footprint.material?.dispose();
-            }
-        });
+    // One step's print; the boots carry wet surfaces for the next steps.
+    leaveBootPrint(x, z, dirX, dirZ, nowSeconds = performance.now() / 1000) {
+        if (!this.trackField) return null;
+        const { print, boots } = stepBoots(this.bootTracks, this.getTrackSurfaceAt(x, z));
+        this.bootTracks = boots;
+        return this.trackField.addPrint({ x, z, dirX, dirZ, surface: print.surface, strength: print.strength, now: nowSeconds });
     }
 
     // docs/design/one-more-ring-design-pillars.md item 1 (Sprint 28 Lane A):
@@ -38004,49 +38007,24 @@ export class ThreeGame {
         });
     }
 
-    spawnVisualSnailTrail(x, z, type, isBoss) {
-        if (!this.scene) return;
-        
-        let color = 0x00d2ff;
-        let useSlimeTexture = true;
-        if (type.includes('cryo')) {
-            color = 0xa3e2ff;
-            useSlimeTexture = false;
-        } else if (type.includes('spore')) {
-            color = 0x55ff55;
-            useSlimeTexture = true;
+    // Snail slime, tinted by type; bosses leave a wider, longer wake. Pooled
+    // in the track field (src/trackField.js) instead of a cloned sprite each.
+    spawnVisualSnailTrail(x, z, type, isBoss, { dirX = 0, dirZ = 0 } = {}) {
+        if (!this.trackField) return null;
+        const now = performance.now() / 1000;
+        if (!String(type ?? '').includes('snail')) {
+            // Walking hostiles (stalkers, chargers, crawlers) leave dark claw prints.
+            return this.trackField.addPrint({ x, z, dirX: dirX || 1, dirZ, surface: 'oil', strength: 0.55, scale: 1.3, now });
         }
-
-        const baseMat = useSlimeTexture 
-            ? this.scatterMaterials.scatter_slime_puddle 
-            : this.scatterMaterials.scatter_coolant_puddle;
-            
-        if (!baseMat) return;
-        const mat = baseMat.clone();
-        mat.color.setHex(color);
-        mat.opacity = 0.45;
-        
-        const sprite = new THREE.Sprite(mat);
-        sprite.center.set(0.5, 0.5);
-        sprite.position.set(x, 0.058, z);
-        const size = isBoss ? 1.15 : 0.45;
-        sprite.scale.set(size, size, 1);
-        sprite.renderOrder = 4;
-        
-        this.scene.add(sprite);
-        
-        const duration = isBoss ? 4.2 : 2.5;
-        registerTransientEffect(this, {
-            mesh: sprite,
-            age: 0,
-            duration,
-            update: (dt, age) => {
-                const t = age / duration;
-                sprite.material.opacity = 0.45 * (1 - t);
-            },
-            dispose: () => {
-                mat.dispose();
-            }
+        // Stretched along the way it crawled, so the marks join into a streak.
+        return this.trackField.addSmear({
+            x, z,
+            dirX, dirZ,
+            size: isBoss ? 1.5 : 0.8,
+            color: slimeColorFor(type),
+            alpha: isBoss ? 0.32 : 0.36,
+            life: isBoss ? 10 : 6,
+            now
         });
     }
 
@@ -38319,7 +38297,10 @@ export class ThreeGame {
                             globalThis.window?.AudioManager?.play?.('enemy_idle_crawler', (this.audioAt?.(child.position.x, child.position.z, { volume: 0.14, playbackRate: 0.95 + Math.random() * 0.2 }) ?? { volume: 0.14 }));
                         }
                     }
-                    if (this.isEnemySimulationActive(child)) this.updateCrawlerBehavior(child, delta);
+                    if (this.isEnemySimulationActive(child)) {
+                        this.updateCrawlerBehavior(child, delta);
+                        this.trackEnemyStep(child);
+                    }
                 }
             } else if (this.isSentinel(child.userData.type)) {
                 child.position.y = baseY;
@@ -38363,17 +38344,8 @@ export class ThreeGame {
                     this.updateSnailBehavior(child, delta, activeShip);
                 }
 
-                // Distance-based trail spawning
-                if (!child.userData.burstTriggered) {
-                    const lastX = child.userData.lastTrailX ?? child.position.x;
-                    const lastZ = child.userData.lastTrailZ ?? child.position.z;
-                    const distMoved = Math.hypot(child.position.x - lastX, child.position.z - lastZ);
-                    if (distMoved >= 0.42 || child.userData.lastTrailX === undefined) {
-                        child.userData.lastTrailX = child.position.x;
-                        child.userData.lastTrailZ = child.position.z;
-                        this.spawnVisualSnailTrail(child.position.x, child.position.z, child.userData.type, child.userData.isBoss);
-                    }
-                }
+                // A mark each stride: slime for snails, claw prints for walkers.
+                this.trackEnemyStep(child);
 
                 // Sporesnail leaves slime puddles
                 if (child.userData.type === 'sporesnail' || child.userData.type === 'boss_sporesnail') {
