@@ -1051,8 +1051,9 @@
     "engineer_ship.png",
     "engineer_ship_broken.png",
     "engineer_ship_healed.png",
+    "favicon-32.png",
+    "favicon-48.png",
     "favicon.png",
-    "favicon.svg",
     "flags/de.svg",
     "flags/en.svg",
     "flags/es-419.svg",
@@ -20026,13 +20027,23 @@
       "classification": "unknown"
     },
     {
-      "path": "favicon.png",
-      "bytes": 453141,
+      "path": "favicon-32.png",
+      "bytes": 2337,
       "classification": "runtime-required"
     },
     {
-      "path": "favicon.svg",
-      "bytes": 9523,
+      "path": "favicon-48.png",
+      "bytes": 4857,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "favicon.ico",
+      "bytes": 7963,
+      "classification": "unknown"
+    },
+    {
+      "path": "favicon.png",
+      "bytes": 453141,
       "classification": "runtime-required"
     },
     {
@@ -21042,7 +21053,7 @@
     },
     {
       "path": "manifest.json",
-      "bytes": 955,
+      "bytes": 861,
       "classification": "runtime-required"
     },
     {
