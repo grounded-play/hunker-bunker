@@ -96,3 +96,11 @@ Differs from the outline above:
 5. V7–V8 quest/model integration.
 6. S1–S3 sleep presentation and dawn commit.
 7. Visual/performance evidence and Sprint 53 closeout.
+
+## On-screen check, 2026-10-07 afternoon (Claude session, `20257ba9`)
+
+Bisected against `f2a4ca24` at 1280×800 with a real GPU:
+
+- **Walls:** a flat amber/cyan emissive wash over every ring wall (W1) made them flat tan-orange and hid the PBR texture. Ring accents now come from the skins' emissive maps only. **Do not reintroduce a constant per-ring emissive colour.**
+- **Night:** `updateSky` runs after `updateDayNightCycle` and reset the fog to the horizon colour every frame, so the night darkening never reached the screen: it was a grey-cream haze, brighter than day. `updateSky` now ends with `applyNightFog()`, which uses `_nightDarkness` from the day cycle. The suit light's night boost is cut to a pool (fill ×1.2, cone ×1.25). **Night fog colour changes belong in `applyNightFog`, not only in `updateDayNightCycle`.**
+
