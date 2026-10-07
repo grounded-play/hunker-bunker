@@ -1119,6 +1119,13 @@ const ADAPTIVE_GAMEPLAY_RECOVERY_FPS = 52;
 const ADAPTIVE_GAMEPLAY_TRIGGER_SECONDS = 1.5;
 const ADAPTIVE_GAMEPLAY_MAX_SAMPLE_SECONDS = 0.25;
 const ADAPTIVE_GAMEPLAY_PIXEL_RATIO_CAP = 0.85;
+// Seconds of gameplay before adaptive resolution may engage (deploy stalls).
+const ADAPTIVE_GAMEPLAY_GRACE_SECONDS = 12;
+// Sustained FPS that restores full resolution, and for how long.
+const ADAPTIVE_GAMEPLAY_RESTORE_FPS = 58;
+const ADAPTIVE_GAMEPLAY_RESTORE_SECONDS = 10;
+// Re-engaging this soon after a restore keeps it reduced for the run.
+const ADAPTIVE_GAMEPLAY_FLAP_SECONDS = 30;
 // Lowering resolution only buys frames when the GPU is what is slow. Both
 // 2026-09 QA logs were main-thread bound (PC: 8.4 ms GPU in ~48 ms frames;
 // Deck: GPU well under 1 ms), so a blurrier picture bought nothing there.
@@ -10615,13 +10622,26 @@ export class ThreeGame {
     }
 
     updateAdaptiveGameplayQuality(frameDeltaSeconds = 0) {
-        if (this.performanceProfile !== 'gameplay' || this.adaptiveGameplayPerformanceMode) return;
+        if (this.performanceProfile !== 'gameplay') {
+            this._adaptiveGameplaySeconds = 0;
+            return;
+        }
 
         // The Steam Deck is no longer dropped to a lower resolution on its
         // first frame (owner, 2026-09-25: full quality first); it is measured
         // like any other machine.
         if (!Number.isFinite(frameDeltaSeconds) || frameDeltaSeconds <= 0) return;
         const fps = 1 / frameDeltaSeconds;
+        const sample = Math.min(frameDeltaSeconds, ADAPTIVE_GAMEPLAY_MAX_SAMPLE_SECONDS);
+        this._adaptiveGameplaySeconds = (this._adaptiveGameplaySeconds ?? 0) + sample;
+        if (this.adaptiveGameplayPerformanceMode) {
+            this.updateAdaptiveGameplayRecovery(fps, sample);
+            return;
+        }
+        // Deploy streams in the world and compiles shaders; those first
+        // seconds say nothing about the run (Deck log 2026-10-07: engaged at
+        // 3.5 FPS inside the deploy stall).
+        if (this._adaptiveGameplaySeconds < ADAPTIVE_GAMEPLAY_GRACE_SECONDS) return;
         this._adaptiveLastFps = fps;
         const frameMs = Math.min(frameDeltaSeconds, ADAPTIVE_GAMEPLAY_MAX_SAMPLE_SECONDS) * 1000;
         this._adaptiveFrameMsAverage = this._adaptiveFrameMsAverage == null
@@ -10656,11 +10676,34 @@ export class ThreeGame {
                 }
                 return;
             }
+            // Re-engaging right after a restore: the reduced resolution was
+            // what held the frames up, so stay reduced for the rest of the run.
+            if (Number.isFinite(this._adaptiveRestoredAtSeconds)
+                && this._adaptiveGameplaySeconds - this._adaptiveRestoredAtSeconds < ADAPTIVE_GAMEPLAY_FLAP_SECONDS) {
+                this._adaptiveRecoveryLocked = true;
+            }
+            this._adaptiveLowFpsSeconds = 0;
+            this._adaptiveHighFpsSeconds = 0;
             this.setAdaptiveGameplayPerformanceMode(true, {
                 reason: 'sustained-low-fps',
                 fps
             });
         }
+    }
+
+    // Adaptive resolution is no longer one-way: sustained high FPS brings full
+    // resolution back (once per flap; see above).
+    updateAdaptiveGameplayRecovery(fps, sample) {
+        if (this._adaptiveRecoveryLocked) return;
+        this._adaptiveHighFpsSeconds = fps >= ADAPTIVE_GAMEPLAY_RESTORE_FPS
+            ? (this._adaptiveHighFpsSeconds ?? 0) + sample
+            : 0;
+        if (this._adaptiveHighFpsSeconds < ADAPTIVE_GAMEPLAY_RESTORE_SECONDS) return;
+        this._adaptiveHighFpsSeconds = 0;
+        this._adaptiveLowFpsSeconds = 0;
+        this._adaptiveRestoredAtSeconds = this._adaptiveGameplaySeconds;
+        this.setAdaptiveGameplayPerformanceMode(false, { reason: 'sustained-high-fps', fps });
+        debugLog.info('PERF', 'adaptive-gameplay-quality-restored', { fps: Math.round(fps * 10) / 10 });
     }
 
     getPerformanceDiagnosticsSnapshot() {
