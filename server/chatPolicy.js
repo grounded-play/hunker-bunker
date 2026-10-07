@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { filterChatText, CHAT_MAX_CODEPOINTS, CHAT_MAX_UTF8_BYTES } from '../src/chatFilter.js';
+import { filterChatText, warmChatFilter, CHAT_MAX_CODEPOINTS, CHAT_MAX_UTF8_BYTES } from '../src/chatFilter.js';
 
 export const CHAT_POLICY_LIMITS = Object.freeze({
     history: 50,
@@ -20,6 +20,8 @@ const isObject = (value) => value !== null && typeof value === 'object' && !Arra
 
 /** Per-relay, bounded chat state. Room membership is enforced by the relay. */
 export function createChatPolicy({ now = Date.now, filter = filterChatText } = {}) {
+    // Compile the filter now, at relay start, not on a room's first message.
+    if (filter === filterChatText) warmChatFilter();
     const rooms = new Map();
     const identities = new Map();
     const reports = [];

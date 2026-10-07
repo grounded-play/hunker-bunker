@@ -62,17 +62,19 @@ export function mapBrowserGamepad(gamepad, {
         cameraDelta: { x: 0, y: 0 },
         fire: readButton(buttons, 7),
         interact: readButton(buttons, 0),
-        reload: readButton(buttons, 2) || readButton(buttons, 14),
+        reload: readButton(buttons, 2),
         melee: readButton(buttons, 3),
         // Y is the gameplay smash action and the archive Inventory action.
         // Keep both semantic fields populated so action-set routing can choose
         // the meaning without losing the browser fallback on Steam Deck.
-        ability: readButton(buttons, 3) || readButton(buttons, 15),
+        ability: readButton(buttons, 3),
         dash: readButton(buttons, 1),
-        // D-pad directions mirror the official layout's gameplay bindings:
-        // up Map, down Scan, left Reload, right Smash.
+        // D-pad directions mirror the official layout's gameplay bindings
+        // (scripts/build-steam-input-configs.js): up Map, down Scan, left
+        // Ping / Squad Trade (keyboard T), right Squad Commands (keyboard G).
         scan: readButton(buttons, 4) || readButton(buttons, 13),
         tacticalPing: readButton(buttons, 10) || readButton(buttons, 14),
+        quickCommand: readButton(buttons, 15),
         sprint: readButton(buttons, 6),
         pause: readButton(buttons, 9),
         // Right-stick click cycles overlapping in-world interaction targets.
@@ -99,6 +101,7 @@ export function mapBrowserGamepad(gamepad, {
         mapped.move.x || mapped.move.y || mapped.camera.x || mapped.camera.y
         || mapped.fire || mapped.interact || mapped.reload || mapped.melee || mapped.ability || mapped.dash
         || mapped.scan || mapped.sprint || mapped.pause || mapped.cycleInteract
+        || mapped.tacticalPing || mapped.quickCommand
         || mapped.menuUp || mapped.menuDown || mapped.menuLeft || mapped.menuRight
         || mapped.menuConfirm || mapped.menuBack
         || mapped.menuTabLeft || mapped.menuTabRight

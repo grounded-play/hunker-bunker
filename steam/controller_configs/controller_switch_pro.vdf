@@ -3,16 +3,16 @@
     "version" "3"
     "game" "Hunker Bunker"
     "title" "Official Hunker Bunker Controls"
-    "description" "Left Stick Move · Right Stick Aim · A Interact · B Dodge · X Reload · Y Smash · D-Pad Map/Scan/Reload/Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause."
+    "description" "Left Stick Move · Right Stick Aim (click: Next Target) · A Interact · B Dodge · X Reload · Y Smash · D-Pad Up Map · Down Scan · Left Ping/Squad Trade · Right Squad Commands · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause."
     "controller_type" "controller_switch_pro"
-    "major_revision" "10"
+    "major_revision" "11"
     "minor_revision" "0"
     "localization"
     {
         "english"
         {
             "title" "Official Hunker Bunker Controls"
-            "description" "Left Stick Move · Right Stick Aim · A Interact · B Dodge · X Reload · Y Smash · D-Pad Map/Scan/Reload/Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause."
+            "description" "Left Stick Move · Right Stick Aim (click: Next Target) · A Interact · B Dodge · X Reload · Y Smash · D-Pad Up Map · Down Scan · Left Ping/Squad Trade · Right Squad Commands · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause."
         }
     }
     "group"
@@ -323,7 +323,18 @@
     {
         "id" "12"
         "mode" "joystick_move"
-        "inputs" { }
+        "inputs" {
+            "click" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay cycle_interact, Next Target"
+                        }
+                    }
+                } }
+        }
         "settings"
         {
             "deadzone_inner_radius" "6000"
@@ -379,7 +390,7 @@
                     {
                         "bindings"
                         {
-                            "binding" "game_action gameplay ability, Smash"
+                            "binding" "game_action gameplay quick_command, Squad Commands"
                         }
                     }
                 } }
@@ -389,7 +400,7 @@
                     {
                         "bindings"
                         {
-                            "binding" "game_action gameplay reload, Reload"
+                            "binding" "game_action gameplay tactical_ping, Ping / Squad Trade"
                         }
                     }
                 } }

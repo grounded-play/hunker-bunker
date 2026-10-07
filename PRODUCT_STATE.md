@@ -5,7 +5,7 @@ and worklogs are evidence or history; they do not override this file. Update a
 row when its implementation or acceptance state changes and link to evidence
 instead of duplicating it here.
 
-Current implementation branch: `dev/sprint-49` (merged as `v2.4.14-beta`), package `2.4.15-beta` (dependency maintenance), opened from
+Current implementation branch: `dev/sprint-49` (merged as `v2.4.14-beta`), package `2.4.16-beta` (Sprint 50, `dev/sprint-50`), opened from
 `95ff7285` on 2026-10-01. [Sprint 49](docs/planning/sprint-49.md) and its
 [handoff](docs/planning/sprint-49-implementation-handoff.md) own current work.
 

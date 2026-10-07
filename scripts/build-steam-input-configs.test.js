@@ -22,10 +22,10 @@ describe('buildSteamInputConfigs', () => {
         expect(outputs).toHaveLength(7);
         const deck = fs.readFileSync(path.join(destination, 'controller_neptune.vdf'), 'utf8');
         expect(deck).toContain('"controller_type" "controller_neptune"');
-        expect(deck).toContain('"major_revision" "10"');
+        expect(deck).toContain('"major_revision" "11"');
         expect(deck).toContain('"minor_revision" "0"');
         expect(deck).toContain('"title" "Official Hunker Bunker Controls"');
-        expect(deck).toContain('D-Pad Map/Scan/Reload/Smash');
+        expect(deck).toContain('Left Ping/Squad Trade · Right Squad Commands');
         expect(deck).toContain('"name" "menu"');
         expect(deck).toContain('"name" "gameplay"');
         expect(deck).toContain('"name" "archive"');
@@ -92,8 +92,10 @@ describe('buildSteamInputConfigs', () => {
             expect(config, file).toContain('"18" "dpad active"');
             expect(config, file).toMatch(/"id" "18"[\s\S]*?"mode" "dpad"[\s\S]*?game_action gameplay toggle_map/);
             expect(config, file).toMatch(/"id" "18"[\s\S]*?"mode" "dpad"[\s\S]*?game_action gameplay scan/);
-            expect(config, file).toMatch(/"id" "18"[\s\S]*?"mode" "dpad"[\s\S]*?game_action gameplay reload/);
-            expect(config, file).toMatch(/"id" "18"[\s\S]*?"mode" "dpad"[\s\S]*?game_action gameplay ability/);
+            // Left/right carry the keyboard-only commands (T ping/trade, G
+            // squad commands) rather than repeating X and Y.
+            expect(config, file).toMatch(/"id" "18"[\s\S]*?"mode" "dpad"[\s\S]*?"dpad_west"[^\n]*\n[\s\S]*?game_action gameplay tactical_ping/);
+            expect(config, file).toMatch(/"id" "18"[\s\S]*?"mode" "dpad"[\s\S]*?"dpad_east"[^\n]*\n[\s\S]*?game_action gameplay quick_command/);
             // The menu preset keeps its own digital D-pad; gameplay actions
             // must not steal it.
             expect(config, file).toContain('"1" "dpad active"');
@@ -121,6 +123,30 @@ describe('buildSteamInputConfigs', () => {
     // A config that binds an action the manifest doesn't declare is silently dead
     // in-game. Every generally applicable declared action must also be reachable;
     // hardware-specific pointer actions are required only on pad-equipped devices.
+    // Session 2026-10-06: "every command maps to something on the Steam Deck
+    // out of the box ... like press T to trade". T (ping / squad trade), G
+    // (squad commands) and C (next interaction target) had no native action.
+    it('gives every keyboard-only gameplay command a controller binding', () => {
+        const destination = fs.mkdtempSync(path.join(os.tmpdir(), 'hb-input-configs-'));
+        tempDirs.push(destination);
+        for (const output of buildSteamInputConfigs({ destination })) {
+            const config = fs.readFileSync(output, 'utf8');
+            for (const action of ['tactical_ping', 'quick_command', 'cycle_interact']) {
+                expect(config, `${path.basename(output)} ${action}`).toContain(`game_action gameplay ${action},`);
+            }
+            expect(config).toMatch(/"id" "12"[\s\S]*?"click"[\s\S]*?game_action gameplay cycle_interact/);
+        }
+    });
+
+    it('reads every manifest gameplay action in the Electron Steam Input snapshot', () => {
+        const manifest = fs.readFileSync(path.join(import.meta.dirname, '..', 'steam', 'steam_input_manifest.vdf'), 'utf8');
+        const gameplayBlock = manifest.slice(manifest.indexOf('#ActionSetGameplay'), manifest.indexOf('#ActionSetArchive'));
+        const digital = [...gameplayBlock.matchAll(/"(\w+)"\s+"#Action\w+"/g)].map(([, key]) => key).filter((key) => key !== 'title');
+        const electronMain = fs.readFileSync(path.join(import.meta.dirname, '..', 'electron', 'main.cjs'), 'utf8');
+        expect(digital).toEqual(expect.arrayContaining(['tactical_ping', 'quick_command', 'cycle_interact']));
+        for (const action of digital) expect(electronMain, action).toContain(`getDigitalAction('${action}')`);
+    });
+
     it('binds exactly the action set the manifest declares, on every controller', () => {
         const destination = fs.mkdtempSync(path.join(os.tmpdir(), 'hb-input-configs-'));
         tempDirs.push(destination);

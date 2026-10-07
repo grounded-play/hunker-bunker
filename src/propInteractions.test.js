@@ -231,4 +231,18 @@ describe('propInteractions', () => {
         expect(interactionSpecKeyFor({ type: 'prop_oxygen_bottle_cascade_rack', world3dModelType: 'prop_oxygen_bottle_cascade_rack' })).toBe('prop_oxygen_bottle_cascade_rack');
         expect(interactionSpecKeyFor({ type: 'prop_rock' })).toBe('prop_rock');
     });
+
+    // Health is three hearts. The coolant siphon dealt 10, a kill from full
+    // health (session 2026-10-06). No interaction may cost more than a heart.
+    it('never charges more than one heart for an interaction', () => {
+        for (const [key, spec] of Object.entries(PROP_INTERACTION_SPECS)) {
+            if (!spec.onInteract) continue;
+            const takeDamage = vi.fn();
+            const game = new Proxy({ takeDamage, snails: [], umbilicalAttackers: [] }, {
+                get: (target, prop) => (prop in target ? target[prop] : vi.fn())
+            });
+            spec.onInteract(game, { position: { x: 0, z: 0 }, userData: {} });
+            for (const [amount] of takeDamage.mock.calls) expect(amount, key).toBeLessThanOrEqual(1);
+        }
+    });
 });

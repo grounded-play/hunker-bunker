@@ -1313,7 +1313,9 @@
       "recover_black_box": "回收黑匣子",
       "recover_final": "回收最终组件",
       "interact": "交互",
-      "rest_end_day": "休息 — 结束第 {day} 天"
+      "rest_end_day": "休息 — 结束第 {day} 天",
+      "rest_blocked_quest": "先完成进行中的委托再睡觉。",
+      "rest_blocked_unsafe": "现在在这里睡觉不安全。"
     },
     "telemeter": {
       "passive_scan": "地表扫描 // 被动",
@@ -1975,6 +1977,51 @@
       "class_line": "{runs} 次出击 · {wins} 次胜利 · {tier}",
       "new_best": "刷新个人最佳 — {boards}",
       "rank_suffix": "#{rank}"
+    },
+    "location": {
+      "room": {
+        "junction_hall": "枢纽大厅",
+        "bulkhead_room": "隔舱室",
+        "survey_office": "勘测办公室",
+        "mess_hall": "食堂",
+        "crew_quarters": "船员宿舍",
+        "relay_room": "中继室",
+        "pump_house": "泵房",
+        "boiler_room": "锅炉房",
+        "switch_room": "配电室",
+        "filtration_plant": "过滤站",
+        "med_bay": "医疗舱",
+        "triage_ward": "分诊病房",
+        "quarantine_cell": "隔离室",
+        "guard_post": "警卫岗",
+        "checkpoint": "检查站",
+        "armory": "军械库",
+        "holding_cells": "拘留室",
+        "reactor_annex": "反应堆附楼",
+        "fab_shop": "制造车间",
+        "servo_lab": "伺服实验室",
+        "turbine_hall": "涡轮大厅",
+        "supply_depot": "补给仓库",
+        "cold_store": "冷藏库",
+        "cargo_hold": "货舱",
+        "strongroom": "保险库",
+        "vault": "金库",
+        "relic_cache": "遗物藏匿处",
+        "camp_commons": "营地公共区",
+        "brood_chamber": "育雏室",
+        "hive_gallery": "巢穴长廊",
+        "cryo_lab": "低温实验室"
+      },
+      "hall": {
+        "service_corridor": "服务走廊",
+        "maintenance_tunnel": "维修隧道",
+        "spine_passage": "主干通道",
+        "cable_run": "电缆沟",
+        "drainage_cut": "排水渠",
+        "access_way": "通行道",
+        "unmarked": "无标记通道"
+      },
+      "unscanned": "??? · 扫描以识别"
     }
   },
   "narrative": {

@@ -6,11 +6,15 @@ const XBOX_LABELS = Object.freeze({
     ability: 'Y',
     tabLeft: 'LB',
     tabRight: 'RB',
-    sprint: 'LS',
+    sprint: 'LT',
     fire: 'RT',
-    scan: 'B',
+    scan: 'LB',
     pause: 'MENU',
-    toggleMap: 'VIEW'
+    toggleMap: 'VIEW',
+    // scripts/build-steam-input-configs.js: D-pad left/right, aim-stick click.
+    tacticalPing: 'D-PAD ←',
+    quickCommand: 'D-PAD →',
+    cycleInteract: 'RS'
 });
 
 const PLAYSTATION_LABELS = Object.freeze({
@@ -22,9 +26,10 @@ const PLAYSTATION_LABELS = Object.freeze({
     ability: '△',
     tabLeft: 'L1',
     tabRight: 'R1',
-    sprint: 'L3',
+    sprint: 'L2',
     fire: 'R2',
-    scan: 'O',
+    scan: 'L1',
+    cycleInteract: 'R3',
     pause: 'OPTIONS',
     toggleMap: 'CREATE'
 });
@@ -38,9 +43,10 @@ const SWITCH_LABELS = Object.freeze({
     ability: 'X',
     tabLeft: 'L',
     tabRight: 'R',
-    sprint: 'L STICK',
+    sprint: 'ZL',
     fire: 'ZR',
-    scan: 'A',
+    scan: 'L',
+    cycleInteract: 'R STICK',
     pause: '+',
     toggleMap: '-'
 });

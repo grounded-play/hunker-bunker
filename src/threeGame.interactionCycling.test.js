@@ -68,4 +68,65 @@ describe('overlapping interaction target selection', () => {
         expect(first).toHaveBeenCalledOnce();
         expect(second).not.toHaveBeenCalled();
     });
+
+    // Session 2026-10-06 (solo, Deck): the camp showed "SETTLE SURVIVOR" but
+    // every press re-opened the lore terminal beside it, whose modal then took
+    // input before the camp check ran. A terminal you have read yields.
+    describe('a read lore terminal does not shadow the camp', () => {
+        const fallbackGame = ({ lore, camp }) => ({
+            isGameplayInputActive: () => true,
+            interactWithMayorTina: () => false,
+            getPriorityInteractionCandidates: () => [],
+            interactWithBunkerBlastDoorButton: () => false,
+            interactWithProceduralDoor: () => false,
+            interactWithMazeAccessSource: () => false,
+            interactWithLoreTerminal: lore,
+            interactWithCaveEntrance: () => false,
+            interactWithAct2Camp: camp,
+            interactWithBunkerCot: () => false, interactWithScientist: () => false,
+            interactWithHiveSite: () => false, interactWithCampQuestObject: () => false,
+            interactWithWanderer: () => false, interactWithHoleTile: () => false,
+            interactWithPocketClimbPoint: () => false, interactWithBiomechanicalDoor: () => false,
+            interactWithCustomBiomechProp: () => false,
+            playThrottledUiError: vi.fn()
+        });
+
+        it('settles at the camp instead of re-opening a terminal already read', () => {
+            const lore = vi.fn(({ unreadOnly } = {}) => !unreadOnly);
+            const camp = vi.fn(() => true);
+            ThreeGame.prototype.triggerGameplayInteract.call(fallbackGame({ lore, camp }));
+            expect(camp).toHaveBeenCalledOnce();
+            expect(lore).toHaveBeenCalledTimes(1);
+            expect(lore).toHaveBeenCalledWith({ unreadOnly: true });
+        });
+
+        it('still reads an unread terminal first, and re-reads one when nothing else is there', () => {
+            const unread = vi.fn(() => true);
+            const camp = vi.fn(() => true);
+            ThreeGame.prototype.triggerGameplayInteract.call(fallbackGame({ lore: unread, camp }));
+            expect(camp).not.toHaveBeenCalled();
+
+            const reread = vi.fn(({ unreadOnly } = {}) => !unreadOnly);
+            ThreeGame.prototype.triggerGameplayInteract.call(fallbackGame({ lore: reread, camp: () => false }));
+            expect(reread).toHaveBeenLastCalledWith({ unreadOnly: false });
+        });
+
+        it('reports whether the terminal opened', () => {
+            const sprite = { userData: { type: 'lore_terminal', loreKey: 'drop_ration_ledger', loreText: '' }, position: new THREE.Vector3(0, 0, 0) };
+            const game = {
+                isGameplayInputActive: () => true,
+                player: { position: new THREE.Vector3(1, 0, 0) },
+                scatterSprites: [sprite],
+                _readLoreKeys: new Set(['drop_ration_ledger'])
+            };
+            const originalWindow = globalThis.window;
+            globalThis.window = { dispatchEvent: vi.fn(), AudioManager: null };
+            try {
+                expect(ThreeGame.prototype.interactWithLoreTerminal.call(game, { unreadOnly: true })).toBe(false);
+                expect(ThreeGame.prototype.interactWithLoreTerminal.call(game)).toBe(true);
+            } finally {
+                globalThis.window = originalWindow;
+            }
+        });
+    });
 });

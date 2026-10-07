@@ -7,7 +7,13 @@
   <meta name="theme-color" content="#07090b" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Not render-blocking (issue #106): text paints in the fallback face and
+       swaps when the webfont arrives (display=swap). -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"></noscript>
+  <!-- The title's key art is the largest paint (#splash and .splash-frost),
+       but CSS only requests it once the boot reveals the title. Fetch it now. -->
+  <link rel="preload" as="image" href="/title_key_art_v2.webp" fetchpriority="high">
   <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="/src/styles/expeditionHud.css">
   <link rel="stylesheet" href="/src/styles/hudDockHousings.css">
@@ -19,7 +25,8 @@
   <link rel="stylesheet" href="/src/styles/foundryHub.css">
   <link rel="stylesheet" href="/src/styles/fieldWorkbench.css">
   <link rel="stylesheet" href="/src/styles/quickCommandRadial.css">
-  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
   <title data-i18n="ui.misc.hunker_bunker_tactical_command">HUNKER BUNKER | TACTICAL COMMAND</title>
 
   <!-- SEO Metadata -->
@@ -43,6 +50,7 @@
 
   <!-- Web App Manifest -->
   <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 </head>
 
 <body>
@@ -206,7 +214,7 @@
       </aside>
       <div class="loader-content">
         <div class="loader-briefing-avatar hidden" id="loader-briefing-avatar">
-          <img id="loader-briefing-avatar-img" src="/lore_portraits/survivor_08.webp" alt="" />
+          <img id="loader-briefing-avatar-img" loading="lazy" decoding="async" src="/lore_portraits/survivor_08.webp" alt="" />
           <div class="loader-briefing-avatar__scanline"></div>
         </div>
         <div data-i18n="ui.loading.initializing_systems" class="loader-title">INITIALIZING SYSTEMS</div>
@@ -351,7 +359,7 @@
 
         <div class="credits-footer">
           <span data-i18n="ui.about.thank_you_for_deploying" class="credits-footer-thankyou">THANK YOU FOR DEPLOYING</span>
-          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.15-BETA // ACTIVE</span>
+          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.16-BETA // ACTIVE</span>
         </div>
       </div>
     </div>
@@ -440,7 +448,7 @@
             <div class="preview-box">
               <div class="hero-identity-block">
                 <div class="char-preview-stage" aria-hidden="true">
-                  <img id="char-preview-fallback" class="char-preview-fallback" src="/Tank.full_v2.png" alt="" />
+                  <img loading="lazy" id="char-preview-fallback" class="char-preview-fallback" src="/Tank.full_v2.png" alt="" />
                   <canvas id="char-preview-sprite" width="256" height="256"></canvas>
                   <canvas id="char-preview-3d" class="hidden" width="480" height="480"></canvas>
                   <div id="char-preview-door" class="char-preview-door">
@@ -778,7 +786,7 @@
           <div class="vault-right-column">
             <div class="vault-details-panel" id="vault-details-panel">
               <div class="vault-details-art">
-                <img id="vault-details-img" src="/favicon.png" alt="" />
+                <img loading="lazy" id="vault-details-img" src="/favicon.png" alt="" />
               </div>
               <div class="vault-details-name" id="vault-details-name">SELECT AN ITEM</div>
               <div class="vault-details-rarity" id="vault-details-rarity">—</div>
@@ -911,7 +919,7 @@
             <!-- Final Revealed Item Card -->
             <div class="vault-reveal-card" id="vault-reveal-card">
               <div class="vault-reveal-card__art">
-                <img id="vault-reveal-img" src="/favicon.png" data-i18n-alt="ui.vault_reveal.alt_reward" alt="Reward" />
+                <img loading="lazy" id="vault-reveal-img" src="/favicon.png" data-i18n-alt="ui.vault_reveal.alt_reward" alt="Reward" />
               </div>
               <div class="vault-reveal-card__rarity" id="vault-reveal-rarity-pill">LEGENDARY REWARD</div>
               <div class="vault-reveal-card__name" id="vault-reveal-name">QUEEN SLAYER EMBLEM</div>
@@ -1307,6 +1315,7 @@
         <span data-i18n="ui.ui.bunker_level" class="level-indicator__title">BUNKER LEVEL</span>
         <span id="level-num">0</span>
         <span id="biome-label" class="level-indicator__biome">ACTIVE SECTOR</span>
+        <span id="hud-location" class="level-indicator__location is-unknown" aria-live="polite" data-i18n="ui.location.unscanned">??? · SCAN TO IDENTIFY</span>
         <span data-i18n-title="ui.campaign_day_indicator.title_campaign_day_and" id="campaign-day-indicator" class="level-indicator__cycle" title="Campaign day and local light cycle">DAY 1 · 06:43 · DAY</span>
         <span class="level-indicator__cycle-track" aria-hidden="true"><span id="campaign-cycle-progress"></span></span>
         <span id="hud-run-seed" class="level-indicator__seed hidden">SEED: —</span>
@@ -1740,7 +1749,7 @@
       <div class="hud-notification-stack">
         <div id="radio-transmission-prompt" class="radio-transmission-prompt hidden" aria-live="polite">
           <div class="radio-transmission-prompt__avatar">
-            <img id="radio-avatar-img" src="/lore_portraits/survivor_08.webp" data-i18n-alt="ui.radio.alt_sender_portrait" alt="Sender Portrait" />
+            <img loading="lazy" id="radio-avatar-img" src="/lore_portraits/survivor_08.webp" data-i18n-alt="ui.radio.alt_sender_portrait" alt="Sender Portrait" />
             <div class="radio-transmission-prompt__scanline"></div>
           </div>
           <div class="radio-transmission-prompt__body">
@@ -2770,45 +2779,7 @@
             <!-- English -->
             <button type="button" class="language-choice-btn" data-language-code="en" role="radio" aria-checked="true" aria-label="English">
               <span class="language-flag-wrap">
-                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
-                  <rect width="640" height="480" fill="#b22234"/>
-                  <path stroke="#fff" stroke-width="37" d="M0 55.4h640M0 129.2h640M0 203.1h640M0 276.9h640M0 350.8h640M0 424.6h640"/>
-                  <rect width="256" height="258.5" fill="#3c3b6e"/>
-                  <g fill="#fff">
-                    <polygon points="32,24 35,33 44,33 37,38 40,47 32,42 24,47 27,38 20,33 29,33"/>
-                    <polygon points="75,24 78,33 87,33 80,38 83,47 75,42 67,47 70,38 63,33 72,33"/>
-                    <polygon points="118,24 121,33 130,33 123,38 126,47 118,42 110,47 113,38 106,33 115,33"/>
-                    <polygon points="161,24 164,33 173,33 166,38 169,47 161,42 153,47 156,38 149,33 158,33"/>
-                    <polygon points="204,24 207,33 216,33 209,38 212,47 204,42 196,47 199,38 192,33 201,33"/>
-                    <polygon points="53.5,58 56.5,67 65.5,67 58.5,72 61.5,81 53.5,76 45.5,81 48.5,72 41.5,67 50.5,67"/>
-                    <polygon points="96.5,58 99.5,67 108.5,67 101.5,72 104.5,81 96.5,76 88.5,81 91.5,72 84.5,67 93.5,67"/>
-                    <polygon points="139.5,58 142.5,67 151.5,67 144.5,72 147.5,81 139.5,76 131.5,81 134.5,72 127.5,67 136.5,67"/>
-                    <polygon points="182.5,58 185.5,67 194.5,67 187.5,72 190.5,81 182.5,76 174.5,81 177.5,72 170.5,67 179.5,67"/>
-                    <polygon points="32,92 35,101 44,101 37,106 40,115 32,110 24,115 27,106 20,101 29,101"/>
-                    <polygon points="75,92 78,101 87,101 80,106 83,115 75,110 67,115 70,106 63,101 72,101"/>
-                    <polygon points="118,92 121,101 130,101 123,106 126,115 118,110 110,115 113,106 106,101 115,101"/>
-                    <polygon points="161,92 164,101 173,101 166,106 169,115 161,110 153,115 156,106 149,101 158,101"/>
-                    <polygon points="204,92 207,101 216,101 209,106 212,115 204,110 196,115 199,106 192,101 201,101"/>
-                    <polygon points="53.5,126 56.5,135 65.5,135 58.5,140 61.5,149 53.5,144 45.5,149 48.5,140 41.5,135 50.5,135"/>
-                    <polygon points="96.5,126 99.5,135 108.5,135 101.5,140 104.5,149 96.5,144 88.5,149 91.5,140 84.5,135 93.5,135"/>
-                    <polygon points="139.5,126 142.5,135 151.5,135 144.5,140 147.5,149 139.5,144 131.5,149 134.5,140 127.5,135 136.5,135"/>
-                    <polygon points="182.5,126 185.5,135 194.5,135 187.5,140 190.5,149 182.5,144 174.5,149 177.5,140 170.5,135 179.5,135"/>
-                    <polygon points="32,160 35,169 44,169 37,174 40,183 32,178 24,183 27,174 20,169 29,169"/>
-                    <polygon points="75,160 78,169 87,169 80,174 83,183 75,178 67,183 70,174 63,169 72,169"/>
-                    <polygon points="118,160 121,169 130,169 123,174 126,183 118,178 110,183 113,174 106,169 115,169"/>
-                    <polygon points="161,160 164,169 173,169 166,174 169,183 161,178 153,183 156,174 149,169 158,169"/>
-                    <polygon points="204,160 207,169 216,169 209,174 212,183 204,178 196,183 199,174 192,169 201,169"/>
-                    <polygon points="53.5,194 56.5,203 65.5,203 58.5,208 61.5,217 53.5,212 45.5,217 48.5,208 41.5,203 50.5,203"/>
-                    <polygon points="96.5,194 99.5,203 108.5,203 101.5,208 104.5,217 96.5,212 88.5,217 91.5,208 84.5,203 93.5,203"/>
-                    <polygon points="139.5,194 142.5,203 151.5,203 144.5,208 147.5,217 139.5,212 131.5,217 134.5,208 127.5,203 136.5,203"/>
-                    <polygon points="182.5,194 185.5,203 194.5,203 187.5,208 190.5,217 182.5,212 174.5,217 177.5,208 170.5,203 179.5,203"/>
-                    <polygon points="32,228 35,237 44,237 37,242 40,251 32,246 24,251 27,242 20,237 29,237"/>
-                    <polygon points="75,228 78,237 87,237 80,242 83,251 75,246 67,251 70,242 63,237 72,237"/>
-                    <polygon points="118,228 121,237 130,237 123,242 126,251 118,246 110,251 113,242 106,237 115,237"/>
-                    <polygon points="161,228 164,237 173,237 166,242 169,251 161,246 153,251 156,242 149,237 158,237"/>
-                    <polygon points="204,228 207,237 216,237 209,242 212,251 204,246 196,251 199,242 192,237 201,237"/>
-                  </g>
-                </svg>
+                <img class="language-flag-svg" src="/flags/en.svg" width="36" height="26" alt="" aria-hidden="true" decoding="async">
               </span>
               <div class="language-choice-info">
                 <span class="language-choice-name">English</span>
@@ -2820,16 +2791,7 @@
             <!-- 简体中文 -->
             <button type="button" class="language-choice-btn" data-language-code="zh-CN" role="radio" aria-checked="false" aria-label="简体中文">
               <span class="language-flag-wrap">
-                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
-                  <rect width="640" height="480" fill="#de2910"/>
-                  <g fill="#ffde00">
-                    <polygon points="100,60 112,98 152,98 120,121 132,159 100,136 68,159 80,121 48,98 88,98"/>
-                    <polygon points="200,32 204,44 216,44 207,51 210,63 200,56 190,63 193,51 184,44 196,44" transform="rotate(23 200 48)"/>
-                    <polygon points="240,72 244,84 256,84 247,91 250,103 240,96 230,103 233,91 224,84 236,84" transform="rotate(45 240 88)"/>
-                    <polygon points="240,132 244,144 256,144 247,151 250,163 240,156 230,163 233,151 224,144 236,144" transform="rotate(0 240 148)"/>
-                    <polygon points="200,172 204,184 216,184 207,191 210,203 200,196 190,203 193,191 184,184 196,184" transform="rotate(-20 200 188)"/>
-                  </g>
-                </svg>
+                <img class="language-flag-svg" src="/flags/zh-CN.svg" width="36" height="26" alt="" aria-hidden="true" decoding="async">
               </span>
               <div class="language-choice-info">
                 <span class="language-choice-name">简体中文</span>
@@ -2841,11 +2803,7 @@
             <!-- Русский -->
             <button type="button" class="language-choice-btn" data-language-code="ru" role="radio" aria-checked="false" aria-label="Русский">
               <span class="language-flag-wrap">
-                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
-                  <rect width="640" height="160" fill="#ffffff"/>
-                  <rect y="160" width="640" height="160" fill="#0039a6"/>
-                  <rect y="320" width="640" height="160" fill="#d52b1e"/>
-                </svg>
+                <img class="language-flag-svg" src="/flags/ru.svg" width="36" height="26" alt="" aria-hidden="true" decoding="async">
               </span>
               <div class="language-choice-info">
                 <span class="language-choice-name">Русский</span>
@@ -2857,16 +2815,7 @@
             <!-- Español (Latinoamérica) -->
             <button type="button" class="language-choice-btn" data-language-code="es-419" role="radio" aria-checked="false" aria-label="Español (Latinoamérica)">
               <span class="language-flag-wrap">
-                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
-                  <rect width="213.3" height="480" fill="#006847"/>
-                  <rect x="213.3" width="213.4" height="480" fill="#ffffff"/>
-                  <rect x="426.7" width="213.3" height="480" fill="#ce1126"/>
-                  <circle cx="320" cy="240" r="42" fill="#cda851"/>
-                  <circle cx="320" cy="240" r="34" fill="#936c28"/>
-                  <path d="M295 240 Q320 270 345 240 Q320 252 295 240Z" fill="#006847"/>
-                  <ellipse cx="320" cy="232" rx="14" ry="18" fill="#5c4314"/>
-                  <polygon points="320,214 326,224 314,224" fill="#f8c300"/>
-                </svg>
+                <img class="language-flag-svg" src="/flags/es-419.svg" width="36" height="26" alt="" aria-hidden="true" decoding="async">
               </span>
               <div class="language-choice-info">
                 <span class="language-choice-name">Español</span>
@@ -2878,11 +2827,7 @@
             <!-- Deutsch -->
             <button type="button" class="language-choice-btn" data-language-code="de" role="radio" aria-checked="false" aria-label="Deutsch">
               <span class="language-flag-wrap">
-                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
-                  <rect width="640" height="160" fill="#000000"/>
-                  <rect y="160" width="640" height="160" fill="#dd0000"/>
-                  <rect y="320" width="640" height="160" fill="#ffce00"/>
-                </svg>
+                <img class="language-flag-svg" src="/flags/de.svg" width="36" height="26" alt="" aria-hidden="true" decoding="async">
               </span>
               <div class="language-choice-info">
                 <span class="language-choice-name">Deutsch</span>
@@ -2894,10 +2839,7 @@
             <!-- 日本語 -->
             <button type="button" class="language-choice-btn" data-language-code="ja" role="radio" aria-checked="false" aria-label="日本語">
               <span class="language-flag-wrap">
-                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
-                  <rect width="640" height="480" fill="#ffffff"/>
-                  <circle cx="320" cy="240" r="144" fill="#bc002d"/>
-                </svg>
+                <img class="language-flag-svg" src="/flags/ja.svg" width="36" height="26" alt="" aria-hidden="true" decoding="async">
               </span>
               <div class="language-choice-info">
                 <span class="language-choice-name">日本語</span>
@@ -2909,16 +2851,7 @@
             <!-- Português (Brasil) -->
             <button type="button" class="language-choice-btn" data-language-code="pt-BR" role="radio" aria-checked="false" aria-label="Português (Brasil)">
               <span class="language-flag-wrap">
-                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
-                  <rect width="640" height="480" fill="#009b3a"/>
-                  <polygon points="320,54 578,240 320,426 62,240" fill="#fedf00"/>
-                  <circle cx="320" cy="240" r="102" fill="#002776"/>
-                  <path d="M222 258 C248 214 340 210 418 250 C340 220 252 226 222 258 Z" fill="#ffffff"/>
-                  <circle cx="304" cy="254" r="3" fill="#ffffff"/>
-                  <circle cx="324" cy="266" r="3" fill="#ffffff"/>
-                  <circle cx="340" cy="250" r="3" fill="#ffffff"/>
-                  <circle cx="316" cy="282" r="3" fill="#ffffff"/>
-                </svg>
+                <img class="language-flag-svg" src="/flags/pt-BR.svg" width="36" height="26" alt="" aria-hidden="true" decoding="async">
               </span>
               <div class="language-choice-info">
                 <span class="language-choice-name">Português</span>
@@ -3024,7 +2957,7 @@
         <button data-i18n-aria-label="ui.leader_conversation.aria_label_leave_conversation" type="button" id="leader-conversation-close" class="close-modal leader-conversation-close" aria-label="Leave conversation">×</button>
         <section data-i18n-aria-label="ui.leader_conversation.aria_label_speaker" class="leader-conversation-visual" aria-label="Speaker">
           <canvas id="leader-conversation-canvas" class="leader-conversation-canvas"></canvas>
-          <img id="leader-conversation-portrait" class="leader-conversation-portrait" src="/lore_portraits/survivor_00.webp" alt="">
+          <img loading="lazy" id="leader-conversation-portrait" class="leader-conversation-portrait" src="/lore_portraits/survivor_00.webp" alt="">
           <div class="leader-conversation-scanlines" aria-hidden="true"></div>
         </section>
         <section class="leader-conversation-content">
@@ -3052,14 +2985,14 @@
         <div class="snail-encounter-stage" id="snail-encounter-stage">
           <div class="snail-combatant snail-combatant--player" id="snail-encounter-player-card">
             <div class="snail-combatant-avatar-wrap">
-              <img id="snail-encounter-player-img" src="/Scout.full_v2.png" data-i18n-alt="ui.snail.alt_player_chassis" alt="Player Chassis" class="snail-combatant-img" />
+              <img loading="lazy" id="snail-encounter-player-img" src="/Scout.full_v2.png" data-i18n-alt="ui.snail.alt_player_chassis" alt="Player Chassis" class="snail-combatant-img" />
             </div>
             <span id="snail-encounter-player-name" class="snail-combatant-name">OPERATOR</span>
           </div>
           <div data-i18n="ui.snail_encounter.vs" class="snail-encounter-vs">VS</div>
           <div class="snail-combatant snail-combatant--enemy" id="snail-encounter-enemy-card">
             <div class="snail-combatant-avatar-wrap">
-              <img id="snail-encounter-enemy-img" src="/cybersnail.png" data-i18n-alt="ui.snail.alt_snail_combatant" alt="Snail Combatant" class="snail-combatant-img" />
+              <img loading="lazy" id="snail-encounter-enemy-img" src="/cybersnail.png" data-i18n-alt="ui.snail.alt_snail_combatant" alt="Snail Combatant" class="snail-combatant-img" />
             </div>
             <span id="snail-encounter-enemy-name" class="snail-combatant-name">CYBERSNAIL</span>
           </div>
@@ -3538,10 +3471,8 @@
 
   </div>
 
-  <script type="module" src="/src/hudInformationArchitecture.js"></script>
-  <script type="module" src="/src/hudGameplayState.js"></script>
-  <script type="module" src="/src/suitConditionController.js"></script>
-  <script type="module" src="/main.js?v=1243"></script>
+  <!-- src/boot.js loads the player's language, then the HUD modules and main.js in this order. -->
+  <script type="module" src="/src/boot.js"></script>
 </body>
 
 </html>

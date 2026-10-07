@@ -1,4 +1,5 @@
 import { createControllerPressGate } from './src/controllerPressGate.js';
+import { registerWebServiceWorker } from './src/serviceWorkerRegistration.js';
 import { initPlayerChatUI } from './src/playerChatUi.js';
 import { crossingGuidance, expeditionDebrief } from './src/expeditionFeedback.js';
 import { runO2MilestoneChoreography } from './src/o2CinematicDoors.js';
@@ -60,8 +61,6 @@ import { EVENT_RESPONSE_DESC_KEYS, EVENT_RESPONSE_LABEL_KEYS, EVENT_TEXT_KEYS } 
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized, isRankedRunPayload } from './src/steam/steamEvents.js';
 import { syncSteamStats } from './src/steamStats.js';
 import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb, unlockChapter as unlockRgbChapter, isChapterUnlocked as isRgbChapterUnlocked } from './src/minigames/rgb/save.js';
-import { mountRgb } from './src/minigames/rgb/runtime.js';
-import { ENDINGS as RGB_ENDINGS, CHAPTERS as RGB_CHAPTERS, CHAPTER_ORDER as RGB_CHAPTER_ORDER } from './src/minigames/rgb/content.js';
 import { mapBrowserGamepad, mergeBrowserAnalogFallback } from './src/browserGamepad.js';
 import { getControllerGlyphLabel } from './src/inputGlyphs.js';
 import {
@@ -78,14 +77,13 @@ import {
 } from './src/inputActions.js';
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
 import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSpriteLayouts.js';
-import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
-import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
-import { createArmoryScene } from './src/armoryScene.js';
+import { clearChromaGreen, repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
+import { PRESENTATION_LAYER_SELECTOR, isPresentationMutation } from './src/presentationLayer.js';
+import { resolveAmmoPickup } from './src/ammoSurplus.js';
 import { createArmoryUi } from './src/armoryUi.js';
 import { initSteamVaultUI, isVaultExchangeAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, renderStorePanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
 import { createFoundryHub, isFoundryHubEnabled } from './src/foundryHub.js';
 import { initSeasonPassUI, cancelXpFeedback, beginSeasonRun, getSeasonRunSummary, openSeasonPassModal, seasonPass } from './src/seasonPassUi.js';
-import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
 import { campaignLedger } from './src/campaignLedger.js';
@@ -112,7 +110,6 @@ import { getResolution, previewCampLeaderLinchpin } from './src/storyLinchpins.j
 import { buildEndingArchive, getLeaderReaction } from './src/storyArchive.js';
 import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
-import { LeaderConversation3d } from './src/leaderConversation3d.js';
 import { getLocale, setLocale, t, t as i18nT, getAvailableLocales } from './src/i18n.js';
 import { createDeveloperCommentary } from './src/developerCommentary.js';
 import { createVoiceLineLibrary, VOICE_LINES_ROOT } from './src/voiceLines.js';
@@ -129,6 +126,9 @@ import { installNativeTooltipGuard } from './src/nativeTooltipGuard.js';
 import { installAccessibilitySettings } from './src/accessibilitySettings.js';
 import { recordCollectedPickup, recordDebugResourceGrant, resetRunResourceTelemetry } from './src/runTelemetry.js';
 import { loaderBuildLabel, versionLabel } from './src/buildLabels.js';
+
+// Installable PWA on the deployed web build only (never Electron or the dev server).
+registerWebServiceWorker();
 
 // These galleries are explicit developer destinations. Keeping their modules
 // out of the boot graph prevents QA scene code (and its transitive catalogs)
@@ -820,8 +820,13 @@ function refreshInteractivePromptKeys() {
     }
 }
 
+// Rendered at all, i.e. no display:none on it or an ancestor. checkVisibility()
+// answers that from style alone; getClientRects() forced a full layout, and the
+// focus-root scan asks ~60 times a frame while the DOM changes (issue #106).
 function isElementVisible(element) {
-    return Boolean(element && element.getClientRects().length > 0);
+    if (!element) return false;
+    if (typeof element.checkVisibility === 'function') return element.checkVisibility();
+    return element.getClientRects().length > 0;
 }
 
 // A focus root only counts as open when it is actually on screen. Several
@@ -1796,15 +1801,43 @@ function syncFocusRootAriaHidden(records) {
     }
 }
 
+// Finding the open focus root measures ~60 surfaces (getClientRects forces a
+// layout), and this observer sees every class change in the document. Run per
+// mutation batch, boot spent ~1 s re-laying-out the page while the loader and
+// HUD toggled classes (Lighthouse TBT, issue #106). Once per frame gives the
+// same answer, at the layout the frame does anyway.
+let controllerFocusSyncQueued = false;
+function runQueuedControllerFocusSync() {
+    controllerFocusSyncQueued = false;
+    const root = getControllerFocusRoot();
+    syncSteamInputPhase();
+    if (root !== activeControllerFocusRoot || (steamInputState.lastInputMode === 'controller' && (isSteamControllerInputActive() || isModalFocusRoot(root)))) {
+        syncControllerFocusBoundary();
+    }
+}
+// Whether a focus root is open can only change when a class or aria-hidden
+// changes on a root or on an ancestor of one. Changes inside a root matter
+// only to a controller user, whose focus the boundary sync keeps on a live
+// element. Everything else (HUD and title stats animating every frame) cannot
+// change the result, and ran the full scan once a frame for nothing.
+function isFocusRootMutation(record) {
+    const target = record?.target;
+    if (!target || target === document.body || target === document.documentElement) return true;
+    if (target.id === 'tactical-map-modal') return true;
+    const controllerMode = steamInputState.lastInputMode === 'controller';
+    for (const id of STEAM_INPUT_FOCUS_ROOT_IDS) {
+        const root = document.getElementById(id);
+        if (!root) continue;
+        if (target === root || target.contains(root)) return true;
+        if (controllerMode && root.contains(target)) return true;
+    }
+    return false;
+}
 const controllerFocusObserver = new MutationObserver((records) => {
     syncFocusRootAriaHidden(records);
-    queueMicrotask(() => {
-        const root = getControllerFocusRoot();
-        syncSteamInputPhase();
-        if (root !== activeControllerFocusRoot || (steamInputState.lastInputMode === 'controller' && (isSteamControllerInputActive() || isModalFocusRoot(root)))) {
-            syncControllerFocusBoundary();
-        }
-    });
+    if (controllerFocusSyncQueued || !records.some(isFocusRootMutation)) return;
+    controllerFocusSyncQueued = true;
+    requestAnimationFrame(runQueuedControllerFocusSync);
 });
 controllerFocusObserver.observe(document.body, {
     subtree: true,
@@ -2217,18 +2250,6 @@ function ensureVirtualGamepadCursor() {
     return virtualGamepadCursor;
 }
 
-// Every full-screen presentation layer: movies (boss, class and interstitial
-// videos all play in .class-intro-overlay), still cinematics, the crash
-// cutscene, RGB cinematics and the blast-door transition. No pointer of any
-// kind belongs on top of these.
-const PRESENTATION_LAYER_SELECTOR = '.fullscreen-video-overlay:not(.hidden), '
-    + '.cinematic-overlay:not(.hidden), '
-    + '.class-intro-overlay:not(.is-closing), '
-    + '.cinematic-still-overlay:not(.is-closing), '
-    + '#cutscene-overlay.is-active, '
-    + '.rgb-cinematic--visible, '
-    + '#transition-overlay.active';
-
 function isPresentationLayerActive() {
     return Boolean(document.querySelector(PRESENTATION_LAYER_SELECTOR));
 }
@@ -2258,10 +2279,16 @@ function syncPresentationCursor() {
     }
 }
 if (typeof MutationObserver !== 'undefined' && document.body) {
-    new MutationObserver(syncPresentationCursor).observe(document.body, {
+    // Only records that can change the answer run the document-wide query
+    // (src/presentationLayer.js); still straight from the observer, so the
+    // pointer never flashes over a movie's first frames.
+    new MutationObserver((records) => {
+        if (records.some(isPresentationMutation)) syncPresentationCursor();
+    }).observe(document.body, {
         subtree: true,
         childList: true,
         attributes: true,
+        attributeOldValue: true,
         attributeFilter: ['class']
     });
 }
@@ -2590,6 +2617,24 @@ debugLog.subscribe((entry) => {
     updateGameplayCrosshair(lastReticleClientX, lastReticleClientY, lastReticleVisibleIntent);
 });
 
+// The tactical map opened mid-run, on a controller: the keyboard's
+// WASD/arrows, +/- and H/P/R. Sticks pan, RT/LT zoom in/out, A centres on the
+// player, Y on home, X resets the view (B, View or Menu close it).
+function handleControllerTacticalMap(controller, prev) {
+    const stick = (value) => (Math.abs(Number(value) || 0) > 0.18 ? Number(value) || 0 : 0);
+    const panX = stick(controller.move?.x) || stick(controller.camera?.x);
+    const panY = stick(controller.move?.y) || stick(controller.camera?.y);
+    if (panX || panY) {
+        tacticalMapState.panX -= panX * 7;
+        tacticalMapState.panY -= panY * 7;
+    }
+    if (controller.fire) adjustTacticalMapZoom(0.02);
+    if (controller.sprint) adjustTacticalMapZoom(-0.02);
+    if (controller.interact && !prev.interact) focusTacticalMapOnPlayer();
+    if (controller.ability && !prev.ability) focusTacticalMapOnHome();
+    if (controller.reload && !prev.reload) resetTacticalMapView();
+}
+
 function handleSteamGameplayInput(controller) {
     const prev = steamInputPrevControllers.get(controller.handle) ?? {};
     const tacticalMapModal = document.getElementById('tactical-map-modal');
@@ -2597,12 +2642,17 @@ function handleSteamGameplayInput(controller) {
     if (isMapOpen) {
         if (performance.now() - lastTacticalMapToggleTimestamp >= 250 && ((controller.dash && !prev.dash) || (controller.toggleMap && !prev.toggleMap) || (controller.pause && !prev.pause))) {
             toggleTacticalMapModal(false);
+        } else {
+            handleControllerTacticalMap(controller, prev);
         }
         updateControllerInputMemory(controller, {
             ...prev,
             dash: Boolean(controller.dash),
             toggleMap: Boolean(controller.toggleMap),
-            pause: Boolean(controller.pause)
+            pause: Boolean(controller.pause),
+            interact: Boolean(controller.interact),
+            ability: Boolean(controller.ability),
+            reload: Boolean(controller.reload)
         });
         return;
     }
@@ -2671,11 +2721,16 @@ function handleSteamGameplayInput(controller) {
         window.quickCommandRadial.handleDirectionInput(aimX, aimY);
         if ((controller.fire && !prev.fire) || (controller.interact && !prev.interact) || (controller.tacticalPing && !prev.tacticalPing)) {
             window.quickCommandRadial.confirmSelection();
-        } else if ((controller.menuBack && !prev.menuBack) || (controller.dash && !prev.dash)) {
+        } else if ((controller.menuBack && !prev.menuBack) || (controller.dash && !prev.dash)
+            || (controller.quickCommand && !prev.quickCommand)) {
             window.quickCommandRadial.close();
         }
+    } else if (controller.quickCommand && !prev.quickCommand) {
+        // Keyboard G: the squad command radial.
+        window.dispatchEvent(new CustomEvent('open-quick-command-radial'));
     } else if (controller.tacticalPing && !prev.tacticalPing) {
-        window.game?.triggerTacticalPing?.();
+        // Keyboard T: trade with a squadmate when there is one, else a ping.
+        if (!toggleSquadTrade()) window.game?.triggerTacticalPing?.();
     }
 
     if (controller.pause && !prev.pause) {
@@ -2697,6 +2752,7 @@ function handleSteamGameplayInput(controller) {
         dash: Boolean(controller.dash),
         scan: Boolean(controller.scan),
         tacticalPing: Boolean(controller.tacticalPing),
+        quickCommand: Boolean(controller.quickCommand),
         pause: Boolean(controller.pause),
         toggleMap: Boolean(controller.toggleMap),
         sprint: Boolean(controller.sprint),
@@ -3044,9 +3100,14 @@ function suspendGameForFullscreenVideo() {
 
 const RGB_ENDING_ORDER = ['system_loop', 'ashes_survival', 'open_hand'];
 
-function openArchiveSimsModal() {
+// The RGB minigame (its runtime and chapter content, ~85 KB) loads with the
+// archive, not at boot (issue #106).
+const loadRgbContent = () => import('./src/minigames/rgb/content.js');
+
+async function openArchiveSimsModal() {
     const modal = document.getElementById('archive-sims-modal');
     if (!modal) return;
+    const { ENDINGS: RGB_ENDINGS, CHAPTERS: RGB_CHAPTERS, CHAPTER_ORDER: RGB_CHAPTER_ORDER } = await loadRgbContent();
     const statusEl = document.getElementById('archive-sim-rgb-status');
     const endingsEl = document.getElementById('archive-sim-rgb-endings');
     const chaptersEl = document.getElementById('archive-sim-rgb-chapters');
@@ -3090,11 +3151,18 @@ function closeArchiveSimsModal() {
     document.getElementById('archive-sims-modal')?.classList.add('hidden');
 }
 
-function launchRgb(chapter = null) {
+async function launchRgb(chapter = null) {
     closeArchiveSimsModal();
-    if (menu) menu.classList.add('hidden');
     const root = document.getElementById('rgb-root');
     if (!root) return;
+    let mountRgb;
+    try {
+        ({ mountRgb } = await import('./src/minigames/rgb/runtime.js'));
+    } catch (error) {
+        console.error('[rgb] could not load the minigame', error);
+        return;
+    }
+    if (menu) menu.classList.add('hidden');
     rgbReturnPhase = appPhase === 'archive' ? 'menu' : appPhase;
     setAppPhase('archive');
     // The archive fully covers the Three.js canvas. Stop both rendering and
@@ -3455,11 +3523,35 @@ function refreshCareerStats() {
     }
 }
 
+// The pre-cut frame (scripts/build-title-portraits.mjs): ~40 KB, where the
+// full walk sheet was 1.3 MB plus a chroma-key pass over 4.2M pixels on the
+// main thread during boot (issue #106). Same pixels.
+function loadTitlePortraitImage(playerType) {
+    const key = String(PLAYER_SPRITE_LAYOUTS[playerType] ? playerType : 'TANK').toLowerCase();
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.decoding = 'async';
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = assetUrl(`/portraits/title_${key}.png`);
+    });
+}
+
 async function renderTitleProfilePortrait(playerType) {
     const portraitCanvas = document.getElementById('title-profile-portrait');
     const layout = PLAYER_SPRITE_LAYOUTS[playerType] ?? PLAYER_SPRITE_LAYOUTS.TANK;
     const context = portraitCanvas?.getContext?.('2d');
     if (!portraitCanvas || !context || !layout) return;
+
+    const portrait = await loadTitlePortraitImage(playerType).catch(() => null);
+    if (portrait) {
+        portraitCanvas.width = portrait.width;
+        portraitCanvas.height = portrait.height;
+        context.clearRect(0, 0, portrait.width, portrait.height);
+        context.imageSmoothingEnabled = false;
+        context.drawImage(portrait, 0, 0);
+        return;
+    }
 
     const image = await getPreviewSpriteImage(layout.path, layout).catch(() => null);
     if (!image) return;
@@ -3960,8 +4052,18 @@ function trackPickupCollected(event) {
         const amount = Number.isFinite(event?.detail?.amount)
             ? Math.max(1, Math.floor(event.detail.amount))
             : 4;
-        pickupCounterState.ammo = Math.min(activeAmmoCapacity, previousValue + amount);
+        const pickup = resolveAmmoPickup(previousValue, amount, activeAmmoCapacity);
+        pickupCounterState.ammo = pickup.ammo;
         window.hbLog?.('WEAPON', 'info', 'ammo-pickup-collected', { newTotal: pickupCounterState.ammo, maxCapacity: activeAmmoCapacity, amountGained: amount });
+        if (pickup.surplusTech > 0) {
+            // Rounds that do not fit become tech salvage (src/ammoSurplus.js).
+            pickupCounterState.weapon = (pickupCounterState.weapon ?? 0) + pickup.surplusTech;
+            window.hbLog?.('WEAPON', 'info', 'ammo-surplus-salvaged', { wasted: pickup.wasted, tech: pickup.surplusTech });
+            recomputePickupTotal();
+            renderPickupCounter();
+            AudioManager.playProceduralLoot('weapon', event?.detail?.rarity);
+            if (pickupCounterState.ammo === previousValue) return;
+        }
     } else {
         const amount = type === 'coin' && Number.isFinite(event?.detail?.amount)
             ? Math.max(1, event.detail.amount)
@@ -7925,8 +8027,9 @@ function installHudCompass() {
         updateHudCompass();
         const now = performance.now();
         // Cards slide and chips wrap without firing resize; keep the columns
-        // clear on the same light cadence as the minimap.
-        if (now - (step.lastHudLayout ?? 0) >= 250) {
+        // clear on the same light cadence as the minimap. The HUD only shows
+        // in a run; measuring it behind the title cost boot time (#106).
+        if (appPhase === 'gameplay' && now - (step.lastHudLayout ?? 0) >= 250) {
             syncHudColumnLayout();
             step.lastHudLayout = now;
         }
@@ -9409,7 +9512,8 @@ function ensureScoutHeroPreview() {
     const canvas = document.getElementById('char-preview-3d');
     if (!canvas) return Promise.resolve(null);
     if (!scoutHeroPreviewPromise) {
-        scoutHeroPreviewPromise = createScoutHeroPreview(canvas)
+        // 3D previews load with their screen, not at boot (issue #106).
+        scoutHeroPreviewPromise = import('./src/scoutHeroPreview.js').then(({ createScoutHeroPreview }) => createScoutHeroPreview(canvas))
             .then((preview) => {
                 scoutHeroPreview = preview;
                 preview.setOperatorPolish(getSelectedPolish?.()?.color ?? 0xffffff);
@@ -9485,6 +9589,7 @@ function ensureArmoryInitialized() {
         armoryInitPromise = (async () => {
             const canvas = document.getElementById('armory-canvas');
             const hudContainer = document.getElementById('armory-hud-overlay');
+            const { createArmoryScene } = await import('./src/armoryScene.js');
             armorySceneInstance = await createArmoryScene(canvas);
             // setOperatorPolish/setDecal are already wired to the in-run
             // player and (polish only) the title-screen hero preview -- the
@@ -12472,6 +12577,27 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
         ctx.restore();
     }
 
+    // Names of scanned rooms and hallways (src/locationNames.js). Unscanned
+    // places carry no label; the full map only, the minimap stays clean.
+    if (!compact) {
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(2, 6, 11, 0.85)';
+        for (const chunk of detailedChunks) {
+            for (const label of chunk.labels ?? []) {
+                const point = worldToMap(label.x, label.z);
+                if (point.x < -80 || point.x > width + 80 || point.y < -20 || point.y > height + 20) continue;
+                ctx.font = label.kind === 'room' ? 'bold 9px Space Mono, monospace' : '8px Space Mono, monospace';
+                ctx.fillStyle = label.kind === 'room' ? 'rgba(255, 214, 140, 0.92)' : 'rgba(150, 215, 235, 0.7)';
+                ctx.strokeText(label.text, point.x, point.y);
+                ctx.fillText(label.text, point.x, point.y);
+            }
+        }
+        ctx.restore();
+    }
+
     // Landmarks (including Home Base)
     for (const landmark of landmarks) {
         const landmarkKey = `${Math.floor(landmark.x / chunkSize)},${Math.floor(landmark.z / chunkSize)}`;
@@ -12693,7 +12819,58 @@ function toggleTacticalMapModal(forceState) {
 }
 
 document.getElementById('close-tactical-map-modal')?.addEventListener('click', () => toggleTacticalMapModal(false));
+// The room or hallway underfoot, named once a radar pulse has reached it
+// (threeGame.syncPlayerLocationLabel, src/locationNames.js).
+window.addEventListener('player-location-changed', (event) => {
+    const element = document.getElementById('hud-location');
+    if (!element) return;
+    const label = event?.detail?.label;
+    element.classList.toggle('is-unknown', !label);
+    if (label) {
+        element.removeAttribute('data-i18n');
+        element.textContent = label;
+    } else {
+        element.setAttribute('data-i18n', 'ui.location.unscanned');
+        element.textContent = t('ui.location.unscanned');
+    }
+});
+window.addEventListener('locale-changed', () => {
+    if (!window.game) return;
+    window.game._detailedChunksDirty = true; // map labels re-render in the new language
+    window.game.syncPlayerLocationLabel?.({ force: true });
+});
+
+// The on-screen "PRESS E / A" prompts are tappable: on a Steam Deck the
+// touchscreen is the natural way to hit them, and a tap used to do nothing
+// (session 2026-10-06: SETTLE SURVIVOR tapped twice at a camp, no settle).
+// The tap performs the same interaction the button would.
+document.addEventListener('click', (event) => {
+    const prompt = event.target?.closest?.('.hud-action-prompt');
+    if (!prompt || prompt.id === 'mouse-look-prompt' || prompt.classList.contains('hidden')) return;
+    if (!isGameplayPhase()) return;
+    event.preventDefault();
+    event.stopPropagation();
+    window.game?.triggerGameplayInteract?.();
+});
 setupClickOutside('tactical-map-modal', () => toggleTacticalMapModal(false));
+
+// T, and D-pad left on a controller. Barter only exists with a real
+// squadmate: solo play used to open a trade window with a made-up
+// "SQUAD-OPERATIVE" on every ping, so with no squadmate this returns false
+// and the press stays a tactical ping (threeGame.js).
+function toggleSquadTrade() {
+    const tradeModal = document.getElementById('player-trade-modal');
+    const tradeOpen = Boolean(tradeModal && !tradeModal.classList.contains('hidden'));
+    const remotes = window.game?.remotePlayers;
+    if (!tradeOpen && !(remotes?.size > 0)) return false;
+    if (tradeOpen) {
+        playerTradeManager.closeTrade();
+    } else {
+        setupPlayerTradeEvents();
+        playerTradeManager.openTrade(Array.from(remotes.values())[0]);
+    }
+    return true;
+}
 
 // Global Key Listener for Modals & Dev Console
 document.addEventListener('keydown', (event) => {
@@ -12757,19 +12934,7 @@ document.addEventListener('keydown', (event) => {
 
     if (event.code === 'KeyT') {
         const activeTag = document.activeElement?.tagName?.toLowerCase();
-        const tradeModal = document.getElementById('player-trade-modal');
-        const tradeOpen = Boolean(tradeModal && !tradeModal.classList.contains('hidden'));
-        const remotes = window.game?.remotePlayers;
-        // T is also the tactical ping (threeGame.js). Barter only exists with a
-        // real squadmate: solo play used to open a trade window with a made-up
-        // "SQUAD-OPERATIVE" on every ping.
-        if (activeTag !== 'input' && activeTag !== 'textarea' && (tradeOpen || remotes?.size > 0)) {
-            if (tradeOpen) {
-                playerTradeManager.closeTrade();
-            } else {
-                setupPlayerTradeEvents();
-                playerTradeManager.openTrade(Array.from(remotes.values())[0]);
-            }
+        if (activeTag !== 'input' && activeTag !== 'textarea' && toggleSquadTrade()) {
             event.preventDefault();
             return;
         }
@@ -14221,7 +14386,29 @@ const leaderConversationGuidance = document.getElementById('leader-conversation-
 const leaderConversationContinue = document.getElementById('leader-conversation-continue');
 const leaderConversationLeave = document.getElementById('leader-conversation-leave');
 const leaderConversationClose = document.getElementById('leader-conversation-close');
-const leaderConversation3d = new LeaderConversation3d(leaderConversationCanvas);
+// The 3D leader portrait loads with the first camp conversation, not at boot
+// (issue #106): react/hide are no-ops until show() has created it.
+// A hide() that lands while the module is still loading cancels that show().
+let leaderConversation3dInstance = null;
+let leaderConversation3dShowToken = 0;
+const leaderConversation3d = {
+    async show(identity) {
+        const token = ++leaderConversation3dShowToken;
+        if (!leaderConversation3dInstance) {
+            // A failed load keeps the 2D portrait, as a failed 3D show does.
+            const module = await import('./src/leaderConversation3d.js').catch(() => null);
+            if (!module) return false;
+            leaderConversation3dInstance ??= new module.LeaderConversation3d(leaderConversationCanvas);
+            if (token !== leaderConversation3dShowToken) return false;
+        }
+        return leaderConversation3dInstance.show(identity);
+    },
+    react(reaction) { leaderConversation3dInstance?.react(reaction); },
+    hide() {
+        leaderConversation3dShowToken += 1;
+        leaderConversation3dInstance?.hide();
+    }
+};
 let leaderConversationLines = [];
 let leaderConversationLineIndex = 0;
 let leaderConversationIdentity = null;
@@ -14994,30 +15181,39 @@ function getDoorImage(key) {
 }
 
 function preloadDoorAssets() {
+    // Only the art getDoorImage can show. The var2/var3 JPEG alternates were
+    // preloaded here but never displayed: 5.5 MB on every boot (Lighthouse
+    // "serve images in next-gen formats", 2026-10-06).
     const doorImages = [
         '/door_biomech_keyart_v2.webp',
         '/door_bio_keyart_v2.webp',
-        '/door_bio_keyart_var2.jpg',
-        '/door_bio_keyart_var3.jpg',
         '/door_nuclear_keyart_v2.webp',
-        '/door_nuclear_keyart_var2.jpg',
-        '/door_nuclear_keyart_var3.jpg',
         '/door_cryo_keyart_v2.webp',
-        '/door_cryo_keyart_var2.jpg',
-        '/door_cryo_keyart_var3.jpg',
         '/door_alien_keyart_v2.webp',
         '/door_rust_keyart_v2.webp',
-        '/door_bio.webp',
-        '/door_nuclear.webp',
-        '/door_cryo.webp',
-        '/door_biomechanical.webp',
         '/ship_wreckage.webp'
     ];
+    // door_bio/nuclear/cryo/biomechanical.webp were preloaded here too but
+    // nothing displays them: 1.4 MB per boot (Lighthouse, issue #106).
 
-    for (const src of doorImages) {
-        const img = new Image();
-        img.src = assetUrl(src);
-    }
+    // The art is first needed when a door closes, which takes a click, and
+    // the loading screen's asset manifest already fetches most of it. Start
+    // on the first input (or 15 s in), so it never competes with the title
+    // key art, the largest paint (issue #106).
+    let doorsRequested = false;
+    const interactionEvents = ['pointerdown', 'keydown', 'touchstart'];
+    const fetchDoors = () => {
+        if (doorsRequested) return;
+        doorsRequested = true;
+        for (const type of interactionEvents) window.removeEventListener(type, fetchDoors, true);
+        for (const src of doorImages) {
+            const img = new Image();
+            img.decoding = 'async';
+            img.src = assetUrl(src);
+        }
+    };
+    for (const type of interactionEvents) window.addEventListener(type, fetchDoors, { capture: true, passive: true });
+    setTimeout(fetchDoors, 15000);
 
     try {
         AudioManager.preload?.(['ui_boot1', 'door_slam_vertical', 'door_gears_spin', 'door_slide_horiz']);
@@ -15244,21 +15440,7 @@ function getPreviewSpriteImage(path, layout) {
             ctx.drawImage(image, 0, 0);
 
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imgData.data;
-
-            // Remove chroma green border/background pixels
-            for (let i = 0; i < data.length; i += 4) {
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-                const a = data[i + 3];
-                if (a > 0) {
-                    if (r < 140 && b < 140 && g > 90 && g > r * 1.4 && g > b * 1.4) {
-                        data[i + 3] = 0; // Make transparent
-                    }
-                }
-            }
-
+            clearChromaGreen(imgData.data);
             ctx.putImageData(imgData, 0, 0);
 
             const runtimeCanvas = repackGeneratedSpriteAtlas(canvas, layout);
@@ -15276,6 +15458,12 @@ function getPreviewSpriteImage(path, layout) {
 async function renderPreviewFrame(type, frameIndex = previewFrameIndex) {
     const data = heroData[type];
     if (!data || !previewSprite || !previewSpriteContext) return;
+    // The preview is on the loadout screen (#menu). Drawing it anywhere else
+    // decoded and chroma-keyed a 2048x2048 sheet during boot, behind the
+    // title (issue #106), and redrew it every 110 ms through a whole run. The
+    // interval draws the first frame within a tick of the menu opening; the
+    // fallback portrait covers that tick, as it does a slow load.
+    if (appPhase !== 'menu') return;
 
     const image = await getPreviewSpriteImage(data.path, data).catch(() => null);
     if (!image || !heroData[type] || heroData[type].path !== data.path) {
@@ -15819,8 +16007,17 @@ function initTacticalCursor() {
 // docs/sprint28plan.md Lane D: if a run-in-progress checkpoint is still on
 // disk at boot, the previous session never reached a graceful end (death,
 // extraction, or a fresh NEW RUN all clear it -- see src/threeGame.js's
-// Initial State Setup
-document.addEventListener('DOMContentLoaded', async () => {
+// Initial State Setup. src/boot.js imports this module after the player's
+// language has loaded, which can be after DOMContentLoaded has already fired;
+// a plain listener would then never run and boot would stall on the loading
+// screen. If the document is already parsed, start on a microtask: still after
+// this whole module has evaluated (the handler reads bindings declared below
+// it), as it always was.
+function whenDocumentParsed(start) {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
+    else queueMicrotask(start);
+}
+whenDocumentParsed(async () => {
     traceBootPhase('dom-content-loaded', {
         electron: Boolean(window.electronAPI),
         devicePixelRatio: window.devicePixelRatio
@@ -16772,7 +16969,7 @@ function finishBootDiagnostics() {
     // also pre-warm each type's shader program (renderer.compileAsync), not
     // just parse the model -- see the function's own comment for why that's
     // a second, separate cost.
-    preloadEnemy3dTemplates(window.game).catch(() => {});
+    import('./src/enemy3dOverlay.js').then(({ preloadEnemy3dTemplates }) => preloadEnemy3dTemplates(window.game)).catch(() => {});
 }
 
 // Boot's observer stops at boot-ready, so nothing recorded *why* a frame

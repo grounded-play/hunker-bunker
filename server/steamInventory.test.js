@@ -516,6 +516,33 @@ describe('Steam Inventory API endpoints', () => {
         expect(finalInv.some((i) => i.itemdefid === 4001)).toBe(false);
     });
 
+    it('POST /steam/inventory/exchange adds duplicate shards when the cache rolls an owned cosmetic', async () => {
+        delete process.env.HB_STEAM_PUBLISHER_KEY;
+        const testId = '76561198000000000';
+        const requestId = `cache-open-dup-${Math.random()}`;
+        await setMockInventory(testId, [
+            { itemId: 'cache-1', itemdefid: 4000, quantity: 1, acquiredAt: Date.now() },
+            { itemId: 'key-1', itemdefid: 4001, quantity: 1, acquiredAt: Date.now() },
+            { itemId: 'chrome-1', itemdefid: 2200, quantity: 1, acquiredAt: Date.now() }
+        ]);
+        const random = vi.spyOn(Math, 'random').mockReturnValueOnce(0.999); // the roll: last bucket, 2200
+        let res;
+        try {
+            res = await fetch(`${baseUrl}/steam/inventory/exchange`, {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ ticketHex: '00112233445566778899aabbccddeeff', requestId, recipeId: 4100, materials: ['cache-1', 'key-1'] })
+            });
+        } finally { random.mockRestore(); }
+        const text = await res.text();
+        if (res.status !== 200) throw new Error(`${res.status} ${text.slice(0, 800)}`);
+        const body = JSON.parse(text);
+        expect(res.status).toBe(200);
+        expect(body.granted.map((item) => item.itemdefid)).toEqual([2200, 4159]);
+        expect(body.duplicateBonus).toEqual({ itemdefid: 4159, quantity: 100, ok: true });
+        expect(getMockInventory(testId).find((i) => i.itemdefid === 4159)?.quantity).toBe(100);
+    });
+
     it('POST /steam/inventory/exchange rejects opening a cache without a key', async () => {
         delete process.env.HB_STEAM_PUBLISHER_KEY;
         const testId = '76561198000000000';

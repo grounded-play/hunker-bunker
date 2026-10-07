@@ -18,7 +18,7 @@ describe('3D corpses', () => {
             getFogOfWarVisibility: () => 1,
             applyFogOfWarOpacity: () => {}
         };
-        for (const name of ['spawnEnemyCorpse', 'attachCorpse3d', 'syncCorpse3d', 'disposeCorpse3d', 'updateCorpses', 'clearCorpses']) {
+        for (const name of ['spawnEnemyCorpse', 'attachCorpse3d', 'syncCorpse3d', 'disposeCorpse3d', 'updateCorpses', 'clearCorpses', 'prewarmLateModel']) {
             game[name] = ThreeGame.prototype[name];
         }
         return game;
@@ -48,6 +48,38 @@ describe('3D corpses', () => {
         expect(root.position.z).toBe(-2);
         // Solid at rest, despite the billboard's 0.85 resting opacity.
         expect(root.children[0].material.opacity).toBeCloseTo(1);
+    });
+
+    // Session 2026-10-06 (Windows): killing the Cyber Snail boss froze the
+    // game for 13.9 s, then 11.4 s. Each was one frame in which the new boss
+    // corpse (and a chassis skin) compiled its shaders synchronously --
+    // Direct3D 11 via Chrome is slow at that. The model now waits for a
+    // background compile before it enters the scene.
+    it('compiles a late corpse model in the background before adding it', async () => {
+        const root = model();
+        let finishCompile;
+        const game = makeGame(vi.fn(async () => root));
+        game.camera = new THREE.PerspectiveCamera();
+        game.renderer = { compileAsync: vi.fn(() => new Promise((resolve) => { finishCompile = resolve; })) };
+        game.spawnEnemyCorpse(enemy('cybersnail'));
+        await vi.waitFor(() => expect(game.renderer.compileAsync).toHaveBeenCalledWith(root, game.camera, game.scene));
+        expect(root.parent).toBeNull();
+        finishCompile();
+        await vi.waitFor(() => expect(root.parent).toBe(game.scene));
+    });
+
+    it('drops the model if the corpse expired while its shaders compiled', async () => {
+        const root = model();
+        let finishCompile;
+        const game = makeGame(vi.fn(async () => root));
+        game.camera = new THREE.PerspectiveCamera();
+        game.renderer = { compileAsync: vi.fn(() => new Promise((resolve) => { finishCompile = resolve; })) };
+        game.spawnEnemyCorpse(enemy('cybersnail'));
+        await vi.waitFor(() => expect(game.renderer.compileAsync).toHaveBeenCalled());
+        game.clearCorpses();
+        finishCompile();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(root.parent).toBeNull();
     });
 
     it('fades and removes the model with its corpse', async () => {

@@ -29,6 +29,12 @@ if (!gotSingleInstanceLock) {
 // identity; Electron's generic fallback can otherwise leave that overlay up
 // even though the renderer and audio are already running.
 app.setName('Hunker Bunker');
+// Windows groups taskbar buttons (and picks their icon) by AppUserModelID.
+// The packaged build gets the builder's appId; a dev run (`npm run
+// electron:dev`) otherwise shows up as electron.exe, with Electron's icon.
+if (process.platform === 'win32') {
+    app.setAppUserModelId('com.icecave.hunkerbunker');
+}
 if (process.platform === 'linux') {
     app.setDesktopName('hunker-bunker.desktop');
     app.commandLine.appendSwitch('class', 'hunker-bunker');
@@ -458,6 +464,9 @@ function initSteam() {
                 scan: steamClient.input.getDigitalAction('scan'),
                 sprint: steamClient.input.getDigitalAction('sprint'),
                 toggleMap: steamClient.input.getDigitalAction('toggle_map'),
+                tacticalPing: steamClient.input.getDigitalAction('tactical_ping'),
+                quickCommand: steamClient.input.getDigitalAction('quick_command'),
+                cycleInteract: steamClient.input.getDigitalAction('cycle_interact'),
                 archiveFocus: steamClient.input.getAnalogAction('archive_focus'),
                 archiveConfirm: steamClient.input.getDigitalAction('archive_confirm'),
                 archiveInventory: steamClient.input.getDigitalAction('archive_inventory'),
@@ -612,6 +621,9 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
             scan: isValidActionHandle(actionHandles.scan) ? controller.isDigitalActionPressed(actionHandles.scan) : false,
             sprint: isValidActionHandle(actionHandles.sprint) ? controller.isDigitalActionPressed(actionHandles.sprint) : false,
             toggleMap: isValidActionHandle(actionHandles.toggleMap) ? controller.isDigitalActionPressed(actionHandles.toggleMap) : false,
+            tacticalPing: isValidActionHandle(actionHandles.tacticalPing) ? controller.isDigitalActionPressed(actionHandles.tacticalPing) : false,
+            quickCommand: isValidActionHandle(actionHandles.quickCommand) ? controller.isDigitalActionPressed(actionHandles.quickCommand) : false,
+            cycleInteract: isValidActionHandle(actionHandles.cycleInteract) ? controller.isDigitalActionPressed(actionHandles.cycleInteract) : false,
             pause: isValidActionHandle(actionHandles.pause) ? controller.isDigitalActionPressed(actionHandles.pause) : false
         }
         : phase === 'archive'
@@ -1158,7 +1170,8 @@ function createWindow() {
         minHeight: 600,
         backgroundColor: '#0a0c0e',
         title: 'Hunker Bunker',
-        icon: path.join(__dirname, 'icon.png'),
+        // The multi-size .ico keeps the Windows taskbar and Alt-Tab icons sharp.
+        icon: path.join(__dirname, process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
         autoHideMenuBar: true,
         focusable: true,
         frame: false,

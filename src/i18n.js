@@ -1,10 +1,19 @@
 import en from './locales/en.json' with { type: 'json' };
-import zhCN from './locales/zh-CN.json' with { type: 'json' };
-import ru from './locales/ru.json' with { type: 'json' };
-import es419 from './locales/es-419.json' with { type: 'json' };
-import de from './locales/de.json' with { type: 'json' };
-import ja from './locales/ja.json' with { type: 'json' };
-import ptBR from './locales/pt-BR.json' with { type: 'json' };
+
+// English is bundled: it is the source text and every lookup's fallback. The
+// other six load on demand, so a session downloads and parses one language
+// rather than seven -- the six were ~330 KB gzipped, a third of the web
+// build's boot JavaScript (Lighthouse, 2026-10-06; issue #106). src/boot.js
+// loads the player's language before the game's modules evaluate, so text
+// translated at load time is already in the right language.
+const LOCALE_LOADERS = Object.freeze({
+    'zh-CN': () => import('./locales/zh-CN.json'),
+    'ru': () => import('./locales/ru.json'),
+    'es-419': () => import('./locales/es-419.json'),
+    'de': () => import('./locales/de.json'),
+    'ja': () => import('./locales/ja.json'),
+    'pt-BR': () => import('./locales/pt-BR.json')
+});
 
 export const SUPPORTED_LOCALES = Object.freeze([
     { code: 'en', name: 'English', nativeName: 'English', rtl: false },
@@ -16,15 +25,9 @@ export const SUPPORTED_LOCALES = Object.freeze([
     { code: 'pt-BR', name: 'Portuguese (Brazil)', nativeName: 'Português (Brasil)', rtl: false }
 ]);
 
-const DICTIONARIES = Object.freeze({
-    'en': en,
-    'zh-CN': zhCN,
-    'ru': ru,
-    'es-419': es419,
-    'de': de,
-    'ja': ja,
-    'pt-BR': ptBR
-});
+const DICTIONARIES = { 'en': en };
+const pendingLoads = new Map();
+const SUPPORTED_CODES = new Set(SUPPORTED_LOCALES.map((item) => item.code));
 
 const STEAM_LANGUAGE_MAP = Object.freeze({
     english: 'en',
@@ -56,7 +59,7 @@ export function resolveLocaleCode(code) {
     if (!code || typeof code !== 'string') return null;
     const lower = code.trim().toLowerCase();
     if (STEAM_LANGUAGE_MAP[lower]) return STEAM_LANGUAGE_MAP[lower];
-    if (DICTIONARIES[code]) return code;
+    if (SUPPORTED_CODES.has(code)) return code;
     const directMatch = SUPPORTED_LOCALES.find((item) => item.code.toLowerCase() === lower);
     if (directMatch) return directMatch.code;
     const prefix = lower.split(/[-_]/)[0];
@@ -101,9 +104,56 @@ export function getLocale() {
     return currentLocale;
 }
 
+export function isLocaleLoaded(localeCode) {
+    const resolved = resolveLocaleCode(localeCode);
+    return Boolean(resolved && Object.hasOwn(DICTIONARIES, resolved));
+}
+
+// Loads a language's dictionary once; resolves false if it cannot load (the
+// player then keeps English, as with any missing key).
+export function loadLocale(localeCode) {
+    const resolved = resolveLocaleCode(localeCode);
+    if (!resolved || !SUPPORTED_CODES.has(resolved)) return Promise.resolve(false);
+    if (Object.hasOwn(DICTIONARIES, resolved)) return Promise.resolve(true);
+    if (!pendingLoads.has(resolved)) {
+        pendingLoads.set(resolved, LOCALE_LOADERS[resolved]()
+            .then((module) => {
+                DICTIONARIES[resolved] = module.default ?? module;
+                // The session's own language arrived after English text was
+                // already applied (static markup translates on DOMContentLoaded,
+                // which boot does not hold back): re-render exactly as a
+                // language switch does.
+                if (resolved === currentLocale && typeof window !== 'undefined' && typeof CustomEvent === 'function') {
+                    window.dispatchEvent(new CustomEvent('locale-changed', { detail: { locale: resolved } }));
+                }
+                return true;
+            })
+            .catch(() => false)
+            .finally(() => pendingLoads.delete(resolved)));
+    }
+    return pendingLoads.get(resolved);
+}
+
+// Boot: the detected language is ready before the game's modules evaluate.
+export function ensureLocaleReady() {
+    return loadLocale(currentLocale);
+}
+
+// Tests and tools that switch through every language synchronously.
+export async function loadAllLocales() {
+    await Promise.all(SUPPORTED_LOCALES.map((item) => loadLocale(item.code)));
+}
+
+// Accepted (true) when the code is a supported language. A language that is
+// not loaded yet switches as soon as its dictionary arrives; the
+// locale-changed event then re-renders everything, exactly as a switch does.
 export function setLocale(localeCode) {
     const resolved = resolveLocaleCode(localeCode);
-    if (!resolved || !DICTIONARIES[resolved]) return false;
+    if (!resolved || !SUPPORTED_CODES.has(resolved)) return false;
+    if (!Object.hasOwn(DICTIONARIES, resolved)) {
+        void loadLocale(resolved).then((loaded) => { if (loaded) setLocale(resolved); });
+        return true;
+    }
     currentLocale = resolved;
 
     try {

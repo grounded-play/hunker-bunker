@@ -8,6 +8,8 @@ export default defineConfig({
     // Vitest's default *.spec.js include pattern would otherwise try to
     // execute directly and fail.
     exclude: ['node_modules/**', 'tests/e2e/**'],
+    // Loads every language dictionary (src/i18n.js loads them on demand).
+    setupFiles: ['./vitest.setup.js'],
     // steam-build's windows-latest packaging job has twice hit vitest's
     // stock 5000ms/10000ms defaults on the SQLite-backed server/steam*.test.js
     // suites (steamLeaderboards.test.js's initDb() beforeAll hook, and a

@@ -7,7 +7,6 @@
 
 import { PRESENTATION_EVENTS } from './presentationTelemetry.js';
 import { getCatalogEntry } from './itemOwnership.js';
-import { mountRewardPreview as mountRewardPreview3d } from './rewardPreview.js';
 
 /**
  * Mount a 3D preview of a reward into `container`.
@@ -18,8 +17,26 @@ import { mountRewardPreview as mountRewardPreview3d } from './rewardPreview.js';
  *   - resolves `{ ok: true }` or `{ ok: false, reason }`.
  *   - `dispose()` releases GPU resources and is safe to call more than once.
  */
+// The 3D preview (and Three.js with it) loads when a reward is actually
+// revealed, not with the Dossier at boot (issue #106). Same { ready, dispose }
+// handle as rewardPreview.js; disposing before the module arrives is safe.
 export function mountRewardPreview(options) {
-    return mountRewardPreview3d(options);
+    let inner = null;
+    let disposed = false;
+    const ready = import('./rewardPreview.js')
+        .then((module) => {
+            if (disposed) return { ok: false, reason: 'disposed' };
+            inner = module.mountRewardPreview(options);
+            return inner.ready;
+        })
+        .catch(() => ({ ok: false, reason: 'preview_module_unavailable' }));
+    return {
+        ready,
+        dispose() {
+            disposed = true;
+            inner?.dispose?.();
+        }
+    };
 }
 
 // §3: reward reveals may share their entry motion, but they must not share

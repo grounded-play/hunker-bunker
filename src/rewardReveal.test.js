@@ -164,3 +164,14 @@ describe('asynchronous receipt delivery', () => {
         expect(calls).toContain('present:reveal');
     });
 });
+
+// Issue #106: the 3D preview (and Three.js) loads on reveal, not at boot.
+describe('lazy reward preview handle', () => {
+    it('resolves without mounting when disposed before the preview module arrives', async () => {
+        const { mountRewardPreview } = await import('./rewardReveal.js');
+        const handle = mountRewardPreview({ container: null, itemId: 4120, category: 'charm' });
+        handle.dispose();
+        handle.dispose();
+        await expect(handle.ready).resolves.toMatchObject({ ok: false });
+    });
+});

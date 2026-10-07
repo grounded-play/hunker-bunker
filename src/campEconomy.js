@@ -336,10 +336,12 @@ export function applyTrade(trade, bankManager) {
             if (typeof bankManager.spendShells === 'function') {
                 bankManager.spendShells(amt);
             } else if (bankManager.state) {
-                bankManager.state.shells = (bankManager.state.shells ?? 0) - amt;
+                bankManager.state.shells = Math.max(0, (bankManager.state.shells ?? 0) - amt);
             }
         } else if (bankManager.state) {
-            bankManager.state[key] = (bankManager.state[key] ?? 0) - amt;
+            // canApplyTrade already refused a trade the bank cannot cover; the
+            // floor keeps a missing or stale key from going negative anyway.
+            bankManager.state[key] = Math.max(0, (bankManager.state[key] ?? 0) - amt);
         }
     }
     for (const [key, amt] of Object.entries(trade.receive ?? {})) {

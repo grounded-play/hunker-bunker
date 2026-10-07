@@ -182,7 +182,10 @@ export const CLASS_SKILL_TREES = Object.freeze({
     ])
 });
 
-export const FOUNDRY_ACTIVATION_COST = Object.freeze({ tech: 25, coin: 10, med: 5 });
+// Session 2026-10-06 (solo, 27 min): 80 tech and 30 med banked but 5 coin,
+// so the Foundry never opened. Coin drops are up and surplus ammo now
+// salvages to tech (src/ammoSurplus.js); the threshold eases a little too.
+export const FOUNDRY_ACTIVATION_COST = Object.freeze({ tech: 20, coin: 8, med: 5 });
 
 // Weapon skill tree ("COMBAT MATRIX"). Levels are 0..maxLevel; costs[level] is the
 // price to advance FROM that level. Effects are applied in threeGame at run init.

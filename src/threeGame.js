@@ -463,6 +463,7 @@ import {
 } from './worldTransformations.js';
 import { createCrossingBridgeMesh } from './crossingBridge.js';
 import { getTerritoryLocation } from './territoryStructures.js';
+import { HALL_SCAN_KEY, ROOM_SCAN_KEY, formatLocationName, hallwayLocationName, roomLocationName } from './locationNames.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
 import { groupDangerZones, lipEdgeQuads } from './dangerZones.js';
 import { GATE_CHALLENGES, GATE_CHALLENGE_TUNING, planGateChallenges } from './gateChallenges.js';
@@ -711,11 +712,14 @@ const PICKUP_DISTRIBUTION = {
     transitional: 0.2,
     stray: 0.1
 };
+// Coin is the Foundry's scarce input (bank.js FOUNDRY_ACTIVATION_COST): a
+// 27-minute solo run on 2026-10-06 banked 5. Coin's share comes from ammo,
+// whose surplus now salvages to tech anyway (src/ammoSurplus.js).
 const PICKUP_TYPES = [
     { type: 'health', weight: 0.27 },
-    { type: 'ammo', weight: 0.50 },
+    { type: 'ammo', weight: 0.46 },
     { type: 'weapon', weight: 0.14 },
-    { type: 'coin', weight: 0.09 }
+    { type: 'coin', weight: 0.13 }
 ];
 export const CLASS_STATS = {
     SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, passiveName: 'EVASIVE', passiveDescription: 'Reduced duration from enemy slow/freeze effects. Faster reload. Slipstream Strike grants +35% move speed on hit.' },
@@ -1761,6 +1765,14 @@ export function isRoomGatewayFrameEligible(room, door, metadata = {}) {
     return true;
 }
 
+// Co-op guests create host enemies they lack (handleEnemyStateSnapshot).
+const REMOTE_ENEMY_MATERIALIZE_PER_SNAPSHOT = 4;
+const REMOTE_REPLICA_STALE_MS = 3000;
+
+// Keyboard keys named in target prompts -> the controller action that does
+// the same thing (src/inputGlyphs.js, scripts/build-steam-input-configs.js).
+const PROMPT_KEY_ACTIONS = Object.freeze({ E: 'interact', T: 'tacticalPing', C: 'cycleInteract', G: 'quickCommand', R: 'reload' });
+
 export class ThreeGame {
     constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null, cameraMode = 'isometric', gameplayTiltShiftBlurEnabled = false } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
@@ -2061,6 +2073,9 @@ export class ThreeGame {
         this._slowFrameChunkMountTick = 0;
         this.discoveredMapChunkKeys = new Set(['0,0']);
         this.discoveredMapRoomKeys = new Set();
+        // Rooms and hallways a radar pulse has reached: their names are known
+        // (src/locationNames.js). Walking in reveals the map, not the name.
+        this.scannedLocationKeys = new Set();
         this.discoveredMapCellKeys = new Set();
         this.maxChunkMountsPerFrame = 1;
         // The orthographic viewport reaches roughly 11 world units from its
@@ -4524,6 +4539,44 @@ export class ThreeGame {
             material.map = tex;
             material.needsUpdate = true;
         });
+        void this.attachBunkerCot3d?.();
+    }
+
+    // The cot as the same 3D camp cot the camps use; the sprite stays the
+    // position/visibility owner and the fallback if the model cannot load.
+    async attachBunkerCot3d() {
+        if (!hasWorld3dModel('prop_camp_cot')) return;
+        try {
+            const root = await (this.createWorld3dModel?.('prop_camp_cot') ?? createWorld3dModel('prop_camp_cot'));
+            if (!root || !this.bunkerCotSprite || !this.scene) return;
+            await this.prewarmLateModel?.(root);
+            root.rotation.y = WORLD_3D_FACING_YAW;
+            this.scene.add(root);
+            this.bunkerCot3d = root;
+            this.bunkerCotSprite.material.visible = false;
+            this.syncBunkerCot();
+        } catch (error) {
+            console.warn('[bunker-cot] 3D cot unavailable; keeping the sprite', error);
+        }
+    }
+
+    // setupBunkerCot runs once, at construction, on the menu profile, where the
+    // spawn tile is the empty showroom chunk: the cot used to stay there while
+    // the rest trigger sat, invisible, beside the real spawn (session
+    // 2026-10-06, "I don't see a bed"). Keep it on the rest point instead --
+    // a new run or a co-op crash site moves the spawn, and the cot with it.
+    syncBunkerCot() {
+        const sprite = this.bunkerCotSprite;
+        if (!sprite) return;
+        if (this.performanceProfile === 'gameplay') {
+            const point = this.getBunkerRestPoint();
+            if (sprite.position.x !== point.x || sprite.position.z !== point.z) sprite.position.set(point.x, 0.7, point.z);
+        }
+        const root = this.bunkerCot3d;
+        if (root) {
+            root.position.set(sprite.position.x, 0, sprite.position.z);
+            root.visible = sprite.visible;
+        }
     }
 
     setupCrashedShips() {
@@ -5370,6 +5423,7 @@ export class ThreeGame {
                 ],
                 ...classVisuals[overlayType]
             });
+            await this.prewarmLateModel?.(overlay.root);
             if (this.player !== playerRoot || this.playerType !== overlayType) {
                 overlay.dispose();
                 return;
@@ -6197,6 +6251,7 @@ export class ThreeGame {
                 wearableOverclocks: equipment.overclockIds,
                 ...classVisuals[remote.opClass]
             });
+            await this.prewarmLateModel?.(overlay.root);
             if (this.remotePlayers?.get(remote.id) !== remote || !remote.mesh.parent || remote.overlayGeneration !== generation) {
                 overlay.dispose();
                 return;
@@ -6907,6 +6962,39 @@ export class ThreeGame {
         return handle.applyRemoteFormation?.(detail) === true;
     }
 
+    materializeRemoteEnemy(state) {
+        if (state?.isBoss) return this.materializeRemoteBoss(state);
+        if (!state?.scatterKey || !state.enemyType || !this.scatterMaterials?.[state.enemyType]) return null;
+        if (!Number.isFinite(state.x) || !Number.isFinite(state.z)) return null;
+        const group = this.chunkMeshes?.get(`${Math.floor(state.x / this.chunkSize)},${Math.floor(state.z / this.chunkSize)}`);
+        if (!group) return null; // Chunk not mounted here yet; a later snapshot retries.
+        const enemy = this.createScatterInstance({
+            x: state.x,
+            z: state.z,
+            type: state.enemyType,
+            scatterKey: state.scatterKey,
+            scale: Number.isFinite(state.scale) ? state.scale : 1,
+            rotation: 0,
+            tiltX: 0,
+            tiltZ: 0,
+            elevation: 0.1,
+            groupType: 'enemy',
+            phase: 0,
+            opacity: 1,
+            isBoss: false
+        });
+        if (!enemy) return null;
+        enemy.userData.isRemoteReplica = true;
+        enemy.userData.lastNetUpdate = Date.now();
+        if (Number.isFinite(state.hp)) {
+            enemy.userData.hp = state.hp;
+            enemy.userData.maxHp = Math.max(state.hp, enemy.userData.maxHp ?? state.hp);
+        }
+        group.add(enemy);
+        this.scatterSprites.push(enemy);
+        return enemy;
+    }
+
     materializeRemoteBoss(state) {
         if (!state?.scatterKey || !state.enemyType || !this.scatterMaterials?.[state.enemyType]) return null;
         if (!Number.isFinite(state.x) || !Number.isFinite(state.z)) return null;
@@ -6946,12 +7034,19 @@ export class ThreeGame {
         if (this.isMultiplayerHost || this.multiplayerMode === 'pvp') return false;
         if (!Array.isArray(data?.enemies) && !Array.isArray(data?.companions)) return false;
         let applied = 0;
+        let materialized = 0;
         if (Array.isArray(data?.enemies)) {
             for (const state of data.enemies) {
                 if (!state?.scatterKey) continue;
                 let sprite = (this.scatterSprites ?? []).find((candidate) => candidate.userData?.scatterKey === state.scatterKey);
-                if (!sprite?.userData && state.isBoss && !state.burstTriggered) {
-                    sprite = this.materializeRemoteBoss?.(state) ?? null;
+                // Any live host enemy this guest lacks (one spawned or pulled in
+                // on the host, not only a boss) is created here. Before, the host
+                // chased the guest with a snail the guest could not see or be hurt
+                // by (co-op session 2026-10-06). Capped per snapshot so a burst of
+                // spawns cannot hitch the guest; the rest arrive 100 ms later.
+                if (!sprite?.userData && !state.burstTriggered && (state.hp ?? 1) > 0 && materialized < REMOTE_ENEMY_MATERIALIZE_PER_SNAPSHOT) {
+                    sprite = this.materializeRemoteEnemy?.(state) ?? null;
+                    if (sprite) materialized += 1;
                 }
                 if (!sprite?.userData) continue;
                 if (Number.isFinite(state.x) && Number.isFinite(state.z)) {
@@ -6979,11 +7074,28 @@ export class ThreeGame {
                 applied += 1;
             }
         }
+        if (Array.isArray(data?.enemies)) this.pruneRemoteReplicas?.(data.enemies);
         if (Array.isArray(data?.companions)) {
             this.handleRemoteCompanionsSnapshot?.(data.companions);
             applied += data.companions.length;
         }
         return applied > 0;
+    }
+
+    // A replica exists only because the host reported it. Once the host stops
+    // (it died off-screen, despawned, or its chunk unloaded there), drop it
+    // rather than leave a ghost the guest can see but nobody can hit.
+    // Deterministic enemies the guest spawned itself are never touched.
+    pruneRemoteReplicas(reported, now = Date.now(), staleMs = REMOTE_REPLICA_STALE_MS) {
+        const live = new Set(reported.map((state) => state?.scatterKey).filter(Boolean));
+        this.scatterSprites = (this.scatterSprites ?? []).filter((sprite) => {
+            const data = sprite?.userData;
+            if (!data?.isRemoteReplica || data.isBoss || live.has(data.scatterKey)) return true;
+            if (now - (data.lastNetUpdate ?? now) < staleMs) return true;
+            sprite.parent?.remove(sprite);
+            sprite.material?.dispose?.();
+            return false;
+        });
     }
 
     handleRemoteCompanionsSnapshot(remoteCompanions) {
@@ -7180,7 +7292,13 @@ export class ThreeGame {
                 // Smooth rotation lerp
                 const yawDelta = wrapAngle(remote.targetYaw - remote.currentYaw);
                 remote.currentYaw += yawDelta * Math.min(1.0, delta * 14);
-                mesh.rotation.y = remote.currentYaw;
+                // A 3D chassis turns itself toward travel and aim in world
+                // space (player3dOverlay.update), exactly as the local one does.
+                // Rotating its parent to the yaw as well turned a squadmate by
+                // their facing twice (co-op session 2026-10-06). The 2D sprite
+                // fallback faces by frame row, so it never needed the rotation.
+                mesh.rotation.y = remote.overlay ? 0 : remote.currentYaw;
+                const remoteAim = aimVectorFromYaw(remote.currentYaw);
 
                 // Walk-cycle animation, driven by the vx/vz/animState already
                 // broadcast in playerMove -- mirrors updatePlayerSpriteAnimation
@@ -7198,12 +7316,14 @@ export class ThreeGame {
                     isMoving,
                     isSprinting: remote.animState === 'run' || speedSq > 8.0,
                     isInjured: remote.hp < remote.maxHp * 0.4,
-                    hasAim: false,
+                    // Their broadcast yaw is where they aim, so a squadmate standing
+                    // still turns toward their aim like the local player does.
+                    hasAim: true,
                     idleActionName: 'idle',
                     moveX: moveDirX,
                     moveZ: moveDirZ,
-                    aimX: moveDirX,
-                    aimZ: moveDirZ,
+                    aimX: remoteAim.x,
+                    aimZ: remoteAim.z,
                     groundSpeed
                 });
                 if (isMoving) {
@@ -7256,6 +7376,7 @@ export class ThreeGame {
             try {
                 const root = await (this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType));
                 if (!root) this.revealWorld3dFallback?.(source);
+                if (root) await this.prewarmLateModel?.(root);
                 if (!root || !source.parent) return null;
                 root.position.copy(source.position);
                 // Must match syncWorld3dReplacement, which adds WORLD_3D_FACING_YAW.
@@ -7369,7 +7490,8 @@ export class ThreeGame {
             const token = ++state.token;
             Promise.resolve()
                 .then(() => this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType))
-                .then((root) => {
+                .then(async (root) => {
+                    if (root) await this.prewarmLateModel?.(root);
                     if (token !== state.token) return;
                     if (!root || !sprite.parent) {
                         state.failed = modelType;
@@ -8166,7 +8288,11 @@ export class ThreeGame {
         handled = this.interactWithBunkerBlastDoorButton() || handled;
         handled = this.interactWithProceduralDoor() || handled;
         handled = this.interactWithMazeAccessSource() || handled;
-        handled = this.interactWithLoreTerminal() || handled;
+        // A terminal already read must not shadow the camp, cot or wanderer
+        // beside it: its modal takes input, so everything after it refused
+        // (session 2026-10-06: a camp's SETTLE SURVIVOR prompt re-opened the
+        // lore beside it on every press). Read ones are re-readable last.
+        handled = this.interactWithLoreTerminal({ unreadOnly: true }) || handled;
         if (!handled) handled = this.interactWithCaveEntrance();
         if (!handled) handled = this.interactWithAct2Camp();
         if (!handled) handled = this.interactWithBunkerCot();
@@ -8180,6 +8306,7 @@ export class ThreeGame {
         if (!handled) handled = this.interactWithPocketClimbPoint();
         if (!handled) handled = this.interactWithBiomechanicalDoor();
         if (!handled) handled = this.interactWithCustomBiomechProp();
+        if (!handled) handled = this.interactWithLoreTerminal({ unreadOnly: false });
         if (!handled) {
             this.playThrottledUiError('_lastNoInteractCueAt', { volume: 0.3, playbackRate: 0.9 });
         }
@@ -10127,6 +10254,7 @@ export class ThreeGame {
         }
         if (this.bunkerCotSprite) {
             this.bunkerCotSprite.visible = nextProfile === 'gameplay';
+            this.syncBunkerCot?.();
         }
         if (nextProfile === 'menu' && this.darknessOverlay) {
             this.darknessOverlay.style.opacity = '0';
@@ -11274,6 +11402,7 @@ export class ThreeGame {
                 weaponEnabled: false,
                 allowStatic: false
             });
+            await this.prewarmLateModel?.(overlay.root);
             if (!marker?.parent || (marker !== this._blackBoxMarker && !marker.userData?.isRemoteDeathMarker)) {
                 overlay.dispose();
                 return false;
@@ -11521,9 +11650,9 @@ export class ThreeGame {
         }
     }
 
-    interactWithLoreTerminal() {
-        if (!this.isGameplayInputActive()) return;
-        if (!this.player) return;
+    interactWithLoreTerminal({ unreadOnly = false } = {}) {
+        if (!this.isGameplayInputActive()) return false;
+        if (!this.player) return false;
         for (const sprite of this.scatterSprites) {
             if (sprite.userData.type !== 'lore_terminal') continue;
             const dist = Math.hypot(
@@ -11531,6 +11660,7 @@ export class ThreeGame {
                 this.player.position.z - sprite.position.z
             );
             if (dist < 2.2) {
+                if (unreadOnly && this._readLoreKeys?.has(sprite.userData.loreKey)) continue;
                 this._readLoreKeys.add(sprite.userData.loreKey);
                 if (this.isMultiplayer) {
                     this.broadcastSharedWorldEvent?.('lore-terminal-read', {
@@ -11546,9 +11676,22 @@ export class ThreeGame {
                     id: `terminal:${sprite.userData.loreKey || `${Math.round(sprite.position.x)},${Math.round(sprite.position.z)}`}`
                 });
                 window.AudioManager?.play('ui_scan_ping', { volume: 0.35, playbackRate: 0.65, bus: 'sfx' });
-                return;
+                return true;
             }
         }
+        return false;
+    }
+
+    // The button that does what this keyboard key does, on the player's
+    // current device: target-panel badges used to print E and T on a Deck.
+    getPromptKeyGlyph(defaultKey = 'E', action = PROMPT_KEY_ACTIONS[defaultKey] ?? 'interact') {
+        const isGamepad = Boolean(
+            this.isGamepadActive?.()
+            || this.activeInputDevice === 'gamepad'
+            || (typeof window !== 'undefined' && window.state?.inputMode === 'gamepad')
+        );
+        if (isGamepad) return getControllerGlyphLabel(action, this.activeControllerType ?? 'SteamDeckController', defaultKey);
+        return (typeof window !== 'undefined' && window.HunkerInputState?.getPromptKeyText?.(defaultKey)) || defaultKey;
     }
 
     getPromptKeyLabel(defaultKey = 'E', action = 'interact') {
@@ -12429,7 +12572,7 @@ export class ThreeGame {
                         return {
                             type: 'interact',
                             targetId: 'trade_peer',
-                            badgeLabel: `[T] LINK // BARTER WITH ${(remote.callsign || 'SQUADMATE').toUpperCase()}`,
+                            badgeLabel: `LINK // BARTER WITH ${(remote.callsign || 'SQUADMATE').toUpperCase()}`,
                             kicker: 'SQUADMATE COMM // TRADE',
                             title: (remote.callsign || 'SQUADMATE').toUpperCase(),
                             subtitle: `CLASS: ${(remote.playerType || 'OPERATIVE').toUpperCase()}`,
@@ -13036,7 +13179,7 @@ export class ThreeGame {
         if (actionPrompt && actionKey && actionText) {
             if (target.promptKey && target.promptText) {
                 actionPrompt.classList.remove('hidden');
-                actionKey.textContent = target.promptKey;
+                actionKey.textContent = this.getPromptKeyGlyph(target.promptKey);
                 actionText.textContent = target.promptText;
             } else {
                 actionPrompt.classList.add('hidden');
@@ -13420,6 +13563,15 @@ export class ThreeGame {
     grantSalvageCache({ tech = 0, coin = 0, med = 0 } = {}) {
         this.bank.deposit({ tech, coin, med });
         window.dispatchEvent(new CustomEvent('salvage-cache-opened', { detail: { tech, coin, med } }));
+    }
+
+    // Props (src/propInteractions.js) pay out "+N SCRAP". The bank has always
+    // read scrap as tech (normalizeInventory), so scrap banks as tech.
+    addScrap(amount = 0) {
+        const qty = Math.floor(Number(amount));
+        if (!Number.isFinite(qty) || qty <= 0) return false;
+        this.bank.deposit({ tech: qty });
+        return true;
     }
 
     // Dev-console `give <resource> <qty>` (src/debugConsole.js). Routes into
@@ -19080,6 +19232,7 @@ export class ThreeGame {
      * action prompt rather than adding a second prompt surface.
      */
     updateRestPrompt() {
+        this.syncBunkerCot?.();
         if (typeof document === 'undefined') return;
         const promptEl = document.getElementById('console-hud-prompt');
         if (!promptEl) return;
@@ -19087,6 +19240,18 @@ export class ThreeGame {
         const point = this.player && this.isGameplayInputActive?.()
             ? this.getRestPointAt(this.player.position.x, this.player.position.z)
             : null;
+
+        // At the bed but not allowed to sleep: say why rather than stay silent.
+        const refusal = !point && this.player && this.isGameplayInputActive?.()
+            ? this.getRestRefusalAt?.(this.player.position.x, this.player.position.z)
+            : null;
+        if (refusal && actionText) {
+            actionText.textContent = refusal === 'active_quest' ? t('ui.prompt.rest_blocked_quest') : t('ui.prompt.rest_blocked_unsafe');
+            actionText.dataset.restPrompt = '1';
+            promptEl.classList.add('visible');
+            promptEl.classList.remove('hidden');
+            return;
+        }
 
         if (point) {
             if (actionText) {
@@ -19110,6 +19275,20 @@ export class ThreeGame {
             promptEl.classList.add('hidden');
             promptEl.classList.remove('visible');
         }
+    }
+
+    /**
+     * Within reach of the cot but refused for a reason the player can act on
+     * (an active contract, an unsafe camp, hostiles); null otherwise. The
+     * mid-sleep "already resting" refusal is not one of them.
+     */
+    getRestRefusalAt(x, z) {
+        if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
+        const cot = this.getBunkerRestPoint();
+        if (Math.hypot(cot.x - x, cot.z - z) > BUNKER_COT_REACH) return null;
+        const check = this.canRestAt(cot, { status: 'alive', safeSpace: true });
+        if (check.allowed) return null;
+        return ['active_quest', 'camp-unsafe', 'hostiles_nearby'].includes(check.reason) ? check.reason : null;
     }
 
     /** Where the bunker cot stands, in world coordinates. */
@@ -21624,7 +21803,7 @@ export class ThreeGame {
                     discoveredRoomKeys: this.discoveredMapRoomKeys ?? new Set(),
                     discoveredCellKeys: this.discoveredMapCellKeys ?? new Set()
                 });
-                detailedChunks.push({ key, chunkX, chunkY, cells });
+                detailedChunks.push({ key, chunkX, chunkY, cells, labels: this.getScannedLocationLabels(key, grid) });
             }
             this._cachedDetailedChunks = detailedChunks;
             this._detailedChunksDirty = false;
@@ -21698,6 +21877,7 @@ export class ThreeGame {
         this._lastDiscoveryChunkKey = chunkKey;
         this._lastDiscoveryLocalX = localX;
         this._lastDiscoveryLocalY = localY;
+        this.syncPlayerLocationLabel();
 
         this.discoveredMapChunkKeys ??= new Set();
         if (!this.discoveredMapChunkKeys.has(chunkKey)) {
@@ -23161,6 +23341,9 @@ export class ThreeGame {
         this.worldRouteRecords?.clear();
         this.discoveredMapChunkKeys = new Set(['0,0']);
         this.discoveredMapRoomKeys = new Set();
+        // Rooms and hallways a radar pulse has reached: their names are known
+        // (src/locationNames.js). Walking in reveals the map, not the name.
+        this.scannedLocationKeys = new Set();
         this.discoveredMapCellKeys = new Set();
         this.reachableGeneratedChunkKeys = new Set();
         this.mazeAccessState = createAccessState();
@@ -23941,6 +24124,7 @@ export class ThreeGame {
                             }
                         }
                         this.discoveredMapRoomKeys.add(roomKey);
+                        this.scannedLocationKeys?.add(ROOM_SCAN_KEY(key, room.id));
                     }
 
                     for (let y = 0; y < grid.length; y++) {
@@ -23953,6 +24137,7 @@ export class ThreeGame {
                                 const cellKey = `${worldX},${worldZ}`;
                                 if (!this.discoveredMapCellKeys.has(cellKey)) freshCells.add(cellKey);
                                 this.discoveredMapCellKeys.add(cellKey);
+                                if (Math.hypot(worldX - px, worldZ - pz) <= radius) this.scannedLocationKeys?.add(HALL_SCAN_KEY(key));
                             }
                         }
                     }
@@ -23973,6 +24158,81 @@ export class ThreeGame {
             freshCells
         };
         this.checkMappingMissionComplete();
+        this.syncPlayerLocationLabel?.({ force: true });
+    }
+
+    /**
+     * The named place at a world position: the room whose floor holds it, else
+     * its chunk's hallways. `known` once a radar pulse has reached it.
+     */
+    getLocationAt(x, z) {
+        if (!Number.isFinite(x) || !Number.isFinite(z) || !this.chunkSize) return null;
+        const chunkX = Math.floor(x / this.chunkSize);
+        const chunkY = Math.floor(z / this.chunkSize);
+        const chunkKey = `${chunkX},${chunkY}`;
+        const localX = Math.round(x - chunkX * this.chunkSize);
+        const localY = Math.round(z - chunkY * this.chunkSize);
+        for (const room of this.wfcMetadataCache?.get(chunkKey)?.roomInstances ?? []) {
+            const cells = room.footprint?.length ? room.footprint : (room.interior ?? []);
+            if (cells.some((cell) => cell.x === localX && cell.y === localY)) {
+                const scanKey = ROOM_SCAN_KEY(chunkKey, room.id);
+                return { scanKey, name: roomLocationName(room, chunkKey), known: Boolean(this.scannedLocationKeys?.has(scanKey)) };
+            }
+        }
+        const scanKey = HALL_SCAN_KEY(chunkKey);
+        return { scanKey, name: hallwayLocationName(chunkKey), known: Boolean(this.scannedLocationKeys?.has(scanKey)) };
+    }
+
+    // Map labels for the scanned rooms and hallways of one chunk, in world
+    // coordinates: a room at its floor's centre, the hallways at the middle of
+    // the chunk's walkable cells outside rooms.
+    getScannedLocationLabels(chunkKey, grid = this.chunkCache?.get(chunkKey)) {
+        const scanned = this.scannedLocationKeys;
+        if (!scanned?.size || !grid) return [];
+        const [chunkX, chunkY] = chunkKey.split(',').map(Number);
+        const originX = chunkX * this.chunkSize;
+        const originZ = chunkY * this.chunkSize;
+        const labels = [];
+        const roomCells = new Set();
+        for (const room of this.wfcMetadataCache?.get(chunkKey)?.roomInstances ?? []) {
+            const cells = room.footprint?.length ? room.footprint : (room.interior ?? []);
+            for (const cell of cells) roomCells.add(`${cell.x},${cell.y}`);
+            if (!cells.length || !scanned.has(ROOM_SCAN_KEY(chunkKey, room.id))) continue;
+            const cx = cells.reduce((sum, cell) => sum + cell.x, 0) / cells.length;
+            const cy = cells.reduce((sum, cell) => sum + cell.y, 0) / cells.length;
+            labels.push({ kind: 'room', x: originX + cx, z: originZ + cy, text: formatLocationName(roomLocationName(room, chunkKey), t) });
+        }
+        if (scanned.has(HALL_SCAN_KEY(chunkKey))) {
+            let sx = 0;
+            let sy = 0;
+            let count = 0;
+            for (let y = 0; y < grid.length; y += 1) {
+                for (let x = 0; x < (grid[y]?.length ?? 0); x += 1) {
+                    if (!['.', 'D', 'R', 'B', 'L', 'O'].includes(grid[y][x]) || roomCells.has(`${x},${y}`)) continue;
+                    sx += x;
+                    sy += y;
+                    count += 1;
+                }
+            }
+            if (count > 0) labels.push({ kind: 'hall', x: originX + sx / count, z: originZ + sy / count, text: formatLocationName(hallwayLocationName(chunkKey), t) });
+        }
+        return labels;
+    }
+
+    // Tells the HUD where the player is, only when the place or whether it
+    // has been scanned changes.
+    syncPlayerLocationLabel({ force = false } = {}) {
+        if (!this.player || this.performanceProfile !== 'gameplay') return null;
+        const location = this.getLocationAt(this.player.position.x, this.player.position.z);
+        if (!location) return null;
+        const signature = `${location.scanKey}|${location.known}`;
+        if (!force && signature === this._lastLocationSignature) return location;
+        this._lastLocationSignature = signature;
+        const label = location.known ? formatLocationName(location.name, t) : null;
+        if (typeof window !== 'undefined' && typeof CustomEvent === 'function') {
+            window.dispatchEvent(new CustomEvent('player-location-changed', { detail: { label, known: location.known, kind: location.name?.kind ?? null } }));
+        }
+        return location;
     }
 
     checkMappingMissionComplete() {
@@ -33572,8 +33832,8 @@ export class ThreeGame {
             return 'health';
         }
 
-        if (roll < 0.1) return 'coin';
-        if (roll < 0.13) return 'weapon';
+        if (roll < 0.14) return 'coin';
+        if (roll < 0.17) return 'weapon';
         if (roll < 0.52) return 'ammo';
         return 'health';
     }
@@ -33680,21 +33940,21 @@ export class ThreeGame {
         const ROOM_PICKUP_BIAS = {
             [ROOM_TYPES.DEAD_END]: [
                 { type: 'health', weight: 0.20 },
-                { type: 'ammo',   weight: 0.45 },
+                { type: 'ammo',   weight: 0.41 },
                 { type: 'weapon', weight: 0.20 },
-                { type: 'coin',   weight: 0.15 }
+                { type: 'coin',   weight: 0.19 }
             ],
             [ROOM_TYPES.CORRIDOR]: [
                 { type: 'health', weight: 0.28 },
-                { type: 'ammo',   weight: 0.52 },
+                { type: 'ammo',   weight: 0.48 },
                 { type: 'weapon', weight: 0.12 },
-                { type: 'coin',   weight: 0.08 }
+                { type: 'coin',   weight: 0.12 }
             ],
             [ROOM_TYPES.CHAMBER]: [
                 { type: 'health', weight: 0.27 },
-                { type: 'ammo',   weight: 0.45 },
+                { type: 'ammo',   weight: 0.41 },
                 { type: 'weapon', weight: 0.18 },
-                { type: 'coin',   weight: 0.10 }
+                { type: 'coin',   weight: 0.14 }
             ]
         };
         const weights = ROOM_PICKUP_BIAS[roomType] ?? PICKUP_TYPES;
@@ -34749,10 +35009,36 @@ export class ThreeGame {
     // the gameplay owner (shell pickup, fade, fog), as with every 3D prop; the
     // model mirrors it each frame in syncCorpse3d. Materials are cloned because
     // a corpse fades on its own and template materials are shared.
+    // Late-loading models (corpses, swapped-in props, a squadmate's chassis)
+    // compile their shader programs the first time they draw. On Windows,
+    // Chrome runs WebGL on Direct3D 11, where a program for this scene's light
+    // count can take 10+ s to compile synchronously: killing the Cyber Snail
+    // boss on PC froze two frames for 13.9 s and 11.4 s as its corpse and a
+    // chassis skin first drew (session 2026-10-06; the Deck's driver was
+    // fine). Compile in the background first, as preloadEnemy3dTemplates
+    // already does for enemies. Bounded, so a compile that never settles
+    // cannot keep a model out of the world; a late corpse beats a frozen game.
+    async prewarmLateModel(root, timeoutMs = 30000) {
+        const renderer = this.renderer;
+        if (!root || typeof renderer?.compileAsync !== 'function' || !this.camera || !this.scene) return;
+        let timer = null;
+        try {
+            await Promise.race([
+                renderer.compileAsync(root, this.camera, this.scene),
+                new Promise((resolve) => { timer = setTimeout(resolve, timeoutMs); })
+            ]);
+        } catch {
+            // A failed prewarm only means the first draw compiles, as before.
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
     async attachCorpse3d(corpse, modelType, enemySprite) {
         corpse.material.visible = false;
         try {
             const root = await (this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType));
+            if (root) await this.prewarmLateModel?.(root);
             if (!root || !corpse.parent || !this.corpses?.includes(corpse)) {
                 if (!root) corpse.material.visible = true;
                 return;

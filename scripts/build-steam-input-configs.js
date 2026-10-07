@@ -20,7 +20,7 @@ const controllerTypes = [
 // aligned with the gameplay preset below instead of duplicating a device image
 // inside the game's loading screen.
 const OFFICIAL_LAYOUT_TITLE = 'Official Hunker Bunker Controls';
-const OFFICIAL_LAYOUT_DESCRIPTION = 'Left Stick Move · Right Stick Aim · A Interact · B Dodge · X Reload · Y Smash · D-Pad Map/Scan/Reload/Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause.';
+const OFFICIAL_LAYOUT_DESCRIPTION = 'Left Stick Move · Right Stick Aim (click: Next Target) · A Interact · B Dodge · X Reload · Y Smash · D-Pad Up Map · Down Scan · Left Ping/Squad Trade · Right Squad Commands · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause.';
 
 function binding(actionSet, action, title) {
     return `"binding" "game_action ${actionSet} ${action}, ${title}"`;
@@ -91,12 +91,15 @@ function mouseGroup(id, actionSet, action, extraSettings = {}) {
     }`;
 }
 
-function analogGroup(id, actionSet, action) {
+function analogGroup(id, actionSet, action, click = null) {
+    const inputs = click ? `{
+            "click" { ${activator(actionSet, click[0], click[1])} }
+        }` : '{ }';
     return `"group"
     {
         "id" "${id}"
         "mode" "joystick_move"
-        "inputs" { }
+        "inputs" ${inputs}
         "settings"
         {
             "deadzone_inner_radius" "6000"
@@ -208,7 +211,9 @@ function buildControllerConfig(controllerType) {
             y: ['ability', 'Smash']
         }),
         analogGroup(11, 'gameplay', 'move'),
-        analogGroup(12, 'gameplay', 'camera'),
+        // Clicking the aim stick steps through overlapping interaction
+        // targets (keyboard C).
+        analogGroup(12, 'gameplay', 'camera', ['cycle_interact', 'Next Target']),
         // Not in the official preset, but kept so the manifest-declared
         // camera_mouse action (polled in electron/main.cjs) has a group a user
         // can bind trackpad or gyro aim to in a custom layout. Removing it makes
@@ -219,11 +224,14 @@ function buildControllerConfig(controllerType) {
         // gamepad. Only actions the runtime already polls in electron/main.cjs
         // are bound here -- a binding for an action nothing reads is a promise
         // the game cannot keep.
+        // Left/right used to repeat X (reload) and Y (smash); they now carry
+        // the commands that were keyboard-only: T (ping, or trade with a
+        // squadmate) and G (the squad command radial).
         dpadGroup(18, 'gameplay', {
             up: ['toggle_map', 'Tactical Map'],
             down: ['scan', 'Scan'],
-            left: ['reload', 'Reload'],
-            right: ['ability', 'Smash']
+            left: ['tactical_ping', 'Ping / Squad Trade'],
+            right: ['quick_command', 'Squad Commands']
         }),
         triggerGroup(13, 'gameplay', 'sprint', 'Sprint'),
         triggerGroup(14, 'gameplay', 'fire', 'Fire'),
@@ -319,7 +327,7 @@ function buildControllerConfig(controllerType) {
     "title" "${OFFICIAL_LAYOUT_TITLE}"
     "description" "${OFFICIAL_LAYOUT_DESCRIPTION}"
     "controller_type" "${controllerType}"
-    "major_revision" "10"
+    "major_revision" "11"
     "minor_revision" "0"
     "localization"
     {

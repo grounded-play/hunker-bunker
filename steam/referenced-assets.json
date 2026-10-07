@@ -395,6 +395,7 @@
     "alien_proto_spitter_walk_v2.png",
     "alien_rhun_walk.png",
     "alien_vey_walk.png",
+    "apple-touch-icon.png",
     "art-remaster/enemy-v5/snails/final/boss-cryosnail-walk-v5.png",
     "art-remaster/enemy-v5/snails/final/boss-cybersnail-walk-v5.png",
     "art-remaster/enemy-v5/snails/final/boss-sporesnail-walk-v5.png",
@@ -703,21 +704,11 @@
     "door.png",
     "door.webp",
     "door_alien_keyart_v2.webp",
-    "door_bio.webp",
     "door_bio_keyart_v2.webp",
-    "door_bio_keyart_var2.jpg",
-    "door_bio_keyart_var3.jpg",
     "door_biomech_keyart_v2.webp",
     "door_biomechanical.png",
-    "door_biomechanical.webp",
-    "door_cryo.webp",
     "door_cryo_keyart_v2.webp",
-    "door_cryo_keyart_var2.jpg",
-    "door_cryo_keyart_var3.jpg",
-    "door_nuclear.webp",
     "door_nuclear_keyart_v2.webp",
-    "door_nuclear_keyart_var2.jpg",
-    "door_nuclear_keyart_var3.jpg",
     "door_rust_keyart_v2.webp",
     "drop_black_flask.png",
     "drop_child_drawing.png",
@@ -1061,11 +1052,20 @@
     "engineer_ship_broken.png",
     "engineer_ship_healed.png",
     "favicon.png",
+    "favicon.svg",
+    "flags/de.svg",
+    "flags/en.svg",
+    "flags/es-419.svg",
+    "flags/ja.svg",
+    "flags/pt-BR.svg",
+    "flags/ru.svg",
+    "flags/zh-CN.svg",
     "fungal_spore_vent.png",
     "fx_spark_burst.svg",
     "fx_steam_puff.svg",
     "ice_base_rock.png",
     "ice_wall_glacier.png",
+    "icon-192.png",
     "interstitials/int_02_kaelen_s_sleeping_machine_key_v1.mp4",
     "interstitials/int_04_warmth_beneath_the_ice_key_v1.mp4",
     "interstitials/int_06_briggs_keeps_the_ledger_key_v1.mp4",
@@ -4018,6 +4018,11 @@
     {
       "path": "alien_vey_walk.png",
       "bytes": 680088,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "apple-touch-icon.png",
+      "bytes": 32340,
       "classification": "runtime-required"
     },
     {
@@ -17607,7 +17612,7 @@
     },
     {
       "path": "cutscenes/event-o2-generator-upgraded-poster.jpg",
-      "bytes": 973147,
+      "bytes": 110702,
       "classification": "runtime-required"
     },
     {
@@ -17617,7 +17622,7 @@
     },
     {
       "path": "cutscenes/event-o2-generator-upgraded.webm",
-      "bytes": 828421,
+      "bytes": 4962388,
       "classification": "runtime-required"
     },
     {
@@ -20028,7 +20033,42 @@
     {
       "path": "favicon.svg",
       "bytes": 9523,
-      "classification": "unknown"
+      "classification": "runtime-required"
+    },
+    {
+      "path": "flags/de.svg",
+      "bytes": 228,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "flags/en.svg",
+      "bytes": 3517,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "flags/es-419.svg",
+      "bytes": 528,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "flags/ja.svg",
+      "bytes": 167,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "flags/pt-BR.svg",
+      "bytes": 516,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "flags/ru.svg",
+      "bytes": 228,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "flags/zh-CN.svg",
+      "bytes": 735,
+      "classification": "runtime-required"
     },
     {
       "path": "fungal_spore_vent.png",
@@ -20108,11 +20148,21 @@
     {
       "path": "icon-192.png",
       "bytes": 39297,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "icon-512.png",
       "bytes": 209249,
+      "classification": "unknown"
+    },
+    {
+      "path": "icon-maskable-192.png",
+      "bytes": 24509,
+      "classification": "unknown"
+    },
+    {
+      "path": "icon-maskable-512.png",
+      "bytes": 131360,
       "classification": "unknown"
     },
     {
@@ -20992,7 +21042,7 @@
     },
     {
       "path": "manifest.json",
-      "bytes": 676,
+      "bytes": 955,
       "classification": "runtime-required"
     },
     {
@@ -21649,6 +21699,21 @@
       "path": "pit_hole.png",
       "bytes": 1509390,
       "classification": "runtime-required"
+    },
+    {
+      "path": "portraits/title_engineer.png",
+      "bytes": 29388,
+      "classification": "unknown"
+    },
+    {
+      "path": "portraits/title_scout.png",
+      "bytes": 31412,
+      "classification": "unknown"
+    },
+    {
+      "path": "portraits/title_tank.png",
+      "bytes": 43127,
+      "classification": "unknown"
     },
     {
       "path": "prop_alien_feeding_basin.png",
@@ -22613,6 +22678,11 @@
     {
       "path": "survivor_vessel.png",
       "bytes": 441016,
+      "classification": "unknown"
+    },
+    {
+      "path": "sw.js",
+      "bytes": 1494,
       "classification": "unknown"
     },
     {

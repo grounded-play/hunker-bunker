@@ -101,11 +101,13 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
     prop_coolant_drum_leaking_pool: {
         hp: 25,
         canInteract: true,
-        interactPrompt: '[E] SIPHON CRYO CHEMICAL (Takes 10 Cold Dmg)',
+        interactPrompt: '[E] SIPHON CRYO CHEMICAL (Costs 1 Heart)',
         onInteract: (game, prop) => {
-            game.takeDamage?.(10, 'cryo-hazard', prop.position.x, prop.position.z);
+            // Health is three hearts; the old 10 was a one-shot kill from full
+            // (session 2026-10-06: the solo run ended here).
+            game.takeDamage?.(1, 'cryo-hazard', prop.position.x, prop.position.z);
             game.addScrap?.(15);
-            game.showBunkerLine?.('EXTRACTED 1× CRYO CHEMICAL FLASK (+15 SCRAP, -10 HP)');
+            game.showBunkerLine?.('EXTRACTED 1× CRYO CHEMICAL FLASK (+15 SCRAP, -1 HEART)');
             safePlaySound('chem_siphon', { volume: 0.5 });
             return true;
         },
