@@ -7,6 +7,7 @@ import { TraumaManager, create3DMuzzleFlash, WEAPON_TRAUMA_TABLE } from './comba
 import { CombatSignal } from './combatSignal.js';
 import { PickupMagnet, PickupComboTracker } from './lootJuice.js';
 import { BiomeAtmosphereSystem } from './ambientDrift.js';
+import { AmbientVentSystem, FloorFogSystem } from './ambientVentsAndFog.js';
 import { KillstreakFeedbackSystem } from './gameplayTactileVfx.js';
 import { CHUNK_SIZE, TILE_SIZE } from './tileCatalog.js';
 import { getControllerGlyphLabel } from './inputGlyphs.js';
@@ -2276,6 +2277,9 @@ export class ThreeGame {
         this.pickupMagnet = new PickupMagnet();
         this.pickupComboTracker = new PickupComboTracker();
         this.biomeAtmosphere = null;
+        this.ambientVentSystem = null;
+        this.floorFogSystem = null;
+        this.lastDayBlend = 1.0;
         this.visitedChunks = new Set();
         this.totalDistanceTravelled = 0;
         this.maxDepthTierReached = 0;
@@ -4331,6 +4335,8 @@ export class ThreeGame {
         this.setupSkyRig();
         this.setupWorld();
         this.biomeAtmosphere = new BiomeAtmosphereSystem(this.scene);
+        this.ambientVentSystem = new AmbientVentSystem(this.scene);
+        this.floorFogSystem = new FloorFogSystem();
         this.setupPlayer();
         this.setupMultiplayerNetwork();
         this.setupInput();
@@ -11163,6 +11169,8 @@ export class ThreeGame {
             fp.measure('updateProceduralDoors', () => this.updateProceduralDoors?.(delta));
             fp.measure('updateBiomeEnvironment', () => this.updateBiomeEnvironment({ delta }));
             fp.measure('updateBiomeAtmosphere', () => this.biomeAtmosphere?.update(delta, this.player ? this.player.position : { x: 0, y: 0, z: 0 }));
+            fp.measure('updateAmbientVents', () => this.ambientVentSystem?.update(delta, now, this.player ? this.player.position : null, this, this.lastDayBlend ?? 1.0));
+            fp.measure('updateFloorFog', () => this.floorFogSystem?.update(delta, now, this.lastDayBlend ?? 1.0));
             fp.measure('updateWeather', () => this.updateWeather(delta));
             fp.measure('updateDayNightCycle', () => this.updateDayNightCycle(delta));
             this.updateSurvivalTension?.();
@@ -23725,6 +23733,9 @@ export class ThreeGame {
 
     disposeChunkGroupResources(group) {
         group?.traverse?.((child) => {
+            if (child.userData?.isVentPlumePool || child.userData?.isFloorFogPool) {
+                child.geometry?.dispose?.();
+            }
             if (child.userData?.isScatter) {
                 child.material?.dispose?.();
                 // THREE.Sprite instances share an internal geometry. Disposing
@@ -23745,6 +23756,8 @@ export class ThreeGame {
     respawnPlayer({ resetRunState = true, skipEffects = false, deferChunkMount = false } = {}) {
         const campaign = resetRunState ? this.beginCampaignExpedition?.() : null;
         if (resetRunState) this.resetRunDrops();
+        this.ambientVentSystem?.clear();
+        this.floorFogSystem?.clear();
         this.resetVitalsForRun({ emit: false });
         this.resetWeaponState({ emit: false });
         this.mouseAimActive = false;
@@ -26377,6 +26390,7 @@ export class ThreeGame {
         if (!this.nightVision && performance.now() < (this._lightsOutUntil ?? 0)) {
             dayBlend = 0;
         }
+        this.lastDayBlend = dayBlend;
         // Sprint 53 (L1): Real night tuning matching key art darkness
         // Ambient drops to ~20%, directional sun drops to ~10% (cold blue moonlight)
         this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.20, 1.0, dayBlend);
@@ -29202,6 +29216,8 @@ export class ThreeGame {
                 continue;
             }
             this.disposeChunkGroupResources(group);
+            this.ambientVentSystem?.unloadChunk(key);
+            this.floorFogSystem?.unloadChunk(key);
             this.chunkGroups.remove(group);
             this.chunkMeshes.delete(key);
             this.pendingChunkMountKeys.delete(key);
@@ -32436,6 +32452,13 @@ export class ThreeGame {
                     intensity: templateCfg.lightIntensity ?? 1
                 });
             }
+        }
+
+        if (this.ambientVentSystem) {
+            this.ambientVentSystem.buildChunkVents(group, chunkX, chunkY, chunkRoomMetadata, grid, landform, this.campaignExpedition ?? null);
+        }
+        if (this.floorFogSystem) {
+            this.floorFogSystem.buildChunkFloorFog(group, chunkX, chunkY, chunkRoomMetadata, grid, landform, this.campaignExpedition ?? null);
         }
 
         for (let i = 0; i < group.children.length; i++) {
@@ -42491,6 +42514,10 @@ export class ThreeGame {
         this.renderer.domElement.removeEventListener('pointerleave', this.handleCanvasPointerCancel);
         this.darknessOverlay?.remove?.();
         this.tiltShiftOverlay?.remove?.();
+        this.ambientVentSystem?.dispose();
+        this.ambientVentSystem = null;
+        this.floorFogSystem?.dispose();
+        this.floorFogSystem = null;
         this.killstreakFeedback?.dispose?.();
         this.killstreakFeedback = null;
         Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());
