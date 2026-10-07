@@ -2,6 +2,8 @@
 
 Status: **approved 2026-10-07** ("all correct proceed"), in progress. Branch: `dev/sprint-51` (local only).
 
+Implementation audit and remaining work: [`sprint-53-continuation-plan-2026-10-07.md`](sprint-53-continuation-plan-2026-10-07.md).
+
 ## The owner, 2026-10-07
 
 - "Re-skin the walls per biome."
@@ -53,7 +55,7 @@ Every prompt below and every lighting change is checked against this list.
 
 **Plan.**
 
-- [ ] **W1. Ring skins.** The wall shader samples the kit PBR sets in place of today's single texture per ring, keeping the smooth blend between rings:
+- [x] **W1. Ring skins.** The wall shader samples the kit PBR sets in place of today's single texture per ring, keeping the smooth blend between rings:
 
   | Biome ring | Wall skin | Accent |
   |---|---|---|
@@ -62,7 +64,7 @@ Every prompt below and every lighting change is checked against this list.
   | Bio | `biomech`, shading into `giger` deeper in | green |
 
   Normal and roughness maps come along, so walls get real relief and wet sheen instead of a flat print.
-- [ ] **W2. Place overrides.** Some places wear their own skin over the ring:
+- [x] **W2. Place overrides.** Some places wear their own skin over the ring:
 
   | Place | Skin |
   |---|---|
@@ -72,8 +74,8 @@ Every prompt below and every lighting change is checked against this list.
   | Corporate Horizon rooms (security, armory) | `space` |
 
   Done per chunk: the wall batch of a chunk whose rooms are mostly one style gets that skin's material variant. This needs no texture arrays, and costs one extra material per skin in view.
-- [ ] **W3. Wall tops and trims.** Today the tops reuse the floor plates. They get the skin's own top (`*_floor_*` where the set has one), plus a darker band where wall meets floor, so blocks stop reading as cubes.
-- [ ] **W4. Two new texture sets** (prompts in A6): geothermal basalt plating for the geothermal expedition condition, and hive resin for the deepest bio ring.
+- [x] **W3. Wall tops and trims.** Today the tops reuse the floor plates. They get the skin's own top (`*_floor_*` where the set has one), plus a darker band where wall meets floor, so blocks stop reading as cubes.
+- [x] **W4. Two new texture sets** (prompts in A6): geothermal basalt plating for the geothermal expedition condition, and hive resin for the deepest bio ring. Generated masters replaced the first procedural stand-ins on 2026-10-07; runtime maps are rebuilt with `scripts/build_sprint53_generated_wall_maps.py`.
 - **Verify:** screenshots of each ring and override at 1280×800; the long-walk benchmark for GPU cost (normal maps add texture reads, so watch Deck GPU time).
 
 ---
@@ -88,8 +90,8 @@ Every prompt below and every lighting change is checked against this list.
 
 **Plan.**
 
-- [ ] **V1. Spacing rule.** The same model never sits within 6 tiles of itself in a room or its hallway, unless a set piece places it deliberately as a cluster (a crate stack, a row of beds). The rule tracks recently placed models per chunk and lowers their weight, so variety rotates instead of repeating.
-- [ ] **V2. Facing rule, by placement:**
+- [x] **V1. Spacing rule.** The same model never sits within 6 tiles of itself in a room or its hallway, unless a set piece places it deliberately as a cluster (a crate stack, a row of beds). The rule tracks recently placed models per chunk and lowers their weight, so variety rotates instead of repeating.
+- [x] **V2. Facing rule, by placement:**
 
   | Placed | Faces |
   |---|---|
@@ -143,14 +145,14 @@ Every prompt below and every lighting change is checked against this list.
 
 **Plan.**
 
-- [ ] **N1. Title card on entry.** Walking into a named, scanned place for the first time in the run shows a title card, using the existing compound card style:
+- [x] **N1. Title card on entry.** Walking into a named, scanned place for the first time in the run shows a title card, using the existing compound card style:
   - **Rooms:** larger card, with the room's role or theme as subtitle ("PUMP HOUSE B-07" / "UTILITY").
   - **Hallways:** a smaller, quieter card.
   - **Scanned with you already inside:** the card shows when the scan reveals it.
   - **Repeat visits:** only the corner line updates, so a card never spams.
-- [ ] **N2. The crash site is named.** A seeded name per run, from the operator's ship and a site code, e.g. "IMPACT SITE K-7 · SCOUT WRECK", shown as the run's first title card after the intro. It's also on the map, and is where the black box and "return to ship" guidance point.
-- [ ] **N3. Other places get names too:** camps (already), hives, the Foundry, the O2 generator site, cave mouths and landmark set pieces, all scan-gated.
-- [ ] **N4. Seven languages:** new name parts and the card subtitles go through the i18n audit, like Sprint 50's names.
+- [x] **N2. The crash site is named.** A seeded name per run, from the operator's ship and a site code, e.g. "IMPACT SITE K-7 · SCOUT WRECK", shown as the run's first title card after the intro. It's also on the map, and is where the black box and "return to ship" guidance point.
+- [x] **N3. Other places get names too:** camps (already), hives, the Foundry, the O2 generator site, cave mouths and landmark set pieces, all scan-gated.
+- [x] **N4. Seven languages:** new name parts and the card subtitles go through the i18n audit, like Sprint 50's names.
 
 ---
 
@@ -162,7 +164,7 @@ Every prompt below and every lighting change is checked against this list.
 
 **Plan.**
 
-- [ ] **L1. Real night.** At night the world goes dark, the way the key art does:
+- [x] **L1. Real night.** At night the world goes dark, the way the key art does:
 
   | Light | Night level |
   |---|---|
@@ -174,7 +176,7 @@ Every prompt below and every lighting change is checked against this list.
   - **Dawn and dusk** ramp over the day cycle; nights in the bio ring get a faint green bioluminescent floor glow.
   - **Readability:** the suit light gets a wider, warmer night profile, enemies keep a rim light, and the Settings brightness slider sets a floor so night is never unplayable.
   - **Not a quality cut:** darker is a look, not lower quality.
-- [ ] **L2. Ambient vents.** A new pooled effect system (instanced soft particles, one draw call per vent type, capped per screen):
+- [x] **L2. Ambient vents.** A new pooled effect system (instanced soft particles, one draw call per vent type, capped per screen):
 
   | Biome | Vent | Behaviour |
   |---|---|---|
@@ -185,7 +187,7 @@ Every prompt below and every lighting change is checked against this list.
 
   - **Placement:** vents sit on floor grates, the new vent props (A4) and near pipes. A few per room, more in utility, engineering and reactor rooms.
   - **Night:** vents carry their own light, so a dark room is lit in pulses.
-- [ ] **L3. Floor fog.** A thin animated fog layer hugging the floor in large rooms and caves, thicker at night and near vents, like the portal fog in the title art.
+- [x] **L3. Floor fog.** A thin animated fog layer hugging the floor in large rooms and caves, thicker at night and near vents, like the portal fog in the title art.
 - **Perf:** vents and fog are pooled and instanced, only update in visible chunks (Sprint 52 rule), and are measured on the long-walk benchmark before and after.
 
 ---
