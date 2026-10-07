@@ -88,6 +88,8 @@ function sanitizeAngle(value) {
     return Math.max(-Math.PI * 2, Math.min(Math.PI * 2, value));
 }
 
+const ENEMY_AGGRO_MODES = new Set(['hunt', 'wander']);
+
 function sanitizeString(value, maxLen = 32, fallback = 'AGENT') {
     if (typeof value !== 'string') return fallback;
     return value.trim().slice(0, maxLen) || fallback;
@@ -1013,7 +1015,11 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                     // host-spawned boss was invisible to everyone else. These let
                     // it recreate one faithfully.
                     isBoss: Boolean(state.isBoss),
-                    scale: Number.isFinite(state.scale) ? Math.max(0.1, Math.min(12, state.scale)) : null
+                    scale: Number.isFinite(state.scale) ? Math.max(0.1, Math.min(12, state.scale)) : null,
+                    // Who the host's AI is chasing (a socket id, 'ship' or
+                    // 'base-turret'), so the guest's copy bites the same player.
+                    targetId: typeof state.targetId === 'string' ? sanitizeString(state.targetId, 64, '') || null : null,
+                    mode: ENEMY_AGGRO_MODES.has(state.mode) ? state.mode : null
                 }];
             });
             const companions = Array.isArray(data.companions) ? data.companions.slice(0, 16).flatMap((state) => {

@@ -116,6 +116,101 @@ describe('host enemies a guest does not have', () => {
     });
 });
 
+// Sprint 50 carry-over: the host's enemy picks the nearest player, but the
+// guest's copy only slid along. A snail the host sent after the guest sat on
+// them and never bit (the host leaves a squadmate's hearts to their client),
+// and nothing told the guest who it was chasing.
+describe('a host enemy chases the same player on both screens', () => {
+    const enemy = (userData = {}) => {
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial());
+        sprite.userData = { type: 'cybersnail', scatterKey: 'chunk:0,0:snail:1', hp: 3, baseScaleX: 1, baseScaleY: 1, ...userData };
+        return sprite;
+    };
+
+    it('sends who each enemy is after with the snapshot', () => {
+        const hunter = enemy({ aggroTargetId: 'host-socket', aggroMode: 'hunt' });
+        const wanderer = enemy({ scatterKey: 'chunk:0,0:snail:2' });
+        const emit = vi.fn();
+        const game = {
+            netSocket: { emit },
+            isMultiplayerHost: true,
+            multiplayerMode: 'coop',
+            scatterSprites: [hunter, wanderer],
+            companions: [],
+            isEnemyType: () => true
+        };
+        ThreeGame.prototype.broadcastEnemyStateSnapshot.call(game, 10_000);
+        const [, payload] = emit.mock.calls[0];
+        expect(payload.enemies[0]).toMatchObject({ targetId: 'host-socket', mode: 'hunt' });
+        expect(payload.enemies[1]).toMatchObject({ targetId: null, mode: null });
+    });
+
+    it("records the host's target on the guest's copy", () => {
+        const sprite = enemy();
+        const game = { isMultiplayerHost: false, multiplayerMode: 'coop', scatterSprites: [sprite] };
+        ThreeGame.prototype.handleEnemyStateSnapshot.call(game, { enemies: [{ scatterKey: sprite.userData.scatterKey, x: 0, z: 0, hp: 3, targetId: 'guest-socket', mode: 'hunt' }] });
+        expect(sprite.userData).toMatchObject({ netAggroTargetId: 'guest-socket', netAggroMode: 'hunt' });
+    });
+
+    const guest = (sprite) => ({
+        isMultiplayer: true,
+        isMultiplayerHost: false,
+        multiplayerLocalPlayerId: 'guest-socket',
+        player: { position: new THREE.Vector3(0.5, 0, 0) },
+        isPlayerDead: false,
+        takeDamage: vi.fn(() => true),
+        applySnailContactKnockback: vi.fn(),
+        applyPlayerSlow: vi.fn(),
+        getSnailContactReach: ThreeGame.prototype.getSnailContactReach,
+        faceSpriteFromDir: ThreeGame.prototype.faceSpriteFromDir,
+        updateSheetSpriteFrame: vi.fn(),
+        sprite
+    });
+
+    it('bites the guest it is hunting, once per attack cooldown', () => {
+        const sprite = enemy({ netTargetX: 0, netTargetZ: 0, netAggroTargetId: 'guest-socket', netAggroMode: 'hunt' });
+        const game = guest(sprite);
+        ThreeGame.prototype.updateRemoteEnemyReplica.call(game, sprite, 1 / 60);
+        ThreeGame.prototype.updateRemoteEnemyReplica.call(game, sprite, 1 / 60);
+        expect(game.takeDamage).toHaveBeenCalledTimes(1);
+        expect(game.takeDamage.mock.calls[0][0]).toBe(1);
+        expect(game.applySnailContactKnockback).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves the guest alone while it chases the host', () => {
+        const sprite = enemy({ netTargetX: 0, netTargetZ: 0, netAggroTargetId: 'host-socket', netAggroMode: 'hunt' });
+        const game = guest(sprite);
+        ThreeGame.prototype.updateRemoteEnemyReplica.call(game, sprite, 1 / 60);
+        expect(game.takeDamage).not.toHaveBeenCalled();
+    });
+
+    it('spares a guest the host would spare: hive kin, or a snail that would talk', () => {
+        const sprite = enemy({ netTargetX: 0, netTargetZ: 0, netAggroTargetId: 'guest-socket', netAggroMode: 'hunt' });
+        const kin = { ...guest(sprite), isHiveKinPassive: () => true };
+        ThreeGame.prototype.updateRemoteEnemyReplica.call(kin, sprite, 1 / 60);
+        const act2 = { ...guest(sprite), isAct2Active: () => true };
+        ThreeGame.prototype.updateRemoteEnemyReplica.call(act2, sprite, 1 / 60);
+        expect(kin.takeDamage).not.toHaveBeenCalled();
+        expect(act2.takeDamage).not.toHaveBeenCalled();
+    });
+
+    it("hurts on contact with a boss's body whoever it is after", () => {
+        const sprite = enemy({ type: 'boss_cybersnail', isBoss: true, netTargetX: 0, netTargetZ: 0, netAggroTargetId: 'ship', netAggroMode: 'hunt' });
+        const game = guest(sprite);
+        ThreeGame.prototype.updateRemoteEnemyReplica.call(game, sprite, 1 / 60);
+        expect(game.takeDamage).toHaveBeenCalledWith(2, 'boss_cybersnail', expect.any(Number), expect.any(Number));
+    });
+
+    it('turns to face the player it is hunting while it stands still', () => {
+        const sprite = enemy({ netTargetX: 3, netTargetZ: 0, netAggroTargetId: 'guest-socket', netAggroMode: 'hunt' });
+        sprite.position.set(3, 0, 0);
+        const game = guest(sprite);
+        game.player.position.set(-2, 0, 0);
+        ThreeGame.prototype.updateRemoteEnemyReplica.call(game, sprite, 1 / 60);
+        expect(sprite.userData.facingSign).toBe(-1);
+    });
+});
+
 // Owner, 2026-10-07: "if one player unlocks O2 both get it, if one player
 // gets coins both get it in PvE / co-op. PvP it's just they don't share."
 describe('a co-op squad shares loot and ship progress', () => {

@@ -6630,7 +6630,11 @@ export class ThreeGame {
                 hp: Number.isFinite(sprite.userData.hp) ? sprite.userData.hp : null,
                 burstTriggered: Boolean(sprite.userData.burstTriggered),
                 isBoss: Boolean(sprite.userData.isBoss),
-                scale: Number.isFinite(sprite.userData.baseScaleX) ? sprite.userData.baseScaleX : null
+                scale: Number.isFinite(sprite.userData.baseScaleX) ? sprite.userData.baseScaleX : null,
+                // Who it is after, so the guest's copy bites and faces the
+                // same player (a socket id, or 'ship' / 'base-turret').
+                targetId: sprite.userData.aggroTargetId ?? null,
+                mode: sprite.userData.aggroMode ?? null
             });
             if (enemies.length >= 256) break;
         }
@@ -7101,6 +7105,10 @@ export class ThreeGame {
                         sprite.position.z = state.z;
                     }
                     sprite.userData.lastNetUpdate = Date.now();
+                }
+                if ('targetId' in state) {
+                    sprite.userData.netAggroTargetId = state.targetId ?? null;
+                    sprite.userData.netAggroMode = state.mode ?? null;
                 }
                 if (state.burstTriggered && !sprite.userData.burstTriggered) {
                     const remainingHp = Math.max(1, sprite.userData.hp || 1);
@@ -37400,22 +37408,15 @@ export class ThreeGame {
         data.knockbackTimer = Math.max(0, (data.knockbackTimer ?? 0) - delta);
 
         if (this.isMultiplayer && !this.isMultiplayerHost) {
-            if (Number.isFinite(data.netTargetX) && Number.isFinite(data.netTargetZ)) {
-                const moveStep = Math.min(delta * 12, 1);
-                const oldX = sprite.position.x;
-                const oldZ = sprite.position.z;
-                sprite.position.x = THREE.MathUtils.lerp(sprite.position.x, data.netTargetX, moveStep);
-                sprite.position.z = THREE.MathUtils.lerp(sprite.position.z, data.netTargetZ, moveStep);
-                const stepX = sprite.position.x - oldX;
-                const stepZ = sprite.position.z - oldZ;
-                if (data.sheetSprite && (Math.abs(stepX) > 0.001 || Math.abs(stepZ) > 0.001)) {
-                    this.updateSheetSpriteFrame(sprite, stepX, stepZ, delta, true);
-                }
-            }
+            this.updateRemoteEnemyReplica(sprite, delta);
             return;
         }
 
         const target = this.selectSnailTarget(sprite, activeShip);
+        data.aggroTargetId = !target ? null
+            : target.type !== 'player' ? target.type
+                : target.id === 'local' ? (this.multiplayerLocalPlayerId ?? 'local') : target.id;
+        data.aggroMode = target?.mode ?? null;
         if (!target) return;
         if (target.type === 'player' && target.id === 'local' && target.mode === 'hunt') {
             this.markCombatActivity?.('enemy-targeted-player');
@@ -37772,6 +37773,58 @@ export class ThreeGame {
                 window.AudioManager?.playMetalStress?.({ volume: 0.24, playbackRate: 1.1, force: true });
             }
         }
+    }
+
+    // A guest's copy of a host enemy. The host runs its AI and owns where it
+    // goes, but each client owns its own player's hearts, so the bite the host
+    // aims at this player (its snapshot names the target) lands here. A boss's
+    // body hurts on touch whoever it is after, as on the host.
+    // attackCooldown is ticked by updateSnailBehavior before this runs.
+    updateRemoteEnemyReplica(sprite, delta) {
+        const data = sprite.userData;
+        let stepX = 0;
+        let stepZ = 0;
+        if (Number.isFinite(data.netTargetX) && Number.isFinite(data.netTargetZ)) {
+            const moveStep = Math.min(delta * 12, 1);
+            const oldX = sprite.position.x;
+            const oldZ = sprite.position.z;
+            sprite.position.x = THREE.MathUtils.lerp(sprite.position.x, data.netTargetX, moveStep);
+            sprite.position.z = THREE.MathUtils.lerp(sprite.position.z, data.netTargetZ, moveStep);
+            stepX = sprite.position.x - oldX;
+            stepZ = sprite.position.z - oldZ;
+        }
+        const moving = Math.abs(stepX) > 0.001 || Math.abs(stepZ) > 0.001;
+        const player = this.player;
+        const huntingMe = data.netAggroMode === 'hunt'
+            && data.netAggroTargetId != null
+            && data.netAggroTargetId === this.multiplayerLocalPlayerId;
+        const dx = player ? player.position.x - sprite.position.x : 0;
+        const dz = player ? player.position.z - sprite.position.z : 0;
+        if (moving) {
+            if (data.sheetSprite) this.updateSheetSpriteFrame(sprite, stepX, stepZ, delta, true);
+            else if (Number.isFinite(data.baseScaleX)) this.faceSpriteFromDir(sprite, stepX);
+        } else if (huntingMe && player) {
+            if (data.sheetSprite && data.sheetLayout) {
+                data.sheetRow = getEnemyDirectionRow(data.sheetLayout, dx, dz, data.sheetRow ?? 0);
+                this.updateSheetSpriteFrame(sprite, dx, dz, delta, false);
+            } else if (Number.isFinite(data.baseScaleX)) {
+                this.faceSpriteFromDir(sprite, dx);
+            }
+        }
+        if (!player || this.isPlayerDead || (!huntingMe && !data.isBoss)) return;
+        if ((data.attackCooldown ?? 0) > 0) return;
+        // The same exemptions the host gives its own player: hive kin are left
+        // alone, and an Act 2 snail that would talk does not bite.
+        if (this.isHiveKinPassive?.(sprite) || this.canEnemyTargetPlayer?.(sprite) === false) return;
+        if (!data.isBoss && ['cybersnail', 'cryosnail', 'sporesnail'].includes(data.type)
+            && !data.isCompanion && !data.encounterResolved && this.isAct2Active?.()) return;
+        const reach = this.getSnailContactReach?.(data) ?? SNAIL_ATTACK_RADIUS * (data.isBoss ? 2.4 : 1.0);
+        if (Math.hypot(dx, dz) > reach) return;
+        data.attackCooldown = SNAIL_ATTACK_COOLDOWN;
+        const applied = this.takeDamage(data.isBoss ? 2 : 1, data.type, sprite.position.x, sprite.position.z);
+        if (applied === false) return;
+        this.applySnailContactKnockback?.(sprite, data);
+        if (data.type === 'cryosnail' || data.type === 'boss_cryosnail') this.applyPlayerSlow?.(2.5);
     }
 
     resolveCryosnailShockwave(sprite) {

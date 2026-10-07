@@ -56,7 +56,8 @@ Also the Netlify Lighthouse report: mobile Performance 38.
 - **Tests:** `src/threeGame.coopSync.test.js` (2 facing cases).
 - **Still to do for "the same thing":**
   - [ ] **PvP remote-health drift** (10-06 05:33 PvP pair): each side's view of the rival's health misses heals between hits, so both recorded a final hit at "0 HP" while the rival had 2. Make the relay's health authoritative in PvP and stop estimating locally.
-  - [ ] **Enemy aggro target.** The host's enemy picks the nearest player on the host. The guest now sees it move there, but host and guest can still disagree when they target different players near a chunk edge. Broadcast `targetPlayerId` in the snapshot and have the guest replica face/attack that target.
+  - [x] **Enemy aggro target.** The host's enemy picks the nearest player on the host. The guest now sees it move there, but host and guest can still disagree when they target different players near a chunk edge. Broadcast `targetPlayerId` in the snapshot and have the guest replica face/attack that target.
+    Done in Sprint 51: the snapshot carries `targetId`/`mode`, and the relay passes them through. It also fixed a worse gap: a guest's enemy copy only slid along and never bit. The host leaves a squadmate's hearts to their own client, so a snail chasing the guest did no damage at all. Now `updateRemoteEnemyReplica` bites and faces the player the host named. Boss bodies hurt on touch, and hive-kin and Act 2 talkers are spared as on the host.
   - [ ] **Cutscene parity.** Milestone cutscenes play on the machine that triggered them. Decide which beats should play for the whole squad (boss intro, O2 upgrade) and send them with the existing shared-world beat messages.
   - [ ] **Verify** with the two-account route in #85.
 
