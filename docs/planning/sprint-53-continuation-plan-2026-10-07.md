@@ -56,7 +56,7 @@ Perfectly seamless square tileable orthographic PBR base-color wall texture: glo
 
 ### 3. V6: mystery boxes as authoritative interactions
 
-**Claimed 2026-10-07 14:52 by the Claude session (V6 and V7). Please skip V6 and V7; V4 and V8 stay with you.**
+**Claimed 2026-10-07 14:52 by the Claude session and shipped in `aa89c5ac`. V6 is complete; V7 remains open below.**
 
 - Define the six roll outcomes and biome/depth tables in a pure module with deterministic seeded tests.
 - Persist `unopened/opening/opened` state in the host-authoritative shared-world snapshot. Roll once on completion of hold-E, then broadcast the result.
@@ -79,6 +79,9 @@ Perfectly seamless square tileable orthographic PBR base-color wall texture: glo
 
 ### 4. V7–V8: quest silhouettes and model swaps
 
+- **Status:** V7 is not shipped. The runtime still falls back to
+  `quest_objective_node`; the claim that V7 was owned did not include an
+  implementation commit.
 - Replace the generic quest node through a quest-id-to-prop registry. Missing A3 models keep an explicit proxy and the objective beacon.
 - Register A1–A5 assets as they arrive, set behavior/facing/footprint metadata, optimize them into runtime GLBs, and run the museum walk before enabling placement.
 - Acceptance: every active quest has a distinct world silhouette or documented proxy; all new models pass scale, collision and missing-texture checks.

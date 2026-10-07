@@ -40,25 +40,27 @@ plan for milestone scope, dependencies, verification gates, and definition of do
   now selects from `ALL_ROOM_BUILDS` (12 legacy + 8 cathedral room builds), making all 8
   cathedral blueprints live-selectable in chunk generation with 0 discarded generation.
   Covered by 35 passing tests in `cathedralBlueprints.test.js`.
-- [ ] **Next commit:** camp/start arrival variants (G5) and hallway vocabulary.
+- [ ] **Next G5 integration:** persist/select the new camp-court and safe-arrival
+  profiles in the expedition plan, bind runtime sites to their semantic anchors,
+  then add hallway vocabulary. The pure profile/site-scoring slice is complete.
 
 - [x] **G3 persistence slice (2026-10-05):** added sanitized map-local dressing
   break records to maze snapshots, legacy-safe restore, and new-map reset. Remote
   dressing events use exact identity, survive unloaded chunks and ignore replay.
   [Evidence and remaining gates](../reports/room-dressing-persistence-2026-10-05.md).
   Shared renderer/hit-target edits are a separate contributor's in-progress work.
-- [ ] **Next G3 slice:** review/integrate renderer lifecycle and stable versioned
+- [x] **G3 renderer/co-op slice:** review/integrate renderer lifecycle and stable versioned
   IDs; verify partial HP, late join and unloaded drops before claiming co-op parity.
-  Interior breaches and finished maintenance-hall visuals remain open.
+  Interior breaches and finished maintenance-hall visuals landed in the following slice.
 
 - [x] **G2 persistence/live slice (2026-10-05):** adapter commit `dbf9c378` is now
   selected by `ThreeGame.buildChunk` for opted-in optional rooms. Map seed and
   `interiorVersion` persist across retries/reloads; changing the version requires
   a new map. Legacy/missing versions remain 0. Full suite: 572 files / 5,067 tests.
   Shared-file prop-alias edits belong to another contributor and are excluded.
-- [ ] **Next: G3 destruction and visual slice.** Instanced prop damage and
-  interior-module breach behavior still need integration, persistence and co-op
-  testing; do not enable this pilot by default. See the
+- [x] **G3 destruction and visual slice.** Instanced prop damage and
+  interior-module breach behavior are integrated with persistence and co-op
+  tests. See the
   [activation and acceptance notes](../reports/room-grammar-baseline-2026-10-04.md#g2-live-pilot-2026-10-05).
 
 - [x] **G2 adapter slice (2026-10-05):** `roomGrammarChunk.js` centers the local
@@ -76,10 +78,10 @@ plan for milestone scope, dependencies, verification gates, and definition of do
   candidates including explicit fallback; no shared RNG or runtime changes.
   Checks: 43 tests, scoped ESLint, 5,000 planner seeds with no failures/fallbacks.
   [Measurements and floor plans](../reports/room-grammar-baseline-2026-10-04.md#g1-pilot-implementation).
-- [ ] **Next implementation slice: G2 adapter.** Map local sockets to chunk portals,
+- [x] **G2 adapter slice.** Map local sockets to chunk portals,
   preserve actual metadata and version/identity persistence. Keep legacy saves on
   their generator; do not reroll campaign terrain on expedition resume. G3 damage
-  targets and the finished maintenance-hall visual slice remain unimplemented.
+  targets and the finished maintenance-hall visual slice landed afterward.
 
 - [x] G0 first measured slice: `scripts/room-layout-portfolio.js` exercises 240
   architectural room-mode cases; 18 normalized floor shapes, 97–169 floor cells,
@@ -91,7 +93,7 @@ plan for milestone scope, dependencies, verification gates, and definition of do
 - [x] Expanded the scope with larger room tiers and finished-room briefs after
   visually inspecting heat-exchanger, autopsy-slab, sector-gateway and tool-cart
   key art. Concrete reference links and observations live in the grammar plan.
-- [ ] G0/G1 now includes larger footprints within current chunks; first finished
+- [x] G0/G1 now includes larger footprints within current chunks; first finished
   slice is an occupied maintenance hall with functional subzones, connected
   infrastructure, readable routes and destructible modules. No runtime size change
   is included in this scope update; retain legacy generation until pilot validation.
@@ -589,16 +591,15 @@ for the outstanding M3/M4 Deck measurements or the M5 Art decision listed above.
   `src/data/cathedralBlueprints.js`); dedicated validation tests and captures exist.
 - [x] Deterministic, budgeted instanced room dressing added (`5cab35a0`), including
   selected wall-facing props and elevated lamps.
-- [ ] **Next commit — destructible dressing:** ordinary instanced props currently
-  have no damage handling in `src/roomDressingRenderer.js`. Define stable instance
-  IDs, damage/removal and authority contracts; cover repeated hits, co-op, save/load
-  and teardown. Keep decorative decals distinct from physical props.
-- [ ] **Following commit — live coverage:** wire/verify cathedral blueprint selection
+- [x] **Destructible dressing:** ordinary instanced props have stable instance
+  IDs, damage/removal and authority contracts covering repeated hits, co-op,
+  save/load and teardown. Decorative decals remain distinct from physical props.
+- [x] **Live coverage:** wire/verify cathedral blueprint selection
   and audit every prop/prefab through generation, placement and destruction. An
   exported catalog or museum entry alone is not live gameplay coverage.
-- [ ] **Following commit — attachments:** complete pipe-organ/oxygen-rack wall
+- [x] **Attachments:** complete pipe-organ/oxygen-rack wall
   placement and ceiling/crane anchoring with doorway, route and clearance checks.
-- [ ] After each slice, record files, commit, checks and the next unfinished step
+- [x] After each slice, record files, commit, checks and the next unfinished step
   here and in S49-20 before handing off. Preserve save/network compatibility.
 - [ ] Repeat the Thursday destruction-window comparison after damage integration;
   retain 76.5 ms presented p95 / 152 ms destruction-window p95 as the measured

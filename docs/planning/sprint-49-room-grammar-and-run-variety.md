@@ -198,6 +198,13 @@ combat and heavily destroyed states, including attachment cleanup and wreck acce
 - [ ] **G5:** one inhabited camp court and one safe arrival variant using the same
   subzone contracts; then expand to the remaining planned starting scenarios (sheltered crash bay,
   maintenance landing, breached cargo court).
+  - [x] **Pure G5 planner slice (2026-10-07):** `camp-court` and `safe-arrival`
+    profiles now cover an inhabited court and all three named arrival scenarios.
+    Semantic anchors reserve party spawn, ship console, first exit, tutorial,
+    hearth, services and sleep zones. Deterministic eligible-site scoring rejects
+    occupied, unreachable, unsafe and quest-incompatible candidates.
+  - [ ] Persist and select the scored site in the live expedition plan, then bind
+    the ship/camp runtime to the semantic anchors without changing existing saves.
 - [ ] **G6:** matched entrance, center, side-route and destruction captures at
   gameplay zoom. Record silhouette, function, infrastructure, habitation,
   navigation and performance findings separately. Bigger alone does not pass.
@@ -309,6 +316,8 @@ Co-op peers must agree on version and plan digest before mounting geometry.
 - [ ] **G5 — camp/start variants.** Add eligible-site scoring and three safe start
   scenarios (sheltered crash bay, maintenance landing, breached cargo court);
   preserve camp IDs, rings, tutorial order and multiplayer crash plans.
+  Pure profiles, anchors and deterministic site scoring are implemented; live
+  expedition selection, persistence and runtime binding remain open.
 - [ ] **G6 — acceptance and rollout.** Run seed sweeps, co-op/persistence journeys,
   gameplay captures, destruction stress and physical Deck comparisons. Enable only
   the profiles that pass; record remaining exceptions and rollback behavior.

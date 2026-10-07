@@ -30,13 +30,14 @@ claim that those uncommitted edits belong to this slice.
 
 Remaining G3 work:
 
-- [ ] Integrate/review the renderer lane's late model-load and chunk-unload behavior.
-- [ ] Verify stable IDs across content changes; the current dressing lane uses
+- [x] Integrate/review the renderer lane's late model-load and chunk-unload behavior.
+- [x] Verify stable IDs across content changes; the current dressing lane uses
   room/layer/placement-index IDs, which require a frozen/versioned plan for old saves.
-- [ ] Define partial-HP persistence and host-authoritative damage reconciliation.
-- [ ] Verify late-join restoration and unloaded-chunk drop delivery; remembering a
+- [x] Define partial-HP persistence and host-authoritative damage reconciliation.
+- [x] Verify late-join restoration and unloaded-chunk drop delivery; remembering a
   broken ID does not itself reconstruct pickups from an unloaded remote break.
-- [ ] Connect interior-module breaches to collision/navigation and required-service
-  recovery, then complete the maintenance-hall art and physical performance checks.
+- [x] Connect interior-module breaches to collision/navigation and required-service
+  recovery, then complete the maintenance-hall art checks.
+- [ ] Repeat the physical performance comparison on Steam Deck hardware.
 
 No new map was started, and no user profile was edited during verification.

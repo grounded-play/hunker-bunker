@@ -213,8 +213,9 @@ The game-development state guidance keeps campaign and PvP mitigation separate.
 - [x] Shared rematch/TRY AGAIN synchronization implemented in Iteration 9.
 - [ ] Environmental damage/healing synchronization remains open. Do not overwrite
   local HP with a higher server value before accounting for environmental losses.
-- [ ] Next commit should define the shared deployment-ready/protected/alive/dead
-  contract and test loading delays, reconnects, environmental deaths and rematches.
+- [x] The shared deployment-ready/protected/alive/dead relay contract landed in
+  `f7b52737`, including round IDs, loading gates and spawn protection. Environmental
+  health synchronization and paired-client reconnect acceptance remain open below.
 
 ## Iteration 6 — explain rejected PvP hits and repair remote health
 
@@ -260,8 +261,8 @@ Reconciliation head: `44484597`, branch: `dev/sprint-49`. Reconciles the histori
 
 - [x] Inventory decoding, exact recipe exchange, durable ambiguity holds, mutation response parsing, numeric request IDs, and no-blind-refund rules.
 - [x] Reconnect roster cleanup, host-only automatic doors, hit rejection reasons, remote-health snapshots, disconnect diagnostics, authoritative PvP round completion, and synchronized rematch.
-- [ ] Define and enforce a shared deployment-ready/spawn-protected/alive/dead contract at the relay boundary; test loading delay and reconnect edges.
+- [x] Define and enforce a shared deployment-ready/spawn-protected/alive/dead contract at the relay boundary; implemented in `f7b52737` with automated loading, round-ID and reconnect coverage.
 - [ ] Test host migration plus simultaneous manual door actions.
 - [H] Run the two-client relay fault drill and paired Deck capture.
 - [H] Measure post-fix CPU/presented-frame/shadow/resource behavior on hardware.
-- [ ] Finish the explicit operator resolution workflow for ambiguous inventory outcomes; existing holds must never be manually cleared without evidence.
+- [x] Finish the explicit operator resolution workflow for ambiguous inventory outcomes; implemented in `62097fcc` with audited dispositions and unattended paid-grant recovery.

@@ -22,23 +22,23 @@ The owner, 2026-10-06:
 ## Plan
 
 ### A. Show what the loadout does
-- [ ] `getItemView` gains `effect` (from `equipmentDefinitions` for charms and mods) and `kind`-based text for cosmetics ("Cosmetic — changes the look only").
-- [ ] Foundry LOADOUT tab: each slot card shows its effect line, and a **summary** totals the equipped modifiers ("+20% magnet radius · +1 pierce · −10% fire rate").
-- [ ] Hero select: hovering or focusing a card shows the same effect in its tooltip and label.
+- [x] `getItemView` gains `effect` (from `equipmentDefinitions` for charms and mods) and `kind`-based text for cosmetics ("Cosmetic — changes the look only").
+- [x] Foundry LOADOUT tab: each slot card shows its effect line, and a **summary** totals the equipped modifiers ("+20% magnet radius · +1 pierce · −10% fire rate").
+- [x] Hero select: hovering or focusing a card shows the same effect in its tooltip and label.
 
 ### B. Click any slot to change it, on every surface
-- [ ] Extract the Armory's slot definitions (the item ids per slot, current value, apply) into one module, `src/loadoutSlots.js`, used by the Armory and the new picker.
-- [ ] A shared slot picker (tiles from `buildPickerTiles` and `buildEquipOptions`, the same ownership gate and locked "???" tiles), each tile showing its effect.
-- [ ] Opened by clicking or pressing A on any slot card, filled or empty, in the Foundry LOADOUT tab and on hero select. Equipping updates the card, the 3D preview and the Armory alike.
-- [ ] Controller: the picker takes focus, B closes it, and focus returns to the slot (same focus-root rules as the Armory).
+- [x] Extract the Armory's slot definitions (the item ids per slot, current value, apply) into one module, `src/loadoutSlots.js`, used by the Armory and the new picker.
+- [x] A shared slot picker (tiles from `buildPickerTiles` and `buildEquipOptions`, the same ownership gate and locked "???" tiles), each tile showing its effect.
+- [x] Opened by clicking or pressing A on any slot card, filled or empty, in the Foundry LOADOUT tab and on hero select. Equipping updates the card, the 3D preview and the Armory alike.
+- [x] Controller: the picker takes focus, B closes it, and focus returns to the slot (same focus-root rules as the Armory).
 
 ### C. Items sized and placed to fit every model
-- [ ] **Measure, don't guess:** a capture harness renders every mod on every chassis (and every charm on every weapon frame) into a contact sheet, so fit is checked by eye in one image.
-- [ ] **Per-model fit:** scale and offset by the model's own skeleton (e.g. shoulder span and torso depth relative to the class reference), so a broad Tank skin and a slim Scout skin both carry an item at the same visual size. Per-item trims stay for the outliers.
-- [ ] Fix the items the sheet shows too small or misplaced; re-render to confirm.
+- [x] **Measure, don't guess:** a capture harness renders every mod on every chassis (and every charm on every weapon frame) into a contact sheet, so fit is checked by eye in one image.
+- [x] **Per-model fit:** scale and offset by the model's own skeleton (e.g. shoulder span and torso depth relative to the class reference), so a broad Tank skin and a slim Scout skin both carry an item at the same visual size. Per-item trims stay for the outliers.
+- [x] Fix the items the sheet shows too small or misplaced; re-render to confirm.
 
 ### D. A fresh or reset save owns nothing it hasn't earned
-- [ ] Remove the Rig Modules from `DEFAULT_OWNED`. Wire their designed unlocks:
+- [x] Remove the Rig Modules from `DEFAULT_OWNED`. Wire their designed unlocks:
   - 4160 and 4161: buy for 150 shells.
   - 4162: Queen killed.
   - 4163: Archivist lore achievement.
@@ -46,9 +46,9 @@ The owner, 2026-10-06:
   - 4166 and 4167: reach depth 4 and depth 6.
 
   Each unlock is persisted in the save, so a reset takes it away again.
-- [ ] Community chassis skins and voice packs: **owner decision** (see below).
-- [ ] Locked items show how to earn them in the picker (`unlockPath`, e.g. "REACH DEPTH 4").
-- [ ] Test: a fresh profile owns nothing beyond the class factory frames (plus whatever the decision keeps); a reset returns to that.
+- [x] Community chassis skins and voice packs: **owner decision** (see below).
+- [x] Locked items show how to earn them in the picker (`unlockPath`, e.g. "REACH DEPTH 4").
+- [x] Test: a fresh profile owns nothing beyond the class factory frames (plus whatever the decision keeps); a reset returns to that.
 
 ## Decisions (owner, 2026-10-06)
 
@@ -113,4 +113,3 @@ Not started.
 2. Done 2026-10-07 07:14, image `candidate-02710831`; rollback is `candidate-970f17af`. Until the Sprint 51 client ships, boss-kill keys (4154) are invisible in the live client's Vault. **Deploy the backend:** quartermaster and assemble routes, ingots and keys on boss kills, `quartermaster`/`assemble` capabilities. Deploy before the client, as with the season ledger.
 3. Done with the backend; the relay runs in the same container. **Deploy the relay:** the PvP `playerHealed` budget, and enemy `targetId`/`mode` in snapshots. An old relay strips the new fields, so guests stay safe from snails until it is updated.
 4. Bump the version (patch, keep `-beta`) when the PR is opened.
-

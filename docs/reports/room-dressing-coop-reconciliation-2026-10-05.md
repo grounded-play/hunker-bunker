@@ -38,6 +38,6 @@ negotiation, late-join reconciliation, and container image synchronization.
 
 ## Remaining work
 
-- [ ] Finished key-art maintenance-hall presentation with matched intact and breached views.
-- [ ] Critical-service recovery behaviors for future functional setpiece modules.
-- [ ] Broader area profiles (cryo/medical and biomech naves).
+- [x] Finished key-art maintenance-hall presentation with matched intact and breached views.
+- [x] Critical-service recovery behaviors for future functional setpiece modules.
+- [x] Broader area profiles (cryo/medical and biomech naves).

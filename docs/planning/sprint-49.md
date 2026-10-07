@@ -558,7 +558,7 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
   `isWallBackedPropType` in `roomPopulation.js`; 20 props optimized and registered in `world3dOverlay.js`;
   rigged 10-bone umbilical attacker with Three.js FK controller; 19 interactive prop specs in `propInteractions.js`;
   semantic variant arrays in `propVariants.js`.
-- [ ] Finish camp/start arrival variants (G5) and final Deck sweeps/rollout (G6);
+- [ ] Finish live camp/start selection and binding (G5) and final Deck sweeps/rollout (G6);
   room grammar stays opt-in pending gameplay and hardware acceptance.
 
 - [x] G3 persistence: dressing break IDs survive maze snapshots and unloaded remote
@@ -923,7 +923,7 @@ Microtransactions).**
 - [x] One price per key. The Vault says $0.99 / $3.99 / $9.99; the schema says
   `VLV100` / `VLV400` / `VLV1000` (P3). → S49-07. (Reconciled: STORE_CATALOG now specifies
   priceCategory `1;VLV100`, `1;VLV400`, `1;VLV1000` matching schema tiers and USD $1.00, $4.00, $10.00).
-- [ ] Revoke on refund or chargeback (P5) and trade holds on new items (P6). →
+- [x] Revoke on refund or chargeback (P5) and trade holds on new items (P6). →
   S49-08, S49-23.
 - [ ] Set the market publisher fee, the key, pack and Season Pass prices, and the
   random-item policy for Belgium. → S49-24, S49-36. (Belgium policy implemented:
@@ -987,9 +987,8 @@ Resume notes and remaining work: [iteration handoff](todo-tree-2026-10-01-handof
 - [x] **Exchange contracts:** ConsumeItem, ExchangeItem and TriggerItemDrop response
   handling, durable request identity and ambiguity journals implemented; see
   Iteration 5 of the [handoff](todo-tree-2026-10-01-handoff.md).
-- [ ] **Next: reversal correctness:** finish audited operator dispositions and
-  unattended paid-grant recovery without duplicate refunds/rewards. Keep S49-08/09
-  and deployed acceptance open until their remaining evidence is recorded.
+- [x] **Reversal correctness:** audited operator dispositions and unattended
+  paid-grant recovery landed in `62097fcc`; deployed acceptance remains open.
 
 ### Iteration 2 — S49-32 / S49-08 crafting boundary
 
@@ -998,7 +997,7 @@ Resume notes and remaining work: [iteration handoff](todo-tree-2026-10-01-handof
   [tests](../../server/steamRecipeExchange.test.js) reject false-success output,
   isolate account/request identities and persist an ambiguity hold before Steam.
   Neither the same request nor a fresh nonce repeats an unresolved craft.
-- [ ] Finish the operator resolution workflow and other mutation paths; the fixed
-  recipe journal is not automatic refund recovery or a completed S49-08.
+- [x] Finish the operator resolution workflow and unattended paid-grant recovery;
+  implemented in `62097fcc`. Live publisher acceptance remains outside this gate.
   See [handoff](todo-tree-2026-10-01-handoff.md#iteration-2--exact-live-crafting-and-durable-ambiguity-holds)
   for test results, stored-record locations and next steps.

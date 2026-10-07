@@ -48,10 +48,13 @@ is claimed. The room grammar remains opt-in.
 
 ## Remaining work
 
-- [ ] Host-authoritative partial-HP reconciliation, co-op identity negotiation,
+- [x] Host-authoritative partial-HP reconciliation, co-op identity negotiation,
   late-join and unloaded-chunk pickup-delivery acceptance.
-- [ ] Generalized critical-service wreck/recovery behavior for future functional
+- [x] Generalized critical-service wreck/recovery behavior for future functional
   setpieces; current pilot module reservations do not contain required services.
-- [ ] Finished key-art maintenance hall, including art/camera review and matched
-  destruction-window profiling against Thursday's 152 ms p95 baseline.
-- [ ] Broader area profiles, cathedral coverage, camps and start variants.
+- [x] Finished key-art maintenance hall, including art/camera review.
+- [ ] Repeat destruction-window profiling against Thursday's 152 ms p95 baseline.
+- [x] Broader area profiles and cathedral coverage.
+- [ ] Live camps and start variants. Pure G5 profiles, semantic anchors and
+  deterministic eligible-site scoring landed on 2026-10-07; expedition-plan
+  persistence and runtime binding remain open.

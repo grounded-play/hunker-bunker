@@ -1,0 +1,111 @@
+TODO tree audit - refreshed 2026-10-07 15:04 PDT
+
+Completed stale checkboxes were reconciled in their source plans before this snapshot was regenerated.
+This tree includes remaining open `[ ]` work and hardware/external `[H]` gates. Files with no remaining items are retained as audited evidence.
+Best unblocked implementation choice: G5 camp-court and safe-arrival room grammar. The pure profiles, semantic anchors and deterministic eligible-site scoring are now implemented; live world-plan selection and runtime binding remain open.
+
+└─ hunker-bunker
+   ├─ economy-master-plan-2026-09-30.md
+   │  ├─ line 123: [H] Direct-purchase alternative for every collection item (R1). Product/catalog decision remains open.
+   │  ├─ line 126: [ ] **Publisher:** confirm submitted ratings and live store disclosures include random items.
+   │  ├─ line 138: [H] Steam store page: declaration, live Item Store, reviewer route, production flags,
+   │  ├─ line 140: [H] No sales to accounts flagged as minors where platform rules require it (remains a
+   │  └─ line 206: [H] **Publisher evidence remains separate:** live deployment, ratings, disclosures, pricing,
+   ├─ qa-2026-10-06-solo-run.md
+   │  └─ line 63: [ ] **Verify on hardware:**
+   ├─ sprint-49-lived-in-world-continuation.md
+   │  ├─ line 43: [ ] **Next G5 integration:** persist/select the new camp-court and safe-arrival
+   │  ├─ line 395: [H] **[Deck]** Paired capture, flag on vs off: presented p95 does not regress and
+   │  ├─ line 470: [H] **[Art]** Art-direction sign-off on the spike before it reaches normal play.
+   │  └─ line 604: [ ] Repeat the Thursday destruction-window comparison after damage integration;
+   ├─ sprint-49-room-grammar-and-run-variety.md
+   │  ├─ line 198: [ ] **G5:** one inhabited camp court and one safe arrival variant using the same
+   │  ├─ line 206: [ ] Persist and select the scored site in the live expedition plan, then bind
+   │  ├─ line 208: [ ] **G6:** matched entrance, center, side-route and destruction captures at
+   │  ├─ line 316: [ ] **G5 — camp/start variants.** Add eligible-site scoring and three safe start
+   │  └─ line 321: [ ] **G6 — acceptance and rollout.** Run seed sweeps, co-op/persistence journeys,
+   ├─ sprint-49.md
+   │  ├─ line 135: [ ] **Remaining:** Record deployed two-account acceptance, including reconnect and channel isolation.
+   │  ├─ line 151: [ ] **Owner: backend + client · Size: L · Type: missing feature.** Implement an
+   │  ├─ line 167: [ ] **Remaining:** Complete native-language evasion and false-positive review.
+   │  ├─ line 175: [ ] **Owner: platform + localization + backend · Size: L · Depends: 02.** Define
+   │  ├─ line 197: [ ] **Remaining:** Verify Deck placement and deployed chat; establish durable report retention and staffed moderation.
+   │  ├─ line 211: [ ] **Owner: UI + platform + localization · Size: L · Depends: 02–03.** Add a
+   │  ├─ line 251: [ ] **Owner: networking + QA/publisher · Size: L · Type: integration/acceptance.**
+   │  ├─ line 278: [ ] **Owner: narrative + UI + QA · Size: M · Type: existing feature acceptance.**
+   │  ├─ line 292: [ ] **Remaining:** Publisher: verify live currency pricing and both checkout routes.
+   │  ├─ line 299: [ ] **Owner: economy + backend + UI · Size: M · Type: confirmed integration gap.**
+   │  ├─ line 347: [ ] **Owner: publisher + backend QA · Size: M · Depends: 07–08, 23.** Confirm
+   │  ├─ line 379: [ ] **Owner: platform + QA · Size: L · Depends: 04.** Extend the achievements
+   │  ├─ line 400: [ ] **Owner: narrative + publisher QA · Size: M · Type: existing feature acceptance.**
+   │  ├─ line 415: [ ] **Owner: publisher + QA · Size: M · Depends: 04–06, 09–11.** Assemble access
+   │  ├─ line 471: [ ] **Owner: networking + gameplay · Size: L.** Exercise the recently added host
+   │  ├─ line 484: [ ] **Owner: gameplay + narrative · Size: M.** Validate distinct assist behavior,
+   │  ├─ line 497: [ ] **Owner: design + gameplay + independent playtesters · Size: L.** Tune the
+   │  ├─ line 510: [ ] **Owner: combat design + gameplay · Size: L.** Tune enemy formation pressure,
+   │  ├─ line 561: [ ] Finish live camp/start selection and binding (G5) and final Deck sweeps/rollout (G6);
+   │  ├─ line 601: [ ] Record three route playthroughs and paired Deck density/destruction results;
+   │  ├─ line 604: [ ] **Owner: world design + gameplay · Size: L.** Use the existing seed portfolio
+   │  ├─ line 618: [ ] **Owner: narrative + gameplay + UI · Size: M.** Verify communion, infection
+   │  ├─ line 632: [ ] **Owner: UI + economy · Size: M.** Refine the existing Stash/Loadout/Fabricate/
+   │  ├─ line 665: [ ] **Owner: product + economy · Size: L · Design decision required.** Measure free
+   │  ├─ line 679: [ ] **Owner: UI + art + accessibility QA · Size: M.** Audit the actual default
+   │  ├─ line 696: [ ] **Owner: rendering + art · Size: L.** Address the measured concept/build gap:
+   │  ├─ line 712: [ ] **Owner: audio + narrative + UI · Size: M.** Mix weapons, hazards, footsteps,
+   │  ├─ line 725: [ ] **Owner: accessibility + gameplay · Size: M.** Validate existing shake,
+   │  ├─ line 739: [ ] **Owner: localization + UI + native-language reviewers · Size: L.** Re-audit
+   │  ├─ line 751: [ ] **Owner: persistence + platform QA · Size: L.** Exercise corruption recovery,
+   │  ├─ line 768: [ ] **Owner: engine + performance QA · Size: L.** Measure the queued chunk mount
+   │  ├─ line 788: [ ] **Owner: backend + operations · Size: M.** Exercise auth expiry, relay outage,
+   │  ├─ line 802: [ ] **Owner: QA + maintainers · Size: M.** Add integration coverage at the seams
+   │  ├─ line 817: [ ] **Owner: game design + gameplay · Size: L.** Expand the existing event/relic/
+   │  ├─ line 828: [ ] **Owner: multiplayer product + UI · Size: L · Depends: 02–05, 14–15.** Design
+   │  ├─ line 840: [ ] **Owner: product + economy · Size: L · Depends: 07–09, 23–24.** Propose the next
+   │  ├─ line 863: [ ] **Owner: art + narrative + audio · Size: L.** Review new achievement cosmetics,
+   │  ├─ line 878: [ ] **Remaining:** Extract remaining purchase presentation with behavior-preserving integration checks.
+   │  ├─ line 880: [ ] **Owner: maintainers · Size: L.** Extract chat, commentary, field crafting and
+   │  ├─ line 904: [ ] **Publisher, Steamworks:** confirm the Item Store is enabled with 4001 / 4005 /
+   │  ├─ line 907: [ ] **Owner go-ahead, then deploy:** set `HB_STEAM_STORE_ENABLED=1`,
+   │  ├─ line 911: [ ] **Publisher:** one real-account key purchase through each route, then
+   │  ├─ line 921: [ ] The $1 cache yields 55% common fragments: approve cosmetic-only caches with pity
+   │  ├─ line 928: [ ] Set the market publisher fee, the key, pack and Season Pass prices, and the
+   │  ├─ line 943: [ ] Two real accounts on the uploaded candidate: co-op and PvP, via Title →
+   │  ├─ line 945: [ ] Controller-only pass on the Deck and a PC pad with the keyboard unplugged,
+   │  └─ line 947: [ ] Commentary checked on the uploaded candidate (Settings → Commentary Mode, and
+   ├─ sprint-50-playtest-fixes-and-web-perf-2026-10-06.md
+   │  ├─ line 61: [ ] **Cutscene parity.** Milestone cutscenes play on the machine that triggered them. Decide which beats should play for the whole squad (boss intro, O2 upgrade) and send them with the existing shared-world beat messages.
+   │  ├─ line 62: [ ] **Verify** with the two-account route in #85.
+   │  ├─ line 69: [ ] **Owner:** a screenshot (or the screen names) of what clips on the PC.
+   │  ├─ line 70: [ ] Add a 16:9 viewport (e.g. 2560×1440) to `tests/e2e/ui-layout-contract.spec.js`, so clipping at that shape fails a test.
+   │  ├─ line 71: [ ] Bottom-band layout proposal, implemented behind the existing UI-overhaul plan.
+   │  ├─ line 160: [ ] **Duplicate shards whose grant failed.** The cache reward stands and the response says `duplicateBonus.ok: false`, but nothing retries it. Add a sweep that re-sends the shard grant from the journal (the AddItem request id is stable, so a retry can't double-grant).
+   │  ├─ line 185: [ ] Keyboard key hints in authored text: "Radar Scan [Q]", "BREACH CACHE [F]", "PRESS [M] / [TAB] TO TOGGLE TACTICAL MAP", "PRESS [1-4]". These need device-aware text.
+   │  └─ line 186: [ ] Verify on the Deck: trade with a squadmate from D-pad ←, the squad radial from D-pad →, and pan the map with the stick.
+   ├─ sprint-51-loadout-and-ownership.md
+   │  └─ audited: no unchecked items
+   ├─ sprint-52-playthrough-2026-10-07.md
+   │  └─ audited: no unchecked items
+   ├─ sprint-53-world-variety-night-and-sleep-2026-10-07.md
+   │  ├─ line 124: [ ] **V7. Quest objects.** Today every camp quest target is the same generic `quest_objective_node`. Each quest gets its own object (A3), so you know what you're looking for at a glance:
+   │  ├─ line 138: [ ] **V8. Scale.** Every new model goes through the museum walk (`tests/e2e/probes/museum-walk.spec.js`) and gets a `maxSpan` if needed before it is placed.
+   │  └─ line 217: [ ] **S3. Morning card.** After the video: "DAY 4 · 06:00", the crash-site name and the day's objective.
+   ├─ todo-tree-2026-10-01-handoff.md
+   │  ├─ line 133: [ ] Diagnose connection churn using paired clients and relay disconnect logs;
+   │  ├─ line 138: [ ] Measure after fixes: CPU/frame profiling, door effects, shadows and resources.
+   │  ├─ line 140: [ ] Test host migration and simultaneous manual door actions; this increment
+   │  ├─ line 158: [ ] Run the paired two-client fault drill and retain both clients' and relay evidence.
+   │  ├─ line 209: [ ] Full authoritative local health is NOT complete: `takeDamage` still has
+   │  ├─ line 214: [ ] Environmental damage/healing synchronization remains open. Do not overwrite
+   │  ├─ line 239: [ ] Next: authoritative local health/death/redeploy contract, paired disconnect
+   │  ├─ line 265: [ ] Test host migration plus simultaneous manual door actions.
+   │  ├─ line 266: [H] Run the two-client relay fault drill and paired Deck capture.
+   │  └─ line 267: [H] Measure post-fix CPU/presented-frame/shadow/resource behavior on hardware.
+   ├─ room-dressing-coop-reconciliation-2026-10-05.md
+   │  └─ audited: no unchecked items
+   ├─ room-dressing-integration-2026-10-05.md
+   │  ├─ line 56: [ ] Repeat destruction-window profiling against Thursday's 152 ms p95 baseline.
+   │  └─ line 58: [ ] Live camps and start variants. Pure G5 profiles, semantic anchors and
+   ├─ room-dressing-persistence-2026-10-05.md
+   │  └─ line 41: [ ] Repeat the physical performance comparison on Steam Deck hardware.
+   └─ room-grammar-maintenance-hall-2026-10-05.md
+      └─ line 37: [ ] Steam Deck and art review gates.

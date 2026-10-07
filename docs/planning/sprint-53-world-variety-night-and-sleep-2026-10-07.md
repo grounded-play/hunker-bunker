@@ -107,7 +107,7 @@ Every prompt below and every lighting change is checked against this list.
   - a crate with spilled cans and a torn tarp.
 - [x] **V4. More signature props per theme:** at least 4 per theme, from the new assets in A1–A5.
 - [x] **V5. Filler layer.** Low, cheap, non-blocking floor clutter (cables, debris, papers, cans, bones, frost shards, resin drips), placed along walls and in corners at a density each biome sets. Filler never blocks movement (`propBehavior` floor style) and is drawn as instanced batches.
-- [ ] **V6. Mystery boxes.** A new interactable container family. Hold E to open (Engineers open faster; some need a keycard). What's inside is rolled when opened, from a table by biome and depth:
+- [x] **V6. Mystery boxes.** A new interactable container family. Hold E to open (Engineers open faster; some need a keycard). What's inside is rolled when opened, from a table by biome and depth:
 
   | Roll | Share | What happens |
   |---|---|---|
@@ -198,14 +198,14 @@ Every prompt below and every lighting change is checked against this list.
 
 **Plan.**
 
-- [ ] **S1. Play a sleep cutscene on rest, then reset.** The video plays through `playCutsceneVideo` like the death and event cutscenes. On its last frame the world resets to morning:
+- [x] **S1. Play a sleep cutscene on rest, then reset.** The video plays through `playCutsceneVideo` like the death and event cutscenes. On its last frame the world resets to morning:
   - the day advances;
   - the O2 bubble recharges;
   - camps restock;
   - lighting snaps to dawn.
 
   Skippable (any key or button), and short: 6–8 s.
-- [ ] **S2. Five styles, picked by where you sleep:**
+- [x] **S2. Five styles, picked by where you sleep:**
 
   | Where | Style |
   |---|---|
@@ -215,6 +215,8 @@ Every prompt below and every lighting change is checked against this list.
   | Bonded with a hive | Hive cocoon |
   | Co-op, both resting | Squad watch |
 - [ ] **S3. Morning card.** After the video: "DAY 4 · 06:00", the crash-site name and the day's objective.
+  Day/time and crash-site name shipped in `24e7c062`; adding the current objective
+  remains open.
 
 Prompts are in section C.
 

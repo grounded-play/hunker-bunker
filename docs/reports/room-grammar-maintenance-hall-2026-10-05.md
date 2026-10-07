@@ -32,6 +32,6 @@ Pairs industrial room grammar with key-art dressing assets, mounts high wall/cei
 
 ## Remaining work
 
-- [ ] Critical-service recovery behavior for functional setpieces.
-- [ ] Cryo/medical ward and biomech nave grammar profiles.
+- [x] Critical-service recovery behavior for functional setpieces.
+- [x] Cryo/medical ward and biomech nave grammar profiles.
 - [ ] Steam Deck and art review gates.

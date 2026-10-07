@@ -80,7 +80,7 @@ Order: performance first (it affects everything), then the quick collision fixes
 
 ### A. Smooth for the whole run (P0)
 
-- [ ] **A1. Measure first.**
+- [x] **A1. Measure first.**
   - Add per-system frame timings to the session log every 10 s:
     - enemy AI and pathfinding;
     - the prop/scatter loop;
@@ -90,18 +90,18 @@ Order: performance first (it affects everything), then the quick collision fixes
   - Also log how many enemies and props are loaded.
   - Add a headless "long walk" probe that walks the player out 6–8 chunks and back, recording frame time and those counts.
   - This becomes the before/after benchmark. It's the fixed route #52 asks for.
-- [ ] **A2. Offscreen enemies stop doing full work every frame.**
+- [x] **A2. Offscreen enemies stop doing full work every frame.**
   - Enemies in chunks you can't see stop running full AI every frame. **Proposed:** they update at a low rate, about 4 Hz, with no pathfinding until their chunk is visible or they're near you.
   - Anything on screen behaves exactly as now. **Needs your OK** (decision 1).
-- [ ] **A3. The prop loop skips work nobody can see.**
+- [x] **A3. The prop loop skips work nobody can see.**
   - The 3D-model scan and the bob animation run only for visible chunks.
   - Output-identical: nothing visible changes.
-- [ ] **A4. Unloading frees what it should.**
+- [x] **A4. Unloading frees what it should.**
   - Dispose all of a chunk's own geometry, materials and textures when it unloads; never dispose shared or cached models.
   - Add a test that mounts and unloads chunks and checks `renderer.info` returns to baseline.
   - Lower `chunkResidentPadding` from 3 to 2 (7×7 instead of 9×9), only if the probe shows prefetch still stays ahead of the player.
-- [ ] **A5. Static chunk content stops updating its matrices every frame**: walls, floors and dressing get `matrixAutoUpdate = false` after mounting.
-- [ ] **A6. The deploy hitch doesn't set quality for the whole run.**
+- [x] **A5. Static chunk content stops updating its matrices every frame**: walls, floors and dressing get `matrixAutoUpdate = false` after mounting.
+- [x] **A6. The deploy hitch doesn't set quality for the whole run.**
   - Adaptive resolution ignores the first ~10 s after deploy, and can step back up once frames recover.
   - Resolution remains the only thing it changes, per your standing rule.
   - Also find out what the 1.2–3.6 s deploy tasks are (likely first-use shader compiles).
@@ -113,19 +113,19 @@ Order: performance first (it affects everything), then the quick collision fixes
 
 ### B. Walk under arches; floors never block (P1, small)
 
-- [ ] **B1. Archways are walk-through.**
+- [x] **B1. Archways are walk-through.**
   - Grand archways, bulkhead frames and biomech arches block only at their two pillar feet: two small colliders at each side of the opening, along the model's width.
   - Columns and buttresses stay solid.
-- [ ] **B2. Floor pieces never block.** Anything flagged as a floor overlay, or a `decal_*` / `scatter_*puddle` type, is never solid, however it was placed.
+- [x] **B2. Floor pieces never block.** Anything flagged as a floor overlay, or a `decal_*` / `scatter_*puddle` type, is never solid, however it was placed.
 - **Tests:** collision flags per type; walking through an archway's center succeeds and walking into a pillar is blocked; an e2e walk across a floor grate.
 
 ### C. Item scale (P1)
 
-- [ ] **C1. A prop lineup sheet.**
+- [x] **C1. A prop lineup sheet.**
   - Render every world prop at its in-game size beside the operator, in rows by category: beds, seats, crates, machines, arches.
   - Uses the same harness approach as `scripts/capture-equipment-fit.mjs`.
   - You review one image and point at anything that's off.
-- [ ] **C2. Beds.**
+- [x] **C2. Beds.**
   - Props are sized by target **height** (`WORLD_3D_MODELS[...].height`). A low, long model (a cot or bed) can come out far too long.
   - Candidates:
     - the bunker cot at spawn (added Sprint 50);
@@ -133,26 +133,26 @@ Order: performance first (it affects everything), then the quick collision fixes
     - `prop_medical_bed`;
     - bedrolls.
   - Fix: size beds by length, so a bed is about operator length.
-- [ ] **C3. Fix whatever else the sheet flags,** then re-render to confirm.
+- [x] **C3. Fix whatever else the sheet flags,** then re-render to confirm.
 
 ### D. Fungus breaks underfoot (P1)
 
-- [ ] Walking through a fungus prop crushes it:
+- [x] Walking through a fungus prop crushes it:
   - a quick squash;
   - a puff of spores, using the existing burst effects;
   - a flattened stain left behind.
-- [ ] It never blocks movement.
-- [ ] Crushed fungus stays crushed for the run, and in co-op for both players (the existing broken-prop sync).
-- [ ] Taller growth (`state_growth_overrun_*`, altars, looms) stays solid and breaks only when shot, as now.
+- [x] It never blocks movement.
+- [x] Crushed fungus stays crushed for the run, and in co-op for both players (the existing broken-prop sync).
+- [x] Taller growth (`state_growth_overrun_*`, altars, looms) stays solid and breaks only when shot, as now.
 
 ### E. Footprints that change with the ground (P1)
 
-- [ ] **One pooled footprint system:**
+- [x] **One pooled footprint system:**
   - drawn as a single instanced mesh;
   - a ring of about 300 prints;
   - no new objects per step.
   - It replaces `spawnWetFootprint` and costs less than the current wet prints.
-- [ ] **Surfaces and look:**
+- [x] **Surfaces and look:**
 
   | You step in / on | Your prints |
   |---|---|
@@ -163,24 +163,24 @@ Order: performance first (it affects everything), then the quick collision fixes
   | Ice or snow (cryo biome, outdoors) | pressed pale prints that last longer |
   | Plain floor | none, or a faint dust print |
 
-- [ ] **Your boots carry it:**
+- [x] **Your boots carry it:**
   - after a liquid, the next ~12 steps leave prints that fade in strength;
   - each print fades out over ~20–30 s, and ice prints over ~60 s.
-- [ ] **Squadmates leave prints too**, drawn locally from their positions, with no extra network traffic.
-- [ ] **Footstep sounds** pick from the same surface (wet, snow or concrete).
+- [x] **Squadmates leave prints too**, drawn locally from their positions, with no extra network traffic.
+- [x] **Footstep sounds** pick from the same surface (wet, snow or concrete).
 
 ### F. Popups never cropped (P1, small)
 
-- [ ] Reproduce at 1280×800 and 1920×1080 with two and three popups up.
-- [ ] **Fix:**
+- [x] Reproduce at 1280×800 and 1920×1080 with two and three popups up.
+- [x] **Fix:**
   - the newest popup always shows in full;
   - older ones collapse to their header line;
   - the stack sizes to its content, so nothing is cut.
-- [ ] e2e screenshot check at Deck size.
+- [x] e2e screenshot check at Deck size.
 
 ### G. Found along the way
 
-- [ ] **Cryo hazard one-shot:** 4.5 damage from a single hazard tick killed a full-health co-op guest (#85 comment). Hazard damage should go through the hearts scale like other damage. Check the cause, then fix.
+- [x] **Cryo hazard one-shot:** 4.5 damage from a single hazard tick killed a full-health co-op guest (#85 comment). Hazard damage should go through the hearts scale like other damage. Check the cause, then fix.
 
 ## Decisions (owner, 2026-10-07)
 
@@ -200,9 +200,9 @@ Order: performance first (it affects everything), then the quick collision fixes
 
 ### H. One behavior table for every prop (from decision 3)
 
-- [ ] `src/propBehavior.js` classifies every world prop type by style (arch, column, floor piece, fungus, bed, furniture, machine…). Every placement path reads it, replacing the scattered `startsWith('arch_')`, `planned.blocking !== false` and per-type special cases.
-- [ ] The museum placards show each exhibit's behavior. A coverage test fails if a registered model has no behavior.
-- [ ] A capture script walks the museum and screenshots every category; I review the sheets and fix what's wrong.
+- [x] `src/propBehavior.js` classifies every world prop type by style (arch, column, floor piece, fungus, bed, furniture, machine…). Every placement path reads it, replacing the scattered `startsWith('arch_')`, `planned.blocking !== false` and per-type special cases.
+- [x] The museum placards show each exhibit's behavior. A coverage test fails if a registered model has no behavior.
+- [x] A capture script walks the museum and screenshots every category; I review the sheets and fix what's wrong.
 
 ## Verification
 
@@ -247,4 +247,3 @@ Order: performance first (it affects everything), then the quick collision fixes
 **Owner steps:**
 1. Play a Deck run of 20 minutes or more on this build and upload the log. The `PERF frame-breakdown` lines show whether frames stay flat on Deck hardware.
 2. Decide on per-biome wall textures (above).
-

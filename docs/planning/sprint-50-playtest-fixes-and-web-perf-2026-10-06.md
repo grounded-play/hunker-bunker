@@ -55,7 +55,7 @@ Also the Netlify Lighthouse report: mobile Performance 38.
 - **Fix.** The parent stays unrotated when a chassis is present (the 2D sprite fallback faces by frame row and is unaffected), and the chassis gets the real aim from the broadcast yaw.
 - **Tests:** `src/threeGame.coopSync.test.js` (2 facing cases).
 - **Still to do for "the same thing":**
-  - [ ] **PvP remote-health drift** (10-06 05:33 PvP pair): each side's view of the rival's health misses heals between hits, so both recorded a final hit at "0 HP" while the rival had 2. Make the relay's health authoritative in PvP and stop estimating locally.
+  - [x] **PvP remote-health drift** (10-06 05:33 PvP pair): relay-authoritative healing landed in Sprint 51 (`051a5334`, `server/relayPvPAuthority.test.js`).
   - [x] **Enemy aggro target.** The host's enemy picks the nearest player on the host. The guest now sees it move there, but host and guest can still disagree when they target different players near a chunk edge. Broadcast `targetPlayerId` in the snapshot and have the guest replica face/attack that target.
     Done in Sprint 51: the snapshot carries `targetId`/`mode`, and the relay passes them through. It also fixed a worse gap: a guest's enemy copy only slid along and never bit. The host leaves a squadmate's hearts to their own client, so a snail chasing the guest did no damage at all. Now `updateRemoteEnemyReplica` bites and faces the player the host named. Boss bodies hurt on touch, and hive-kin and Act 2 talkers are spared as on the host.
   - [ ] **Cutscene parity.** Milestone cutscenes play on the machine that triggered them. Decide which beats should play for the whole squad (boss intro, O2 upgrade) and send them with the existing shared-world beat messages.
@@ -146,17 +146,17 @@ The design is `docs/season-zero-protocol/05-crafting-matrix-and-salvage-economy.
 
 **Needs a decision before it can be built** (each touches real Steam items):
 
-- [ ] **Earned keys.** Boss kills grant the *paid, marketable* key 4001, so free keys can be sold on the Community Market. Proposal:
+- [x] **Earned keys.** Boss kills grant the non-marketable earned key 4154 and generator 4002 accepts either key (`0d2b599b`; schema revision 3 uploaded).
   - Boss kills grant 4154 instead.
   - Add `4000x1,4154x1` as a second exchange on generator 4002 in `steam/inventory_schema_hunker_bunker.json`.
   - Accept either key in `server/steamRecipeExchange.js` and `src/steamVaultUi.js`.
   - Owner uploads the schema.
-- [ ] **Quartermaster shards → reagents** (doc 05 §4): Matrix 35 shards (max 3/week), Ambergris 50 (max 2/week), Earned Key 75 (max 1/week).
+- [x] **Quartermaster shards → reagents** (doc 05 §4): Matrix 35 shards (max 3/week), Ambergris 50 (max 2/week), Earned Key 75 (max 1/week).
   - Server route on the existing `commitExchange`, with weekly caps held server-side.
   - Only worth building once reagents have a sink.
-- [ ] **A sink for ingots and reagents.** Doc 05 §6 overclock assembly needs components that aren't real items (Micro-Capacitor, Coolant Line…) and Scrap, which lives in the client-side bank and can't be charged on the server. Proposal: assemble overclocks 4140–4147 from ingots + matrices + ambergris only (the doc's quantities, components dropped).
-- [ ] **A Steam source for ingots.** The Quartermaster pack is paid in tech, which the server can't verify, so it stays sandbox-only. Proposal: ingots ride on the existing server-verified boss-kill milestone.
-- [ ] **Retire 4155** from the schema (owner upload).
+- [x] **A sink for ingots and reagents.** Overclock assembly for 4140–4147 landed in `db05d7bc` using ingots, matrices and ambergris.
+- [x] **A Steam source for ingots.** Server-verified boss kills grant five ingots (`db05d7bc`).
+- [x] **Resolve 4155:** retained for compatibility but hidden from the store and made non-marketable in uploaded schema revision 3.
 - [ ] **Duplicate shards whose grant failed.** The cache reward stands and the response says `duplicateBonus.ok: false`, but nothing retries it. Add a sweep that re-sends the shard grant from the journal (the AddItem request id is stable, so a retry can't double-grant).
 
 **Owner steps for what shipped here:** deploy the backend (cache-open duplicate shards are server-side). No schema change is needed: shards 4159 already exist and are granted with AddItem.
