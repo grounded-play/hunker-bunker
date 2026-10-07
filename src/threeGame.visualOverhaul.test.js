@@ -114,7 +114,7 @@ describe('Visual Overhaul Phase B & D (Surface Depth & Grade)', () => {
         });
 
         it('damps suitFillLight when player is near a wall to prevent wall overexposure', () => {
-            expect(threeGameSource).toContain('this.suitFillLight.intensity = SUIT_LIGHT_BASE_INTENSITY * lerp(1.35, 0.68, dayBlend) * (1 + movePulse) * wallGlowDamp;');
+            expect(threeGameSource).toContain('this.suitFillLight.intensity = SUIT_LIGHT_BASE_INTENSITY * lerp(1.2, 0.68, dayBlend) * (1 + movePulse) * wallGlowDamp;');
         });
     });
 });

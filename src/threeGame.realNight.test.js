@@ -133,4 +133,35 @@ describe('ThreeGame L1: Real night tuning', () => {
         // Clamped by minAmbientFloor = 0.18 * 1.5 = 0.27
         expect(darkGame.ambientLight.intensity).toBeGreaterThanOrEqual(0.25);
     });
+
+    // Capture 2026-10-07: updateSky runs after this and resets the fog to the
+    // horizon colour every frame, so night came out washed-out grey-cream.
+    it('keeps the fog dark at night after the sky sets its colour', () => {
+        const game = createNightTestGame({ getDayFactor: () => 0.0 });
+        game.updateDayNightCycle(0);
+        game.scene.fog.color.setHex(0xc8c0b0); // what the sky's horizon colour wrote
+        game.applyNightFog = ThreeGame.prototype.applyNightFog;
+        game.applyNightFog();
+        const { r, g, b } = game.scene.fog.color;
+        expect(Math.max(r, g, b)).toBeLessThan(0.25);
+    });
+
+    it('leaves the daytime fog colour alone', () => {
+        const game = createNightTestGame({ getDayFactor: () => 1.0 });
+        game.updateDayNightCycle(0);
+        game.scene.fog.color.setHex(0xc8c0b0);
+        game.applyNightFog = ThreeGame.prototype.applyNightFog;
+        game.applyNightFog();
+        expect(game.scene.fog.color.getHex()).toBe(0xc8c0b0);
+    });
+
+    it('lights a pool around the operator at night, not a floodlight', () => {
+        const night = createNightTestGame({ getDayFactor: () => 0.0 });
+        const day = createNightTestGame({ getDayFactor: () => 1.0 });
+        night.updateDayNightCycle(0);
+        day.updateDayNightCycle(0);
+        expect(night.suitFillLight.intensity / day.suitFillLight.intensity).toBeLessThanOrEqual(1.84);
+        expect(night.playerForwardSpotLight.intensity / day.playerForwardSpotLight.intensity).toBeLessThanOrEqual(1.67);
+    });
 });
+

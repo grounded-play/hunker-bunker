@@ -3097,11 +3097,16 @@ export class ThreeGame {
                         }
                         hbWallEmissive = pbrEmiss;
                     } else {
-                        // Ambient PBR emissive accents per ring (W1): amber (bunker), cyan (cryo), emerald (bio/giger)
+                        // Ring accents come from each skin's own emissive map (W1):
+                        // lamps, cyan strips and veins where they are painted. A flat
+                        // amber/cyan wash over every wall drowned the texture and tinted
+                        // the whole bunker ring orange (playthrough capture 2026-10-07).
+                        vec3 pbrBunkerEmiss = texture2D(tRoomWallEmissiveAtlas, uvPbrBunker).rgb;
+                        vec3 pbrCryoEmiss = texture2D(tRoomWallEmissiveAtlas, uvPbrCryo).rgb;
                         vec3 pbrBioEmiss = mix(texture2D(tRoomWallEmissiveAtlas, uvPbrBio).rgb, texture2D(tRoomWallEmissiveAtlas, uvPbrGiger).rgb, deepBio);
-                        vec3 ringEmissAccent = mix(vec3(0.96, 0.55, 0.10) * 0.10, vec3(0.12, 0.82, 0.95) * 0.12, cryoMix);
-                        ringEmissAccent = mix(ringEmissAccent, pbrBioEmiss * 0.80 + vec3(0.06, 0.75, 0.42) * 0.15, bioMix);
-                        hbWallEmissive += ringEmissAccent;
+                        vec3 ringEmissAccent = mix(pbrBunkerEmiss, pbrCryoEmiss, cryoMix);
+                        ringEmissAccent = mix(ringEmissAccent, pbrBioEmiss, bioMix);
+                        hbWallEmissive += ringEmissAccent * 0.6;
                     }
 
                     // W3: Wall tops and trims (darker band where wall meets floor, top cap shading)
@@ -19596,6 +19601,17 @@ export class ThreeGame {
      * timeOfDay is a short visual loop (dayCycleSeconds) that otherwise runs
      * free of dayState.day; waking pins it to dawn so a new day looks like one.
      */
+    // Night darkens the fog and backdrop toward key-art black. Called by
+    // updateSky after it sets the horizon colour, which otherwise undid the
+    // darkening every frame (capture 2026-10-07: night came out grey-cream).
+    applyNightFog() {
+        const darkness = this._nightDarkness ?? 0;
+        if (!(darkness > 0.02) || !this.scene?.fog) return;
+        this._nightFogDarkColor ??= new THREE.Color(0x040810);
+        this.scene.fog.color.lerp(this._nightFogDarkColor, darkness * 0.85);
+        if (this.scene.background?.isColor) this.scene.background.lerp(this._nightFogDarkColor, darkness * 0.85);
+    }
+
     setTimeOfDayToMorning() {
         this.timeOfDay = MORNING_TIME_OF_DAY;
         // Recompute the sky and the day/night lighting immediately at delta 0,
@@ -26332,6 +26348,7 @@ export class ThreeGame {
                 this._expeditionFogTint ??= new THREE.Color();
                 this.scene.fog.color.lerp(this._expeditionFogTint.setHex(atmosphere.fog), atmosphere.fogStrength);
             }
+            this.applyNightFog?.();
         }
 
         // The sun becomes the key light's actual direction. Elevation is clamped
@@ -26408,6 +26425,8 @@ export class ThreeGame {
         this.lastDayBlend = dayBlend;
         // Sprint 53 (L1): Real night tuning matching key art darkness
         // Ambient drops to ~20%, directional sun drops to ~10% (cold blue moonlight)
+        // How deep into night it is, for applyNightFog (updateSky runs later).
+        this._nightDarkness = this.nightVision ? 0 : 1 - dayBlend;
         this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.20, 1.0, dayBlend);
         this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.10, 1.0, dayBlend);
         this.fillLight.intensity = this.baseLightIntensity.fill * lerp(0.20, 1.05, dayBlend);
@@ -26484,8 +26503,8 @@ export class ThreeGame {
         if (this.suitFillLight) {
             const movePulse = this.isMoving ? 0.14 * (0.5 + 0.5 * Math.sin(performance.now() * 0.011)) : 0;
             const wallGlowDamp = THREE.MathUtils.clamp(((this._lastMinWallDist ?? 2.0) - 0.25) / 1.0, 0.45, 1.0);
-            this.suitFillLight.intensity = SUIT_LIGHT_BASE_INTENSITY * lerp(1.35, 0.68, dayBlend) * (1 + movePulse) * wallGlowDamp;
-            this.suitFillLight.distance = SUIT_LIGHT_BASE_DISTANCE * lerp(1.30, 0.9, dayBlend);
+            this.suitFillLight.intensity = SUIT_LIGHT_BASE_INTENSITY * lerp(1.2, 0.68, dayBlend) * (1 + movePulse) * wallGlowDamp;
+            this.suitFillLight.distance = SUIT_LIGHT_BASE_DISTANCE * lerp(1.15, 0.9, dayBlend);
             this.suitFillLight.decay = lerp(1.15, 1.4, dayBlend);
         }
         if (this.playerForwardSpotLight) {
@@ -26494,8 +26513,8 @@ export class ThreeGame {
             // the spotlight so it provides clean directional illumination instead of blowing out
             // into a blinding white/yellow disc on the wall and player.
             const wallProximityDamp = THREE.MathUtils.clamp(((this._lastMinWallDist ?? 2.0) - 0.25) / 1.25, 0.22, 1.0);
-            this.playerForwardSpotLight.intensity = 3.6 * lerp(1.55, 0.75, dayBlend) * (1 + pulse) * wallProximityDamp;
-            this.playerForwardSpotLight.distance = SUIT_CONE_LIGHT_DISTANCE * lerp(1.35, 0.88, dayBlend);
+            this.playerForwardSpotLight.intensity = 3.6 * lerp(1.25, 0.75, dayBlend) * (1 + pulse) * wallProximityDamp;
+            this.playerForwardSpotLight.distance = SUIT_CONE_LIGHT_DISTANCE * lerp(1.2, 0.88, dayBlend);
             this.playerForwardSpotLight.angle = SUIT_CONE_LIGHT_ANGLE * lerp(1.30, 0.92, dayBlend);
         }
         // Warmer suit light profile at night (amber-white work lamp)
