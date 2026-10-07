@@ -10991,6 +10991,7 @@ export class ThreeGame {
             fp.measure('updateTerminalClockTick', () => this.updateTerminalClockTick(now));
             fp.measure('updatePickups', () => this.updatePickups(delta, now));
             fp.measure('updateScatter', () => this.updateScatter(delta, now));
+            fp.measure('updateUnderfootCrush', () => this.updateUnderfootCrush());
             fp.measure('updateBaseDefenseTurret', () => this.updateBaseDefenseTurret(delta));
             fp.measure('updateCorpses', () => this.updateCorpses(delta));
             fp.measure('updateLoreDrops', () => this.updateLoreDrops(delta));
@@ -34677,6 +34678,48 @@ export class ThreeGame {
         }
     }
 
+    // Fungus you walk through breaks (src/propBehavior.js crushable). The
+    // crushable subset is cached like the collision subset; returns how many
+    // broke this frame.
+    updateUnderfootCrush() {
+        if (!this.player?.position || this.isPlayerDead || !this.scatterSprites) return 0;
+        if (this._crushablePropsSource !== this.scatterSprites || this._crushablePropsLength !== this.scatterSprites.length) {
+            this._crushablePropsSource = this.scatterSprites;
+            this._crushablePropsLength = this.scatterSprites.length;
+            this._crushableProps = this.scatterSprites.filter((prop) => getPropBehavior(prop?.userData?.type).crushable);
+        }
+        const { x, z } = this.player.position;
+        const reach = (this.playerRadius ?? 0.3) + 0.35;
+        let crushed = 0;
+        for (const prop of this._crushableProps ?? []) {
+            if (prop.userData?.burstTriggered || !prop.parent) continue;
+            if (Math.hypot(x - prop.position.x, z - prop.position.z) > reach) continue;
+            if (this.breakScatterProp(prop, { plannedDrops: [], crushed: true })) crushed += 1;
+        }
+        return crushed;
+    }
+
+    // A flattened smear where fungus was crushed: the spore patch floor decal.
+    spawnFungusStain(sprite) {
+        const parent = sprite?.parent;
+        if (!parent || typeof this.createScatterInstance !== 'function') return null;
+        try {
+            const stain = this.createScatterInstance({
+                type: 'decal_spore_growth_patch',
+                x: sprite.position.x,
+                z: sprite.position.z,
+                scale: 0.8,
+                tiltX: 0,
+                elevation: 0.03,
+                rotation: Math.random() * Math.PI * 2
+            });
+            if (stain) parent.add(stain);
+            return stain;
+        } catch {
+            return null;
+        }
+    }
+
     damageScatterProp(sprite, amount = 1) {
         if (!sprite?.userData?.isDestructibleProp || sprite.userData.burstTriggered) return false;
         if (this._dressingProtocolEnabled && this.isMultiplayer && this.multiplayerMode !== 'pvp'
@@ -34706,7 +34749,7 @@ export class ThreeGame {
     // Break a prop: debris, drops, removal. The client that broke it rolls the
     // drops once and tells the squad, which breaks the same prop with the same
     // drops (2026-09-24 QA: nothing in co-op may differ between screens).
-    breakScatterProp(sprite, { plannedDrops = null, fromRemote = false } = {}) {
+    breakScatterProp(sprite, { plannedDrops = null, fromRemote = false, crushed = false } = {}) {
         if (!sprite?.userData || sprite.userData.burstTriggered) return false;
         sprite.userData.burstTriggered = true;
         if (sprite.userData?.isRoomDressingCollider) {
@@ -34727,36 +34770,47 @@ export class ThreeGame {
             sprite.userData.practicalLight = null;
         }
         const isBio = sprite.userData.type?.includes?.('spore') || sprite.userData.type?.includes?.('specimen');
+        if (crushed) {
+            // Walked over (src/propBehavior.js crushable): a puff of spores, a
+            // squish and a stain. Cosmetic: no loot, no hazard (owner, 2026-10-07).
+            this.spawnGearPoofEffect?.(sprite.position.x, sprite.position.z, 'bio_spores');
+            this.spawnFungusStain?.(sprite);
+            globalThis.window?.AudioManager?.play?.('enemy_hit_soft', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.3, playbackRate: 0.7 }) ?? { volume: 0.3, playbackRate: 0.7 }));
+            this.spawnDestructiblePropDrops?.(sprite, []);
+        }
         // Props with a 3D model come apart into physical chunks; the poof
         // remains the fallback for flat-sprite props that have nothing to
         // fracture. spawnPropDebris reports which happened, so a prop never
         // gets both a debris field and a puff of smoke standing in for one.
-        const brokeApart = spawnPropDebris(this, sprite, {
+        const brokeApart = crushed || spawnPropDebris(this, sprite, {
             direction: this.player ? {
                 x: sprite.position.x - this.player.position.x,
                 z: sprite.position.z - this.player.position.z
             } : null
         });
-        if (!brokeApart) {
-            this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, isBio ? 'bio_spores' : 'bunker_junk');
-        }
-        if (isBio) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
-        globalThis.window?.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 1.85, force: true });
+        if (!crushed) {
+            if (!brokeApart) {
+                this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, isBio ? 'bio_spores' : 'bunker_junk');
+            }
+            if (isBio) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
+            globalThis.window?.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 1.85, force: true });
 
-        const propKey = interactionSpecKeyFor(sprite.userData);
-        if (propKey) {
-            handleCustomPropDestruction(this, propKey, sprite.position, sprite);
-        }
-        handleCriticalServiceDestruction(this, sprite);
+            const propKey = interactionSpecKeyFor(sprite.userData);
+            if (propKey) {
+                handleCustomPropDestruction(this, propKey, sprite.position, sprite);
+            }
+            handleCriticalServiceDestruction(this, sprite);
 
-        // Dense dressing adds breakable scenery, not dozens of new ammo rolls.
-        this.spawnDestructiblePropDrops(sprite, plannedDrops ?? (sprite.userData.isRoomDressingCollider ? [] : null));
+            // Dense dressing adds breakable scenery, not dozens of new ammo rolls.
+            this.spawnDestructiblePropDrops(sprite, plannedDrops ?? (sprite.userData.isRoomDressingCollider ? [] : null));
+        }
         if (!fromRemote && coopRole(this) !== COOP_ROLE.SOLO) {
             this.broadcastSharedWorldEvent?.('prop-broken', {
                 scatterKey: sprite.userData.scatterKey ?? null,
                 x: sprite.position.x,
                 z: sprite.position.z,
-                drops: sprite.userData.dropPlan ?? []
+                drops: crushed ? [] : (sprite.userData.dropPlan ?? []),
+                crushed
             });
         }
 
@@ -34797,7 +34851,7 @@ export class ThreeGame {
         ));
         if (!sprite) return false;
         sprite.userData.propHp = 0;
-        return this.breakScatterProp(sprite, { plannedDrops: Array.isArray(detail.drops) ? detail.drops : [], fromRemote: true });
+        return this.breakScatterProp(sprite, { plannedDrops: Array.isArray(detail.drops) ? detail.drops : [], fromRemote: true, crushed: detail.crushed === true });
     }
 
     spawnDestructiblePropDrops(sprite, plannedDrops = null) {
