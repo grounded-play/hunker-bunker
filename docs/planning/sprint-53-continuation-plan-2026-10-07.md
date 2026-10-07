@@ -75,6 +75,13 @@ Perfectly seamless square tileable orthographic PBR base-color wall texture: glo
 - Show `DAY N · 06:00`, crash-site name and current objective after the commit; only then restore input.
 - Acceptance: play-to-end, skip, missing-video, decode-failure, double-confirm, co-op guest and reconnect tests all advance exactly once and wake at dawn.
 
+**Done 2026-10-07 in `24e7c062` (Claude session). Do not redo.** `src/sleepCutscene.js` picks the style; `main.js` (`playSleepCutscene`, `openMorningAfterRest`) plays it, then the morning card, then the debrief and the Bay. Tests: `src/sleepCutscene.test.js`, `src/threeGame.sleepCutscene.test.js`, `tests/e2e/sleep-cutscene.spec.js`.
+
+Differs from the outline above:
+- **Dawn commits before the presentation.** The existing `beginCampRest` advances the day, simulates the night and pins the sky to dawn before `day-rest-open`, as it always has. The cutscene plays over that change, so play-to-end, skip, missing video and decode failure all resolve the same promise into the same morning, with no second commit path to keep idempotent. The day advances exactly once, inside `beginCampRest`, which a second confirm cannot re-enter (`beginSleep` refuses).
+- **The morning card** shows the day and the crash-site name, not yet the current objective.
+- **No videos yet:** a 2.6 s skippable night card plays until a style is listed in `SHIPPED_SLEEP_CUTSCENES`.
+
 ### 6. Final integration gate
 
 - Full unit suite, production build, museum walk, named-place walk, night/vent capture, sleep matrix and long-walk benchmark.
