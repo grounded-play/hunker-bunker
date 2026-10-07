@@ -711,11 +711,14 @@ const PICKUP_DISTRIBUTION = {
     transitional: 0.2,
     stray: 0.1
 };
+// Coin is the Foundry's scarce input (bank.js FOUNDRY_ACTIVATION_COST): a
+// 27-minute solo run on 2026-10-06 banked 5. Coin's share comes from ammo,
+// whose surplus now salvages to tech anyway (src/ammoSurplus.js).
 const PICKUP_TYPES = [
     { type: 'health', weight: 0.27 },
-    { type: 'ammo', weight: 0.50 },
+    { type: 'ammo', weight: 0.46 },
     { type: 'weapon', weight: 0.14 },
-    { type: 'coin', weight: 0.09 }
+    { type: 'coin', weight: 0.13 }
 ];
 export const CLASS_STATS = {
     SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, passiveName: 'EVASIVE', passiveDescription: 'Reduced duration from enemy slow/freeze effects. Faster reload. Slipstream Strike grants +35% move speed on hit.' },
@@ -8281,7 +8284,11 @@ export class ThreeGame {
         handled = this.interactWithBunkerBlastDoorButton() || handled;
         handled = this.interactWithProceduralDoor() || handled;
         handled = this.interactWithMazeAccessSource() || handled;
-        handled = this.interactWithLoreTerminal() || handled;
+        // A terminal already read must not shadow the camp, cot or wanderer
+        // beside it: its modal takes input, so everything after it refused
+        // (session 2026-10-06: a camp's SETTLE SURVIVOR prompt re-opened the
+        // lore beside it on every press). Read ones are re-readable last.
+        handled = this.interactWithLoreTerminal({ unreadOnly: true }) || handled;
         if (!handled) handled = this.interactWithCaveEntrance();
         if (!handled) handled = this.interactWithAct2Camp();
         if (!handled) handled = this.interactWithBunkerCot();
@@ -8295,6 +8302,7 @@ export class ThreeGame {
         if (!handled) handled = this.interactWithPocketClimbPoint();
         if (!handled) handled = this.interactWithBiomechanicalDoor();
         if (!handled) handled = this.interactWithCustomBiomechProp();
+        if (!handled) handled = this.interactWithLoreTerminal({ unreadOnly: false });
         if (!handled) {
             this.playThrottledUiError('_lastNoInteractCueAt', { volume: 0.3, playbackRate: 0.9 });
         }
@@ -11638,9 +11646,9 @@ export class ThreeGame {
         }
     }
 
-    interactWithLoreTerminal() {
-        if (!this.isGameplayInputActive()) return;
-        if (!this.player) return;
+    interactWithLoreTerminal({ unreadOnly = false } = {}) {
+        if (!this.isGameplayInputActive()) return false;
+        if (!this.player) return false;
         for (const sprite of this.scatterSprites) {
             if (sprite.userData.type !== 'lore_terminal') continue;
             const dist = Math.hypot(
@@ -11648,6 +11656,7 @@ export class ThreeGame {
                 this.player.position.z - sprite.position.z
             );
             if (dist < 2.2) {
+                if (unreadOnly && this._readLoreKeys?.has(sprite.userData.loreKey)) continue;
                 this._readLoreKeys.add(sprite.userData.loreKey);
                 if (this.isMultiplayer) {
                     this.broadcastSharedWorldEvent?.('lore-terminal-read', {
@@ -11663,9 +11672,10 @@ export class ThreeGame {
                     id: `terminal:${sprite.userData.loreKey || `${Math.round(sprite.position.x)},${Math.round(sprite.position.z)}`}`
                 });
                 window.AudioManager?.play('ui_scan_ping', { volume: 0.35, playbackRate: 0.65, bus: 'sfx' });
-                return;
+                return true;
             }
         }
+        return false;
     }
 
     // The button that does what this keyboard key does, on the player's
@@ -33737,8 +33747,8 @@ export class ThreeGame {
             return 'health';
         }
 
-        if (roll < 0.1) return 'coin';
-        if (roll < 0.13) return 'weapon';
+        if (roll < 0.14) return 'coin';
+        if (roll < 0.17) return 'weapon';
         if (roll < 0.52) return 'ammo';
         return 'health';
     }
@@ -33845,21 +33855,21 @@ export class ThreeGame {
         const ROOM_PICKUP_BIAS = {
             [ROOM_TYPES.DEAD_END]: [
                 { type: 'health', weight: 0.20 },
-                { type: 'ammo',   weight: 0.45 },
+                { type: 'ammo',   weight: 0.41 },
                 { type: 'weapon', weight: 0.20 },
-                { type: 'coin',   weight: 0.15 }
+                { type: 'coin',   weight: 0.19 }
             ],
             [ROOM_TYPES.CORRIDOR]: [
                 { type: 'health', weight: 0.28 },
-                { type: 'ammo',   weight: 0.52 },
+                { type: 'ammo',   weight: 0.48 },
                 { type: 'weapon', weight: 0.12 },
-                { type: 'coin',   weight: 0.08 }
+                { type: 'coin',   weight: 0.12 }
             ],
             [ROOM_TYPES.CHAMBER]: [
                 { type: 'health', weight: 0.27 },
-                { type: 'ammo',   weight: 0.45 },
+                { type: 'ammo',   weight: 0.41 },
                 { type: 'weapon', weight: 0.18 },
-                { type: 'coin',   weight: 0.10 }
+                { type: 'coin',   weight: 0.14 }
             ]
         };
         const weights = ROOM_PICKUP_BIAS[roomType] ?? PICKUP_TYPES;

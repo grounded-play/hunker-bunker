@@ -81,6 +81,7 @@ import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
 import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSpriteLayouts.js';
 import { clearChromaGreen, repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { PRESENTATION_LAYER_SELECTOR, isPresentationMutation } from './src/presentationLayer.js';
+import { resolveAmmoPickup } from './src/ammoSurplus.js';
 import { createArmoryUi } from './src/armoryUi.js';
 import { initSteamVaultUI, isVaultExchangeAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, renderStorePanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
 import { createFoundryHub, isFoundryHubEnabled } from './src/foundryHub.js';
@@ -4041,8 +4042,18 @@ function trackPickupCollected(event) {
         const amount = Number.isFinite(event?.detail?.amount)
             ? Math.max(1, Math.floor(event.detail.amount))
             : 4;
-        pickupCounterState.ammo = Math.min(activeAmmoCapacity, previousValue + amount);
+        const pickup = resolveAmmoPickup(previousValue, amount, activeAmmoCapacity);
+        pickupCounterState.ammo = pickup.ammo;
         window.hbLog?.('WEAPON', 'info', 'ammo-pickup-collected', { newTotal: pickupCounterState.ammo, maxCapacity: activeAmmoCapacity, amountGained: amount });
+        if (pickup.surplusTech > 0) {
+            // Rounds that do not fit become tech salvage (src/ammoSurplus.js).
+            pickupCounterState.weapon = (pickupCounterState.weapon ?? 0) + pickup.surplusTech;
+            window.hbLog?.('WEAPON', 'info', 'ammo-surplus-salvaged', { wasted: pickup.wasted, tech: pickup.surplusTech });
+            recomputePickupTotal();
+            renderPickupCounter();
+            AudioManager.playProceduralLoot('weapon', event?.detail?.rarity);
+            if (pickupCounterState.ammo === previousValue) return;
+        }
     } else {
         const amount = type === 'coin' && Number.isFinite(event?.detail?.amount)
             ? Math.max(1, event.detail.amount)
@@ -12777,6 +12788,18 @@ function toggleTacticalMapModal(forceState) {
 }
 
 document.getElementById('close-tactical-map-modal')?.addEventListener('click', () => toggleTacticalMapModal(false));
+// The on-screen "PRESS E / A" prompts are tappable: on a Steam Deck the
+// touchscreen is the natural way to hit them, and a tap used to do nothing
+// (session 2026-10-06: SETTLE SURVIVOR tapped twice at a camp, no settle).
+// The tap performs the same interaction the button would.
+document.addEventListener('click', (event) => {
+    const prompt = event.target?.closest?.('.hud-action-prompt');
+    if (!prompt || prompt.id === 'mouse-look-prompt' || prompt.classList.contains('hidden')) return;
+    if (!isGameplayPhase()) return;
+    event.preventDefault();
+    event.stopPropagation();
+    window.game?.triggerGameplayInteract?.();
+});
 setupClickOutside('tactical-map-modal', () => toggleTacticalMapModal(false));
 
 // T, and D-pad left on a controller. Barter only exists with a real
