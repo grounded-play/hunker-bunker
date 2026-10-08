@@ -277,6 +277,7 @@ import { registerTinaHit, TINA_TOTAL_HITS } from './mayorTinaCombat.js';
 import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
 import { WORLD_3D_FACING_YAW, WORLD_3D_SWAP_PREFETCH_DISTANCE, world3dModelTypeFor, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, resolveScatterWorld3dType, syncWorld3dReplacement } from './world3dOverlay.js';
+import { prepareCorpse3dModel } from './corpse3d.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { intersectWallMeshes } from './wallRaycastIndex.js';
 import { createFlatMaterialSweeper, useSinglePassForFlatMaterials } from './singlePassFlatMaterials.js';
@@ -36002,13 +36003,7 @@ export class ThreeGame {
             // Fade-ready materials first, then prewarm: transparency is part of
             // the shader program, so prewarming the opaque originals left the
             // real program to compile on the first frame after the kill.
-            root?.traverse((child) => {
-                if (!child.isMesh) return;
-                child.material = Array.isArray(child.material)
-                    ? child.material.map((m) => m.clone())
-                    : child.material.clone();
-                for (const m of [child.material].flat()) m.transparent = true;
-            });
+            prepareCorpse3dModel(root);
             if (root) await this.prewarmLateModel?.(root);
             if (!root || !corpse.parent || !this.corpses?.includes(corpse)) {
                 if (!root) corpse.material.visible = true;

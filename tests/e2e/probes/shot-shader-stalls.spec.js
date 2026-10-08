@@ -39,24 +39,22 @@ test('which shaders compile the first time you shoot', async ({ page }) => {
     }, label));
     await page.waitForTimeout(2000);
     await mark('idle');
-    // A target 4 tiles out along +x, then shoot it.
+    // A one-hit target 4 tiles out along +x isolates the first shot and kill
+    // from unrelated chunk streaming during a long firing loop.
     await page.evaluate(() => {
         const g = window.game;
         const p = g.player.position;
         g.playerVitals.maxHp = 999; g.playerVitals.hp = 999;
-        g.spawnEnemyInstance('cybersnail', p.x + 4, p.z);
+        const target = g.spawnEnemyInstance('cybersnail', p.x + 4, p.z);
+        if (target?.userData) target.userData.hp = 1;
         g.aimDirX = 1; g.aimDirZ = 0;
     });
     await page.waitForTimeout(1500);
     await mark('enemy spawned');
-    for (let i = 0; i < 20; i++) {
-        await page.evaluate(() => { const g = window.game; g.aimDirX = 1; g.aimDirZ = 0; g.weaponFireCooldown = 0; g.weaponClipAmmo = Math.max(g.weaponClipAmmo, 3); g.fireWeaponAtCurrentAim({ source: 'probe' }); });
-        await page.waitForTimeout(250);
-        if (i === 0) await mark('first shot');
-    }
+    await page.evaluate(() => { const g = window.game; g.aimDirX = 1; g.aimDirZ = 0; g.weaponFireCooldown = 0; g.weaponClipAmmo = Math.max(g.weaponClipAmmo, 3); g.fireWeaponAtCurrentAim({ source: 'probe' }); });
     await page.waitForTimeout(2500);
     await page.evaluate(() => { window.__firstKillProgramId = Math.max(...[...window.__probe.before].map((k) => Number(k.split('|')[0]))) + 1; });
-    await mark('after 20 shots / kill');
+    await mark('first shot / kill');
     await page.evaluate(() => {
         const progs = window.game.renderer.info.programs ?? [];
         window.__firstKillProgramId = Math.min(...progs.map((p) => p.id).filter((id) => id >= 0).slice(-3));
