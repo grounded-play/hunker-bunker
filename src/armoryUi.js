@@ -473,7 +473,7 @@ export function createArmoryUi({
                     data-value="${tile.id}"
                     aria-pressed="${tile.selected}"
                     data-rarity="${rarity}"
-                    ${tile.locked ? 'aria-disabled="true"' : ''}
+                    ${tile.locked ? 'aria-disabled="true" data-controller-focusable' : ''}
                     aria-label="${tile.ariaLabel}"
                     title="${tile.locked ? 'Locked' : tile.realName}">
                     <span class="armory-tile__art">${art}${tile.locked ? '<span class="armory-tile__glyph">?</span>' : ''}</span>

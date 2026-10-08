@@ -893,7 +893,10 @@ function getVisibleControllerFocusables(root = document) {
     }
     return elements.filter((element) => {
         if (!isElementVisible(element)) return false;
-        if (element.disabled || element.getAttribute('aria-disabled') === 'true') return false;
+        // aria-disabled controls stay out of the pad's reach unless they opt
+        // in: locked Armory tiles still explain how they unlock, or buy.
+        if (element.disabled) return false;
+        if (element.getAttribute('aria-disabled') === 'true' && !element.hasAttribute('data-controller-focusable')) return false;
         if (element.closest('.hidden, [hidden], [inert]')) return false;
         if (element.closest('[aria-hidden="true"]')) return false;
         const style = window.getComputedStyle(element);
@@ -1394,6 +1397,9 @@ function moveControllerDirectional(root, code, backward) {
 const SPATIAL_FOCUS_ROOT_IDS = new Set([
     'achievements-modal',
     'steam-vault-modal',
+    // The Armory tile picker (skins, sheens, charms...) is its own focus
+    // root; without this the D-pad's up / down stepped through DOM order.
+    'armory-picker-modal',
     'armory-screen',
     'foundry-hub-modal',
     'fabrication-modal',

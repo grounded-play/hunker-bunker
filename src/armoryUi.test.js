@@ -357,6 +357,9 @@ describe('createArmoryUi ownership gating', () => {
         // Cryo-Vanguard Scout (4113) is a scout chassis skin nobody owns here.
         expect(html).toContain('data-value="4113"');
         expect(html).toMatch(/data-value="4113"[^>]*aria-disabled/);
+        // A pad must still reach it (to read how it unlocks, or buy it):
+        // the controller focus list skips aria-disabled without this.
+        expect(html).toMatch(/data-value="4113"[^>]*data-controller-focusable/);
         // Present but unnamed: the tile is there, the name is not.
         const tile = html.slice(html.indexOf('data-value="4113"'));
         expect(tile.slice(0, 400)).toContain('Locked');
