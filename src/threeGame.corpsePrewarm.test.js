@@ -58,7 +58,7 @@ describe('corpse model prewarm', () => {
         expect(setRenderTarget).toHaveBeenLastCalledWith(oldTarget);
     });
 
-    it('prewarms the gib interior and textured kill-burst sprite together', async () => {
+    it('prewarms the textured kill-burst sprite', async () => {
         const game = Object.create(ThreeGame.prototype);
         const spark = new THREE.SpriteMaterial({ map: new THREE.Texture(), transparent: true });
         const prewarmLateModel = vi.fn(async () => {});
@@ -70,8 +70,27 @@ describe('corpse model prewarm', () => {
         const root = await game.prewarmKillEffectShaders();
 
         expect(prewarmLateModel).toHaveBeenCalledWith(root);
-        expect(root.children.some((child) => child.isMesh && child.material.isMeshBasicMaterial)).toBe(true);
         expect(root.children.some((child) => child.isSprite && child.material.map === spark.map)).toBe(true);
         expect(game.killEffectShaderWarmup).toBe(root);
+    });
+
+    it('prewarms and retains the exact gib skin variant once per enemy type', async () => {
+        const game = Object.create(ThreeGame.prototype);
+        const enemyRoot = new THREE.Group();
+        const sourceMaterial = new THREE.MeshPhysicalMaterial({ transparent: false });
+        enemyRoot.add(new THREE.Mesh(new THREE.BoxGeometry(), sourceMaterial));
+        const prewarmLateModel = vi.fn(async () => {});
+        game.prewarmLateModel = prewarmLateModel;
+
+        const first = await game.prewarmEnemyGibShaders('test_enemy', enemyRoot);
+        const second = await game.prewarmEnemyGibShaders('test_enemy', enemyRoot);
+
+        expect(first).toBe(second);
+        expect(prewarmLateModel).toHaveBeenCalledTimes(1);
+        expect(first.children).toHaveLength(2);
+        expect(first.children[0].material).not.toBe(sourceMaterial);
+        expect(first.children[0].material.isMeshPhysicalMaterial).toBe(true);
+        expect(first.children[0].material.transparent).toBe(true);
+        expect(first.children[1].material.isMeshBasicMaterial).toBe(true);
     });
 });

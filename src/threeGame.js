@@ -7488,6 +7488,11 @@ export class ThreeGame {
         try {
             const visual = await createEnemy3dVisual(sprite.userData.modelVariant ?? sprite.userData.type);
             if (!visual || sprite.userData.burstTriggered) return;
+            await this.prewarmEnemyGibShaders(
+                sprite.userData.modelVariant ?? sprite.userData.type,
+                visual.root
+            );
+            if (sprite.userData.burstTriggered) return;
             sprite.userData.enemy3dVisual = visual;
             if (sprite.parent && visual.root) {
                 sprite.parent.add(visual.root);
@@ -36013,7 +36018,8 @@ export class ThreeGame {
     }
 
     async prewarmKillEffectShaders() {
-        const root = createEnemyGibShaderWarmup();
+        const root = new THREE.Group();
+        root.name = 'kill-effect-shader-warmup';
         const sparkMaterial = this.scatterMaterials?.fx_spark_burst?.clone?.();
         if (sparkMaterial) root.add(new THREE.Sprite(sparkMaterial));
         await this.prewarmLateModel(root);
@@ -36021,6 +36027,25 @@ export class ThreeGame {
         // reference lets Three release its program and defeats the warmup.
         this.killEffectShaderWarmup = root;
         return root;
+    }
+
+    async prewarmEnemyGibShaders(type, enemyRoot) {
+        this.enemyGibShaderWarmups ??= new Map();
+        if (this.enemyGibShaderWarmups.has(type)) {
+            return this.enemyGibShaderWarmups.get(type);
+        }
+        const promise = (async () => {
+            const root = createEnemyGibShaderWarmup(type, enemyRoot);
+            if (!root) return null;
+            await this.prewarmLateModel(root);
+            return root;
+        })().catch((error) => {
+            this.enemyGibShaderWarmups.delete(type);
+            throw error;
+        });
+        // The promise retains the exact warmup materials after it resolves.
+        this.enemyGibShaderWarmups.set(type, promise);
+        return promise;
     }
 
     async attachCorpse3d(corpse, modelType, enemySprite) {
