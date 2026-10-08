@@ -7639,6 +7639,12 @@ export class ThreeGame {
                         root
                     });
                     this.umbilicalAttackers.push(attacker);
+                    // The attacker runs its own mixer on these bones; the
+                    // overlay's idle mixer would only be overwritten each frame.
+                    if (attacker.mixer && root.userData?.mixer) {
+                        this.world3dMixers?.delete(root.userData.mixer);
+                        root.userData.mixer.stopAllAction();
+                    }
                     source.userData.umbilicalAttacker = attacker;
                     root.userData.umbilicalAttacker = attacker;
                 }

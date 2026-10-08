@@ -28,6 +28,43 @@ describe('UmbilicalAttacker', () => {
         });
     }
 
+    // Mirrors the rigged GLB: a static Umbilical_Base bone holding the floor
+    // hatch, and Umbilical_Root (the first tentacle bone) as its child.
+    function createRiggedAttacker() {
+        const root = new THREE.Group();
+        const model = new THREE.Group();
+        const base = new THREE.Bone();
+        base.name = 'Umbilical_Base';
+        base.rotation.y = 0.7;
+        const tentacleRoot = new THREE.Bone();
+        tentacleRoot.name = 'Umbilical_Root';
+        tentacleRoot.position.set(0, 0.1, 0);
+        tentacleRoot.rotation.y = 0.3;
+        base.add(tentacleRoot);
+        model.add(base);
+        root.add(model);
+        root.updateMatrixWorld(true);
+        const attacker = new UmbilicalAttacker({ scene: model, animations: [] }, {
+            root, x: 0, y: 0, z: 0, detectionRadius: 10, strikeRadius: 1
+        });
+        return { attacker, model, base, tentacleRoot };
+    }
+
+    it('turns the tentacle root bone toward the player and leaves the hatch still', () => {
+        const { attacker, model, base, tentacleRoot } = createRiggedAttacker();
+        const baseRest = base.quaternion.clone();
+        const player = { x: 5, y: 0, z: 0 };
+        for (let i = 0; i < 120; i++) attacker.update(0.05, player);
+        expect(attacker.state).toBe('TRACKING');
+        expect(model.rotation.y).toBe(0);
+        expect(base.quaternion.equals(baseRest)).toBe(true);
+        tentacleRoot.updateMatrixWorld(true);
+        const forward = new THREE.Vector3(0, 0, 1)
+            .applyQuaternion(tentacleRoot.getWorldQuaternion(new THREE.Quaternion()));
+        expect(forward.y).toBeCloseTo(0, 5);
+        expect(Math.atan2(forward.x, forward.z)).toBeCloseTo(Math.PI / 2, 2);
+    });
+
     it('initializes with default combat stats and root group', () => {
         const attacker = createMockAttacker();
         expect(attacker.isAlive).toBe(true);

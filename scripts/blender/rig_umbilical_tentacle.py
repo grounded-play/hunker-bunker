@@ -1,235 +1,268 @@
-"""Rig the biomechanical spore umbilical cable with a 10-bone armature and procedural actions.
+"""Rig the biomechanical spore umbilical cable: a floor hatch with a tentacle rising out of it.
 
 Usage:
     /snap/bin/blender -b -P scripts/blender/rig_umbilical_tentacle.py
+
+The model stands on its hatch (z = 0 is the floor). The rig is:
+
+    Umbilical_Base   static, owns every hatch vertex at weight 1.0, never keyed
+    Umbilical_Root   first tentacle bone, never keyed (the game yaws it to face the player)
+    Umbilical_Bone_01 .. _08
+    Umbilical_Tip
+
+The chain climbs from the hatch top to the tentacle's crown, following the
+tentacle's centreline slice by slice, so its S-curve bends where it is drawn.
+Weights are assigned by height, blended linearly between neighbouring bones;
+the hatch-to-tentacle seam blends Base into Root so the drips do not tear.
+
+An earlier version hung the chain from the top (a ceiling rig). The hatch then
+sat at the tip, the bone that swings hardest, and every action moved the floor.
 """
 
 import math
 import os
 import bpy
-from mathutils import Vector, Euler
+from mathutils import Euler, Vector
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 SRC_GLB = os.path.join(ROOT, 'public', '3d', 'runtime', 'new3ds', 'prop_biomech_spore_umbilical_cable.glb')
 OUT_GLB = os.path.join(ROOT, 'public', '3d', 'runtime', 'new3ds', 'prop_biomech_spore_umbilical_cable_rigged.glb')
 
 FPS = 30
-NUM_BONES = 10
+CHAIN_BONES = 10            # Root + 8 + Tip
+HATCH_TOP = 0.075           # fraction of height: the hatch slab ends here (slice histogram: dense below, ~85 verts/slice above)
+SEAM_BLEND = 0.055          # fraction of height above HATCH_TOP over which Base hands over to Root
+CENTRE_WINDOW = 0.05        # fraction of height sampled around each joint for the centreline
 
 
-def build_rigged_tentacle():
-    if not os.path.exists(SRC_GLB):
-        # Fallback to public/3dprops if runtime not ready yet
-        alt_src = os.path.join(ROOT, 'public', '3dprops', 'prop_biomech_spore_umbilical_cable.glb')
-        if os.path.exists(alt_src):
-            src_path = alt_src
-        else:
-            raise FileNotFoundError(f"Cannot find umbilical cable GLB at {SRC_GLB} or {alt_src}")
-    else:
-        src_path = SRC_GLB
+def chain_name(i):
+    if i == 0:
+        return 'Umbilical_Root'
+    if i == CHAIN_BONES - 1:
+        return 'Umbilical_Tip'
+    return f'Umbilical_Bone_{i:02d}'
 
-    print(f"Loading {src_path} for skeletal rigging...")
+
+def import_body():
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.context.scene.render.fps = FPS
-    bpy.ops.import_scene.gltf(filepath=src_path)
-
-    # Clean non-mesh objects
+    bpy.ops.import_scene.gltf(filepath=SRC_GLB)
     meshes = [o for o in bpy.data.objects if o.type == 'MESH']
     if not meshes:
-        raise RuntimeError("No mesh objects found in GLTF scene")
-
-    # Apply transforms and join meshes if multiple
+        raise RuntimeError('No mesh objects found in the source GLB')
+    for obj in list(bpy.data.objects):
+        if obj.type != 'MESH':
+            bpy.data.objects.remove(obj, do_unlink=True)
     for m in meshes:
         bpy.ops.object.select_all(action='DESELECT')
         m.select_set(True)
         bpy.context.view_layer.objects.active = m
-        bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-
     bpy.ops.object.select_all(action='DESELECT')
     for m in meshes:
         m.select_set(True)
     bpy.context.view_layer.objects.active = meshes[0]
     if len(meshes) > 1:
         bpy.ops.object.join()
-
     body = bpy.context.view_layer.objects.active
     body.name = 'UmbilicalBody'
+    return body
 
-    # Find bounding box in world space
-    bb = [body.matrix_world @ Vector(corner) for corner in body.bound_box]
-    min_x = min(v.x for v in bb)
-    max_x = max(v.x for v in bb)
-    min_y = min(v.y for v in bb)
-    max_y = max(v.y for v in bb)
-    min_z = min(v.z for v in bb)
-    max_z = max(v.z for v in bb)
 
-    center_x = (min_x + max_x) * 0.5
-    center_y = (min_y + max_y) * 0.5
+def centreline(points, z, half_window):
+    near = [p for p in points if abs(p.z - z) <= half_window]
+    if not near:
+        return None
+    return Vector((sum(p.x for p in near) / len(near), sum(p.y for p in near) / len(near), z))
+
+
+def build_rigged_tentacle():
+    print(f'Loading {SRC_GLB} for skeletal rigging...')
+    body = import_body()
+    points = [v.co.copy() for v in body.data.vertices]
+    min_z = min(p.z for p in points)
+    max_z = max(p.z for p in points)
     height = max_z - min_z
-    print(f"Tentacle Bounding Box: X:[{min_x:.2f}, {max_x:.2f}], Y:[{min_y:.2f}, {max_y:.2f}], Z:[{min_z:.2f}, {max_z:.2f}] (Height: {height:.2f}m)")
+    hatch_top = min_z + HATCH_TOP * height
+    seam_top = hatch_top + SEAM_BLEND * height
+    tentacle = [p for p in points if p.z >= hatch_top]
+    print(f'Height {height:.3f}; hatch below z={hatch_top:.3f}; seam to z={seam_top:.3f}')
 
-    # Construct armature
+    # Joints: the tentacle's centreline at evenly spaced heights, lightly
+    # smoothed. The first joint is the hatch top, directly above the base.
+    step = (max_z - hatch_top) / CHAIN_BONES
+    raw = []
+    for k in range(CHAIN_BONES + 1):
+        z = hatch_top + k * step
+        c = centreline(tentacle, z, CENTRE_WINDOW * height) or (raw[-1].copy() if raw else Vector((0, 0, z)))
+        c.z = z
+        raw.append(c)
+    joints = []
+    for k, c in enumerate(raw):
+        a = raw[max(0, k - 1)]
+        b = raw[min(len(raw) - 1, k + 1)]
+        joints.append(Vector(((a.x + 2 * c.x + b.x) / 4, (a.y + 2 * c.y + b.y) / 4, c.z)))
+
     arm_data = bpy.data.armatures.new('UmbilicalRig')
     arm = bpy.data.objects.new('UmbilicalRig', arm_data)
     bpy.context.scene.collection.objects.link(arm)
     bpy.context.view_layer.objects.active = arm
-
     bpy.ops.object.mode_set(mode='EDIT')
+
+    # Root is vertical so its parent-space Y is world up: the game yaws it
+    # about that axis without tilting the tentacle.
+    joints[1] = Vector((joints[0].x, joints[0].y, joints[1].z))
+    base = arm_data.edit_bones.new('Umbilical_Base')
+    base.head = Vector((joints[0].x, joints[0].y, min_z))
+    base.tail = joints[0].copy()
+    base.roll = 0
+    prev = base
     bone_names = []
-    # Build bone chain from top (ceiling anchor) down to bottom tip
-    step_z = height / NUM_BONES
-    prev_bone = None
-
-    for i in range(NUM_BONES):
-        bname = 'Umbilical_Root' if i == 0 else f'Umbilical_Bone_{i:02d}'
-        if i == NUM_BONES - 1:
-            bname = 'Umbilical_Tip'
-        bone_names.append(bname)
-
-        head_z = max_z - i * step_z
-        tail_z = max_z - (i + 1) * step_z
-
-        eb = arm_data.edit_bones.new(bname)
-        eb.head = Vector((center_x, center_y, head_z))
-        eb.tail = Vector((center_x, center_y, tail_z))
+    for i in range(CHAIN_BONES):
+        eb = arm_data.edit_bones.new(chain_name(i))
+        eb.head = joints[i].copy()
+        eb.tail = joints[i + 1].copy()
         eb.roll = 0
-
-        if prev_bone:
-            eb.parent = prev_bone
-            eb.use_connect = True
-        prev_bone = eb
-
+        eb.parent = prev
+        eb.use_connect = True
+        prev = eb
+        bone_names.append(eb.name)
     bpy.ops.object.mode_set(mode='OBJECT')
 
-    # Bind armature with automatic weights
+    # Skin by height. Bone centres are the blend anchors.
     bpy.ops.object.select_all(action='DESELECT')
     body.select_set(True)
     arm.select_set(True)
     bpy.context.view_layer.objects.active = arm
-    bpy.ops.object.parent_set(type='ARMATURE_AUTO')
+    bpy.ops.object.parent_set(type='ARMATURE_NAME')
+    for vg in list(body.vertex_groups):
+        body.vertex_groups.remove(vg)
+    groups = {name: body.vertex_groups.new(name=name) for name in ['Umbilical_Base', *bone_names]}
+    centres = [hatch_top + (i + 0.5) * step for i in range(CHAIN_BONES)]
+    for v in body.data.vertices:
+        z = v.co.z
+        if z < hatch_top:
+            groups['Umbilical_Base'].add([v.index], 1.0, 'REPLACE')
+            continue
+        if z < seam_top:
+            s = (z - hatch_top) / (seam_top - hatch_top)
+            s = s * s * (3 - 2 * s)
+            groups['Umbilical_Base'].add([v.index], 1.0 - s, 'REPLACE')
+            groups[bone_names[0]].add([v.index], s, 'REPLACE')
+            continue
+        if z <= centres[0]:
+            groups[bone_names[0]].add([v.index], 1.0, 'REPLACE')
+            continue
+        if z >= centres[-1]:
+            groups[bone_names[-1]].add([v.index], 1.0, 'REPLACE')
+            continue
+        i = min(CHAIN_BONES - 2, int((z - centres[0]) / step))
+        t = (z - centres[i]) / step
+        groups[bone_names[i]].add([v.index], 1.0 - t, 'REPLACE')
+        groups[bone_names[i + 1]].add([v.index], t, 'REPLACE')
 
-    # Fallback skinning check: ensure all vertices have at least one weight group
-    missed = sum(1 for v in body.data.vertices if not v.groups)
-    print(f"Automatic skinning completed. Unweighted vertices: {missed} of {len(body.data.vertices)}")
+    hatch = [v for v in body.data.vertices if v.co.z < hatch_top]
+    impure = sum(1 for v in hatch if any(body.vertex_groups[g.group].name != 'Umbilical_Base' and g.weight > 0 for g in v.groups))
+    print(f'Hatch vertices: {len(hatch)}; with any non-base weight: {impure}')
+    if impure:
+        raise RuntimeError('hatch vertices must belong to Umbilical_Base only')
 
-    if missed > 0:
-        print("Assigning missed vertices to closest bone by Z-height...")
-        for v in body.data.vertices:
-            if not v.groups:
-                z_rel = (max_z - v.co.z) / max(height, 1e-4)
-                bone_idx = max(0, min(NUM_BONES - 1, int(z_rel * NUM_BONES)))
-                bname = bone_names[bone_idx]
-                vg = body.vertex_groups.get(bname)
-                if not vg:
-                    vg = body.vertex_groups.new(name=bname)
-                vg.add([v.index], 1.0, 'REPLACE')
-
-    # Create Procedural Animation Actions
+    # Positive pitch about a bone's local X swings the chain toward the
+    # bones' local +Z. The strike lunges that way; the game measures it from
+    # the root bone's rest frame, so its direction need not match world axes.
     bpy.context.view_layer.objects.active = arm
     bpy.ops.object.mode_set(mode='POSE')
-
-    # Helper to insert keyframe on pose bone
-    def key_bone_rot(action, bone, frame, euler_rot):
-        bone.rotation_mode = 'XYZ'
-        bone.rotation_euler = euler_rot
-        bone.keyframe_insert(data_path='rotation_euler', frame=frame)
-
-    # 1. Action: idle_sway (72 frames = 2.4s @ 30fps)
-    action_idle = bpy.data.actions.new(name='idle_sway')
     arm.animation_data_create()
-    arm.animation_data.action = action_idle
 
+    def key(pbone, frame, euler):
+        pbone.rotation_mode = 'XYZ'
+        pbone.rotation_euler = euler
+        pbone.keyframe_insert(data_path='rotation_euler', frame=frame)
+
+    def new_action(name):
+        action = bpy.data.actions.new(name=name)
+        arm.animation_data.action = action
+        for pb in arm.pose.bones:
+            pb.rotation_mode = 'XYZ'
+            pb.rotation_euler = Euler((0, 0, 0))
+        return action
+
+    animated = bone_names[1:]  # Base and Root are never keyed
+
+    def weight(i):
+        return (i + 1) / len(animated)
+
+    # 1. idle_sway: 2.4 s loop, a slow travelling wave.
+    idle = new_action('idle_sway')
     for f in range(0, 73, 6):
-        t = (f / 72.0) * math.pi * 2.0
-        for i, bname in enumerate(bone_names):
-            if i == 0:
-                continue  # Root bone anchored
-            pbone = arm.pose.bones[bname]
-            phase = t + (i * 0.45)
-            # Gentle sinusoidal organic curl
-            pitch = math.sin(phase) * 0.08 * (i / NUM_BONES)
-            yaw = math.cos(phase * 0.7) * 0.10 * (i / NUM_BONES)
-            roll = math.sin(phase * 1.3) * 0.04
-            key_bone_rot(action_idle, pbone, f, Euler((pitch, yaw, roll)))
+        t = (f / 72.0) * math.tau
+        for i, name in enumerate(animated):
+            phase = t - i * 0.45
+            key(arm.pose.bones[name], f, Euler((
+                math.sin(phase) * 0.10 * weight(i),
+                math.sin(phase * 2.0) * 0.03,
+                math.cos(phase) * 0.08 * weight(i),
+            )))
 
-    # 2. Action: coil_anticipation (15 frames = 0.5s)
-    action_coil = bpy.data.actions.new(name='coil_anticipation')
-    arm.animation_data.action = action_coil
-
-    for f in [0, 8, 15]:
+    # 2. coil_anticipation: 0.5 s, rears back into an S.
+    coil = new_action('coil_anticipation')
+    for f in (0, 8, 15):
         prog = f / 15.0
-        for i, bname in enumerate(bone_names):
-            pbone = arm.pose.bones[bname]
-            if i == 0:
-                continue
-            # S-curve coil contraction
-            sign = 1 if (i % 2 == 0) else -1
-            pitch = sign * prog * 0.35 * (i / NUM_BONES)
-            yaw = prog * 0.15
-            key_bone_rot(action_coil, pbone, f, Euler((pitch, yaw, 0)))
+        for i, name in enumerate(animated):
+            sign = -1 if i < len(animated) // 2 else 1
+            key(arm.pose.bones[name], f, Euler((sign * -prog * 0.32 * (0.5 + weight(i)), 0, 0)))
 
-    # 3. Action: lash_strike (12 frames = 0.4s)
-    action_strike = bpy.data.actions.new(name='lash_strike')
-    arm.animation_data.action = action_strike
-
-    # f=0: coiled, f=4: whip forward extension, f=8: tip snap, f=12: rebound
-    for f in [0, 4, 8, 12]:
-        for i, bname in enumerate(bone_names):
-            pbone = arm.pose.bones[bname]
-            if i == 0:
-                continue
-            if f == 0:
-                pitch = 0.3 * (i / NUM_BONES)
-            elif f == 4:
-                # Forward thrust
-                pitch = -0.45 * (i / NUM_BONES)
-            elif f == 8:
-                # Tip snap down
-                pitch = -0.70 if i >= 6 else -0.30
+    # 3. lash_strike: 0.4 s, coiled -> lunge forward -> tip snap -> rebound.
+    strike = new_action('lash_strike')
+    for f, pose in ((0, 'coiled'), (4, 'lunge'), (8, 'snap'), (12, 'rebound')):
+        for i, name in enumerate(animated):
+            if pose == 'coiled':
+                pitch = -0.28 * weight(i)
+            elif pose == 'lunge':
+                pitch = 0.30 * (0.4 + weight(i))
+            elif pose == 'snap':
+                pitch = 0.55 if i >= len(animated) // 2 else 0.22
             else:
-                pitch = -0.15
-            key_bone_rot(action_strike, pbone, f, Euler((pitch, 0, 0)))
+                pitch = 0.10
+            key(arm.pose.bones[name], f, Euler((pitch, 0, 0)))
 
-    # 4. Action: sever_convulsion (36 frames = 1.2s)
-    action_sever = bpy.data.actions.new(name='sever_convulsion')
-    arm.animation_data.action = action_sever
-
+    # 4. sever_convulsion: 1.2 s, thrashing that settles into a limp droop.
+    sever = new_action('sever_convulsion')
     for f in range(0, 37, 3):
-        decay = max(0.0, 1.0 - (f / 36.0))
-        for i, bname in enumerate(bone_names):
-            pbone = arm.pose.bones[bname]
-            if i == 0:
-                continue
-            # Spastic random trembling settling to limp hanging
-            jitter_x = math.sin(f * 2.5 + i) * 0.35 * decay
-            jitter_y = math.cos(f * 3.1 + i) * 0.35 * decay
-            key_bone_rot(action_sever, pbone, f, Euler((jitter_x, jitter_y, 0)))
+        decay = max(0.0, 1.0 - f / 36.0)
+        droop = (1.0 - decay) * 0.16
+        for i, name in enumerate(animated):
+            key(arm.pose.bones[name], f, Euler((
+                math.sin(f * 2.5 + i) * 0.30 * decay + droop,
+                0,
+                math.cos(f * 3.1 + i) * 0.30 * decay,
+            )))
 
-    # Store all actions in NLA tracks so glTF exporter packages all animations
-    for act in [action_idle, action_coil, action_strike, action_sever]:
+    arm.animation_data.action = None
+    for action in (idle, coil, strike, sever):
         track = arm.animation_data.nla_tracks.new()
-        track.name = act.name
-        track.strips.new(act.name, 0, act)
-
+        track.name = action.name
+        track.strips.new(action.name, 0, action)
+        track.mute = True
+    for pb in arm.pose.bones:
+        pb.rotation_euler = Euler((0, 0, 0))
     bpy.ops.object.mode_set(mode='OBJECT')
 
-    # Export rigged model
-    print(f"Exporting rigged umbilical tentacle to {OUT_GLB}...")
+    print(f'Exporting {OUT_GLB}...')
     bpy.ops.export_scene.gltf(
         filepath=OUT_GLB,
         export_format='GLB',
         export_apply=False,
         export_animations=True,
-        export_nla_strips=True,
+        export_animation_mode='NLA_TRACKS',
         export_cameras=False,
         export_lights=False,
         export_skins=True,
-        export_morph=True
+        export_morph=False,
+        export_optimize_animation_size=True,
+        export_optimize_animation_keep_anim_armature=False,
     )
-    final_mb = os.path.getsize(OUT_GLB) / (1024 * 1024)
-    print(f"-> Successfully exported rigged umbilical tentacle ({final_mb:.2f} MB)")
+    print(f'-> {os.path.getsize(OUT_GLB) / (1024 * 1024):.2f} MB')
 
 
 if __name__ == '__main__':
