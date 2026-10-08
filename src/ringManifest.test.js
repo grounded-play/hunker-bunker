@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { bindRoomGrammarSites } from './roomGrammarSiteSelection.js';
 import { ACT2_CAMP_STATUSES, ACT2_HIVE_SITES, ACT2_HIVE_STATUSES } from './act2.js';
 import { CAMP_QUESTS } from './data/campQuests.js';
 import { generateRadialMazeExpedition } from './mazeExpedition.js';
@@ -152,8 +153,11 @@ describe('ring manifest validation failures', () => {
     it('rejects duplicate IDs and out-of-bounds rings', () => {
         const plan = clone(buildRingManifestPlan(generateRadialMazeExpedition(4)));
         plan.ringManifests[1].id = plan.ringManifests[0].id;
-        plan.ringManifests[1].reservations[0].id = plan.ringManifests[0].reservations[0].id;
-        plan.ringManifests[1].reservations[1].ring = 6;
+        const ringOneEntry = plan.ringManifests[0].reservations.find((entry) => entry.role === 'entry');
+        const ringTwoEntry = plan.ringManifests[1].reservations.find((entry) => entry.role === 'entry');
+        const ringTwoShortcut = plan.ringManifests[1].reservations.find((entry) => entry.role === 'returnShortcut');
+        ringTwoEntry.id = ringOneEntry.id;
+        ringTwoShortcut.ring = 6;
         const result = validateRingManifestPlan(plan);
 
         expect(result.valid).toBe(false);
@@ -288,6 +292,49 @@ describe('WorldPlan handoff contract', () => {
             .toContain('hive_suture:choice_chamber');
     });
 
+    // G5: chosen once and kept with the plan, without touching reservations,
+    // so the plan version and every existing save stay as they were.
+    it('keeps one arrival scenario and one scored camp court with the plan, reservations untouched', () => {
+        const plan = buildWorldPlan(generateRadialMazeExpedition(8128));
+        expect(plan.version).toBe(1);
+        expect(plan.roomGrammarSites).toMatchObject({
+            version: 1,
+            arrival: { chunkKey: '0,0', profile: 'safe-arrival', roomOrigin: { x: 1, y: 1 },
+                bindings: { player: 'party-spawn', shipConsole: 'ship-console' } },
+            camp: { profile: 'camp-court', bindings: { camp: 'hearth', sleep: 'sleep' } }
+        });
+        const selectedCamp = getWorldReservation(plan, plan.roomGrammarSites.camp.reservationId);
+        expect(selectedCamp).toMatchObject({ role: 'campTerritory', siteId: plan.roomGrammarSites.camp.siteId });
+        expect(plan.reservations.some((entry) => entry.roomGrammarProfile)).toBe(false);
+        expect(validateWorldPlan(plan)).toEqual({ valid: true, errors: [] });
+
+        // The grammar pilot binds the court onto that camp and its state anchors.
+        const bound = bindRoomGrammarSites(plan.reservations, plan.roomGrammarSites, plan.seed);
+        expect(bound.filter((entry) => entry.role === 'campTerritory' && entry.roomGrammarProfile)).toHaveLength(1);
+        expect(bound.filter((entry) => entry.role === 'campStateAnchor' && entry.siteId === selectedCamp.siteId)
+            .every((entry) => entry.roomGrammarMotif === plan.roomGrammarSites.camp.motifId)).toBe(true);
+    });
+
+    it('accepts a plan saved before G5', () => {
+        const plan = buildWorldPlan(generateRadialMazeExpedition(8128));
+        delete plan.roomGrammarSites;
+        delete plan.roomGrammarSitePlanVersion;
+        expect(validateWorldPlan(plan)).toEqual({ valid: true, errors: [] });
+    });
+
+    it('keeps G5 selection deterministic while exercising every arrival scenario', () => {
+        const arrivals = new Set();
+        for (let seed = 1; seed <= 100; seed += 1) {
+            const first = buildWorldPlan(generateRadialMazeExpedition(seed));
+            const second = buildWorldPlan(generateRadialMazeExpedition(seed));
+            expect(second.roomGrammarSites).toEqual(first.roomGrammarSites);
+            arrivals.add(first.roomGrammarSites.arrival.motifId);
+        }
+        expect(arrivals).toEqual(new Set([
+            'sheltered-crash-bay', 'maintenance-landing', 'breached-cargo-court'
+        ]));
+    });
+
     it('keeps every camp objective away from its camp territory boundary', () => {
         const plan = buildWorldPlan(generateRadialMazeExpedition(91));
         const quests = plan.reservations.filter((reservation) => reservation.role === 'campObjective');
@@ -325,5 +372,15 @@ describe('WorldPlan handoff contract', () => {
         const result = validateWorldPlan(plan);
         expect(result.valid).toBe(false);
         expect(result.errors).toContain('camp_meridian:state:robbed has invalid shared reservation ownership');
+    });
+
+    it('rejects a grammar selection that drifts from the plan', () => {
+        const plan = buildWorldPlan(generateRadialMazeExpedition(8));
+        plan.roomGrammarSites.arrival.motifId = 'not-an-arrival-scenario';
+        plan.roomGrammarSites.camp.chunkKey = '99,99';
+        expect(validateWorldPlan(plan).errors).toEqual(expect.arrayContaining([
+            'room grammar arrival selection does not match the crash origin',
+            'room grammar camp selection does not match its reservation'
+        ]));
     });
 });

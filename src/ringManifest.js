@@ -14,6 +14,7 @@ import {
     validateTerritoryPlan
 } from './territoryPlanner.js';
 import { allocateWorldSetpieces } from './setpieceBuilds.js';
+import { planRoomGrammarSites, validateRoomGrammarSites } from './roomGrammarSiteSelection.js';
 
 export const RING_MANIFEST_VERSION = 1;
 export const WORLD_PLAN_VERSION = 1;
@@ -804,6 +805,16 @@ export function buildWorldPlan(expedition) {
     });
     const crossingPlan = buildRingCrossingPlan(expedition);
     const projection = projectManifestReservations(expedition, manifestPlan, territoryPlan, crossingPlan);
+    // G5: the arrival scenario and the inhabited camp court are chosen here,
+    // once, and kept with the plan. Additive: the reservations (and so the
+    // plan version and every existing save) are unchanged; the selections
+    // only shape rooms where the grammar pilot is on (see bindRoomGrammarSites).
+    const grammarSites = planRoomGrammarSites({
+        seed: Number(expedition.seed) >>> 0,
+        topology: expedition.topology,
+        reservations: projection.reservations
+    });
+    const reservations = projection.reservations;
     const questFallbacks = manifestPlan.ringManifests
         .filter((manifest) => manifest.progression)
         .map((manifest) => ({
@@ -822,12 +833,14 @@ export function buildWorldPlan(expedition) {
         topology: expedition.topology,
         ringManifestVersion: manifestPlan.version,
         ringManifests: manifestPlan.ringManifests,
-        reservations: projection.reservations,
+        reservations,
         territoryPlanVersion: territoryPlan.version,
         territories: territoryPlan.territories,
         ringCrossingPlanVersion: crossingPlan.version,
         ringCrossings: crossingPlan.ringCrossings,
         requiredChunkSockets: territoryPlan.requiredChunkSockets,
+        roomGrammarSitePlanVersion: grammarSites.version,
+        roomGrammarSites: grammarSites,
         questFallbacks,
         diagnostics: {
             territory: territoryPlan.diagnostics,
@@ -940,6 +953,8 @@ export function validateWorldPlan(worldPlan) {
     });
     errors.push(...crossingValidation.errors);
     errors.push(...(worldPlan?.diagnostics?.projectionErrors ?? []));
+    // Plans saved before G5 carry no selections; that is valid.
+    if (worldPlan?.roomGrammarSites) errors.push(...validateRoomGrammarSites(worldPlan));
 
     const sourceIds = (worldPlan?.ringManifests ?? [])
         .flatMap((manifest) => manifest.reservations ?? [])

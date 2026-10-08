@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { bindRoomGrammarSites } from './roomGrammarSiteSelection.js';
 // Deliberately imports Lane A's real, shipped modules — this file exists
 // to prove src/chunkStructure.js's resolveChunkStructureForReservation
 // actually interoperates with src/ringManifest.js's real output, not a
@@ -100,6 +101,19 @@ describe('resolveChunkStructureForReservation against Lane A\'s real WorldPlan',
         });
         expect(result).not.toBeNull();
         expect(result.diagnostics.buildId).toBe('ring_crossing_landmark');
+    });
+
+    it('builds the G5 camp court through the grammar producer once the pilot binds it', () => {
+        const bound = bindRoomGrammarSites(worldPlan.reservations, worldPlan.roomGrammarSites, worldPlan.seed);
+        const camp = bound.find((entry) => entry.role === 'campTerritory' && entry.roomGrammarProfile === 'camp-court');
+        const openings = { south: { open: true, offset: 7 } };
+        const campResult = resolveChunkStructureForReservation(seededRandom(6), camp, { openings });
+        expect(campResult.generatorId).toBe('grammar-room');
+        expect(campResult.rooms[0]).toMatchObject({ safeZone: true, role: 'camp' });
+        expect(campResult.anchors.find((anchor) => anchor.role === 'hearth')).toBeTruthy();
+        // Unbound, the same reservation stays the authored territory chamber.
+        const plain = worldPlan.reservations.find((entry) => entry.id === camp.id);
+        expect(resolveChunkStructureForReservation(seededRandom(6), plain, { openings })?.generatorId).not.toBe('grammar-room');
     });
 
     it('returns null (not a thrown error) for a reservation whose family the vertical-slice catalog does not cover yet', () => {

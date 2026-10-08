@@ -4,6 +4,7 @@ import { generateArchitecturalMazeChunk } from './architecturalMaze.js';
 import { ALL_ROOM_BUILDS, selectRoomBuild, rotateRoomBuild, stampRoomBuild, buildRoomInstanceFromBuild } from './roomBuilds.js';
 import { HALLWAY_BUILD_CATALOG, selectHallwayArchetype, realizeHallwayConnector } from './hallwayConnector.js';
 import { createTerritoryRoomBuild } from './territoryStructures.js';
+import { buildGrammarRoomChunk } from './roomGrammarChunk.js';
 
 // Sprint 23 Phase 0A / Lane B.
 //
@@ -282,6 +283,19 @@ export function buildAuthoredRoomChunkStructure(random, {
 export function resolveChunkStructureForReservation(random, reservation, options = {}) {
     if (!reservation?.roomFamily || !Number.isInteger(reservation?.chunkX) || !Number.isInteger(reservation?.chunkY)) {
         return null;
+    }
+    if (reservation.roomGrammarProfile) {
+        return buildGrammarRoomChunk({
+            seed: reservation.roomGrammarSeed,
+            chunkX: reservation.chunkX,
+            chunkY: reservation.chunkY,
+            areaId: reservation.roomGrammarProfile,
+            tier: reservation.roomGrammarTier ?? 'standard',
+            motifId: reservation.roomGrammarMotif ?? null,
+            roomOrigin: reservation.roomGrammarOrigin ?? null,
+            role: reservation.role === 'campTerritory' || reservation.role === 'campStateAnchor' ? 'camp' : null,
+            ...options
+        });
     }
     return buildAuthoredRoomChunkStructure(random, {
         chunkX: reservation.chunkX,

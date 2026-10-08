@@ -487,6 +487,7 @@ import { skipMatrixPassWhileHidden } from './chunkMatrices.js';
 import { pickSleepCutsceneStyle } from './sleepCutscene.js';
 import { attachQuestBeacon, questObjectFor, removeCampQuestEntity } from './questObjects.js';
 import { applySpecialVariant } from './specialVariants.js';
+import { bindRoomGrammarSites } from './roomGrammarSiteSelection.js';
 import { MYSTERY_BOX_KINDS, MYSTERY_OUTCOME_LINE_KEYS, mysteryBoxChance, mysteryOpenSeconds, mysteryRewardDrops, pickMysteryBoxKind, rollMysteryOutcome, seededRandom } from './mysteryBoxes.js';
 import { createTrackField, slimeColorFor, stepBoots, trackSurfaceForType } from './trackField.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
@@ -17411,6 +17412,19 @@ export class ThreeGame {
         if (state?.seed !== this._campaignWorldSeed || !state.interiorVersion) return null;
         if (state.interiorVersion !== 1) throw new Error('Unsupported saved interior generator');
         return { seed: state.mapSeed, version: state.interiorVersion };
+    }
+
+    // G5: a world with the room grammar on (the solo pilot) builds the camp
+    // court its plan chose; every other world keeps the plain plan.
+    getRoomGrammarChunkPlan(plan) {
+        if (!plan?.roomGrammarSites || !this.getRoomGrammarConfig?.()) return plan;
+        this._roomGrammarBoundPlans ??= new WeakMap();
+        let bound = this._roomGrammarBoundPlans.get(plan);
+        if (!bound) {
+            bound = { ...plan, reservations: bindRoomGrammarSites(plan.reservations, plan.roomGrammarSites, plan.seed) };
+            this._roomGrammarBoundPlans.set(plan, bound);
+        }
+        return bound;
     }
 
     getRouteLayoutVersion() {
@@ -41896,7 +41910,8 @@ export class ThreeGame {
                     mazeMetadata.roomInstances = [];
                 }
             } else {
-                const authoredPlan = this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
+                const authoredPlan = this.getRoomGrammarChunkPlan?.(this.ensureAuthoredWorldPlan?.() ?? this.worldPlan)
+                    ?? this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
                 const authoredResolution = authoredPlan
                     ? resolveAuthoredChunkStructure(random, authoredPlan, {
                     chunkX,

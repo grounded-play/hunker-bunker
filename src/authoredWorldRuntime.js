@@ -474,7 +474,16 @@ function withReservationMetadata(structure, reservation, rotationSteps) {
         rooms: (structure?.rooms ?? []).map((room) => ({
             ...room,
             reservationId: reservation?.id ?? null,
-            stateVariant: stateVariant ?? room.stateVariant
+            stateVariant: stateVariant ?? room.stateVariant,
+            // A grammar-built camp court (G5) carries its camp identity the
+            // way an authored territory chamber does.
+            ...(reservation?.roomGrammarProfile && reservation?.siteId ? { siteId: reservation.siteId } : {}),
+            ...(reservation?.roomGrammarProfile && reservation?.territoryBeatKey
+                ? { territoryBeatKey: reservation.territoryBeatKey }
+                : {}),
+            ...(reservation?.semanticAnchorBindings
+                ? { semanticAnchorBindings: { ...reservation.semanticAnchorBindings } }
+                : {})
         })),
         anchors: (structure?.anchors ?? []).map((anchor) => ({ ...anchor, reservationId: reservation?.id ?? null })),
         zones: (structure?.zones ?? []).map((zone) => ({ ...zone, reservationId: reservation?.id ?? null })),
