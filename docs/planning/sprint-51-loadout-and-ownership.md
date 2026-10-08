@@ -1,6 +1,6 @@
 # Sprint 51 — Loadout you can read and change anywhere; earn everything
 
-Status: A–D done, second wave done (below) | Branch: `dev/sprint-51` (local only until the owner says publish)
+Status: **implementation complete; hardware acceptance and deferred perf work remain** | Branch: `dev/sprint-51` (local only until the owner says publish)
 
 The owner, 2026-10-06:
 - "Fix the Foundry that shows loadout. I want to see what the loadout does."
@@ -90,9 +90,11 @@ Decisions (owner, 2026-10-07):
 | `db05d7bc` | **Reagent loop:** the Quartermaster trades shards for ambergris (35, 3/week), matrices (50, 2/week) and the earned key (75, 1/week). Boss kills grant 5 ingots. The Assembly Bay builds 4140–4147. Both panels are on the Vault's Trade-up tab. |
 | `3cd1219d` | **Co-op aggro:** the host's snapshot names each enemy's target, and the guest's copy bites and faces that player. Before, a snail chasing the guest never did damage. |
 | `c51a02b8` | **Web perf:** the briefing, Vault, trade window and legacy dev console are built on first open (`src/deferredMarkup.js`). Boot DOM went from ~2,700 to ~2,200 elements. |
+| `7f991a74` | **Duplicate-shard recovery:** a failed secondary shard grant retries from the completed cache journal on the same request or before the player's next exchange. The cache never rerolls, and Steam receives the same stable AddItem request ID. |
+| `6ad75ec1` | **16:9 clipping guard:** the deferred co-op deployment briefing opens at 2560×1440 and every visible interactive control must remain inside the viewport and unobscured. |
 
 Not done:
-- **UI clipping on a 16:9 PC:** needs the owner's screenshot. At 1280×720 the deployment briefing's co-op view runs past the bottom of its frame. A candidate, unconfirmed.
+- **UI clipping on the owner's 16:9 PC:** still needs the original screenshot or screen name. The known deployment-briefing candidate now passes an automated 2560×1440 control-bounds check (`6ad75ec1`).
 - **Web perf, next:**
   - Settings (210 elements) and the ship console (210) are the next deferral candidates. Both are read and written by boot-time settings sync throughout `main.js`, so they need their own pass.
   - LCP is still the title art painting late, and the owner rejected showing it in the loader.
@@ -113,3 +115,4 @@ Not started.
 2. Done 2026-10-07 07:14, image `candidate-02710831`; rollback is `candidate-970f17af`. Until the Sprint 51 client ships, boss-kill keys (4154) are invisible in the live client's Vault. **Deploy the backend:** quartermaster and assemble routes, ingots and keys on boss kills, `quartermaster`/`assemble` capabilities. Deploy before the client, as with the season ledger.
 3. Done with the backend; the relay runs in the same container. **Deploy the relay:** the PvP `playerHealed` budget, and enemy `targetId`/`mode` in snapshots. An old relay strips the new fields, so guests stay safe from snails until it is updated.
 4. Bump the version (patch, keep `-beta`) when the PR is opened.
+5. Run the two-account co-op route and the Deck controller route. Automated parity/input coverage is green, but it does not replace the hardware check.

@@ -1,6 +1,6 @@
 # Sprint 50 — playtest fixes and web performance (2026-10-06)
 
-Status: in progress | Branch: `dev/sprint-50` | PR #105 | Issue #106
+Status: **implementation continued on `dev/sprint-51`; hardware acceptance and perf backlog remain** | Original branch: `dev/sprint-50` | PR #105 | Issue #106
 
 Source: the owner's two-account co-op session on 2026-10-06, 18:42–18:57 UTC.
 - **Build:** `2.4.15-beta` (`58a0f732`) on both machines.
@@ -47,7 +47,7 @@ Also the Netlify Lighthouse report: mobile Performance 38.
   - Visuals are unchanged; each guard is re-checked after the wait.
 - **Tests:** `src/threeGame.corpse3d.test.js` (compile before add; an expired corpse is dropped).
 - **Verify on hardware:** Windows host kills the Cyber Snail boss. There's no multi-second stall (Long Task windows stay under ~0.5 s), and the corpse appears within a second or two.
-- **Follow-up (not done):** warm the corpse and skin programs during the boot shader-warmup phase, so even the background compile is done before the fight.
+- **Follow-up completed 2026-10-08:** regular corpse variants, exact gib materials and fallback sprites prewarm before use; late models compile against both EffectComposer buffers. `tests/e2e/probes/shot-shader-stalls.spec.js` fell from 11 new programs on a kill to at most one lightweight sprite program and now enforces that budget (`1eb220f0`–`bf22ba2d`, Sprint 52 continuation).
 
 ## 3–4. Seeing the same thing; squadmate rotation — rotation fixed (`7686fbc7`)
 
@@ -58,7 +58,8 @@ Also the Netlify Lighthouse report: mobile Performance 38.
   - [x] **PvP remote-health drift** (10-06 05:33 PvP pair): relay-authoritative healing landed in Sprint 51 (`051a5334`, `server/relayPvPAuthority.test.js`).
   - [x] **Enemy aggro target.** The host's enemy picks the nearest player on the host. The guest now sees it move there, but host and guest can still disagree when they target different players near a chunk edge. Broadcast `targetPlayerId` in the snapshot and have the guest replica face/attack that target.
     Done in Sprint 51: the snapshot carries `targetId`/`mode`, and the relay passes them through. It also fixed a worse gap: a guest's enemy copy only slid along and never bit. The host leaves a squadmate's hearts to their own client, so a snail chasing the guest did no damage at all. Now `updateRemoteEnemyReplica` bites and faces the player the host named. Boss bodies hurt on touch, and hive-kin and Act 2 talkers are spared as on the host.
-  - [ ] **Cutscene parity.** Milestone cutscenes play on the machine that triggered them. Decide which beats should play for the whole squad (boss intro, O2 upgrade) and send them with the existing shared-world beat messages.
+  - [x] **O2 milestone parity.** Shared-world events relay the O2 build/upgrade beat through both clients, including the cutscene, generator state and retaliation boss (`1149fdae`; relay and client tests).
+  - [ ] **Remaining cutscene parity.** Audit boss intros and later authored beats, then explicitly choose which are local and which play for the whole squad.
   - [ ] **Verify** with the two-account route in #85.
 
 ## 5. UI clipping and a lower layout — needs a screenshot
@@ -67,7 +68,7 @@ Also the Netlify Lighthouse report: mobile Performance 38.
 - **Likely cause.** Elements positioned against the *window* (`position: fixed` against the viewport, or `vw`/`vh` units) instead of the stage. On 16:9 they land in or past the side bars. `docs/design/ui-surfaces-menu-map-and-controller-navigation.md` and `docs/planning/ui-overhaul-plan-2026-10-05.md` hold the fixed-positioning traps found earlier.
 - **"More on the lower part of the screen."** A layout rule: keep the HUD in a bottom band and pull top-anchored notification decks and mission stacks down toward it, inside the stage.
 - [ ] **Owner:** a screenshot (or the screen names) of what clips on the PC.
-- [ ] Add a 16:9 viewport (e.g. 2560×1440) to `tests/e2e/ui-layout-contract.spec.js`, so clipping at that shape fails a test.
+- [x] Add a 16:9 viewport regression: `tests/e2e/deferred-screens.spec.js` opens the co-op deployment briefing at 2560×1440 and fails if a visible control is clipped or covered (`6ad75ec1`). The broader layout contract also accepts `HB_CONTRACT_SIZE=WxH` for manual matrix runs.
 - [ ] Bottom-band layout proposal, implemented behind the existing UI-overhaul plan.
 
 ## 6. Web performance (#106)
@@ -106,7 +107,7 @@ Also the Netlify Lighthouse report: mobile Performance 38.
   - A loader showing the title art scored 74–77, but the owner preferred the plain loader, so it was reverted.
 
 **Next, in order:**
-- **Split `main.js` per screen.** It is 607 KB raw, and most of the remaining unused JS and DOM size is screens bundled into boot: settings (246 elements), ship console (210), multiplayer lobby (200), Steam Vault (142), dev console (79). Each needs its boot-time wiring moved to first open, then its markup can move to a `<template>` built on first open.
+- **Continue splitting `main.js` per screen.** Sprint 51 moved the deployment briefing, Steam Vault, trade window and legacy dev console to first-open templates (`c51a02b8`; boot DOM ~2,700 → ~2,200). Settings and the ship console remain because boot-time settings sync still reads and writes them.
 - **LCP (~8 s, the biggest remaining weight).** The LCP element is the title (`#splash`), which JavaScript reveals late in boot. Paint the title shell from static HTML and CSS, then let the boot fill it in.
 - **`main.js` evaluation** (~1.4 s throttled).
 - Critical CSS (the 96 KB stylesheet is ~90% unused at first paint).
@@ -157,7 +158,7 @@ The design is `docs/season-zero-protocol/05-crafting-matrix-and-salvage-economy.
 - [x] **A sink for ingots and reagents.** Overclock assembly for 4140–4147 landed in `db05d7bc` using ingots, matrices and ambergris.
 - [x] **A Steam source for ingots.** Server-verified boss kills grant five ingots (`db05d7bc`).
 - [x] **Resolve 4155:** retained for compatibility but hidden from the store and made non-marketable in uploaded schema revision 3.
-- [ ] **Duplicate shards whose grant failed.** The cache reward stands and the response says `duplicateBonus.ok: false`, but nothing retries it. Add a sweep that re-sends the shard grant from the journal (the AddItem request id is stable, so a retry can't double-grant).
+- [x] **Duplicate shards whose grant failed.** `7f991a74` retries from the completed journal on the same cache-open replay and opportunistically before the player's next exchange. It reuses the stable AddItem request ID, never consumes another key and never rerolls the cache reward.
 
 **Owner steps for what shipped here:** deploy the backend (cache-open duplicate shards are server-side). No schema change is needed: shards 4159 already exist and are granted with AddItem.
 
@@ -182,7 +183,7 @@ The design is `docs/season-zero-protocol/05-crafting-matrix-and-salvage-economy.
   - `src/browserGamepad.test.js`, `src/inputGlyphs.test.js`, `src/threeGame.controllerPrompts.test.js`.
 - **Owner steps.** The manifest and layouts ship in the Steam build (depot upload). The Steamworks Steam Input page may need the official layout re-published for revision 11.
 - **Not done:**
-  - [ ] Keyboard key hints in authored text: "Radar Scan [Q]", "BREACH CACHE [F]", "PRESS [M] / [TAB] TO TOGGLE TACTICAL MAP", "PRESS [1-4]". These need device-aware text.
+  - [x] Keyboard key hints in authored UI text are device-aware through `src/inputHints.js` (`8d5c4d06`), including radar, tactical map and dialogue choices. The untranslated source keeps its keyboard wording; the active controller swaps the i18n key.
   - [ ] Verify on the Deck: trade with a squadmate from D-pad ←, the squad radial from D-pad →, and pan the map with the stick.
 
 ## Status log
@@ -190,3 +191,5 @@ The design is `docs/season-zero-protocol/05-crafting-matrix-and-salvage-economy.
 - 2026-10-06: items 1, 2 and 4 fixed with tests; item 6 step 1 done; this plan written. Items 3 (remaining), 5 and 6 (remaining) open.
 - 2026-10-06 (later): item 6 steps 2–3 (Performance 52–53); item 7 (bed) fixed; item 8 audited, with scrap, duplicate shards and the Steam partial-open message fixed and four economy decisions listed.
 - 2026-10-06 (evening): item 9 (Deck controls) done; item 6 round 2 (Performance 63–65 locally). Open e2e failures not from this work: `camp-quests` (the bounty chip wins the objective lane over an accepted quest, `515f42fe`) and `foundry-lifecycle` (exact float compare of the player's Y).
+- 2026-10-07: Sprint 51 carried the earned-key/reagent loop, co-op aggro, controller hints and first-open briefing/Vault/trade markup to completion.
+- 2026-10-08: duplicate-shard journal recovery and the 2560×1440 briefing regression landed. The first-kill shader follow-up now permits only one lightweight sprite program. Remaining gates are the owner's unidentified clipping surface, two-account/Deck verification, and the settings/ship-console perf split.
