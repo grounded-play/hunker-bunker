@@ -6,7 +6,8 @@ import { bootToOperatorMenu } from './helpers.js';
 // translated, wired, and closable.
 test.describe.configure({ timeout: 240_000 });
 
-test('the deployment briefing is built on first open and works', async ({ page }) => {
+test('the deployment briefing is built on first open and fits a 16:9 PC', async ({ page }) => {
+    await page.setViewportSize({ width: 2560, height: 1440 });
     await bootToOperatorMenu(page);
     // Not in the page at boot: only its shell and an inert template.
     await expect(page.locator('#net-connect-btn')).toHaveCount(0);
@@ -25,6 +26,20 @@ test('the deployment briefing is built on first open and works', async ({ page }
     await page.locator('#net-mode-coop-btn').click();
     await expect(page.locator('#net-mode-coop-btn')).toHaveClass(/active/);
     await expect(pvp).not.toHaveClass(/active/);
+
+    const clipped = await modal.evaluate((root) => [...root.querySelectorAll('button, input, select, [tabindex="0"]')]
+        .filter((element) => element.checkVisibility({ visibilityProperty: true, opacityProperty: true }))
+        .flatMap((element) => {
+            const rect = element.getBoundingClientRect();
+            const insideViewport = rect.left >= 0 && rect.top >= 0
+                && rect.right <= innerWidth && rect.bottom <= innerHeight;
+            const visibleAtCenter = document.elementsFromPoint(
+                (rect.left + rect.right) / 2,
+                (rect.top + rect.bottom) / 2
+            ).some((candidate) => candidate === element || element.contains(candidate));
+            return insideViewport && visibleAtCenter ? [] : [element.id || element.textContent.trim().slice(0, 30)];
+        }));
+    expect(clipped, 'visible briefing controls clipped or covered at 2560x1440').toEqual([]);
 
     // Translated: no raw i18n keys in the built markup.
     expect(await modal.innerText()).not.toMatch(/\bui\.[a-z_]+\.[a-z_]+/);
