@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { ThreeGame } from './threeGame.js';
 
@@ -29,5 +29,32 @@ describe('corpse model prewarm', () => {
         const drawn = corpse.userData.corpse3d.children[0].material;
         expect(seen.transparent).toBe(true);
         expect(seen.material).toBe(drawn);
+    });
+
+    it('compiles late models against the gameplay composer target', async () => {
+        const game = Object.create(ThreeGame.prototype);
+        const oldTarget = { name: 'old-target' };
+        const gameplayTarget = { name: 'composer-target' };
+        const root = new THREE.Group();
+        const setRenderTarget = vi.fn();
+        const compileAsync = vi.fn(async () => {});
+        Object.assign(game, {
+            camera: {},
+            scene: {},
+            composer: { readBuffer: gameplayTarget },
+            performanceProfile: 'gameplay',
+            gameplayPostProcessingEnabled: true,
+            renderer: {
+                compileAsync,
+                getRenderTarget: () => oldTarget,
+                setRenderTarget
+            }
+        });
+
+        await game.prewarmLateModel(root);
+
+        expect(setRenderTarget).toHaveBeenNthCalledWith(1, gameplayTarget);
+        expect(compileAsync).toHaveBeenCalledWith(root, game.camera, game.scene);
+        expect(setRenderTarget).toHaveBeenLastCalledWith(oldTarget);
     });
 });

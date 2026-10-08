@@ -29755,11 +29755,6 @@ export class ThreeGame {
 
         // Preload common 3D world models in background during chunk staging & warmup
         const preloadPromise = preloadWorld3dModels().catch(() => null);
-        // Title-screen warmup normally wins this race. Starting the same
-        // deduplicated work here covers players who deploy immediately; await
-        // it at the existing shader boundary so combat never sees a half-warm
-        // corpse variant.
-        const corpsePrewarmPromise = prewarmCommonCorpse3dTemplates(this).catch(() => null);
 
         // Deployment only needs the visible 3x3 set. Directional prefetch is
         // a runtime concern and must not inflate the covered startup workload.
@@ -29792,7 +29787,11 @@ export class ThreeGame {
         this._ensureEnvLightPool();
         await this.warmUpShaderPrograms();
 
-        await Promise.all([preloadPromise, corpsePrewarmPromise]);
+        await preloadPromise;
+        // Compile after the scene warmup restores its final shadow and
+        // composer state. Running this in parallel would race the warmup's
+        // temporary render targets and compile a cache key gameplay never uses.
+        await prewarmCommonCorpse3dTemplates(this);
 
         onProgress?.(1);
         debugLog.info('STREAM', 'Initial chunk staging ready', {
@@ -35989,7 +35988,17 @@ export class ThreeGame {
         const renderer = this.renderer;
         if (!root || typeof renderer?.compileAsync !== 'function' || !this.camera || !this.scene) return;
         let timer = null;
+        const previousTarget = renderer.getRenderTarget?.() ?? null;
+        const gameplayTarget = this.composer
+            && this.performanceProfile === 'gameplay'
+            && this.gameplayPostProcessingEnabled !== false
+            ? this.composer.readBuffer ?? null
+            : previousTarget;
         try {
+            // Gameplay draws through EffectComposer. Render-target colour space
+            // and tone mapping are shader cache keys, so a canvas compile would
+            // still miss on the first real draw.
+            renderer.setRenderTarget?.(gameplayTarget);
             await Promise.race([
                 renderer.compileAsync(root, this.camera, this.scene),
                 new Promise((resolve) => { timer = setTimeout(resolve, timeoutMs); })
@@ -35997,6 +36006,7 @@ export class ThreeGame {
         } catch {
             // A failed prewarm only means the first draw compiles, as before.
         } finally {
+            renderer.setRenderTarget?.(previousTarget);
             clearTimeout(timer);
         }
     }

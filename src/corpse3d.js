@@ -52,7 +52,8 @@ export function prewarmCorpse3dTemplate(game, type, loadModel = createWorld3dMod
         .then(async (root) => {
             if (!root) return null;
             prepareCorpse3dModel(root);
-            await game.renderer.compileAsync(root, game.camera, game.scene);
+            if (typeof game.prewarmLateModel === 'function') await game.prewarmLateModel(root);
+            else await game.renderer.compileAsync(root, game.camera, game.scene);
             return root;
         })
         .catch((error) => {
