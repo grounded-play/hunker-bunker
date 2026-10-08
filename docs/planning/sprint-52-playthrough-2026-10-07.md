@@ -1,6 +1,6 @@
 # Sprint 52 — Smooth the whole run; walk-through world, footprints, popups
 
-Status: **done 2026-10-07** on `dev/sprint-51` (local only), awaiting a Deck run. See the status log at the end.
+Status: **implementation complete; acceptance pending** on `dev/sprint-51`. The original work landed 2026-10-07; the Deck run and the first-draw shader follow-up below remain open. See the status log at the end.
 
 ## The owner, 2026-10-07, after a Deck playthrough
 
@@ -105,6 +105,10 @@ Order: performance first (it affects everything), then the quick collision fixes
   - Adaptive resolution ignores the first ~10 s after deploy, and can step back up once frames recover.
   - Resolution remains the only thing it changes, per your standing rule.
   - Also find out what the 1.2–3.6 s deploy tasks are (likely first-use shader compiles).
+- [ ] **A7. Close the remaining first-draw shader hitch.**
+  - The 2026-10-07 shot/kill probe found that `4a9d7fa6` removed the burst-light recompiles and the opaque-then-transparent corpse compile, reducing a kill from 11 new programs / 400 ms to 3 new programs / 133 ms.
+  - Identify those last program owners on the current build, prewarm only the required variants outside active play, and turn the probe into a regression budget.
+  - Do not move the hitch into deploy or keep duplicate model trees alive without a bounded cache.
 - **Target:**
   - On the Deck, frame time doesn't grow with distance or explored area.
   - p95 ≤ 33 ms in normal play across a 25-minute run, with no gameplay stall over 250 ms.
@@ -228,8 +232,10 @@ Order: performance first (it affects everything), then the quick collision fixes
 | `efabbd82` | A2, A3 | **Offscreen enemies stay static** (owner decision). Props in hidden chunks skip per-frame work. Hunters re-plan on their own timer instead of every tile the player crosses; searches per frame had climbed from 1.7 to 10. |
 | `ace9181f` | A5 | **Hidden chunks skip the matrix pass**, which had grown from 2.0 to 5.2 ms with loaded chunks; it is now flat. |
 | `c7dc4350` | A6 | **The deploy stall** no longer sets the resolution for the whole run: a 12 s grace period, recovery after steady high FPS, and no flapping. |
+| `4a9d7fa6` | A6, A7 | **Shot and kill recompiles.** Vent lights remain in the shader light count at zero intensity instead of toggling visibility; corpse transparency is configured before its compile prewarm. The GPU probe fell from 11 new programs / 400 ms on a kill to 3 / 133 ms. See `qa-2026-10-07-no-damage-and-stalls.md`; the last three first-draw programs remain A7. |
 | `23337070` | E | **Footprints and trails** (`src/trackField.js`): one pooled field. Prints change with the surface (dust, snow, water, blood, slime, oil); boots carry wet surfaces for about 11 steps; squadmates leave prints. Snails leave slime streaks tinted by type, bosses a wake, walkers claw prints. This replaces the per-mark meshes and the per-frame puddle scan. |
 | `d5bc4b9c` | B | **e2e:** a real grand archway in a live run: the opening is walkable, the posts are solid. |
+| `ef1b40d3`, `20257ba9`, `2179f2d6` | owner wall decision | **Biome walls shipped in Sprint 53.** Tile walls now select the existing kit PBR families by biome, retain their textures under the lighting pass, and participate in the fuller lived-in room compositions. |
 
 **Long-walk benchmark** (desktop RTX 2070, 4 rings, frame time excluding vsync):
 
@@ -242,8 +248,8 @@ Order: performance first (it affects everything), then the quick collision fixes
 **Not changed, with reasons:**
 - **A4, GPU memory on unload:** probed by teleporting across seven areas at a constant 16 chunks. Geometries stayed flat (150–170), so nothing leaks there. Textures rose as new prop types were first loaded (the model cache), and scene counts plateaued. `chunkResidentPadding` stays at 3.
 - **G, cryo hazard one-shot:** already fixed. Last night's co-op run used a build (`c2e1619`) older than the Sprint 50 siphon fix (`7e3007a0`, 10 damage became 1 heart); the Steam build `02710831` has it.
-- **Walls** are textured blocks in one metal set for every biome. The kit PBR sets (cave, space, cathedral, bunker, biomech, giger, reliquary, cryo deck) exist but never reach the tile walls. Re-skinning walls by biome is an art-direction call for the owner.
+- **Walls:** the open art-direction decision was resolved after this sprint. Sprint 53 routes the existing kit PBR families to tile walls by biome (`ef1b40d3`), preserves them under the lighting pass (`20257ba9`), and uses them in the expanded room compositions (`2179f2d6`).
 
 **Owner steps:**
 1. Play a Deck run of 20 minutes or more on this build and upload the log. The `PERF frame-breakdown` lines show whether frames stay flat on Deck hardware.
-2. Decide on per-biome wall textures (above).
+2. Re-check Act 1 damage and shot/kill frame times in that same capture against `docs/planning/qa-2026-10-07-no-damage-and-stalls.md`.
