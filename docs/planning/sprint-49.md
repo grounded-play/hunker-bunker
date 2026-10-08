@@ -1,6 +1,6 @@
 # Sprint 49 — Finish the Features, Improve the Expedition, Prove the Build
 
-Status: active plan | Owner: repository maintainers | Updated: 2026-09-30 | Review: every completed ticket and release candidate
+Status: active plan | Owner: repository maintainers | Updated: 2026-10-08 (session-log review) | Review: every completed ticket and release candidate
 
 Baseline branch: `dev/sprint-49`
 Baseline version: `2.4.16-beta` (Sprint 49 opened at `2.4.13-beta`; `2.4.14-beta` released 2026-10-06 as PR #100; `2.4.15-beta` dependency maintenance; `2.4.16-beta` is Sprint 50's first PR)
@@ -30,6 +30,10 @@ Feature count is useful only when a player can discover and use those features.
 - [Full documentation inventory](../reports/documentation-audit-inventory-2026-09-30.json)
   records every scanned document, its lifecycle classification, markers, and links.
 - [Product State](../../PRODUCT_STATE.md) records implementation truth.
+- [Session-log review 2026-10-05 → 10-08](../reports/session-log-review-2026-10-08.md)
+  holds paired Deck + PC Steam sessions on 2.4.14–2.4.16 builds: co-op, PvP, chat, sandbox
+  purchases, commentary and frame pacing. These are owner playtests: evidence toward the
+  gates below, not their sign-off.
 - [Previous review remediation](steam-review-build-25475189-fix-plan-2026-09-30.md)
   contains the earlier access fixes; its removal-only chat direction is superseded.
 - [Economy proposal](economy-master-plan-2026-09-30.md) supplies design input;
@@ -77,36 +81,36 @@ Legend: `[x]` Verified complete in repository code/tests or local evidence · `[
 | Ticket | Scope / Outcome | Reconciled Status & Remaining Gap |
 | :--- | :--- | :--- |
 | S49-01 | One current backlog & documentation checks | `[x]` Complete |
-| S49-02 | Lobby & in-game text chat | `[~]` Code complete; deployed two-account acceptance open |
+| S49-02 | Lobby & in-game text chat | `[~]` Code complete. 10-05/10-06 Steam builds: chat crossed Deck ↔ PC in co-op and PvP; one relay connection per session, so the 10-04 churn is gone ([session-log review](../reports/session-log-review-2026-10-08.md)). Channel isolation and a deliberate reconnect remain open |
 | S49-03 | Multilingual filtering | `[~]` Seven-language baseline complete; native review/evasion/false-positive acceptance open |
-| S49-04 | Chat UI, mute/report & controller text entry | `[~]` Implemented; Deck placement, deployed match, and staffed moderation operations open |
-| S49-05 | Demonstrable online co-op and PvP | `[~]` Authority, reconnect, rejection diagnostics, round completion, and rematch improved; paired real-account candidate run open |
-| S49-06 | Developer commentary | `[~]` Localized text, voiced lines, history reader, controller stops, and routes exist; installed-candidate review open |
+| S49-04 | Chat UI, mute/report & controller text entry | `[~]` Implemented; chat opened and typed on the Deck with the controller in 3 deployed matches ([session-log review](../reports/session-log-review-2026-10-08.md)). Live mute/report, filter rejection, and staffed moderation operations open |
+| S49-05 | Demonstrable online co-op and PvP | `[~]` Six paired real-account sessions on uploaded Steam builds 2.4.14–2.4.16 (3 co-op with host/guest reversal; 3 PvP). Death/redeploy replicate; PvP round results agree on both machines ([session-log review](../reports/session-log-review-2026-10-08.md)). Rematch, invites/listing, host loss, a recording, and cross-region remain open |
+| S49-06 | Developer commentary | `[~]` Installed 2.4.14 PC build: Settings → READ ALL; voiced lines played in English and German ([session-log review](../reports/session-log-review-2026-10-08.md)). Deck route and an in-run trigger remain open |
 | S49-07 | Catalog/quantity/price consistency | `[~]` Adapter complete; live Steam currency and both checkout routes require publisher evidence |
 | S49-08 | Settlement reconciliation | `[x]` Unattended paid recovery and audited item-level reversal/review dispositions implemented |
-| S49-09 | Real purchase, cancel, delivery & reversal | `[H]` Real purchase/cancel/delivery/reversal evidence |
-| S49-10 | Full controller journey | `[~]` Broad browser route and focus fixes exist; native Steam Input plus physical Deck/Xbox/PlayStation passes remain |
+| S49-09 | Real purchase, cancel, delivery & reversal | `[H]` Sandbox evidence on the Deck: `key_1` cancel then complete, `key_15` complete, caches delivered once, the 409 settlement hold observed ([session-log review](../reports/session-log-review-2026-10-08.md)). A non-sandbox charge, the hosted route, reversal, and GetReport remain publisher evidence; one PC `key_15` stayed `pending` |
+| S49-10 | Full controller journey | `[~]` The Deck played controller-only through 14 sessions (store, chat, commentary, results); from `6d5fc7ed` the deploy record reports native Steam Input (`mode: controller`) ([session-log review](../reports/session-log-review-2026-10-08.md)). PC with the keyboard unplugged, Xbox and PlayStation passes remain |
 | S49-11 | Mature story content & reviewer access | `[~]` Content/code checks complete; installed reviewer route and authorized save evidence remain |
 | S49-12 | One reproducible Steam resubmission packet | `[H]` One-BuildID Steam resubmission packet |
 | S49-13 | Playable field workbench | `[x]` Complete |
 | S49-14 | Tactical pings & quick-command radial | `[x]` Complete in code; deployed paired-session acceptance tracked in S49-15/33 |
-| S49-15 | Co-op parity for events, companions & rewards | `[ ]` Co-op parity journeys, host loss/rejoin, and replay-safe rewards |
+| S49-15 | Co-op parity for events, companions & rewards | `[ ]` Death/redeploy replicate in paired runs ([session-log review](../reports/session-log-review-2026-10-08.md)); aggro sync and mystery-box sync landed locally. Host loss/rejoin, camps/companions in co-op, and replay-safe rewards open |
 | S49-16 | Companions roles & settlement | `[ ]` Companion behavior/pathing/settlement/save validation |
 | S49-17 | First hour & second run tuning | `[H]` First-hour/second-run tuning needs independent playtesters; probes/fixes prepared |
-| S49-18 | Combat threats, boss phases & builds | `[ ]` Encounter/boss/ammo/class tuning and seeded combat reports |
+| S49-18 | Combat threats, boss phases & builds | `[ ]` A 17-min Act 2 Deck run took no damage: hive kinship made wild enemies passive. Fixed locally in `4a9d7fa6` ([session-log review](../reports/session-log-review-2026-10-08.md)). Encounter/boss/ammo/class tuning and seeded combat reports open |
 | S49-19 | Inert drop effects disposition | `[x]` Inert drop effects explicitly removed from active reward pools |
 | S49-20 | World variety, seeds & navigation | `[~]` G1–G4 complete (live room grammar opt-in, 20-build authored catalog in chunkStructure, 5 G3 destruction/reconciliation subcontracts, multi-family area profiles, 20 interactive props); G5 camp/start variants and G6 Deck acceptance open |
-| S49-21 | Narrative consequences & debriefs | `[ ]` Narrative consequence/debrief state verification |
+| S49-21 | Narrative consequences & debriefs | `[ ]` Camp talks opened two conversations plus song videos (logs 10-01, 10-07). Consolidated locally in `da3cbaac` ([audit](qa-2026-10-08-camp-interaction-audit.md)). Consequence/debrief state verification open |
 | S49-22 | Unified Foundry & inventory journey | `[ ]` Unified Foundry/inventory controller journey |
 | S49-23 | Enforce earned power & trusted ownership | `[x]` Earned-power/paid-cosmetic separation and ownership tests |
 | S49-24 | Reward economy design | `[H]` Reward-economy design and regional/platform approval |
 | S49-25 | Readable HUD & calm information priorities | `[~]` HUD automation and 1280×800 safe-frame layout overhaul implemented; physical Deck/desktop captures remain |
 | S49-26 | Camera & lighting | `[~]` Isometric default and Sprint 49 room presentation landed; matched Deck/desktop acceptance remains |
-| S49-27 | Audio clarity, voice & subtitles | `[~]` Soundtrack/SFX wiring complete; stress mix, ducking, and subtitle parity capture remain |
+| S49-27 | Audio clarity, voice & subtitles | `[~]` Soundtrack/SFX wiring complete; 15 sound keys still missing in play, led by `enemy_idle_boss` (34 plays / 12 sessions) ([session-log review](../reports/session-log-review-2026-10-08.md)). Stress mix, ducking, and subtitle parity capture remain |
 | S49-28 | Accessibility settings | `[ ]` Accessibility settings end-to-end validation |
 | S49-29 | Seven languages beyond key parity | `[H]` Automated seven-locale audit rerun; semantic/native language acceptance requires reviewers |
-| S49-30 | Saves, Steam Cloud & suspend | `[H]` Save/Cloud/suspend automation expands; Deck sleep/wake and two-machine Cloud conflict evidence require hardware/accounts |
-| S49-31 | Frame pacing, loading & memory | `[H]` Telemetry is corrected; named-hardware frame pacing and memory acceptance remain |
+| S49-30 | Saves, Steam Cloud & suspend | `[H]` Cloud Sync available on every Steam session ([session-log review](../reports/session-log-review-2026-10-08.md)); Deck sleep/wake and two-machine Cloud conflict evidence still require hardware/accounts |
+| S49-31 | Frame pacing, loading & memory | `[H]` Deck gameplay p50 46–78 ms / p95 73–177 ms (target 33.3 ms), worsening with the Sprint 52–53 world; desktop RTX 2070 S p50 21–33 ms; every session has 0.4–13.9 s stalls ([session-log review](../reports/session-log-review-2026-10-08.md)). Shader-recompile stalls fixed locally (`4a9d7fa6`, `1eb220f0`–`bf22ba2d`); re-measure on the next build |
 | S49-32 | Reliable services & failure recovery | `[~]` Service diagnostics improved; repeatable fault drills, durable report operations, alerts, backup/restore, and ownership remain open |
 | S49-33 | Player journeys & packaged outputs | `[ ]` End-to-end seams and packaged-output journey tests |
 | S49-34 | Expedition choices & contracts | `[ ]` Deeper expedition choices and replayable contracts |
@@ -114,6 +118,17 @@ Legend: `[x]` Verified complete in repository code/tests or local evidence · `[
 | S49-36 | Seasonal progression & direct cosmetics | `[H]` Seasonal progression/direct cosmetics needs product decisions |
 | S49-37 | Art & content completeness | `[~]` Asset audits, 20 optimized/registered props, rigged umbilical attacker, 19 interactive prop specs, and 12 furnished-room captures complete; gameplay-context review remains |
 | S49-38 | Integration debt & module extraction | `[~]` Chat, commentary, and Fabrication Bay extracted; purchase presentation extraction and lifecycle characterization remain open |
+
+### Session-log review (2026-10-08)
+
+Source: the in-game session-log uploads from 2026-10-05 to 10-07 (28 uploads, merged into 24 sessions), plus the owner's pasted 10-08 desktop log. Every session was an installed Steam beta build: a Steam Deck with its controller, and a desktop RTX 2070 SUPER with keyboard and mouse. Full tables are in the [report](../reports/session-log-review-2026-10-08.md).
+
+What it moves:
+- **S49-02, 04, 05, 06, 09, 10:** paired real-account and installed-build evidence now exists, so each gate's remaining work is narrower.
+- **S49-18, 21:** the logs exposed two defects, fixed locally in `4a9d7fa6` and `da3cbaac`.
+- **S49-31:** the Deck is well short of its 30 fps target, and that is the largest open risk to the Deck experience.
+
+No ticket is closed by these logs. The publisher, hardware and recording gates still stand.
 
 ## P0 — complete the Steam review features
 
@@ -133,6 +148,7 @@ Legend: `[x]` Verified complete in repository code/tests or local evidence · `[
 
 - [x] Authenticated relay, channel UI and reconnect history implemented.
 - [ ] **Remaining:** Record deployed two-account acceptance, including reconnect and channel isolation.
+  2026-10-08 log evidence ([session-log review](../reports/session-log-review-2026-10-08.md)): chat crossed Deck ↔ PC in co-op and PvP on the 2.4.14 and 2.4.16 Steam builds, and every match held one relay connection. Still open: channel isolation and a deliberate reconnect with history restored.
 
 Implementation checkpoint (v2.4.14-beta): authenticated room relay and filtering
 landed in `e8cc0a16`; client/UI, virtual keyboard fallback, mute/block/report, and
@@ -195,6 +211,7 @@ survey's promise is met. [Steam text-filter API](https://partner.steamgames.com/
 
 - [x] Chat UI, mute/report and controller entry implemented.
 - [ ] **Remaining:** Verify Deck placement and deployed chat; establish durable report retention and staffed moderation.
+  2026-10-08 log evidence ([session-log review](../reports/session-log-review-2026-10-08.md)): chat was opened and typed on the Deck with the controller in three deployed matches (menu text-editing mode), and the unread badge showed. Still open: live mute/report, a filter rejection, retention and moderation.
 
 Implementation checkpoint (v2.4.14-beta): [client UI](../../src/playerChatUi.js) and
 [browser checks](../../tests/e2e/player-chat.spec.js) landed in `82501e4f`, covering
@@ -261,6 +278,12 @@ two real Steam accounts on the uploaded candidate build playing co-op and PvP.
   objectives/results; no stalled host transition or duplicate rewards. Describe
   support as **Online**, not LAN. Document cross-region discovery limitations.
 
+2026-10-08 log evidence ([session-log review](../reports/session-log-review-2026-10-08.md)): six paired real-account sessions on uploaded Steam builds, Deck + PC:
+- co-op on 2.4.14, 2.4.15 and 2.4.16, with host/guest roles reversed;
+- PvP on 2.4.14 (twice) and 2.4.16.
+
+Every session completed join → roster → ready → avatar. Co-op deaths and redeploys replicate. The 10-07 PvP round agrees on both machines (PC won, Deck lost, `reason: combat`). Still open: rematch, invites and lobby listing, host loss, a recording, and cross-region discovery.
+
 ### S49-06 — developer commentary that is discoverable and worth reading
 
 Implementation checkpoint (v2.4.14-beta): real historical development commentary
@@ -285,6 +308,8 @@ below is met once the rendered lines ship in the candidate build.
   **Accept:** reviewer reaches a real commentary entry from Settings within one
   minute, reads every entry, and triggers an in-run example. No recorded-audio
   promise unless commentary audio is actually produced and connected.
+
+2026-10-08 log evidence ([session-log review](../reports/session-log-review-2026-10-08.md)): on the installed 2.4.14 PC build (`cf9f4967`), Settings → READ ALL played voiced lines in English and German. Still open: the Deck route and an in-run example.
 
 ### S49-07 — consistent products, quantities and Steam Wallet prices
 
@@ -358,6 +383,14 @@ contract. [GetReport reference](https://partner.steamgames.com/doc/webapi/ISteam
   routes deliver exactly once and cancellation does not grant. This planning task
   does not authorize a purchase, deployment, or production flag change.
 
+2026-10-08 log evidence ([session-log review](../reports/session-log-review-2026-10-08.md)), Steam beta sandbox on the Deck:
+- `key_1` was declined (cancel), then completed on retry; `key_15` completed (`9e89d8a4`);
+- `key_1` completed again on `6d5fc7ed`;
+- each cache grant was delivered once;
+- the 409 `exchange_outcome_requires_review` settlement hold was observed on `89b5c81a`.
+
+Still open: one PC `key_15` (2.4.15) stayed `purchase-pending`, plus the non-sandbox charge, the hosted-store route, reversal, and GetReport.
+
 ### S49-10 — full controller journey including new features
 
 Implementation checkpoint (v2.4.14-beta): controller journey probe in
@@ -388,6 +421,8 @@ native Steam Input injection hook.
   **Accept:** no mouse/keyboard required on physical Deck, Xbox pad and PlayStation
   pad through Steam; last achievement is reachable and visible; chat/checkout
   cannot strand focus. Record tested hardware/build and remaining failures.
+
+2026-10-08 log evidence ([session-log review](../reports/session-log-review-2026-10-08.md)): the Deck played controller-only through 14 sessions on 2.4.14–2.4.16: store, chat, commentary, gameplay and results. From `6d5fc7ed` the deploy record reports native Steam Input (`mode: controller`); earlier builds used keyboard emulation. Still open: PC with the keyboard unplugged, Xbox and PlayStation pads.
 
 ### S49-11 — mature story content and accurate reviewer access
 
@@ -777,6 +812,13 @@ rendering performance measurement.
   desktop 60 fps on named hardware, no ≥500 ms gameplay stall and no monotonic
   resource leak over ten deploy/retry cycles. Preserve visual quality and report
   measured tradeoffs, not just a headless logic-time improvement.
+
+2026-10-08 log evidence ([session-log review](../reports/session-log-review-2026-10-08.md)):
+- **Deck gameplay:** p50 46–78 ms (13–22 fps), p95 73–177 ms. That is far from the 33.3 ms target, and worst on the denser Sprint 52–53 builds.
+- **Desktop RTX 2070 SUPER:** p50 21–33 ms, p95 29–57 ms.
+- **Stalls:** every session has single stalls of 0.4–13.9 s. On the desktop these were shader recompiles from runtime light toggles and late-material changes, fixed locally in `4a9d7fa6` and `1eb220f0`–`bf22ba2d` ([QA](qa-2026-10-07-no-damage-and-stalls.md)).
+
+Next: re-measure on the Deck and desktop with the next build, then profile the Deck's main-thread time.
 
 ### S49-32 — reliable services and player-facing failure recovery
 
