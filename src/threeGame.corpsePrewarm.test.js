@@ -58,12 +58,13 @@ describe('corpse model prewarm', () => {
         expect(setRenderTarget).toHaveBeenLastCalledWith(oldTarget);
     });
 
-    it('prewarms the textured kill-burst sprite', async () => {
+    it('prewarms the textured kill-burst and corpse fallback sprites', async () => {
         const game = Object.create(ThreeGame.prototype);
         const spark = new THREE.SpriteMaterial({ map: new THREE.Texture(), transparent: true });
+        const corpse = new THREE.SpriteMaterial({ map: new THREE.Texture(), transparent: true });
         const prewarmLateModel = vi.fn(async () => {});
         Object.assign(game, {
-            scatterMaterials: { fx_spark_burst: spark },
+            scatterMaterials: { fx_spark_burst: spark, cybersnail_dead: corpse },
             prewarmLateModel
         });
 
@@ -71,6 +72,7 @@ describe('corpse model prewarm', () => {
 
         expect(prewarmLateModel).toHaveBeenCalledWith(root);
         expect(root.children.some((child) => child.isSprite && child.material.map === spark.map)).toBe(true);
+        expect(root.children.some((child) => child.isSprite && child.material.map === corpse.map)).toBe(true);
         expect(game.killEffectShaderWarmup).toBe(root);
     });
 

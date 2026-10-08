@@ -36020,8 +36020,10 @@ export class ThreeGame {
     async prewarmKillEffectShaders() {
         const root = new THREE.Group();
         root.name = 'kill-effect-shader-warmup';
-        const sparkMaterial = this.scatterMaterials?.fx_spark_burst?.clone?.();
-        if (sparkMaterial) root.add(new THREE.Sprite(sparkMaterial));
+        for (const type of ['fx_spark_burst', 'cybersnail_dead', 'cryosnail_dead', 'sporesnail_dead']) {
+            const material = this.scatterMaterials?.[type]?.clone?.();
+            if (material) root.add(new THREE.Sprite(material));
+        }
         await this.prewarmLateModel(root);
         // Keep the exact material instances alive. Disposing the last material
         // reference lets Three release its program and defeats the warmup.
