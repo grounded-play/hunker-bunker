@@ -4,6 +4,7 @@ import {
     COMMON_CORPSE_3D_TYPES,
     corpse3dTypeForEnemy,
     prepareCorpse3dModel,
+    prewarmCommonCorpse3dTemplates,
     prewarmCorpse3dTemplate
 } from './corpse3d.js';
 
@@ -52,5 +53,33 @@ describe('corpse 3D shader preparation', () => {
         expect(loadModel).toHaveBeenCalledTimes(1);
         expect(game.renderer.compileAsync).toHaveBeenCalledTimes(1);
         expect(game.renderer.compileAsync).toHaveBeenCalledWith(root, game.camera, game.scene);
+    });
+
+    it('warms the common roster serially so the driver handles one compile at a time', async () => {
+        const order = [];
+        const loadModel = vi.fn(async (type) => {
+            order.push(`load:${type}`);
+            const root = new THREE.Group();
+            root.userData.type = type;
+            root.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
+            return root;
+        });
+        const game = {
+            camera: {},
+            scene: {},
+            renderer: {
+                compileAsync: vi.fn(async (root) => {
+                    order.push(`compile:${root.userData.type}`);
+                })
+            }
+        };
+
+        const roots = await prewarmCommonCorpse3dTemplates(game, loadModel);
+
+        expect(roots).toHaveLength(3);
+        expect(order).toEqual(COMMON_CORPSE_3D_TYPES.flatMap((type) => [
+            `load:${type}`,
+            `compile:${type}`
+        ]));
     });
 });

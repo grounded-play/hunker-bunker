@@ -277,7 +277,7 @@ import { registerTinaHit, TINA_TOTAL_HITS } from './mayorTinaCombat.js';
 import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
 import { WORLD_3D_FACING_YAW, WORLD_3D_SWAP_PREFETCH_DISTANCE, world3dModelTypeFor, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, resolveScatterWorld3dType, syncWorld3dReplacement } from './world3dOverlay.js';
-import { prepareCorpse3dModel } from './corpse3d.js';
+import { prepareCorpse3dModel, prewarmCommonCorpse3dTemplates } from './corpse3d.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { intersectWallMeshes } from './wallRaycastIndex.js';
 import { createFlatMaterialSweeper, useSinglePassForFlatMaterials } from './singlePassFlatMaterials.js';
@@ -29755,6 +29755,11 @@ export class ThreeGame {
 
         // Preload common 3D world models in background during chunk staging & warmup
         const preloadPromise = preloadWorld3dModels().catch(() => null);
+        // Title-screen warmup normally wins this race. Starting the same
+        // deduplicated work here covers players who deploy immediately; await
+        // it at the existing shader boundary so combat never sees a half-warm
+        // corpse variant.
+        const corpsePrewarmPromise = prewarmCommonCorpse3dTemplates(this).catch(() => null);
 
         // Deployment only needs the visible 3x3 set. Directional prefetch is
         // a runtime concern and must not inflate the covered startup workload.
@@ -29787,7 +29792,7 @@ export class ThreeGame {
         this._ensureEnvLightPool();
         await this.warmUpShaderPrograms();
 
-        await preloadPromise;
+        await Promise.all([preloadPromise, corpsePrewarmPromise]);
 
         onProgress?.(1);
         debugLog.info('STREAM', 'Initial chunk staging ready', {

@@ -6,7 +6,7 @@ export const COMMON_CORPSE_3D_TYPES = Object.freeze([
     'sporesnail_dead'
 ]);
 
-const prewarmedCorpseRoots = new Map();
+const prewarmedCorpseRootsByRenderer = new WeakMap();
 
 export function prepareCorpse3dModel(root) {
     const materialClones = new Map();
@@ -41,6 +41,11 @@ export function prewarmCorpse3dTemplate(game, type, loadModel = createWorld3dMod
     if (!COMMON_CORPSE_3D_TYPES.includes(type) || !game?.renderer?.compileAsync || !game.camera || !game.scene) {
         return Promise.resolve(null);
     }
+    let prewarmedCorpseRoots = prewarmedCorpseRootsByRenderer.get(game.renderer);
+    if (!prewarmedCorpseRoots) {
+        prewarmedCorpseRoots = new Map();
+        prewarmedCorpseRootsByRenderer.set(game.renderer, prewarmedCorpseRoots);
+    }
     if (prewarmedCorpseRoots.has(type)) return prewarmedCorpseRoots.get(type);
 
     const promise = Promise.resolve(loadModel(type))
@@ -56,4 +61,16 @@ export function prewarmCorpse3dTemplate(game, type, loadModel = createWorld3dMod
         });
     prewarmedCorpseRoots.set(type, promise);
     return promise;
+}
+
+export async function prewarmCommonCorpse3dTemplates(game, loadModel = createWorld3dModel) {
+    const roots = [];
+    for (const type of COMMON_CORPSE_3D_TYPES) {
+        try {
+            roots.push(await prewarmCorpse3dTemplate(game, type, loadModel));
+        } catch (error) {
+            console.warn(`[corpse-3d] shader prewarm failed for ${type}`, error);
+        }
+    }
+    return roots.filter(Boolean);
 }
