@@ -35985,18 +35985,21 @@ export class ThreeGame {
         corpse.material.visible = false;
         try {
             const root = await (this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType));
-            if (root) await this.prewarmLateModel?.(root);
-            if (!root || !corpse.parent || !this.corpses?.includes(corpse)) {
-                if (!root) corpse.material.visible = true;
-                return;
-            }
-            root.traverse((child) => {
+            // Fade-ready materials first, then prewarm: transparency is part of
+            // the shader program, so prewarming the opaque originals left the
+            // real program to compile on the first frame after the kill.
+            root?.traverse((child) => {
                 if (!child.isMesh) return;
                 child.material = Array.isArray(child.material)
                     ? child.material.map((m) => m.clone())
                     : child.material.clone();
                 for (const m of [child.material].flat()) m.transparent = true;
             });
+            if (root) await this.prewarmLateModel?.(root);
+            if (!root || !corpse.parent || !this.corpses?.includes(corpse)) {
+                if (!root) corpse.material.visible = true;
+                return;
+            }
             const enemyRoot = enemySprite?.userData?.enemy3dVisual?.root;
             root.rotation.y = Number.isFinite(enemyRoot?.rotation?.y) ? enemyRoot.rotation.y : WORLD_3D_FACING_YAW;
             root.position.set(corpse.position.x, 0, corpse.position.z);
@@ -36596,13 +36599,14 @@ export class ThreeGame {
         return spawned;
     }
 
-    // Post-turn the hive recognizes its carrier: wild snails ignore the
-    // player. Camp defenders and anything the player shoots stay hostile.
+    // Hive kinship (July) made every wild enemy ignore the player for all of
+    // Act 2 unless shot first, so a whole Act 2 run could pass without a hit.
+    // Owner, 2026-10-07: "enemy were not hitting my player ... we need to take
+    // damage". Wild enemies hunt again; Act 2 snails still open their talk-or-
+    // fight encounter on contact, and killing kin still costs obedience.
+    // Only a companion stays passive.
     isHiveKinPassive(sprite) {
-        return this.isAct2Active()
-            && !sprite?.userData?.campDefenderId
-            && !sprite?.userData?.isHiveHarvestBoss
-            && !sprite?.userData?.shotByPlayer;
+        return this.isAct2Active() && Boolean(sprite?.userData?.isCompanion);
     }
 
     // How close counts as "touching" this enemy. The fixed 2.4x boss radius

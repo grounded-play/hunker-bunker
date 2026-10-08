@@ -150,6 +150,32 @@ describe('Sprint 53 L2 & L3: Ambient Vents & Floor Fog', () => {
         ventSys.dispose();
     });
 
+    // Owner log 2026-10-07 (desktop, ANGLE/D3D11): 2-10 s frozen frames.
+    // three bakes the count of VISIBLE point lights into every lit shader, so
+    // a vent light toggled with .visible made every material in view compile a
+    // new program each time a burst started or ended. Idle = intensity 0.
+    it('keeps its vent lights in the scene at a constant count, burst or idle', () => {
+        const scene = new THREE.Scene();
+        const ventSys = new AmbientVentSystem(scene);
+        const group = new THREE.Group();
+        ventSys.buildChunkVents(group, 0, 0, { roomInstances: [mockRoomUtility] }, null, 'canyon', { condition: 'geothermal' });
+        const geyser = [...ventSys.activeVents.values()].find(v => v.type === VENT_TYPES.GEYSER);
+        const fakeGame = { chunkMeshes: new Map([['0,0', group]]), takeDamage: vi.fn() };
+        const visibleLights = () => ventSys.lightPool.filter((light) => light.visible).length;
+        expect(visibleLights()).toBe(ventSys.maxDynamicLights);
+        const bursting = ((geyser.interval - geyser.phase + 0.5) % geyser.interval) * 1000;
+        ventSys.update(0.016, bursting, { x: 99, y: 0, z: 99 }, fakeGame, 0.5);
+        expect(visibleLights()).toBe(ventSys.maxDynamicLights);
+        expect(ventSys.lightPool.some((light) => light.intensity > 0)).toBe(true);
+        const quiet = ((geyser.interval - geyser.phase + geyser.interval * 0.95) % geyser.interval) * 1000;
+        ventSys.update(0.016, quiet, { x: 99, y: 0, z: 99 }, fakeGame, 0.5);
+        expect(visibleLights()).toBe(ventSys.maxDynamicLights);
+        ventSys.clear();
+        expect(visibleLights()).toBe(ventSys.maxDynamicLights);
+        expect(ventSys.lightPool.every((light) => light.intensity === 0)).toBe(true);
+        ventSys.dispose();
+    });
+
     it('FloorFogSystem updates dayBlend and thickens at night (L3)', () => {
         const fogSys = new FloorFogSystem();
         const group = new THREE.Group();

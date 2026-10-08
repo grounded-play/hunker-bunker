@@ -432,13 +432,17 @@ export class AmbientVentSystem {
             metalness: 0.2
         });
 
-        // Dynamic pulsed point light pool for bursting vents
+        // Dynamic pulsed point light pool for bursting vents. Always visible,
+        // idle at intensity 0: three bakes the count of visible point lights
+        // into every lit shader, so toggling .visible recompiled every material
+        // in view at each burst (2-10 s frames on ANGLE/D3D11, owner log
+        // 2026-10-07). See also ThreeGame._ensureEnvLightPool.
         this.lightPool = [];
         this.maxDynamicLights = 3;
         for (let i = 0; i < this.maxDynamicLights; i++) {
             const light = new THREE.PointLight(0xffaa44, 0, 7.5, 1.6);
             light.name = `AmbientVentLight_${i}`;
-            light.visible = false;
+            light.visible = true;
             if (this.scene) this.scene.add(light);
             this.lightPool.push(light);
         }
@@ -560,10 +564,7 @@ export class AmbientVentSystem {
         this.lastAudioTimes.clear();
         this.lastTelegraphTimes.clear();
         this.chunkFog.clear();
-        for (const light of this.lightPool) {
-            light.intensity = 0;
-            light.visible = false;
-        }
+        for (const light of this.lightPool) light.intensity = 0;
     }
 
     /**
@@ -576,11 +577,8 @@ export class AmbientVentSystem {
             this.plumeMaterial.uniforms.uDayBlend.value = dayBlend;
         }
 
-        // Turn off dynamic lights by default
-        for (const light of this.lightPool) {
-            light.visible = false;
-            light.intensity = 0;
-        }
+        // Idle dynamic lights by default (intensity only; see the constructor).
+        for (const light of this.lightPool) light.intensity = 0;
         let lightIdx = 0;
 
         // Iterate mounted chunks
@@ -647,7 +645,6 @@ export class AmbientVentSystem {
                         const envelope = Math.sin(progress * Math.PI);
                         light.intensity = vent.glowIntensity * envelope * nightMultiplier;
                         light.distance = vent.lightDistance;
-                        light.visible = true;
                     }
 
                     // Geothermal geyser damage check: brief heat damage if player is standing in it
