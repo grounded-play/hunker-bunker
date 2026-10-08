@@ -413,6 +413,23 @@ export function retargetMixamoClip(source, fromPrefix, toPrefix, targetRoot) {
     return clip;
 }
 
+// Rig bones tagged with an `hbFollow` extra (glTF node extras arrive as
+// userData) copy the named bone's local rotation each frame. No clip names
+// them. Mayor Tina's outer legs use it to stride with her thighs while
+// pivoting at their own roots (scripts/blender/rig_mayor_tina.py).
+export function bindFollowerBones(root) {
+    const pairs = [];
+    root.traverse((object) => {
+        const sourceName = object.isBone ? object.userData?.hbFollow : null;
+        if (!sourceName) return;
+        const source = root.getObjectByName(THREE.PropertyBinding.sanitizeNodeName(sourceName));
+        if (source) pairs.push([object, source]);
+    });
+    return () => {
+        for (const [bone, source] of pairs) bone.quaternion.copy(source.quaternion);
+    };
+}
+
 function normalizeModel(root, targetHeight) {
     root.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(root);
@@ -675,10 +692,12 @@ export async function createPlayer3dOverlay({
     }
     // Prime the idle action immediately with full weight and tick the mixer so the
     // skinned mesh starts in its natural idle pose instead of its T-pose bind pose.
+    const syncFollowerBones = bindFollowerBones(root);
     if (activeIdleName && actions.has(activeIdleName)) {
         smoothedWeights[activeIdleName] = 1;
         actions.get(activeIdleName)?.setEffectiveWeight(1).play();
         mixer.update(0);
+        syncFollowerBones();
     }
 
     const charmPhysics = {
@@ -698,6 +717,7 @@ export async function createPlayer3dOverlay({
     return {
         root,
         actions,
+        syncFollowerBones,
         hasAnimation(name) { return actions.has(name); },
         getAnimationNames() { return [...actions.keys()]; },
         weapon,
@@ -835,6 +855,7 @@ export async function createPlayer3dOverlay({
                 mixer.timeScale = THREE.MathUtils.damp(mixer.timeScale, 1.0, 10, delta);
             }
             mixer.update(delta);
+            syncFollowerBones();
             const targetUpperBodyTurn = followMovement && state.hasAim
                 ? computeUpperBodyAimOffset(root.rotation.y, state.aimX, state.aimZ)
                 : 0;
