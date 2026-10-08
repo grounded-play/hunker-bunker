@@ -7,7 +7,7 @@ export const SLEEP_CUTSCENE_STYLES = Object.freeze(['bunker', 'camp', 'cryo', 'h
 
 // Videos added to public/cutscenes/ as sleep-<style>.webm (+ .mp4, -poster.jpg).
 // Until a style's video ships, main.js plays a short night interstitial.
-export const SHIPPED_SLEEP_CUTSCENES = Object.freeze(new Set([]));
+export const SHIPPED_SLEEP_CUTSCENES = Object.freeze(new Set(['sleep-bunker']));
 
 /** Which sleep a rest gets, by where and how the operator sleeps. */
 export function pickSleepCutsceneStyle({ campId = null, coopPlayers = 0, hiveBonded = false, infected = false, biome = 'active' } = {}) {

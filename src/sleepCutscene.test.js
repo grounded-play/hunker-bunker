@@ -22,9 +22,14 @@ describe('which sleep cutscene plays', () => {
     });
 
     it('lists only videos that are really in public/cutscenes', () => {
+        expect([...SHIPPED_SLEEP_CUTSCENES]).toEqual(['sleep-bunker']);
         for (const base of SHIPPED_SLEEP_CUTSCENES) {
             const webm = new URL(`../public/cutscenes/${base}.webm`, import.meta.url);
+            const mp4 = new URL(`../public/cutscenes/${base}.mp4`, import.meta.url);
+            const poster = new URL(`../public/cutscenes/${base}-poster.jpg`, import.meta.url);
             expect(fs.existsSync(webm), base).toBe(true);
+            expect(fs.existsSync(mp4), base).toBe(true);
+            expect(fs.existsSync(poster), base).toBe(true);
         }
     });
 });
