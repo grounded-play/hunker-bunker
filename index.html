@@ -1184,7 +1184,7 @@
           <div class="npc-header-left">
             <span class="npc-header-icon" id="npc-dialogue-icon">🩸</span>
             <div class="npc-header-meta">
-              <div class="npc-header-name" id="npc-dialogue-name">SISTER VAL</div>
+              <div class="npc-header-name" id="npc-dialogue-name">SISTER MARTHA</div>
               <div class="npc-header-faction" id="npc-dialogue-faction">CAMP TALLOW // SUTURE SANCTUARY</div>
             </div>
           </div>
@@ -1225,7 +1225,7 @@
               She sets down a steaming bronze kettle of heated botanical resin...
             </div>
             <div class="npc-dialogue-box">
-              <span class="npc-dialogue-speaker" id="npc-dialogue-speaker">SISTER VAL:</span>
+              <span class="npc-dialogue-speaker" id="npc-dialogue-speaker">SISTER MARTHA:</span>
               <p class="npc-dialogue-text" id="npc-dialogue-text">"You're shivering, contractor..."</p>
             </div>
           </div>
@@ -2411,6 +2411,15 @@
       </div>
     </div>
 
+    <div id="camp-services-modal" class="modal camp-services-modal hidden" aria-hidden="true">
+      <div class="modal-content camp-services-panel" role="dialog" aria-modal="true" aria-labelledby="camp-services-title">
+        <button data-i18n-aria-label="ui.camp.services_aria_close" type="button" class="close-modal camp-services-close" id="close-camp-services" aria-label="Close camp services">×</button>
+        <div data-i18n="ui.camp.services_kicker" class="camp-services-kicker">CAMP SERVICES</div>
+        <h2 class="modal-title camp-services-title" id="camp-services-title">CAMP</h2>
+        <div class="camp-services-list" id="camp-services-list"></div>
+      </div>
+    </div>
+
     <div id="field-workbench-modal" class="modal field-workbench-modal hidden" aria-hidden="true">
       <div class="modal-content field-workbench-panel">
         <button data-i18n-aria-label="ui.workbench.aria_close" class="close-modal field-workbench-close" id="close-field-workbench" aria-label="Close field workbench">×</button>
@@ -2989,6 +2998,7 @@
             <div id="leader-conversation-stats" class="leader-conversation-stats"></div>
             <div id="leader-conversation-guidance" class="leader-conversation-guidance"></div>
           </div>
+          <div id="leader-conversation-choices" class="leader-conversation-choices" hidden></div>
           <div class="leader-conversation-actions">
             <button type="button" id="leader-conversation-continue">CONTINUE</button>
             <button data-i18n="ui.leader_conversation.leave" type="button" id="leader-conversation-leave">LEAVE</button>

@@ -489,6 +489,7 @@ import { pickSleepCutsceneStyle } from './sleepCutscene.js';
 import { attachQuestBeacon, questObjectFor, removeCampQuestEntity } from './questObjects.js';
 import { applySpecialVariant } from './specialVariants.js';
 import { bindRoomGrammarSites } from './roomGrammarSiteSelection.js';
+import { trimCampPromptActions } from './campActionMenu.js';
 import { MYSTERY_BOX_KINDS, MYSTERY_OUTCOME_LINE_KEYS, mysteryBoxChance, mysteryOpenSeconds, mysteryRewardDrops, pickMysteryBoxKind, rollMysteryOutcome, seededRandom } from './mysteryBoxes.js';
 import { createTrackField, slimeColorFor, stepBoots, trackSurfaceForType } from './trackField.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
@@ -20114,10 +20115,27 @@ export class ThreeGame {
             }
         }
 
+        // The leader's choice tree (src/npcDialogueTrees.js) continues this
+        // same conversation once its staged lines end -- one window, never a
+        // second modal (owner, 2026-10-08).
+        const treeMap = {
+            camp_tallow: 'sister_val',
+            camp_vesper: 'commander_briggs',
+            camp_meridian: 'overseer_kaelen',
+            hive_suture: 'aria_queen_mimic',
+            hive_relay: 'aria_queen_mimic',
+            hive_carapace: 'aria_queen_mimic',
+            camp_nahl: 'dr_nahl',
+            hive_nahl: 'dr_nahl',
+            hive_bio_relay: 'dr_nahl'
+        };
+        const treeId = treeMap[entity.id] || (String(entity.id).includes('nahl') ? 'dr_nahl' : null);
+
         window.dispatchEvent(new CustomEvent('leader-dialogue', {
             detail: {
                 kind,
                 id: entity.id,
+                treeId,
                 lines,
                 beatType: beat.type,
                 stage: beat.stage,
@@ -20140,18 +20158,6 @@ export class ThreeGame {
             }
         }));
 
-        const treeMap = {
-            camp_tallow: 'sister_val',
-            camp_vesper: 'commander_briggs',
-            camp_meridian: 'overseer_kaelen',
-            hive_suture: 'aria_queen_mimic',
-            hive_relay: 'aria_queen_mimic',
-            hive_carapace: 'aria_queen_mimic',
-            camp_nahl: 'dr_nahl',
-            hive_nahl: 'dr_nahl',
-            hive_bio_relay: 'dr_nahl'
-        };
-        const treeId = treeMap[entity.id] || (String(entity.id).includes('nahl') ? 'dr_nahl' : null);
         if (treeId && typeof window !== 'undefined') {
             if (window.sideStoryManager) {
                 window.sideStoryManager.evaluateTriggers({
@@ -20167,9 +20173,6 @@ export class ThreeGame {
                     ammoInventory: this.playerAmmo ?? 0,
                     lowO2Exposures: (this.playerVitals?.o2 < 20) ? 1 : 0
                 });
-            }
-            if (window.openNpcDialogueTree) {
-                window.openNpcDialogueTree(treeId);
             }
         }
 
@@ -20456,10 +20459,30 @@ export class ThreeGame {
         }
     }
 
+    // A pick from the CAMP SERVICES menu. The camp may have changed while the
+    // menu was open (shells spent, night fallen), so the pick runs only if the
+    // same action is still on offer where the player stands.
+    performCampService(index) {
+        const picked = this._campServices?.actions?.[index];
+        this._campServices = null;
+        if (!picked || !this.player) return false;
+        const current = this.getCampActionsAt(this.player.position.x, this.player.position.z)
+            .find((entry) => entry.action === picked.action && entry.label === picked.label && entry.camp?.id === picked.camp?.id);
+        if (!current) {
+            this.playThrottledUiError?.('_lastCampServiceGoneCueAt', { volume: 0.3 });
+            return false;
+        }
+        return this.interactWithAct2Camp(current);
+    }
+
     // The camp action the prompt shows and interact performs; C / the aim
     // stick click steps through the rest (cycleInteractionTarget).
     getSelectedCampAction(x, z, phase = this.act2?.getPhase()) {
-        const actions = this.getCampActionsAt(x, z, phase);
+        // At most three on the prompt; CAMP SERVICES holds the rest
+        // (src/campActionMenu.js, owner 2026-10-08).
+        const actions = trimCampPromptActions(this.getCampActionsAt(x, z, phase), {
+            servicesLabel: (count) => t('ui.camp.services', { count })
+        });
         if (!actions.length) {
             this._campActionIndex = 0;
             this._campActionCampId = null;
@@ -21085,11 +21108,23 @@ export class ThreeGame {
         return false;
     }
 
-    interactWithAct2Camp() {
+    interactWithAct2Camp(chosen = null) {
         if (!this.isGameplayInputActive() || !this.player || !this.act2) return false;
-        const actionable = this.getSelectedCampAction(this.player.position.x, this.player.position.z);
+        const actionable = chosen ?? this.getSelectedCampAction(this.player.position.x, this.player.position.z);
         if (!actionable) return false;
         const { camp, action } = actionable;
+
+        if (action === 'services') {
+            this._campServices = { campId: camp.id, actions: actionable.services ?? [] };
+            window.dispatchEvent(new CustomEvent('camp-services-open', {
+                detail: {
+                    campId: camp.id,
+                    campLabel: camp.label,
+                    actions: this._campServices.actions.map((entry, index) => ({ index, action: entry.action, label: entry.label }))
+                }
+            }));
+            return true;
+        }
 
         if (action === 'talk-resident') return this.talkToCampResident(camp, actionable.workerIndex);
         if (action === 'field-workbench') return this.openFieldWorkbench(camp);

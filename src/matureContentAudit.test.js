@@ -100,7 +100,7 @@ describe('MatureContentAudit', () => {
         const blocks = buildDialogueReaderBlocks(NPC_DIALOGUE_TREES.sister_val, base);
         const greeting = blocks.find((b) => b.nodeId === 'val_greeting');
         expect(greeting.image).toBe('file:///C:/Steam/Hunker%20Bunker/resources/app.asar/dist/interstitials/int_val_hearth_warmth_key_v1.webp');
-        expect(greeting.alt).toMatch(/Sister Val/);
+        expect(greeting.alt).toMatch(/Sister Martha/);
         expect(greeting.text).toContain(NPC_DIALOGUE_TREES.sister_val.nodes.val_greeting.dialogue);
         const climax = blocks.find((b) => b.nodeId === 'val_intimate_climax');
         expect(climax.image).toContain('/interstitials/');

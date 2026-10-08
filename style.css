@@ -8547,9 +8547,13 @@ body.mission-intro-active #game-container canvas {
 
 .leader-conversation-content {
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   padding: calc(var(--vu) * 4.2);
+  /* The choice tree can list six options; the column scrolls rather than
+     cutting the last ones off (owner, 2026-10-08). */
+  overflow-y: auto;
 }
 
 .leader-conversation-kicker,
@@ -8584,6 +8588,53 @@ body.mission-intro-active #game-container canvas {
 .leader-conversation-stats { margin-bottom: calc(var(--vu) * 0.8); font-size: calc(var(--vu) * 1.05); }
 .leader-conversation-guidance { color: #d8e3db; font-size: calc(var(--vu) * 1.25); line-height: 1.45; }
 .leader-conversation-actions { display: flex; gap: calc(var(--vu) * 1.2); margin-top: calc(var(--vu) * 2); }
+/* The leader's choice tree continues the conversation in this window. */
+.leader-conversation-line.is-tree {
+  flex: 0 0 auto;
+  min-height: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: calc(var(--vu) * 1);
+  font-size: calc(var(--vu) * 1.7);
+}
+.leader-conversation-narration { color: var(--text-muted); font-size: calc(var(--vu) * 1.3); }
+.leader-conversation-choices {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.8);
+  margin-top: calc(var(--vu) * 1.6);
+  /* Up to six options: the list scrolls inside the panel, never off it. */
+  max-height: calc(var(--vu) * 24);
+  overflow-y: auto;
+  padding-right: calc(var(--vu) * 0.6);
+}
+.leader-conversation-choices[hidden] { display: none; }
+/* Choosing: the panel holds a fixed height and the options take the room
+   left, scrolling inside it. */
+.leader-conversation-modal.is-choosing .leader-conversation-panel {
+  height: min(calc(var(--vu) * 74), 92%);
+  grid-template-rows: minmax(0, 1fr);
+}
+.leader-conversation-modal.is-choosing .leader-conversation-choices {
+  flex: 1 1 auto;
+  min-height: calc(var(--vu) * 10);
+  max-height: none;
+}
+/* The mission banner, objective drawer and notifications sit above every
+   gameplay modal (16800+); hide them while a camp conversation or its
+   services menu is open (owner, 2026-10-08). */
+html[data-camp-dialog="open"] .mission-progress-hud,
+html[data-camp-dialog="open"] .objective-drawer,
+html[data-camp-dialog="open"] .hud-notification-stack {
+  visibility: hidden !important;
+}
+.leader-conversation-choices .npc-choice-btn:hover,
+.leader-conversation-choices .npc-choice-btn:focus-visible {
+  border-color: var(--leader-accent);
+  background: color-mix(in srgb, var(--leader-accent) 16%, #081010);
+  box-shadow: none;
+}
 .leader-conversation-actions button {
   padding: calc(var(--vu) * 1.2) calc(var(--vu) * 2);
   border: 1px solid color-mix(in srgb, var(--leader-accent) 65%, transparent);

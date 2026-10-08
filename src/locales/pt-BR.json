@@ -1605,7 +1605,10 @@
       "listen_hint": "Ouça e então decida como quer ajudar.",
       "quote": "“{text}”",
       "next_action": "Sua próxima ação muda o manifesto de lançamento e o vetor do final.",
-      "scar_gained": "A NOITE DEIXOU SUA MARCA: {scar}"
+      "scar_gained": "A NOITE DEIXOU SUA MARCA: {scar}",
+      "services": "SERVIÇOS DO ACAMPAMENTO ({count})",
+      "services_kicker": "SERVIÇOS DO ACAMPAMENTO",
+      "services_aria_close": "Fechar serviços do acampamento"
     },
     "title": {
       "pregalien_command": "PREGALIEN | COMANDO DA COLMEIA",

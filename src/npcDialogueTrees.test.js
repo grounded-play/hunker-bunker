@@ -74,3 +74,55 @@ describe('NpcDialogueTreeManager & Sensual Storyline Trees', () => {
         expect(manager.activePerks.has('nahl_neural_freedom')).toBe(true);
     });
 });
+
+// Owner, 2026-10-08: camps showed two conversations and music videos stacked
+// behind them; earned perks vanished on reload. See
+// docs/planning/qa-2026-10-08-camp-interaction-audit.md.
+describe('camp conversation consolidation', () => {
+    it('keeps earned perks and bond after a reload, from the saved side stories', () => {
+        const stories = {
+            state: {
+                overseer_kaelen: { perks: ['meridian_neural_overclock'], bondScore: 65 },
+                sister_val: { perks: [], bondScore: 25 }
+            }
+        };
+        const manager = new NpcDialogueTreeManager({ stories });
+        expect(manager.activePerks.has('meridian_neural_overclock')).toBe(true);
+        expect(manager.bondState.overseer_kaelen).toBe(65);
+        expect(manager.bondState.sister_val).toBe(25);
+    });
+
+    it('starts no music video when a choice is made', () => {
+        const play = vi.fn();
+        globalThis.window = { playSideStoryInterstitial: play };
+        try {
+            const manager = new NpcDialogueTreeManager({ stories: { state: {} } });
+            manager.startDialogue('overseer_kaelen');
+            manager.selectChoice('kaelen_bio_link');
+            expect(play).not.toHaveBeenCalled();
+        } finally {
+            delete globalThis.window;
+        }
+    });
+
+    it("names Tallow's leader Sister Martha, as the camp does", () => {
+        const tree = NPC_DIALOGUE_TREES.sister_val;
+        expect(tree.name).toBe('Sister Martha');
+        const text = JSON.stringify(tree);
+        expect(text).not.toMatch(/\bVal\b/);
+    });
+});
+
+describe('no third way to leave', () => {
+    // A paused side story was never resumed or read; [PAUSE] was just another
+    // LEAVE beside the tree's own and the window's (owner, 2026-10-08).
+    it('does not append a pause choice', () => {
+        const manager = new NpcDialogueTreeManager({ stories: { state: {} } });
+        const node = manager.startDialogue('overseer_kaelen');
+        expect(node.choices.some((choice) => choice.id === 'pause_story_choice')).toBe(false);
+        // The tree's own way out stays (read from the data: earlier tests in
+        // this file advance Kaelen's stage on the shared side-story state).
+        expect(NPC_DIALOGUE_TREES.overseer_kaelen.nodes.kaelen_greeting.choices
+            .some((choice) => /LEAVE/.test(choice.tone ?? ''))).toBe(true);
+    });
+});

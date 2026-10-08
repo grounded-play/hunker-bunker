@@ -1605,7 +1605,10 @@
       "listen_hint": "Escucha y luego decide cómo quieres ayudar.",
       "quote": "«{text}»",
       "next_action": "Tu próxima acción cambia el manifiesto de lanzamiento y el vector del final.",
-      "scar_gained": "LA NOCHE DEJÓ SU MARCA: {scar}"
+      "scar_gained": "LA NOCHE DEJÓ SU MARCA: {scar}",
+      "services": "SERVICIOS DEL CAMPAMENTO ({count})",
+      "services_kicker": "SERVICIOS DEL CAMPAMENTO",
+      "services_aria_close": "Cerrar servicios del campamento"
     },
     "title": {
       "pregalien_command": "PREGALIEN | MANDO DE LA COLMENA",

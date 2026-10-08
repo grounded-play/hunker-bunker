@@ -1605,7 +1605,10 @@
       "listen_hint": "Listen, then decide how you want to help.",
       "quote": "\"{text}\"",
       "next_action": "Your next action changes the launch manifest and the ending vector.",
-      "scar_gained": "LAST NIGHT LEFT ITS MARK: {scar}"
+      "scar_gained": "LAST NIGHT LEFT ITS MARK: {scar}",
+      "services": "CAMP SERVICES ({count})",
+      "services_kicker": "CAMP SERVICES",
+      "services_aria_close": "Close camp services"
     },
     "title": {
       "pregalien_command": "PREGALIEN | HIVE COMMAND",

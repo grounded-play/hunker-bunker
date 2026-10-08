@@ -100,6 +100,7 @@ import { matureContentAudit } from './src/matureContentAudit.js';
 import { progressionWalkthrough } from './src/progressionWalkthrough.js';
 import { getGameOverLeaderboardBoard, renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { createFieldWorkbenchUi } from './src/fieldWorkbenchUi.js';
+import { createCampServicesUi } from './src/campServicesUi.js';
 import { createQuickCommandRadialUi } from './src/quickCommandRadialUi.js';
 import { flushPendingRunSubmits, submitRunWithRetryQueue } from './src/steam/runSubmitQueue.js';
 import { FATIGUE_STATE_KEY, describeScars, normalizeFatigueState } from './src/fatigue.js';
@@ -613,6 +614,7 @@ function setAppPhase(phase) {
             window.npcDialogueTreeManager.closeDialogue();
         }
         document.getElementById('wanderer-encounter-modal')?.remove();
+        window.campServicesUi?.close?.();
         document.getElementById('npc-dialogue-modal')?.classList.add('hidden');
         document.getElementById('mothership-dialogue')?.classList.add('hidden');
         document.getElementById('leader-conversation-modal')?.classList.add('hidden');
@@ -1400,6 +1402,7 @@ const SPATIAL_FOCUS_ROOT_IDS = new Set([
     'multiplayer-modal',
     'console-terminal-modal',
     'field-workbench-modal',
+    'camp-services-modal',
     'mature-content-audit-modal',
     'season-pass-modal'
 ]);
@@ -12044,6 +12047,10 @@ function setupPlayerTradeEvents() {
 }
 
 let npcDialogueEventsInitialized = false;
+// Where the choice tree draws. 'leader': inside the camp conversation, which
+// it continues once the staged lines end (owner, 2026-10-08: one
+// conversation per camp, never a second modal).
+let npcTreeHost = null;
 
 function updateNpcDialogueUi(state = {}) {
     const modal = document.getElementById('npc-dialogue-modal');
@@ -12145,7 +12152,9 @@ function setupNpcDialogueEvents() {
     if (npcDialogueEventsInitialized) return;
     npcDialogueEventsInitialized = true;
 
-    npcDialogueTreeManager.onStateChanged = updateNpcDialogueUi;
+    npcDialogueTreeManager.onStateChanged = (state) => (npcTreeHost === 'leader'
+        ? renderLeaderConversationTree(state)
+        : updateNpcDialogueUi(state));
 
     document.getElementById('close-npc-dialogue-modal')?.addEventListener('click', () => {
         npcDialogueTreeManager.closeDialogue();
@@ -12176,11 +12185,9 @@ function setupNpcDialogueEvents() {
     window.openNpcDialogueTree = async (treeId) => {
         if (!isGameplayPhase() || !isGameplayHudActive()) return null;
         setupNpcDialogueEvents();
-        const node = npcDialogueTreeManager.startDialogue(treeId);
-        if (node?.interstitial && typeof window.playSideStoryInterstitial === 'function') {
-            await window.playSideStoryInterstitial(node.interstitial);
-        }
-        return node;
+        // No music video per node: a camp's title card plays on first
+        // contact only (owner, 2026-10-08).
+        return npcDialogueTreeManager.startDialogue(treeId);
     };
     window.NPC_DIALOGUE_TREES = NPC_DIALOGUE_TREES;
     window.npcDialogueTreeManager = npcDialogueTreeManager;
@@ -14487,10 +14494,10 @@ window.playSideStoryInterstitial = async (id) => {
     return await songInterstitial.show(id, { holdMs: 1400 });
 };
 
-window.addEventListener('camp-choice-open', async (event) => {
-    const detail = event?.detail ?? {};
-    await songInterstitial.show(selectCampInterstitial(detail));
-    renderCampChoice(detail);
+// The camp's title card plays once, on first contact (owner, 2026-10-08:
+// "first contact only"); the decision opens straight away.
+window.addEventListener('camp-choice-open', (event) => {
+    renderCampChoice(event?.detail ?? {});
 });
 
 // First contact with a camp (any act) gets the same song title card as the
@@ -14538,6 +14545,8 @@ const leaderConversation3d = {
 let leaderConversationLines = [];
 let leaderConversationLineIndex = 0;
 let leaderConversationIdentity = null;
+let leaderConversationTreeId = null;
+const leaderConversationChoices = document.getElementById('leader-conversation-choices');
 
 function cleanLeaderDialogueLine(line, speakerName = '') {
     const text = String(line ?? '').trim();
@@ -14561,7 +14570,97 @@ function renderLeaderConversationLine() {
     }
 }
 
+// A camp conversation or its services menu is open: the HUD layers that sit
+// above every modal step aside (style.css, html[data-camp-dialog]).
+const openCampDialogs = new Set();
+function setCampDialogOpen(name, open) {
+    if (open) openCampDialogs.add(name);
+    else openCampDialogs.delete(name);
+    if (openCampDialogs.size) document.documentElement.dataset.campDialog = 'open';
+    else delete document.documentElement.dataset.campDialog;
+}
+window.setCampDialogOpen = setCampDialogOpen;
+
+// The staged lines are done: the leader's choice tree carries on here.
+function openLeaderConversationTree() {
+    if (!leaderConversationTreeId || npcTreeHost === 'leader') return false;
+    setupNpcDialogueEvents();
+    npcTreeHost = 'leader';
+    const treeId = leaderConversationTreeId;
+    leaderConversationTreeId = null;
+    if (!npcDialogueTreeManager.startDialogue(treeId)) {
+        npcTreeHost = null;
+        return false;
+    }
+    return true;
+}
+
+function renderLeaderConversationTree(state = {}) {
+    if (!state.isOpen || !state.node) {
+        closeLeaderConversation();
+        return;
+    }
+    const node = state.node;
+    if (leaderConversationLine) {
+        leaderConversationLine.classList.add('is-tree');
+        leaderConversationLine.textContent = '';
+        if (node.narration) {
+            const narration = document.createElement('em');
+            narration.className = 'leader-conversation-narration';
+            narration.textContent = node.narration;
+            leaderConversationLine.append(narration);
+        }
+        const spoken = document.createElement('span');
+        spoken.textContent = cleanLeaderDialogueLine(node.dialogue ?? '', leaderConversationIdentity?.name);
+        leaderConversationLine.append(spoken);
+    }
+    leaderConversation3d.react(dialogueReactionForLine(node.dialogue ?? ''));
+    if (leaderConversationGuidance && state.bond) {
+        leaderConversationGuidance.textContent = t('ui.bond.badge', { label: state.bond.label, score: state.bondScore || 0 });
+    }
+    if (leaderConversationContinue) leaderConversationContinue.hidden = true;
+    leaderConversationModal?.classList.add('is-choosing');
+    if (!leaderConversationChoices) return;
+    leaderConversationChoices.textContent = '';
+    leaderConversationChoices.hidden = false;
+    (node.choices ?? []).forEach((choice, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'npc-choice-btn';
+        button.dataset.choiceId = choice.id;
+        for (const [className, text] of [['npc-choice-key', `[${index + 1}]`], ['npc-choice-tone', choice.tone ?? ''], ['npc-choice-text', choice.text ?? '']]) {
+            const part = document.createElement('span');
+            part.className = className;
+            part.textContent = text;
+            button.append(part);
+        }
+        button.addEventListener('click', () => {
+            window.AudioManager?.play?.('ui_click', { volume: 0.3 });
+            npcDialogueTreeManager.selectChoice(choice.id);
+        });
+        leaderConversationChoices.append(button);
+    });
+    leaderConversationChoices.querySelector('button')?.focus();
+}
+
+function resetLeaderConversationTree() {
+    leaderConversationTreeId = null;
+    if (npcTreeHost === 'leader') {
+        npcTreeHost = null;
+        if (npcDialogueTreeManager.activeTree) npcDialogueTreeManager.closeDialogue();
+    }
+    if (leaderConversationChoices) {
+        leaderConversationChoices.textContent = '';
+        leaderConversationChoices.hidden = true;
+    }
+    if (leaderConversationContinue) leaderConversationContinue.hidden = false;
+    leaderConversationLine?.classList.remove('is-tree');
+    leaderConversationModal?.classList.remove('is-choosing');
+}
+
 function closeLeaderConversation() {
+    resetLeaderConversationTree();
+    setCampDialogOpen('leader', false);
     leaderConversationModal?.classList.add('hidden');
     leaderConversationModal?.setAttribute('aria-hidden', 'true');
     leaderConversation3d.hide();
@@ -14573,6 +14672,7 @@ function closeLeaderConversation() {
 leaderConversationContinue?.addEventListener('click', () => {
     window.AudioManager?.play?.('ui_click', { volume: 0.4 });
     if (leaderConversationLineIndex >= leaderConversationLines.length - 1) {
+        if (openLeaderConversationTree()) return;
         closeLeaderConversation();
         return;
     }
@@ -14587,6 +14687,8 @@ window.addEventListener('leader-dialogue', async (event) => {
     const detail = event?.detail ?? {};
     const identity = resolveLeaderIdentity(detail);
     leaderConversationIdentity = identity;
+    resetLeaderConversationTree();
+    leaderConversationTreeId = detail.treeId ?? null;
     const { beatType, leaderName, leaderClassId } = detail;
     let lines = (detail.lines ?? []).map((line) => String(line ?? '')).filter(Boolean);
 
@@ -14664,6 +14766,7 @@ window.addEventListener('leader-dialogue', async (event) => {
     renderLeaderConversationLine();
     leaderConversationModal.classList.remove('hidden');
     leaderConversationModal.setAttribute('aria-hidden', 'false');
+    setCampDialogOpen('leader', true);
     window.game?.setInputEnabled?.(false);
     leaderConversationContinue?.focus();
     window.AudioManager?.play?.('door_slide_horiz', { volume: 0.32 });
@@ -17656,6 +17759,7 @@ progressionWalkthrough.init();
 initVirtualKeyboard();
 setupNpcDialogueEvents();
 createFieldWorkbenchUi();
+window.campServicesUi = createCampServicesUi();
 createQuickCommandRadialUi();
 
 // Keep the title art alive at rest while making pointer movement feel like a

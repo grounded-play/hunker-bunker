@@ -43,13 +43,23 @@ describe('a camp offers everything it can, and talk is always one of them', () =
         expect(campGame({ companion: false, beat: null }).getCampActionsAt(0, 0, 'dormant').map((entry) => entry.action)).not.toContain('talk');
     });
 
-    it('steps through the actions with the cycle button and shows where you are', () => {
+    // Owner, 2026-10-08: "too many options are showing on one". The prompt
+    // offers at most three -- TALK, the most relevant, CAMP SERVICES -- and C
+    // steps through those (src/campActionMenu.js).
+    it('steps through at most three, talk first, the rest under camp services', () => {
         const game = campGame();
-        expect(game.getSelectedCampAction(0, 0, 'dormant')).toMatchObject({ action: 'settle-companion', index: 0 });
+        const all = game.getCampActionsAt(0, 0, 'dormant');
+        const first = game.getSelectedCampAction(0, 0, 'dormant');
+        expect(first).toMatchObject({ action: 'talk', index: 0 });
+        expect(first.count).toBe(Math.min(3, all.length));
         expect(game.cycleCampAction(1)).toBe(true);
-        const next = game.getSelectedCampAction(0, 0, 'dormant');
-        expect(next.index).toBe(1);
-        expect(next.count).toBeGreaterThanOrEqual(3);
+        expect(game.getSelectedCampAction(0, 0, 'dormant').index).toBe(1);
+        if (all.length > 3) {
+            game.cycleCampAction(1);
+            const services = game.getSelectedCampAction(0, 0, 'dormant');
+            expect(services.action).toBe('services');
+            expect(services.services.length).toBe(all.length - 2);
+        }
     });
 
     it('keeps an exclusive state the only option', () => {

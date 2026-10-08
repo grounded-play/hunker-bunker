@@ -1605,7 +1605,10 @@
       "listen_hint": "Hör zu und entscheide dann, wie du helfen willst.",
       "quote": "„{text}“",
       "next_action": "Deine nächste Handlung ändert die Startliste und den Endverlauf.",
-      "scar_gained": "DIE NACHT HAT SPUREN HINTERLASSEN: {scar}"
+      "scar_gained": "DIE NACHT HAT SPUREN HINTERLASSEN: {scar}",
+      "services": "LAGERDIENSTE ({count})",
+      "services_kicker": "LAGERDIENSTE",
+      "services_aria_close": "Lagerdienste schließen"
     },
     "title": {
       "pregalien_command": "PREGALIEN | NEST-KOMMANDO",

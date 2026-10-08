@@ -67,6 +67,7 @@ export const MENU_FOCUS_ROOT_IDS = Object.freeze([
     'expedition-event-modal',
     'camp-choice-modal',
     'field-workbench-modal',
+    'camp-services-modal',
     'leader-conversation-modal',
     'npc-dialogue-modal',
     'mothership-dialogue',

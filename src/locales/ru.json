@@ -1605,7 +1605,10 @@
       "listen_hint": "Выслушайте, затем решите, чем помочь.",
       "quote": "«{text}»",
       "next_action": "Твой следующий шаг изменит манифест запуска и вектор финала.",
-      "scar_gained": "ПРОШЛАЯ НОЧЬ ОСТАВИЛА СЛЕД: {scar}"
+      "scar_gained": "ПРОШЛАЯ НОЧЬ ОСТАВИЛА СЛЕД: {scar}",
+      "services": "УСЛУГИ ЛАГЕРЯ ({count})",
+      "services_kicker": "УСЛУГИ ЛАГЕРЯ",
+      "services_aria_close": "Закрыть услуги лагеря"
     },
     "title": {
       "pregalien_command": "PREGALIEN | КОМАНДОВАНИЕ УЛЬЯ",

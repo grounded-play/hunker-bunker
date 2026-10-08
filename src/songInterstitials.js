@@ -43,7 +43,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
     val_hearth_warmth: Object.freeze({
         id: 'val_hearth_warmth',
         title: 'Warmth of the Suture',
-        character: 'Sister Val',
+        character: 'Sister Martha',
         camp: 'Camp Tallow',
         image: '/interstitials/int_val_hearth_warmth_key_v1.webp',
         motionMp4: '/interstitials/int_04_warmth_beneath_the_ice_key_v1.mp4',
@@ -51,12 +51,12 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         motionWebm: '/interstitials/motion/int_04_warmth_beneath_the_ice_motion_v1.webm',
         audio: '/audio/ost/Warmth Beneath the Ice.mp3',
         musicKey: 'music_interstitial_04',
-        alt: 'Sister Val warming the survivor hands at the geothermal hearth'
+        alt: 'Sister Martha warming the survivor hands at the geothermal hearth'
     }),
     val_spore_communion: Object.freeze({
         id: 'val_spore_communion',
         title: 'Botanical Spore Oil',
-        character: 'Sister Val',
+        character: 'Sister Martha',
         camp: 'Camp Tallow',
         image: '/interstitials/int_val_spore_communion_key_v1.webp',
         motionMp4: '/interstitials/int_20_tallow_keeps_the_steam_key_v1.mp4',
@@ -64,12 +64,12 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         motionWebm: '/interstitials/motion/int_20_tallow_keeps_the_steam_motion_v1.webm',
         audio: '/audio/ost/Tallow Keeps the Steam.mp3',
         musicKey: 'music_interstitial_20',
-        alt: 'Sister Val applying glowing botanical spore salve'
+        alt: 'Sister Martha applying glowing botanical spore salve'
     }),
     val_eternal_hearth: Object.freeze({
         id: 'val_eternal_hearth',
         title: 'The Eternal Hearth',
-        character: 'Sister Val',
+        character: 'Sister Martha',
         camp: 'Camp Tallow',
         image: '/interstitials/int_val_eternal_hearth_key_v1.webp',
         motionMp4: '/interstitials/int_04_warmth_beneath_the_ice_key_v1.mp4',

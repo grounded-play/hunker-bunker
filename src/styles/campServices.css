@@ -1,0 +1,54 @@
+/* CAMP SERVICES menu (owner, 2026-10-08): the camp actions the prompt no
+   longer cycles through. Same housing as the field workbench. */
+.camp-services-modal {
+  z-index: 16200;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 170, 0, 0.10), rgba(0, 0, 0, 0.86) 50%),
+    rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(8px);
+}
+
+.camp-services-panel {
+  width: min(calc(var(--vu, 10px) * 64), 94%);
+  max-height: min(88vh, calc(var(--vu, 10px) * 80));
+  border: 1px solid rgba(255, 170, 0, 0.7);
+  background: linear-gradient(180deg, rgba(20, 18, 12, 0.98), rgba(8, 8, 10, 0.98));
+  box-shadow: 0 0 0 1px rgba(255, 170, 0, 0.2) inset, 0 0 48px rgba(0, 0, 0, 0.92);
+  border-radius: 4px;
+  padding: calc(var(--vu, 10px) * 3);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu, 10px) * 1.2);
+  overflow-y: auto;
+  position: relative;
+}
+
+.camp-services-kicker {
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--vu, 10px) * 1.1);
+  letter-spacing: 0.14em;
+  color: #ffaa00;
+}
+
+.camp-services-title { margin: 0; text-align: left; }
+
+.camp-services-list { display: flex; flex-direction: column; gap: calc(var(--vu, 10px) * 0.8); }
+
+.camp-services-option {
+  padding: calc(var(--vu, 10px) * 1.2) calc(var(--vu, 10px) * 1.8);
+  border: 1px solid rgba(255, 170, 0, 0.45);
+  background: rgba(8, 10, 12, 0.96);
+  color: #f4f6f0;
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--vu, 10px) * 1.3);
+  letter-spacing: 0.06em;
+  text-align: left;
+  cursor: pointer;
+}
+
+.camp-services-option:hover,
+.camp-services-option:focus-visible {
+  border-color: #ffaa00;
+  background: rgba(255, 170, 0, 0.14);
+  outline: none;
+}
