@@ -34,14 +34,15 @@ describe('corpse model prewarm', () => {
     it('compiles late models against the gameplay composer target', async () => {
         const game = Object.create(ThreeGame.prototype);
         const oldTarget = { name: 'old-target' };
-        const gameplayTarget = { name: 'composer-target' };
+        const readTarget = { name: 'composer-read-target' };
+        const writeTarget = { name: 'composer-write-target' };
         const root = new THREE.Group();
         const setRenderTarget = vi.fn();
         const compileAsync = vi.fn(async () => {});
         Object.assign(game, {
             camera: {},
             scene: {},
-            composer: { readBuffer: gameplayTarget },
+            composer: { readBuffer: readTarget, writeBuffer: writeTarget },
             performanceProfile: 'gameplay',
             gameplayPostProcessingEnabled: true,
             renderer: {
@@ -53,8 +54,11 @@ describe('corpse model prewarm', () => {
 
         await game.prewarmLateModel(root);
 
-        expect(setRenderTarget).toHaveBeenNthCalledWith(1, gameplayTarget);
-        expect(compileAsync).toHaveBeenCalledWith(root, game.camera, game.scene);
+        expect(setRenderTarget).toHaveBeenNthCalledWith(1, readTarget);
+        expect(setRenderTarget).toHaveBeenNthCalledWith(2, writeTarget);
+        expect(compileAsync).toHaveBeenCalledTimes(2);
+        expect(compileAsync).toHaveBeenNthCalledWith(1, root, game.camera, game.scene);
+        expect(compileAsync).toHaveBeenNthCalledWith(2, root, game.camera, game.scene);
         expect(setRenderTarget).toHaveBeenLastCalledWith(oldTarget);
     });
 

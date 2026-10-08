@@ -35993,27 +35993,33 @@ export class ThreeGame {
     async prewarmLateModel(root, timeoutMs = 30000) {
         const renderer = this.renderer;
         if (!root || typeof renderer?.compileAsync !== 'function' || !this.camera || !this.scene) return;
-        let timer = null;
         const previousTarget = renderer.getRenderTarget?.() ?? null;
-        const gameplayTarget = this.composer
+        const gameplayTargets = this.composer
             && this.performanceProfile === 'gameplay'
             && this.gameplayPostProcessingEnabled !== false
-            ? this.composer.readBuffer ?? null
-            : previousTarget;
+            ? [...new Set([this.composer.readBuffer ?? null, this.composer.writeBuffer ?? null])]
+            : [previousTarget];
         try {
             // Gameplay draws through EffectComposer. Render-target colour space
             // and tone mapping are shader cache keys, so a canvas compile would
-            // still miss on the first real draw.
-            renderer.setRenderTarget?.(gameplayTarget);
-            await Promise.race([
-                renderer.compileAsync(root, this.camera, this.scene),
-                new Promise((resolve) => { timer = setTimeout(resolve, timeoutMs); })
-            ]);
+            // still miss on the first real draw. The composer ping-pongs between
+            // two targets, so both variants must be ready.
+            for (const target of gameplayTargets) {
+                let timer = null;
+                renderer.setRenderTarget?.(target);
+                try {
+                    await Promise.race([
+                        renderer.compileAsync(root, this.camera, this.scene),
+                        new Promise((resolve) => { timer = setTimeout(resolve, timeoutMs); })
+                    ]);
+                } finally {
+                    clearTimeout(timer);
+                }
+            }
         } catch {
             // A failed prewarm only means the first draw compiles, as before.
         } finally {
             renderer.setRenderTarget?.(previousTarget);
-            clearTimeout(timer);
         }
     }
 
