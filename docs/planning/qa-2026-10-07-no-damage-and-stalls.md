@@ -36,16 +36,18 @@ Owner reports:
 - **Cause:** the corpse model was prewarmed while opaque, then made transparent. Transparency is part of the shader program, so the real program compiled on the frame after the kill.
 - **Fix:** the corpse is made transparent first, then prewarmed.
 
-## Verification (GPU headless, `playwright.gpu.config.mjs`)
+## Verification (Chrome via the repository Playwright config, `HB_PROBES=1`)
 
 - `tests/e2e/probes/shot-shader-stalls.spec.js`:
   - before: a kill added 11 programs, worst frame 400 ms;
   - after: a kill adds 3 programs, worst frame 133 ms;
   - the steady-state program count dropped from 251 to 154–186.
+  - 2026-10-08 continuation (`1eb220f0`–`bf22ba2d`): a kill adds at most one lightweight sprite program and no corpse/gib physical or basic programs. The probe now enforces that budget.
+  - This container rendered at roughly one frame per second even while idle, so its 2026-10-08 frame durations are not performance evidence; use the program delta here and the physical Deck run for latency acceptance.
 - `tests/e2e/probes/enemy-damage-sweep.spec.js`: hits land at 8 of 8 spots 40 tiles out, in Act 1 and in Act 2 (`SWEEP_ACT2=1`).
 - `tests/e2e/probes/natural-enemy-damage.spec.js`: six of the world's own enemies (cryosnail, spore vent, stalker) bite a Tank in Act 1.
 
 ## Still open
 
 - **The desktop run's Act 1 no-damage is not reproduced.** Every Act 1 probe takes hits. The most likely factor is the stalls themselves: the game barely advanced through them. Re-check in the next desktop capture on this build.
-- **The remaining 3 programs on a kill** are first-draw compiles (the corpse model and a streamed cliff variant). Prewarm them at load if they still show on Windows.
+- **One lightweight sprite program may still appear on the first kill.** The regression budget permits it but rejects the expensive physical/basic corpse and gib variants. Re-check its cost on Windows and Deck hardware; the physical Deck run remains Sprint 52's acceptance gate.

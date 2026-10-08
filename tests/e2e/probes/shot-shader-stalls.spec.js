@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { bootToOperatorMenu, startRunAndSkipIntro } from '../helpers.js';
 
 // Owner log 2026-10-07 (desktop, ANGLE/D3D11): 2-10 s single frames "at
@@ -60,6 +60,11 @@ test('which shaders compile the first time you shoot', async ({ page }) => {
         window.__firstKillProgramId = Math.min(...progs.map((p) => p.id).filter((id) => id >= 0).slice(-3));
     });
     for (const s of steps) console.log('STEP', JSON.stringify(s));
+    const killStep = steps.find((step) => step.label === 'first shot / kill');
+    // One short-lived sprite variant remains driver-dependent. Corpse and gib
+    // physical/basic programs are the expensive regression this probe guards.
+    expect(killStep.fresh.length).toBeLessThanOrEqual(1);
+    expect(killStep.fresh.every((program) => program.includes('|sprite,'))).toBe(true);
     // Who uses the programs the kill created?
     console.log('OWNERS', JSON.stringify(await page.evaluate(() => {
         const g = window.game;

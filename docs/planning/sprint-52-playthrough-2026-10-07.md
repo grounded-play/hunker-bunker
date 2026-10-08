@@ -105,10 +105,11 @@ Order: performance first (it affects everything), then the quick collision fixes
   - Adaptive resolution ignores the first ~10 s after deploy, and can step back up once frames recover.
   - Resolution remains the only thing it changes, per your standing rule.
   - Also find out what the 1.2–3.6 s deploy tasks are (likely first-use shader compiles).
-- [ ] **A7. Close the remaining first-draw shader hitch.**
+- [x] **A7. Close the remaining heavy first-draw shader hitch.**
   - The 2026-10-07 shot/kill probe found that `4a9d7fa6` removed the burst-light recompiles and the opaque-then-transparent corpse compile, reducing a kill from 11 new programs / 400 ms to 3 new programs / 133 ms.
   - Identify those last program owners on the current build, prewarm only the required variants outside active play, and turn the probe into a regression budget.
   - Do not move the hitch into deploy or keep duplicate model trees alive without a bounded cache.
+  - Completed 2026-10-08: regular corpse variants compile serially behind the deployment cover; late models compile against both EffectComposer ping-pong targets; exact gib materials compile before the 3D enemy replaces its sprite. The probe now allows at most one lightweight sprite program and rejects any physical/basic kill-time regression.
 - **Target:**
   - On the Deck, frame time doesn't grow with distance or explored area.
   - p95 ≤ 33 ms in normal play across a 25-minute run, with no gameplay stall over 250 ms.
@@ -233,6 +234,7 @@ Order: performance first (it affects everything), then the quick collision fixes
 | `ace9181f` | A5 | **Hidden chunks skip the matrix pass**, which had grown from 2.0 to 5.2 ms with loaded chunks; it is now flat. |
 | `c7dc4350` | A6 | **The deploy stall** no longer sets the resolution for the whole run: a 12 s grace period, recovery after steady high FPS, and no flapping. |
 | `4a9d7fa6` | A6, A7 | **Shot and kill recompiles.** Vent lights remain in the shader light count at zero intensity instead of toggling visibility; corpse transparency is configured before its compile prewarm. The GPU probe fell from 11 new programs / 400 ms on a kill to 3 / 133 ms. See `qa-2026-10-07-no-damage-and-stalls.md`; the last three first-draw programs remain A7. |
+| `1eb220f0`–`bf22ba2d` | A7 | **Exact first-kill variants.** A three-type retained corpse cache, composer-target-aware late-model prewarming, exact per-enemy gib material warmup, corpse fallback sprites, and both composer buffers reduce the current first-shot/kill probe from 11 new programs to one lightweight sprite program. The probe enforces that ceiling and rejects physical/basic variants. |
 | `23337070` | E | **Footprints and trails** (`src/trackField.js`): one pooled field. Prints change with the surface (dust, snow, water, blood, slime, oil); boots carry wet surfaces for about 11 steps; squadmates leave prints. Snails leave slime streaks tinted by type, bosses a wake, walkers claw prints. This replaces the per-mark meshes and the per-frame puddle scan. |
 | `d5bc4b9c` | B | **e2e:** a real grand archway in a live run: the opening is walkable, the posts are solid. |
 | `ef1b40d3`, `20257ba9`, `2179f2d6` | owner wall decision | **Biome walls shipped in Sprint 53.** Tile walls now select the existing kit PBR families by biome, retain their textures under the lighting pass, and participate in the fuller lived-in room compositions. |
