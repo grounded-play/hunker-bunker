@@ -401,6 +401,8 @@ Seamless tileable top-down orthographic texture of a wall grown over by alien hi
 
 ## C. Sleep cutscene prompts
 
+> **Refined 2026-10-08:** first frame, last frame and action for each sleep film, plus the five missing endings, three new beats and 20 lived-in assets, are in [`cutscene-and-lived-in-asset-prompts-2026-10-08.md`](cutscene-and-lived-in-asset-prompts-2026-10-08.md).
+
 **Shared direction.**
 - **Length:** 6–8 s; 16:9; 1920×1080 source; WebM plus an MP4 fallback and a poster JPG, named `public/cutscenes/sleep-<style>.webm`.
 - **Style:** the key art. Near-black frames, one warm light source, fog on the floor, wet reflections, monumental biomechanical surroundings, the operator small in frame.
