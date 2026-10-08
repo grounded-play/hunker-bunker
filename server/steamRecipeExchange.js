@@ -84,6 +84,29 @@ export function performSteamRecipeExchange(options) {
     return withPlayerLock(options.steamId, () => performLockedRecipeExchange(options));
 }
 
+function hasFailedDuplicateShardGrant(record) {
+    return record?.state === 'completed'
+        && record.body?.ok === true
+        && record.body?.duplicateBonus?.itemdefid === SHARD_ITEMDEFID
+        && record.body.duplicateBonus.ok === false
+        && Number.isSafeInteger(record.body.duplicateBonus.quantity)
+        && record.body.duplicateBonus.quantity > 0;
+}
+
+async function retryFailedDuplicateShardGrant({ steamId, record, recordKey, activeKey = null, save, grantImpl }) {
+    if (!hasFailedDuplicateShardGrant(record)) return record;
+    return grantDuplicateShards({
+        steamId,
+        journalKey: recordKey,
+        shards: record.body.duplicateBonus.quantity,
+        result: record,
+        pending: record,
+        save,
+        grantImpl,
+        activeKey
+    });
+}
+
 async function performLockedRecipeExchange({ steamId, recipeId, materials, requestId, key, appId,
     fetchImpl = fetch, read = readJournal, save = saveJournal, now = Date.now, grantImpl = grantItemToPlayer }) {
     if (typeof requestId !== 'string' || !requestId || requestId.length > 256) return failure('missing_request_id');
@@ -94,10 +117,26 @@ async function performLockedRecipeExchange({ steamId, recipeId, materials, reque
     let stuck = null;
     try {
         const existing = read(journalKey);
-        if (existing) return existing.signature === signature ? existing : failure('exchange_request_conflict', 409);
+        if (existing) {
+            if (existing.signature !== signature) return failure('exchange_request_conflict', 409);
+            return retryFailedDuplicateShardGrant({ steamId, record: existing, recordKey: journalKey, save, grantImpl });
+        }
         // The UI can generate a new nonce after a failed click. Do not let that
         // bypass an unresolved attempt and consume another batch from the stack.
-        const active = read(activeKey);
+        let active = read(activeKey);
+        // A completed cache open never rolls again. Its failed secondary shard
+        // grant is safe to sweep here because AddItem receives the original,
+        // stable request id; Steam reports a replay instead of double-granting.
+        if (hasFailedDuplicateShardGrant(active) && active.journalKey) {
+            active = await retryFailedDuplicateShardGrant({
+                steamId,
+                record: active,
+                recordKey: active.journalKey,
+                activeKey,
+                save,
+                grantImpl
+            });
+        }
         if (active?.state === 'submitted_unknown') {
             if (!(now() - (active.createdAt ?? 0) >= EXCHANGE_SETTLE_MS)) return uncertain();
             stuck = active;
@@ -149,14 +188,16 @@ async function performLockedRecipeExchange({ steamId, recipeId, materials, reque
         return uncertain();
     }
     const shards = recipeId === OPEN_CACHE_RECIPE_ID ? cacheDuplicateShardBonus(result.body.granted, loaded.inventory) : 0;
-    if (shards > 0) result = await grantDuplicateShards({ steamId, journalKey, shards, result, pending, save, grantImpl });
+    if (shards > 0) result = await grantDuplicateShards({
+        steamId, journalKey, shards, result, pending, save, grantImpl, activeKey
+    });
     return result;
 }
 
 // Runs after the exchange is journaled as completed, so a shard failure can
 // never put the opened reward under review. The AddItem request id is derived
 // from the journal key, and a replay returns the journal, so it is sent once.
-async function grantDuplicateShards({ steamId, journalKey, shards, result, pending, save, grantImpl }) {
+async function grantDuplicateShards({ steamId, journalKey, shards, result, pending, save, grantImpl, activeKey = null }) {
     let grant;
     try {
         grant = await grantImpl({ steamId, itemdefid: SHARD_ITEMDEFID, quantity: shards, isDevMode: false,
@@ -168,8 +209,10 @@ async function grantDuplicateShards({ steamId, journalKey, shards, result, pendi
     const granted = ok ? [...result.body.granted, ...(grant.granted ?? [])] : result.body.granted;
     const next = { ...result, body: { ...result.body, granted, duplicateBonus: { itemdefid: SHARD_ITEMDEFID, quantity: shards, ok } } };
     if (!ok) console.warn('[steam] cache duplicate shard grant failed', { steamId, shards });
+    const completed = { ...pending, ...next, state: 'completed' };
+    try { await save(journalKey, completed); } catch { /* the completed journal above already stands */ }
     try {
-        await save(journalKey, { ...pending, ...next, state: 'completed' });
-    } catch { /* the completed journal above already stands */ }
+        if (activeKey) await save(activeKey, { ...completed, journalKey });
+    } catch { /* the per-request record still drives a same-request retry */ }
     return next;
 }
