@@ -292,10 +292,13 @@ async function spawnComparePair(game, entry, x, z) {
         const image = texture?.image;
         if (image?.width > 1 && image?.height > 1) sprite.scale.set(height * (image.width / image.height), height, 1);
     };
-    material.map = typeof game?.loadKeyedSpriteTexture === 'function'
-        ? game.loadKeyedSpriteTexture(entry.sprite, 14, fitAspect)
-        : new THREE.TextureLoader().load(assetUrl(entry.sprite), fitAspect);
-    pair.add(sprite);
+    // A 3D-only room anchor never had 2D art: show its model alone.
+    if (entry.sprite) {
+        material.map = typeof game?.loadKeyedSpriteTexture === 'function'
+            ? game.loadKeyedSpriteTexture(entry.sprite, 14, fitAspect)
+            : new THREE.TextureLoader().load(assetUrl(entry.sprite), fitAspect);
+        pair.add(sprite);
+    }
 
     const tag = makeLabelSprite(entry.status === 'wired' ? 'WIRED' : 'REVIEW', {
         color: entry.status === 'wired' ? '#4ade80' : '#f59e0b', fontSize: 34

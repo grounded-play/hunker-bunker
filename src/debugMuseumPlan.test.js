@@ -81,8 +81,10 @@ describe('2D -> 3D review row', () => {
         const pairs = WORLD_3D_CANDIDATES.reduce((n, c) => n + c.candidates.length, 0);
         expect(first.entries).toHaveLength(pairs);
         for (const entry of first.entries) {
-            expect(entry.sprite).toMatch(/^\//);
+            // A 3D-only room anchor (no 2D art ever existed) pairs with nothing.
             expect(entry.modelType).toBeTruthy();
+            if (entry.site === 'room-anchor' && entry.sprite === null) continue;
+            expect(entry.sprite, entry.type).toMatch(/^\//);
         }
     });
 });
