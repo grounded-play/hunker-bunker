@@ -2,7 +2,7 @@ TODO tree audit - refreshed 2026-10-07 15:04 PDT
 
 Completed stale checkboxes were reconciled in their source plans before this snapshot was regenerated.
 This tree includes remaining open `[ ]` work and hardware/external `[H]` gates. Files with no remaining items are retained as audited evidence.
-Best unblocked implementation choice: G5 camp-court and safe-arrival room grammar. The pure profiles, semantic anchors and deterministic eligible-site scoring are now implemented; live world-plan selection and runtime binding remain open.
+Best unblocked implementation choice: G5 camp-court and safe-arrival room grammar. Done 2026-10-07 (a5d57dfb): the plan selects and stores both, and the camp court is bound in the solo grammar pilot. The crash-site presentation of the arrival moves to G6.
 
 └─ hunker-bunker
    ├─ economy-master-plan-2026-09-30.md
@@ -14,15 +14,15 @@ Best unblocked implementation choice: G5 camp-court and safe-arrival room gramma
    ├─ qa-2026-10-06-solo-run.md
    │  └─ line 63: [ ] **Verify on hardware:**
    ├─ sprint-49-lived-in-world-continuation.md
-   │  ├─ line 43: [ ] **Next G5 integration:** persist/select the new camp-court and safe-arrival
+   │  ├─ line 43: [x] **Next G5 integration:** persist/select the new camp-court and safe-arrival
    │  ├─ line 395: [H] **[Deck]** Paired capture, flag on vs off: presented p95 does not regress and
    │  ├─ line 470: [H] **[Art]** Art-direction sign-off on the spike before it reaches normal play.
    │  └─ line 604: [ ] Repeat the Thursday destruction-window comparison after damage integration;
    ├─ sprint-49-room-grammar-and-run-variety.md
-   │  ├─ line 198: [ ] **G5:** one inhabited camp court and one safe arrival variant using the same
+   │  ├─ line 198: [x] **G5:** one inhabited camp court and one safe arrival variant using the same
    │  ├─ line 206: [ ] Persist and select the scored site in the live expedition plan, then bind
    │  ├─ line 208: [ ] **G6:** matched entrance, center, side-route and destruction captures at
-   │  ├─ line 316: [ ] **G5 — camp/start variants.** Add eligible-site scoring and three safe start
+   │  ├─ line 316: [x] **G5 — camp/start variants.** Add eligible-site scoring and three safe start
    │  └─ line 321: [ ] **G6 — acceptance and rollout.** Run seed sweeps, co-op/persistence journeys,
    ├─ sprint-49.md
    │  ├─ line 135: [ ] **Remaining:** Record deployed two-account acceptance, including reconnect and channel isolation.

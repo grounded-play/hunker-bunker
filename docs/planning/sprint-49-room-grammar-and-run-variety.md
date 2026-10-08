@@ -195,7 +195,7 @@ combat and heavily destroyed states, including attachment cleanup and wreck acce
 - [x] **G3:** destroyed every physical module class in the slice; verified collision,
   attachment cleanup, service recovery, co-op reconciliation and saved destruction state
   across 5 evidence reports.
-- [ ] **G5:** one inhabited camp court and one safe arrival variant using the same
+- [x] **G5:** one inhabited camp court and one safe arrival variant using the same
   subzone contracts; then expand to the remaining planned starting scenarios (sheltered crash bay,
   maintenance landing, breached cargo court).
   - [x] **Pure G5 planner slice (2026-10-07):** `camp-court` and `safe-arrival`
@@ -203,8 +203,19 @@ combat and heavily destroyed states, including attachment cleanup and wreck acce
     Semantic anchors reserve party spawn, ship console, first exit, tutorial,
     hearth, services and sleep zones. Deterministic eligible-site scoring rejects
     occupied, unreachable, unsafe and quest-incompatible candidates.
-  - [ ] Persist and select the scored site in the live expedition plan, then bind
+  - [x] Persist and select the scored site in the live expedition plan, then bind
     the ship/camp runtime to the semantic anchors without changing existing saves.
+    Done 2026-10-07 (a5d57dfb):
+    - `buildWorldPlan` stores `roomGrammarSites`, and `validateWorldPlan` checks it.
+    - The selection is additive, and the plan stays at version 1 because a bump
+      broke every saved run's identity check.
+    - The camp court is bound only where the solo grammar pilot is on
+      (`getRoomGrammarChunkPlan`).
+    - The motif blocks were re-laid inside the room envelope: 0 fallbacks in
+      2,880 solver runs.
+    - **Left for G6:** showing the arrival scenario at the crash site. Chunk 0,0
+      is a fixed field landform holding the ship, console and blast door, so it
+      needs captures before it changes.
 - [ ] **G6:** matched entrance, center, side-route and destruction captures at
   gameplay zoom. Record silhouette, function, infrastructure, habitation,
   navigation and performance findings separately. Bigger alone does not pass.
@@ -313,7 +324,7 @@ Co-op peers must agree on version and plan digest before mounting geometry.
   thematic motifs (quarantine, autopsy, stasis, incubation, tracheal, spore organ),
   dynamic profile resolution, and role/theme chunk adaptation.
   [Evidence](../reports/room-grammar-area-profiles-2026-10-05.md).
-- [ ] **G5 — camp/start variants.** Add eligible-site scoring and three safe start
+- [x] **G5 — camp/start variants.** Add eligible-site scoring and three safe start
   scenarios (sheltered crash bay, maintenance landing, breached cargo court);
   preserve camp IDs, rings, tutorial order and multiplayer crash plans.
   Pure profiles, anchors and deterministic site scoring are implemented; live

@@ -40,7 +40,7 @@ plan for milestone scope, dependencies, verification gates, and definition of do
   now selects from `ALL_ROOM_BUILDS` (12 legacy + 8 cathedral room builds), making all 8
   cathedral blueprints live-selectable in chunk generation with 0 discarded generation.
   Covered by 35 passing tests in `cathedralBlueprints.test.js`.
-- [ ] **Next G5 integration:** persist/select the new camp-court and safe-arrival
+- [x] **Next G5 integration (done 2026-10-07, a5d57dfb):** persist/select the new camp-court and safe-arrival
   profiles in the expedition plan, bind runtime sites to their semantic anchors,
   then add hallway vocabulary. The pure profile/site-scoring slice is complete.
 
