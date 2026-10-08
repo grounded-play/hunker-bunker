@@ -134,6 +134,7 @@ describe('room dressing plan', () => {
         const after = flood(solid);
         for (const key of before) if (!solid.has(key)) expect(after.has(key), `cut off ${key}`).toBe(true);
         expect(dressing.items.some(({ layer }) => layer === 'vignette')).toBe(true);
+        expect(dressing.items.filter(({ practicalLight }) => practicalLight).length).toBeLessThanOrEqual(1);
         const compositions = Map.groupBy(
             dressing.items.filter(({ compositionId }) => compositionId),
             ({ compositionId }) => compositionId

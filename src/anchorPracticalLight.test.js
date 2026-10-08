@@ -9,6 +9,9 @@ describe('anchor practical light (lived-in world M4)', () => {
         expect(anchorPaletteFor('prop_votive_candle_shrine')).toBe('amber');
         expect(anchorPaletteFor('prop_biomech_sphincter_hatch_vent')).toBe('green');
         expect(anchorPaletteFor('prop_biomech_tracheal_wall_pipe')).toBe('green');
+        expect(anchorPaletteFor('life_water_still')).toBe('cyan');
+        expect(anchorPaletteFor('life_barrel_heater')).toBe('amber');
+        expect(anchorPaletteFor('life_pheromone_censer')).toBe('amber');
         expect(anchorPaletteFor('prop_bunker_supplies')).toBeNull();
         expect(anchorLightFor('prop_votive_candle_shrine')).toEqual({ palette: 'amber', ...ANCHOR_LIGHT_PALETTE.amber });
     });

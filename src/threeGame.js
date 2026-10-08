@@ -30400,6 +30400,15 @@ export class ThreeGame {
             item.collider = collider;
             group.add(collider);
             this.scatterSprites.push(collider);
+            if (item.practicalLight) {
+                const { color, intensity, distance, decay } = item.practicalLight;
+                const light = new THREE.PointLight(color, intensity, distance, decay);
+                light.position.set(item.x, 1.15, item.y);
+                light.userData.isDressingPracticalLight = true;
+                group.add(light);
+                this.registerEnvLight?.(light);
+                collider.userData.practicalLight = light;
+            }
         }
 
         registerDressingNetwork(this, items);

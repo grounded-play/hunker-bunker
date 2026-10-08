@@ -18,6 +18,7 @@ import { dressingKitFor, dressingProfileFor, ROLE_VIGNETTES, vignettesFor, WALL_
 import { DRESSING_TRIANGLES } from './data/dressingTriangles.js';
 import { roomDressingIdentity } from './roomDressingIdentity.js';
 import { computePropFacingYaw, chooseSpacedModel } from './propBehavior.js';
+import { anchorLightFor } from './anchorPracticalLight.js';
 
 export const DRESSING_LIMITS = Object.freeze({
     // Distinct types per room, per layer: the instanced renderer draws one
@@ -378,6 +379,9 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
         }
     }
 
+    const practical = items.find((item) => anchorLightFor(item.type));
+    if (practical) practical.practicalLight = anchorLightFor(practical.type);
+
     items.forEach((item, index) => {
         item.legacyId = `${room?.id ?? 'room'}:dressing:${item.layer}:${index}`;
         item.id = roomDressingIdentity(room?.id ?? 'room', item);
@@ -396,6 +400,7 @@ export function isDestructibleDressingType(type, layer) {
     if (type.startsWith('arch_') || type.startsWith('gate_') || type === 'state_column_shattered') return false;
     if (type.includes('terminal') && !type.includes('ruptured')) return false;
     return type.startsWith('prop_')
+        || type.startsWith('life_')
         || type.startsWith('bunker_junk_')
         || type.startsWith('state_barricade_')
         || type.startsWith('scatter_');
