@@ -316,6 +316,15 @@ function getCutMaterial(organic = true) {
     return cutMaterials[key];
 }
 
+export function createEnemyGibShaderWarmup() {
+    const group = new THREE.Group();
+    group.name = 'enemy-gib-shader-warmup';
+    // The geometry is deliberately tiny; only the exact retained cut material
+    // matters. Real chunk geometry is already fractured and cached separately.
+    group.add(new THREE.Mesh(new THREE.PlaneGeometry(0.01, 0.01), getCutMaterial(true)));
+    return group;
+}
+
 /**
  * Blow an enemy's 3D visual apart into physical chunks.
  *

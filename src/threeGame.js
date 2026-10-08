@@ -264,7 +264,7 @@ export const BLACK_BOX_CORPSE_VISUALS = Object.freeze({
     })
 });
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
-import { spawnEnemyGibs, spawnPropDebris } from './enemyGibs.js';
+import { createEnemyGibShaderWarmup, spawnEnemyGibs, spawnPropDebris } from './enemyGibs.js';
 import { createPropDebrisPrewarmQueue } from './propDebrisPrewarm.js';
 import { isAreaRoomDensityEnabled } from './featureFlags.js';
 import { roomPracticalLightPlacement } from './anchorPracticalLight.js';
@@ -29792,6 +29792,7 @@ export class ThreeGame {
         // composer state. Running this in parallel would race the warmup's
         // temporary render targets and compile a cache key gameplay never uses.
         await prewarmCommonCorpse3dTemplates(this);
+        await this.prewarmKillEffectShaders();
 
         onProgress?.(1);
         debugLog.info('STREAM', 'Initial chunk staging ready', {
@@ -36009,6 +36010,17 @@ export class ThreeGame {
             renderer.setRenderTarget?.(previousTarget);
             clearTimeout(timer);
         }
+    }
+
+    async prewarmKillEffectShaders() {
+        const root = createEnemyGibShaderWarmup();
+        const sparkMaterial = this.scatterMaterials?.fx_spark_burst?.clone?.();
+        if (sparkMaterial) root.add(new THREE.Sprite(sparkMaterial));
+        await this.prewarmLateModel(root);
+        // Keep the exact material instances alive. Disposing the last material
+        // reference lets Three release its program and defeats the warmup.
+        this.killEffectShaderWarmup = root;
+        return root;
     }
 
     async attachCorpse3d(corpse, modelType, enemySprite) {

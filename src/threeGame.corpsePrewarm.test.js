@@ -57,4 +57,21 @@ describe('corpse model prewarm', () => {
         expect(compileAsync).toHaveBeenCalledWith(root, game.camera, game.scene);
         expect(setRenderTarget).toHaveBeenLastCalledWith(oldTarget);
     });
+
+    it('prewarms the gib interior and textured kill-burst sprite together', async () => {
+        const game = Object.create(ThreeGame.prototype);
+        const spark = new THREE.SpriteMaterial({ map: new THREE.Texture(), transparent: true });
+        const prewarmLateModel = vi.fn(async () => {});
+        Object.assign(game, {
+            scatterMaterials: { fx_spark_burst: spark },
+            prewarmLateModel
+        });
+
+        const root = await game.prewarmKillEffectShaders();
+
+        expect(prewarmLateModel).toHaveBeenCalledWith(root);
+        expect(root.children.some((child) => child.isMesh && child.material.isMeshBasicMaterial)).toBe(true);
+        expect(root.children.some((child) => child.isSprite && child.material.map === spark.map)).toBe(true);
+        expect(game.killEffectShaderWarmup).toBe(root);
+    });
 });
