@@ -148,6 +148,26 @@ import {
 } from './wfcGenerator.js';
 import { generateArchitecturalMazeChunk } from './architecturalMaze.js';
 import { applyVerticalBridgeFeature, VERTICAL_TILE } from './verticalWfc.js';
+import {
+    ROOM_FLOOR_MATERIAL_FAMILY,
+    ROOM_FLOOR_WETNESS,
+    ROOM_MATERIAL_ATLAS_SLOT,
+    SITE_FLOOR_ATLAS_SLOT,
+    FLOOR_SPLAT_FRAGMENT_BLEND,
+    FLOOR_SPLAT_FRAGMENT_EMISSIVE,
+    FLOOR_SPLAT_FRAGMENT_METALNESS,
+    FLOOR_SPLAT_FRAGMENT_NORMAL,
+    FLOOR_SPLAT_FRAGMENT_PARS,
+    FLOOR_SPLAT_FRAGMENT_ROUGHNESS,
+    buildFloorLayerArray,
+    buildFloorSplatData,
+    buildGroundNormalArray,
+    createEmptyFloorSplatTexture,
+    createFloorSplatTexture,
+    createPlaceholderFloorLayerArray,
+    isFloorSplatEnabled,
+    scopeSpecularSofteningToBaseFloor
+} from './floorSplat.js';
 import { assignRoomThemes } from './roomThemes.js';
 import { isWallBackedPropType, planChunkRoomPopulation } from './roomPopulation.js';
 import { collectReachableCells, planChunkRoomEncounters } from './roomEncounters.js';
@@ -907,46 +927,6 @@ const ROOM_FLOOR_STYLE_COLOR = Object.freeze({
     'bio-hive': 0x3b5a37,
     camp: 0x796044,
     storage: 0x78633e
-});
-const ROOM_MATERIAL_ATLAS_SLOT = Object.freeze({
-    utility: Object.freeze({ x: 0, y: 0.5 }),
-    medical: Object.freeze({ x: 0.5, y: 0.5 }),
-    cryo: Object.freeze({ x: 0, y: 0 }),
-    bio: Object.freeze({ x: 0.5, y: 0 })
-});
-const SITE_FLOOR_ATLAS_SLOT = Object.freeze({
-    hallway: Object.freeze({ x: 0, y: 0.5 }),
-    camp: Object.freeze({ x: 0.5, y: 0.5 }),
-    hive: Object.freeze({ x: 0, y: 0 }),
-    room: Object.freeze({ x: 0.5, y: 0 })
-});
-const ROOM_FLOOR_MATERIAL_FAMILY = Object.freeze({
-    hallway: 'site:hallway',
-    'bunker-standard': 'site:room',
-    'bunker-utility': 'utility',
-    'bunker-medical': 'medical',
-    'bunker-security': 'utility',
-    'bunker-storage': 'utility',
-    'cryo-rough': 'cryo',
-    'cryo-tile': 'cryo',
-    'bio-resin': 'bio',
-    'bio-hive': 'site:hive',
-    camp: 'site:camp',
-    storage: 'utility'
-});
-const ROOM_FLOOR_WETNESS = Object.freeze({
-    hallway: 0.38,
-    'bunker-standard': 0.52,
-    'bunker-utility': 0.68,
-    'bunker-medical': 0.24,
-    'bunker-security': 0.42,
-    'bunker-storage': 0.46,
-    'cryo-rough': 0.34,
-    'cryo-tile': 0.28,
-    'bio-resin': 0.72,
-    'bio-hive': 0.78,
-    camp: 0.2,
-    storage: 0.44
 });
 const GENERATED_ROOM_PROP_PATHS = Object.freeze({
     prop_medical_bed: '/prop_medical_bed.png',
@@ -2721,7 +2701,23 @@ export class ThreeGame {
         // Set map so the ThreeJS compiler compiles mapping features into the shader
         this.floorMaterial.map = baseMetalTex;
 
-        this.floorMaterial.onBeforeCompile = (shader) => {
+        // Blended chunk floors (src/floorSplat.js): each chunk's clone of this
+        // material carries its own per-cell data in userData.floorSplat; the
+        // shared uniforms hold the surface texture array. Every clone keeps
+        // this function, so they all share one compiled program.
+        const game = this;
+        this.floorSplatShared = {
+            uFloorLayers: { value: createPlaceholderFloorLayerArray() },
+            uGroundNormals: { value: createPlaceholderFloorLayerArray(3) },
+            uFloorLayersReady: { value: 0 },
+            uFloorTime: { value: 0 },
+            uGroundEmissive: { value: [0x071521, 0x081d35, 0x09251d].map((hex) => new THREE.Color(hex)) }
+        };
+        const noFloorSplat = {
+            uSplatData: { value: createEmptyFloorSplatTexture() },
+            uSplatInfo: { value: new THREE.Vector3(0, 0, 0) }
+        };
+        this.floorMaterial.onBeforeCompile = function onFloorBeforeCompile(shader) {
             shader.uniforms.tBase = { value: baseMetalTex };
             shader.uniforms.tGrunge = { value: grungeRustTex };
             shader.uniforms.tDetail = { value: techScratchesTex };
@@ -2731,8 +2727,12 @@ export class ThreeGame {
             shader.uniforms.tBioBase = { value: bioTerrainTextures.floorBase };
             shader.uniforms.tBioGrunge = { value: bioTerrainTextures.floorGrunge };
             shader.uniforms.tBioDetail = { value: bioTerrainTextures.floorDetail };
-            shader.uniforms.uShipWorldPos = { value: this.biomeShipAnchor };
-            this.floorShaderUniforms = shader.uniforms;
+            shader.uniforms.uShipWorldPos = { value: game.biomeShipAnchor };
+            const floorSplat = this?.userData?.floorSplat ?? noFloorSplat;
+            shader.uniforms.uSplatData = floorSplat.uSplatData;
+            shader.uniforms.uSplatInfo = floorSplat.uSplatInfo;
+            Object.assign(shader.uniforms, game.floorSplatShared);
+            if (floorSplat === noFloorSplat) game.floorShaderUniforms = shader.uniforms;
 
             // Inject world position varying into vertex shader
             shader.vertexShader = shader.vertexShader.replace(
@@ -2763,6 +2763,7 @@ export class ThreeGame {
                 uniform sampler2D tBioGrunge;
                 uniform sampler2D tBioDetail;
                 uniform vec2 uShipWorldPos;
+                ${FLOOR_SPLAT_FRAGMENT_PARS}
                 float hbFloorRoughness;
                 vec3 hbFloorNormalPerturb;
                 ${shader.fragmentShader}
@@ -2813,6 +2814,7 @@ export class ThreeGame {
 
                     vec3 floorColor = mix(bunkerColor, cryoColor, cryoMix);
                     floorColor = mix(floorColor, bioColor, bioMix);
+                    ${FLOOR_SPLAT_FRAGMENT_BLEND}
                     diffuseColor *= vec4(floorColor, 1.0);
 
                     // Phase B2: Roughness variation break-up (smooth worn metal vs matte oxidation vs wet bio)
@@ -2837,17 +2839,33 @@ export class ThreeGame {
                 #include <roughnessmap_fragment>
                 #ifdef USE_MAP
                     roughnessFactor = clamp(hbFloorRoughness, 0.04, 1.0);
+                    ${FLOOR_SPLAT_FRAGMENT_ROUGHNESS}
+                #endif
+                `
+            );
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <metalnessmap_fragment>',
+                `
+                #include <metalnessmap_fragment>
+                #ifdef USE_MAP
+                    ${FLOOR_SPLAT_FRAGMENT_METALNESS}
                 #endif
                 `
             );
             softenDirectSpecularHighlights(shader);
+            shader.fragmentShader = scopeSpecularSofteningToBaseFloor(shader.fragmentShader);
 
             shader.fragmentShader = shader.fragmentShader.replace(
                 '#include <normal_fragment_maps>',
                 `
                 #include <normal_fragment_maps>
                 #ifdef USE_MAP
-                    normal = normalize(normal + hbFloorNormalPerturb);
+                    // Blended floors scale this by the base plates' share
+                    // (FLOOR_SPLAT_FRAGMENT_NORMAL); plain floors take it whole.
+                    if (uSplatInfo.z < 0.5) normal = normalize(normal + hbFloorNormalPerturb);
+                    else {
+                        ${FLOOR_SPLAT_FRAGMENT_NORMAL}
+                    }
                 #endif
                 `
             );
@@ -2863,7 +2881,11 @@ export class ThreeGame {
                     float glowIntensity = smoothstep(0.35, 0.7, colDetailEmissive.g * colDetailEmissive.b);
                     // Phase B3: Glowing vascular circuitry and bio veins
                     vec3 bioVeinColor = vec3(1.0, 0.44, 0.08) * smoothstep(0.4, 0.75, bioDetail.r * bioDetail.g) * 1.8 * bioMix;
+                    // Stencil glow and veins belong to the base plates only.
+                    glowIntensity *= hbSplatBaseWeight;
+                    bioVeinColor *= hbSplatBaseWeight;
                     totalEmissiveRadiance += vec3(0.0, 0.7, 0.85) * glowIntensity * 1.35 + bioVeinColor;
+                    ${FLOOR_SPLAT_FRAGMENT_EMISSIVE}
                 #endif
                 `
             );
@@ -4248,6 +4270,7 @@ export class ThreeGame {
             };
             this.cliffMaterials[biomeKey] = material;
         }
+        this.startFloorLayerArrayBuild();
 
         this.canyonDropMaterials = {};
         // A flat vertical plane read as a sheer, featureless wall — bow it
@@ -9989,6 +10012,84 @@ export class ThreeGame {
         }
     }
 
+    /**
+     * Packs the floor atlases and ground rocks into the blended floor's
+     * texture array once their images have loaded (src/floorSplat.js).
+     */
+    startFloorLayerArrayBuild() {
+        if (!this.floorSplatShared || typeof document === 'undefined') return;
+        const sources = () => ({
+            roomAtlas: this.roomFloorMaterialAtlas?.image,
+            siteAtlas: this.siteFloorMaterialAtlas?.image,
+            ground: {
+                active: this.cliffTextures?.[BIOME_KEYS.ACTIVE]?.image,
+                cryo: this.cliffTextures?.[BIOME_KEYS.CRYO]?.image,
+                bio: this.cliffTextures?.[BIOME_KEYS.BIO]?.image
+            },
+            normals: {
+                active: this.cliffNormalTextures?.[BIOME_KEYS.ACTIVE]?.image,
+                cryo: this.cliffNormalTextures?.[BIOME_KEYS.CRYO]?.image,
+                bio: this.cliffNormalTextures?.[BIOME_KEYS.BIO]?.image
+            }
+        });
+        const loaded = (image) => Boolean(image && (image.naturalWidth || image.width));
+        const shared = this.floorSplatShared;
+        let attempts = 0;
+        const tryBuild = () => {
+            if (this.floorSplatShared !== shared) return;
+            const images = sources();
+            if (![images.roomAtlas, images.siteAtlas, ...Object.values(images.ground), ...Object.values(images.normals)].every(loaded)) {
+                attempts += 1;
+                if (attempts < 600) setTimeout(tryBuild, 100);
+                else console.warn('[ThreeGame] Floor layer textures never loaded; floors stay unblended.');
+                return;
+            }
+            Promise.all([buildFloorLayerArray(images), buildGroundNormalArray(images)]).then(([array, normals]) => {
+                if (this.floorSplatShared !== shared) {
+                    array.dispose();
+                    normals.dispose();
+                    return;
+                }
+                const anisotropy = this.renderer?.capabilities?.getMaxAnisotropy?.() ?? 1;
+                array.anisotropy = anisotropy;
+                normals.anisotropy = anisotropy;
+                const placeholders = [shared.uFloorLayers.value, shared.uGroundNormals.value];
+                shared.uFloorLayers.value = array;
+                shared.uGroundNormals.value = normals;
+                shared.uFloorLayersReady.value = 1;
+                for (const placeholder of placeholders) placeholder?.dispose?.();
+            }).catch((error) => console.warn('[ThreeGame] Floor layer array build failed', error));
+        };
+        tryBuild();
+    }
+
+    /**
+     * One floor material per chunk: a clone of the floor material that reads
+     * this chunk's per-cell surface data. Returns null when blending is off.
+     */
+    createChunkFloorSplatMaterial(chunkX, chunkY, grid, { landform, ledgeGround = false } = {}) {
+        if (!this.floorMaterial || !this.floorSplatShared || !grid || !isFloorSplatEnabled()) return null;
+        const splat = buildFloorSplatData({
+            grid,
+            size: this.chunkSize,
+            metadata: this.wfcMetadataCache?.get(`${chunkX},${chunkY}`),
+            maze: landform === LANDFORMS.MAZE,
+            crashRoom: chunkX === 0 && chunkY === 0,
+            ledgeGround
+        });
+        const material = this.floorMaterial.clone();
+        material.onBeforeCompile = this.floorMaterial.onBeforeCompile;
+        material.userData = {
+            ...material.userData,
+            ownsFloorSplat: true,
+            floorSplat: {
+                uSplatData: { value: createFloorSplatTexture(splat) },
+                uSplatInfo: { value: new THREE.Vector3(chunkX * this.chunkSize, chunkY * this.chunkSize, this.chunkSize) }
+            }
+        };
+        return material;
+    }
+
     loadTerrainTexture(path, textureLoader, maxAnisotropy = 1, fallbackPath = null) {
         const safePath = this.resolveRelativeAssetPath(path);
         const safeFallbackPath = this.resolveRelativeAssetPath(fallbackPath);
@@ -11066,6 +11167,7 @@ export class ThreeGame {
         if (this.crashSiteHeatLight) {
             this.crashSiteHeatLight.intensity = 1.4 + crashHeatPulse * 0.24;
         }
+        if (this.floorSplatShared) this.floorSplatShared.uFloorTime.value = now * 0.001;
         for (const uniforms of this.cliffShaderUniforms ?? []) {
             if (uniforms.uCliffTime) uniforms.uCliffTime.value = now * 0.001;
         }
@@ -24147,6 +24249,10 @@ export class ThreeGame {
 
     disposeChunkGroupResources(group) {
         group?.traverse?.((child) => {
+            if (child.material?.userData?.ownsFloorSplat) {
+                child.material.userData.floorSplat?.uSplatData?.value?.dispose?.();
+                child.material.dispose();
+            }
             if (child.userData?.isVentPlumePool || child.userData?.isFloorFogPool) {
                 child.geometry?.dispose?.();
             }
@@ -31745,7 +31851,14 @@ export class ThreeGame {
         // as more solid room. Instance only structural cells so canyon is an
         // actual visible break in the floor.
         const chunkCenter = (this.chunkSize - 1) / 2;
-        if (landform === LANDFORMS.MAZE || hasExteriorCanyon) {
+        // One blended floor material per chunk replaces the room, hallway,
+        // threshold and crash-room overlays (src/floorSplat.js).
+        const instancedFloor = landform === LANDFORMS.MAZE || hasExteriorCanyon;
+        const floorSplatMaterial = this.createChunkFloorSplatMaterial(chunkX, chunkY, grid, {
+            landform,
+            ledgeGround: instancedFloor
+        });
+        if (instancedFloor) {
             const floorCells = [];
             const exteriorGroundCells = [];
             for (let localY = 0; localY < this.chunkSize; localY += 1) {
@@ -31755,7 +31868,7 @@ export class ThreeGame {
                     else if (tileChar !== EXTERIOR_CANYON_TILE && tileChar !== CLIFF_TILE) floorCells.push({ localX, localY });
                 }
             }
-            const floors = new THREE.InstancedMesh(this.floorGeometry, this.floorMaterial, floorCells.length);
+            const floors = new THREE.InstancedMesh(this.floorGeometry, floorSplatMaterial ?? this.floorMaterial, floorCells.length);
             const matrix = new THREE.Matrix4();
             const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
             floorCells.forEach((cell, index) => {
@@ -31776,13 +31889,17 @@ export class ThreeGame {
                 const biomeKey = this.getBiomeKeyForWorldPosition(chunkWorldX, chunkWorldZ);
                 const ledges = new THREE.InstancedMesh(
                     this.floorGeometry,
-                    this.cliffMaterials?.[biomeKey] ?? this.cliffMaterials?.[BIOME_KEYS.ACTIVE],
+                    floorSplatMaterial ?? this.cliffMaterials?.[biomeKey] ?? this.cliffMaterials?.[BIOME_KEYS.ACTIVE],
                     exteriorGroundCells.length
                 );
+                // On the blended floor the ledges share the floor's material,
+                // so they sit flush with it: the old 12 mm lift opened a
+                // bright crack along every corridor edge.
+                const ledgeY = floorSplatMaterial ? 0 : 0.012;
                 exteriorGroundCells.forEach((cell, index) => {
                     _scratchVector3.set(
                         chunkX * this.chunkSize + cell.localX,
-                        0.012,
+                        ledgeY,
                         chunkY * this.chunkSize + cell.localY
                     );
                     matrix.compose(_scratchVector3, rotation, _scratchScale);
@@ -31794,7 +31911,7 @@ export class ThreeGame {
                 group.add(ledges);
             }
         } else {
-            const chunkFloor = new THREE.Mesh(this.chunkFloorGeometry, this.floorMaterial);
+            const chunkFloor = new THREE.Mesh(this.chunkFloorGeometry, floorSplatMaterial ?? this.floorMaterial);
             chunkFloor.rotation.x = -Math.PI / 2;
             chunkFloor.position.set(
                 chunkX * this.chunkSize + chunkCenter,
@@ -31843,12 +31960,14 @@ export class ThreeGame {
             this.crashSiteFloorMesh = crashDeck;
             group.add(crashDeck);
         }
-        this.addRoomSurfaceOverlays(
-            group,
-            chunkX,
-            chunkY,
-            this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
-        );
+        if (!floorSplatMaterial) {
+            this.addRoomSurfaceOverlays(
+                group,
+                chunkX,
+                chunkY,
+                this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
+            );
+        }
         this.addRoomPracticalLighting(
             group,
             chunkX,
@@ -31887,15 +32006,17 @@ export class ThreeGame {
             this.wfcMetadataCache?.get(`${chunkX},${chunkY}`),
             grid
         );
-        if (chunkX === 0 && chunkY === 0) this.addCrashRoomSurfaceOverlay(group, grid);
-        if (landform === LANDFORMS.MAZE) this.addHallwaySurfaceOverlay(group, chunkX, chunkY, grid);
-        this.addDoorThresholdSurfaceOverlay(
-            group,
-            chunkX,
-            chunkY,
-            grid,
-            this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
-        );
+        if (!floorSplatMaterial) {
+            if (chunkX === 0 && chunkY === 0) this.addCrashRoomSurfaceOverlay(group, grid);
+            if (landform === LANDFORMS.MAZE) this.addHallwaySurfaceOverlay(group, chunkX, chunkY, grid);
+            this.addDoorThresholdSurfaceOverlay(
+                group,
+                chunkX,
+                chunkY,
+                grid,
+                this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
+            );
+        }
         this.addTerrainStepDressing(group, chunkX, chunkY, grid, landform);
         if (landform === LANDFORMS.MAZE) {
             this.addWfcDebugOverlay(
@@ -43014,6 +43135,9 @@ export class ThreeGame {
             Object.values(textureSet ?? {}).forEach((texture) => texture?.dispose?.());
         });
         this.floorMaterial?.dispose?.();
+        this.floorSplatShared?.uFloorLayers?.value?.dispose?.();
+        this.floorSplatShared?.uGroundNormals?.value?.dispose?.();
+        this.floorSplatShared = null;
         this.crashSiteFloorMaterial?.dispose?.();
         this.crashSiteFloorTexture?.dispose?.();
         this.crashSiteHeatMaterial?.dispose?.();

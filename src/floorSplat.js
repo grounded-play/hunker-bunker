@@ -1,0 +1,584 @@
+/**
+ * Blended chunk floors (lived-in pass 2, Part 5 of
+ * docs/planning/lived-in-world-pass-2-2026-10-09.md).
+ *
+ * The floor used to be four layers of 1 m tiles: the base floor, the
+ * exterior ground ledges, and the room, hallway and door-threshold overlays.
+ * Every surface change was a straight cell edge. A chunk now draws its floor
+ * with one material that reads a per-cell data texture (49x49 texels):
+ *
+ *   R  surface layer (FLOOR_LAYER), 255 = no floor (wall, canyon, cliff)
+ *   G  distance to the nearest wall, in cells x WALL_DISTANCE_SCALE
+ *   B  reserved for path wear
+ *   A  wetness (0-255)
+ *
+ * The shader blends the four cells around each fragment, nudged by noise and
+ * resolved by height, so boundaries read as a rough brush stroke, and darkens
+ * the floor along wall feet. Surface art comes from one texture array: the
+ * eight quadrants of the two floor atlases plus the three biome ground rocks.
+ */
+import * as THREE from 'three';
+
+export const FLOOR_LAYER = Object.freeze({
+    BASE: 0,
+    GROUND: 1,
+    UTILITY: 2,
+    MEDICAL: 3,
+    CRYO: 4,
+    BIO: 5,
+    HALLWAY: 6,
+    CAMP: 7,
+    HIVE: 8,
+    ROOM: 9,
+    NONE: 255
+});
+
+export const ROOM_MATERIAL_ATLAS_SLOT = Object.freeze({
+    utility: Object.freeze({ x: 0, y: 0.5 }),
+    medical: Object.freeze({ x: 0.5, y: 0.5 }),
+    cryo: Object.freeze({ x: 0, y: 0 }),
+    bio: Object.freeze({ x: 0.5, y: 0 })
+});
+export const SITE_FLOOR_ATLAS_SLOT = Object.freeze({
+    hallway: Object.freeze({ x: 0, y: 0.5 }),
+    camp: Object.freeze({ x: 0.5, y: 0.5 }),
+    hive: Object.freeze({ x: 0, y: 0 }),
+    room: Object.freeze({ x: 0.5, y: 0 })
+});
+export const ROOM_FLOOR_MATERIAL_FAMILY = Object.freeze({
+    hallway: 'site:hallway',
+    'bunker-standard': 'site:room',
+    'bunker-utility': 'utility',
+    'bunker-medical': 'medical',
+    'bunker-security': 'utility',
+    'bunker-storage': 'utility',
+    'cryo-rough': 'cryo',
+    'cryo-tile': 'cryo',
+    'bio-resin': 'bio',
+    'bio-hive': 'site:hive',
+    camp: 'site:camp',
+    storage: 'utility'
+});
+export const ROOM_FLOOR_WETNESS = Object.freeze({
+    hallway: 0.38,
+    'bunker-standard': 0.52,
+    'bunker-utility': 0.68,
+    'bunker-medical': 0.24,
+    'bunker-security': 0.42,
+    'bunker-storage': 0.46,
+    'cryo-rough': 0.34,
+    'cryo-tile': 0.28,
+    'bio-resin': 0.72,
+    'bio-hive': 0.78,
+    camp: 0.2,
+    storage: 0.44
+});
+const DEFAULT_ROOM_WETNESS = 0.45;
+
+const FAMILY_LAYER = Object.freeze({
+    utility: FLOOR_LAYER.UTILITY,
+    medical: FLOOR_LAYER.MEDICAL,
+    cryo: FLOOR_LAYER.CRYO,
+    bio: FLOOR_LAYER.BIO,
+    'site:hallway': FLOOR_LAYER.HALLWAY,
+    'site:camp': FLOOR_LAYER.CAMP,
+    'site:hive': FLOOR_LAYER.HIVE,
+    'site:room': FLOOR_LAYER.ROOM
+});
+
+/**
+ * Texture-array layer sources, indexed by `FLOOR_LAYER - 2` for the atlas
+ * surfaces; the three ground rocks (active, cryo, bio) follow.
+ */
+export const FLOOR_ARRAY_SOURCES = Object.freeze([
+    { atlas: 'room', slot: ROOM_MATERIAL_ATLAS_SLOT.utility },
+    { atlas: 'room', slot: ROOM_MATERIAL_ATLAS_SLOT.medical },
+    { atlas: 'room', slot: ROOM_MATERIAL_ATLAS_SLOT.cryo },
+    { atlas: 'room', slot: ROOM_MATERIAL_ATLAS_SLOT.bio },
+    { atlas: 'site', slot: SITE_FLOOR_ATLAS_SLOT.hallway },
+    { atlas: 'site', slot: SITE_FLOOR_ATLAS_SLOT.camp },
+    { atlas: 'site', slot: SITE_FLOOR_ATLAS_SLOT.hive },
+    { atlas: 'site', slot: SITE_FLOOR_ATLAS_SLOT.room },
+    { ground: 'active' },
+    { ground: 'cryo' },
+    { ground: 'bio' }
+]);
+export const FLOOR_ARRAY_GROUND_FIRST = 8;
+export const FLOOR_ARRAY_LAYER_SIZE = 1024;
+export const WALL_DISTANCE_SCALE = 32;
+
+const WALL_TILES = new Set(['#', 'W']);
+const NO_FLOOR_TILES = new Set(['#', 'W', 'X', 'C']);
+const THRESHOLD_TILES = new Set(['.', 'D', 'R', 'B', 'L']);
+
+export function floorLayerForStyle(style) {
+    return FAMILY_LAYER[ROOM_FLOOR_MATERIAL_FAMILY[style]] ?? FLOOR_LAYER.BASE;
+}
+
+export function floorWetnessForStyle(style) {
+    return ROOM_FLOOR_WETNESS[style] ?? DEFAULT_ROOM_WETNESS;
+}
+
+/** The door cells the old threshold overlay painted with the hallway surface. */
+export function collectThresholdCells(grid, size, metadata) {
+    const cells = new Map();
+    const add = (x, y) => {
+        if (!Number.isInteger(x) || !Number.isInteger(y)) return;
+        if (x < 0 || y < 0 || x >= size || y >= size) return;
+        if (!THRESHOLD_TILES.has(grid[y]?.[x])) return;
+        cells.set(`${x},${y}`, { x, y });
+    };
+    for (let y = 0; y < size; y += 1) {
+        for (let x = 0; x < size; x += 1) {
+            if (grid[y]?.[x] === 'D') add(x, y);
+        }
+    }
+    for (const room of metadata?.roomInstances ?? []) {
+        for (const cell of room.navigation?.doorLanes ?? []) add(cell.x, cell.y);
+    }
+    for (const door of metadata?.doors ?? []) {
+        add(door.localX, door.localY);
+        for (const cell of door.cells ?? []) add(cell.x, cell.y);
+    }
+    return [...cells.values()];
+}
+
+/**
+ * Per-cell floor data for one chunk, in the same precedence the overlays had:
+ * base or ground, then hallway (maze) or crash room, then room interiors,
+ * then door thresholds on top.
+ */
+export function buildFloorSplatData({
+    grid,
+    size,
+    metadata = null,
+    maze = false,
+    crashRoom = false,
+    ledgeGround = false
+} = {}) {
+    const count = size * size;
+    const layer = new Uint8Array(count).fill(FLOOR_LAYER.NONE);
+    const wetness = new Float32Array(count);
+    const set = (x, y, value, wet) => {
+        const index = y * size + x;
+        layer[index] = value;
+        wetness[index] = wet;
+    };
+    const roomCells = new Set();
+    for (const room of metadata?.roomInstances ?? []) {
+        for (const cell of room.interior ?? []) roomCells.add(`${cell.x},${cell.y}`);
+    }
+    for (let y = 0; y < size; y += 1) {
+        for (let x = 0; x < size; x += 1) {
+            const tile = grid[y]?.[x];
+            if (tile === undefined || NO_FLOOR_TILES.has(tile)) continue;
+            if (tile === 'O') {
+                set(x, y, ledgeGround ? FLOOR_LAYER.GROUND : FLOOR_LAYER.BASE, 0);
+            } else if (crashRoom && tile === '.') {
+                set(x, y, FLOOR_LAYER.ROOM, floorWetnessForStyle('bunker-standard'));
+            } else if (maze && tile === '.' && !roomCells.has(`${x},${y}`)) {
+                set(x, y, FLOOR_LAYER.HALLWAY, floorWetnessForStyle('hallway'));
+            } else {
+                set(x, y, FLOOR_LAYER.BASE, 0);
+            }
+        }
+    }
+    for (const room of metadata?.roomInstances ?? []) {
+        const style = room.themeConfig?.floorStyle ?? 'bunker-standard';
+        const value = floorLayerForStyle(style);
+        const wet = value === FLOOR_LAYER.BASE ? 0 : floorWetnessForStyle(style);
+        for (const cell of room.interior ?? []) {
+            if (cell.x < 0 || cell.y < 0 || cell.x >= size || cell.y >= size) continue;
+            set(cell.x, cell.y, value, wet);
+        }
+    }
+    for (const cell of collectThresholdCells(grid, size, metadata)) {
+        set(cell.x, cell.y, FLOOR_LAYER.HALLWAY, floorWetnessForStyle('hallway'));
+    }
+
+    // Distance to the nearest wall cell (4-neighbour steps).
+    const distance = new Float32Array(count).fill(Infinity);
+    const queue = new Int32Array(count);
+    let head = 0;
+    let tail = 0;
+    for (let y = 0; y < size; y += 1) {
+        for (let x = 0; x < size; x += 1) {
+            if (WALL_TILES.has(grid[y]?.[x])) {
+                distance[y * size + x] = 0;
+                queue[tail++] = y * size + x;
+            }
+        }
+    }
+    while (head < tail) {
+        const index = queue[head++];
+        const x = index % size;
+        const y = (index - x) / size;
+        const next = distance[index] + 1;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
+            const neighbour = ny * size + nx;
+            if (distance[neighbour] <= next) continue;
+            distance[neighbour] = next;
+            queue[tail++] = neighbour;
+        }
+    }
+
+    const data = new Uint8Array(count * 4);
+    for (let index = 0; index < count; index += 1) {
+        data[index * 4] = layer[index];
+        data[index * 4 + 1] = Math.min(255, Math.round(distance[index] * WALL_DISTANCE_SCALE));
+        data[index * 4 + 2] = 0;
+        data[index * 4 + 3] = Math.round(Math.min(1, Math.max(0, wetness[index])) * 255);
+    }
+    return { data, size, layer };
+}
+
+export function createFloorSplatTexture(splat) {
+    const texture = new THREE.DataTexture(splat.data, splat.size, splat.size, THREE.RGBAFormat, THREE.UnsignedByteType);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    return texture;
+}
+
+/** A 1x1 "no splat" stand-in so every floor material has valid bindings. */
+export function createEmptyFloorSplatTexture() {
+    return createFloorSplatTexture({ data: new Uint8Array([255, 0, 0, 0]), size: 1 });
+}
+
+function createLayerArray(data, size, depth) {
+    const texture = new THREE.DataArrayTexture(data, size, size, depth);
+    texture.format = THREE.RGBAFormat;
+    texture.type = THREE.UnsignedByteType;
+    // The ground normal maps are sRGB too: the ledge material loaded them
+    // through configureTerrainTexture, and that decode is part of how dark
+    // the rock reads. Matching it keeps the ground's look unchanged.
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.magFilter = THREE.LinearFilter;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.generateMipmaps = true;
+    texture.needsUpdate = true;
+    return texture;
+}
+
+export function createPlaceholderFloorLayerArray(depth = FLOOR_ARRAY_SOURCES.length) {
+    const texture = createLayerArray(new Uint8Array(depth * 4).fill(128), 1, depth);
+    texture.generateMipmaps = false;
+    texture.minFilter = THREE.LinearFilter;
+    return texture;
+}
+
+async function packImageLayers(layers, { size, documentRef, yieldTask }) {
+    const canvas = documentRef.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+    const data = new Uint8Array(size * size * 4 * layers.length);
+    for (let layer = 0; layer < layers.length; layer += 1) {
+        const { image, sx, sy, sw, sh } = layers[layer];
+        context.clearRect(0, 0, size, size);
+        context.drawImage(image, sx, sy, sw, sh, 0, 0, size, size);
+        data.set(context.getImageData(0, 0, size, size).data, layer * size * size * 4);
+        await yieldTask();
+    }
+    return createLayerArray(data, size, layers.length);
+}
+
+const imageSize = (image) => ({ width: image.naturalWidth || image.width, height: image.naturalHeight || image.height });
+const whole = (image) => {
+    const { width, height } = imageSize(image);
+    return { image, sx: 0, sy: 0, sw: width, sh: height };
+};
+const defaultYield = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+/**
+ * Packs the floor atlases' quadrants and the ground rocks into one texture
+ * array. One layer is drawn per task so boot never takes a long main-thread
+ * hit. Rows are stored top-down; the shader flips v to match the flipY
+ * orientation the source textures had.
+ */
+export function buildFloorLayerArray({
+    roomAtlas,
+    siteAtlas,
+    ground,
+    size = FLOOR_ARRAY_LAYER_SIZE,
+    documentRef = globalThis.document,
+    yieldTask = defaultYield
+}) {
+    const layers = FLOOR_ARRAY_SOURCES.map((source) => {
+        if (source.ground) return whole(ground[source.ground]);
+        const image = source.atlas === 'room' ? roomAtlas : siteAtlas;
+        const { width, height } = imageSize(image);
+        // Atlas slots are UV offsets with v up; image rows run down.
+        return { image, sx: source.slot.x * width, sy: (0.5 - source.slot.y) * height, sw: width / 2, sh: height / 2 };
+    });
+    return packImageLayers(layers, { size, documentRef, yieldTask });
+}
+
+/** The ground rocks' normal maps (active, cryo, bio) as a second array. */
+export function buildGroundNormalArray({
+    normals,
+    size = FLOOR_ARRAY_LAYER_SIZE,
+    documentRef = globalThis.document,
+    yieldTask = defaultYield
+}) {
+    return packImageLayers(['active', 'cryo', 'bio'].map((key) => whole(normals[key])), { size, documentRef, yieldTask });
+}
+
+export function isFloorSplatEnabled(storage = globalThis.localStorage) {
+    try {
+        return storage?.getItem?.('hb_floor_splat') !== '0';
+    } catch {
+        return true;
+    }
+}
+
+/** Declarations added to the floor fragment shader. */
+export const FLOOR_SPLAT_FRAGMENT_PARS = /* glsl */ `
+    uniform sampler2D uSplatData;
+    uniform vec3 uSplatInfo;
+    uniform sampler2DArray uFloorLayers;
+    uniform sampler2DArray uGroundNormals;
+    uniform float uFloorLayersReady;
+    uniform vec3 uGroundEmissive[3];
+    uniform float uFloorTime;
+    float hbSplatActive;
+    float hbSplatLayerA;
+    float hbSplatLayerB;
+    float hbSplatMixB;
+    float hbSplatWet;
+    float hbSplatGrime;
+    float hbSplatBaseWeight;
+    float hbSplatGroundWeight;
+    float hbSplatHash(vec2 point) {
+        return fract(sin(dot(point, vec2(127.1, 311.7))) * 43758.5453123);
+    }
+    float hbSplatNoise(vec2 point) {
+        vec2 cell = floor(point);
+        vec2 blend = fract(point);
+        blend = blend * blend * (3.0 - 2.0 * blend);
+        return mix(
+            mix(hbSplatHash(cell), hbSplatHash(cell + vec2(1.0, 0.0)), blend.x),
+            mix(hbSplatHash(cell + vec2(0.0, 1.0)), hbSplatHash(cell + vec2(1.0, 1.0)), blend.x),
+            blend.y
+        );
+    }
+    vec4 hbSplatTexel(ivec2 cell) {
+        int size = int(uSplatInfo.z);
+        if (cell.x < 0 || cell.y < 0 || cell.x >= size || cell.y >= size) return vec4(1.0, 0.0, 0.0, 0.0);
+        return texelFetch(uSplatData, cell, 0);
+    }
+    vec3 hbSplatLayerColor(float layer, vec2 worldXZ, vec3 baseColor, float cryoMix, float bioMix) {
+        if (layer < 0.5) return baseColor;
+        if (layer < 1.5) {
+            vec2 groundUv = vec2(worldXZ.x, -worldXZ.y) * 0.65;
+            vec3 ground = texture(uFloorLayers, vec3(groundUv, ${FLOOR_ARRAY_GROUND_FIRST}.0)).rgb;
+            if (cryoMix > 0.001) ground = mix(ground, texture(uFloorLayers, vec3(groundUv, ${FLOOR_ARRAY_GROUND_FIRST + 1}.0)).rgb, cryoMix);
+            if (bioMix > 0.001) ground = mix(ground, texture(uFloorLayers, vec3(groundUv, ${FLOOR_ARRAY_GROUND_FIRST + 2}.0)).rgb, bioMix);
+            // The ledge material's lift of its near-black rock art.
+            return pow(ground, vec3(0.55)) * 1.35;
+        }
+        return texture(uFloorLayers, vec3(vec2(worldXZ.x, -worldXZ.y) * 0.25, layer - 2.0)).rgb;
+    }
+    float hbSplatLayerRoughness(float layer, float baseRoughness) {
+        if (layer < 0.5) return baseRoughness;
+        if (layer < 1.5) return 1.0;
+        return 0.82;
+    }
+    float hbSplatLayerMetalness(float layer, float baseMetalness) {
+        if (layer < 0.5) return baseMetalness;
+        if (layer < 1.5) return 0.0;
+        if (abs(layer - ${FLOOR_LAYER.BIO}.0) < 0.5) return 0.02;
+        if (abs(layer - ${FLOOR_LAYER.CRYO}.0) < 0.5) return 0.12;
+        return 0.26;
+    }
+`;
+
+/**
+ * Runs inside the floor's map chunk once `floorColor`, `cryoMix` and `bioMix`
+ * exist, and rewrites `floorColor`. Roughness, metalness and emissive read
+ * the hbSplat* globals it leaves behind.
+ */
+export const FLOOR_SPLAT_FRAGMENT_BLEND = /* glsl */ `
+    hbSplatActive = 0.0;
+    hbSplatLayerA = 0.0;
+    hbSplatLayerB = 0.0;
+    hbSplatMixB = 0.0;
+    hbSplatWet = 0.0;
+    hbSplatGrime = 0.0;
+    hbSplatBaseWeight = 1.0;
+    hbSplatGroundWeight = 0.0;
+    if (uSplatInfo.z > 0.5 && uFloorLayersReady > 0.5) {
+        vec2 splatWorld = vWorldPos.xz;
+        vec2 splatLocal = splatWorld - uSplatInfo.xy;
+        // Two octaves of offset make the boundary wander like a brush edge.
+        vec2 splatJitter = vec2(hbSplatNoise(splatWorld * 1.9), hbSplatNoise(splatWorld * 1.9 + 37.0)) - 0.5;
+        splatJitter += (vec2(hbSplatNoise(splatWorld * 5.3 + 11.0), hbSplatNoise(splatWorld * 5.3 + 71.0)) - 0.5) * 0.45;
+        vec2 splatPoint = splatLocal + splatJitter * 0.55;
+        vec2 splatCell = floor(splatPoint);
+        vec2 splatFrac = splatPoint - splatCell;
+        ivec2 splatBase = ivec2(splatCell);
+        vec4 splatTexels[4];
+        splatTexels[0] = hbSplatTexel(splatBase);
+        splatTexels[1] = hbSplatTexel(splatBase + ivec2(1, 0));
+        splatTexels[2] = hbSplatTexel(splatBase + ivec2(0, 1));
+        splatTexels[3] = hbSplatTexel(splatBase + ivec2(1, 1));
+        float splatRaw[4];
+        splatRaw[0] = (1.0 - splatFrac.x) * (1.0 - splatFrac.y);
+        splatRaw[1] = splatFrac.x * (1.0 - splatFrac.y);
+        splatRaw[2] = (1.0 - splatFrac.x) * splatFrac.y;
+        splatRaw[3] = splatFrac.x * splatFrac.y;
+        float splatLayers[4];
+        float splatWeights[4];
+        float splatTotal = 0.0;
+        float splatWallDistance = 0.0;
+        float splatWetness = 0.0;
+        for (int i = 0; i < 4; i++) {
+            splatLayers[i] = floor(splatTexels[i].r * 255.0 + 0.5);
+            splatWeights[i] = splatLayers[i] > 254.5 ? 0.0 : splatRaw[i];
+            splatTotal += splatWeights[i];
+            // Wall cells count as distance 0 here, so the floor darkens
+            // toward each wall face.
+            splatWallDistance += splatRaw[i] * splatTexels[i].g * 255.0 / ${WALL_DISTANCE_SCALE}.0;
+            splatWetness += splatWeights[i] * splatTexels[i].a;
+        }
+        if (splatTotal > 0.0001) {
+            float layerA = -1.0;
+            float weightA = 0.0;
+            float layerB = -1.0;
+            float weightB = 0.0;
+            for (int i = 0; i < 4; i++) {
+                if (splatWeights[i] <= 0.0) continue;
+                float candidate = splatLayers[i];
+                if (candidate == layerA || candidate == layerB) continue;
+                float sum = 0.0;
+                for (int j = 0; j < 4; j++) {
+                    if (splatLayers[j] == candidate) sum += splatWeights[j];
+                }
+                if (sum > weightA) {
+                    layerB = layerA;
+                    weightB = weightA;
+                    layerA = candidate;
+                    weightA = sum;
+                } else if (sum > weightB) {
+                    layerB = candidate;
+                    weightB = sum;
+                }
+            }
+            vec3 colorA = hbSplatLayerColor(layerA, splatWorld, floorColor, cryoMix, bioMix);
+            vec3 splatColor = colorA;
+            float mixB = 0.0;
+            if (layerB >= 0.0 && weightB > 0.0) {
+                vec3 colorB = hbSplatLayerColor(layerB, splatWorld, floorColor, cryoMix, bioMix);
+                // Height blend: whichever surface stands higher wins first,
+                // so grit fills the cracks before it covers the plates.
+                float shareB = weightB / (weightA + weightB);
+                float heightA = clamp(dot(colorA, vec3(0.299, 0.587, 0.114)) * 2.5, 0.0, 1.0) + (1.0 - shareB);
+                float heightB = clamp(dot(colorB, vec3(0.299, 0.587, 0.114)) * 2.5, 0.0, 1.0) + shareB;
+                float ridge = max(heightA, heightB) - 0.22;
+                float keepA = max(heightA - ridge, 0.0);
+                float keepB = max(heightB - ridge, 0.0);
+                mixB = keepB / max(keepA + keepB, 0.0001);
+                splatColor = mix(colorA, colorB, mixB);
+            } else {
+                layerB = layerA;
+            }
+            hbSplatActive = 1.0;
+            hbSplatLayerA = layerA;
+            hbSplatLayerB = layerB;
+            hbSplatMixB = mixB;
+            hbSplatBaseWeight = (layerA < 0.5 ? 1.0 - mixB : 0.0) + (layerB < 0.5 ? mixB : 0.0);
+            hbSplatGroundWeight = (abs(layerA - 1.0) < 0.5 ? 1.0 - mixB : 0.0) + (abs(layerB - 1.0) < 0.5 ? mixB : 0.0);
+            float atlasWeight = max(0.0, 1.0 - hbSplatBaseWeight - hbSplatGroundWeight);
+
+            // The authored rooms' wet patches.
+            float wetBroad = hbSplatNoise(splatWorld * 0.32);
+            float wetBreakup = hbSplatNoise(splatWorld * 0.91 + vec2(17.0, 31.0));
+            float wetMask = smoothstep(0.57, 0.78, wetBroad * 0.78 + wetBreakup * 0.22);
+            hbSplatWet = wetMask * (splatWetness / splatTotal) * atlasWeight;
+            splatColor *= mix(1.0, 0.78, hbSplatWet);
+
+            // Grime packed against the foot of every wall.
+            float grime = 1.0 - smoothstep(0.5, 1.05, splatWallDistance);
+            grime *= 0.55 + 0.45 * hbSplatNoise(splatWorld * 3.1 + 5.0);
+            hbSplatGrime = grime;
+            splatColor *= 1.0 - 0.38 * grime;
+            floorColor = splatColor;
+        }
+    }
+`;
+
+export const FLOOR_SPLAT_FRAGMENT_ROUGHNESS = /* glsl */ `
+    if (hbSplatActive > 0.5) {
+        float splatRoughness = mix(
+            hbSplatLayerRoughness(hbSplatLayerA, roughnessFactor),
+            hbSplatLayerRoughness(hbSplatLayerB, roughnessFactor),
+            hbSplatMixB
+        );
+        splatRoughness = mix(splatRoughness, 0.1, hbSplatWet);
+        splatRoughness = mix(splatRoughness, 0.95, hbSplatGrime * 0.6);
+        roughnessFactor = clamp(splatRoughness, 0.04, 1.0);
+    }
+`;
+
+export const FLOOR_SPLAT_FRAGMENT_METALNESS = /* glsl */ `
+    if (hbSplatActive > 0.5) {
+        metalnessFactor = mix(
+            hbSplatLayerMetalness(hbSplatLayerA, metalnessFactor),
+            hbSplatLayerMetalness(hbSplatLayerB, metalnessFactor),
+            hbSplatMixB
+        );
+    }
+`;
+
+/** The ledge material's emissive tint and slow pulse, on ground cells only. */
+export const FLOOR_SPLAT_FRAGMENT_EMISSIVE = /* glsl */ `
+    if (hbSplatGroundWeight > 0.0) {
+        vec3 groundEmissive = mix(mix(uGroundEmissive[0], uGroundEmissive[1], cryoMix), uGroundEmissive[2], bioMix);
+        float groundPulse = 0.5 + 0.5 * sin(uFloorTime * 1.4 + vWorldPos.x * 0.37 + vWorldPos.z * 0.29 - vWorldPos.y * 0.16);
+        totalEmissiveRadiance += (groundEmissive * 0.65 + diffuseColor.rgb * groundPulse * 0.075) * hbSplatGroundWeight;
+    }
+`;
+
+/**
+ * The ledge material's normal map on ground cells: same maps, scale and
+ * tangent frame (u along +x, v along -z), blended by biome. Room and atlas
+ * surfaces also drop the base plates' luminance relief, which they never had.
+ */
+export const FLOOR_SPLAT_FRAGMENT_NORMAL = /* glsl */ `
+    hbFloorNormalPerturb *= hbSplatBaseWeight;
+    normal = normalize(normal + hbFloorNormalPerturb);
+    if (hbSplatGroundWeight > 0.0) {
+        vec2 groundNormalUv = vWorldPos.xz * 1.5;
+        vec3 groundNormal = texture(uGroundNormals, vec3(groundNormalUv, 0.0)).xyz;
+        if (cryoMix > 0.001) groundNormal = mix(groundNormal, texture(uGroundNormals, vec3(groundNormalUv, 1.0)).xyz, cryoMix);
+        if (bioMix > 0.001) groundNormal = mix(groundNormal, texture(uGroundNormals, vec3(groundNormalUv, 2.0)).xyz, bioMix);
+        groundNormal = groundNormal * 2.0 - 1.0;
+        groundNormal.xy *= 0.72;
+        mat3 groundTangentFrame = mat3(
+            normalize((viewMatrix * vec4(1.0, 0.0, 0.0, 0.0)).xyz),
+            normalize((viewMatrix * vec4(0.0, 0.0, -1.0, 0.0)).xyz),
+            normal
+        );
+        normal = normalize(mix(normal, normalize(groundTangentFrame * groundNormal), hbSplatGroundWeight));
+    }
+`;
+
+/**
+ * softenDirectSpecularHighlights is a base-plate look. Room surfaces and the
+ * ground never had it, so scale its two edits by the base plates' share.
+ */
+export function scopeSpecularSofteningToBaseFloor(fragmentShader) {
+    return fragmentShader
+        .replace(/material\.roughness = max\(material\.roughness, ([0-9.]+)\);/,
+            'material.roughness = mix(material.roughness, max(material.roughness, $1), hbSplatBaseWeight);')
+        .replace('reflectedLight.directSpecular *= 0.35;',
+            'reflectedLight.directSpecular *= mix(1.0, 0.35, hbSplatBaseWeight);');
+}

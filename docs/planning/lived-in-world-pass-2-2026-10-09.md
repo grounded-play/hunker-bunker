@@ -2,7 +2,32 @@
 
 Owner, 2026-10-09: "I feel the world still feels too empty, what can we do to make it more lived in, in terms of assets and graphics overlays ... a list of 40 new unique assets in the visual style of the last 20 but for various areas and 20 more that we will put over a chroma green to like sticker on top of textures ... some more textures and instead of hard lines where one area ends and another begins we brush and blend the edges between things, let's plan this all out first, what do games use to make the world more lived in?"
 
-This is a plan. Nothing in it is built yet.
+This is a plan. Phases 0 and 1 are built (see **Status** below); the rest is not.
+
+## Status
+
+**2026-10-09: Phases 0 and 1 are done.**
+
+- **Phase 0.** `tests/e2e/probes/floor-blend-captures.spec.js` pins the map (fixed run entropy, seed offset 424242) and captures the same floor boundaries before and after a change. It fails on any shader compile error.
+- **Phase 1.** `src/floorSplat.js` gives each chunk one floor material.
+  - **What it replaces:**
+    - the room, hallway, door-threshold and crash-room overlays;
+    - the exterior ground's separate rock material.
+  - **What it does:**
+    - Surfaces meet in a noise-broken, height-resolved brush edge.
+    - The biome blends per fragment.
+    - Grime collects along every wall foot.
+  - **What it keeps:**
+    - each surface's look: the ground keeps its normal map, including the sRGB decode that makes it dark;
+    - the rooms' wet patches;
+    - the base plates' softened specular, which applies only to their share.
+  - **Opt-out:** `localStorage.hb_floor_splat = '0'` brings back the old overlays.
+  - **Results on the pinned map:**
+    - draw calls at a room door fell from 342 to 312;
+    - compiled programs fell from 154 to 135;
+    - lifting the ground ledges flush removed a bright crack that ran along every corridor edge.
+  - **Not measured yet:** GPU cost on the Deck. The floor shader gains 4 texel fetches, up to 2 array samples and some value noise per fragment.
+
 
 - **Part 0:** why the world still reads as empty, taken from the code.
 - **Part 1:** the techniques games use to make a world feel lived in, mapped to what we already have.
@@ -29,9 +54,10 @@ The first lived-in pass (`5cab35a0`, then the 40 `life_*` props in `55015f04`) d
    - Hallways are another overlay (`addHallwaySurfaceOverlay`, y = 0.006), and only on MAZE chunks.
    - Door thresholds are a third (`addDoorThresholdSurfaceOverlay`).
    - Where two of these meet, the texture switches on a cell edge with no transition.
-3. **The biome changes at the chunk border on room floors.**
+3. **The biome changes at the chunk border on the exterior ground.**
    - The base floor shader blends bunker, cryo and bio by distance from the ship, with a 20 m `smoothstep` (`BIOME_BLEND_HALF_WIDTH = 10`).
-   - The room and hallway overlays instead pick one biome per chunk at the chunk centre (`getBiomeKeyForWorldPosition(centerX, centerZ)`). Inside the blend ring, a straight 49 m chunk edge shows.
+   - The exterior ground ledges (`O` cells) instead take one rock material per chunk, chosen at the chunk centre (`getBiomeKeyForWorldPosition(centerX, centerZ)`). Inside the blend ring, a straight 49 m chunk edge shows, and the ground can disagree with its own walls.
+   - Corrected 2026-10-09: the first draft blamed the room overlays. Their atlas textures never varied by biome.
 4. **Few floor surfaces, low resolution and visible tiling.**
    - Room floors use two 1254 px atlases of four quadrants each: eight surfaces in total.
    - Each quadrant is 627 px stretched across 4 m (about 157 px per metre) and repeats every 4 m.
