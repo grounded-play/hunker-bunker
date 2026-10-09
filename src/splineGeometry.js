@@ -189,6 +189,8 @@ export function computeParallelTransportFrames(points) {
  * @param {number} [options.vAtlasOffset=0.0]   Vertical offset in texture atlas (0.0 to 1.0)
  * @param {number} [options.vAtlasScale=0.25]   Height of texture band in atlas (e.g. 0.25 for 4 bands)
  * @param {number} [options.vRepeat=1.0]        Texture repeats per meter of tube length
+ * @param {number} [options.layer]              Texture-array layer: when set, v runs unbroken along
+ *                                              the tube and every vertex carries `splineLayer`
  * @returns {THREE.BufferGeometry|null}
  */
 export function buildPrismTubeGeometry(points, {
@@ -196,7 +198,8 @@ export function buildPrismTubeGeometry(points, {
     sides = 4,
     vAtlasOffset = 0.0,
     vAtlasScale = 0.25,
-    vRepeat = 1.0
+    vRepeat = 1.0,
+    layer = null
 } = {}) {
     if (!points || points.length < 2) return null;
 
@@ -231,8 +234,9 @@ export function buildPrismTubeGeometry(points, {
         const R = frame.normal;
         const S = frame.binormal;
         const vLength = arcLengths[i] * vRepeat;
-        // Map v into the atlas band [vAtlasOffset, vAtlasOffset + vAtlasScale]
-        const vCoord = vAtlasOffset + (vLength % 1.0) * vAtlasScale;
+        // Array layers repeat on their own, so v runs on unbroken (a wrapped
+        // atlas v smears a whole band across the wrapping quad).
+        const vCoord = Number.isFinite(layer) ? vLength : vAtlasOffset + (vLength % 1.0) * vAtlasScale;
 
         for (let j = 0; j <= sideCount; j += 1) {
             const uFrac = j / sideCount;
@@ -289,6 +293,7 @@ export function buildPrismTubeGeometry(points, {
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
     geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    if (Number.isFinite(layer)) geometry.setAttribute('splineLayer', new THREE.BufferAttribute(new Float32Array(totalVerts).fill(layer), 1));
     geometry.setIndex(new THREE.BufferAttribute(indices, 1));
 
     return geometry;
@@ -305,13 +310,15 @@ export function buildPrismTubeGeometry(points, {
  * @param {number} [options.sides=6]        Number of radial sides (default 6 for hex flange)
  * @param {number} [options.vAtlasOffset=0.75]
  * @param {number} [options.vAtlasScale=0.25]
+ * @param {number} [options.layer]           Texture-array layer (see buildPrismTubeGeometry)
  * @returns {THREE.BufferGeometry|null}
  */
 export function buildTerminationCollarGeometry(pos, normal, {
     radius = 0.035,
     sides = 6,
     vAtlasOffset = 0.75,
-    vAtlasScale = 0.25
+    vAtlasScale = 0.25,
+    layer = null
 } = {}) {
     const center = Array.isArray(pos) ? new THREE.Vector3(...pos) : pos.clone();
     const N = Array.isArray(normal) ? new THREE.Vector3(...normal).normalize() : normal.clone().normalize();
@@ -345,7 +352,7 @@ export function buildTerminationCollarGeometry(pos, normal, {
     for (let i = 0; i < ringCount; i += 1) {
         const ring = profile[i];
         const ringCenter = center.clone().addScaledVector(N, ring.d);
-        const vCoord = vAtlasOffset + ring.v * vAtlasScale;
+        const vCoord = Number.isFinite(layer) ? ring.v * 0.25 : vAtlasOffset + ring.v * vAtlasScale;
 
         for (let j = 0; j <= sideCount; j += 1) {
             const uFrac = j / sideCount;
@@ -405,8 +412,8 @@ export function buildTerminationCollarGeometry(pos, normal, {
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
     geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    if (Number.isFinite(layer)) geometry.setAttribute('splineLayer', new THREE.BufferAttribute(new Float32Array(totalVerts).fill(layer), 1));
     geometry.setIndex(new THREE.BufferAttribute(indices, 1));
 
     return geometry;
 }
-

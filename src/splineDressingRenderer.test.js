@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
-import { buildChunkSplinesMesh, disposeSplineMesh, getSplineMaterial } from './splineDressingRenderer.js';
+import { buildChunkSplinesMesh, buildSeveredSplineGeometry, disposeSplineMesh, getSplineMaterial, splineLayerFor, splineVRepeat } from './splineDressingRenderer.js';
 
 describe('splineDressingRenderer', () => {
     const dummyManifest = [
@@ -64,14 +64,25 @@ describe('splineDressingRenderer', () => {
         expect(buildChunkSplinesMesh(null)).toBeNull();
     });
 
-    it('caches and tunes materials per sector theme', () => {
-        const matBunker = getSplineMaterial('bunker');
-        const matCryo = getSplineMaterial('cryo');
-        const matBio = getSplineMaterial('bio');
+    it('draws every area from one shared layered material', () => {
+        expect(getSplineMaterial('bunker')).toBe(getSplineMaterial('cryo'));
+        expect(splineLayerFor({ layerKind: 'vein' })).toBe(1);
+        expect(splineLayerFor({ type: 'coolant_pipe' })).toBe(2);
+        expect(splineLayerFor({ type: 'rope' })).toBe(3);
+        // One texture repeat spans two circumferences of the tube.
+        expect(1 / splineVRepeat(0.05, 0)).toBeCloseTo(2 * 2 * Math.PI * 0.05);
+    });
 
-        expect(matBunker).toBe(getSplineMaterial('bunker'));
-        expect(matCryo.roughness).toBeLessThan(matBunker.roughness);
-        expect(matBio.metalness).toBeLessThan(matBunker.metalness);
+    it('severs a run into two hanging halves with free ends at the cut', () => {
+        const points = [0, 1, 2, 3, 4].map((x) => new THREE.Vector3(x, 1.5, 0));
+        const severed = buildSeveredSplineGeometry({ points, radius: 0.03, cutPoint: new THREE.Vector3(2, 1.5, 0), layerKind: 'wire' });
+        expect(severed.ends).toHaveLength(2);
+        for (const end of severed.ends) {
+            // The loose ends sag below the run and pull back from the cut.
+            expect(end.position.y).toBeLessThan(1.5);
+            expect(Math.abs(end.position.x - 2)).toBeGreaterThan(0.01);
+        }
+        expect(severed.geometry.getAttribute('splineLayer')).toBeTruthy();
     });
 
     it('safely disposes geometry on chunk unload', () => {

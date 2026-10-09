@@ -40,7 +40,7 @@ import {
 } from './propInteractions.js';
 import { resolvePropVariant } from './propVariants.js';
 import { isDynamicPropExperienceType } from './propExperience.js';
-import { getPropFxProfile, setPropFxViewportHeight } from './propFx.js';
+import { createPropFx, getPropFxProfile, setPropFxViewportHeight } from './propFx.js';
 import { UmbilicalAttacker } from './3d/umbilicalAttacker.js';
 import { handleCriticalServiceDestruction } from './criticalServiceRecovery.js';
 
@@ -313,7 +313,16 @@ import { registerDressingNetwork, applyDressingNetworkEvent } from './dressingNe
 import { isRoomDressingId, serializeBrokenRoomDressing, restoreBrokenRoomDressing } from './roomDressingPersistence.js';
 import { buildRoomDressingGroup, loadKeyedDecalTexture, hideRoomDressingItem, hideRoomDressingSupport } from './roomDressingRenderer.js';
 import { planRoomSplineDressing } from './splineRouter.js';
-import { buildChunkSplinesMesh } from './splineDressingRenderer.js';
+import {
+    buildChunkSplinesMesh,
+    buildSeveredSplineGeometry,
+    getSplineMaterial,
+    isSplineArraysEnabled,
+    loadSplineArrays,
+    setSplineArrays,
+    SPLINE_LAYERS,
+    splineLayerFor
+} from './splineDressingRenderer.js';
 import { registerTinaHit, TINA_TOTAL_HITS } from './mayorTinaCombat.js';
 import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
@@ -10153,6 +10162,19 @@ export class ThreeGame {
                 }).catch((error) => {
                     stickerLoader.dispose();
                     console.warn('[ThreeGame] Stickers failed to load', error);
+                });
+            }
+            if (isSplineArraysEnabled() && !this.splineArraysLoadStarted) {
+                this.splineArraysLoadStarted = true;
+                const splineLoader = new KTX2Loader().detectSupport(this.renderer);
+                loadSplineArrays({ loader: splineLoader, resolveUrl: (path) => this.resolveRelativeAssetPath(path) }).then((arrays) => {
+                    splineLoader.dispose();
+                    arrays.albedo.anisotropy = anisotropy;
+                    arrays.detail.anisotropy = anisotropy;
+                    setSplineArrays(arrays);
+                }).catch((error) => {
+                    splineLoader.dispose();
+                    console.warn('[ThreeGame] Spline conduit textures failed to load', error);
                 });
             }
         } else {
@@ -30949,7 +30971,9 @@ export class ThreeGame {
                 group.add(cuttableMesh);
                 const isBroken = this.brokenPropScatterKeys?.has(item.id);
                 if (isBroken) {
+                    // Cut on an earlier visit: it stays cut, hanging where it fell.
                     cuttableMesh.visible = false;
+                    this.severSplineRun(item, group);
                     return;
                 }
 
@@ -30966,7 +30990,8 @@ export class ThreeGame {
                         type: item.cuttableType ?? 'spline_wire_bunker',
                         propHp: item.hp ?? 15,
                         maxPropHp: item.hp ?? 15,
-                        splineMesh: cuttableMesh
+                        splineMesh: cuttableMesh,
+                        splineItem: item
                     };
                     group.add(collider);
                     this.scatterSprites?.push?.(collider);
@@ -30979,6 +31004,34 @@ export class ThreeGame {
             return splineMesh;
         }
         return null;
+    }
+
+    /**
+     * A cut wire, vein, pipe or vine: two halves hang from their anchors and
+     * the loose ends keep sparking, oozing, venting or shedding.
+     */
+    severSplineRun(item, group) {
+        const severed = buildSeveredSplineGeometry(item);
+        if (!severed || !group) return null;
+        const mesh = new THREE.Mesh(severed.geometry, getSplineMaterial());
+        mesh.name = `severed-spline-${item.id}`;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.userData = { isSplineDressing: true, isSeveredSpline: true, splineId: item.id };
+        group.add(mesh);
+        const kind = SPLINE_LAYERS[splineLayerFor(item)]?.kind ?? 'wire';
+        const fxType = `spline_cut_${kind === 'metal' ? 'wire' : kind}`;
+        for (const end of severed.ends) {
+            const root = new THREE.Group();
+            root.name = `${fxType}:end`;
+            root.position.copy(end.position);
+            const fx = createPropFx(root, new THREE.Group(), fxType);
+            if (!fx) continue;
+            root.userData.propFx = fx;
+            group.add(root);
+            this.registerWorld3dPropFx?.(root);
+        }
+        return mesh;
     }
 
     addRoomEnvironmentalDrips(group, chunkX, chunkY, metadata) {
@@ -36119,6 +36172,9 @@ export class ThreeGame {
         } else if (sprite.userData?.isCuttableSpline) {
             if (sprite.userData.splineMesh) {
                 sprite.userData.splineMesh.visible = false;
+                if (sprite.userData.splineItem && sprite.userData.splineMesh.parent) {
+                    this.severSplineRun(sprite.userData.splineItem, sprite.userData.splineMesh.parent);
+                }
             }
             const key = sprite.userData.splineId ?? sprite.userData.scatterKey;
             if (key) {

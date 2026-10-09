@@ -42,6 +42,10 @@ const keyOf = (x, y) => `${x},${y}`;
  * @param {Array<object>} [options.dressingItems=[]]  Room dressing items (wallDecals, wallProps, floorDecals)
  * @returns {Array<object>} Manifest of spline runs and collars
  */
+const READABLE_SCALE = 1.9;
+const MIN_SIDES = 6;
+const AREA_CONDUIT = Object.freeze({ bunker: 'wire', reward: 'wire', bio: 'vein', giger: 'vein', cryo: 'pipe', camp: 'vine' });
+
 export function planRoomSplineDressing(room, grid, { placements = [], reserved = [], dressingItems = [] } = {}) {
     if (!room || !grid || !room.interior?.length) return [];
 
@@ -429,5 +433,16 @@ export function planRoomSplineDressing(room, grid, { placements = [], reserved =
         }
     }
 
-    return splines;
+    // Every run in a room wears that area's conduit: the bunker's taped cable,
+    // the hive's sinew veins, cryo's frosted coolant pipe, the camp's vines.
+    const areaLayer = AREA_CONDUIT[themeFamily] ?? 'wire';
+    // Real-world radii (2-4 cm) draw as hairlines from the game camera, so
+    // conduits are drawn at READABLE_SCALE with enough sides to read round.
+    return splines.map((spline) => ({
+        layerKind: areaLayer,
+        ...spline,
+        radius: (spline.radius ?? 0.035) * READABLE_SCALE,
+        sides: Math.max(MIN_SIDES, spline.sides ?? 4),
+        collars: spline.collars?.map((collar) => ({ ...collar, radius: (collar.radius ?? spline.radius ?? 0.035) * READABLE_SCALE }))
+    }));
 }

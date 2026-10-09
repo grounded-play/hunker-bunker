@@ -187,9 +187,9 @@ export function classifyPublicAsset(relativePath, referenced) {
     if (/^(?:ach|door|decal|prop|scatter)_[^/]+\.(?:avif|gif|jpe?g|png|svg|webp)$/i.test(relativePath)) {
         return 'runtime-required';
     }
-    // Lived-in floor surfaces and stickers: src/floorSplat.js and
-    // src/stickerDecals.js build each name from their layer tables.
-    if (/^3d\/runtime\/(?:surfaces|decals)\/[^/]+\.(?:ktx2|webp)$/i.test(relativePath)) {
+    // Lived-in floor surfaces, stickers and spline conduits: src/floorSplat.js,
+    // src/stickerDecals.js and src/splineDressingRenderer.js build each name from their layer tables.
+    if (/^3d\/runtime\/(?:surfaces|decals|splines)\/[^/]+\.(?:ktx2|webp)$/i.test(relativePath)) {
         return 'runtime-required';
     }
     if (/(?:^|\/)(?:concepts?|references?|rejected-candidates|sources-keyed|strips|identity|keyart)(?:\/|$)/.test(lower)

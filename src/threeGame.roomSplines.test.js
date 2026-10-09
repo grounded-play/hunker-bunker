@@ -61,6 +61,7 @@ describe('ThreeGame room splines (pipes, cables, and rigging)', () => {
         game.triggerCameraShake = vi.fn();
         game.spawnGearPoofEffect = vi.fn();
         game.spawnDestructiblePropDrops = vi.fn();
+        game.registerWorld3dPropFx = vi.fn();
         game.breakScatterProp = ThreeGame.prototype.breakScatterProp;
 
         const group = new THREE.Group();
@@ -82,6 +83,10 @@ describe('ThreeGame room splines (pipes, cables, and rigging)', () => {
 
         // Mesh is severed/hidden immediately
         expect(splineMesh.visible).toBe(false);
+        // The run hangs in two halves, and both loose ends keep an effect running.
+        const severed = group.getObjectByName(`severed-spline-${targetCollider.userData.splineId}`);
+        expect(severed?.userData.isSeveredSpline).toBe(true);
+        expect(game.registerWorld3dPropFx).toHaveBeenCalledTimes(2);
         // Scatter key is recorded so it remains severed
         expect(game.brokenPropScatterKeys.has(targetCollider.userData.splineId)).toBe(true);
         // Burst VFX triggered

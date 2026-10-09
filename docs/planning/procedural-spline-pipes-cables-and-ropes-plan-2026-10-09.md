@@ -11,6 +11,29 @@
 
 ---
 
+## Status — 2026-10-09 (later)
+
+The router, geometry and renderer shipped in c225a670. This pass made the conduits real.
+
+- **Bespoke surfaces per area.**
+  - `scripts/art/build_spline_textures.py` cuts bands from the owner's sticker art:
+    - the bunker's corrugated cable with duct-tape and hazard bands, from the taped-cables sticker;
+    - the hive's braided sinew veins, from resin creep;
+    - cryo's frost-sheathed coolant pipe, from frost creep;
+    - the camp's tangled vine roots, from resin creep;
+    - the collars' gunmetal, from cracked seam.
+  - Each band is made seamless along its length and baked to PBR (albedo, normal, roughness, metalness) as BC7 KTX2 texture-array layers.
+  - One layered material draws every run in a chunk in one draw call. Each vertex carries its layer, and the texture repeats every two circumferences, so the art keeps its proportions on any radius.
+  - The router gives every run in a room its area's conduit: bunker wire, bio and cathedral vein, cryo pipe, camp vine.
+- **This replaces the atlas plan in section 6.** Array layers have no band bleeding and no wrapped-v seam, which the atlas design had.
+- **Readable size.** Runs draw at 1.9 times their real radius, with at least 6 sides. At 2–4 cm they were hairlines from the game camera.
+- **Cuttable and destructible, for real.**
+  - Shooting or cutting a run now severs it at the cut point (`buildSeveredSplineGeometry`). Two halves hang from their anchors, and each free end sags under its own weight.
+  - The ends keep looping effects: a cut wire arcs with sparks and a flickering pooled light, a vein oozes, a coolant pipe vents cold steam, and a vine sheds.
+  - A run cut on an earlier visit comes back severed.
+  - The per-type destruction effects in `propInteractions.js` (electric damage, bile, cryo burst) still fire.
+- **Verified by** `tests/e2e/probes/spline-captures.spec.js`. On the pinned map it found 51 vine, 23 vein, 5 pipe and 2 wire runs, and cut one of each.
+
 ## 1. Executive Summary & Vision
 
 The environments in *Hunker-Bunker* feature powerful individual hero props (generators, cryo manifolds, bio-incubators, wall terminals) and static clutter (crates, oil drums, wall decals). However, industrial and biomechanical spaces in the real world—and in iconic industrial horror like *Alien* and H.R. Giger’s biomechanical nightmares—derive their claustrophobic, "lived-in" atmosphere from **continuous infrastructure**:

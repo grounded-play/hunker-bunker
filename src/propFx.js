@@ -349,7 +349,35 @@ const AMBIENT_PROFILES = {
     body_empty_exosuit: poweredProfile({ sparks: true, lit: false, glowAt: [0.5, 0.7, 0.5], color: 0xff3b2f })
 };
 
-export const PROP_FX_PROFILES = Object.freeze({ ...AMBIENT_PROFILES, ...HERO_PROFILES });
+// The loose ends of a severed spline (src/splineDressingRenderer.js): a cut
+// wire keeps arcing, a vein oozes, a coolant pipe vents, a vine sheds.
+const SEVERED_SPLINE_PROFILES = {
+    spline_cut_wire: profile({
+        maxDistance: 22,
+        effects: [
+            { kind: 'sparks', position: [0, 0, 0], color: 0x9fdcff, count: 9, height: 0.28, radius: 0.05 },
+            { kind: 'glow', position: [0, 0, 0], color: 0x7cc8ff, radius: 0.07, pulse: 0.6 }
+        ],
+        light: { position: [0, 0.05, 0], color: 0x8fd0ff, intensity: 0.7, distance: 2.2, decay: 2, flicker: 0.55 }
+    }),
+    spline_cut_vein: profile({
+        maxDistance: 20,
+        effects: [
+            { kind: 'bubbles', position: [0, -0.02, 0], color: 0xa8e85a, count: 6, height: -0.35, radius: 0.03 },
+            { kind: 'glow', position: [0, 0, 0], color: 0x84cc16, radius: 0.08, pulse: 0.3 }
+        ]
+    }),
+    spline_cut_pipe: profile({
+        maxDistance: 22,
+        effects: [{ kind: 'steam', position: [0, 0, 0], color: 0xdff6ff, count: 10, height: 0.7, radius: 0.06 }]
+    }),
+    spline_cut_vine: profile({
+        maxDistance: 18,
+        effects: [{ kind: 'spores', position: [0, 0, 0], color: 0xc9a06a, count: 4, height: -0.3, radius: 0.05 }]
+    })
+};
+
+export const PROP_FX_PROFILES = Object.freeze({ ...AMBIENT_PROFILES, ...HERO_PROFILES, ...SEVERED_SPLINE_PROFILES });
 
 function hashString(value) {
     let hash = 2166136261;
