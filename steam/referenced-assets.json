@@ -3657,7 +3657,7 @@
     },
     {
       "path": "3d/runtime/new3ds/life_confessional.glb",
-      "bytes": 2198192,
+      "bytes": 2212572,
       "classification": "runtime-required"
     },
     {
@@ -3742,7 +3742,7 @@
     },
     {
       "path": "3d/runtime/new3ds/life_ice_bore_winch.glb",
-      "bytes": 2540856,
+      "bytes": 2552660,
       "classification": "runtime-required"
     },
     {
@@ -3862,7 +3862,7 @@
     },
     {
       "path": "3d/runtime/new3ds/life_ribcage_rescue_cabinet.glb",
-      "bytes": 2400440,
+      "bytes": 2409856,
       "classification": "runtime-required"
     },
     {
@@ -3887,7 +3887,7 @@
     },
     {
       "path": "3d/runtime/new3ds/life_seismic_drill.glb",
-      "bytes": 2660228,
+      "bytes": 2662232,
       "classification": "runtime-required"
     },
     {
@@ -3912,7 +3912,7 @@
     },
     {
       "path": "3d/runtime/new3ds/life_supply_drop_pod.glb",
-      "bytes": 2241676,
+      "bytes": 2248532,
       "classification": "runtime-required"
     },
     {
@@ -4768,6 +4768,56 @@
     {
       "path": "3d/runtime/secrets/teacup-roach.glb",
       "bytes": 5722292,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/splines/spline_metal_albedo.ktx2",
+      "bytes": 281524,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/splines/spline_metal_detail.ktx2",
+      "bytes": 246728,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/splines/spline_pipe_albedo.ktx2",
+      "bytes": 247507,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/splines/spline_pipe_detail.ktx2",
+      "bytes": 226842,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/splines/spline_vein_albedo.ktx2",
+      "bytes": 322944,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/splines/spline_vein_detail.ktx2",
+      "bytes": 276177,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/splines/spline_vine_albedo.ktx2",
+      "bytes": 273640,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/splines/spline_vine_detail.ktx2",
+      "bytes": 231067,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/splines/spline_wire_albedo.ktx2",
+      "bytes": 295731,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/splines/spline_wire_detail.ktx2",
+      "bytes": 242864,
       "classification": "runtime-required"
     },
     {
