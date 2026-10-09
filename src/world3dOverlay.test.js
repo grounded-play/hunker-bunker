@@ -216,4 +216,25 @@ describe('world 3D replacement catalog', () => {
         expect(syncWorld3dReplacement(source, { delta: 0.016 })).toBe(true);
         expect(root.rotation.y).toBeCloseTo(1.25);
     });
+
+    it('attaches a registered prop FX recipe to normalized world models', async () => {
+        const { prepareWorld3dModel } = await import('./world3dOverlay.js');
+        const model = new THREE.Group();
+        model.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial()));
+        const root = prepareWorld3dModel(model, 'life_water_still', { height: 1.3, yaw: 0 });
+        expect(root.userData.propFx?.type).toBe('life_water_still');
+        expect(root.getObjectByName('PropFx:life_water_still')).toBeDefined();
+    });
+
+    it('attaches an isolated presentation controller to interactive terminals', async () => {
+        const { prepareWorld3dModel } = await import('./world3dOverlay.js');
+        const model = new THREE.Group();
+        model.add(new THREE.Mesh(
+            new THREE.BoxGeometry(1, 1, 1),
+            new THREE.MeshStandardMaterial({ emissive: 0x000000 })
+        ));
+        const root = prepareWorld3dModel(model, 'prop_diagnostic_console', { height: 1.2, yaw: 0 });
+        expect(root.userData.propExperience?.type).toBe('prop_diagnostic_console');
+        expect(root.userData.propExperience?.state).toBe('ready');
+    });
 });

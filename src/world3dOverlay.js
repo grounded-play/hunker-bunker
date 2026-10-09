@@ -7,6 +7,8 @@ import { recordAssetLoad } from './assetLoadTelemetry.js';
 import { measurePerfPhase } from './perfPhases.js';
 import { useSinglePassForFlatMaterials } from './singlePassFlatMaterials.js';
 import { KIT_SCALE, applyKitMaterials } from './kitMaterials.js';
+import { createPropFx } from './propFx.js';
+import { createPropExperience } from './propExperience.js';
 
 // docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws without this registered first.
@@ -513,9 +515,13 @@ export function prepareWorld3dModel(model, type, config, animations = null) {
                 mixer.stopAllAction();
                 mixer.uncacheRoot(model);
             }
+            root.userData.propFx?.dispose?.();
+            root.userData.propExperience?.dispose?.();
         }
     };
     root.add(model);
+    root.userData.propFx = createPropFx(root, model, type);
+    root.userData.propExperience = createPropExperience(root, model, type);
     return root;
 }
 

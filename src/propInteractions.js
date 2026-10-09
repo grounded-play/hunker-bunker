@@ -51,7 +51,78 @@ function safePlaySound(sound, options) {
     }
 }
 
+function terminalInteraction(interactPrompt, response, { hp = 35, sound = 'terminal_beep' } = {}) {
+    return Object.freeze({
+        hp,
+        canInteract: true,
+        repeatable: true,
+        interactPrompt,
+        onInteract: (game) => {
+            game.showBunkerLine?.(response);
+            safePlaySound(sound, { volume: 0.48, playbackRate: 0.96 });
+            return true;
+        }
+    });
+}
+
+// Props with cut-out moving parts (src/propArticulation.js): E opens/closes
+// the doors or starts/stops the rotor; the prop experience does the motion.
+function mechanismInteraction(interactPrompt, response, { hp = 40, sound = 'vault_open' } = {}) {
+    return Object.freeze({
+        hp,
+        canInteract: true,
+        repeatable: true,
+        interactPrompt,
+        onInteract: (game) => {
+            game.showBunkerLine?.(response);
+            safePlaySound(sound, { volume: 0.5, playbackRate: 0.95 + Math.random() * 0.1 });
+            return true;
+        }
+    });
+}
+
 export const PROP_INTERACTION_SPECS = Object.freeze({
+    life_ribcage_rescue_cabinet: mechanismInteraction('[E] WORK RESCUE CABINET', 'RESCUE CABINET: RIB DOOR UNLATCHED.', { sound: 'flesh_seal' }),
+    life_confessional: mechanismInteraction('[E] WORK CONFESSIONAL DOORS', 'CONFESSIONAL: THE BOOTH DOORS SWING.', { sound: 'vault_open' }),
+    life_seismic_drill: mechanismInteraction('[E] RUN SEISMIC DRILL', 'SEISMIC DRILL: AUGER ENGAGED.', { sound: 'crane_motor' }),
+    life_ice_bore_winch: mechanismInteraction('[E] WORK ICE-BORE WINCH', 'ICE-BORE WINCH: DRUM TURNING.', { sound: 'crane_motor' }),
+
+    prop_diagnostic_console: terminalInteraction(
+        '[E] RUN DIAGNOSTIC SWEEP',
+        'DIAGNOSTIC CONSOLE: LOCAL SYSTEMS RESPONDING.'
+    ),
+    prop_fabricator_workstation: terminalInteraction(
+        '[E] WAKE FABRICATOR WORKSTATION',
+        'FABRICATOR WORKSTATION: STANDBY BUS ONLINE.'
+    ),
+    life_tactile_console: terminalInteraction(
+        '[E] ACCESS TACTILE CONSOLE',
+        'TACTILE CONSOLE: MEMBRANE INPUT ACKNOWLEDGED.'
+    ),
+    life_route_map_table: terminalInteraction(
+        '[E] REVIEW ROUTE MAP',
+        'ROUTE TABLE: LOCAL PATH DATA ILLUMINATED.'
+    ),
+    life_assimilated_desk: terminalInteraction(
+        '[E] ACCESS ASSIMILATED WORKSTATION',
+        'ASSIMILATED WORKSTATION: ORGANIC BUS ANSWERS.'
+    ),
+    life_cochlear_intercom: terminalInteraction(
+        '[E] KEY COCHLEAR INTERCOM',
+        'INTERCOM: CARRIER TONE RECEIVED.',
+        { hp: 25 }
+    ),
+    prop_camp_meridian_radio: terminalInteraction(
+        '[E] TUNE MERIDIAN RADIO',
+        'MERIDIAN RADIO: SIGNAL LOCKED.',
+        { hp: 30 }
+    ),
+    prop_terminal_ruptured: terminalInteraction(
+        '[E] QUERY RUPTURED TERMINAL',
+        'TERMINAL FAULT: MEMORY BUS CORRUPTED.',
+        { hp: 20 }
+    ),
+
     // 01. Oxygen Cascade Rack: Rupture gives massive O2 + cryo knockback; Interact bleeds O2 safely
     prop_oxygen_bottle_cascade_rack: {
         hp: 35,
@@ -572,9 +643,10 @@ export function interactWithCustomProp(game, nearestInfo) {
     }
     const success = nearestInfo.spec.onInteract(game, nearestInfo.sprite);
     if (success) {
+        game.acknowledgePropExperience?.(nearestInfo.sprite);
         nearestInfo.sprite.userData.hasBeenInteracted = true;
         const key = nearestInfo.sprite.userData.scatterKey;
-        if (!nearestInfo.sprite.userData.interactionSpec && key) {
+        if (!nearestInfo.spec.repeatable && !nearestInfo.sprite.userData.interactionSpec && key) {
             (game.spentPropScatterKeys ??= new Set()).add(key);
         }
     }
@@ -588,5 +660,7 @@ export function interactWithCustomProp(game, nearestInfo) {
 function isSpentProp(game, sprite) {
     const data = sprite.userData ?? {};
     if (data.interactionSpec) return false;
+    const spec = PROP_INTERACTION_SPECS[interactionSpecKeyFor(data)];
+    if (spec?.repeatable) return false;
     return Boolean(data.hasBeenInteracted || (data.scatterKey && game.spentPropScatterKeys?.has(data.scatterKey)));
 }

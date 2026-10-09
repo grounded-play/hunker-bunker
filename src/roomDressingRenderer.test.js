@@ -63,4 +63,44 @@ describe('instanced dressing lifecycle', () => {
             expect(matrix.getMaxScaleOnAxis() === 0).toBe(Boolean(item.supportCell));
         }
     });
+
+    it('keeps an interactive terminal as a standalone per-instance root', async () => {
+        const collider = new THREE.Object3D();
+        const item = {
+            layer: 'vignette', type: 'prop_diagnostic_console', x: 3, y: 4,
+            yaw: 0.7, scale: 1.1, dynamicExperience: true, collider
+        };
+        const root = new THREE.Group();
+        root.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
+        const onDynamicModel = vi.fn();
+        const group = await buildRoomDressingGroup([item], {
+            loadModel: async () => root,
+            loadDecalTexture: () => null,
+            onDynamicModel
+        });
+
+        expect(group.children).toEqual([root]);
+        expect(group.children.some((child) => child.isInstancedMesh)).toBe(false);
+        expect(root.position.toArray()).toEqual([3, 0, 4]);
+        expect(root.rotation.y).toBeCloseTo(0.7);
+        expect(root.scale.toArray()).toEqual([1.1, 1.1, 1.1]);
+        expect(collider.userData.world3dRoot).toBe(root);
+        expect(onDynamicModel).toHaveBeenCalledWith(root, item);
+    });
+
+    it('keeps a budget-approved ambient FX prop out of static instancing', async () => {
+        const item = {
+            layer: 'vignette', type: 'life_water_still', x: 1, y: 2,
+            dynamicExperience: true
+        };
+        const root = new THREE.Group();
+        root.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
+        const group = await buildRoomDressingGroup([item], {
+            loadModel: async () => root,
+            loadDecalTexture: () => null
+        });
+
+        expect(group.children).toEqual([root]);
+        expect(item.dynamicRoot).toBe(root);
+    });
 });

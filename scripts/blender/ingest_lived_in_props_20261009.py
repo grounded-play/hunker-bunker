@@ -14,8 +14,12 @@ Usage:
 
 import os
 import subprocess
+import sys
 
 import bpy
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from articulation_recipes import apply_articulation  # noqa: E402
 
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -102,7 +106,8 @@ def optimize_scene(target_triangles):
 def meshopt_compress(path):
     """EXT_meshopt_compression on the geometry; textures pass through as-is."""
     packed = path + '.packed.glb'
-    subprocess.run(['npx', '-y', 'gltfpack@1.3', '-i', path, '-o', packed, '-c', '-kn', '-km', '-noq'],
+    # -kn/-ke keep the HB_* part nodes and their motion extras.
+    subprocess.run(['npx', '-y', 'gltfpack@1.3', '-i', path, '-o', packed, '-c', '-kn', '-km', '-ke', '-noq'],
                    check=True, cwd=ROOT, stdout=subprocess.DEVNULL)
     os.replace(packed, path)
 
@@ -122,6 +127,8 @@ def main():
         bpy.ops.wm.read_factory_settings(use_empty=True)
         bpy.ops.import_scene.gltf(filepath=source)
         before, after = optimize_scene(target)
+        for line in apply_articulation(name):
+            print(f'[lived-in 2] {name} {line}')
         bpy.ops.export_scene.gltf(
             filepath=destination,
             export_format='GLB',
@@ -131,6 +138,7 @@ def main():
             export_lights=False,
             export_image_format='WEBP',
             export_image_quality=WEBP_QUALITY,
+            export_extras=True,
         )
         meshopt_compress(destination)
         source_mb = os.path.getsize(source) / 1_000_000

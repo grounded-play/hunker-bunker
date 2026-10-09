@@ -220,6 +220,23 @@ describe('propInteractions', () => {
         interactWithCustomProp(game, findNearestInteractableProp(game, 2.5));
         expect(findNearestInteractableProp(game, 2.5)?.sprite).toBe(wreck);
     });
+
+    it('keeps terminal interactions repeatable and acknowledges their 3D presentation', () => {
+        const consoleProp = {
+            position: { x: 1, z: 0 },
+            userData: { type: 'prop_diagnostic_console', scatterKey: 'diagnostic:1' }
+        };
+        const game = {
+            player: { position: { x: 0, z: 0 } },
+            scatterSprites: [consoleProp],
+            showBunkerLine: vi.fn(),
+            acknowledgePropExperience: vi.fn()
+        };
+        expect(interactWithCustomProp(game, findNearestInteractableProp(game))).toBe(true);
+        expect(game.acknowledgePropExperience).toHaveBeenCalledWith(consoleProp);
+        expect(findNearestInteractableProp(game)?.sprite).toBe(consoleProp);
+        expect(game.spentPropScatterKeys?.size ?? 0).toBe(0);
+    });
     // A 2D placeholder type that draws as a catalogue model (a Meridian repair
     // rig drawn as the tool cart) behaves like the model the player sees.
     it('a prop drawn as a catalogue model takes that model\'s interaction', () => {

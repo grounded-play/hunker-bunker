@@ -38,6 +38,8 @@ import {
     PROP_INTERACTION_SPECS
 } from './propInteractions.js';
 import { resolvePropVariant } from './propVariants.js';
+import { isDynamicPropExperienceType } from './propExperience.js';
+import { getPropFxProfile } from './propFx.js';
 import { UmbilicalAttacker } from './3d/umbilicalAttacker.js';
 import { handleCriticalServiceDestruction } from './criticalServiceRecovery.js';
 
@@ -7663,6 +7665,8 @@ export class ThreeGame {
                 source.userData.world3dDesiredVisible = ownerVisible;
                 source.userData.replacedBy3d = true;
                 source.visible = false;
+                this.registerWorld3dPropFx?.(root);
+                this.registerWorld3dPropExperience?.(root);
                 syncWorld3dReplacement(source);
                 this.measureArchPillars(source, root);
                 this.propDebrisPrewarm?.enqueue(source, root);
@@ -7760,6 +7764,8 @@ export class ThreeGame {
         }
         sprite.material.visible = false;
         if (state.type !== modelType) {
+            this.disposeWorld3dPropFx?.(state.root);
+            this.disposeWorld3dPropExperience?.(state.root);
             state.root?.removeFromParent();
             state.root = null;
             state.type = modelType;
@@ -7779,6 +7785,8 @@ export class ThreeGame {
                     sprite.parent.add(root);
                     state.root = root;
                     root.visible = sprite.visible;
+                    this.registerWorld3dPropFx?.(root);
+                    this.registerWorld3dPropExperience?.(root);
                 })
                 .catch((error) => {
                     if (token !== state.token) return;
@@ -12837,6 +12845,9 @@ export class ThreeGame {
     interactWithConsole() {
         if (!this.isGameplayInputActive()) return false;
         if (!this.activeInteractiveConsole) return false;
+        this.acknowledgePropExperience?.(
+            this.activeInteractiveConsole.consoleSprite ?? this.activeInteractiveConsole
+        );
         if (this.isAct2Active()) {
             this.handleAct2ConsoleInteract();
             return true;
@@ -12848,6 +12859,9 @@ export class ThreeGame {
     interactWithO2Generator() {
         if (!this.isGameplayInputActive()) return false;
         if (!this.activeInteractiveO2Generator) return false;
+        this.acknowledgePropExperience?.(
+            this.activeInteractiveO2Generator.o2ModuleSprite ?? this.activeInteractiveO2Generator
+        );
         this.openO2GeneratorModal(this.activeInteractiveO2Generator);
         return true;
     }
@@ -17212,10 +17226,64 @@ export class ThreeGame {
         }
     }
 
+    registerWorld3dPropFx(root) {
+        const propFx = root?.userData?.propFx;
+        if (!propFx || propFx.registered) return propFx ?? null;
+        propFx.registered = true;
+        this.world3dPropEffects ??= new Set();
+        this.world3dPropEffects.add(propFx);
+        // Sources start hidden so late-model shader warmup cannot change the
+        // scene's light count. registerEnvLight snapshots the enabled state,
+        // then hides them permanently and feeds the fixed eight-light pool.
+        for (const light of propFx.lightSources ?? []) {
+            light.visible = true;
+            this.registerEnvLight?.(light);
+        }
+        return propFx;
+    }
+
+    registerWorld3dPropExperience(root) {
+        const experience = root?.userData?.propExperience;
+        if (!experience || experience.registered) return experience ?? null;
+        experience.registered = true;
+        this.world3dPropExperiences ??= new Set();
+        this.world3dPropExperiences.add(experience);
+        return experience;
+    }
+
+    acknowledgePropExperience(target) {
+        const root = target?.userData?.world3dRoot
+            ?? target?.userData?.dynamicRoot
+            ?? target?.dynamicRoot
+            ?? (target?.userData?.propExperience ? target : null);
+        return root?.userData?.propExperience?.acknowledge?.() ?? false;
+    }
+
+    disposeWorld3dPropFx(root) {
+        const propFx = root?.userData?.propFx;
+        if (!propFx) return;
+        this.world3dPropEffects?.delete(propFx);
+        propFx.dispose?.();
+        root.userData.propFx = null;
+    }
+
+    disposeWorld3dPropExperience(root) {
+        const experience = root?.userData?.propExperience;
+        if (!experience) return;
+        this.world3dPropExperiences?.delete(experience);
+        experience.dispose?.();
+        root.userData.propExperience = null;
+    }
+
     updateWorld3dMixers(delta) {
-        if (!this.world3dMixers?.size) return;
-        for (const mixer of this.world3dMixers) {
+        for (const mixer of this.world3dMixers ?? []) {
             mixer.update(delta);
+        }
+        for (const propFx of this.world3dPropEffects ?? []) {
+            propFx.update?.(delta, this.camera?.position);
+        }
+        for (const experience of this.world3dPropExperiences ?? []) {
+            experience.update?.(delta);
         }
     }
 
@@ -24353,6 +24421,12 @@ export class ThreeGame {
 
     disposeChunkGroupResources(group) {
         group?.traverse?.((child) => {
+            if (child.userData?.propFx) this.disposeWorld3dPropFx(child);
+            if (child.userData?.propExperience) this.disposeWorld3dPropExperience(child);
+            if (child.userData?.mixer) {
+                this.world3dMixers?.delete(child.userData.mixer);
+                child.userData.dispose?.();
+            }
             if (child.userData?.isStickerDecals) child.geometry?.dispose?.();
             if (child.material?.userData?.ownsFloorSplat) {
                 child.material.userData.floorSplat?.uSplatData?.value?.dispose?.();
@@ -30607,8 +30681,36 @@ export class ThreeGame {
             y: item.y + originZ,
             supportCell: item.supportCell ? { x: item.supportCell.x + originX, y: item.supportCell.y + originZ } : null
         }));
+        // Stateful props (moving parts, terminals) leave the instanced batch,
+        // under the same per-chunk cap room dressing uses.
+        let dynamicCount = 0;
         for (const item of worldItems) {
-            if (!item.blocking) continue;
+            item.dynamicExperience = isDynamicPropExperienceType(item.type) && dynamicCount < 12;
+            if (item.dynamicExperience) dynamicCount += 1;
+        }
+        for (const item of worldItems) {
+            const interactive = Boolean(PROP_INTERACTION_SPECS[item.type]);
+            if (!item.blocking && !interactive) continue;
+            if (!item.blocking) {
+                const target = new THREE.Object3D();
+                target.position.set(item.x, 0, item.y);
+                target.userData = {
+                    isScatter: true,
+                    isSolidProp: false,
+                    isRoomDressingCollider: true,
+                    collisionRadius: 0.4,
+                    type: item.type,
+                    groupType: 'dressing',
+                    scatterKey: item.id,
+                    dressingId: item.id,
+                    dressingStableId: item.stableId,
+                    dressingItem: item
+                };
+                item.collider = target;
+                group.add(target);
+                this.scatterSprites.push(target);
+                continue;
+            }
             for (const cell of item.cells ?? [{ x: item.x - originX, y: item.y - originZ }]) {
                 const collider = new THREE.Object3D();
                 collider.position.set(cell.x + originX, 0, cell.y + originZ);
@@ -30624,6 +30726,7 @@ export class ThreeGame {
                     dressingStableId: item.stableId,
                     dressingItem: item
                 };
+                item.collider ??= collider;
                 group.add(collider);
                 this.scatterSprites.push(collider);
             }
@@ -30651,6 +30754,11 @@ export class ThreeGame {
                 }
                 dressing.name = 'lived-in-world-dressing';
                 group.add(dressing);
+                for (const item of worldItems) {
+                    if (!item.dynamicRoot) continue;
+                    this.registerWorld3dPropFx?.(item.dynamicRoot);
+                    this.registerWorld3dPropExperience?.(item.dynamicRoot);
+                }
             }).catch((error) => console.warn('[ThreeGame] Lived-in dressing failed to build', error));
         }
 
@@ -30697,9 +30805,22 @@ export class ThreeGame {
         }
         if (items.length === 0) return null;
 
+        // Individually stateful props leave the static InstancedMesh path so a
+        // single console can acknowledge E without changing every shared copy.
+        // The hard cap preserves the chunk draw/update budget; excess copies
+        // remain static but visually identical.
+        let dynamicExperienceCount = 0;
+        for (const item of items) {
+            const eligible = isDynamicPropExperienceType(item.type)
+                || Boolean(getPropFxProfile(item.type));
+            item.dynamicExperience = eligible && dynamicExperienceCount < 12;
+            if (item.dynamicExperience) dynamicExperienceCount += 1;
+        }
+
         for (const item of items) {
             if (item.isDestroyed) continue;
-            if (!item.blocking && !item.destructible) continue;
+            // Interactive props need a target for E even when they don't block.
+            if (!item.blocking && !item.destructible && !PROP_INTERACTION_SPECS[item.type]) continue;
             const collider = new THREE.Object3D();
             collider.position.set(item.x, 0, item.y);
             collider.userData = {
@@ -30745,6 +30866,15 @@ export class ThreeGame {
                 return;
             }
             group.add(dressing);
+            for (const item of items) {
+                if (!item.dynamicRoot) continue;
+                this.registerWorld3dPropFx?.(item.dynamicRoot);
+                this.registerWorld3dPropExperience?.(item.dynamicRoot);
+                if (item.dynamicRoot.userData?.mixer) {
+                    this.world3dMixers ??= new Set();
+                    this.world3dMixers.add(item.dynamicRoot.userData.mixer);
+                }
+            }
             for (const item of items) {
                 const supportBroken = item.supportCell && this.destroyedWallKeys?.has(this.getWallKey?.(item.supportCell.x, item.supportCell.y));
                 if (this.brokenPropScatterKeys?.has(item.id) || supportBroken) {
