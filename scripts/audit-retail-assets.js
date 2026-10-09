@@ -89,7 +89,12 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // KTX2 floor surfaces (~95 MB) and 84 BC7 KTX2 sticker layers (~74 MB), all
 // of them new art; the committed payload was already 3104 MiB, and measured
 // with this batch it is 3357 MiB. KTX2 joins .glb in asarUnpack.
-const PUBLIC_BUDGET = 3400 * 1024 * 1024;
+// Raised 3400->3600 MiB when every GLB's textures moved to KTX2 (Basis UASTC,
+// scripts/art/convert_glb_textures_ktx2.py) plus the spline conduit layers:
+// GPU texture memory in a pinned run fell 3737 -> 1717 MiB, and disk grew
+// only ~150 MB because UASTC beats the old PNGs (lossy WebP sources grew).
+// Measured payload 3520 MiB.
+const PUBLIC_BUDGET = 3600 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus

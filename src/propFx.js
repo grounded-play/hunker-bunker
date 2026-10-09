@@ -621,7 +621,7 @@ function createGlow(spec, pulseTargets) {
         map: getHaloTexture(),
         color: spec.color ?? 0xffffff,
         transparent: true,
-        opacity: 0.7,
+        opacity: 0.5,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
         toneMapped: false

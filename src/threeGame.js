@@ -48,6 +48,7 @@ import * as THREE from 'three';
 import { fitWallShaderSamplerBudget, INSTANCED_WORLD_POSITION } from './wallShaderCompatibility.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
+import { registerKtx2Renderer } from './gltfLoaderFactory.js';
 import { createFrameProfiler, summarizeFrameBreakdown } from './frameProfiler.js';
 import { createFrameIntervalTracker } from './frameIntervalTracker.js';
 import { createGpuFrameTimer } from './gpuFrameTimer.js';
@@ -2475,6 +2476,8 @@ export class ThreeGame {
             // adapter. Steam Deck has one GPU, so the hint is harmless there.
             powerPreference: 'high-performance'
         });
+        // Model textures ship as KTX2: configure the shared loader for this GPU.
+        registerKtx2Renderer(this.renderer);
         this.gpuFrameTimer = createGpuFrameTimer(this.renderer.getContext());
         this.gpuMemoryTracker = createGpuMemoryTracker();
         this._hardwareCapabilities = null;

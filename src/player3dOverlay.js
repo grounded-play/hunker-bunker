@@ -1,8 +1,6 @@
 import { loadGltfTemplate } from './gltfTemplateCache.js';
 import { createOperatorPatch } from './operatorPatch.js';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { assetUrl } from './assetUrl.js';
 import { recordAssetLoad } from './assetLoadTelemetry.js';
@@ -17,7 +15,7 @@ import { createOperatorEquipmentController } from './operatorEquipmentSockets.js
 // EXT_meshopt_compression; GLTFLoader throws "setMeshoptDecoder must be called
 // before loading compressed files" without this registered first.
 function createGltfLoader() {
-    return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    return createSharedGltfLoader();
 }
 
 const MODEL_URL = '/3d/scouting-scout/Scout.game.glb';
@@ -40,6 +38,7 @@ const MODEL_URL = '/3d/scouting-scout/Scout.game.glb';
 
 import { COMMUNITY_GESTURES } from './data/communitySkins.js';
 import { WEAPON_URL, WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES, CHASSIS_SKIN_MODELS } from './data/operatorModelUrls.js';
+import { createGltfLoader as createSharedGltfLoader } from './gltfLoaderFactory.js';
 
 // Defined in data/operatorModelUrls.js (Three.js-free); re-exported for existing importers.
 export { WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES, CHASSIS_SKIN_MODELS };

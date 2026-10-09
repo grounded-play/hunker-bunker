@@ -1,6 +1,4 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { assetUrl } from './assetUrl.js';
 import { recordAssetLoad } from './assetLoadTelemetry.js';
@@ -9,11 +7,12 @@ import { useSinglePassForFlatMaterials } from './singlePassFlatMaterials.js';
 import { KIT_SCALE, applyKitMaterials } from './kitMaterials.js';
 import { createPropFx } from './propFx.js';
 import { createPropExperience } from './propExperience.js';
+import { createGltfLoader as createSharedGltfLoader } from './gltfLoaderFactory.js';
 
 // docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws without this registered first.
 function createGltfLoader() {
-    return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    return createSharedGltfLoader();
 }
 
 export const WORLD_3D_MODELS = Object.freeze({

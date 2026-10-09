@@ -1,14 +1,13 @@
 import { loadGltfTemplate } from './gltfTemplateCache.js';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { prewarmEnemyGibs } from './enemyGibs.js';
+import { createGltfLoader as createSharedGltfLoader } from './gltfLoaderFactory.js';
 
 // docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws without this registered first.
 function createGltfLoader() {
-    return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    return createSharedGltfLoader();
 }
 
 const MODEL_CONFIG = {

@@ -1,6 +1,4 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { createWorld3dModel } from './world3dOverlay.js';
 import { assetUrl } from './assetUrl.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
@@ -16,6 +14,7 @@ import {
 } from './debugAssetCatalogs.js';
 export { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y, SHOWROOM_CHUNK_KEY } from './debugWorldLayout.js';
 import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugWorldLayout.js';
+import { createGltfLoader } from './gltfLoaderFactory.js';
 
 // Categorized catalog for exhibition
 export const SHOWROOM_CATEGORIES = Object.freeze({
@@ -498,7 +497,7 @@ function createLabelSprite(text, { color = '#00f0ff', bgColor = 'rgba(10, 16, 26
 let _showroomGltfLoader = null;
 const _showroomGltfCache = new Map();
 function getShowroomGltfLoader() {
-    if (!_showroomGltfLoader) _showroomGltfLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    if (!_showroomGltfLoader) _showroomGltfLoader = createGltfLoader();
     return _showroomGltfLoader;
 }
 async function loadShowroomGlb(url) {

@@ -1,16 +1,15 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { assetUrl } from './assetUrl.js';
 import { getEquipmentDefinition } from './data/equipmentDefinitions.js';
 import { MOD_GLB_MAP } from './data/operatorModelUrls.js';
+import { createGltfLoader } from './gltfLoaderFactory.js';
 
 // Defined in data/operatorModelUrls.js (Three.js-free); re-exported for existing importers.
 export { MOD_GLB_MAP };
 
 
 const cache = new Map();
-const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+const loader = createGltfLoader();
 const SOCKETS = Object.freeze({
     chest_center: { bones: ['Spine2', 'Spine1', 'Spine'], offset: [0, 0.04, 0.20], rotation: [0, 0, 0], size: .35 },
     back_upper: { bones: ['Spine2', 'Spine1', 'Spine'], offset: [0, 0.05, -0.22], rotation: [0, Math.PI, 0], size: .32 },

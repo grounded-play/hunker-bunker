@@ -2,17 +2,20 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// Every runtime GLTFLoader in the game registers the meshopt decoder and
-// nothing else (no DRACOLoader, no KTX2Loader, and no decoder files ship in
-// public/). A GLB that requires another compression extension cannot load:
-// the 80 kit pieces were Draco-compressed and failed with "No DRACOLoader
-// instance provided" everywhere, found by the museum QA pass 2026-10-01.
+// Every runtime GLTFLoader comes from src/gltfLoaderFactory.js, which
+// registers the meshopt decoder and KTX2 (Basis) textures, and nothing else
+// (no DRACOLoader). A GLB that requires another compression extension cannot
+// load: the 80 kit pieces were Draco-compressed and failed with "No
+// DRACOLoader instance provided" everywhere, found by the museum QA pass
+// 2026-10-01. Model textures are KTX2 since 2026-10-09
+// (scripts/art/convert_glb_textures_ktx2.py).
 const SUPPORTED_REQUIRED = new Set([
     'EXT_meshopt_compression',
     'KHR_mesh_quantization',
     'KHR_texture_transform',
     'KHR_materials_emissive_strength',
-    'EXT_texture_webp'
+    'EXT_texture_webp',
+    'KHR_texture_basisu'
 ]);
 
 function glbs(dir) {
@@ -40,5 +43,16 @@ describe('GLB decoder support', () => {
             if (missing.length) unsupported.push(`${path.relative('public', file)}: ${missing.join(', ')}`);
         }
         expect(unsupported).toEqual([]);
+    });
+
+    it('builds every loader through the factory that registers KTX2, and ships the transcoder', () => {
+        const direct = [];
+        for (const file of fs.readdirSync('src')) {
+            if (!file.endsWith('.js') || file.includes('.test.') || file === 'gltfLoaderFactory.js') continue;
+            if (/new GLTFLoader\(/.test(fs.readFileSync(path.join('src', file), 'utf8'))) direct.push(file);
+        }
+        expect(direct).toEqual([]);
+        expect(fs.existsSync('public/basis/basis_transcoder.js')).toBe(true);
+        expect(fs.existsSync('public/basis/basis_transcoder.wasm')).toBe(true);
     });
 });

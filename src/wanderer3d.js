@@ -1,11 +1,10 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { assetUrl } from './assetUrl.js';
+import { createGltfLoader as createSharedGltfLoader } from './gltfLoaderFactory.js';
 
 function createGltfLoader() {
-    return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    return createSharedGltfLoader();
 }
 
 const templateCache = new Map();

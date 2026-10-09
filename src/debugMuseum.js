@@ -5,9 +5,7 @@
  * `window.__DEBUG__.openMuseum()`, matching the existing dev-tool console pattern.
  */
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { assetUrl } from './assetUrl.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
 import { createDebugWallDecalDisplay } from './debugShowroom.js';
@@ -20,6 +18,7 @@ import { AudioManager } from './audio.js';
 import { getVoiceScriptRows, getVoiceAudioManifest } from './data/voiceBanks.js';
 import { SONG_INTERSTITIALS } from './songInterstitials.js';
 import { GAMEPLAY_FOLEY_MANIFEST, GAMEPLAY_ENEMY_MANIFEST } from './data/gameSoundsets.js';
+import { createGltfLoader } from './gltfLoaderFactory.js';
 
 // Far outside any real generated terrain so the museum never overlaps a real run's chunks.
 const MUSEUM_ORIGIN = Object.freeze({ x: 9000, z: 9000 });
@@ -42,7 +41,7 @@ async function forEachLimited(items, limit, fn) {
 const CATEGORY_GAP = 3.5;
 
 function createMuseumGltfLoader() {
-    return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    return createGltfLoader();
 }
 
 function makeLabelSprite(text, { color = '#e2e8f0', fontSize = 48 } = {}) {

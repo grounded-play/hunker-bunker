@@ -1367,77 +1367,77 @@
   "assets": [
     {
       "path": "3d/GG.1.glb",
-      "bytes": 4229388,
+      "bytes": 3025268,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/basic-pile.glb",
-      "bytes": 5649512,
+      "bytes": 3898668,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/broken-engineer-ship.glb",
-      "bytes": 5249124,
+      "bytes": 3782748,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/broken-scout-ship.glb",
-      "bytes": 5001976,
+      "bytes": 3597088,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/broken-tank-ship.glb",
-      "bytes": 5051904,
+      "bytes": 3711892,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/eng_abg.glb",
-      "bytes": 20852544,
+      "bytes": 15775808,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/eng_afro_crash.glb",
-      "bytes": 15979540,
+      "bytes": 12019040,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/eng_apex.glb",
-      "bytes": 15912516,
+      "bytes": 13260772,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/eng_corpo_shadow_runner.glb",
-      "bytes": 13090748,
+      "bytes": 10747484,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/eng_foxhole_shadow.glb",
-      "bytes": 18023792,
+      "bytes": 14167104,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/eng_neural_weaver.glb",
-      "bytes": 21071408,
+      "bytes": 15689136,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/eng_sil.glb",
-      "bytes": 18462876,
+      "bytes": 14849192,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/eng_soft_manic_architect_gf.glb",
-      "bytes": 23253796,
+      "bytes": 16536908,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/eng_swim.glb",
-      "bytes": 19618696,
+      "bytes": 15223924,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/eng_toxic_apex_chrysalis.glb",
-      "bytes": 19295992,
+      "bytes": 15548620,
       "classification": "runtime-required"
     },
     {
@@ -1447,122 +1447,122 @@
     },
     {
       "path": "3d/runtime/community/scount_sil.glb",
-      "bytes": 17313112,
+      "bytes": 14254988,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/scout_abg.glb",
-      "bytes": 21494776,
+      "bytes": 15720008,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/scout_apex.glb",
-      "bytes": 15690116,
+      "bytes": 12928008,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/scout_corpo_shadow_runner.glb",
-      "bytes": 9260924,
+      "bytes": 11052916,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/scout_foxhole_shadow.glb",
-      "bytes": 16979956,
+      "bytes": 12971484,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/scout_soft_manic_infiltrator_gf.glb",
-      "bytes": 20757108,
+      "bytes": 14513056,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/scout_swim.glb",
-      "bytes": 17539104,
+      "bytes": 13862048,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/scout_tank_crash.glb",
-      "bytes": 16280876,
+      "bytes": 13074468,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/scout_toxic_apex_chrysalis.glb",
-      "bytes": 19560012,
+      "bytes": 15431796,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/scout_xeno_stalker.glb",
-      "bytes": 12647060,
+      "bytes": 14162624,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/tank_abg.glb",
-      "bytes": 18249912,
+      "bytes": 13599380,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/tank_afro_crash.glb",
-      "bytes": 17350060,
+      "bytes": 13102468,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/tank_apex.glb",
-      "bytes": 15531088,
+      "bytes": 12315124,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/tank_brood_matron.glb",
-      "bytes": 25863484,
+      "bytes": 17262580,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/tank_chubby_protective_hacker_gf.glb",
-      "bytes": 23394404,
+      "bytes": 16040336,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/tank_corpo_shadow_runner.glb",
-      "bytes": 9065188,
+      "bytes": 7764264,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/tank_foxhole_shadow.glb",
-      "bytes": 16735556,
+      "bytes": 13256012,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/tank_sil.glb",
-      "bytes": 17921092,
+      "bytes": 14567536,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/tank_swim.glb",
-      "bytes": 24656952,
+      "bytes": 16872668,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/community/tank_toxic_apex_chrysalis.glb",
-      "bytes": 17709980,
+      "bytes": 14826080,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/console.glb",
-      "bytes": 4318964,
+      "bytes": 3339624,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/cryo-snail-boss.glb",
-      "bytes": 4770452,
+      "bytes": 3334272,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/cyber-snail-boss.glb",
-      "bytes": 6008404,
+      "bytes": 4212484,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/cyber-snail.glb",
-      "bytes": 6233064,
+      "bytes": 4268396,
       "classification": "runtime-required"
     },
     {
@@ -2407,22 +2407,22 @@
     },
     {
       "path": "3d/runtime/engineer-rigged-gestures.glb",
-      "bytes": 6357192,
+      "bytes": 4964320,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/frozen-tanker.glb",
-      "bytes": 5093968,
+      "bytes": 3548028,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/fusion-generator.glb",
-      "bytes": 4516144,
+      "bytes": 3370800,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/hull-matrix.glb",
-      "bytes": 4910584,
+      "bytes": 3589476,
       "classification": "runtime-required"
     },
     {
@@ -3212,1562 +3212,1562 @@
     },
     {
       "path": "3d/runtime/new3ds/alien_proto_crawler.glb",
-      "bytes": 5088468,
+      "bytes": 3777152,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/alien_proto_crawler_A.glb",
-      "bytes": 4582244,
+      "bytes": 3270908,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/alien_proto_spitter.glb",
-      "bytes": 4904884,
+      "bytes": 3488788,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_bulkhead_frame.glb",
-      "bytes": 937180,
+      "bytes": 2596380,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_deco_archway_grand_01.glb",
-      "bytes": 610768,
+      "bytes": 1897832,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_deco_archway_grand_02.glb",
-      "bytes": 1312864,
+      "bytes": 3063028,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_deco_archway_grand_03.glb",
-      "bytes": 609880,
+      "bytes": 1521480,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_deco_archway_grand_04.glb",
-      "bytes": 674656,
+      "bytes": 2063832,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_niche_shrine.glb",
-      "bytes": 678192,
+      "bytes": 1963080,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_pillar_buttress_01.glb",
-      "bytes": 872992,
+      "bytes": 2422408,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_pillar_buttress_02.glb",
-      "bytes": 943880,
+      "bytes": 2727864,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_pillar_buttress_03.glb",
-      "bytes": 806756,
+      "bytes": 2481992,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_pillar_buttress_04.glb",
-      "bytes": 1153348,
+      "bytes": 3021660,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_rib_ceiling_vault_01.glb",
-      "bytes": 776576,
+      "bytes": 2349960,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_rib_ceiling_vault_02.glb",
-      "bytes": 799192,
+      "bytes": 2195032,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_rib_ceiling_vault_03.glb",
-      "bytes": 756376,
+      "bytes": 2301256,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/arch_window_stained.glb",
-      "bytes": 1044396,
+      "bytes": 3026812,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/body_empty_exosuit.glb",
-      "bytes": 161972,
+      "bytes": 313732,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/body_frozen_human.glb",
-      "bytes": 162296,
+      "bytes": 285020,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/boss_corrupted_briggs.glb",
-      "bytes": 2813748,
+      "bytes": 2816804,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/boss_corrupted_engineer.glb",
-      "bytes": 4123196,
+      "bytes": 11564396,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/boss_corrupted_martha.glb",
-      "bytes": 2490056,
+      "bytes": 2578884,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/boss_cryosnail_dead.glb",
-      "bytes": 1304656,
+      "bytes": 2848004,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/boss_cybersnail_dead.glb",
-      "bytes": 1154888,
+      "bytes": 2546712,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/bunker_junk_rare.glb",
-      "bytes": 4363348,
+      "bytes": 3328216,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/bunker_junk_uncommon.glb",
-      "bytes": 3795812,
+      "bytes": 3007156,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/charm_amber_bio_flask.glb",
-      "bytes": 1456720,
+      "bytes": 1295896,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/charm_bunker404.glb",
-      "bytes": 145780,
+      "bytes": 266616,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/charm_dark_matter.glb",
-      "bytes": 1360896,
+      "bytes": 1107556,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/charm_deep_frost.glb",
-      "bytes": 137816,
+      "bytes": 265456,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/charm_geodetic_compass.glb",
-      "bytes": 1722644,
+      "bytes": 3789048,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/charm_glitched_ram.glb",
-      "bytes": 1874048,
+      "bytes": 4009676,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/charm_golden_sub_bunker_key.glb",
-      "bytes": 2204124,
+      "bytes": 4854232,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/charm_grand_marshal.glb",
-      "bytes": 162452,
+      "bytes": 341024,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/charm_hive_chitin.glb",
-      "bytes": 141200,
+      "bytes": 269304,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/charm_horizon_corporate.glb",
-      "bytes": 128476,
+      "bytes": 252232,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/charm_mini_cryo_core.glb",
-      "bytes": 1992748,
+      "bytes": 3995408,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/charm_mini_drone_bobble.glb",
-      "bytes": 1898800,
+      "bytes": 3668604,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/charm_rust_bone.glb",
-      "bytes": 135196,
+      "bytes": 282600,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/charm_spent_50cal.glb",
-      "bytes": 1637676,
+      "bytes": 3709720,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/charm_sporesnail_pearl.glb",
-      "bytes": 1708652,
+      "bytes": 3604880,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/charm_trench_whistle.glb",
-      "bytes": 1685548,
+      "bytes": 3924872,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_bio_synthesizer_medic.glb",
-      "bytes": 20085460,
+      "bytes": 14493532,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_bunker404.glb",
-      "bytes": 564432,
+      "bytes": 712836,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_cryo_vanguard_scout.glb",
-      "bytes": 3405192,
+      "bytes": 2780528,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_cyber_spectre_infiltrator.glb",
-      "bytes": 16163084,
+      "bytes": 13472128,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_deep_frost.glb",
-      "bytes": 550604,
+      "bytes": 693704,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_dreadnought_exo_juggernaut.glb",
-      "bytes": 17377968,
+      "bytes": 12875164,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_engineer_chen_undying.glb",
-      "bytes": 22201000,
+      "bytes": 16465816,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_engineer_exodus_vanguard.glb",
-      "bytes": 20023616,
+      "bytes": 15087816,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_grand_marshal.glb",
-      "bytes": 545888,
+      "bytes": 701816,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_hive_chitin.glb",
-      "bytes": 515468,
+      "bytes": 650808,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_hive_lord_symbiote.glb",
-      "bytes": 17337132,
+      "bytes": 12687876,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_horizon_corporate.glb",
-      "bytes": 539760,
+      "bytes": 703136,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_rust_bone.glb",
-      "bytes": 594936,
+      "bytes": 737608,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_scout_cartographer.glb",
-      "bytes": 18956524,
+      "bytes": 14933116,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_scout_ghost_runner.glb",
-      "bytes": 3317280,
+      "bytes": 8511356,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_scout_ghost_runner_male.glb",
-      "bytes": 3450060,
+      "bytes": 10085572,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_scout_pioneer_courier.glb",
-      "bytes": 18516476,
+      "bytes": 14198552,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_subterran_drill_engineer.glb",
-      "bytes": 3734008,
+      "bytes": 3111776,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_tank_colossus_hive.glb",
-      "bytes": 18853208,
+      "bytes": 15326364,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_tank_gentle_titan.glb",
-      "bytes": 20286712,
+      "bytes": 15666940,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_tank_old_iron.glb",
-      "bytes": 23918628,
+      "bytes": 16793200,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_trench_warden_heavy.glb",
-      "bytes": 3250012,
+      "bytes": 2748340,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/chassis_void_commando_recon.glb",
-      "bytes": 6367676,
+      "bytes": 5471428,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/cryosnail.glb",
-      "bytes": 1634308,
+      "bytes": 3360104,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/cryosnail_dead.glb",
-      "bytes": 1286424,
+      "bytes": 3064160,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/cybersnail_dead.glb",
-      "bytes": 4283480,
+      "bytes": 2858288,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/fixture_clock_dead.glb",
-      "bytes": 901992,
+      "bytes": 2852168,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/fixture_sconce_vine.glb",
-      "bytes": 331296,
+      "bytes": 684212,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/fungal_spore_vent.glb",
-      "bytes": 3284196,
+      "bytes": 2637524,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/gun_engineer_tesla_lock.glb",
-      "bytes": 689520,
+      "bytes": 2649628,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/gun_scout_talon_c.glb",
-      "bytes": 608620,
+      "bytes": 1616300,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/gun_scout_vector9_talon.glb",
-      "bytes": 548956,
+      "bytes": 2254632,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/gun_tank_siege_breaker50.glb",
-      "bytes": 614468,
+      "bytes": 2441116,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_acoustic_ear_horn.glb",
-      "bytes": 863428,
+      "bytes": 2990192,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_ammo_ovipositor.glb",
-      "bytes": 820232,
+      "bytes": 2737512,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_assimilated_desk.glb",
-      "bytes": 1831716,
+      "bytes": 6333844,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_barber_chair.glb",
-      "bytes": 2367032,
+      "bytes": 7810132,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_barrel_heater.glb",
-      "bytes": 720552,
+      "bytes": 2419936,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_bone_clamp_rig.glb",
-      "bytes": 777184,
+      "bytes": 2703096,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_brood_comb.glb",
-      "bytes": 1972328,
+      "bytes": 6737672,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_bunk_stack.glb",
-      "bytes": 869488,
+      "bytes": 2755664,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_card_table.glb",
-      "bytes": 880288,
+      "bytes": 2914792,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_cargo_pallet_netted.glb",
-      "bytes": 794392,
+      "bytes": 2397516,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_ceiling_collapse.glb",
-      "bytes": 2749876,
+      "bytes": 9179968,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_checkpoint_post.glb",
-      "bytes": 2157136,
+      "bytes": 7048148,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_cochlear_intercom.glb",
-      "bytes": 2082700,
+      "bytes": 7984236,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_colossal_limb.glb",
-      "bytes": 2156064,
+      "bytes": 8918496,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_confessional.glb",
-      "bytes": 2212572,
+      "bytes": 8336228,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_covered_stretcher.glb",
-      "bytes": 721992,
+      "bytes": 2603596,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_devotion_tree.glb",
-      "bytes": 2461336,
+      "bytes": 7743640,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_drip_buckets.glb",
-      "bytes": 1755456,
+      "bytes": 6762384,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_dropped_kit_pile.glb",
-      "bytes": 2216884,
+      "bytes": 8804696,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_exosuit_teardown.glb",
-      "bytes": 2446292,
+      "bytes": 9290356,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_fallen_comm_dish.glb",
-      "bytes": 2295324,
+      "bytes": 8057016,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_flood_lamp_tripod.glb",
-      "bytes": 770924,
+      "bytes": 2468348,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_footlocker_open.glb",
-      "bytes": 885168,
+      "bytes": 2997744,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_fuel_probe_boom.glb",
-      "bytes": 765244,
+      "bytes": 2409536,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_fungal_cable_bundle.glb",
-      "bytes": 1823456,
+      "bytes": 7469004,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_fuse_bypass_panel.glb",
-      "bytes": 2040732,
+      "bytes": 8075696,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_galley_hotplate.glb",
-      "bytes": 990228,
+      "bytes": 3105056,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_guide_rope_stakes.glb",
-      "bytes": 3164792,
+      "bytes": 11136720,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_hive_dew_funnel.glb",
-      "bytes": 1533836,
+      "bytes": 6572136,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_hive_feeding_bladder.glb",
-      "bytes": 1491552,
+      "bytes": 5581280,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_hydro_rack.glb",
-      "bytes": 707348,
+      "bytes": 2114988,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_ice_bore_winch.glb",
-      "bytes": 2552660,
+      "bytes": 8420560,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_ice_core_rack.glb",
-      "bytes": 1990244,
+      "bytes": 7718124,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_ice_sled.glb",
-      "bytes": 2602868,
+      "bytes": 9869232,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_infusion_cradle.glb",
-      "bytes": 770320,
+      "bytes": 2401240,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_janitor_cart.glb",
-      "bytes": 1503680,
+      "bytes": 5247396,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_latrine_stall.glb",
-      "bytes": 700684,
+      "bytes": 2523524,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_lookout_perch.glb",
-      "bytes": 2686128,
+      "bytes": 10131944,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_lung_filter_bellows.glb",
-      "bytes": 818816,
+      "bytes": 2779752,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_mask_rack.glb",
-      "bytes": 686236,
+      "bytes": 2059920,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_meat_smoking_rack.glb",
-      "bytes": 1997384,
+      "bytes": 7159832,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_memorial_board.glb",
-      "bytes": 1051116,
+      "bytes": 3254424,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_mess_table.glb",
-      "bytes": 961700,
+      "bytes": 2976780,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_ore_cart.glb",
-      "bytes": 2266976,
+      "bytes": 7587764,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_parka_hooks.glb",
-      "bytes": 2459908,
+      "bytes": 9284768,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_pelvic_autopsy_trough.glb",
-      "bytes": 1087804,
+      "bytes": 3246972,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_peristaltic_feeder.glb",
-      "bytes": 550736,
+      "bytes": 2058604,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_pew_segment.glb",
-      "bytes": 2963464,
+      "bytes": 10811296,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_pheromone_censer.glb",
-      "bytes": 939448,
+      "bytes": 3041748,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_pipe_hammock.glb",
-      "bytes": 841072,
+      "bytes": 2901252,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_pipeline_trestle.glb",
-      "bytes": 3015968,
+      "bytes": 11041568,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_pneumatic_tube_node.glb",
-      "bytes": 1979688,
+      "bytes": 8243792,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_pod_seat_row.glb",
-      "bytes": 2382820,
+      "bytes": 9388760,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_reloading_bench.glb",
-      "bytes": 911448,
+      "bytes": 2791872,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_resin_extractor.glb",
-      "bytes": 1130332,
+      "bytes": 3324632,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_ribcage_rescue_cabinet.glb",
-      "bytes": 2409856,
+      "bytes": 9305128,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_rope_anchor_post.glb",
-      "bytes": 2365116,
+      "bytes": 8357932,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_route_map_table.glb",
-      "bytes": 1063416,
+      "bytes": 3184192,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_sanitation_bidet.glb",
-      "bytes": 662264,
+      "bytes": 2334596,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_scent_distiller.glb",
-      "bytes": 721984,
+      "bytes": 2615068,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_seismic_drill.glb",
-      "bytes": 2662232,
+      "bytes": 9531584,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_sensory_chair.glb",
-      "bytes": 995460,
+      "bytes": 3090464,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_sleep_sleeve.glb",
-      "bytes": 805340,
+      "bytes": 2278536,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_stigmata_inscriber.glb",
-      "bytes": 869308,
+      "bytes": 2809524,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_suit_drying_rack.glb",
-      "bytes": 921228,
+      "bytes": 2978732,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_supply_drop_pod.glb",
-      "bytes": 2248532,
+      "bytes": 8134432,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_tactile_console.glb",
-      "bytes": 916952,
+      "bytes": 2938692,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_tally_bulkhead.glb",
-      "bytes": 875672,
+      "bytes": 3089744,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_tarp_leanto.glb",
-      "bytes": 2150108,
+      "bytes": 8450136,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_training_dummy.glb",
-      "bytes": 1790224,
+      "bytes": 7949912,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_umbilical_tether.glb",
-      "bytes": 804224,
+      "bytes": 2746848,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_vending_machine.glb",
-      "bytes": 778140,
+      "bytes": 2535788,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_vertebral_restraint_rack.glb",
-      "bytes": 749420,
+      "bytes": 2554820,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_vulval_drain_sump.glb",
-      "bytes": 740208,
+      "bytes": 2709892,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_warmth_hearth.glb",
-      "bytes": 703616,
+      "bytes": 2603828,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_water_still.glb",
-      "bytes": 664388,
+      "bytes": 2072044,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_wayfinding_totem.glb",
-      "bytes": 2054636,
+      "bytes": 8677032,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_welding_station.glb",
-      "bytes": 2490112,
+      "bytes": 9740332,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/life_wind_mast.glb",
-      "bytes": 1992696,
+      "bytes": 7434864,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/mod_archivist_lens.glb",
-      "bytes": 159244,
+      "bytes": 287296,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/mod_ballast_plating.glb",
-      "bytes": 154544,
+      "bytes": 308096,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/mod_bio_hazard_filter.glb",
-      "bytes": 1862176,
+      "bytes": 1650012,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/mod_cryo_capacitor.glb",
-      "bytes": 1975092,
+      "bytes": 4074440,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/mod_deep_anchor.glb",
-      "bytes": 162752,
+      "bytes": 321568,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/mod_duplicate_refiner.glb",
-      "bytes": 134296,
+      "bytes": 247644,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/mod_echo_location_transceiver.glb",
-      "bytes": 4479148,
+      "bytes": 3163892,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/mod_kinetic_impact.glb",
-      "bytes": 1527784,
+      "bytes": 1337304,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/mod_magnetic_scavenger.glb",
-      "bytes": 2129132,
+      "bytes": 4290136,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/mod_pressure_seal.glb",
-      "bytes": 191012,
+      "bytes": 318120,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/mod_queens_bane.glb",
-      "bytes": 682672,
+      "bytes": 1898876,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/mod_scrap_furnace.glb",
-      "bytes": 170468,
+      "bytes": 313864,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/mod_shard_conduit.glb",
-      "bytes": 191468,
+      "bytes": 336648,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/mod_symbiotic_adrenaline_pump.glb",
-      "bytes": 5478680,
+      "bytes": 3573164,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/mod_thermal_heat_exchanger.glb",
-      "bytes": 2073092,
+      "bytes": 1733508,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/mod_zero_point_flux.glb",
-      "bytes": 2099316,
+      "bytes": 4432472,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/mycelium_stalker.glb",
-      "bytes": 3900252,
+      "bytes": 9690812,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/npc_alien_rhun.glb",
-      "bytes": 5570392,
+      "bytes": 4031168,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/npc_alien_vey.glb",
-      "bytes": 5192952,
+      "bytes": 3952996,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/npc_aria.glb",
-      "bytes": 3211072,
+      "bytes": 2685640,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/npc_civilian_miner.glb",
-      "bytes": 5345724,
+      "bytes": 3889176,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/npc_civilian_researcher.glb",
-      "bytes": 4917168,
+      "bytes": 3707668,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/npc_kaelen.glb",
-      "bytes": 3105052,
+      "bytes": 3115492,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/npc_martha.glb",
-      "bytes": 3271444,
+      "bytes": 2743240,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/npc_nahl.glb",
-      "bytes": 3425744,
+      "bytes": 2811652,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/npc_queen.glb",
-      "bytes": 3244112,
+      "bytes": 2679400,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/npc_val.glb",
-      "bytes": 3728960,
+      "bytes": 3092096,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_ammo_crate_stack.glb",
-      "bytes": 1130116,
+      "bytes": 802236,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_autopsy_dissection_slab.glb",
-      "bytes": 4259692,
+      "bytes": 2987188,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_base_defense_turret.glb",
-      "bytes": 5036496,
+      "bytes": 3607520,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_biomech_arch.glb",
-      "bytes": 5251704,
+      "bytes": 3822704,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_biomech_flesh_locker.glb",
-      "bytes": 1159876,
+      "bytes": 776976,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_biomech_incubator.glb",
-      "bytes": 1183816,
+      "bytes": 793648,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_biomech_neural_synapse.glb",
-      "bytes": 1252528,
+      "bytes": 839564,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_biomech_respirator.glb",
-      "bytes": 1127516,
+      "bytes": 759348,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_biomech_sphincter_hatch_vent.glb",
-      "bytes": 4577336,
+      "bytes": 3099684,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_biomech_sphincter_trap.glb",
-      "bytes": 1419608,
+      "bytes": 938340,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_biomech_spore_umbilical_cable.glb",
-      "bytes": 4210780,
+      "bytes": 3014040,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_biomech_spore_umbilical_cable_rigged.glb",
-      "bytes": 4625708,
+      "bytes": 3429016,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_biomech_tracheal_wall_pipe.glb",
-      "bytes": 3565760,
+      "bytes": 2425836,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_biomech_triage_cradle.glb",
-      "bytes": 1242384,
+      "bytes": 840688,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_body_empty_exosuit.glb",
-      "bytes": 4818916,
+      "bytes": 3325908,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_body_human_frozen.glb",
-      "bytes": 4380640,
+      "bytes": 3163648,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_broken_specimen_tank.glb",
-      "bytes": 4623472,
+      "bytes": 3419568,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_bunker_supplies.glb",
-      "bytes": 4932964,
+      "bytes": 3585120,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_camp_bedrolls.glb",
-      "bytes": 1208804,
+      "bytes": 3022940,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_camp_cookfire.glb",
-      "bytes": 1292412,
+      "bytes": 7972772,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_camp_cookfire_lit.glb",
-      "bytes": 1240988,
+      "bytes": 3120276,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_camp_cot.glb",
-      "bytes": 159716,
+      "bytes": 298128,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_camp_crate.glb",
-      "bytes": 140772,
+      "bytes": 285052,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_camp_laundry.glb",
-      "bytes": 1218032,
+      "bytes": 3095008,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_camp_meridian_radio.glb",
-      "bytes": 1212292,
+      "bytes": 3102056,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_camp_shutter_lockdown.glb",
-      "bytes": 1463220,
+      "bytes": 3662216,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_camp_warning_placard.glb",
-      "bytes": 1223732,
+      "bytes": 3249524,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_cave_bones.glb",
-      "bytes": 4435296,
+      "bytes": 3358528,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_cave_eggs_hatched.glb",
-      "bytes": 1152892,
+      "bytes": 2761368,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_cave_eggs_intact.glb",
-      "bytes": 975536,
+      "bytes": 2165096,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_cave_hive_wounded.glb",
-      "bytes": 853656,
+      "bytes": 2079088,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_cave_lichen.glb",
-      "bytes": 1325708,
+      "bytes": 3209364,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_cave_queen_throne.glb",
-      "bytes": 5885988,
+      "bytes": 4122792,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_cave_spores.glb",
-      "bytes": 1267636,
+      "bytes": 3014676,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_cave_webs.glb",
-      "bytes": 1243040,
+      "bytes": 3033856,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_ceiling_crane_hoist.glb",
-      "bytes": 4827260,
+      "bytes": 3338116,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_chair_operator_wrecked.glb",
-      "bytes": 866704,
+      "bytes": 1981144,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_conduit_hub.glb",
-      "bytes": 3960216,
+      "bytes": 3085804,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_conduit_junction_box.glb",
-      "bytes": 393688,
+      "bytes": 946728,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_coolant_drum_leaking_pool.glb",
-      "bytes": 3836208,
+      "bytes": 2577412,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_corporate_saint_reliquary.glb",
-      "bytes": 4910620,
+      "bytes": 3421380,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_decon_eyewash_shower_station.glb",
-      "bytes": 4676004,
+      "bytes": 3143192,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_diagnostic_console.glb",
-      "bytes": 5365368,
+      "bytes": 3863744,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_exhaust_blower_fan_hood.glb",
-      "bytes": 4185012,
+      "bytes": 3000812,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_exosuit_docking_gantry.glb",
-      "bytes": 3640144,
+      "bytes": 2655308,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_fabricator_workstation.glb",
-      "bytes": 1296028,
+      "bytes": 919400,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_flesh_steel_coffin.glb",
-      "bytes": 992684,
+      "bytes": 2893980,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_flesh_steel_cradle.glb",
-      "bytes": 383288,
+      "bytes": 845184,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_flesh_steel_inhaler.glb",
-      "bytes": 742808,
+      "bytes": 2384136,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_floor_conduit_bridge.glb",
-      "bytes": 3565632,
+      "bytes": 2690800,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_floor_drainage_sump_trough.glb",
-      "bytes": 4281880,
+      "bytes": 3062656,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_fungal_mycelium_loom.glb",
-      "bytes": 877076,
+      "bytes": 2478140,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_fungal_resin_basin.glb",
-      "bytes": 524088,
+      "bytes": 959796,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_fungal_spore_dispenser.glb",
-      "bytes": 609832,
+      "bytes": 1656268,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_fungal_tendril_altar.glb",
-      "bytes": 395580,
+      "bytes": 861960,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_hive_carapace_molt.glb",
-      "bytes": 1271064,
+      "bytes": 3279576,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_hive_resin_sac.glb",
-      "bytes": 118528,
+      "bytes": 237664,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_icey_frost_manifold.glb",
-      "bytes": 917464,
+      "bytes": 2457276,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_icey_frost_vent.glb",
-      "bytes": 792340,
+      "bytes": 2443768,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_icey_thermal_pod.glb",
-      "bytes": 823956,
+      "bytes": 2569700,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_laser_trap_emitter.glb",
-      "bytes": 1156788,
+      "bytes": 807172,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_light_cluster_dripping.glb",
-      "bytes": 678604,
+      "bytes": 1947652,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_liturgical_terminal_lectern.glb",
-      "bytes": 4573256,
+      "bytes": 3251856,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_locker_bulged.glb",
-      "bytes": 991136,
+      "bytes": 2300664,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_maintenance_tool_cart.glb",
-      "bytes": 4421640,
+      "bytes": 3086148,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_medical_bed.glb",
-      "bytes": 4075660,
+      "bytes": 3134444,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_o2_filter_vat.glb",
-      "bytes": 1119976,
+      "bytes": 739176,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_overhead_cage_fluorescent.glb",
-      "bytes": 5248440,
+      "bytes": 3619324,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_oxygen_bottle_cascade_rack.glb",
-      "bytes": 4700556,
+      "bytes": 3196428,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_pipe_organ_heat_exchanger.glb",
-      "bytes": 3823036,
+      "bytes": 2863232,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_pipe_rupture.glb",
-      "bytes": 346888,
+      "bytes": 776772,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_security_barricade.glb",
-      "bytes": 4915192,
+      "bytes": 3610196,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_shrine_plinth_broken.glb",
-      "bytes": 855848,
+      "bytes": 2673876,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_specimen_tank.glb",
-      "bytes": 5239916,
+      "bytes": 3816884,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_spore_colony.glb",
-      "bytes": 1803480,
+      "bytes": 3692888,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_storage_drum_dented.glb",
-      "bytes": 756520,
+      "bytes": 2309096,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_surgical_cart.glb",
-      "bytes": 4765964,
+      "bytes": 3554328,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_terminal_ruptured.glb",
-      "bytes": 767796,
+      "bytes": 2389188,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_tesla_coil_node.glb",
-      "bytes": 1111072,
+      "bytes": 747720,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_valve_wheel_fused.glb",
-      "bytes": 681208,
+      "bytes": 2276284,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_vent_grate_exploded.glb",
-      "bytes": 646600,
+      "bytes": 1961512,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_vertebral_cable_riser.glb",
-      "bytes": 4145232,
+      "bytes": 2975360,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_vital_monitor.glb",
-      "bytes": 1060412,
+      "bytes": 734860,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_votive_candle_shrine.glb",
-      "bytes": 3798748,
+      "bytes": 2609776,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_wall_cable_tray_swag.glb",
-      "bytes": 4135872,
+      "bytes": 2956960,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/scatter_bolts.glb",
-      "bytes": 173400,
+      "bytes": 313328,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/scatter_cable_coil.glb",
-      "bytes": 144164,
+      "bytes": 280452,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/scatter_hive_eggs.glb",
-      "bytes": 973732,
+      "bytes": 2241032,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/sentinel.glb",
-      "bytes": 5822928,
+      "bytes": 4114304,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/sentinel_A.glb",
-      "bytes": 5368360,
+      "bytes": 3659700,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/sentinel_B.glb",
-      "bytes": 5886780,
+      "bytes": 4192688,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_biolume_spore_sprayer.glb",
-      "bytes": 4976612,
+      "bytes": 3480336,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_bunker404.glb",
-      "bytes": 219836,
+      "bytes": 373032,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_deep_frost.glb",
-      "bytes": 199680,
+      "bytes": 347736,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_engineer_archival_constructor.glb",
-      "bytes": 687376,
+      "bytes": 1950792,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_engineer_cryo_plasma.glb",
-      "bytes": 541968,
+      "bytes": 2371632,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_engineer_hive_weaver.glb",
-      "bytes": 654192,
+      "bytes": 1782572,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_glitched_circuit_bolter.glb",
-      "bytes": 4932832,
+      "bytes": 3460088,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_grand_marshal.glb",
-      "bytes": 183584,
+      "bytes": 348252,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_hazard_stripe_smg.glb",
-      "bytes": 4500836,
+      "bytes": 3281824,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_hive_chitin.glb",
-      "bytes": 162528,
+      "bytes": 270084,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_horizon_corporate.glb",
-      "bytes": 196052,
+      "bytes": 323520,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_obsidian_shard.glb",
-      "bytes": 4261544,
+      "bytes": 3124000,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_queen_carapace_carbine.glb",
-      "bytes": 11966464,
+      "bytes": 14141568,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_rust_bone.glb",
-      "bytes": 170424,
+      "bytes": 308204,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_rust_bone_trench.glb",
-      "bytes": 42499044,
+      "bytes": 32455920,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_scout_chrono_drifter.glb",
-      "bytes": 667804,
+      "bytes": 1803104,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_scout_frostbite.glb",
-      "bytes": 478056,
+      "bytes": 2164080,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_solar_flare_antimatter.glb",
-      "bytes": 45688800,
+      "bytes": 32579692,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_tank_bunker_bastion.glb",
-      "bytes": 722536,
+      "bytes": 1961088,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_tank_deep_core_melter.glb",
-      "bytes": 513376,
+      "bytes": 2161752,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_tectonic_driller.glb",
-      "bytes": 4540248,
+      "bytes": 3172960,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/skin_void_walker_beam.glb",
-      "bytes": 14057084,
+      "bytes": 16030020,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/spore_mortar.glb",
-      "bytes": 5404332,
+      "bytes": 3760900,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/sporesnail.glb",
-      "bytes": 5308636,
+      "bytes": 3608352,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/sporesnail_dead.glb",
-      "bytes": 1128416,
+      "bytes": 2349288,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/state_barricade_improvised_1.glb",
-      "bytes": 165760,
+      "bytes": 296464,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/state_barricade_improvised_2.glb",
-      "bytes": 163108,
+      "bytes": 267308,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/state_column_shattered.glb",
-      "bytes": 781076,
+      "bytes": 2410088,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/state_growth_overrun_1.glb",
-      "bytes": 163080,
+      "bytes": 294128,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/state_growth_overrun_2.glb",
-      "bytes": 150168,
+      "bytes": 242816,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/state_wall_breached_01.glb",
-      "bytes": 793044,
+      "bytes": 2431404,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/state_wall_breached_02.glb",
-      "bytes": 1046708,
+      "bytes": 2854292,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/state_wall_breached_03.glb",
-      "bytes": 1311380,
+      "bytes": 3282504,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/o2-generator.glb",
-      "bytes": 4971272,
+      "bytes": 3630932,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/parasite.glb",
-      "bytes": 5540768,
+      "bytes": 3754748,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/queen.glb",
-      "bytes": 4994940,
+      "bytes": 3561168,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/radar.glb",
-      "bytes": 4830252,
+      "bytes": 3535080,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/secrets/mayor-tina-rigged.glb",
-      "bytes": 6019116,
+      "bytes": 4509552,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/secrets/mayor-tina.glb",
-      "bytes": 5297812,
+      "bytes": 3788268,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/secrets/teacup-roach.glb",
-      "bytes": 5722292,
+      "bytes": 3848356,
       "classification": "runtime-required"
     },
     {
@@ -4822,12 +4822,12 @@
     },
     {
       "path": "3d/runtime/spore-snail-boss.glb",
-      "bytes": 5822668,
+      "bytes": 3922484,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/storage-locker.glb",
-      "bytes": 5068812,
+      "bytes": 3686084,
       "classification": "runtime-required"
     },
     {
@@ -5322,12 +5322,12 @@
     },
     {
       "path": "3d/runtime/tank-rigged.glb",
-      "bytes": 5525480,
+      "bytes": 4140536,
       "classification": "runtime-required"
     },
     {
       "path": "3d/scouting-scout/Scout.game.glb",
-      "bytes": 7948504,
+      "bytes": 6096736,
       "classification": "runtime-required"
     },
     {
@@ -18974,6 +18974,16 @@
       "path": "audio/voice/vey/voice_vey_03_forge_mothership.mp3",
       "bytes": 317275,
       "classification": "runtime-required"
+    },
+    {
+      "path": "basis/basis_transcoder.js",
+      "bytes": 57529,
+      "classification": "unknown"
+    },
+    {
+      "path": "basis/basis_transcoder.wasm",
+      "bytes": 527333,
+      "classification": "unknown"
     },
     {
       "path": "bg.png",
