@@ -24,7 +24,7 @@ import math
 
 import bmesh
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 
 def to_gltf(vector):
@@ -51,6 +51,18 @@ def _near_segment(a, b, radius, zmin=-9, zmax=9, ymax=9):
         p = Vector((c.x, c.y))
         t = max(0.0, min(1.0, (p - a).dot(ab) / ab.dot(ab)))
         return (p - (a + ab * t)).length <= radius
+    return select
+
+
+def _plane_slab(centre, normal, thickness, radius, extra=lambda c: True):
+    """Faces within `thickness` of a plane and `radius` of a point on it."""
+    centre = Vector(centre)
+    normal = Vector(normal).normalized()
+
+    def select(c):
+        offset = c - centre
+        depth = offset.dot(normal)
+        return abs(depth) <= thickness and (offset - normal * depth).length <= radius and extra(c)
     return select
 
 
@@ -83,6 +95,18 @@ RECIPES = {
         dict(name='HB_DOOR_01', motion='hinge',
              select=_any(_near_segment((0.31, -0.14), (0.40, -0.36), 0.055, ymax=-0.14), _box(xmin=0.25, ymax=-0.165)),
              hinge_end='max_y', closed_dir=(-1.0, 0.0), slide=(0.0, 0.0, 0.0), duration=1.1),
+    ],
+    'life_supply_drop_pod': [
+        # The lid stands off the pod's right side. Its plane was fitted to the
+        # scan; the opening is where the shell has a hole (facing front and up,
+        # (0.30, -0.82, 0.49)). One swing about the axis taking the lid's
+        # outward normal onto the opening's normal (rim plane fitted from the
+        # shell around the hole, centre (-0.043, -0.101, 0.341)) seats it 3.5 cm
+        # proud of the rim; the residual move is a short slide along the axis.
+        dict(name='HB_LID_00', motion='hinge_axis',
+             select=_plane_slab((0.225, 0.015, 0.29), (0.833, 0.551, 0.052), 0.08, 0.26, lambda c: c.z > 0.1 and c.x > 0.135),
+             axis=(0.3099, -0.3865, -0.8687), pivot=(0.0405, 0.0206, 0.2217), closed_angle=math.radians(93.96),
+             slide=(0.3099 * -0.0825, -0.3865 * -0.0825, -0.8687 * -0.0825), duration=1.3),
     ],
     'life_seismic_drill': [
         # The vertebral auger bit under the mast, boring into the ground.
@@ -160,6 +184,22 @@ def _hinge(part, recipe):
     return f'hinge at ({pivot.x:.3f}, {pivot.y:.3f}) closes {math.degrees(closed):.1f} deg'
 
 
+def _hinge_axis(part, recipe):
+    """A hinge on an arbitrary axis (lids that close onto tilted openings)."""
+    axis = Vector(recipe['axis']).normalized()
+    _set_origin(part, recipe['pivot'])
+    part.rotation_mode = 'QUATERNION'
+    part.rotation_quaternion = Quaternion(axis, recipe['closed_angle'])
+    slide = Vector(recipe.get('slide', (0.0, 0.0, 0.0)))
+    part.location = part.location + slide
+    part['hb_motion'] = 'hinge'
+    part['hb_axis'] = to_gltf(axis)
+    part['hb_open_angle'] = -recipe['closed_angle']
+    part['hb_open_offset'] = to_gltf(-slide)
+    part['hb_duration'] = recipe['duration']
+    return f"hinge on axis {tuple(round(v, 3) for v in axis)} closes {math.degrees(recipe['closed_angle']):.1f} deg"
+
+
 def _spin(part, recipe):
     _set_origin(part, recipe['pivot'])
     axis = Vector(recipe['axis'])
@@ -193,6 +233,6 @@ def apply_articulation(prop_name):
     report = []
     for recipe in recipe_list:
         part, faces = _separate(body, recipe['select'], recipe['name'])
-        detail = _hinge(part, recipe) if recipe['motion'] == 'hinge' else _spin(part, recipe)
+        detail = {'hinge': _hinge, 'hinge_axis': _hinge_axis, 'spin': _spin}[recipe['motion']](part, recipe)
         report.append(f"{recipe['name']}: {faces} faces, {detail}")
     return report

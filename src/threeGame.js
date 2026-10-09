@@ -35,11 +35,12 @@ import {
     interactionSpecKeyFor,
     findNearestInteractableProp,
     interactWithCustomProp,
+    isSearchableType,
     PROP_INTERACTION_SPECS
 } from './propInteractions.js';
 import { resolvePropVariant } from './propVariants.js';
 import { isDynamicPropExperienceType } from './propExperience.js';
-import { getPropFxProfile } from './propFx.js';
+import { getPropFxProfile, setPropFxViewportHeight } from './propFx.js';
 import { UmbilicalAttacker } from './3d/umbilicalAttacker.js';
 import { handleCriticalServiceDestruction } from './criticalServiceRecovery.js';
 
@@ -311,6 +312,8 @@ import { resolveRoomDressingIdentity } from './roomDressingIdentity.js';
 import { registerDressingNetwork, applyDressingNetworkEvent } from './dressingNetwork.js';
 import { isRoomDressingId, serializeBrokenRoomDressing, restoreBrokenRoomDressing } from './roomDressingPersistence.js';
 import { buildRoomDressingGroup, loadKeyedDecalTexture, hideRoomDressingItem, hideRoomDressingSupport } from './roomDressingRenderer.js';
+import { planRoomSplineDressing } from './splineRouter.js';
+import { buildChunkSplinesMesh } from './splineDressingRenderer.js';
 import { registerTinaHit, TINA_TOTAL_HITS } from './mayorTinaCombat.js';
 import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
@@ -1796,6 +1799,11 @@ const CAMP_EXCLUSIVE_ACTIONS = new Set(['turret', 'lockdown', 'wait', 'aid', 'cu
 // Keyboard keys named in target prompts -> the controller action that does
 // the same thing (src/inputGlyphs.js, scripts/build-steam-input-configs.js).
 const PROMPT_KEY_ACTIONS = Object.freeze({ E: 'interact', T: 'tacticalPing', C: 'cycleInteract', G: 'quickCommand', R: 'reload' });
+
+/** Dressing props E can reach: bespoke specs, searchable containers, switchable effects. */
+function isInteractiveDressingType(type) {
+    return Boolean(PROP_INTERACTION_SPECS[type] || isSearchableType(type) || getPropFxProfile(type));
+}
 
 export class ThreeGame {
     constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null, cameraMode = 'isometric', gameplayTiltShiftBlurEnabled = false } = {}) {
@@ -17276,6 +17284,8 @@ export class ThreeGame {
     }
 
     updateWorld3dMixers(delta) {
+        // Prop particles are sized in metres through the camera's projection.
+        if (this.renderer?.domElement) setPropFxViewportHeight(this.renderer.domElement.height);
         for (const mixer of this.world3dMixers ?? []) {
             mixer.update(delta);
         }
@@ -24428,6 +24438,7 @@ export class ThreeGame {
                 child.userData.dispose?.();
             }
             if (child.userData?.isStickerDecals) child.geometry?.dispose?.();
+            if (child.userData?.isSplineDressing) child.geometry?.dispose?.();
             if (child.material?.userData?.ownsFloorSplat) {
                 child.material.userData.floorSplat?.uSplatData?.value?.dispose?.();
                 child.material.dispose();
@@ -30689,7 +30700,7 @@ export class ThreeGame {
             if (item.dynamicExperience) dynamicCount += 1;
         }
         for (const item of worldItems) {
-            const interactive = Boolean(PROP_INTERACTION_SPECS[item.type]);
+            const interactive = isInteractiveDressingType(item.type);
             if (!item.blocking && !interactive) continue;
             if (!item.blocking) {
                 const target = new THREE.Object3D();
@@ -30820,7 +30831,7 @@ export class ThreeGame {
         for (const item of items) {
             if (item.isDestroyed) continue;
             // Interactive props need a target for E even when they don't block.
-            if (!item.blocking && !item.destructible && !PROP_INTERACTION_SPECS[item.type]) continue;
+            if (!item.blocking && !item.destructible && !isInteractiveDressingType(item.type)) continue;
             const collider = new THREE.Object3D();
             collider.position.set(item.x, 0, item.y);
             collider.userData = {
@@ -30890,6 +30901,84 @@ export class ThreeGame {
             console.warn('[room-dressing] could not dress chunk', error);
         });
         return token;
+    }
+
+    addRoomSplines(group, chunkX, chunkY, metadata, grid) {
+        const rooms = metadata?.roomInstances ?? [];
+        if (!group || rooms.length === 0) return null;
+        const originX = chunkX * this.chunkSize;
+        const originZ = chunkY * this.chunkSize;
+        const centerX = originX + this.chunkSize * 0.5;
+        const centerZ = originZ + this.chunkSize * 0.5;
+        const biome = this.getBiomeKeyForWorldPosition?.(centerX, centerZ) ?? 'bunker';
+
+        const allSplines = [];
+        for (const room of rooms) {
+            if (!room.interior?.length) continue;
+            const dressing = planRoomDressing(room, metadata.dressingGrid ?? grid, {
+                reserved: room.populationPlan?.reserved,
+                occupied: room.populationPlan?.placements
+            });
+            const splines = planRoomSplineDressing(room, metadata.dressingGrid ?? grid, {
+                placements: room.populationPlan?.placements ?? [],
+                reserved: room.populationPlan?.reserved ?? [],
+                dressingItems: dressing?.items ?? []
+            });
+            for (const item of splines) {
+                const worldPoints = item.points?.map((pt) => new THREE.Vector3(pt.x + originX, pt.y, pt.z + originZ));
+                const worldCollars = item.collars?.map((c) => ({
+                    ...c,
+                    pos: new THREE.Vector3(c.pos.x + originX, c.pos.y, c.pos.z + originZ)
+                }));
+                const worldCutPoint = item.cutPoint
+                    ? new THREE.Vector3(item.cutPoint.x + originX, item.cutPoint.y, item.cutPoint.z + originZ)
+                    : null;
+                allSplines.push({
+                    ...item,
+                    points: worldPoints,
+                    collars: worldCollars,
+                    cutPoint: worldCutPoint
+                });
+            }
+        }
+        if (allSplines.length === 0) return null;
+
+        const splineMesh = buildChunkSplinesMesh(allSplines, {
+            theme: biome,
+            onCuttableMesh: (cuttableMesh, item) => {
+                group.add(cuttableMesh);
+                const isBroken = this.brokenPropScatterKeys?.has(item.id);
+                if (isBroken) {
+                    cuttableMesh.visible = false;
+                    return;
+                }
+
+                if (item.cutPoint) {
+                    const collider = new THREE.Object3D();
+                    collider.position.copy(item.cutPoint);
+                    collider.userData = {
+                        isScatter: true,
+                        isDestructibleProp: true,
+                        isCuttableSpline: true,
+                        splineId: item.id,
+                        scatterKey: item.id,
+                        dressingId: item.id,
+                        type: item.cuttableType ?? 'spline_wire_bunker',
+                        propHp: item.hp ?? 15,
+                        maxPropHp: item.hp ?? 15,
+                        splineMesh: cuttableMesh
+                    };
+                    group.add(collider);
+                    this.scatterSprites?.push?.(collider);
+                }
+            }
+        });
+
+        if (splineMesh) {
+            group.add(splineMesh);
+            return splineMesh;
+        }
+        return null;
     }
 
     addRoomEnvironmentalDrips(group, chunkX, chunkY, metadata) {
@@ -32344,6 +32433,13 @@ export class ThreeGame {
             grid
         );
         this.addRoomDressing(
+            group,
+            chunkX,
+            chunkY,
+            this.wfcMetadataCache?.get(`${chunkX},${chunkY}`),
+            grid
+        );
+        this.addRoomSplines(
             group,
             chunkX,
             chunkY,
@@ -36016,6 +36112,15 @@ export class ThreeGame {
         if (sprite.userData?.isRoomDressingCollider) {
             hideRoomDressingItem(sprite.userData.dressingItem);
             const key = sprite.userData.dressingId ?? sprite.userData.scatterKey;
+            if (key) {
+                this.brokenPropScatterKeys = this.brokenPropScatterKeys || new Set();
+                this.brokenPropScatterKeys.add(key);
+            }
+        } else if (sprite.userData?.isCuttableSpline) {
+            if (sprite.userData.splineMesh) {
+                sprite.userData.splineMesh.visible = false;
+            }
+            const key = sprite.userData.splineId ?? sprite.userData.scatterKey;
             if (key) {
                 this.brokenPropScatterKeys = this.brokenPropScatterKeys || new Set();
                 this.brokenPropScatterKeys.add(key);

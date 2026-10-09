@@ -8,7 +8,7 @@ import { bootToOperatorMenu, startRunAndSkipIntro } from '../helpers.js';
 // captures it open / working.
 //   HB_PROBES=1 ARTIC_SHOTS_DIR=/tmp/shots npx playwright test -c <gpu config> \
 //     tests/e2e/probes/prop-articulation-captures.spec.js
-const RIGS = ['life_ribcage_rescue_cabinet', 'life_confessional', 'life_seismic_drill', 'life_ice_bore_winch'];
+const RIGS = ['life_ribcage_rescue_cabinet', 'life_confessional', 'life_seismic_drill', 'life_ice_bore_winch', 'life_supply_drop_pod'];
 
 test('articulated props: rest and active captures', async ({ page }) => {
     test.setTimeout(240_000);
@@ -43,7 +43,7 @@ test('articulated props: rest and active captures', async ({ page }) => {
         const roots = [];
         for (const [index, type] of rigs.entries()) {
             const root = await createWorld3dModel(type);
-            root.position.set(origin.x - 5.4 + index * 3.6, 0, origin.z + 2);
+            root.position.set(origin.x - 7.2 + index * 3.6, 0, origin.z + 2);
             game.scene.add(root);
             game.registerWorld3dPropExperience(root);
             roots.push(root);
@@ -90,6 +90,6 @@ test('articulated props: rest and active captures', async ({ page }) => {
     await shoot('active');
     const states = await page.evaluate(() => window.__articRoots.map((root) => root.userData.propExperience.state));
     console.log(JSON.stringify(states));
-    expect(states).toEqual(['open', 'open', 'working', 'working']);
+    expect(states).toEqual(['open', 'open', 'working', 'working', 'open']);
     expect(errors).toEqual([]);
 });

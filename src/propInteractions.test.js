@@ -263,3 +263,29 @@ describe('propInteractions', () => {
         }
     });
 });
+
+describe('generic prop interactions', () => {
+    it('offers a switch only when the prop has live effects to switch', async () => {
+        const { genericInteractionSpec } = await import('./propInteractions.js');
+        let enabled = true;
+        const fx = { setEnabled: () => enabled, toggle: () => (enabled = !enabled) };
+        const sprite = { userData: { world3dRoot: { userData: { propFx: fx } } } };
+        const spec = genericInteractionSpec('life_barrel_heater', sprite);
+        expect(spec.interactPrompt).toBe('[E] SWITCH BARREL HEATER');
+        expect(spec.repeatable).toBe(true);
+        const lines = [];
+        expect(spec.onInteract({ showBunkerLine: (line) => lines.push(line) }, sprite)).toBe(true);
+        expect(enabled).toBe(false);
+        expect(lines[0]).toBe('BARREL HEATER: SHUT DOWN.');
+        expect(genericInteractionSpec('life_barrel_heater', { userData: {} })).toBe(null);
+    });
+
+    it('lets containers be searched once and leaves inert furniture alone', async () => {
+        const { genericInteractionSpec } = await import('./propInteractions.js');
+        const crate = genericInteractionSpec('prop_camp_crates', { userData: {} });
+        expect(crate.interactPrompt).toBe('[E] SEARCH CAMP CRATES');
+        expect(crate.repeatable).toBe(false);
+        expect(genericInteractionSpec('life_pew_segment', { userData: {} })).toBe(null);
+        expect(genericInteractionSpec('arch_pillar_buttress_01', { userData: {} })).toBe(null);
+    });
+});

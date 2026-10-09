@@ -33,6 +33,7 @@ export const PROP_EXPERIENCE_PROFILES = Object.freeze({
     life_confessional: mechanism(0xffb84d),
     life_seismic_drill: mechanism(0xffa648, ['use', 'ambient', 'damage']),
     life_ice_bore_winch: mechanism(0x5fe3ff, ['use', 'ambient', 'damage']),
+    life_supply_drop_pod: mechanism(0xffa648, ['use', 'inspect', 'damage']),
     base_console: terminal(0x52ff9a),
     o2_generator: terminal(0x55d9ff, { intensity: 2.8 }),
     prop_diagnostic_console: terminal(0x52ff9a),

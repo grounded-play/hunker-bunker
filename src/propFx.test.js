@@ -24,7 +24,15 @@ describe('prop FX recipes', () => {
         ]) {
             expect(getPropFxProfile(type), type).toBeDefined();
         }
-        for (const type of ['prop_camp_crate', 'prop_medical_bed', 'prop_body_human_frozen']) {
+        // Every prop with a plausible source of light, heat, steam, liquid,
+        // sparks or growth loops; inert furniture and architecture stay still.
+        for (const type of [
+            'life_seismic_drill', 'life_wind_mast', 'life_meat_smoking_rack', 'life_ice_core_rack',
+            'life_welding_station', 'life_supply_drop_pod', 'prop_body_human_frozen', 'prop_medical_bed'
+        ]) {
+            expect(getPropFxProfile(type), type).toBeDefined();
+        }
+        for (const type of ['prop_camp_crate', 'life_pew_segment', 'prop_camp_sandbags', 'arch_pillar_buttress_01']) {
             expect(getPropFxProfile(type), type).toBeNull();
         }
     });
@@ -65,7 +73,7 @@ describe('prop FX recipes', () => {
         root.add(model);
 
         const fx = createPropFx(root, model, 'base_console');
-        const glow = fx.group.children.find((child) => child.isMesh);
+        const glow = fx.group.children.find((child) => child.isSprite);
         expect(glow.position.x).toBeCloseTo(0);
         expect(glow.position.y).toBeCloseTo(2.64);
         expect(glow.position.z).toBeCloseTo(0.36);

@@ -119,6 +119,37 @@ const organicProfile = (options = {}) => profile({
     motion: { kind: 'breathe', amount: options.motion ?? 0.012, speed: options.speed ?? 1.25 }
 });
 
+// Smouldering wreckage: a slow smoke column over an ember glow.
+const smoulderProfile = (options = {}) => profile({
+    maxDistance: options.maxDistance ?? 22,
+    effects: [
+        atBounds('smoke', options.at ?? [0.5, 0.7, 0.5], {
+            color: options.color ?? 0x7d756c, count: options.count ?? 6, height: options.height ?? 0.9, radius: options.radius ?? 0.22
+        }),
+        atBounds('glow', options.glowAt ?? [0.5, 0.45, 0.5], { color: 0xff6a18, radius: options.glowRadius ?? 0.16, pulse: 0.2 })
+    ],
+    light: options.lit === false ? null : {
+        bounds: options.glowAt ?? [0.5, 0.45, 0.5], color: 0xff7a24, intensity: 0.6, distance: 2.6, decay: 2, flicker: 0.18
+    }
+});
+
+// Cold vapour off ice, cryo kit and frozen bodies.
+const coldProfile = (options = {}) => profile({
+    maxDistance: options.maxDistance ?? 20,
+    effects: [
+        atBounds('steam', options.at ?? [0.5, 0.6, 0.5], {
+            color: 0xd8f4ff, count: options.count ?? 6, height: options.height ?? 0.4, radius: options.radius ?? 0.24
+        }),
+        ...(options.glowAt ? [atBounds('glow', options.glowAt, { color: 0x5fe3ff, radius: options.glowRadius ?? 0.12, pulse: 0.1 })] : [])
+    ],
+    light: options.glowAt ? {
+        bounds: options.glowAt, color: 0x5fe3ff, intensity: 0.7, distance: 2.6, decay: 2, pulse: 0.08
+    } : null
+});
+
+// A working lamp: the glow plus a pooled light.
+const lampProfile = (options = {}) => poweredProfile({ radius: 0.15, pulse: 0.05, ...options });
+
 const profilesFor = (types, makeProfile) => Object.fromEntries(types.map((type) => [type, makeProfile(type)]));
 
 const HERO_PROFILES = {
@@ -241,7 +272,81 @@ const AMBIENT_PROFILES = {
     prop_cave_eggs_hatched: organicProfile({ spores: false, motion: 0.006 }),
     prop_hive_carapace_molt: organicProfile({ spores: false, motion: 0.006 }),
     prop_vertebral_cable_riser: organicProfile({ spores: false, motion: 0.008 }),
-    life_hydro_rack: organicProfile({ color: 0x70c86c, spores: false, motion: 0.006 })
+    life_hydro_rack: organicProfile({ color: 0x70c86c, spores: false, motion: 0.006 }),
+
+    // Lived-in pass 2 (props 41-79) and the older props that had no recipe.
+    // Inert furniture (pews, crates, sandbags) and architecture get none.
+    life_cochlear_intercom: lampProfile({ glowAt: [0.75, 0.72, 0.7], color: 0xffa648 }),
+    life_ribcage_rescue_cabinet: lampProfile({ glowAt: [0.55, 0.86, 0.6], color: 0xff3b2f, pulse: 0.2 }),
+    life_checkpoint_post: lampProfile({ glowAt: [0.72, 0.92, 0.5], color: 0xffa648 }),
+    life_pneumatic_tube_node: profile({
+        effects: [
+            atBounds('steam', [0.5, 0.35, 0.65], { color: 0xc8dde0, count: 5, height: 0.5, radius: 0.16 }),
+            atBounds('glow', [0.68, 0.7, 0.62], { color: 0xffa648, radius: 0.1, pulse: 0.12 })
+        ]
+    }),
+    life_wayfinding_totem: lampProfile({ glowAt: [0.5, 0.95, 0.5], color: 0x55d9ff, pulse: 0.12 }),
+    life_seismic_drill: profile({
+        effects: [
+            atBounds('glow', [0.5, 0.95, 0.5], { color: 0xffa648, radius: 0.13, pulse: 0.08 }),
+            atBounds('smoke', [0.5, 0.08, 0.5], { color: 0x9a9182, count: 6, height: 0.35, radius: 0.22 })
+        ],
+        light: { bounds: [0.5, 0.95, 0.5], color: 0xffa648, intensity: 1.1, distance: 3.6, decay: 2, flicker: 0.05 }
+    }),
+    life_supply_drop_pod: smoulderProfile({ at: [0.55, 0.85, 0.45], glowAt: [0.45, 0.4, 0.4] }),
+    life_wind_mast: lampProfile({ glowAt: [0.5, 0.98, 0.5], color: 0xff3b2f, pulse: 0.45 }),
+    life_rope_anchor_post: lampProfile({ glowAt: [0.5, 0.95, 0.5], color: 0xffa648 }),
+    life_lookout_perch: lampProfile({ glowAt: [0.62, 0.9, 0.55], color: 0xffa648 }),
+    life_fallen_comm_dish: poweredProfile({ sparks: true, lit: false, color: 0x55d9ff, glowAt: [0.45, 0.4, 0.5] }),
+    life_ceiling_collapse: poweredProfile({ sparks: true, lit: false, color: 0xffb45b, glowAt: [0.5, 0.6, 0.5], sparkAt: [0.5, 0.9, 0.5] }),
+    life_pod_seat_row: poweredProfile({ sparks: true, lit: false, color: 0xff3b2f, glowAt: [0.5, 0.35, 0.6] }),
+    life_pipeline_trestle: ventProfile({ at: [0.3, 0.85, 0.5], count: 8 }),
+    life_ice_sled: coldProfile({ at: [0.5, 0.5, 0.5], count: 4 }),
+    life_ice_core_rack: coldProfile({ glowAt: [0.5, 0.15, 0.5] }),
+    life_ice_bore_winch: coldProfile({ at: [0.5, 0.12, 0.5], glowAt: [0.55, 0.98, 0.5] }),
+    life_parka_hooks: thermalProfile({ flameAt: [0.5, 0.22, 0.6], glowAt: [0.5, 0.22, 0.6], scale: 0.25, intensity: 0.5, distance: 2 }),
+    life_brood_comb: organicProfile({ glowAt: [0.5, 0.5, 0.6], radius: 0.28 }),
+    life_hive_dew_funnel: organicProfile({ glowAt: [0.5, 0.15, 0.5] }),
+    life_hive_feeding_bladder: organicProfile({ glowAt: [0.5, 0.55, 0.5], radius: 0.3, motion: 0.02 }),
+    life_assimilated_desk: poweredProfile({ color: 0x76d95c, glowAt: [0.5, 0.75, 0.5] }),
+    life_fungal_cable_bundle: organicProfile({ glowAt: [0.5, 0.45, 0.65] }),
+    life_colossal_limb: organicProfile({ glowAt: [0.5, 0.3, 0.5], radius: 0.4, motion: 0.003 }),
+    life_drip_buckets: liquidProfile({ surfaceAt: [0.5, 0.6, 0.5], bubblesAt: [0.5, 0.3, 0.5], lit: false, count: 3 }),
+    life_confessional: thermalProfile({ flameAt: [0.25, 0.4, 0.4], glowAt: [0.25, 0.4, 0.4], scale: 0.22, intensity: 0.55, distance: 2.2 }),
+    life_devotion_tree: thermalProfile({ flameAt: [0.5, 0.12, 0.5], glowAt: [0.5, 0.15, 0.5], scale: 0.3, intensity: 0.9, radius: 0.3 }),
+    life_meat_smoking_rack: smoulderProfile({ at: [0.5, 0.75, 0.5], glowAt: [0.5, 0.12, 0.5], count: 8 }),
+    life_welding_station: poweredProfile({ sparks: true, color: 0xffb45b, glowAt: [0.55, 0.62, 0.55], sparkAt: [0.55, 0.62, 0.55], sparkCount: 8 }),
+    life_exosuit_teardown: poweredProfile({ sparks: true, lit: false, glowAt: [0.6, 0.6, 0.5] }),
+    life_fuse_bypass_panel: poweredProfile({ sparks: true, color: 0xff3b2f, glowAt: [0.5, 0.6, 0.65], sparkAt: [0.5, 0.55, 0.65], pulse: 0.3 }),
+    life_janitor_cart: liquidProfile({ surfaceAt: [0.3, 0.5, 0.5], bubblesAt: [0.3, 0.35, 0.5], lit: false, count: 3, color: 0x7f8a6a }),
+    life_suit_drying_rack: ventProfile({ at: [0.5, 0.8, 0.5], count: 5, color: 0xd9e2e0 }),
+    life_pipe_hammock: ventProfile({ at: [0.2, 0.85, 0.5], count: 4 }),
+    life_latrine_stall: liquidProfile({ surfaceAt: [0.5, 0.25, 0.5], bubblesAt: [0.5, 0.2, 0.5], lit: false, count: 3, color: 0x6f7a55 }),
+    life_sanitation_bidet: liquidProfile({ surfaceAt: [0.5, 0.45, 0.5], bubblesAt: [0.5, 0.35, 0.5], lit: false, count: 3 }),
+    life_memorial_board: thermalProfile({ flameAt: [0.5, 0.08, 0.7], glowAt: [0.5, 0.1, 0.7], scale: 0.2, intensity: 0.45, distance: 1.8 }),
+    life_acoustic_ear_horn: poweredProfile({ color: 0xffa648, glowAt: [0.5, 0.55, 0.6] }),
+    frozen_tanker: coldProfile({ glowAt: [0.5, 0.6, 0.5] }),
+    prop_body_human_frozen: coldProfile({ count: 4 }),
+    body_frozen_human: coldProfile({ count: 4 }),
+    prop_icey_thermal_pod: coldProfile({ glowAt: [0.5, 0.7, 0.5] }),
+    prop_oxygen_bottle_cascade_rack: coldProfile({ at: [0.5, 0.85, 0.5], count: 5 }),
+    prop_camp_cookfire: smoulderProfile({ at: [0.5, 0.4, 0.5], glowAt: [0.5, 0.15, 0.5], count: 4, lit: false }),
+    prop_conduit_hub: poweredProfile({ sparks: true }),
+    prop_wall_cable_tray_swag: poweredProfile({ sparks: true, lit: false, glowAt: [0.5, 0.4, 0.6] }),
+    prop_chair_operator_wrecked: poweredProfile({ sparks: true, lit: false, glowAt: [0.5, 0.6, 0.5] }),
+    prop_floor_conduit_bridge: poweredProfile({ glowAt: [0.5, 0.3, 0.5], color: 0x55d9ff }),
+    prop_surgical_cart: poweredProfile({ glowAt: [0.5, 0.8, 0.5], color: 0x52ff9a, radius: 0.08 }),
+    prop_medical_bed: poweredProfile({ glowAt: [0.8, 0.7, 0.5], color: 0x52ff9a, radius: 0.1 }),
+    prop_valve_wheel_fused: ventProfile({ at: [0.5, 0.7, 0.5], count: 5 }),
+    prop_vent_grate_exploded: ventProfile({ at: [0.5, 0.4, 0.5], count: 6 }),
+    prop_shrine_plinth_broken: thermalProfile({ flameAt: [0.5, 0.75, 0.5], glowAt: [0.5, 0.72, 0.5], scale: 0.3, intensity: 0.6 }),
+    prop_flesh_steel_coffin: organicProfile({ spores: false, motion: 0.008 }),
+    prop_flesh_steel_cradle: organicProfile({ spores: false, motion: 0.01 }),
+    prop_autopsy_dissection_slab: organicProfile({ spores: false, motion: 0.004, color: 0xd94a4a, glowAt: [0.5, 0.6, 0.5] }),
+    prop_cave_queen_throne: organicProfile({ radius: 0.3 }),
+    prop_biomech_arch: organicProfile({ spores: false, motion: 0.004 }),
+    prop_body_empty_exosuit: poweredProfile({ sparks: true, lit: false, glowAt: [0.5, 0.7, 0.5], color: 0xff3b2f }),
+    body_empty_exosuit: poweredProfile({ sparks: true, lit: false, glowAt: [0.5, 0.7, 0.5], color: 0xff3b2f })
 };
 
 export const PROP_FX_PROFILES = Object.freeze({ ...AMBIENT_PROFILES, ...HERO_PROFILES });
@@ -371,6 +476,13 @@ function createWater(spec, uniforms) {
     return mesh;
 }
 
+// Half the drawing buffer's height in pixels: particle sizes are in metres,
+// projected through the camera (ThreeGame keeps this current on resize).
+const FX_VIEWPORT_HALF_HEIGHT = { value: 450 };
+export function setPropFxViewportHeight(pixels) {
+    if (Number.isFinite(pixels) && pixels > 0) FX_VIEWPORT_HALF_HEIGHT.value = pixels / 2;
+}
+
 function createRisingPoints(spec, uniforms, seed) {
     const count = Math.max(1, spec.count ?? 8);
     const radius = spec.radius ?? 0.2;
@@ -397,7 +509,9 @@ function createRisingPoints(spec, uniforms, seed) {
         uColor: { value: new THREE.Color(spec.color ?? 0xffffff) },
         uHeight: { value: spec.height ?? 0.6 },
         uSpeed: { value: steam ? 0.16 : sparks ? 0.72 : spores ? 0.08 : 0.25 },
-        uPointSize: { value: steam ? 0.085 : sparks ? 0.025 : spores ? 0.045 : 0.040 },
+        // Metres across: a steam puff, a spark, a spore, a bubble.
+        uPointSize: { value: steam ? 0.22 : sparks ? 0.035 : spores ? 0.06 : 0.05 },
+        uViewportHalfHeight: FX_VIEWPORT_HALF_HEIGHT,
         uStyle: { value: style }
     };
     const material = new THREE.ShaderMaterial({
@@ -407,6 +521,7 @@ function createRisingPoints(spec, uniforms, seed) {
             uniform float uHeight;
             uniform float uSpeed;
             uniform float uPointSize;
+            uniform float uViewportHalfHeight;
             attribute float aPhase;
             varying float vLife;
             void main() {
@@ -417,7 +532,11 @@ function createRisingPoints(spec, uniforms, seed) {
                 p.z += cos((aPhase * 1.7 + uTime) * 7.0) * life * 0.05;
                 vec4 mv = modelViewMatrix * vec4(p, 1.0);
                 gl_Position = projectionMatrix * mv;
-                gl_PointSize = clamp(uPointSize * (210.0 / max(0.6, -mv.z)), 1.5, 18.0);
+                // World size through the projection: orthographic cameras keep it
+                // constant, perspective ones shrink it with depth. Puffs grow as they rise.
+                float perspective = projectionMatrix[3][3] > 0.5 ? 1.0 : 1.0 / max(0.6, -mv.z);
+                float grow = uStyle == 1 ? 0.6 + life * 0.9 : 1.0;
+                gl_PointSize = clamp(uPointSize * grow * projectionMatrix[1][1] * uViewportHalfHeight * perspective, 1.5, 96.0);
                 vLife = life;
             }
         `,
@@ -447,20 +566,49 @@ function createRisingPoints(spec, uniforms, seed) {
     return points;
 }
 
+let haloTexture = null;
+function getHaloTexture() {
+    if (haloTexture) return haloTexture;
+    const size = 64;
+    const data = new Uint8Array(size * size * 4);
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+            const r = Math.hypot(x + 0.5 - size / 2, y + 0.5 - size / 2) / (size / 2);
+            // A bright core and a long soft falloff, like light in dusty air.
+            const a = Math.max(0, 1 - r) ** 2.2 * 0.75 + Math.max(0, 1 - r * 3.2) ** 2 * 0.25;
+            const i = (y * size + x) * 4;
+            data[i] = data[i + 1] = data[i + 2] = 255;
+            data[i + 3] = Math.round(Math.min(1, a) * 255);
+        }
+    }
+    haloTexture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+    haloTexture.needsUpdate = true;
+    haloTexture.magFilter = THREE.LinearFilter;
+    haloTexture.minFilter = THREE.LinearFilter;
+    return haloTexture;
+}
+
 function createGlow(spec, pulseTargets) {
-    const geometry = new THREE.SphereGeometry(spec.radius ?? 0.2, 10, 7);
-    const material = new THREE.MeshBasicMaterial({
+    const material = new THREE.SpriteMaterial({
+        map: getHaloTexture(),
         color: spec.color ?? 0xffffff,
         transparent: true,
-        opacity: 0.10,
+        opacity: 0.7,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
         toneMapped: false
     });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.userData.propFxOwned = true;
-    pulseTargets.push({ object: mesh, material, amount: spec.pulse ?? 0.12, baseOpacity: material.opacity });
-    return mesh;
+    const sprite = new THREE.Sprite(material);
+    // The halo spreads several times the source's radius.
+    const scale = (spec.radius ?? 0.2) * 5;
+    sprite.scale.setScalar(scale);
+    sprite.renderOrder = 7;
+    // The sprite's material is ours; its geometry is three's shared quad.
+    material.userData.propFxOwnedMaterial = true;
+    sprite.userData.propFxOwned = true;
+    sprite.userData.propFxSharedGeometry = true;
+    pulseTargets.push({ object: sprite, material, amount: spec.pulse ?? 0.12, baseOpacity: material.opacity, baseScale: scale });
+    return sprite;
 }
 
 export function getPropFxProfile(type) {
@@ -514,14 +662,23 @@ export function createPropFx(root, model, type) {
     const animateModel = Boolean(config.motion && !root.userData?.mixer);
     let elapsed = (seed % 4096) / 193;
     let disposed = false;
+    let enabled = true;
     const api = {
         type,
         group,
         lightSources,
+        get enabled() { return enabled; },
+        /** Switch the effects and their pooled light (never `.visible` on a light). */
+        setEnabled(next) {
+            enabled = Boolean(next);
+            api.update(0);
+            return enabled;
+        },
+        toggle() { return api.setEnabled(!enabled); },
         update(delta = 0, cameraPosition = null) {
             if (disposed) return;
             elapsed += Math.min(Math.max(Number(delta) || 0, 0), 0.1);
-            let active = root.visible !== false;
+            let active = enabled && root.visible !== false;
             if (active && cameraPosition?.isVector3) {
                 root.getWorldPosition(scratch);
                 active = scratch.distanceToSquared(cameraPosition) <= config.maxDistance * config.maxDistance;
@@ -539,7 +696,7 @@ export function createPropFx(root, model, type) {
             }
             for (const target of pulseTargets) {
                 const pulse = 1 + wave * target.amount;
-                target.object.scale.setScalar(pulse);
+                target.object.scale.setScalar((target.baseScale ?? 1) * pulse);
                 target.material.opacity = target.baseOpacity * (0.86 + 0.14 * wave);
             }
             for (const light of lightSources) {
@@ -557,7 +714,7 @@ export function createPropFx(root, model, type) {
             for (const light of lightSources) light.userData.envLightEnabled = false;
             group.traverse((object) => {
                 if (!object.userData?.propFxOwned) return;
-                object.geometry?.dispose?.();
+                if (!object.userData.propFxSharedGeometry) object.geometry?.dispose?.();
                 const materials = Array.isArray(object.material) ? object.material : [object.material];
                 for (const material of materials) material?.dispose?.();
             });
