@@ -203,6 +203,85 @@
     "3d/runtime/new3ds/gun_scout_talon_c.glb",
     "3d/runtime/new3ds/gun_scout_vector9_talon.glb",
     "3d/runtime/new3ds/gun_tank_siege_breaker50.glb",
+    "3d/runtime/new3ds/life_acoustic_ear_horn.glb",
+    "3d/runtime/new3ds/life_ammo_ovipositor.glb",
+    "3d/runtime/new3ds/life_assimilated_desk.glb",
+    "3d/runtime/new3ds/life_barber_chair.glb",
+    "3d/runtime/new3ds/life_barrel_heater.glb",
+    "3d/runtime/new3ds/life_bone_clamp_rig.glb",
+    "3d/runtime/new3ds/life_brood_comb.glb",
+    "3d/runtime/new3ds/life_bunk_stack.glb",
+    "3d/runtime/new3ds/life_card_table.glb",
+    "3d/runtime/new3ds/life_cargo_pallet_netted.glb",
+    "3d/runtime/new3ds/life_ceiling_collapse.glb",
+    "3d/runtime/new3ds/life_checkpoint_post.glb",
+    "3d/runtime/new3ds/life_cochlear_intercom.glb",
+    "3d/runtime/new3ds/life_colossal_limb.glb",
+    "3d/runtime/new3ds/life_confessional.glb",
+    "3d/runtime/new3ds/life_covered_stretcher.glb",
+    "3d/runtime/new3ds/life_devotion_tree.glb",
+    "3d/runtime/new3ds/life_drip_buckets.glb",
+    "3d/runtime/new3ds/life_dropped_kit_pile.glb",
+    "3d/runtime/new3ds/life_exosuit_teardown.glb",
+    "3d/runtime/new3ds/life_fallen_comm_dish.glb",
+    "3d/runtime/new3ds/life_flood_lamp_tripod.glb",
+    "3d/runtime/new3ds/life_footlocker_open.glb",
+    "3d/runtime/new3ds/life_fuel_probe_boom.glb",
+    "3d/runtime/new3ds/life_fungal_cable_bundle.glb",
+    "3d/runtime/new3ds/life_fuse_bypass_panel.glb",
+    "3d/runtime/new3ds/life_galley_hotplate.glb",
+    "3d/runtime/new3ds/life_guide_rope_stakes.glb",
+    "3d/runtime/new3ds/life_hive_dew_funnel.glb",
+    "3d/runtime/new3ds/life_hive_feeding_bladder.glb",
+    "3d/runtime/new3ds/life_hydro_rack.glb",
+    "3d/runtime/new3ds/life_ice_bore_winch.glb",
+    "3d/runtime/new3ds/life_ice_core_rack.glb",
+    "3d/runtime/new3ds/life_ice_sled.glb",
+    "3d/runtime/new3ds/life_infusion_cradle.glb",
+    "3d/runtime/new3ds/life_janitor_cart.glb",
+    "3d/runtime/new3ds/life_latrine_stall.glb",
+    "3d/runtime/new3ds/life_lookout_perch.glb",
+    "3d/runtime/new3ds/life_lung_filter_bellows.glb",
+    "3d/runtime/new3ds/life_mask_rack.glb",
+    "3d/runtime/new3ds/life_meat_smoking_rack.glb",
+    "3d/runtime/new3ds/life_memorial_board.glb",
+    "3d/runtime/new3ds/life_mess_table.glb",
+    "3d/runtime/new3ds/life_ore_cart.glb",
+    "3d/runtime/new3ds/life_parka_hooks.glb",
+    "3d/runtime/new3ds/life_pelvic_autopsy_trough.glb",
+    "3d/runtime/new3ds/life_peristaltic_feeder.glb",
+    "3d/runtime/new3ds/life_pew_segment.glb",
+    "3d/runtime/new3ds/life_pheromone_censer.glb",
+    "3d/runtime/new3ds/life_pipe_hammock.glb",
+    "3d/runtime/new3ds/life_pipeline_trestle.glb",
+    "3d/runtime/new3ds/life_pneumatic_tube_node.glb",
+    "3d/runtime/new3ds/life_pod_seat_row.glb",
+    "3d/runtime/new3ds/life_reloading_bench.glb",
+    "3d/runtime/new3ds/life_resin_extractor.glb",
+    "3d/runtime/new3ds/life_ribcage_rescue_cabinet.glb",
+    "3d/runtime/new3ds/life_rope_anchor_post.glb",
+    "3d/runtime/new3ds/life_route_map_table.glb",
+    "3d/runtime/new3ds/life_sanitation_bidet.glb",
+    "3d/runtime/new3ds/life_scent_distiller.glb",
+    "3d/runtime/new3ds/life_seismic_drill.glb",
+    "3d/runtime/new3ds/life_sensory_chair.glb",
+    "3d/runtime/new3ds/life_sleep_sleeve.glb",
+    "3d/runtime/new3ds/life_stigmata_inscriber.glb",
+    "3d/runtime/new3ds/life_suit_drying_rack.glb",
+    "3d/runtime/new3ds/life_supply_drop_pod.glb",
+    "3d/runtime/new3ds/life_tactile_console.glb",
+    "3d/runtime/new3ds/life_tally_bulkhead.glb",
+    "3d/runtime/new3ds/life_tarp_leanto.glb",
+    "3d/runtime/new3ds/life_training_dummy.glb",
+    "3d/runtime/new3ds/life_umbilical_tether.glb",
+    "3d/runtime/new3ds/life_vending_machine.glb",
+    "3d/runtime/new3ds/life_vertebral_restraint_rack.glb",
+    "3d/runtime/new3ds/life_vulval_drain_sump.glb",
+    "3d/runtime/new3ds/life_warmth_hearth.glb",
+    "3d/runtime/new3ds/life_water_still.glb",
+    "3d/runtime/new3ds/life_wayfinding_totem.glb",
+    "3d/runtime/new3ds/life_welding_station.glb",
+    "3d/runtime/new3ds/life_wind_mast.glb",
     "3d/runtime/new3ds/mod_archivist_lens.glb",
     "3d/runtime/new3ds/mod_ballast_plating.glb",
     "3d/runtime/new3ds/mod_bio_hazard_filter.glb",
@@ -1487,6 +1566,846 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/decal_alien_tracks_a_albedo.ktx2",
+      "bytes": 341597,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_alien_tracks_a_detail.ktx2",
+      "bytes": 241739,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_alien_tracks_b_albedo.ktx2",
+      "bytes": 377016,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_alien_tracks_b_detail.ktx2",
+      "bytes": 313129,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_alien_tracks_c_albedo.ktx2",
+      "bytes": 412290,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_alien_tracks_c_detail.ktx2",
+      "bytes": 320456,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_alien_tracks_d_albedo.ktx2",
+      "bytes": 371060,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_alien_tracks_d_detail.ktx2",
+      "bytes": 324037,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_cracked_seam_a_albedo.ktx2",
+      "bytes": 585487,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_cracked_seam_a_detail.ktx2",
+      "bytes": 495911,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_cracked_seam_b_albedo.ktx2",
+      "bytes": 593189,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_cracked_seam_b_detail.ktx2",
+      "bytes": 489843,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_cracked_seam_c_albedo.ktx2",
+      "bytes": 548488,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_cracked_seam_c_detail.ktx2",
+      "bytes": 471632,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_cracked_seam_d_albedo.ktx2",
+      "bytes": 568385,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_cracked_seam_d_detail.ktx2",
+      "bytes": 479580,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_mud_fan_a_albedo.ktx2",
+      "bytes": 498482,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_mud_fan_a_detail.ktx2",
+      "bytes": 413246,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_mud_fan_b_albedo.ktx2",
+      "bytes": 436009,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_mud_fan_b_detail.ktx2",
+      "bytes": 367226,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_mud_fan_c_albedo.ktx2",
+      "bytes": 420677,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_mud_fan_c_detail.ktx2",
+      "bytes": 360897,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_mud_fan_d_albedo.ktx2",
+      "bytes": 382130,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_mud_fan_d_detail.ktx2",
+      "bytes": 328636,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_rust_bloom_a_albedo.ktx2",
+      "bytes": 512996,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_rust_bloom_a_detail.ktx2",
+      "bytes": 417898,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_rust_bloom_b_albedo.ktx2",
+      "bytes": 557681,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_rust_bloom_b_detail.ktx2",
+      "bytes": 455034,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_rust_bloom_c_albedo.ktx2",
+      "bytes": 513955,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_rust_bloom_c_detail.ktx2",
+      "bytes": 414666,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_rust_bloom_d_albedo.ktx2",
+      "bytes": 543057,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_rust_bloom_d_detail.ktx2",
+      "bytes": 443931,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_scuff_path_a_albedo.ktx2",
+      "bytes": 571702,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_scuff_path_a_detail.ktx2",
+      "bytes": 484101,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_scuff_path_b_albedo.ktx2",
+      "bytes": 552349,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_scuff_path_b_detail.ktx2",
+      "bytes": 470663,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_scuff_path_c_albedo.ktx2",
+      "bytes": 565417,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_scuff_path_c_detail.ktx2",
+      "bytes": 478883,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_scuff_path_d_albedo.ktx2",
+      "bytes": 591321,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_scuff_path_d_detail.ktx2",
+      "bytes": 494245,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_spore_dusting_a_albedo.ktx2",
+      "bytes": 505028,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_spore_dusting_a_detail.ktx2",
+      "bytes": 381725,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_spore_dusting_b_albedo.ktx2",
+      "bytes": 482122,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_spore_dusting_b_detail.ktx2",
+      "bytes": 368311,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_spore_dusting_c_albedo.ktx2",
+      "bytes": 462691,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_spore_dusting_c_detail.ktx2",
+      "bytes": 353911,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_spore_dusting_d_albedo.ktx2",
+      "bytes": 454430,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_blend_spore_dusting_d_detail.ktx2",
+      "bytes": 341031,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_butts_and_ash_a_albedo.ktx2",
+      "bytes": 515650,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_butts_and_ash_a_detail.ktx2",
+      "bytes": 411224,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_butts_and_ash_b_albedo.ktx2",
+      "bytes": 426995,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_butts_and_ash_b_detail.ktx2",
+      "bytes": 327107,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_butts_and_ash_c_albedo.ktx2",
+      "bytes": 349517,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_butts_and_ash_c_detail.ktx2",
+      "bytes": 310112,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_butts_and_ash_d_albedo.ktx2",
+      "bytes": 399768,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_butts_and_ash_d_detail.ktx2",
+      "bytes": 309502,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_contact_grime_a_albedo.ktx2",
+      "bytes": 434264,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_contact_grime_a_detail.ktx2",
+      "bytes": 369614,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_contact_grime_b_albedo.ktx2",
+      "bytes": 373089,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_contact_grime_b_detail.ktx2",
+      "bytes": 319659,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_contact_grime_c_albedo.ktx2",
+      "bytes": 420850,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_contact_grime_c_detail.ktx2",
+      "bytes": 352443,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_contact_grime_d_albedo.ktx2",
+      "bytes": 459335,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_contact_grime_d_detail.ktx2",
+      "bytes": 384145,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_dust_drift_a_albedo.ktx2",
+      "bytes": 534764,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_dust_drift_a_detail.ktx2",
+      "bytes": 423442,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_dust_drift_b_albedo.ktx2",
+      "bytes": 583841,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_dust_drift_b_detail.ktx2",
+      "bytes": 458844,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_dust_drift_c_albedo.ktx2",
+      "bytes": 517734,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_dust_drift_c_detail.ktx2",
+      "bytes": 407050,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_dust_drift_d_albedo.ktx2",
+      "bytes": 535172,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_dust_drift_d_detail.ktx2",
+      "bytes": 410066,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_frost_creep_a_albedo.ktx2",
+      "bytes": 578021,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_frost_creep_a_detail.ktx2",
+      "bytes": 458620,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_frost_creep_b_albedo.ktx2",
+      "bytes": 569580,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_frost_creep_b_detail.ktx2",
+      "bytes": 457584,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_frost_creep_c_albedo.ktx2",
+      "bytes": 589092,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_frost_creep_c_detail.ktx2",
+      "bytes": 472176,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_frost_creep_d_albedo.ktx2",
+      "bytes": 611733,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_frost_creep_d_detail.ktx2",
+      "bytes": 491666,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_resin_creep_a_albedo.ktx2",
+      "bytes": 601927,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_resin_creep_a_detail.ktx2",
+      "bytes": 474379,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_resin_creep_b_albedo.ktx2",
+      "bytes": 605512,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_resin_creep_b_detail.ktx2",
+      "bytes": 488353,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_resin_creep_c_albedo.ktx2",
+      "bytes": 619571,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_resin_creep_c_detail.ktx2",
+      "bytes": 501114,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_resin_creep_d_albedo.ktx2",
+      "bytes": 627739,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_resin_creep_d_detail.ktx2",
+      "bytes": 505487,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_wallbase_grime_a_albedo.ktx2",
+      "bytes": 520327,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_wallbase_grime_a_detail.ktx2",
+      "bytes": 418197,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_wallbase_grime_b_albedo.ktx2",
+      "bytes": 501585,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_wallbase_grime_b_detail.ktx2",
+      "bytes": 419916,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_wallbase_grime_c_albedo.ktx2",
+      "bytes": 524349,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_wallbase_grime_c_detail.ktx2",
+      "bytes": 431063,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_wallbase_grime_d_albedo.ktx2",
+      "bytes": 494234,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_edge_wallbase_grime_d_detail.ktx2",
+      "bytes": 400035,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_floor_lane_chevrons_a_albedo.ktx2",
+      "bytes": 590489,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_floor_lane_chevrons_a_detail.ktx2",
+      "bytes": 503386,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_floor_lane_chevrons_b_albedo.ktx2",
+      "bytes": 589506,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_floor_lane_chevrons_b_detail.ktx2",
+      "bytes": 449124,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_floor_lane_chevrons_c_albedo.ktx2",
+      "bytes": 565077,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_floor_lane_chevrons_c_detail.ktx2",
+      "bytes": 481493,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_floor_lane_chevrons_d_albedo.ktx2",
+      "bytes": 584490,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_floor_lane_chevrons_d_detail.ktx2",
+      "bytes": 494305,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_floor_taped_cables_a_albedo.ktx2",
+      "bytes": 617129,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_floor_taped_cables_a_detail.ktx2",
+      "bytes": 526335,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_floor_taped_cables_b_albedo.ktx2",
+      "bytes": 542273,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_floor_taped_cables_b_detail.ktx2",
+      "bytes": 463242,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_floor_taped_cables_c_albedo.ktx2",
+      "bytes": 603216,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_floor_taped_cables_c_detail.ktx2",
+      "bytes": 496987,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_floor_taped_cables_d_albedo.ktx2",
+      "bytes": 486784,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_floor_taped_cables_d_detail.ktx2",
+      "bytes": 391546,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_paper_scatter_a_albedo.ktx2",
+      "bytes": 614395,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_paper_scatter_a_detail.ktx2",
+      "bytes": 488005,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_paper_scatter_b_albedo.ktx2",
+      "bytes": 621737,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_paper_scatter_b_detail.ktx2",
+      "bytes": 509558,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_paper_scatter_c_albedo.ktx2",
+      "bytes": 591004,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_paper_scatter_c_detail.ktx2",
+      "bytes": 471484,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_paper_scatter_d_albedo.ktx2",
+      "bytes": 604370,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_paper_scatter_d_detail.ktx2",
+      "bytes": 479616,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_spent_casings_a_albedo.ktx2",
+      "bytes": 512089,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_spent_casings_a_detail.ktx2",
+      "bytes": 398311,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_spent_casings_b_albedo.ktx2",
+      "bytes": 435048,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_spent_casings_b_detail.ktx2",
+      "bytes": 307610,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_spent_casings_c_albedo.ktx2",
+      "bytes": 395396,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_spent_casings_c_detail.ktx2",
+      "bytes": 290590,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_spent_casings_d_albedo.ktx2",
+      "bytes": 503943,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_spent_casings_d_detail.ktx2",
+      "bytes": 332388,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_spilled_rations_a_albedo.ktx2",
+      "bytes": 528040,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_spilled_rations_a_detail.ktx2",
+      "bytes": 420553,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_spilled_rations_b_albedo.ktx2",
+      "bytes": 516292,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_spilled_rations_b_detail.ktx2",
+      "bytes": 390035,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_spilled_rations_c_albedo.ktx2",
+      "bytes": 487812,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_spilled_rations_c_detail.ktx2",
+      "bytes": 395735,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_spilled_rations_d_albedo.ktx2",
+      "bytes": 469770,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_spilled_rations_d_detail.ktx2",
+      "bytes": 358796,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_home_mural_a_albedo.ktx2",
+      "bytes": 575824,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_home_mural_a_detail.ktx2",
+      "bytes": 458206,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_home_mural_b_albedo.ktx2",
+      "bytes": 571887,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_home_mural_b_detail.ktx2",
+      "bytes": 445877,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_home_mural_c_albedo.ktx2",
+      "bytes": 626292,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_home_mural_c_detail.ktx2",
+      "bytes": 514891,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_home_mural_d_albedo.ktx2",
+      "bytes": 594905,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_home_mural_d_detail.ktx2",
+      "bytes": 473596,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_mineral_streaks_a_albedo.ktx2",
+      "bytes": 420688,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_mineral_streaks_a_detail.ktx2",
+      "bytes": 316655,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_mineral_streaks_b_albedo.ktx2",
+      "bytes": 518537,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_mineral_streaks_b_detail.ktx2",
+      "bytes": 389510,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_mineral_streaks_c_albedo.ktx2",
+      "bytes": 520766,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_mineral_streaks_c_detail.ktx2",
+      "bytes": 397035,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_mineral_streaks_d_albedo.ktx2",
+      "bytes": 442752,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_mineral_streaks_d_detail.ktx2",
+      "bytes": 347710,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_soot_plume_a_albedo.ktx2",
+      "bytes": 508476,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_soot_plume_a_detail.ktx2",
+      "bytes": 400859,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_soot_plume_b_albedo.ktx2",
+      "bytes": 444304,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_soot_plume_b_detail.ktx2",
+      "bytes": 343958,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_soot_plume_c_albedo.ktx2",
+      "bytes": 537096,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_soot_plume_c_detail.ktx2",
+      "bytes": 416323,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_soot_plume_d_albedo.ktx2",
+      "bytes": 512500,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/decal_wall_soot_plume_d_detail.ktx2",
+      "bytes": 408290,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/tex_wall_kickplate_band_a_albedo.ktx2",
+      "bytes": 611096,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/tex_wall_kickplate_band_a_detail.ktx2",
+      "bytes": 536648,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/tex_wall_kickplate_band_b_albedo.ktx2",
+      "bytes": 615678,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/tex_wall_kickplate_band_b_detail.ktx2",
+      "bytes": 541048,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/tex_wall_kickplate_band_c_albedo.ktx2",
+      "bytes": 627752,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/tex_wall_kickplate_band_c_detail.ktx2",
+      "bytes": 553733,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/tex_wall_kickplate_band_d_albedo.ktx2",
+      "bytes": 616942,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/tex_wall_kickplate_band_d_detail.ktx2",
+      "bytes": 545929,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/engineer-rigged-gestures.glb",
       "bytes": 6357192,
       "classification": "runtime-required"
@@ -2082,6 +3001,46 @@
       "classification": "unknown"
     },
     {
+      "path": "3d/runtime/kits/textures/geothermal_floor_color.webp",
+      "bytes": 305556,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/geothermal_floor_emissive.webp",
+      "bytes": 59384,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/geothermal_floor_normal.webp",
+      "bytes": 658472,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/geothermal_floor_rough.webp",
+      "bytes": 40328,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/geothermal_wall_color.webp",
+      "bytes": 1786896,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/geothermal_wall_emissive.webp",
+      "bytes": 209320,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/geothermal_wall_normal.webp",
+      "bytes": 2727986,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/geothermal_wall_rough.webp",
+      "bytes": 591702,
+      "classification": "unknown"
+    },
+    {
       "path": "3d/runtime/kits/textures/giger_floor_color.webp",
       "bytes": 267686,
       "classification": "unknown"
@@ -2119,6 +3078,46 @@
     {
       "path": "3d/runtime/kits/textures/giger_wall_rough.webp",
       "bytes": 77686,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/hive_resin_floor_color.webp",
+      "bytes": 32150,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/hive_resin_floor_emissive.webp",
+      "bytes": 33094,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/hive_resin_floor_normal.webp",
+      "bytes": 272352,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/hive_resin_floor_rough.webp",
+      "bytes": 20010,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/hive_resin_wall_color.webp",
+      "bytes": 1567334,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/hive_resin_wall_emissive.webp",
+      "bytes": 45844,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/hive_resin_wall_normal.webp",
+      "bytes": 2629034,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/kits/textures/hive_resin_wall_rough.webp",
+      "bytes": 499286,
       "classification": "unknown"
     },
     {
@@ -2587,6 +3586,401 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/life_acoustic_ear_horn.glb",
+      "bytes": 863428,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_ammo_ovipositor.glb",
+      "bytes": 820232,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_assimilated_desk.glb",
+      "bytes": 1831716,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_barber_chair.glb",
+      "bytes": 2367032,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_barrel_heater.glb",
+      "bytes": 720552,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_bone_clamp_rig.glb",
+      "bytes": 777184,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_brood_comb.glb",
+      "bytes": 1972328,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_bunk_stack.glb",
+      "bytes": 869488,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_card_table.glb",
+      "bytes": 880288,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_cargo_pallet_netted.glb",
+      "bytes": 794392,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_ceiling_collapse.glb",
+      "bytes": 2749876,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_checkpoint_post.glb",
+      "bytes": 2157136,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_cochlear_intercom.glb",
+      "bytes": 2082700,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_colossal_limb.glb",
+      "bytes": 2156064,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_confessional.glb",
+      "bytes": 2198192,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_covered_stretcher.glb",
+      "bytes": 721992,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_devotion_tree.glb",
+      "bytes": 2461336,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_drip_buckets.glb",
+      "bytes": 1755456,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_dropped_kit_pile.glb",
+      "bytes": 2216884,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_exosuit_teardown.glb",
+      "bytes": 2446292,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_fallen_comm_dish.glb",
+      "bytes": 2295324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_flood_lamp_tripod.glb",
+      "bytes": 770924,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_footlocker_open.glb",
+      "bytes": 885168,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_fuel_probe_boom.glb",
+      "bytes": 765244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_fungal_cable_bundle.glb",
+      "bytes": 1823456,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_fuse_bypass_panel.glb",
+      "bytes": 2040732,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_galley_hotplate.glb",
+      "bytes": 990228,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_guide_rope_stakes.glb",
+      "bytes": 3164792,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_hive_dew_funnel.glb",
+      "bytes": 1533836,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_hive_feeding_bladder.glb",
+      "bytes": 1491552,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_hydro_rack.glb",
+      "bytes": 707348,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_ice_bore_winch.glb",
+      "bytes": 2540856,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_ice_core_rack.glb",
+      "bytes": 1990244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_ice_sled.glb",
+      "bytes": 2602868,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_infusion_cradle.glb",
+      "bytes": 770320,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_janitor_cart.glb",
+      "bytes": 1503680,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_latrine_stall.glb",
+      "bytes": 700684,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_lookout_perch.glb",
+      "bytes": 2686128,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_lung_filter_bellows.glb",
+      "bytes": 818816,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_mask_rack.glb",
+      "bytes": 686236,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_meat_smoking_rack.glb",
+      "bytes": 1997384,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_memorial_board.glb",
+      "bytes": 1051116,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_mess_table.glb",
+      "bytes": 961700,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_ore_cart.glb",
+      "bytes": 2266976,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_parka_hooks.glb",
+      "bytes": 2459908,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_pelvic_autopsy_trough.glb",
+      "bytes": 1087804,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_peristaltic_feeder.glb",
+      "bytes": 550736,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_pew_segment.glb",
+      "bytes": 2963464,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_pheromone_censer.glb",
+      "bytes": 939448,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_pipe_hammock.glb",
+      "bytes": 841072,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_pipeline_trestle.glb",
+      "bytes": 3015968,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_pneumatic_tube_node.glb",
+      "bytes": 1979688,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_pod_seat_row.glb",
+      "bytes": 2382820,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_reloading_bench.glb",
+      "bytes": 911448,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_resin_extractor.glb",
+      "bytes": 1130332,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_ribcage_rescue_cabinet.glb",
+      "bytes": 2400440,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_rope_anchor_post.glb",
+      "bytes": 2365116,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_route_map_table.glb",
+      "bytes": 1063416,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_sanitation_bidet.glb",
+      "bytes": 662264,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_scent_distiller.glb",
+      "bytes": 721984,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_seismic_drill.glb",
+      "bytes": 2660228,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_sensory_chair.glb",
+      "bytes": 995460,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_sleep_sleeve.glb",
+      "bytes": 805340,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_stigmata_inscriber.glb",
+      "bytes": 869308,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_suit_drying_rack.glb",
+      "bytes": 921228,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_supply_drop_pod.glb",
+      "bytes": 2241676,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_tactile_console.glb",
+      "bytes": 916952,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_tally_bulkhead.glb",
+      "bytes": 875672,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_tarp_leanto.glb",
+      "bytes": 2150108,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_training_dummy.glb",
+      "bytes": 1790224,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_umbilical_tether.glb",
+      "bytes": 804224,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_vending_machine.glb",
+      "bytes": 778140,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_vertebral_restraint_rack.glb",
+      "bytes": 749420,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_vulval_drain_sump.glb",
+      "bytes": 740208,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_warmth_hearth.glb",
+      "bytes": 703616,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_water_still.glb",
+      "bytes": 664388,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_wayfinding_totem.glb",
+      "bytes": 2054636,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_welding_station.glb",
+      "bytes": 2490112,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/life_wind_mast.glb",
+      "bytes": 1992696,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/mod_archivist_lens.glb",
       "bytes": 159244,
       "classification": "runtime-required"
@@ -2778,7 +4172,7 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_biomech_spore_umbilical_cable_rigged.glb",
-      "bytes": 4642128,
+      "bytes": 4625708,
       "classification": "runtime-required"
     },
     {
@@ -3363,7 +4757,7 @@
     },
     {
       "path": "3d/runtime/secrets/mayor-tina-rigged.glb",
-      "bytes": 6018488,
+      "bytes": 6019116,
       "classification": "runtime-required"
     },
     {
@@ -3394,6 +4788,486 @@
     {
       "path": "3d/runtime/structures/structure_reference_49m.glb",
       "bytes": 4572,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_blend_breakup_a.webp",
+      "bytes": 638144,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_blend_breakup_b.webp",
+      "bytes": 670118,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_blend_breakup_c.webp",
+      "bytes": 669750,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_blend_breakup_d.webp",
+      "bytes": 619392,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_bone_terrazzo_a_albedo.ktx2",
+      "bytes": 1055683,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_bone_terrazzo_a_detail.ktx2",
+      "bytes": 1197681,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_bone_terrazzo_b_albedo.ktx2",
+      "bytes": 1079419,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_bone_terrazzo_b_detail.ktx2",
+      "bytes": 1236712,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_bone_terrazzo_c_albedo.ktx2",
+      "bytes": 1049774,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_bone_terrazzo_c_detail.ktx2",
+      "bytes": 1132917,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_bone_terrazzo_d_albedo.ktx2",
+      "bytes": 1045835,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_bone_terrazzo_d_detail.ktx2",
+      "bytes": 1207680,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_camp_planks_a_albedo.ktx2",
+      "bytes": 984213,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_camp_planks_a_detail.ktx2",
+      "bytes": 1194707,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_camp_planks_b_albedo.ktx2",
+      "bytes": 986994,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_camp_planks_b_detail.ktx2",
+      "bytes": 1178801,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_camp_planks_c_albedo.ktx2",
+      "bytes": 965767,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_camp_planks_c_detail.ktx2",
+      "bytes": 1147313,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_camp_planks_d_albedo.ktx2",
+      "bytes": 1008969,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_camp_planks_d_detail.ktx2",
+      "bytes": 1188680,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_chitin_resin_a_albedo.ktx2",
+      "bytes": 1017306,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_chitin_resin_a_detail.ktx2",
+      "bytes": 1130521,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_chitin_resin_b_albedo.ktx2",
+      "bytes": 1033824,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_chitin_resin_b_detail.ktx2",
+      "bytes": 1157940,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_chitin_resin_c_albedo.ktx2",
+      "bytes": 1041032,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_chitin_resin_c_detail.ktx2",
+      "bytes": 1194975,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_chitin_resin_d_albedo.ktx2",
+      "bytes": 1003173,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_chitin_resin_d_detail.ktx2",
+      "bytes": 1123274,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_concrete_stained_a_albedo.ktx2",
+      "bytes": 968536,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_concrete_stained_a_detail.ktx2",
+      "bytes": 1163281,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_concrete_stained_b_albedo.ktx2",
+      "bytes": 973422,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_concrete_stained_b_detail.ktx2",
+      "bytes": 1191197,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_concrete_stained_c_albedo.ktx2",
+      "bytes": 962249,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_concrete_stained_c_detail.ktx2",
+      "bytes": 1179512,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_concrete_stained_d_albedo.ktx2",
+      "bytes": 990444,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_concrete_stained_d_detail.ktx2",
+      "bytes": 1201788,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_concrete_stained_e_albedo.ktx2",
+      "bytes": 963195,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_concrete_stained_e_detail.ktx2",
+      "bytes": 1164796,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_concrete_stained_f_albedo.ktx2",
+      "bytes": 968827,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_concrete_stained_f_detail.ktx2",
+      "bytes": 1169018,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_concrete_stained_g_albedo.ktx2",
+      "bytes": 991349,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_concrete_stained_g_detail.ktx2",
+      "bytes": 1206195,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_concrete_stained_h_albedo.ktx2",
+      "bytes": 995152,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_concrete_stained_h_detail.ktx2",
+      "bytes": 1172356,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_deck_drain_a_albedo.ktx2",
+      "bytes": 1039561,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_deck_drain_a_detail.ktx2",
+      "bytes": 1141762,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_deck_drain_b_albedo.ktx2",
+      "bytes": 1044127,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_deck_drain_b_detail.ktx2",
+      "bytes": 1147187,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_deck_drain_c_albedo.ktx2",
+      "bytes": 1006082,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_deck_drain_c_detail.ktx2",
+      "bytes": 1100056,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_deck_drain_d_albedo.ktx2",
+      "bytes": 1026741,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_deck_drain_d_detail.ktx2",
+      "bytes": 1134214,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_grate_trench_a_albedo.ktx2",
+      "bytes": 1031295,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_grate_trench_a_detail.ktx2",
+      "bytes": 1183992,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_grate_trench_b_albedo.ktx2",
+      "bytes": 951018,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_grate_trench_b_detail.ktx2",
+      "bytes": 1002211,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_grate_trench_c_albedo.ktx2",
+      "bytes": 1042580,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_grate_trench_c_detail.ktx2",
+      "bytes": 1182568,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_grate_trench_d_albedo.ktx2",
+      "bytes": 999793,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_grate_trench_d_detail.ktx2",
+      "bytes": 1087117,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_latex_mat_a_albedo.ktx2",
+      "bytes": 938978,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_latex_mat_a_detail.ktx2",
+      "bytes": 1114301,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_latex_mat_b_albedo.ktx2",
+      "bytes": 894584,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_latex_mat_b_detail.ktx2",
+      "bytes": 1043717,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_latex_mat_c_albedo.ktx2",
+      "bytes": 913953,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_latex_mat_c_detail.ktx2",
+      "bytes": 1138428,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_latex_mat_d_albedo.ktx2",
+      "bytes": 939910,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_latex_mat_d_detail.ktx2",
+      "bytes": 1121856,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_slush_ice_a_albedo.ktx2",
+      "bytes": 1017151,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_slush_ice_a_detail.ktx2",
+      "bytes": 1208657,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_slush_ice_b_albedo.ktx2",
+      "bytes": 1035612,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_slush_ice_b_detail.ktx2",
+      "bytes": 1219385,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_slush_ice_c_albedo.ktx2",
+      "bytes": 1039237,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_slush_ice_c_detail.ktx2",
+      "bytes": 1217395,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_slush_ice_d_albedo.ktx2",
+      "bytes": 1026220,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_floor_slush_ice_d_detail.ktx2",
+      "bytes": 1218974,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_ground_regolith_a_albedo.ktx2",
+      "bytes": 978448,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_ground_regolith_a_detail.ktx2",
+      "bytes": 1149996,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_ground_regolith_b_albedo.ktx2",
+      "bytes": 947095,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_ground_regolith_b_detail.ktx2",
+      "bytes": 1060503,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_ground_regolith_c_albedo.ktx2",
+      "bytes": 972114,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_ground_regolith_c_detail.ktx2",
+      "bytes": 1091019,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_ground_regolith_d_albedo.ktx2",
+      "bytes": 959128,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_ground_regolith_d_detail.ktx2",
+      "bytes": 1105316,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_ground_rutted_dirt_a_albedo.ktx2",
+      "bytes": 908583,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_ground_rutted_dirt_a_detail.ktx2",
+      "bytes": 1135532,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_ground_rutted_dirt_b_albedo.ktx2",
+      "bytes": 966000,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_ground_rutted_dirt_b_detail.ktx2",
+      "bytes": 1168966,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_ground_rutted_dirt_c_albedo.ktx2",
+      "bytes": 937959,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_ground_rutted_dirt_c_detail.ktx2",
+      "bytes": 1144900,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_ground_rutted_dirt_d_albedo.ktx2",
+      "bytes": 963866,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_ground_rutted_dirt_d_detail.ktx2",
+      "bytes": 1163329,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_macro_grime_a.webp",
+      "bytes": 504750,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_macro_grime_b.webp",
+      "bytes": 518096,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_macro_grime_c.webp",
+      "bytes": 502890,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/surfaces/tex_macro_grime_d.webp",
+      "bytes": 540448,
       "classification": "runtime-required"
     },
     {
@@ -17724,6 +19598,21 @@
     {
       "path": "cutscenes/scout-intro.webm",
       "bytes": 1483713,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/sleep-bunker-poster.jpg",
+      "bytes": 133071,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/sleep-bunker.mp4",
+      "bytes": 2312580,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/sleep-bunker.webm",
+      "bytes": 1209327,
       "classification": "runtime-required"
     },
     {

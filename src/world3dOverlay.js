@@ -300,7 +300,51 @@ export const WORLD_3D_MODELS = Object.freeze({
     life_acoustic_ear_horn: { url: '/3d/runtime/new3ds/life_acoustic_ear_horn.glb', height: 1.6, span: 0.9, yaw: 0 },
     life_stigmata_inscriber: { url: '/3d/runtime/new3ds/life_stigmata_inscriber.glb', height: 1.7, span: 1.1, yaw: 0 },
     life_lung_filter_bellows: { url: '/3d/runtime/new3ds/life_lung_filter_bellows.glb', height: 1.4, span: 1.2, yaw: 0 },
-    life_vertebral_restraint_rack: { url: '/3d/runtime/new3ds/life_vertebral_restraint_rack.glb', height: 2.1, span: 0.8, yaw: 0 }
+    life_vertebral_restraint_rack: { url: '/3d/runtime/new3ds/life_vertebral_restraint_rack.glb', height: 2.1, span: 0.8, yaw: 0 },
+
+    // Lived-in batch 2026-10-09 (props 41-79; 80 was not delivered). 25k
+    // triangles each: these keep their detail rather than the prompt-sheet
+    // budgets. Heights are the prompt sheet's; maxSpan caps the few models
+    // that run longer than the sheet without stretching them.
+    life_cochlear_intercom: { url: '/3d/runtime/new3ds/life_cochlear_intercom.glb', height: 0.9, yaw: 0 },
+    life_ceiling_collapse: { url: '/3d/runtime/new3ds/life_ceiling_collapse.glb', height: 0.6, maxSpan: 2.2, yaw: 0 },
+    life_ribcage_rescue_cabinet: { url: '/3d/runtime/new3ds/life_ribcage_rescue_cabinet.glb', height: 1.4, yaw: 0 },
+    life_checkpoint_post: { url: '/3d/runtime/new3ds/life_checkpoint_post.glb', height: 1.3, yaw: 0 },
+    life_pneumatic_tube_node: { url: '/3d/runtime/new3ds/life_pneumatic_tube_node.glb', height: 1.8, yaw: 0 },
+    life_janitor_cart: { url: '/3d/runtime/new3ds/life_janitor_cart.glb', height: 1.0, yaw: 0 },
+    life_wayfinding_totem: { url: '/3d/runtime/new3ds/life_wayfinding_totem.glb', height: 2.0, yaw: 0 },
+    life_dropped_kit_pile: { url: '/3d/runtime/new3ds/life_dropped_kit_pile.glb', height: 0.35, maxSpan: 1.1, yaw: 0 },
+    life_seismic_drill: { url: '/3d/runtime/new3ds/life_seismic_drill.glb', height: 2.2, yaw: 0 },
+    life_supply_drop_pod: { url: '/3d/runtime/new3ds/life_supply_drop_pod.glb', height: 1.6, maxSpan: 3.0, yaw: 0 },
+    life_colossal_limb: { url: '/3d/runtime/new3ds/life_colossal_limb.glb', height: 3.5, maxSpan: 8.0, yaw: 0 },
+    life_wind_mast: { url: '/3d/runtime/new3ds/life_wind_mast.glb', height: 3.0, yaw: 0 },
+    life_guide_rope_stakes: { url: '/3d/runtime/new3ds/life_guide_rope_stakes.glb', height: 1.1, maxSpan: 3.0, yaw: 0 },
+    life_fallen_comm_dish: { url: '/3d/runtime/new3ds/life_fallen_comm_dish.glb', height: 1.8, maxSpan: 3.4, yaw: 0 },
+    life_tarp_leanto: { url: '/3d/runtime/new3ds/life_tarp_leanto.glb', height: 1.5, maxSpan: 2.8, yaw: 0 },
+    life_pipeline_trestle: { url: '/3d/runtime/new3ds/life_pipeline_trestle.glb', height: 2.0, maxSpan: 4.4, yaw: 0 },
+    life_ice_sled: { url: '/3d/runtime/new3ds/life_ice_sled.glb', height: 0.9, maxSpan: 2.4, yaw: 0 },
+    life_ice_core_rack: { url: '/3d/runtime/new3ds/life_ice_core_rack.glb', height: 1.6, maxSpan: 2.4, yaw: 0 },
+    life_ice_bore_winch: { url: '/3d/runtime/new3ds/life_ice_bore_winch.glb', height: 2.1, yaw: 0 },
+    life_parka_hooks: { url: '/3d/runtime/new3ds/life_parka_hooks.glb', height: 1.7, yaw: 0 },
+    life_brood_comb: { url: '/3d/runtime/new3ds/life_brood_comb.glb', height: 1.8, maxSpan: 2.4, yaw: 0 },
+    life_hive_dew_funnel: { url: '/3d/runtime/new3ds/life_hive_dew_funnel.glb', height: 1.5, yaw: 0 },
+    life_hive_feeding_bladder: { url: '/3d/runtime/new3ds/life_hive_feeding_bladder.glb', height: 1.0, yaw: 0 },
+    life_assimilated_desk: { url: '/3d/runtime/new3ds/life_assimilated_desk.glb', height: 1.3, yaw: 0 },
+    life_fungal_cable_bundle: { url: '/3d/runtime/new3ds/life_fungal_cable_bundle.glb', height: 1.2, yaw: 0 },
+    life_ore_cart: { url: '/3d/runtime/new3ds/life_ore_cart.glb', height: 1.0, yaw: 0 },
+    life_drip_buckets: { url: '/3d/runtime/new3ds/life_drip_buckets.glb', height: 0.5, maxSpan: 1.2, yaw: 0 },
+    life_rope_anchor_post: { url: '/3d/runtime/new3ds/life_rope_anchor_post.glb', height: 1.4, yaw: 0 },
+    life_confessional: { url: '/3d/runtime/new3ds/life_confessional.glb', height: 2.3, yaw: 0 },
+    life_devotion_tree: { url: '/3d/runtime/new3ds/life_devotion_tree.glb', height: 1.9, yaw: 0 },
+    life_pew_segment: { url: '/3d/runtime/new3ds/life_pew_segment.glb', height: 1.0, yaw: 0 },
+    life_barber_chair: { url: '/3d/runtime/new3ds/life_barber_chair.glb', height: 1.3, yaw: 0 },
+    life_meat_smoking_rack: { url: '/3d/runtime/new3ds/life_meat_smoking_rack.glb', height: 1.8, yaw: 0 },
+    life_training_dummy: { url: '/3d/runtime/new3ds/life_training_dummy.glb', height: 1.9, yaw: 0 },
+    life_lookout_perch: { url: '/3d/runtime/new3ds/life_lookout_perch.glb', height: 2.6, yaw: 0 },
+    life_welding_station: { url: '/3d/runtime/new3ds/life_welding_station.glb', height: 1.4, yaw: 0 },
+    life_exosuit_teardown: { url: '/3d/runtime/new3ds/life_exosuit_teardown.glb', height: 1.1, maxSpan: 2.6, yaw: 0 },
+    life_fuse_bypass_panel: { url: '/3d/runtime/new3ds/life_fuse_bypass_panel.glb', height: 1.6, yaw: 0 },
+    life_pod_seat_row: { url: '/3d/runtime/new3ds/life_pod_seat_row.glb', height: 1.4, maxSpan: 2.4, yaw: 0 }
 });
 
 // Metric-scale set-piece shells are deliberately separate from prop models.

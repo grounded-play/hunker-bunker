@@ -28,6 +28,66 @@ This is a plan. Phases 0 and 1 are built (see **Status** below); the rest is not
     - lifting the ground ledges flush removed a bright crack that ran along every corridor edge.
   - **Not measured yet:** GPU cost on the Deck. The floor shader gains 4 texel fetches, up to 2 array samples and some value noise per fragment.
 
+**2026-10-09 (later): Phases 3, 4 and 5 are done, with the owner's art.**
+
+The owner uploaded 39 GLBs, 80 sticker renders and 56 texture renders without names. Each was identified by eye against Parts 2–4. The mapping from upload name to asset name is `scripts/art/manifests/lived-in-pass-2-sources.json`, and the raw files moved out of `public/` into ignored `art/source/`.
+- **Missing:** prop 80, the smouldering hull shard, was not in the upload.
+- **Extra:** stained concrete (T2) came in eight versions; everything else came in four.
+
+- **Props (Phase 3).** `scripts/blender/ingest_lived_in_props_20261009.py`.
+  - **Changed from this plan:** each prop keeps **25k triangles**, not the 3k–14k in Part 2. Cut that low, the organic curves faceted visibly (the intercom's ear ring, the pew's bones); at 25k they match the 50k source.
+  - **Textures:** 2048 px WebP (the sources are 4096).
+  - **Geometry:** gltfpack meshopt compression, so each file is 1.5–3.2 MB.
+  - **Registered in:** `WORLD_3D_MODELS`, `DRESSING_TRIANGLES` and the showroom.
+- **Floor textures (Phase 3).** `scripts/art/build_floor_surfaces.py`.
+  - **The bake:**
+    - divides the baked lighting out;
+    - makes each texture seamless with a ragged half-offset cut;
+    - derives height, normal, roughness, AO and metalness.
+  - **Review copies:** the full PBR set is written as PNGs to `art/source/textures/lived-in-pass-2/pbr/`.
+  - **What ships:** two BC7 KTX2 files per version (`_albedo`, `_detail`) with zstd supercompression, 95 MB in all. KTX2 was decision O2.
+    - All 44 versions stay compressed on the GPU, about 120 MB against about 470 MB as plain images.
+    - `src/floorSplat.js` loads them with three's KTX2Loader and stacks them into two arrays.
+  - **Where each surface goes:**
+    - the hallway takes T1;
+    - room themes map through `ROOM_THEME_SURFACE`;
+    - field and crater ground take T4, and ruins take T5;
+    - every room, hallway and chunk picks one of the versions.
+  - **The utility maps:** T11 (macro grime over 32 m) and T12 (edge breakup) ship as WebP, and the blend shader reads them.
+  - **Fallback:** without BC7 support, each new surface draws the older surface it replaced.
+- **Stickers (Phases 3 and 4).** `scripts/art/build_stickers.py`.
+  - **Keying:** a soft difference matte against the key colour read from each image's border.
+    - D3 and D9 are keyed on magenta.
+    - Spill is removed, and edge colour comes from the nearest solid part of the sticker.
+  - **Shaping:** each sticker is trimmed to its content, and tall stickers are turned on their side to keep their resolution.
+  - **What ships:** 84 BC7 KTX2 layers (80 stickers plus the T13 wall band), 74 MB.
+  - **Placement:** `src/stickerPlanner.js` places them per chunk:
+    - grime strips along wall feet;
+    - the T13 band on the walls of bunker rooms;
+    - frost, resin and dust strips, or a cracked seam, where surface families meet;
+    - tracked mud on both sides of doors;
+    - story stickers by room theme;
+    - scuffs, rust and tracks in halls and on open ground;
+    - contact grime under props.
+  - **Rendering:** `src/stickerDecals.js` draws every sticker in a chunk with full PBR (colour, coverage, normal, roughness, metalness) as one instanced draw.
+  - **Opt-out:** `localStorage.hb_stickers = '0'`.
+- **Placement (Phase 5).**
+  - **Kits** take the Part 6.3 additions.
+  - **Camps** get the lookout perch, smoking rack and training dummy, plus the barber chair and devotion tree.
+  - **`src/worldDressing.js`** dresses the corridors (wall fixtures on straight runs, vignettes at dead ends, a wayfinding totem at wide crossings) and the open landforms (a landmark 40% of the time, plus 2–5 working props).
+  - **Budgets:** 125k triangles per maze chunk and 150k per outdoor chunk, so at 25k a prop that is a handful each.
+  - **Reachability:** a placement may never split a connected floor region.
+  - **Lights:** lamp-carrying props get pooled practical lights.
+- **Pinned-map probe:** 183 world props and about 18k stickers across the 49 mounted chunks, with no shader errors. Draw calls at a maze door rose from 331 to 372.
+- **Retail budget:** raised to 3400 MiB, measured at 3357 MiB. KTX2 joins `.glb` in `asarUnpack` and in `src/assetUrl.js`.
+
+**Still open:**
+- the crash-site seat row (79), which needs hand placement around the console and the modules;
+- prop 80;
+- ambient motion (Part 7);
+- a Deck p95 capture;
+- converting the game's other world textures to KTX2. The owner asked for this as the next pass. An estimate from the files: 983 textures inside models and 521 loose world textures, about 13 GB if every one were loaded unpacked.
+
 
 - **Part 0:** why the world still reads as empty, taken from the code.
 - **Part 1:** the techniques games use to make a world feel lived in, mapped to what we already have.

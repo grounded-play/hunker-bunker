@@ -1,8 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
+import fs from 'node:fs';
+import { read as readKtx2 } from 'three/examples/jsm/libs/ktx-parse.module.js';
 import {
     FLOOR_ARRAY_SOURCES,
     FLOOR_LAYER,
+    FLOOR_SPLAT_FRAGMENT_PARS,
+    FLOOR_SURFACES,
+    FLOOR_SURFACE_COUNT,
+    ROOM_THEME_SURFACE,
+    SURFACE_LAYER_FIRST,
+    floorSurfaceFileNames,
+    stackCompressedLayers,
+    surfaceForLayer,
+    surfaceLayer,
     ROOM_FLOOR_MATERIAL_FAMILY,
     WALL_DISTANCE_SCALE,
     buildFloorLayerArray,
@@ -42,6 +53,7 @@ describe('buildFloorSplatData', () => {
         metadata: { roomInstances: [ROOM] },
         maze: true,
         ledgeGround: true,
+        surfaces: false,
         ...options
     });
 
@@ -86,6 +98,83 @@ describe('buildFloorSplatData', () => {
         expect(at(splat, 2, 3).wet).toBeCloseTo(0.28, 2);
         expect(at(splat, 1, 0).wet).toBeCloseTo(0.38, 2);
         expect(at(splat, 0, 3).wet).toBe(0);
+    });
+});
+
+describe('new floor surfaces', () => {
+    const build = (options = {}) => buildFloorSplatData({
+        grid: GRID,
+        size: 7,
+        metadata: { roomInstances: [{ ...ROOM, theme: 'cryo-rough' }] },
+        maze: true,
+        ledgeGround: true,
+        landform: 'field',
+        variantKey: '3,-2',
+        ...options
+    });
+
+    it('gives hallways the deck plate, rooms their theme surface and field ground regolith', () => {
+        const splat = build();
+        expect(surfaceForLayer(at(splat, 1, 0).layer).id).toBe('tex_floor_deck_drain');
+        expect(surfaceForLayer(at(splat, 3, 1).layer).id).toBe('tex_floor_deck_drain');
+        expect(surfaceForLayer(at(splat, 2, 3).layer).id).toBe('tex_floor_slush_ice');
+        expect(surfaceForLayer(at(splat, 0, 3).layer).id).toBe('tex_ground_regolith');
+    });
+
+    it('keeps the atlas floor for themes without a new surface and rock in canyons', () => {
+        const splat = build({ metadata: { roomInstances: [{ ...ROOM, theme: 'cryo-medical' }] }, landform: 'canyon' });
+        expect(at(splat, 2, 3).layer).toBe(FLOOR_LAYER.CRYO);
+        expect(at(splat, 0, 3).layer).toBe(FLOOR_LAYER.GROUND);
+    });
+
+    it('picks a stable version per key and uses every version somewhere', () => {
+        expect(surfaceLayer('tex_floor_latex_mat', 'room-a')).toBe(surfaceLayer('tex_floor_latex_mat', 'room-a'));
+        const seen = new Set(Array.from({ length: 64 }, (_, i) => surfaceLayer('tex_floor_concrete_stained', `room-${i}`)));
+        expect(seen.size).toBe(8);
+    });
+
+    it('maps every room theme surface and file to a layer below the NONE marker', () => {
+        for (const id of Object.values(ROOM_THEME_SURFACE)) expect(FLOOR_SURFACES.some((s) => s.id === id), id).toBe(true);
+        expect(floorSurfaceFileNames()).toHaveLength(FLOOR_SURFACE_COUNT);
+        expect(floorSurfaceFileNames()[4]).toBe('tex_floor_concrete_stained_a');
+        expect(SURFACE_LAYER_FIRST + FLOOR_SURFACE_COUNT).toBeLessThan(FLOOR_LAYER.NONE);
+    });
+
+    it('draws each surface as its fallback until the arrays load', () => {
+        expect(FLOOR_SPLAT_FRAGMENT_PARS).toContain('if (layer < 20.0 - 0.5) { scale = 4.00; groundLike = 0.0; return 6.0; }');
+        expect(FLOOR_SPLAT_FRAGMENT_PARS).toContain('uSurfacesReady > 0.5) return layer;');
+    });
+});
+
+describe('floor surface files', () => {
+    it('ships every version as matching BC7 KTX2 albedo (sRGB) and detail (linear) maps', () => {
+        let shape = null;
+        for (const name of floorSurfaceFileNames()) {
+            for (const [map, vkFormat] of [['albedo', 146], ['detail', 145]]) {
+                const container = readKtx2(new Uint8Array(fs.readFileSync(`public/3d/runtime/surfaces/${name}_${map}.ktx2`)));
+                expect(container.vkFormat, `${name}_${map}`).toBe(vkFormat);
+                const current = `${container.pixelWidth}x${container.pixelHeight}x${container.levels.length}`;
+                shape ??= current;
+                expect(current, `${name}_${map}`).toBe(shape);
+            }
+        }
+        expect(shape).toBe('1024x1024x9');
+    });
+
+    it('stacks one map of every version into a compressed array, level by level', () => {
+        const layer = (fill) => ({
+            image: { width: 8, height: 8 },
+            format: THREE.RGBA_BPTC_Format,
+            mipmaps: [
+                { data: new Uint8Array(64).fill(fill), width: 8, height: 8 },
+                { data: new Uint8Array(16).fill(fill), width: 4, height: 4 }
+            ]
+        });
+        const array = stackCompressedLayers([layer(1), layer(2)], THREE.SRGBColorSpace);
+        expect(array).toBeInstanceOf(THREE.CompressedArrayTexture);
+        expect(array.image.depth).toBe(2);
+        expect([...array.mipmaps[1].data]).toEqual([...new Array(16).fill(1), ...new Array(16).fill(2)]);
+        expect(() => stackCompressedLayers([layer(1), { ...layer(2), mipmaps: layer(2).mipmaps.slice(0, 1) }])).toThrow(/differ/);
     });
 });
 

@@ -33,6 +33,8 @@ describe('retail asset audit', () => {
 
     it('classifies explicit references as runtime required', () => {
         expect(classifyPublicAsset('odd/location.png', new Set(['odd/location.png']))).toBe('runtime-required');
+        expect(classifyPublicAsset('3d/runtime/surfaces/tex_floor_deck_drain_a_albedo.ktx2', new Set())).toBe('runtime-required');
+        expect(classifyPublicAsset('3d/runtime/decals/decal_alien_tracks_a_detail.ktx2', new Set())).toBe('runtime-required');
     });
 
     it('keeps source/reference and generated intermediates out of runtime classification', () => {

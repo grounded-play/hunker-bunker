@@ -44,6 +44,7 @@ import { handleCriticalServiceDestruction } from './criticalServiceRecovery.js';
 import * as THREE from 'three';
 import { fitWallShaderSamplerBudget, INSTANCED_WORLD_POSITION } from './wallShaderCompatibility.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import { createFrameProfiler, summarizeFrameBreakdown } from './frameProfiler.js';
 import { createFrameIntervalTracker } from './frameIntervalTracker.js';
 import { createGpuFrameTimer } from './gpuFrameTimer.js';
@@ -159,15 +160,30 @@ import {
     FLOOR_SPLAT_FRAGMENT_NORMAL,
     FLOOR_SPLAT_FRAGMENT_PARS,
     FLOOR_SPLAT_FRAGMENT_ROUGHNESS,
+    FLOOR_UTILITY_MAPS,
     buildFloorLayerArray,
     buildFloorSplatData,
+    buildFloorUtilityTexture,
     buildGroundNormalArray,
     createEmptyFloorSplatTexture,
     createFloorSplatTexture,
     createPlaceholderFloorLayerArray,
+    createPlaceholderSurfaceArray,
+    createPlaceholderUtilityTexture,
     isFloorSplatEnabled,
+    loadFloorSurfaceArrays,
     scopeSpecularSofteningToBaseFloor
 } from './floorSplat.js';
+import { planChunkStickers, surfaceCategory } from './stickerPlanner.js';
+import { planWorldDressing } from './worldDressing.js';
+import {
+    buildStickerMesh,
+    createStickerMaterial,
+    disposeStickerMaterial,
+    isStickersEnabled,
+    loadStickerArrays,
+    setStickerArrays
+} from './stickerDecals.js';
 import { assignRoomThemes } from './roomThemes.js';
 import { isWallBackedPropType, planChunkRoomPopulation } from './roomPopulation.js';
 import { collectReachableCells, planChunkRoomEncounters } from './roomEncounters.js';
@@ -287,7 +303,7 @@ import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from '
 import { createEnemyGibShaderWarmup, spawnEnemyGibs, spawnPropDebris } from './enemyGibs.js';
 import { createPropDebrisPrewarmQueue } from './propDebrisPrewarm.js';
 import { isAreaRoomDensityEnabled } from './featureFlags.js';
-import { roomPracticalLightPlacement } from './anchorPracticalLight.js';
+import { anchorLightFor, roomPracticalLightPlacement } from './anchorPracticalLight.js';
 import { planRoomDressing } from './roomDressing.js';
 import { resolveRoomDressingIdentity } from './roomDressingIdentity.js';
 import { registerDressingNetwork, applyDressingNetworkEvent } from './dressingNetwork.js';
@@ -2710,9 +2726,17 @@ export class ThreeGame {
             uFloorLayers: { value: createPlaceholderFloorLayerArray() },
             uGroundNormals: { value: createPlaceholderFloorLayerArray(3) },
             uFloorLayersReady: { value: 0 },
+            uSurfaceAlbedo: { value: createPlaceholderSurfaceArray() },
+            uSurfaceDetail: { value: createPlaceholderSurfaceArray() },
+            uSurfacesReady: { value: 0 },
+            uFloorMacro: { value: createPlaceholderUtilityTexture() },
+            uFloorBreakup: { value: createPlaceholderUtilityTexture() },
+            uFloorUtilityReady: { value: 0 },
             uFloorTime: { value: 0 },
             uGroundEmissive: { value: [0x071521, 0x081d35, 0x09251d].map((hex) => new THREE.Color(hex)) }
         };
+        // Lived-in stickers (src/stickerDecals.js): one material for every chunk.
+        this.stickerMaterial = isStickersEnabled() ? createStickerMaterial() : null;
         const noFloorSplat = {
             uSplatData: { value: createEmptyFloorSplatTexture() },
             uSplatInfo: { value: new THREE.Vector3(0, 0, 0) }
@@ -10058,9 +10082,86 @@ export class ThreeGame {
                 shared.uGroundNormals.value = normals;
                 shared.uFloorLayersReady.value = 1;
                 for (const placeholder of placeholders) placeholder?.dispose?.();
+                this.startFloorSurfaceLoad();
             }).catch((error) => console.warn('[ThreeGame] Floor layer array build failed', error));
         };
         tryBuild();
+    }
+
+    /**
+     * Lived-in pass 2 floors: the BC7 surface arrays (T1-T10) and the macro
+     * grime / edge breakup maps (T11, T12). Until they land, and for good on
+     * a GPU without BC7, each new surface draws its older fallback.
+     */
+    startFloorSurfaceLoad() {
+        const shared = this.floorSplatShared;
+        if (!shared || this.floorSurfaceLoadStarted) return;
+        this.floorSurfaceLoadStarted = true;
+        const anisotropy = this.renderer?.capabilities?.getMaxAnisotropy?.() ?? 1;
+        const swap = (key, texture) => {
+            const previous = shared[key].value;
+            shared[key].value = texture;
+            previous?.dispose?.();
+        };
+        if (this.renderer?.extensions?.has?.('EXT_texture_compression_bptc')) {
+            const loader = new KTX2Loader().detectSupport(this.renderer);
+            loadFloorSurfaceArrays({ loader, resolveUrl: (path) => this.resolveRelativeAssetPath(path) }).then(({ albedo, detail }) => {
+                loader.dispose();
+                if (this.floorSplatShared !== shared) {
+                    albedo.dispose();
+                    detail.dispose();
+                    return;
+                }
+                albedo.anisotropy = anisotropy;
+                detail.anisotropy = anisotropy;
+                swap('uSurfaceAlbedo', albedo);
+                swap('uSurfaceDetail', detail);
+                shared.uSurfacesReady.value = 1;
+            }).catch((error) => {
+                loader.dispose();
+                console.warn('[ThreeGame] Floor surfaces failed to load; keeping the older floors', error);
+            });
+            if (this.stickerMaterial) {
+                const material = this.stickerMaterial;
+                const stickerLoader = new KTX2Loader().detectSupport(this.renderer);
+                loadStickerArrays({ loader: stickerLoader, resolveUrl: (path) => this.resolveRelativeAssetPath(path) }).then((arrays) => {
+                    stickerLoader.dispose();
+                    if (this.stickerMaterial !== material) {
+                        arrays.albedo.dispose();
+                        arrays.detail.dispose();
+                        return;
+                    }
+                    arrays.albedo.anisotropy = anisotropy;
+                    arrays.detail.anisotropy = anisotropy;
+                    setStickerArrays(material, arrays);
+                }).catch((error) => {
+                    stickerLoader.dispose();
+                    console.warn('[ThreeGame] Stickers failed to load', error);
+                });
+            }
+        } else {
+            console.info('[ThreeGame] No BC7 support; new floor surfaces draw their older fallbacks and stickers stay off.');
+        }
+        const loadImage = (name) => new Promise((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve(image);
+            image.onerror = () => reject(new Error(`Floor utility map ${name} failed to load`));
+            image.src = this.resolveRelativeAssetPath(`/3d/runtime/surfaces/${name}.webp`);
+        });
+        Promise.all(Object.entries(FLOOR_UTILITY_MAPS).map(async ([key, names]) => {
+            const texture = await buildFloorUtilityTexture({ images: await Promise.all(names.map(loadImage)) });
+            texture.anisotropy = anisotropy;
+            return [key, texture];
+        })).then((entries) => {
+            const textures = Object.fromEntries(entries);
+            if (this.floorSplatShared !== shared) {
+                Object.values(textures).forEach((texture) => texture.dispose());
+                return;
+            }
+            swap('uFloorMacro', textures.macro);
+            swap('uFloorBreakup', textures.breakup);
+            shared.uFloorUtilityReady.value = 1;
+        }).catch((error) => console.warn('[ThreeGame] Floor utility maps failed to load', error));
     }
 
     /**
@@ -10075,13 +10176,16 @@ export class ThreeGame {
             metadata: this.wfcMetadataCache?.get(`${chunkX},${chunkY}`),
             maze: landform === LANDFORMS.MAZE,
             crashRoom: chunkX === 0 && chunkY === 0,
-            ledgeGround
+            ledgeGround,
+            landform,
+            variantKey: `${chunkX},${chunkY}`
         });
         const material = this.floorMaterial.clone();
         material.onBeforeCompile = this.floorMaterial.onBeforeCompile;
         material.userData = {
             ...material.userData,
             ownsFloorSplat: true,
+            floorSplatLayer: splat.layer,
             floorSplat: {
                 uSplatData: { value: createFloorSplatTexture(splat) },
                 uSplatInfo: { value: new THREE.Vector3(chunkX * this.chunkSize, chunkY * this.chunkSize, this.chunkSize) }
@@ -24249,6 +24353,7 @@ export class ThreeGame {
 
     disposeChunkGroupResources(group) {
         group?.traverse?.((child) => {
+            if (child.userData?.isStickerDecals) child.geometry?.dispose?.();
             if (child.material?.userData?.ownsFloorSplat) {
                 child.material.userData.floorSplat?.uSplatData?.value?.dispose?.();
                 child.material.dispose();
@@ -30458,6 +30563,115 @@ export class ThreeGame {
      * furniture collides through invisible anchors in scatterSprites, which
      * chunk unload already removes with their group.
      */
+    /**
+     * Lived-in pass 2 (docs/planning/lived-in-world-pass-2-2026-10-09.md):
+     * props for corridors and open ground (src/worldDressing.js), drawn and
+     * collided like room dressing, then every sticker for the chunk
+     * (src/stickerPlanner.js) as one instanced draw.
+     */
+    addLivedInDressing(group, chunkX, chunkY, grid, landform, floorSplatMaterial) {
+        if (!floorSplatMaterial) return;
+        const originX = chunkX * this.chunkSize;
+        const originZ = chunkY * this.chunkSize;
+        const metadata = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
+        const layer = floorSplatMaterial.userData.floorSplatLayer;
+        const size = this.chunkSize;
+
+        // Anything already standing in the chunk (scatter, sites, pickups,
+        // boxes, room props) keeps a cell of clearance around it.
+        const occupied = new Set();
+        for (const child of group.children) {
+            if (child.isInstancedMesh || child.userData?.isWall) continue;
+            const localX = Math.round(child.position.x - originX);
+            const localY = Math.round(child.position.z - originZ);
+            if (localX < 0 || localY < 0 || localX >= size || localY >= size) continue;
+            if (child.position.x === 0 && child.position.z === 0) continue;
+            for (let dy = -1; dy <= 1; dy += 1) {
+                for (let dx = -1; dx <= 1; dx += 1) occupied.add(`${localX + dx},${localY + dy}`);
+            }
+        }
+        const dressingGrid = grid.map((row, y) => [...row].map((tile, x) => (occupied.has(`${x},${y}`) && tile === '.' ? 'P' : tile)).join(''));
+        const { items } = planWorldDressing({
+            grid: dressingGrid,
+            size,
+            landform,
+            metadata,
+            categoryAt: (x, y) => surfaceCategory(layer[y * size + x]),
+            seed: `${chunkX},${chunkY}`
+        });
+        const worldItems = items.map((item, index) => ({
+            ...item,
+            id: `lived-in:${chunkX},${chunkY}:${index}`,
+            stableId: `lived-in:${chunkX},${chunkY}:${index}`,
+            x: item.x + originX,
+            y: item.y + originZ,
+            supportCell: item.supportCell ? { x: item.supportCell.x + originX, y: item.supportCell.y + originZ } : null
+        }));
+        for (const item of worldItems) {
+            if (!item.blocking) continue;
+            for (const cell of item.cells ?? [{ x: item.x - originX, y: item.y - originZ }]) {
+                const collider = new THREE.Object3D();
+                collider.position.set(cell.x + originX, 0, cell.y + originZ);
+                collider.userData = {
+                    isScatter: true,
+                    isSolidProp: true,
+                    isRoomDressingCollider: true,
+                    collisionRadius: 0.42,
+                    type: item.type,
+                    groupType: 'dressing',
+                    scatterKey: `${item.id}:${cell.x},${cell.y}`,
+                    dressingId: item.id,
+                    dressingStableId: item.stableId,
+                    dressingItem: item
+                };
+                group.add(collider);
+                this.scatterSprites.push(collider);
+            }
+        }
+        // Lamp-carrying props light their surroundings through the pooled
+        // environment lights; two per chunk at most.
+        for (const item of worldItems.filter((entry) => anchorLightFor(entry.type)).slice(0, 2)) {
+            const { color, intensity, distance, decay } = anchorLightFor(item.type);
+            const light = new THREE.PointLight(color, intensity, distance, decay);
+            light.position.set(item.x, 1.6, item.y);
+            light.userData.isDressingPracticalLight = true;
+            group.add(light);
+            this.registerEnvLight?.(light);
+        }
+        if (worldItems.length > 0) {
+            const token = {};
+            group.userData.livedInDressingToken = token;
+            buildRoomDressingGroup(worldItems, {
+                loadModel: (type) => createWorld3dModel(type),
+                loadDecalTexture: () => null
+            }).then((dressing) => {
+                if (!group.parent || group.userData.livedInDressingToken !== token) {
+                    dressing.traverse((node) => node.isInstancedMesh && node.dispose());
+                    return;
+                }
+                dressing.name = 'lived-in-world-dressing';
+                group.add(dressing);
+            }).catch((error) => console.warn('[ThreeGame] Lived-in dressing failed to build', error));
+        }
+
+        if (!this.stickerMaterial) return;
+        // Contact grime goes under every prop that stands on the floor.
+        const props = group.children
+            .filter((child) => child.userData?.isRoomDressingCollider && child.userData.isSolidProp)
+            .map((child) => ({ x: child.position.x, z: child.position.z, radius: 0.7 }));
+        const stickers = buildStickerMesh(planChunkStickers({
+            grid,
+            size,
+            layer,
+            metadata,
+            landform,
+            originX,
+            originZ,
+            props
+        }), this.stickerMaterial);
+        if (stickers) group.add(stickers);
+    }
+
     addRoomDressing(group, chunkX, chunkY, metadata, grid) {
         const originX = chunkX * this.chunkSize;
         const originZ = chunkY * this.chunkSize;
@@ -33015,6 +33229,10 @@ export class ThreeGame {
 
         // Mystery boxes (Sprint 53 V6): placed after the room content.
         this.placeMysteryBoxes?.(group, chunkX, chunkY);
+
+        // Lived-in pass 2: corridor and landform props, then the stickers,
+        // last so they keep clear of everything the chunk already holds.
+        this.addLivedInDressing(group, chunkX, chunkY, grid, landform, floorSplatMaterial);
 
         for (let i = 0; i < group.children.length; i++) {
             const child = group.children[i];
@@ -43137,7 +43355,13 @@ export class ThreeGame {
         this.floorMaterial?.dispose?.();
         this.floorSplatShared?.uFloorLayers?.value?.dispose?.();
         this.floorSplatShared?.uGroundNormals?.value?.dispose?.();
+        for (const key of ['uSurfaceAlbedo', 'uSurfaceDetail', 'uFloorMacro', 'uFloorBreakup']) {
+            this.floorSplatShared?.[key]?.value?.dispose?.();
+        }
         this.floorSplatShared = null;
+        this.floorSurfaceLoadStarted = false;
+        disposeStickerMaterial(this.stickerMaterial);
+        this.stickerMaterial = null;
         this.crashSiteFloorMaterial?.dispose?.();
         this.crashSiteFloorTexture?.dispose?.();
         this.crashSiteHeatMaterial?.dispose?.();

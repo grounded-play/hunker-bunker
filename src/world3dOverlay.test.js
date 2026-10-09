@@ -31,7 +31,7 @@ describe('world 3D replacement catalog', () => {
             life_pelvic_autopsy_trough: [0.95, 2.3],
             life_vertebral_restraint_rack: [2.1, 0.8]
         };
-        expect(Object.keys(WORLD_3D_MODELS).filter((type) => type.startsWith('life_'))).toHaveLength(40);
+        expect(Object.keys(WORLD_3D_MODELS).filter((type) => type.startsWith('life_'))).toHaveLength(79);
         for (const [type, [height, span]] of Object.entries(expected)) {
             expect(WORLD_3D_MODELS[type].height, type).toBe(height);
             if (span) expect(WORLD_3D_MODELS[type].span, type).toBe(span);

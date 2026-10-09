@@ -14,7 +14,7 @@ test('floor boundaries: pinned-map captures', async ({ page }) => {
     test.setTimeout(300_000);
     const shaderErrors = [];
     page.on('console', (message) => {
-        if (/Shader Error|WebGLProgram|GL_INVALID|Floor layer/i.test(message.text())) shaderErrors.push(message.text().slice(0, 400));
+        if (/Shader Error|WebGLProgram|GL_INVALID|Floor layer|Floor surface|Floor utility|No BC7|Stickers failed|Lived-in dressing/i.test(message.text())) shaderErrors.push(message.text().slice(0, 400));
     });
     await page.setViewportSize({ width: 1600, height: 900 });
     await bootToOperatorMenu(page);
@@ -31,12 +31,12 @@ test('floor boundaries: pinned-map captures', async ({ page }) => {
     }, SEED_OFFSET);
     await page.waitForTimeout(3_000);
 
-    const spots = await page.evaluate(() => {
+    const spots = await page.evaluate((maxRadius) => {
         const game = window.game;
         const size = game.chunkSize;
         const found = {};
         const chunks = [];
-        for (let radius = 0; radius <= 2; radius += 1) {
+        for (let radius = 0; radius <= maxRadius; radius += 1) {
             for (let cy = -radius; cy <= radius; cy += 1) {
                 for (let cx = -radius; cx <= radius; cx += 1) {
                     if (Math.max(Math.abs(cx), Math.abs(cy)) !== radius) continue;
@@ -70,9 +70,25 @@ test('floor boundaries: pinned-map captures', async ({ page }) => {
                 if (!found.roomInterior && `${cx},${cy}` !== '0,0' && room.interior?.length > 20) {
                     found.roomInterior = world(room.interior[Math.floor(room.interior.length / 2)]);
                 }
+                // One room per theme, to see each theme's floor surface.
+                const themeKey = `room-${room.theme}`;
+                if (!found[themeKey] && `${cx},${cy}` !== '0,0' && room.interior?.length > 12) {
+                    found[themeKey] = world(room.interior[Math.floor(room.interior.length / 2)]);
+                }
             }
             const roomCells = new Set((metadata?.roomInstances ?? []).flatMap((r) => r.interior ?? []).map((c) => `${c.x},${c.y}`));
             const isHall = (x, y) => at(x, y) === '.' && !roomCells.has(`${x},${y}`);
+            // Exterior ground in the open landforms.
+            if (!found[`${landform}Ground`] && landform !== 'maze') {
+                for (let y = 10; y < size - 10 && !found[`${landform}Ground`]; y += 1) {
+                    for (let x = 10; x < size - 10; x += 1) {
+                        if (at(x, y) === 'O' && at(x + 1, y) === 'O' && at(x, y + 1) === 'O') {
+                            found[`${landform}Ground`] = world({ x, y });
+                            break;
+                        }
+                    }
+                }
+            }
             for (let y = 3; y < size - 3; y += 1) {
                 for (let x = 3; x < size - 3; x += 1) {
                     if (!isHall(x, y)) continue;
@@ -91,7 +107,7 @@ test('floor boundaries: pinned-map captures', async ({ page }) => {
             }
         }
         return { found, signature };
-    });
+    }, Number(process.env.FLOOR_SHOTS_RADIUS ?? 2));
     console.log(JSON.stringify(spots, null, 2));
     expect(Object.keys(spots.found).length).toBeGreaterThan(2);
 
@@ -119,7 +135,13 @@ test('floor boundaries: pinned-map captures', async ({ page }) => {
             return {
                 calls: info?.render?.calls ?? null,
                 programs: info?.programs?.length ?? null,
-                floorLayersReady: game.floorSplatShared?.uFloorLayersReady?.value ?? null
+                floorLayersReady: game.floorSplatShared?.uFloorLayersReady?.value ?? null,
+                surfacesReady: game.floorSplatShared?.uSurfacesReady?.value ?? null,
+                utilityReady: game.floorSplatShared?.uFloorUtilityReady?.value ?? null,
+                stickersReady: game.stickerMaterial?.userData?.stickerUniforms?.uStickersReady?.value ?? null,
+                stickers: game.scene.getObjectsByProperty('name', 'lived-in-stickers').reduce((sum, mesh) => sum + mesh.count, 0),
+                livedInProps: game.scene.getObjectsByProperty('name', 'lived-in-world-dressing').reduce((sum, group) => sum + (group.userData.itemCount ?? 0), 0),
+                triangles: game.renderer?.info?.render?.triangles ?? null
             };
         });
         if (dir) await page.screenshot({ path: path.join(dir, `${label}-${name}.png`) });

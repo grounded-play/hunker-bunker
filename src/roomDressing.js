@@ -25,11 +25,12 @@ export const DRESSING_LIMITS = Object.freeze({
     // batch per type, so this bounds draw calls however dense the room is.
     typesPerLayer: Object.freeze({ wallProps: 3, wallDecals: 4, clutter: 4, corners: 2, floorDecals: 3 }),
     // GPU budget. The shipped GLBs come in 2.5k/6k/12k/18k/25k/30k-triangle
-    // tiers; layers that repeat a model many times only take the light tiers,
+    // tiers (the 2026-10-09 lived-in batch keeps 25k: cut lower, its organic
+    // curves facet); layers that repeat a model many times only take the light tiers,
     // and each room's 3D dressing is capped (decals are a quad each). Measured
     // in game 2026-10-04: without these caps the visible dressing added
     // 0.8-1.25M triangles, about half the frame.
-    maxTrianglesPerModel: Object.freeze({ wallProps: 18000, clutter: 12000, corners: 18000 }),
+    maxTrianglesPerModel: Object.freeze({ wallProps: 25000, clutter: 12000, corners: 25000 }),
     roomTriangles: Object.freeze({ perimeter: 120000, vignettes: 70000 }),
     // One vignette per this many open floor cells, within [min, max].
     vignettes: Object.freeze({ cellsPer: 22, min: 2, max: 6 })

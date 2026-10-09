@@ -9,6 +9,8 @@ describe('assetUrl', () => {
             .toBe('file:///opt/game/resources/app.asar.unpacked/dist/audio/ost/Kaelens%20Sleeping%20Machine.mp3');
         expect(assetUrl('/3d/Scout.glb', 'file:///opt/game/resources/app.asar/dist/index.html'))
             .toBe('file:///opt/game/resources/app.asar.unpacked/dist/3d/Scout.glb');
+        expect(assetUrl('/3d/runtime/surfaces/tex_floor_deck_drain_a_albedo.ktx2', 'file:///opt/game/resources/app.asar/dist/index.html'))
+            .toBe('file:///opt/game/resources/app.asar.unpacked/dist/3d/runtime/surfaces/tex_floor_deck_drain_a_albedo.ktx2');
     });
 
     it('keeps non-unpacked public assets inside app.asar dist directory', () => {

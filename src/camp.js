@@ -56,7 +56,12 @@ export const CAMP_DRESSING_MODELS = Object.freeze({
         { type: 'life_latrine_stall', x: -5.2, z: 1.7, yaw: 1.25 },
         { type: 'life_pipe_hammock', x: 5.1, z: 1.8, yaw: -1.2 },
         { type: 'life_sanitation_bidet', x: -2.2, z: -4.8, yaw: 0.4 },
-        { type: 'life_vulval_drain_sump', x: 2.3, z: -4.8, yaw: -0.4 }
+        { type: 'life_vulval_drain_sump', x: 2.3, z: -4.8, yaw: -0.4 },
+        // Lived-in batch 2026-10-09: the camp's own piece, then the barber
+        // chair and devotion tree every camp shares.
+        { type: 'life_lookout_perch', x: -5.9, z: 0.6, yaw: Math.PI / 2 },
+        { type: 'life_barber_chair', x: 5.8, z: -0.7, yaw: -Math.PI / 2 },
+        { type: 'life_devotion_tree', x: 0.1, z: -5.9, yaw: 0 }
     ]),
     camp_tallow: Object.freeze([
         { type: 'prop_fungal_resin_basin', x: -3.0, z: 2.6, yaw: 0.2 },
@@ -74,7 +79,12 @@ export const CAMP_DRESSING_MODELS = Object.freeze({
         { type: 'life_latrine_stall', x: -5.1, z: 1.8, yaw: 1.2 },
         { type: 'life_pipe_hammock', x: 5.1, z: 1.8, yaw: -1.2 },
         { type: 'life_sanitation_bidet', x: -2.3, z: -4.8, yaw: 0.4 },
-        { type: 'life_vulval_drain_sump', x: 2.4, z: -4.8, yaw: -0.4 }
+        { type: 'life_vulval_drain_sump', x: 2.4, z: -4.8, yaw: -0.4 },
+        // Lived-in batch 2026-10-09: the camp's own piece, then the barber
+        // chair and devotion tree every camp shares.
+        { type: 'life_meat_smoking_rack', x: -5.9, z: 0.6, yaw: Math.PI / 2 },
+        { type: 'life_barber_chair', x: 5.8, z: -0.7, yaw: -Math.PI / 2 },
+        { type: 'life_devotion_tree', x: 0.1, z: -5.9, yaw: 0 }
     ]),
     camp_vesper: Object.freeze([
         { type: 'prop_base_defense_turret', x: -3.2, z: -2.6, yaw: 0.9 },
@@ -91,7 +101,12 @@ export const CAMP_DRESSING_MODELS = Object.freeze({
         { type: 'life_latrine_stall', x: -5.1, z: 1.8, yaw: 1.2 },
         { type: 'life_pipe_hammock', x: 5.1, z: 1.8, yaw: -1.2 },
         { type: 'life_sanitation_bidet', x: -2.3, z: -4.9, yaw: 0.4 },
-        { type: 'life_vulval_drain_sump', x: 2.4, z: -4.9, yaw: -0.4 }
+        { type: 'life_vulval_drain_sump', x: 2.4, z: -4.9, yaw: -0.4 },
+        // Lived-in batch 2026-10-09: the camp's own piece, then the barber
+        // chair and devotion tree every camp shares.
+        { type: 'life_training_dummy', x: -5.9, z: 0.6, yaw: Math.PI / 2 },
+        { type: 'life_barber_chair', x: 5.8, z: -0.7, yaw: -Math.PI / 2 },
+        { type: 'life_devotion_tree', x: 0.1, z: -5.9, yaw: 0 }
     ])
 });
 

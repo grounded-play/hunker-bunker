@@ -107,6 +107,7 @@
       "dist/**/*.mp4",
       "dist/**/*.webm",
       "dist/**/*.glb",
+      "dist/**/*.ktx2",
       "dist/**/*.mp3",
       "dist/**/*.wav",
       "dist/**/*.ogg"

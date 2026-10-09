@@ -75,6 +75,88 @@ export const ROOM_FLOOR_WETNESS = Object.freeze({
 });
 const DEFAULT_ROOM_WETNESS = 0.45;
 
+/**
+ * The lived-in pass 2 PBR floors (T1-T10), built by
+ * scripts/art/build_floor_surfaces.py. Every version the owner made ships;
+ * each room, hallway and chunk picks one. A cell's layer is
+ * SURFACE_LAYER_FIRST + its index in the surface arrays. `scale` is metres
+ * per repeat; `fallback` is the older surface drawn until the compressed
+ * arrays load, or for good on a GPU without BC7.
+ */
+export const SURFACE_LAYER_FIRST = 16;
+export const FLOOR_SURFACES = Object.freeze([
+    { id: 'tex_floor_deck_drain', variants: 4, scale: 4, fallback: FLOOR_LAYER.HALLWAY },
+    { id: 'tex_floor_concrete_stained', variants: 8, scale: 4, fallback: FLOOR_LAYER.UTILITY },
+    { id: 'tex_floor_chitin_resin', variants: 4, scale: 3, fallback: FLOOR_LAYER.HIVE },
+    { id: 'tex_ground_regolith', variants: 4, scale: 5, fallback: FLOOR_LAYER.GROUND, groundLike: true },
+    { id: 'tex_ground_rutted_dirt', variants: 4, scale: 5, fallback: FLOOR_LAYER.GROUND, groundLike: true },
+    { id: 'tex_floor_slush_ice', variants: 4, scale: 4, fallback: FLOOR_LAYER.CRYO },
+    { id: 'tex_floor_bone_terrazzo', variants: 4, scale: 4, fallback: FLOOR_LAYER.BASE },
+    { id: 'tex_floor_latex_mat', variants: 4, scale: 2.5, fallback: FLOOR_LAYER.MEDICAL },
+    { id: 'tex_floor_camp_planks', variants: 4, scale: 4, fallback: FLOOR_LAYER.CAMP },
+    { id: 'tex_floor_grate_trench', variants: 4, scale: 3, fallback: FLOOR_LAYER.UTILITY }
+].map((surface, index, all) => Object.freeze({
+    ...surface,
+    groundLike: Boolean(surface.groundLike),
+    first: all.slice(0, index).reduce((sum, entry) => sum + entry.variants, 0)
+})));
+export const FLOOR_SURFACE_COUNT = FLOOR_SURFACES.reduce((sum, surface) => sum + surface.variants, 0);
+const SURFACE_BY_ID = new Map(FLOOR_SURFACES.map((surface) => [surface.id, surface]));
+const VARIANT_LETTERS = 'abcdefgh';
+
+/** Runtime pack names in array order: tex_floor_deck_drain_a, ... */
+export function floorSurfaceFileNames() {
+    return FLOOR_SURFACES.flatMap((surface) =>
+        Array.from({ length: surface.variants }, (_, variant) => `${surface.id}_${VARIANT_LETTERS[variant]}`));
+}
+
+/** Room themes that moved to a new surface; the rest keep their atlas floor. */
+export const ROOM_THEME_SURFACE = Object.freeze({
+    'bunker-medical': 'tex_floor_latex_mat',
+    'bunker-security': 'tex_floor_concrete_stained',
+    'bunker-armory': 'tex_floor_concrete_stained',
+    'bunker-storage': 'tex_floor_concrete_stained',
+    'reward-cache': 'tex_floor_concrete_stained',
+    'bunker-workshop': 'tex_floor_grate_trench',
+    'cryo-engineering': 'tex_floor_grate_trench',
+    'bio-engineering': 'tex_floor_grate_trench',
+    'cryo-rough': 'tex_floor_slush_ice',
+    'cryo-recovery': 'tex_floor_slush_ice',
+    'bio-nest': 'tex_floor_chitin_resin',
+    'bio-medical': 'tex_floor_chitin_resin',
+    'bio-feeding-chamber': 'tex_floor_chitin_resin',
+    'camp-fortified': 'tex_floor_camp_planks',
+    'giger-cathedral': 'tex_floor_bone_terrazzo'
+});
+/** Exterior ground per landform; the rest keep the biome rock. */
+export const LANDFORM_GROUND_SURFACE = Object.freeze({
+    field: 'tex_ground_regolith',
+    crater: 'tex_ground_regolith',
+    ruins: 'tex_ground_rutted_dirt'
+});
+export const HALLWAY_SURFACE = 'tex_floor_deck_drain';
+
+function hashKey(key) {
+    let hash = 2166136261;
+    for (const char of String(key)) {
+        hash ^= char.charCodeAt(0);
+        hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+}
+
+/** The layer for one version of a surface, picked by a stable key. */
+export function surfaceLayer(surfaceId, key) {
+    const surface = SURFACE_BY_ID.get(surfaceId);
+    if (!surface) return null;
+    return SURFACE_LAYER_FIRST + surface.first + (hashKey(`${surfaceId}:${key}`) % surface.variants);
+}
+
+export function surfaceForLayer(layer) {
+    const index = layer - SURFACE_LAYER_FIRST;
+    return FLOOR_SURFACES.find((surface) => index >= surface.first && index < surface.first + surface.variants) ?? null;
+}
+
 const FAMILY_LAYER = Object.freeze({
     utility: FLOOR_LAYER.UTILITY,
     medical: FLOOR_LAYER.MEDICAL,
@@ -154,9 +236,17 @@ export function buildFloorSplatData({
     metadata = null,
     maze = false,
     crashRoom = false,
-    ledgeGround = false
+    ledgeGround = false,
+    landform = null,
+    variantKey = '',
+    surfaces = true
 } = {}) {
     const count = size * size;
+    const hallwayLayer = (surfaces && surfaceLayer(HALLWAY_SURFACE, variantKey)) || FLOOR_LAYER.HALLWAY;
+    const groundSurface = surfaces ? LANDFORM_GROUND_SURFACE[landform] : null;
+    const groundLayer = ledgeGround
+        ? ((groundSurface && surfaceLayer(groundSurface, variantKey)) || FLOOR_LAYER.GROUND)
+        : FLOOR_LAYER.BASE;
     const layer = new Uint8Array(count).fill(FLOOR_LAYER.NONE);
     const wetness = new Float32Array(count);
     const set = (x, y, value, wet) => {
@@ -173,11 +263,11 @@ export function buildFloorSplatData({
             const tile = grid[y]?.[x];
             if (tile === undefined || NO_FLOOR_TILES.has(tile)) continue;
             if (tile === 'O') {
-                set(x, y, ledgeGround ? FLOOR_LAYER.GROUND : FLOOR_LAYER.BASE, 0);
+                set(x, y, groundLayer, 0);
             } else if (crashRoom && tile === '.') {
                 set(x, y, FLOOR_LAYER.ROOM, floorWetnessForStyle('bunker-standard'));
             } else if (maze && tile === '.' && !roomCells.has(`${x},${y}`)) {
-                set(x, y, FLOOR_LAYER.HALLWAY, floorWetnessForStyle('hallway'));
+                set(x, y, hallwayLayer, floorWetnessForStyle('hallway'));
             } else {
                 set(x, y, FLOOR_LAYER.BASE, 0);
             }
@@ -185,7 +275,8 @@ export function buildFloorSplatData({
     }
     for (const room of metadata?.roomInstances ?? []) {
         const style = room.themeConfig?.floorStyle ?? 'bunker-standard';
-        const value = floorLayerForStyle(style);
+        const themeSurface = surfaces ? ROOM_THEME_SURFACE[room.theme ?? room.themeConfig?.id] : null;
+        const value = (themeSurface && surfaceLayer(themeSurface, room.id ?? variantKey)) || floorLayerForStyle(style);
         const wet = value === FLOOR_LAYER.BASE ? 0 : floorWetnessForStyle(style);
         for (const cell of room.interior ?? []) {
             if (cell.x < 0 || cell.y < 0 || cell.x >= size || cell.y >= size) continue;
@@ -193,7 +284,7 @@ export function buildFloorSplatData({
         }
     }
     for (const cell of collectThresholdCells(grid, size, metadata)) {
-        set(cell.x, cell.y, FLOOR_LAYER.HALLWAY, floorWetnessForStyle('hallway'));
+        set(cell.x, cell.y, hallwayLayer, floorWetnessForStyle('hallway'));
     }
 
     // Distance to the nearest wall cell (4-neighbour steps).
@@ -273,6 +364,18 @@ export function createPlaceholderFloorLayerArray(depth = FLOOR_ARRAY_SOURCES.len
     return texture;
 }
 
+/** One neutral layer standing in for the surface arrays until they load. */
+export function createPlaceholderSurfaceArray() {
+    return createPlaceholderFloorLayerArray(1);
+}
+
+/** Mid-grey: neutral for both the macro grime and the edge breakup. */
+export function createPlaceholderUtilityTexture() {
+    const texture = new THREE.DataTexture(new Uint8Array([128, 128, 128, 128]), 1, 1, THREE.RGBAFormat, THREE.UnsignedByteType);
+    texture.needsUpdate = true;
+    return texture;
+}
+
 async function packImageLayers(layers, { size, documentRef, yieldTask }) {
     const canvas = documentRef.createElement('canvas');
     canvas.width = size;
@@ -332,6 +435,96 @@ export function buildGroundNormalArray({
     return packImageLayers(['active', 'cryo', 'bio'].map((key) => whole(normals[key])), { size, documentRef, yieldTask });
 }
 
+/**
+ * Stacks one map of every surface version (each a 2D BC7 KTX2 from
+ * scripts/art/build_floor_surfaces.py) into a single compressed array, level
+ * by level. KTX2Loader builds arrays only through its Basis transcoder, so
+ * the stacking happens here.
+ */
+export function stackCompressedLayers(textures, colorSpace) {
+    const [first] = textures;
+    const levels = first.mipmaps.length;
+    for (const texture of textures) {
+        if (texture.image.width !== first.image.width || texture.mipmaps.length !== levels || texture.format !== first.format) {
+            throw new Error('Floor surface textures differ in size, mips or format');
+        }
+    }
+    const mipmaps = Array.from({ length: levels }, (_, level) => {
+        const layerBytes = first.mipmaps[level].data.byteLength;
+        const data = new Uint8Array(layerBytes * textures.length);
+        textures.forEach((texture, layer) => data.set(texture.mipmaps[level].data, layer * layerBytes));
+        return { data, width: first.mipmaps[level].width, height: first.mipmaps[level].height };
+    });
+    const array = new THREE.CompressedArrayTexture(mipmaps, first.image.width, first.image.height, textures.length, first.format);
+    array.colorSpace = colorSpace;
+    array.wrapS = THREE.RepeatWrapping;
+    array.wrapT = THREE.RepeatWrapping;
+    array.magFilter = THREE.LinearFilter;
+    array.minFilter = THREE.LinearMipmapLinearFilter;
+    array.generateMipmaps = false;
+    array.needsUpdate = true;
+    return array;
+}
+
+/**
+ * Loads every surface version's albedo (RGB + metalness) and detail (normal,
+ * roughness, height) KTX2 and stacks each map into one array. Needs BC7
+ * (EXT_texture_compression_bptc); callers skip it without, and the shader
+ * keeps drawing each surface's fallback.
+ */
+export async function loadFloorSurfaceArrays({
+    loader,
+    resolveUrl = (path) => path,
+    yieldTask = defaultYield,
+    baseUrl = '/3d/runtime/surfaces/'
+}) {
+    const albedo = [];
+    const detail = [];
+    for (const name of floorSurfaceFileNames()) {
+        albedo.push(await loader.loadAsync(resolveUrl(`${baseUrl}${name}_albedo.ktx2`)));
+        detail.push(await loader.loadAsync(resolveUrl(`${baseUrl}${name}_detail.ktx2`)));
+        await yieldTask();
+    }
+    try {
+        return {
+            albedo: stackCompressedLayers(albedo, THREE.SRGBColorSpace),
+            detail: stackCompressedLayers(detail, THREE.NoColorSpace)
+        };
+    } finally {
+        // Their data now lives in the arrays; nothing was uploaded for these.
+        for (const texture of [...albedo, ...detail]) texture.dispose();
+    }
+}
+
+export const FLOOR_UTILITY_MAPS = Object.freeze({
+    macro: ['tex_macro_grime_a', 'tex_macro_grime_b', 'tex_macro_grime_c', 'tex_macro_grime_d'],
+    breakup: ['tex_blend_breakup_a', 'tex_blend_breakup_b', 'tex_blend_breakup_c', 'tex_blend_breakup_d']
+});
+
+/** Four greyscale maps packed into the four channels of one texture. */
+export async function buildFloorUtilityTexture({ images, size = FLOOR_ARRAY_LAYER_SIZE, documentRef = globalThis.document, yieldTask = defaultYield }) {
+    const canvas = documentRef.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    const data = new Uint8Array(size * size * 4);
+    for (let channel = 0; channel < 4; channel += 1) {
+        context.clearRect(0, 0, size, size);
+        context.drawImage(images[channel], 0, 0, size, size);
+        const pixels = context.getImageData(0, 0, size, size).data;
+        for (let i = 0; i < size * size; i += 1) data[i * 4 + channel] = pixels[i * 4];
+        await yieldTask();
+    }
+    const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat, THREE.UnsignedByteType);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.magFilter = THREE.LinearFilter;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.generateMipmaps = true;
+    texture.needsUpdate = true;
+    return texture;
+}
+
 export function isFloorSplatEnabled(storage = globalThis.localStorage) {
     try {
         return storage?.getItem?.('hb_floor_splat') !== '0';
@@ -340,8 +533,38 @@ export function isFloorSplatEnabled(storage = globalThis.localStorage) {
     }
 }
 
+// Per-surface scale, ground blending and fallback, by layer range.
+const SURFACE_INFO_GLSL = FLOOR_SURFACES.map((surface) => {
+    const end = SURFACE_LAYER_FIRST + surface.first + surface.variants;
+    return `if (layer < ${end}.0 - 0.5) { scale = ${surface.scale.toFixed(2)}; groundLike = ${surface.groundLike ? '1.0' : '0.0'}; return ${surface.fallback}.0; }`;
+}).join('\n        ');
+
 /** Declarations added to the floor fragment shader. */
 export const FLOOR_SPLAT_FRAGMENT_PARS = /* glsl */ `
+    uniform sampler2DArray uSurfaceAlbedo;
+    uniform sampler2DArray uSurfaceDetail;
+    uniform float uSurfacesReady;
+    uniform sampler2D uFloorMacro;
+    uniform sampler2D uFloorBreakup;
+    uniform float uFloorUtilityReady;
+    vec4 hbSurfAlbedoA;
+    vec4 hbSurfDetailA;
+    vec4 hbSurfAlbedoB;
+    vec4 hbSurfDetailB;
+    // Returns the fallback layer; writes the surface's scale and ground flag.
+    float hbSurfaceInfo(float layer, out float scale, out float groundLike) {
+        scale = 4.0;
+        groundLike = 0.0;
+        ${SURFACE_INFO_GLSL}
+        return ${FLOOR_LAYER.BASE}.0;
+    }
+    // New surfaces draw as their older fallback until the arrays load.
+    float hbSplatResolveLayer(float layer) {
+        if (layer < ${SURFACE_LAYER_FIRST}.0 - 0.5 || layer > 254.5 || uSurfacesReady > 0.5) return layer;
+        float scale;
+        float groundLike;
+        return hbSurfaceInfo(layer, scale, groundLike);
+    }
     uniform sampler2D uSplatData;
     uniform vec3 uSplatInfo;
     uniform sampler2DArray uFloorLayers;
@@ -370,6 +593,17 @@ export const FLOOR_SPLAT_FRAGMENT_PARS = /* glsl */ `
             blend.y
         );
     }
+    // Four utility maps blended by slow noise, so no one map repeats.
+    float hbFloorUtility(sampler2D map, vec2 uv, vec2 worldXZ) {
+        vec4 weights = vec4(
+            hbSplatNoise(worldXZ * 0.021),
+            hbSplatNoise(worldXZ * 0.021 + 19.0),
+            hbSplatNoise(worldXZ * 0.021 + 41.0),
+            hbSplatNoise(worldXZ * 0.021 + 73.0)
+        );
+        weights *= weights;
+        return dot(texture(map, uv), weights) / max(dot(weights, vec4(1.0)), 0.0001);
+    }
     vec4 hbSplatTexel(ivec2 cell) {
         int size = int(uSplatInfo.z);
         if (cell.x < 0 || cell.y < 0 || cell.x >= size || cell.y >= size) return vec4(1.0, 0.0, 0.0, 0.0);
@@ -386,6 +620,37 @@ export const FLOOR_SPLAT_FRAGMENT_PARS = /* glsl */ `
             return pow(ground, vec3(0.55)) * 1.35;
         }
         return texture(uFloorLayers, vec3(vec2(worldXZ.x, -worldXZ.y) * 0.25, layer - 2.0)).rgb;
+    }
+    // Samples a slot's layer (0 = A, 1 = B); new surfaces keep their albedo
+    // and detail texels for the roughness, metalness and normal chunks.
+    vec3 hbSplatSampleLayer(int slot, float layer, vec2 worldXZ, vec3 baseColor, float cryoMix, float bioMix) {
+        if (layer < ${SURFACE_LAYER_FIRST}.0 - 0.5) return hbSplatLayerColor(layer, worldXZ, baseColor, cryoMix, bioMix);
+        float scale;
+        float groundLike;
+        hbSurfaceInfo(layer, scale, groundLike);
+        vec3 uvw = vec3(worldXZ / scale, layer - ${SURFACE_LAYER_FIRST}.0);
+        vec4 albedo = texture(uSurfaceAlbedo, uvw);
+        vec4 detail = texture(uSurfaceDetail, uvw);
+        if (slot == 0) {
+            hbSurfAlbedoA = albedo;
+            hbSurfDetailA = detail;
+        } else {
+            hbSurfAlbedoB = albedo;
+            hbSurfDetailB = detail;
+        }
+        vec3 color = albedo.rgb;
+        // Outdoor ground still turns to ice or resin rock in those biomes.
+        float biome = clamp(cryoMix + bioMix, 0.0, 1.0) * groundLike;
+        if (biome > 0.001) color = mix(color, hbSplatLayerColor(1.0, worldXZ, baseColor, cryoMix, bioMix), biome);
+        return color;
+    }
+    float hbSplatLayerHeight(float layer, vec3 color, vec4 detail) {
+        if (layer > ${SURFACE_LAYER_FIRST}.0 - 0.5) return detail.a;
+        return clamp(dot(color, vec3(0.299, 0.587, 0.114)) * 2.5, 0.0, 1.0);
+    }
+    vec3 hbSurfaceNormal(vec4 detail) {
+        vec2 xy = detail.rg * 2.0 - 1.0;
+        return vec3(xy, sqrt(max(1.0 - dot(xy, xy), 0.0)));
     }
     float hbSplatLayerRoughness(float layer, float baseRoughness) {
         if (layer < 0.5) return baseRoughness;
@@ -415,12 +680,19 @@ export const FLOOR_SPLAT_FRAGMENT_BLEND = /* glsl */ `
     hbSplatGrime = 0.0;
     hbSplatBaseWeight = 1.0;
     hbSplatGroundWeight = 0.0;
+    hbSurfAlbedoA = vec4(0.5, 0.5, 0.5, 0.0);
+    hbSurfAlbedoB = hbSurfAlbedoA;
+    hbSurfDetailA = vec4(0.5, 0.5, 0.8, 0.5);
+    hbSurfDetailB = hbSurfDetailA;
     if (uSplatInfo.z > 0.5 && uFloorLayersReady > 0.5) {
         vec2 splatWorld = vWorldPos.xz;
         vec2 splatLocal = splatWorld - uSplatInfo.xy;
         // Two octaves of offset make the boundary wander like a brush edge.
         vec2 splatJitter = vec2(hbSplatNoise(splatWorld * 1.9), hbSplatNoise(splatWorld * 1.9 + 37.0)) - 0.5;
         splatJitter += (vec2(hbSplatNoise(splatWorld * 5.3 + 11.0), hbSplatNoise(splatWorld * 5.3 + 71.0)) - 0.5) * 0.45;
+        // T12: painted breakup grain pushes the edge around at a finer scale.
+        float splatBreakup = uFloorUtilityReady > 0.5 ? hbFloorUtility(uFloorBreakup, splatWorld / 7.0, splatWorld) : 0.5;
+        splatJitter += (splatBreakup - 0.5) * 0.5;
         vec2 splatPoint = splatLocal + splatJitter * 0.55;
         vec2 splatCell = floor(splatPoint);
         vec2 splatFrac = splatPoint - splatCell;
@@ -441,7 +713,7 @@ export const FLOOR_SPLAT_FRAGMENT_BLEND = /* glsl */ `
         float splatWallDistance = 0.0;
         float splatWetness = 0.0;
         for (int i = 0; i < 4; i++) {
-            splatLayers[i] = floor(splatTexels[i].r * 255.0 + 0.5);
+            splatLayers[i] = hbSplatResolveLayer(floor(splatTexels[i].r * 255.0 + 0.5));
             splatWeights[i] = splatLayers[i] > 254.5 ? 0.0 : splatRaw[i];
             splatTotal += splatWeights[i];
             // Wall cells count as distance 0 here, so the floor darkens
@@ -472,16 +744,16 @@ export const FLOOR_SPLAT_FRAGMENT_BLEND = /* glsl */ `
                     weightB = sum;
                 }
             }
-            vec3 colorA = hbSplatLayerColor(layerA, splatWorld, floorColor, cryoMix, bioMix);
+            vec3 colorA = hbSplatSampleLayer(0, layerA, splatWorld, floorColor, cryoMix, bioMix);
             vec3 splatColor = colorA;
             float mixB = 0.0;
             if (layerB >= 0.0 && weightB > 0.0) {
-                vec3 colorB = hbSplatLayerColor(layerB, splatWorld, floorColor, cryoMix, bioMix);
+                vec3 colorB = hbSplatSampleLayer(1, layerB, splatWorld, floorColor, cryoMix, bioMix);
                 // Height blend: whichever surface stands higher wins first,
                 // so grit fills the cracks before it covers the plates.
                 float shareB = weightB / (weightA + weightB);
-                float heightA = clamp(dot(colorA, vec3(0.299, 0.587, 0.114)) * 2.5, 0.0, 1.0) + (1.0 - shareB);
-                float heightB = clamp(dot(colorB, vec3(0.299, 0.587, 0.114)) * 2.5, 0.0, 1.0) + shareB;
+                float heightA = hbSplatLayerHeight(layerA, colorA, hbSurfDetailA) + (1.0 - shareB);
+                float heightB = hbSplatLayerHeight(layerB, colorB, hbSurfDetailB) + shareB + (splatBreakup - 0.5) * 0.4;
                 float ridge = max(heightA, heightB) - 0.22;
                 float keepA = max(heightA - ridge, 0.0);
                 float keepB = max(heightB - ridge, 0.0);
@@ -510,6 +782,12 @@ export const FLOOR_SPLAT_FRAGMENT_BLEND = /* glsl */ `
             grime *= 0.55 + 0.45 * hbSplatNoise(splatWorld * 3.1 + 5.0);
             hbSplatGrime = grime;
             splatColor *= 1.0 - 0.38 * grime;
+
+            // T11: grime that varies over tens of metres breaks up tiling.
+            if (uFloorUtilityReady > 0.5) {
+                float macro = hbFloorUtility(uFloorMacro, splatWorld / 32.0, splatWorld + 57.0);
+                splatColor *= mix(0.8, 1.06, macro);
+            }
             floorColor = splatColor;
         }
     }
@@ -518,8 +796,8 @@ export const FLOOR_SPLAT_FRAGMENT_BLEND = /* glsl */ `
 export const FLOOR_SPLAT_FRAGMENT_ROUGHNESS = /* glsl */ `
     if (hbSplatActive > 0.5) {
         float splatRoughness = mix(
-            hbSplatLayerRoughness(hbSplatLayerA, roughnessFactor),
-            hbSplatLayerRoughness(hbSplatLayerB, roughnessFactor),
+            hbSplatLayerA > ${SURFACE_LAYER_FIRST}.0 - 0.5 ? hbSurfDetailA.b : hbSplatLayerRoughness(hbSplatLayerA, roughnessFactor),
+            hbSplatLayerB > ${SURFACE_LAYER_FIRST}.0 - 0.5 ? hbSurfDetailB.b : hbSplatLayerRoughness(hbSplatLayerB, roughnessFactor),
             hbSplatMixB
         );
         splatRoughness = mix(splatRoughness, 0.1, hbSplatWet);
@@ -531,8 +809,8 @@ export const FLOOR_SPLAT_FRAGMENT_ROUGHNESS = /* glsl */ `
 export const FLOOR_SPLAT_FRAGMENT_METALNESS = /* glsl */ `
     if (hbSplatActive > 0.5) {
         metalnessFactor = mix(
-            hbSplatLayerMetalness(hbSplatLayerA, metalnessFactor),
-            hbSplatLayerMetalness(hbSplatLayerB, metalnessFactor),
+            hbSplatLayerA > ${SURFACE_LAYER_FIRST}.0 - 0.5 ? hbSurfAlbedoA.a : hbSplatLayerMetalness(hbSplatLayerA, metalnessFactor),
+            hbSplatLayerB > ${SURFACE_LAYER_FIRST}.0 - 0.5 ? hbSurfAlbedoB.a : hbSplatLayerMetalness(hbSplatLayerB, metalnessFactor),
             hbSplatMixB
         );
     }
@@ -555,6 +833,19 @@ export const FLOOR_SPLAT_FRAGMENT_EMISSIVE = /* glsl */ `
 export const FLOOR_SPLAT_FRAGMENT_NORMAL = /* glsl */ `
     hbFloorNormalPerturb *= hbSplatBaseWeight;
     normal = normalize(normal + hbFloorNormalPerturb);
+    // New surfaces: tangent u along +x, v along +z, so the tangent-space
+    // normal (x, y, z) is (x, z, y) in the world.
+    float surfaceA = hbSplatLayerA > ${SURFACE_LAYER_FIRST}.0 - 0.5 ? 1.0 - hbSplatMixB : 0.0;
+    float surfaceB = hbSplatLayerB > ${SURFACE_LAYER_FIRST}.0 - 0.5 ? hbSplatMixB : 0.0;
+    if (surfaceA + surfaceB > 0.0) {
+        vec3 surfaceTangentNormal = normalize(
+            hbSurfaceNormal(hbSurfDetailA) * surfaceA
+            + hbSurfaceNormal(hbSurfDetailB) * surfaceB
+            + vec3(0.0, 0.0, 1.0) * max(0.0, 1.0 - surfaceA - surfaceB)
+        );
+        vec3 surfaceWorldNormal = vec3(surfaceTangentNormal.x, surfaceTangentNormal.z, surfaceTangentNormal.y);
+        normal = normalize(mix(normal, normalize((viewMatrix * vec4(surfaceWorldNormal, 0.0)).xyz), min(1.0, surfaceA + surfaceB)));
+    }
     if (hbSplatGroundWeight > 0.0) {
         vec2 groundNormalUv = vWorldPos.xz * 1.5;
         vec3 groundNormal = texture(uGroundNormals, vec3(groundNormalUv, 0.0)).xyz;

@@ -19,7 +19,7 @@ export const ANCHOR_LIGHT_PALETTE = Object.freeze({
 // First match wins; cyan before green so a "biomech oxygen" piece reads cold.
 const PALETTE_RULES = Object.freeze([
     { palette: 'cyan', match: /oxygen|coolant|cryo|o2_|frost|icey|thermal|water_still/ },
-    { palette: 'amber', match: /lectern|votive|shrine|reliquary|saint|liturgical|candle|barrel_heater|flood_lamp|pheromone_censer|scent_distiller|warmth_hearth/ },
+    { palette: 'amber', match: /lectern|votive|shrine|reliquary|saint|liturgical|candle|barrel_heater|flood_lamp|pheromone_censer|scent_distiller|warmth_hearth|checkpoint_post|wayfinding_totem|seismic_drill|devotion_tree|meat_smoking_rack/ },
     { palette: 'green', match: /biomech|spore|fungal|hive|flesh|umbilical|alien|incubator|mycelium/ }
 ]);
 

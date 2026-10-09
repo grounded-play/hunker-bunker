@@ -84,7 +84,12 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // Raised 3040->3080 MiB for the 2026-10-05 2D->3D gap batch: 19 runtime GLBs
 // (cave/hive floor, camp props, four corpses) at ~1-2 MB each with WebP
 // textures (~37 MiB; PNG would have been ~85); measured payload ~3065 MiB.
-const PUBLIC_BUDGET = 3080 * 1024 * 1024;
+// Raised 3080->3400 MiB for lived-in pass 2 (2026-10-09): 39 props at 25k
+// triangles with 2048px WebP textures and meshopt geometry (~88 MB), 44 BC7
+// KTX2 floor surfaces (~95 MB) and 84 BC7 KTX2 sticker layers (~74 MB), all
+// of them new art; the committed payload was already 3104 MiB, and measured
+// with this batch it is 3357 MiB. KTX2 joins .glb in asarUnpack.
+const PUBLIC_BUDGET = 3400 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus
@@ -180,6 +185,11 @@ export function classifyPublicAsset(relativePath, referenced) {
     // to filenames at runtime, so no literal `/asset.png` string exists for
     // the static reference scanner to discover.
     if (/^(?:ach|door|decal|prop|scatter)_[^/]+\.(?:avif|gif|jpe?g|png|svg|webp)$/i.test(relativePath)) {
+        return 'runtime-required';
+    }
+    // Lived-in floor surfaces and stickers: src/floorSplat.js and
+    // src/stickerDecals.js build each name from their layer tables.
+    if (/^3d\/runtime\/(?:surfaces|decals)\/[^/]+\.(?:ktx2|webp)$/i.test(relativePath)) {
         return 'runtime-required';
     }
     if (/(?:^|\/)(?:concepts?|references?|rejected-candidates|sources-keyed|strips|identity|keyart)(?:\/|$)/.test(lower)

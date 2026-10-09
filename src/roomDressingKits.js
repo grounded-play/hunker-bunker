@@ -36,7 +36,8 @@ export const DRESSING_KITS = Object.freeze({
     bunker: {
         wallProps: ['prop_wall_cable_tray_swag', 'prop_conduit_junction_box', 'prop_locker_bulged',
             'prop_exhaust_blower_fan_hood', 'prop_terminal_ruptured', 'fixture_clock_dead', 'prop_overhead_cage_fluorescent',
-            'life_memorial_board', 'life_tally_bulkhead', 'life_vending_machine', 'life_mask_rack'],
+            'life_memorial_board', 'life_tally_bulkhead', 'life_vending_machine', 'life_mask_rack',
+            'life_cochlear_intercom', 'life_ribcage_rescue_cabinet', 'life_pneumatic_tube_node'],
         wallDecals: [...COMMON.wallDecals, 'decal_wall_panel_grille_01', 'decal_wall_panel_grille_02', 'decal_hazard_stripes',
             'decal_meridian_stencil', 'prop_torn_warning_poster'],
         clutter: [...COMMON.clutter, 'prop_storage_drum_dented', 'prop_camp_crates', 'prop_valve_wheel_fused', 'prop_vent_grate_exploded',
@@ -47,27 +48,30 @@ export const DRESSING_KITS = Object.freeze({
     },
     cryo: {
         wallProps: ['prop_icey_frost_manifold', 'prop_wall_cable_tray_swag', 'prop_conduit_junction_box', 'prop_locker_bulged',
-            'prop_decon_eyewash_shower_station', 'prop_overhead_cage_fluorescent', 'fixture_clock_dead'],
+            'prop_decon_eyewash_shower_station', 'prop_overhead_cage_fluorescent', 'fixture_clock_dead', 'life_parka_hooks'],
         wallDecals: ['decal_water_stain', 'decal_rust_bleed_1', 'decal_hand_smears_1', 'decal_hand_smears_2',
             'decal_graffiti_tally_1', 'decal_wall_panel_grille_03', 'decal_biohazard_stencil', 'decal_scars'],
         clutter: [...COMMON.clutter, 'prop_body_human_frozen', 'prop_storage_drum_dented', 'prop_vent_grate_exploded',
             'life_water_still', 'life_footlocker_open', 'life_vulval_drain_sump'],
         corners: ['prop_icey_thermal_pod', 'prop_coolant_drum_leaking_pool', 'prop_icey_frost_vent', 'state_column_shattered',
-            'life_cargo_pallet_netted', 'life_barrel_heater', 'life_sleep_sleeve'],
+            'life_cargo_pallet_netted', 'life_barrel_heater', 'life_sleep_sleeve',
+            'life_ice_sled', 'life_ice_core_rack', 'life_ice_bore_winch'],
         floorDecals: ['decal_frost_bloom_1', 'decal_frost_bloom_2', 'decal_condensation_run', 'scatter_coolant_puddle',
             'decal_footprints_mud', 'decal_floor_grate_03']
     },
     bio: {
         wallProps: ['prop_biomech_tracheal_wall_pipe', 'prop_vertebral_cable_riser', 'prop_biomech_flesh_locker',
             'fixture_sconce_vine', 'prop_light_cluster_dripping', 'prop_biomech_respirator', 'life_mask_rack',
-            'life_umbilical_tether', 'life_lung_filter_bellows', 'life_vertebral_restraint_rack'],
+            'life_umbilical_tether', 'life_lung_filter_bellows', 'life_vertebral_restraint_rack',
+            'life_brood_comb', 'life_fungal_cable_bundle'],
         wallDecals: ['decal_spore_stain_01', 'decal_spore_stain_02', 'decal_spore_stain_03', 'decal_vine_iron_shadow_1',
             'decal_vine_iron_shadow_2', 'decal_claw_scratches', 'decal_bite_marks_02', 'decal_hand_smears_2'],
         clutter: ['prop_hive_resin_sac', 'state_growth_overrun_2', 'scatter_bolts', 'scatter_cable_coil',
             'prop_biomech_respirator', 'prop_cave_bones', 'bunker_junk_rare', 'prop_body_empty_exosuit',
             'life_sanitation_bidet', 'life_vulval_drain_sump', 'life_peristaltic_feeder', 'life_scent_distiller'],
         corners: ['state_growth_overrun_1', 'state_growth_overrun_2', 'prop_hive_resin_sac', 'prop_fungal_resin_basin',
-            'life_sleep_sleeve', 'life_resin_extractor', 'life_pheromone_censer', 'life_warmth_hearth'],
+            'life_sleep_sleeve', 'life_resin_extractor', 'life_pheromone_censer', 'life_warmth_hearth',
+            'life_hive_dew_funnel', 'life_hive_feeding_bladder', 'life_assimilated_desk'],
         floorDecals: ['decal_growth_creep_1', 'decal_growth_creep_2', 'decal_spore_growth_patch', 'scatter_slime_puddle',
             'decal_fluid_seep', 'prop_blood_trail']
     },
@@ -78,7 +82,8 @@ export const DRESSING_KITS = Object.freeze({
         clutter: ['prop_camp_crates', 'prop_camp_crate', 'prop_camp_cot', 'scatter_bolts', 'scatter_cable_coil', 'bunker_junk_uncommon',
             'life_footlocker_open', 'life_galley_hotplate', 'life_sanitation_bidet', 'life_vulval_drain_sump'],
         corners: ['prop_camp_sandbags', 'state_barricade_improvised_1', 'state_barricade_improvised_2', 'prop_storage_drum_dented',
-            'life_latrine_stall', 'life_barrel_heater', 'life_pipe_hammock', 'life_hydro_rack'],
+            'life_latrine_stall', 'life_barrel_heater', 'life_pipe_hammock', 'life_hydro_rack',
+            'life_barber_chair', 'life_devotion_tree'],
         floorDecals: ['decal_footprints_mud', 'decal_oil_spill_patch', 'decal_tallow_symbol', 'prop_blood_trail']
     },
     cathedral: {
@@ -88,7 +93,8 @@ export const DRESSING_KITS = Object.freeze({
             'decal_mirror_tarnished', 'decal_maintenance_shrine', 'decal_vine_iron_shadow_1', 'decal_rust_bleed_2'],
         clutter: ['scatter_bolts', 'scatter_cable_coil', 'bunker_junk_rare', 'prop_cave_bones',
             'life_pheromone_censer', 'life_sanitation_bidet', 'life_vulval_drain_sump'],
-        corners: ['arch_pillar_buttress_01', 'arch_pillar_buttress_02', 'arch_pillar_buttress_03', 'arch_pillar_buttress_04'],
+        corners: ['arch_pillar_buttress_01', 'arch_pillar_buttress_02', 'arch_pillar_buttress_03', 'arch_pillar_buttress_04',
+            'life_confessional', 'life_devotion_tree'],
         floorDecals: ['decal_floor_medallion_01', 'decal_floor_medallion_02', 'decal_floor_medallion_03', 'decal_floor_medallion_04',
             'decal_fluid_seep', 'decal_growth_creep_1']
     }
@@ -121,21 +127,28 @@ export const ROLE_DRESSING = Object.freeze({
     security: {
         wallProps: ['life_vertebral_restraint_rack'],
         clutter: ['prop_ammo_crate_stack', 'life_ammo_ovipositor'],
-        corners: ['state_barricade_improvised_1'], wallDecals: ['decal_bullet_holes']
+        corners: ['state_barricade_improvised_1', 'life_checkpoint_post'], wallDecals: ['decal_bullet_holes']
     },
     armory: { clutter: ['prop_ammo_crate_stack'], corners: ['prop_ammo_crate_stack', 'life_reloading_bench', 'life_ammo_ovipositor'], wallDecals: ['decal_hazard_stripes'] },
-    storage: { clutter: ['prop_bunker_supplies', 'prop_storage_drum_dented', 'life_footlocker_open'], corners: ['prop_camp_crates', 'life_cargo_pallet_netted'] },
+    storage: {
+        clutter: ['prop_bunker_supplies', 'prop_storage_drum_dented', 'life_footlocker_open'],
+        corners: ['prop_camp_crates', 'life_cargo_pallet_netted', 'life_janitor_cart', 'life_ice_sled']
+    },
     reward: { clutter: ['prop_bunker_supplies'], corners: ['prop_ammo_crate_stack'] },
     engineering: {
-        wallProps: ['prop_conduit_junction_box', 'prop_wall_cable_tray_swag', 'prop_exhaust_blower_fan_hood', 'prop_pipe_organ_heat_exchanger', 'life_lung_filter_bellows'],
+        wallProps: ['prop_conduit_junction_box', 'prop_wall_cable_tray_swag', 'prop_exhaust_blower_fan_hood', 'prop_pipe_organ_heat_exchanger', 'life_lung_filter_bellows',
+            'life_fuse_bypass_panel'],
         clutter: ['prop_maintenance_tool_cart', 'scatter_cable_coil', 'scatter_bolts', 'life_umbilical_tether'],
-        corners: ['prop_oxygen_bottle_cascade_rack', 'prop_exosuit_docking_gantry', 'prop_coolant_drum_leaking_pool', 'prop_floor_drainage_sump_trough', 'life_fuel_probe_boom'],
+        corners: ['prop_oxygen_bottle_cascade_rack', 'prop_exosuit_docking_gantry', 'prop_coolant_drum_leaking_pool', 'prop_floor_drainage_sump_trough', 'life_fuel_probe_boom',
+            'life_welding_station', 'life_exosuit_teardown'],
         floorDecals: ['decal_grease_pool', 'decal_oil_spill_patch', 'scatter_coolant_puddle', 'decal_floor_grate_01']
     },
     workshop: {
-        wallProps: ['prop_conduit_junction_box', 'prop_wall_cable_tray_swag', 'prop_exhaust_blower_fan_hood', 'prop_pipe_organ_heat_exchanger', 'life_lung_filter_bellows'],
+        wallProps: ['prop_conduit_junction_box', 'prop_wall_cable_tray_swag', 'prop_exhaust_blower_fan_hood', 'prop_pipe_organ_heat_exchanger', 'life_lung_filter_bellows',
+            'life_fuse_bypass_panel'],
         clutter: ['prop_maintenance_tool_cart', 'scatter_cable_coil', 'scatter_bolts', 'life_umbilical_tether'],
-        corners: ['prop_oxygen_bottle_cascade_rack', 'prop_exosuit_docking_gantry', 'prop_coolant_drum_leaking_pool', 'prop_floor_drainage_sump_trough', 'life_fuel_probe_boom'],
+        corners: ['prop_oxygen_bottle_cascade_rack', 'prop_exosuit_docking_gantry', 'prop_coolant_drum_leaking_pool', 'prop_floor_drainage_sump_trough', 'life_fuel_probe_boom',
+            'life_welding_station', 'life_exosuit_teardown'],
         floorDecals: ['decal_grease_pool', 'decal_oil_spill_patch', 'scatter_coolant_puddle', 'decal_floor_grate_01']
     }
 });
@@ -188,7 +201,9 @@ export const VIGNETTES = Object.freeze({
         ['prop_icey_thermal_pod', 'prop_coolant_drum_leaking_pool'],
         ['prop_body_human_frozen', 'prop_icey_frost_vent'],
         ['prop_broken_specimen_tank', 'prop_surgical_cart', 'scatter_cable_coil'],
-        ['prop_storage_drum_dented', 'prop_camp_crates', 'bunker_junk_uncommon']
+        ['prop_storage_drum_dented', 'prop_camp_crates', 'bunker_junk_uncommon'],
+        ['life_ice_sled', 'life_ice_core_rack'],
+        ['life_ice_bore_winch', 'life_drip_buckets']
     ],
     bio: [
         ['life_sleep_sleeve', 'life_pheromone_censer', 'life_resin_extractor'],
@@ -197,7 +212,9 @@ export const VIGNETTES = Object.freeze({
         ['prop_hive_resin_sac', 'prop_cave_bones'],
         ['prop_fungal_resin_basin', 'state_growth_overrun_2', 'prop_cave_bones'],
         ['prop_flesh_steel_coffin', 'prop_cave_bones'],
-        ['prop_body_empty_exosuit', 'state_growth_overrun_1']
+        ['prop_body_empty_exosuit', 'state_growth_overrun_1'],
+        ['life_assimilated_desk', 'life_hive_dew_funnel'],
+        ['life_hive_feeding_bladder', 'prop_cave_bones']
     ],
     camp: [
         ['life_card_table', 'life_memorial_board', 'life_barrel_heater'],
@@ -206,7 +223,9 @@ export const VIGNETTES = Object.freeze({
         ['prop_camp_cot', 'prop_camp_crate', 'scatter_cable_coil'],
         ['prop_camp_sandbags', 'prop_camp_crates'],
         ['prop_camp_cot', 'prop_storage_drum_dented'],
-        ['prop_maintenance_tool_cart', 'prop_camp_crate', 'bunker_junk_uncommon']
+        ['prop_maintenance_tool_cart', 'prop_camp_crate', 'bunker_junk_uncommon'],
+        ['life_barber_chair', 'life_footlocker_open'],
+        ['life_devotion_tree', 'prop_camp_crate']
     ],
     cathedral: [
         ['life_pheromone_censer', 'life_stigmata_inscriber', 'life_memorial_board'],
@@ -214,7 +233,9 @@ export const VIGNETTES = Object.freeze({
         ['prop_shrine_plinth_broken', 'prop_cave_bones'],
         ['state_column_shattered', 'bunker_junk_rare'],
         ['prop_flesh_steel_coffin', 'prop_cave_bones'],
-        ['prop_chair_operator_wrecked', 'prop_terminal_ruptured']
+        ['prop_chair_operator_wrecked', 'prop_terminal_ruptured'],
+        ['life_pew_segment', 'life_devotion_tree'],
+        ['life_confessional', 'life_pew_segment']
     ]
 });
 
@@ -228,7 +249,8 @@ export const ROLE_VIGNETTES = Object.freeze({
         ['life_infusion_cradle', 'life_water_still', 'life_bone_clamp_rig'],
         ['prop_medical_bed', 'prop_vital_monitor', 'prop_surgical_cart']
     ],
-    security: [['life_vertebral_restraint_rack', 'life_ammo_ovipositor'], ['prop_security_barricade', 'prop_ammo_crate_stack']],
+    security: [['life_vertebral_restraint_rack', 'life_ammo_ovipositor'], ['prop_security_barricade', 'prop_ammo_crate_stack'],
+        ['life_checkpoint_post', 'life_dropped_kit_pile']],
     armory: [['life_reloading_bench', 'life_ammo_ovipositor', 'prop_ammo_crate_stack'], ['prop_ammo_crate_stack', 'prop_security_barricade', 'scatter_bolts']],
     storage: [['life_cargo_pallet_netted', 'life_footlocker_open', 'prop_storage_drum_dented'], ['prop_bunker_supplies', 'prop_camp_crates', 'prop_storage_drum_dented']],
     reward: [['prop_bunker_supplies', 'prop_ammo_crate_stack']],
@@ -236,13 +258,17 @@ export const ROLE_VIGNETTES = Object.freeze({
         ['life_fuel_probe_boom', 'life_lung_filter_bellows', 'life_umbilical_tether'],
         ['prop_fabricator_workstation', 'prop_maintenance_tool_cart', 'scatter_cable_coil'],
         ['prop_pipe_organ_heat_exchanger', 'prop_maintenance_tool_cart', 'prop_floor_drainage_sump_trough'],
-        ['prop_coolant_drum_leaking_pool', 'prop_maintenance_tool_cart', 'scatter_bolts']
+        ['prop_coolant_drum_leaking_pool', 'prop_maintenance_tool_cart', 'scatter_bolts'],
+        ['life_welding_station', 'prop_maintenance_tool_cart'],
+        ['life_exosuit_teardown', 'scatter_bolts']
     ],
     workshop: [
         ['life_fuel_probe_boom', 'life_lung_filter_bellows', 'life_umbilical_tether'],
         ['prop_fabricator_workstation', 'prop_maintenance_tool_cart', 'scatter_cable_coil'],
         ['prop_pipe_organ_heat_exchanger', 'prop_maintenance_tool_cart', 'prop_floor_drainage_sump_trough'],
-        ['prop_coolant_drum_leaking_pool', 'prop_maintenance_tool_cart', 'scatter_bolts']
+        ['prop_coolant_drum_leaking_pool', 'prop_maintenance_tool_cart', 'scatter_bolts'],
+        ['life_welding_station', 'prop_maintenance_tool_cart'],
+        ['life_exosuit_teardown', 'scatter_bolts']
     ]
 });
 

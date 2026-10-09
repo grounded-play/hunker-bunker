@@ -38,7 +38,8 @@ describe('camp 3D dressing', () => {
         // precisely because their dressing does not differentiate them.
         const intentionallyShared = new Set([
             'life_card_table', 'life_memorial_board', 'life_latrine_stall',
-            'life_pipe_hammock', 'life_sanitation_bidet', 'life_vulval_drain_sump'
+            'life_pipe_hammock', 'life_sanitation_bidet', 'life_vulval_drain_sump',
+            'life_barber_chair', 'life_devotion_tree'
         ]);
         const all = Object.values(CAMP_DRESSING_MODELS).flat().map((s) => s.type)
             .filter((type) => !intentionallyShared.has(type));
@@ -48,7 +49,8 @@ describe('camp 3D dressing', () => {
     it('gives every camp the shared daily-life layer from the prompt sheet', () => {
         const shared = [
             'life_card_table', 'life_memorial_board', 'life_latrine_stall',
-            'life_pipe_hammock', 'life_sanitation_bidet', 'life_vulval_drain_sump'
+            'life_pipe_hammock', 'life_sanitation_bidet', 'life_vulval_drain_sump',
+            'life_barber_chair', 'life_devotion_tree'
         ];
         for (const specs of Object.values(CAMP_DRESSING_MODELS)) {
             const types = new Set(specs.map(({ type }) => type));
