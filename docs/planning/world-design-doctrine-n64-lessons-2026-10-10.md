@@ -12,6 +12,9 @@ This document is the shared design target for the next world pass. The earlier
 [`world-floor-decals-layout-expansion-2026-10-10.md`](world-floor-decals-layout-expansion-2026-10-10.md)
 remains the supporting art-intake plan; where the two overlap, this spatial doctrine decides
 what should be built and the intake plan decides how art reaches runtime.
+The companion
+[`n64-architectural-level-design-overhaul-2026-10-10.md`](n64-architectural-level-design-overhaul-2026-10-10.md)
+is the architectural reference, chunk-world diagnosis, and live lane index.
 
 ## North star
 
@@ -418,6 +421,27 @@ without making portal integration or unsupported height block the shape doctrine
 5. `room_subdeck_cryo_exchanger` — use a flat offset service loop, visual height, vapor occlusion,
    and a hazard bypass. Traversable descent/return is a later vertical-room-contract proof, not an
    acceptance gate for this pass.
+
+### Active implementation lane — Lane A
+
+**Owner:** Codex/root, claimed 2026-10-10
+
+**Scope:** flat authored-room greyboxes; no vertical-contract or progression migration
+
+**Current proof:** `medical_triage`
+
+The medical room now uses an offset clean/dirty partition rather than a single central bar. Its
+south approach meets an intake screen, pivots east to reveal the protected treatment pocket, and
+can continue through a longer supply-side loop. Existing room/socket IDs, rotation, safe-room
+behavior, and objective anchor IDs are preserved. The refreshed isometric showroom review is
+`docs/reports/assets/furnished-rooms/medical_triage-bio.png`; it is not a substitute for the
+required real gameplay-camera threshold/return capture.
+
+Verified on this slice: authored catalog validation, all rotations, connector reachability,
+population, dressing, destruction handling, and the focused showroom probe. Actual gameplay-camera
+sign-off remains open. Next within Lane A is `reactor_compressor_hall`;
+`room_biomech_machine_nave` follows after its flat processional layout is reviewed against cutaway
+occlusion.
 
 ### P1 — extend proven shapes
 

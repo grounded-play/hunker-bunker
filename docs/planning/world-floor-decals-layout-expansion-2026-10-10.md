@@ -45,12 +45,15 @@ The four transparent 512 × 512 decals have been successfully baked and integrat
 
 All 72 runtime decal layers are registered in `src/data/legacyDecalLayers.js`. `npx vitest run src/stickerPlanner.test.js` passes cleanly (11/11 tests).
 
-### Master Architectural Paradigm: The N64 Level Design Overhaul
-To eliminate the sterile, orthogonal, flat-grid feel across authored spaces, refer to the master architectural design document:
-👉 [docs/planning/n64-architectural-level-design-overhaul-2026-10-10.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/planning/n64-architectural-level-design-overhaul-2026-10-10.md)
+### Architectural reference and active lane index
+For the N64 precedent study, chunk-world diagnosis, and lane ownership, see
+[`n64-architectural-level-design-overhaul-2026-10-10.md`](n64-architectural-level-design-overhaul-2026-10-10.md).
+The world-design doctrine linked at the top of this document remains authoritative when the two
+overlap. Lane A is active on flat authored-room proofs, beginning with `medical_triage`.
 
 This integrates classic Nintendo 64 level design principles (*The Legend of Zelda: Ocarina of Time*, *GoldenEye 007*, *Super Mario 64*, *Perfect Dark*):
-1. **Tiered Verticality**: Sunken sub-decks ($-1.2\text{m}$ to $-1.8\text{m}$), main transit decks ($0.0\text{m}$), raised command plinths ($+0.6\text{m}$ to $+1.0\text{m}$), and overhead catwalks ($+2.4\text{m}$).
+1. **Layered depth**: visual sumps, raised-looking plinths, overhead catwalk silhouettes, and
+   grates over visible depth; walkable tiers wait for the vertical-room contract.
 2. **Broken Orthogonality**: $45^\circ$ corner chamfers converting rectangular boxes into octagonal rotundas, cruciform halls, and curved apses.
 3. **The "Hero Landmark" Rule**: Every room must center on an unmistakable monumental centerpiece (e.g. 4m pulsating turbine, colossal ruptured cryo-obelisk, breathing spore well).
 4. **Proscenium Sightlines**: Doorways act as proscenium arches framing the hero focal point in the mid-ground and the exit in the background.

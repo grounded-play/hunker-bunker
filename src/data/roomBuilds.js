@@ -17,6 +17,14 @@ import { CATHEDRAL_ROOM_BLUEPRINTS } from './cathedralBlueprints.js';
 export const ROOM_BUILD_VERSION = 1;
 export { CATHEDRAL_ROOM_BLUEPRINTS };
 
+function authoredRoomPattern(rows) {
+    const width = rows[0]?.length ?? 0;
+    if (!width || rows.some((row) => row.length !== width || /[^.#]/.test(row))) {
+        throw new Error('Authored room patterns must be equal-width rows containing only "." and "#"');
+    }
+    return rows;
+}
+
 function rectRoomPattern(width, height, obstructions = []) {
     const pattern = Array.from({ length: height }, () => Array(width).fill('.'));
     for (const { x, y, w, h } of obstructions) {
@@ -33,7 +41,21 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'medical_triage',
         family: 'medical',
-        pattern: rectRoomPattern(15, 9, [{ x: 5, y: 3, w: 5, h: 1 }]),
+        // Lane A / P0A spatial proof. The offset clean-room partition forces
+        // the south approach to pivot east around the intake screen before
+        // the treatment bay is exposed. The east service channel provides a
+        // longer supply-side return without changing the flat room contract.
+        pattern: authoredRoomPattern([
+            '...............',
+            '...........#...',
+            '...#######.#...',
+            '...#.......#...',
+            '...#.......#...',
+            '...#####...#...',
+            '...............',
+            '...............',
+            '...............'
+        ]),
         sockets: [{ id: 'entry', side: 's', width: 3, required: true }],
         rotationPolicy: 'cardinal',
         tierEligibility: [1, 2],
@@ -44,7 +66,7 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         // registered in GENERATED_ROOM_PROP_PATHS/scatterTextures already.
         // Replaces the generic prop_conduit_hub placeholder, which reads as
         // an engineering fixture, not a medical partition.
-        structuralAnchors: [{ id: 'triage_partition', type: 'prop_vital_monitor', x: 7, y: 3 }],
+        structuralAnchors: [{ id: 'triage_partition', type: 'prop_vital_monitor', x: 7, y: 5 }],
         // 'triage_console' is this room's own generic default interaction.
         // 'hydro_bed_controls' additionally matches
         // src/ringManifest.js's CAMP_QUEST_DESTINATIONS objectiveAnchorId
@@ -52,16 +74,21 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         // that specific quest's anchor id finds a real point here too,
         // without narrowing the whole family to one quest's naming.
         interactionAnchors: [
-            { id: 'triage_console', type: 'prop_diagnostic_console', x: 7, y: 5 },
-            { id: 'hydro_bed_controls', type: 'prop_medical_bed', x: 9, y: 5 }
+            { id: 'triage_console', type: 'prop_diagnostic_console', x: 8, y: 3 },
+            { id: 'hydro_bed_controls', type: 'prop_medical_bed', x: 6, y: 4 }
         ],
         compassAnchors: { approach: 'entry', objective: 'triage_console' },
-        coverZones: [{ x: 4, y: 2, w: 7, h: 3 }],
+        coverZones: [
+            { x: 3, y: 2, w: 7, h: 1 },
+            { x: 3, y: 2, w: 1, h: 4 },
+            { x: 3, y: 5, w: 5, h: 1 },
+            { x: 11, y: 1, w: 1, h: 5 }
+        ],
         encounterZones: [],
-        rewardAnchors: [{ id: 'med_supply_case', type: 'prop_bunker_supplies', x: 2, y: 1 }],
+        rewardAnchors: [{ id: 'med_supply_case', type: 'prop_bunker_supplies', x: 13, y: 2 }],
         loreAnchors: [],
         hazardZones: [],
-        quietZones: [{ x: 0, y: 0, w: 15, h: 9 }],
+        quietZones: [{ x: 4, y: 3, w: 7, h: 2 }],
         safeZone: true,
         containmentBounds: { minX: 0, minY: 0, maxX: 14, maxY: 8 },
         presentationVariants: ['intact', 'abandoned', 'infested', 'looted'],

@@ -41,6 +41,25 @@ describe('ROOM_BUILD_CATALOG', () => {
         }));
     });
 
+    it('uses the medical P0A proof to create a reveal pivot and supply-side loop', () => {
+        const build = ROOM_BUILD_CATALOG.find((entry) => entry.id === 'medical_triage');
+        expect(build.pattern).toEqual([
+            '...............',
+            '...........#...',
+            '...#######.#...',
+            '...#.......#...',
+            '...#.......#...',
+            '...#####...#...',
+            '...............',
+            '...............',
+            '...............'
+        ]);
+        expect(computeApproachPoint(build)).toEqual({ x: 7, y: 6 });
+        expect(build.pattern[5][7]).toBe('#');
+        expect(build.interactionAnchors).toContainEqual(expect.objectContaining({ id: 'triage_console', x: 8, y: 3 }));
+        expect(build.rewardAnchors).toContainEqual(expect.objectContaining({ id: 'med_supply_case', x: 13, y: 2 }));
+    });
+
     it.each(ROOM_BUILD_CATALOG.map((build) => [build.id, build]))('%s is internally valid', (_, build) => {
         expect(validateRoomBuild(build)).toEqual([]);
     });

@@ -1,8 +1,17 @@
 # N64 Architectural Level Design & World Overhaul Plan — 2026-10-10
 
-> **Central Collaborative Planning Document**  
-> **Status:** Approved Architectural Design  
+> **Architectural reference and lane index**
+>
+> **Status:** Active; reconciled with the audited room doctrine
+>
 > **Target:** Elimination of sterile orthogonal blockiness via legendary Nintendo 64 level design paradigms (*The Legend of Zelda: Ocarina of Time*, *GoldenEye 007*, *Super Mario 64*, *Perfect Dark*).
+
+The authoritative room-design rules and current 20-room proof order live in
+[`world-design-doctrine-n64-lessons-2026-10-10.md`](world-design-doctrine-n64-lessons-2026-10-10.md).
+This file is the architectural reference, chunk-world diagnosis, and lane index. Where earlier
+sections describe mandatory walkable tiers or automatic elevation tags, §8 and the doctrine's
+capability classification govern: visual depth first; traversable height only after a separate
+vertical-room contract is proven.
 
 ---
 
@@ -85,8 +94,11 @@ flowchart TD
 
 ---
 
-### Pillar 1: Tiered Verticality (Multi-Plane Elevation)
-No room in the expanded world should exist as a single flat plane. Every space must be composed of at least two to three distinct vertical tiers:
+### Pillar 1: Layered depth, with traversable height gated
+No hero room should *read* as an undifferentiated flat plane. Use visual pits, raised-looking
+plinths, overhead structure, parallax, grates, and background layers immediately. The tier values
+below are targets for visual composition; they are not automatically walkable elevations. Any
+traversable tier requires the vertical-room contract and gameplay checks in §8.
 
 | Elevation Tier | Height ($Y$) | Architectural Function | Gameplay Role |
 |---|---|---|---|
@@ -342,7 +354,9 @@ To break orthogonal blockiness without breaking the WFC maze generator, pathfind
 2. **Sockets Remain Contract-Compliant**:
    All 3-wide doorway sockets (`width: 3`) remain perfectly centered on cardinal edges (`s`, `n`, `w`, `e`) so room rotation and WFC tile stitching continue to function with $100\%$ zero regressions.
 3. **Vertical Step Representation**:
-   Elevated plinths and sunken basins are tagged in `structuralAnchors` and `coverZones` with explicit `elevation: -1.5` or `elevation: +0.8` attributes, allowing the renderer to instance stepped curbs, stairs, or safety railings automatically.
+   `structuralAnchors` and `coverZones` do not currently create elevation. Use them for semantic
+   placement only. Visual tiers can be dressed around the flat route; traversable tiers must use a
+   proven `verticalHeightmap`/vertical-WFC path and pass the §8 gameplay checks.
 
 ### 5.2 Spline Conduits & Physical Anchors (`src/splineRouter.js`)
 Connecting tiered spaces requires physical infrastructure:
@@ -363,13 +377,15 @@ Even with monumental geometry and multi-tier architecture, the strict performanc
 | Phase | Milestone | Focus Area | Verification Criteria |
 |---|---|---|---|
 | **Step 1** | **Central Alignment (Current)** | Commit this master level design specification to `docs/planning/` for all agents. | Documentation review complete; zero blockers. |
-| **Step 2** | **First Prototype Blueprint** | Author `room_subdeck_turbine_sump` in `src/data/roomBuilds.js` with $45^\circ$ chamfers and sunken pit. | Passes `validateRoomBuild`, `rotateRoomBuild`, and showroom render. |
-| **Step 3** | **Vertical Curb & Railing Dressing** | Add modular step-up curb props and industrial railings to delineate Tier -1 pits and Tier +1 plinths. | Player collision respects elevation steps; zero Z-fighting. |
-| **Step 4** | **Rollout of Remaining 5 Blueprints** | Implement Cryo-Fissure, Spore Well, Decon Sluice, Obsidian Vault, and Bore Pit. | Full suite of 26 authored builds validated across Active, Cryo, and Bio biomes. |
+| **Step 2** | **P0A flat-room proof** | Retrofit `medical_triage`, then compressor hall and machine nave, without changing height or progression contracts. | Validation, rotation, reachability, isometric showroom review, and saved-room identity remain sound; real gameplay-camera review remains a separate gate. |
+| **Step 3** | **Wall and visual-depth proof** | Add wall shape/cutaway improvements and visual pits/plinths without implying walkable elevation. | Equal-or-lower draw calls, readable default camera, collision unchanged. |
+| **Step 4** | **Integration proofs** | Test the ring crossing detached from live progression and classify the cryo exchanger as visual or traversable height. | Portal/reservation checks pass; vertical gameplay is separately proven before rollout. |
 
 > [!IMPORTANT]
 > **Summary for Collaborating Agents:**  
-> Do not generate more flat grid boxes. Every new or retrofitted room must feature **corner chamfers (broken orthogonality)**, **multi-tier elevation (sunken or raised zones)**, an **unmissable hero centerpiece ("weenie")**, and **proscenium doorway sightlines**.
+> Do not disguise unchanged boxes with clutter. Every new or retrofitted hero room needs a
+> distinctive envelope, readable depth, a primary landmark, and an authored reveal. Symmetry,
+> immediate disclosure, and flat navigation remain valid when they serve the room's purpose.
 
 ---
 
@@ -537,7 +553,7 @@ uncommitted edits from other agents.
 
 | Lane | Scope | Main files | Depends on | Claimed |
 |---|---|---|---|---|
-| A. Room greyboxes | doctrine P0 rooms + Blueprint 1 | `src/data/roomBuilds.js`, `src/data/cathedralBlueprints.js` | B for the chamfer look, E for tiers | — |
+| A. Room greyboxes | doctrine P0 rooms; flat contract first | `src/data/roomBuilds.js`, `src/data/cathedralBlueprints.js` | B for final wall look; E only for later traversable tiers | **Codex/root — active 2026-10-10; `medical_triage` proof implemented** |
 | B. Wall autotile and height tiers | §7.2 | wall build in `threeGame.js`, wall shader, new wall-piece module, Blender kit | — | — (Claude lived-in lane available) |
 | C. Landform mix and rhythm | §7.3 | `src/landforms.js` | — | — |
 | D. Pits and edges | §7.4 | pit/void build in `threeGame.js` | B | — |
@@ -564,7 +580,24 @@ uncommitted edits from other agents.
 | D4 | Accept a visual edge up to about 0.3 m off the square collision for chamfers and natural contours? | Yes. |
 | D5 | Which camera approves a room? | The default isometric camera; third-person second. |
 
-### 9.5 Proposed first slice
+### 9.5 Active first slice
+
+Lane A is active. `medical_triage` is the first P0A proof: an offset partition forces a reveal
+pivot from the south threshold, the treatment bay occupies the protected inner pocket, and a
+longer east-side service loop reaches the medical supply case. It deliberately remains a flat,
+single-chunk room and preserves the existing entry socket, room ID, rotation policy, quest anchor
+IDs, and safe-room behavior.
+
+Verification for this slice:
+
+- catalog validation and all rotations remain valid;
+- connector reachability remains intact;
+- room population/dressing/destruction tests pass;
+- the isometric furnished-room review capture is refreshed at
+  `docs/reports/assets/furnished-rooms/medical_triage-bio.png`.
+- a real default-gameplay-camera threshold/return capture remains required before P0A sign-off.
+
+### 9.6 Proposed next slice
 
 Lane B on two chunks, the spawn field and a neighbouring maze:
 
@@ -580,3 +613,6 @@ This shows whether the blocky read changes before any room is rebuilt.
 
 - 2026-10-10: §1–6 drafted (blueprints, pillars, contract). §7–9 added: chunk-world diagnosis
   from live captures, engine facts, lanes, owner decisions. Nothing implemented.
+- 2026-10-10: Documents reconciled around the audited flat authored-room contract. Lane A claimed;
+  `medical_triage` P0A geometry implemented and reviewed in the isometric showroom; actual gameplay
+  camera sign-off remains open.
