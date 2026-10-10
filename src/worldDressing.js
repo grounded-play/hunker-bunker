@@ -45,6 +45,15 @@ const FOOTPRINT = Object.freeze({
     life_pod_seat_row: [1, 0],
     life_ceiling_collapse: [1, 0]
 });
+// The crash site (chunk 0,0) is authored: the wreck, its console and its
+// modules stand at fixed offsets from the ship, the spawn ring sits by the
+// console and arrival wreckage takes slots along the walls. Its props are laid
+// out by hand in slots relative to the ship; the first slot that fits wins.
+const CRASH_SITE_PROPS = Object.freeze([
+    // Torn from the wreck and thrown west, tipped toward the door hall.
+    { type: 'life_pod_seat_row', slots: [{ dx: -5, dy: -1, yaw: Math.PI / 2 + 0.35 }, { dx: 4, dy: 5, yaw: -0.4 }] }
+    // Prop 80 (life_hull_shard_smoldering) joins here when its model arrives.
+]);
 const NON_BLOCKING = new Set(['life_dropped_kit_pile', 'life_drip_buckets', 'life_guide_rope_stakes', 'life_ceiling_collapse']);
 const WALL_TILES = new Set(['#', 'W']);
 const FLOOR_TILES = new Set(['.', 'O']);
@@ -124,8 +133,9 @@ function footprintCells(type, x, y, yaw) {
  * @param {object} [chunk.metadata]       roomInstances are left to room dressing
  * @param {(x:number, y:number) => string|null} [chunk.categoryAt]  floor family (stickerPlanner.surfaceCategory)
  * @param {string} chunk.seed
+ * @param {{ ship: { x: number, y: number } }} [chunk.crashSite]  chunk 0,0: hand-placed props around the wreck instead of the landform's
  */
-export function planWorldDressing({ grid, size, landform, metadata = null, categoryAt = () => null, seed = '' }) {
+export function planWorldDressing({ grid, size, landform, metadata = null, categoryAt = () => null, seed = '', crashSite = null }) {
     const random = createRandom(`world-dressing:${seed}`);
     const at = (x, y) => (x < 0 || y < 0 || x >= size || y >= size ? null : grid[y]?.[x]);
     const inRoom = new Set();
@@ -174,6 +184,17 @@ export function planWorldDressing({ grid, size, landform, metadata = null, categ
         items.push(item);
         return true;
     };
+
+    if (crashSite?.ship) {
+        for (const { type, slots } of CRASH_SITE_PROPS) {
+            for (const { dx, dy, yaw } of slots) {
+                const x = crashSite.ship.x + dx;
+                const y = crashSite.ship.y + dy;
+                if (tryPlace({ layer: 'corner', type, x, y, yaw, scale: 1, mountY: 0, blocking: !NON_BLOCKING.has(type), cells: footprintCells(type, x, y, yaw) })) break;
+            }
+        }
+        return { items, triangles: spent };
+    }
 
     if (landform === 'maze') {
         // Wall fixtures along straight runs, spaced, alternating sides.

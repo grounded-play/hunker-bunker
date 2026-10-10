@@ -82,14 +82,14 @@ The owner uploaded 39 GLBs, 80 sticker renders and 56 texture renders without na
 - **Retail budget:** raised to 3400 MiB, measured at 3357 MiB. KTX2 joins `.glb` in `asarUnpack` and in `src/assetUrl.js`.
 
 **Still open** (updated 2026-10-10):
-- [ ] the crash-site seat row (79), which needs hand placement around the console and the modules;
+- [x] the crash-site seat row (79): hand-placed west of the wreck by the console, in ship-relative slots that clear the modules, the spawn ring, the arrival-wreckage slots and the door hall (`planWorldDressing({ crashSite })`). The crash room had been getting random field props (a seismic drill on the radar dish, a trestle on the reactor) because the wreck and modules are scene sprites the occupied scan never saw; it now gets only its hand-placed set;
 - [ ] prop 80, the hull shard: still not uploaded;
 - [ ] ambient motion (Part 7). Steam, sparks, glows, drips and lamp flicker shipped on 147 props through `src/propFx.js` (`c225a670`). Still missing: dust motes in light cones, cable sway, paper skitter, cloth flutter;
 - [ ] a Deck p95 capture. The newest Deck log is 10-07 (`6d5fc7ed`), from before this pass;
 - [x] model textures to KTX2: every GLB texture ships as Basis UASTC (`36be2b26`); GPU texture memory 3737 → 1717 MiB in the census probe;
 - [x] room-dressing PNG decals to KTX2: 68 baked layers, one draw per room (`5966fb49`);
 - [ ] the 2D sprites (about 449 MB of uncompressed PNG/WebP), not yet converted;
-- [ ] V8: the museum walk for props 41–79 (Sprint 53).
+- [x] V8: the museum walk for props 41–79 (Sprint 53): all load at their configured sizes.
 
 
 - **Part 0:** why the world still reads as empty, taken from the code.

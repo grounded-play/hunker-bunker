@@ -30733,7 +30733,10 @@ export class ThreeGame {
             landform,
             metadata,
             categoryAt: (x, y) => surfaceCategory(layer[y * size + x]),
-            seed: `${chunkX},${chunkY}`
+            seed: `${chunkX},${chunkY}`,
+            // The wreck, console and modules are scene sprites, not chunk
+            // children, so the occupied scan above never sees them.
+            crashSite: chunkX === 0 && chunkY === 0 ? { ship: { x: CRASH_SITE_CENTER, y: CRASH_SITE_CENTER } } : null
         });
         const worldItems = items.map((item, index) => ({
             ...item,
