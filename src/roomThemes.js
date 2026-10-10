@@ -15,7 +15,7 @@ export const LIVED_IN_DECALS = Object.freeze({
         'decal_wall_panel_relief', 'decal_mirror_tarnished',
         'decal_lacquer_blister_01', 'decal_friction_burn',
         'decal_electrical_scorch', 'decal_hazard_chevron',
-        'decal_substation_stencil'
+        'decal_substation_stencil', 'decal_cathedral_runic'
     ]),
     cryo: Object.freeze([
         'decal_emergency_oxygen_nest', 'decal_failed_decon_kit',
@@ -36,7 +36,8 @@ export const LIVED_IN_DECALS = Object.freeze({
         'decal_flesh_press', 'decal_bite_marks_02',
         'decal_bite_marks_03', 'decal_spore_stain_01',
         'decal_spore_stain_02', 'decal_spore_stain_03',
-        'decal_bio_mycelium', 'decal_chitin_cluster'
+        'decal_bio_mycelium', 'decal_chitin_cluster',
+        'decal_bio_spore_vent', 'decal_giger_relief'
     ]),
     camp: Object.freeze([
         'decal_abandoned_meal_tray', 'decal_emergency_oxygen_nest',
@@ -46,7 +47,8 @@ export const LIVED_IN_DECALS = Object.freeze({
         'decal_scorch_bloom', 'decal_grease_pool',
         'decal_lacquer_blister_02', 'decal_lacquer_blister_03',
         'decal_friction_burn', 'decal_mirror_tarnished',
-        'decal_bite_marks_02', 'decal_evac_treads'
+        'decal_bite_marks_02', 'decal_evac_treads',
+        'decal_camp_map'
     ])
 });
 
@@ -378,6 +380,90 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         ambientProps: LIVED_IN_DECALS.bio,
         rareProps: ['prop_corporate_saint_reliquary', 'prop_votive_candle_shrine'],
         encounterProfile: 'security'
+    },
+    {
+        id: 'bunker-substation',
+        biomes: ['active'],
+        roles: ['utility', 'engineering'],
+        weight: 1.1,
+        wallStyle: 'substation',
+        floorStyle: 'substation',
+        doorStyle: 'utility',
+        signatureProps: ['prop_fusion_generator', 'prop_conduit_hub', 'prop_tesla_coil_node', 'prop_cyber_junction'],
+        largeProps: ['prop_engineering_bench', 'prop_conduit_junction_box', 'prop_pipe_rupture', 'prop_diagnostic_console', 'decal_substation_stencil', 'decal_electrical_scorch'],
+        smallProps: ['scatter_cable_coil', 'scatter_bolts', 'prop_valve_wheel_fused', 'decal_hazard_chevron'],
+        ambientProps: LIVED_IN_DECALS.bunker,
+        encounterProfile: 'utility'
+    },
+    {
+        id: 'cryo-permafrost',
+        biomes: ['cryo'],
+        roles: ['generic', 'storage', 'reward'],
+        weight: 1.05,
+        wallStyle: 'permafrost',
+        floorStyle: 'permafrost',
+        doorStyle: 'cryo',
+        signatureProps: ['prop_icey_thermal_pod', 'prop_icey_frost_vent', 'prop_icey_frost_manifold', 'prop_cryo_sleep_pod'],
+        largeProps: ['prop_ruptured_coolant_pump', 'frozen_tanker', 'decal_cryo_fracture', 'decal_permafrost_icicles'],
+        smallProps: ['scatter_cryo_shards', 'scatter_cryo_icicle', 'scatter_coolant_puddle', 'decal_footprints_mud'],
+        ambientProps: LIVED_IN_DECALS.cryo,
+        encounterProfile: 'cryo-standard'
+    },
+    {
+        id: 'bunker-cleanroom',
+        biomes: ['active', 'cryo'],
+        roles: ['medical', 'engineering'],
+        weight: 1.0,
+        wallStyle: 'cleanroom',
+        floorStyle: 'cleanroom',
+        doorStyle: 'medical-seal',
+        signatureProps: ['prop_diagnostic_console', 'prop_vital_monitor', 'prop_medical_bed', 'prop_surgical_cart'],
+        largeProps: ['prop_broken_specimen_tank', 'prop_specimen_tank', 'prop_biomech_triage_cradle', 'prop_decon_eyewash_shower_station', 'decal_biohazard_stencil', 'decal_substation_stencil'],
+        smallProps: ['scatter_bolts', 'prop_overhead_cage_fluorescent', 'decal_hazard_chevron'],
+        ambientProps: LIVED_IN_DECALS.bunker,
+        encounterProfile: 'sterile'
+    },
+    {
+        id: 'bio-mycelium',
+        biomes: ['bio'],
+        roles: ['generic', 'utility', 'nest'],
+        weight: 1.15,
+        wallStyle: 'mycelium',
+        floorStyle: 'mycelium',
+        doorStyle: 'resin',
+        signatureProps: ['prop_spore_colony', 'prop_fungal_spore_dispenser', 'prop_fungal_mycelium_loom', 'prop_alien_respiratory_vent'],
+        largeProps: ['prop_fungal_resin_basin', 'prop_hive_resin_sac', 'prop_flesh_steel_cradle', 'decal_bio_mycelium', 'decal_bio_spore_vent', 'decal_spore_growth_patch'],
+        smallProps: ['prop_cave_spores', 'scatter_slime_puddle', 'fixture_sconce_vine'],
+        ambientProps: LIVED_IN_DECALS.bio,
+        encounterProfile: 'bio-standard'
+    },
+    {
+        id: 'giger-obsidian',
+        biomes: ['active', 'cryo', 'bio'],
+        roles: ['reward', 'security'],
+        weight: 1.1,
+        wallStyle: 'obsidian',
+        floorStyle: 'obsidian',
+        doorStyle: 'hive',
+        signatureProps: ['prop_corporate_saint_reliquary', 'prop_votive_candle_shrine', 'prop_liturgical_terminal_lectern', 'prop_pipe_organ_heat_exchanger'],
+        largeProps: ['arch_deco_archway_grand_01', 'arch_pillar_buttress_01', 'arch_rib_ceiling_vault_01', 'decal_cathedral_runic', 'decal_giger_relief'],
+        smallProps: ['scatter_bolts', 'scatter_cable_coil', 'fixture_sconce_vine'],
+        ambientProps: LIVED_IN_DECALS.bio,
+        encounterProfile: 'security'
+    },
+    {
+        id: 'bunker-toxic-sump',
+        biomes: ['active', 'bio'],
+        roles: ['utility', 'storage'],
+        weight: 1.0,
+        wallStyle: 'toxic_sump',
+        floorStyle: 'toxic_sump',
+        doorStyle: 'utility',
+        signatureProps: ['prop_floor_drainage_sump_trough', 'prop_pipe_rupture', 'prop_o2_filter_vat', 'prop_storage_drum_dented'],
+        largeProps: ['prop_coolant_drum_leaking_pool', 'prop_conduit_junction_box', 'prop_exhaust_blower_fan_hood', 'decal_hazard_chevron', 'decal_evac_treads'],
+        smallProps: ['scatter_bolts', 'decal_oil_spill_patch', 'decal_hazard_stripes'],
+        ambientProps: LIVED_IN_DECALS.bunker,
+        encounterProfile: 'utility'
     }
 ]);
 

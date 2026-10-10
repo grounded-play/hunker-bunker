@@ -104,7 +104,14 @@ RECIPES = {
         # shell around the hole, centre (-0.043, -0.101, 0.341)) seats it 3.5 cm
         # proud of the rim; the residual move is a short slide along the axis.
         dict(name='HB_LID_00', motion='hinge_axis',
-             select=_plane_slab((0.225, 0.015, 0.29), (0.833, 0.551, 0.052), 0.08, 0.26, lambda c: c.z > 0.1 and c.x > 0.135),
+             select=_any(
+                 _plane_slab((0.225, 0.015, 0.29), (0.833, 0.551, 0.052), 0.08, 0.26,
+                             lambda c: c.z > 0.1 and c.x > 0.135),
+                 # Two sparse outer-shell islands fall barely outside the
+                 # fitted slab tolerance. Keep this residue box narrow so the
+                 # pod shell and the low ground debris remain on HB_BODY.
+                 _box(xmin=0.23, xmax=0.33, ymin=0.0, ymax=0.15, zmin=0.19, zmax=0.36),
+             ),
              axis=(0.3099, -0.3865, -0.8687), pivot=(0.0405, 0.0206, 0.2217), closed_angle=math.radians(93.96),
              slide=(0.3099 * -0.0825, -0.3865 * -0.0825, -0.8687 * -0.0825), duration=1.3),
     ],

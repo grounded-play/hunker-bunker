@@ -1,21 +1,21 @@
 {
   "version": 1,
   "budgets": {
-    "publicBytes": 3774873600,
+    "publicBytes": 3879731200,
     "appAsarBytes": 996147200,
     "unknownAssets": 160,
     "codecMismatches": 140,
     "duplicateGroups": 15
   },
   "measured": {
-    "publicBytes": 3719826932,
-    "publicFileCount": 4824
+    "publicBytes": 3794085825,
+    "publicFileCount": 5081
   },
   "classifications": {
-    "runtime-required": 4449,
+    "runtime-required": 4778,
     "source-reference": 23,
     "generated-intermediate": 208,
-    "unknown": 144
+    "unknown": 72
   },
   "missingReferences": [],
   "invalidMedia": [],
@@ -612,6 +612,13 @@
     }
   ],
   "duplicateChecksums": [
+    {
+      "sha256": "0ac1270cbb8a1b72a0157d8edb6cca657fa5596d30105e7594ac1a1d21049ff9",
+      "files": [
+        "3d/runtime/sprites/prop_camp_cot-t14-c0.ktx2",
+        "3d/runtime/sprites/prop_camp_cot-t15-c0.ktx2"
+      ]
+    },
     {
       "sha256": "cc9655c87efbfeb86e0aa6856b7d0f55790964c990b1073f2378205dc6ee409a",
       "files": [

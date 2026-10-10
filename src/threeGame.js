@@ -949,7 +949,14 @@ const ROOM_WALL_STYLE_ID = Object.freeze({
     'reliquary': 5,
     'cathedral': 6,
     'cave': 7,
-    'space': 8
+    'space': 8,
+    // Expansion suites:
+    'substation': 1,
+    'permafrost': 2,
+    'cleanroom': 6,
+    'mycelium': 3,
+    'obsidian': 5,
+    'toxic_sump': 1
 });
 const ROOM_FLOOR_STYLE_COLOR = Object.freeze({
     'bunker-standard': 0x7a858c,
@@ -962,7 +969,13 @@ const ROOM_FLOOR_STYLE_COLOR = Object.freeze({
     'bio-resin': 0x4d3656,
     'bio-hive': 0x3b5a37,
     camp: 0x796044,
-    storage: 0x78633e
+    storage: 0x78633e,
+    substation: 0x6b7782,
+    permafrost: 0x6ca3c0,
+    cleanroom: 0xd0e4e8,
+    mycelium: 0x5a3e20,
+    obsidian: 0x1f1a28,
+    toxic_sump: 0x3d473b
 });
 const GENERATED_ROOM_PROP_PATHS = Object.freeze({
     prop_medical_bed: '/prop_medical_bed.png',

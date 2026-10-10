@@ -80,7 +80,12 @@ describe('articulated runtime props', () => {
         expect(nodes('life_confessional').map((node) => node.name).sort()).toEqual(['HB_DOOR_00', 'HB_DOOR_01']);
         expect(nodes('life_seismic_drill')[0].extras.hb_motion).toBe('spin');
         expect(nodes('life_ice_bore_winch')[0].extras.hb_motion).toBe('spin');
-        for (const door of [...nodes('life_ribcage_rescue_cabinet'), ...nodes('life_confessional')]) {
+        expect(nodes('life_supply_drop_pod').map((node) => node.name)).toEqual(['HB_LID_00']);
+        for (const door of [
+            ...nodes('life_ribcage_rescue_cabinet'),
+            ...nodes('life_confessional'),
+            ...nodes('life_supply_drop_pod')
+        ]) {
             // Rest pose is closed: the door node carries the closing swing.
             expect(door.rotation, door.name).toBeDefined();
             expect(Math.abs(door.extras.hb_open_angle)).toBeGreaterThan(1.4);

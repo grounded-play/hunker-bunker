@@ -2406,6 +2406,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_bio_spore_vent_albedo.ktx2",
+      "bytes": 277064,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_bio_spore_vent_detail.ktx2",
+      "bytes": 224220,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_biohazard_stencil_albedo.ktx2",
       "bytes": 244680,
       "classification": "runtime-required"
@@ -2443,6 +2453,26 @@
     {
       "path": "3d/runtime/decals/legacy/decal_bullet_holes_detail.ktx2",
       "bytes": 263851,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_camp_map_albedo.ktx2",
+      "bytes": 331229,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_camp_map_detail.ktx2",
+      "bytes": 271615,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_cathedral_runic_albedo.ktx2",
+      "bytes": 289644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_cathedral_runic_detail.ktx2",
+      "bytes": 233186,
       "classification": "runtime-required"
     },
     {
@@ -2673,6 +2703,16 @@
     {
       "path": "3d/runtime/decals/legacy/decal_frost_bloom_2_detail.ktx2",
       "bytes": 99850,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_giger_relief_albedo.ktx2",
+      "bytes": 289709,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_giger_relief_detail.ktx2",
+      "bytes": 245689,
       "classification": "runtime-required"
     },
     {
@@ -3513,292 +3553,412 @@
     {
       "path": "3d/runtime/kits/textures/biomech_floor_color.webp",
       "bytes": 211924,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/biomech_floor_emissive.webp",
       "bytes": 48212,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/biomech_floor_normal.webp",
       "bytes": 210950,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/biomech_floor_rough.webp",
       "bytes": 70836,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/biomech_wall_color.webp",
       "bytes": 331944,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/biomech_wall_emissive.webp",
       "bytes": 38708,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/biomech_wall_normal.webp",
       "bytes": 320638,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/biomech_wall_rough.webp",
       "bytes": 109062,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/bunker_floor_color.webp",
       "bytes": 260574,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/bunker_floor_normal.webp",
       "bytes": 267780,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/bunker_floor_rough.webp",
       "bytes": 57830,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/bunker_wall_color.webp",
       "bytes": 162760,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/bunker_wall_normal.webp",
       "bytes": 167868,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/bunker_wall_rough.webp",
       "bytes": 25392,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cathedral_floor_color.webp",
       "bytes": 313316,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cathedral_floor_normal.webp",
       "bytes": 270508,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cathedral_floor_rough.webp",
       "bytes": 37342,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cathedral_wall_color.webp",
       "bytes": 309764,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cathedral_wall_normal.webp",
       "bytes": 293512,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cathedral_wall_rough.webp",
       "bytes": 29110,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cave_floor_color.webp",
       "bytes": 332476,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cave_floor_normal.webp",
       "bytes": 618304,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cave_floor_rough.webp",
       "bytes": 468370,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cave_wall_color.webp",
       "bytes": 138038,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cave_wall_normal.webp",
       "bytes": 474130,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cave_wall_rough.webp",
       "bytes": 157520,
-      "classification": "unknown"
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cleanroom_floor_color.webp",
+      "bytes": 303298,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cleanroom_floor_emissive.webp",
+      "bytes": 10330,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cleanroom_floor_normal.webp",
+      "bytes": 674166,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cleanroom_floor_rough.webp",
+      "bytes": 7938,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cleanroom_wall_color.webp",
+      "bytes": 193056,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cleanroom_wall_emissive.webp",
+      "bytes": 5354,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cleanroom_wall_normal.webp",
+      "bytes": 534528,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/cleanroom_wall_rough.webp",
+      "bytes": 3922,
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cryo_deck_floor_color.webp",
       "bytes": 384676,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cryo_deck_floor_emissive.webp",
       "bytes": 87988,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cryo_deck_floor_normal.webp",
       "bytes": 368524,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cryo_deck_floor_rough.webp",
       "bytes": 127962,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cryo_deck_wall_color.webp",
       "bytes": 317632,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cryo_deck_wall_emissive.webp",
       "bytes": 8520,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cryo_deck_wall_normal.webp",
       "bytes": 311422,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/cryo_deck_wall_rough.webp",
       "bytes": 82232,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/geothermal_floor_color.webp",
       "bytes": 305556,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/geothermal_floor_emissive.webp",
       "bytes": 59384,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/geothermal_floor_normal.webp",
       "bytes": 658472,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/geothermal_floor_rough.webp",
       "bytes": 40328,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/geothermal_wall_color.webp",
       "bytes": 1786896,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/geothermal_wall_emissive.webp",
       "bytes": 209320,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/geothermal_wall_normal.webp",
       "bytes": 2727986,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/geothermal_wall_rough.webp",
       "bytes": 591702,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/giger_floor_color.webp",
       "bytes": 267686,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/giger_floor_emissive.webp",
       "bytes": 28248,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/giger_floor_normal.webp",
       "bytes": 260034,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/giger_floor_rough.webp",
       "bytes": 77836,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/giger_wall_color.webp",
       "bytes": 243852,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/giger_wall_emissive.webp",
       "bytes": 18438,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/giger_wall_normal.webp",
       "bytes": 249832,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/giger_wall_rough.webp",
       "bytes": 77686,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/hive_resin_floor_color.webp",
       "bytes": 32150,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/hive_resin_floor_emissive.webp",
       "bytes": 33094,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/hive_resin_floor_normal.webp",
       "bytes": 272352,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/hive_resin_floor_rough.webp",
       "bytes": 20010,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/hive_resin_wall_color.webp",
       "bytes": 1567334,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/hive_resin_wall_emissive.webp",
       "bytes": 45844,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/hive_resin_wall_normal.webp",
       "bytes": 2629034,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/hive_resin_wall_rough.webp",
       "bytes": 499286,
-      "classification": "unknown"
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/mycelium_floor_color.webp",
+      "bytes": 301726,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/mycelium_floor_emissive.webp",
+      "bytes": 25204,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/mycelium_floor_normal.webp",
+      "bytes": 657012,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/mycelium_floor_rough.webp",
+      "bytes": 18810,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/mycelium_wall_color.webp",
+      "bytes": 278862,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/mycelium_wall_emissive.webp",
+      "bytes": 61488,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/mycelium_wall_normal.webp",
+      "bytes": 639174,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/mycelium_wall_rough.webp",
+      "bytes": 46108,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/obsidian_floor_color.webp",
+      "bytes": 214128,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/obsidian_floor_emissive.webp",
+      "bytes": 64240,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/obsidian_floor_normal.webp",
+      "bytes": 513706,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/obsidian_floor_rough.webp",
+      "bytes": 90574,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/obsidian_wall_color.webp",
+      "bytes": 325726,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/obsidian_wall_emissive.webp",
+      "bytes": 134566,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/obsidian_wall_normal.webp",
+      "bytes": 610988,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/obsidian_wall_rough.webp",
+      "bytes": 27548,
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/pbr_wall_color_atlas.webp",
@@ -3821,74 +3981,184 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/kits/textures/permafrost_floor_color.webp",
+      "bytes": 267746,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/permafrost_floor_emissive.webp",
+      "bytes": 59976,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/permafrost_floor_normal.webp",
+      "bytes": 622406,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/permafrost_floor_rough.webp",
+      "bytes": 13216,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/permafrost_wall_color.webp",
+      "bytes": 284124,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/permafrost_wall_emissive.webp",
+      "bytes": 69402,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/permafrost_wall_normal.webp",
+      "bytes": 631788,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/permafrost_wall_rough.webp",
+      "bytes": 15120,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/kits/textures/reliquary_floor_color.webp",
       "bytes": 279826,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/reliquary_floor_emissive.webp",
       "bytes": 59826,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/reliquary_floor_normal.webp",
       "bytes": 257464,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/reliquary_floor_rough.webp",
       "bytes": 71938,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/reliquary_wall_color.webp",
       "bytes": 260090,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/reliquary_wall_emissive.webp",
       "bytes": 72888,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/reliquary_wall_normal.webp",
       "bytes": 259568,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/reliquary_wall_rough.webp",
       "bytes": 77338,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/space_floor_color.webp",
       "bytes": 59032,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/space_floor_normal.webp",
       "bytes": 223238,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/space_floor_rough.webp",
       "bytes": 240142,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/space_wall_color.webp",
       "bytes": 64764,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/space_wall_normal.webp",
       "bytes": 25700,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/kits/textures/space_wall_rough.webp",
       "bytes": 347484,
-      "classification": "unknown"
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/substation_floor_color.webp",
+      "bytes": 308138,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/substation_floor_normal.webp",
+      "bytes": 723886,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/substation_floor_rough.webp",
+      "bytes": 13512,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/substation_wall_color.webp",
+      "bytes": 349542,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/substation_wall_normal.webp",
+      "bytes": 748880,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/substation_wall_rough.webp",
+      "bytes": 112994,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/toxic_sump_floor_color.webp",
+      "bytes": 223852,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/toxic_sump_floor_emissive.webp",
+      "bytes": 5268,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/toxic_sump_floor_normal.webp",
+      "bytes": 601276,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/toxic_sump_floor_rough.webp",
+      "bytes": 60802,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/toxic_sump_wall_color.webp",
+      "bytes": 341680,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/toxic_sump_wall_emissive.webp",
+      "bytes": 3042,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/toxic_sump_wall_normal.webp",
+      "bytes": 700242,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/toxic_sump_wall_rough.webp",
+      "bytes": 3022,
+      "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/alien_proto_crawler.glb",
@@ -4592,7 +4862,7 @@
     },
     {
       "path": "3d/runtime/new3ds/life_supply_drop_pod.glb",
-      "bytes": 8135936,
+      "bytes": 8135392,
       "classification": "runtime-required"
     },
     {
@@ -4607,7 +4877,7 @@
     },
     {
       "path": "3d/runtime/new3ds/life_tarp_leanto.glb",
-      "bytes": 8450136,
+      "bytes": 8485688,
       "classification": "runtime-required"
     },
     {
@@ -4657,7 +4927,7 @@
     },
     {
       "path": "3d/runtime/new3ds/life_wind_mast.glb",
-      "bytes": 7434864,
+      "bytes": 7439940,
       "classification": "runtime-required"
     },
     {
@@ -5503,6 +5773,1001 @@
     {
       "path": "3d/runtime/spore-snail-boss.glb",
       "bytes": 3922484,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/alien_proto_crawler_walk_v2-t16-c0.ktx2",
+      "bytes": 681943,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/alien_proto_spitter_walk_v2-t16-c0.ktx2",
+      "bytes": 669979,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/bio_charger-t14-c0.ktx2",
+      "bytes": 638194,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/boss_corrupted_engineer_v2-t16-c0.ktx2",
+      "bytes": 514440,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/boss_corrupted_scout_v2-t16-c0.ktx2",
+      "bytes": 577149,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/boss_corrupted_tank_v2-t16-c0.ktx2",
+      "bytes": 626584,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/boss_cryosnail_dead-t14-c0.ktx2",
+      "bytes": 732519,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/boss_cybersnail_dead-t14-c0.ktx2",
+      "bytes": 775866,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/boss_sporesnail_dead-t14-c0.ktx2",
+      "bytes": 602698,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/civilian_miner_walk-t16-c0.ktx2",
+      "bytes": 574045,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/civilian_researcher_walk-t16-c0.ktx2",
+      "bytes": 673493,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/console-t15-c0.ktx2",
+      "bytes": 647096,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/crash_site_broken_floor_v1-t14-c0.ktx2",
+      "bytes": 864739,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/cryosnail_dead-t14-c0.ktx2",
+      "bytes": 434279,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/cybersnail-t14-c0.ktx2",
+      "bytes": 652955,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/cybersnail_dead-t14-c0.ktx2",
+      "bytes": 893344,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_abandoned_meal_tray-t14-c0.ktx2",
+      "bytes": 324525,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_barricade_last_stand-t14-c0.ktx2",
+      "bytes": 290326,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_bio_sample_spill-t14-c0.ktx2",
+      "bytes": 315484,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_biohazard_stencil-t14-c0.ktx2",
+      "bytes": 250535,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_bite_marks_02-t14-c0.ktx2",
+      "bytes": 57979,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_bite_marks_03-t14-c0.ktx2",
+      "bytes": 43533,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_bullet_holes-t14-c0.ktx2",
+      "bytes": 1003185,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_childlike_cave_map-t14-c0.ktx2",
+      "bytes": 336111,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_claw_scratches-t14-c0.ktx2",
+      "bytes": 252211,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_condensation_run-t14-c0.ktx2",
+      "bytes": 35072,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_emergency_oxygen_nest-t14-c0.ktx2",
+      "bytes": 270016,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_failed_decon_kit-t14-c0.ktx2",
+      "bytes": 287168,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_flesh_press-t14-c0.ktx2",
+      "bytes": 44901,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_floor_grate_01-t14-c0.ktx2",
+      "bytes": 40101,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_floor_grate_02-t14-c0.ktx2",
+      "bytes": 36342,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_floor_grate_03-t14-c0.ktx2",
+      "bytes": 47780,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_floor_grate_04-t14-c0.ktx2",
+      "bytes": 44549,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_floor_medallion_01-t14-c0.ktx2",
+      "bytes": 53576,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_floor_medallion_02-t14-c0.ktx2",
+      "bytes": 53867,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_floor_medallion_03-t14-c0.ktx2",
+      "bytes": 53100,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_floor_medallion_04-t14-c0.ktx2",
+      "bytes": 47057,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_fluid_seep-t14-c0.ktx2",
+      "bytes": 55831,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_footprints_mud-t14-c0.ktx2",
+      "bytes": 252338,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_friction_burn-t14-c0.ktx2",
+      "bytes": 20652,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_frost_bloom_1-t14-c0.ktx2",
+      "bytes": 153518,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_frost_bloom_2-t14-c0.ktx2",
+      "bytes": 134537,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_graffiti_tally_1-t14-c0.ktx2",
+      "bytes": 188543,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_graffiti_tally_2-t14-c0.ktx2",
+      "bytes": 218429,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_grease_pool-t14-c0.ktx2",
+      "bytes": 64503,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_growth_creep_1-t14-c0.ktx2",
+      "bytes": 142018,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_growth_creep_2-t14-c0.ktx2",
+      "bytes": 147815,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_hand_smears_1-t14-c0.ktx2",
+      "bytes": 144953,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_hand_smears_2-t14-c0.ktx2",
+      "bytes": 171761,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_hazard_stripes-t14-c0.ktx2",
+      "bytes": 236037,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_hive_growth-t14-c0.ktx2",
+      "bytes": 737575,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_lacquer_blister_01-t14-c0.ktx2",
+      "bytes": 42339,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_lacquer_blister_02-t14-c0.ktx2",
+      "bytes": 47865,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_lacquer_blister_03-t14-c0.ktx2",
+      "bytes": 35589,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_maintenance_shrine-t14-c0.ktx2",
+      "bytes": 223157,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_meridian_stencil-t14-c0.ktx2",
+      "bytes": 264275,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_mirror_tarnished-t14-c0.ktx2",
+      "bytes": 32450,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_oil_spill_patch-t14-c0.ktx2",
+      "bytes": 183762,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_rust_bleed_1-t14-c0.ktx2",
+      "bytes": 158827,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_rust_bleed_2-t14-c0.ktx2",
+      "bytes": 225016,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_scorch_bloom-t14-c0.ktx2",
+      "bytes": 109378,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_spore_growth_patch-t14-c0.ktx2",
+      "bytes": 208067,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_spore_stain_01-t14-c0.ktx2",
+      "bytes": 29849,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_spore_stain_02-t14-c0.ktx2",
+      "bytes": 33424,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_spore_stain_03-t14-c0.ktx2",
+      "bytes": 48896,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_tallow_symbol-t14-c0.ktx2",
+      "bytes": 138890,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_vine_iron_shadow_1-t14-c0.ktx2",
+      "bytes": 97527,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_vine_iron_shadow_2-t14-c0.ktx2",
+      "bytes": 82501,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_wall_breach-t14-c0.ktx2",
+      "bytes": 870300,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_wall_panel_grille_01-t14-c0.ktx2",
+      "bytes": 35692,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_wall_panel_grille_02-t14-c0.ktx2",
+      "bytes": 32695,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_wall_panel_grille_03-t14-c0.ktx2",
+      "bytes": 34982,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_wall_panel_relief-t14-c0.ktx2",
+      "bytes": 57520,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_water_stain-t14-c0.ktx2",
+      "bytes": 89661,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/decal_worker_sleep_roll-t14-c0.ktx2",
+      "bytes": 272861,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/door_biomechanical-t14-c0.ktx2",
+      "bytes": 789822,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/drop_black_flask-t14-c0.ktx2",
+      "bytes": 184743,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/drop_child_drawing-t14-c0.ktx2",
+      "bytes": 215908,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/drop_dig_manifest-t14-c0.ktx2",
+      "bytes": 221830,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/drop_dogtags-t14-c0.ktx2",
+      "bytes": 170808,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/drop_first_bore_tag-t14-c0.ktx2",
+      "bytes": 182401,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/drop_frozen_letter-t14-c0.ktx2",
+      "bytes": 167065,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/drop_horizon_badge-t14-c0.ktx2",
+      "bytes": 159519,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/drop_meteor_core-t14-c0.ktx2",
+      "bytes": 164185,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/drop_moult_shard-t14-c0.ktx2",
+      "bytes": 185742,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/drop_prayer_stone-t14-c0.ktx2",
+      "bytes": 205533,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/drop_ration_ledger-t14-c0.ktx2",
+      "bytes": 194943,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/drop_resin_locket-t14-c0.ktx2",
+      "bytes": 107492,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/drop_security_log-t14-c0.ktx2",
+      "bytes": 183631,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/drop_survey_probe-t14-c0.ktx2",
+      "bytes": 134887,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/engineer_ship-t15-c0.ktx2",
+      "bytes": 556087,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/engineer_ship_broken-t15-c0.ktx2",
+      "bytes": 696833,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/engineer_ship_healed-t15-c0.ktx2",
+      "bytes": 553869,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/fungal_spore_vent-t14-c0.ktx2",
+      "bytes": 707794,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/module_hull_matrix-t18-c016.ktx2",
+      "bytes": 344901,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/module_o2_generator-t18-c016.ktx2",
+      "bytes": 342206,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/module_radar_dish-t18-c016.ktx2",
+      "bytes": 468425,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/module_reactor_compressor-t18-c016.ktx2",
+      "bytes": 582622,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/mycelium_stalker-t14-c0.ktx2",
+      "bytes": 558268,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_alien_feeding_basin-t14-c0.ktx2",
+      "bytes": 316312,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_alien_respiratory_vent-t14-c0.ktx2",
+      "bytes": 279133,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_ammo_crate_stack-t14-c0.ktx2",
+      "bytes": 734381,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_biomech_arch-t14-c0.ktx2",
+      "bytes": 627173,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_biomech_flesh_locker-t14-c0.ktx2",
+      "bytes": 468102,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_biomech_incubator-t14-c0.ktx2",
+      "bytes": 404837,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_biomech_neural_synapse-t14-c0.ktx2",
+      "bytes": 460924,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_biomech_pillar_left-t14-c0.ktx2",
+      "bytes": 496618,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_biomech_pillar_right-t14-c0.ktx2",
+      "bytes": 551021,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_biomech_respirator-t14-c0.ktx2",
+      "bytes": 518715,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_biomech_sphincter_trap-t14-c0.ktx2",
+      "bytes": 472783,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_biomech_triage_cradle-t14-c0.ktx2",
+      "bytes": 634828,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_broken_specimen_tank-t14-c0.ktx2",
+      "bytes": 221413,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_bunker_supplies-t14-c0.ktx2",
+      "bytes": 788443,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_bedrolls-t14-c0.ktx2",
+      "bytes": 97844,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_cookfire_doused-t14-c0.ktx2",
+      "bytes": 104492,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_cookfire_lit-t14-c0.ktx2",
+      "bytes": 109067,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_cot-t14-c0.ktx2",
+      "bytes": 112254,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_cot-t15-c0.ktx2",
+      "bytes": 112254,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_crate-t14-c0.ktx2",
+      "bytes": 132023,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_crates-t14-c0.ktx2",
+      "bytes": 686957,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_crates_chained-t14-c0.ktx2",
+      "bytes": 65733,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_grave_fresh-t14-c0.ktx2",
+      "bytes": 65842,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_grave_old-t14-c0.ktx2",
+      "bytes": 99450,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_laundry-t14-c0.ktx2",
+      "bytes": 75365,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_meridian_battery_bank-t14-c0.ktx2",
+      "bytes": 24414,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_meridian_radio-t14-c0.ktx2",
+      "bytes": 23763,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_meridian_repair_rig-t14-c0.ktx2",
+      "bytes": 23835,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_sandbags-t14-c0.ktx2",
+      "bytes": 740765,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_shutter_lockdown-t14-c0.ktx2",
+      "bytes": 38728,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_tallow_resin_urn-t14-c0.ktx2",
+      "bytes": 22500,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_tallow_spore_trays-t14-c0.ktx2",
+      "bytes": 22610,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_tallow_still-t14-c0.ktx2",
+      "bytes": 24281,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_vesper_ammo_press-t14-c0.ktx2",
+      "bytes": 22579,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_vesper_shield_rack-t14-c0.ktx2",
+      "bytes": 22959,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_vesper_turret-t14-c0.ktx2",
+      "bytes": 18122,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_camp_warning_placard-t14-c0.ktx2",
+      "bytes": 35007,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_cave_bones-t14-c0.ktx2",
+      "bytes": 912199,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_cave_eggs_hatched-t14-c0.ktx2",
+      "bytes": 39215,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_cave_eggs_intact-t14-c0.ktx2",
+      "bytes": 742648,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_cave_hive_wounded-t14-c0.ktx2",
+      "bytes": 175052,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_cave_lichen-t14-c0.ktx2",
+      "bytes": 670389,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_cave_queen_throne-t14-c0.ktx2",
+      "bytes": 765847,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_cave_spores-t14-c0.ktx2",
+      "bytes": 666131,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_cave_webs-t14-c0.ktx2",
+      "bytes": 787806,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_chair_operator_wrecked-t14-c0.ktx2",
+      "bytes": 36939,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_conduit_hub-t14-c0.ktx2",
+      "bytes": 691306,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_conduit_junction_box-t14-c0.ktx2",
+      "bytes": 42651,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_cryo_sleep_pod-t14-c0.ktx2",
+      "bytes": 273504,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_cyber_junction-t14-c0.ktx2",
+      "bytes": 671224,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_diagnostic_console-t14-c0.ktx2",
+      "bytes": 232324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_engineering_bench-t14-c0.ktx2",
+      "bytes": 319447,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_fabricator_workstation-t14-c0.ktx2",
+      "bytes": 440910,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_flesh_steel_coffin-t14-c0.ktx2",
+      "bytes": 37362,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_flesh_steel_cradle-t14-c0.ktx2",
+      "bytes": 41380,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_flesh_steel_inhaler-t14-c0.ktx2",
+      "bytes": 28881,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_fungal_mycelium_loom-t14-c0.ktx2",
+      "bytes": 47946,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_fungal_resin_basin-t14-c0.ktx2",
+      "bytes": 28034,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_fungal_spore_dispenser-t14-c0.ktx2",
+      "bytes": 31528,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_fungal_tendril_altar-t14-c0.ktx2",
+      "bytes": 35065,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_fusion_generator-t14-c0.ktx2",
+      "bytes": 282882,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_hive_carapace_molt-t14-c0.ktx2",
+      "bytes": 23459,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_hive_chitin_hatchery-t14-c0.ktx2",
+      "bytes": 23647,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_hive_relay_antenna-t14-c0.ktx2",
+      "bytes": 23704,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_hive_suture_organ-t14-c0.ktx2",
+      "bytes": 25524,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_hive_synaptic_web-t14-c0.ktx2",
+      "bytes": 24865,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_hive_wound_cauterizer-t14-c0.ktx2",
+      "bytes": 24467,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_icey_frost_manifold-t14-c0.ktx2",
+      "bytes": 49136,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_icey_frost_vent-t14-c0.ktx2",
+      "bytes": 43183,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_icey_thermal_pod-t14-c0.ktx2",
+      "bytes": 29356,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_laser_trap_emitter-t14-c0.ktx2",
+      "bytes": 558148,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_light_cluster_dripping-t14-c0.ktx2",
+      "bytes": 24154,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_locker_bulged-t14-c0.ktx2",
+      "bytes": 23263,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_medical_bed-t14-c0.ktx2",
+      "bytes": 250341,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_o2_filter_vat-t14-c0.ktx2",
+      "bytes": 606767,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_pipe_rupture-t14-c0.ktx2",
+      "bytes": 39896,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_ruptured_coolant_pump-t14-c0.ktx2",
+      "bytes": 284907,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_security_barricade-t14-c0.ktx2",
+      "bytes": 221431,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_security_locker-t14-c0.ktx2",
+      "bytes": 261069,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_shrine_plinth_broken-t14-c0.ktx2",
+      "bytes": 26155,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_specimen_tank-t14-c0.ktx2",
+      "bytes": 579578,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_spore_colony-t14-c0.ktx2",
+      "bytes": 783771,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_storage_drum_dented-t14-c0.ktx2",
+      "bytes": 29227,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_surgical_cart-t14-c0.ktx2",
+      "bytes": 238117,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_terminal_ruptured-t14-c0.ktx2",
+      "bytes": 33669,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_tesla_coil_node-t14-c0.ktx2",
+      "bytes": 463569,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_torn_warning_poster-t14-c0.ktx2",
+      "bytes": 876462,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_valve_wheel_fused-t14-c0.ktx2",
+      "bytes": 34334,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_vent_grate_exploded-t14-c0.ktx2",
+      "bytes": 34302,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/prop_vital_monitor-t14-c0.ktx2",
+      "bytes": 577522,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/queen_silhouette-t14-c0.ktx2",
+      "bytes": 557093,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/scatter_bio_pod-t22-c0.ktx2",
+      "bytes": 302114,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/scout_ship-t15-c0.ktx2",
+      "bytes": 537159,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/scout_ship_broken-t15-c0.ktx2",
+      "bytes": 594300,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/scout_ship_healed-t15-c0.ktx2",
+      "bytes": 545877,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/spore_mortar-t14-c0.ktx2",
+      "bytes": 605574,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/sporesnail_dead-t14-c0.ktx2",
+      "bytes": 478817,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/tank_ship-t15-c0.ktx2",
+      "bytes": 598384,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/tank_ship_broken-t15-c0.ktx2",
+      "bytes": 670218,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/sprites/tank_ship_healed-t15-c0.ktx2",
+      "bytes": 591326,
       "classification": "runtime-required"
     },
     {
@@ -20411,6 +21676,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_bio_spore_vent.png",
+      "bytes": 506101,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_biohazard_stencil.png",
       "bytes": 187264,
       "classification": "runtime-required"
@@ -20428,6 +21698,16 @@
     {
       "path": "decal_bullet_holes.png",
       "bytes": 2050027,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_camp_map.png",
+      "bytes": 605815,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_cathedral_runic.png",
+      "bytes": 561262,
       "classification": "runtime-required"
     },
     {
@@ -20543,6 +21823,11 @@
     {
       "path": "decal_frost_bloom_2.png",
       "bytes": 211098,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_giger_relief.png",
+      "bytes": 579539,
       "classification": "runtime-required"
     },
     {
