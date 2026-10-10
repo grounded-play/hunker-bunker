@@ -88,7 +88,8 @@ The owner uploaded 39 GLBs, 80 sticker renders and 56 texture renders without na
 - [ ] a Deck p95 capture. The newest Deck log is 10-07 (`6d5fc7ed`), from before this pass;
 - [x] model textures to KTX2: every GLB texture ships as Basis UASTC (`36be2b26`); GPU texture memory 3737 → 1717 MiB in the census probe;
 - [x] room-dressing PNG decals to KTX2: 68 baked layers, one draw per room (`5966fb49`);
-- [ ] the 2D sprites (about 449 MB of uncompressed PNG/WebP), not yet converted;
+- [x] the 2D sprites: every runtime-keyed sprite is baked ahead of time with the game's own keyer and loads as mipmapped UASTC KTX2 (`src/keyedSpriteBakes.js`; bake with `tests/e2e/probes/keyed-sprite-bake.spec.js` then `scripts/art/build_keyed_sprite_ktx2.py`; `hb_sprite_ktx2=0` keys at runtime again). 199 sprites, 55 MiB on disk; in the census run sprite textures fell 449 -> 333 MiB and all textures 1717 -> 1560 MiB. A rerun in misses mode found nothing left unbaked on that path;
+- [ ] the remaining sprite canvases: plain-PNG scatter sprites (`loadScatterTexture`, ~43 MiB), the enemy animation atlases (`layout` sprites, shared across instances) and the camp/hive site keyers (`camp.js`, `hiveSite.js`), mostly hidden behind their 3D models;
 - [x] V8: the museum walk for props 41–79 (Sprint 53): all load at their configured sizes.
 
 

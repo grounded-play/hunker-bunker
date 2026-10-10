@@ -50,7 +50,7 @@ import * as THREE from 'three';
 import { fitWallShaderSamplerBudget, INSTANCED_WORLD_POSITION } from './wallShaderCompatibility.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
-import { registerKtx2Renderer } from './gltfLoaderFactory.js';
+import { getKtx2Loader, registerKtx2Renderer } from './gltfLoaderFactory.js';
 import { createFrameProfiler, summarizeFrameBreakdown } from './frameProfiler.js';
 import { createFrameIntervalTracker } from './frameIntervalTracker.js';
 import { createGpuFrameTimer } from './gpuFrameTimer.js';
@@ -369,6 +369,7 @@ import { FOXHOLE_CONTRACT, HACKER_CONTRACT, HYBRID_CONTRACT, SURVIVOR_CONTRACTS,
 import { createWanderer3dInstance } from './wanderer3d.js';
 import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
 import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js';
+import { applyCompressedSprite, bakedKeyedSpriteUrl, keyedSpriteBakeKey, recordKeyedSprite } from './keyedSpriteBakes.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
 import { corridorKitPlacement, roomGatewayKitPlacement } from './kitGrammar.js';
@@ -10345,18 +10346,29 @@ export class ThreeGame {
         // output isn't known to be safely shareable across texture instances,
         // and in practice these are already skipped by the alpha check below.
         const cacheKey = options?.layout ? null : `${safePath}::${threshold}::${options?.cropBottomRatio ?? ''}`;
+        // The same result baked ahead of time (src/keyedSpriteBakes.js).
+        const bakeKey = options?.layout ? null : keyedSpriteBakeKey(path, threshold, options?.cropBottomRatio);
         const cached = cacheKey ? keyedSpriteTextureCache.get(cacheKey) : null;
         if (cached) {
-            if (cached.image) {
+            if (cached.compressed) {
+                queueMicrotask(() => {
+                    applyCompressedSprite(texture, cached.compressed);
+                    if (onLoad) onLoad(texture);
+                });
+            } else if (cached.image) {
                 queueMicrotask(() => {
                     texture.image = cached.image;
                     texture.needsUpdate = true;
                     if (onLoad) onLoad(texture);
                 });
             } else {
-                cached.waiters.push((image) => {
-                    texture.image = image;
-                    texture.needsUpdate = true;
+                cached.waiters.push((image, compressed) => {
+                    if (compressed) {
+                        applyCompressedSprite(texture, compressed);
+                    } else {
+                        texture.image = image;
+                        texture.needsUpdate = true;
+                    }
                     if (onLoad) onLoad(texture);
                 });
             }
@@ -10371,7 +10383,16 @@ export class ThreeGame {
             if (cacheEntry) {
                 cacheEntry.image = finalImage;
                 const waiters = cacheEntry.waiters.splice(0);
-                waiters.forEach((notify) => notify(finalImage));
+                waiters.forEach((notify) => notify(finalImage, null));
+            }
+            if (onLoad) onLoad(texture);
+        };
+        const applyCompressed = (compressed) => {
+            applyCompressedSprite(texture, compressed);
+            if (cacheEntry) {
+                cacheEntry.compressed = compressed;
+                const waiters = cacheEntry.waiters.splice(0);
+                waiters.forEach((notify) => notify(null, compressed));
             }
             if (onLoad) onLoad(texture);
         };
@@ -10419,6 +10440,7 @@ export class ThreeGame {
             }
 
             ctx.putImageData(imgData, 0, 0);
+            recordKeyedSprite(bakeKey, canvas);
 
             // repackGeneratedSpriteAtlas is a passthrough (returns canvas
             // unchanged) whenever options.layout is unset, which is exactly
@@ -10461,20 +10483,35 @@ export class ThreeGame {
             image.src = safePath;
         };
 
-        if (cacheKey) {
-            // Skip the fetch AND the chroma-key pixel work entirely on a
-            // persistent-cache hit -- this is the actual boot-time win, not
-            // just deferring the cost to idle time (which the
-            // requestIdleCallback path above already did).
-            getCachedKeyedImage(cacheKey).then((blob) => {
-                if (!blob) {
-                    startFetch();
-                    return;
-                }
-                createImageBitmap(blob).then(applyFinalImage).catch(startFetch);
-            }).catch(startFetch);
+        const keyAtRuntime = () => {
+            if (cacheKey) {
+                // Skip the fetch AND the chroma-key pixel work entirely on a
+                // persistent-cache hit -- this is the actual boot-time win, not
+                // just deferring the cost to idle time (which the
+                // requestIdleCallback path above already did).
+                getCachedKeyedImage(cacheKey).then((blob) => {
+                    if (!blob) {
+                        startFetch();
+                        return;
+                    }
+                    createImageBitmap(blob).then(applyFinalImage).catch(startFetch);
+                }).catch(startFetch);
+            } else {
+                startFetch();
+            }
+        };
+
+        // A baked sprite loads compressed (about a quarter of the GPU memory,
+        // and no keying work); anything wrong with it falls back to keying.
+        const bakedUrl = bakeKey ? bakedKeyedSpriteUrl(bakeKey) : null;
+        const ktx2 = bakedUrl ? getKtx2Loader() : null;
+        if (ktx2) {
+            ktx2.loadAsync(this.resolveRelativeAssetPath(bakedUrl)).then(applyCompressed).catch((error) => {
+                console.warn(`[ThreeGame] Baked sprite failed, keying ${safePath} instead`, error);
+                keyAtRuntime();
+            });
         } else {
-            startFetch();
+            keyAtRuntime();
         }
 
         return texture;

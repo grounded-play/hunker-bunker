@@ -94,7 +94,11 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // GPU texture memory in a pinned run fell 3737 -> 1717 MiB, and disk grew
 // only ~150 MB because UASTC beats the old PNGs (lossy WebP sources grew).
 // Measured payload 3520 MiB.
-const PUBLIC_BUDGET = 3600 * 1024 * 1024;
+// Raised 3600->3700 MiB for the baked keyed sprites (src/keyedSpriteBakes.js,
+// public/3d/runtime/sprites, 55 MiB of UASTC KTX2): sprite GPU memory in a
+// pinned run fell 449 -> 333 MiB, total textures 1717 -> 1560 MiB. Measured
+// payload with them 3548 MiB, before other uncommitted art.
+const PUBLIC_BUDGET = 3700 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus
@@ -192,9 +196,9 @@ export function classifyPublicAsset(relativePath, referenced) {
     if (/^(?:ach|door|decal|prop|scatter)_[^/]+\.(?:avif|gif|jpe?g|png|svg|webp)$/i.test(relativePath)) {
         return 'runtime-required';
     }
-    // Lived-in floor surfaces, stickers and spline conduits: src/floorSplat.js,
-    // src/stickerDecals.js and src/splineDressingRenderer.js build each name from their layer tables.
-    if (/^3d\/runtime\/(?:surfaces|decals|splines)\/(?:legacy\/)?[^/]+\.(?:ktx2|webp)$/i.test(relativePath)) {
+    // Lived-in floor surfaces, stickers, spline conduits and baked keyed sprites: src/floorSplat.js,
+    // src/stickerDecals.js, src/splineDressingRenderer.js and src/keyedSpriteBakes.js build each name from their tables.
+    if (/^3d\/runtime\/(?:surfaces|decals|splines|sprites)\/(?:legacy\/)?[^/]+\.(?:ktx2|webp)$/i.test(relativePath)) {
         return 'runtime-required';
     }
     if (/(?:^|\/)(?:concepts?|references?|rejected-candidates|sources-keyed|strips|identity|keyart)(?:\/|$)/.test(lower)
