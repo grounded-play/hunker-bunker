@@ -158,6 +158,21 @@ describe('splineRouter', () => {
         for (const vine of splines.filter((s) => s.category === 'wall_crawling_vine')) expect(vine.sway).toBeUndefined();
     });
 
+    it('hangs work bulbs along the camp\'s rope swags only', () => {
+        const campRoom = { ...baseRoom, id: 'camp_bulbs', theme: 'camp-tallow' };
+        const campSwags = planRoomSplineDressing(campRoom, grid).filter((s) => s.category === 'overhead_swag');
+        expect(campSwags.length).toBeGreaterThan(0);
+        for (const swag of campSwags) {
+            expect(swag.bulbs?.length).toBeGreaterThan(0);
+            // Each bulb clips onto the rope: on the run, below the brackets.
+            for (const bulb of swag.bulbs) {
+                expect(Math.min(...swag.points.map((p) => p.distanceTo(bulb)))).toBeLessThan(1e-6);
+                expect(bulb.y).toBeLessThan(2.42);
+            }
+        }
+        for (const swag of planRoomSplineDressing(baseRoom, grid).filter((s) => s.category === 'overhead_swag')) expect(swag.bulbs).toBeUndefined();
+    });
+
     describe('doorways', () => {
         // A west door at row 3: the wall cell is open, and the cell inside it is
         // the door lane. Its apron is the lane plus one cell around it.

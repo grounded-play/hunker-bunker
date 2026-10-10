@@ -508,7 +508,7 @@ if (splineManifest?.length > 0) {
 - [x] Hook into `src/threeGame.js` chunk load/unload lifecycle with recursive `.dispose()` safety.
 
 ### Phase 4: Biome Theming & Visual Polish
-- [ ] Wire sector themes. Partly done: each area has its own conduit (`AREA_CONDUIT`: bunker wire, bio/cathedral vein, cryo pipe, camp vine). Not done: hazard striping, frost-bloom shader modulation, pulsing umbilicals, camp work lamps:
+- [x] Wire sector themes. Each area has its own conduit (`AREA_CONDUIT`: bunker wire, bio/cathedral vein, cryo pipe, camp vine), and 2026-10-10 added the finishes, all in the one shared material: hazard-striped collars and brackets in the bunker, frost that blooms on the top of cryo pipes with glinting crystals, peristaltic pulses along the hive's veins, and Edison work bulbs on drop cords at the low point of each camp rope span (emissive only, no new point lights). Hanging spans sway, and a cut cable's loose end swings:
   - Bunker: Gunmetal + hazard striping + wall brackets.
   - Cryo: Insulated wrap + frost bloom shader modulation.
   - Bio: Wet black latex + pulsating cartilage umbilicals.

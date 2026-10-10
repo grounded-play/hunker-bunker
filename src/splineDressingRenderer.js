@@ -20,6 +20,14 @@ export const SPLINE_LAYERS = Object.freeze([
     Object.freeze({ kind: 'metal', turns: 1, fallback: 0x4b5563 })
 ]);
 const LAYER_BY_KIND = new Map(SPLINE_LAYERS.map((layer, index) => [layer.kind, index]));
+/**
+ * Finishes painted in the shader past the baked layers (texture lookups clamp
+ * to the last layer, the gunmetal): the bunker's hazard-striped collars and
+ * brackets, and the camps' glowing work bulbs.
+ */
+export const SPLINE_PAINT = Object.freeze({ hazardMetal: SPLINE_LAYERS.length, bulb: SPLINE_LAYERS.length + 1 });
+const BULB_DROP = 0.16;
+const BULB_RADIUS = 0.05;
 const KIND_ALIASES = Object.freeze({
     wire: 'wire', cable: 'wire', power: 'wire', data: 'wire',
     vein: 'vein', sinew: 'vein', trachea: 'vein',
@@ -111,12 +119,18 @@ function createSplineMaterial() {
                     transformed.x += sin(uSplineTime * 1.1 + hbSwayPhase) * 0.045 * splineSway;
                     transformed.z += sin(uSplineTime * 0.83 + hbSwayPhase * 1.7) * 0.035 * splineSway;
                     transformed.y += sin(uSplineTime * 1.6 + hbSwayPhase) * 0.008 * splineSway;
+                }
+                // The hive's veins push slow peristaltic pulses along their length.
+                if (abs(splineLayer - 1.0) < 0.5) {
+                    float hbVeinPulse = pow(max(0.0, sin(uSplineTime * 2.6 - uv.y * 2.4)), 6.0);
+                    transformed += objectNormal * 0.009 * hbVeinPulse;
                 }`);
         shader.fragmentShader = shader.fragmentShader
             .replace('#include <common>', `#include <common>
                 uniform sampler2DArray uSplineAlbedo;
                 uniform sampler2DArray uSplineDetail;
                 uniform float uSplineReady;
+                uniform float uSplineTime;
                 uniform vec3 uSplineFallback[${SPLINE_LAYERS.length}];
                 varying float vSplineLayer;
                 vec4 hbSplineDetail;
@@ -146,6 +160,17 @@ function createSplineMaterial() {
                         if (abs(splineLayerIndex - float(i)) < 0.5) fallbackColor = uSplineFallback[i];
                     }
                     diffuseColor.rgb *= fallbackColor;
+                }
+                // Bunker collars and brackets: yellow and black hazard bands over the grime.
+                if (abs(splineLayerIndex - ${SPLINE_PAINT.hazardMetal}.0) < 0.5) {
+                    float hbGrime = dot(diffuseColor.rgb, vec3(0.333));
+                    float hbHazard = step(0.5, fract((vMapUv.x + vMapUv.y * 2.0) * 3.0));
+                    diffuseColor.rgb = mix(vec3(0.04), vec3(0.92, 0.66, 0.06), hbHazard) * (0.45 + 0.9 * hbGrime);
+                }
+                // Work bulbs: warm glass.
+                if (abs(splineLayerIndex - ${SPLINE_PAINT.bulb}.0) < 0.5) {
+                    diffuseColor.rgb = vec3(1.0, 0.7, 0.35);
+                    hbSplineDetail = vec4(0.5, 0.5, 0.15, 0.0);
                 }`)
             .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
                 roughnessFactor = hbSplineDetail.b;`)
@@ -156,6 +181,24 @@ function createSplineMaterial() {
                     vec2 splineXY = hbSplineDetail.rg * 2.0 - 1.0;
                     vec3 splineNormal = vec3(splineXY, sqrt(max(1.0 - dot(splineXY, splineXY), 0.0)));
                     normal = normalize(hbSplineTangentFrame(-vViewPosition, normal, vMapUv) * splineNormal);
+                }
+                // Cryo's coolant pipes frost over on top; the bloom thickens and thins slowly.
+                float hbFrost = 0.0;
+                if (abs(splineLayerIndex - 2.0) < 0.5) {
+                    vec3 hbUp = normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
+                    hbFrost = smoothstep(0.1, 0.8, dot(normal, hbUp)) * (0.7 + 0.3 * sin(uSplineTime * 0.35 + vMapUv.y * 0.8));
+                    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.94, 1.0), hbFrost * 0.6);
+                    roughnessFactor = mix(roughnessFactor, 0.32, hbFrost);
+                }`)
+            .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+                if (abs(splineLayerIndex - ${SPLINE_PAINT.bulb}.0) < 0.5) {
+                    totalEmissiveRadiance += vec3(1.0, 0.42, 0.1) * (1.5 + 0.18 * sin(uSplineTime * 7.0));
+                }
+                // Ice crystals in the frost catch the light.
+                if (hbFrost > 0.0) {
+                    vec2 hbCell = floor(vMapUv * vec2(24.0, 60.0));
+                    float hbGlint = fract(sin(dot(hbCell, vec2(12.9898, 78.233))) * 43758.5453);
+                    totalEmissiveRadiance += vec3(0.7, 0.85, 1.0) * step(0.985, hbGlint) * hbFrost * (0.5 + 0.5 * sin(uSplineTime * 3.0 + hbGlint * 40.0));
                 }`);
     };
     material.customProgramCacheKey = () => 'hb-spline-layered';
@@ -194,11 +237,29 @@ function tubeGeometry(points, item, layer, sway = item.sway) {
 }
 
 function collarGeometry(collar, item) {
+    const bunker = splineLayerFor(item) === LAYER_BY_KIND.get('wire');
     return buildTerminationCollarGeometry(collar.pos, collar.normal, {
         radius: collar.radius ?? item.radius ?? 0.035,
         sides: collar.sides ?? 6,
-        layer: LAYER_BY_KIND.get('metal')
+        layer: bunker ? SPLINE_PAINT.hazardMetal : LAYER_BY_KIND.get('metal')
     });
+}
+
+// A work bulb on a short drop cord, swinging with the rope it is clipped to.
+function bulbGeometries(position, item, sway) {
+    const anchor = position.isVector3 ? position : new THREE.Vector3(position.x, position.y, position.z);
+    const socket = anchor.clone().add(new THREE.Vector3(0, -BULB_DROP, 0));
+    const cord = buildPrismTubeGeometry([anchor, socket], {
+        radius: 0.008, sides: 6, vRepeat: 4, layer: LAYER_BY_KIND.get('wire'), sway: [sway, sway]
+    });
+    const bulb = new THREE.SphereGeometry(BULB_RADIUS, 10, 8).toNonIndexed();
+    bulb.translate(socket.x, socket.y - BULB_RADIUS * 0.8, socket.z);
+    const count = bulb.getAttribute('position').count;
+    bulb.setAttribute('splineLayer', new THREE.BufferAttribute(new Float32Array(count).fill(SPLINE_PAINT.bulb), 1));
+    bulb.setAttribute('splineSway', new THREE.BufferAttribute(new Float32Array(count).fill(sway), 1));
+    const indices = Array.from({ length: count }, (_, index) => index);
+    bulb.setIndex(indices);
+    return [cord, bulb].filter(Boolean);
 }
 
 function itemGeometries(item) {
@@ -215,6 +276,10 @@ function itemGeometries(item) {
     for (const collar of item.collars ?? []) {
         const geometry = collarGeometry(collar, item);
         if (geometry) geometries.push(geometry);
+    }
+    for (const bulb of item.bulbs ?? []) {
+        const nearest = item.points?.reduce((best, point, index) => (point.distanceToSquared(bulb) < item.points[best].distanceToSquared(bulb) ? index : best), 0) ?? 0;
+        geometries.push(...bulbGeometries(bulb, item, item.sway?.[nearest] ?? 0));
     }
     return geometries;
 }

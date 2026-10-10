@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
-import { buildChunkSplinesMesh, buildSeveredSplineGeometry, disposeSplineMesh, getSplineMaterial, setSplineTime, splineLayerFor, splineVRepeat } from './splineDressingRenderer.js';
+import { SPLINE_PAINT, buildChunkSplinesMesh, buildSeveredSplineGeometry, disposeSplineMesh, getSplineMaterial, setSplineTime, splineLayerFor, splineVRepeat } from './splineDressingRenderer.js';
 
 describe('splineDressingRenderer', () => {
     const dummyManifest = [
@@ -125,6 +125,47 @@ describe('splineDressingRenderer', () => {
             expect(shader.vertexShader).toMatch(/transformed\.[xz] \+=/);
             setSplineTime(12.5);
             expect(shader.uniforms.uSplineTime.value).toBe(12.5);
+        });
+    });
+
+    describe('area finish', () => {
+        const run = (layerKind, extra = {}) => ({
+            id: `${layerKind}-run`,
+            layerKind,
+            points: [new THREE.Vector3(0, 1, 0), new THREE.Vector3(2, 1, 0)],
+            radius: 0.05,
+            collars: [{ pos: new THREE.Vector3(0, 1, 0), normal: new THREE.Vector3(1, 0, 0), radius: 0.05 }],
+            ...extra
+        });
+        const layers = (mesh) => new Set(mesh.geometry.getAttribute('splineLayer').array);
+
+        it('paints the bunker\'s collars and brackets with hazard stripes, and nobody else\'s', () => {
+            expect(layers(buildChunkSplinesMesh([run('wire')]))).toContain(SPLINE_PAINT.hazardMetal);
+            for (const kind of ['vein', 'pipe', 'vine']) expect(layers(buildChunkSplinesMesh([run(kind)]))).not.toContain(SPLINE_PAINT.hazardMetal);
+        });
+
+        it('hangs a work bulb on a drop cord wherever a run asks for one', () => {
+            const mesh = buildChunkSplinesMesh([run('vine', { bulbs: [new THREE.Vector3(1, 2.2, 0)] })]);
+            expect(layers(mesh)).toContain(SPLINE_PAINT.bulb);
+            const positions = mesh.geometry.getAttribute('position');
+            const layer = mesh.geometry.getAttribute('splineLayer');
+            let lowest = Infinity;
+            for (let i = 0; i < positions.count; i += 1) if (layer.getX(i) === SPLINE_PAINT.bulb) lowest = Math.min(lowest, positions.getY(i));
+            // The bulb hangs below the run it is clipped to.
+            expect(lowest).toBeLessThan(2.2 - 0.1);
+        });
+
+        it('pulses the veins, frosts the pipes, stripes the hazard metal and lights the bulbs in the one material', () => {
+            const shader = {
+                uniforms: {},
+                vertexShader: '#include <common>\n#include <uv_vertex>\n#include <begin_vertex>',
+                fragmentShader: '#include <common>\n#include <map_fragment>\n#include <roughnessmap_fragment>\n#include <metalnessmap_fragment>\n#include <normal_fragment_maps>\n#include <emissivemap_fragment>'
+            };
+            getSplineMaterial().onBeforeCompile(shader);
+            expect(shader.vertexShader).toMatch(/hbVeinPulse/);
+            expect(shader.fragmentShader).toMatch(/hbFrost/);
+            expect(shader.fragmentShader).toMatch(/hbHazard/);
+            expect(shader.fragmentShader).toMatch(/totalEmissiveRadiance/);
         });
     });
 

@@ -424,10 +424,14 @@ export function planRoomSplineDressing(room, grid, { placements = [], reserved =
         for (let s = 0.4; s <= run.length - 0.4 + 1e-6; s += 1.6 + random() * 0.6) brackets.push(onRun(run, s, SWAG_BRACKET_HEIGHT, radius));
         if (brackets.length < 2) return;
         const points = [brackets[0]];
+        // Camps clip a work bulb to the low point of each span of rope.
+        const bulbs = [];
         for (let i = 1; i < brackets.length; i += 1) {
             const span = brackets[i].distanceTo(brackets[i - 1]);
             const sag = Math.min(SWAG_MAX_SAG, span * 0.06 + 0.04);
-            points.push(...evaluateCatenaryPoints(brackets[i - 1], brackets[i], sag, 6).slice(1));
+            const spanPoints = evaluateCatenaryPoints(brackets[i - 1], brackets[i], sag, 6).slice(1);
+            points.push(...spanPoints);
+            if (isRope) bulbs.push(spanPoints.reduce((low, point) => (point.y < low.y ? point : low)).clone());
         }
         const wallNormal = new THREE.Vector3(-run.dir[0], 0, -run.dir[1]);
         splines.push({
@@ -436,6 +440,7 @@ export function planRoomSplineDressing(room, grid, { placements = [], reserved =
             type: isRope ? 'rope' : 'cable',
             points,
             sway: points.map((point) => Math.min(1, Math.max(0, (SWAG_BRACKET_HEIGHT - point.y) / SWAG_MAX_SAG))),
+            ...(bulbs.length ? { bulbs } : {}),
             radius,
             sides: 3,
             vAtlasOffset: isRope ? 0.0 : 0.25,
