@@ -371,6 +371,7 @@ import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
 import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js';
 import { applyCompressedSprite, bakedKeyedSpriteUrl, keyedSpriteBakeKey, recordKeyedSprite } from './keyedSpriteBakes.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
+import { createCornerCutDepthMaterial, createCornerCutPoolGeometry, createCornerCutWallGeometry, isWallAutotileEnabled, patchCornerCutVertexShader, wallCornerCutMask, wallHeightScale } from './wallAutotile.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
 import { corridorKitPlacement, roomGatewayKitPlacement } from './kitGrammar.js';
 import {
@@ -1873,6 +1874,12 @@ export class ThreeGame {
         this.visibleChunkRadius = this.defaultVisibleChunkRadius;
         this.wallHeight = 2.8;
         this.wallGeometry = new THREE.BoxGeometry(1, this.wallHeight, 1);
+        // Instanced chunk walls share a prism whose exposed corners are cut
+        // per instance (src/wallAutotile.js); uncut, it is this box.
+        this.wallCornerCutGeometry = createCornerCutWallGeometry({ height: this.wallHeight });
+        this.wallCornerCutDepthMaterial = createCornerCutDepthMaterial();
+        // hb_wall_autotile=0 brings back the per-cell boxes and height roll.
+        this.wallAutotileEnabled = isWallAutotileEnabled();
         this.floorGeometry = new THREE.PlaneGeometry(1, 1);
         // One merged floor plane per chunk instead of chunkSize² unit tiles. The
         // floor shader blends by world position (vWorldPos), so a single plane is
@@ -2991,6 +2998,7 @@ export class ThreeGame {
             shader.uniforms.uLandformId = { value: 0 };
             shader.uniforms.uRoomStyleId = { value: 0 };
             this.wallShaderUniforms = shader.uniforms;
+            shader.vertexShader = patchCornerCutVertexShader(shader.vertexShader);
 
             // Inject world position and world normal varyings in vertex shader
             shader.vertexShader = shader.vertexShader.replace(
@@ -24547,6 +24555,11 @@ export class ThreeGame {
                 child.userData.dispose?.();
             }
             if (child.userData?.isStickerDecals) child.geometry?.dispose?.();
+            // A wall pool owns its corner-cut geometry and its instance buffers.
+            if (child.userData?.isInstancedWallPool) {
+                if (child.geometry?.userData?.ownedByWallPool) child.geometry.dispose();
+                child.dispose?.();
+            }
             // Shared sheet geometry and material stay; the instance buffer goes.
             if (child.userData?.isPaperSkitter) child.dispose?.();
             if (child.userData?.isSplineDressing) child.geometry?.dispose?.();
@@ -32825,6 +32838,28 @@ export class ThreeGame {
             }
         };
 
+        // Whether a cell shows a standing wall, for picking wall pieces: a '#'
+        // the hole roll below didn't turn into a pit. Cells in a neighbouring
+        // chunk count as standing when they are '#' (or not yet generated), so
+        // a chunk edge never cuts a corner open by mistake.
+        const autotileWalls = this.wallAutotileEnabled !== false;
+        const isStandingWallCell = (cellX, cellY) => {
+            if (cellX < 0 || cellY < 0 || cellX >= this.chunkSize || cellY >= this.chunkSize) {
+                const cellWorldX = chunkX * this.chunkSize + cellX;
+                const cellWorldZ = chunkY * this.chunkSize + cellY;
+                const neighbourX = Math.floor(cellWorldX / this.chunkSize);
+                const neighbourY = Math.floor(cellWorldZ / this.chunkSize);
+                const neighbour = this.chunkCache?.get?.(`${neighbourX},${neighbourY}`);
+                const row = neighbour?.[cellWorldZ - neighbourY * this.chunkSize];
+                return !row || row[cellWorldX - neighbourX * this.chunkSize] === '#';
+            }
+            if (grid[cellY]?.[cellX] !== '#') return false;
+            if (roomBoundaryWallCells.has(`${cellX},${cellY}`)) return true;
+            const cellWorldX = chunkX * this.chunkSize + cellX;
+            const cellWorldZ = chunkY * this.chunkSize + cellY;
+            return this.createSeededRandom(this.hashTile(cellWorldX, cellWorldZ) + 999)() >= holeCut;
+        };
+
         for (let localY = 0; localY < this.chunkSize; localY++) {
             for (let localX = 0; localX < this.chunkSize; localX++) {
                 const worldX = chunkX * this.chunkSize + localX;
@@ -33126,30 +33161,32 @@ export class ThreeGame {
                         rubbleMatrices.push(rubbleMat);
                     }
                 } else {
-                    // Standard Wall — instanced.
-                    let heightScale = 1;
-                    if (landform === LANDFORMS.CANYON) {
-                        // Canyon ridges tower over the standard maze so the halls
-                        // read as carved terrain, not corridors.
-                        heightScale = 1.2 + wallTypeRng() * 0.35;
-                    } else if (landform === LANDFORMS.MAZE) {
-                        const terrainRoll = wallTypeRng();
-                        if (terrainRoll < 0.28) {
-                            heightScale = 0.60 + wallTypeRng() * 0.18;
-                        } else if (terrainRoll < 0.66) {
-                            heightScale = 0.82 + wallTypeRng() * 0.16;
-                        } else if (terrainRoll > 0.92) {
-                            heightScale = 1.08 + wallTypeRng() * 0.18;
+                    // Standard Wall — instanced. Heights come from a coherent field
+                    // inside each landform's range (canyon ridges tower, ruins and
+                    // mazes step down), so neighbouring walls read as built runs.
+                    let heightScale = autotileWalls ? wallHeightScale(landform, worldX, worldZ) : 1;
+                    if (!autotileWalls) {
+                        if (landform === LANDFORMS.CANYON) {
+                            heightScale = 1.2 + wallTypeRng() * 0.35;
+                        } else if (landform === LANDFORMS.MAZE) {
+                            const terrainRoll = wallTypeRng();
+                            if (terrainRoll < 0.28) {
+                                heightScale = 0.60 + wallTypeRng() * 0.18;
+                            } else if (terrainRoll < 0.66) {
+                                heightScale = 0.82 + wallTypeRng() * 0.16;
+                            } else if (terrainRoll > 0.92) {
+                                heightScale = 1.08 + wallTypeRng() * 0.18;
+                            }
+                        } else if (landform === LANDFORMS.RUINS) {
+                            const terrainRoll = wallTypeRng();
+                            heightScale = terrainRoll < 0.62
+                                ? 0.58 + wallTypeRng() * 0.26
+                                : 0.88 + wallTypeRng() * 0.22;
+                        } else if (landform === LANDFORMS.FIELD) {
+                            heightScale = 0.72 + wallTypeRng() * 0.36;
+                        } else if (landform === LANDFORMS.CRATER) {
+                            heightScale = 0.88 + wallTypeRng() * 0.40;
                         }
-                    } else if (landform === LANDFORMS.RUINS) {
-                        const terrainRoll = wallTypeRng();
-                        heightScale = terrainRoll < 0.62
-                            ? 0.58 + wallTypeRng() * 0.26
-                            : 0.88 + wallTypeRng() * 0.22;
-                    } else if (landform === LANDFORMS.FIELD) {
-                        heightScale = 0.72 + wallTypeRng() * 0.36;
-                    } else if (landform === LANDFORMS.CRATER) {
-                        heightScale = 0.88 + wallTypeRng() * 0.40;
                     }
                     if (isRoomBoundaryWall) heightScale = Math.max(1, heightScale);
                     const visualHeightScale = isForegroundRoomWall
@@ -33167,6 +33204,11 @@ export class ThreeGame {
                     );
                     pushWallInstanceMatrix(standardMatrix, {
                         chunkX, chunkY, localX, localY, worldX, worldZ, landform,
+                        // Room walls stay square: rooms are lane A's, and the
+                        // cutaway rewrites their instances as boxes.
+                        cornerCut: autotileWalls && !isRoomBoundaryWall
+                            ? wallCornerCutMask(isStandingWallCell, localX, localY)
+                            : 0,
                         variant: 'standard',
                         heightScale,
                         roomBoundary: isRoomBoundaryWall,
@@ -33345,7 +33387,12 @@ export class ThreeGame {
         const roomBoundaryRecords = [];
         for (const [roomStyleId, matrices] of wallMatricesByRoomStyle.entries()) {
             const metaList = wallMetaByRoomStyle.get(roomStyleId);
-            const pool = new THREE.InstancedMesh(this.wallGeometry, this.wallMaterial, matrices.length);
+            // Each wall's exposed corners ride along as a per-instance mask.
+            const poolGeometry = autotileWalls && this.wallCornerCutGeometry
+                ? createCornerCutPoolGeometry(this.wallCornerCutGeometry, metaList.map((opts) => opts.cornerCut ?? 0))
+                : this.wallGeometry;
+            const pool = new THREE.InstancedMesh(poolGeometry, this.wallMaterial, matrices.length);
+            if (poolGeometry !== this.wallGeometry) pool.customDepthMaterial = this.wallCornerCutDepthMaterial;
             const undamagedColor = new THREE.Color(0xffffff);
             matrices.forEach((m, idx) => {
                 pool.setMatrixAt(idx, m);
