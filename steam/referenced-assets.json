@@ -2366,6 +2366,686 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_abandoned_meal_tray_albedo.ktx2",
+      "bytes": 241656,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_abandoned_meal_tray_detail.ktx2",
+      "bytes": 167738,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_barricade_last_stand_albedo.ktx2",
+      "bytes": 223093,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_barricade_last_stand_detail.ktx2",
+      "bytes": 162875,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_bio_mycelium_albedo.ktx2",
+      "bytes": 231087,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_bio_mycelium_detail.ktx2",
+      "bytes": 198630,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_bio_sample_spill_albedo.ktx2",
+      "bytes": 235345,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_bio_sample_spill_detail.ktx2",
+      "bytes": 173160,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_biohazard_stencil_albedo.ktx2",
+      "bytes": 244680,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_biohazard_stencil_detail.ktx2",
+      "bytes": 212663,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_bite_marks_02_albedo.ktx2",
+      "bytes": 208296,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_bite_marks_02_detail.ktx2",
+      "bytes": 182827,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_bite_marks_03_albedo.ktx2",
+      "bytes": 156391,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_bite_marks_03_detail.ktx2",
+      "bytes": 135635,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_bullet_holes_albedo.ktx2",
+      "bytes": 285283,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_bullet_holes_detail.ktx2",
+      "bytes": 263851,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_childlike_cave_map_albedo.ktx2",
+      "bytes": 234283,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_childlike_cave_map_detail.ktx2",
+      "bytes": 174008,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_chitin_cluster_albedo.ktx2",
+      "bytes": 259053,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_chitin_cluster_detail.ktx2",
+      "bytes": 202096,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_claw_scratches_albedo.ktx2",
+      "bytes": 244603,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_claw_scratches_detail.ktx2",
+      "bytes": 214856,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_condensation_run_albedo.ktx2",
+      "bytes": 110900,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_condensation_run_detail.ktx2",
+      "bytes": 107479,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_cryo_fracture_albedo.ktx2",
+      "bytes": 291731,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_cryo_fracture_detail.ktx2",
+      "bytes": 243050,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_electrical_scorch_albedo.ktx2",
+      "bytes": 271303,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_electrical_scorch_detail.ktx2",
+      "bytes": 223350,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_emergency_oxygen_nest_albedo.ktx2",
+      "bytes": 200023,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_emergency_oxygen_nest_detail.ktx2",
+      "bytes": 146756,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_evac_treads_albedo.ktx2",
+      "bytes": 311096,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_evac_treads_detail.ktx2",
+      "bytes": 260702,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_failed_decon_kit_albedo.ktx2",
+      "bytes": 209541,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_failed_decon_kit_detail.ktx2",
+      "bytes": 153608,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_flesh_press_albedo.ktx2",
+      "bytes": 176513,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_flesh_press_detail.ktx2",
+      "bytes": 194856,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_floor_grate_01_albedo.ktx2",
+      "bytes": 142118,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_floor_grate_01_detail.ktx2",
+      "bytes": 141936,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_floor_grate_02_albedo.ktx2",
+      "bytes": 124876,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_floor_grate_02_detail.ktx2",
+      "bytes": 128517,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_floor_grate_03_albedo.ktx2",
+      "bytes": 174649,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_floor_grate_03_detail.ktx2",
+      "bytes": 175826,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_floor_grate_04_albedo.ktx2",
+      "bytes": 155501,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_floor_grate_04_detail.ktx2",
+      "bytes": 150774,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_floor_medallion_01_albedo.ktx2",
+      "bytes": 200652,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_floor_medallion_01_detail.ktx2",
+      "bytes": 183432,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_floor_medallion_02_albedo.ktx2",
+      "bytes": 194117,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_floor_medallion_02_detail.ktx2",
+      "bytes": 176071,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_floor_medallion_03_albedo.ktx2",
+      "bytes": 197029,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_floor_medallion_03_detail.ktx2",
+      "bytes": 173381,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_floor_medallion_04_albedo.ktx2",
+      "bytes": 157005,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_floor_medallion_04_detail.ktx2",
+      "bytes": 150861,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_fluid_seep_albedo.ktx2",
+      "bytes": 197247,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_fluid_seep_detail.ktx2",
+      "bytes": 188701,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_footprints_mud_albedo.ktx2",
+      "bytes": 259490,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_footprints_mud_detail.ktx2",
+      "bytes": 222169,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_friction_burn_albedo.ktx2",
+      "bytes": 42290,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_friction_burn_detail.ktx2",
+      "bytes": 45871,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_frost_bloom_1_albedo.ktx2",
+      "bytes": 146752,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_frost_bloom_1_detail.ktx2",
+      "bytes": 122414,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_frost_bloom_2_albedo.ktx2",
+      "bytes": 115756,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_frost_bloom_2_detail.ktx2",
+      "bytes": 99850,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_graffiti_tally_1_albedo.ktx2",
+      "bytes": 201805,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_graffiti_tally_1_detail.ktx2",
+      "bytes": 163688,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_graffiti_tally_2_albedo.ktx2",
+      "bytes": 232603,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_graffiti_tally_2_detail.ktx2",
+      "bytes": 192731,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_grease_pool_albedo.ktx2",
+      "bytes": 96938,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_grease_pool_detail.ktx2",
+      "bytes": 64057,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_growth_creep_1_albedo.ktx2",
+      "bytes": 164394,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_growth_creep_1_detail.ktx2",
+      "bytes": 141225,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_growth_creep_2_albedo.ktx2",
+      "bytes": 174543,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_growth_creep_2_detail.ktx2",
+      "bytes": 139424,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hand_smears_1_albedo.ktx2",
+      "bytes": 163550,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hand_smears_1_detail.ktx2",
+      "bytes": 128677,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hand_smears_2_albedo.ktx2",
+      "bytes": 186513,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hand_smears_2_detail.ktx2",
+      "bytes": 151518,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hazard_chevron_albedo.ktx2",
+      "bytes": 327846,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hazard_chevron_detail.ktx2",
+      "bytes": 275895,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hazard_stripes_albedo.ktx2",
+      "bytes": 237048,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hazard_stripes_detail.ktx2",
+      "bytes": 202405,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hive_growth_albedo.ktx2",
+      "bytes": 199861,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_hive_growth_detail.ktx2",
+      "bytes": 174503,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_lacquer_blister_01_albedo.ktx2",
+      "bytes": 137193,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_lacquer_blister_01_detail.ktx2",
+      "bytes": 117285,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_lacquer_blister_02_albedo.ktx2",
+      "bytes": 172567,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_lacquer_blister_02_detail.ktx2",
+      "bytes": 149047,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_lacquer_blister_03_albedo.ktx2",
+      "bytes": 118203,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_lacquer_blister_03_detail.ktx2",
+      "bytes": 95036,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_maintenance_shrine_albedo.ktx2",
+      "bytes": 170229,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_maintenance_shrine_detail.ktx2",
+      "bytes": 120127,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_meridian_stencil_albedo.ktx2",
+      "bytes": 268448,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_meridian_stencil_detail.ktx2",
+      "bytes": 232272,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_mirror_tarnished_albedo.ktx2",
+      "bytes": 107448,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_mirror_tarnished_detail.ktx2",
+      "bytes": 116585,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_oil_spill_patch_albedo.ktx2",
+      "bytes": 186603,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_oil_spill_patch_detail.ktx2",
+      "bytes": 159793,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_permafrost_icicles_albedo.ktx2",
+      "bytes": 331628,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_permafrost_icicles_detail.ktx2",
+      "bytes": 281142,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_rust_bleed_1_albedo.ktx2",
+      "bytes": 177094,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_rust_bleed_1_detail.ktx2",
+      "bytes": 143457,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_rust_bleed_2_albedo.ktx2",
+      "bytes": 239280,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_rust_bleed_2_detail.ktx2",
+      "bytes": 200082,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_scars_albedo.ktx2",
+      "bytes": 237038,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_scars_detail.ktx2",
+      "bytes": 182831,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_scorch_bloom_albedo.ktx2",
+      "bytes": 135629,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_scorch_bloom_detail.ktx2",
+      "bytes": 111691,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_spore_growth_patch_albedo.ktx2",
+      "bytes": 221319,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_spore_growth_patch_detail.ktx2",
+      "bytes": 179566,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_spore_stain_01_albedo.ktx2",
+      "bytes": 91237,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_spore_stain_01_detail.ktx2",
+      "bytes": 78450,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_spore_stain_02_albedo.ktx2",
+      "bytes": 101238,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_spore_stain_02_detail.ktx2",
+      "bytes": 83617,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_spore_stain_03_albedo.ktx2",
+      "bytes": 164963,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_spore_stain_03_detail.ktx2",
+      "bytes": 135246,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_substation_stencil_albedo.ktx2",
+      "bytes": 328584,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_substation_stencil_detail.ktx2",
+      "bytes": 274588,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_tallow_symbol_albedo.ktx2",
+      "bytes": 130300,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_tallow_symbol_detail.ktx2",
+      "bytes": 111876,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_vine_iron_shadow_1_albedo.ktx2",
+      "bytes": 149003,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_vine_iron_shadow_1_detail.ktx2",
+      "bytes": 101324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_vine_iron_shadow_2_albedo.ktx2",
+      "bytes": 121648,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_vine_iron_shadow_2_detail.ktx2",
+      "bytes": 86538,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_wall_breach_albedo.ktx2",
+      "bytes": 266731,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_wall_breach_detail.ktx2",
+      "bytes": 236099,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_wall_panel_grille_01_albedo.ktx2",
+      "bytes": 122979,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_wall_panel_grille_01_detail.ktx2",
+      "bytes": 139967,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_wall_panel_grille_02_albedo.ktx2",
+      "bytes": 112439,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_wall_panel_grille_02_detail.ktx2",
+      "bytes": 130201,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_wall_panel_grille_03_albedo.ktx2",
+      "bytes": 125284,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_wall_panel_grille_03_detail.ktx2",
+      "bytes": 136994,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_wall_panel_relief_albedo.ktx2",
+      "bytes": 216966,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_wall_panel_relief_detail.ktx2",
+      "bytes": 209747,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_water_stain_albedo.ktx2",
+      "bytes": 109760,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_water_stain_detail.ktx2",
+      "bytes": 86200,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_worker_sleep_roll_albedo.ktx2",
+      "bytes": 211734,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_worker_sleep_roll_detail.ktx2",
+      "bytes": 152303,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/tex_wall_kickplate_band_a_albedo.ktx2",
       "bytes": 611096,
       "classification": "runtime-required"
@@ -3912,7 +4592,7 @@
     },
     {
       "path": "3d/runtime/new3ds/life_supply_drop_pod.glb",
-      "bytes": 8134432,
+      "bytes": 8135936,
       "classification": "runtime-required"
     },
     {
@@ -19721,6 +20401,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_bio_mycelium.png",
+      "bytes": 508732,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_bio_sample_spill.png",
       "bytes": 618877,
       "classification": "runtime-required"
@@ -19751,6 +20436,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_chitin_cluster.png",
+      "bytes": 450908,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_claw_scratches.png",
       "bytes": 219979,
       "classification": "runtime-required"
@@ -19761,8 +20451,23 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_cryo_fracture.png",
+      "bytes": 603215,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_electrical_scorch.png",
+      "bytes": 486637,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_emergency_oxygen_nest.png",
       "bytes": 542404,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_evac_treads.png",
+      "bytes": 633372,
       "classification": "runtime-required"
     },
     {
@@ -19876,6 +20581,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_hazard_chevron.png",
+      "bytes": 642095,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_hazard_stripes.png",
       "bytes": 213478,
       "classification": "runtime-required"
@@ -19921,6 +20631,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_permafrost_icicles.png",
+      "bytes": 653734,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_rust_bleed_1.png",
       "bytes": 263185,
       "classification": "runtime-required"
@@ -19958,6 +20673,11 @@
     {
       "path": "decal_spore_stain_03.png",
       "bytes": 19593,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_substation_stencil.png",
+      "bytes": 595444,
       "classification": "runtime-required"
     },
     {

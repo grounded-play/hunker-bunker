@@ -119,3 +119,32 @@ describe('sticker layers', () => {
         expect(mesh.geometry.getAttribute('aSticker').count).toBe(mesh.count);
     });
 });
+
+describe('room-dressing PNG decals on the PBR path', () => {
+    it('gives every public/decal_*.png a baked PBR layer and ships both maps', async () => {
+        const { LEGACY_DECAL_LAYERS } = await import('./data/legacyDecalLayers.js');
+        const pngs = fs.readdirSync('public').filter((file) => /^decal_.*\.png$/.test(file)).map((file) => file.slice(0, -4)).sort();
+        expect(LEGACY_DECAL_LAYERS.map((layer) => layer.name)).toEqual(pngs);
+        for (const { name } of LEGACY_DECAL_LAYERS) {
+            for (const map of ['albedo', 'detail']) {
+                expect(fs.existsSync(`public/3d/runtime/decals/legacy/${name}_${map}.ktx2`), `${name}_${map}`).toBe(true);
+            }
+        }
+    });
+
+    it('draws a room\'s decals as one mesh placed like the PNG batches, keeping hide handles', async () => {
+        const { buildLegacyDecalMesh } = await import('./stickerDecals.js');
+        const items = [
+            { layer: 'floorDecal', type: 'decal_oil_spill_patch', x: 2, y: 3, yaw: 0.5, size: 1.2 },
+            { layer: 'wallDecal', type: 'decal_rust_bleed_1', x: 1, y: 0.6, normal: { x: 0, z: 1 }, height: 1.4, size: 0.9 },
+            { layer: 'floorDecal', type: 'decal_not_baked', x: 0, y: 0, size: 1 }
+        ];
+        const mesh = buildLegacyDecalMesh(items, createStickerMaterial());
+        expect(mesh.count).toBe(2);
+        const wall = new THREE.Matrix4();
+        mesh.getMatrixAt(1, wall);
+        expect(new THREE.Vector3().setFromMatrixPosition(wall).y).toBeCloseTo(1.4);
+        expect(items[0].batchInstances[0]).toEqual({ batch: mesh, index: 0 });
+        expect(items[2].batchInstances).toBeUndefined();
+    });
+});

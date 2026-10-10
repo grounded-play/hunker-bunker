@@ -14,7 +14,7 @@ test('floor boundaries: pinned-map captures', async ({ page }) => {
     test.setTimeout(300_000);
     const shaderErrors = [];
     page.on('console', (message) => {
-        if (/Shader Error|WebGLProgram|GL_INVALID|Floor layer|Floor surface|Floor utility|No BC7|Stickers failed|Lived-in dressing/i.test(message.text())) shaderErrors.push(message.text().slice(0, 400));
+        if (/Shader Error|WebGLProgram|GL_INVALID|Floor layer|Floor surface|Floor utility|No BC7|Stickers failed|Lived-in dressing|Room decal layers failed/i.test(message.text())) shaderErrors.push(message.text().slice(0, 400));
     });
     await page.setViewportSize({ width: 1600, height: 900 });
     await bootToOperatorMenu(page);
@@ -140,6 +140,8 @@ test('floor boundaries: pinned-map captures', async ({ page }) => {
                 utilityReady: game.floorSplatShared?.uFloorUtilityReady?.value ?? null,
                 stickersReady: game.stickerMaterial?.userData?.stickerUniforms?.uStickersReady?.value ?? null,
                 stickers: game.scene.getObjectsByProperty('name', 'lived-in-stickers').reduce((sum, mesh) => sum + mesh.count, 0),
+                roomDecals: game.scene.getObjectsByProperty('name', 'room-dressing-decals').reduce((sum, mesh) => sum + mesh.count, 0),
+                roomDecalsReady: game.roomDecalMaterial?.userData?.stickerUniforms?.uStickersReady?.value ?? null,
                 livedInProps: game.scene.getObjectsByProperty('name', 'lived-in-world-dressing').reduce((sum, group) => sum + (group.userData.itemCount ?? 0), 0),
                 triangles: game.renderer?.info?.render?.triangles ?? null
             };

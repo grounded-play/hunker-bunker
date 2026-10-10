@@ -194,7 +194,7 @@ export function classifyPublicAsset(relativePath, referenced) {
     }
     // Lived-in floor surfaces, stickers and spline conduits: src/floorSplat.js,
     // src/stickerDecals.js and src/splineDressingRenderer.js build each name from their layer tables.
-    if (/^3d\/runtime\/(?:surfaces|decals|splines)\/[^/]+\.(?:ktx2|webp)$/i.test(relativePath)) {
+    if (/^3d\/runtime\/(?:surfaces|decals|splines)\/(?:legacy\/)?[^/]+\.(?:ktx2|webp)$/i.test(relativePath)) {
         return 'runtime-required';
     }
     if (/(?:^|\/)(?:concepts?|references?|rejected-candidates|sources-keyed|strips|identity|keyart)(?:\/|$)/.test(lower)

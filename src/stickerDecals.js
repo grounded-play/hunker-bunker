@@ -6,10 +6,17 @@
  */
 import * as THREE from 'three';
 import { STICKER_LAYERS } from './data/stickerLayers.js';
+import { LEGACY_DECAL_LAYERS } from './data/legacyDecalLayers.js';
 import { stackCompressedLayers } from './floorSplat.js';
 import { STICKER_FAMILIES } from './stickerPlanner.js';
 
 const LAYER_INDEX = new Map(STICKER_LAYERS.map((entry, index) => [entry.name, index]));
+const LEGACY_INDEX = new Map(LEGACY_DECAL_LAYERS.map((entry, index) => [entry.name, index]));
+
+/** The PBR layer of a room-dressing PNG decal type, or -1 (it stays on the PNG path). */
+export function legacyDecalLayerIndex(type) {
+    return LEGACY_INDEX.get(type) ?? -1;
+}
 const VARIANT_LETTERS = 'abcd';
 
 export function stickerLayerIndex(family, variant = 0) {
@@ -29,11 +36,12 @@ export async function loadStickerArrays({
     loader,
     resolveUrl = (path) => path,
     yieldTask = () => new Promise((resolve) => setTimeout(resolve, 0)),
-    baseUrl = '/3d/runtime/decals/'
+    baseUrl = '/3d/runtime/decals/',
+    layers = STICKER_LAYERS
 }) {
     const albedo = [];
     const detail = [];
-    for (const { name } of STICKER_LAYERS) {
+    for (const { name } of layers) {
         albedo.push(await loader.loadAsync(resolveUrl(`${baseUrl}${name}_albedo.ktx2`)));
         detail.push(await loader.loadAsync(resolveUrl(`${baseUrl}${name}_detail.ktx2`)));
         await yieldTask();
@@ -202,6 +210,59 @@ export function buildStickerMesh(items, material) {
     mesh.renderOrder = 6;
     mesh.computeBoundingSphere();
     mesh.name = 'lived-in-stickers';
+    mesh.userData.isStickerDecals = true;
+    mesh.userData.stickerCount = placed.length;
+    return mesh;
+}
+
+const LEGACY_FLAT = new THREE.Euler(0, 0, 0, 'YXZ');
+const LEGACY_HIDDEN = new THREE.Matrix4().makeScale(0, 0, 0);
+
+/**
+ * Room-dressing decals drawn from their PBR layers (LEGACY_DECAL_LAYERS), placed
+ * exactly as roomDressingRenderer's PNG batches place them, as one draw for
+ * the whole room instead of one per decal type. Each item gets its
+ * batchInstances entry, so breaking a wall still hides its decals.
+ */
+export function buildLegacyDecalMesh(items, material) {
+    const placed = items.map((item) => ({ item, layer: legacyDecalLayerIndex(item.type) })).filter(({ layer }) => layer >= 0);
+    if (placed.length === 0) return null;
+    const info = new Float32Array(placed.length * 4);
+    const geometry = new THREE.PlaneGeometry(1, 1);
+    geometry.setAttribute('aSticker', new THREE.InstancedBufferAttribute(info, 4));
+    const mesh = new THREE.InstancedMesh(geometry, material, placed.length);
+    const matrix = new THREE.Matrix4();
+    const position = new THREE.Vector3();
+    const quaternion = new THREE.Quaternion();
+    const scale = new THREE.Vector3();
+    placed.forEach(({ item, layer }, index) => {
+        item.batchInstances = item.batchInstances || [];
+        item.batchInstances.push({ batch: mesh, index });
+        info.set([layer, 0, 0, 1], index * 4);
+        if (item.isDestroyed) {
+            mesh.setMatrixAt(index, LEGACY_HIDDEN);
+            return;
+        }
+        const size = item.size ?? 1;
+        const aspect = LEGACY_DECAL_LAYERS[layer].aspect;
+        if (item.layer === 'wallDecal') {
+            position.set(item.x, item.height ?? 1.4, item.y);
+            LEGACY_FLAT.set(0, Math.atan2(item.normal?.x ?? 0, item.normal?.z ?? 1), item.roll ?? 0);
+        } else {
+            // The same few-millimetre stagger the PNG batches use against z-fighting.
+            position.set(item.x, 0.03 + (index % 7) * 0.002, item.y);
+            LEGACY_FLAT.set(-Math.PI / 2, item.yaw ?? 0, 0);
+        }
+        quaternion.setFromEuler(LEGACY_FLAT);
+        scale.set(size * aspect, size, 1);
+        mesh.setMatrixAt(index, matrix.compose(position, quaternion, scale));
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.receiveShadow = true;
+    mesh.castShadow = false;
+    mesh.renderOrder = 6;
+    mesh.computeBoundingSphere();
+    mesh.name = 'room-dressing-decals';
     mesh.userData.isStickerDecals = true;
     mesh.userData.stickerCount = placed.length;
     return mesh;

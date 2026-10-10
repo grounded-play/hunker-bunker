@@ -179,6 +179,7 @@ import {
     scopeSpecularSofteningToBaseFloor
 } from './floorSplat.js';
 import { planChunkStickers, surfaceCategory } from './stickerPlanner.js';
+import { LEGACY_DECAL_LAYERS } from './data/legacyDecalLayers.js';
 import { planWorldDressing } from './worldDressing.js';
 import {
     buildStickerMesh,
@@ -2759,6 +2760,8 @@ export class ThreeGame {
         };
         // Lived-in stickers (src/stickerDecals.js): one material for every chunk.
         this.stickerMaterial = isStickersEnabled() ? createStickerMaterial() : null;
+        // Room-dressing PNG decals' PBR twins (public/3d/runtime/decals/legacy).
+        this.roomDecalMaterial = isStickersEnabled() ? createStickerMaterial() : null;
         const noFloorSplat = {
             uSplatData: { value: createEmptyFloorSplatTexture() },
             uSplatInfo: { value: new THREE.Vector3(0, 0, 0) }
@@ -10165,6 +10168,29 @@ export class ThreeGame {
                 }).catch((error) => {
                     stickerLoader.dispose();
                     console.warn('[ThreeGame] Stickers failed to load', error);
+                });
+            }
+            if (this.roomDecalMaterial) {
+                const material = this.roomDecalMaterial;
+                const decalLoader = new KTX2Loader().detectSupport(this.renderer);
+                loadStickerArrays({
+                    loader: decalLoader,
+                    resolveUrl: (path) => this.resolveRelativeAssetPath(path),
+                    layers: LEGACY_DECAL_LAYERS,
+                    baseUrl: '/3d/runtime/decals/legacy/'
+                }).then((arrays) => {
+                    decalLoader.dispose();
+                    if (this.roomDecalMaterial !== material) {
+                        arrays.albedo.dispose();
+                        arrays.detail.dispose();
+                        return;
+                    }
+                    arrays.albedo.anisotropy = anisotropy;
+                    arrays.detail.anisotropy = anisotropy;
+                    setStickerArrays(material, arrays);
+                }).catch((error) => {
+                    decalLoader.dispose();
+                    console.warn('[ThreeGame] Room decal layers failed to load; keeping the PNG decals', error);
                 });
             }
             if (isSplineArraysEnabled() && !this.splineArraysLoadStarted) {
@@ -30896,7 +30922,9 @@ export class ThreeGame {
         buildRoomDressingGroup(items, {
             loadModel: (type) => createWorld3dModel(type),
             loadDecalTexture: (type) => loadKeyedDecalTexture(type),
-            isDestroyed: (id) => this.brokenPropScatterKeys?.has(id)
+            isDestroyed: (id) => this.brokenPropScatterKeys?.has(id),
+            // Decals draw from their PBR layers once those have loaded.
+            decalMaterial: this.roomDecalMaterial?.userData.stickerUniforms.uStickersReady.value ? this.roomDecalMaterial : null
         }).then((dressing) => {
             // The chunk may have unloaded while models streamed in.
             if (!group.parent || group.userData.roomDressingToken !== token) {
@@ -43679,6 +43707,8 @@ export class ThreeGame {
         this.floorSurfaceLoadStarted = false;
         disposeStickerMaterial(this.stickerMaterial);
         this.stickerMaterial = null;
+        disposeStickerMaterial(this.roomDecalMaterial);
+        this.roomDecalMaterial = null;
         this.crashSiteFloorMaterial?.dispose?.();
         this.crashSiteFloorTexture?.dispose?.();
         this.crashSiteHeatMaterial?.dispose?.();

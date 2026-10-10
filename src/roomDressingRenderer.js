@@ -9,6 +9,7 @@
  * review images show exactly what the game draws.
  */
 import * as THREE from 'three';
+import { buildLegacyDecalMesh, legacyDecalLayerIndex } from './stickerDecals.js';
 import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
 import { assetUrl } from './assetUrl.js';
 import { isDynamicPropExperienceType } from './propExperience.js';
@@ -113,7 +114,10 @@ export async function buildRoomDressingGroup(items, {
     loadModel,
     loadDecalTexture,
     isDestroyed = null,
-    onDynamicModel = null
+    onDynamicModel = null,
+    // When set (its PBR arrays loaded), decals with a baked layer draw from it
+    // as one mesh; the rest keep the runtime-keyed PNG batches.
+    decalMaterial: pbrDecalMaterial = null
 } = {}) {
     const group = new THREE.Group();
     group.name = 'room-dressing';
@@ -143,7 +147,12 @@ export async function buildRoomDressingGroup(items, {
     const euler = new THREE.Euler(0, 0, 0, 'YXZ');
     let drawCalls = 0;
 
+    const pbrDecals = [];
     for (const [type, list] of byType) {
+        if (pbrDecalMaterial && !MODEL_LAYERS.has(list[0].layer) && legacyDecalLayerIndex(type) >= 0) {
+            pbrDecals.push(...list);
+            continue;
+        }
         if (MODEL_LAYERS.has(list[0].layer)) {
             const usesDynamicExperience = (item) => item.dynamicExperience
                 ?? isDynamicPropExperienceType(item.type);
@@ -243,6 +252,12 @@ export async function buildRoomDressingGroup(items, {
         batch.computeBoundingSphere();
         batch.userData.roomDressingType = type;
         group.add(batch);
+        drawCalls += 1;
+    }
+
+    const decalMesh = pbrDecals.length ? buildLegacyDecalMesh(pbrDecals, pbrDecalMaterial) : null;
+    if (decalMesh) {
+        group.add(decalMesh);
         drawCalls += 1;
     }
 
