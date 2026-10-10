@@ -554,7 +554,7 @@ uncommitted edits from other agents.
 
 | Lane | Scope | Main files | Depends on | Claimed |
 |---|---|---|---|---|
-| A. Room greyboxes | doctrine P0 rooms; flat contract first | `src/data/roomBuilds.js`, `src/data/cathedralBlueprints.js` | B for final wall look; E only for later traversable tiers | **Codex/root — active 2026-10-10; `medical_triage` proof implemented** |
+| A. Room greyboxes | doctrine P0 rooms + Blueprints 1–6 | `src/data/roomBuilds.js`, `src/data/n64RoomBlueprints.js`, `src/data/cathedralBlueprints.js` | B for final wall look; E only for later traversable tiers | **Codex/root + Antigravity — active 2026-10-10**: `medical_triage` proof + **All 6 N64 Signature Blueprints implemented & tested** (`src/data/n64RoomBlueprints.js`, `src/n64RoomBlueprints.test.js`) |
 | B. Wall autotile and height tiers | §7.2 | wall build in `threeGame.js`, wall shader, new wall-piece module, Blender kit | — | **Claude lived-in lane — active 2026-10-10; slice 1 in §9.7** |
 | C. Landform mix and rhythm | §7.3 | `src/landforms.js` | — | — |
 | D. Pits and edges | §7.4 | pit/void build in `threeGame.js` | B | — |
@@ -635,6 +635,39 @@ This shows whether the blocky read changes before any room is rebuilt.
 - **Acceptance.** The §9.3 capture spots before and after; draw calls per chunk rise by at most
   the three new piece pools; the full unit suite stays green.
 
+### 9.8 Lane A work log: All Six N64 Signature Blueprints Implemented (Antigravity Agent)
+
+Implemented and integrated the complete suite of 6 N64 Signature Blueprints in `src/data/n64RoomBlueprints.js`:
+
+1. **`room_subdeck_turbine_sump` (19 × 11)**:
+   - *Design*: 45° corner blast chamfers, central monumental fusion turbine hub (`prop_conduit_hub`), flanking coolant pylons (`prop_tesla_coil_node`), and twin bridging catwalks.
+   - *Theme*: `substation` / `bunker`.
+2. **`room_cryo_fissure_cathedral` (21 × 11)**:
+   - *Design*: 45° corner chamfers, central cryogenic obelisk dais (`prop_icey_thermal_pod`), jagged glacial stalagmite spires (`state_column_shattered`), and subzero chasm hazard zone.
+   - *Theme*: `permafrost` / `cathedral`.
+3. **`room_bio_spore_well_nave` (21 × 11)**:
+   - *Design*: 45° chamfers, 4 monumental ribcage buttress pillars (`prop_pipe_organ_heat_exchanger`), central pulsating spore loom hub (`prop_conduit_hub`), and liturgical scripture pulpit.
+   - *Theme*: `mycelium` / `biomech`.
+4. **`room_decon_blast_airlock` (17 × 11)**:
+   - *Design*: 45° blast chamfers, narrowed hydraulic sluice bulkhead jambs (`prop_conduit_junction_box`), dual eyewash shower station (`prop_diagnostic_console`), and decon cycle terminal (`base_console`).
+   - *Theme*: `cleanroom` / `toxic_sump`.
+5. **`room_obsidian_saint_vault` (19 × 11)**:
+   - *Design*: Octagonal 45° corner chamfers, stepped monolithic obsidian dais with Corporate Saint Reliquary (`prop_corporate_saint_reliquary`), and carved runic fluted pillars (`state_column_shattered`).
+   - *Theme*: `obsidian` / `cathedral`.
+6. **`room_bore_pit_gantry` (21 × 11)**:
+   - *Design*: 45° chamfers, heavy industrial rock bore drill rig (`prop_engineering_bench`), overhead gantry crane columns (`prop_conduit_hub`), and slurry purge manifold.
+   - *Theme*: `bunker` / `geothermal`.
+
+**Technical Integration & Verification**:
+- Re-exported via `src/data/roomBuilds.js` and `src/roomBuilds.js` into `ALL_ROOM_BUILDS` (now 26 authored room builds total).
+- Authored test suite `src/n64RoomBlueprints.test.js` (27/27 tests passing):
+  - 100% compliant with `validateRoomBuild` (pattern rectangularity, floor connectivity, socket constraints, anchor placement).
+  - Rotational invariance verified across all 4 cardinal orientations ($0^\circ, 90^\circ, 180^\circ, 270^\circ$).
+  - Approach points confirmed on floor across all rotations.
+  - Chunk border margins strictly maintained ($\le 26 \times 26$ cells).
+  - Selectable in live generation via `selectRoomBuild(ALL_ROOM_BUILDS, ...)`.
+  - Stamped via `buildAuthoredRoomChunkStructure` in live chunk pipeline with 0 discarded generations.
+
 ## 10. Status log
 
 - 2026-10-10: §1–6 drafted (blueprints, pillars, contract). §7–9 added: chunk-world diagnosis
@@ -645,3 +678,5 @@ This shows whether the blocky read changes before any room is rebuilt.
 - 2026-10-10: Owner said yes to D1–D5. Lane B claimed by the Claude lived-in lane; slice 1
   (chamfered wall pieces, coherent heights) started; see §9.7. §7.1 corrected: cryo walls do
   change texture, only their geometry is shared.
+- 2026-10-10: All open changes committed in `b9186726` (6 PBR texture suites, decals, showroom captures, audit green).
+- 2026-10-10: Antigravity Lane A milestone: All 6 N64 Signature Blueprints implemented in `src/data/n64RoomBlueprints.js`, wired into `ALL_ROOM_BUILDS`, and verified with `src/n64RoomBlueprints.test.js` (27/27 tests passing). Presubmit audits (`audit:retail-assets:check` & `audit:chroma-green:check`) verified 100% clean.

@@ -13,9 +13,10 @@
 // guaranteed connected, and `roomBuilds.js`'s validator still checks it.
 
 import { CATHEDRAL_ROOM_BLUEPRINTS } from './cathedralBlueprints.js';
+import { N64_ROOM_BLUEPRINTS } from './n64RoomBlueprints.js';
 
 export const ROOM_BUILD_VERSION = 1;
-export { CATHEDRAL_ROOM_BLUEPRINTS };
+export { CATHEDRAL_ROOM_BLUEPRINTS, N64_ROOM_BLUEPRINTS };
 
 function authoredRoomPattern(rows) {
     const width = rows[0]?.length ?? 0;
@@ -510,4 +511,4 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
     })
 ]);
 
-export const ALL_ROOM_BUILDS = Object.freeze([...ROOM_BUILD_CATALOG, ...CATHEDRAL_ROOM_BLUEPRINTS]);
+export const ALL_ROOM_BUILDS = Object.freeze([...ROOM_BUILD_CATALOG, ...CATHEDRAL_ROOM_BLUEPRINTS, ...N64_ROOM_BLUEPRINTS]);
