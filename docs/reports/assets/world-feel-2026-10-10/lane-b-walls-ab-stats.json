@@ -1,0 +1,180 @@
+{
+ "on": [
+  {
+   "pools": 16,
+   "pieces": {
+    "square": 2573,
+    "chamfer": 37,
+    "post": 172,
+    "end": 310
+   },
+   "x": 13,
+   "z": 1
+  },
+  {
+   "pools": 12,
+   "pieces": {
+    "square": 2107,
+    "chamfer": 25,
+    "post": 172,
+    "end": 309
+   },
+   "x": 22,
+   "z": 6
+  },
+  {
+   "pools": 16,
+   "pieces": {
+    "square": 2573,
+    "chamfer": 37,
+    "post": 172,
+    "end": 310
+   },
+   "x": -19,
+   "z": 11
+  },
+  {
+   "pools": 16,
+   "pieces": {
+    "square": 2961,
+    "chamfer": 54,
+    "post": 173,
+    "end": 310
+   },
+   "x": 40,
+   "z": 40
+  },
+  {
+   "pools": 16,
+   "pieces": {
+    "square": 2818,
+    "chamfer": 36,
+    "post": 238,
+    "end": 451
+   },
+   "x": -44,
+   "z": -9
+  },
+  {
+   "pools": 12,
+   "pieces": {
+    "square": 2037,
+    "chamfer": 30,
+    "post": 166,
+    "end": 306
+   },
+   "x": 60,
+   "z": -20
+  },
+  {
+   "pools": 16,
+   "pieces": {
+    "square": 2639,
+    "chamfer": 31,
+    "post": 253,
+    "end": 431
+   },
+   "x": 0,
+   "z": -58
+  },
+  {
+   "pools": 12,
+   "pieces": {
+    "square": 2394,
+    "post": 229,
+    "end": 449,
+    "chamfer": 25
+   },
+   "x": -69,
+   "z": 51
+  },
+  {
+   "pools": 16,
+   "pieces": {
+    "square": 2688,
+    "chamfer": 41,
+    "end": 304,
+    "post": 172
+   },
+   "x": 91,
+   "z": 11
+  }
+ ],
+ "off": [
+  {
+   "pools": 15,
+   "pieces": {
+    "box": 2983
+   },
+   "x": 13,
+   "z": 1
+  },
+  {
+   "pools": 12,
+   "pieces": {
+    "box": 2613
+   },
+   "x": 22,
+   "z": 6
+  },
+  {
+   "pools": 16,
+   "pieces": {
+    "box": 3092
+   },
+   "x": -19,
+   "z": 11
+  },
+  {
+   "pools": 16,
+   "pieces": {
+    "box": 3498
+   },
+   "x": 40,
+   "z": 40
+  },
+  {
+   "pools": 16,
+   "pieces": {
+    "box": 3543
+   },
+   "x": -44,
+   "z": -9
+  },
+  {
+   "pools": 12,
+   "pieces": {
+    "box": 2539
+   },
+   "x": 60,
+   "z": -20
+  },
+  {
+   "pools": 16,
+   "pieces": {
+    "box": 3354
+   },
+   "x": 0,
+   "z": -58
+  },
+  {
+   "pools": 12,
+   "pieces": {
+    "box": 3097
+   },
+   "x": -69,
+   "z": 51
+  },
+  {
+   "pools": 16,
+   "pieces": {
+    "box": 3205
+   },
+   "x": 91,
+   "z": 11
+  }
+ ],
+ "shaderErrors": [
+  "THREE.WebGLRenderer: KHR_parallel_shader_compile extension not supported."
+ ]
+}

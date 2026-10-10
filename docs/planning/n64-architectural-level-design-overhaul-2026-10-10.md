@@ -614,26 +614,57 @@ This shows whether the blocky read changes before any room is rebuilt.
 
 ### 9.7 Lane B work log (Claude lived-in lane)
 
-**Slice 1: chunk walls stop being cubes.** In progress.
+**Slice 1: chunk walls stop being cubes.** Done, `42373004`.
 
-- **Scope.** The standing walls of the chunk terrain outside rooms. Room boundary walls stay as
-  they are: lane A owns the rooms, and the cutaway rewrites those instances every time the camera
-  turns.
-- **Pieces.** Each wall cell reads which of its four sides open onto floor. Every exposed outer
-  corner is cut at 45° by 0.3 m (D4), giving four pieces: block (no exposed corner), chamfer (one),
-  end cap (two, one open side) and post (four, a lone pillar, now an octagonal column). A diagonal
-  run of cells becomes a faceted diagonal wall instead of a staircase. Collision, the grid, the
-  radar and pathing are untouched. One instanced pool per room style and piece; destruction
-  still zeroes the cell's instance.
-- **Heights.** The per-cell random height roll is replaced by a coherent field: quantised value
-  noise over world coordinates, inside each landform's existing range. Neighbouring walls share a
-  height and change in steps every few cells, so the skyline reads as built runs, not noise.
-- **Code.** `src/wallAutotile.js` (pure, tested) and its use in the chunk wall build in
-  `threeGame.js`. Textures need no work: the wall shader projects in world space.
-- **Not in this slice:** dressed wall tops, plinths, tall and towering tiers (D3), cryo geometry,
-  natural rock and ice contours. Those are slice 2.
-- **Acceptance.** The §9.3 capture spots before and after; draw calls per chunk rise by at most
-  the three new piece pools; the full unit suite stays green.
+- **What changed.**
+  - *Corners.* Every standing wall cell outside a room cuts each outer corner whose two sides
+    both open onto floor, at 45° by 0.3 m (D4). A lone pillar becomes an octagonal column, the
+    free end of a run gets a bevelled cap, and a diagonal staircase of cells reads as a faceted
+    diagonal wall.
+  - *Heights.* The per-cell random roll is replaced by quantised value noise over world cells,
+    inside each landform's old range. Neighbouring walls share a height and step every few
+    cells.
+- **How it stays cheap.**
+  - *One shape.* All instanced walls share one octagonal prism. A per-instance mask
+    (`hbCornerCut`) keeps only the exposed corners cut, and the wall vertex shader moves the
+    others back out to the square. A closed cell draws exactly the old box.
+  - *Same draw calls.* There is still one pool per room style: the capture counted 12–16 wall
+    pools per view before and after.
+  - *Shadows.* The shadow depth material uses the same patch, so shadows match the new shapes.
+  - *Safety.* Masks are stored offset by 16, and the shader acts only on values of 16 or more.
+    A mesh drawn with the wall material but without the attribute can't trigger it.
+  - *Disposal.* Wall pools now dispose their geometry and instance buffers when a chunk unloads
+    (they used to leak).
+- **What did not change.**
+  - The grid, collision, pathing, radar, destruction and textures (the wall shader projects in
+    world space).
+  - Room boundary walls stay square: rooms are lane A's, and the cutaway rewrites their
+    instances.
+- **Switch.** `hb_wall_autotile=0` restores the boxes and the old roll.
+- **Code.** `src/wallAutotile.js` (16 tests) and the chunk wall build in `threeGame.js`.
+- **Evidence.**
+  - Same chunks, same run, old walls left and new walls right:
+    [sheet A](../reports/assets/world-feel-2026-10-10/05-lane-b-walls-before-after-a.jpg),
+    [sheet B](../reports/assets/world-feel-2026-10-10/06-lane-b-walls-before-after-b.jpg).
+  - [Pool and corner counts](../reports/assets/world-feel-2026-10-10/lane-b-walls-ab-stats.json):
+    across nine views, 15–23% of visible walls get cuts (25–54 chamfers, 166–253 posts,
+    304–451 run ends per view).
+  - Unit suite 662 files / 5,701 tests green. No shader errors in the GPU run.
+  - Not yet measured on the Deck.
+- **For lane A.** The chamfers in the six blueprints are `#` cells on room boundary walls, so
+  they still render stair-stepped. Corner cuts can extend to room walls: the cutaway only
+  rewrites matrices, and the mask stays on the instance. Two things block it today: room walls
+  are excluded on purpose, and the cutaway cap is a square box that would overhang a cut corner
+  at cut height. That is slice 2 item 1.
+
+**Slice 2 (next):**
+
+1. Corner cuts on room walls, with a cutaway cap that follows the mask.
+2. Wall tops dressed per skin: pipes and grates (bunker), snow cornices (cryo), growth (bio),
+   rebar (ruins).
+3. Plinth and lit cap edge in the wall shader (shared with lane G).
+4. Tall tiers for district borders and landform edges (D3).
+5. Natural rock and ice contours for cave, bio and cryo.
 
 ### 9.8 Lane A work log: All Six N64 Signature Blueprints Implemented (Antigravity Agent)
 
@@ -680,3 +711,6 @@ Implemented and integrated the complete suite of 6 N64 Signature Blueprints in `
   change texture, only their geometry is shared.
 - 2026-10-10: All open changes committed in `b9186726` (6 PBR texture suites, decals, showroom captures, audit green).
 - 2026-10-10: Antigravity Lane A milestone: All 6 N64 Signature Blueprints implemented in `src/data/n64RoomBlueprints.js`, wired into `ALL_ROOM_BUILDS`, and verified with `src/n64RoomBlueprints.test.js` (27/27 tests passing). Presubmit audits (`audit:retail-assets:check` & `audit:chroma-green:check`) verified 100% clean.
+- 2026-10-10: Lane B slice 1 done (`42373004`). Chunk walls cut their exposed corners and step
+  in coherent heights at unchanged draw calls; before/after sheets in §9.7. Slice 2 starts with
+  corner cuts on room walls, which lane A's chamfered blueprints need.
