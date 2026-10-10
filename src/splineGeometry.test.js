@@ -4,7 +4,8 @@ import {
     evaluateCatenaryPoints,
     evaluateFilletedManhattanPoints,
     computeParallelTransportFrames,
-    buildPrismTubeGeometry
+    buildPrismTubeGeometry,
+    buildTerminationCollarGeometry
 } from './splineGeometry.js';
 
 describe('splineGeometry math core', () => {
@@ -153,5 +154,21 @@ describe('splineGeometry math core', () => {
                 expect(v).toBeLessThanOrEqual(0.75 + 1e-5);
             }
         });
+    });
+});
+
+describe('sway attribute', () => {
+    const points = [0, 1, 2].map((x) => new THREE.Vector3(x, 2, 0));
+    it('writes each point\'s sway weight to its whole ring', () => {
+        const geometry = buildPrismTubeGeometry(points, { sides: 4, layer: 0, sway: [0, 1, 0.5] });
+        const sway = geometry.getAttribute('splineSway').array;
+        expect([...sway.slice(0, 5)]).toEqual([0, 0, 0, 0, 0]);
+        expect([...sway.slice(5, 10)]).toEqual([1, 1, 1, 1, 1]);
+        expect([...sway.slice(10, 15)]).toEqual([0.5, 0.5, 0.5, 0.5, 0.5]);
+    });
+    it('gives every layered tube and collar the attribute, zero when fixed, so they merge', () => {
+        expect([...buildPrismTubeGeometry(points, { layer: 1 }).getAttribute('splineSway').array].every((v) => v === 0)).toBe(true);
+        const collar = buildTerminationCollarGeometry(new THREE.Vector3(), new THREE.Vector3(0, 0, 1), { layer: 4 });
+        expect([...collar.getAttribute('splineSway').array].every((v) => v === 0)).toBe(true);
     });
 });

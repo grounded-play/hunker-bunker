@@ -72,6 +72,39 @@ test('spline conduits: per-area textures and severing', async ({ page }) => {
         await hideHud();
         if (dir) await page.screenshot({ path: path.join(dir, `${kind}-cut.png`) });
     }
+    // Hanging spans sway: some vertices carry weight, and the shared clock runs.
+    const sway = await page.evaluate(async () => {
+        const uniforms = (await import('/src/splineDressingRenderer.js')).getSplineMaterial().userData.splineUniforms;
+        let swaying = 0;
+        let freest = null;
+        window.game.scene.traverse((object) => {
+            const weights = object.isMesh && object.userData?.isSplineDressing ? object.geometry?.getAttribute('splineSway') : null;
+            if (!weights) return;
+            const positions = object.geometry.getAttribute('position');
+            for (let i = 0; i < weights.count; i += 1) {
+                if (weights.array[i] <= 0) continue;
+                swaying += 1;
+                if (!freest || weights.array[i] > freest.weight) freest = { weight: weights.array[i], x: positions.getX(i), z: positions.getZ(i) };
+            }
+        });
+        const before = uniforms.uSplineTime.value;
+        await new Promise((resolve) => { setTimeout(resolve, 1000); });
+        return { swaying, freest, advanced: uniforms.uSplineTime.value - before };
+    });
+    console.log('sway', JSON.stringify(sway));
+    expect(sway.swaying).toBeGreaterThan(0);
+    expect(sway.advanced).toBeGreaterThan(0.5);
+    if (dir && sway.freest) {
+        await page.evaluate(({ x, z }) => {
+            window.game.teleportPlayerTo(x + 1.5, z + 1.5, { safeFloor: false });
+            window.game.snapCameraToPlayer?.();
+        }, sway.freest);
+        await page.waitForTimeout(2500);
+        await hideHud();
+        await page.screenshot({ path: path.join(dir, 'sway-a.png') });
+        await page.waitForTimeout(1400);
+        await page.screenshot({ path: path.join(dir, 'sway-b.png') });
+    }
     const ready = await page.evaluate(async () => (await import('/src/splineDressingRenderer.js')).getSplineMaterial().userData.splineUniforms.uSplineReady.value);
     expect(ready).toBe(1);
     expect(errors).toEqual([]);

@@ -322,6 +322,7 @@ import {
     isSplineArraysEnabled,
     loadSplineArrays,
     setSplineArrays,
+    setSplineTime,
     SPLINE_LAYERS,
     splineLayerFor
 } from './splineDressingRenderer.js';
@@ -17337,6 +17338,9 @@ export class ThreeGame {
     updateWorld3dMixers(delta) {
         // Prop particles are sized in metres through the camera's projection.
         if (this.renderer?.domElement) setPropFxViewportHeight(this.renderer.domElement.height);
+        // Hanging cables sway on one shared clock.
+        this._splineSwayTime = (this._splineSwayTime ?? 0) + delta;
+        setSplineTime(this._splineSwayTime);
         for (const mixer of this.world3dMixers ?? []) {
             mixer.update(delta);
         }

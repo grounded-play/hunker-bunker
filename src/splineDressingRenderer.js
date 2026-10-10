@@ -82,6 +82,7 @@ function createSplineMaterial() {
         uSplineAlbedo: { value: placeholderArray() },
         uSplineDetail: { value: placeholderArray() },
         uSplineReady: { value: 0 },
+        uSplineTime: { value: 0 },
         uSplineFallback: { value: SPLINE_LAYERS.map((layer) => new THREE.Color(layer.fallback)) }
     };
     // A 1x1 map switches on three's UV path (vMapUv); the shader replaces its use.
@@ -95,9 +96,22 @@ function createSplineMaterial() {
         shader.vertexShader = shader.vertexShader
             .replace('#include <common>', `#include <common>
                 attribute float splineLayer;
+                attribute float splineSway;
+                uniform float uSplineTime;
                 varying float vSplineLayer;`)
             .replace('#include <uv_vertex>', `#include <uv_vertex>
-                vSplineLayer = splineLayer;`);
+                vSplineLayer = splineLayer;`)
+            // Hanging spans drift in the air handling: a slow swing across the
+            // run, weighted by how freely each point hangs. The phase drifts a
+            // little with position (geometry is in world space), so neighbouring
+            // cables move apart and one cable flexes without ever tearing.
+            .replace('#include <begin_vertex>', `#include <begin_vertex>
+                if (splineSway > 0.0) {
+                    float hbSwayPhase = dot(position.xz, vec2(0.11, 0.07));
+                    transformed.x += sin(uSplineTime * 1.1 + hbSwayPhase) * 0.045 * splineSway;
+                    transformed.z += sin(uSplineTime * 0.83 + hbSwayPhase * 1.7) * 0.035 * splineSway;
+                    transformed.y += sin(uSplineTime * 1.6 + hbSwayPhase) * 0.008 * splineSway;
+                }`);
         shader.fragmentShader = shader.fragmentShader
             .replace('#include <common>', `#include <common>
                 uniform sampler2DArray uSplineAlbedo;
@@ -154,6 +168,11 @@ export function getSplineMaterial() {
     return sharedMaterial;
 }
 
+/** Advances the hanging-cable sway; called once a frame. */
+export function setSplineTime(seconds) {
+    getSplineMaterial().userData.splineUniforms.uSplineTime.value = seconds;
+}
+
 export function setSplineArrays({ albedo, detail }) {
     const uniforms = getSplineMaterial().userData.splineUniforms;
     const previous = [uniforms.uSplineAlbedo.value, uniforms.uSplineDetail.value];
@@ -163,13 +182,14 @@ export function setSplineArrays({ albedo, detail }) {
     for (const texture of previous) texture?.dispose?.();
 }
 
-function tubeGeometry(points, item, layer) {
+function tubeGeometry(points, item, layer, sway = item.sway) {
     const radius = item.radius ?? 0.035;
     return buildPrismTubeGeometry(points, {
         radius,
         sides: item.sides ?? 4,
         vRepeat: splineVRepeat(radius, layer),
-        layer
+        layer,
+        sway
     });
 }
 
@@ -297,7 +317,8 @@ export function buildSeveredSplineGeometry(item) {
             const t = lengths[index] / total;
             return point.clone().add(new THREE.Vector3(0, -drop * t * t, 0)).addScaledVector(pull, -t);
         });
-        const tube = tubeGeometry(sagged, item, layer);
+        // The loose end swings; the end still fastened holds.
+        const tube = tubeGeometry(sagged, item, layer, lengths.map((length) => (length / total) ** 2));
         if (tube) geometries.push(tube);
         const tip = sagged[sagged.length - 1];
         ends.push({ position: tip.clone(), direction: tip.clone().sub(sagged[sagged.length - 2]).normalize() });

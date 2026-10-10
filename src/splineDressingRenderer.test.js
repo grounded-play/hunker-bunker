@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
-import { buildChunkSplinesMesh, buildSeveredSplineGeometry, disposeSplineMesh, getSplineMaterial, splineLayerFor, splineVRepeat } from './splineDressingRenderer.js';
+import { buildChunkSplinesMesh, buildSeveredSplineGeometry, disposeSplineMesh, getSplineMaterial, setSplineTime, splineLayerFor, splineVRepeat } from './splineDressingRenderer.js';
 
 describe('splineDressingRenderer', () => {
     const dummyManifest = [
@@ -83,6 +83,49 @@ describe('splineDressingRenderer', () => {
             expect(Math.abs(end.position.x - 2)).toBeGreaterThan(0.01);
         }
         expect(severed.geometry.getAttribute('splineLayer')).toBeTruthy();
+    });
+
+    describe('sway', () => {
+        const hanging = {
+            id: 'swag',
+            points: [0, 1, 2, 3, 4].map((x) => new THREE.Vector3(x, 2.42 - Math.sin((x / 4) * Math.PI) * 0.2, 0)),
+            radius: 0.03,
+            layerKind: 'wire',
+            sway: [0, 0.7, 1, 0.7, 0],
+            collars: [{ pos: new THREE.Vector3(0, 2.42, 0), normal: new THREE.Vector3(0, 0, 1), radius: 0.03 }]
+        };
+        const sways = (geometry) => [...geometry.getAttribute('splineSway').array];
+
+        it('carries each hanging span\'s sway weight on its vertices, and zero on everything fixed', () => {
+            const mesh = buildChunkSplinesMesh([hanging, dummyManifest[0]]);
+            const values = sways(mesh.geometry);
+            expect(Math.max(...values)).toBe(1);
+            expect(Math.min(...values)).toBe(0);
+            // Collars and the fixed run merge into the same draw with zero sway.
+            expect(values.filter((value) => value === 0).length).toBeGreaterThan(values.length / 2);
+        });
+
+        it('lets a cut cable\'s free ends swing while the anchored ends hold', () => {
+            const points = [0, 1, 2, 3, 4].map((x) => new THREE.Vector3(x, 1.5, 0));
+            const severed = buildSeveredSplineGeometry({ points, radius: 0.03, cutPoint: new THREE.Vector3(2, 1.5, 0), layerKind: 'wire' });
+            const values = sways(severed.geometry);
+            expect(Math.max(...values)).toBe(1);
+            expect(values[0]).toBe(0);
+        });
+
+        it('swings the swaying vertices from one shared clock', () => {
+            const material = getSplineMaterial();
+            const shader = {
+                uniforms: {},
+                vertexShader: '#include <common>\n#include <uv_vertex>\n#include <begin_vertex>',
+                fragmentShader: '#include <common>\n#include <map_fragment>\n#include <roughnessmap_fragment>\n#include <metalnessmap_fragment>\n#include <normal_fragment_maps>'
+            };
+            material.onBeforeCompile(shader);
+            expect(shader.vertexShader).toContain('attribute float splineSway;');
+            expect(shader.vertexShader).toMatch(/transformed\.[xz] \+=/);
+            setSplineTime(12.5);
+            expect(shader.uniforms.uSplineTime.value).toBe(12.5);
+        });
     });
 
     it('safely disposes geometry on chunk unload', () => {

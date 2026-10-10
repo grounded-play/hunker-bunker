@@ -53,6 +53,20 @@ const MIN_SIDES = 6;
 const HEAD_CLEARANCE = 1.9;
 const AREA_CONDUIT = Object.freeze({ bunker: 'wire', reward: 'wire', bio: 'vein', giger: 'vein', cryo: 'pipe', camp: 'vine' });
 
+// How freely each point of a hanging span swings: its drop below the straight
+// line between the span's ends, as a share of SWAG_MAX_SAG (0 at the ends).
+function chordSway(points) {
+    const lengths = [0];
+    for (let i = 1; i < points.length; i += 1) lengths.push(lengths[i - 1] + points[i].distanceTo(points[i - 1]));
+    const total = lengths[lengths.length - 1] || 1;
+    const first = points[0].y;
+    const last = points[points.length - 1].y;
+    return points.map((point, i) => {
+        const chord = first + (last - first) * (lengths[i] / total);
+        return Math.min(1, Math.max(0, (chord - point.y) / SWAG_MAX_SAG));
+    });
+}
+
 export function planRoomSplineDressing(room, grid, { placements = [], reserved = [], dressingItems = [] } = {}) {
     if (!room || !grid || !room.interior?.length) return [];
 
@@ -176,6 +190,7 @@ export function planRoomSplineDressing(room, grid, { placements = [], reserved =
                     ...evaluateCatenaryPoints(pStart, pEnd, sag, 6),
                     sB.worldPos.clone()
                 ];
+                const sway = chordSway(points);
                 // Across a doorway: leave both sockets to run to a wall instead.
                 if (blocksDoorway(points)) continue;
                 sA.connected = true;
@@ -189,6 +204,7 @@ export function planRoomSplineDressing(room, grid, { placements = [], reserved =
                     sides,
                     vAtlasOffset: vOffset,
                     vAtlasScale: 0.25,
+                    sway,
                     cuttable: true,
                     cutPoint: points[Math.floor(points.length / 2)],
                     cuttableType,
@@ -419,6 +435,7 @@ export function planRoomSplineDressing(room, grid, { placements = [], reserved =
             category: 'overhead_swag',
             type: isRope ? 'rope' : 'cable',
             points,
+            sway: points.map((point) => Math.min(1, Math.max(0, (SWAG_BRACKET_HEIGHT - point.y) / SWAG_MAX_SAG))),
             radius,
             sides: 3,
             vAtlasOffset: isRope ? 0.0 : 0.25,

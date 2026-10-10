@@ -142,6 +142,22 @@ describe('splineRouter', () => {
         }
     });
 
+    it('gives hanging spans sway weights: still at the brackets, freest at the deepest sag', () => {
+        const splines = planRoomSplineDressing(baseRoom, grid, { placements: [] });
+        const swags = splines.filter((s) => s.category === 'overhead_swag');
+        expect(swags.length).toBeGreaterThan(0);
+        for (const swag of swags) {
+            expect(swag.sway).toHaveLength(swag.points.length);
+            expect(swag.sway[0]).toBe(0);
+            expect(swag.sway[swag.sway.length - 1]).toBe(0);
+            expect(Math.max(...swag.sway)).toBeGreaterThan(0.5);
+            const deepest = swag.points.reduce((best, p, i) => (p.y < swag.points[best].y ? i : best), 0);
+            expect(swag.sway[deepest]).toBe(Math.max(...swag.sway));
+        }
+        // Runs fastened along a wall don't swing.
+        for (const vine of splines.filter((s) => s.category === 'wall_crawling_vine')) expect(vine.sway).toBeUndefined();
+    });
+
     describe('doorways', () => {
         // A west door at row 3: the wall cell is open, and the cell inside it is
         // the door lane. Its apron is the lane plus one cell around it.

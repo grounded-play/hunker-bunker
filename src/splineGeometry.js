@@ -191,6 +191,8 @@ export function computeParallelTransportFrames(points) {
  * @param {number} [options.vRepeat=1.0]        Texture repeats per meter of tube length
  * @param {number} [options.layer]              Texture-array layer: when set, v runs unbroken along
  *                                              the tube and every vertex carries `splineLayer`
+ * @param {number[]} [options.sway]             Per-point sway weight (0 fixed, 1 free), written to
+ *                                              `splineSway` on layered tubes (zero when omitted)
  * @returns {THREE.BufferGeometry|null}
  */
 export function buildPrismTubeGeometry(points, {
@@ -199,7 +201,8 @@ export function buildPrismTubeGeometry(points, {
     vAtlasOffset = 0.0,
     vAtlasScale = 0.25,
     vRepeat = 1.0,
-    layer = null
+    layer = null,
+    sway = null
 } = {}) {
     if (!points || points.length < 2) return null;
 
@@ -293,7 +296,15 @@ export function buildPrismTubeGeometry(points, {
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
     geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-    if (Number.isFinite(layer)) geometry.setAttribute('splineLayer', new THREE.BufferAttribute(new Float32Array(totalVerts).fill(layer), 1));
+    if (Number.isFinite(layer)) {
+        geometry.setAttribute('splineLayer', new THREE.BufferAttribute(new Float32Array(totalVerts).fill(layer), 1));
+        // Every layered piece carries sway (zero when fixed) so a chunk's runs merge into one draw.
+        const swayWeights = new Float32Array(totalVerts);
+        if (sway) {
+            for (let i = 0; i < ringCount; i += 1) swayWeights.fill(sway[i] ?? 0, i * ringVerts, (i + 1) * ringVerts);
+        }
+        geometry.setAttribute('splineSway', new THREE.BufferAttribute(swayWeights, 1));
+    }
     geometry.setIndex(new THREE.BufferAttribute(indices, 1));
 
     return geometry;
@@ -412,7 +423,10 @@ export function buildTerminationCollarGeometry(pos, normal, {
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
     geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-    if (Number.isFinite(layer)) geometry.setAttribute('splineLayer', new THREE.BufferAttribute(new Float32Array(totalVerts).fill(layer), 1));
+    if (Number.isFinite(layer)) {
+        geometry.setAttribute('splineLayer', new THREE.BufferAttribute(new Float32Array(totalVerts).fill(layer), 1));
+        geometry.setAttribute('splineSway', new THREE.BufferAttribute(new Float32Array(totalVerts), 1));
+    }
     geometry.setIndex(new THREE.BufferAttribute(indices, 1));
 
     return geometry;
