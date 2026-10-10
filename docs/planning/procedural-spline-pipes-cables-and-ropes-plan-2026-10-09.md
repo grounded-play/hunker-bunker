@@ -487,33 +487,34 @@ if (splineManifest?.length > 0) {
 ## 9. Rollout Roadmap & Verification Plan
 
 ### Phase 1: Pure Mathematical & Geometry Engine
-- [ ] Implement `src/splineGeometry.js` with RMF Parallel Transport and low-poly prism extrusion.
-- [ ] Implement parabolic catenary and filleted Manhattan curve generators.
-- [ ] Unit tests (`src/splineGeometry.test.js`):
+- [x] Implement `src/splineGeometry.js` with RMF Parallel Transport and low-poly prism extrusion.
+- [x] Implement parabolic catenary and filleted Manhattan curve generators.
+- [x] Unit tests (`src/splineGeometry.test.js`):
   - Verify that 3-sided, 4-sided, and 6-sided extrusions generate valid, non-degenerate normal vectors.
   - Verify that vertical lines ($Y$-aligned) do not produce NaN normals or gimbal twists.
   - Verify vertex count formulas: $N \text{ segments} \times M \text{ sides}$.
 
 ### Phase 2: Socket Catalog & Routing Logic
-- [ ] Implement `src/data/propSockets.js` with initial socket coordinates for key machines (`prop_fusion_generator`, `prop_conduit_junction_box`, `prop_icey_frost_manifold`, `prop_coolant_drum_leaking_pool`, `prop_biomech_incubator`, `prop_biomech_tracheal_wall_pipe`).
-- [ ] Implement `src/splineRouter.js` to route connections and ambient ceiling/wall swags.
-- [ ] Unit tests (`src/splineRouter.test.js`):
+- [x] Implement `src/data/propSockets.js` with initial socket coordinates for key machines (`prop_fusion_generator`, `prop_conduit_junction_box`, `prop_icey_frost_manifold`, `prop_coolant_drum_leaking_pool`, `prop_biomech_incubator`, `prop_biomech_tracheal_wall_pipe`).
+- [x] Implement `src/splineRouter.js` to route connections and ambient ceiling/wall swags.
+- [x] Unit tests (`src/splineRouter.test.js`):
   - Determinism test: verify identical point outputs across repeated runs with identical seed.
   - Clearance validation: assert that all overhead swags maintain $Y \ge 2.15\text{m}$ across room interiors.
-  - Clearance validation: assert that floor cables never cross doorway threshold cells.
+  - [ ] Clearance validation: assert that floor cables never cross doorway threshold cells. The router takes `reserved` door-apron cells, but no test asserts it yet.
 
 ### Phase 3: Texture Atlas & Three.js Batch Renderer
-- [ ] Author/pack the unified 2048x2048 PBR atlas (`public/textures/splines/conduit_atlas_pbr.png`) covering steel pipes, biomech trachea, rubber cables, and hemp rope.
-- [ ] Implement `src/splineDressingRenderer.js` with `BufferGeometryUtils.mergeGeometries`.
-- [ ] Hook into `src/threeGame.js` chunk load/unload lifecycle with recursive `.dispose()` safety.
+- [x] ~~Author/pack the unified 2048x2048 PBR atlas~~. Replaced by per-area BC7 KTX2 array layers (wire, vein, pipe, vine, metal) from `scripts/art/build_spline_textures.py`; see Status.
+- [x] Implement `src/splineDressingRenderer.js` with `BufferGeometryUtils.mergeGeometries`.
+- [x] Hook into `src/threeGame.js` chunk load/unload lifecycle with recursive `.dispose()` safety.
 
 ### Phase 4: Biome Theming & Visual Polish
-- [ ] Wire sector themes:
+- [ ] Wire sector themes. Partly done: each area has its own conduit (`AREA_CONDUIT`: bunker wire, bio/cathedral vein, cryo pipe, camp vine). Not done: hazard striping, frost-bloom shader modulation, pulsing umbilicals, camp work lamps:
   - Bunker: Gunmetal + hazard striping + wall brackets.
   - Cryo: Insulated wrap + frost bloom shader modulation.
   - Bio: Wet black latex + pulsating cartilage umbilicals.
   - Camp: Spliced cables + hanging Edison work lamps.
-- [ ] In-game review via furnished-room debug gallery (`/debug/museum` and live gameplay).
+- [ ] In-game review via furnished-room debug gallery (`/debug/museum` and live gameplay). Live gameplay is done (`tests/e2e/probes/spline-captures.spec.js` on the pinned map); the museum gallery is not.
+- [ ] Performance gate below, measured on a Steam Deck. Not yet run.
 
 ### Performance Acceptance Gate (Steam Deck Target):
 1. **Draw Calls:** Exactly **+1 draw call** per active world chunk.

@@ -185,6 +185,7 @@ The design is `docs/season-zero-protocol/05-crafting-matrix-and-salvage-economy.
 - **Not done:**
   - [x] Keyboard key hints in authored UI text are device-aware through `src/inputHints.js` (`8d5c4d06`), including radar, tactical map and dialogue choices. The untranslated source keeps its keyboard wording; the active controller swaps the i18n key.
   - [ ] Verify on the Deck: trade with a squadmate from D-pad ←, the squad radial from D-pad →, and pan the map with the stick.
+    2026-10-10: none of these actions writes a session-log event, so the Deck logs can't confirm them. This needs an owner check.
 
 ## Status log
 

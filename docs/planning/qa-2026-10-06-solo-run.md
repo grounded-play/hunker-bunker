@@ -63,3 +63,7 @@ What the owner said:
 - [ ] **Verify on hardware:**
   - settle a survivor at a camp with a lore terminal nearby, by button and by tap;
   - confirm a Foundry is affordable within one ~25-minute run.
+  - 2026-10-10, from the logs: the 10-07 Deck run entered a Foundry at 16.9 minutes
+    (`foundry-entered`, `6d5fc7ed`). Activation is a saved bank flag, so the log doesn't
+    show it was bought in that run. A survivor settle writes no session-log event, so
+    the logs can't show it either way. Both still need an owner run.

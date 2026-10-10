@@ -604,6 +604,11 @@ for the outstanding M3/M4 Deck measurements or the M5 Art decision listed above.
 - [ ] Repeat the Thursday destruction-window comparison after damage integration;
   retain 76.5 ms presented p95 / 152 ms destruction-window p95 as the measured
   baseline, and leave physical Deck/art gates open until new evidence exists.
+  2026-10-10, from the 10-07 Deck log (`6d5fc7ed`, Act 2, 17 destructible breaks;
+  [Deck evidence note](../reports/deck-destruction-window-2026-10-10.md)): the 20 s after each
+  break averaged 38.8 ms a frame against 35.1 ms elsewhere; the worst single frame was 203 ms, and
+  the rolling p95 read 87–91 ms. That is a different metric from the 152 ms baseline and predates
+  the 10-09/10 KTX2 textures and 25k-triangle props, so this stays open until a paired re-run.
 
 ### Milestones
 

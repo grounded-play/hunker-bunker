@@ -81,12 +81,15 @@ The owner uploaded 39 GLBs, 80 sticker renders and 56 texture renders without na
 - **Pinned-map probe:** 183 world props and about 18k stickers across the 49 mounted chunks, with no shader errors. Draw calls at a maze door rose from 331 to 372.
 - **Retail budget:** raised to 3400 MiB, measured at 3357 MiB. KTX2 joins `.glb` in `asarUnpack` and in `src/assetUrl.js`.
 
-**Still open:**
-- the crash-site seat row (79), which needs hand placement around the console and the modules;
-- prop 80;
-- ambient motion (Part 7);
-- a Deck p95 capture;
-- converting the game's other world textures to KTX2. The owner asked for this as the next pass. An estimate from the files: 983 textures inside models and 521 loose world textures, about 13 GB if every one were loaded unpacked.
+**Still open** (updated 2026-10-10):
+- [ ] the crash-site seat row (79), which needs hand placement around the console and the modules;
+- [ ] prop 80, the hull shard: still not uploaded;
+- [ ] ambient motion (Part 7). Steam, sparks, glows, drips and lamp flicker shipped on 147 props through `src/propFx.js` (`c225a670`). Still missing: dust motes in light cones, cable sway, paper skitter, cloth flutter;
+- [ ] a Deck p95 capture. The newest Deck log is 10-07 (`6d5fc7ed`), from before this pass;
+- [x] model textures to KTX2: every GLB texture ships as Basis UASTC (`36be2b26`); GPU texture memory 3737 → 1717 MiB in the census probe;
+- [x] room-dressing PNG decals to KTX2: 68 baked layers, one draw per room (`5966fb49`);
+- [ ] the 2D sprites (about 449 MB of uncompressed PNG/WebP), not yet converted;
+- [ ] V8: the museum walk for props 41–79 (Sprint 53).
 
 
 - **Part 0:** why the world still reads as empty, taken from the code.

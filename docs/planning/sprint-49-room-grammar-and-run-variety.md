@@ -327,11 +327,12 @@ Co-op peers must agree on version and plan digest before mounting geometry.
 - [x] **G5 — camp/start variants.** Add eligible-site scoring and three safe start
   scenarios (sheltered crash bay, maintenance landing, breached cargo court);
   preserve camp IDs, rings, tutorial order and multiplayer crash plans.
-  Pure profiles, anchors and deterministic site scoring are implemented; live
-  expedition selection, persistence and runtime binding remain open.
+  Pure profiles, anchors and deterministic site scoring are implemented; the world
+  plan selects and stores both (`a5d57dfb`, 2026-10-07), bound in the solo pilot.
 - [ ] **G6 — acceptance and rollout.** Run seed sweeps, co-op/persistence journeys,
   gameplay captures, destruction stress and physical Deck comparisons. Enable only
   the profiles that pass; record remaining exceptions and rollback behavior.
+  2026-10-10: not started. No seed sweep, capture set or Deck log has run with room grammar on.
 
 Before each commit, update this checklist and the continuation journal with scope,
 evidence, limitations and the next bounded step. After committing, record the hash

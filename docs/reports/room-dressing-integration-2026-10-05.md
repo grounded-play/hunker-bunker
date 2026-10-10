@@ -54,7 +54,14 @@ is claimed. The room grammar remains opt-in.
   setpieces; current pilot module reservations do not contain required services.
 - [x] Finished key-art maintenance hall, including art/camera review.
 - [ ] Repeat destruction-window profiling against Thursday's 152 ms p95 baseline.
+  2026-10-10, from the 10-07 Deck log (`6d5fc7ed`, Act 2, 17 destructible breaks;
+  [Deck evidence note](deck-destruction-window-2026-10-10.md)): the 20 s after each
+  break averaged 38.8 ms a frame against 35.1 ms elsewhere; the worst single frame was 203 ms, and
+  the rolling p95 read 87–91 ms. That is a different metric from the 152 ms baseline and predates
+  the 10-09/10 KTX2 textures and 25k-triangle props, so this stays open until a paired re-run.
 - [x] Broader area profiles and cathedral coverage.
-- [ ] Live camps and start variants. Pure G5 profiles, semantic anchors and
-  deterministic eligible-site scoring landed on 2026-10-07; expedition-plan
-  persistence and runtime binding remain open.
+- [x] Live camps and start variants. Pure G5 profiles, semantic anchors and
+  deterministic eligible-site scoring landed on 2026-10-07; the world plan now
+  selects and stores the arrival scenario and camp court (`roomGrammarSites`,
+  `a5d57dfb`), bound at runtime in the solo room-grammar pilot. Showing the
+  arrival at the crash site moved to G6.

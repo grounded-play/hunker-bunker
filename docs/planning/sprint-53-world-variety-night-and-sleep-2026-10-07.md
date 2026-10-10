@@ -121,7 +121,7 @@ Every prompt below and every lighting change is checked against this list.
   - **Kinds** (A2): four visually distinct boxes, from common courier cases to rare biomech reliquary pods, plus a sealed quarantine crate that always holds the riskier rolls, and a keycard-locked black-site lockbox.
   - **Co-op:** opened once for the squad, synced like broken props; the loot is shared at full value (Sprint 51 rule).
   - **Owner decision 2:** whether ambush and hazard rolls are in.
-- [ ] **V7. Quest objects.** Today every camp quest target is the same generic `quest_objective_node`. Each quest gets its own object (A3), so you know what you're looking for at a glance:
+- [x] **V7. Quest objects.** Done 2026-10-07 (`ae0e5add`: `src/questObjects.js`, plus a beacon per active objective). Today every camp quest target is the same generic `quest_objective_node`. Each quest gets its own object (A3), so you know what you're looking for at a glance:
 
   | Quest | Object |
   |---|---|
@@ -136,6 +136,7 @@ Every prompt below and every lighting change is checked against this list.
 
   Objectives also get a world-space beacon (a thin light pillar plus the objective glyph) while the quest is active.
 - [ ] **V8. Scale.** Every new model goes through the museum walk (`tests/e2e/probes/museum-walk.spec.js`) and gets a `maxSpan` if needed before it is placed.
+  2026-10-10: the 39 lived-in pass 2 props (props 41–79) carry a `maxSpan` and were checked in the floor-blend and articulation probes, but have not been through the museum walk yet.
 
 ---
 

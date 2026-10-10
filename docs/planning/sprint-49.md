@@ -593,7 +593,8 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
   `isWallBackedPropType` in `roomPopulation.js`; 20 props optimized and registered in `world3dOverlay.js`;
   rigged 10-bone umbilical attacker with Three.js FK controller; 19 interactive prop specs in `propInteractions.js`;
   semantic variant arrays in `propVariants.js`.
-- [ ] Finish live camp/start selection and binding (G5) and final Deck sweeps/rollout (G6);
+- [x] Live camp/start selection and binding (G5): done 2026-10-07 in `a5d57dfb`.
+- [ ] Final Deck sweeps/rollout (G6);
   room grammar stays opt-in pending gameplay and hardware acceptance.
 
 - [x] G3 persistence: dressing break IDs survive maze snapshots and unloaded remote
@@ -635,6 +636,11 @@ text and stats were reconciled in all 7 locales to match its actual consumer in 
   prop/prefab coverage; completed wall and ceiling attachment contracts in `roomPopulation.js`.
 - [ ] Record three route playthroughs and paired Deck density/destruction results;
   Thursday's 76.5 ms presented p95 / 152 ms destruction p95 remains the baseline.
+  2026-10-10, from the 10-07 Deck log (`6d5fc7ed`, Act 2, 17 destructible breaks;
+  [Deck evidence note](../reports/deck-destruction-window-2026-10-10.md)): the 20 s after each
+  break averaged 38.8 ms a frame against 35.1 ms elsewhere; the worst single frame was 203 ms, and
+  the rolling p95 read 87–91 ms. That is a different metric from the 152 ms baseline and predates
+  the 10-09/10 KTX2 textures and 25k-triangle props, so this stays open until a paired re-run.
 
 - [ ] **Owner: world design + gameplay · Size: L.** Use the existing seed portfolio
   to tune room scale, corridor rhythm, camp/hive identity, reward placement and

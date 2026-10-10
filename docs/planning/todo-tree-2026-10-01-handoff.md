@@ -132,11 +132,17 @@ sequence 552, retained gameplay average 58.51 ms. No guest-side acceptance infer
 - [x] Add connection-churn diagnostics and one-sided session analysis.
 - [ ] Diagnose connection churn using paired clients and relay disconnect logs;
   instrumentation alone does not establish the cause.
+  2026-10-10: the churn has not come back. Every paired session from 10-05 to 10-07
+  held one relay connection ([session-log review](../reports/session-log-review-2026-10-08.md)).
+  The cause was never confirmed; close this only if it stays away on the next paired run.
 - [x] Add hit rejection diagnostics and authoritative health/resume tests.
 - [x] Decide duel versus survival-skirmish rules before altering ship/environment
   deaths; synchronize round completion and rematch instead of unilateral retry.
 - [ ] Measure after fixes: CPU/frame profiling, door effects, shadows and resources.
   GPU timing is not presented FPS; no 30/60 FPS or hardware acceptance claimed.
+  2026-10-10: presented-frame p95 from the logs is 73–177 ms on the Deck and 29–57 ms on the
+  RTX 2070 S (10-05 to 10-07). The light-toggle stall fix (`4a9d7fa6`) and the KTX2 textures
+  (`36be2b26`) have not been measured on hardware yet.
 - [ ] Test host migration and simultaneous manual door actions; this increment
   stops competing automatic decisions, not a full server-authoritative door protocol.
 
@@ -210,9 +216,13 @@ The game-development state guidance keeps campaign and PvP mitigation separate.
   lifecycle, i-frame and spawn guards, while relay `weaponHit` has no matching
   spawn-protection deadline. Move protection into the relay with deployment-ready
   timing and round IDs before bypassing local protection on accepted hits.
+  2026-10-10: the relay half landed in `f7b52737` (round IDs, readiness, spawn
+  protection). Bypassing local protection on accepted hits has not been done.
 - [x] Shared rematch/TRY AGAIN synchronization implemented in Iteration 9.
 - [ ] Environmental damage/healing synchronization remains open. Do not overwrite
   local HP with a higher server value before accounting for environmental losses.
+  2026-10-10: healing is synchronized in PvP (`051a5334`: `playerHealed` and
+  `playerHealthSync`, with a heal budget). Environmental damage is still local only.
 - [x] The shared deployment-ready/protected/alive/dead relay contract landed in
   `f7b52737`, including round IDs, loading gates and spawn protection. Environmental
   health synchronization and paired-client reconnect acceptance remain open below.
