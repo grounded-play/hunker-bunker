@@ -414,9 +414,10 @@ and that is where "blocky" comes from:
 3. **Mazes dominate.** The maze landform takes 50–58% of chunks (`LANDFORM_WEIGHTS`,
    `landforms.js:25`). Field outcrops are blobs of one to four cubes.
 4. **Pits look stamped out.** Holes are stacked discs with scalloped rims over a flat brown void.
-5. **Cryo uses the bunker's walls.** `BIOME_SKIN` maps cryo to the space skin
-   (`kitGrammar.js:25`), so only the floor changes. Compare the bunker and cryo sheets: the same
-   cube field in a different tint.
+5. **Cryo walls are bunker walls in different paint.** The chunk wall shader does blend cryo and
+   bio textures by distance from the ship, but the geometry is identical everywhere, and the room
+   kit maps cryo to the space skin (`BIOME_SKIN`, `kitGrammar.js:25`). Compare the bunker and cryo
+   sheets: the same cube field in a different tint.
 6. **Light is even.** No part of a frame is clearly brighter than another, and fog washes the
    aerial view into a single colour.
 
@@ -554,7 +555,7 @@ uncommitted edits from other agents.
 | Lane | Scope | Main files | Depends on | Claimed |
 |---|---|---|---|---|
 | A. Room greyboxes | doctrine P0 rooms; flat contract first | `src/data/roomBuilds.js`, `src/data/cathedralBlueprints.js` | B for final wall look; E only for later traversable tiers | **Codex/root — active 2026-10-10; `medical_triage` proof implemented** |
-| B. Wall autotile and height tiers | §7.2 | wall build in `threeGame.js`, wall shader, new wall-piece module, Blender kit | — | — (Claude lived-in lane available) |
+| B. Wall autotile and height tiers | §7.2 | wall build in `threeGame.js`, wall shader, new wall-piece module, Blender kit | — | **Claude lived-in lane — active 2026-10-10; slice 1 in §9.7** |
 | C. Landform mix and rhythm | §7.3 | `src/landforms.js` | — | — |
 | D. Pits and edges | §7.4 | pit/void build in `threeGame.js` | B | — |
 | E. Vertical tiers | Pillar 1, §8 | `src/verticalWfc.js`, heightmap | A | — |
@@ -570,9 +571,11 @@ uncommitted edits from other agents.
 - **Every lane posts before/after sheets** plus `renderer.info.render.calls` and frame time.
   Quality is never traded for FPS.
 
-### 9.4 Decisions for the owner
+### 9.4 Owner decisions
 
-| ID | Decision | Recommendation |
+The owner answered "yes" to all five recommendations on 2026-10-10; they are now decisions.
+
+| ID | Question | Decided (owner, 2026-10-10) |
 |---|---|---|
 | D1 | Walkable tiers (ramps into sumps, steps onto daises) now, or visual-only tiers first? | Visual-only first; walkable after the §8 checks pass on one room. |
 | D2 | Target maze share? | 25% or less. |
@@ -609,6 +612,29 @@ Lane B on two chunks, the spawn field and a neighbouring maze:
 
 This shows whether the blocky read changes before any room is rebuilt.
 
+### 9.7 Lane B work log (Claude lived-in lane)
+
+**Slice 1: chunk walls stop being cubes.** In progress.
+
+- **Scope.** The standing walls of the chunk terrain outside rooms. Room boundary walls stay as
+  they are: lane A owns the rooms, and the cutaway rewrites those instances every time the camera
+  turns.
+- **Pieces.** Each wall cell reads which of its four sides open onto floor. Every exposed outer
+  corner is cut at 45° by 0.3 m (D4), giving four pieces: block (no exposed corner), chamfer (one),
+  end cap (two, one open side) and post (four, a lone pillar, now an octagonal column). A diagonal
+  run of cells becomes a faceted diagonal wall instead of a staircase. Collision, the grid, the
+  radar and pathing are untouched. One instanced pool per room style and piece; destruction
+  still zeroes the cell's instance.
+- **Heights.** The per-cell random height roll is replaced by a coherent field: quantised value
+  noise over world coordinates, inside each landform's existing range. Neighbouring walls share a
+  height and change in steps every few cells, so the skyline reads as built runs, not noise.
+- **Code.** `src/wallAutotile.js` (pure, tested) and its use in the chunk wall build in
+  `threeGame.js`. Textures need no work: the wall shader projects in world space.
+- **Not in this slice:** dressed wall tops, plinths, tall and towering tiers (D3), cryo geometry,
+  natural rock and ice contours. Those are slice 2.
+- **Acceptance.** The §9.3 capture spots before and after; draw calls per chunk rise by at most
+  the three new piece pools; the full unit suite stays green.
+
 ## 10. Status log
 
 - 2026-10-10: §1–6 drafted (blueprints, pillars, contract). §7–9 added: chunk-world diagnosis
@@ -616,3 +642,6 @@ This shows whether the blocky read changes before any room is rebuilt.
 - 2026-10-10: Documents reconciled around the audited flat authored-room contract. Lane A claimed;
   `medical_triage` P0A geometry implemented and reviewed in the isometric showroom; actual gameplay
   camera sign-off remains open.
+- 2026-10-10: Owner said yes to D1–D5. Lane B claimed by the Claude lived-in lane; slice 1
+  (chamfered wall pieces, coherent heights) started; see §9.7. §7.1 corrected: cryo walls do
+  change texture, only their geometry is shared.
