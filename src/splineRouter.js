@@ -49,6 +49,8 @@ const MAX_CRAWLERS_PER_ROOM = 4;
 const SWAG_BRACKET_HEIGHT = 2.42;
 const SWAG_MAX_SAG = 0.2;
 const MIN_SIDES = 6;
+// Below this a conduit is in the way of someone walking through a door.
+const HEAD_CLEARANCE = 1.9;
 const AREA_CONDUIT = Object.freeze({ bunker: 'wire', reward: 'wire', bio: 'vein', giger: 'vein', cryo: 'pipe', camp: 'vine' });
 
 export function planRoomSplineDressing(room, grid, { placements = [], reserved = [], dressingItems = [] } = {}) {
@@ -57,6 +59,29 @@ export function planRoomSplineDressing(room, grid, { placements = [], reserved =
     const random = seededRandom(stableHash(`${room.id ?? 'room'}:splines:v2`));
     const reservedSet = reserved instanceof Set ? reserved : new Set(reserved);
     const splines = [];
+
+    // Door aprons: each door lane plus one cell around it, the same apron
+    // room population keeps clear. No conduit crosses one below head height.
+    const doorApron = new Set();
+    for (const lane of room.navigation?.doorLanes ?? []) {
+        for (let dz = -1; dz <= 1; dz += 1) {
+            for (let dx = -1; dx <= 1; dx += 1) doorApron.add(keyOf(lane.x + dx, lane.y + dz));
+        }
+    }
+    const blocksDoorway = (points) => {
+        if (!doorApron.size) return false;
+        for (let i = 1; i < points.length; i += 1) {
+            const a = points[i - 1];
+            const b = points[i];
+            const steps = Math.max(1, Math.ceil(a.distanceTo(b) / 0.05));
+            for (let k = 0; k <= steps; k += 1) {
+                const t = k / steps;
+                if (a.y + (b.y - a.y) * t >= HEAD_CLEARANCE) continue;
+                if (doorApron.has(keyOf(Math.round(a.x + (b.x - a.x) * t), Math.round(a.z + (b.z - a.z) * t)))) return true;
+            }
+        }
+        return false;
+    };
 
     // Localized theme conduit profile tuning
     const themeFamily = room.theme?.split('-')?.[0] ?? 'bunker';
@@ -138,9 +163,6 @@ export function planRoomSplineDressing(room, grid, { placements = [], reserved =
             const dist = sA.worldPos.distanceTo(sB.worldPos);
             if (dist > 8.5) continue;
 
-            sA.connected = true;
-            sB.connected = true;
-
             const radius = Math.min(sA.socket.radius, sB.socket.radius);
             const sides = Math.max(sA.socket.sides, sB.socket.sides);
             const vOffset = sA.socket.vAtlasOffset ?? vAtlasOffset;
@@ -154,6 +176,10 @@ export function planRoomSplineDressing(room, grid, { placements = [], reserved =
                     ...evaluateCatenaryPoints(pStart, pEnd, sag, 6),
                     sB.worldPos.clone()
                 ];
+                // Across a doorway: leave both sockets to run to a wall instead.
+                if (blocksDoorway(points)) continue;
+                sA.connected = true;
+                sB.connected = true;
                 splines.push({
                     id: `${room.id}:sock:${sA.socket.id}_${sB.socket.id}`,
                     category: 'socket_connection',
@@ -177,6 +203,9 @@ export function planRoomSplineDressing(room, grid, { placements = [], reserved =
                     sB.worldPos.clone()
                 ];
                 const points = evaluateFilletedManhattanPoints(waypoints, 0.15, 3);
+                if (blocksDoorway(points)) continue;
+                sA.connected = true;
+                sB.connected = true;
                 splines.push({
                     id: `${room.id}:sock:${sA.socket.id}_${sB.socket.id}`,
                     category: 'socket_connection',
@@ -204,7 +233,7 @@ export function planRoomSplineDressing(room, grid, { placements = [], reserved =
     const faces = [];
     for (const cell of room.interior) {
         for (const [dx, dz] of WALL_DIRECTIONS) {
-            if (isWallTile(cell.x + dx, cell.y + dz)) faces.push({ x: cell.x, z: cell.y, dx, dz });
+            if (isWallTile(cell.x + dx, cell.y + dz) && !doorApron.has(keyOf(cell.x, cell.y))) faces.push({ x: cell.x, z: cell.y, dx, dz });
         }
     }
 
@@ -214,16 +243,26 @@ export function planRoomSplineDressing(room, grid, { placements = [], reserved =
         if (sock.connected) continue;
         sock.connected = true;
         const radius = sock.socket.radius;
-        let best = null;
-        for (const face of faces) {
-            const point = new THREE.Vector3(face.x + face.dx * faceDistance(radius), 0.25, face.z + face.dz * faceDistance(radius));
-            const distance = Math.hypot(point.x - sock.worldPos.x, point.z - sock.worldPos.z);
-            if (!best || distance < best.distance) best = { point, face, distance };
-        }
-        if (!best || best.distance > 6) continue;
         const leadOut = sock.worldPos.clone().addScaledVector(sock.worldNorm, 0.3);
-        const atWall = new THREE.Vector3(best.point.x, Math.max(0.25, leadOut.y), best.point.z);
-        const points = evaluateFilletedManhattanPoints([sock.worldPos.clone(), leadOut, atWall, best.point.clone()], 0.12, 3);
+        // The nearest wall face whose run keeps clear of the doorways.
+        const candidates = faces
+            .map((face) => {
+                const point = new THREE.Vector3(face.x + face.dx * faceDistance(radius), 0.25, face.z + face.dz * faceDistance(radius));
+                return { point, face, distance: Math.hypot(point.x - sock.worldPos.x, point.z - sock.worldPos.z) };
+            })
+            .filter((candidate) => candidate.distance <= 6)
+            .sort((a, b) => a.distance - b.distance);
+        let best = null;
+        let points = null;
+        for (const candidate of candidates) {
+            const atWall = new THREE.Vector3(candidate.point.x, Math.max(0.25, leadOut.y), candidate.point.z);
+            const route = evaluateFilletedManhattanPoints([sock.worldPos.clone(), leadOut, atWall, candidate.point.clone()], 0.12, 3);
+            if (blocksDoorway(route)) continue;
+            best = candidate;
+            points = route;
+            break;
+        }
+        if (!best) continue;
         splines.push({
             id: `${room.id}:orphan:${sock.socket.id}`,
             category: 'socket_escape',

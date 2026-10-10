@@ -500,7 +500,7 @@ if (splineManifest?.length > 0) {
 - [x] Unit tests (`src/splineRouter.test.js`):
   - Determinism test: verify identical point outputs across repeated runs with identical seed.
   - Clearance validation: assert that all overhead swags maintain $Y \ge 2.15\text{m}$ across room interiors.
-  - [ ] Clearance validation: assert that floor cables never cross doorway threshold cells. The router takes `reserved` door-apron cells, but no test asserts it yet.
+  - [x] Clearance validation: floor cables never cross a door apron (the door lane plus one cell, from `room.navigation.doorLanes`). Below 1.9 m, a socket pair whose run would cross one is left unpaired, and each socket runs to the nearest wall face it can reach without crossing (2026-10-10, `doorways` tests).
 
 ### Phase 3: Texture Atlas & Three.js Batch Renderer
 - [x] ~~Author/pack the unified 2048x2048 PBR atlas~~. Replaced by per-area BC7 KTX2 array layers (wire, vein, pipe, vine, metal) from `scripts/art/build_spline_textures.py`; see Status.

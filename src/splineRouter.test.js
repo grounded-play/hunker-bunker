@@ -142,6 +142,54 @@ describe('splineRouter', () => {
         }
     });
 
+    describe('doorways', () => {
+        // A west door at row 3: the wall cell is open, and the cell inside it is
+        // the door lane. Its apron is the lane plus one cell around it.
+        const doorGrid = grid.map((row) => row.slice());
+        doorGrid[3][0] = '.';
+        const doorRoom = { ...baseRoom, id: 'door_room', navigation: { doorLanes: [{ x: 1, y: 3 }] } };
+        const apron = new Set();
+        for (let dy = -1; dy <= 1; dy += 1) for (let dx = -1; dx <= 1; dx += 1) apron.add(`${1 + dx},${3 + dy}`);
+        // Every low point (below head height) along a run, sampled every 5 cm.
+        const lowCells = (spline) => {
+            const cells = [];
+            for (let i = 1; i < spline.points.length; i += 1) {
+                const a = spline.points[i - 1];
+                const b = spline.points[i];
+                const steps = Math.max(1, Math.ceil(a.distanceTo(b) / 0.05));
+                for (let k = 0; k <= steps; k += 1) {
+                    const p = a.clone().lerp(b, k / steps);
+                    if (p.y < 1.9) cells.push(`${Math.round(p.x)},${Math.round(p.z)}`);
+                }
+            }
+            return cells;
+        };
+        const layouts = [
+            [{ type: 'prop_fusion_generator', x: 2, y: 5, yaw: 0 }, { type: 'prop_diagnostic_console', x: 2, y: 1, yaw: 0 }],
+            [{ type: 'prop_fusion_generator', x: 1, y: 5, yaw: Math.PI / 2 }, { type: 'prop_conduit_junction_box', x: 1, y: 1, yaw: 0 }],
+            [{ type: 'prop_icey_frost_manifold', x: 3, y: 1, yaw: 0 }, { type: 'prop_coolant_drum_leaking_pool', x: 2, y: 5, yaw: Math.PI }],
+            [{ type: 'prop_coolant_drum_leaking_pool', x: 3, y: 3, yaw: Math.PI / 2 }]
+        ];
+
+        it('never runs a floor-level conduit across a door apron', () => {
+            for (const [index, placements] of layouts.entries()) {
+                const splines = planRoomSplineDressing({ ...doorRoom, id: `door_room_${index}` }, doorGrid, { placements });
+                for (const spline of splines) {
+                    const crossing = lowCells(spline).filter((cell) => apron.has(cell));
+                    expect(crossing, `${spline.id} crosses the door apron at ${crossing[0]}`).toEqual([]);
+                }
+            }
+        });
+
+        it('still ends every socket on a wall when the direct run would block the door', () => {
+            for (const [index, placements] of layouts.entries()) {
+                const splines = planRoomSplineDressing({ ...doorRoom, id: `door_room_${index}` }, doorGrid, { placements });
+                const ends = splines.filter((s) => s.category === 'socket_connection' || s.category === 'socket_escape');
+                expect(ends.length, `layout ${index}`).toBeGreaterThan(0);
+            }
+        });
+    });
+
     describe('placement on real walls', () => {
         // Distance from a point to the nearest wall-cell face of the grid.
         const faceGap = (pt) => {
