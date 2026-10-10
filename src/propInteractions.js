@@ -642,10 +642,14 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
         }
     },
 
-    // 20. Cuttable Procedural Splines: Wires, Biomech Veins, Cryo Pipes, Camp Vines
+    // 20. Cuttable Procedural Splines: Wires, Biomech Veins, Cryo Pipes, Camp Vines.
+    //     Shoot them or cut them with E; either way they sever (threeGame.severSplineRun).
     spline_wire_bunker: {
         hp: 15,
-        canInteract: false,
+        canInteract: true,
+        interactPrompt: '[E] CUT POWER CABLE',
+        // Cut by hand: the same break as shooting it (severed halves, effects, co-op).
+        onInteract: (game, sprite) => Boolean(game.breakScatterProp?.(sprite)),
         onDestroy: (game, prop) => {
             game.spawnPhysicalBurst?.(prop.position.x, prop.position.z, { color: 0x38bdf8, count: 14, upward: 0.35, spread: 1.8 });
             safePlaySound('ambient_sparks', { volume: 0.7, playbackRate: 1.2 });
@@ -663,7 +667,10 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
     },
     spline_vein_bio: {
         hp: 15,
-        canInteract: false,
+        canInteract: true,
+        interactPrompt: '[E] SEVER VEIN',
+        // Cut by hand: the same break as shooting it (severed halves, effects, co-op).
+        onInteract: (game, sprite) => Boolean(game.breakScatterProp?.(sprite)),
         onDestroy: (game, prop) => {
             game.spawnPhysicalBurst?.(prop.position.x, prop.position.z, { color: 0x84cc16, count: 18, upward: 0.3, spread: 1.5 });
             safePlaySound('enemy_hit_soft', { volume: 0.8, playbackRate: 0.6 });
@@ -672,7 +679,10 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
     },
     spline_pipe_cryo: {
         hp: 20,
-        canInteract: false,
+        canInteract: true,
+        interactPrompt: '[E] CRACK COOLANT PIPE',
+        // Cut by hand: the same break as shooting it (severed halves, effects, co-op).
+        onInteract: (game, sprite) => Boolean(game.breakScatterProp?.(sprite)),
         onDestroy: (game, prop) => {
             game.spawnPhysicalBurst?.(prop.position.x, prop.position.z, { color: 0xa5f3fc, count: 20, upward: 0.4, spread: 2.0 });
             safePlaySound('ambient_steam_hiss', { volume: 0.7, playbackRate: 0.9 });
@@ -689,7 +699,10 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
     },
     spline_vine_camp: {
         hp: 10,
-        canInteract: false,
+        canInteract: true,
+        interactPrompt: '[E] CUT VINE',
+        // Cut by hand: the same break as shooting it (severed halves, effects, co-op).
+        onInteract: (game, sprite) => Boolean(game.breakScatterProp?.(sprite)),
         onDestroy: (game, prop) => {
             game.spawnPhysicalBurst?.(prop.position.x, prop.position.z, { color: 0xd97706, count: 10, upward: 0.2, spread: 1.2 });
             safePlaySound('metal_stress', { volume: 0.4, playbackRate: 2.2 });

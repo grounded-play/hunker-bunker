@@ -141,4 +141,70 @@ describe('splineRouter', () => {
             }
         }
     });
+
+    describe('placement on real walls', () => {
+        // Distance from a point to the nearest wall-cell face of the grid.
+        const faceGap = (pt) => {
+            let best = Infinity;
+            for (let z = 0; z < grid.length; z += 1) {
+                for (let x = 0; x < grid[z].length; x += 1) {
+                    if (grid[z][x] !== '#') continue;
+                    const dx = Math.max(0, Math.abs(pt.x - x) - 0.5);
+                    const dz = Math.max(0, Math.abs(pt.z - z) - 0.5);
+                    best = Math.min(best, Math.hypot(dx, dz));
+                }
+            }
+            return best;
+        };
+
+        it('hugs a wall face with every wall vine, never sinking into it', () => {
+            for (const theme of ['bunker-standard', 'bio-nest', 'cryo-rough', 'camp-fortified']) {
+                const splines = planRoomSplineDressing({ ...baseRoom, id: `walls:${theme}`, theme }, grid, { placements: [] });
+                for (const vine of splines.filter((s) => s.category === 'wall_crawling_vine')) {
+                    for (const pt of vine.points) {
+                        const gap = faceGap(pt);
+                        expect(gap, theme).toBeGreaterThanOrEqual(vine.radius - 1e-6);
+                        expect(gap, theme).toBeLessThan(vine.radius + 0.06);
+                    }
+                }
+            }
+        });
+
+        it('crawls all four walls across rooms, not only the north one', () => {
+            const sides = new Set();
+            for (let i = 0; i < 24; i += 1) {
+                const splines = planRoomSplineDressing({ ...baseRoom, id: `sides:${i}`, theme: 'bio-nest' }, grid, { placements: [] });
+                for (const vine of splines.filter((s) => s.category === 'wall_crawling_vine')) {
+                    // A run along a wall keeps one coordinate fixed.
+                    const xs = vine.points.map((pt) => pt.x);
+                    const zs = vine.points.map((pt) => pt.z);
+                    if (Math.max(...zs) - Math.min(...zs) < 0.01) sides.add(zs[0] < 3.5 ? 'north' : 'south');
+                    else if (Math.max(...xs) - Math.min(...xs) < 0.01) sides.add(xs[0] < 3.5 ? 'west' : 'east');
+                }
+            }
+            expect([...sides].sort()).toEqual(['east', 'north', 'south', 'west']);
+        });
+
+        it('hangs swags along a wall top between brackets, above head height', () => {
+            const splines = planRoomSplineDressing({ ...baseRoom, id: 'swag-wall' }, grid, { placements: [] });
+            for (const swag of splines.filter((s) => s.category === 'overhead_swag')) {
+                for (const pt of swag.points) {
+                    expect(pt.y).toBeGreaterThanOrEqual(2.15);
+                    expect(faceGap(pt)).toBeLessThan(swag.radius + 0.06);
+                }
+            }
+        });
+
+        it('ends orphan sockets on a wall face and turns sockets with the prop like three.js does', () => {
+            const placements = [{ type: 'prop_diagnostic_console', x: 3, y: 3, yaw: Math.PI / 2 }];
+            const splines = planRoomSplineDressing({ ...baseRoom, id: 'orphan-wall' }, grid, { placements });
+            const escape = splines.find((s) => s.category === 'socket_escape');
+            const first = escape.points[0];
+            // Socket local (0, 0.35, -0.25) turned +90 deg about Y lands at (-0.25, 0.35, 0).
+            expect(first.x).toBeCloseTo(3 - 0.25);
+            expect(first.z).toBeCloseTo(3);
+            const last = escape.points[escape.points.length - 1];
+            expect(faceGap(last)).toBeLessThan(escape.radius + 0.06);
+        });
+    });
 });

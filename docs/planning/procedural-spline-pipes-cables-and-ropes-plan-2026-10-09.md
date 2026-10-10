@@ -34,6 +34,20 @@ The router, geometry and renderer shipped in c225a670. This pass made the condui
   - The per-type destruction effects in `propInteractions.js` (electric damage, bile, cryo burst) still fire.
 - **Verified by** `tests/e2e/probes/spline-captures.spec.js`. On the pinned map it found 51 vine, 23 vein, 5 pipe and 2 wire runs, and cut one of each.
 
+**Audit, 2026-10-09 evening.** Fixed:
+- **Wall runs floated in the room.** They sat at cell centre plus 8 cm, about 0.6 m off the face. They now hug the face, using the drawn radius so thick runs never sink in.
+- **Only north walls ever got runs.** All four walls are scanned now, with up to 4 crawlers per room.
+- **Runs anchored to dressing that wasn't built.** The spline pass re-planned dressing without `recentModels`. It now reuses the chunk's actual plan.
+- **Prop sockets rotated the wrong way.** They used the inverse of three.js `rotation.y`.
+- **Orphan sockets never reached a wall.** They dropped to a mid-floor collar. They now run to the nearest wall face.
+- **Overhead swags hung in mid-air.** They spanned the room 0.1 m inside one wall to 0.9 m past the other, with no ceiling. They now hang along a wall top between brackets at 2.42 m.
+
+Added:
+- **Cut by hand.** Conduits can be cut with E (`[E] CUT POWER CABLE`, `SEVER VEIN`, `CRACK COOLANT PIPE`, `CUT VINE`), through the same break path as shooting them.
+- **One draw call.** A chunk's intact cuttable runs draw as one mesh, rebuilt when one is cut. Before, each run was its own draw call.
+
+Covered by new router tests: face hugging, all four walls, swag height and placement, orphan routing, and socket yaw.
+
 ## 1. Executive Summary & Vision
 
 The environments in *Hunker-Bunker* feature powerful individual hero props (generators, cryo manifolds, bio-incubators, wall terminals) and static clutter (crates, oil drums, wall decals). However, industrial and biomechanical spaces in the real world—and in iconic industrial horror like *Alien* and H.R. Giger’s biomechanical nightmares—derive their claustrophobic, "lived-in" atmosphere from **continuous infrastructure**:

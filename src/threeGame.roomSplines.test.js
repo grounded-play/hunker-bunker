@@ -74,15 +74,18 @@ describe('ThreeGame room splines (pipes, cables, and rigging)', () => {
         expect(cuttableColliders.length).toBeGreaterThan(0);
 
         const targetCollider = cuttableColliders[0];
-        const splineMesh = targetCollider.userData.splineMesh;
-        expect(splineMesh).toBeTruthy();
-        expect(splineMesh.visible).toBe(true);
+        // Every intact cuttable run draws from one batch mesh for the chunk.
+        const batch = targetCollider.userData.splineBatch;
+        expect(batch.mesh.name).toBe('chunk-cuttable-splines');
+        expect(batch.items).toContain(targetCollider.userData.splineItem);
+        expect(group.children.filter((child) => child.name === 'chunk-cuttable-splines')).toHaveLength(1);
 
         // Sever the spline via breakScatterProp
         game.breakScatterProp(targetCollider);
 
-        // Mesh is severed/hidden immediately
-        expect(splineMesh.visible).toBe(false);
+        // The cut run leaves the batch, which is rebuilt without it.
+        expect(batch.items).not.toContain(targetCollider.userData.splineItem);
+        expect(group.children.filter((child) => child.name === 'chunk-cuttable-splines').length).toBeLessThanOrEqual(1);
         // The run hangs in two halves, and both loose ends keep an effect running.
         const severed = group.getObjectByName(`severed-spline-${targetCollider.userData.splineId}`);
         expect(severed?.userData.isSeveredSpline).toBe(true);

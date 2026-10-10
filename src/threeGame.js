@@ -30830,6 +30830,8 @@ export class ThreeGame {
                 occupied: plan.placements,
                 recentModels
             });
+            // The spline pass anchors runs to this exact plan (addRoomSplines).
+            (group.userData.roomDressingPlans ??= new Map()).set(room.id, dressing.items);
             for (const item of dressing.items) {
                 item.stableId = item.id;
                 item.id = resolveRoomDressingIdentity(item, this.brokenPropScatterKeys, { multiplayer: this.isMultiplayer });
@@ -30933,21 +30935,22 @@ export class ThreeGame {
         if (!group || rooms.length === 0) return null;
         const originX = chunkX * this.chunkSize;
         const originZ = chunkY * this.chunkSize;
-        const centerX = originX + this.chunkSize * 0.5;
-        const centerZ = originZ + this.chunkSize * 0.5;
-        const biome = this.getBiomeKeyForWorldPosition?.(centerX, centerZ) ?? 'bunker';
 
         const allSplines = [];
         for (const room of rooms) {
             if (!room.interior?.length) continue;
-            const dressing = planRoomDressing(room, metadata.dressingGrid ?? grid, {
-                reserved: room.populationPlan?.reserved,
-                occupied: room.populationPlan?.placements
-            });
+            // Anchor to the dressing actually built in this chunk; re-planning
+            // here (without addRoomDressing's shared recentModels) produced a
+            // different plan, so runs ended at props and decals that weren't there.
+            const dressingItems = group.userData.roomDressingPlans?.get(room.id)
+                ?? planRoomDressing(room, metadata.dressingGrid ?? grid, {
+                    reserved: room.populationPlan?.reserved,
+                    occupied: room.populationPlan?.placements
+                }).items;
             const splines = planRoomSplineDressing(room, metadata.dressingGrid ?? grid, {
                 placements: room.populationPlan?.placements ?? [],
                 reserved: room.populationPlan?.reserved ?? [],
-                dressingItems: dressing?.items ?? []
+                dressingItems
             });
             for (const item of splines) {
                 const worldPoints = item.points?.map((pt) => new THREE.Vector3(pt.x + originX, pt.y, pt.z + originZ));
@@ -30968,45 +30971,64 @@ export class ThreeGame {
         }
         if (allSplines.length === 0) return null;
 
+        // Fixed runs merge into one mesh; the intact cuttable runs merge into
+        // a second, rebuilt only when one is cut (one draw each, however many
+        // runs the chunk has). Runs cut on an earlier visit come back severed.
+        const cuttable = [];
         const splineMesh = buildChunkSplinesMesh(allSplines, {
-            theme: biome,
             onCuttableMesh: (cuttableMesh, item) => {
-                group.add(cuttableMesh);
-                const isBroken = this.brokenPropScatterKeys?.has(item.id);
-                if (isBroken) {
-                    // Cut on an earlier visit: it stays cut, hanging where it fell.
-                    cuttableMesh.visible = false;
+                cuttableMesh.geometry.dispose();
+                if (this.brokenPropScatterKeys?.has(item.id)) {
                     this.severSplineRun(item, group);
                     return;
                 }
-
-                if (item.cutPoint) {
-                    const collider = new THREE.Object3D();
-                    collider.position.copy(item.cutPoint);
-                    collider.userData = {
-                        isScatter: true,
-                        isDestructibleProp: true,
-                        isCuttableSpline: true,
-                        splineId: item.id,
-                        scatterKey: item.id,
-                        dressingId: item.id,
-                        type: item.cuttableType ?? 'spline_wire_bunker',
-                        propHp: item.hp ?? 15,
-                        maxPropHp: item.hp ?? 15,
-                        splineMesh: cuttableMesh,
-                        splineItem: item
-                    };
-                    group.add(collider);
-                    this.scatterSprites?.push?.(collider);
-                }
+                cuttable.push(item);
             }
         });
+        const batch = { group, items: cuttable, mesh: null };
+        this.rebuildCuttableSplineBatch(batch);
+        for (const item of cuttable) {
+            if (!item.cutPoint) continue;
+            const collider = new THREE.Object3D();
+            collider.position.copy(item.cutPoint);
+            collider.userData = {
+                isScatter: true,
+                isDestructibleProp: true,
+                isCuttableSpline: true,
+                splineId: item.id,
+                scatterKey: item.id,
+                dressingId: item.id,
+                type: item.cuttableType ?? 'spline_wire_bunker',
+                propHp: item.hp ?? 15,
+                maxPropHp: item.hp ?? 15,
+                splineBatch: batch,
+                splineItem: item
+            };
+            group.add(collider);
+            this.scatterSprites?.push?.(collider);
+        }
 
         if (splineMesh) {
             group.add(splineMesh);
             return splineMesh;
         }
         return null;
+    }
+
+    /** (Re)builds a chunk's one mesh of intact cuttable runs. */
+    rebuildCuttableSplineBatch(batch) {
+        if (batch.mesh) {
+            batch.mesh.geometry.dispose();
+            batch.mesh.removeFromParent();
+            batch.mesh = null;
+        }
+        const mesh = buildChunkSplinesMesh(batch.items.map((item) => ({ ...item, cuttable: false })));
+        if (!mesh) return null;
+        mesh.name = 'chunk-cuttable-splines';
+        mesh.userData.isCuttableSplineBatch = true;
+        batch.group.add(mesh);
+        batch.mesh = mesh;
+        return mesh;
     }
 
     /**
@@ -36173,11 +36195,12 @@ export class ThreeGame {
                 this.brokenPropScatterKeys.add(key);
             }
         } else if (sprite.userData?.isCuttableSpline) {
-            if (sprite.userData.splineMesh) {
-                sprite.userData.splineMesh.visible = false;
-                if (sprite.userData.splineItem && sprite.userData.splineMesh.parent) {
-                    this.severSplineRun(sprite.userData.splineItem, sprite.userData.splineMesh.parent);
-                }
+            const batch = sprite.userData.splineBatch;
+            const item = sprite.userData.splineItem;
+            if (batch && item) {
+                batch.items = batch.items.filter((entry) => entry !== item);
+                this.rebuildCuttableSplineBatch(batch);
+                this.severSplineRun(item, batch.group);
             }
             const key = sprite.userData.splineId ?? sprite.userData.scatterKey;
             if (key) {

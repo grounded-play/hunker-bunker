@@ -289,3 +289,17 @@ describe('generic prop interactions', () => {
         expect(genericInteractionSpec('arch_pillar_buttress_01', { userData: {} })).toBe(null);
     });
 });
+
+describe('cuttable spline conduits', () => {
+    it('can be cut by hand with E, through the same break as shooting them', () => {
+        for (const type of ['spline_wire_bunker', 'spline_vein_bio', 'spline_pipe_cryo', 'spline_vine_camp']) {
+            const spec = PROP_INTERACTION_SPECS[type];
+            expect(spec.canInteract, type).toBe(true);
+            expect(spec.interactPrompt, type).toMatch(/^\[E\] /);
+            const sprite = { userData: { type } };
+            const breakScatterProp = vi.fn(() => true);
+            expect(spec.onInteract({ breakScatterProp }, sprite)).toBe(true);
+            expect(breakScatterProp).toHaveBeenCalledWith(sprite);
+        }
+    });
+});

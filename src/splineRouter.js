@@ -43,6 +43,11 @@ const keyOf = (x, y) => `${x},${y}`;
  * @returns {Array<object>} Manifest of spline runs and collars
  */
 const READABLE_SCALE = 1.9;
+const WALL_GAP = 0.02;
+const WALL_DIRECTIONS = Object.freeze([[0, -1], [0, 1], [-1, 0], [1, 0]]);
+const MAX_CRAWLERS_PER_ROOM = 4;
+const SWAG_BRACKET_HEIGHT = 2.42;
+const SWAG_MAX_SAG = 0.2;
 const MIN_SIDES = 6;
 const AREA_CONDUIT = Object.freeze({ bunker: 'wire', reward: 'wire', bio: 'vein', giger: 'vein', cryo: 'pipe', camp: 'vine' });
 
@@ -100,13 +105,14 @@ export function planRoomSplineDressing(room, grid, { placements = [], reserved =
             const [lx, ly, lz] = sock.pos;
             const [nx, ny, nz] = sock.normal;
 
-            const wx = item.x + (lx * cos - lz * sin);
+            // three.js rotation.y: x' = x cos + z sin, z' = -x sin + z cos.
+            const wx = item.x + (lx * cos + lz * sin);
             const wy = baseY + ly;
-            const wz = item.y + (lx * sin + lz * cos);
+            const wz = item.y + (-lx * sin + lz * cos);
 
-            const wnx = nx * cos - nz * sin;
+            const wnx = nx * cos + nz * sin;
             const wny = ny;
-            const wnz = nx * sin + nz * cos;
+            const wnz = -nx * sin + nz * cos;
 
             activeSockets.push({
                 prop: item,
@@ -190,162 +196,127 @@ export function planRoomSplineDressing(room, grid, { placements = [], reserved =
         }
     }
 
-    // 3. Orphan Sockets (Route to nearest perimeter wall with a clean termination collar)
+    // Wall faces: every side of an interior cell that meets a wall. A conduit
+    // hugging a face sits WALL_GAP proud of it, never out in the room.
+    const isWallTile = (x, z) => grid[z]?.[x] === '#' || grid[z]?.[x] === 'W';
+    // Offsets use the drawn radius (READABLE_SCALE) so thick runs never sink into the wall.
+    const faceDistance = (radius) => 0.5 - radius * READABLE_SCALE - WALL_GAP;
+    const faces = [];
+    for (const cell of room.interior) {
+        for (const [dx, dz] of WALL_DIRECTIONS) {
+            if (isWallTile(cell.x + dx, cell.y + dz)) faces.push({ x: cell.x, z: cell.y, dx, dz });
+        }
+    }
+
+    // 3. Orphan sockets run to the nearest wall face and end there at
+    //    baseboard height under a collar.
     for (const sock of activeSockets) {
         if (sock.connected) continue;
         sock.connected = true;
-
-        const leadOut = sock.worldPos.clone().addScaledVector(sock.worldNorm, 0.38);
-        const wallTarget = leadOut.clone();
-        wallTarget.y = 0.25; // drop to baseboard
-
-        const waypoints = [sock.worldPos.clone(), leadOut, wallTarget];
-        const points = evaluateFilletedManhattanPoints(waypoints, 0.12, 3);
-        const normalOut = new THREE.Vector3(0, 1, 0);
-
+        const radius = sock.socket.radius;
+        let best = null;
+        for (const face of faces) {
+            const point = new THREE.Vector3(face.x + face.dx * faceDistance(radius), 0.25, face.z + face.dz * faceDistance(radius));
+            const distance = Math.hypot(point.x - sock.worldPos.x, point.z - sock.worldPos.z);
+            if (!best || distance < best.distance) best = { point, face, distance };
+        }
+        if (!best || best.distance > 6) continue;
+        const leadOut = sock.worldPos.clone().addScaledVector(sock.worldNorm, 0.3);
+        const atWall = new THREE.Vector3(best.point.x, Math.max(0.25, leadOut.y), best.point.z);
+        const points = evaluateFilletedManhattanPoints([sock.worldPos.clone(), leadOut, atWall, best.point.clone()], 0.12, 3);
         splines.push({
             id: `${room.id}:orphan:${sock.socket.id}`,
             category: 'socket_escape',
             type: sock.socket.type,
             points,
-            radius: sock.socket.radius,
+            radius,
             sides: sock.socket.sides,
             vAtlasOffset: sock.socket.vAtlasOffset ?? vAtlasOffset,
             vAtlasScale: 0.25,
-            collars: [
-                { pos: wallTarget, normal: normalOut, radius: sock.socket.radius, sides: 6 }
-            ]
+            collars: [{ pos: best.point.clone(), normal: new THREE.Vector3(-best.face.dx, 0, -best.face.dz), radius, sides: 6 }]
         });
     }
 
-    // 4. Gather Decal & Model Anchors from Dressing Items
+    // 4. Anchors from the room's dressing: wall props and wall decals a run
+    //    can start from, and floor grates or spills it can end in.
     const wallAnchors = [];
     const floorAnchors = [];
-
     for (const item of dressingItems) {
         if (item.layer === 'wallDecal') {
-            const h = item.height ?? 1.25;
-            const norm = item.normal
-                ? new THREE.Vector3(item.normal.x, 0, item.normal.z).normalize()
-                : new THREE.Vector3(0, 0, 1);
-            wallAnchors.push({
-                type: item.type,
-                layer: 'wallDecal',
-                pos: new THREE.Vector3(item.x, h, item.y),
-                normal: norm
-            });
+            wallAnchors.push({ pos: new THREE.Vector3(item.x, item.height ?? 1.25, item.y) });
         } else if (item.layer === 'wallProp') {
-            const h = item.mountY ?? 1.35;
-            const yaw = item.yaw ?? 0;
-            const norm = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw)).normalize();
-            wallAnchors.push({
-                type: item.type,
-                layer: 'wallProp',
-                pos: new THREE.Vector3(item.x, h, item.y),
-                normal: norm
-            });
-        } else if (item.layer === 'floorDecal' && (item.type.includes('grate') || item.type.includes('spill') || item.type.includes('burn'))) {
-            floorAnchors.push({
-                type: item.type,
-                layer: 'floorDecal',
-                pos: new THREE.Vector3(item.x, 0.02, item.y),
-                normal: new THREE.Vector3(0, 1, 0)
-            });
+            wallAnchors.push({ pos: new THREE.Vector3(item.x, Math.max(0.4, (item.mountY ?? 0) + 0.6), item.y) });
+        } else if (item.layer === 'floorDecal' && /grate|spill|burn/.test(item.type ?? '')) {
+            floorAnchors.push({ pos: new THREE.Vector3(item.x, 0.02, item.y) });
         }
     }
 
-    // 5. Wall-Crawling Vine-Wires ("Lines vines crawling walls into decals and models")
-    const bounds = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity };
-    for (const cell of room.interior) {
-        bounds.minX = Math.min(bounds.minX, cell.x);
-        bounds.maxX = Math.max(bounds.maxX, cell.x);
-        bounds.minZ = Math.min(bounds.minZ, cell.y);
-        bounds.maxZ = Math.max(bounds.maxZ, cell.y);
-    }
-
-    // Find horizontal and vertical perimeter wall runs
+    // 5. Straight runs of wall along all four sides, at least three cells long.
     const wallRuns = [];
-    // North wall runs: grid[z - 1][x] === '#'
-    for (let z = bounds.minZ; z <= bounds.maxZ; z += 1) {
-        let runStart = null;
-        for (let x = bounds.minX; x <= bounds.maxX + 1; x += 1) {
-            const isFloor = grid[z]?.[x] === '.';
-            const isWall = grid[z - 1]?.[x] === '#';
-            const isDoor = reservedSet.has(keyOf(x, z));
-
-            if (isFloor && isWall && !isDoor) {
-                if (runStart === null) runStart = x;
-            } else {
-                if (runStart !== null && (x - runStart) >= 3) {
-                    wallRuns.push({
-                        axis: 'x',
-                        start: runStart,
-                        end: x,
-                        fixed: z,
-                        wallNormal: new THREE.Vector3(0, 0, 1),
-                        wallOffset: new THREE.Vector3(0, 0, 0.08)
-                    });
+    for (const [dx, dz] of WALL_DIRECTIONS) {
+        const along = dx === 0 ? [1, 0] : [0, 1];
+        const lines = new Map();
+        for (const face of faces) {
+            if (face.dx !== dx || face.dz !== dz || reservedSet.has(keyOf(face.x, face.z))) continue;
+            const line = dx === 0 ? face.z : face.x;
+            if (!lines.has(line)) lines.set(line, []);
+            lines.get(line).push(dx === 0 ? face.x : face.z);
+        }
+        for (const [line, positions] of lines) {
+            positions.sort((a, b) => a - b);
+            let runStart = positions[0];
+            for (let i = 1; i <= positions.length; i += 1) {
+                if (i < positions.length && positions[i] === positions[i - 1] + 1) continue;
+                const runEnd = positions[i - 1];
+                if (runEnd - runStart + 1 >= 3) {
+                    const cell = (k) => (dx === 0 ? { x: k, z: line } : { x: line, z: k });
+                    wallRuns.push({ dir: [dx, dz], along, first: cell(runStart), length: runEnd - runStart + 1 });
                 }
-                runStart = null;
+                if (i < positions.length) runStart = positions[i];
             }
         }
     }
+    // A point on a run: `s` metres along it from its first cell's outer edge,
+    // `radius` off the wall face, at height y.
+    const onRun = (run, s, y, radius) => new THREE.Vector3(
+        run.first.x + run.along[0] * (s - 0.5) + run.dir[0] * faceDistance(radius),
+        y,
+        run.first.z + run.along[1] * (s - 0.5) + run.dir[1] * faceDistance(radius)
+    );
+    const nearRun = (run, anchors, s) => anchors.find((anchor) => {
+        const target = onRun(run, s, anchor.pos.y, baseRadius);
+        return Math.hypot(anchor.pos.x - target.x, anchor.pos.z - target.z) <= 1.0;
+    });
 
-    // For each qualified wall run, generate organic crawling vine-cables
+    // Vines and wires crawl some of the walls (more in the hive and camps).
+    const crawlChance = themeFamily === 'bio' || themeFamily === 'camp' || themeFamily === 'giger' ? 0.8 : 0.5;
+    let crawlers = 0;
     wallRuns.forEach((run, runIndex) => {
-        const runLen = run.end - run.start;
-        const seedVal = runIndex * 13.37;
-
-        // Origin: look for a wall anchor near the start, else start on wall with collar
-        const nearStartAnchor = wallAnchors.find((a) => Math.abs(a.pos.x - run.start) <= 1.5 && Math.abs(a.pos.z - run.fixed) <= 1.2);
-        const nearEndAnchor = floorAnchors.find((a) => Math.abs(a.pos.x - run.end) <= 1.5 && Math.abs(a.pos.z - run.fixed) <= 1.2)
-            || wallAnchors.find((a) => Math.abs(a.pos.x - run.end) <= 1.5 && Math.abs(a.pos.z - run.fixed) <= 1.2);
-
-        const startHeight = nearStartAnchor?.pos?.y ?? (0.6 + random() * 0.9);
-        const endHeight = nearEndAnchor?.pos?.y ?? (nearEndAnchor ? 0.02 : 0.25 + random() * 0.4);
-
-        const p0 = nearStartAnchor
-            ? nearStartAnchor.pos.clone()
-            : new THREE.Vector3(run.start + 0.2, startHeight, run.fixed).add(run.wallOffset);
-
-        const pEnd = nearEndAnchor
-            ? nearEndAnchor.pos.clone()
-            : new THREE.Vector3(run.end - 0.2, endHeight, run.fixed).add(run.wallOffset);
-
-        const segmentCount = Math.max(4, Math.floor(runLen * 2));
-        const vinePoints = [p0];
-        const collars = [];
-
-        // If starting on a bare wall without a model/decal, attach a clean flanged collar
-        if (!nearStartAnchor) {
-            collars.push({ pos: p0.clone(), normal: run.wallNormal.clone(), radius: baseRadius, sides: 6 });
-        }
-
-        for (let s = 1; s < segmentCount; s += 1) {
-            const t = s / segmentCount;
-            const x = THREE.MathUtils.lerp(p0.x, pEnd.x, t);
-            const z = THREE.MathUtils.lerp(p0.z, pEnd.z, t);
-
-            // Organic height undulation crawling up and down the wall
+        if (crawlers >= MAX_CRAWLERS_PER_ROOM || random() > crawlChance) return;
+        crawlers += 1;
+        const startAnchor = nearRun(run, wallAnchors, 0.3);
+        const endAnchor = nearRun(run, floorAnchors, run.length - 0.3) || nearRun(run, wallAnchors, run.length - 0.3);
+        const startHeight = startAnchor?.pos.y ?? 0.6 + random() * 0.9;
+        const endHeight = endAnchor?.pos.y ?? 0.25 + random() * 0.4;
+        const segmentCount = Math.max(4, Math.floor(run.length * 2));
+        const seedPhase = random() * Math.PI * 2;
+        const vinePoints = [];
+        for (let k = 0; k <= segmentCount; k += 1) {
+            const t = k / segmentCount;
+            const s = 0.3 + t * (run.length - 0.6);
             const linearY = THREE.MathUtils.lerp(startHeight, endHeight, t);
-            const undulation = Math.sin(t * Math.PI * 2.2 + seedVal) * undulationAmp;
-            const y = Math.max(0.12, Math.min(2.25, linearY + undulation));
-
-            vinePoints.push(new THREE.Vector3(x, y, z));
+            const y = k === 0 || k === segmentCount
+                ? linearY
+                : Math.max(0.12, Math.min(2.25, linearY + Math.sin(t * Math.PI * 2.2 + seedPhase) * undulationAmp));
+            vinePoints.push(onRun(run, s, y, baseRadius));
         }
+        const wallNormal = new THREE.Vector3(-run.dir[0], 0, -run.dir[1]);
+        const collars = [];
+        if (!startAnchor) collars.push({ pos: vinePoints[0].clone(), normal: wallNormal.clone(), radius: baseRadius, sides: 6 });
+        if (!endAnchor) collars.push({ pos: vinePoints[vinePoints.length - 1].clone(), normal: wallNormal.clone(), radius: baseRadius, sides: 6 });
 
-        vinePoints.push(pEnd);
-
-        // If ending on bare wall/floor, attach a clean flanged collar
-        if (!nearEndAnchor) {
-            const endNorm = (endHeight <= 0.15) ? new THREE.Vector3(0, 1, 0) : run.wallNormal.clone();
-            collars.push({ pos: pEnd.clone(), normal: endNorm, radius: baseRadius, sides: 6 });
-        }
-
-        const cutIdx = Math.floor(vinePoints.length / 2);
-        const cutPoint = vinePoints[cutIdx];
-        const isReachable = cutPoint.y <= 1.85;
-
+        const cutPoint = vinePoints[Math.floor(vinePoints.length / 2)];
+        const reachable = cutPoint.y <= 1.85;
         splines.push({
             id: `${room.id}:wall_vine:${runIndex}`,
             category: 'wall_crawling_vine',
@@ -356,40 +327,30 @@ export function planRoomSplineDressing(room, grid, { placements = [], reserved =
             vAtlasOffset,
             vAtlasScale: 0.25,
             collars,
-            cuttable: isReachable,
-            cutPoint: isReachable ? cutPoint.clone() : null,
+            cuttable: reachable,
+            cutPoint: reachable ? cutPoint.clone() : null,
             cuttableType,
             hp: 15
         });
 
-        // 6. Branching Tendril ("splitting vines creeping toward floor/vents")
-        if (runLen >= 4 && random() < 0.7) {
+        // 6. A tendril splits off and creeps down the wall to the floor.
+        if (run.length >= 4 && random() < 0.7) {
             const branchStart = vinePoints[Math.floor(segmentCount * 0.45)].clone();
-            const branchEnd = new THREE.Vector3(
-                branchStart.x + (random() - 0.5) * 1.2,
-                0.03, // creeps down to floor
-                run.fixed + 0.15
-            );
-            const branchMid = new THREE.Vector3(
-                (branchStart.x + branchEnd.x) * 0.5,
-                branchStart.y * 0.4,
-                run.fixed + 0.1
-            );
-            const branchPoints = [branchStart, branchMid, branchEnd];
+            const sAt = 0.3 + 0.45 * (run.length - 0.6) + (random() - 0.5) * 1.2;
             const branchRadius = baseRadius * 0.65;
-
+            const branchEnd = onRun(run, Math.max(0.3, Math.min(run.length - 0.3, sAt)), 0.04, branchRadius);
+            const branchMid = branchStart.clone().lerp(branchEnd, 0.5);
+            branchMid.y = branchStart.y * 0.45;
             splines.push({
                 id: `${room.id}:vine_branch:${runIndex}`,
                 category: 'wall_vine_branch',
                 type: conduitKind,
-                points: branchPoints,
+                points: [branchStart, branchMid, branchEnd],
                 radius: branchRadius,
                 sides: 3,
                 vAtlasOffset,
                 vAtlasScale: 0.25,
-                collars: [
-                    { pos: branchEnd.clone(), normal: new THREE.Vector3(0, 1, 0), radius: branchRadius, sides: 6 }
-                ],
+                collars: [{ pos: branchEnd.clone(), normal: new THREE.Vector3(0, 1, 0), radius: branchRadius, sides: 6 }],
                 cuttable: true,
                 cutPoint: branchMid.clone(),
                 cuttableType,
@@ -398,40 +359,34 @@ export function planRoomSplineDressing(room, grid, { placements = [], reserved =
         }
     });
 
-    // 7. Ambient Overhead Swags (Across ceiling span, clearance Y >= 2.15m)
-    const spanX = bounds.maxX - bounds.minX;
-    const spanZ = bounds.maxZ - bounds.minZ;
-
-    if (spanX >= 4 || spanZ >= 4) {
-        const swagCount = Math.min(3, 1 + Math.floor(random() * 2));
-        for (let s = 0; s < swagCount; s += 1) {
-            const zRatio = 0.25 + 0.5 * (s / Math.max(1, swagCount - 1));
-            const midZ = bounds.minZ + (spanZ * zRatio);
-
-            const p0 = new THREE.Vector3(bounds.minX + 0.1, 2.45, midZ);
-            const p1 = new THREE.Vector3(bounds.maxX + 0.9, 2.45, midZ + (random() - 0.5) * 1.5);
-
-            const span = p0.distanceTo(p1);
-            const sag = Math.min(0.25, span * 0.035 + 0.05);
-            const points = evaluateCatenaryPoints(p0, p1, sag, 6);
-
-            const isRope = themeFamily === 'camp';
-            splines.push({
-                id: `${room.id}:overhead:${s}`,
-                category: 'overhead_swag',
-                type: isRope ? 'rope' : 'cable',
-                points,
-                radius: isRope ? 0.022 : 0.018,
-                sides: 3,
-                vAtlasOffset: isRope ? 0.0 : 0.25,
-                vAtlasScale: 0.25,
-                collars: [
-                    { pos: p0.clone(), normal: new THREE.Vector3(1, 0, 0), radius: 0.02, sides: 6 },
-                    { pos: p1.clone(), normal: new THREE.Vector3(-1, 0, 0), radius: 0.02, sides: 6 }
-                ]
-            });
+    // 7. High swags: a cable (rope in camps) along the top of a long wall,
+    //    sagging between brackets, well above head height.
+    const swagRuns = wallRuns.filter((run) => run.length >= 4).sort(() => random() - 0.5).slice(0, Math.min(2, 1 + Math.floor(random() * 2)));
+    swagRuns.forEach((run, swagIndex) => {
+        const isRope = themeFamily === 'camp';
+        const radius = isRope ? 0.022 : 0.018;
+        const brackets = [];
+        for (let s = 0.4; s <= run.length - 0.4 + 1e-6; s += 1.6 + random() * 0.6) brackets.push(onRun(run, s, SWAG_BRACKET_HEIGHT, radius));
+        if (brackets.length < 2) return;
+        const points = [brackets[0]];
+        for (let i = 1; i < brackets.length; i += 1) {
+            const span = brackets[i].distanceTo(brackets[i - 1]);
+            const sag = Math.min(SWAG_MAX_SAG, span * 0.06 + 0.04);
+            points.push(...evaluateCatenaryPoints(brackets[i - 1], brackets[i], sag, 6).slice(1));
         }
-    }
+        const wallNormal = new THREE.Vector3(-run.dir[0], 0, -run.dir[1]);
+        splines.push({
+            id: `${room.id}:overhead:${swagIndex}`,
+            category: 'overhead_swag',
+            type: isRope ? 'rope' : 'cable',
+            points,
+            radius,
+            sides: 3,
+            vAtlasOffset: isRope ? 0.0 : 0.25,
+            vAtlasScale: 0.25,
+            collars: brackets.map((pos) => ({ pos: pos.clone().addScaledVector(wallNormal, -radius), normal: wallNormal.clone(), radius: 0.02, sides: 6 }))
+        });
+    });
 
     // Every run in a room wears that area's conduit: the bunker's taped cable,
     // the hive's sinew veins, cryo's frosted coolant pipe, the camp's vines.
