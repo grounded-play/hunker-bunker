@@ -41,6 +41,7 @@ import {
 import { resolvePropVariant } from './propVariants.js';
 import { isDynamicPropExperienceType } from './propExperience.js';
 import { createPropFx, getPropFxProfile, setPropFxViewportHeight } from './propFx.js';
+import { createPaperSkitter, planPaperSheets } from './paperSkitter.js';
 import { UmbilicalAttacker } from './3d/umbilicalAttacker.js';
 import { handleCriticalServiceDestruction } from './criticalServiceRecovery.js';
 
@@ -17341,6 +17342,7 @@ export class ThreeGame {
         // Hanging cables sway on one shared clock.
         this._splineSwayTime = (this._splineSwayTime ?? 0) + delta;
         setSplineTime(this._splineSwayTime);
+        this.updatePaperSkitter?.(delta);
         for (const mixer of this.world3dMixers ?? []) {
             mixer.update(delta);
         }
@@ -24493,6 +24495,8 @@ export class ThreeGame {
                 child.userData.dispose?.();
             }
             if (child.userData?.isStickerDecals) child.geometry?.dispose?.();
+            // Shared sheet geometry and material stay; the instance buffer goes.
+            if (child.userData?.isPaperSkitter) child.dispose?.();
             if (child.userData?.isSplineDressing) child.geometry?.dispose?.();
             if (child.material?.userData?.ownsFloorSplat) {
                 child.material.userData.floorSplat?.uSplatData?.value?.dispose?.();
@@ -30836,7 +30840,7 @@ export class ThreeGame {
         const props = group.children
             .filter((child) => child.userData?.isRoomDressingCollider && child.userData.isSolidProp)
             .map((child) => ({ x: child.position.x, z: child.position.z, radius: 0.7 }));
-        const stickers = buildStickerMesh(planChunkStickers({
+        const plannedStickers = planChunkStickers({
             grid,
             size,
             layer,
@@ -30845,8 +30849,33 @@ export class ThreeGame {
             originX,
             originZ,
             props
-        }), this.stickerMaterial);
+        });
+        const stickers = buildStickerMesh(plannedStickers, this.stickerMaterial);
         if (stickers) group.add(stickers);
+        // Loose sheets over the paperwork stickers lift when someone runs past.
+        const paperSheets = planPaperSheets(plannedStickers);
+        if (paperSheets.length) {
+            const skitter = createPaperSkitter(paperSheets);
+            group.add(skitter.mesh);
+            group.userData.paperSkitter = skitter;
+        }
+    }
+
+    // Paper only stirs near the player: the chunks around them, nothing further.
+    updatePaperSkitter(delta) {
+        const player = this.player?.position;
+        if (!player || !this.chunkMeshes || this.performanceProfile !== 'gameplay') return;
+        this._paperIsOpen ??= (x, z) => {
+            const tile = this.getTileType(x, z);
+            return tile != null && tile !== '#' && tile !== 'W' && tile !== EXTERIOR_CANYON_TILE;
+        };
+        const chunkX = Math.floor(player.x / this.chunkSize);
+        const chunkZ = Math.floor(player.z / this.chunkSize);
+        for (let dz = -1; dz <= 1; dz += 1) {
+            for (let dx = -1; dx <= 1; dx += 1) {
+                this.chunkMeshes.get(`${chunkX + dx},${chunkZ + dz}`)?.userData?.paperSkitter?.update(delta, player, this._paperIsOpen);
+            }
+        }
     }
 
     addRoomDressing(group, chunkX, chunkY, metadata, grid) {
