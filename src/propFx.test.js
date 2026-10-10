@@ -97,6 +97,35 @@ describe('prop FX recipes', () => {
         expect(organicModel.scale.toArray()).toEqual([1, 1, 1]);
     });
 
+    it('hangs dust motes in the air around every practical light, and only there', () => {
+        const root = new THREE.Group();
+        const model = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+        root.add(model);
+        const fx = createPropFx(root, model, 'prop_camp_cookfire_lit');
+        const light = fx.lightSources[0];
+        const motes = fx.group.getObjectByName('prop_camp_cookfire_lit:DustMotes');
+        expect(motes?.isPoints).toBe(true);
+        const positions = motes.geometry.getAttribute('position');
+        expect(positions.count).toBeGreaterThanOrEqual(40);
+        for (let i = 0; i < positions.count; i += 1) {
+            // Inside the pool the light throws, from the floor up past the lamp.
+            expect(Math.hypot(positions.getX(i) - light.position.x, positions.getZ(i) - light.position.z)).toBeLessThanOrEqual(light.distance * 0.5 + 1e-6);
+            expect(positions.getY(i)).toBeGreaterThanOrEqual(0);
+        }
+        // Tinted by the light and drifting on the effect's clock.
+        const uniforms = motes.material.uniforms;
+        expect(uniforms.uColor.value.getHex()).not.toBe(0xffffff);
+        fx.update(0.05);
+        expect(uniforms.uTime.value).toBeGreaterThan(0);
+
+        const unlitRoot = new THREE.Group();
+        const unlitModel = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
+        unlitRoot.add(unlitModel);
+        const unlitType = Object.keys(PROP_FX_PROFILES).find((type) => !PROP_FX_PROFILES[type].light);
+        const unlit = createPropFx(unlitRoot, unlitModel, unlitType);
+        expect(unlit.group.children.some((child) => child.name.endsWith(':DustMotes'))).toBe(false);
+    });
+
     it('distance-culls visual work and disables its registered light source', () => {
         const root = new THREE.Group();
         const model = new THREE.Group();

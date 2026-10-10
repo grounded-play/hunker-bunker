@@ -594,6 +594,80 @@ function createRisingPoints(spec, uniforms, seed) {
     return points;
 }
 
+// Dust caught in a practical light: a static cloud filling the pool the light
+// throws, from the floor to a little above the lamp. Each mote drifts on its
+// own slow loop in the vertex shader and shows only where the light reaches,
+// twinkling as it turns. One draw per light; nothing per frame but the clock.
+const DUST_MOTE_COUNT = 48;
+function createDustMotes(lightSpec, lightPosition, uniforms, seed) {
+    const random = seededRandom(seed);
+    const reach = (lightSpec.distance ?? 2) * 0.5;
+    const top = Math.max(lightPosition.y + 0.25, 0.9);
+    const positions = new Float32Array(DUST_MOTE_COUNT * 3);
+    const phases = new Float32Array(DUST_MOTE_COUNT);
+    for (let i = 0; i < DUST_MOTE_COUNT; i += 1) {
+        const angle = random() * Math.PI * 2;
+        // Inset by the drift (0.12 m) so a drifting mote stays inside the pool.
+        const distance = Math.sqrt(random()) * Math.max(0.1, reach - 0.12);
+        positions[i * 3] = lightPosition.x + Math.cos(angle) * distance;
+        positions[i * 3 + 1] = 0.08 + random() * (top - 0.16);
+        positions[i * 3 + 2] = lightPosition.z + Math.sin(angle) * distance;
+        phases[i] = random();
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('aPhase', new THREE.BufferAttribute(phases, 1));
+    // Dust reads as the light's colour washed toward warm white.
+    const color = new THREE.Color(lightSpec.color ?? 0xffffff).lerp(new THREE.Color(0xfff1d6), 0.45);
+    const local = {
+        uTime: { value: 0 },
+        uColor: { value: color },
+        uLight: { value: lightPosition.clone() },
+        uReach: { value: reach },
+        uPointSize: { value: 0.032 },
+        uViewportHalfHeight: FX_VIEWPORT_HALF_HEIGHT
+    };
+    const material = new THREE.ShaderMaterial({
+        uniforms: local,
+        vertexShader: `
+            uniform float uTime;
+            uniform float uPointSize;
+            uniform float uViewportHalfHeight;
+            uniform vec3 uLight;
+            uniform float uReach;
+            attribute float aPhase;
+            varying float vGlow;
+            void main() {
+                float t = uTime + aPhase * 97.0;
+                vec3 p = position + vec3(sin(t * 0.21 + aPhase * 6.28) * 0.12, sin(t * 0.13 + aPhase * 3.1) * 0.08, cos(t * 0.17 + aPhase * 5.0) * 0.12);
+                vec4 mv = modelViewMatrix * vec4(p, 1.0);
+                gl_Position = projectionMatrix * mv;
+                float perspective = projectionMatrix[3][3] > 0.5 ? 1.0 : 1.0 / max(0.6, -mv.z);
+                gl_PointSize = clamp(uPointSize * projectionMatrix[1][1] * uViewportHalfHeight * perspective, 2.0, 24.0);
+                float lit = 1.0 - smoothstep(uReach * 0.25, uReach, distance(p, uLight));
+                vGlow = lit * (0.45 + 0.55 * max(0.0, sin(t * 1.3 + aPhase * 20.0)));
+            }
+        `,
+        fragmentShader: `
+            uniform vec3 uColor;
+            varying float vGlow;
+            void main() {
+                float disc = smoothstep(0.5, 0.1, length(gl_PointCoord - 0.5));
+                gl_FragColor = vec4(uColor, disc * vGlow * 0.8);
+            }
+        `,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+    });
+    const points = new THREE.Points(geometry, material);
+    points.frustumCulled = false;
+    points.renderOrder = 6;
+    points.userData.propFxOwned = true;
+    uniforms.push(local.uTime);
+    return points;
+}
+
 let haloTexture = null;
 function getHaloTexture() {
     if (haloTexture) return haloTexture;
@@ -682,6 +756,9 @@ export function createPropFx(root, model, type) {
         light.userData.propFxPulse = spec.pulse ?? 0;
         group.add(light);
         lightSources.push(light);
+        const motes = createDustMotes(spec, light.position, timeUniforms, seed ^ hashString('motes'));
+        motes.name = `${type}:DustMotes`;
+        group.add(motes);
     }
 
     root.add(group);
