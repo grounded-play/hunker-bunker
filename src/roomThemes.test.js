@@ -100,7 +100,7 @@ describe('room themes', () => {
             expect(new Set(theme.signatureProps).size, theme.id).toBeGreaterThanOrEqual(4);
             expect(theme.ambientProps.length, theme.id).toBeGreaterThan(0);
         }
-        expect(new Set(Object.values(LIVED_IN_DECALS).flat()).size).toBe(48);
+        expect(new Set(Object.values(LIVED_IN_DECALS).flat()).size).toBe(56);
     });
 
     it('places every survival-pack prefab through the fortified camp theme', () => {

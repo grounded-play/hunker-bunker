@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-10-05T06:33:16.030Z",
-  "scannedCount": 65,
+  "timestamp": "2026-10-10T03:54:25.428Z",
+  "scannedCount": 66,
   "unallowedCount": 0,
   "allowlistCount": 106,
   "unallowed": [],
@@ -388,6 +388,12 @@
       "ratio": 0.7541,
       "width": 1024,
       "height": 559
+    },
+    {
+      "file": "public/3d/runtime/kits/textures/hive_resin_floor_emissive.webp",
+      "ratio": 0.0379,
+      "width": 1024,
+      "height": 1024
     },
     {
       "file": "public/lore_portraits/queen_00.webp",

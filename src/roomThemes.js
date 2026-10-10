@@ -13,7 +13,9 @@ export const LIVED_IN_DECALS = Object.freeze({
         'decal_floor_grate_03', 'decal_floor_grate_04',
         'decal_wall_panel_grille_01', 'decal_wall_panel_grille_02',
         'decal_wall_panel_relief', 'decal_mirror_tarnished',
-        'decal_lacquer_blister_01', 'decal_friction_burn'
+        'decal_lacquer_blister_01', 'decal_friction_burn',
+        'decal_electrical_scorch', 'decal_hazard_chevron',
+        'decal_substation_stencil'
     ]),
     cryo: Object.freeze([
         'decal_emergency_oxygen_nest', 'decal_failed_decon_kit',
@@ -22,7 +24,8 @@ export const LIVED_IN_DECALS = Object.freeze({
         'decal_frost_bloom_1', 'decal_frost_bloom_2',
         'decal_water_stain', 'decal_hand_smears_1',
         'decal_condensation_run', 'decal_fluid_seep',
-        'decal_floor_grate_01', 'decal_wall_panel_grille_03'
+        'decal_floor_grate_01', 'decal_wall_panel_grille_03',
+        'decal_cryo_fracture', 'decal_permafrost_icicles'
     ]),
     bio: Object.freeze([
         'decal_maintenance_shrine', 'decal_childlike_cave_map',
@@ -32,7 +35,8 @@ export const LIVED_IN_DECALS = Object.freeze({
         'decal_vine_iron_shadow_2', 'decal_grease_pool',
         'decal_flesh_press', 'decal_bite_marks_02',
         'decal_bite_marks_03', 'decal_spore_stain_01',
-        'decal_spore_stain_02', 'decal_spore_stain_03'
+        'decal_spore_stain_02', 'decal_spore_stain_03',
+        'decal_bio_mycelium', 'decal_chitin_cluster'
     ]),
     camp: Object.freeze([
         'decal_abandoned_meal_tray', 'decal_emergency_oxygen_nest',
@@ -42,7 +46,7 @@ export const LIVED_IN_DECALS = Object.freeze({
         'decal_scorch_bloom', 'decal_grease_pool',
         'decal_lacquer_blister_02', 'decal_lacquer_blister_03',
         'decal_friction_burn', 'decal_mirror_tarnished',
-        'decal_bite_marks_02'
+        'decal_bite_marks_02', 'decal_evac_treads'
     ])
 });
 
