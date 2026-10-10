@@ -7,6 +7,7 @@ import { useSinglePassForFlatMaterials } from './singlePassFlatMaterials.js';
 import { KIT_SCALE, applyKitMaterials } from './kitMaterials.js';
 import { createPropFx } from './propFx.js';
 import { createPropExperience } from './propExperience.js';
+import { applyClothFlutter } from './clothFlutter.js';
 import { createGltfLoader as createSharedGltfLoader } from './gltfLoaderFactory.js';
 
 // docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
@@ -486,6 +487,7 @@ export function prepareWorld3dModel(model, type, config, animations = null) {
         object.frustumCulled = true;
     });
     useSinglePassForFlatMaterials(model);
+    applyClothFlutter(model);
 
     let mixer = null;
     if (animations && animations.length > 0) {

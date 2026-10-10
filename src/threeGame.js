@@ -42,6 +42,7 @@ import { resolvePropVariant } from './propVariants.js';
 import { isDynamicPropExperienceType } from './propExperience.js';
 import { createPropFx, getPropFxProfile, setPropFxViewportHeight } from './propFx.js';
 import { createPaperSkitter, planPaperSheets } from './paperSkitter.js';
+import { setClothFlutterTime } from './clothFlutter.js';
 import { UmbilicalAttacker } from './3d/umbilicalAttacker.js';
 import { handleCriticalServiceDestruction } from './criticalServiceRecovery.js';
 
@@ -17342,6 +17343,7 @@ export class ThreeGame {
         // Hanging cables sway on one shared clock.
         this._splineSwayTime = (this._splineSwayTime ?? 0) + delta;
         setSplineTime(this._splineSwayTime);
+        setClothFlutterTime(this._splineSwayTime);
         this.updatePaperSkitter?.(delta);
         for (const mixer of this.world3dMixers ?? []) {
             mixer.update(delta);

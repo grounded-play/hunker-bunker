@@ -20,6 +20,7 @@ import bpy
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from articulation_recipes import apply_articulation  # noqa: E402
+from flutter_recipes import apply_flutter  # noqa: E402
 
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -129,6 +130,11 @@ def main():
         before, after = optimize_scene(target)
         for line in apply_articulation(name):
             print(f'[lived-in 2] {name} {line}')
+        flutter_lines = list(apply_flutter(name))
+        for line in flutter_lines:
+            print(f'[lived-in 2] {name} {line}')
+        # Fluttering cloth carries its baked weights in COLOR_0 (flutter_recipes.py).
+        color_export = {'export_vertex_color': 'ACTIVE'} if any(o.name.startswith('HB_FLUTTER') for o in bpy.data.objects) else {}
         bpy.ops.export_scene.gltf(
             filepath=destination,
             export_format='GLB',
@@ -139,6 +145,7 @@ def main():
             export_image_format='WEBP',
             export_image_quality=WEBP_QUALITY,
             export_extras=True,
+            **color_export,
         )
         meshopt_compress(destination)
         source_mb = os.path.getsize(source) / 1_000_000
