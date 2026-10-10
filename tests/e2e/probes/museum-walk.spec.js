@@ -53,7 +53,7 @@ test('museum walk: sizes and eye-level rows', async ({ page }) => {
         const maxX = Math.max(...xs) + 2.4;
         const z = members[0].z;
         const tallest = Math.max(2.4, ...members.map((m) => (m.size?.y ?? 1) + 0.8));
-        const dataUrl = await page.evaluate(({ minX, maxX, z, tallest }) => {
+        const { url: dataUrl, blank } = await page.evaluate(({ minX, maxX, z, tallest }) => {
             const game = window.game;
             const halfW = (maxX - minX) / 2;
             const halfH = Math.max(tallest / 2 + 0.3, halfW * (640 / 1600));
@@ -78,12 +78,24 @@ test('museum walk: sizes and eye-level rows', async ({ page }) => {
                     if (child.visible) { hidden.push(child); child.visible = false; }
                 }
             }
+            // The frame loop leaves its post-processing target bound; drawing
+            // into it instead of the canvas made every row come out blank.
+            const previousTarget = game.renderer.getRenderTarget();
+            game.renderer.setRenderTarget(null);
             game.renderer.render(game.scene, cam);
             const url = game.renderer.domElement.toDataURL('image/png');
+            const sample = document.createElement('canvas');
+            sample.width = 64;
+            sample.height = 32;
+            const context = sample.getContext('2d');
+            context.drawImage(game.renderer.domElement, 0, 0, 64, 32);
+            const blank = context.getImageData(0, 0, 64, 32).data.every((value) => value === 0);
+            game.renderer.setRenderTarget(previousTarget);
             for (const child of hidden) child.visible = true;
-            return url;
+            return { url, blank };
         }, { minX, maxX, z, tallest });
         const file = `${category.replace(/[^A-Z0-9]+/gi, '_')}-${String(n++).padStart(3, '0')}.png`;
+        if (blank) throw new Error(`${file}: the row rendered blank`);
         fs.writeFileSync(path.join(OUT, file), Buffer.from(dataUrl.split(',')[1], 'base64'));
     }
 });

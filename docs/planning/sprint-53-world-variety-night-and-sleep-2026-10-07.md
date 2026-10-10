@@ -135,8 +135,8 @@ Every prompt below and every lighting change is checked against this list.
   | Signature quests (`grid_covenant`, `warm_pipes`, `iron_ledger`) | their camp's own centrepiece (Kaelen's ledger desk, Martha's warm-pipe junction, Briggs' memorial wall) |
 
   Objectives also get a world-space beacon (a thin light pillar plus the objective glyph) while the quest is active.
-- [ ] **V8. Scale.** Every new model goes through the museum walk (`tests/e2e/probes/museum-walk.spec.js`) and gets a `maxSpan` if needed before it is placed.
-  2026-10-10: the 39 lived-in pass 2 props (props 41–79) carry a `maxSpan` and were checked in the floor-blend and articulation probes, but have not been through the museum walk yet.
+- [x] **V8. Scale.** Every new model goes through the museum walk (`tests/e2e/probes/museum-walk.spec.js`) and gets a `maxSpan` if needed before it is placed.
+  2026-10-10: all 79 lived-in props walked in their own museum row (`LIVED-IN PROPS`). Every one loads, measures its configured height, and reads right beside the operator posts; none needed a new `maxSpan`. The walk had been writing blank rows (the frame loop leaves its post-processing target bound); it now renders to the canvas and fails on a blank row.
 
 ---
 
