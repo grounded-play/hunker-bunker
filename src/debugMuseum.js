@@ -19,6 +19,7 @@ import { getVoiceScriptRows, getVoiceAudioManifest } from './data/voiceBanks.js'
 import { SONG_INTERSTITIALS } from './songInterstitials.js';
 import { GAMEPLAY_FOLEY_MANIFEST, GAMEPLAY_ENEMY_MANIFEST } from './data/gameSoundsets.js';
 import { createGltfLoader } from './gltfLoaderFactory.js';
+import { createConduitExhibit } from './debugConduitExhibit.js';
 
 // Far outside any real generated terrain so the museum never overlaps a real run's chunks.
 const MUSEUM_ORIGIN = Object.freeze({ x: 9000, z: 9000 });
@@ -752,7 +753,12 @@ export async function openDebugMuseum(game) {
             return display;
         },
         floorDecal: (entry, x, zPos) => game.createScatterInstance({ type: entry.type, x, z: zPos, scale: 1, tiltX: 0, elevation: 0.05, rotation: 0 }),
-        compare: (entry, x, zPos) => spawnComparePair(game, entry, x, zPos)
+        compare: (entry, x, zPos) => spawnComparePair(game, entry, x, zPos),
+        conduit: (entry, x, zPos) => {
+            const exhibit = createConduitExhibit(entry.theme);
+            exhibit.position.set(x, 0, zPos);
+            return exhibit;
+        }
     };
     const LIFE_SIZE = new Set(['character', 'world', 'enemy']);
 

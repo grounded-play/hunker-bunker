@@ -23,6 +23,7 @@ import { WORLD_3D_MODELS, WORLD_3D_STRUCTURES } from './world3dOverlay.js';
 import { ENEMY_3D_MODELS } from './enemy3dOverlay.js';
 import { CHASSIS_BODY_VARIANTS } from './chassisBodies.js';
 import { WORLD_3D_CANDIDATES } from './data/world3dCandidates.js';
+import { CONDUIT_EXHIBITS } from './debugConduitExhibit.js';
 import {
     WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES, CHARM_GLB_MAP, MOD_GLB_MAP, CHASSIS_SKIN_GLB_MAP
 } from './debugAssetCatalogs.js';
@@ -134,6 +135,11 @@ export function buildMuseumExhibitPlan() {
         entries: SHOWROOM_CATEGORIES.FLOOR_DECALS.map((type) => ({ label: type, type }))
     });
 
+    // Spline conduits as a room of each area gets them, in a three-walled bay.
+    plan.push({
+        title: 'CONDUITS', kind: 'conduit', spacing: 8, raised: false, paired: false,
+        entries: CONDUIT_EXHIBITS.map(({ label, theme }) => ({ label, theme }))
+    });
     // Structures are building-sized; one per row, last, with room around it.
     plan.push({
         title: 'STRUCTURES', kind: 'structure', spacing: 60, columns: 1,

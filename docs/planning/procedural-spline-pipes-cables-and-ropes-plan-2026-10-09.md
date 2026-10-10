@@ -513,7 +513,7 @@ if (splineManifest?.length > 0) {
   - Cryo: Insulated wrap + frost bloom shader modulation.
   - Bio: Wet black latex + pulsating cartilage umbilicals.
   - Camp: Spliced cables + hanging Edison work lamps.
-- [ ] In-game review via furnished-room debug gallery (`/debug/museum` and live gameplay). Live gameplay is done (`tests/e2e/probes/spline-captures.spec.js` on the pinned map); the museum gallery is not.
+- [x] In-game review via furnished-room debug gallery (`/debug/museum` and live gameplay). Live gameplay: `tests/e2e/probes/spline-captures.spec.js` on the pinned map. Museum: a CONDUITS row (`src/debugConduitExhibit.js`) with a three-walled bay per area, dressed by the real router and drawn with the real material (`MUSEUM_CATEGORIES=CONDUITS` on the museum walk).
 - [ ] Performance gate below, measured on a Steam Deck. Not yet run.
 
 ### Performance Acceptance Gate (Steam Deck Target):
