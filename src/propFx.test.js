@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
-import { PROP_FX_ANCHORS, PROP_FX_PROFILES, createPropFx, getPropFxProfile } from './propFx.js';
+import { PROP_FX_ANCHORS, PROP_FX_PROFILES, applyPropFxQuality, createPropFx, getPropFxProfile, setPropFxQuality } from './propFx.js';
 
 describe('prop FX recipes', () => {
     it('covers the representative fire, liquid, mechanical, electrical, organic and rupture slice', () => {
@@ -189,5 +189,53 @@ describe('prop FX shaders compile', () => {
             });
         }
         expect(problems).toEqual([]);
+    });
+});
+
+describe('prop FX quality (Settings > Graphics > Effects)', () => {
+    const build = (type) => {
+        const root = new THREE.Group();
+        const model = new THREE.Group();
+        root.add(model);
+        return createPropFx(root, model, type);
+    };
+    const owned = (fx) => {
+        const out = [];
+        fx.group.traverse((object) => { if (object.userData?.propFxOwned) out.push(object); });
+        return out;
+    };
+
+    it('full shows everything; reduced drops only the dust motes; off keeps flames and water but no particles', () => {
+        const fx = build('prop_camp_cookfire_lit');
+        for (const level of ['full', 'reduced', 'off']) {
+            applyPropFxQuality(fx.group, level);
+            for (const object of owned(fx)) {
+                const motes = object.name.endsWith(':DustMotes');
+                const particle = object.isPoints || object.isSprite;
+                const expected = level === 'full' || (level === 'reduced' ? !motes : !particle);
+                expect(object.visible, `${level} ${object.name || object.type}`).toBe(expected);
+            }
+        }
+        applyPropFxQuality(fx.group, 'full');
+    });
+
+    it('never touches the pooled practical light', () => {
+        const fx = build('prop_camp_cookfire_lit');
+        const light = fx.group.getObjectByName('prop_camp_cookfire_lit:PropFxLight');
+        const before = light.visible;
+        applyPropFxQuality(fx.group, 'off');
+        expect(light.visible).toBe(before);
+    });
+
+    it('props built later follow the current level', () => {
+        setPropFxQuality('off');
+        try {
+            const fx = build('prop_biomech_respirator');
+            const particles = owned(fx).filter((object) => object.isPoints);
+            expect(particles.length).toBeGreaterThan(0);
+            expect(particles.every((object) => !object.visible)).toBe(true);
+        } finally {
+            setPropFxQuality('full');
+        }
     });
 });

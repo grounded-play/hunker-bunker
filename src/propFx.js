@@ -719,6 +719,30 @@ export function getPropFxProfile(type) {
 }
 
 /** Attach the reusable FX recipe for a normalized world model. */
+// Settings > Graphics > Effects (src/graphicsSettings.js): full shows every
+// effect; reduced drops the dust motes; off drops every particle but keeps
+// flames and water, which are part of what the prop is. Lights are never
+// touched (toggling a light recompiles every lit shader).
+let propFxQuality = 'full';
+
+/** Sets the effects level for props built from now on. */
+export function setPropFxQuality(level) {
+    propFxQuality = ['full', 'reduced', 'off'].includes(level) ? level : 'full';
+}
+
+function propFxObjectVisible(object, level) {
+    if (level === 'full') return true;
+    if (level === 'reduced') return !object.name?.endsWith(':DustMotes');
+    return !(object.isPoints || object.isSprite);
+}
+
+/** Applies an effects level to everything under `root` (built props, a whole scene). */
+export function applyPropFxQuality(root, level = propFxQuality) {
+    root?.traverse?.((object) => {
+        if (object.userData?.propFxOwned) object.visible = propFxObjectVisible(object, level);
+    });
+}
+
 export function createPropFx(root, model, type) {
     const config = getPropFxProfile(type);
     if (!root || !model || !config) return null;
@@ -762,6 +786,7 @@ export function createPropFx(root, model, type) {
         group.add(motes);
     }
 
+    applyPropFxQuality(group);
     root.add(group);
     const scratch = new THREE.Vector3();
     const baseModelScale = model.scale.clone();
