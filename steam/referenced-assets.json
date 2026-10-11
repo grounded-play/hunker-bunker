@@ -2526,6 +2526,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_door_wear_apron_albedo.ktx2",
+      "bytes": 247719,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_door_wear_apron_detail.ktx2",
+      "bytes": 195925,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_electrical_scorch_albedo.ktx2",
       "bytes": 271303,
       "classification": "runtime-required"
@@ -2816,6 +2826,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_junction_turn_wear_albedo.ktx2",
+      "bytes": 192795,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_junction_turn_wear_detail.ktx2",
+      "bytes": 130658,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_lacquer_blister_01_albedo.ktx2",
       "bytes": 137193,
       "classification": "runtime-required"
@@ -2976,6 +2996,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_strip_cart_ruts_albedo.ktx2",
+      "bytes": 192379,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_cart_ruts_detail.ktx2",
+      "bytes": 120626,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_substation_stencil_albedo.ktx2",
       "bytes": 328584,
       "classification": "runtime-required"
@@ -3023,6 +3053,16 @@
     {
       "path": "3d/runtime/decals/legacy/decal_wall_breach_detail.ktx2",
       "bytes": 236099,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_wall_conduit_patch_albedo.ktx2",
+      "bytes": 234524,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_wall_conduit_patch_detail.ktx2",
+      "bytes": 177596,
       "classification": "runtime-required"
     },
     {
@@ -4118,6 +4158,36 @@
     {
       "path": "3d/runtime/kits/textures/substation_wall_rough.webp",
       "bytes": 112994,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_path_packed_snow_color.webp",
+      "bytes": 337180,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_path_packed_snow_normal.webp",
+      "bytes": 557190,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_path_resin_trail_color.webp",
+      "bytes": 225414,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_path_resin_trail_normal.webp",
+      "bytes": 436326,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_path_worn_deck_color.webp",
+      "bytes": 481308,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/kits/textures/tex_path_worn_deck_normal.webp",
+      "bytes": 670202,
       "classification": "runtime-required"
     },
     {
@@ -6272,12 +6342,12 @@
     },
     {
       "path": "3d/runtime/sprites/prop_alien_feeding_basin-t14-c0.ktx2",
-      "bytes": 316312,
+      "bytes": 253719,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/sprites/prop_alien_respiratory_vent-t14-c0.ktx2",
-      "bytes": 279133,
+      "bytes": 208712,
       "classification": "runtime-required"
     },
     {
@@ -6332,7 +6402,7 @@
     },
     {
       "path": "3d/runtime/sprites/prop_broken_specimen_tank-t14-c0.ktx2",
-      "bytes": 221413,
+      "bytes": 166001,
       "classification": "runtime-required"
     },
     {
@@ -6372,7 +6442,7 @@
     },
     {
       "path": "3d/runtime/sprites/prop_camp_crates-t14-c0.ktx2",
-      "bytes": 686957,
+      "bytes": 555373,
       "classification": "runtime-required"
     },
     {
@@ -6457,7 +6527,7 @@
     },
     {
       "path": "3d/runtime/sprites/prop_cave_bones-t14-c0.ktx2",
-      "bytes": 912199,
+      "bytes": 797436,
       "classification": "runtime-required"
     },
     {
@@ -6467,7 +6537,7 @@
     },
     {
       "path": "3d/runtime/sprites/prop_cave_eggs_intact-t14-c0.ktx2",
-      "bytes": 742648,
+      "bytes": 682777,
       "classification": "runtime-required"
     },
     {
@@ -6477,7 +6547,7 @@
     },
     {
       "path": "3d/runtime/sprites/prop_cave_lichen-t14-c0.ktx2",
-      "bytes": 670389,
+      "bytes": 609502,
       "classification": "runtime-required"
     },
     {
@@ -6487,7 +6557,7 @@
     },
     {
       "path": "3d/runtime/sprites/prop_cave_spores-t14-c0.ktx2",
-      "bytes": 666131,
+      "bytes": 550004,
       "classification": "runtime-required"
     },
     {
@@ -6512,7 +6582,7 @@
     },
     {
       "path": "3d/runtime/sprites/prop_cryo_sleep_pod-t14-c0.ktx2",
-      "bytes": 273504,
+      "bytes": 221009,
       "classification": "runtime-required"
     },
     {
@@ -6522,12 +6592,12 @@
     },
     {
       "path": "3d/runtime/sprites/prop_diagnostic_console-t14-c0.ktx2",
-      "bytes": 232324,
+      "bytes": 188010,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/sprites/prop_engineering_bench-t14-c0.ktx2",
-      "bytes": 319447,
+      "bytes": 268906,
       "classification": "runtime-required"
     },
     {
@@ -6572,7 +6642,7 @@
     },
     {
       "path": "3d/runtime/sprites/prop_fusion_generator-t14-c0.ktx2",
-      "bytes": 282882,
+      "bytes": 229490,
       "classification": "runtime-required"
     },
     {
@@ -6637,7 +6707,7 @@
     },
     {
       "path": "3d/runtime/sprites/prop_medical_bed-t14-c0.ktx2",
-      "bytes": 250341,
+      "bytes": 181641,
       "classification": "runtime-required"
     },
     {
@@ -6652,17 +6722,17 @@
     },
     {
       "path": "3d/runtime/sprites/prop_ruptured_coolant_pump-t14-c0.ktx2",
-      "bytes": 284907,
+      "bytes": 224522,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/sprites/prop_security_barricade-t14-c0.ktx2",
-      "bytes": 221431,
+      "bytes": 153031,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/sprites/prop_security_locker-t14-c0.ktx2",
-      "bytes": 261069,
+      "bytes": 220225,
       "classification": "runtime-required"
     },
     {
@@ -6687,7 +6757,7 @@
     },
     {
       "path": "3d/runtime/sprites/prop_surgical_cart-t14-c0.ktx2",
-      "bytes": 238117,
+      "bytes": 180236,
       "classification": "runtime-required"
     },
     {
@@ -21736,6 +21806,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_door_wear_apron.png",
+      "bytes": 1623453,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_electrical_scorch.png",
       "bytes": 486637,
       "classification": "runtime-required"
@@ -21881,6 +21956,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_junction_turn_wear.png",
+      "bytes": 939518,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_lacquer_blister_01.png",
       "bytes": 13956,
       "classification": "runtime-required"
@@ -21961,6 +22041,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_strip_cart_ruts.png",
+      "bytes": 760259,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_substation_stencil.png",
       "bytes": 595444,
       "classification": "runtime-required"
@@ -21983,6 +22068,11 @@
     {
       "path": "decal_wall_breach.png",
       "bytes": 1930665,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_wall_conduit_patch.png",
+      "bytes": 1186879,
       "classification": "runtime-required"
     },
     {

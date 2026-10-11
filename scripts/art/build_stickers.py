@@ -308,7 +308,8 @@ def main_legacy():
     are only re-measured, so a new delivery processes just the new decals."""
     entries = []
     baked = 0
-    for path in sorted((ROOT / 'public').glob('decal_*.png')):
+    paths = sorted((ROOT / 'public').glob('decal_*.png'))
+    for path in paths:
         albedo = LEGACY_DIR / f'{path.stem}_albedo.ktx2'
         detail = LEGACY_DIR / f'{path.stem}_detail.ktx2'
         fresh = albedo.exists() and detail.exists() and min(albedo.stat().st_mtime, detail.stat().st_mtime) >= path.stat().st_mtime

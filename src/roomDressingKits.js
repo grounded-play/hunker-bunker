@@ -39,13 +39,13 @@ export const DRESSING_KITS = Object.freeze({
             'life_memorial_board', 'life_tally_bulkhead', 'life_vending_machine', 'life_mask_rack',
             'life_cochlear_intercom', 'life_ribcage_rescue_cabinet', 'life_pneumatic_tube_node'],
         wallDecals: [...COMMON.wallDecals, 'decal_wall_panel_grille_01', 'decal_wall_panel_grille_02', 'decal_hazard_stripes',
-            'decal_meridian_stencil', 'prop_torn_warning_poster', 'decal_substation_stencil'],
+            'decal_meridian_stencil', 'prop_torn_warning_poster', 'decal_substation_stencil', 'decal_wall_conduit_patch'],
         clutter: [...COMMON.clutter, 'prop_storage_drum_dented', 'prop_camp_crates', 'prop_valve_wheel_fused', 'prop_vent_grate_exploded',
             'life_footlocker_open', 'life_galley_hotplate', 'life_sanitation_bidet', 'life_vulval_drain_sump'],
         corners: ['prop_storage_drum_dented', 'prop_ammo_crate_stack', 'prop_maintenance_tool_cart', 'state_column_shattered',
             'life_bunk_stack', 'life_suit_drying_rack', 'life_latrine_stall'],
         floorDecals: [...COMMON.floorDecals, 'decal_floor_grate_01', 'decal_floor_grate_02', 'decal_scorch_bloom', 'prop_blood_trail',
-            'decal_electrical_scorch', 'decal_hazard_chevron']
+            'decal_electrical_scorch', 'decal_hazard_chevron', 'decal_door_wear_apron', 'decal_junction_turn_wear', 'decal_strip_cart_ruts']
     },
     cryo: {
         wallProps: ['prop_icey_frost_manifold', 'prop_wall_cable_tray_swag', 'prop_conduit_junction_box', 'prop_locker_bulged',
@@ -59,7 +59,7 @@ export const DRESSING_KITS = Object.freeze({
             'life_cargo_pallet_netted', 'life_barrel_heater', 'life_sleep_sleeve',
             'life_ice_sled', 'life_ice_core_rack', 'life_ice_bore_winch'],
         floorDecals: ['decal_frost_bloom_1', 'decal_frost_bloom_2', 'decal_condensation_run', 'scatter_coolant_puddle',
-            'decal_footprints_mud', 'decal_floor_grate_03', 'decal_cryo_fracture']
+            'decal_footprints_mud', 'decal_floor_grate_03', 'decal_cryo_fracture', 'decal_door_wear_apron', 'decal_strip_cart_ruts']
     },
     bio: {
         wallProps: ['prop_biomech_tracheal_wall_pipe', 'prop_vertebral_cable_riser', 'prop_biomech_flesh_locker',
@@ -75,7 +75,8 @@ export const DRESSING_KITS = Object.freeze({
             'life_sleep_sleeve', 'life_resin_extractor', 'life_pheromone_censer', 'life_warmth_hearth',
             'life_hive_dew_funnel', 'life_hive_feeding_bladder', 'life_assimilated_desk'],
         floorDecals: ['decal_growth_creep_1', 'decal_growth_creep_2', 'decal_spore_growth_patch', 'scatter_slime_puddle',
-            'decal_fluid_seep', 'prop_blood_trail', 'decal_bio_mycelium', 'decal_chitin_cluster', 'decal_bio_spore_vent']
+            'decal_fluid_seep', 'prop_blood_trail', 'decal_bio_mycelium', 'decal_chitin_cluster', 'decal_bio_spore_vent',
+            'decal_door_wear_apron']
     },
     camp: {
         wallProps: ['prop_wall_cable_tray_swag', 'prop_locker_bulged', 'fixture_sconce_vine', 'prop_overhead_cage_fluorescent',
@@ -86,7 +87,8 @@ export const DRESSING_KITS = Object.freeze({
         corners: ['prop_camp_sandbags', 'state_barricade_improvised_1', 'state_barricade_improvised_2', 'prop_storage_drum_dented',
             'life_latrine_stall', 'life_barrel_heater', 'life_pipe_hammock', 'life_hydro_rack',
             'life_barber_chair', 'life_devotion_tree'],
-        floorDecals: ['decal_footprints_mud', 'decal_oil_spill_patch', 'decal_tallow_symbol', 'prop_blood_trail', 'decal_evac_treads']
+        floorDecals: ['decal_footprints_mud', 'decal_oil_spill_patch', 'decal_tallow_symbol', 'prop_blood_trail', 'decal_evac_treads',
+            'decal_door_wear_apron', 'decal_strip_cart_ruts']
     },
     cathedral: {
         wallProps: ['arch_niche_shrine', 'arch_window_stained', 'prop_vertebral_cable_riser', 'fixture_sconce_vine',

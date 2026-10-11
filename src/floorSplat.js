@@ -226,6 +226,138 @@ export function collectThresholdCells(grid, size, metadata) {
 }
 
 /**
+ * Computes deterministic path wear traffic (0-255) across walkable chunk cells.
+ * Connects doors, threshold cells, chunk edge openings, and room objectives/anchors
+ * via BFS shortest paths, then blurs by 1 cell to produce a smooth wear trail.
+ */
+export function computeChunkPathWear({ grid, size, metadata = null }) {
+    const count = size * size;
+    const isWalkable = (x, y) => {
+        if (x < 0 || y < 0 || x >= size || y >= size) return false;
+        const tile = grid[y]?.[x];
+        return tile !== undefined && !NO_FLOOR_TILES.has(tile);
+    };
+
+    const points = [];
+    const pointKeys = new Set();
+    const addPoint = (x, y) => {
+        x = Math.round(x);
+        y = Math.round(y);
+        const key = `${x},${y}`;
+        if (!pointKeys.has(key) && isWalkable(x, y)) {
+            pointKeys.add(key);
+            points.push({ x, y });
+        }
+    };
+
+    for (const cell of collectThresholdCells(grid, size, metadata)) {
+        addPoint(cell.x, cell.y);
+    }
+    for (const door of metadata?.doors ?? []) {
+        addPoint(door.localX ?? door.x, door.localY ?? door.y);
+        for (const c of door.cells ?? []) addPoint(c.x, c.y);
+    }
+    for (let i = 0; i < size; i += 1) {
+        if (isWalkable(i, 0)) addPoint(i, 0);
+        if (isWalkable(i, size - 1)) addPoint(i, size - 1);
+        if (isWalkable(0, i)) addPoint(0, i);
+        if (isWalkable(size - 1, i)) addPoint(size - 1, i);
+    }
+    for (const room of metadata?.roomInstances ?? []) {
+        if (room.approach) addPoint(room.approach.x, room.approach.y);
+        for (const a of room.interactionAnchors ?? []) addPoint(a.x, a.y);
+        for (const a of room.rewardAnchors ?? []) addPoint(a.x, a.y);
+    }
+
+    const traffic = new Float32Array(count);
+    if (points.length >= 2) {
+        const bfsPath = (start, goal) => {
+            if (start.x === goal.x && start.y === goal.y) return [];
+            const visited = new Int32Array(count).fill(-1);
+            const queue = new Int32Array(count);
+            let head = 0;
+            let tail = 0;
+            const startIndex = start.y * size + start.x;
+            const goalIndex = goal.y * size + goal.x;
+            visited[startIndex] = startIndex;
+            queue[tail++] = startIndex;
+
+            let found = false;
+            while (head < tail) {
+                const curr = queue[head++];
+                if (curr === goalIndex) {
+                    found = true;
+                    break;
+                }
+                const cx = curr % size;
+                const cy = (curr - cx) / size;
+                for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                    const nx = cx + dx;
+                    const ny = cy + dy;
+                    if (!isWalkable(nx, ny)) continue;
+                    const nextIndex = ny * size + nx;
+                    if (visited[nextIndex] === -1) {
+                        visited[nextIndex] = curr;
+                        queue[tail++] = nextIndex;
+                    }
+                }
+            }
+            if (!found) return [];
+            const path = [];
+            let curr = goalIndex;
+            while (curr !== startIndex) {
+                path.push(curr);
+                curr = visited[curr];
+            }
+            path.push(startIndex);
+            return path;
+        };
+
+        for (let i = 0; i < points.length; i += 1) {
+            const nextI = (i + 1) % points.length;
+            const path = bfsPath(points[i], points[nextI]);
+            for (const cellIndex of path) traffic[cellIndex] += 1;
+
+            if (points.length > 3) {
+                const oppI = (i + Math.floor(points.length / 2)) % points.length;
+                const oppPath = bfsPath(points[i], points[oppI]);
+                for (const cellIndex of oppPath) traffic[cellIndex] += 1;
+            }
+        }
+    }
+
+    let maxVal = 0;
+    const blurred = new Float32Array(count);
+    for (let y = 0; y < size; y += 1) {
+        for (let x = 0; x < size; x += 1) {
+            const index = y * size + x;
+            if (!isWalkable(x, y)) continue;
+            let sum = traffic[index] * 4;
+            let weightSum = 4;
+            for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                const nx = x + dx;
+                const ny = y + dy;
+                if (isWalkable(nx, ny)) {
+                    sum += traffic[ny * size + nx];
+                    weightSum += 1;
+                }
+            }
+            const val = sum / weightSum;
+            blurred[index] = val;
+            if (val > maxVal) maxVal = val;
+        }
+    }
+
+    const pathWear = new Uint8Array(count);
+    if (maxVal > 0) {
+        for (let i = 0; i < count; i += 1) {
+            pathWear[i] = Math.min(255, Math.round((blurred[i] / maxVal) * 255));
+        }
+    }
+    return pathWear;
+}
+
+/**
  * Per-cell floor data for one chunk, in the same precedence the overlays had:
  * base or ground, then hallway (maze) or crash room, then room interiors,
  * then door thresholds on top.
@@ -316,11 +448,12 @@ export function buildFloorSplatData({
         }
     }
 
+    const pathWear = computeChunkPathWear({ grid, size, metadata });
     const data = new Uint8Array(count * 4);
     for (let index = 0; index < count; index += 1) {
         data[index * 4] = layer[index];
         data[index * 4 + 1] = Math.min(255, Math.round(distance[index] * WALL_DISTANCE_SCALE));
-        data[index * 4 + 2] = 0;
+        data[index * 4 + 2] = pathWear[index];
         data[index * 4 + 3] = Math.round(Math.min(1, Math.max(0, wetness[index])) * 255);
     }
     return { data, size, layer };
@@ -580,6 +713,7 @@ export const FLOOR_SPLAT_FRAGMENT_PARS = /* glsl */ `
     float hbSplatGrime;
     float hbSplatBaseWeight;
     float hbSplatGroundWeight;
+    float hbSplatPathWear;
     float hbSplatHash(vec2 point) {
         return fract(sin(dot(point, vec2(127.1, 311.7))) * 43758.5453123);
     }
@@ -680,6 +814,7 @@ export const FLOOR_SPLAT_FRAGMENT_BLEND = /* glsl */ `
     hbSplatGrime = 0.0;
     hbSplatBaseWeight = 1.0;
     hbSplatGroundWeight = 0.0;
+    hbSplatPathWear = 0.0;
     hbSurfAlbedoA = vec4(0.5, 0.5, 0.5, 0.0);
     hbSurfAlbedoB = hbSurfAlbedoA;
     hbSurfDetailA = vec4(0.5, 0.5, 0.8, 0.5);
@@ -712,6 +847,7 @@ export const FLOOR_SPLAT_FRAGMENT_BLEND = /* glsl */ `
         float splatTotal = 0.0;
         float splatWallDistance = 0.0;
         float splatWetness = 0.0;
+        float splatPathWear = 0.0;
         for (int i = 0; i < 4; i++) {
             splatLayers[i] = hbSplatResolveLayer(floor(splatTexels[i].r * 255.0 + 0.5));
             splatWeights[i] = splatLayers[i] > 254.5 ? 0.0 : splatRaw[i];
@@ -720,6 +856,7 @@ export const FLOOR_SPLAT_FRAGMENT_BLEND = /* glsl */ `
             // toward each wall face.
             splatWallDistance += splatRaw[i] * splatTexels[i].g * 255.0 / ${WALL_DISTANCE_SCALE}.0;
             splatWetness += splatWeights[i] * splatTexels[i].a;
+            splatPathWear += splatWeights[i] * splatTexels[i].b;
         }
         if (splatTotal > 0.0001) {
             float layerA = -1.0;
@@ -770,6 +907,8 @@ export const FLOOR_SPLAT_FRAGMENT_BLEND = /* glsl */ `
             hbSplatGroundWeight = (abs(layerA - 1.0) < 0.5 ? 1.0 - mixB : 0.0) + (abs(layerB - 1.0) < 0.5 ? mixB : 0.0);
             float atlasWeight = max(0.0, 1.0 - hbSplatBaseWeight - hbSplatGroundWeight);
 
+            hbSplatPathWear = splatPathWear / splatTotal;
+
             // The authored rooms' wet patches.
             float wetBroad = hbSplatNoise(splatWorld * 0.32);
             float wetBreakup = hbSplatNoise(splatWorld * 0.91 + vec2(17.0, 31.0));
@@ -782,6 +921,13 @@ export const FLOOR_SPLAT_FRAGMENT_BLEND = /* glsl */ `
             grime *= 0.55 + 0.45 * hbSplatNoise(splatWorld * 3.1 + 5.0);
             hbSplatGrime = grime;
             splatColor *= 1.0 - 0.38 * grime;
+
+            // Path wear: heavy foot traffic polishes metal decks, compresses snow, glazes resin.
+            // Shoulder edge (0.04 to 0.22) collects kicked grit/dirt, while center (>0.22) is polished.
+            float wearCenter = smoothstep(0.22, 0.75, hbSplatPathWear);
+            float wearShoulder = smoothstep(0.04, 0.16, hbSplatPathWear) * (1.0 - smoothstep(0.16, 0.45, hbSplatPathWear));
+            splatColor *= (1.0 - wearShoulder * 0.12);
+            splatColor = mix(splatColor, splatColor * 1.08 + vec3(0.012), wearCenter * 0.4);
 
             // T11: grime that varies over tens of metres breaks up tiling.
             if (uFloorUtilityReady > 0.5) {
@@ -802,6 +948,10 @@ export const FLOOR_SPLAT_FRAGMENT_ROUGHNESS = /* glsl */ `
         );
         splatRoughness = mix(splatRoughness, 0.1, hbSplatWet);
         splatRoughness = mix(splatRoughness, 0.95, hbSplatGrime * 0.6);
+        float wearCenter = smoothstep(0.22, 0.75, hbSplatPathWear);
+        float wearShoulder = smoothstep(0.04, 0.16, hbSplatPathWear) * (1.0 - smoothstep(0.16, 0.45, hbSplatPathWear));
+        splatRoughness = mix(splatRoughness, splatRoughness * 0.65, wearCenter * 0.7);
+        splatRoughness = mix(splatRoughness, 0.92, wearShoulder * 0.4);
         roughnessFactor = clamp(splatRoughness, 0.04, 1.0);
     }
 `;
@@ -813,6 +963,8 @@ export const FLOOR_SPLAT_FRAGMENT_METALNESS = /* glsl */ `
             hbSplatLayerB > ${SURFACE_LAYER_FIRST}.0 - 0.5 ? hbSurfAlbedoB.a : hbSplatLayerMetalness(hbSplatLayerB, metalnessFactor),
             hbSplatMixB
         );
+        float wearCenter = smoothstep(0.22, 0.75, hbSplatPathWear);
+        metalnessFactor = mix(metalnessFactor, min(1.0, metalnessFactor * 1.25 + 0.1), wearCenter * hbSplatBaseWeight * 0.5);
     }
 `;
 

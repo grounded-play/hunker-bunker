@@ -1,0 +1,64 @@
+{
+  "uploaded": "2026-10-11",
+  "note": "World completion assets: pilot path surfaces, route strips, landing marks and wall decals (docs/planning/world-completion-assets-and-path-layers-2026-10-11.md)",
+  "surfaces": {
+    "tex_path_worn_deck": {
+      "kind": "surface",
+      "district": "bunker",
+      "worldScale": 2.0,
+      "variants": ["tex_path_worn_deck_a.jpg"],
+      "keyMode": "opaque",
+      "description": "Boot-polished diamond-plate steel deck flooring"
+    },
+    "tex_path_packed_snow": {
+      "kind": "surface",
+      "district": "cryo",
+      "worldScale": 2.0,
+      "variants": ["tex_path_packed_snow_a.jpg"],
+      "keyMode": "opaque",
+      "description": "Trampled and packed snow track with boot prints and frost glints"
+    },
+    "tex_path_resin_trail": {
+      "kind": "surface",
+      "district": "bio",
+      "worldScale": 2.0,
+      "variants": ["tex_path_resin_trail_a.jpg"],
+      "keyMode": "opaque",
+      "description": "Compressed hive resin trail with translucent layers and veins"
+    }
+  },
+  "decals": {
+    "decal_door_wear_apron": {
+      "kind": "square",
+      "surface": "floor",
+      "worldScale": 3.0,
+      "keyMode": "magenta",
+      "placement": "in front of doors and portals",
+      "variants": ["decal_door_wear_apron_a.jpg"]
+    },
+    "decal_junction_turn_wear": {
+      "kind": "square",
+      "surface": "floor",
+      "worldScale": 2.5,
+      "keyMode": "magenta",
+      "placement": "corridor turns and traffic pivots",
+      "variants": ["decal_junction_turn_wear_a.jpg"]
+    },
+    "strip_cart_ruts": {
+      "kind": "strip_1:4",
+      "surface": "floor",
+      "worldScale": [1.0, 4.0],
+      "keyMode": "magenta",
+      "placement": "heavy traffic segments in storage and cargo halls",
+      "variants": ["strip_cart_ruts_a.jpg"]
+    },
+    "decal_wall_conduit_patch": {
+      "kind": "square",
+      "surface": "wall",
+      "worldScale": 1.2,
+      "keyMode": "magenta",
+      "placement": "corridor and room walls needing maintenance narrative",
+      "variants": ["decal_wall_conduit_patch_a.jpg"]
+    }
+  }
+}

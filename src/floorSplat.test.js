@@ -18,6 +18,7 @@ import {
     WALL_DISTANCE_SCALE,
     buildFloorLayerArray,
     buildFloorSplatData,
+    computeChunkPathWear,
     floorLayerForStyle,
     isFloorSplatEnabled,
     scopeSpecularSofteningToBaseFloor
@@ -43,7 +44,12 @@ const ROOM = {
 };
 const at = (splat, x, y) => {
     const i = (y * splat.size + x) * 4;
-    return { layer: splat.data[i], wall: splat.data[i + 1] / WALL_DISTANCE_SCALE, wet: splat.data[i + 3] / 255 };
+    return {
+        layer: splat.data[i],
+        wall: splat.data[i + 1] / WALL_DISTANCE_SCALE,
+        wear: splat.data[i + 2] / 255,
+        wet: splat.data[i + 3] / 255
+    };
 };
 
 describe('buildFloorSplatData', () => {
@@ -98,6 +104,18 @@ describe('buildFloorSplatData', () => {
         expect(at(splat, 2, 3).wet).toBeCloseTo(0.28, 2);
         expect(at(splat, 1, 0).wet).toBeCloseTo(0.38, 2);
         expect(at(splat, 0, 3).wet).toBe(0);
+    });
+
+    it('records deterministic traffic path wear in the B channel along routes', () => {
+        const splat = build();
+        // Door at (3, 1) and its approach / lane should have non-zero traffic wear
+        expect(at(splat, 3, 1).wear).toBeGreaterThan(0);
+        // Wall cell should have 0 wear
+        expect(at(splat, 1, 1).wear).toBe(0);
+
+        const directWear = computeChunkPathWear({ grid: GRID, size: 7, metadata: { roomInstances: [ROOM] } });
+        expect(directWear).toBeInstanceOf(Uint8Array);
+        expect(directWear[1 * 7 + 3]).toBeGreaterThan(0);
     });
 });
 
