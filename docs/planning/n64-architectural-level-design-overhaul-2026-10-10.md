@@ -690,8 +690,9 @@ This shows whether the blocky read changes before any room is rebuilt.
    - Cost: two or three small lit pools per chunk, no shadows cast.
    - [Before/after](../reports/assets/world-feel-2026-10-10/11-lane-b-wall-top-dressing-before-after.jpg),
      [pipes up close](../reports/assets/world-feel-2026-10-10/12-lane-b-wall-top-pipes-zoom.jpg).
-   - Older issue noticed along the way: wall *face* decorations (pipes, vents, brackets) are
-     not removed when their wall is destroyed. Not fixed here.
+   - Older issue fixed along the way (`6c443fef`): wall *face* decorations (pipes, vents,
+     corner pillars, brackets) used to stay hanging when their wall was destroyed. They now go
+     with it, verified live for all six kinds.
 5. **Tall tiers (D3): on hold, by design.**
    - Making chunk-border walls tall would draw a 49 m grid of tall lines across the world, which
      is more blocky, not less.
@@ -813,3 +814,4 @@ Implemented Owner Decision D2 and the world pacing rhythm from §7.3:
   silhouettes go to lane F landmarks instead of a grid of tall borders.
 - 2026-10-10: Lane D: faint light far below the void, so pits read as deep (`6c2145c1`).
 - 2026-10-10: Wall tops dressed: pipe runs and hatches, nodules in bio (`25a45b5f`).
+- 2026-10-10: Destroyed walls take their face decorations with them (`6c443fef`).
