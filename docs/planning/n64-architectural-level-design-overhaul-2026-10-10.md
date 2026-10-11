@@ -565,9 +565,16 @@ uncommitted edits from other agents.
 
 ### 9.3 Measuring before and after
 
-- **A fixed-seed capture probe comes first.** The §7.1 sheets came from a scratch probe: 13 fixed
-  spots plus aerial shots, at the default camera on the GPU config. It should become
-  `tests/e2e/probes/world-look.spec.js` with a fixed seed.
+- **The capture probe: `tests/e2e/probes/world-look.spec.js`.**
+  - It visits eight fixed spots across bunker, cryo and bio in one run, with lane B's walls on
+    and then off. Between passes it flips `hb_wall_autotile` live: it walks 3 km away so the
+    chunks unload, flips the switch, and walks back.
+  - Per spot it saves the gameplay frame and a closer aerial, and counts the wall pools and
+    corner-cut walls in view.
+  - It fails on any shader error, or if the wall work adds pools.
+  - `WORLD_LOOK_PERF=1` adds draw calls, triangles and frame time per spot, with shaders warmed
+    first.
+  - Other lanes can copy the same flip pattern for their own switches.
 - **Every lane posts before/after sheets** plus `renderer.info.render.calls` and frame time.
   Quality is never traded for FPS.
 
@@ -843,3 +850,4 @@ Implemented Owner Decision D2 and the world pacing rhythm from §7.3:
 - 2026-10-10: Wall feet: drifts, growth and rubble soften the wall–floor crease (`cf956c73`).
 - 2026-10-10: Lane B performance A/B logged: about 6% more draw calls from dressing, frame time
   unchanged within noise on the dev GPU; the Deck is still unmeasured.
+- 2026-10-10: Capture probe committed as `tests/e2e/probes/world-look.spec.js` (§9.3).
