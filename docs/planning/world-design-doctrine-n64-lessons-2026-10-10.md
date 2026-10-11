@@ -630,8 +630,24 @@ but no shipped use profile or wheel articulation; `vent_floor` constrains enemy 
 `steam_plume` is metadata without room-hazard damage; and the pressurized/venting/stabilized labels
 do not drive GLBs, particles, or navigation. Future response may strain the wheel, reduce local
 steam/sparks, and change status light/audio, but may not open a shortcut or close either route. The
-next flat P2 candidate is `hull_fabrication_bay`; the ring crossing remains a detached
-progression-integration proof.
+`hull_fabrication_bay` is the fifth P2 spatial proof. A long west press bed and unequal loading
+shoulders replace the paired block islands, compressing the south arrival around a permanently
+clear four-cell process lane. The mandatory `hull_fabrication_console` moves onto a protected east
+inspection strip and is revealed only after the threshold; the inspection bench and plating cache
+continue north before rejoining at the optional exit. The process lane owns encounter placement,
+while the arrival and east inspection strip remain quiet. Tests pin the exact silhouette, all
+quest/reward anchors, the uninterrupted lane, press mounts, and the complete
+console → bench → cache → exit inspection route. Four gameplay-camera/cutaway captures live at
+`docs/reports/assets/furnished-rooms/p2-hull_fabrication_bay-game-camera-r*.png`.
+
+Capability correction: both authored hydraulic actuators currently resolve to the same
+`prop_exosuit_docking_gantry` stand-in; there is no dedicated press GLB or linked room controller.
+The fabrication console has a real terminal acknowledgement and powered FX, but it does not cycle
+either gantry. `prop_engineering_bench` also aliases the workstation visually and does not prove a
+separate fabrication station. Future dedicated art may isolate vertical ram heads or contained
+carriages and add sparks, work-light/audio response, and a short local cycle, but no moving part may
+sweep into the process lane and no state may alter collision. The next flat P2 candidate is
+`radar_alignment_post`; the ring crossing remains a detached progression-integration proof.
 
 ## Greybox process
 

@@ -94,6 +94,49 @@ describe('ROOM_BUILD_CATALOG', () => {
         expect(build.hazardZones[0]).toMatchObject({ id: 'steam_plume', x: 7, y: 4, w: 3, h: 3 });
     });
 
+    it('turns the hull fabrication bay into an asymmetric press bed around a clear process line', () => {
+        const build = ROOM_BUILD_CATALOG.find((entry) => entry.id === 'hull_fabrication_bay');
+        expect(build.pattern).toEqual([
+            '.................',
+            '.................',
+            '...####..........',
+            '...#.............',
+            '...#.............',
+            '...#.............',
+            '...#.............',
+            '...####..........',
+            '....###....###...',
+            '....###....###...',
+            '.................'
+        ]);
+        const approach = computeApproachPoint(build);
+        const console = { x: 13, y: 6 };
+        const bench = { x: 14, y: 3 };
+        const reward = { x: 15, y: 1 };
+        const exit = { x: 8, y: 0 };
+        expect(approach).toEqual({ x: 8, y: 8 });
+        for (let y = 0; y < build.pattern.length; y += 1) {
+            for (let x = 7; x <= 10; x += 1) {
+                expect(build.pattern[y][x], `process lane ${x},${y}`).toBe('.');
+            }
+        }
+        expect(shortestPatternPath(build.pattern, approach, exit)).toBe(8);
+        expect(shortestPatternPath(build.pattern, approach, console)).toBeLessThan(Infinity);
+        expect(shortestPatternPath(build.pattern, console, bench)).toBeLessThan(Infinity);
+        expect(shortestPatternPath(build.pattern, bench, reward)).toBeLessThan(Infinity);
+        expect(shortestPatternPath(build.pattern, reward, exit)).toBeLessThan(Infinity);
+        expect(build.structuralAnchors).toEqual(expect.arrayContaining([
+            expect.objectContaining({ id: 'hull_press_a', x: 3, y: 5 }),
+            expect.objectContaining({ id: 'hull_press_b', x: 5, y: 2 })
+        ]));
+        expect(build.structuralAnchors.every((anchor) => build.pattern[anchor.y][anchor.x] === '#')).toBe(true);
+        expect(build.interactionAnchors).toEqual(expect.arrayContaining([
+            expect.objectContaining({ id: 'hull_fabrication_console', x: 13, y: 6 }),
+            expect.objectContaining({ id: 'hull_bench', x: 14, y: 3 })
+        ]));
+        expect(build.quietZones[0]).toMatchObject({ x: 12, y: 1, w: 5, h: 7 });
+    });
+
     it('uses the medical P0A proof to create a reveal pivot and supply-side loop', () => {
         const build = ROOM_BUILD_CATALOG.find((entry) => entry.id === 'medical_triage');
         expect(build.pattern).toEqual([

@@ -556,9 +556,22 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         family: 'engineering',
         themeStyle: 'bunker',
         partitionThickness: 0.5,
-        // Two gantry blocks leave a working aisle down the middle and a full
-        // ring of floor, so the bay reads as a shop floor rather than a room.
-        pattern: rectRoomPattern(17, 11, [{ x: 4, y: 3, w: 3, h: 5 }, { x: 10, y: 3, w: 3, h: 5 }]),
+        // P2 shop-floor proof: a long west press bed and unequal loading
+        // shoulders compress the entry around a permanently clear process
+        // line. The objective lives on the revealed east inspection strip.
+        pattern: authoredRoomPattern([
+            '.................',
+            '.................',
+            '...####..........',
+            '...#.............',
+            '...#.............',
+            '...#.............',
+            '...#.............',
+            '...####..........',
+            '....###....###...',
+            '....###....###...',
+            '.................'
+        ]),
         sockets: [
             { id: 'entry', side: 's', width: 3, required: true },
             { id: 'gantryExit', side: 'n', width: 3, required: false }
@@ -568,22 +581,28 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         biomeEligibility: ['active', 'cryo'],
         roles: ['objective', 'questDestination'],
         structuralAnchors: [
-            { id: 'hull_press_a', type: 'prop_hydraulic_piston_actuator', x: 5, y: 5 },
-            { id: 'hull_press_b', type: 'prop_hydraulic_piston_actuator', x: 11, y: 5 }
+            { id: 'hull_press_a', type: 'prop_hydraulic_piston_actuator', x: 3, y: 5 },
+            { id: 'hull_press_b', type: 'prop_hydraulic_piston_actuator', x: 5, y: 2 }
         ],
         // MANDATORY_SHIP_GOALS hullExpansion -> objectiveAnchorId, exactly.
         interactionAnchors: [
-            { id: 'hull_fabrication_console', type: 'prop_fabricator_workstation', x: 8, y: 8 },
-            { id: 'hull_bench', type: 'prop_engineering_bench', x: 8, y: 2 }
+            { id: 'hull_fabrication_console', type: 'prop_fabricator_workstation', x: 13, y: 6 },
+            { id: 'hull_bench', type: 'prop_engineering_bench', x: 14, y: 3 }
         ],
         signatureAnchorId: 'hull_fabrication_console',
         compassAnchors: { approach: 'entry', objective: 'hull_fabrication_console' },
-        coverZones: [{ x: 3, y: 2, w: 4, h: 7 }, { x: 10, y: 2, w: 4, h: 7 }],
-        encounterZones: [{ id: 'bay_floor', x: 7, y: 2, w: 3, h: 7 }],
-        rewardAnchors: [{ id: 'hull_plating_cache', type: 'prop_bunker_supplies', x: 1, y: 1 }],
-        loreAnchors: [{ id: 'fabrication_log', type: 'lore_terminal', x: 15, y: 9 }],
+        coverZones: [
+            { x: 2, y: 1, w: 6, h: 8 },
+            { x: 3, y: 8, w: 11, h: 2 }
+        ],
+        encounterZones: [{ id: 'bay_floor', x: 7, y: 1, w: 4, h: 7 }],
+        rewardAnchors: [{ id: 'hull_plating_cache', type: 'prop_bunker_supplies', x: 15, y: 1 }],
+        loreAnchors: [{ id: 'fabrication_log', type: 'lore_terminal', x: 14, y: 8 }],
         hazardZones: [],
-        quietZones: [],
+        quietZones: [
+            { x: 12, y: 1, w: 5, h: 7 },
+            { x: 7, y: 8, w: 4, h: 3 }
+        ],
         safeZone: false,
         containmentBounds: { minX: 0, minY: 0, maxX: 16, maxY: 10 },
         presentationVariants: ['intact', 'abandoned', 'infested', 'looted'],

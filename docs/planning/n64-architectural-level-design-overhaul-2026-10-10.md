@@ -780,10 +780,28 @@ but it is not wired to the camp quest's separately spawned three-valve cluster. 
 vent particles but no use profile or articulated wheel; the encounter and steam rectangles are
 placement metadata, not activation or damage; and presentation/state labels do not drive effects.
 Future bounded response may change wheel strain, steam/sparks, light, and audio without changing
-collision or routes. Next flat P2 candidate: `hull_fabrication_bay`;
-`ring_crossing_landmark` remains a detached progression proof.
+collision or routes.
 
-### 9.6.6 Authored-geometry persistence gate
+### 9.6.6 Lane A P2: asymmetric fabrication line
+
+`hull_fabrication_bay` is the fifth P2 spatial proof. A long west press bed and unequal loading
+shoulders replace two equal block islands, compressing the south entry around a four-cell process
+lane that stays clear through the north exit. The preserved ship-goal console sits on a protected
+east inspection strip and appears after the threshold turn; bench and plating cache extend that
+route to the far end. Tests pin every row, the complete clear lane, both press mounts, mandatory
+anchor identity, and the inspection route through console, bench, cache, and exit. Four
+gameplay-camera/cutaway captures live at
+`docs/reports/assets/furnished-rooms/p2-hull_fabrication_bay-game-camera-r*.png`.
+
+Capability correction: the two hydraulic actuator types currently alias the same exosuit-docking
+gantry model, whose armor-charge semantics are not a fabrication controller. The console can
+acknowledge interaction and glow, but it does not drive either stand-in; the engineering bench also
+visually aliases the workstation. Dedicated future press art may move only a vertical ram or
+contained carriage within the obstruction footprint, with bounded sparks, sound, and work-light
+changes. Nothing may sweep into the process lane or change collision. Next flat P2 candidate:
+`radar_alignment_post`; `ring_crossing_landmark` remains a detached progression proof.
+
+### 9.6.7 Authored-geometry persistence gate
 
 The existing `ROOM_BUILD_VERSION` is only exported; it is not serialized or compared. Neither
 campaign `interiorVersion`, macro `layoutVersion`, nor `WORLD_PLAN_VERSION` pins room-pattern data.
@@ -1159,6 +1177,11 @@ chunk mounts.
   encounter, steam metadata, and service reward; both rejoin at the north exit. Exact two-route and
   four-camera proofs pass. Valve articulation, steam damage, and state-driven FX remain future
   controller work.
+- 2026-10-11: Lane A rebuilt the hull fabrication bay as an asymmetric press line. Unequal loading
+  shoulders compress the entry around a permanently clear process lane, while the preserved
+  ship-goal console, bench, and plating reward form a protected inspection strip. Exact route and
+  four-camera proofs pass. Dedicated press art, bounded ram/carriage motion, and console-to-machine
+  linkage remain future work.
 - 2026-10-10: Round 2 done (`1b0fce7c`): chasm landmarks plus tactical-map glyphs. Criteria 1,
   3, 4 and 5 met; criterion 2 not met as written, with the reason and the map-based answer in
   §9.10.
