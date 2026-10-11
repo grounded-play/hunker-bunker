@@ -393,8 +393,12 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
         if (budget.signature > 0 && !hasAuthoredSignature) {
             reservePlacement('signature', propFrom(theme.signatureProps, random, 'prop_bunker_supplies', { placements, recentModels }), true);
         }
+        const hasAuthoredSupplyCache = placements.some((placement) => (
+            placement.anchorId
+            && /supplies|ammo_crate|locker/.test(String(placement.type ?? ''))
+        ));
         if (['reward', 'storage', 'security'].includes(room.role)) {
-            reservePlacement('ammo-cache', 'prop_bunker_supplies', true);
+            if (!hasAuthoredSupplyCache) reservePlacement('ammo-cache', 'prop_bunker_supplies', true);
         } else if (budget.large.min > 0 && theme.largeProps?.length) {
             reservePlacement('large', propFrom(theme.largeProps, random, 'prop_conduit_hub', { placements, recentModels }), true);
         }

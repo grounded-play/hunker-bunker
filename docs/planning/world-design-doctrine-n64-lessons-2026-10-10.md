@@ -38,8 +38,8 @@ waiting for decoration.
 
 At the start of this audit, all 12 original authored builds used
 `rectRoomPattern(width, height, obstructions)`. It fills a complete rectangle and can only add
-rectangular wall islands. `power_puzzle` and `trap_vault` have since become P2 authored-pattern
-proofs; `reward_cache` remains the unobstructed original. The cathedral builds remain
+rectangular wall islands. `power_puzzle`, `trap_vault`, and `reward_cache` have since become P2
+authored-pattern proofs. The cathedral builds remain
 rectilinear cell fields assembled from rectangular stamps; some chamfer corners or add divider
 walls, but they do not encode height and most retain box-dominant massing.
 
@@ -591,7 +591,29 @@ generic searchable supplies interaction; `trap_trigger` only constrains encounte
 `spore_vent` is metadata with no room-hazard damage consumer; and `trap_payoff` is not locked. A
 future local controller must arm the emitters, fire and time their beams, change lights/audio,
 disable or reset safely, and gate the payoff. Those states may animate meshes and VFX but must not
-change walls or close either route. The next P2 candidate is `reward_cache`.
+change walls or close either route.
+
+`reward_cache` is the third P2 spatial proof. A broken C-shaped screen divides the compact room
+into a south anticipation chamber, a reward apse, and a quiet western lore alcove. The south entry
+looks into the screen rather than directly at the supplies: players can wrap either end, turn once,
+and reveal `reward_vault` under a restrained amber practical. The provenance terminal rewards the
+quieter west approach. Tests pin the exact screen, prove both routes independently by blocking the
+opposite opening, prove that the shortest route must turn rather than follow the direct Manhattan
+line, and preserve access between reward and lore. Four gameplay-camera/cutaway captures live at
+`docs/reports/assets/furnished-rooms/p2-reward_cache-game-camera-r*.png`.
+
+The population planner no longer adds a redundant generic ammo cache when an authored supplies,
+ammo-crate, or locker anchor already owns the room; un-authored reward, storage, and security rooms
+retain their guaranteed fallback. This keeps the authored vault singular without reducing the
+general loot guarantee.
+
+Capability correction: `locked`, `unlocked`, and `emptied` are presentation labels, not a working
+container-state controller. The colocated interaction and reward records produce one visible prop,
+but there is no proven synchronization among opening animation, reward claim, light state, and
+persistent emptied state. The separate high-stakes cache system in `rewardCache.js` is not wired to
+this room anchor. A future local controller may open or dim the cache and persist collection, but
+must not alter the C-screen or close either return route. The next flat P2 candidate is
+`reactor_vent_station`; the ring crossing remains a detached progression-integration proof.
 
 ## Greybox process
 

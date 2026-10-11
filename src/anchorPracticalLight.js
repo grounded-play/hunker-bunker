@@ -21,7 +21,7 @@ export const ANCHOR_LIGHT_PALETTE = Object.freeze({
 const PALETTE_RULES = Object.freeze([
     { palette: 'cyan', match: /oxygen|coolant|cryo|o2_|frost|icey|thermal|water_still|medical_bed|tesla_coil|fabricator|cyber_junction/ },
     { palette: 'warning', match: /false_cache|laser_trap|trap_emitter/ },
-    { palette: 'amber', match: /lectern|votive|shrine|reliquary|saint|liturgical|candle|barrel_heater|flood_lamp|pheromone_censer|scent_distiller|warmth_hearth|checkpoint_post|wayfinding_totem|seismic_drill|devotion_tree|meat_smoking_rack|pipe_organ_heat_exchanger|ammo_crate/ },
+    { palette: 'amber', match: /reward_vault|lectern|votive|shrine|reliquary|saint|liturgical|candle|barrel_heater|flood_lamp|pheromone_censer|scent_distiller|warmth_hearth|checkpoint_post|wayfinding_totem|seismic_drill|devotion_tree|meat_smoking_rack|pipe_organ_heat_exchanger|ammo_crate/ },
     { palette: 'green', match: /biomech|spore|fungal|hive|flesh|umbilical|alien|incubator|mycelium/ }
 ]);
 

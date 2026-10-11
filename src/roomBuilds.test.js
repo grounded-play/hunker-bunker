@@ -291,6 +291,38 @@ describe('ROOM_BUILD_CATALOG', () => {
         expect(build.quietZones[1]).toMatchObject({ x: 0, y: 3, w: 4, h: 6 });
     });
 
+    it('turns the reward cache into a screened two-route reveal', () => {
+        const build = ROOM_BUILD_CATALOG.find((entry) => entry.id === 'reward_cache');
+        expect(build.pattern).toEqual([
+            '...............',
+            '...............',
+            '...............',
+            '...............',
+            '....####.......',
+            '....#..........',
+            '...............',
+            '....######.....',
+            '...............',
+            '...............',
+            '...............'
+        ]);
+        const approach = computeApproachPoint(build);
+        const vault = { x: 6, y: 5 };
+        const westScreen = new Set(['0,7', '1,7', '2,7', '3,7']);
+        const eastScreen = new Set(['10,7', '11,7', '12,7', '13,7', '14,7']);
+        expect(approach).toEqual({ x: 7, y: 8 });
+        expect(build.pattern[7][approach.x]).toBe('#');
+        expect(shortestPatternPath(build.pattern, approach, vault, westScreen)).toBeLessThan(Infinity);
+        expect(shortestPatternPath(build.pattern, approach, vault, eastScreen)).toBeLessThan(Infinity);
+        expect(shortestPatternPath(build.pattern, approach, vault)).toBeGreaterThan(
+            Math.abs(approach.x - vault.x) + Math.abs(approach.y - vault.y)
+        );
+        expect(build.interactionAnchors[0]).toMatchObject({ id: 'reward_vault', x: 6, y: 5 });
+        expect(build.rewardAnchors[0]).toMatchObject({ id: 'reward_vault', x: 6, y: 5 });
+        expect(build.loreAnchors[0]).toMatchObject({ id: 'cache_provenance_log', x: 2, y: 5 });
+        expect(shortestPatternPath(build.pattern, vault, { x: 2, y: 5 })).toBeLessThan(Infinity);
+    });
+
     it.each(ROOM_BUILD_CATALOG.map((build) => [build.id, build]))('%s is internally valid', (_, build) => {
         expect(validateRoomBuild(build)).toEqual([]);
     });

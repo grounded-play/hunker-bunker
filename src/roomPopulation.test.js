@@ -318,6 +318,25 @@ describe('room population', () => {
         }
     });
 
+    it('does not duplicate an authored supply vault with a generic ammo cache', () => {
+        const grid = Array.from({ length: 7 }, () => Array(9).fill('.'));
+        const room = {
+            id: 'authored-reward',
+            role: 'reward',
+            interior: Array.from({ length: 7 }, (_, index) => ({ x: index + 1, y: 3 })),
+            navigation: { doorLanes: [] },
+            interactionAnchors: [{ id: 'reward_vault', type: 'prop_bunker_supplies', x: 4, y: 3 }],
+            signatureAnchorId: 'reward_vault',
+            populationBudget: { signature: 1, large: 0, small: 0, pickup: 0, enemy: 0 },
+            themeConfig: { signatureProps: ['prop_bunker_supplies'] }
+        };
+        const plan = planRoomPopulation(room, grid, () => 0);
+        expect(plan.placements.filter((placement) => placement.type === 'prop_bunker_supplies')).toEqual([
+            expect.objectContaining({ anchorId: 'reward_vault', kind: 'signature', x: 4, y: 3 })
+        ]);
+        expect(plan.placements.some((placement) => placement.kind === 'ammo-cache')).toBe(false);
+    });
+
     it('restricts wall-backed props (altars, cradles) to cells adjacent to walls with wallNormal', () => {
         const room = {
             id: 'altar-room',

@@ -740,10 +740,32 @@ Capability correction: this is spatial and presentation scaffolding, not a funct
 The false cache is still a normal supplies interaction, `trap_trigger` affects enemy placement only,
 the spore-vent hazard has no room-level damage consumer, and the payoff is available immediately.
 A future local controller must own arming, beam timing, warning lights/audio, disarm/reset, and
-reward locking. Animation and VFX remain bounded and non-colliding; neither route may close. Next
-P2 candidate: `reward_cache`.
+reward locking. Animation and VFX remain bounded and non-colliding; neither route may close.
 
-### 9.6.4 Authored-geometry persistence gate
+### 9.6.4 Lane A P2: screened reward apse
+
+`reward_cache` is the third P2 spatial proof. A broken C-shaped screen hides the reward body from
+the south threshold and creates a compact antechamber, two unequal approaches, a reward apse, and a
+western provenance-log alcove. Both openings remain permanently traversable. The cache is revealed
+only after a lateral turn and owns a restrained amber practical; the lore terminal is the dimmer
+secondary pull. Exact-pattern tests force each route independently and prove the unobstructed
+shortest path is longer than the direct Manhattan line. Four gameplay-camera/cutaway captures live
+at `docs/reports/assets/furnished-rooms/p2-reward_cache-game-camera-r*.png`.
+
+The population planner now suppresses its generic ammo-cache fallback only when an authored
+supplies, ammo-crate, or locker anchor already exists. This removes the duplicate crate pile that
+competed with the hero cache while preserving the loot guarantee in un-authored reward, storage,
+and security rooms.
+
+Capability correction: the room's locked/unlocked/emptied variants are not yet driven states. The
+interaction and reward records share a cell and render once, but no controller currently binds lid
+animation, payout, practical-light change, and persistent emptied state. `rewardCache.js` owns a
+separate high-stakes cache at its own coordinates; its O₂ siphon, defender wave, and lockdown must
+not be claimed here until the systems are deliberately bridged. A local future controller may
+animate and dim the prop without changing walls or routes. Next flat P2 candidate:
+`reactor_vent_station`; `ring_crossing_landmark` remains a detached progression proof.
+
+### 9.6.5 Authored-geometry persistence gate
 
 The existing `ROOM_BUILD_VERSION` is only exported; it is not serialized or compared. Neither
 campaign `interiorVersion`, macro `layoutVersion`, nor `WORLD_PLAN_VERSION` pins room-pattern data.
@@ -1109,6 +1131,11 @@ chunk mounts.
   payoff. Exact route and four-camera proofs pass. The showroom now previews the same stained-
   concrete surface family selected by the live security theme; trap firing, damage, and reward
   locking remain future controller work.
+- 2026-10-11: Lane A rebuilt the reward cache around a broken C-screen. Both approaches now turn
+  into a single amber-lit reward apse, with a quiet provenance-log alcove on the west route. Exact
+  two-route and four-camera proofs pass, and authored supply caches no longer receive a redundant
+  generic ammo pile. Opening animation, payout/light synchronization, and persistent emptied state
+  remain future controller work.
 - 2026-10-10: Round 2 done (`1b0fce7c`): chasm landmarks plus tactical-map glyphs. Criteria 1,
   3, 4 and 5 met; criterion 2 not met as written, with the reason and the map-based answer in
   §9.10.

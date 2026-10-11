@@ -384,15 +384,21 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         family: 'cache',
         themeStyle: 'reliquary',
         partitionThickness: 0.5,
-        // The reward vault is a floor-standing interactive prop framed by
-        // sanctuary plinths and corner chamfers.
-        pattern: rectRoomPattern(15, 11, [
-            { x: 0, y: 0, w: 2, h: 2 },
-            { x: 13, y: 0, w: 2, h: 2 },
-            { x: 0, y: 9, w: 2, h: 2 },
-            { x: 13, y: 9, w: 2, h: 2 },
-            { x: 4, y: 3, w: 2, h: 2 },
-            { x: 9, y: 3, w: 2, h: 2 }
+        // P2 reward-space proof: a broken C-shaped screen blocks the cache
+        // body from the south entry while leaving distinct east and west
+        // approaches. The reward appears only after a lateral turn.
+        pattern: authoredRoomPattern([
+            '...............',
+            '...............',
+            '...............',
+            '...............',
+            '....####.......',
+            '....#..........',
+            '...............',
+            '....######.....',
+            '...............',
+            '...............',
+            '...............'
         ]),
         sockets: [{ id: 'entry', side: 's', width: 3, required: true }],
         rotationPolicy: 'cardinal',
@@ -400,15 +406,23 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['reward'],
         structuralAnchors: [],
-        interactionAnchors: [{ id: 'reward_vault', type: 'prop_bunker_supplies', x: 7, y: 5 }],
+        interactionAnchors: [{ id: 'reward_vault', type: 'prop_bunker_supplies', x: 6, y: 5 }],
         signatureAnchorId: 'reward_vault',
         compassAnchors: { approach: 'entry', objective: 'reward_vault' },
-        coverZones: [{ x: 4, y: 3, w: 2, h: 2 }, { x: 9, y: 3, w: 2, h: 2 }],
+        coverZones: [
+            { x: 4, y: 4, w: 4, h: 1 },
+            { x: 4, y: 4, w: 1, h: 2 },
+            { x: 4, y: 7, w: 6, h: 1 }
+        ],
         encounterZones: [],
-        rewardAnchors: [{ id: 'reward_vault', type: 'prop_bunker_supplies', x: 7, y: 5 }],
-        loreAnchors: [],
+        rewardAnchors: [{ id: 'reward_vault', type: 'prop_bunker_supplies', x: 6, y: 5 }],
+        loreAnchors: [{ id: 'cache_provenance_log', type: 'lore_terminal', x: 2, y: 5 }],
         hazardZones: [],
-        quietZones: [{ x: 0, y: 0, w: 15, h: 11 }],
+        quietZones: [
+            { x: 4, y: 8, w: 7, h: 3 },
+            { x: 5, y: 4, w: 4, h: 3 },
+            { x: 1, y: 4, w: 3, h: 3 }
+        ],
         safeZone: true,
         containmentBounds: { minX: 0, minY: 0, maxX: 14, maxY: 10 },
         presentationVariants: ['locked', 'unlocked', 'emptied'],
