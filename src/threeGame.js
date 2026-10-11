@@ -43703,12 +43703,20 @@ export class ThreeGame {
             if (isChunkOnRingBarrier(chunkX, chunkY, this.chunkSize, this.getBiomeAnchorPosition())) {
                 this._chunkLandformCache.set(key, LANDFORMS.CANYON);
             } else {
-                const biome = this.getBiomeKeyForWorldPosition(
-                    chunkX * this.chunkSize + this.chunkSize * 0.5,
-                    chunkY * this.chunkSize + this.chunkSize * 0.5
+                // Lane C (D2): no chunk repeats its neighbour's landform. Compared
+                // against the neighbours' raw seeded picks, never the cache, so a
+                // chunk's landform does not depend on which chunks loaded first
+                // (TRY AGAIN keeps the map; co-op peers build it independently).
+                const rawPick = (x, y, avoid = null) => pickLandform(
+                    this.createSeededRandom((this.hashTile(x * 977 + 61, y * 613 + 37) ^ this.runEntropy) >>> 0),
+                    this.getBiomeKeyForWorldPosition(x * this.chunkSize + this.chunkSize * 0.5, y * this.chunkSize + this.chunkSize * 0.5),
+                    { avoid }
                 );
-                const random = this.createSeededRandom((this.hashTile(chunkX * 977 + 61, chunkY * 613 + 37) ^ this.runEntropy) >>> 0);
-                this._chunkLandformCache.set(key, pickLandform(random, biome));
+                const own = rawPick(chunkX, chunkY);
+                const west = rawPick(chunkX - 1, chunkY);
+                const north = rawPick(chunkX, chunkY - 1);
+                const avoid = own === west ? west : own === north ? north : null;
+                this._chunkLandformCache.set(key, avoid ? rawPick(chunkX, chunkY, avoid) : own);
             }
         }
         return this._chunkLandformCache.get(key);
