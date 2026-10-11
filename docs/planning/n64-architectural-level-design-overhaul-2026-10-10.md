@@ -730,7 +730,15 @@ This shows whether the blocky read changes before any room is rebuilt.
    - Room walls keep their authored materials.
    - Together with the lit lip and the frost/growth tops (item 2), this is lane G's "light
      painted into the architecture".
-   - Still open in G: light pools at doors and hero props.
+   - **Door light pools: done, `765e95be`.** Every procedural door has a soft additive glow on
+     the floor on both sides, coloured by state: ordinary cool cyan, route amber, locked red.
+     Usually one draw per chunk, no lights.
+     [Captures](../reports/assets/world-feel-2026-10-10/16-lane-g-door-light-pools.jpg).
+   - Tuned in the same commit: cyan and green strips bloomed into neon tubes, so their source
+     colours are dimmer than the amber, and amber is trimmed to 1.5. Void embers showed as
+     orange smudges at some camera heights; now smaller and dimmer.
+   - Still open in G: pools at hero props (lane A's signature anchors already carry a
+     practical light).
    - [Captures](../reports/assets/world-feel-2026-10-10/15-lane-g-wall-light-strips.jpg).
 9. **Tall tiers (D3): on hold, by design.**
    - Making chunk-border walls tall would draw a 49 m grid of tall lines across the world, which
@@ -862,3 +870,4 @@ Implemented Owner Decision D2 and the world pacing rhythm from §7.3:
 - 2026-10-10: Capture probe committed as `tests/e2e/probes/world-look.spec.js` (§9.3).
 - 2026-10-10: Lane G claimed by the Claude lived-in lane; sparse light strips on wall runs
   (`281fda4b`).
+- 2026-10-10: Door light pools by state; strips and void embers retuned (`765e95be`).
