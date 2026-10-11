@@ -1,0 +1,36 @@
+{
+ "off-first": {
+  "calls": [
+   417.6,
+   432.3
+  ],
+  "triangles": [
+   2220757,
+   2323567.7
+  ],
+  "frameMs": [
+   58.3,
+   60.0
+  ]
+ },
+ "on-first": {
+  "calls": [
+   424.4,
+   432.4
+  ],
+  "triangles": [
+   2231215.3,
+   2334559.1
+  ],
+  "frameMs": [
+   58.5,
+   58.4
+  ]
+ },
+ "coverage": {
+  "all_walkable": "11/60",
+  "ledge": "9/28",
+  "interior": "2/32",
+  "note": "six per chunk, ten cells apart; 3-per-chunk measured 5/60"
+ }
+}

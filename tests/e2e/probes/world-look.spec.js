@@ -58,7 +58,25 @@ test('world look: lane B walls on and off', async ({ page }) => {
                 for (let i = 0; i < object.count; i += 1) walls[masks.getX(i) > 16.5 ? 'cut' : 'square'] += 1;
             });
         }
-        return { pools, walls };
+        // Chasm landmarks (lane F) the camera actually frames: the base or a
+        // point 6 m up lands on screen.
+        const camera = game.camera;
+        camera.updateMatrixWorld();
+        const Vector3 = camera.position.constructor;
+        const onScreen = (x, y, z) => {
+            const point = new Vector3(x, y, z).project(camera);
+            return Math.abs(point.x) <= 1 && Math.abs(point.y) <= 1 && point.z < 1;
+        };
+        let landmarksInView = 0;
+        for (const group of game.chunkMeshes.values()) {
+            if (!group.visible) continue;
+            group.traverse((object) => {
+                for (const { x, z } of object.userData?.isChasmLandmark ? object.userData.sites : []) {
+                    if (onScreen(x, 0, z) || onScreen(x, 6, z)) landmarksInView += 1;
+                }
+            });
+        }
+        return { pools, walls, landmarksInView };
     });
     const aerial = () => page.evaluate(() => {
         const game = window.game;

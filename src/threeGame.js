@@ -372,6 +372,7 @@ import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js
 import { applyCompressedSprite, bakedKeyedSpriteUrl, keyedSpriteBakeKey, recordKeyedSprite } from './keyedSpriteBakes.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
 import { applyVoidDepth, setVoidDepthTime } from './voidDepth.js';
+import { chasmLandmarkForm, chasmLandmarkMapEntry, chasmLandmarkYaw, createChasmLandmarkGeometry, createChasmLandmarkMaterial, isChasmLandmarksEnabled, pickChasmLandmarkSites } from './chasmLandmarks.js';
 import { DOOR_LIGHT_POOL, createDoorLightPoolGeometry, createDoorLightPoolMaterial, doorLightPoolMatrices } from './doorLightPools.js';
 import { WALL_LIGHT_SHAPE_FRAGMENT, planWallFootDressing, planWallIcicles, planWallTopDressing, createCornerCutDepthMaterial, createCornerCutPoolGeometry, createCornerCutWallGeometry, isWallAutotileEnabled, patchCornerCutVertexShader, wallCornerCutMask, wallHeightScale } from './wallAutotile.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
@@ -2048,6 +2049,15 @@ export class ThreeGame {
         // Pools of light either side of every door, coloured by its kind
         // (src/doorLightPools.js).
         this.doorLightPoolGeometry = createDoorLightPoolGeometry();
+        // A landmark rising out of each chunk's chasm (src/chasmLandmarks.js);
+        // geometry and materials shared, built on first use.
+        this.chasmLandmarksEnabled = isChasmLandmarksEnabled();
+        this.chasmLandmarkGeometries = {};
+        this.chasmLandmarkMaterials = {
+            mast: createChasmLandmarkMaterial('mast'),
+            spire: createChasmLandmarkMaterial('spire'),
+            arch: createChasmLandmarkMaterial('arch')
+        };
         this.doorLightPoolMaterials = Object.fromEntries(Object.entries(DOOR_LIGHT_POOL.colors)
             .map(([kind, color]) => [kind, createDoorLightPoolMaterial(color)]));
         this.doorPortalHeaderMaterials = {
@@ -24614,7 +24624,7 @@ export class ThreeGame {
             }
             if (child.userData?.isStickerDecals) child.geometry?.dispose?.();
             // Wall-top dressing and door pools share their geometry; their instance buffers go.
-            if (child.userData?.isWallTopDressing || child.userData?.isDoorLightPool) child.dispose?.();
+            if (child.userData?.isWallTopDressing || child.userData?.isDoorLightPool || child.userData?.isChasmLandmark) child.dispose?.();
             // A wall or cap pool owns its corner-cut geometry and its instance buffers.
             if (child.userData?.isInstancedWallPool || child.userData?.isRoomCutawayCapPool
                 || (child.userData?.isCliff && child.geometry?.userData?.ownedByWallPool)) {
@@ -33771,6 +33781,54 @@ export class ThreeGame {
             panelPool.instanceMatrix.needsUpdate = true;
             panelPool.userData = { isDoorDecoration: true, decorationType: 'panel' };
             group.add(panelPool);
+        }
+
+        // Landmarks rising out of this chunk's chasm, on void cells only.
+        if (this.chasmLandmarksEnabled !== false) {
+            // The tracker outlives runs: drop this chunk's chasm entries from an
+            // earlier map before registering the one built now.
+            const chunkMinX = chunkX * this.chunkSize - 0.5;
+            const chunkMinZ = chunkY * this.chunkSize - 0.5;
+            for (const entry of this.explorationTracker?.getLandmarks?.() ?? []) {
+                if (!String(entry.type).startsWith('chasm_')) continue;
+                if (entry.x >= chunkMinX && entry.x < chunkMinX + this.chunkSize
+                    && entry.z >= chunkMinZ && entry.z < chunkMinZ + this.chunkSize) {
+                    this.explorationTracker.removeLandmark?.(entry.id);
+                }
+            }
+            // One instanced mesh per form, one material: a chunk's landmarks cost
+            // one draw (plus shadow) however many there are.
+            const landmarksByForm = new Map();
+            for (const [siteIndex, site] of pickChasmLandmarkSites(grid, { chunkX, chunkY }).entries()) {
+                const siteX = chunkX * this.chunkSize + site.x;
+                const siteZ = chunkY * this.chunkSize + site.y;
+                const form = chasmLandmarkForm(this.getBiomeKeyForWorldPosition?.(siteX, siteZ) ?? BIOME_KEYS.ACTIVE);
+                const yaw = chasmLandmarkYaw(site.facing);
+                if (!landmarksByForm.has(form)) landmarksByForm.set(form, []);
+                landmarksByForm.get(form).push({ x: siteX, z: siteZ, yaw });
+                // The chunk's chief landmark goes on the tactical map, found with its chunk.
+                if (siteIndex === 0) {
+                    const entry = chasmLandmarkMapEntry(form, siteX, siteZ);
+                    this.explorationTracker?.registerLandmark?.(entry.id, { x: entry.x, z: entry.z, label: entry.label, type: entry.type });
+                }
+            }
+            for (const [form, sites] of landmarksByForm) {
+                this.chasmLandmarkGeometries[form] ??= createChasmLandmarkGeometry(form);
+                const landmarks = new THREE.InstancedMesh(this.chasmLandmarkGeometries[form], this.chasmLandmarkMaterials[form], sites.length);
+                sites.forEach(({ x, z, yaw }, index) => {
+                    landmarks.setMatrixAt(index, new THREE.Matrix4().compose(
+                        new THREE.Vector3(x, 0, z),
+                        new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw, 0)),
+                        new THREE.Vector3(1, 1, 1)
+                    ));
+                });
+                landmarks.instanceMatrix.needsUpdate = true;
+                landmarks.computeBoundingSphere();
+                landmarks.castShadow = true;
+                landmarks.receiveShadow = true;
+                landmarks.userData = { isChasmLandmark: true, form, sites };
+                group.add(landmarks);
+            }
         }
 
         for (const [kind, matrices] of Object.entries(doorPoolMatrices)) {

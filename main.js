@@ -12738,6 +12738,18 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
             ctx.fillStyle = '#d0e0f0';
             ctx.font = '10px Space Mono, monospace';
             if (!compact) ctx.fillText(landmark.label ?? '', lx, ly + 14);
+        } else if (landmark.type?.startsWith('chasm_')) {
+            // Landmarks rising out of the chasm (src/chasmLandmarks.js): small,
+            // in the district's colour, named on the full map only.
+            const glyph = { chasm_mast: ['▲', '#ff5a44'], chasm_spire: ['◆', '#7fe3ff'], chasm_arch: ['∩', '#9cff6a'] }[landmark.type] ?? ['▲', '#ff5a44'];
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillStyle = glyph[1];
+            ctx.fillText(glyph[0], lx, ly);
+            if (!compact) {
+                ctx.fillStyle = 'rgba(208, 224, 240, 0.75)';
+                ctx.font = '8px Space Mono, monospace';
+                ctx.fillText(landmark.label ?? '', lx, ly + 11);
+            }
         } else if (landmark.type === 'hive') {
             ctx.fillStyle = '#ff0055';
             ctx.fillText('⚡', lx, ly);
