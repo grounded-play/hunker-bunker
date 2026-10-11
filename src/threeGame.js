@@ -371,6 +371,7 @@ import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
 import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js';
 import { applyCompressedSprite, bakedKeyedSpriteUrl, keyedSpriteBakeKey, recordKeyedSprite } from './keyedSpriteBakes.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
+import { applyVoidDepth, setVoidDepthTime } from './voidDepth.js';
 import { WALL_LIGHT_SHAPE_FRAGMENT, createCornerCutDepthMaterial, createCornerCutPoolGeometry, createCornerCutWallGeometry, isWallAutotileEnabled, patchCornerCutVertexShader, wallCornerCutMask, wallHeightScale } from './wallAutotile.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
 import { corridorKitPlacement, roomGatewayKitPlacement } from './kitGrammar.js';
@@ -4440,6 +4441,16 @@ export class ThreeGame {
         this.voidMaterial = new THREE.MeshBasicMaterial({
             color: 0x020304,
             fog: true
+        });
+        // Faint light far below the rim, so a pit reads as deep (src/voidDepth.js).
+        applyVoidDepth(this.voidMaterial, {
+            shipWorldPos: () => this.biomeShipAnchor,
+            range: {
+                cryoStart: BIOME_THRESHOLD_CRYO - BIOME_BLEND_HALF_WIDTH,
+                cryoEnd: BIOME_THRESHOLD_CRYO + BIOME_BLEND_HALF_WIDTH,
+                bioStart: BIOME_THRESHOLD_BIO - BIOME_BLEND_HALF_WIDTH,
+                bioEnd: BIOME_THRESHOLD_BIO + BIOME_BLEND_HALF_WIDTH
+            }
         });
         this.cliffPathMaterial = new THREE.MeshBasicMaterial({
             color: 0x70eaff,
@@ -17427,6 +17438,7 @@ export class ThreeGame {
         this._splineSwayTime = (this._splineSwayTime ?? 0) + delta;
         setSplineTime(this._splineSwayTime);
         setClothFlutterTime(this._splineSwayTime);
+        setVoidDepthTime(this._splineSwayTime);
         this.updatePaperSkitter?.(delta);
         for (const mixer of this.world3dMixers ?? []) {
             mixer.update(delta);
