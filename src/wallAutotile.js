@@ -429,3 +429,40 @@ export function planWallTopDressing({ worldX, worldZ, runAxis = null, biome = 'a
     }
     return items;
 }
+
+// ── Wall feet (lane B slice 3) ──────────────────────────────────────────
+
+const FOOT_SIDES = Object.freeze({ n: 1, e: 2, s: 3, w: 4 });
+const FOOT_TYPE = Object.freeze({ cryo: 'drift', bio: 'lump' });
+
+/**
+ * What gathers at the foot of a wall cell's open faces, softening the hard
+ * crease where every wall meets the floor: snow drifts in cryo, lumps of
+ * growth in bio, small rubble elsewhere. Each item names the face it leans
+ * on (`side`), where along it it sits (`along`, metres from the face's
+ * centre) and its size; low and shallow, so it never reads as an obstacle.
+ * Deterministic per world cell.
+ */
+export function planWallFootDressing({ worldX, worldZ, openSides, biome = 'active' }) {
+    const items = [];
+    const type = FOOT_TYPE[biome] ?? 'rubble';
+    for (const [side, salt] of Object.entries(FOOT_SIDES)) {
+        if (!openSides?.[side]) continue;
+        if (latticeValue(worldX * 17 + salt * 131, worldZ * 23 - salt * 71) >= 0.2) continue;
+        const pieces = type === 'rubble' ? 2 + Math.floor(latticeValue(worldX + salt, worldZ * 3) * 2) : 1;
+        for (let k = 0; k < pieces; k += 1) {
+            const roll = (offset) => latticeValue(worldX * 7 + salt * 13 + k * 31 + offset, worldZ * 11 - k * 17);
+            items.push({
+                type,
+                side,
+                along: (roll(1) - 0.5) * 0.8,
+                // Drifts lie long and low against the wall; growth bulges more.
+                length: type === 'rubble' ? 0.08 + roll(2) * 0.1 : type === 'drift' ? 0.7 + roll(2) * 0.5 : 0.55 + roll(2) * 0.45,
+                height: type === 'rubble' ? 0.06 + roll(3) * 0.08 : type === 'drift' ? 0.08 + roll(3) * 0.1 : 0.16 + roll(3) * 0.16,
+                depth: type === 'rubble' ? 0.08 + roll(4) * 0.1 : type === 'drift' ? 0.26 + roll(4) * 0.14 : 0.22 + roll(4) * 0.18,
+                spin: roll(5) * Math.PI * 2
+            });
+        }
+    }
+    return items;
+}

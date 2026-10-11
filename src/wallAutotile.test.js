@@ -11,6 +11,7 @@ import {
     createCornerCutWallGeometry,
     isWallAutotileEnabled,
     patchCornerCutVertexShader,
+    planWallFootDressing,
     planWallTopDressing,
     wallCornerCutMask,
     wallHeightScale
@@ -372,5 +373,47 @@ describe('planWallTopDressing', () => {
         const dressed = cells.filter((items) => items.length > 0).length;
         expect(dressed / cells.length).toBeGreaterThan(0.1);
         expect(dressed / cells.length).toBeLessThan(0.6);
+    });
+});
+
+describe('planWallFootDressing', () => {
+    const allOpen = { n: true, e: true, s: true, w: true };
+
+    it('is deterministic per cell', () => {
+        const a = planWallFootDressing({ worldX: 3, worldZ: -8, openSides: allOpen, biome: 'cryo' });
+        expect(planWallFootDressing({ worldX: 3, worldZ: -8, openSides: allOpen, biome: 'cryo' })).toEqual(a);
+    });
+
+    it('sits only against faces that open onto floor', () => {
+        for (let i = 0; i < 400; i += 1) {
+            const items = planWallFootDressing({ worldX: i, worldZ: i * 7, openSides: { n: true, e: false, s: false, w: false }, biome: 'active' });
+            for (const item of items) expect(item.side).toBe('n');
+        }
+        expect(planWallFootDressing({ worldX: 1, worldZ: 2, openSides: { n: false, e: false, s: false, w: false }, biome: 'active' })).toEqual([]);
+    });
+
+    it('drifts snow in cryo, lumps growth in bio and scatters rubble elsewhere', () => {
+        const kinds = (biome) => new Set(Array.from({ length: 300 }, (_, i) => planWallFootDressing({ worldX: i, worldZ: 5, openSides: allOpen, biome }))
+            .flat().map((item) => item.type));
+        expect([...kinds('cryo')]).toEqual(['drift']);
+        expect([...kinds('bio')]).toEqual(['lump']);
+        expect([...kinds('active')]).toEqual(['rubble']);
+    });
+
+    it('keeps low and close to the wall, and dresses only some faces', () => {
+        let faces = 0;
+        let dressed = 0;
+        for (let i = 0; i < 500; i += 1) {
+            const items = planWallFootDressing({ worldX: i * 3, worldZ: i, openSides: allOpen, biome: 'cryo' });
+            faces += 4;
+            dressed += new Set(items.map((item) => item.side)).size;
+            for (const item of items) {
+                expect(item.height).toBeLessThanOrEqual(0.32);
+                expect(item.depth).toBeLessThanOrEqual(0.4);
+                expect(Math.abs(item.along)).toBeLessThanOrEqual(0.4);
+            }
+        }
+        expect(dressed / faces).toBeGreaterThan(0.08);
+        expect(dressed / faces).toBeLessThan(0.35);
     });
 });
