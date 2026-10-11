@@ -255,7 +255,8 @@
       "placeholder_agent": "エージェント",
       "commentary_list": "開発者コメンタリー",
       "commentary_read_all": "すべて読む",
-      "content_guide": "コンテンツガイド（成人向けテーマ）"
+      "content_guide": "コンテンツガイド（成人向けテーマ）",
+      "graphics": "グラフィック"
     },
     "action": {
       "open": "開く",
@@ -2210,6 +2211,48 @@
         "hazard": "{box}：封印が破れた。離れろ。",
         "quest_hook": "{box}：ルートチップ。マップに新しい手がかり。"
       }
+    },
+    "graphics": {
+      "intro": "すべて「高」から始まります。ゲームがカクついたときは、自動調整が設定を1つずつ下げ、その理由を下に記録します。いつでも元に戻せます。",
+      "preset": "品質プリセット",
+      "preset_high": "高",
+      "preset_medium": "中",
+      "preset_low": "低",
+      "preset_custom": "カスタム",
+      "auto_adjust": "カクつき時に自動調整",
+      "label_resolution": "描画解像度",
+      "label_shadows": "影",
+      "label_postProcessing": "ポストエフェクト（ブルーム、フォーカス）",
+      "label_worldDetail": "ワールドの細部（配管、雪だまり、つらら）",
+      "label_landmarks": "奈落のランドマーク",
+      "label_effects": "エフェクト（蒸気、火花、ほこり）",
+      "val_resolution_100": "100%（ネイティブ）",
+      "val_resolution_85": "85%",
+      "val_resolution_70": "70%",
+      "val_shadows_full": "フル",
+      "val_shadows_reduced": "軽減（更新頻度半分）",
+      "val_shadows_off": "オフ",
+      "val_postProcessing_on": "オン",
+      "val_postProcessing_off": "オフ",
+      "val_worldDetail_high": "高",
+      "val_worldDetail_low": "低",
+      "val_landmarks_on": "オン",
+      "val_landmarks_off": "オフ",
+      "val_effects_full": "フル",
+      "val_effects_reduced": "軽減（ほこりなし）",
+      "val_effects_off": "オフ",
+      "auto_changes": "自動で行った変更",
+      "auto_none": "自動で下げた設定はまだありません。",
+      "restore": "元に戻す",
+      "restore_label": "自動調整で下げた設定を元に戻す",
+      "change_entry": "{time} — {setting}：{from} → {to}。{area}で{seconds}秒間 {fps} FPS、{cause}。",
+      "cause_gpu": "グラフィックカードが限界でした",
+      "cause_cpu": "メインスレッド（CPU）が限界でした",
+      "area_active": "バンカー",
+      "area_cryo": "クライオ区画",
+      "area_bio": "バイオ区画",
+      "area_unknown": "フィールド",
+      "notice": "表示：動作をなめらかに保つため{setting}を{to}に下げました。設定 › グラフィックを参照。"
     }
   },
   "narrative": {

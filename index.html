@@ -2489,6 +2489,7 @@
           <button data-i18n="ui.settings.audio" type="button" class="settings-tab" data-settings-tab="audio" role="tab" aria-selected="false">AUDIO</button>
           <button data-i18n="ui.settings.controls" type="button" class="settings-tab" data-settings-tab="controls" role="tab" aria-selected="false">CONTROLS</button>
           <button data-i18n="ui.settings.camera_hud" type="button" class="settings-tab" data-settings-tab="camera" role="tab" aria-selected="false">CAMERA &amp; HUD</button>
+          <button data-i18n="ui.settings.graphics" type="button" class="settings-tab" data-settings-tab="graphics" role="tab" aria-selected="false">GRAPHICS</button>
           <button data-i18n="ui.settings.accessibility" type="button" class="settings-tab" data-settings-tab="accessibility" role="tab" aria-selected="false">ACCESSIBILITY</button>
           <button data-i18n="ui.settings.profile_saves" type="button" class="settings-tab" data-settings-tab="profile" role="tab" aria-selected="false">PROFILE &amp; SAVES</button>
         </div>
@@ -2701,6 +2702,76 @@
 
         <div class="settings-category-group hidden" data-settings-panel="camera">
           <div data-i18n="ui.settings.camera_hud" class="settings-category-header">CAMERA &amp; HUD</div>
+        </div>
+
+        <div class="settings-category-group hidden" data-settings-panel="graphics">
+          <div data-i18n="ui.settings.graphics" class="settings-category-header">GRAPHICS</div>
+          <p data-i18n="ui.graphics.intro" class="graphics-intro">Everything starts at High. If the game stalls, auto-adjust lowers one setting at a time and records why below. Raise anything back whenever you like.</p>
+          <div class="setting-item">
+            <span data-i18n="ui.graphics.preset">QUALITY PRESET</span>
+            <select id="setting-graphics-preset" data-i18n-aria-label="ui.graphics.preset" class="settings-select" aria-label="Quality preset">
+              <option value="high" data-i18n="ui.graphics.preset_high">HIGH</option>
+              <option value="medium" data-i18n="ui.graphics.preset_medium">MEDIUM</option>
+              <option value="low" data-i18n="ui.graphics.preset_low">LOW</option>
+              <option value="custom" disabled data-i18n="ui.graphics.preset_custom">CUSTOM</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span data-i18n="ui.graphics.auto_adjust">AUTO-ADJUST WHEN THE GAME STALLS</span>
+            <label class="toggle"><input type="checkbox" id="setting-graphics-auto" checked> <span class="slider"></span></label>
+          </div>
+          <div class="setting-item">
+            <span data-i18n="ui.graphics.label_resolution">RENDER RESOLUTION</span>
+            <select id="setting-graphics-resolution" data-i18n-aria-label="ui.graphics.label_resolution" class="settings-select" aria-label="Render Resolution">
+              <option value="100" data-i18n="ui.graphics.val_resolution_100">100% (NATIVE)</option>
+              <option value="85" data-i18n="ui.graphics.val_resolution_85">85%</option>
+              <option value="70" data-i18n="ui.graphics.val_resolution_70">70%</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span data-i18n="ui.graphics.label_shadows">SHADOWS</span>
+            <select id="setting-graphics-shadows" data-i18n-aria-label="ui.graphics.label_shadows" class="settings-select" aria-label="Shadows">
+              <option value="full" data-i18n="ui.graphics.val_shadows_full">FULL</option>
+              <option value="reduced" data-i18n="ui.graphics.val_shadows_reduced">REDUCED (HALF RATE)</option>
+              <option value="off" data-i18n="ui.graphics.val_shadows_off">OFF</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span data-i18n="ui.graphics.label_postProcessing">POST-PROCESSING (BLOOM, FOCUS)</span>
+            <select id="setting-graphics-post" data-i18n-aria-label="ui.graphics.label_postProcessing" class="settings-select" aria-label="Post-Processing (Bloom, Focus)">
+              <option value="on" data-i18n="ui.graphics.val_postProcessing_on">ON</option>
+              <option value="off" data-i18n="ui.graphics.val_postProcessing_off">OFF</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span data-i18n="ui.graphics.label_worldDetail">WORLD DETAIL (PIPES, DRIFTS, ICICLES)</span>
+            <select id="setting-graphics-detail" data-i18n-aria-label="ui.graphics.label_worldDetail" class="settings-select" aria-label="World Detail (Pipes, Drifts, Icicles)">
+              <option value="high" data-i18n="ui.graphics.val_worldDetail_high">HIGH</option>
+              <option value="low" data-i18n="ui.graphics.val_worldDetail_low">LOW</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span data-i18n="ui.graphics.label_landmarks">CHASM LANDMARKS</span>
+            <select id="setting-graphics-landmarks" data-i18n-aria-label="ui.graphics.label_landmarks" class="settings-select" aria-label="Chasm Landmarks">
+              <option value="on" data-i18n="ui.graphics.val_landmarks_on">ON</option>
+              <option value="off" data-i18n="ui.graphics.val_landmarks_off">OFF</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span data-i18n="ui.graphics.label_effects">EFFECTS (STEAM, SPARKS, DUST)</span>
+            <select id="setting-graphics-effects" data-i18n-aria-label="ui.graphics.label_effects" class="settings-select" aria-label="Effects (Steam, Sparks, Dust)">
+              <option value="full" data-i18n="ui.graphics.val_effects_full">FULL</option>
+              <option value="reduced" data-i18n="ui.graphics.val_effects_reduced">REDUCED (NO DUST)</option>
+              <option value="off" data-i18n="ui.graphics.val_effects_off">OFF</option>
+            </select>
+          </div>
+          <div data-i18n="ui.graphics.auto_changes" class="settings-category-header graphics-auto-header">AUTOMATIC CHANGES</div>
+          <p id="graphics-auto-none" data-i18n="ui.graphics.auto_none" class="graphics-intro">Nothing has been lowered automatically.</p>
+          <ul id="graphics-auto-changes" class="graphics-auto-changes"></ul>
+          <div class="setting-item setting-item--action">
+            <span data-i18n="ui.graphics.restore_label">RESTORE WHAT AUTO-ADJUST LOWERED</span>
+            <button type="button" class="calibrate-btn settings-action-btn" id="graphics-auto-restore" data-i18n="ui.graphics.restore">RESTORE</button>
+          </div>
         </div>
 
         <div class="settings-category-group hidden" data-settings-panel="accessibility">

@@ -255,7 +255,8 @@
       "placeholder_agent": "AGENTE",
       "commentary_list": "COMENTÁRIOS DOS DESENVOLVEDORES",
       "commentary_read_all": "LER TUDO",
-      "content_guide": "GUIA DE CONTEÚDO (TEMAS ADULTOS)"
+      "content_guide": "GUIA DE CONTEÚDO (TEMAS ADULTOS)",
+      "graphics": "GRÁFICOS"
     },
     "action": {
       "open": "ABRIR",
@@ -2210,6 +2211,48 @@
         "hazard": "{box}: lacre rompido. Afaste-se.",
         "quest_hook": "{box}: um chip de rota. Nova pista no mapa."
       }
+    },
+    "graphics": {
+      "intro": "Tudo começa no Alto. Se o jogo travar, o ajuste automático reduz uma opção por vez e registra o motivo abaixo. Você pode aumentar qualquer coisa de novo quando quiser.",
+      "preset": "PREDEFINIÇÃO DE QUALIDADE",
+      "preset_high": "ALTO",
+      "preset_medium": "MÉDIO",
+      "preset_low": "BAIXO",
+      "preset_custom": "PERSONALIZADO",
+      "auto_adjust": "AJUSTE AUTOMÁTICO QUANDO O JOGO TRAVAR",
+      "label_resolution": "RESOLUÇÃO DE RENDERIZAÇÃO",
+      "label_shadows": "SOMBRAS",
+      "label_postProcessing": "PÓS-PROCESSAMENTO (BLOOM, FOCO)",
+      "label_worldDetail": "DETALHES DO MUNDO (CANOS, NEVE, PINGENTES)",
+      "label_landmarks": "MARCOS DO ABISMO",
+      "label_effects": "EFEITOS (VAPOR, FAÍSCAS, POEIRA)",
+      "val_resolution_100": "100% (NATIVA)",
+      "val_resolution_85": "85%",
+      "val_resolution_70": "70%",
+      "val_shadows_full": "COMPLETAS",
+      "val_shadows_reduced": "REDUZIDAS (METADE DA TAXA)",
+      "val_shadows_off": "DESLIGADAS",
+      "val_postProcessing_on": "LIGADO",
+      "val_postProcessing_off": "DESLIGADO",
+      "val_worldDetail_high": "ALTO",
+      "val_worldDetail_low": "BAIXO",
+      "val_landmarks_on": "LIGADOS",
+      "val_landmarks_off": "DESLIGADOS",
+      "val_effects_full": "COMPLETOS",
+      "val_effects_reduced": "REDUZIDOS (SEM POEIRA)",
+      "val_effects_off": "DESLIGADOS",
+      "auto_changes": "MUDANÇAS AUTOMÁTICAS",
+      "auto_none": "Nada foi reduzido automaticamente.",
+      "restore": "RESTAURAR",
+      "restore_label": "RESTAURAR O QUE O AJUSTE AUTOMÁTICO REDUZIU",
+      "change_entry": "{time} — {setting}: {from} → {to}. {fps} FPS por {seconds} s {area}; {cause}.",
+      "cause_gpu": "a placa de vídeo estava no limite",
+      "cause_cpu": "a thread principal (CPU) estava no limite",
+      "area_active": "no bunker",
+      "area_cryo": "no setor criogênico",
+      "area_bio": "no setor bio",
+      "area_unknown": "no terreno",
+      "notice": "Tela: {setting} reduzido para {to} para manter o jogo fluido. Veja Configurações › Gráficos."
     }
   },
   "narrative": {

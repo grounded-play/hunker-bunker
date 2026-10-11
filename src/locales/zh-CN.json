@@ -255,7 +255,8 @@
       "placeholder_agent": "特工",
       "commentary_list": "开发者评论",
       "commentary_read_all": "全部阅读",
-      "content_guide": "内容指南（成人主题）"
+      "content_guide": "内容指南（成人主题）",
+      "graphics": "图形"
     },
     "action": {
       "open": "打开",
@@ -2210,6 +2211,48 @@
         "hazard": "{box}：密封破裂。快离开。",
         "quest_hook": "{box}：一枚路线芯片。地图上有新线索。"
       }
+    },
+    "graphics": {
+      "intro": "所有选项从“高”开始。如果游戏卡顿，自动调整会一次降低一项设置，并在下方记录原因。你可以随时调回。",
+      "preset": "画质预设",
+      "preset_high": "高",
+      "preset_medium": "中",
+      "preset_low": "低",
+      "preset_custom": "自定义",
+      "auto_adjust": "游戏卡顿时自动调整",
+      "label_resolution": "渲染分辨率",
+      "label_shadows": "阴影",
+      "label_postProcessing": "后期处理（泛光、景深）",
+      "label_worldDetail": "世界细节（管道、积雪、冰柱）",
+      "label_landmarks": "深渊地标",
+      "label_effects": "特效（蒸汽、火花、灰尘）",
+      "val_resolution_100": "100%（原生）",
+      "val_resolution_85": "85%",
+      "val_resolution_70": "70%",
+      "val_shadows_full": "完整",
+      "val_shadows_reduced": "降低（半速更新）",
+      "val_shadows_off": "关闭",
+      "val_postProcessing_on": "开启",
+      "val_postProcessing_off": "关闭",
+      "val_worldDetail_high": "高",
+      "val_worldDetail_low": "低",
+      "val_landmarks_on": "开启",
+      "val_landmarks_off": "关闭",
+      "val_effects_full": "完整",
+      "val_effects_reduced": "降低（无灰尘）",
+      "val_effects_off": "关闭",
+      "auto_changes": "自动更改",
+      "auto_none": "尚未自动降低任何设置。",
+      "restore": "恢复",
+      "restore_label": "恢复自动调整降低的设置",
+      "change_entry": "{time} — {setting}：{from} → {to}。在{area}持续 {seconds} 秒 {fps} FPS；{cause}。",
+      "cause_gpu": "显卡已达上限",
+      "cause_cpu": "主线程（CPU）已达上限",
+      "area_active": "地堡",
+      "area_cryo": "冷冻区",
+      "area_bio": "生物区",
+      "area_unknown": "野外",
+      "notice": "显示：为保持流畅，{setting}已降至{to}。见 设置 › 图形。"
     }
   },
   "narrative": {

@@ -255,7 +255,8 @@
       "placeholder_agent": "AGENT",
       "commentary_list": "DEVELOPER COMMENTARY",
       "commentary_read_all": "READ ALL",
-      "content_guide": "CONTENT GUIDE (MATURE THEMES)"
+      "content_guide": "CONTENT GUIDE (MATURE THEMES)",
+      "graphics": "GRAPHICS"
     },
     "action": {
       "open": "OPEN",
@@ -2210,6 +2211,48 @@
         "hazard": "{box}: seal breach. Get clear.",
         "quest_hook": "{box}: a route chit. New lead on the map."
       }
+    },
+    "graphics": {
+      "intro": "Everything starts at High. If the game stalls, auto-adjust lowers one setting at a time and records why below. Raise anything back whenever you like.",
+      "preset": "QUALITY PRESET",
+      "preset_high": "HIGH",
+      "preset_medium": "MEDIUM",
+      "preset_low": "LOW",
+      "preset_custom": "CUSTOM",
+      "auto_adjust": "AUTO-ADJUST WHEN THE GAME STALLS",
+      "label_resolution": "RENDER RESOLUTION",
+      "label_shadows": "SHADOWS",
+      "label_postProcessing": "POST-PROCESSING (BLOOM, FOCUS)",
+      "label_worldDetail": "WORLD DETAIL (PIPES, DRIFTS, ICICLES)",
+      "label_landmarks": "CHASM LANDMARKS",
+      "label_effects": "EFFECTS (STEAM, SPARKS, DUST)",
+      "val_resolution_100": "100% (NATIVE)",
+      "val_resolution_85": "85%",
+      "val_resolution_70": "70%",
+      "val_shadows_full": "FULL",
+      "val_shadows_reduced": "REDUCED (HALF RATE)",
+      "val_shadows_off": "OFF",
+      "val_postProcessing_on": "ON",
+      "val_postProcessing_off": "OFF",
+      "val_worldDetail_high": "HIGH",
+      "val_worldDetail_low": "LOW",
+      "val_landmarks_on": "ON",
+      "val_landmarks_off": "OFF",
+      "val_effects_full": "FULL",
+      "val_effects_reduced": "REDUCED (NO DUST)",
+      "val_effects_off": "OFF",
+      "auto_changes": "AUTOMATIC CHANGES",
+      "auto_none": "Nothing has been lowered automatically.",
+      "restore": "RESTORE",
+      "restore_label": "RESTORE WHAT AUTO-ADJUST LOWERED",
+      "change_entry": "{time} — {setting}: {from} → {to}. {fps} FPS for {seconds} s {area}; {cause}.",
+      "cause_gpu": "the graphics card was the limit",
+      "cause_cpu": "the game's main thread (CPU) was the limit",
+      "area_active": "in the bunker",
+      "area_cryo": "in the cryo sector",
+      "area_bio": "in the bio sector",
+      "area_unknown": "in the field",
+      "notice": "Display: {setting} lowered to {to} to keep the game smooth. See Settings › Graphics."
     }
   },
   "narrative": {

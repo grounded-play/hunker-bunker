@@ -255,7 +255,8 @@
       "placeholder_agent": "AGENTE",
       "commentary_list": "COMENTARIOS DEL DESARROLLADOR",
       "commentary_read_all": "LEER TODO",
-      "content_guide": "GUÍA DE CONTENIDO (TEMAS MADUROS)"
+      "content_guide": "GUÍA DE CONTENIDO (TEMAS MADUROS)",
+      "graphics": "GRÁFICOS"
     },
     "action": {
       "open": "ABRIR",
@@ -2210,6 +2211,48 @@
         "hazard": "{box}: sello roto. Aléjate.",
         "quest_hook": "{box}: un chip de ruta. Nueva pista en el mapa."
       }
+    },
+    "graphics": {
+      "intro": "Todo empieza en Alto. Si el juego se traba, el ajuste automático baja una opción a la vez y anota el motivo abajo. Puedes volver a subir cualquier cosa cuando quieras.",
+      "preset": "PRESET DE CALIDAD",
+      "preset_high": "ALTO",
+      "preset_medium": "MEDIO",
+      "preset_low": "BAJO",
+      "preset_custom": "PERSONALIZADO",
+      "auto_adjust": "AJUSTE AUTOMÁTICO SI EL JUEGO SE TRABA",
+      "label_resolution": "RESOLUCIÓN DE RENDERIZADO",
+      "label_shadows": "SOMBRAS",
+      "label_postProcessing": "POSPROCESADO (BLOOM, ENFOQUE)",
+      "label_worldDetail": "DETALLE DEL MUNDO (TUBERÍAS, NIEVE, CARÁMBANOS)",
+      "label_landmarks": "HITOS DEL ABISMO",
+      "label_effects": "EFECTOS (VAPOR, CHISPAS, POLVO)",
+      "val_resolution_100": "100 % (NATIVA)",
+      "val_resolution_85": "85 %",
+      "val_resolution_70": "70 %",
+      "val_shadows_full": "COMPLETAS",
+      "val_shadows_reduced": "REDUCIDAS (MITAD DE FRECUENCIA)",
+      "val_shadows_off": "DESACTIVADAS",
+      "val_postProcessing_on": "ACTIVADO",
+      "val_postProcessing_off": "DESACTIVADO",
+      "val_worldDetail_high": "ALTO",
+      "val_worldDetail_low": "BAJO",
+      "val_landmarks_on": "ACTIVADOS",
+      "val_landmarks_off": "DESACTIVADOS",
+      "val_effects_full": "COMPLETOS",
+      "val_effects_reduced": "REDUCIDOS (SIN POLVO)",
+      "val_effects_off": "DESACTIVADOS",
+      "auto_changes": "CAMBIOS AUTOMÁTICOS",
+      "auto_none": "Todavía no se bajó nada automáticamente.",
+      "restore": "RESTAURAR",
+      "restore_label": "RESTAURAR LO QUE BAJÓ EL AJUSTE AUTOMÁTICO",
+      "change_entry": "{time} — {setting}: {from} → {to}. {fps} FPS durante {seconds} s {area}; {cause}.",
+      "cause_gpu": "la tarjeta gráfica estaba al límite",
+      "cause_cpu": "el hilo principal (CPU) estaba al límite",
+      "area_active": "en el búnker",
+      "area_cryo": "en el sector criogénico",
+      "area_bio": "en el sector bio",
+      "area_unknown": "en el terreno",
+      "notice": "Pantalla: {setting} bajó a {to} para mantener el juego fluido. Ver Ajustes › Gráficos."
     }
   },
   "narrative": {

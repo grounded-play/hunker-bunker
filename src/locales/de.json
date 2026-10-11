@@ -255,7 +255,8 @@
       "placeholder_agent": "AGENT",
       "commentary_list": "ENTWICKLERKOMMENTAR",
       "commentary_read_all": "ALLE LESEN",
-      "content_guide": "INHALTSLEITFADEN (REIFE THEMEN)"
+      "content_guide": "INHALTSLEITFADEN (REIFE THEMEN)",
+      "graphics": "GRAFIK"
     },
     "action": {
       "open": "ÖFFNEN",
@@ -2210,6 +2211,48 @@
         "hazard": "{box}: Siegelbruch. Weg hier.",
         "quest_hook": "{box}: Ein Routenchip. Neue Spur auf der Karte."
       }
+    },
+    "graphics": {
+      "intro": "Alles startet auf Hoch. Wenn das Spiel ins Stocken gerät, senkt die automatische Anpassung eine Einstellung nach der anderen und vermerkt unten den Grund. Du kannst alles jederzeit wieder erhöhen.",
+      "preset": "QUALITÄTSVORGABE",
+      "preset_high": "HOCH",
+      "preset_medium": "MITTEL",
+      "preset_low": "NIEDRIG",
+      "preset_custom": "BENUTZERDEFINIERT",
+      "auto_adjust": "AUTOMATISCH ANPASSEN, WENN DAS SPIEL STOCKT",
+      "label_resolution": "RENDERAUFLÖSUNG",
+      "label_shadows": "SCHATTEN",
+      "label_postProcessing": "NACHBEARBEITUNG (BLOOM, FOKUS)",
+      "label_worldDetail": "WELTDETAILS (ROHRE, VERWEHUNGEN, EISZAPFEN)",
+      "label_landmarks": "SCHLUCHT-WAHRZEICHEN",
+      "label_effects": "EFFEKTE (DAMPF, FUNKEN, STAUB)",
+      "val_resolution_100": "100 % (NATIV)",
+      "val_resolution_85": "85 %",
+      "val_resolution_70": "70 %",
+      "val_shadows_full": "VOLL",
+      "val_shadows_reduced": "REDUZIERT (HALBE RATE)",
+      "val_shadows_off": "AUS",
+      "val_postProcessing_on": "AN",
+      "val_postProcessing_off": "AUS",
+      "val_worldDetail_high": "HOCH",
+      "val_worldDetail_low": "NIEDRIG",
+      "val_landmarks_on": "AN",
+      "val_landmarks_off": "AUS",
+      "val_effects_full": "VOLL",
+      "val_effects_reduced": "REDUZIERT (OHNE STAUB)",
+      "val_effects_off": "AUS",
+      "auto_changes": "AUTOMATISCHE ÄNDERUNGEN",
+      "auto_none": "Bisher wurde nichts automatisch gesenkt.",
+      "restore": "WIEDERHERSTELLEN",
+      "restore_label": "AUTOMATISCH GESENKTES WIEDERHERSTELLEN",
+      "change_entry": "{time} — {setting}: {from} → {to}. {fps} FPS für {seconds} s {area}; {cause}.",
+      "cause_gpu": "die Grafikkarte war am Limit",
+      "cause_cpu": "der Haupt-Thread (CPU) war am Limit",
+      "area_active": "im Bunker",
+      "area_cryo": "im Kryo-Sektor",
+      "area_bio": "im Bio-Sektor",
+      "area_unknown": "im Gelände",
+      "notice": "Anzeige: {setting} auf {to} gesenkt, damit das Spiel flüssig bleibt. Siehe Einstellungen › Grafik."
     }
   },
   "narrative": {

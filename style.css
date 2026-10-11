@@ -4362,6 +4362,38 @@ input:checked+.slider:before {
   background: rgba(255, 159, 28, 0.08);
 }
 
+/* Settings > Graphics (src/graphicsSettings.js) */
+.settings-modal-content .graphics-intro {
+  grid-column: 1 / -1;
+  margin: 0 0 calc(var(--vu) * 1.6);
+  padding: 0 calc(var(--vu) * 1.2);
+  font-size: max(13px, var(--font-xs));
+  line-height: 1.45;
+  color: rgba(214, 228, 240, 0.82);
+}
+
+.settings-modal-content .graphics-auto-header {
+  margin-top: calc(var(--vu) * 2.4);
+}
+
+.settings-modal-content .graphics-auto-changes {
+  grid-column: 1 / -1;
+  list-style: none;
+  margin: 0 0 calc(var(--vu) * 1.6);
+  padding: 0 calc(var(--vu) * 1.2);
+  display: grid;
+  gap: calc(var(--vu) * 0.8);
+}
+
+.settings-modal-content .graphics-auto-changes li {
+  font-size: max(13px, var(--font-xs));
+  line-height: 1.4;
+  color: #ffd27a;
+  border-left: 3px solid rgba(255, 159, 28, 0.6);
+  padding: calc(var(--vu) * 0.5) calc(var(--vu) * 1);
+  background: rgba(255, 159, 28, 0.06);
+}
+
 .settings-modal-content .modal-actions {
   margin-top: calc(var(--vu) * 2) !important;
   padding-top: calc(var(--vu) * 1.5) !important;

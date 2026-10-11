@@ -255,7 +255,8 @@
       "placeholder_agent": "АГЕНТ",
       "commentary_list": "КОММЕНТАРИИ РАЗРАБОТЧИКОВ",
       "commentary_read_all": "ЧИТАТЬ ВСЁ",
-      "content_guide": "ОПИСАНИЕ КОНТЕНТА (ТЕМЫ ДЛЯ ВЗРОСЛЫХ)"
+      "content_guide": "ОПИСАНИЕ КОНТЕНТА (ТЕМЫ ДЛЯ ВЗРОСЛЫХ)",
+      "graphics": "ГРАФИКА"
     },
     "action": {
       "open": "ОТКРЫТЬ",
@@ -2210,6 +2211,48 @@
         "hazard": "{box}: печать сорвана. Отойди.",
         "quest_hook": "{box}: маршрутный чип. Новая цель на карте."
       }
+    },
+    "graphics": {
+      "intro": "Всё начинается на высоком качестве. Если игра начинает тормозить, автонастройка снижает по одному параметру и записывает причину ниже. Вы можете вернуть любой параметр в любой момент.",
+      "preset": "ПРЕДУСТАНОВКА КАЧЕСТВА",
+      "preset_high": "ВЫСОКОЕ",
+      "preset_medium": "СРЕДНЕЕ",
+      "preset_low": "НИЗКОЕ",
+      "preset_custom": "СВОЁ",
+      "auto_adjust": "АВТОНАСТРОЙКА ПРИ ТОРМОЖЕНИИ",
+      "label_resolution": "РАЗРЕШЕНИЕ РЕНДЕРИНГА",
+      "label_shadows": "ТЕНИ",
+      "label_postProcessing": "ПОСТОБРАБОТКА (СВЕЧЕНИЕ, ФОКУС)",
+      "label_worldDetail": "ДЕТАЛИ МИРА (ТРУБЫ, СУГРОБЫ, СОСУЛЬКИ)",
+      "label_landmarks": "ОРИЕНТИРЫ В ПРОПАСТИ",
+      "label_effects": "ЭФФЕКТЫ (ПАР, ИСКРЫ, ПЫЛЬ)",
+      "val_resolution_100": "100% (РОДНОЕ)",
+      "val_resolution_85": "85%",
+      "val_resolution_70": "70%",
+      "val_shadows_full": "ПОЛНЫЕ",
+      "val_shadows_reduced": "СНИЖЕННЫЕ (ПОЛОВИННАЯ ЧАСТОТА)",
+      "val_shadows_off": "ВЫКЛ.",
+      "val_postProcessing_on": "ВКЛ.",
+      "val_postProcessing_off": "ВЫКЛ.",
+      "val_worldDetail_high": "ВЫСОКИЕ",
+      "val_worldDetail_low": "НИЗКИЕ",
+      "val_landmarks_on": "ВКЛ.",
+      "val_landmarks_off": "ВЫКЛ.",
+      "val_effects_full": "ПОЛНЫЕ",
+      "val_effects_reduced": "СНИЖЕННЫЕ (БЕЗ ПЫЛИ)",
+      "val_effects_off": "ВЫКЛ.",
+      "auto_changes": "АВТОМАТИЧЕСКИЕ ИЗМЕНЕНИЯ",
+      "auto_none": "Пока ничего не снижалось автоматически.",
+      "restore": "ВЕРНУТЬ",
+      "restore_label": "ВЕРНУТЬ ТО, ЧТО СНИЗИЛА АВТОНАСТРОЙКА",
+      "change_entry": "{time} — {setting}: {from} → {to}. {fps} FPS в течение {seconds} с {area}; {cause}.",
+      "cause_gpu": "видеокарта работала на пределе",
+      "cause_cpu": "основной поток (ЦП) работал на пределе",
+      "area_active": "в бункере",
+      "area_cryo": "в криосекторе",
+      "area_bio": "в биосекторе",
+      "area_unknown": "на местности",
+      "notice": "Экран: {setting} снижено до {to}, чтобы игра шла плавно. См. Настройки › Графика."
     }
   },
   "narrative": {

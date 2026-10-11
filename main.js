@@ -47,6 +47,7 @@ import { registerStoryManager } from './src/storyScope.js';
 import { CaveRevealController } from './src/caveReveal.js';
 import { Act2Manager, ACT2_LINES, getAct2EndingLines, pickAct2Ending, buildAct2Manifest, resolveEndingCutscene } from './src/act2.js';
 import { isDemoBuild, isGoreEnabled, setGoreEnabled } from './src/featureFlags.js';
+import { applyGraphicsPreset, graphicsPresetOf, loadGraphicsSettings, restoreAutoGraphicsChanges, saveGraphicsSettings, setGraphicsAutoAdjust, setGraphicsValue } from './src/graphicsSettings.js';
 import {
     loadAccessibilitySettings,
     applyAccessibilitySettings,
@@ -11322,6 +11323,115 @@ function organizeSettingsPanels() {
     ].forEach(([id, target]) => moveControl(id, target));
 }
 organizeSettingsPanels();
+
+// ── Settings > Graphics (src/graphicsSettings.js) ─────────────────────
+// Everything starts at High. Auto-adjust may lower one setting at a time when
+// the game stalls; each step is listed here with why, and the player can
+// change or restore anything. ThreeGame owns the live settings once it
+// exists; before that they are read and written in storage.
+const GRAPHICS_CONTROLS = Object.freeze({
+    resolution: 'setting-graphics-resolution',
+    shadows: 'setting-graphics-shadows',
+    postProcessing: 'setting-graphics-post',
+    worldDetail: 'setting-graphics-detail',
+    landmarks: 'setting-graphics-landmarks',
+    effects: 'setting-graphics-effects'
+});
+// Literal keys (the i18n audit finds references by their full text).
+const GRAPHICS_LABEL_KEYS = Object.freeze({
+    resolution: 'ui.graphics.label_resolution',
+    shadows: 'ui.graphics.label_shadows',
+    postProcessing: 'ui.graphics.label_postProcessing',
+    worldDetail: 'ui.graphics.label_worldDetail',
+    landmarks: 'ui.graphics.label_landmarks',
+    effects: 'ui.graphics.label_effects'
+});
+const GRAPHICS_CAUSE_KEYS = Object.freeze({ gpu: 'ui.graphics.cause_gpu', cpu: 'ui.graphics.cause_cpu' });
+const GRAPHICS_AREA_KEYS = Object.freeze({
+    active: 'ui.graphics.area_active',
+    cryo: 'ui.graphics.area_cryo',
+    bio: 'ui.graphics.area_bio',
+    unknown: 'ui.graphics.area_unknown'
+});
+
+function currentGraphicsSettings() {
+    return window.game?.graphicsSettings ?? loadGraphicsSettings();
+}
+
+function graphicsValueLabel(key, value) {
+    // Option labels double as the value names in the change list.
+    const option = document.querySelector(`#${GRAPHICS_CONTROLS[key]} option[value="${value}"]`);
+    return option?.textContent?.trim() || String(value);
+}
+
+function describeGraphicsChange(change) {
+    const at = new Date(change.at);
+    return t('ui.graphics.change_entry', {
+        time: Number.isNaN(at.getTime()) ? '' : at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        setting: t(GRAPHICS_LABEL_KEYS[change.key]),
+        from: graphicsValueLabel(change.key, change.from),
+        to: graphicsValueLabel(change.key, change.to),
+        fps: change.fps ?? '?',
+        seconds: change.seconds ?? '?',
+        area: t(GRAPHICS_AREA_KEYS[change.area] ?? GRAPHICS_AREA_KEYS.unknown),
+        cause: t(GRAPHICS_CAUSE_KEYS[change.bound] ?? GRAPHICS_CAUSE_KEYS.gpu)
+    });
+}
+
+function renderGraphicsSettingsTab() {
+    const settings = currentGraphicsSettings();
+    const preset = document.getElementById('setting-graphics-preset');
+    if (preset) preset.value = graphicsPresetOf(settings.values);
+    const auto = document.getElementById('setting-graphics-auto');
+    if (auto) auto.checked = settings.autoAdjust !== false;
+    for (const [key, id] of Object.entries(GRAPHICS_CONTROLS)) {
+        const select = document.getElementById(id);
+        if (select) select.value = settings.values[key];
+    }
+    const list = document.getElementById('graphics-auto-changes');
+    if (list) {
+        list.replaceChildren(...settings.autoChanges.map((change) => {
+            const item = document.createElement('li');
+            item.textContent = describeGraphicsChange(change);
+            return item;
+        }));
+    }
+    document.getElementById('graphics-auto-none')?.classList.toggle('hidden', settings.autoChanges.length > 0);
+    const restore = document.getElementById('graphics-auto-restore');
+    if (restore) restore.disabled = settings.autoChanges.length === 0;
+}
+
+function commitGraphicsSettings(next) {
+    if (window.game?.setGraphicsSettings) window.game.setGraphicsSettings(next);
+    else saveGraphicsSettings(next);
+    renderGraphicsSettingsTab();
+}
+
+document.getElementById('setting-graphics-preset')?.addEventListener('change', (event) => {
+    commitGraphicsSettings(applyGraphicsPreset(currentGraphicsSettings(), event.target.value));
+});
+document.getElementById('setting-graphics-auto')?.addEventListener('change', (event) => {
+    commitGraphicsSettings(setGraphicsAutoAdjust(currentGraphicsSettings(), event.target.checked));
+});
+for (const [key, id] of Object.entries(GRAPHICS_CONTROLS)) {
+    document.getElementById(id)?.addEventListener('change', (event) => {
+        commitGraphicsSettings(setGraphicsValue(currentGraphicsSettings(), key, event.target.value));
+    });
+}
+document.getElementById('graphics-auto-restore')?.addEventListener('click', () => {
+    commitGraphicsSettings(restoreAutoGraphicsChanges(currentGraphicsSettings()));
+});
+window.addEventListener('hb:graphics-auto-lowered', (event) => {
+    renderGraphicsSettingsTab();
+    const change = event?.detail?.change;
+    if (!change || !isGameplayPhase()) return;
+    showBiomePrompt(`> ${t('ui.graphics.notice', {
+        setting: t(GRAPHICS_LABEL_KEYS[change.key]),
+        to: graphicsValueLabel(change.key, change.to)
+    })}`);
+});
+window.addEventListener('locale-changed', () => renderGraphicsSettingsTab());
+renderGraphicsSettingsTab();
 
 if (settingsPopup) {
     new MutationObserver(() => syncSteamInputPhase()).observe(settingsPopup, {

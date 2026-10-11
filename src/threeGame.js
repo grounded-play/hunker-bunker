@@ -40,7 +40,8 @@ import {
 } from './propInteractions.js';
 import { resolvePropVariant } from './propVariants.js';
 import { isDynamicPropExperienceType } from './propExperience.js';
-import { createPropFx, getPropFxProfile, setPropFxViewportHeight } from './propFx.js';
+import { applyPropFxQuality, createPropFx, getPropFxProfile, setPropFxQuality, setPropFxViewportHeight } from './propFx.js';
+import { DEFAULT_GRAPHICS_SETTINGS, GRAPHICS_PRESETS, loadGraphicsSettings, nextAutoGraphicsStep, recordAutoGraphicsStep, saveGraphicsSettings } from './graphicsSettings.js';
 import { createPaperSkitter, planPaperSheets } from './paperSkitter.js';
 import { setClothFlutterTime } from './clothFlutter.js';
 import { UmbilicalAttacker } from './3d/umbilicalAttacker.js';
@@ -1190,6 +1191,9 @@ const ADAPTIVE_GAMEPLAY_FLAP_SECONDS = 30;
 // With GPU timing available, the drop needs the GPU to fill most of the frame.
 const ADAPTIVE_GAMEPLAY_GPU_BOUND_SHARE = 0.6;
 const ADAPTIVE_GAMEPLAY_GPU_MIN_SAMPLES = 30;
+// After an automatic graphics step, wait this long before judging again, so
+// the frame rate can show whether the step helped.
+const GRAPHICS_AUTO_STEP_COOLDOWN_SECONDS = 10;
 // docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #3 --
 // updateWallDamageColor used to clone this.wallMaterial into a brand new
 // MeshStandardMaterial for every non-instanced wall the first time it took
@@ -2537,6 +2541,9 @@ export class ThreeGame {
         this.gameplayPixelRatio = 1;
         this.performanceProfile = 'menu';
         this.adaptiveGameplayPerformanceMode = false;
+        // Settings > Graphics (src/graphicsSettings.js): High unless the player,
+        // or auto-adjust during a stall, lowered something.
+        this.graphicsSettings = loadGraphicsSettings();
         this.gameplayPostProcessingEnabled = true;
         this._adaptiveLowFpsSeconds = 0;
         this._adaptiveLastFps = null;
@@ -10712,9 +10719,7 @@ export class ThreeGame {
             maxFramebufferPixels: 3_600_000
         });
         const targetPixelRatio = this.performanceProfile === 'gameplay'
-            ? (this.adaptiveGameplayPerformanceMode
-                ? Math.min(this.gameplayPixelRatio, ADAPTIVE_GAMEPLAY_PIXEL_RATIO_CAP)
-                : this.gameplayPixelRatio)
+            ? (this.gameplayTargetPixelRatio?.() ?? this.gameplayPixelRatio)
             : this.menuPixelRatio;
         if (Math.abs(this.renderer.getPixelRatio() - targetPixelRatio) > 0.001) {
             this.renderer.setPixelRatio(targetPixelRatio);
@@ -10911,7 +10916,7 @@ export class ThreeGame {
             this.chunkGroups.visible = nextProfile === 'gameplay';
         }
         const targetPixelRatio = nextProfile === 'gameplay'
-            ? this.gameplayPixelRatio
+            ? (this.gameplayTargetPixelRatio?.() ?? this.gameplayPixelRatio)
             : this.menuPixelRatio;
         if (Math.abs(this.renderer.getPixelRatio() - targetPixelRatio) > 0.001) {
             this.renderer.setPixelRatio(targetPixelRatio);
@@ -10923,6 +10928,9 @@ export class ThreeGame {
         if (nextProfile === 'gameplay') this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.autoUpdate = nextProfile === 'gameplay';
         this.resize();
+        // Settings > Graphics (shadow rate, post-processing, detail, effects),
+        // after the profile's own shadow defaults so a lowered setting holds.
+        if (nextProfile === 'gameplay') this.applyGraphicsSettings?.();
         if (nextProfile === 'gameplay') {
             // Hardware status is known before deployment in packaged builds;
             // engage Deck quality before staging warms shader variants that
@@ -11092,10 +11100,8 @@ export class ThreeGame {
             usesGameplayFocusEffects(this)
         );
 
-        const basePixelRatio = this.gameplayPixelRatio ?? 1;
-        const targetPixelRatio = nextEnabled
-            ? Math.min(basePixelRatio, ADAPTIVE_GAMEPLAY_PIXEL_RATIO_CAP)
-            : basePixelRatio;
+        const targetPixelRatio = this.gameplayTargetPixelRatio?.()
+            ?? (nextEnabled ? Math.min(this.gameplayPixelRatio ?? 1, ADAPTIVE_GAMEPLAY_PIXEL_RATIO_CAP) : (this.gameplayPixelRatio ?? 1));
         const currentPixelRatio = this.renderer?.getPixelRatio?.();
         if (this.renderer?.setPixelRatio
             && (!Number.isFinite(currentPixelRatio)
@@ -11127,6 +11133,89 @@ export class ThreeGame {
         });
         this.emitLightingTelemetry?.('adaptive-tier-change', { reason, fps });
         return true;
+    }
+
+    /** The gameplay pixel ratio after Settings > Graphics > Render resolution. */
+    gameplayTargetPixelRatio() {
+        const scale = Number(this.graphicsSettings?.values?.resolution ?? 100) / 100;
+        const target = (this.gameplayPixelRatio ?? 1) * (Number.isFinite(scale) && scale > 0 ? scale : 1);
+        return this.adaptiveGameplayPerformanceMode ? Math.min(target, ADAPTIVE_GAMEPLAY_PIXEL_RATIO_CAP) : target;
+    }
+
+    /**
+     * Applies Settings > Graphics to the running game and to everything
+     * already built; chunks and props built later read it as they are made.
+     * Never flips renderer.shadowMap.enabled or a light's visibility (both
+     * recompile every lit shader): shadows go off by intensity.
+     */
+    applyGraphicsSettings() {
+        const values = this.graphicsSettings?.values ?? GRAPHICS_PRESETS.high;
+        if (this.performanceProfile === 'gameplay' && this.renderer?.setPixelRatio) {
+            const target = this.gameplayTargetPixelRatio();
+            if (Math.abs((this.renderer.getPixelRatio?.() ?? 0) - target) > 0.001) {
+                this.renderer.setPixelRatio(target);
+                this.resize?.();
+            }
+        }
+        for (const light of [this.directionalLight, this.playerForwardSpotLight]) {
+            if (!light?.shadow) continue;
+            light.userData.hbBaseShadowIntensity ??= light.shadow.intensity ?? 1;
+            light.shadow.intensity = values.shadows === 'off' ? 0 : light.userData.hbBaseShadowIntensity;
+        }
+        if (this.renderer?.shadowMap) {
+            this.renderer.shadowMap.autoUpdate = values.shadows === 'full';
+            if (values.shadows === 'off') this.renderer.shadowMap.needsUpdate = false;
+        }
+        this._shadowUpdateEveryOtherFrame = values.shadows === 'reduced';
+        this.gameplayPostProcessingEnabled = values.postProcessing !== 'off';
+        this.tiltShiftOverlay?.classList?.toggle?.('is-active', usesGameplayFocusEffects(this));
+        for (const group of this.chunkMeshes?.values?.() ?? []) {
+            group.traverse?.((object) => {
+                if (object.userData?.isWallTopDressing) object.visible = values.worldDetail !== 'low';
+                if (object.userData?.isChasmLandmark) object.visible = values.landmarks !== 'off';
+            });
+        }
+        setPropFxQuality(values.effects);
+        if (this.scene) applyPropFxQuality(this.scene, values.effects);
+    }
+
+    /** Replaces the settings (the Graphics tab), applies and saves them. */
+    setGraphicsSettings(next) {
+        if (!next?.values) return this.graphicsSettings;
+        this.graphicsSettings = next;
+        this.applyGraphicsSettings();
+        this.saveGraphics();
+        return this.graphicsSettings;
+    }
+
+    saveGraphics() {
+        saveGraphicsSettings(this.graphicsSettings ?? DEFAULT_GRAPHICS_SETTINGS);
+    }
+
+    /** Tells the Graphics tab (and its toast) that auto-adjust lowered something. */
+    announceGraphicsChange(change) {
+        if (typeof window === 'undefined' || typeof CustomEvent === 'undefined') return;
+        window.dispatchEvent(new CustomEvent('hb:graphics-auto-lowered', { detail: { change, settings: this.graphicsSettings } }));
+    }
+
+    /**
+     * One automatic step down for a 'gpu' or 'cpu' bottleneck, written into
+     * the settings with why; null when auto-adjust is off or nothing is left.
+     */
+    autoLowerGraphics({ fps = null, bound = 'gpu', seconds = null } = {}) {
+        const settings = this.graphicsSettings ?? DEFAULT_GRAPHICS_SETTINGS;
+        if (settings.autoAdjust === false) return null;
+        const step = nextAutoGraphicsStep(settings.values, bound);
+        if (!step) return null;
+        const position = this.player?.position;
+        const area = position ? (this.getBiomeKeyForWorldPosition?.(position.x, position.z) ?? null) : null;
+        this.graphicsSettings = recordAutoGraphicsStep(settings, step, { fps, bound, area, seconds });
+        this.applyGraphicsSettings?.();
+        this.saveGraphics?.();
+        const change = this.graphicsSettings.autoChanges[this.graphicsSettings.autoChanges.length - 1];
+        this.announceGraphicsChange?.(change);
+        debugLog.warn('PERF', 'graphics-auto-lowered', change);
+        return step;
     }
 
     updateAdaptiveGameplayQuality(frameDeltaSeconds = 0) {
@@ -11167,35 +11256,37 @@ export class ThreeGame {
 
         if ((this._adaptiveLowFpsSeconds ?? 0) >= ADAPTIVE_GAMEPLAY_TRIGGER_SECONDS) {
             const gpu = this.gpuFrameTimer?.snapshot?.();
-            if (gpu?.supported
+            const cpuBound = Boolean(gpu?.supported
                 && (gpu.samples ?? 0) >= ADAPTIVE_GAMEPLAY_GPU_MIN_SAMPLES
                 && Number.isFinite(gpu.averageMs)
-                && gpu.averageMs < this._adaptiveFrameMsAverage * ADAPTIVE_GAMEPLAY_GPU_BOUND_SHARE) {
-                // Main-thread bound: keep full resolution, start measuring again.
-                this._adaptiveLowFpsSeconds = 0;
+                && gpu.averageMs < this._adaptiveFrameMsAverage * ADAPTIVE_GAMEPLAY_GPU_BOUND_SHARE);
+            this._adaptiveLowFpsSeconds = 0;
+            this._adaptiveHighFpsSeconds = 0;
+            // Settings > Graphics: one automatic step, chosen by what holds the
+            // frame up (resolution only helps when the GPU is the limit; a
+            // main-thread stall needs fewer draw calls), then wait to see
+            // whether it helped. Every step is written into the settings with
+            // why; nothing is ever raised or switched off behind the player.
+            if ((this._adaptiveGameplaySeconds ?? 0) < (this._graphicsStepCooldownUntil ?? -Infinity)) return;
+            this._graphicsStepCooldownUntil = (this._adaptiveGameplaySeconds ?? 0) + GRAPHICS_AUTO_STEP_COOLDOWN_SECONDS;
+            const step = this.autoLowerGraphics?.({
+                fps,
+                bound: cpuBound ? 'cpu' : 'gpu',
+                seconds: ADAPTIVE_GAMEPLAY_TRIGGER_SECONDS
+            });
+            if (!step) {
                 const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
                 if (!(now - (this._adaptiveCpuBoundLoggedAt ?? -Infinity) < 30_000)) {
                     this._adaptiveCpuBoundLoggedAt = now;
-                    debugLog.info('PERF', 'adaptive-resolution-kept-cpu-bound', {
+                    debugLog.info('PERF', 'graphics-auto-nothing-left', {
                         fps: Math.round(fps * 10) / 10,
-                        frameMs: Math.round(this._adaptiveFrameMsAverage * 10) / 10,
-                        gpuMs: gpu.averageMs
+                        frameMs: Math.round((this._adaptiveFrameMsAverage ?? 0) * 10) / 10,
+                        gpuMs: gpu?.averageMs ?? null,
+                        bound: cpuBound ? 'cpu' : 'gpu',
+                        autoAdjust: this.graphicsSettings?.autoAdjust !== false
                     });
                 }
-                return;
             }
-            // Re-engaging right after a restore: the reduced resolution was
-            // what held the frames up, so stay reduced for the rest of the run.
-            if (Number.isFinite(this._adaptiveRestoredAtSeconds)
-                && this._adaptiveGameplaySeconds - this._adaptiveRestoredAtSeconds < ADAPTIVE_GAMEPLAY_FLAP_SECONDS) {
-                this._adaptiveRecoveryLocked = true;
-            }
-            this._adaptiveLowFpsSeconds = 0;
-            this._adaptiveHighFpsSeconds = 0;
-            this.setAdaptiveGameplayPerformanceMode(true, {
-                reason: 'sustained-low-fps',
-                fps
-            });
         }
     }
 
@@ -11290,6 +11381,12 @@ export class ThreeGame {
         if (info) {
             info.reset?.();
             info.autoReset = false;
+        }
+        // Settings > Graphics > Shadows: Reduced redraws the shadow maps every
+        // other frame (autoUpdate is off; the map keeps the last frame).
+        if (this._shadowUpdateEveryOtherFrame && this.renderer?.shadowMap) {
+            this._shadowFrameParity = !this._shadowFrameParity;
+            this.renderer.shadowMap.needsUpdate = this._shadowFrameParity;
         }
         try {
             if (this.composer && usesGameplayFocusEffects(this)) {
@@ -33761,6 +33858,7 @@ export class ThreeGame {
             topPool.castShadow = false;
             topPool.receiveShadow = true;
             topPool.userData = { isWallTopDressing: true, decorationType: kind };
+            topPool.visible = this.graphicsSettings?.values?.worldDetail !== 'low';
             group.add(topPool);
             wallDressingPools[kind] = topPool;
         }
@@ -33830,6 +33928,7 @@ export class ThreeGame {
                 landmarks.castShadow = true;
                 landmarks.receiveShadow = true;
                 landmarks.userData = { isChasmLandmark: true, form, sites };
+                landmarks.visible = this.graphicsSettings?.values?.landmarks !== 'off';
                 group.add(landmarks);
             }
         }
