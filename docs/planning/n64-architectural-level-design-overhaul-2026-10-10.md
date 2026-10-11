@@ -739,6 +739,10 @@ This shows whether the blocky read changes before any room is rebuilt.
      orange smudges at some camera heights; now smaller and dimmer.
    - Still open in G: pools at hero props (lane A's signature anchors already carry a
      practical light).
+   - **Cryo icicles: done, `2e039597`.** About a quarter of a cryo wall's open top edges carry
+     a fringe of three to six icicles, short enough that even the lowest wall keeps headroom.
+     They go with the wall when it is destroyed.
+     [Captures](../reports/assets/world-feel-2026-10-10/17-lane-g-cryo-icicles.jpg).
    - [Captures](../reports/assets/world-feel-2026-10-10/15-lane-g-wall-light-strips.jpg).
 9. **Tall tiers (D3): on hold, by design.**
    - Making chunk-border walls tall would draw a 49 m grid of tall lines across the world, which
@@ -871,3 +875,4 @@ Implemented Owner Decision D2 and the world pacing rhythm from §7.3:
 - 2026-10-10: Lane G claimed by the Claude lived-in lane; sparse light strips on wall runs
   (`281fda4b`).
 - 2026-10-10: Door light pools by state; strips and void embers retuned (`765e95be`).
+- 2026-10-10: Cryo icicles fringe wall top edges (`2e039597`).
