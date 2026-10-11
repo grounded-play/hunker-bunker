@@ -672,8 +672,20 @@ This shows whether the blocky read changes before any room is rebuilt.
    - Shader-only: no draw calls, textures or lights added. No shader errors in the GPU run.
    - Cryo frames now read as a district from the camera alone:
      [captures](../reports/assets/world-feel-2026-10-10/07-lane-b-lit-lip-and-frost-tops.jpg).
-3. **Next: tall tiers** for district borders and landform edges (D3).
-4. **Then:** natural rock and ice contours for cave, bio and cryo.
+3. **Organic bio walls: done, `83cddb62`.**
+   - Chunks reaching into bio draw a subdivided prism (84 triangles instead of 24). The vertex
+     shader bends corner-cut walls by a smooth world-space noise field, up to 0.13 m, scaled by
+     how far into bio the wall stands.
+   - Shared points move together, so runs stay watertight. Shadows and cutaway caps bend the
+     same way.
+   - Cryo is deliberately excluded: its walls are frosted deck plating, and bending them reads as
+     melted metal.
+   - [Before/after](../reports/assets/world-feel-2026-10-10/09-lane-b-organic-bio-walls-before-after.jpg).
+4. **Tall tiers (D3): on hold, by design.**
+   - Making chunk-border walls tall would draw a 49 m grid of tall lines across the world, which
+     is more blocky, not less.
+   - Non-room walls have no cutaway, so tall walls would hide the player.
+   - Tall silhouettes belong to lane F as landmarks, not to the wall field.
 
 **Lane D, canyon rims: done, `7af0989c`.**
 
@@ -779,3 +791,6 @@ Implemented Owner Decision D2 and the world pacing rhythm from §7.3:
   which had put three objectives in rooms without their anchor; details for lane A in §9.7.
 - 2026-10-10: Lane D claimed by the Claude lived-in lane. Canyon rims are faceted ledges instead
   of stacked coins (`7af0989c`).
+
+- 2026-10-10: Bio walls bend into organic forms (`83cddb62`). Lane B tall tiers held: tall
+  silhouettes go to lane F landmarks instead of a grid of tall borders.
