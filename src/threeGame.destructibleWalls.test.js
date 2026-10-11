@@ -342,6 +342,38 @@ describe('instanced wall tile identity', () => {
         expect(grid[5][4]).toBe('.');
     });
 
+    it('takes the dressing on a destroyed wall\'s top down with it', () => {
+        const pool = { setMatrixAt: vi.fn(), instanceMatrix: { needsUpdate: false } };
+        const pipes = { setMatrixAt: vi.fn(), instanceMatrix: { needsUpdate: false } };
+        const wall = makeRecord(4, 5, 0, pool);
+        // The pools are filled in after the walls' records exist.
+        wall.topDressingPools = {};
+        wall.topDressing = [{ kind: 'pipe', index: 3 }, { kind: 'hatch', index: 0 }];
+        wall.topDressingPools.pipe = pipes;
+        const fakeThis = {
+            chunkSize: 19,
+            chunkCache: new Map([['0,0', makeGrid()]]),
+            chunkMeshes: new Map(),
+            destroyedWallKeys: new Set(),
+            destroyedExteriorWallKeys: new Set(),
+            _chunkRoomTypeCache: new Map(),
+            _chunkTemplateCache: new Map(),
+            _wallInstanceIndex: new Map([[wall.wallKey, wall]]),
+            wallMeshes: [pool],
+            getWallKey: ThreeGame.prototype.getWallKey,
+            getChunkLocalFromWorld: ThreeGame.prototype.getChunkLocalFromWorld,
+            findWallMeshAt: ThreeGame.prototype.findWallMeshAt,
+            isExteriorWallTile: () => false
+        };
+
+        call('markWallTileDestroyed', fakeThis, 4, 5);
+
+        expect(pipes.setMatrixAt).toHaveBeenCalledTimes(1);
+        expect(pipes.setMatrixAt.mock.calls[0][0]).toBe(3);
+        expect(pipes.setMatrixAt.mock.calls[0][1].elements.slice(0, 11).every((value) => value === 0)).toBe(true);
+        expect(pipes.instanceMatrix.needsUpdate).toBe(true);
+    });
+
     it('tints an instanced wall via setColorAt with a white lerp base, not a hardcoded gray', () => {
         const pool = {
             setColorAt: vi.fn(),

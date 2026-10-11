@@ -372,7 +372,7 @@ import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js
 import { applyCompressedSprite, bakedKeyedSpriteUrl, keyedSpriteBakeKey, recordKeyedSprite } from './keyedSpriteBakes.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
 import { applyVoidDepth, setVoidDepthTime } from './voidDepth.js';
-import { WALL_LIGHT_SHAPE_FRAGMENT, createCornerCutDepthMaterial, createCornerCutPoolGeometry, createCornerCutWallGeometry, isWallAutotileEnabled, patchCornerCutVertexShader, wallCornerCutMask, wallHeightScale } from './wallAutotile.js';
+import { WALL_LIGHT_SHAPE_FRAGMENT, planWallTopDressing, createCornerCutDepthMaterial, createCornerCutPoolGeometry, createCornerCutWallGeometry, isWallAutotileEnabled, patchCornerCutVertexShader, wallCornerCutMask, wallHeightScale } from './wallAutotile.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
 import { corridorKitPlacement, roomGatewayKitPlacement } from './kitGrammar.js';
 import {
@@ -1905,6 +1905,13 @@ export class ThreeGame {
         this.bracketGeometry = new THREE.BoxGeometry(0.8, 0.08, 0.12);
         this.ventGeometry = new THREE.BoxGeometry(0.48, 0.48, 0.06);
         this.pipeGeometry = new THREE.CylinderGeometry(0.06, 0.06, this.wallHeight, 6);
+        // Wall-top dressing (src/wallAutotile.js planWallTopDressing): unit
+        // shapes scaled per instance. A pipe lies along x.
+        this.wallTopPipeGeometry = new THREE.CylinderGeometry(1, 1, 1, 8).rotateZ(Math.PI / 2);
+        this.wallTopHatchGeometry = new THREE.BoxGeometry(1, 0.06, 1);
+        this.wallTopNoduleGeometry = new THREE.IcosahedronGeometry(1, 0);
+        this.wallTopDressingMaterial = new THREE.MeshStandardMaterial({ color: 0x4f5962, metalness: 0.55, roughness: 0.45 });
+        this.wallTopNoduleMaterial = new THREE.MeshStandardMaterial({ color: 0x2c3a22, emissive: 0x0b1408, metalness: 0.1, roughness: 0.6 });
         this.roomLightFixtureGeometry = new THREE.BoxGeometry(1.05, 0.06, 0.12);
         this.roomLightHousingGeometry = new THREE.BoxGeometry(1.18, 0.12, 0.2);
         this.roomLightHousingMaterial = new THREE.MeshStandardMaterial({
@@ -24592,6 +24599,8 @@ export class ThreeGame {
                 child.userData.dispose?.();
             }
             if (child.userData?.isStickerDecals) child.geometry?.dispose?.();
+            // Wall-top dressing shares its geometry; its instance buffers go.
+            if (child.userData?.isWallTopDressing) child.dispose?.();
             // A wall or cap pool owns its corner-cut geometry and its instance buffers.
             if (child.userData?.isInstancedWallPool || child.userData?.isRoomCutawayCapPool
                 || (child.userData?.isCliff && child.geometry?.userData?.ownedByWallPool)) {
@@ -31705,6 +31714,13 @@ export class ThreeGame {
                 new THREE.Matrix4().makeScale(0, 0, 0)
             );
             if (wallMesh.instancedMesh) wallMesh.instancedMesh.instanceMatrix.needsUpdate = true;
+            // Whatever stood on its top goes with it.
+            for (const { kind, index } of wallMesh.topDressing ?? []) {
+                const topPool = wallMesh.topDressingPools?.[kind];
+                if (!topPool) continue;
+                topPool.setMatrixAt(index, new THREE.Matrix4().makeScale(0, 0, 0));
+                topPool.instanceMatrix.needsUpdate = true;
+            }
             wallMesh.destroyed = true;
             this._wallInstanceIndex?.delete(wallMesh.wallKey);
             if (exterior) {
@@ -32790,6 +32806,9 @@ export class ThreeGame {
         const bracketMatricesByRoomStyle = new Map();
         const ventMatrices = [];
         const pipeMatrices = [];
+        const wallTopMatrices = { pipe: [], hatch: [], nodule: [] };
+        // Filled once the pools exist; each wall record reaches its dressing through it.
+        const wallTopPools = {};
         const doorPanelMatrices = [];
         const doorPortalHeaderMatrices = new Map([
             ['ordinary', []],
@@ -33283,9 +33302,50 @@ export class ThreeGame {
                     // Room walls cut their corners too: the cutaway only rewrites
                     // matrices, and the mask stays on the instance (and its cap).
                     const wallCornerCut = autotileWalls ? wallCornerCutMask(isStandingWallCell, localX, localY) : 0;
+                    // Dressing on the top the camera looks down on; not on room walls
+                    // (the cutaway would leave it floating) or cut corners.
+                    const topDressing = [];
+                    if (autotileWalls && !isRoomBoundaryWall && wallCornerCut === 0) {
+                        const runAxis = isStandingWallCell(localX - 1, localY) && isStandingWallCell(localX + 1, localY)
+                            ? 'x'
+                            : isStandingWallCell(localX, localY - 1) && isStandingWallCell(localX, localY + 1) ? 'z' : null;
+                        const topY = this.wallHeight * visualHeightScale;
+                        const centreX = worldX + jitter.offsetX;
+                        const centreZ = worldZ + jitter.offsetZ;
+                        const dressingBiome = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
+                        for (const item of planWallTopDressing({ worldX, worldZ, runAxis, biome: dressingBiome })) {
+                            let matrix;
+                            if (item.type === 'pipe') {
+                                matrix = new THREE.Matrix4().compose(
+                                    new THREE.Vector3(
+                                        centreX + (item.axis === 'z' ? item.offset : 0),
+                                        topY + item.radius,
+                                        centreZ + (item.axis === 'x' ? item.offset : 0)
+                                    ),
+                                    new THREE.Quaternion().setFromEuler(new THREE.Euler(0, item.axis === 'z' ? Math.PI / 2 : 0, 0)),
+                                    new THREE.Vector3(1.02, item.radius, item.radius)
+                                );
+                            } else if (item.type === 'hatch') {
+                                matrix = new THREE.Matrix4().compose(
+                                    new THREE.Vector3(centreX, topY + 0.03, centreZ),
+                                    new THREE.Quaternion().setFromEuler(new THREE.Euler(0, item.rotation, 0)),
+                                    new THREE.Vector3(item.size, 1, item.size * 0.8)
+                                );
+                            } else {
+                                matrix = new THREE.Matrix4().compose(
+                                    new THREE.Vector3(centreX + item.x, topY + item.size * 0.25, centreZ + item.z),
+                                    new THREE.Quaternion().setFromEuler(new THREE.Euler(item.x * 5, item.z * 7, item.size * 11)),
+                                    new THREE.Vector3(item.size, item.size * 0.8, item.size)
+                                );
+                            }
+                            const matrices = wallTopMatrices[item.type];
+                            topDressing.push({ kind: item.type, index: matrices.push(matrix) - 1 });
+                        }
+                    }
                     pushWallInstanceMatrix(standardMatrix, {
                         chunkX, chunkY, localX, localY, worldX, worldZ, landform,
                         cornerCut: wallCornerCut,
+                        topDressing: topDressing.length ? topDressing : null,
                         variant: 'standard',
                         heightScale,
                         roomBoundary: isRoomBoundaryWall,
@@ -33501,6 +33561,10 @@ export class ThreeGame {
                 const record = this.createWallInstanceRecord(opts);
                 record.instancedMesh = pool;
                 record.instanceIndex = idx;
+                if (opts.topDressing) {
+                    record.topDressing = opts.topDressing;
+                    record.topDressingPools = wallTopPools;
+                }
                 this._wallInstanceIndex.set(record.wallKey, record);
                 if (record.roomBoundary) roomBoundaryRecords.push(record);
             });
@@ -33585,6 +33649,21 @@ export class ThreeGame {
             ventPool.instanceMatrix.needsUpdate = true;
             ventPool.userData = { isWallDecoration: true, decorationType: 'vent' };
             group.add(ventPool);
+        }
+
+        for (const [kind, matrices] of Object.entries(wallTopMatrices)) {
+            if (!matrices.length) continue;
+            const geometry = kind === 'pipe' ? this.wallTopPipeGeometry
+                : kind === 'hatch' ? this.wallTopHatchGeometry : this.wallTopNoduleGeometry;
+            const material = kind === 'nodule' ? this.wallTopNoduleMaterial : this.wallTopDressingMaterial;
+            const topPool = new THREE.InstancedMesh(geometry, material, matrices.length);
+            matrices.forEach((matrix, index) => topPool.setMatrixAt(index, matrix));
+            topPool.instanceMatrix.needsUpdate = true;
+            topPool.castShadow = false;
+            topPool.receiveShadow = true;
+            topPool.userData = { isWallTopDressing: true, decorationType: kind };
+            group.add(topPool);
+            wallTopPools[kind] = topPool;
         }
 
         if (pipeMatrices.length > 0) {

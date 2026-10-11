@@ -366,3 +366,57 @@ export const WALL_LIGHT_SHAPE_FRAGMENT = `
                         finalWallColor = mix( finalWallColor, vec3( 0.13, 0.2, 0.1 ), hbGrowth * 0.55 );
                     }
 `;
+
+// ── Wall-top dressing (lane B slice 2, item 2) ─────────────────────────
+
+/** Cells per pipe stretch along a run. */
+const PIPE_STRETCH = 5;
+
+/**
+ * What stands on top of one wall cell, in the cell's frame (x east, z south,
+ * metres from its centre; tops are where the isometric camera looks):
+ *   - bunker and cryo: pipes laid along straight runs (`runAxis` 'x' or 'z')
+ *     in stretches of PIPE_STRETCH cells, keeping one side per run so they
+ *     read as one conduit, sometimes doubled; elsewhere an occasional hatch;
+ *   - bio: a few nodules, growth breaking through.
+ * Deterministic per world cell.
+ */
+export function planWallTopDressing({ worldX, worldZ, runAxis = null, biome = 'active' }) {
+    const items = [];
+    const cellRoll = latticeValue(worldX * 3 + 101, worldZ * 7 - 53);
+    if (biome === 'bio') {
+        if (cellRoll >= 0.16) return items;
+        const count = 1 + Math.floor(latticeValue(worldX + 7, worldZ - 11) * 2);
+        for (let k = 0; k < count; k += 1) {
+            items.push({
+                type: 'nodule',
+                x: (latticeValue(worldX * 11 + k, worldZ + 3) - 0.5) * 0.6,
+                z: (latticeValue(worldX + 5, worldZ * 13 + k) - 0.5) * 0.6,
+                size: 0.1 + latticeValue(worldX - k, worldZ * 5) * 0.14
+            });
+        }
+        return items;
+    }
+    if (runAxis === 'x' || runAxis === 'z') {
+        const line = runAxis === 'x' ? worldZ : worldX;
+        const position = runAxis === 'x' ? worldX : worldZ;
+        const stretch = Math.floor(position / PIPE_STRETCH);
+        const salt = runAxis === 'x' ? 17 : 29;
+        if (latticeValue(line * 13 + salt, stretch) < 0.3) {
+            const side = latticeValue(line + salt, 991) < 0.5 ? -1 : 1;
+            items.push({ type: 'pipe', axis: runAxis, offset: side * 0.24, radius: 0.07 });
+            if (latticeValue(line * 5 + salt, stretch + 401) < 0.3) {
+                items.push({ type: 'pipe', axis: runAxis, offset: -side * 0.17, radius: 0.05 });
+            }
+            return items;
+        }
+    }
+    if (cellRoll < 0.07) {
+        items.push({
+            type: 'hatch',
+            size: 0.42 + latticeValue(worldX + 31, worldZ - 7) * 0.16,
+            rotation: latticeValue(worldX - 3, worldZ + 19) < 0.5 ? 0 : Math.PI / 2
+        });
+    }
+    return items;
+}

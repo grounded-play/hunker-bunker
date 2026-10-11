@@ -11,6 +11,7 @@ import {
     createCornerCutWallGeometry,
     isWallAutotileEnabled,
     patchCornerCutVertexShader,
+    planWallTopDressing,
     wallCornerCutMask,
     wallHeightScale
 } from './wallAutotile.js';
@@ -312,5 +313,64 @@ describe('organic bio walls', () => {
         expect(shader.uniforms.uShipWorldPos.value).toBe(ship);
         expect(shader.vertexShader).toContain('hbOrganicWorld');
         expect(material.customProgramCacheKey()).toBe('hb-wall-corner-cut-depth-organic');
+    });
+});
+
+describe('planWallTopDressing', () => {
+    const along = (axis, count, fixed, biome = 'active') => Array.from({ length: count }, (_, i) => (
+        axis === 'x'
+            ? planWallTopDressing({ worldX: i, worldZ: fixed, runAxis: 'x', biome })
+            : planWallTopDressing({ worldX: fixed, worldZ: i, runAxis: 'z', biome })
+    ));
+
+    it('is deterministic per cell', () => {
+        const a = planWallTopDressing({ worldX: 4, worldZ: 9, runAxis: 'x', biome: 'active' });
+        expect(planWallTopDressing({ worldX: 4, worldZ: 9, runAxis: 'x', biome: 'active' })).toEqual(a);
+    });
+
+    it('lays pipes along runs in continuous stretches, one side per run', () => {
+        let pipeCells = 0;
+        let continued = 0;
+        for (let row = 0; row < 40; row += 1) {
+            const cells = along('x', 60, row);
+            for (let i = 0; i < cells.length; i += 1) {
+                const pipes = cells[i].filter((item) => item.type === 'pipe');
+                for (const pipe of pipes) {
+                    expect(pipe.axis).toBe('x');
+                    expect(Math.abs(pipe.offset)).toBeGreaterThan(0.1);
+                    expect(Math.abs(pipe.offset)).toBeLessThan(0.4);
+                }
+                if (!pipes.length) continue;
+                pipeCells += 1;
+                if (cells[i + 1]?.some((item) => item.type === 'pipe' && item.offset === pipes[0].offset)) continued += 1;
+            }
+        }
+        expect(pipeCells).toBeGreaterThan(0);
+        // Stretches, not speckle: most pipe cells carry on into the next one.
+        expect(continued / pipeCells).toBeGreaterThan(0.6);
+    });
+
+    it('puts no pipes where the cell is not part of a straight run', () => {
+        for (let i = 0; i < 200; i += 1) {
+            const items = planWallTopDressing({ worldX: i, worldZ: i * 3, runAxis: null, biome: 'active' });
+            expect(items.some((item) => item.type === 'pipe')).toBe(false);
+        }
+    });
+
+    it('grows nodules on bio walls instead of pipes and hatches', () => {
+        const items = along('x', 200, 7, 'bio').flat();
+        expect(items.some((item) => item.type === 'nodule')).toBe(true);
+        expect(items.some((item) => item.type === 'pipe' || item.type === 'hatch')).toBe(false);
+        for (const nodule of items) {
+            expect(Math.abs(nodule.x)).toBeLessThanOrEqual(0.35);
+            expect(Math.abs(nodule.z)).toBeLessThanOrEqual(0.35);
+        }
+    });
+
+    it('dresses only some walls, so tops stay readable', () => {
+        const cells = along('z', 400, 3);
+        const dressed = cells.filter((items) => items.length > 0).length;
+        expect(dressed / cells.length).toBeGreaterThan(0.1);
+        expect(dressed / cells.length).toBeLessThan(0.6);
     });
 });
