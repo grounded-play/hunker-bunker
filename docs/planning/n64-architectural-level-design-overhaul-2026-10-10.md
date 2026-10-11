@@ -700,7 +700,14 @@ This shows whether the blocky read changes before any room is rebuilt.
      0.6 / 0.8 / 1.0 / 1.2 of the wall.
    - 88–95% of neighbouring walls share a height (64% before).
    - [Before/after](../reports/assets/world-feel-2026-10-10/13-lane-b-bold-height-tiers-before-after.jpg).
-6. **Tall tiers (D3): on hold, by design.**
+6. **Wall feet (slice 3): done, `cf956c73`.**
+   - Every wall met the floor in a hard 90° crease. Faces that open onto plain floor now
+     sometimes gather something at their foot, sunk a little into the floor: long low snow
+     drifts in cryo, lumps of growth in bio, small rubble elsewhere.
+   - About one face in five. Never over a pit or a door, never against room walls, and gone
+     with its wall.
+   - [Before/after](../reports/assets/world-feel-2026-10-10/14-lane-b-wall-feet-before-after.jpg).
+7. **Tall tiers (D3): on hold, by design.**
    - Making chunk-border walls tall would draw a 49 m grid of tall lines across the world, which
      is more blocky, not less.
    - Non-room walls have no cutaway, so tall walls would hide the player.
@@ -824,3 +831,4 @@ Implemented Owner Decision D2 and the world pacing rhythm from §7.3:
 - 2026-10-10: Destroyed walls take their face decorations with them (`6c443fef`).
 - 2026-10-10: Wall heights hold long runs and step boldly (`d698fd0f`). Corrected the void-depth
   commit reference to `0d58bc4f` (amended).
+- 2026-10-10: Wall feet: drifts, growth and rubble soften the wall–floor crease (`cf956c73`).
