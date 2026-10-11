@@ -160,3 +160,34 @@ describe('prop FX recipes', () => {
         }
     });
 });
+
+describe('prop FX shaders compile', () => {
+    // Playtest 2026-10-11: every rising-points effect (steam, smoke, sparks,
+    // spores, bubbles) failed to link because the vertex stage read uStyle
+    // without declaring it, so none of them ever drew. checkShaderErrors is
+    // off in the game, so the only symptom was a WebGL warning per frame.
+    const undeclaredUniforms = (source) => {
+        const declared = new Set([...source.matchAll(/uniform\s+\w+\s+(u[A-Z]\w*)\s*;/g)].map((match) => match[1]));
+        const used = new Set([...source.matchAll(/\b(u[A-Z]\w*)\b/g)].map((match) => match[1]));
+        return [...used].filter((name) => !declared.has(name));
+    };
+
+    it('declares every uniform each stage uses, for every profile', () => {
+        const problems = [];
+        for (const type of Object.keys(PROP_FX_PROFILES)) {
+            const root = new THREE.Group();
+            const model = new THREE.Group();
+            root.add(model);
+            const fx = createPropFx(root, model, type);
+            fx?.group?.traverse((object) => {
+                const material = object.material;
+                if (!material?.isShaderMaterial) return;
+                for (const [stage, source] of [['vertex', material.vertexShader], ['fragment', material.fragmentShader]]) {
+                    const missing = undeclaredUniforms(source);
+                    if (missing.length) problems.push(`${type} ${object.name || object.type} ${stage}: ${missing.join(', ')}`);
+                }
+            });
+        }
+        expect(problems).toEqual([]);
+    });
+});

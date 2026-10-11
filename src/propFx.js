@@ -550,6 +550,7 @@ function createRisingPoints(spec, uniforms, seed) {
             uniform float uSpeed;
             uniform float uPointSize;
             uniform float uViewportHalfHeight;
+            uniform int uStyle;
             attribute float aPhase;
             varying float vLife;
             void main() {
