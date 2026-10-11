@@ -2916,6 +2916,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_puddle_slick_albedo.ktx2",
+      "bytes": 192380,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_puddle_slick_detail.ktx2",
+      "bytes": 133882,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_rust_bleed_1_albedo.ktx2",
       "bytes": 177094,
       "classification": "runtime-required"
@@ -2953,6 +2963,16 @@
     {
       "path": "3d/runtime/decals/legacy/decal_scorch_bloom_detail.ktx2",
       "bytes": 111691,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_sled_tracks_albedo.ktx2",
+      "bytes": 159684,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_sled_tracks_detail.ktx2",
+      "bytes": 105589,
       "classification": "runtime-required"
     },
     {
@@ -3006,6 +3026,26 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_strip_drag_marks_albedo.ktx2",
+      "bytes": 210627,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_drag_marks_detail.ktx2",
+      "bytes": 155160,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_hive_veins_albedo.ktx2",
+      "bytes": 203226,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_strip_hive_veins_detail.ktx2",
+      "bytes": 125305,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_substation_stencil_albedo.ktx2",
       "bytes": 328584,
       "classification": "runtime-required"
@@ -3046,6 +3086,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_walkway_borders_albedo.ktx2",
+      "bytes": 195905,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_walkway_borders_detail.ktx2",
+      "bytes": 132621,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_wall_breach_albedo.ktx2",
       "bytes": 266731,
       "classification": "runtime-required"
@@ -3063,6 +3113,16 @@
     {
       "path": "3d/runtime/decals/legacy/decal_wall_conduit_patch_detail.ktx2",
       "bytes": 177596,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_wall_grime_drip_albedo.ktx2",
+      "bytes": 153153,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_wall_grime_drip_detail.ktx2",
+      "bytes": 104870,
       "classification": "runtime-required"
     },
     {
@@ -22001,6 +22061,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_puddle_slick.png",
+      "bytes": 1480339,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_rust_bleed_1.png",
       "bytes": 263185,
       "classification": "runtime-required"
@@ -22018,6 +22083,11 @@
     {
       "path": "decal_scorch_bloom.png",
       "bytes": 187083,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_sled_tracks.png",
+      "bytes": 1154239,
       "classification": "runtime-required"
     },
     {
@@ -22046,6 +22116,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_strip_drag_marks.png",
+      "bytes": 1971700,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_strip_hive_veins.png",
+      "bytes": 1476587,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_substation_stencil.png",
       "bytes": 595444,
       "classification": "runtime-required"
@@ -22066,6 +22146,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_walkway_borders.png",
+      "bytes": 1587107,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_wall_breach.png",
       "bytes": 1930665,
       "classification": "runtime-required"
@@ -22073,6 +22158,11 @@
     {
       "path": "decal_wall_conduit_patch.png",
       "bytes": 1186879,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_wall_grime_drip.png",
+      "bytes": 1429787,
       "classification": "runtime-required"
     },
     {

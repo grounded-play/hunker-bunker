@@ -59,6 +59,54 @@
       "keyMode": "magenta",
       "placement": "corridor and room walls needing maintenance narrative",
       "variants": ["decal_wall_conduit_patch_a.jpg"]
+    },
+    "decal_strip_drag_marks": {
+      "kind": "strip_1:4",
+      "surface": "floor",
+      "worldScale": [1.0, 4.0],
+      "keyMode": "magenta",
+      "placement": "routes where cargo or casualties were hauled toward doors",
+      "variants": ["decal_strip_drag_marks_a.jpg"]
+    },
+    "decal_walkway_borders": {
+      "kind": "strip_1:4",
+      "surface": "floor",
+      "worldScale": [1.5, 6.0],
+      "keyMode": "magenta",
+      "placement": "corridors and industrial transit paths",
+      "variants": ["decal_walkway_borders_a.jpg"]
+    },
+    "decal_strip_hive_veins": {
+      "kind": "strip_1:4",
+      "surface": "floor",
+      "worldScale": [1.0, 4.0],
+      "keyMode": "magenta",
+      "placement": "bio and hive corridors leading toward nodes",
+      "variants": ["decal_strip_hive_veins_a.jpg"]
+    },
+    "decal_puddle_slick": {
+      "kind": "square",
+      "surface": "floor",
+      "worldScale": 2.2,
+      "keyMode": "magenta",
+      "placement": "low spots, near sumps and leaking fixtures",
+      "variants": ["decal_puddle_slick_a.jpg"]
+    },
+    "decal_sled_tracks": {
+      "kind": "strip_1:4",
+      "surface": "floor",
+      "worldScale": [1.0, 4.0],
+      "keyMode": "magenta",
+      "placement": "cryo transit corridors and ice crawler approaches",
+      "variants": ["decal_sled_tracks_a.jpg"]
+    },
+    "decal_wall_grime_drip": {
+      "kind": "square",
+      "surface": "wall",
+      "worldScale": 1.6,
+      "keyMode": "magenta",
+      "placement": "bulkheads below vents, pipe junctions and weeping conduits",
+      "variants": ["decal_wall_grime_drip_a.jpg"]
     }
   }
 }
