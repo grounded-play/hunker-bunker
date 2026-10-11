@@ -1927,6 +1927,9 @@ export class ThreeGame {
             })]
         ]);
         this.roomCutawayCapGeometry = new THREE.BoxGeometry(1.03, 0.08, 1.03);
+        // With corner-cut walls the cap follows its wall's outline: a unit
+        // prism the instance matrix scales to the box's 1.03.
+        this.roomCutawayCapCornerCutGeometry = createCornerCutWallGeometry({ height: 0.08 });
         this.roomCutawayCapMaterial = new THREE.MeshStandardMaterial({
             color: 0x05080c,
             emissive: 0x010204,
@@ -1934,6 +1937,9 @@ export class ThreeGame {
             metalness: 0.7,
             roughness: 0.34
         });
+        this.roomCutawayCapMaterial.onBeforeCompile = (shader) => {
+            shader.vertexShader = patchCornerCutVertexShader(shader.vertexShader);
+        };
         this.roomRoleDisplayGeometry = new THREE.BoxGeometry(1, 1, 1);
         this.roomRoleDisplayHousingMaterial = new THREE.MeshStandardMaterial({
             color: 0x070b0f,
@@ -24555,8 +24561,8 @@ export class ThreeGame {
                 child.userData.dispose?.();
             }
             if (child.userData?.isStickerDecals) child.geometry?.dispose?.();
-            // A wall pool owns its corner-cut geometry and its instance buffers.
-            if (child.userData?.isInstancedWallPool) {
+            // A wall or cap pool owns its corner-cut geometry and its instance buffers.
+            if (child.userData?.isInstancedWallPool || child.userData?.isRoomCutawayCapPool) {
                 if (child.geometry?.userData?.ownedByWallPool) child.geometry.dispose();
                 child.dispose?.();
             }
@@ -29673,7 +29679,7 @@ export class ThreeGame {
                                 record.worldZ + state.offsetZ
                             ),
                             wallQuaternion.setFromEuler(new THREE.Euler(0, state.rotationY, 0)),
-                            new THREE.Vector3(1, 1, 1)
+                            new THREE.Vector3(presentation.capScale ?? 1, 1, presentation.capScale ?? 1)
                         )
                         : new THREE.Matrix4().makeScale(0, 0, 0);
                     presentation.capPool.setMatrixAt(capIndex, capMatrix);
@@ -32843,6 +32849,7 @@ export class ThreeGame {
         // chunk count as standing when they are '#' (or not yet generated), so
         // a chunk edge never cuts a corner open by mistake.
         const autotileWalls = this.wallAutotileEnabled !== false;
+        const cutawayCapScale = autotileWalls && this.roomCutawayCapCornerCutGeometry ? 1.03 : 1;
         const isStandingWallCell = (cellX, cellY) => {
             if (cellX < 0 || cellY < 0 || cellX >= this.chunkSize || cellY >= this.chunkSize) {
                 const cellWorldX = chunkX * this.chunkSize + cellX;
@@ -32851,8 +32858,11 @@ export class ThreeGame {
                 const neighbourY = Math.floor(cellWorldZ / this.chunkSize);
                 const neighbour = this.chunkCache?.get?.(`${neighbourX},${neighbourY}`);
                 const row = neighbour?.[cellWorldZ - neighbourY * this.chunkSize];
-                return !row || row[cellWorldX - neighbourX * this.chunkSize] === '#';
+                const cell = row?.[cellWorldX - neighbourX * this.chunkSize];
+                return !row || cell === '#' || cell === 'D';
             }
+            // A door's jambs stay square against its slab and lintel.
+            if (grid[cellY]?.[cellX] === 'D') return true;
             if (grid[cellY]?.[cellX] !== '#') return false;
             if (roomBoundaryWallCells.has(`${cellX},${cellY}`)) return true;
             const cellWorldX = chunkX * this.chunkSize + cellX;
@@ -33202,13 +33212,12 @@ export class ThreeGame {
                         new THREE.Quaternion().setFromEuler(new THREE.Euler(0, jitter.rotationY, 0)),
                         new THREE.Vector3(1, visualHeightScale, 1)
                     );
+                    // Room walls cut their corners too: the cutaway only rewrites
+                    // matrices, and the mask stays on the instance (and its cap).
+                    const wallCornerCut = autotileWalls ? wallCornerCutMask(isStandingWallCell, localX, localY) : 0;
                     pushWallInstanceMatrix(standardMatrix, {
                         chunkX, chunkY, localX, localY, worldX, worldZ, landform,
-                        // Room walls stay square: rooms are lane A's, and the
-                        // cutaway rewrites their instances as boxes.
-                        cornerCut: autotileWalls && !isRoomBoundaryWall
-                            ? wallCornerCutMask(isStandingWallCell, localX, localY)
-                            : 0,
+                        cornerCut: wallCornerCut,
                         variant: 'standard',
                         heightScale,
                         roomBoundary: isRoomBoundaryWall,
@@ -33228,11 +33237,12 @@ export class ThreeGame {
                                 worldZ + jitter.offsetZ
                             ),
                             new THREE.Quaternion().setFromEuler(new THREE.Euler(0, jitter.rotationY, 0)),
-                            new THREE.Vector3(1, 1, 1)
+                            new THREE.Vector3(cutawayCapScale, 1, cutawayCapScale)
                         )
                             : new THREE.Matrix4().makeScale(0, 0, 0);
                         cutawayCapMatrices.push(capMatrix);
                         cutawayCapEntries.push({
+                            cornerCut: wallCornerCut,
                             wallKey: this.getWallKey(worldX, worldZ),
                             worldX,
                             worldZ,
@@ -33425,7 +33435,12 @@ export class ThreeGame {
         let cutawayCapPool = null;
         if (cutawayCapMatrices.length > 0) {
             const caps = new THREE.InstancedMesh(
-                this.roomCutawayCapGeometry,
+                cutawayCapScale !== 1
+                    ? createCornerCutPoolGeometry(
+                        this.roomCutawayCapCornerCutGeometry,
+                        cutawayCapEntries.map((entry) => entry.cornerCut ?? 0)
+                    )
+                    : this.roomCutawayCapGeometry,
                 this.roomCutawayCapMaterial,
                 cutawayCapMatrices.length
             );
@@ -33446,6 +33461,7 @@ export class ThreeGame {
                 quadrant: cutawayQuadrant,
                 wallRecords: roomBoundaryRecords,
                 capPool: cutawayCapPool,
+                capScale: cutawayCapScale,
                 capEntries: cutawayCapEntries,
                 capIndexByWallKey: new Map(
                     cutawayCapEntries.map((entry, index) => [entry.wallKey, index])
