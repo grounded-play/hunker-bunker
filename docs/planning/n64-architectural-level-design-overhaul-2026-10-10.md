@@ -560,7 +560,7 @@ uncommitted edits from other agents.
 | D. Pits and edges | §7.4 | pit/void build in `threeGame.js` | B | **Claude lived-in lane — active 2026-10-10; canyon rims done (§9.7)** |
 | E. Vertical tiers | Pillar 1, §8 | `src/verticalWfc.js`, heightmap | A | — |
 | F. Landmarks and sky signals | §7.5, gate doc | `src/sky/*`, new landmark props | — | — |
-| G. Light shape and district skins | §7.6–7.7 | wall shader, `src/kitGrammar.js`, `src/kitMaterials.js` | B | — |
+| G. Light shape and district skins | §7.6–7.7 | wall shader, `src/kitGrammar.js`, `src/kitMaterials.js` | B | **Claude lived-in lane — active 2026-10-10: lit lip, frost/growth tops, light strips (§9.7)** |
 | H. Surfaces and decals | decal doc | `src/floorSplat.js`, `src/stickerPlanner.js` | — | decal-doc agent |
 
 ### 9.3 Measuring before and after
@@ -723,7 +723,16 @@ This shows whether the blocky read changes before any room is rebuilt.
    - *Triangles:* follow which chunks are loaded, in both directions.
    - *Not measured on the Deck.* If the dressing pools show there, they can merge into one
      static mesh per chunk without losing anything on screen.
-8. **Tall tiers (D3): on hold, by design.**
+8. **Lane G, light strips: done, `281fda4b`.**
+   - About one stretch in five of an unthemed wall run carries a thin lit band at 1.5–1.6 m:
+     amber in the bunker, cyan in cryo, green in bio. Each is one fixture with dark ends.
+   - Emissive only: no point lights, so no shader recompiles, and no draw calls.
+   - Room walls keep their authored materials.
+   - Together with the lit lip and the frost/growth tops (item 2), this is lane G's "light
+     painted into the architecture".
+   - Still open in G: light pools at doors and hero props.
+   - [Captures](../reports/assets/world-feel-2026-10-10/15-lane-g-wall-light-strips.jpg).
+9. **Tall tiers (D3): on hold, by design.**
    - Making chunk-border walls tall would draw a 49 m grid of tall lines across the world, which
      is more blocky, not less.
    - Non-room walls have no cutaway, so tall walls would hide the player.
@@ -851,3 +860,5 @@ Implemented Owner Decision D2 and the world pacing rhythm from §7.3:
 - 2026-10-10: Lane B performance A/B logged: about 6% more draw calls from dressing, frame time
   unchanged within noise on the dev GPU; the Deck is still unmeasured.
 - 2026-10-10: Capture probe committed as `tests/e2e/probes/world-look.spec.js` (§9.3).
+- 2026-10-10: Lane G claimed by the Claude lived-in lane; sparse light strips on wall runs
+  (`281fda4b`).
