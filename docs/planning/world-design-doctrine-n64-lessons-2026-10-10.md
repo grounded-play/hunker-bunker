@@ -553,9 +553,23 @@ transformations while clearing coordinate-local geometry state. Do not repurpose
 
 ### P2 — complete the authored catalog
 
-Puzzle, trap, cache, radar, vent, hull bay, crypt, cloister, and astrogation rooms. Six signature
-blueprint prototypes landed concurrently with this pass; treat them as comparison greyboxes and
-do not expand the catalog further until P0A and P0B read in the default gameplay camera.
+Puzzle, trap, cache, radar, vent, hull bay, crypt, cloister, and astrogation rooms. The six
+signature blueprint prototypes remain comparison greyboxes until each receives the same exact-route
+and gameplay-camera proof used by P0/P1.
+
+`power_puzzle` is the first P2 spatial proof. A cyan tutorial relay sits alone in the west lobe;
+a broken rectangular bus then forces equal upper and lower feeds before both routes rejoin at the
+east final relay and offset reward. Existing `routing_node_a` and `routing_node_b` identities are
+preserved, while `routing_node_c` and `routing_node_d` complete the paired branch vocabulary. Tests
+pin the exact enclosure, equal branch routes, all four anchors, and cyan signature practical. Four
+rotation/cutaway captures live at
+`docs/reports/assets/furnished-rooms/p2-power_puzzle-game-camera-r*.png`.
+
+This is not yet an ordered puzzle. All four relays are currently independent generic interactions,
+and the supply cache remains searchable without solving them. A future controller must own
+A → C/D → B activation, incorrect-input reset, cable-light propagation, resolved calm state, and
+reward availability. Relay/contact animation and arcs stay local and non-colliding; no power state
+changes walls or traversal. The next P2 candidate is `trap_vault`.
 
 ## Greybox process
 

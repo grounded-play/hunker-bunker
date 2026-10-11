@@ -219,6 +219,45 @@ describe('ROOM_BUILD_CATALOG', () => {
         expect(build.rewardAnchors[0]).toMatchObject({ id: 'schematic_cache', x: 3, y: 5 });
     });
 
+    it('turns the power room into a teach, branch and rejoin relay circuit', () => {
+        const build = ROOM_BUILD_CATALOG.find((entry) => entry.id === 'power_puzzle');
+        expect(build.pattern).toEqual([
+            '.................',
+            '.................',
+            '.................',
+            '......####.......',
+            '......#....#.....',
+            '......#....#.....',
+            '......#....#.....',
+            '......####.......',
+            '.................',
+            '.................',
+            '.................'
+        ]);
+        const approach = computeApproachPoint(build);
+        const tutorial = { x: 4, y: 5 };
+        const final = { x: 13, y: 5 };
+        const upper = { x: 8, y: 2 };
+        const lower = { x: 8, y: 8 };
+        const upperRoute = shortestPatternPath(build.pattern, approach, tutorial)
+            + shortestPatternPath(build.pattern, tutorial, upper)
+            + shortestPatternPath(build.pattern, upper, final);
+        const lowerRoute = shortestPatternPath(build.pattern, approach, tutorial)
+            + shortestPatternPath(build.pattern, tutorial, lower)
+            + shortestPatternPath(build.pattern, lower, final);
+        expect(approach).toEqual({ x: 2, y: 5 });
+        expect(upperRoute).toBe(lowerRoute);
+        expect(upperRoute).toBeLessThan(Infinity);
+        expect(build.signatureAnchorId).toBe('routing_node_a');
+        expect(build.interactionAnchors).toEqual(expect.arrayContaining([
+            expect.objectContaining({ id: 'routing_node_a', x: 4, y: 5 }),
+            expect.objectContaining({ id: 'routing_node_b', x: 13, y: 5 }),
+            expect.objectContaining({ id: 'routing_node_c', x: 8, y: 2 }),
+            expect.objectContaining({ id: 'routing_node_d', x: 8, y: 8 })
+        ]));
+        expect(build.rewardAnchors[0]).toMatchObject({ id: 'puzzle_reward', x: 15, y: 3 });
+    });
+
     it.each(ROOM_BUILD_CATALOG.map((build) => [build.id, build]))('%s is internally valid', (_, build) => {
         expect(validateRoomBuild(build)).toEqual([]);
     });

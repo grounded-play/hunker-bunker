@@ -704,7 +704,23 @@ and non-colliding. Presentation/state variants may change screens, lighting, sta
 particles, never bay access or wall cells. This completes the six-room P1 flat-topology set. The
 next authored-room lane begins P2 with `power_puzzle`.
 
-### 9.6.2 Authored-geometry persistence gate
+### 9.6.2 Lane A P2: broken relay enclosure
+
+`power_puzzle` is the first P2 spatial proof. The west lobe isolates the preserved
+`routing_node_a` as a cyan tutorial focal, then a broken rectangular bus enclosure forces equal
+upper and lower relay routes before they rejoin at preserved final node `routing_node_b` and the
+offset east reward. New `routing_node_c` and `routing_node_d` anchors make both branch stations
+authored rather than random dressing. Exact-pattern and route tests prove the equal branches; four
+gameplay-camera/cutaway captures live at
+`docs/reports/assets/furnished-rooms/p2-power_puzzle-game-camera-r*.png`.
+
+Capability correction: four positioned relays do not constitute a sequence controller. They are
+independent generic interactions today, and `puzzle_reward` remains immediately searchable. A
+future A → C/D → B state machine must own validation, reset, cable-light propagation, final calm
+state, and reward availability. All relay, spark, and cable animation remains non-colliding and the
+two routes stay permanently open. Next P2 candidate: `trap_vault`.
+
+### 9.6.3 Authored-geometry persistence gate
 
 The existing `ROOM_BUILD_VERSION` is only exported; it is not serialized or compared. Neither
 campaign `interiorVersion`, macro `layoutVersion`, nor `WORLD_PLAN_VERSION` pins room-pattern data.
@@ -1061,6 +1077,10 @@ chunk mounts.
   S-partition. The short fabrication route and longer private care route reconnect north; the
   preserved medical-bed objective owns cyan hierarchy. Exact geometry, both loop connections, and
   all four camera rotations pass; future articulation remains local and non-colliding.
+- 2026-10-11: Lane A began P2 by replacing the power room's unrelated block islands with a broken
+  relay enclosure. Four authored nodes now teach, branch, and rejoin spatially under a cyan focal;
+  equal-route and four-camera proofs pass. Ordered relay state and reward locking remain explicit
+  future controller work.
 - 2026-10-10: Round 2 done (`1b0fce7c`): chasm landmarks plus tactical-map glyphs. Criteria 1,
   3, 4 and 5 met; criterion 2 not met as written, with the reason and the map-based answer in
   §9.10.

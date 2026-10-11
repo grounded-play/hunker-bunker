@@ -266,16 +266,22 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         family: 'puzzle',
         themeStyle: 'substation',
         partitionThickness: 0.5,
-        // Routing nodes are floor-standing interactive props, not
-        // collision geometry — the player must be able to stand on the
-        // cell to interact with them. Substation relay pylons and chamfers frame the space.
-        pattern: rectRoomPattern(17, 11, [
-            { x: 0, y: 0, w: 2, h: 2 },
-            { x: 15, y: 0, w: 2, h: 2 },
-            { x: 0, y: 9, w: 2, h: 2 },
-            { x: 15, y: 9, w: 2, h: 2 },
-            { x: 5, y: 3, w: 2, h: 2 },
-            { x: 10, y: 6, w: 2, h: 2 }
+        // P2 spatial-puzzle proof: node A teaches in the west lobe, then a
+        // broken relay enclosure splits into upper/lower feeds and rejoins
+        // at node B in the east. Relays are floor-standing props; solved
+        // state may gate reward use, never the permanently open routes.
+        pattern: authoredRoomPattern([
+            '.................',
+            '.................',
+            '.................',
+            '......####.......',
+            '......#....#.....',
+            '......#....#.....',
+            '......#....#.....',
+            '......####.......',
+            '.................',
+            '.................',
+            '.................'
         ]),
         sockets: [{ id: 'entry', side: 'w', width: 3, required: true }],
         rotationPolicy: 'cardinal',
@@ -284,23 +290,35 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         roles: ['challenge', 'questDestination'],
         structuralAnchors: [],
         interactionAnchors: [
-            { id: 'routing_node_a', type: 'prop_cyber_junction', x: 5, y: 2 },
-            { id: 'routing_node_b', type: 'prop_cyber_junction', x: 10, y: 5 }
+            { id: 'routing_node_a', type: 'prop_cyber_junction', x: 4, y: 5 },
+            { id: 'routing_node_b', type: 'prop_cyber_junction', x: 13, y: 5 },
+            { id: 'routing_node_c', type: 'prop_cyber_junction', x: 8, y: 2 },
+            { id: 'routing_node_d', type: 'prop_cyber_junction', x: 8, y: 8 }
         ],
         signatureAnchorId: 'routing_node_a',
         compassAnchors: { approach: 'entry', objective: 'routing_node_a' },
-        coverZones: [{ x: 5, y: 3, w: 2, h: 2 }, { x: 10, y: 6, w: 2, h: 2 }],
+        coverZones: [
+            { x: 6, y: 3, w: 4, h: 1 },
+            { x: 6, y: 3, w: 1, h: 5 },
+            { x: 11, y: 4, w: 1, h: 3 },
+            { x: 6, y: 7, w: 4, h: 1 }
+        ],
         encounterZones: [],
-        rewardAnchors: [{ id: 'puzzle_reward', type: 'prop_bunker_supplies', x: 14, y: 2 }],
+        rewardAnchors: [{ id: 'puzzle_reward', type: 'prop_bunker_supplies', x: 15, y: 3 }],
         loreAnchors: [],
         hazardZones: [],
-        quietZones: [{ x: 0, y: 0, w: 17, h: 11 }],
+        quietZones: [
+            { x: 1, y: 3, w: 5, h: 5 },
+            { x: 6, y: 0, w: 5, h: 3 },
+            { x: 6, y: 8, w: 5, h: 3 },
+            { x: 12, y: 3, w: 5, h: 5 }
+        ],
         safeZone: true,
         containmentBounds: { minX: 0, minY: 0, maxX: 16, maxY: 10 },
         presentationVariants: ['off', 'powered', 'incorrect', 'solved'],
         stateVariants: ['dormant', 'questActive', 'resolved'],
         adjacency: { prefers: [], forbids: ['camp', 'reward_vault'] },
-        contentBudget: { structuralLarge: 0, activityZones: 2, pickupsMin: 1, enemiesMax: 0 }
+        contentBudget: { structuralLarge: 0, activityZones: 4, pickupsMin: 1, enemiesMax: 0 }
     }),
     Object.freeze({
         id: 'trap_vault',
