@@ -491,8 +491,21 @@ doors already open and close by proximity, but they have no mutual-exclusion FSM
 generic interaction reports a bypass, while authored `hazardZones` have no live damage consumer.
 Do not describe the plume as damaging or mechanically disabled until that state contract lands.
 
-The next P1 candidate is `armory_cage`: a reward-focused T-choice after the three-room
-O₂ → stasis → quarantine sequence.
+`armory_cage` is the fourth P1 proof and the reward-focused answer to the three-room
+O₂ → stasis → quarantine sequence. A thin T-shaped cage divides the room into two unequal
+flanks: the north route is shorter but exposed to the encounter pocket, while the south route is
+longer and stays behind cover. The progression-stable `armory_lock` console sits on the west
+approach as the compass objective; it no longer steals the focal hierarchy from the prize. The
+existing `ammo_crate` interaction is visible beyond the cage and owns the amber signature
+practical. Weapon racks reinforce both ends of the barrier without occupying either route. Tests
+pin the exact wall pattern, prove both flanks and the east exit reachable, and prove the north
+route shorter. All four rotation/cutaway captures live at
+`docs/reports/assets/furnished-rooms/p1-armory_cage-game-camera-r*.png`.
+
+This is a fixed architectural reward choice, not yet an opening locker simulation. The ammo crate
+retains its existing generic interaction; opening panels, lock-state animation, contents reveal,
+and synchronized light/audio feedback remain presentation work and must not alter the two routes.
+The next P1 candidate is `field_fabricator`.
 
 ### Authored-geometry save policy
 

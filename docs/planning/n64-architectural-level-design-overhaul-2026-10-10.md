@@ -663,7 +663,20 @@ live at `docs/reports/assets/furnished-rooms/p1-quarantine_airlock-game-camera-r
 Capability correction: this blueprint is not a live progression gate today. Exterior doors use
 distance hysteresis but are not mutually interlocked, and authored hazard zones are metadata rather
 than damage volumes. The fixed route is approved; a purge-cycle FSM, door binding, and real
-hazard-disable state remain separate implementation work. Next P1 candidate: `armory_cage`.
+hazard-disable state remain separate implementation work.
+
+The fourth P1 proof is `armory_cage`. A thin T-shaped cage converts the former equal block islands
+into a readable reward choice: the north flank is short and exposed beneath the encounter pocket;
+the south flank is longer and covered. The preserved `armory_lock` console stays on the west
+approach as the progression/compass objective, while the existing `ammo_crate` interaction beyond
+the crossbar becomes the authored signature and receives an amber task light. Exact-pattern and
+route tests prove both flanks, the shorter north route, and the east exit. Four gameplay-camera and
+production-cutaway captures live at
+`docs/reports/assets/furnished-rooms/p1-armory_cage-game-camera-r*.png`.
+
+The locker does not physically open yet: panel animation, lock-state binding, contents reveal, and
+coordinated light/audio feedback remain presentation work. The geometry stays fixed when those
+states land. Next P1 candidate: `field_fabricator`.
 
 ### 9.6.2 Authored-geometry persistence gate
 
@@ -1010,6 +1023,10 @@ chunk mounts.
 - 2026-10-11: Lane A rebuilt the quarantine airlock as a staggered double-sluice with dirty/clean
   staging, a side-pocket amber override, and off-axis emergency O₂. Four rotation captures and a
   two-door stamp proof pass. Docs now state honestly that purge damage/interlock are not yet live.
+- 2026-10-11: Lane A rebuilt the armory as a compact T-cage with a short exposed flank and a long
+  covered flank. The preserved lock console remains the progression objective, while the ammo cache
+  owns amber signature light and reward hierarchy. Exact geometry, route, exit, and four-rotation
+  camera proofs pass; animated locker state remains future presentation work.
 - 2026-10-10: Round 2 done (`1b0fce7c`): chasm landmarks plus tactical-map glyphs. Criteria 1,
   3, 4 and 5 met; criterion 2 not met as written, with the reason and the map-based answer in
   §9.10.

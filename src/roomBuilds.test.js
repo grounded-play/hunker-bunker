@@ -155,6 +155,35 @@ describe('ROOM_BUILD_CATALOG', () => {
         expect(shortestPatternPath(build.pattern, approach, control, westService)).toBeLessThan(Infinity);
     });
 
+    it('turns the armory into a T-choice with a shorter defended reward flank', () => {
+        const build = ROOM_BUILD_CATALOG.find((entry) => entry.id === 'armory_cage');
+        expect(build.pattern).toEqual([
+            '...............',
+            '...............',
+            '.....#.........',
+            '.....#.........',
+            '.....######....',
+            '.....#.........',
+            '.....#.........',
+            '...............',
+            '...............'
+        ]);
+        const approach = computeApproachPoint(build);
+        const reward = { x: 8, y: 3 };
+        const north = { x: 6, y: 1 };
+        const south = { x: 6, y: 7 };
+        const northRoute = shortestPatternPath(build.pattern, approach, north)
+            + shortestPatternPath(build.pattern, north, reward);
+        const southRoute = shortestPatternPath(build.pattern, approach, south)
+            + shortestPatternPath(build.pattern, south, reward);
+        expect(approach).toEqual({ x: 2, y: 4 });
+        expect(northRoute).toBeLessThan(southRoute);
+        expect(shortestPatternPath(build.pattern, approach, { x: 14, y: 4 })).toBeLessThan(Infinity);
+        expect(build.signatureAnchorId).toBe('ammo_crate');
+        expect(build.interactionAnchors[0]).toMatchObject({ id: 'armory_lock', x: 3, y: 3 });
+        expect(build.rewardAnchors[0]).toMatchObject({ id: 'ammo_crate', x: 8, y: 3 });
+    });
+
     it.each(ROOM_BUILD_CATALOG.map((build) => [build.id, build]))('%s is internally valid', (_, build) => {
         expect(validateRoomBuild(build)).toEqual([]);
     });

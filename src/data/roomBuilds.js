@@ -105,13 +105,19 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         family: 'armory',
         themeStyle: 'substation',
         partitionThickness: 0.5,
-        pattern: rectRoomPattern(17, 11, [
-            { x: 0, y: 0, w: 2, h: 2 },
-            { x: 15, y: 0, w: 2, h: 2 },
-            { x: 0, y: 9, w: 2, h: 2 },
-            { x: 15, y: 9, w: 2, h: 2 },
-            { x: 4, y: 4, w: 2, h: 3 },
-            { x: 11, y: 4, w: 2, h: 3 }
+        // P1 reward-choice proof: a single T cage interrupts the west/east
+        // lane. The north flank is short and defended; the south inspection
+        // lane is longer and uses the crossbar as continuous cover.
+        pattern: authoredRoomPattern([
+            '...............',
+            '...............',
+            '.....#.........',
+            '.....#.........',
+            '.....######....',
+            '.....#.........',
+            '.....#.........',
+            '...............',
+            '...............'
         ]),
         sockets: [
             { id: 'entry', side: 'w', width: 3, required: true },
@@ -122,20 +128,20 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['reward', 'questDestination'],
         structuralAnchors: [
-            { id: 'weapon_rack_a', type: 'prop_security_locker', x: 5, y: 5 },
-            { id: 'weapon_rack_b', type: 'prop_security_locker', x: 12, y: 5 }
+            { id: 'weapon_rack_a', type: 'prop_security_locker', x: 5, y: 2 },
+            { id: 'weapon_rack_b', type: 'prop_security_locker', x: 5, y: 6 }
         ],
-        interactionAnchors: [{ id: 'armory_lock', type: 'base_console', x: 8, y: 5 }],
-        signatureAnchorId: 'armory_lock',
+        interactionAnchors: [{ id: 'armory_lock', type: 'base_console', x: 3, y: 3 }],
+        signatureAnchorId: 'ammo_crate',
         compassAnchors: { approach: 'entry', objective: 'armory_lock' },
-        coverZones: [{ x: 4, y: 4, w: 2, h: 3 }, { x: 11, y: 4, w: 2, h: 3 }],
+        coverZones: [{ x: 5, y: 2, w: 1, h: 5 }, { x: 5, y: 4, w: 6, h: 1 }],
         encounterZones: [{ id: 'armory_defenders', x: 6, y: 1, w: 5, h: 3 }],
-        rewardAnchors: [{ id: 'ammo_crate', type: 'prop_ammo_crate_stack', x: 8, y: 8 }],
+        rewardAnchors: [{ id: 'ammo_crate', type: 'prop_ammo_crate_stack', x: 8, y: 3 }],
         loreAnchors: [],
         hazardZones: [],
-        quietZones: [],
+        quietZones: [{ x: 1, y: 2, w: 4, h: 5 }],
         safeZone: false,
-        containmentBounds: { minX: 0, minY: 0, maxX: 16, maxY: 10 },
+        containmentBounds: { minX: 0, minY: 0, maxX: 14, maxY: 8 },
         presentationVariants: ['sealed', 'breached', 'looted'],
         stateVariants: ['dormant', 'questActive', 'resolved'],
         adjacency: { prefers: ['pressure_corridor'], forbids: ['reward_vault'] },
