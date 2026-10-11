@@ -230,3 +230,87 @@ describe('WALL_LIGHT_SHAPE_FRAGMENT', () => {
         }
     });
 });
+
+describe('subdivided corner-cut walls (organic bio walls)', () => {
+    const fine = createCornerCutWallGeometry({ height: 2.8, heightSegments: 3, widthSegments: 2 });
+
+    it('keeps the same outline as the plain prism for every mask', () => {
+        for (const mask of [0, 1, 6, 15]) {
+            const plain = cornerCutPositions(geometry, mask);
+            const subdivided = cornerCutPositions(fine, mask);
+            const extent = (positions) => {
+                const box = new THREE.Box3();
+                for (let i = 0; i < positions.length; i += 3) box.expandByPoint(new THREE.Vector3(positions[i], positions[i + 1], positions[i + 2]));
+                return box;
+            };
+            expect(extent(subdivided).equals(extent(plain))).toBe(true);
+            for (const corner of Object.values(CORNERS)) {
+                const has = (positions) => {
+                    for (let i = 0; i < positions.length; i += 3) {
+                        if (Math.abs(positions[i] - corner[0]) < 1e-4 && Math.abs(positions[i + 2] - corner[1]) < 1e-4) return true;
+                    }
+                    return false;
+                };
+                expect(has(subdivided), `mask ${mask}`).toBe(has(plain));
+            }
+        }
+    });
+
+    it('collapses every sample along an uncut chamfer onto its corner', () => {
+        const positions = cornerCutPositions(fine, 0);
+        for (let i = 0; i < positions.length; i += 3) {
+            const [x, z] = [positions[i], positions[i + 2]];
+            const onOutline = Math.abs(Math.abs(x) - 0.5) < 1e-6 || Math.abs(Math.abs(z) - 0.5) < 1e-6;
+            expect(onOutline || (x === 0 && z === 0)).toBe(true);
+        }
+    });
+
+    it('splits the sides into rows and columns and closes the top over every sample', () => {
+        const plainCount = geometry.getAttribute('position').count / 3;
+        const fineCount = fine.getAttribute('position').count / 3;
+        // Axis sides 2 columns, chamfers 1, all 3 rows; the top fans over all 12 rim points.
+        expect(fineCount).toBe((4 * 2 + 4 * 1) * 3 * 2 + 12);
+        expect(plainCount).toBe(8 * 2 + 8);
+        // Every rim point of the sides' top row is a vertex of the top fan (no T-junctions).
+        const position = fine.getAttribute('position');
+        const normal = fine.getAttribute('normal');
+        const key = (i) => `${position.getX(i).toFixed(4)},${position.getZ(i).toFixed(4)}`;
+        const sideTop = new Set();
+        const topRim = new Set();
+        for (let i = 0; i < position.count; i += 1) {
+            if (Math.abs(position.getY(i) - 1.4) > 1e-6) continue;
+            if (normal.getY(i) > 0.9) topRim.add(key(i));
+            else sideTop.add(key(i));
+        }
+        for (const point of sideTop) expect(topRim.has(point)).toBe(true);
+    });
+});
+
+describe('organic bio walls', () => {
+    const vertexShader = '#include <common>\nvoid main() {\n#include <begin_vertex>\n#include <project_vertex>\n}';
+
+    it('bends only corner-cut walls, by world position, scaled into bio', () => {
+        const patched = patchCornerCutVertexShader(vertexShader, { organic: { start: 130, end: 150 } });
+        expect(patched).toContain('uniform vec2 uShipWorldPos;');
+        expect(patched).toContain('smoothstep( 130.0, 150.0');
+        expect(patched).toContain(`hbCornerCut > ${CORNER_CUT_ACTIVE - 0.5}`);
+        expect(patched).toContain('hbOrganicWorld');
+        // Bends after the corner cut, before projection.
+        expect(patched.indexOf('hbOrganicWorld')).toBeGreaterThan(patched.indexOf('hbCornerMask'));
+        expect(patched.indexOf('transformed.xz +=')).toBeLessThan(patched.indexOf('#include <project_vertex>'));
+        // Never declares the ship uniform twice.
+        const declared = patchCornerCutVertexShader(`uniform vec2 uShipWorldPos;\n${vertexShader}`, { organic: { start: 1, end: 2 } });
+        expect(declared.match(/uniform vec2 uShipWorldPos;/g)).toHaveLength(1);
+        expect(patchCornerCutVertexShader(vertexShader)).not.toContain('hbOrganicWorld');
+    });
+
+    it('casts the same bent shadow, reading the ship position when it compiles', () => {
+        const ship = new THREE.Vector2(3, 4);
+        const material = createCornerCutDepthMaterial({ organic: { start: 130, end: 150 }, shipWorldPos: () => ship });
+        const shader = { vertexShader, fragmentShader: '', uniforms: {} };
+        material.onBeforeCompile(shader);
+        expect(shader.uniforms.uShipWorldPos.value).toBe(ship);
+        expect(shader.vertexShader).toContain('hbOrganicWorld');
+        expect(material.customProgramCacheKey()).toBe('hb-wall-corner-cut-depth-organic');
+    });
+});

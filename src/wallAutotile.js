@@ -64,8 +64,13 @@ export function wallCornerCutMask(isSolid, x, y) {
  * in [-0.5, 0.5], y in [-height/2, height/2]. An octagon in plan with every
  * corner cut; each vertex of a cut carries hbCorner (1 NE, 2 NW, 3 SW, 4 SE),
  * all others 0. Flat-shaded sides and top, no bottom (it stands on the floor).
+ *
+ * `heightSegments` and `widthSegments` split the sides into rows and columns
+ * (chamfer facets stay one column) for walls the vertex shader bends, such as
+ * the organic bio walls; every sample of a chamfer belongs to its corner, and
+ * the top fans over every rim sample so a bent top never cracks.
  */
-export function createCornerCutWallGeometry({ height = 2.8, cut = WALL_CHAMFER } = {}) {
+export function createCornerCutWallGeometry({ height = 2.8, cut = WALL_CHAMFER, heightSegments = 1, widthSegments = 1 } = {}) {
     const h = 0.5;
     // Round the cell, each cut's two points in walking order.
     const ring = [
@@ -99,6 +104,7 @@ export function createCornerCutWallGeometry({ height = 2.8, cut = WALL_CHAMFER }
         }
     };
 
+    const rim = [];
     let along = 0;
     for (let i = 0; i < ring.length; i += 1) {
         const [x0, z0, c0] = ring[i];
@@ -107,21 +113,30 @@ export function createCornerCutWallGeometry({ height = 2.8, cut = WALL_CHAMFER }
         const normal = new THREE.Vector3(z1 - z0, 0, x0 - x1).normalize();
         // The ring is convex around the origin: point the normal away from it.
         if (normal.x * (x0 + x1) + normal.z * (z0 + z1) < 0) normal.negate();
-        const quad = [
-            [x0, bottom, z0, along, 0, c0],
-            [x1, bottom, z1, along + length, 0, c1],
-            [x1, top, z1, along + length, 1, c1],
-            [x0, top, z0, along, 1, c0]
-        ];
-        triangle([quad[0], quad[1], quad[2]], normal);
-        triangle([quad[0], quad[2], quad[3]], normal);
+        const chamfer = c0 === c1;
+        const columns = chamfer ? 1 : Math.max(1, widthSegments);
+        const rows = Math.max(1, heightSegments);
+        const sample = (column, row) => {
+            const s = column / columns;
+            const corner = column === 0 ? c0 : column === columns ? c1 : (chamfer ? c0 : 0);
+            return [x0 + (x1 - x0) * s, bottom + (top - bottom) * (row / rows), z0 + (z1 - z0) * s,
+                along + length * s, row / rows, corner];
+        };
+        for (let column = 0; column < columns; column += 1) {
+            rim.push(sample(column, rows));
+            for (let row = 0; row < rows; row += 1) {
+                const quad = [sample(column, row), sample(column + 1, row), sample(column + 1, row + 1), sample(column, row + 1)];
+                triangle([quad[0], quad[1], quad[2]], normal);
+                triangle([quad[0], quad[2], quad[3]], normal);
+            }
+        }
         along += length;
     }
 
     const up = new THREE.Vector3(0, 1, 0);
-    for (let i = 0; i < ring.length; i += 1) {
-        const [x0, z0, c0] = ring[i];
-        const [x1, z1, c1] = ring[(i + 1) % ring.length];
+    for (let i = 0; i < rim.length; i += 1) {
+        const [x0, , z0, , , c0] = rim[i];
+        const [x1, , z1, , , c1] = rim[(i + 1) % rim.length];
         triangle([
             [0, top, 0, 0.5, 0.5, 0],
             [x0, top, z0, x0 + 0.5, z0 + 0.5, c0],
@@ -185,22 +200,62 @@ if ( hbCorner > 0.5 && hbCornerCut > ${CORNER_CUT_ACTIVE - 0.5} ) {
 }
 `;
 
-/** Patches a vertex shader (standard or depth) to draw the cell's real outline. */
-export function patchCornerCutVertexShader(vertexShader) {
-    if (vertexShader.includes('attribute float hbCornerCut;')) return vertexShader;
-    return vertexShader
-        .replace('#include <common>', `#include <common>${CORNER_CUT_DECLARATIONS}`)
-        .replace('#include <begin_vertex>', `#include <begin_vertex>${CORNER_CUT_VERTEX}`);
+/** How far organic walls bend, at most (metres, per axis). */
+export const ORGANIC_WALL_BEND = 0.13;
+
+// Bio walls (the biomech/giger skin, the rock kit) bend by a smooth noise
+// field over world position, scaled by how far into bio the wall stands.
+// World position only, so a point two neighbouring walls share moves the
+// same way for both and runs stay watertight; only corner-cut instances
+// (hbCornerCut in the active range) bend. Collision is untouched.
+function organicVertex({ start, end }) {
+    return `
+#ifdef USE_INSTANCING
+    vec4 hbOrganicWorld = modelMatrix * instanceMatrix * vec4( transformed, 1.0 );
+#else
+    vec4 hbOrganicWorld = modelMatrix * vec4( transformed, 1.0 );
+#endif
+float hbBio = smoothstep( ${start.toFixed(1)}, ${end.toFixed(1)}, length( hbOrganicWorld.xz - uShipWorldPos ) );
+if ( hbBio > 0.0 && hbCornerCut > ${CORNER_CUT_ACTIVE - 0.5} ) {
+    vec3 hbP = hbOrganicWorld.xyz * vec3( 1.1, 0.7, 1.1 );
+    vec2 hbBend = vec2(
+        sin( hbP.x * 1.7 + hbP.y * 2.3 + sin( hbP.z * 1.3 ) ) + sin( hbP.z * 2.9 - hbP.y * 1.1 ),
+        sin( hbP.z * 1.9 + hbP.y * 1.7 + sin( hbP.x * 1.1 ) ) + sin( hbP.x * 2.3 + hbP.y * 0.9 )
+    ) * 0.5;
+    transformed.xz += hbBend * ${ORGANIC_WALL_BEND.toFixed(3)} * hbBio;
+}
+`;
 }
 
-/** The shadow pass's depth material, cutting corners like the wall itself. */
-export function createCornerCutDepthMaterial() {
+/**
+ * Patches a vertex shader (standard or depth) to draw the cell's real
+ * outline. With `organic: { start, end }` (distances from the ship where bio
+ * begins and is full), bio walls also bend; the shader then needs the
+ * uShipWorldPos uniform.
+ */
+export function patchCornerCutVertexShader(vertexShader, { organic = null } = {}) {
+    if (vertexShader.includes('attribute float hbCornerCut;')) return vertexShader;
+    const declarations = organic && !vertexShader.includes('uniform vec2 uShipWorldPos;')
+        ? `${CORNER_CUT_DECLARATIONS}uniform vec2 uShipWorldPos;\n`
+        : CORNER_CUT_DECLARATIONS;
+    return vertexShader
+        .replace('#include <common>', `#include <common>${declarations}`)
+        .replace('#include <begin_vertex>', `#include <begin_vertex>${CORNER_CUT_VERTEX}${organic ? organicVertex(organic) : ''}`);
+}
+
+/**
+ * The shadow pass's depth material, cutting corners (and, with `organic`,
+ * bending bio walls) like the wall itself. `shipWorldPos` returns the ship's
+ * position (a Vector2), read when the material compiles.
+ */
+export function createCornerCutDepthMaterial({ organic = null, shipWorldPos = null } = {}) {
     const material = new THREE.MeshDepthMaterial();
     material.name = 'wall-corner-cut-depth';
     material.onBeforeCompile = (shader) => {
-        shader.vertexShader = patchCornerCutVertexShader(shader.vertexShader);
+        if (organic) shader.uniforms.uShipWorldPos = { value: shipWorldPos?.() ?? new THREE.Vector2() };
+        shader.vertexShader = patchCornerCutVertexShader(shader.vertexShader, { organic });
     };
-    material.customProgramCacheKey = () => 'hb-wall-corner-cut-depth';
+    material.customProgramCacheKey = () => `hb-wall-corner-cut-depth${organic ? '-organic' : ''}`;
     return material;
 }
 

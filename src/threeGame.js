@@ -1498,6 +1498,11 @@ const BIOME_ORDER = Object.freeze([
 const BIOME_THRESHOLD_CRYO = 60;
 const BIOME_THRESHOLD_BIO = 140;
 const BIOME_BLEND_HALF_WIDTH = 10;
+// Where bio walls start to bend (src/wallAutotile.js): across the bio blend.
+const ORGANIC_WALL_RANGE = Object.freeze({
+    start: BIOME_THRESHOLD_BIO - BIOME_BLEND_HALF_WIDTH,
+    end: BIOME_THRESHOLD_BIO + BIOME_BLEND_HALF_WIDTH
+});
 const BIOME_SWITCH_HYSTERESIS = 4;
 const BIOME_O2_DRAIN_MULTIPLIERS = Object.freeze({
     [BIOME_KEYS.ACTIVE]: 1.0,
@@ -1877,7 +1882,12 @@ export class ThreeGame {
         // Instanced chunk walls share a prism whose exposed corners are cut
         // per instance (src/wallAutotile.js); uncut, it is this box.
         this.wallCornerCutGeometry = createCornerCutWallGeometry({ height: this.wallHeight });
-        this.wallCornerCutDepthMaterial = createCornerCutDepthMaterial();
+        // Chunks reaching into bio draw a subdivided prism the shader bends.
+        this.wallOrganicGeometry = createCornerCutWallGeometry({ height: this.wallHeight, heightSegments: 3, widthSegments: 2 });
+        this.wallCornerCutDepthMaterial = createCornerCutDepthMaterial({
+            organic: ORGANIC_WALL_RANGE,
+            shipWorldPos: () => this.biomeShipAnchor
+        });
         // hb_wall_autotile=0 brings back the per-cell boxes and height roll.
         this.wallAutotileEnabled = isWallAutotileEnabled();
         this.floorGeometry = new THREE.PlaneGeometry(1, 1);
@@ -1938,7 +1948,9 @@ export class ThreeGame {
             roughness: 0.34
         });
         this.roomCutawayCapMaterial.onBeforeCompile = (shader) => {
-            shader.vertexShader = patchCornerCutVertexShader(shader.vertexShader);
+            // Bends with the bio walls it caps.
+            shader.uniforms.uShipWorldPos = { value: this.biomeShipAnchor ?? new THREE.Vector2() };
+            shader.vertexShader = patchCornerCutVertexShader(shader.vertexShader, { organic: ORGANIC_WALL_RANGE });
         };
         this.roomRoleDisplayGeometry = new THREE.BoxGeometry(1, 1, 1);
         this.roomRoleDisplayHousingMaterial = new THREE.MeshStandardMaterial({
@@ -3004,7 +3016,7 @@ export class ThreeGame {
             shader.uniforms.uLandformId = { value: 0 };
             shader.uniforms.uRoomStyleId = { value: 0 };
             this.wallShaderUniforms = shader.uniforms;
-            shader.vertexShader = patchCornerCutVertexShader(shader.vertexShader);
+            shader.vertexShader = patchCornerCutVertexShader(shader.vertexShader, { organic: ORGANIC_WALL_RANGE });
 
             // Inject world position and world normal varyings in vertex shader
             shader.vertexShader = shader.vertexShader.replace(
@@ -32794,6 +32806,15 @@ export class ThreeGame {
         };
 
         const autotileWalls = this.wallAutotileEnabled !== false;
+        // Whether any of this chunk lies past where bio walls start bending.
+        const chunkReachesBio = (() => {
+            const anchor = this.biomeShipAnchor;
+            if (!anchor) return false;
+            const x0 = chunkX * this.chunkSize;
+            const z0 = chunkY * this.chunkSize;
+            return [[x0, z0], [x0 + this.chunkSize, z0], [x0, z0 + this.chunkSize], [x0 + this.chunkSize, z0 + this.chunkSize]]
+                .some(([x, z]) => Math.hypot(x - anchor.x, z - anchor.y) >= ORGANIC_WALL_RANGE.start);
+        })();
         // A cell beside a void cell is solid for the cliff's corner cuts when
         // it is ground, a wall, or a void cell that carries a cliff column of
         // its own (it touches ground); open void cuts the corner. Unknown
@@ -33438,7 +33459,10 @@ export class ThreeGame {
             const metaList = wallMetaByRoomStyle.get(roomStyleId);
             // Each wall's exposed corners ride along as a per-instance mask.
             const poolGeometry = autotileWalls && this.wallCornerCutGeometry
-                ? createCornerCutPoolGeometry(this.wallCornerCutGeometry, metaList.map((opts) => opts.cornerCut ?? 0))
+                ? createCornerCutPoolGeometry(
+                    (chunkReachesBio && this.wallOrganicGeometry) || this.wallCornerCutGeometry,
+                    metaList.map((opts) => opts.cornerCut ?? 0)
+                )
                 : this.wallGeometry;
             const pool = new THREE.InstancedMesh(poolGeometry, this.wallMaterial, matrices.length);
             if (poolGeometry !== this.wallGeometry) pool.customDepthMaterial = this.wallCornerCutDepthMaterial;
