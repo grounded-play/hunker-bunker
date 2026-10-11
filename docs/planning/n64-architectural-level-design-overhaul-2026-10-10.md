@@ -927,6 +927,35 @@ that, differently from §7.5's first idea of distant beacons, which this camera 
   4. No shader errors.
   5. Results logged here with captures.
 
+**Round 2 result: done, `1b0fce7c`.**
+[Captures and map](../reports/assets/world-feel-2026-10-10/18-lane-f-chasm-landmarks.jpg),
+[performance and coverage numbers](../reports/assets/world-feel-2026-10-10/lane-f-landmarks-perf-and-coverage.json).
+
+| Criterion | Result |
+|---|---|
+| 1. Tests | Met. 14 tests in `src/chasmLandmarks.test.js`. Sites are void-only, solid, in reach of a ledge, deterministic and spaced, and the grid is never changed. |
+| 2. Framed at half the probe spots | **Not met as written:** 1 of 8. The fixed spots sit inside wall cores, while landmarks stand off ledges. Across 60 random walkable cells, 18% frame a landmark (32% of ledge cells), with never more than two in frame. This camera frames a landmark only within about 12 m, so being seen from most places would need a forest of them. Instead, each chunk's chief landmark goes on the tactical map as a glyph and name (▲ radio mast, ◆ ice spire, ∩ rib arch), found with its chunk. In a top-down game, that is where a landmark is seen from afar. |
+| 3. ≤ 1 draw (+ shadow) per chunk | Met after two fixes: one instanced mesh per form per chunk, and one material with the glow on a per-vertex attribute. The cost is +8 to +15 draw calls per view (2–3.5%) in both measuring orders; frame time is within noise. The first version cost +16 to +41. |
+| 4. No shader errors | Met. |
+| 5. Logged with captures | Met (this entry). |
+
+**What the evidence changed along the way:**
+- *Height.* At 10–12 m, the arch's peak and any landmark north of the player ran off the top of
+  the frame, so all three forms came down to 7–8 m.
+- *Density.* One per chunk was seen from 8% of walkable places; it is now up to six per chunk,
+  ten cells apart.
+- *Readability.* The bio arch was dark ribs on a dark floor; it is now bone with thicker ribs.
+- *Glow.* The glow moved into the one material, which also made it bloom properly.
+
+`hb_landmarks=0` turns them off. Stale map entries from an earlier run's map are dropped when a
+chunk mounts.
+
+**Round 2 vs round 1:**
+- *Different:* a silhouette rule rather than wall surfaces, and the void, which is the world's
+  biggest unused space.
+- *Better in process:* plan and acceptance criteria were written first; each criterion was
+  measured, iterated on the evidence, and reported, including the one that was not met.
+
 ## 10. Status log
 
 - 2026-10-10: §1–6 drafted (blueprints, pillars, contract). §7–9 added: chunk-world diagnosis
@@ -981,3 +1010,6 @@ that, differently from §7.5's first idea of distant beacons, which this camera 
 - 2026-10-11: Lane A rebuilt the quarantine airlock as a staggered double-sluice with dirty/clean
   staging, a side-pocket amber override, and off-axis emergency O₂. Four rotation captures and a
   two-door stamp proof pass. Docs now state honestly that purge damage/interlock are not yet live.
+- 2026-10-10: Round 2 done (`1b0fce7c`): chasm landmarks plus tactical-map glyphs. Criteria 1,
+  3, 4 and 5 met; criterion 2 not met as written, with the reason and the map-based answer in
+  §9.10.
