@@ -559,7 +559,7 @@ uncommitted edits from other agents.
 | C. Landform mix and rhythm | §7.3 | `src/landforms.js`, `src/threeGame.js` | — | **Antigravity — active 2026-10-10; Decision D2 implemented (maze <= 25%, neighbour avoidance)** |
 | D. Pits and edges | §7.4 | pit/void build in `threeGame.js` | B | **Claude lived-in lane — active 2026-10-10; canyon rims done (§9.7)** |
 | E. Vertical tiers | Pillar 1, §8 | `src/verticalWfc.js`, heightmap | A | — |
-| F. Landmarks and sky signals | §7.5, gate doc | new `src/chasmLandmarks.js`, chunk build in `threeGame.js` | — | **Claude lived-in lane — Round 2, 2026-10-10 (§9.9)** |
+| F. Landmarks and sky signals | §7.5, gate doc | new `src/chasmLandmarks.js`, chunk build in `threeGame.js` | — | **Claude lived-in lane — Round 2, 2026-10-10 (§9.10)** |
 | G. Light shape and district skins | §7.6–7.7 | wall shader, `src/kitGrammar.js`, `src/kitMaterials.js` | B | **Claude lived-in lane — active 2026-10-10: lit lip, frost/growth tops, light strips (§9.7)** |
 | H. Surfaces and decals | decal doc | `src/floorSplat.js`, `src/stickerPlanner.js` | — | decal-doc agent |
 
@@ -840,7 +840,7 @@ Implemented Owner Decision D2 and the world pacing rhythm from §7.3:
      - Strict avoidance assertion verifies `pickLandform` never selects the avoided neighbour archetype.
    - All 18 tests pass cleanly.
 
-### 9.9 Round 2 (Claude lived-in lane): landmarks in the chasm
+### 9.10 Round 2 (Claude lived-in lane): landmarks in the chasm
 
 Round 1 made the wall field less blocky. Every doc in this pass, though, puts one rule first: a
 place needs a dominant silhouette, the "weenie". The chunk world still has none. Round 2 does
@@ -904,5 +904,5 @@ that, differently from §7.5's first idea of distant beacons, which this camera 
   (`281fda4b`).
 - 2026-10-10: Door light pools by state; strips and void embers retuned (`765e95be`).
 - 2026-10-10: Cryo icicles fringe wall top edges (`2e039597`).
-- 2026-10-10: Round 2 planned (§9.9): lane F claimed by the Claude lived-in lane; landmarks
+- 2026-10-10: Round 2 planned (§9.10): lane F claimed by the Claude lived-in lane; landmarks
   rise out of the chasm, one per chunk.
