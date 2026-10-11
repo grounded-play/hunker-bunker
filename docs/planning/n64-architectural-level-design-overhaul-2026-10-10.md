@@ -607,17 +607,28 @@ Verification for this slice:
   `docs/reports/assets/furnished-rooms/medical_triage-bio.png`.
 - a real default-gameplay-camera threshold/return capture remains required before P0A sign-off.
 
-### 9.6 Proposed next slice
+### 9.6 Lane A P0A work log
 
-Lane B on two chunks, the spawn field and a neighbouring maze:
+**Flat spatial verbs and authored focal hierarchy.** In progress.
 
-- autotiled pieces at three heights;
-- dressed tops;
-- diagonal chamfers;
-- cryo on its own skin;
-- judged with the §9.3 probe against today's sheets, at equal or fewer draw calls per chunk.
+- `medical_triage`: offset partition, eastward reveal pivot, protected treatment pocket,
+  supply-side return, and quiet threshold apron.
+- `reactor_compressor_hall`: one asymmetric compressor island, subordinate heat shield, wide safe
+  service loop, shorter hazardous bypass, chamfered opposing corners, and a flank control that
+  both routes can reach.
+- `room_biomech_machine_nave`: seven-cell processional axis, open transept, four shallow side
+  chapels, reward/lore opposition, and a combat zone that stops short of the apse.
+- Authored signature hierarchy: the population planner promotes a structural or interaction anchor
+  named by `signatureAnchorId`, or consumes a dedicated presentational `signatureAnchors`
+  placement. The focal practical and review camera therefore belong to the bed, compressor drive,
+  and apse lectern rather than a random theme prop.
+- Route tests prove the compressor's hot path is shorter, its plume-blocked service route remains
+  legal, its north exit remains reachable, and the two-cell bypass preserves companion clearance.
 
-This shows whether the blocky read changes before any room is rebuilt.
+The fixed orthographic review harness now captures all four rotations with the production cutaway
+planner; evidence lives at `docs/reports/assets/furnished-rooms/p0a-*-game-camera-r*.png`.
+Remaining P0A gates: live in-campaign threshold/return captures, biome contrast review, companion
+passage, and an explicit saved-campaign geometry policy.
 
 ### 9.7 Lane B work log (Claude lived-in lane)
 
@@ -825,7 +836,7 @@ Implemented and integrated the complete suite of 6 N64 Signature Blueprints in `
 Implemented Owner Decision D2 and the world pacing rhythm from §7.3:
 
 1. **Maze share capped at $\le 25\%$ (Decision D2)**:
-   - Reduced `LANDFORM_WEIGHTS` in [`src/landforms.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/landforms.js):
+   - Reduced `LANDFORM_WEIGHTS` in [`src/landforms.js`](../../src/landforms.js):
      - `active`: maze dropped from $58\%$ to $24\%$ (field: $20\%$, canyon: $18\%$, crater: $20\%$, ruins: $18\%$).
      - `cryo`: maze dropped from $52\%$ to $22\%$ (canyon: $32\%$, ruins: $18\%$, field: $14\%$, crater: $14\%$).
      - `bio`: maze dropped from $50\%$ to $20\%$ (field: $24\%$, crater: $22\%$, ruins: $20\%$, canyon: $14\%$).
@@ -835,7 +846,7 @@ Implemented Owner Decision D2 and the world pacing rhythm from §7.3:
    - Wired neighbour checking in `threeGame.js` (`getChunkLandform` checks west and north neighbours from `_chunkLandformCache`).
    - Guarantees neighbouring chunks alternate spatial archetypes (e.g., canyon corridor into open field basin into crater rim), eliminating uniform runs of identical landforms.
 3. **Unit verification**:
-   - Added automated tests to [`src/landforms.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/landforms.test.js) asserting:
+   - Added automated tests to [`src/landforms.test.js`](../../src/landforms.test.js) asserting:
      - Monte Carlo sampling ($N=1000$) verifies maze ratio $\le 26\%$ across all three biomes.
      - Strict avoidance assertion verifies `pickLandform` never selects the avoided neighbour archetype.
    - All 18 tests pass cleanly.
@@ -875,6 +886,9 @@ that, differently from §7.5's first idea of distant beacons, which this camera 
 - 2026-10-10: Documents reconciled around the audited flat authored-room contract. Lane A claimed;
   `medical_triage` P0A geometry implemented and reviewed in the isometric showroom; actual gameplay
   camera sign-off remains open.
+- 2026-10-10: Lane A extended through compressor and nave topology. Authored signature anchors now
+  control focal placement and practical lighting; route semantics are covered by tests. Gameplay
+  camera/cutaway and saved-campaign gates remain open.
 - 2026-10-10: Owner said yes to D1–D5. Lane B claimed by the Claude lived-in lane; slice 1
   (chamfered wall pieces, coherent heights) started; see §9.7. §7.1 corrected: cryo walls do
   change texture, only their geometry is shared.
@@ -906,3 +920,6 @@ that, differently from §7.5's first idea of distant beacons, which this camera 
 - 2026-10-10: Cryo icicles fringe wall top edges (`2e039597`).
 - 2026-10-10: Round 2 planned (§9.10): lane F claimed by the Claude lived-in lane; landmarks
   rise out of the chasm, one per chunk.
+- 2026-10-10: Lane A's three P0A rooms now have fixed orthographic gameplay-camera and production
+  cutaway review captures in all four rotations. Twelve views pass structural review; live
+  threshold/return play and persistence remain open.

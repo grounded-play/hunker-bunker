@@ -21,7 +21,7 @@ props explain what the room does, and animation confirms what the player changed
 
 | System | Current inventory | Runtime path |
 | --- | ---: | --- |
-| Authored room builds | 20: 12 original + 8 cathedral/biomech builds | `src/data/roomBuilds.js`, `src/data/cathedralBlueprints.js` |
+| Authored room builds | 26: 12 original + 8 cathedral/biomech + 6 N64 signature prototypes | `src/data/roomBuilds.js`, `src/data/cathedralBlueprints.js`, `src/data/n64RoomBlueprints.js` |
 | Generated floor source renders | 56 JPGs | `art/source/textures/lived-in-pass-2/` |
 | Shipped high-resolution floor layers | 44 albedo/detail pairs across 10 surface families | `public/3d/runtime/surfaces/` |
 | Lived-in sticker source renders | 80 JPGs, 20 families × 4 variants | `art/source/decals/lived-in-pass-2/` |

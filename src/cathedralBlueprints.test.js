@@ -52,6 +52,22 @@ describe('CATHEDRAL_ROOM_BLUEPRINTS', () => {
         }
     });
 
+    it('gives the machine nave a clear processional axis, side chapels and cross-cut', () => {
+        const nave = CATHEDRAL_ROOM_BLUEPRINTS.find((build) => build.id === 'room_biomech_machine_nave');
+        for (let y = 0; y < nave.pattern.length; y += 1) {
+            expect(nave.pattern[y].slice(7, 14), `central axis row ${y}`).toBe('.......');
+        }
+        expect(nave.pattern[5]).toBe('.'.repeat(21));
+        expect(nave.pattern[2]).toBe('...####.......####...');
+        expect(nave.structuralAnchors.every((anchor) => nave.pattern[anchor.y][anchor.x] === '#')).toBe(true);
+        expect(nave.interactionAnchors).toContainEqual(expect.objectContaining({
+            id: 'conduit_bridge_controls', x: 12, y: 6
+        }));
+        expect(nave.rewardAnchors[0]).toMatchObject({ x: 2, y: 3 });
+        expect(nave.loreAnchors[0]).toMatchObject({ x: 18, y: 3 });
+        expect(nave.encounterZones[0]).toMatchObject({ x: 7, y: 5, w: 7, h: 4 });
+    });
+
     it('proves all 8 cathedral blueprints are selectable from ALL_ROOM_BUILDS for live world generation', () => {
         for (const blueprint of CATHEDRAL_ROOM_BLUEPRINTS) {
             const selected = selectRoomBuild(ALL_ROOM_BUILDS, {

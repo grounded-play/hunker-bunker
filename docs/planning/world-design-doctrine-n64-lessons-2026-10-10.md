@@ -360,7 +360,11 @@ Surfaces support topology; they do not replace it.
 - Let boundaries describe state: clean/dirty, dry/wet, warm/frozen, human/hive, powered/dead.
 - A room must remain recognizable with all textures replaced by grey values.
 
-## The 20-room redesign briefs
+## The original 20-room redesign briefs
+
+The live catalog now contains 26 builds: these 20 established rooms plus six N64 signature
+blueprint prototypes in `src/data/n64RoomBlueprints.js`. The six prototypes expand the comparison
+set; they do not bypass P0 gameplay-camera approval or establish traversable verticality.
 
 | Room | New spatial identity | Route and reveal | Landmark/state change |
 | --- | --- | --- | --- |
@@ -428,20 +432,26 @@ without making portal integration or unsupported height block the shape doctrine
 
 **Scope:** flat authored-room greyboxes; no vertical-contract or progression migration
 
-**Current proof:** `medical_triage`
+**Current proof set:** `medical_triage`, `reactor_compressor_hall`,
+`room_biomech_machine_nave`
 
-The medical room now uses an offset clean/dirty partition rather than a single central bar. Its
-south approach meets an intake screen, pivots east to reveal the protected treatment pocket, and
-can continue through a longer supply-side loop. Existing room/socket IDs, rotation, safe-room
-behavior, and objective anchor IDs are preserved. The refreshed isometric showroom review is
-`docs/reports/assets/furnished-rooms/medical_triage-bio.png`; it is not a substitute for the
-required real gameplay-camera threshold/return capture.
+The medical room uses an offset clean/dirty partition, eastward reveal pivot, protected treatment
+pocket, supply-side loop, and quiet arrival apron. The compressor hall replaces six equal blocks
+with one asymmetric core, a subordinate heat shield, a broad safe service loop, and a shorter
+two-cell hazardous bypass. The machine nave preserves a seven-cell processional axis, opens a
+cross-cut, and gives its opposing side chapels separate reward and lore purposes.
 
-Verified on this slice: authored catalog validation, all rotations, connector reachability,
-population, dressing, destruction handling, and the focused showroom probe. Actual gameplay-camera
-sign-off remains open. Next within Lane A is `reactor_compressor_hall`;
-`room_biomech_machine_nave` follows after its flat processional layout is reviewed against cutaway
-occlusion.
+Hero hierarchy is now authored rather than random. Medical and the nave promote an existing
+interaction anchor via `signatureAnchorId`; the compressor declares a separate presentational
+`signatureAnchors` hero prop. The population planner respects both forms, so practical light and
+review focus stay on the medical bed, compressor drive, or apse lectern instead of an unrelated
+theme prop.
+
+Verified so far: catalog validation, all rotations, connector reachability, semantic safe-versus-
+hazardous compressor routes, companion-width hot bypass, population, dressing, destruction
+handling, and fixed orthographic gameplay-camera/cutaway captures for all four rotations. Those
+captures live at `docs/reports/assets/furnished-rooms/p0a-*-game-camera-r*.png`. Live in-campaign
+threshold/return views and saved-campaign geometry policy remain open before P0A sign-off.
 
 ### P1 — extend proven shapes
 
@@ -450,9 +460,9 @@ occlusion.
 
 ### P2 — complete the authored catalog
 
-Puzzle, trap, cache, radar, vent, hull bay, crypt, cloister, and astrogation rooms. Do not author
-new hero rooms until P0A and P0B prove that the revised topology reads in the default gameplay
-camera.
+Puzzle, trap, cache, radar, vent, hull bay, crypt, cloister, and astrogation rooms. Six signature
+blueprint prototypes landed concurrently with this pass; treat them as comparison greyboxes and
+do not expand the catalog further until P0A and P0B read in the default gameplay camera.
 
 ## Greybox process
 

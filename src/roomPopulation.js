@@ -192,6 +192,8 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
         ?? room.contentPlan?.structural
         ?? [];
     const contentAnchorGroups = [
+        room.signatureAnchors,
+        room.roomBuild?.signatureAnchors,
         structuralAnchors,
         room.interactionAnchors,
         room.rewardAnchors,
@@ -303,6 +305,12 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
 
     const typedContentGroups = [
         {
+            kind: 'signature',
+            anchors: room.signatureAnchors ?? room.roomBuild?.signatureAnchors ?? [],
+            defaultType: 'prop_bunker_supplies',
+            defaultBlocking: true
+        },
+        {
             kind: 'interaction',
             anchors: room.interactionAnchors ?? room.roomBuild?.interactionAnchors ?? room.contentPlan?.interactions ?? [],
             defaultType: 'console',
@@ -354,6 +362,20 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
         }
     }
 
+    // Hero rooms can nominate one of their existing authored anchors as the
+    // focal object. Promoting that placement preserves its exact coordinate,
+    // type and anchor id while preventing a random theme signature from
+    // stealing the practical light and close-up elsewhere in the room.
+    const signatureAnchorId = room.signatureAnchorId ?? room.roomBuild?.signatureAnchorId ?? null;
+    if (signatureAnchorId) {
+        const authoredSignature = placements.find((placement) => placement.anchorId === signatureAnchorId);
+        if (authoredSignature && authoredSignature.kind !== 'signature') {
+            authoredSignature.authoredKind = authoredSignature.kind;
+            authoredSignature.kind = 'signature';
+        }
+    }
+    const hasAuthoredSignature = placements.some((placement) => placement.kind === 'signature');
+
     if (room.role === 'medical' || room.role === 'cryo-lab') {
         const medicalProps = [...new Set([
             ...(theme.signatureProps ?? []),
@@ -362,13 +384,13 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
         while (medicalProps.length < 3) {
             medicalProps.push(['prop_medical_bed', 'prop_diagnostic_console', 'prop_surgical_cart'][medicalProps.length]);
         }
-        if (budget.signature > 0) {
+        if (budget.signature > 0 && !hasAuthoredSignature) {
             medicalProps.forEach((type, index) => reservePlacement(index === 0 ? 'signature' : 'large', type, true));
-        } else {
+        } else if (budget.signature === 0) {
             medicalProps.slice(0, Math.min(3, budget.large.min)).forEach((type) => reservePlacement('large', type, true));
         }
     } else {
-        if (budget.signature > 0) {
+        if (budget.signature > 0 && !hasAuthoredSignature) {
             reservePlacement('signature', propFrom(theme.signatureProps, random, 'prop_bunker_supplies', { placements, recentModels }), true);
         }
         if (['reward', 'storage', 'security'].includes(room.role)) {

@@ -100,6 +100,31 @@ describe('room population', () => {
         expect(plan.degraded).toBe(false);
     });
 
+    it('promotes an authored focal anchor instead of adding a random theme signature', () => {
+        const room = {
+            id: 'authored-hero-room',
+            role: 'engineering',
+            interior: [{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 1 }],
+            navigation: { doorLanes: [] },
+            populationBudget: { signature: 1, large: 0, small: 0, pickup: 0, enemy: 0 },
+            signatureAnchorId: 'hero_machine',
+            structuralAnchors: [{ id: 'hero_machine', type: 'prop_fusion_generator', x: 2, y: 2 }],
+            themeConfig: { signatureProps: ['wrong_random_signature'] }
+        };
+        const grid = Array.from({ length: 4 }, () => Array(5).fill('#'));
+        for (const cell of room.interior) grid[cell.y][cell.x] = '.';
+
+        const plan = planRoomPopulation(room, grid, () => 0);
+
+        expect(plan.placements).toContainEqual(expect.objectContaining({
+            anchorId: 'hero_machine', kind: 'signature', authoredKind: 'structural',
+            type: 'prop_fusion_generator', x: 2, y: 2
+        }));
+        expect(plan.placements).not.toContainEqual(expect.objectContaining({ type: 'wrong_random_signature' }));
+        expect(plan.signaturePlaced).toBe(true);
+        expect(plan.degraded).toBe(false);
+    });
+
     it('layers non-blocking small and ambient dressing around an ordinary room edge', () => {
         const room = {
             id: 'ordinary-room',
@@ -506,4 +531,3 @@ describe('room population', () => {
         });
     });
 });
-

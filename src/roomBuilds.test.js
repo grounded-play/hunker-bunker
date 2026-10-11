@@ -22,6 +22,24 @@ function seededRandom(seed) {
     };
 }
 
+function shortestPatternPath(pattern, start, goal, blocked = new Set()) {
+    const key = ({ x, y }) => `${x},${y}`;
+    const queue = [{ ...start, distance: 0 }];
+    const seen = new Set([key(start)]);
+    for (let index = 0; index < queue.length; index += 1) {
+        const current = queue[index];
+        if (current.x === goal.x && current.y === goal.y) return current.distance;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const next = { x: current.x + dx, y: current.y + dy };
+            const nextKey = key(next);
+            if (pattern[next.y]?.[next.x] !== '.' || blocked.has(nextKey) || seen.has(nextKey)) continue;
+            seen.add(nextKey);
+            queue.push({ ...next, distance: current.distance + 1 });
+        }
+    }
+    return Infinity;
+}
+
 describe('ROOM_BUILD_CATALOG', () => {
     // Engineering includes the two mandatory ship-goal rooms plus Meridian's
     // Ring 1 reactor-vent quest destination.
@@ -58,6 +76,49 @@ describe('ROOM_BUILD_CATALOG', () => {
         expect(build.pattern[5][7]).toBe('#');
         expect(build.interactionAnchors).toContainEqual(expect.objectContaining({ id: 'triage_console', x: 8, y: 3 }));
         expect(build.rewardAnchors).toContainEqual(expect.objectContaining({ id: 'med_supply_case', x: 13, y: 2 }));
+    });
+
+    it('uses one compressor island with a distinct hot-side bypass in the P0A hall', () => {
+        const build = ROOM_BUILD_CATALOG.find((entry) => entry.id === 'reactor_compressor_hall');
+        expect(build.pattern).toEqual([
+            '###................',
+            '##.................',
+            '#..................',
+            '...................',
+            '.......#####..##...',
+            '......######..##...',
+            '......###.##..##...',
+            '.......##.##..##...',
+            '.......##.##..##...',
+            '..............##...',
+            '..................#',
+            '.................##',
+            '................###'
+        ]);
+        expect(build.pattern[6]).toBe('......###.##..##...');
+        expect(build.pattern[6].slice(12, 14)).toBe('..');
+        expect(build.hazardZones).toContainEqual(expect.objectContaining({
+            id: 'coolant_plume', x: 12, y: 4, w: 2, h: 5
+        }));
+        expect(build.signatureAnchors).toContainEqual(expect.objectContaining({
+            id: 'compressor_drive', type: 'prop_tesla_coil_node', x: 9, y: 6
+        }));
+        expect(build.structuralAnchors).toContainEqual(expect.objectContaining({
+            id: 'coolant_manifold', x: 14, y: 6
+        }));
+        expect(computeApproachPoint(build)).toEqual({ x: 9, y: 10 });
+
+        const control = { x: 12, y: 3 };
+        const plume = new Set();
+        for (let y = 4; y < 9; y += 1) for (let x = 12; x < 14; x += 1) plume.add(`${x},${y}`);
+        const hotPath = shortestPatternPath(build.pattern, computeApproachPoint(build), control);
+        const servicePath = shortestPatternPath(build.pattern, computeApproachPoint(build), control, plume);
+        expect(hotPath).toBeLessThan(servicePath);
+        expect(servicePath).toBeLessThan(Infinity);
+        expect(shortestPatternPath(build.pattern, control, { x: 9, y: 0 })).toBeLessThan(Infinity);
+        for (let y = 4; y < 9; y += 1) {
+            expect(build.pattern[y].slice(12, 14), `hot bypass clearance row ${y}`).toBe('..');
+        }
     });
 
     it.each(ROOM_BUILD_CATALOG.map((build) => [build.id, build]))('%s is internally valid', (_, build) => {

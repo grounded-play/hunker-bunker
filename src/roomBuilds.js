@@ -74,6 +74,7 @@ function rotateOnce(build) {
         pattern: rotatePatternClockwise(build.pattern),
         rotation: ((build.rotation ?? 0) + 1) % 4,
         sockets: build.sockets.map((socket) => ({ ...socket, side: CLOCKWISE_SIDE[socket.side] })),
+        signatureAnchors: rotatePointList(build.signatureAnchors ?? [], height),
         structuralAnchors: rotatePointList(build.structuralAnchors, height),
         interactionAnchors: rotatePointList(build.interactionAnchors, height),
         rewardAnchors: rotatePointList(build.rewardAnchors, height),
@@ -143,7 +144,7 @@ function wallAnchorsOf(build) {
 }
 
 function floorAnchorsOf(build) {
-    return [...build.interactionAnchors, ...build.rewardAnchors, ...build.loreAnchors];
+    return [...(build.signatureAnchors ?? []), ...build.interactionAnchors, ...build.rewardAnchors, ...build.loreAnchors];
 }
 
 /**
@@ -417,6 +418,10 @@ export function buildRoomInstanceFromBuild(build, stamped, { chunkX = 0, chunkY 
             pickup: build.contentBudget.pickupsMin,
             enemy: build.contentBudget.enemiesMax
         },
+        // Optional authored focal hierarchy. The population planner promotes
+        // the matching structural/interaction/reward/lore placement instead
+        // of inventing a theme-random signature elsewhere in the room.
+        signatureAnchorId: build.signatureAnchorId ?? null,
         // roomEncounters.js reads room.contentBudget?.enemiesMax directly
         // (not populationBudget.enemy.max, which is a plain number here,
         // not an object) — expose the build's own budget shape verbatim so
@@ -426,6 +431,7 @@ export function buildRoomInstanceFromBuild(build, stamped, { chunkX = 0, chunkY 
         gate: null,
         placements: [],
         encounter: null,
+        signatureAnchors: (build.signatureAnchors ?? []).map((a) => translatePoint(a, origin)),
         structuralAnchors: build.structuralAnchors.map((a) => translatePoint(a, origin)),
         interactionAnchors: build.interactionAnchors.map((a) => translatePoint(a, origin)),
         rewardAnchors: build.rewardAnchors.map((a) => translatePoint(a, origin)),

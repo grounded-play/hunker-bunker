@@ -17,16 +17,25 @@ function buildPattern(width, height, wallCells = []) {
 }
 
 export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
-    // Blueprint 1: The Machine God Nave (21 x 11) - Monumental Hall with buttress arches & aisle
+    // Blueprint 1: The Machine God Nave (21 x 11) - processional axis,
+    // lateral chapels and an open cross-cut under the current flat contract.
     Object.freeze({
         id: 'room_biomech_machine_nave',
         family: 'gate',
         themeStyle: 'giger',
         pattern: buildPattern(21, 11, [
-            { x: 3, y: 2, w: 2, h: 2 },
-            { x: 3, y: 7, w: 2, h: 2 },
-            { x: 16, y: 2, w: 2, h: 2 },
-            { x: 16, y: 7, w: 2, h: 2 }
+            // North chapel returns: the outer stems conceal side pockets
+            // while the seven-cell central nave remains readable from entry.
+            { x: 3, y: 2, w: 4, h: 1 },
+            { x: 3, y: 2, w: 1, h: 3 },
+            { x: 14, y: 2, w: 4, h: 1 },
+            { x: 17, y: 2, w: 1, h: 3 },
+            // South returns compress the threshold, then release at the
+            // clear transept on row five.
+            { x: 3, y: 6, w: 1, h: 3 },
+            { x: 3, y: 8, w: 4, h: 1 },
+            { x: 17, y: 6, w: 1, h: 3 },
+            { x: 14, y: 8, w: 4, h: 1 }
         ]),
         sockets: [
             { id: 'approach', side: 's', width: 3, required: true },
@@ -37,22 +46,28 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['ringCrossing', 'objective'],
         structuralAnchors: [
-            { id: 'buttress_nw', type: 'prop_pipe_organ_heat_exchanger', x: 4, y: 3 },
+            { id: 'buttress_nw', type: 'prop_pipe_organ_heat_exchanger', x: 4, y: 2 },
             { id: 'buttress_sw', type: 'prop_pipe_organ_heat_exchanger', x: 4, y: 8 },
-            { id: 'buttress_ne', type: 'prop_pipe_organ_heat_exchanger', x: 16, y: 3 },
+            { id: 'buttress_ne', type: 'prop_pipe_organ_heat_exchanger', x: 16, y: 2 },
             { id: 'buttress_se', type: 'prop_pipe_organ_heat_exchanger', x: 16, y: 8 }
         ],
         interactionAnchors: [
             { id: 'apse_scripture_terminal', type: 'prop_liturgical_terminal_lectern', x: 10, y: 3 },
-            { id: 'conduit_bridge_controls', type: 'base_console', x: 10, y: 6 }
+            { id: 'conduit_bridge_controls', type: 'base_console', x: 12, y: 6 }
         ],
+        signatureAnchorId: 'apse_scripture_terminal',
         compassAnchors: { approach: 'approach', objective: 'apse_scripture_terminal' },
-        coverZones: [{ x: 3, y: 2, w: 3, h: 3 }, { x: 15, y: 2, w: 3, h: 3 }],
-        encounterZones: [{ id: 'nave_concourse', x: 7, y: 3, w: 7, h: 5 }],
-        rewardAnchors: [{ id: 'votive_shrine_relic', type: 'prop_bunker_supplies', x: 10, y: 2 }],
-        loreAnchors: [{ id: 'nave_catechism_log', type: 'lore_terminal', x: 2, y: 5 }],
+        coverZones: [
+            { x: 3, y: 2, w: 4, h: 3 },
+            { x: 14, y: 2, w: 4, h: 3 },
+            { x: 3, y: 6, w: 4, h: 3 },
+            { x: 14, y: 6, w: 4, h: 3 }
+        ],
+        encounterZones: [{ id: 'nave_concourse', x: 7, y: 5, w: 7, h: 4 }],
+        rewardAnchors: [{ id: 'votive_shrine_relic', type: 'prop_bunker_supplies', x: 2, y: 3 }],
+        loreAnchors: [{ id: 'nave_catechism_log', type: 'lore_terminal', x: 18, y: 3 }],
         hazardZones: [],
-        quietZones: [],
+        quietZones: [{ x: 0, y: 2, w: 3, h: 3 }],
         safeZone: false,
         containmentBounds: { minX: 0, minY: 0, maxX: 20, maxY: 10 },
         presentationVariants: ['intact', 'consecrated', 'desecrated'],

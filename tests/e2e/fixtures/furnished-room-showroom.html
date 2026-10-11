@@ -30,7 +30,7 @@
   -->
   <script type="module">
     import * as THREE from 'three';
-    import { ROOM_BUILD_CATALOG, ALL_ROOM_BUILDS, stampRoomBuild, buildRoomInstanceFromBuild } from '/src/roomBuilds.js';
+    import { ROOM_BUILD_CATALOG, ALL_ROOM_BUILDS, rotateRoomBuild, stampRoomBuild, buildRoomInstanceFromBuild } from '/src/roomBuilds.js';
     import { assignRoomThemes } from '/src/roomThemes.js';
     import { bindRoomContent } from '/src/roomContent.js';
     import { planRoomPopulation } from '/src/roomPopulation.js';
@@ -41,12 +41,16 @@
     import { planRoomDressing } from '/src/roomDressing.js';
     import { buildRoomDressingGroup, loadKeyedDecalTexture, hideRoomDressingSupport } from '/src/roomDressingRenderer.js';
     import { buildGrammarRoomChunk } from '/src/roomGrammarChunk.js';
+    import { planRoomCutawayCells, ROOM_CUTAWAY_HEIGHT } from '/src/roomPresentation.js';
 
     const params = new URLSearchParams(location.search);
     const catalog = ALL_ROOM_BUILDS ?? ROOM_BUILD_CATALOG;
     const isGrammar = params.get('build') === 'maintenance_hall' || params.get('grammar') === '1';
     const isBreached = params.get('view') === 'breached' || params.get('breach') === '1';
-    const build = isGrammar ? null : (catalog.find((b) => b.id === params.get('build')) ?? ROOM_BUILD_CATALOG[0]);
+    const sourceBuild = isGrammar ? null : (catalog.find((b) => b.id === params.get('build')) ?? ROOM_BUILD_CATALOG[0]);
+    const reviewMode = params.get('review') === 'gameplay';
+    const rotation = Math.max(0, Math.min(3, Number.parseInt(params.get('rotation') ?? '0', 10) || 0));
+    const build = sourceBuild && rotation ? rotateRoomBuild(sourceBuild, rotation) : sourceBuild;
     const biome = ['active', 'cryo', 'bio', 'cave'].includes(params.get('biome')) ? params.get('biome') : 'active';
     let state = Number(params.get('seed')) || 11;
     const random = () => (state = (state * 16807) % 2147483647) / 2147483647;
@@ -203,6 +207,7 @@
     const wallGeo = new THREE.BoxGeometry(1, WALL_HEIGHT, 1);
     const edgeGeo = new THREE.EdgesGeometry(wallGeo);
     const edgeMat = new THREE.LineBasicMaterial({ color: 0x0b0d0f, transparent: true, opacity: 0.55 });
+    const wallMeshes = new Map();
     for (let y = top - 1; y <= bottom + 1; y += 1) {
       for (let x = left - 1; x <= right + 1; x += 1) {
         if (currentGrid[y]?.[x] !== '#' || shellCells.has(`${x},${y}`)) continue;
@@ -212,7 +217,22 @@
         const edges = new THREE.LineSegments(edgeGeo, edgeMat);
         edges.position.copy(wall.position);
         scene.add(edges);
+        wallMeshes.set(`${x},${y}`, { wall, edges });
       }
+    }
+
+    // Match the live renderer's default +X/+Z camera cutaway in gameplay
+    // review mode. Keeping this fixture on the same pure planner prevents a
+    // flattering showroom angle from hiding foreground-wall regressions.
+    const cutawayCells = reviewMode ? planRoomCutawayCells(room, currentGrid, 'se') : [];
+    const cutawayCellKeys = new Set(cutawayCells.map(({ x, y }) => `${x},${y}`));
+    for (const { x, y } of cutawayCells) {
+      const record = wallMeshes.get(`${x},${y}`);
+      if (!record) continue;
+      record.wall.scale.y = ROOM_CUTAWAY_HEIGHT / WALL_HEIGHT;
+      record.wall.position.y = ROOM_CUTAWAY_HEIGHT / 2;
+      record.edges.scale.y = ROOM_CUTAWAY_HEIGHT / WALL_HEIGHT;
+      record.edges.position.y = ROOM_CUTAWAY_HEIGHT / 2;
     }
 
     // Kit pieces: shells and gateway frames.
@@ -222,7 +242,10 @@
       const model = await kitCache.get(type);
       return model ? model.clone(true) : null;
     };
+    const shellPieces = new Set(shells);
     for (const piece of [...shells, ...gateways]) {
+      if (reviewMode && shellPieces.has(piece)
+        && piece.cells?.some(({ x, y }) => cutawayCellKeys.has(`${x},${y}`))) continue;
       const root = await kit(piece.type);
       if (!root) continue;
       root.position.set(piece.x, 0, piece.y);
@@ -311,9 +334,11 @@
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     document.body.append(renderer.domElement);
 
-    const overview = new THREE.PerspectiveCamera(38, (width * 0.58) / height, 0.1, 300);
-    overview.position.set(cx + 9, 21, cz + 17);
-    overview.lookAt(cx, 0, cz);
+    const overview = reviewMode
+      ? new THREE.OrthographicCamera(-10.3, 10.3, 10, -10, 0.1, 100)
+      : new THREE.PerspectiveCamera(38, (width * 0.58) / height, 0.1, 300);
+    overview.position.set(cx + (reviewMode ? 8 : 9), reviewMode ? 12.5 : 21, cz + (reviewMode ? 8 : 17));
+    overview.lookAt(cx, reviewMode ? 0.4 : 0, cz);
     // Close-up on the room's focal object: the signature anchor, else the first
     // authored interaction/structural piece. The camera stands on the room-centre
     // side of it so it never starts inside a wall.
@@ -345,7 +370,7 @@
     label.style.top = '8px';
     const roomTitle = isGrammar
       ? `maintenance_hall (${room.grammar?.motif ?? 'industrial'}) · ${isBreached ? 'BREACHED' : 'INTACT'}`
-      : `${build.id} · ${biome} · theme ${room.theme}`;
+      : `${build.id} · ${biome} · theme ${room.theme}${reviewMode ? ` · GAME CAMERA R${rotation}` : ''}`;
     label.textContent = `${roomTitle} · ${props} props, ${decals} decals, `
       + `${shells.length} wall shells, ${gateways.length} gateway${gateways.length === 1 ? '' : 's'} · `
       + `dressing ${dressing.items.length} pieces in ${dressingGroup.userData.drawCalls} draw calls`
@@ -373,7 +398,10 @@
       gateways: gateways.length,
       missing,
       degraded: plan.degraded,
-      onWalls
+      onWalls,
+      reviewMode,
+      rotation,
+      cutawayCells: cutawayCells.length
     };
   </script>
 </body>
