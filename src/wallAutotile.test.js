@@ -10,6 +10,8 @@ import {
     createCornerCutDepthMaterial,
     createCornerCutPoolGeometry,
     createCornerCutWallGeometry,
+    createSlimWallGeometry,
+    detectWallPartitionProfile,
     isWallAutotileEnabled,
     patchCornerCutVertexShader,
     planWallFootDressing,
@@ -461,5 +463,97 @@ describe('planWallIcicles', () => {
     it('is deterministic per cell', () => {
         const a = planWallIcicles({ worldX: 7, worldZ: -2, openSides: allOpen, biome: 'cryo' });
         expect(planWallIcicles({ worldX: 7, worldZ: -2, openSides: allOpen, biome: 'cryo' })).toEqual(a);
+    });
+});
+
+describe('createSlimWallGeometry', () => {
+    it('creates 1/2 unit size (0.5m) slim partition geometry with correct bounding box', () => {
+        const geoZ = createSlimWallGeometry({ height: 2.8, thickness: 0.5, orientation: 'z' });
+        expect(geoZ.userData.isSlimWall).toBe(true);
+        expect(geoZ.userData.thickness).toBe(0.5);
+        expect(geoZ.userData.thicknessX).toBe(0.5);
+        expect(geoZ.userData.thicknessZ).toBe(1.0);
+        expect(geoZ.boundingBox.min.x).toBeCloseTo(-0.25, 4);
+        expect(geoZ.boundingBox.max.x).toBeCloseTo(0.25, 4);
+        expect(geoZ.boundingBox.min.z).toBeCloseTo(-0.5, 4);
+        expect(geoZ.boundingBox.max.z).toBeCloseTo(0.5, 4);
+
+        const geoX = createSlimWallGeometry({ height: 2.8, thickness: 0.5, orientation: 'x' });
+        expect(geoX.userData.thicknessX).toBe(1.0);
+        expect(geoX.userData.thicknessZ).toBe(0.5);
+        expect(geoX.boundingBox.min.x).toBeCloseTo(-0.5, 4);
+        expect(geoX.boundingBox.max.x).toBeCloseTo(0.5, 4);
+        expect(geoX.boundingBox.min.z).toBeCloseTo(-0.25, 4);
+        expect(geoX.boundingBox.max.z).toBeCloseTo(0.25, 4);
+    });
+
+    it('creates 1/4 unit size (0.25m) slim partition geometry with correct bounding box', () => {
+        const geoZ = createSlimWallGeometry({ height: 2.8, thickness: 0.25, orientation: 'z' });
+        expect(geoZ.userData.isSlimWall).toBe(true);
+        expect(geoZ.userData.thickness).toBe(0.25);
+        expect(geoZ.userData.thicknessX).toBe(0.25);
+        expect(geoZ.userData.thicknessZ).toBe(1.0);
+        expect(geoZ.boundingBox.min.x).toBeCloseTo(-0.125, 4);
+        expect(geoZ.boundingBox.max.x).toBeCloseTo(0.125, 4);
+        expect(geoZ.boundingBox.min.z).toBeCloseTo(-0.5, 4);
+        expect(geoZ.boundingBox.max.z).toBeCloseTo(0.5, 4);
+    });
+
+    it('creates 3D octagonal slim pillar geometry for isolated posts', () => {
+        const pillar = createSlimWallGeometry({ height: 2.8, thickness: 0.5, orientation: 'pillar' });
+        expect(pillar.userData.thicknessX).toBe(0.5);
+        expect(pillar.userData.thicknessZ).toBe(0.5);
+        expect(pillar.boundingBox.min.x).toBeCloseTo(-0.25, 4);
+        expect(pillar.boundingBox.max.x).toBeCloseTo(0.25, 4);
+        expect(pillar.boundingBox.min.z).toBeCloseTo(-0.25, 4);
+        expect(pillar.boundingBox.max.z).toBeCloseTo(0.25, 4);
+        // Has full 3D normals pointing outward
+        const normal = pillar.getAttribute('normal');
+        expect(normal.count).toBeGreaterThan(0);
+    });
+});
+
+describe('detectWallPartitionProfile', () => {
+    it('detects East-West partition divider (runs along X, thin in Z) when open north and south', () => {
+        const grid = [
+            '.....',
+            '#####',
+            '.....'
+        ];
+        expect(detectWallPartitionProfile(solidAt(grid), 2, 1)).toBe('x');
+    });
+
+    it('detects North-South partition divider (runs along Z, thin in X) when open east and west', () => {
+        const grid = [
+            '.#.',
+            '.#.',
+            '.#.'
+        ];
+        expect(detectWallPartitionProfile(solidAt(grid), 1, 1)).toBe('z');
+    });
+
+    it('detects isolated slim pillar when open on all 4 sides', () => {
+        const grid = [
+            '...',
+            '.#.',
+            '...'
+        ];
+        expect(detectWallPartitionProfile(solidAt(grid), 1, 1)).toBe('pillar');
+    });
+
+    it('returns null for thick wall cluster or perimeter corners', () => {
+        const grid = [
+            '###',
+            '###',
+            '###'
+        ];
+        expect(detectWallPartitionProfile(solidAt(grid), 1, 1)).toBeNull();
+
+        const corner = [
+            '##.',
+            '##.',
+            '...'
+        ];
+        expect(detectWallPartitionProfile(solidAt(corner), 0, 0)).toBeNull();
     });
 });

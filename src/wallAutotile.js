@@ -70,14 +70,24 @@ export function wallCornerCutMask(isSolid, x, y) {
  * the organic bio walls; every sample of a chamfer belongs to its corner, and
  * the top fans over every rim sample so a bent top never cracks.
  */
-export function createCornerCutWallGeometry({ height = 2.8, cut = WALL_CHAMFER, heightSegments = 1, widthSegments = 1 } = {}) {
-    const h = 0.5;
+export function createCornerCutWallGeometry({
+    height = 2.8,
+    cut = WALL_CHAMFER,
+    thicknessX = 1.0,
+    thicknessZ = 1.0,
+    heightSegments = 1,
+    widthSegments = 1
+} = {}) {
+    const hx = thicknessX / 2;
+    const hz = thicknessZ / 2;
+    const maxCut = Math.min(hx, hz) * 0.85;
+    const actualCut = Math.min(cut, maxCut);
     // Round the cell, each cut's two points in walking order.
     const ring = [
-        [h - cut, -h, 1], [h, -h + cut, 1],
-        [h, h - cut, 4], [h - cut, h, 4],
-        [-h + cut, h, 3], [-h, h - cut, 3],
-        [-h, -h + cut, 2], [-h + cut, -h, 2]
+        [hx - actualCut, -hz, 1], [hx, -hz + actualCut, 1],
+        [hx, hz - actualCut, 4], [hx - actualCut, hz, 4],
+        [-hx + actualCut, hz, 3], [-hx, hz - actualCut, 3],
+        [-hx, -hz + actualCut, 2], [-hx + actualCut, -hz, 2]
     ];
     const bottom = -height / 2;
     const top = height / 2;
@@ -149,10 +159,70 @@ export function createCornerCutWallGeometry({ height = 2.8, cut = WALL_CHAMFER, 
     geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
     geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geometry.setAttribute('hbCorner', new THREE.Float32BufferAttribute(corners, 1));
-    // Bounds of the full square, which is what most cells draw.
-    geometry.boundingBox = new THREE.Box3(new THREE.Vector3(-h, bottom, -h), new THREE.Vector3(h, top, h));
+    // Bounds of the wall cell.
+    geometry.boundingBox = new THREE.Box3(new THREE.Vector3(-hx, bottom, -hz), new THREE.Vector3(hx, top, hz));
     geometry.boundingSphere = geometry.boundingBox.getBoundingSphere(new THREE.Sphere());
+    geometry.userData = { thicknessX, thicknessZ };
     return geometry;
+}
+
+/**
+ * Creates slim wall / partition geometry for interior room dividers.
+ * Thickness can be 0.5 (half-unit) or 0.25 (quarter-unit).
+ * Orientation:
+ *   - 'x': Wall runs along X axis (thin along Z: width 1.0, depth thickness)
+ *   - 'z': Wall runs along Z axis (thin along X: width thickness, depth 1.0)
+ *   - 'pillar': Isolated slim pillar (both width and depth equal thickness)
+ */
+export function createSlimWallGeometry({
+    height = 2.8,
+    thickness = 0.5,
+    orientation = 'z',
+    cut = null,
+    heightSegments = 1,
+    widthSegments = 1
+} = {}) {
+    const t = Math.max(0.1, Math.min(1.0, thickness));
+    const isPillar = orientation === 'pillar' || orientation === 'both';
+    const thicknessX = isPillar || orientation === 'z' ? t : 1.0;
+    const thicknessZ = isPillar || orientation === 'x' ? t : 1.0;
+    const actualCut = cut ?? Math.min(WALL_CHAMFER, Math.min(thicknessX, thicknessZ) * 0.35);
+    const geo = createCornerCutWallGeometry({
+        height,
+        cut: actualCut,
+        thicknessX,
+        thicknessZ,
+        heightSegments,
+        widthSegments
+    });
+    geo.userData = {
+        isSlimWall: true,
+        thickness: t,
+        orientation,
+        thicknessX,
+        thicknessZ
+    };
+    return geo;
+}
+
+/**
+ * Analyzes neighbouring cells around a solid wall cell to classify its partition profile.
+ * - 'x': Wall runs along X axis (thin along Z), open floor North and South.
+ * - 'z': Wall runs along Z axis (thin along X), open floor East and West.
+ * - 'pillar': Isolated wall cell (open floor on all 4 sides).
+ * - null: Standard solid wall block (part of a thick boundary or cluster).
+ */
+export function detectWallPartitionProfile(isSolid, x, y) {
+    if (!isSolid(x, y)) return null;
+    const north = !isSolid(x, y - 1);
+    const east = !isSolid(x + 1, y);
+    const south = !isSolid(x, y + 1);
+    const west = !isSolid(x - 1, y);
+
+    if (north && south && east && west) return 'pillar';
+    if (north && south && !east && !west) return 'x';
+    if (east && west && !north && !south) return 'z';
+    return null;
 }
 
 /**
@@ -160,14 +230,17 @@ export function createCornerCutWallGeometry({ height = 2.8, cut = WALL_CHAMFER, 
  * every corner not in `mask` moved back out to the square. For tests and
  * anything that needs a cell's real outline.
  */
-export function cornerCutPositions(geometry, mask) {
+export function cornerCutPositions(geometry, mask, { thicknessX = 1.0, thicknessZ = 1.0 } = {}) {
+    const hx = thicknessX / 2;
+    const hz = thicknessZ / 2;
+    const cornerPoints = [null, [hx, -hz], [-hx, -hz], [-hx, hz], [hx, hz]];
     const position = geometry.getAttribute('position');
     const corner = geometry.getAttribute('hbCorner');
     const out = new Float32Array(position.array);
     for (let i = 0; i < position.count; i += 1) {
         const index = corner.getX(i);
         if (index < 0.5 || mask & (1 << (index - 1))) continue;
-        const [x, z] = CORNER_POINTS[index];
+        const [x, z] = cornerPoints[index] ?? CORNER_POINTS[index];
         out[i * 3] = x;
         out[i * 3 + 2] = z;
     }
