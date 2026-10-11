@@ -116,6 +116,7 @@ export function createCornerCutWallGeometry({
 
     const rim = [];
     let along = 0;
+    let sideVertexCount = 0;
     for (let i = 0; i < ring.length; i += 1) {
         const [x0, z0, c0] = ring[i];
         const [x1, z1, c1] = ring[(i + 1) % ring.length];
@@ -138,11 +139,13 @@ export function createCornerCutWallGeometry({
                 const quad = [sample(column, row), sample(column + 1, row), sample(column + 1, row + 1), sample(column, row + 1)];
                 triangle([quad[0], quad[1], quad[2]], normal);
                 triangle([quad[0], quad[2], quad[3]], normal);
+                sideVertexCount += 6;
             }
         }
         along += length;
     }
 
+    let topVertexCount = 0;
     const up = new THREE.Vector3(0, 1, 0);
     for (let i = 0; i < rim.length; i += 1) {
         const [x0, , z0, , , c0] = rim[i];
@@ -152,6 +155,7 @@ export function createCornerCutWallGeometry({
             [x0, top, z0, x0 + 0.5, z0 + 0.5, c0],
             [x1, top, z1, x1 + 0.5, z1 + 0.5, c1]
         ], up);
+        topVertexCount += 3;
     }
 
     const geometry = new THREE.BufferGeometry();
@@ -159,6 +163,8 @@ export function createCornerCutWallGeometry({
     geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
     geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geometry.setAttribute('hbCorner', new THREE.Float32BufferAttribute(corners, 1));
+    geometry.addGroup(0, sideVertexCount, 0);
+    geometry.addGroup(sideVertexCount, topVertexCount, 1);
     // Bounds of the wall cell.
     geometry.boundingBox = new THREE.Box3(new THREE.Vector3(-hx, bottom, -hz), new THREE.Vector3(hx, top, hz));
     geometry.boundingSphere = geometry.boundingBox.getBoundingSphere(new THREE.Sphere());

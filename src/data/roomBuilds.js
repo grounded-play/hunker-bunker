@@ -40,6 +40,8 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'medical_triage',
         family: 'medical',
+        themeStyle: 'cleanroom',
+        partitionThickness: 0.5,
         // Lane A / P0A spatial proof. The offset clean-room partition forces
         // the south approach to pivot east around the intake screen before
         // the treatment bay is exposed. The east service channel provides a
@@ -101,9 +103,15 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'armory_cage',
         family: 'armory',
-        pattern: rectRoomPattern(15, 9, [
-            { x: 3, y: 3, w: 2, h: 2 },
-            { x: 10, y: 3, w: 2, h: 2 }
+        themeStyle: 'substation',
+        partitionThickness: 0.5,
+        pattern: rectRoomPattern(17, 11, [
+            { x: 0, y: 0, w: 2, h: 2 },
+            { x: 15, y: 0, w: 2, h: 2 },
+            { x: 0, y: 9, w: 2, h: 2 },
+            { x: 15, y: 9, w: 2, h: 2 },
+            { x: 4, y: 4, w: 2, h: 3 },
+            { x: 11, y: 4, w: 2, h: 3 }
         ]),
         sockets: [
             { id: 'entry', side: 'w', width: 3, required: true },
@@ -113,25 +121,21 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         tierEligibility: [2, 3],
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['reward', 'questDestination'],
-        structuralAnchors: [{ id: 'weapon_rack_a', type: 'prop_security_locker', x: 4, y: 4 }, { id: 'weapon_rack_b', type: 'prop_security_locker', x: 11, y: 4 }],
-        // 'console' was a placeholder that resolves to nothing: no bare
-        // 'console' key exists in either scatterTextures or
-        // WORLD_3D_MODELS (only 'base_console'/'prop_diagnostic_console'
-        // do). 'base_console' is a real connected 3D GLB
-        // (public/3d/runtime/console.glb).
-        interactionAnchors: [{ id: 'armory_lock', type: 'base_console', x: 7, y: 5 }],
+        structuralAnchors: [
+            { id: 'weapon_rack_a', type: 'prop_security_locker', x: 5, y: 5 },
+            { id: 'weapon_rack_b', type: 'prop_security_locker', x: 12, y: 5 }
+        ],
+        interactionAnchors: [{ id: 'armory_lock', type: 'base_console', x: 8, y: 5 }],
+        signatureAnchorId: 'armory_lock',
         compassAnchors: { approach: 'entry', objective: 'armory_lock' },
-        coverZones: [{ x: 3, y: 3, w: 2, h: 2 }, { x: 10, y: 3, w: 2, h: 2 }],
-        encounterZones: [{ id: 'armory_defenders', x: 5, y: 1, w: 5, h: 3 }],
-        // prop_ammo_crate_stack: dedicated signature sprite for this exact
-        // reward, added this sprint — replaces the generic camp-crate
-        // placeholder.
-        rewardAnchors: [{ id: 'ammo_crate', type: 'prop_ammo_crate_stack', x: 7, y: 7 }],
+        coverZones: [{ x: 4, y: 4, w: 2, h: 3 }, { x: 11, y: 4, w: 2, h: 3 }],
+        encounterZones: [{ id: 'armory_defenders', x: 6, y: 1, w: 5, h: 3 }],
+        rewardAnchors: [{ id: 'ammo_crate', type: 'prop_ammo_crate_stack', x: 8, y: 8 }],
         loreAnchors: [],
         hazardZones: [],
         quietZones: [],
         safeZone: false,
-        containmentBounds: { minX: 0, minY: 0, maxX: 14, maxY: 8 },
+        containmentBounds: { minX: 0, minY: 0, maxX: 16, maxY: 10 },
         presentationVariants: ['sealed', 'breached', 'looted'],
         stateVariants: ['dormant', 'questActive', 'resolved'],
         adjacency: { prefers: ['pressure_corridor'], forbids: ['reward_vault'] },
@@ -140,6 +144,8 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'o2_scrubber',
         family: 'o2',
+        themeStyle: 'permafrost',
+        partitionThickness: 0.5,
         // P1 broken-ring proof. The crown and two legs form an open-bottomed
         // scrubber housing: entry from the north splits around it, both paths
         // rejoin at the south, and only then can the player turn back into the
@@ -191,7 +197,15 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'field_fabricator',
         family: 'fabricator',
-        pattern: rectRoomPattern(13, 9, [{ x: 5, y: 3, w: 3, h: 2 }]),
+        themeStyle: 'bunker',
+        partitionThickness: 0.5,
+        pattern: rectRoomPattern(15, 11, [
+            { x: 0, y: 0, w: 2, h: 2 },
+            { x: 13, y: 0, w: 2, h: 2 },
+            { x: 0, y: 9, w: 2, h: 2 },
+            { x: 13, y: 9, w: 2, h: 2 },
+            { x: 6, y: 4, w: 3, h: 2 }
+        ]),
         sockets: [{ id: 'entry', side: 's', width: 3, required: true }],
         rotationPolicy: 'cardinal',
         // Ring 1 included: src/ringManifest.js's makeProgressionContract
@@ -202,20 +216,21 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         tierEligibility: [1, 2, 3, 4],
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['support', 'questDestination'],
-        structuralAnchors: [{ id: 'fabricator_bench', type: 'prop_engineering_bench', x: 6, y: 3 }],
+        structuralAnchors: [{ id: 'fabricator_bench', type: 'prop_engineering_bench', x: 7, y: 4 }],
         // prop_fabricator_workstation: dedicated signature sprite,
         // replacing the placeholder 'console' type that resolved to no
         // texture.
-        interactionAnchors: [{ id: 'fabricator_terminal', type: 'prop_fabricator_workstation', x: 6, y: 6 }],
+        interactionAnchors: [{ id: 'fabricator_terminal', type: 'prop_fabricator_workstation', x: 7, y: 7 }],
+        signatureAnchorId: 'fabricator_terminal',
         compassAnchors: { approach: 'entry', objective: 'fabricator_terminal' },
-        coverZones: [{ x: 5, y: 3, w: 3, h: 2 }],
+        coverZones: [{ x: 6, y: 4, w: 3, h: 2 }],
         encounterZones: [],
-        rewardAnchors: [{ id: 'schematic_cache', type: 'prop_bunker_supplies', x: 1, y: 1 }],
+        rewardAnchors: [{ id: 'schematic_cache', type: 'prop_bunker_supplies', x: 2, y: 2 }],
         loreAnchors: [],
         hazardZones: [],
-        quietZones: [{ x: 0, y: 0, w: 13, h: 9 }],
+        quietZones: [{ x: 0, y: 0, w: 15, h: 11 }],
         safeZone: true,
-        containmentBounds: { minX: 0, minY: 0, maxX: 12, maxY: 8 },
+        containmentBounds: { minX: 0, minY: 0, maxX: 14, maxY: 10 },
         presentationVariants: ['intact', 'depleted', 'broken'],
         stateVariants: ['dormant', 'questActive', 'resolved'],
         adjacency: { prefers: ['service_passage'], forbids: ['camp'] },
@@ -224,10 +239,19 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'power_puzzle',
         family: 'puzzle',
+        themeStyle: 'substation',
+        partitionThickness: 0.5,
         // Routing nodes are floor-standing interactive props, not
         // collision geometry — the player must be able to stand on the
-        // cell to interact with them, so they carry no obstruction rect.
-        pattern: rectRoomPattern(13, 11, []),
+        // cell to interact with them. Substation relay pylons and chamfers frame the space.
+        pattern: rectRoomPattern(17, 11, [
+            { x: 0, y: 0, w: 2, h: 2 },
+            { x: 15, y: 0, w: 2, h: 2 },
+            { x: 0, y: 9, w: 2, h: 2 },
+            { x: 15, y: 9, w: 2, h: 2 },
+            { x: 5, y: 3, w: 2, h: 2 },
+            { x: 10, y: 6, w: 2, h: 2 }
+        ]),
         sockets: [{ id: 'entry', side: 'w', width: 3, required: true }],
         rotationPolicy: 'cardinal',
         tierEligibility: [2, 3, 4],
@@ -235,18 +259,19 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         roles: ['challenge', 'questDestination'],
         structuralAnchors: [],
         interactionAnchors: [
-            { id: 'routing_node_a', type: 'prop_cyber_junction', x: 3, y: 3 },
-            { id: 'routing_node_b', type: 'prop_cyber_junction', x: 8, y: 7 }
+            { id: 'routing_node_a', type: 'prop_cyber_junction', x: 5, y: 2 },
+            { id: 'routing_node_b', type: 'prop_cyber_junction', x: 10, y: 5 }
         ],
+        signatureAnchorId: 'routing_node_a',
         compassAnchors: { approach: 'entry', objective: 'routing_node_a' },
-        coverZones: [],
+        coverZones: [{ x: 5, y: 3, w: 2, h: 2 }, { x: 10, y: 6, w: 2, h: 2 }],
         encounterZones: [],
-        rewardAnchors: [{ id: 'puzzle_reward', type: 'prop_bunker_supplies', x: 10, y: 2 }],
+        rewardAnchors: [{ id: 'puzzle_reward', type: 'prop_bunker_supplies', x: 14, y: 2 }],
         loreAnchors: [],
         hazardZones: [],
-        quietZones: [{ x: 0, y: 0, w: 13, h: 11 }],
+        quietZones: [{ x: 0, y: 0, w: 17, h: 11 }],
         safeZone: true,
-        containmentBounds: { minX: 0, minY: 0, maxX: 12, maxY: 10 },
+        containmentBounds: { minX: 0, minY: 0, maxX: 16, maxY: 10 },
         presentationVariants: ['off', 'powered', 'incorrect', 'solved'],
         stateVariants: ['dormant', 'questActive', 'resolved'],
         adjacency: { prefers: [], forbids: ['camp', 'reward_vault'] },
@@ -258,25 +283,35 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         // exactly ('trap_reward', not 'trap') — that table is already
         // shipped and keyed by this family string.
         family: 'trap_reward',
-        // The false cache is a floor-standing interactive prop, not
-        // collision geometry, for the same reason as power_puzzle's nodes.
-        pattern: rectRoomPattern(13, 9, []),
+        themeStyle: 'obsidian',
+        partitionThickness: 0.5,
+        // The false cache is a floor-standing interactive prop framed by
+        // twin obsidian dais pylons and corner chamfers.
+        pattern: rectRoomPattern(17, 11, [
+            { x: 0, y: 0, w: 2, h: 2 },
+            { x: 15, y: 0, w: 2, h: 2 },
+            { x: 0, y: 9, w: 2, h: 2 },
+            { x: 15, y: 9, w: 2, h: 2 },
+            { x: 4, y: 4, w: 2, h: 3 },
+            { x: 11, y: 4, w: 2, h: 3 }
+        ]),
         sockets: [{ id: 'entry', side: 'n', width: 3, required: true }],
         rotationPolicy: 'cardinal',
         tierEligibility: [2, 3, 4],
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['challenge', 'reward'],
         structuralAnchors: [],
-        interactionAnchors: [{ id: 'false_cache', type: 'prop_bunker_supplies', x: 6, y: 4 }],
+        interactionAnchors: [{ id: 'false_cache', type: 'prop_bunker_supplies', x: 8, y: 5 }],
+        signatureAnchorId: 'false_cache',
         compassAnchors: { approach: 'entry', objective: 'false_cache' },
-        coverZones: [],
-        encounterZones: [{ id: 'trap_trigger', x: 3, y: 2, w: 7, h: 5 }],
-        rewardAnchors: [{ id: 'trap_payoff', type: 'prop_bunker_supplies', x: 6, y: 6 }],
+        coverZones: [{ x: 4, y: 4, w: 2, h: 3 }, { x: 11, y: 4, w: 2, h: 3 }],
+        encounterZones: [{ id: 'trap_trigger', x: 5, y: 3, w: 7, h: 5 }],
+        rewardAnchors: [{ id: 'trap_payoff', type: 'prop_bunker_supplies', x: 8, y: 8 }],
         loreAnchors: [],
-        hazardZones: [{ id: 'spore_vent', x: 3, y: 2, w: 7, h: 5 }],
+        hazardZones: [{ id: 'spore_vent', x: 5, y: 3, w: 7, h: 5 }],
         quietZones: [],
         safeZone: false,
-        containmentBounds: { minX: 0, minY: 0, maxX: 12, maxY: 8 },
+        containmentBounds: { minX: 0, minY: 0, maxX: 16, maxY: 10 },
         presentationVariants: ['warning', 'active', 'spent'],
         stateVariants: ['dormant', 'questActive', 'resolved'],
         adjacency: { prefers: [], forbids: ['camp'] },
@@ -285,25 +320,35 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'reward_cache',
         family: 'cache',
-        // The reward vault is a floor-standing interactive prop, not
-        // collision geometry, for the same reason as power_puzzle's nodes.
-        pattern: rectRoomPattern(11, 9, []),
+        themeStyle: 'reliquary',
+        partitionThickness: 0.5,
+        // The reward vault is a floor-standing interactive prop framed by
+        // sanctuary plinths and corner chamfers.
+        pattern: rectRoomPattern(15, 11, [
+            { x: 0, y: 0, w: 2, h: 2 },
+            { x: 13, y: 0, w: 2, h: 2 },
+            { x: 0, y: 9, w: 2, h: 2 },
+            { x: 13, y: 9, w: 2, h: 2 },
+            { x: 4, y: 3, w: 2, h: 2 },
+            { x: 9, y: 3, w: 2, h: 2 }
+        ]),
         sockets: [{ id: 'entry', side: 's', width: 3, required: true }],
         rotationPolicy: 'cardinal',
         tierEligibility: [1, 2, 3, 4],
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['reward'],
         structuralAnchors: [],
-        interactionAnchors: [{ id: 'reward_vault', type: 'prop_bunker_supplies', x: 5, y: 4 }],
+        interactionAnchors: [{ id: 'reward_vault', type: 'prop_bunker_supplies', x: 7, y: 5 }],
+        signatureAnchorId: 'reward_vault',
         compassAnchors: { approach: 'entry', objective: 'reward_vault' },
-        coverZones: [],
+        coverZones: [{ x: 4, y: 3, w: 2, h: 2 }, { x: 9, y: 3, w: 2, h: 2 }],
         encounterZones: [],
-        rewardAnchors: [{ id: 'reward_vault', type: 'prop_bunker_supplies', x: 5, y: 4 }],
+        rewardAnchors: [{ id: 'reward_vault', type: 'prop_bunker_supplies', x: 7, y: 5 }],
         loreAnchors: [],
         hazardZones: [],
-        quietZones: [{ x: 0, y: 0, w: 11, h: 9 }],
+        quietZones: [{ x: 0, y: 0, w: 15, h: 11 }],
         safeZone: true,
-        containmentBounds: { minX: 0, minY: 0, maxX: 10, maxY: 8 },
+        containmentBounds: { minX: 0, minY: 0, maxX: 14, maxY: 10 },
         presentationVariants: ['locked', 'unlocked', 'emptied'],
         stateVariants: ['dormant', 'questActive', 'resolved'],
         adjacency: { prefers: [], forbids: [] },
@@ -312,6 +357,8 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'ring_crossing_landmark',
         family: 'gate',
+        themeStyle: 'cathedral',
+        partitionThickness: 0.5,
         pattern: rectRoomPattern(17, 13, [
             { x: 3, y: 4, w: 2, h: 3 },
             { x: 12, y: 4, w: 2, h: 3 }
@@ -339,6 +386,7 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         // yet — a natural next asset (e.g. prop_hydraulic_piston_actuator
         // per docs/sprint-23-room-juice-and-dressing-assets.md).
         interactionAnchors: [{ id: 'gate_control', type: 'base_console', x: 8, y: 7 }],
+        signatureAnchorId: 'gate_control',
         compassAnchors: { approach: 'approach', objective: 'gate_control' },
         coverZones: [{ x: 3, y: 4, w: 2, h: 3 }, { x: 12, y: 4, w: 2, h: 3 }],
         encounterZones: [{ id: 'gate_staging', x: 6, y: 8, w: 5, h: 4 }],
@@ -371,6 +419,8 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'reactor_vent_station',
         family: 'engineering',
+        themeStyle: 'cryo_deck',
+        partitionThickness: 0.5,
         pattern: rectRoomPattern(15, 11, [
             { x: 3, y: 3, w: 2, h: 5 },
             { x: 10, y: 3, w: 2, h: 5 },
@@ -391,6 +441,7 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         interactionAnchors: [
             { id: 'reactor_vent_control', type: 'prop_valve_wheel_fused', x: 7, y: 8 }
         ],
+        signatureAnchorId: 'reactor_vent_control',
         compassAnchors: { approach: 'entry', objective: 'reactor_vent_control' },
         coverZones: [{ x: 2, y: 2, w: 4, h: 7 }, { x: 9, y: 2, w: 4, h: 7 }],
         encounterZones: [{ id: 'vent_floor', x: 6, y: 4, w: 3, h: 4 }],
@@ -409,6 +460,8 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'hull_fabrication_bay',
         family: 'engineering',
+        themeStyle: 'bunker',
+        partitionThickness: 0.5,
         // Two gantry blocks leave a working aisle down the middle and a full
         // ring of floor, so the bay reads as a shop floor rather than a room.
         pattern: rectRoomPattern(17, 11, [{ x: 4, y: 3, w: 3, h: 5 }, { x: 10, y: 3, w: 3, h: 5 }]),
@@ -429,6 +482,7 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
             { id: 'hull_fabrication_console', type: 'prop_fabricator_workstation', x: 8, y: 8 },
             { id: 'hull_bench', type: 'prop_engineering_bench', x: 8, y: 2 }
         ],
+        signatureAnchorId: 'hull_fabrication_console',
         compassAnchors: { approach: 'entry', objective: 'hull_fabrication_console' },
         coverZones: [{ x: 3, y: 2, w: 4, h: 7 }, { x: 10, y: 2, w: 4, h: 7 }],
         encounterZones: [{ id: 'bay_floor', x: 7, y: 2, w: 3, h: 7 }],
@@ -447,6 +501,8 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'radar_alignment_post',
         family: 'security',
+        themeStyle: 'substation',
+        partitionThickness: 0.5,
         // One central mast block: sightlines stay open all the way round it,
         // which is what makes the defend-the-console beat readable.
         pattern: rectRoomPattern(15, 13, [{ x: 6, y: 5, w: 3, h: 3 }, { x: 2, y: 2, w: 2, h: 2 }]),
@@ -467,6 +523,7 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
             { id: 'radar_alignment_console', type: 'prop_diagnostic_console', x: 7, y: 10 },
             { id: 'post_terminal', type: 'prop_terminal_ruptured', x: 12, y: 3 }
         ],
+        signatureAnchorId: 'radar_alignment_console',
         compassAnchors: { approach: 'entry', objective: 'radar_alignment_console' },
         coverZones: [{ x: 5, y: 4, w: 5, h: 5 }],
         encounterZones: [
@@ -488,6 +545,8 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'reactor_compressor_hall',
         family: 'engineering',
+        themeStyle: 'biomech',
+        partitionThickness: 0.5,
         // Lane A / P0A proof: one asymmetric compressor mass replaces the
         // old six-block forest. The west side is a broad service loop; the
         // two-cell channel between core and heat shield is the risky hot-side
