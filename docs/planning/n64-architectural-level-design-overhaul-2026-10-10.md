@@ -557,7 +557,7 @@ uncommitted edits from other agents.
 | A. Room greyboxes | doctrine P0 rooms + Blueprints 1–6 | `src/data/roomBuilds.js`, `src/data/n64RoomBlueprints.js`, `src/data/cathedralBlueprints.js` | B for final wall look; E only for later traversable tiers | **Codex/root + Antigravity — active 2026-10-10**: `medical_triage` proof + **All 6 N64 Signature Blueprints implemented & tested** (`src/data/n64RoomBlueprints.js`, `src/n64RoomBlueprints.test.js`) |
 | B. Wall autotile and height tiers | §7.2 | wall build in `threeGame.js`, wall shader, new wall-piece module, Blender kit | — | **Claude lived-in lane — active 2026-10-10; slice 1 in §9.7** |
 | C. Landform mix and rhythm | §7.3 | `src/landforms.js`, `src/threeGame.js` | — | **Antigravity — active 2026-10-10; Decision D2 implemented (maze <= 25%, neighbour avoidance)** |
-| D. Pits and edges | §7.4 | pit/void build in `threeGame.js` | B | — |
+| D. Pits and edges | §7.4 | pit/void build in `threeGame.js` | B | **Claude lived-in lane — active 2026-10-10; canyon rims done (§9.7)** |
 | E. Vertical tiers | Pillar 1, §8 | `src/verticalWfc.js`, heightmap | A | — |
 | F. Landmarks and sky signals | §7.5, gate doc | `src/sky/*`, new landmark props | — | — |
 | G. Light shape and district skins | §7.6–7.7 | wall shader, `src/kitGrammar.js`, `src/kitMaterials.js` | B | — |
@@ -675,6 +675,18 @@ This shows whether the blocky read changes before any room is rebuilt.
 3. **Next: tall tiers** for district borders and landform edges (D3).
 4. **Then:** natural rock and ice contours for cave, bio and cryo.
 
+**Lane D, canyon rims: done, `7af0989c`.**
+
+- *Before:* every cliff edge cell drew a randomly offset, scaled and rotated 14-sided cylinder, so
+  from the isometric camera each canyon rim was a row of overlapping coins.
+- *After:* each edge cell draws a 10 m corner-cut prism from lane B, aligned to its cell with a
+  little seeded drift. Corners facing open void are cut, so rims become faceted ledges with 45°
+  turns.
+- *Unchanged:* rim rubble, draw calls, collision. `hb_wall_autotile=0` restores the cylinders.
+- *Evidence:* [before/after](../reports/assets/world-feel-2026-10-10/08-lane-d-cliff-edges-before-after.jpg).
+- *Next for D:* depth inside the void (under-floor structure, girders, faint light far down,
+  height fog), and grated floor over visible depth.
+
 **Found while testing, fixed for lane A (`e40ae21a`).** Authored room selection took the first
 eligible build of the family, so three ship-goal objectives landed in rooms without their anchor
 and fell back to a generic point:
@@ -765,3 +777,5 @@ Implemented Owner Decision D2 and the world pacing rhythm from §7.3:
 - 2026-10-10: Lane B slice 2 items 1–2 done (`5f8bd9c2` room-wall corner cuts and caps,
   `7574aea5` lit top lip and frost/growth tops). Fixed ship-goal room selection (`e40ae21a`),
   which had put three objectives in rooms without their anchor; details for lane A in §9.7.
+- 2026-10-10: Lane D claimed by the Claude lived-in lane. Canyon rims are faceted ledges instead
+  of stacked coins (`7af0989c`).
