@@ -44,6 +44,17 @@ export function bakedKeyedSpriteUrl(key, { bakes = KEYED_SPRITE_BAKES, storage =
  * Callers get their Texture before any pixels exist and hand it straight to
  * materials, so the compressed sprite is poured into that same object.
  */
+/**
+ * Whether a baked sprite can upload: block-compressed formats need sides in
+ * multiples of four (627 x 627 bakes failed glTexStorage and drew nothing).
+ */
+export function isUploadableCompressedSprite(compressed) {
+    const width = compressed?.image?.width;
+    const height = compressed?.image?.height;
+    return Number.isInteger(width) && Number.isInteger(height) && width > 0 && height > 0
+        && width % 4 === 0 && height % 4 === 0;
+}
+
 export function applyCompressedSprite(texture, compressed) {
     texture.isCompressedTexture = true;
     texture.mipmaps = compressed.mipmaps;

@@ -6,6 +6,7 @@ sprite exactly as the runtime keyer left it, and an index of their keys
 (path::threshold::crop). Each one is
   - bled: transparent pixels take the colour of the nearest opaque one, so
     mipmaps don't pull dark fringes in from the keyed-out backdrop;
+  - resized to sides in multiples of four (block-compressed uploads need it);
   - flipped bottom-up (compressed uploads can't flip, sprites sample with v up);
   - encoded as UASTC KTX2 with alpha and mipmaps (sRGB),
 to public/3d/runtime/sprites/, and src/data/keyedSpriteBakes.js is rewritten
@@ -72,9 +73,25 @@ def bleed(rgba):
     return out
 
 
+def multiple_of_four(size):
+    return max(4, int(round(size / 4)) * 4)
+
+
+def ktx2_size(path):
+    header = path.read_bytes()[:28]
+    return int.from_bytes(header[20:24], 'little'), int.from_bytes(header[24:28], 'little')
+
+
 def encode(basisu, exported, target):
-    rgba = np.asarray(Image.open(exported).convert('RGBA'))
-    prepared = np.ascontiguousarray(np.flipud(bleed(rgba)))
+    rgba = bleed(np.asarray(Image.open(exported).convert('RGBA')))
+    # Block-compressed uploads need sides in multiples of four: a 627 x 627
+    # bake failed glTexStorage on the GPU and drew nothing. Resizing (not
+    # padding) keeps the whole sprite on the same UVs.
+    height, width = rgba.shape[:2]
+    size = (multiple_of_four(width), multiple_of_four(height))
+    if size != (width, height):
+        rgba = np.asarray(Image.fromarray(rgba, 'RGBA').resize(size, Image.LANCZOS))
+    prepared = np.ascontiguousarray(np.flipud(rgba))
     with tempfile.TemporaryDirectory() as work:
         source = Path(work) / 'sprite.png'
         Image.fromarray(prepared, 'RGBA').save(source)
@@ -102,9 +119,12 @@ def main():
         target = OUT / f'{slug_for(key)}.ktx2'
         url = f'/3d/runtime/sprites/{target.name}'
         known = manifest.get(key)
-        if not args.force and known and known['sha1'] == sha1 and target.exists():
+        if not args.force and known and known['sha1'] == sha1 and target.exists() \
+                and all(side % 4 == 0 for side in ktx2_size(target)):
             return key, known, 'skip'
         encode(args.basisu, export / entry['file'], target)
+        if any(side % 4 for side in ktx2_size(target)):
+            raise SystemExit(f'{target}: sides must be multiples of four, got {ktx2_size(target)}')
         return key, {'url': url, 'sha1': sha1}, f'{target.stat().st_size / 1e6:.2f} MB'
 
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:

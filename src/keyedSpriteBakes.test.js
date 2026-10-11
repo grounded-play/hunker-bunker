@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import {
+    isUploadableCompressedSprite,
     applyCompressedSprite, bakedKeyedSpriteUrl, isKeyedSpriteBakeEnabled, keyedSpriteBakeKey,
     listRecordedKeyedSprites, recordKeyedSprite
 } from './keyedSpriteBakes.js';
@@ -47,6 +48,18 @@ describe('applyCompressedSprite', () => {
     });
 });
 
+describe('isUploadableCompressedSprite', () => {
+    // Block-compressed uploads need sides in multiples of four: 627 x 627
+    // bakes failed glTexStorage on the GPU and drew nothing.
+    it('accepts only sides in multiples of four', () => {
+        const make = (width, height) => new THREE.CompressedTexture([{ data: new Uint8Array(16), width, height }], width, height, THREE.RGBA_BPTC_Format);
+        expect(isUploadableCompressedSprite(make(628, 628))).toBe(true);
+        expect(isUploadableCompressedSprite(make(627, 627))).toBe(false);
+        expect(isUploadableCompressedSprite(make(1588, 990))).toBe(false);
+        expect(isUploadableCompressedSprite(null)).toBe(false);
+    });
+});
+
 describe('recordKeyedSprite', () => {
     it('keeps keyed results for the bake only while a bake is running', () => {
         const canvas = { width: 2, height: 2 };
@@ -76,5 +89,18 @@ describe('KEYED_SPRITE_BAKES', () => {
             if (now !== sha1) stale.push(source);
         }
         expect(stale).toEqual([]);
+    });
+
+    it('ships every bake with sides in multiples of four, so it uploads', async () => {
+        const fs = await import('node:fs');
+        const { KEYED_SPRITE_BAKES } = await import('./data/keyedSpriteBakes.js');
+        const bad = [];
+        for (const { url } of Object.values(KEYED_SPRITE_BAKES)) {
+            const header = fs.readFileSync(`public${url}`).subarray(0, 28);
+            const width = header.readUInt32LE(20);
+            const height = header.readUInt32LE(24);
+            if (width % 4 || height % 4) bad.push(`${url} ${width}x${height}`);
+        }
+        expect(bad).toEqual([]);
     });
 });

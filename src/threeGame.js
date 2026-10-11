@@ -369,7 +369,7 @@ import { FOXHOLE_CONTRACT, HACKER_CONTRACT, HYBRID_CONTRACT, SURVIVOR_CONTRACTS,
 import { createWanderer3dInstance } from './wanderer3d.js';
 import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
 import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js';
-import { applyCompressedSprite, bakedKeyedSpriteUrl, keyedSpriteBakeKey, recordKeyedSprite } from './keyedSpriteBakes.js';
+import { applyCompressedSprite, bakedKeyedSpriteUrl, isUploadableCompressedSprite, keyedSpriteBakeKey, recordKeyedSprite } from './keyedSpriteBakes.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
 import { applyVoidDepth, setVoidDepthTime } from './voidDepth.js';
 import { chasmLandmarkForm, chasmLandmarkMapEntry, chasmLandmarkYaw, createChasmLandmarkGeometry, createChasmLandmarkMaterial, isChasmLandmarksEnabled, pickChasmLandmarkSites } from './chasmLandmarks.js';
@@ -10594,7 +10594,10 @@ export class ThreeGame {
         const bakedUrl = bakeKey ? bakedKeyedSpriteUrl(bakeKey) : null;
         const ktx2 = bakedUrl ? getKtx2Loader() : null;
         if (ktx2) {
-            ktx2.loadAsync(this.resolveRelativeAssetPath(bakedUrl)).then(applyCompressed).catch((error) => {
+            // A bake that cannot upload keys at runtime instead of drawing nothing.
+            ktx2.loadAsync(this.resolveRelativeAssetPath(bakedUrl)).then((compressed) => (
+                isUploadableCompressedSprite(compressed) ? applyCompressed(compressed) : keyAtRuntime()
+            )).catch((error) => {
                 console.warn(`[ThreeGame] Baked sprite failed, keying ${safePath} instead`, error);
                 keyAtRuntime();
             });
