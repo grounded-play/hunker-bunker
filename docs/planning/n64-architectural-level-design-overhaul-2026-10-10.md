@@ -693,7 +693,14 @@ This shows whether the blocky read changes before any room is rebuilt.
    - Older issue fixed along the way (`6c443fef`): wall *face* decorations (pipes, vents,
      corner pillars, brackets) used to stay hanging when their wall was destroyed. They now go
      with it, verified live for all six kinds.
-5. **Tall tiers (D3): on hold, by design.**
+5. **Bold height tiers: done, `d698fd0f`.**
+   - Once frost caps and lit lips outlined every top, slice 1's small steps (0.34 m every five
+     cells or so) read as a jagged crenellation.
+   - Heights now change every nine cells or so, on one global grid of 0.56 m: the maze uses
+     0.6 / 0.8 / 1.0 / 1.2 of the wall.
+   - 88–95% of neighbouring walls share a height (64% before).
+   - [Before/after](../reports/assets/world-feel-2026-10-10/13-lane-b-bold-height-tiers-before-after.jpg).
+6. **Tall tiers (D3): on hold, by design.**
    - Making chunk-border walls tall would draw a 49 m grid of tall lines across the world, which
      is more blocky, not less.
    - Non-room walls have no cutaway, so tall walls would hide the player.
@@ -708,7 +715,7 @@ This shows whether the blocky read changes before any room is rebuilt.
   turns.
 - *Unchanged:* rim rubble, draw calls, collision. `hb_wall_autotile=0` restores the cylinders.
 - *Evidence:* [before/after](../reports/assets/world-feel-2026-10-10/08-lane-d-cliff-edges-before-after.jpg).
-- *Void depth: done, `6c2145c1`.*
+- *Void depth: done, `0d58bc4f`.*
   - The void mask's shader casts each pixel down to a floor 14 m below and lights it faintly
     with slow-drifting embers: amber in the bunker, teal in cryo, green in bio, fading with
     distance like fog.
@@ -812,6 +819,8 @@ Implemented Owner Decision D2 and the world pacing rhythm from §7.3:
   of stacked coins (`7af0989c`).
 - 2026-10-10: Bio walls bend into organic forms (`83cddb62`). Lane B tall tiers held: tall
   silhouettes go to lane F landmarks instead of a grid of tall borders.
-- 2026-10-10: Lane D: faint light far below the void, so pits read as deep (`6c2145c1`).
+- 2026-10-10: Lane D: faint light far below the void, so pits read as deep (`0d58bc4f`).
 - 2026-10-10: Wall tops dressed: pipe runs and hatches, nodules in bio (`25a45b5f`).
 - 2026-10-10: Destroyed walls take their face decorations with them (`6c443fef`).
+- 2026-10-10: Wall heights hold long runs and step boldly (`d698fd0f`). Corrected the void-depth
+  commit reference to `0d58bc4f` (amended).
