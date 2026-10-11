@@ -19,6 +19,7 @@ export const LEGACY_DECAL_LAYERS = Object.freeze([
     Object.freeze({ name: 'decal_chitin_cluster', aspect: 1.0, rotated: false }),
     Object.freeze({ name: 'decal_claw_scratches', aspect: 1.0, rotated: false }),
     Object.freeze({ name: 'decal_condensation_run', aspect: 1.0, rotated: false }),
+    Object.freeze({ name: 'decal_corner_grit_pocket', aspect: 1.0, rotated: false }),
     Object.freeze({ name: 'decal_cryo_fracture', aspect: 1.0, rotated: false }),
     Object.freeze({ name: 'decal_door_wear_apron', aspect: 1.0, rotated: false }),
     Object.freeze({ name: 'decal_electrical_scorch', aspect: 1.0, rotated: false }),

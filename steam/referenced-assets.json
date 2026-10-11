@@ -2516,6 +2516,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/decals/legacy/decal_corner_grit_pocket_albedo.ktx2",
+      "bytes": 271751,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/decals/legacy/decal_corner_grit_pocket_detail.ktx2",
+      "bytes": 254802,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/decals/legacy/decal_cryo_fracture_albedo.ktx2",
       "bytes": 291731,
       "classification": "runtime-required"
@@ -21858,6 +21868,11 @@
     {
       "path": "decal_condensation_run.png",
       "bytes": 10362,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_corner_grit_pocket.png",
+      "bytes": 1694930,
       "classification": "runtime-required"
     },
     {

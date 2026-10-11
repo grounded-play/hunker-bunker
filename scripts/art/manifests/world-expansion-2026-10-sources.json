@@ -107,6 +107,14 @@
       "keyMode": "magenta",
       "placement": "bulkheads below vents, pipe junctions and weeping conduits",
       "variants": ["decal_wall_grime_drip_a.jpg"]
+    },
+    "decal_corner_grit_pocket": {
+      "kind": "square",
+      "surface": "floor",
+      "worldScale": 1.2,
+      "keyMode": "magenta",
+      "placement": "concave 90-degree inside corners where perpendicular walls meet the floor",
+      "variants": ["decal_corner_grit_pocket_a.jpg"]
     }
   }
 }

@@ -14,7 +14,7 @@
  * caller passes the population plan's `reserved` keys), and floor items never
  * share a cell with a planned hero prop (`occupied`).
  */
-import { dressingKitFor, dressingProfileFor, ROLE_VIGNETTES, vignettesFor, WALL_MOUNT_HEIGHT } from './roomDressingKits.js';
+import { decalWorldScale, dressingKitFor, dressingProfileFor, ROLE_VIGNETTES, vignettesFor, WALL_MOUNT_HEIGHT } from './roomDressingKits.js';
 import { DRESSING_TRIANGLES } from './data/dressingTriangles.js';
 import { roomDressingIdentity } from './roomDressingIdentity.js';
 import { computePropFacingYaw, chooseSpacedModel } from './propBehavior.js';
@@ -23,7 +23,7 @@ import { anchorLightFor } from './anchorPracticalLight.js';
 export const DRESSING_LIMITS = Object.freeze({
     // Distinct types per room, per layer: the instanced renderer draws one
     // batch per type, so this bounds draw calls however dense the room is.
-    typesPerLayer: Object.freeze({ wallProps: 3, wallDecals: 4, clutter: 4, corners: 2, floorDecals: 3 }),
+    typesPerLayer: Object.freeze({ wallProps: 3, wallDecals: 5, clutter: 4, corners: 2, floorDecals: 5 }),
     // GPU budget. The shipped GLBs come in 2.5k/6k/12k/18k/25k/30k-triangle
     // tiers (the 2026-10-09 lived-in batch keeps 25k: cut lower, its organic
     // curves facet); layers that repeat a model many times only take the light tiers,
@@ -134,29 +134,72 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
                 Math.abs(placed.x - decalCell.x) + Math.abs(placed.y - decalCell.y) < profile.wallDecalSpacing
             ));
             if (!hasNearbyDecal && types.wallDecals.length && random() < profile.wallDecalChance) {
+                const wallType = choose(types.wallDecals);
+                const wallHeight = wallType === 'decal_wall_grime_drip'
+                    ? 1.45 + random() * 0.35
+                    : (wallType === 'decal_permafrost_icicles' ? 1.5 + random() * 0.3 : 0.85 + random() * 1.05);
                 items.push({
                     layer: 'wallDecal',
-                    type: choose(types.wallDecals),
+                    type: wallType,
                     x: cell.x + dx * 0.49,
                     y: cell.y + dy * 0.49,
                     normal: { x: -dx, z: -dy },
                     supportCell: { x: cell.x + dx, y: cell.y + dy },
-                    height: 0.85 + random() * 1.05,
-                    size: 1.05 + random() * 0.75,
-                    roll: (random() - 0.5) * 0.5
+                    height: wallHeight,
+                    size: decalWorldScale(wallType, random),
+                    roll: (random() - 0.5) * 0.4
                 });
                 wallDecalCells.push(decalCell);
+
+                // Layered wall decal: e.g. a grime drip beneath a vent/panel, or bullet holes/blood near graffiti
+                if (types.wallDecals.length > 1 && random() < 0.35) {
+                    const secondaryPool = types.wallDecals.filter((t) => t !== wallType);
+                    const secondaryWallType = choose(secondaryPool.length ? secondaryPool : types.wallDecals);
+                    const secondaryHeight = secondaryWallType === 'decal_wall_grime_drip'
+                        ? Math.max(0.6, wallHeight - 0.4)
+                        : (secondaryWallType.includes('stencil') ? 1.2 + random() * 0.2 : 0.75 + random() * 0.8);
+                    items.push({
+                        layer: 'wallDecal',
+                        type: secondaryWallType,
+                        x: cell.x + dx * 0.49,
+                        y: cell.y + dy * 0.49,
+                        normal: { x: -dx, z: -dy },
+                        supportCell: { x: cell.x + dx, y: cell.y + dy },
+                        height: secondaryHeight,
+                        size: decalWorldScale(secondaryWallType, random),
+                        roll: (random() - 0.5) * 0.3
+                    });
+                }
+            }
+        }
+
+        const corner = walls.length >= 2 && walls.some(([ax, ay]) => walls.some(([bx, by]) => ax * bx + ay * by === 0 && (ax !== bx || ay !== by)));
+        const towardX = walls.reduce((sum, [dx]) => sum + dx, 0);
+        const towardY = walls.reduce((sum, [, dy]) => sum + dy, 0);
+
+        // Ground grit/grime pocket wedged directly into inside corners where walls and floor meet
+        if (corner && types.floorDecals.length) {
+            const cornerDecalType = types.floorDecals.includes('decal_corner_grit_pocket')
+                ? 'decal_corner_grit_pocket'
+                : (types.floorDecals.find((t) => t.includes('grit') || t.includes('growth') || t.includes('frost') || t.includes('oil')) ?? types.floorDecals[0]);
+            if (cornerDecalType && random() < 0.88) {
+                items.push({
+                    layer: 'floorDecal',
+                    type: cornerDecalType,
+                    x: cell.x + Math.sign(towardX) * 0.32,
+                    y: cell.y + Math.sign(towardY) * 0.32,
+                    yaw: Math.atan2(-towardX, -towardY) + (random() - 0.5) * 0.25,
+                    size: decalWorldScale(cornerDecalType, random),
+                    compositionRole: 'corner'
+                });
             }
         }
 
         if (taken.has(key)) continue;
-        const corner = walls.length >= 2 && walls.some(([ax, ay]) => walls.some(([bx, by]) => ax * bx + ay * by === 0 && (ax !== bx || ay !== by)));
         const [wx, wy] = walls[0];
         if (corner && types.corners.length && random() < profile.cornerChance) {
             const cornerType = chooseLight(types.corners, cell.x, cell.y);
             if (!afford('perimeter', cornerType)) continue;
-            const towardX = walls.reduce((sum, [dx]) => sum + dx, 0);
-            const towardY = walls.reduce((sum, [, dy]) => sum + dy, 0);
             const yaw = computePropFacingYaw({
                 type: cornerType,
                 x: cell.x,
@@ -343,19 +386,35 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
     // Story on the open floor: a few clusters of overlapping decals.
     const open = floorCells.filter(({ x, y }) => !blocked.has(keyOf(x, y)) && !nearDoor(x, y));
     if (types.floorDecals.length && open.length) {
-        // Every furniture composition gets one grounding mark, so it reads as a
+        // Every furniture composition gets grounding marks, so it reads as a
         // single lived-in scene rather than unrelated objects on a clean floor.
         for (const anchor of vignetteAnchors) {
+            const baseType = choose(types.floorDecals);
             items.push({
                 layer: 'floorDecal',
-                type: choose(types.floorDecals),
+                type: baseType,
                 x: anchor.x + (random() - 0.5) * 0.28,
                 y: anchor.y + (random() - 0.5) * 0.28,
                 yaw: random() * Math.PI * 2,
-                size: 0.9 + random() * 0.35,
+                size: decalWorldScale(baseType, random),
                 compositionId: anchor.compositionId,
                 compositionRole: 'grounding'
             });
+            // Multi-layered grounding: secondary accent under furniture cluster
+            if (types.floorDecals.length > 1 && random() < 0.65) {
+                const accentPool = types.floorDecals.filter((t) => t !== baseType);
+                const accentType = choose(accentPool.length ? accentPool : types.floorDecals);
+                items.push({
+                    layer: 'floorDecal',
+                    type: accentType,
+                    x: anchor.x + (random() - 0.5) * 0.36,
+                    y: anchor.y + (random() - 0.5) * 0.36,
+                    yaw: random() * Math.PI * 2,
+                    size: decalWorldScale(accentType, random),
+                    compositionId: anchor.compositionId,
+                    compositionRole: 'grounding'
+                });
+            }
         }
         const [min, max] = profile.floorClusters;
         const clusters = min + Math.floor(random() * (max - min + 1));
@@ -366,15 +425,30 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
             )));
             const centre = (spaced.length ? spaced : open)[Math.floor(random() * (spaced.length ? spaced.length : open.length))];
             clusterCentres.push(centre);
-            const pieces = 1 + Math.floor(random() * 2);
-            for (let p = 0; p < pieces; p += 1) {
+
+            // Primary foundation decal for this wear cluster (spill, apron, bloom, or ruts)
+            const primaryType = choose(types.floorDecals);
+            items.push({
+                layer: 'floorDecal',
+                type: primaryType,
+                x: centre.x + (random() - 0.5) * 0.35,
+                y: centre.y + (random() - 0.5) * 0.35,
+                yaw: random() * Math.PI * 2,
+                size: decalWorldScale(primaryType, random)
+            });
+
+            // Overlapping secondary/detail decals creating a composite wear narrative
+            const extraLayers = 1 + Math.floor(random() * 2);
+            for (let l = 0; l < extraLayers; l += 1) {
+                const secondaryPool = types.floorDecals.filter((t) => t !== primaryType);
+                const secondaryType = choose(secondaryPool.length ? secondaryPool : types.floorDecals);
                 items.push({
                     layer: 'floorDecal',
-                    type: choose(types.floorDecals),
-                    x: centre.x + (random() - 0.5) * 1.2,
-                    y: centre.y + (random() - 0.5) * 1.2,
+                    type: secondaryType,
+                    x: centre.x + (random() - 0.5) * 0.95,
+                    y: centre.y + (random() - 0.5) * 0.95,
                     yaw: random() * Math.PI * 2,
-                    size: 0.72 + random() * 0.48
+                    size: decalWorldScale(secondaryType, random)
                 });
             }
         }

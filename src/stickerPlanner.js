@@ -161,8 +161,8 @@ export function planChunkStickers({ grid, size, layer, metadata = null, landform
     for (let y = 0; y < size; y += 1) {
         for (let x = 0; x < size; x += 1) {
             if (!isFloor(x, y)) continue;
-            for (const [dx, dy] of DIRS) {
-                if (!WALLS.has(at(x + dx, y + dy))) continue;
+            const wallDirs = DIRS.filter(([dx, dy]) => WALLS.has(at(x + dx, y + dy)));
+            for (const [dx, dy] of wallDirs) {
                 if (random() < 0.62) {
                     const depth = STICKER_FAMILIES.decal_edge_wallbase_grime.depth;
                     floor('decal_edge_wallbase_grime', x + dx * (0.5 - depth / 2), y + dy * (0.5 - depth / 2), yawToward(dx, dy), { length: 1.3 });
@@ -171,6 +171,15 @@ export function planChunkStickers({ grid, size, layer, metadata = null, landform
                 if (room && KICKPLATE_THEMES.has(room.theme) && random() < 0.55) {
                     wall('tex_wall_kickplate_band', x + dx * 0.49, y + dy * 0.49, -dx, -dy, 0, { length: 1.02 });
                 }
+            }
+
+            // Inside concave corner pocket where two walls meet at 90 degrees
+            const isCorner = wallDirs.length >= 2 && wallDirs.some(([ax, ay]) => wallDirs.some(([bx, by]) => ax * bx + ay * by === 0 && (ax !== bx || ay !== by)));
+            if (isCorner && random() < 0.6) {
+                const towardX = wallDirs.reduce((sum, [dx]) => sum + dx, 0);
+                const towardY = wallDirs.reduce((sum, [, dy]) => sum + dy, 0);
+                const depth = STICKER_FAMILIES.decal_edge_wallbase_grime.depth;
+                floor('decal_edge_wallbase_grime', x + towardX * (0.5 - depth / 2), y + towardY * (0.5 - depth / 2), yawToward(towardX, towardY), { length: 1.15 });
             }
         }
     }
