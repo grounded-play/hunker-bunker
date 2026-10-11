@@ -646,8 +646,15 @@ Route tests prove that either flank remains sufficient when the other is blocked
 orthographic rotation/cutaway captures live at
 `docs/reports/assets/furnished-rooms/p1-o2_scrubber-game-camera-r*.png`.
 
-P1 pacing order after this systemic room: `room_stasis_bunk_sepulcher` for quiet human-scale
-release, then `room_quarantine_airlock_threshold` for renewed compression.
+The second P1 proof is `room_stasis_bunk_sepulcher`. Its offset sleeping-comb walls preserve a
+fully open three-cell west/east inspection spine. The existing `chrysalis_pod_console` interaction
+is now represented by a real cyan thermal pod in a shallow north niche, visible from the threshold
+but optional to inspect. Low flesh-steel cradles replace tall exosuit gantries, while the ration
+cache and survivor slate form one southeast human-story pocket. Four rotation/cutaway captures
+live at `docs/reports/assets/furnished-rooms/p1-stasis_bunk_sepulcher-game-camera-r*.png`.
+
+Next P1 pacing proof: `room_quarantine_airlock_threshold` for renewed compression after the quiet
+stasis release.
 
 ### 9.6.2 Authored-geometry persistence gate
 
@@ -959,3 +966,6 @@ that, differently from §7.5's first idea of distant beacons, which this camera 
   bed and Tesla drive, and replaced the mandatory O2 room's generic block with a tested broken-ring
   repair route. Four O2 rotation captures pass. Authored-geometry persistence policy is explicit;
   the version gate remains implementation work.
+- 2026-10-11: Lane A rebuilt the stasis sepulcher as an offset sleeping comb with an open inspection
+  spine, real thermal-pod focal anchor, low cradle silhouettes, and one survivor story pocket. Four
+  cardinal gameplay-camera/cutaway captures pass.

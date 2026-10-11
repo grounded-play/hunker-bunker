@@ -289,12 +289,18 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         id: 'room_stasis_bunk_sepulcher',
         family: 'fabricator',
         themeStyle: 'giger',
+        // P1 quiet-release proof: an offset sleeping comb frames a completely
+        // open three-cell inspection spine. Shallow north/south niches invite
+        // observation without turning the room into another forced puzzle.
         pattern: buildPattern(15, 9, [
-            // Pod divider buttresses along north and south walls
-            { x: 4, y: 1, w: 2, h: 1 },
-            { x: 9, y: 1, w: 2, h: 1 },
-            { x: 4, y: 7, w: 2, h: 1 },
-            { x: 9, y: 7, w: 2, h: 1 }
+            { x: 3, y: 1, w: 3, h: 1 },
+            { x: 9, y: 1, w: 3, h: 1 },
+            { x: 3, y: 2, w: 1, h: 1 },
+            { x: 11, y: 2, w: 1, h: 1 },
+            { x: 4, y: 6, w: 1, h: 1 },
+            { x: 12, y: 6, w: 1, h: 1 },
+            { x: 4, y: 7, w: 3, h: 1 },
+            { x: 10, y: 7, w: 3, h: 1 }
         ]),
         sockets: [
             { id: 'entry', side: 'w', width: 3, required: true },
@@ -305,19 +311,25 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['support', 'questDestination'],
         structuralAnchors: [
-            { id: 'stasis_rack_north', type: 'prop_exosuit_docking_gantry', x: 4, y: 1 },
-            { id: 'stasis_rack_south', type: 'prop_exosuit_docking_gantry', x: 9, y: 7 }
+            { id: 'stasis_rack_north', type: 'prop_flesh_steel_cradle', x: 4, y: 1 },
+            { id: 'stasis_rack_south', type: 'prop_flesh_steel_cradle', x: 11, y: 7 }
         ],
         interactionAnchors: [
-            { id: 'chrysalis_pod_console', type: 'prop_liturgical_terminal_lectern', x: 7, y: 4 }
+            { id: 'chrysalis_pod_console', type: 'prop_icey_thermal_pod', x: 7, y: 2 }
         ],
+        signatureAnchorId: 'chrysalis_pod_console',
         compassAnchors: { approach: 'entry', objective: 'chrysalis_pod_console' },
-        coverZones: [{ x: 3, y: 1, w: 4, h: 2 }, { x: 8, y: 6, w: 4, h: 2 }],
+        coverZones: [{ x: 3, y: 1, w: 4, h: 2 }, { x: 9, y: 6, w: 4, h: 2 }],
         encounterZones: [],
-        rewardAnchors: [{ id: 'scavenged_ration_cache', type: 'prop_bunker_supplies', x: 12, y: 4 }],
-        loreAnchors: [{ id: 'sepulcher_survivor_slate', type: 'lore_terminal', x: 2, y: 2 }],
+        // Supplies and the final slate share one optional southeast survivor
+        // pocket, leaving the threshold and inspection spine visually calm.
+        rewardAnchors: [{ id: 'scavenged_ration_cache', type: 'prop_bunker_supplies', x: 11, y: 6 }],
+        loreAnchors: [{ id: 'sepulcher_survivor_slate', type: 'lore_terminal', x: 13, y: 6 }],
         hazardZones: [],
-        quietZones: [{ x: 0, y: 0, w: 15, h: 9 }],
+        quietZones: [
+            { x: 0, y: 3, w: 15, h: 3 },
+            { x: 6, y: 1, w: 3, h: 3 }
+        ],
         safeZone: true,
         containmentBounds: { minX: 0, minY: 0, maxX: 14, maxY: 8 },
         presentationVariants: ['huddled', 'abandoned', 'dormant'],

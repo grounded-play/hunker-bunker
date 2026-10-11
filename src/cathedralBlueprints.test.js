@@ -68,6 +68,32 @@ describe('CATHEDRAL_ROOM_BLUEPRINTS', () => {
         expect(nave.encounterZones[0]).toMatchObject({ x: 7, y: 5, w: 7, h: 4 });
     });
 
+    it('gives the stasis sepulcher a clear inspection spine and optional pod/story niches', () => {
+        const stasis = CATHEDRAL_ROOM_BLUEPRINTS.find((build) => build.id === 'room_stasis_bunk_sepulcher');
+        expect(stasis.pattern).toEqual([
+            '...............',
+            '...###...###...',
+            '...#.......#...',
+            '...............',
+            '...............',
+            '...............',
+            '....#.......#..',
+            '....###...###..',
+            '...............'
+        ]);
+        for (let y = 3; y <= 5; y += 1) {
+            expect(stasis.pattern[y]).toBe('.'.repeat(15));
+        }
+        expect(computeApproachPoint(stasis)).toEqual({ x: 2, y: 4 });
+        expect(stasis.signatureAnchorId).toBe('chrysalis_pod_console');
+        expect(stasis.interactionAnchors).toContainEqual(expect.objectContaining({
+            id: 'chrysalis_pod_console', type: 'prop_icey_thermal_pod', x: 7, y: 2
+        }));
+        expect(stasis.structuralAnchors.every((anchor) => stasis.pattern[anchor.y][anchor.x] === '#')).toBe(true);
+        expect(stasis.rewardAnchors[0]).toMatchObject({ x: 11, y: 6 });
+        expect(stasis.loreAnchors[0]).toMatchObject({ x: 13, y: 6 });
+    });
+
     it('proves all 8 cathedral blueprints are selectable from ALL_ROOM_BUILDS for live world generation', () => {
         for (const blueprint of CATHEDRAL_ROOM_BLUEPRINTS) {
             const selected = selectRoomBuild(ALL_ROOM_BUILDS, {

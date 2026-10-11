@@ -469,9 +469,16 @@ intake remains the service route. `o2_control` keeps its progression-critical id
 cyan focal practical. All four rotation/cutaway captures live at
 `docs/reports/assets/furnished-rooms/p1-o2_scrubber-game-camera-r*.png`.
 
-The next pacing proof is `room_stasis_bunk_sepulcher`, followed by
-`room_quarantine_airlock_threshold`: monumental nave → intimate human-scale release → compressed
-decontamination threshold.
+`room_stasis_bunk_sepulcher` is the second P1 proof and the intentional release after the nave.
+Its offset sleeping comb leaves a completely open three-cell west/east inspection spine. A real
+cyan thermal pod, using the existing `chrysalis_pod_console` interaction ID, invites a short
+northward inspection without blocking traversal; low flesh-steel cradles replace the tall exosuit
+gantries, and survivor supplies plus the final slate form one optional southeast story pocket.
+All four rotation/cutaway captures live at
+`docs/reports/assets/furnished-rooms/p1-stasis_bunk_sepulcher-game-camera-r*.png`.
+
+The next pacing proof is `room_quarantine_airlock_threshold`: monumental nave → intimate
+human-scale release → compressed decontamination threshold.
 
 ### Authored-geometry save policy
 
