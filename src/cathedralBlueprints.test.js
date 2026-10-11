@@ -4,6 +4,7 @@ import {
     validateRoomBuild,
     rotateRoomBuild,
     computeApproachPoint,
+    stampRoomBuild,
     selectRoomBuild,
     ALL_ROOM_BUILDS
 } from './roomBuilds.js';
@@ -92,6 +93,41 @@ describe('CATHEDRAL_ROOM_BLUEPRINTS', () => {
         expect(stasis.structuralAnchors.every((anchor) => stasis.pattern[anchor.y][anchor.x] === '#')).toBe(true);
         expect(stasis.rewardAnchors[0]).toMatchObject({ x: 11, y: 6 });
         expect(stasis.loreAnchors[0]).toMatchObject({ x: 13, y: 6 });
+    });
+
+    it('gives the quarantine airlock two offset sluices around one purge gallery', () => {
+        const airlock = CATHEDRAL_ROOM_BLUEPRINTS.find((build) => build.id === 'room_quarantine_airlock_threshold');
+        expect(airlock.pattern).toEqual([
+            '##.........##',
+            '##.........##',
+            '.............',
+            '#######...###',
+            '.............',
+            '###...#######',
+            '.............',
+            '##.........##',
+            '##.........##'
+        ]);
+        expect(computeApproachPoint(airlock)).toEqual({ x: 6, y: 6 });
+        expect(airlock.pattern[5].slice(3, 6)).toBe('...');
+        expect(airlock.pattern[3].slice(7, 10)).toBe('...');
+        expect(airlock.pattern[5][6]).toBe('#');
+        expect(airlock.pattern[3][6]).toBe('#');
+        expect(airlock.pattern[4]).toBe('.'.repeat(13));
+        expect(airlock.signatureAnchorId).toBe('airlock_purge_override');
+        expect(airlock.interactionAnchors).toContainEqual(expect.objectContaining({
+            id: 'airlock_purge_override', x: 1, y: 4
+        }));
+        expect(airlock.hazardZones[0]).toMatchObject({ x: 3, y: 4, w: 7, h: 1 });
+        expect(airlock.structuralAnchors.every((anchor) => airlock.pattern[anchor.y][anchor.x] === '#')).toBe(true);
+
+        const stamped = stampRoomBuild(airlock, () => 0.5, {
+            openings: {
+                north: { open: true, offset: 8 },
+                south: { open: true, offset: 8 }
+            }
+        });
+        expect(new Set(stamped.doors.map((door) => door.socketId))).toEqual(new Set(['entry', 'exit']));
     });
 
     it('proves all 8 cathedral blueprints are selectable from ALL_ROOM_BUILDS for live world generation', () => {

@@ -653,8 +653,17 @@ but optional to inspect. Low flesh-steel cradles replace tall exosuit gantries, 
 cache and survivor slate form one southeast human-story pocket. Four rotation/cutaway captures
 live at `docs/reports/assets/furnished-rooms/p1-stasis_bunk_sepulcher-game-camera-r*.png`.
 
-Next P1 pacing proof: `room_quarantine_airlock_threshold` for renewed compression after the quiet
-stasis release.
+The third P1 proof is `room_quarantine_airlock_threshold`. Two offset three-cell sluices create a
+fixed S-shaped crossing from dirty south staging, through a west override pocket and central purge
+gallery, into a clean north recovery bay. The existing `airlock_purge_override` exchanger remains
+off both gate apertures and owns an amber practical; emergency O₂ moves off the exit axis. A
+two-ended stamp test proves both socket-tagged exterior doors, and four rotation/cutaway captures
+live at `docs/reports/assets/furnished-rooms/p1-quarantine_airlock-game-camera-r*.png`.
+
+Capability correction: this blueprint is not a live progression gate today. Exterior doors use
+distance hysteresis but are not mutually interlocked, and authored hazard zones are metadata rather
+than damage volumes. The fixed route is approved; a purge-cycle FSM, door binding, and real
+hazard-disable state remain separate implementation work. Next P1 candidate: `armory_cage`.
 
 ### 9.6.2 Authored-geometry persistence gate
 
@@ -969,3 +978,6 @@ that, differently from §7.5's first idea of distant beacons, which this camera 
 - 2026-10-11: Lane A rebuilt the stasis sepulcher as an offset sleeping comb with an open inspection
   spine, real thermal-pod focal anchor, low cradle silhouettes, and one survivor story pocket. Four
   cardinal gameplay-camera/cutaway captures pass.
+- 2026-10-11: Lane A rebuilt the quarantine airlock as a staggered double-sluice with dirty/clean
+  staging, a side-pocket amber override, and off-axis emergency O₂. Four rotation captures and a
+  two-door stamp proof pass. Docs now state honestly that purge damage/interlock are not yet live.

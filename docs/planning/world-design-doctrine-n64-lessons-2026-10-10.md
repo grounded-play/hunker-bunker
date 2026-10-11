@@ -399,7 +399,8 @@ never be used to imply a reachable route that the current room contract cannot p
 | Room(s) | Current design capability | Boundary |
 | --- | --- | --- |
 | `medical_triage`, `armory_cage`, `o2_scrubber`, `field_fabricator`, `hull_fabrication_bay`, `radar_alignment_post`, `reactor_compressor_hall`, `room_corpospace_executive_crypt`, `room_deep_space_astrogation_apse`, `room_stasis_bunk_sepulcher` | requires prop interaction | Motion/light/audio/presentation may confirm use; geometry and route remain fixed. |
-| `power_puzzle`, `trap_vault`, `room_quarantine_airlock_threshold` | existing progression gate plus prop interaction | Preserve current sockets and gate semantics; stage feedback around them. |
+| `power_puzzle`, `trap_vault` | existing progression gate plus prop interaction | Preserve current sockets and gate semantics; stage feedback around them. |
+| `room_quarantine_airlock_threshold` | presentation-only airlock plus prop interaction | Exterior doors are distance-driven, not mutually interlocked; authored plume zones are metadata today. Keep the route fixed and do not claim a damaging/disabled purge cycle until runtime state is wired. |
 | `reward_cache` | presentation-only plus prop interaction | One local opening and response; no world-state burden. |
 | `ring_crossing_landmark` | existing progression gate; topology mutation only after detached proof | First prove the fixture away from live portal/reservation logic. |
 | `reactor_vent_station`, `room_biomech_machine_nave`, `room_xenobiotic_incubation_cloister`, `room_cyber_surgical_fabrication_ward` | requires prop interaction; proposed access change requires topology mutation | Flat route stays legal before and after interaction unless mutation support is separately approved. |
@@ -477,8 +478,21 @@ gantries, and survivor supplies plus the final slate form one optional southeast
 All four rotation/cutaway captures live at
 `docs/reports/assets/furnished-rooms/p1-stasis_bunk_sepulcher-game-camera-r*.png`.
 
-The next pacing proof is `room_quarantine_airlock_threshold`: monumental nave → intimate
-human-scale release → compressed decontamination threshold.
+`room_quarantine_airlock_threshold` is the third P1 proof. Two offset three-cell sluice openings
+replace the open octagon and create a fixed S-shaped crossing: dirty south staging → west override
+pocket → central purge gallery → east upper sluice → clean north recovery. The existing exchanger
+keeps `airlock_purge_override`, owns an amber task light, and remains outside both traversal gates;
+the emergency O₂ rack moves off-axis into the clean bay. Both exterior socket doors stamp in the
+two-ended proof, and all four rotation/cutaway captures live at
+`docs/reports/assets/furnished-rooms/p1-quarantine_airlock-game-camera-r*.png`.
+
+This is currently architectural/presentational truth, not a simulated pressure cycle. Exterior
+doors already open and close by proximity, but they have no mutual-exclusion FSM. The exchanger's
+generic interaction reports a bypass, while authored `hazardZones` have no live damage consumer.
+Do not describe the plume as damaging or mechanically disabled until that state contract lands.
+
+The next P1 candidate is `armory_cage`: a reward-focused T-choice after the three-room
+O₂ → stasis → quarantine sequence.
 
 ### Authored-geometry save policy
 

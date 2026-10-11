@@ -343,15 +343,19 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         id: 'room_quarantine_airlock_threshold',
         family: 'puzzle',
         themeStyle: 'bunker',
+        // P1 compression proof: two offset three-cell sluice openings create
+        // an immutable S-shaped crossing. Presentation can purge the central
+        // gallery, but no state ever changes floor/wall topology.
         pattern: buildPattern(13, 9, [
-            // Chamfered 45-degree blast corners
             { x: 0, y: 0, w: 2, h: 2 },
             { x: 11, y: 0, w: 2, h: 2 },
             { x: 0, y: 7, w: 2, h: 2 },
             { x: 11, y: 7, w: 2, h: 2 },
-            // Wall jambs
-            { x: 3, y: 4, w: 1, h: 1 },
-            { x: 9, y: 4, w: 1, h: 1 }
+            // Upper opening x=7..9; lower opening x=3..5.
+            { x: 0, y: 3, w: 7, h: 1 },
+            { x: 10, y: 3, w: 3, h: 1 },
+            { x: 0, y: 5, w: 3, h: 1 },
+            { x: 6, y: 5, w: 7, h: 1 }
         ]),
         sockets: [
             { id: 'entry', side: 's', width: 3, required: true },
@@ -362,19 +366,23 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['challenge', 'questDestination'],
         structuralAnchors: [
-            { id: 'decon_station_west', type: 'prop_decon_eyewash_shower_station', x: 3, y: 4 },
-            { id: 'decon_station_east', type: 'prop_decon_eyewash_shower_station', x: 9, y: 4 }
+            { id: 'decon_station_west', type: 'prop_decon_eyewash_shower_station', x: 2, y: 5 },
+            { id: 'decon_station_east', type: 'prop_decon_eyewash_shower_station', x: 10, y: 3 }
         ],
         interactionAnchors: [
-            { id: 'airlock_purge_override', type: 'prop_pipe_organ_heat_exchanger', x: 6, y: 4 }
+            { id: 'airlock_purge_override', type: 'prop_pipe_organ_heat_exchanger', x: 1, y: 4 }
         ],
+        signatureAnchorId: 'airlock_purge_override',
         compassAnchors: { approach: 'entry', objective: 'airlock_purge_override' },
-        coverZones: [{ x: 2, y: 3, w: 3, h: 3 }, { x: 8, y: 3, w: 3, h: 3 }],
+        coverZones: [{ x: 1, y: 6, w: 5, h: 3 }, { x: 7, y: 0, w: 5, h: 3 }],
         encounterZones: [],
-        rewardAnchors: [{ id: 'emergency_o2_pack', type: 'prop_oxygen_bottle_cascade_rack', x: 6, y: 2 }],
+        rewardAnchors: [{ id: 'emergency_o2_pack', type: 'prop_oxygen_bottle_cascade_rack', x: 10, y: 1 }],
         loreAnchors: [],
-        hazardZones: [{ id: 'decon_purge_plume', x: 4, y: 3, w: 5, h: 3 }],
-        quietZones: [{ x: 0, y: 0, w: 13, h: 9 }],
+        hazardZones: [{ id: 'decon_purge_plume', x: 3, y: 4, w: 7, h: 1 }],
+        quietZones: [
+            { x: 2, y: 6, w: 9, h: 3 },
+            { x: 2, y: 0, w: 9, h: 3 }
+        ],
         safeZone: true,
         containmentBounds: { minX: 0, minY: 0, maxX: 12, maxY: 8 },
         presentationVariants: ['pressurized', 'purging', 'sealed'],
