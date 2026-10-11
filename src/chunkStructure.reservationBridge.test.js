@@ -13,7 +13,7 @@ import {
     buildAuthoredRoomChunkStructure,
     STRUCTURE_GENERATOR
 } from './chunkStructure.js';
-import { ROOM_BUILD_CATALOG } from './roomBuilds.js';
+import { ALL_ROOM_BUILDS, ROOM_BUILD_CATALOG } from './roomBuilds.js';
 
 function seededRandom(seed) {
     let state = (seed >>> 0) || 1;
@@ -61,6 +61,34 @@ describe('resolveChunkStructureForReservation against Lane A\'s real WorldPlan',
         expect(result.rooms[0].ring).toBe(reservation.ring);
         const anchor = result.rooms[0].interactionAnchors.find((a) => a.id === reservation.objectiveAnchorId);
         expect(anchor).toBeDefined();
+    });
+
+    it('puts every objective in a room that carries its anchor, in every biome', () => {
+        // Selection takes the first eligible build of the family; the same
+        // family also holds rooms built for other objectives (reactor vent,
+        // cryo exchanger, the N64 blueprints), which must not take the slot.
+        const anchorIds = (build) => [...build.interactionAnchors, ...build.structuralAnchors, ...build.rewardAnchors, ...build.loreAnchors]
+            .map((a) => a.id);
+        // Only objectives some room was built for (a lost probe, say, is placed on its own).
+        const objectives = worldPlan.reservations.filter((r) => r.roomFamily && r.objectiveAnchorId
+            && ALL_ROOM_BUILDS.some((build) => build.family === r.roomFamily && anchorIds(build).includes(r.objectiveAnchorId)));
+        expect(objectives.length).toBeGreaterThan(0);
+        const misses = [];
+        for (const reservation of objectives) {
+            for (const biome of ['active', 'cryo', 'bio']) {
+                const result = resolveChunkStructureForReservation(seededRandom(3), reservation, {
+                    openings: { south: { open: true, offset: 4 } },
+                    biome
+                });
+                if (!result || result.generatorId !== STRUCTURE_GENERATOR.AUTHORED_ROOM) continue;
+                const room = result.rooms[0];
+                const anchors = [...room.interactionAnchors, ...room.structuralAnchors, ...room.rewardAnchors, ...room.loreAnchors];
+                if (!anchors.some((a) => a.id === reservation.objectiveAnchorId)) {
+                    misses.push(`${reservation.goalKey ?? reservation.questId} (${biome}): ${room.buildId} lacks ${reservation.objectiveAnchorId}`);
+                }
+            }
+        }
+        expect(misses).toEqual([]);
     });
 
     it('resolves the armory_breach camp-quest destination to an authored room whose anchor matches its objectiveAnchorId', () => {
