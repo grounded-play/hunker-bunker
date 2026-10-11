@@ -13,6 +13,7 @@ import {
     isWallAutotileEnabled,
     patchCornerCutVertexShader,
     planWallFootDressing,
+    planWallIcicles,
     planWallTopDressing,
     wallCornerCutMask,
     wallHeightScale
@@ -427,5 +428,38 @@ describe('planWallFootDressing', () => {
         }
         expect(dressed / faces).toBeGreaterThan(0.08);
         expect(dressed / faces).toBeLessThan(0.35);
+    });
+});
+
+describe('planWallIcicles', () => {
+    const allOpen = { n: true, e: true, s: true, w: true };
+
+    it('hangs icicles only in cryo, only from open faces', () => {
+        for (const biome of ['active', 'bio']) {
+            expect(Array.from({ length: 200 }, (_, i) => planWallIcicles({ worldX: i, worldZ: 2, openSides: allOpen, biome })).flat()).toEqual([]);
+        }
+        const cryo = Array.from({ length: 300 }, (_, i) => planWallIcicles({ worldX: i, worldZ: 9, openSides: { n: false, e: false, s: true, w: false }, biome: 'cryo' })).flat();
+        expect(cryo.length).toBeGreaterThan(0);
+        for (const icicle of cryo) expect(icicle.side).toBe('s');
+    });
+
+    it('hangs them in runs along an edge, short enough to clear the floor', () => {
+        const rows = Array.from({ length: 400 }, (_, i) => planWallIcicles({ worldX: i, worldZ: 3, openSides: allOpen, biome: 'cryo' }));
+        const edges = rows.flatMap((items) => [...new Set(items.map((item) => item.side))]);
+        expect(edges.length / (rows.length * 4)).toBeGreaterThan(0.1);
+        expect(edges.length / (rows.length * 4)).toBeLessThan(0.45);
+        for (const icicle of rows.flat()) {
+            expect(icicle.length).toBeLessThanOrEqual(0.6);
+            expect(icicle.radius).toBeLessThanOrEqual(0.06);
+            expect(Math.abs(icicle.along)).toBeLessThanOrEqual(0.45);
+        }
+        // Several per dressed edge, so an edge reads as a fringe.
+        const perEdge = rows.flat().length / edges.length;
+        expect(perEdge).toBeGreaterThan(2);
+    });
+
+    it('is deterministic per cell', () => {
+        const a = planWallIcicles({ worldX: 7, worldZ: -2, openSides: allOpen, biome: 'cryo' });
+        expect(planWallIcicles({ worldX: 7, worldZ: -2, openSides: allOpen, biome: 'cryo' })).toEqual(a);
     });
 });

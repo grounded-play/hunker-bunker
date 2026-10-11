@@ -373,7 +373,7 @@ import { applyCompressedSprite, bakedKeyedSpriteUrl, keyedSpriteBakeKey, recordK
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
 import { applyVoidDepth, setVoidDepthTime } from './voidDepth.js';
 import { DOOR_LIGHT_POOL, createDoorLightPoolGeometry, createDoorLightPoolMaterial, doorLightPoolMatrices } from './doorLightPools.js';
-import { WALL_LIGHT_SHAPE_FRAGMENT, planWallFootDressing, planWallTopDressing, createCornerCutDepthMaterial, createCornerCutPoolGeometry, createCornerCutWallGeometry, isWallAutotileEnabled, patchCornerCutVertexShader, wallCornerCutMask, wallHeightScale } from './wallAutotile.js';
+import { WALL_LIGHT_SHAPE_FRAGMENT, planWallFootDressing, planWallIcicles, planWallTopDressing, createCornerCutDepthMaterial, createCornerCutPoolGeometry, createCornerCutWallGeometry, isWallAutotileEnabled, patchCornerCutVertexShader, wallCornerCutMask, wallHeightScale } from './wallAutotile.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
 import { corridorKitPlacement, roomGatewayKitPlacement } from './kitGrammar.js';
 import {
@@ -1918,6 +1918,9 @@ export class ThreeGame {
         this.wallFootRubbleGeometry = new THREE.DodecahedronGeometry(1, 0);
         this.wallFootDriftMaterial = new THREE.MeshStandardMaterial({ color: 0xc4d1dc, metalness: 0, roughness: 1, flatShading: true });
         this.wallFootRubbleMaterial = new THREE.MeshStandardMaterial({ color: 0x4a4440, metalness: 0.15, roughness: 0.95 });
+        // Cryo icicles (planWallIcicles): a downward cone, base at y = 0, tip at y = -1.
+        this.wallIcicleGeometry = new THREE.ConeGeometry(1, 1, 5).rotateX(Math.PI).translate(0, -0.5, 0);
+        this.wallIcicleMaterial = new THREE.MeshStandardMaterial({ color: 0xcfe6f5, emissive: 0x16323f, metalness: 0.1, roughness: 0.25, flatShading: true });
         this.roomLightFixtureGeometry = new THREE.BoxGeometry(1.05, 0.06, 0.12);
         this.roomLightHousingGeometry = new THREE.BoxGeometry(1.18, 0.12, 0.2);
         this.roomLightHousingMaterial = new THREE.MeshStandardMaterial({
@@ -32817,7 +32820,7 @@ export class ThreeGame {
         const bracketMatricesByRoomStyle = new Map();
         const ventMatrices = [];
         const pipeMatrices = [];
-        const wallTopMatrices = { pipe: [], hatch: [], nodule: [], drift: [], lump: [], rubble: [] };
+        const wallTopMatrices = { pipe: [], hatch: [], nodule: [], drift: [], lump: [], rubble: [], icicle: [] };
         // Filled once the pools exist; each wall record reaches its dressing
         // (top dressing and face decorations) through it.
         const wallDressingPools = {};
@@ -33390,6 +33393,23 @@ export class ThreeGame {
                             const matrices = wallTopMatrices[item.type];
                             wallDressing.push({ kind: item.type, index: matrices.push(matrix) - 1 });
                         }
+                        // Cryo: icicles hang from the top edge of the same open faces.
+                        const icicleTop = this.wallHeight * visualHeightScale;
+                        for (const icicle of planWallIcicles({ worldX, worldZ, openSides, biome: footBiome })) {
+                            const [nx, nz] = faceNormals[icicle.side];
+                            const [tx, tz] = nx === 0 ? [1, 0] : [0, 1];
+                            const out = 0.5 + icicle.radius * 0.6;
+                            const matrix = new THREE.Matrix4().compose(
+                                new THREE.Vector3(
+                                    worldX + jitter.offsetX + nx * out + tx * icicle.along,
+                                    icicleTop,
+                                    worldZ + jitter.offsetZ + nz * out + tz * icicle.along
+                                ),
+                                new THREE.Quaternion(),
+                                new THREE.Vector3(icicle.radius, icicle.length, icicle.radius)
+                            );
+                            wallDressing.push({ kind: 'icicle', index: wallTopMatrices.icicle.push(matrix) - 1 });
+                        }
                     }
                     pushWallInstanceMatrix(standardMatrix, {
                         chunkX, chunkY, localX, localY, worldX, worldZ, landform,
@@ -33712,13 +33732,15 @@ export class ThreeGame {
                 nodule: this.wallTopNoduleGeometry,
                 drift: this.wallFootDriftGeometry,
                 lump: this.wallTopNoduleGeometry,
-                rubble: this.wallFootRubbleGeometry
+                rubble: this.wallFootRubbleGeometry,
+                icicle: this.wallIcicleGeometry
             }[kind];
             const material = {
                 nodule: this.wallTopNoduleMaterial,
                 lump: this.wallTopNoduleMaterial,
                 drift: this.wallFootDriftMaterial,
-                rubble: this.wallFootRubbleMaterial
+                rubble: this.wallFootRubbleMaterial,
+                icicle: this.wallIcicleMaterial
             }[kind] ?? this.wallTopDressingMaterial;
             const topPool = new THREE.InstancedMesh(geometry, material, matrices.length);
             matrices.forEach((matrix, index) => topPool.setMatrixAt(index, matrix));

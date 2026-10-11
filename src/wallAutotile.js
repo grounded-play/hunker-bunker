@@ -504,3 +504,32 @@ export function planWallFootDressing({ worldX, worldZ, openSides, biome = 'activ
     }
     return items;
 }
+
+// ── Icicles (lane G district skins: cryo) ──────────────────────────────
+
+/**
+ * Icicles hanging from the top edge of a cryo wall's open faces: a fringe of
+ * three to six along one edge, on about a quarter of edges. Each names its
+ * face (`side`), where along it it hangs (`along`), and its length and
+ * radius; short, so even the lowest wall keeps clear headroom. Only cryo;
+ * deterministic per world cell.
+ */
+export function planWallIcicles({ worldX, worldZ, openSides, biome = 'active' }) {
+    if (biome !== 'cryo') return [];
+    const items = [];
+    for (const [side, salt] of Object.entries(FOOT_SIDES)) {
+        if (!openSides?.[side]) continue;
+        if (latticeValue(worldX * 19 - salt * 97, worldZ * 29 + salt * 53) >= 0.26) continue;
+        const count = 3 + Math.floor(latticeValue(worldX + salt * 7, worldZ - salt) * 4);
+        for (let k = 0; k < count; k += 1) {
+            const roll = (offset) => latticeValue(worldX * 5 + salt * 11 + k * 37 + offset, worldZ * 13 - k * 19);
+            items.push({
+                side,
+                along: -0.4 + (0.8 * (k + 0.2 + roll(1) * 0.6)) / count,
+                length: 0.15 + roll(2) * 0.45,
+                radius: 0.025 + roll(3) * 0.035
+            });
+        }
+    }
+    return items;
+}
