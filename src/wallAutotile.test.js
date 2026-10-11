@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import {
     CORNER_BIT,
+    WALL_LIGHT_SHAPE_FRAGMENT,
     CORNER_CUT_ACTIVE,
     WALL_CHAMFER,
     cornerCutPositions,
@@ -214,5 +215,18 @@ describe('isWallAutotileEnabled', () => {
         expect(isWallAutotileEnabled(store('0'))).toBe(false);
         expect(isWallAutotileEnabled({ getItem: () => { throw new Error('blocked'); } })).toBe(true);
         expect(isWallAutotileEnabled(undefined)).toBe(true);
+    });
+});
+
+describe('WALL_LIGHT_SHAPE_FRAGMENT', () => {
+    it('lights the top lip of every side and dresses tops per area', () => {
+        expect(WALL_LIGHT_SHAPE_FRAGMENT).toContain('vMapUv.y');
+        expect(WALL_LIGHT_SHAPE_FRAGMENT).toContain('hbLip');
+        expect(WALL_LIGHT_SHAPE_FRAGMENT).toContain('cryoMix');
+        expect(WALL_LIGHT_SHAPE_FRAGMENT).toContain('bioMix');
+        // Only reads names the wall shader declares before its insertion point.
+        for (const name of ['cryoWallGrunge', 'bioWallGrunge', 'finalWallColor', 'vWorldNormal', 'vWorldPos']) {
+            expect(WALL_LIGHT_SHAPE_FRAGMENT).toContain(name);
+        }
     });
 });

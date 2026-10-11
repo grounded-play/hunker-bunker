@@ -283,3 +283,31 @@ export function wallHeightScale(landform, worldX, worldZ) {
     }
     return 1;
 }
+
+// ── Light painted into the walls (lane B slice 2, item 3) ──────────────
+
+/**
+ * Wall fragment shading, inserted after the wall shader has blended
+ * finalWallColor (inside its USE_MAP block, where cryoMix, bioMix and the
+ * grunge samples exist). The N64 lesson: light painted into the
+ * architecture.
+ *   - Sides: a bright lip along the top edge, so a run's silhouette reads
+ *     crisply from the isometric camera. Side UVs run 0 at the base to 1 at
+ *     the top (box and corner-cut prism alike) and walls stand on y = 0, so
+ *     the top is vWorldPos.y / v.
+ *   - Tops, which the camera looks down on: frost settles on cryo walls and
+ *     growth creeps over bio walls, each where its grunge map gathers.
+ */
+export const WALL_LIGHT_SHAPE_FRAGMENT = `
+                    if ( abs( vWorldNormal.y ) <= 0.5 ) {
+                        float hbWallV = clamp( vMapUv.y, 0.001, 1.0 );
+                        float hbFromTop = vWorldPos.y / hbWallV - vWorldPos.y;
+                        float hbLip = 1.0 - smoothstep( 0.03, 0.1, hbFromTop );
+                        finalWallColor = mix( finalWallColor, finalWallColor * 1.45 + vec3( 0.03 ), hbLip * 0.85 );
+                    } else if ( vWorldNormal.y > 0.5 ) {
+                        float hbFrost = smoothstep( 0.32, 0.62, cryoWallGrunge.g + cryoWallGrunge.r * 0.4 ) * cryoMix * ( 1.0 - bioMix );
+                        finalWallColor = mix( finalWallColor, vec3( 0.78, 0.86, 0.94 ), hbFrost * 0.8 );
+                        float hbGrowth = smoothstep( 0.3, 0.7, bioWallGrunge.g ) * bioMix;
+                        finalWallColor = mix( finalWallColor, vec3( 0.13, 0.2, 0.1 ), hbGrowth * 0.55 );
+                    }
+`;

@@ -371,7 +371,7 @@ import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
 import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js';
 import { applyCompressedSprite, bakedKeyedSpriteUrl, keyedSpriteBakeKey, recordKeyedSprite } from './keyedSpriteBakes.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
-import { createCornerCutDepthMaterial, createCornerCutPoolGeometry, createCornerCutWallGeometry, isWallAutotileEnabled, patchCornerCutVertexShader, wallCornerCutMask, wallHeightScale } from './wallAutotile.js';
+import { WALL_LIGHT_SHAPE_FRAGMENT, createCornerCutDepthMaterial, createCornerCutPoolGeometry, createCornerCutWallGeometry, isWallAutotileEnabled, patchCornerCutVertexShader, wallCornerCutMask, wallHeightScale } from './wallAutotile.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
 import { corridorKitPlacement, roomGatewayKitPlacement } from './kitGrammar.js';
 import {
@@ -3225,6 +3225,8 @@ export class ThreeGame {
                     } else {
                         finalWallColor *= 0.88;
                     }
+
+                    ${WALL_LIGHT_SHAPE_FRAGMENT}
 
                     // Per-tile wear jitter breaks the "one flat slab" read
                     // when several wall tiles sit side by side.
