@@ -1139,3 +1139,4 @@ chunk mounts.
 - 2026-10-10: Round 2 done (`1b0fce7c`): chasm landmarks plus tactical-map glyphs. Criteria 1,
   3, 4 and 5 met; criterion 2 not met as written, with the reason and the map-based answer in
   §9.10.
+- 2026-10-11: Next art plan in [world completion](world-completion-assets-and-path-layers-2026-10-11.md): 40 new 3D assets (including chasm vista props for lane F's sites) and 20 route-driven floor layers for lane H, filling the splat floor's reserved path-wear channel.
