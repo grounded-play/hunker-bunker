@@ -646,8 +646,26 @@ The fabrication console has a real terminal acknowledgement and powered FX, but 
 either gantry. `prop_engineering_bench` also aliases the workstation visually and does not prove a
 separate fabrication station. Future dedicated art may isolate vertical ram heads or contained
 carriages and add sparks, work-light/audio response, and a short local cycle, but no moving part may
-sweep into the process lane and no state may alter collision. The next flat P2 candidate is
-`radar_alignment_post`; the ring crossing remains a detached progression-integration proof.
+sweep into the process lane and no state may alter collision.
+
+`radar_alignment_post` is the sixth P2 spatial proof. The west threshold now looks directly into
+a real `radar` GLB framed by a C-shaped plinth instead of an anonymous central cube. The plinth
+stops the direct west/east walk and splits the room into unequal north and south calibration arcs.
+A short northern branch exposes the damaged terminal and locker rail; the southern branch turns
+behind a second L-shaped bank into the mandatory `radar_alignment_console`, ammo reveal, and quiet
+return strip before rejoining at the east maintenance exit. Tests pin the exact silhouette,
+preserved ship-goal and support IDs, visible dish approach, both independently forced routes, and
+all anchor cells. Four gameplay-camera/cutaway captures live at
+`docs/reports/assets/furnished-rooms/p2-radar_alignment_post-game-camera-r*.png`.
+
+Capability correction: the shipped radar model is a single mesh with no animation clips or
+`HB_*` articulation nodes. It now receives a restrained cyan practical and existing powered ambient
+FX, while both terminals retain their genuine use acknowledgement, but using the alignment console
+does not rotate or resolve the mast. A future local controller may drive a dedicated azimuth ring,
+dish yoke, sweep-light illusion, sound, and dormant/active/resolved colour response entirely within
+the C-plinth footprint. Collision, both calibration routes, and the maintenance exit remain fixed.
+This completes the current flat P2 room set; `ring_crossing_landmark` remains a detached
+progression-integration proof.
 
 ## Greybox process
 

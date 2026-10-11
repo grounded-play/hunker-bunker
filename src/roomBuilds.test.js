@@ -137,6 +137,51 @@ describe('ROOM_BUILD_CATALOG', () => {
         expect(build.quietZones[0]).toMatchObject({ x: 12, y: 1, w: 5, h: 7 });
     });
 
+    it('turns the radar post into a sightline court with two calibration routes', () => {
+        const build = ROOM_BUILD_CATALOG.find((entry) => entry.id === 'radar_alignment_post');
+        expect(build.pattern).toEqual([
+            '...............',
+            '...............',
+            '...............',
+            '..........###..',
+            '............#..',
+            '......###......',
+            '........#......',
+            '......###......',
+            '........###....',
+            '..........#....',
+            '..........#....',
+            '...............',
+            '...............'
+        ]);
+        const approach = computeApproachPoint(build);
+        const dishThreshold = { x: 7, y: 6 };
+        const console = { x: 13, y: 10 };
+        const exit = { x: 14, y: 6 };
+        const northCrossing = new Set(Array.from({ length: 5 }, (_, y) => `7,${y}`));
+        const southCrossing = new Set(Array.from({ length: 5 }, (_, offset) => `7,${offset + 8}`));
+        expect(approach).toEqual({ x: 2, y: 6 });
+        expect(shortestPatternPath(build.pattern, approach, dishThreshold)).toBe(5);
+        expect(shortestPatternPath(build.pattern, approach, console, northCrossing)).toBeLessThan(Infinity);
+        expect(shortestPatternPath(build.pattern, approach, console, southCrossing)).toBeLessThan(Infinity);
+        expect(shortestPatternPath(build.pattern, console, exit)).toBeLessThan(Infinity);
+        expect(build.signatureAnchors).toEqual([
+            expect.objectContaining({ id: 'mast_base', type: 'radar', x: 7, y: 6, blocking: true })
+        ]);
+        expect(build.structuralAnchors).toEqual(expect.arrayContaining([
+            expect.objectContaining({ id: 'post_locker', x: 11, y: 3 }),
+            expect.objectContaining({ id: 'calibration_bank', x: 10, y: 9 })
+        ]));
+        expect(build.structuralAnchors.every((anchor) => build.pattern[anchor.y][anchor.x] === '#')).toBe(true);
+        expect(build.interactionAnchors).toEqual(expect.arrayContaining([
+            expect.objectContaining({ id: 'radar_alignment_console', x: 13, y: 10 }),
+            expect.objectContaining({ id: 'post_terminal', x: 10, y: 2 })
+        ]));
+        expect(build.rewardAnchors[0]).toMatchObject({ id: 'post_ammo', x: 12, y: 8 });
+        expect(build.signatureAnchorId).toBe('mast_base');
+        expect(build.quietZones[0]).toMatchObject({ x: 11, y: 8, w: 4, h: 5 });
+    });
+
     it('uses the medical P0A proof to create a reveal pivot and supply-side loop', () => {
         const build = ROOM_BUILD_CATALOG.find((entry) => entry.id === 'medical_triage');
         expect(build.pattern).toEqual([

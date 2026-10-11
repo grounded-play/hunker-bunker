@@ -616,9 +616,24 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         family: 'security',
         themeStyle: 'substation',
         partitionThickness: 0.5,
-        // One central mast block: sightlines stay open all the way round it,
-        // which is what makes the defend-the-console beat readable.
-        pattern: rectRoomPattern(15, 13, [{ x: 6, y: 5, w: 3, h: 3 }, { x: 2, y: 2, w: 2, h: 2 }]),
+        // P2 alignment proof: the west threshold looks straight into the
+        // dish pedestal, while unequal calibration banks peel north and
+        // south around it. Both routes permanently rejoin at the east exit.
+        pattern: authoredRoomPattern([
+            '...............',
+            '...............',
+            '...............',
+            '..........###..',
+            '............#..',
+            '......###......',
+            '........#......',
+            '......###......',
+            '........###....',
+            '..........#....',
+            '..........#....',
+            '...............',
+            '...............'
+        ]),
         sockets: [
             { id: 'entry', side: 'w', width: 3, required: true },
             { id: 'maintenanceExit', side: 'e', width: 3, required: false }
@@ -627,26 +642,35 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         tierEligibility: [3, 4],
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['objective', 'defense'],
+        signatureAnchors: [
+            // The radar stands in the open mouth of a C-shaped plinth: its
+            // back wall stops the direct route without swallowing the GLB.
+            { id: 'mast_base', type: 'radar', x: 7, y: 6, blocking: true }
+        ],
         structuralAnchors: [
-            { id: 'mast_base', type: 'prop_cyber_junction', x: 7, y: 6 },
-            { id: 'post_locker', type: 'prop_security_locker', x: 2, y: 2 }
+            { id: 'post_locker', type: 'prop_security_locker', x: 11, y: 3 },
+            { id: 'calibration_bank', type: 'prop_cyber_junction', x: 10, y: 9 }
         ],
         // MANDATORY_SHIP_GOALS radarNode -> objectiveAnchorId, exactly.
         interactionAnchors: [
-            { id: 'radar_alignment_console', type: 'prop_diagnostic_console', x: 7, y: 10 },
-            { id: 'post_terminal', type: 'prop_terminal_ruptured', x: 12, y: 3 }
+            { id: 'radar_alignment_console', type: 'prop_diagnostic_console', x: 13, y: 10 },
+            { id: 'post_terminal', type: 'prop_terminal_ruptured', x: 10, y: 2 }
         ],
-        signatureAnchorId: 'radar_alignment_console',
+        signatureAnchorId: 'mast_base',
         compassAnchors: { approach: 'entry', objective: 'radar_alignment_console' },
-        coverZones: [{ x: 5, y: 4, w: 5, h: 5 }],
-        encounterZones: [
-            { id: 'north_approach', x: 3, y: 1, w: 9, h: 3 },
-            { id: 'south_approach', x: 3, y: 9, w: 9, h: 3 }
+        coverZones: [
+            { x: 5, y: 4, w: 5, h: 5 },
+            { x: 9, y: 2, w: 5, h: 3 },
+            { x: 8, y: 8, w: 4, h: 3 }
         ],
-        rewardAnchors: [{ id: 'post_ammo', type: 'prop_ammo_crate_stack', x: 12, y: 10 }],
+        encounterZones: [
+            { id: 'north_approach', x: 3, y: 1, w: 7, h: 4 },
+            { id: 'south_approach', x: 3, y: 8, w: 7, h: 4 }
+        ],
+        rewardAnchors: [{ id: 'post_ammo', type: 'prop_ammo_crate_stack', x: 12, y: 8 }],
         loreAnchors: [],
         hazardZones: [],
-        quietZones: [],
+        quietZones: [{ x: 11, y: 8, w: 4, h: 5 }],
         safeZone: false,
         containmentBounds: { minX: 0, minY: 0, maxX: 14, maxY: 12 },
         presentationVariants: ['intact', 'abandoned', 'infested', 'looted'],

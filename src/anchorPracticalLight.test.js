@@ -14,6 +14,7 @@ describe('anchor practical light (lived-in world M4)', () => {
         expect(anchorPaletteFor('prop_tesla_coil_node')).toBe('cyan');
         expect(anchorPaletteFor('prop_fabricator_workstation')).toBe('cyan');
         expect(anchorPaletteFor('prop_cyber_junction')).toBe('cyan');
+        expect(anchorPaletteFor('radar')).toBe('cyan');
         expect(anchorPaletteFor('false_cache prop_bunker_supplies')).toBe('warning');
         expect(anchorPaletteFor('prop_laser_trap_emitter')).toBe('warning');
         expect(anchorPaletteFor('reactor_vent_control prop_valve_wheel_fused')).toBe('warning');

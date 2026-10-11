@@ -798,10 +798,29 @@ gantry model, whose armor-charge semantics are not a fabrication controller. The
 acknowledge interaction and glow, but it does not drive either stand-in; the engineering bench also
 visually aliases the workstation. Dedicated future press art may move only a vertical ram or
 contained carriage within the obstruction footprint, with bounded sparks, sound, and work-light
-changes. Nothing may sweep into the process lane or change collision. Next flat P2 candidate:
-`radar_alignment_post`; `ring_crossing_landmark` remains a detached progression proof.
+changes. Nothing may sweep into the process lane or change collision.
 
-### 9.6.7 Authored-geometry persistence gate
+### 9.6.7 Lane A P2: radar calibration court
+
+`radar_alignment_post` is the sixth P2 spatial proof. Its west entry now promises an actual
+`radar` GLB in the open mouth of a C-shaped plinth. The back of that plinth blocks the direct line
+to the east exit without hiding the model, forcing unequal north and south calibration arcs. The
+short northern arc reveals the damaged terminal and retained locker rail; the southern arc bends
+behind an L-shaped bank into the mandatory `radar_alignment_console`, ammo reveal, and quiet return
+strip. Both routes remain permanently open and rejoin at `maintenanceExit`. Exact-pattern tests
+pin the dish sightline, preserved anchor IDs, both forced routes, all mounts, and the ship-goal
+objective. Four gameplay-camera/cutaway captures live at
+`docs/reports/assets/furnished-rooms/p2-radar_alignment_post-game-camera-r*.png`.
+
+The radar now owns the cyan focal practical and existing powered ambient FX, but this is not yet a
+working alignment machine. `radar.glb` is one mesh with no animation clips or `HB_*` articulation
+nodes; the diagnostic console acknowledges use but has no room-level link to the mast. Future art
+may isolate an azimuth ring and dish yoke, and a future local controller may add sweep light, sound,
+and dormant/active/resolved colour response. All motion stays over the C-plinth, collision never
+rotates, and neither calibration route may close. This completes the current flat P2 set;
+`ring_crossing_landmark` remains a detached progression proof.
+
+### 9.6.8 Authored-geometry persistence gate
 
 The existing `ROOM_BUILD_VERSION` is only exported; it is not serialized or compared. Neither
 campaign `interiorVersion`, macro `layoutVersion`, nor `WORLD_PLAN_VERSION` pins room-pattern data.
@@ -1182,6 +1201,10 @@ chunk mounts.
   ship-goal console, bench, and plating reward form a protected inspection strip. Exact route and
   four-camera proofs pass. Dedicated press art, bounded ram/carriage motion, and console-to-machine
   linkage remain future work.
+- 2026-10-11: Lane A rebuilt the radar alignment post as a dish-first calibration court. A visible
+  powered radar in a C-plinth splits the west/east axis into unequal calibration arcs; the southern
+  arc conceals the preserved ship-goal console and quiet ammo return. Exact dual-route and
+  four-camera proofs pass. Dish articulation and console-to-mast state binding remain future work.
 - 2026-10-10: Round 2 done (`1b0fce7c`): chasm landmarks plus tactical-map glyphs. Criteria 1,
   3, 4 and 5 met; criterion 2 not met as written, with the reason and the map-based answer in
   §9.10.
