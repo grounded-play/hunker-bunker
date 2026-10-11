@@ -667,6 +667,24 @@ the C-plinth footprint. Collision, both calibration routes, and the maintenance 
 This completes the current flat P2 room set; `ring_crossing_landmark` remains a detached
 progression-integration proof.
 
+The first P0B crossing step now exists as `ring_crossing_landmark_spatial_proof_v1`, a deliberately
+non-catalogued 17×13 gatehouse fixture. Twin south shoulders compress the arrival, release into a
+forecourt, and promise `gate_control` through a one-cell notch. The sealed back of the recessed
+control apse prevents a false straight-through route, forcing independent west/east branches that
+rejoin at the north threshold; flank sockets enter those branch lanes directly. Exact tests prove
+all four rotations, Large classification, all four synthetic socket doors, the five-cell control
+approach, and both branch routes. Four zero-dressing gameplay-camera/cutaway captures live at
+`docs/reports/assets/furnished-rooms/p0b-ring_crossing_landmark-detached-game-camera-r*.png`.
+
+This is spatial evidence, not live progression integration. The fixture uses neutral family
+`spatial_proof` and role `spatialProof`, is absent from both room catalogs, and produces neither a
+`ringCrossingId` nor mission-control access source. The live `ring_crossing_landmark`, crossing
+state derivation, reserved chunks, procedural door lock, bridge traversal, and saved campaigns are
+unchanged. Its paired pillar IDs still alias the same biomechanical arch, `base_console` is the only
+real interactive focal, and no dedicated ring mechanism exists. A separate integration change must
+first pass the full room/camera matrix plus crossing-door, reservation, setpiece-pivot, persistence,
+and multiplayer checks.
+
 ## Greybox process
 
 For each proof room:

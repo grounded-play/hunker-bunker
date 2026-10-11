@@ -31,6 +31,7 @@
   <script type="module">
     import * as THREE from 'three';
     import { ROOM_BUILD_CATALOG, ALL_ROOM_BUILDS, rotateRoomBuild, stampRoomBuild, buildRoomInstanceFromBuild } from '/src/roomBuilds.js';
+    import { RING_CROSSING_SPATIAL_PROOF } from '/src/data/ringCrossingSpatialProof.js';
     import { assignRoomThemes } from '/src/roomThemes.js';
     import { bindRoomContent } from '/src/roomContent.js';
     import { planRoomPopulation } from '/src/roomPopulation.js';
@@ -47,9 +48,14 @@
 
     const params = new URLSearchParams(location.search);
     const catalog = ALL_ROOM_BUILDS ?? ROOM_BUILD_CATALOG;
+    const requestedBuildId = params.get('build');
     const isGrammar = params.get('build') === 'maintenance_hall' || params.get('grammar') === '1';
     const isBreached = params.get('view') === 'breached' || params.get('breach') === '1';
-    const sourceBuild = isGrammar ? null : (catalog.find((b) => b.id === params.get('build')) ?? ROOM_BUILD_CATALOG[0]);
+    const detachedProof = requestedBuildId === RING_CROSSING_SPATIAL_PROOF.id;
+    const greyboxReview = params.get('greybox') === '1';
+    const sourceBuild = isGrammar ? null : (
+      detachedProof ? RING_CROSSING_SPATIAL_PROOF : (catalog.find((b) => b.id === requestedBuildId) ?? ROOM_BUILD_CATALOG[0])
+    );
     const reviewMode = params.get('review') === 'gameplay';
     const rotation = Math.max(0, Math.min(3, Number.parseInt(params.get('rotation') ?? '0', 10) || 0));
     const build = sourceBuild && rotation ? rotateRoomBuild(sourceBuild, rotation) : sourceBuild;
@@ -383,7 +389,9 @@
     }
 
     // Lived-in dressing layer: the same planner and instanced renderer the game uses.
-    const dressing = planRoomDressing(room, currentGrid, { reserved: plan.reserved, occupied: plan.placements });
+    const dressing = greyboxReview
+      ? { items: [] }
+      : planRoomDressing(room, currentGrid, { reserved: plan.reserved, occupied: plan.placements });
     const dressingGroup = await buildRoomDressingGroup(dressing.items, {
       loadModel: (type) => kit(type),
       loadDecalTexture: (type) => loadKeyedDecalTexture(type)
@@ -453,7 +461,7 @@
     label.style.top = '8px';
     const roomTitle = isGrammar
       ? `maintenance_hall (${room.grammar?.motif ?? 'industrial'}) · ${isBreached ? 'BREACHED' : 'INTACT'}`
-      : `${build.id} · ${biome} · theme ${room.theme}${reviewMode ? ` · GAME CAMERA R${rotation}` : ''}`;
+      : `${build.id}${detachedProof ? ' · DETACHED SPATIAL PROOF' : ''}${greyboxReview ? ' · GREYBOX' : ''} · ${biome} · theme ${room.theme}${reviewMode ? ` · GAME CAMERA R${rotation}` : ''}`;
     label.textContent = `${roomTitle} · ${props} props, ${decals} decals, `
       + `${shells.length} wall shells, ${gateways.length} gateway${gateways.length === 1 ? '' : 's'} · `
       + `dressing ${dressing.items.length} pieces in ${dressingGroup.userData.drawCalls} draw calls`
@@ -483,6 +491,8 @@
       degraded: plan.degraded,
       onWalls,
       reviewMode,
+      detachedProof,
+      greyboxReview,
       rotation,
       cutawayCells: cutawayCells.length
     };

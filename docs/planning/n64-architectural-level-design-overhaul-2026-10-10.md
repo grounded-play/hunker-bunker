@@ -820,7 +820,32 @@ and dormant/active/resolved colour response. All motion stays over the C-plinth,
 rotates, and neither calibration route may close. This completes the current flat P2 set;
 `ring_crossing_landmark` remains a detached progression proof.
 
-### 9.6.8 Authored-geometry persistence gate
+### 9.6.8 Lane A P0B: detached gatehouse proof
+
+The first crossing-integration step is intentionally isolated as
+`ring_crossing_landmark_spatial_proof_v1`. It is a 17×13 fixture with two south loading shoulders,
+a released forecourt, and a recessed control apse promised through one central notch. The apse's
+sealed north wall blocks the false straight-through line, so west and east branches wrap the
+landmark and rejoin before the north threshold; flank sockets join those branch lanes. Tests prove
+the five-cell approach to `gate_control`, both independently forced routes, Large classification,
+all four rotations, and four synthetic socket doors. Four no-dressing gameplay-camera/cutaway
+captures live at
+`docs/reports/assets/furnished-rooms/p0b-ring_crossing_landmark-detached-game-camera-r*.png`.
+
+The isolation is executable, not a documentation promise: the fixture has neutral family
+`spatial_proof` and role `spatialProof`, is absent from `ROOM_BUILD_CATALOG` and `ALL_ROOM_BUILDS`,
+and its stamped doors have no `ringCrossingId`. Building a room instance produces no access source,
+reservation identity, crossing state, or procedural door state. The live `ring_crossing_landmark`
+remains untouched. Its future art debt is also explicit: both pillar IDs alias the same
+`prop_biomech_arch`, `base_console` is a genuine terminal but not a ring mechanism, and none of those
+models has a relevant animation clip or articulated gate state.
+
+This proof does not open a route. Before integration, run the complete room/camera orientation
+matrix and separately prove crossing-door selection, all topology openings, reservations,
+setpiece-pivot and non-pivot seeds, bridge spawning, save persistence, and multiplayer state. The
+authoritative status derivation and outward procedural door remain out of scope here.
+
+### 9.6.9 Authored-geometry persistence gate
 
 The existing `ROOM_BUILD_VERSION` is only exported; it is not serialized or compared. Neither
 campaign `interiorVersion`, macro `layoutVersion`, nor `WORLD_PLAN_VERSION` pins room-pattern data.
@@ -1205,6 +1230,10 @@ chunk mounts.
   powered radar in a C-plinth splits the west/east axis into unequal calibration arcs; the southern
   arc conceals the preserved ship-goal console and quiet ammo return. Exact dual-route and
   four-camera proofs pass. Dish articulation and console-to-mast state binding remain future work.
+- 2026-10-11: Lane A completed the detached spatial phase of the ring-crossing proof. A
+  non-catalogued gatehouse fixture now compresses into a recessed control reveal and forks around
+  the landmark to all four sockets. Exact route/socket/negative-integration tests and four clean
+  greybox camera views pass; the live crossing room and every progression system remain unchanged.
 - 2026-10-10: Round 2 done (`1b0fce7c`): chasm landmarks plus tactical-map glyphs. Criteria 1,
   3, 4 and 5 met; criterion 2 not met as written, with the reason and the map-based answer in
   §9.10.
