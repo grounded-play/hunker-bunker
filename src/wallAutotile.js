@@ -289,9 +289,14 @@ const HEIGHT_BANDS = Object.freeze({
     crater: [[1, 0.88, 1.28]]
 });
 
-/** Height steps: 0.12 of the 2.8 m wall, about 0.34 m. */
-export const WALL_HEIGHT_STEP = 0.12;
-const NOISE_CELL = 5;
+/**
+ * Height steps: 0.2 of the 2.8 m wall, about 0.56 m, over a field that
+ * changes every nine cells or so. Smaller, more frequent steps (0.34 m every
+ * five cells) read as a jagged crenellation once frost caps lit every edge;
+ * N64 walls hold a height for a long run and change boldly.
+ */
+export const WALL_HEIGHT_STEP = 0.2;
+const NOISE_CELL = 9;
 
 function latticeValue(ix, iz) {
     let h = Math.imul(ix | 0, 0x27d4eb2d) ^ Math.imul(iz | 0, 0x165667b1);
@@ -331,8 +336,12 @@ export function wallHeightScale(landform, worldX, worldZ) {
         if (n < start + share || i === bands.length - 1) {
             const t = Math.min(1, Math.max(0, (n - start) / share));
             const raw = low + (high - low) * t;
-            const stepped = low + Math.round((raw - low) / WALL_HEIGHT_STEP) * WALL_HEIGHT_STEP;
-            return Math.round(Math.min(high, Math.max(low, stepped)) * 1000) / 1000;
+            // One grid of heights for every band, so neighbouring bands never
+            // differ by a sliver; clamped to the landform's whole range.
+            const stepped = Math.round(raw / WALL_HEIGHT_STEP) * WALL_HEIGHT_STEP;
+            const floor = Math.min(...bands.map((band) => band[1]));
+            const ceiling = Math.max(...bands.map((band) => band[2]));
+            return Math.round(Math.min(ceiling, Math.max(floor, stepped)) * 1000) / 1000;
         }
         start += share;
     }

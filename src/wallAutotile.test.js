@@ -197,7 +197,7 @@ describe('wallHeightScale', () => {
                 if (row[x] === row[x - 1]) same += 1;
             }
         }
-        expect(same / pairs).toBeGreaterThan(0.6);
+        expect(same / pairs).toBeGreaterThan(0.75);
     });
 
     it('still uses the whole range: low, ordinary and tall walls all occur', () => {
