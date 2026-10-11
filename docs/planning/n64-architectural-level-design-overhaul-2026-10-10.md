@@ -681,7 +681,18 @@ This shows whether the blocky read changes before any room is rebuilt.
    - Cryo is deliberately excluded: its walls are frosted deck plating, and bending them reads as
      melted metal.
    - [Before/after](../reports/assets/world-feel-2026-10-10/09-lane-b-organic-bio-walls-before-after.jpg).
-4. **Tall tiers (D3): on hold, by design.**
+4. **Dressed wall tops: done, `25a45b5f`.**
+   - Bunker and cryo: pipes lie along straight runs in five-cell stretches, keeping one side
+     per run so they read as one conduit (sometimes doubled); occasional hatches sit elsewhere.
+   - Bio walls grow a few nodules instead.
+   - Never on room walls (the cutaway would leave them floating) or on cells with cut corners.
+   - A destroyed wall takes its dressing with it.
+   - Cost: two or three small lit pools per chunk, no shadows cast.
+   - [Before/after](../reports/assets/world-feel-2026-10-10/11-lane-b-wall-top-dressing-before-after.jpg),
+     [pipes up close](../reports/assets/world-feel-2026-10-10/12-lane-b-wall-top-pipes-zoom.jpg).
+   - Older issue noticed along the way: wall *face* decorations (pipes, vents, brackets) are
+     not removed when their wall is destroyed. Not fixed here.
+5. **Tall tiers (D3): on hold, by design.**
    - Making chunk-border walls tall would draw a 49 m grid of tall lines across the world, which
      is more blocky, not less.
    - Non-room walls have no cutaway, so tall walls would hide the player.
@@ -801,3 +812,4 @@ Implemented Owner Decision D2 and the world pacing rhythm from §7.3:
 - 2026-10-10: Bio walls bend into organic forms (`83cddb62`). Lane B tall tiers held: tall
   silhouettes go to lane F landmarks instead of a grid of tall borders.
 - 2026-10-10: Lane D: faint light far below the void, so pits read as deep (`6c2145c1`).
+- 2026-10-10: Wall tops dressed: pipe runs and hatches, nodules in bio (`25a45b5f`).
