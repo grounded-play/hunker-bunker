@@ -657,14 +657,41 @@ This shows whether the blocky read changes before any room is rebuilt.
   are excluded on purpose, and the cutaway cap is a square box that would overhang a cut corner
   at cut height. That is slice 2 item 1.
 
-**Slice 2 (next):**
+**Slice 2: in progress.**
 
-1. Corner cuts on room walls, with a cutaway cap that follows the mask.
-2. Wall tops dressed per skin: pipes and grates (bunker), snow cornices (cryo), growth (bio),
-   rebar (ruins).
-3. Plinth and lit cap edge in the wall shader (shared with lane G).
-4. Tall tiers for district borders and landform edges (D3).
-5. Natural rock and ice contours for cave, bio and cryo.
+1. **Room walls cut their corners: done, `5f8bd9c2`.**
+   - Room boundary walls now carry the corner mask, so lane A's chamfer cells read as 45° facets
+     instead of stair steps.
+   - The cutaway only rewrites matrices, so the mask survives every camera turn. Its cap is a
+     unit corner-cut prism scaled to the old 1.03 by the instance matrix.
+   - Door cells count as solid, so jambs stay square against the 0.58 m slab and its lintel.
+2. **Lit top lip and dressed tops: done, `7574aea5`.**
+   - Every wall side brightens along its top edge; the existing base band already darkens where
+     wall meets floor.
+   - Frost settles on the tops of cryo walls and growth on bio walls.
+   - Shader-only: no draw calls, textures or lights added. No shader errors in the GPU run.
+   - Cryo frames now read as a district from the camera alone:
+     [captures](../reports/assets/world-feel-2026-10-10/07-lane-b-lit-lip-and-frost-tops.jpg).
+3. **Next: tall tiers** for district borders and landform edges (D3).
+4. **Then:** natural rock and ice contours for cave, bio and cryo.
+
+**Found while testing, fixed for lane A (`e40ae21a`).** Authored room selection took the first
+eligible build of the family, so three ship-goal objectives landed in rooms without their anchor
+and fell back to a generic point:
+
+- `hullExpansion` (ring 2) got `reactor_vent_station` in active and cryo, and lane A's
+  `room_subdeck_turbine_sump` in bio;
+- `reactorCompressor` (ring 4) got `room_subdeck_cryo_exchanger` in active.
+
+A reservation that names an `objectiveAnchorId` now gets a build carrying that anchor: in its own
+biome first, then in any biome (themes reskin it). Otherwise selection is unchanged.
+`chunkStructure.reservationBridge.test.js` now checks every objective in every biome.
+
+Also for lane A: in one live run, none of the 26 authored builds appeared within six chunks of
+spawn. They are placed only as ring objectives (`ringManifest.js`), so a blueprint is seen only
+when it wins one of those slots. The two engineering blueprints can now still win non-objective
+engineering slots, but no longer take a goal's room. Blueprints meant to be seen often need a
+reservation role of their own.
 
 ### 9.8 Lane A work log: All Six N64 Signature Blueprints Implemented (Antigravity Agent)
 
@@ -735,3 +762,6 @@ Implemented Owner Decision D2 and the world pacing rhythm from §7.3:
   in coherent heights at unchanged draw calls; before/after sheets in §9.7. Slice 2 starts with
   corner cuts on room walls, which lane A's chamfered blueprints need.
 - 2026-10-10: Antigravity Lane C milestone: Decision D2 implemented. Maze share capped at <= 25% across all biomes in `src/landforms.js`. Neighbour-avoidance rhythm implemented in `src/threeGame.js` so adjacent chunks alternate terrain archetypes. 18/18 tests passing in `src/landforms.test.js`. Presubmits 100% clean.
+- 2026-10-10: Lane B slice 2 items 1–2 done (`5f8bd9c2` room-wall corner cuts and caps,
+  `7574aea5` lit top lip and frost/growth tops). Fixed ship-goal room selection (`e40ae21a`),
+  which had put three objectives in rooms without their anchor; details for lane A in §9.7.
