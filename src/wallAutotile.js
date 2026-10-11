@@ -363,7 +363,7 @@ export const WALL_LIGHT_STRIP = Object.freeze({
     /** The band, metres above the floor: under the lowest wall (0.6 x 2.8 m). */
     bottom: 1.5,
     top: 1.6,
-    intensity: 2.0
+    intensity: 1.5
 });
 
 /**
@@ -398,8 +398,9 @@ export const WALL_LIGHT_SHAPE_FRAGMENT = `
                                     * ( 1.0 - smoothstep( ${(WALL_LIGHT_STRIP.top - 0.02).toFixed(3)}, ${WALL_LIGHT_STRIP.top.toFixed(3)}, vWorldPos.y ) );
                                 float hbStripRun = fract( hbAlong );
                                 float hbStripEnds = smoothstep( 0.05, 0.1, hbStripRun ) * ( 1.0 - smoothstep( 0.9, 0.95, hbStripRun ) );
-                                vec3 hbStripColor = mix( vec3( 1.0, 0.55, 0.18 ), vec3( 0.35, 0.85, 1.0 ), cryoMix );
-                                hbStripColor = mix( hbStripColor, vec3( 0.5, 1.0, 0.35 ), bioMix );
+                                // Cyan and green bloom far harder than amber: dimmer at source.
+                                vec3 hbStripColor = mix( vec3( 1.0, 0.55, 0.18 ), vec3( 0.16, 0.42, 0.52 ), cryoMix );
+                                hbStripColor = mix( hbStripColor, vec3( 0.26, 0.55, 0.18 ), bioMix );
                                 float hbStrip = hbStripBand * hbStripEnds;
                                 finalWallColor = mix( finalWallColor, vec3( 0.04 ), hbStrip * 0.5 );
                                 hbWallEmissive += hbStripColor * hbStrip * ${WALL_LIGHT_STRIP.intensity.toFixed(2)};

@@ -372,6 +372,7 @@ import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js
 import { applyCompressedSprite, bakedKeyedSpriteUrl, keyedSpriteBakeKey, recordKeyedSprite } from './keyedSpriteBakes.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
 import { applyVoidDepth, setVoidDepthTime } from './voidDepth.js';
+import { DOOR_LIGHT_POOL, createDoorLightPoolGeometry, createDoorLightPoolMaterial, doorLightPoolMatrices } from './doorLightPools.js';
 import { WALL_LIGHT_SHAPE_FRAGMENT, planWallFootDressing, planWallTopDressing, createCornerCutDepthMaterial, createCornerCutPoolGeometry, createCornerCutWallGeometry, isWallAutotileEnabled, patchCornerCutVertexShader, wallCornerCutMask, wallHeightScale } from './wallAutotile.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
 import { corridorKitPlacement, roomGatewayKitPlacement } from './kitGrammar.js';
@@ -2041,6 +2042,11 @@ export class ThreeGame {
         this.doorPanelGeometry = new THREE.BoxGeometry(0.38, 0.58, 0.24);
         this.doorPanelMaterial = new THREE.MeshStandardMaterial({ color: 0x12191f, emissive: 0x07141a, metalness: 0.78, roughness: 0.38 });
         this.doorPortalHeaderGeometry = new THREE.BoxGeometry(1, 1, 1);
+        // Pools of light either side of every door, coloured by its kind
+        // (src/doorLightPools.js).
+        this.doorLightPoolGeometry = createDoorLightPoolGeometry();
+        this.doorLightPoolMaterials = Object.fromEntries(Object.entries(DOOR_LIGHT_POOL.colors)
+            .map(([kind, color]) => [kind, createDoorLightPoolMaterial(color)]));
         this.doorPortalHeaderMaterials = {
             ordinary: new THREE.MeshStandardMaterial({
                 color: 0x31545b,
@@ -24604,8 +24610,8 @@ export class ThreeGame {
                 child.userData.dispose?.();
             }
             if (child.userData?.isStickerDecals) child.geometry?.dispose?.();
-            // Wall-top dressing shares its geometry; its instance buffers go.
-            if (child.userData?.isWallTopDressing) child.dispose?.();
+            // Wall-top dressing and door pools share their geometry; their instance buffers go.
+            if (child.userData?.isWallTopDressing || child.userData?.isDoorLightPool) child.dispose?.();
             // A wall or cap pool owns its corner-cut geometry and its instance buffers.
             if (child.userData?.isInstancedWallPool || child.userData?.isRoomCutawayCapPool
                 || (child.userData?.isCliff && child.geometry?.userData?.ownedByWallPool)) {
@@ -32816,6 +32822,7 @@ export class ThreeGame {
         // (top dressing and face decorations) through it.
         const wallDressingPools = {};
         const doorPanelMatrices = [];
+        const doorPoolMatrices = { ordinary: [], route: [], locked: [] };
         const doorPortalHeaderMatrices = new Map([
             ['ordinary', []],
             ['route', []],
@@ -33080,6 +33087,7 @@ export class ThreeGame {
                         ? 'locked'
                         : (persistedDoor?.ringCrossingId || persistedDoor?.gateId ? 'route' : 'ordinary');
                     const portalThickness = portalImportance === 'ordinary' ? 0.07 : portalImportance === 'route' ? 0.1 : 0.14;
+                    doorPoolMatrices[portalImportance].push(...doorLightPoolMatrices({ worldX, worldZ, horizontal }));
                     doorPortalHeaderMatrices.get(portalImportance).push(new THREE.Matrix4().compose(
                         new THREE.Vector3(worldX, this.wallHeight + 0.12 + portalThickness * 0.5, worldZ),
                         new THREE.Quaternion(),
@@ -33741,6 +33749,18 @@ export class ThreeGame {
             panelPool.instanceMatrix.needsUpdate = true;
             panelPool.userData = { isDoorDecoration: true, decorationType: 'panel' };
             group.add(panelPool);
+        }
+
+        for (const [kind, matrices] of Object.entries(doorPoolMatrices)) {
+            if (!matrices.length || !this.doorLightPoolMaterials?.[kind]) continue;
+            const pools = new THREE.InstancedMesh(this.doorLightPoolGeometry, this.doorLightPoolMaterials[kind], matrices.length);
+            matrices.forEach((matrix, index) => pools.setMatrixAt(index, matrix));
+            pools.instanceMatrix.needsUpdate = true;
+            pools.castShadow = false;
+            pools.receiveShadow = false;
+            pools.renderOrder = 2;
+            pools.userData = { isDoorLightPool: true, kind };
+            group.add(pools);
         }
 
         for (const [importance, matrices] of doorPortalHeaderMatrices) {

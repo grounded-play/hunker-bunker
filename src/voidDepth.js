@@ -16,8 +16,8 @@ export const VOID_DEPTH = Object.freeze({
     /** How far below the rim the lit floor appears (metres). */
     floorDepth: 14,
     /** Base glow everywhere down there, and the extra at the drifting light's peaks. */
-    ambient: 0.02,
-    peak: 0.14,
+    ambient: 0.015,
+    peak: 0.09,
     /** Exponential fade per metre of ray travelled below the rim. */
     fade: 0.035
 });
@@ -56,10 +56,10 @@ export function applyVoidDepth(material, { shipWorldPos, range }) {
                 vec3 hbDir = normalize( vVoidWorldPos - cameraPosition );
                 float hbT = ( -${VOID_DEPTH.floorDepth.toFixed(1)} - vVoidWorldPos.y ) / min( hbDir.y, -0.08 );
                 vec3 hbDeep = vVoidWorldPos + hbDir * hbT;
-                vec2 hbQ = hbDeep.xz * 0.47;
+                vec2 hbQ = hbDeep.xz * 0.8;
                 float hbN = sin( hbQ.x + uVoidTime * 0.13 + sin( hbQ.y * 1.7 ) ) * sin( hbQ.y * 1.3 - uVoidTime * 0.09 + sin( hbQ.x * 1.1 ) );
                 hbN += 0.5 * sin( hbQ.x * 2.3 + hbQ.y * 1.9 + uVoidTime * 0.21 );
-                float hbGlow = smoothstep( 0.75, 1.35, hbN );
+                float hbGlow = smoothstep( 0.9, 1.4, hbN );
                 float hbDist = length( vVoidWorldPos.xz - uShipWorldPos );
                 vec3 hbTint = mix( vec3( 0.55, 0.2, 0.06 ), vec3( 0.08, 0.38, 0.5 ), smoothstep( ${cryoStart.toFixed(1)}, ${cryoEnd.toFixed(1)}, hbDist ) );
                 hbTint = mix( hbTint, vec3( 0.22, 0.5, 0.12 ), smoothstep( ${bioStart.toFixed(1)}, ${bioEnd.toFixed(1)}, hbDist ) );
