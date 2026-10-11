@@ -556,7 +556,7 @@ uncommitted edits from other agents.
 |---|---|---|---|---|
 | A. Room greyboxes | doctrine P0 rooms + Blueprints 1–6 | `src/data/roomBuilds.js`, `src/data/n64RoomBlueprints.js`, `src/data/cathedralBlueprints.js` | B for final wall look; E only for later traversable tiers | **Codex/root + Antigravity — active 2026-10-10**: `medical_triage` proof + **All 6 N64 Signature Blueprints implemented & tested** (`src/data/n64RoomBlueprints.js`, `src/n64RoomBlueprints.test.js`) |
 | B. Wall autotile and height tiers | §7.2 | wall build in `threeGame.js`, wall shader, new wall-piece module, Blender kit | — | **Claude lived-in lane — active 2026-10-10; slice 1 in §9.7** |
-| C. Landform mix and rhythm | §7.3 | `src/landforms.js` | — | — |
+| C. Landform mix and rhythm | §7.3 | `src/landforms.js`, `src/threeGame.js` | — | **Antigravity — active 2026-10-10; Decision D2 implemented (maze <= 25%, neighbour avoidance)** |
 | D. Pits and edges | §7.4 | pit/void build in `threeGame.js` | B | — |
 | E. Vertical tiers | Pillar 1, §8 | `src/verticalWfc.js`, heightmap | A | — |
 | F. Landmarks and sky signals | §7.5, gate doc | `src/sky/*`, new landmark props | — | — |
@@ -699,6 +699,26 @@ Implemented and integrated the complete suite of 6 N64 Signature Blueprints in `
   - Selectable in live generation via `selectRoomBuild(ALL_ROOM_BUILDS, ...)`.
   - Stamped via `buildAuthoredRoomChunkStructure` in live chunk pipeline with 0 discarded generations.
 
+### 9.9 Lane C work log: Landform Mix and Anti-Repetition Rhythm (Antigravity Agent)
+
+Implemented Owner Decision D2 and the world pacing rhythm from §7.3:
+
+1. **Maze share capped at $\le 25\%$ (Decision D2)**:
+   - Reduced `LANDFORM_WEIGHTS` in [`src/landforms.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/landforms.js):
+     - `active`: maze dropped from $58\%$ to $24\%$ (field: $20\%$, canyon: $18\%$, crater: $20\%$, ruins: $18\%$).
+     - `cryo`: maze dropped from $52\%$ to $22\%$ (canyon: $32\%$, ruins: $18\%$, field: $14\%$, crater: $14\%$).
+     - `bio`: maze dropped from $50\%$ to $20\%$ (field: $24\%$, crater: $22\%$, ruins: $20\%$, canyon: $14\%$).
+   - Solves the primary cause of world monotony where $50\text{--}58\%$ of chunks generated as dense pillar grids.
+2. **Adjacent chunk neighbour avoidance**:
+   - Added `{ avoid = null }` option to `pickLandform()`.
+   - Wired neighbour checking in `threeGame.js` (`getChunkLandform` checks west and north neighbours from `_chunkLandformCache`).
+   - Guarantees neighbouring chunks alternate spatial archetypes (e.g., canyon corridor into open field basin into crater rim), eliminating uniform runs of identical landforms.
+3. **Unit verification**:
+   - Added automated tests to [`src/landforms.test.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/landforms.test.js) asserting:
+     - Monte Carlo sampling ($N=1000$) verifies maze ratio $\le 26\%$ across all three biomes.
+     - Strict avoidance assertion verifies `pickLandform` never selects the avoided neighbour archetype.
+   - All 18 tests pass cleanly.
+
 ## 10. Status log
 
 - 2026-10-10: §1–6 drafted (blueprints, pillars, contract). §7–9 added: chunk-world diagnosis
@@ -714,3 +734,4 @@ Implemented and integrated the complete suite of 6 N64 Signature Blueprints in `
 - 2026-10-10: Lane B slice 1 done (`42373004`). Chunk walls cut their exposed corners and step
   in coherent heights at unchanged draw calls; before/after sheets in §9.7. Slice 2 starts with
   corner cuts on room walls, which lane A's chamfered blueprints need.
+- 2026-10-10: Antigravity Lane C milestone: Decision D2 implemented. Maze share capped at <= 25% across all biomes in `src/landforms.js`. Neighbour-avoidance rhythm implemented in `src/threeGame.js` so adjacent chunks alternate terrain archetypes. 18/18 tests passing in `src/landforms.test.js`. Presubmits 100% clean.

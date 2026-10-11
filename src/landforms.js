@@ -21,21 +21,35 @@ export const LANDFORMS = Object.freeze({
 });
 
 // Weights lean on the biome fantasy while keeping hard pillar mazes as a
-// discovery beat instead of the default traversal texture.
+// discovery beat instead of the default traversal texture (N64 overhaul §7.3,
+// Decision D2: maze share 25% or less).
 const LANDFORM_WEIGHTS = Object.freeze({
-    active: Object.freeze({ maze: 0.58, field: 0.10, canyon: 0.10, crater: 0.12, ruins: 0.10 }),
-    cryo: Object.freeze({ maze: 0.52, field: 0.07, canyon: 0.22, crater: 0.08, ruins: 0.11 }),
-    bio: Object.freeze({ maze: 0.50, field: 0.13, canyon: 0.07, crater: 0.16, ruins: 0.14 })
+    active: Object.freeze({ maze: 0.24, field: 0.20, canyon: 0.18, crater: 0.20, ruins: 0.18 }),
+    cryo: Object.freeze({ maze: 0.22, field: 0.14, canyon: 0.32, crater: 0.14, ruins: 0.18 }),
+    bio: Object.freeze({ maze: 0.20, field: 0.24, canyon: 0.14, crater: 0.22, ruins: 0.20 })
 });
 
-export function pickLandform(random, biome = 'active') {
-    const weights = LANDFORM_WEIGHTS[biome] ?? LANDFORM_WEIGHTS.active;
+export function pickLandform(random, biome = 'active', { avoid = null } = {}) {
+    const rawWeights = LANDFORM_WEIGHTS[biome] ?? LANDFORM_WEIGHTS.active;
+    let weights = rawWeights;
+    if (avoid && rawWeights[avoid] !== undefined) {
+        const remainingTotal = Object.entries(rawWeights)
+            .filter(([key]) => key !== avoid)
+            .reduce((sum, [, w]) => sum + w, 0);
+        if (remainingTotal > 0) {
+            weights = Object.fromEntries(
+                Object.entries(rawWeights)
+                    .filter(([key]) => key !== avoid)
+                    .map(([key, w]) => [key, w / remainingTotal])
+            );
+        }
+    }
     let roll = random();
     for (const [landform, weight] of Object.entries(weights)) {
         roll -= weight;
         if (roll <= 0) return landform;
     }
-    return LANDFORMS.MAZE;
+    return Object.keys(weights)[0] ?? LANDFORMS.MAZE;
 }
 
 // Open clearing with seeded rock outcrops. The border stays walled (portals
