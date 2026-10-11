@@ -31714,12 +31714,12 @@ export class ThreeGame {
                 new THREE.Matrix4().makeScale(0, 0, 0)
             );
             if (wallMesh.instancedMesh) wallMesh.instancedMesh.instanceMatrix.needsUpdate = true;
-            // Whatever stood on its top goes with it.
-            for (const { kind, index } of wallMesh.topDressing ?? []) {
-                const topPool = wallMesh.topDressingPools?.[kind];
-                if (!topPool) continue;
-                topPool.setMatrixAt(index, new THREE.Matrix4().makeScale(0, 0, 0));
-                topPool.instanceMatrix.needsUpdate = true;
+            // Whatever stood on its top or hung on its faces goes with it.
+            for (const { kind, index } of wallMesh.dressing ?? []) {
+                const dressingPool = wallMesh.dressingPools?.[kind];
+                if (!dressingPool) continue;
+                dressingPool.setMatrixAt(index, new THREE.Matrix4().makeScale(0, 0, 0));
+                dressingPool.instanceMatrix.needsUpdate = true;
             }
             wallMesh.destroyed = true;
             this._wallInstanceIndex?.delete(wallMesh.wallKey);
@@ -32807,8 +32807,9 @@ export class ThreeGame {
         const ventMatrices = [];
         const pipeMatrices = [];
         const wallTopMatrices = { pipe: [], hatch: [], nodule: [] };
-        // Filled once the pools exist; each wall record reaches its dressing through it.
-        const wallTopPools = {};
+        // Filled once the pools exist; each wall record reaches its dressing
+        // (top dressing and face decorations) through it.
+        const wallDressingPools = {};
         const doorPanelMatrices = [];
         const doorPortalHeaderMatrices = new Map([
             ['ordinary', []],
@@ -32820,20 +32821,20 @@ export class ThreeGame {
         const cutawayCapEntries = [];
         const decorationScratch = new THREE.Matrix4();
 
+        // Returns where the decoration landed ({ kind, index }), so the wall
+        // it hangs on can take it down when the wall is destroyed.
         const pushDecorationMatrix = (type, wallMatrix, roomInfo, localMatrix) => {
             decorationScratch.multiplyMatrices(wallMatrix, localMatrix);
             if (type === 'vent') {
-                ventMatrices.push(decorationScratch.clone());
-                return;
+                return { kind: 'vent', index: ventMatrices.push(decorationScratch.clone()) - 1 };
             }
             if (type === 'pipe') {
-                pipeMatrices.push(decorationScratch.clone());
-                return;
+                return { kind: 'pipeFace', index: pipeMatrices.push(decorationScratch.clone()) - 1 };
             }
             const target = type === 'pillar' ? pillarMatricesByRoomStyle : bracketMatricesByRoomStyle;
             const bucketKey = roomInfo.roomStyleId;
             if (!target.has(bucketKey)) target.set(bucketKey, []);
-            target.get(bucketKey).push(decorationScratch.clone());
+            return { kind: `${type}:${bucketKey}`, index: target.get(bucketKey).push(decorationScratch.clone()) - 1 };
         };
 
         const autotileWalls = this.wallAutotileEnabled !== false;
@@ -33304,7 +33305,7 @@ export class ThreeGame {
                     const wallCornerCut = autotileWalls ? wallCornerCutMask(isStandingWallCell, localX, localY) : 0;
                     // Dressing on the top the camera looks down on; not on room walls
                     // (the cutaway would leave it floating) or cut corners.
-                    const topDressing = [];
+                    const wallDressing = [];
                     if (autotileWalls && !isRoomBoundaryWall && wallCornerCut === 0) {
                         const runAxis = isStandingWallCell(localX - 1, localY) && isStandingWallCell(localX + 1, localY)
                             ? 'x'
@@ -33339,13 +33340,14 @@ export class ThreeGame {
                                 );
                             }
                             const matrices = wallTopMatrices[item.type];
-                            topDressing.push({ kind: item.type, index: matrices.push(matrix) - 1 });
+                            wallDressing.push({ kind: item.type, index: matrices.push(matrix) - 1 });
                         }
                     }
                     pushWallInstanceMatrix(standardMatrix, {
                         chunkX, chunkY, localX, localY, worldX, worldZ, landform,
                         cornerCut: wallCornerCut,
-                        topDressing: topDressing.length ? topDressing : null,
+                        // Face decorations below join it once they are placed.
+                        dressing: wallDressing,
                         variant: 'standard',
                         heightScale,
                         roomBoundary: isRoomBoundaryWall,
@@ -33385,8 +33387,8 @@ export class ThreeGame {
                     if (!isRoomBoundaryWall && roll < 0.12) {
                         const cx = (rng() < 0.5 ? -0.5 : 0.5);
                         const cz = (rng() < 0.5 ? -0.5 : 0.5);
-                        pushDecorationMatrix('pillar', standardMatrix, roomStyleIdFor(chunkX, chunkY, localX, localY),
-                            new THREE.Matrix4().makeTranslation(cx, 0, cz));
+                        wallDressing.push(pushDecorationMatrix('pillar', standardMatrix, roomStyleIdFor(chunkX, chunkY, localX, localY),
+                            new THREE.Matrix4().makeTranslation(cx, 0, cz)));
                     } else if (!isRoomBoundaryWall && roll < 0.24) {
                         const faceRoll = Math.floor(rng() * 4);
                         const bracketLocal = new THREE.Matrix4();
@@ -33407,7 +33409,7 @@ export class ThreeGame {
                         } else {
                             bracketLocal.makeTranslation(0, (rng() - 0.5) * 1.5, -0.5);
                         }
-                        pushDecorationMatrix('bracket', standardMatrix, roomStyleIdFor(chunkX, chunkY, localX, localY), bracketLocal);
+                        wallDressing.push(pushDecorationMatrix('bracket', standardMatrix, roomStyleIdFor(chunkX, chunkY, localX, localY), bracketLocal));
                     } else if (!isRoomBoundaryWall && roll < 0.32) {
                         const faceRoll = Math.floor(rng() * 4);
                         const vy = 0.4 + rng() * 0.6;
@@ -33429,7 +33431,7 @@ export class ThreeGame {
                         } else {
                             ventLocal.makeTranslation(0, vy, -0.501);
                         }
-                        pushDecorationMatrix('vent', standardMatrix, null, ventLocal);
+                        wallDressing.push(pushDecorationMatrix('vent', standardMatrix, null, ventLocal));
                     } else if (!isRoomBoundaryWall && roll < 0.38) {
                         const faceRoll = Math.floor(rng() * 4);
                         const pipeLocal = new THREE.Matrix4();
@@ -33442,7 +33444,7 @@ export class ThreeGame {
                         } else {
                             pipeLocal.makeTranslation((rng() - 0.5) * 0.6, 0, -0.42);
                         }
-                        pushDecorationMatrix('pipe', standardMatrix, null, pipeLocal);
+                        wallDressing.push(pushDecorationMatrix('pipe', standardMatrix, null, pipeLocal));
                     }
                 }
             }
@@ -33561,9 +33563,9 @@ export class ThreeGame {
                 const record = this.createWallInstanceRecord(opts);
                 record.instancedMesh = pool;
                 record.instanceIndex = idx;
-                if (opts.topDressing) {
-                    record.topDressing = opts.topDressing;
-                    record.topDressingPools = wallTopPools;
+                if (opts.dressing?.length) {
+                    record.dressing = opts.dressing;
+                    record.dressingPools = wallDressingPools;
                 }
                 this._wallInstanceIndex.set(record.wallKey, record);
                 if (record.roomBoundary) roomBoundaryRecords.push(record);
@@ -33617,6 +33619,7 @@ export class ThreeGame {
             pool.castShadow = false;
             pool.receiveShadow = true;
             pool.userData = { isWallDecoration: true, decorationType: 'pillar' };
+            wallDressingPools[`pillar:${roomStyleId}`] = pool;
             pool.onBeforeRender = () => {
                 if (this.wallShaderUniforms) {
                     this.wallShaderUniforms.uLandformId.value = landformShaderId;
@@ -33634,6 +33637,7 @@ export class ThreeGame {
             pool.castShadow = false;
             pool.receiveShadow = true;
             pool.userData = { isWallDecoration: true, decorationType: 'bracket' };
+            wallDressingPools[`bracket:${roomStyleId}`] = pool;
             pool.onBeforeRender = () => {
                 if (this.wallShaderUniforms) {
                     this.wallShaderUniforms.uLandformId.value = landformShaderId;
@@ -33648,6 +33652,7 @@ export class ThreeGame {
             ventMatrices.forEach((m, idx) => ventPool.setMatrixAt(idx, m));
             ventPool.instanceMatrix.needsUpdate = true;
             ventPool.userData = { isWallDecoration: true, decorationType: 'vent' };
+            wallDressingPools.vent = ventPool;
             group.add(ventPool);
         }
 
@@ -33663,7 +33668,7 @@ export class ThreeGame {
             topPool.receiveShadow = true;
             topPool.userData = { isWallTopDressing: true, decorationType: kind };
             group.add(topPool);
-            wallTopPools[kind] = topPool;
+            wallDressingPools[kind] = topPool;
         }
 
         if (pipeMatrices.length > 0) {
@@ -33673,6 +33678,7 @@ export class ThreeGame {
             pipePool.castShadow = false;
             pipePool.receiveShadow = true;
             pipePool.userData = { isWallDecoration: true, decorationType: 'pipe' };
+            wallDressingPools.pipeFace = pipePool;
             group.add(pipePool);
         }
 

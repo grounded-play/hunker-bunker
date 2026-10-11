@@ -342,14 +342,16 @@ describe('instanced wall tile identity', () => {
         expect(grid[5][4]).toBe('.');
     });
 
-    it('takes the dressing on a destroyed wall\'s top down with it', () => {
+    it('takes everything on a destroyed wall down with it: top dressing and face decorations', () => {
         const pool = { setMatrixAt: vi.fn(), instanceMatrix: { needsUpdate: false } };
         const pipes = { setMatrixAt: vi.fn(), instanceMatrix: { needsUpdate: false } };
+        const vents = { setMatrixAt: vi.fn(), instanceMatrix: { needsUpdate: false } };
         const wall = makeRecord(4, 5, 0, pool);
         // The pools are filled in after the walls' records exist.
-        wall.topDressingPools = {};
-        wall.topDressing = [{ kind: 'pipe', index: 3 }, { kind: 'hatch', index: 0 }];
-        wall.topDressingPools.pipe = pipes;
+        wall.dressingPools = {};
+        wall.dressing = [{ kind: 'pipe', index: 3 }, { kind: 'vent', index: 7 }, { kind: 'hatch', index: 0 }];
+        wall.dressingPools.pipe = pipes;
+        wall.dressingPools.vent = vents;
         const fakeThis = {
             chunkSize: 19,
             chunkCache: new Map([['0,0', makeGrid()]]),
@@ -368,10 +370,12 @@ describe('instanced wall tile identity', () => {
 
         call('markWallTileDestroyed', fakeThis, 4, 5);
 
-        expect(pipes.setMatrixAt).toHaveBeenCalledTimes(1);
-        expect(pipes.setMatrixAt.mock.calls[0][0]).toBe(3);
-        expect(pipes.setMatrixAt.mock.calls[0][1].elements.slice(0, 11).every((value) => value === 0)).toBe(true);
-        expect(pipes.instanceMatrix.needsUpdate).toBe(true);
+        for (const [dressingPool, index] of [[pipes, 3], [vents, 7]]) {
+            expect(dressingPool.setMatrixAt).toHaveBeenCalledTimes(1);
+            expect(dressingPool.setMatrixAt.mock.calls[0][0]).toBe(index);
+            expect(dressingPool.setMatrixAt.mock.calls[0][1].elements.slice(0, 11).every((value) => value === 0)).toBe(true);
+            expect(dressingPool.instanceMatrix.needsUpdate).toBe(true);
+        }
     });
 
     it('tints an instanced wall via setColorAt with a white lerp base, not a hardcoded gray', () => {
