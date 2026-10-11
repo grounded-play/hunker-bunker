@@ -196,7 +196,7 @@ function archParts() {
 // Marks every vertex of a part as body (0) or glow (1).
 function marked(geometries, glow) {
     return geometries.map((geometry) => {
-        const flat = geometry.toNonIndexed();
+        const flat = geometry.index ? geometry.toNonIndexed() : geometry;
         flat.setAttribute('hbGlow', new THREE.Float32BufferAttribute(new Float32Array(flat.getAttribute('position').count).fill(glow), 1));
         return flat;
     });
