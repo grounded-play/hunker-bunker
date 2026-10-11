@@ -207,10 +207,14 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         id: 'room_cyber_surgical_fabrication_ward',
         family: 'medical',
         themeStyle: 'giger',
+        // P1 dual-process proof: opposing returns make one S-shaped divider.
+        // The south threshold offers a short fabrication route or a longer,
+        // private care route; both reconnect through the permanent north
+        // crosscut. Presentation states never change this topology.
         pattern: buildPattern(19, 11, [
-            // Dividing wall between Bay A and Bay B with open center threshold and approach
-            { x: 9, y: 1, w: 1, h: 3 },
-            { x: 9, y: 5, w: 1, h: 2 }
+            { x: 9, y: 3, w: 5, h: 1 },
+            { x: 9, y: 4, w: 1, h: 3 },
+            { x: 4, y: 7, w: 6, h: 1 }
         ]),
         sockets: [
             { id: 'entry', side: 's', width: 3, required: true }
@@ -220,20 +224,29 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['support', 'questDestination'],
         structuralAnchors: [
-            { id: 'bay_divider_north', type: 'prop_vital_monitor', x: 9, y: 2 },
-            { id: 'bay_divider_south', type: 'prop_vital_monitor', x: 9, y: 6 }
+            { id: 'bay_divider_north', type: 'prop_vital_monitor', x: 11, y: 3 },
+            { id: 'bay_divider_south', type: 'prop_vital_monitor', x: 7, y: 7 }
         ],
         interactionAnchors: [
             { id: 'surgical_slab_controls', type: 'prop_medical_bed', x: 5, y: 5 },
             { id: 'fabricator_ward_terminal', type: 'prop_fabricator_workstation', x: 14, y: 5 }
         ],
+        signatureAnchorId: 'surgical_slab_controls',
         compassAnchors: { approach: 'entry', objective: 'surgical_slab_controls' },
-        coverZones: [{ x: 8, y: 1, w: 3, h: 9 }],
+        coverZones: [
+            { x: 9, y: 3, w: 5, h: 1 },
+            { x: 9, y: 3, w: 1, h: 5 },
+            { x: 4, y: 7, w: 6, h: 1 }
+        ],
         encounterZones: [],
-        rewardAnchors: [{ id: 'surgical_supplies', type: 'prop_bunker_supplies', x: 2, y: 2 }],
-        loreAnchors: [{ id: 'surgical_triage_log', type: 'lore_terminal', x: 16, y: 2 }],
+        rewardAnchors: [{ id: 'surgical_supplies', type: 'prop_bunker_supplies', x: 3, y: 4 }],
+        loreAnchors: [{ id: 'surgical_triage_log', type: 'lore_terminal', x: 16, y: 6 }],
         hazardZones: [],
-        quietZones: [{ x: 0, y: 0, w: 19, h: 11 }],
+        quietZones: [
+            { x: 1, y: 3, w: 8, h: 5 },
+            { x: 10, y: 3, w: 8, h: 5 },
+            { x: 7, y: 8, w: 5, h: 3 }
+        ],
         safeZone: true,
         containmentBounds: { minX: 0, minY: 0, maxX: 18, maxY: 10 },
         presentationVariants: ['sterile', 'field_dressing', 'abandoned'],

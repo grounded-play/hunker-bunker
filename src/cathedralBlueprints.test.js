@@ -11,6 +11,24 @@ import {
 import { CHUNK_SIZE } from './tileCatalog.js';
 import { buildAuthoredRoomChunkStructure } from './chunkStructure.js';
 
+function shortestPatternPath(pattern, start, goal, blocked = new Set()) {
+    const key = ({ x, y }) => `${x},${y}`;
+    const queue = [{ ...start, distance: 0 }];
+    const seen = new Set([key(start)]);
+    for (let index = 0; index < queue.length; index += 1) {
+        const current = queue[index];
+        if (current.x === goal.x && current.y === goal.y) return current.distance;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const next = { x: current.x + dx, y: current.y + dy };
+            const nextKey = key(next);
+            if (pattern[next.y]?.[next.x] !== '.' || blocked.has(nextKey) || seen.has(nextKey)) continue;
+            seen.add(nextKey);
+            queue.push({ ...next, distance: current.distance + 1 });
+        }
+    }
+    return Infinity;
+}
+
 describe('CATHEDRAL_ROOM_BLUEPRINTS', () => {
     it('has exactly the 8 cathedral blueprints defined in the planning doc', () => {
         expect(CATHEDRAL_ROOM_BLUEPRINTS).toHaveLength(8);
@@ -93,6 +111,45 @@ describe('CATHEDRAL_ROOM_BLUEPRINTS', () => {
         expect(stasis.structuralAnchors.every((anchor) => stasis.pattern[anchor.y][anchor.x] === '#')).toBe(true);
         expect(stasis.rewardAnchors[0]).toMatchObject({ x: 11, y: 6 });
         expect(stasis.loreAnchors[0]).toMatchObject({ x: 13, y: 6 });
+    });
+
+    it('gives the cyber-surgical ward unequal bays joined by a fixed inspection loop', () => {
+        const ward = CATHEDRAL_ROOM_BLUEPRINTS.find((build) => build.id === 'room_cyber_surgical_fabrication_ward');
+        expect(ward.pattern).toEqual([
+            '...................',
+            '...................',
+            '...................',
+            '.........#####.....',
+            '.........#.........',
+            '.........#.........',
+            '.........#.........',
+            '....######.........',
+            '...................',
+            '...................',
+            '...................'
+        ]);
+        const approach = computeApproachPoint(ward);
+        const surgery = { x: 5, y: 5 };
+        const fabricator = { x: 14, y: 5 };
+        const northCrosscut = new Set();
+        const southCrosscut = new Set();
+        for (let x = 5; x <= 14; x += 1) {
+            northCrosscut.add(`${x},2`);
+            southCrosscut.add(`${x},8`);
+        }
+        expect(approach).toEqual({ x: 9, y: 8 });
+        expect(shortestPatternPath(ward.pattern, approach, surgery))
+            .toBeGreaterThan(shortestPatternPath(ward.pattern, approach, fabricator));
+        expect(shortestPatternPath(ward.pattern, surgery, fabricator, northCrosscut)).toBeLessThan(Infinity);
+        expect(shortestPatternPath(ward.pattern, surgery, fabricator, southCrosscut)).toBeLessThan(Infinity);
+        expect(ward.signatureAnchorId).toBe('surgical_slab_controls');
+        expect(ward.structuralAnchors.every((anchor) => ward.pattern[anchor.y][anchor.x] === '#')).toBe(true);
+        expect(ward.interactionAnchors).toContainEqual(expect.objectContaining({
+            id: 'surgical_slab_controls', type: 'prop_medical_bed', x: 5, y: 5
+        }));
+        expect(ward.interactionAnchors).toContainEqual(expect.objectContaining({
+            id: 'fabricator_ward_terminal', type: 'prop_fabricator_workstation', x: 14, y: 5
+        }));
     });
 
     it('gives the quarantine airlock two offset sluices around one purge gallery', () => {

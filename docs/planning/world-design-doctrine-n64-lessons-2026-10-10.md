@@ -519,8 +519,22 @@ The structural bench and interactive terminal currently resolve to the same work
 proof separates their projection lines and hierarchy, but future art should give the bench a low
 amber work treatment and the terminal the dominant cyan screen. A bounded nozzle, carriage, clamp,
 or output-tray cycle may animate inside the prop footprint; it must never become navigation
-collision or change the loop. The next P1 candidate is
-`room_cyber_surgical_fabrication_ward`.
+collision or change the loop.
+
+`room_cyber_surgical_fabrication_ward` is the sixth P1 proof. Opposing returns form an asymmetric
+S-partition: the south comparison threshold offers a short fabrication route or a deliberately
+longer, more private medical commitment, and both bays reconnect through a permanent north
+crosscut. The preserved `surgical_slab_controls` medical bed is now the authored signature and
+cyan focal practical; the fabrication terminal remains a visible counter-focal across the divide.
+Tests pin the exact pattern, prove the care route is longer, prove both loop connections, and retain
+every anchor identity. All four rotation/cutaway captures live at
+`docs/reports/assets/furnished-rooms/p1-cyber_surgical_ward-game-camera-r*.png`.
+
+Bed restraints or surgical arms, fabricator trays/nozzles, monitor shutters, and state lighting may
+animate locally, but they remain non-colliding and inside their prop footprints. `sterile`,
+`field_dressing`, and `abandoned` may change light, stains, screens, sound, and particles only; no
+state closes a bay or creates a route. This completes the six-room P1 flat-topology proof set. The
+next authored-room lane begins P2 with `power_puzzle`.
 
 ### Authored-geometry save policy
 

@@ -689,7 +689,20 @@ at `docs/reports/assets/furnished-rooms/p1-field_fabricator-game-camera-r*.png`.
 The bench and terminal currently share one workstation GLB. Distinct light, grime, screen, and
 interaction treatment must carry their separate roles until the bench receives unique art. Future
 nozzle, carriage, clamp, or output-tray animation stays bounded inside the prop footprint and never
-changes navigation collision. Next P1 candidate: `room_cyber_surgical_fabrication_ward`.
+changes navigation collision.
+
+The sixth P1 proof is `room_cyber_surgical_fabrication_ward`. Opposing horizontal returns and a
+shared spine create an asymmetric S-partition. From the south comparison threshold, fabrication is
+the short tempting route while care requires a longer private commitment; a permanent northern
+crosscut closes the inspection loop. The preserved `surgical_slab_controls` medical bed becomes the
+authored signature and cyan focal practical. Exact-pattern tests prove the unequal approach and both
+bay connections, and four gameplay-camera/cutaway captures live at
+`docs/reports/assets/furnished-rooms/p1-cyber_surgical_ward-game-camera-r*.png`.
+
+Future restraints, surgical arms, fabrication trays/nozzles, and monitor shutters remain bounded
+and non-colliding. Presentation/state variants may change screens, lighting, stains, audio, and
+particles, never bay access or wall cells. This completes the six-room P1 flat-topology set. The
+next authored-room lane begins P2 with `power_puzzle`.
 
 ### 9.6.2 Authored-geometry persistence gate
 
@@ -1044,6 +1057,10 @@ chunk mounts.
   asymmetric work-cell loop. Its fallback-resource terminal keeps identity and now owns cyan focal
   light; both island paths and all four camera rotations pass. Bench/terminal GLB duplication and
   bounded fabrication articulation remain presentation work.
+- 2026-10-11: Lane A completed P1 by rebuilding the cyber-surgical ward around an asymmetric
+  S-partition. The short fabrication route and longer private care route reconnect north; the
+  preserved medical-bed objective owns cyan hierarchy. Exact geometry, both loop connections, and
+  all four camera rotations pass; future articulation remains local and non-colliding.
 - 2026-10-10: Round 2 done (`1b0fce7c`): chasm landmarks plus tactical-map glyphs. Criteria 1,
   3, 4 and 5 met; criterion 2 not met as written, with the reason and the map-based answer in
   §9.10.
