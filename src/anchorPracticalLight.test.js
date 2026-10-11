@@ -14,6 +14,8 @@ describe('anchor practical light (lived-in world M4)', () => {
         expect(anchorPaletteFor('prop_tesla_coil_node')).toBe('cyan');
         expect(anchorPaletteFor('prop_fabricator_workstation')).toBe('cyan');
         expect(anchorPaletteFor('prop_cyber_junction')).toBe('cyan');
+        expect(anchorPaletteFor('false_cache prop_bunker_supplies')).toBe('warning');
+        expect(anchorPaletteFor('prop_laser_trap_emitter')).toBe('warning');
         expect(anchorPaletteFor('prop_pipe_organ_heat_exchanger')).toBe('amber');
         expect(anchorPaletteFor('prop_ammo_crate_stack')).toBe('amber');
         expect(anchorPaletteFor('life_barrel_heater')).toBe('amber');
@@ -33,6 +35,12 @@ describe('anchor practical light (lived-in world M4)', () => {
             light: { palette: 'cyan', ...ANCHOR_LIGHT_PALETTE.cyan }
         });
         expect(roomPracticalLightPlacement([{ id: 'x', kind: 'signature', type: 'prop_bunker_supplies' }, ...plan.slice(1)])).toBeNull();
+        expect(roomPracticalLightPlacement([
+            { id: 'trap:signature:0', anchorId: 'false_cache', kind: 'signature', type: 'prop_bunker_supplies' }
+        ])).toEqual({
+            placementId: 'trap:signature:0',
+            light: { palette: 'warning', ...ANCHOR_LIGHT_PALETTE.warning }
+        });
         expect(roomPracticalLightPlacement(plan.slice(1))).toBeNull();
         expect(roomPracticalLightPlacement()).toBeNull();
     });

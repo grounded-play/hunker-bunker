@@ -58,7 +58,20 @@ const SURFACES = Object.freeze({
     permafrost: { wall: { metalness: 0.15 }, floor: { metalness: 0.10 } },
     cleanroom: { wall: { metalness: 0.40 }, floor: { metalness: 0.35 } },
     mycelium: { wall: { metalness: 0.15 }, floor: { metalness: 0.08 } },
-    obsidian: { wall: { metalness: 0.55 }, floor: { metalness: 0.65 } },
+    obsidian: {
+        wall: {
+            metalness: 0.55,
+            emissiveIntensity: 0.16,
+            color: 0x3a303f,
+            emissiveColor: 0x421850
+        },
+        floor: {
+            metalness: 0.65,
+            emissiveIntensity: 0.04,
+            color: 0x24202a,
+            emissiveColor: 0x421850
+        }
+    },
     toxic_sump: { wall: { metalness: 0.70 }, floor: { metalness: 0.60 } }
 });
 
@@ -104,14 +117,15 @@ export function getKitMaterial(skin, surface, loader = null) {
         roughnessMap: loadTiling(textureLoader, urls.rough),
         roughness: 1,
         metalness: SURFACES[skin]?.[surface]?.metalness ?? 0,
+        color: SURFACES[skin]?.[surface]?.color ?? 0xffffff,
         vertexColors: true,
         // Kenney pieces are authored double-sided: a corridor wall is one sheet.
         side: THREE.DoubleSide
     };
     if (urls.emissive) {
         matConfig.emissiveMap = loadTiling(textureLoader, urls.emissive);
-        matConfig.emissive = new THREE.Color(0xffffff);
-        matConfig.emissiveIntensity = 1.0;
+        matConfig.emissive = new THREE.Color(SURFACES[skin]?.[surface]?.emissiveColor ?? 0xffffff);
+        matConfig.emissiveIntensity = SURFACES[skin]?.[surface]?.emissiveIntensity ?? 1.0;
     }
     const material = new THREE.MeshStandardMaterial(matConfig);
     materials.set(key, material);
@@ -145,10 +159,13 @@ export function updateKitMaterials(elapsedSeconds) {
     const obsidianWall = materials.get('obsidian:wall');
     const obsidianFloor = materials.get('obsidian:floor');
     if (obsidianWall?.emissiveMap) {
-        obsidianWall.emissiveIntensity = 1.0 + 0.30 * Math.sin(time * 1.4);
+        obsidianWall.emissiveIntensity = 0.16 + 0.05 * Math.sin(time * 1.4);
     }
     if (obsidianFloor?.emissiveMap) {
-        obsidianFloor.emissiveIntensity = 1.0 + 0.25 * Math.sin(time * 1.4 + 1.5);
+        // Obsidian linework is wayfinding, not room-wide key light. Keeping
+        // it below the wall pulse lets authored warning/reward practicals
+        // establish hierarchy instead of competing with every floor tile.
+        obsidianFloor.emissiveIntensity = 0.04 + 0.015 * Math.sin(time * 1.4 + 1.5);
     }
 }
 

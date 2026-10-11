@@ -36,9 +36,10 @@ waiting for decoration.
 
 ### Geometry begins as a rectangle
 
-All 12 original authored builds use `rectRoomPattern(width, height, obstructions)`. It fills a
-complete rectangle and can only add rectangular wall islands. Three rooms—`power_puzzle`,
-`trap_vault`, and `reward_cache`—have no internal obstruction at all. The cathedral builds remain
+At the start of this audit, all 12 original authored builds used
+`rectRoomPattern(width, height, obstructions)`. It fills a complete rectangle and can only add
+rectangular wall islands. `power_puzzle` and `trap_vault` have since become P2 authored-pattern
+proofs; `reward_cache` remains the unobstructed original. The cathedral builds remain
 rectilinear cell fields assembled from rectangular stamps; some chamfer corners or add divider
 walls, but they do not encode height and most retain box-dominant massing.
 
@@ -569,7 +570,28 @@ This is not yet an ordered puzzle. All four relays are currently independent gen
 and the supply cache remains searchable without solving them. A future controller must own
 A → C/D → B activation, incorrect-input reset, cable-light propagation, resolved calm state, and
 reward availability. Relay/contact animation and arcs stay local and non-colliding; no power state
-changes walls or traversal. The next P2 candidate is `trap_vault`.
+changes walls or traversal.
+
+`trap_vault` is the second P2 spatial proof. Two mirrored three-sided jambs form an hourglass lure
+court: the north threshold gives the player a quiet observation beat, a red-lit false cache draws a
+fast line through the center, and paired `prop_laser_trap_emitter` GLBs establish a readable threat
+axis. The real `trap_payoff` moved into a quiet western bypass that remains reachable when every
+intended hazard cell is treated as blocked. Exact-pattern tests pin both emitters, the direct lure
+route, the hazard-safe reward route, and the western quiet zone. Four gameplay-camera/cutaway
+captures live at
+`docs/reports/assets/furnished-rooms/p2-trap_vault-game-camera-r*.png`.
+
+The review fixture now mirrors the live theme's lived-in floor-surface precedence, so this active
+`bunker-security` capture uses stained concrete rather than falsely presenting the raw neon
+obsidian kit texture as the room floor. Obsidian modular linework is also held below authored red
+warning and reward practicals.
+
+Capability correction: the room telegraphs a trap but does not yet execute one. `false_cache` is a
+generic searchable supplies interaction; `trap_trigger` only constrains encounter placement;
+`spore_vent` is metadata with no room-hazard damage consumer; and `trap_payoff` is not locked. A
+future local controller must arm the emitters, fire and time their beams, change lights/audio,
+disable or reset safely, and gate the payoff. Those states may animate meshes and VFX but must not
+change walls or close either route. The next P2 candidate is `reward_cache`.
 
 ## Greybox process
 

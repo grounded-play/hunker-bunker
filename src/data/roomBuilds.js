@@ -328,37 +328,56 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         family: 'trap_reward',
         themeStyle: 'obsidian',
         partitionThickness: 0.5,
-        // The false cache is a floor-standing interactive prop framed by
-        // twin obsidian dais pylons and corner chamfers.
-        pattern: rectRoomPattern(17, 11, [
-            { x: 0, y: 0, w: 2, h: 2 },
-            { x: 15, y: 0, w: 2, h: 2 },
-            { x: 0, y: 9, w: 2, h: 2 },
-            { x: 15, y: 9, w: 2, h: 2 },
-            { x: 4, y: 4, w: 2, h: 3 },
-            { x: 11, y: 4, w: 2, h: 3 }
+        // P2 trap-space proof: mirrored jambs frame an obvious central lure
+        // court while the west edge stays outside encounter/hazard metadata
+        // and conceals the actual payoff. Geometry never changes by state.
+        pattern: authoredRoomPattern([
+            '.................',
+            '.................',
+            '.................',
+            '....###...###....',
+            '....#.......#....',
+            '....#.......#....',
+            '....#.......#....',
+            '....###...###....',
+            '.................',
+            '.................',
+            '.................'
         ]),
         sockets: [{ id: 'entry', side: 'n', width: 3, required: true }],
         rotationPolicy: 'cardinal',
         tierEligibility: [2, 3, 4],
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['challenge', 'reward'],
-        structuralAnchors: [],
+        structuralAnchors: [
+            { id: 'trap_emitter_west', type: 'prop_laser_trap_emitter', x: 4, y: 5 },
+            { id: 'trap_emitter_east', type: 'prop_laser_trap_emitter', x: 12, y: 5 }
+        ],
         interactionAnchors: [{ id: 'false_cache', type: 'prop_bunker_supplies', x: 8, y: 5 }],
         signatureAnchorId: 'false_cache',
         compassAnchors: { approach: 'entry', objective: 'false_cache' },
-        coverZones: [{ x: 4, y: 4, w: 2, h: 3 }, { x: 11, y: 4, w: 2, h: 3 }],
-        encounterZones: [{ id: 'trap_trigger', x: 5, y: 3, w: 7, h: 5 }],
-        rewardAnchors: [{ id: 'trap_payoff', type: 'prop_bunker_supplies', x: 8, y: 8 }],
+        coverZones: [
+            { x: 4, y: 3, w: 3, h: 1 },
+            { x: 4, y: 3, w: 1, h: 5 },
+            { x: 4, y: 7, w: 3, h: 1 },
+            { x: 10, y: 3, w: 3, h: 1 },
+            { x: 12, y: 3, w: 1, h: 5 },
+            { x: 10, y: 7, w: 3, h: 1 }
+        ],
+        encounterZones: [{ id: 'trap_trigger', x: 5, y: 3, w: 12, h: 5 }],
+        rewardAnchors: [{ id: 'trap_payoff', type: 'prop_bunker_supplies', x: 2, y: 8 }],
         loreAnchors: [],
-        hazardZones: [{ id: 'spore_vent', x: 5, y: 3, w: 7, h: 5 }],
-        quietZones: [],
+        hazardZones: [{ id: 'spore_vent', x: 7, y: 3, w: 10, h: 5 }],
+        quietZones: [
+            { x: 5, y: 0, w: 7, h: 3 },
+            { x: 0, y: 3, w: 4, h: 6 }
+        ],
         safeZone: false,
         containmentBounds: { minX: 0, minY: 0, maxX: 16, maxY: 10 },
         presentationVariants: ['warning', 'active', 'spent'],
         stateVariants: ['dormant', 'questActive', 'resolved'],
         adjacency: { prefers: [], forbids: ['camp'] },
-        contentBudget: { structuralLarge: 0, activityZones: 1, pickupsMin: 1, enemiesMax: 2 }
+        contentBudget: { structuralLarge: 2, activityZones: 2, pickupsMin: 1, enemiesMax: 2 }
     }),
     Object.freeze({
         id: 'reward_cache',

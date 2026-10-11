@@ -718,9 +718,32 @@ Capability correction: four positioned relays do not constitute a sequence contr
 independent generic interactions today, and `puzzle_reward` remains immediately searchable. A
 future A → C/D → B state machine must own validation, reset, cable-light propagation, final calm
 state, and reward availability. All relay, spark, and cable animation remains non-colliding and the
-two routes stay permanently open. Next P2 candidate: `trap_vault`.
+two routes stay permanently open.
 
-### 9.6.3 Authored-geometry persistence gate
+### 9.6.3 Lane A P2: telegraphed lure court
+
+`trap_vault` is the second P2 spatial proof. Mirrored three-sided jambs make an hourglass threshold
+around a red-lit false cache, while two authored `prop_laser_trap_emitter` GLBs face the central
+court. The north entry remains a quiet observation shelf; the direct route makes the lure obvious;
+and the actual `trap_payoff` sits in a western bypass outside both encounter and hazard metadata.
+Tests treat the complete intended hazard rectangle as blocked and still prove the payoff reachable,
+in addition to pinning exact geometry, emitter mounts, lure access, and the quiet bypass. Four
+gameplay-camera/cutaway captures live at
+`docs/reports/assets/furnished-rooms/p2-trap_vault-game-camera-r*.png`.
+
+The showroom had been displaying `build.themeStyle` as the entire floor, which made this
+`bunker-security` room look like a neon-magenta obsidian grid even though the live floor-splat path
+selects stained concrete for that theme. Review captures now follow the live lived-in surface
+precedence; obsidian modular trim is reduced to subordinate dark-violet linework.
+
+Capability correction: this is spatial and presentation scaffolding, not a functioning trap FSM.
+The false cache is still a normal supplies interaction, `trap_trigger` affects enemy placement only,
+the spore-vent hazard has no room-level damage consumer, and the payoff is available immediately.
+A future local controller must own arming, beam timing, warning lights/audio, disarm/reset, and
+reward locking. Animation and VFX remain bounded and non-colliding; neither route may close. Next
+P2 candidate: `reward_cache`.
+
+### 9.6.4 Authored-geometry persistence gate
 
 The existing `ROOM_BUILD_VERSION` is only exported; it is not serialized or compared. Neither
 campaign `interiorVersion`, macro `layoutVersion`, nor `WORLD_PLAN_VERSION` pins room-pattern data.
@@ -1081,6 +1104,11 @@ chunk mounts.
   relay enclosure. Four authored nodes now teach, branch, and rejoin spatially under a cyan focal;
   equal-route and four-camera proofs pass. Ordered relay state and reward locking remain explicit
   future controller work.
+- 2026-10-11: Lane A rebuilt the trap vault as an hourglass lure court with a quiet observation
+  shelf, red false cache, paired laser-emitter GLBs, and a hazard-safe western bypass to the true
+  payoff. Exact route and four-camera proofs pass. The showroom now previews the same stained-
+  concrete surface family selected by the live security theme; trap firing, damage, and reward
+  locking remain future controller work.
 - 2026-10-10: Round 2 done (`1b0fce7c`): chasm landmarks plus tactical-map glyphs. Criteria 1,
   3, 4 and 5 met; criterion 2 not met as written, with the reason and the map-based answer in
   §9.10.

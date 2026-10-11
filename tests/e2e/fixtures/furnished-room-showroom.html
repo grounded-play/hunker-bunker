@@ -43,6 +43,7 @@
     import { buildGrammarRoomChunk } from '/src/roomGrammarChunk.js';
     import { planRoomCutawayCells, ROOM_CUTAWAY_HEIGHT } from '/src/roomPresentation.js';
     import { createCornerCutWallGeometry, createSlimWallGeometry, detectWallPartitionProfile, wallCornerCutMask, cornerCutPositions } from '/src/wallAutotile.js';
+    import { ROOM_THEME_SURFACE, SURFACE_LAYER_FIRST, surfaceForLayer, surfaceLayer } from '/src/floorSplat.js';
 
     const params = new URLSearchParams(location.search);
     const catalog = ALL_ROOM_BUILDS ?? ROOM_BUILD_CATALOG;
@@ -135,7 +136,18 @@
       gate: 'cathedral'
     };
     const resolvedThemeStyle = themeStyle ?? FAMILY_DEFAULT_STYLES[build?.family] ?? (biome === 'cryo' ? 'cryo_deck' : biome === 'bio' ? 'biomech' : 'bunker');
-    const TERRAIN = PBR_SUITES[resolvedThemeStyle] ?? PBR_SUITES.bunker;
+    const TERRAIN = { ...(PBR_SUITES[resolvedThemeStyle] ?? PBR_SUITES.bunker) };
+    // The live renderer gives selected room themes a lived-in pass-2 surface
+    // before it falls back to the older suite atlas. Mirror that precedence in
+    // review captures; otherwise a bunker-security room such as trap_vault is
+    // incorrectly shown with the build's neon obsidian kit floor.
+    const themeSurfaceId = ROOM_THEME_SURFACE[room.theme ?? room.themeConfig?.id];
+    if (themeSurfaceId) {
+      const layer = surfaceLayer(themeSurfaceId, room.id ?? build?.id ?? 'showroom');
+      const surface = surfaceForLayer(layer);
+      const variant = 'abcdefgh'[layer - SURFACE_LAYER_FIRST - surface.first];
+      TERRAIN.floor = `/art/source/textures/lived-in-pass-2/pbr/${themeSurfaceId}_${variant}_albedo.png`;
+    }
     const textureLoader = new THREE.TextureLoader();
     const tiled = (path, repeatX = 1, repeatY = 1) => {
       const texture = textureLoader.load(path);

@@ -258,6 +258,39 @@ describe('ROOM_BUILD_CATALOG', () => {
         expect(build.rewardAnchors[0]).toMatchObject({ id: 'puzzle_reward', x: 15, y: 3 });
     });
 
+    it('turns the trap vault into a lure court with a safe concealed bypass', () => {
+        const build = ROOM_BUILD_CATALOG.find((entry) => entry.id === 'trap_vault');
+        expect(build.pattern).toEqual([
+            '.................',
+            '.................',
+            '.................',
+            '....###...###....',
+            '....#.......#....',
+            '....#.......#....',
+            '....#.......#....',
+            '....###...###....',
+            '.................',
+            '.................',
+            '.................'
+        ]);
+        const approach = computeApproachPoint(build);
+        const lure = { x: 8, y: 5 };
+        const payoff = { x: 2, y: 8 };
+        const hazard = new Set();
+        for (let y = 3; y < 8; y += 1) for (let x = 7; x < 17; x += 1) hazard.add(`${x},${y}`);
+        expect(approach).toEqual({ x: 8, y: 2 });
+        expect(shortestPatternPath(build.pattern, approach, lure)).toBeLessThan(Infinity);
+        expect(shortestPatternPath(build.pattern, approach, payoff, hazard)).toBeLessThan(Infinity);
+        expect(build.signatureAnchorId).toBe('false_cache');
+        expect(build.structuralAnchors).toEqual(expect.arrayContaining([
+            expect.objectContaining({ id: 'trap_emitter_west', type: 'prop_laser_trap_emitter', x: 4, y: 5 }),
+            expect.objectContaining({ id: 'trap_emitter_east', type: 'prop_laser_trap_emitter', x: 12, y: 5 })
+        ]));
+        expect(build.structuralAnchors.every((anchor) => build.pattern[anchor.y][anchor.x] === '#')).toBe(true);
+        expect(build.rewardAnchors[0]).toMatchObject({ id: 'trap_payoff', x: 2, y: 8 });
+        expect(build.quietZones[1]).toMatchObject({ x: 0, y: 3, w: 4, h: 6 });
+    });
+
     it.each(ROOM_BUILD_CATALOG.map((build) => [build.id, build]))('%s is internally valid', (_, build) => {
         expect(validateRoomBuild(build)).toEqual([]);
     });
