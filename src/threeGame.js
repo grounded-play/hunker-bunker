@@ -4283,6 +4283,7 @@ export class ThreeGame {
             material.onBeforeCompile = (shader) => {
                 shader.uniforms.uCliffTime = { value: 0 };
                 this.cliffShaderUniforms.push(shader.uniforms);
+                shader.vertexShader = patchCornerCutVertexShader(shader.vertexShader);
                 shader.vertexShader = shader.vertexShader.replace(
                     'void main() {',
                     `
@@ -4445,6 +4446,10 @@ export class ThreeGame {
         // Shared organic rock-column geometry instanced by addCliffInstance
         // (buildChunk's chunk-mesh pass) for every canyon-edge/cliff tile.
         this.cliffPrimaryGeometry = new THREE.CylinderGeometry(0.68, 0.95, 10, 14);
+        // With autotiled walls the cliff edge follows the cells instead: a
+        // 10 m corner-cut prism per edge cell, cut where it faces open void,
+        // so the rim reads as a faceted ledge, not a row of stacked coins.
+        this.cliffCornerCutGeometry = createCornerCutWallGeometry({ height: 10 });
 
         this.invisibleMaterial = new THREE.MeshBasicMaterial({ visible: false });
 
@@ -24564,7 +24569,8 @@ export class ThreeGame {
             }
             if (child.userData?.isStickerDecals) child.geometry?.dispose?.();
             // A wall or cap pool owns its corner-cut geometry and its instance buffers.
-            if (child.userData?.isInstancedWallPool || child.userData?.isRoomCutawayCapPool) {
+            if (child.userData?.isInstancedWallPool || child.userData?.isRoomCutawayCapPool
+                || (child.userData?.isCliff && child.geometry?.userData?.ownedByWallPool)) {
                 if (child.geometry?.userData?.ownedByWallPool) child.geometry.dispose();
                 child.dispose?.();
             }
@@ -32787,6 +32793,21 @@ export class ThreeGame {
             target.get(bucketKey).push(decorationScratch.clone());
         };
 
+        const autotileWalls = this.wallAutotileEnabled !== false;
+        // A cell beside a void cell is solid for the cliff's corner cuts when
+        // it is ground, a wall, or a void cell that carries a cliff column of
+        // its own (it touches ground); open void cuts the corner. Unknown
+        // cells count as solid.
+        const tileAt = (x, z) => this.getCachedTileType?.(x, z) ?? this.getTileType?.(x, z);
+        const isCliffSolid = (x, z) => {
+            const char = tileAt(x, z);
+            if (char === null || char === undefined || char !== EXTERIOR_CANYON_TILE) return true;
+            return [[0, -1], [0, 1], [-1, 0], [1, 0]].some(([dx, dz]) => {
+                const next = tileAt(x + dx, z + dz);
+                return next !== null && next !== undefined && next !== EXTERIOR_CANYON_TILE;
+            });
+        };
+        const cliffMasksByBiome = new Map();
         const addCliffInstance = (worldX, worldZ) => {
             const biomeKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
             const seed = (this.hashTile(Math.round(worldX * 137 + 19), Math.round(worldZ * 223 + 43)) ^ (this.runEntropy ?? 0)) >>> 0;
@@ -32799,14 +32820,27 @@ export class ThreeGame {
             const rotY = rng() * Math.PI * 2;
             const rotZ = (rng() - 0.5) * 0.22;
 
-            const cliffQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(rotX, rotY, rotZ));
-            const cliffMat = new THREE.Matrix4().compose(
-                new THREE.Vector3(worldX + pOffsetX, -4.8, worldZ + pOffsetZ),
-                cliffQuat,
-                new THREE.Vector3(pScaleX, 1.02, pScaleZ)
-            );
-            if (!cliffMatricesByBiome.has(biomeKey)) cliffMatricesByBiome.set(biomeKey, []);
+            // Cell-aligned prisms keep only a little of the seeded drift, so a
+            // straight rim steps slightly instead of ruling a line.
+            const cliffMat = autotileWalls
+                ? new THREE.Matrix4().compose(
+                    new THREE.Vector3(worldX + pOffsetX * 0.25, -4.8 + (pScaleX - 1.04) * 0.25, worldZ + pOffsetZ * 0.25),
+                    new THREE.Quaternion(),
+                    new THREE.Vector3(1 + (pScaleZ - 0.78) * 0.2, 1.02, 1 + (pScaleZ - 0.78) * 0.2)
+                )
+                : new THREE.Matrix4().compose(
+                    new THREE.Vector3(worldX + pOffsetX, -4.8, worldZ + pOffsetZ),
+                    new THREE.Quaternion().setFromEuler(new THREE.Euler(rotX, rotY, rotZ)),
+                    new THREE.Vector3(pScaleX, 1.02, pScaleZ)
+                );
+            if (!cliffMatricesByBiome.has(biomeKey)) {
+                cliffMatricesByBiome.set(biomeKey, []);
+                cliffMasksByBiome.set(biomeKey, []);
+            }
             cliffMatricesByBiome.get(biomeKey).push(cliffMat);
+            cliffMasksByBiome.get(biomeKey).push(autotileWalls
+                ? wallCornerCutMask((x, z) => isCliffSolid(worldX + x, worldZ + z), 0, 0)
+                : 0);
 
             // Two overlapping, flattened rock plates per cliff tile break the
             // one-unit grid silhouette into a cracked, irregular rim. They use
@@ -32850,7 +32884,6 @@ export class ThreeGame {
         // the hole roll below didn't turn into a pit. Cells in a neighbouring
         // chunk count as standing when they are '#' (or not yet generated), so
         // a chunk edge never cuts a corner open by mistake.
-        const autotileWalls = this.wallAutotileEnabled !== false;
         const cutawayCapScale = autotileWalls && this.roomCutawayCapCornerCutGeometry ? 1.03 : 1;
         const isStandingWallCell = (cellX, cellY) => {
             if (cellX < 0 || cellY < 0 || cellX >= this.chunkSize || cellY >= this.chunkSize) {
@@ -33355,7 +33388,11 @@ export class ThreeGame {
                 if (matrices.length === 0) continue;
                 const mat = this.cliffMaterials?.[bKey] ?? this.cliffMaterials?.[BIOME_KEYS.ACTIVE];
                 if (!mat) continue;
-                const cliffInstanced = new THREE.InstancedMesh(this.cliffPrimaryGeometry, mat, matrices.length);
+                const cliffGeometry = autotileWalls && this.cliffCornerCutGeometry
+                    ? createCornerCutPoolGeometry(this.cliffCornerCutGeometry, cliffMasksByBiome.get(bKey) ?? [])
+                    : this.cliffPrimaryGeometry;
+                const cliffInstanced = new THREE.InstancedMesh(cliffGeometry, mat, matrices.length);
+                if (cliffGeometry !== this.cliffPrimaryGeometry) cliffInstanced.customDepthMaterial = this.wallCornerCutDepthMaterial;
                 matrices.forEach((m, idx) => cliffInstanced.setMatrixAt(idx, m));
                 cliffInstanced.instanceMatrix.needsUpdate = true;
                 cliffInstanced.receiveShadow = true;
