@@ -351,14 +351,32 @@ export function wallHeightScale(landform, worldX, worldZ) {
 // ── Light painted into the walls (lane B slice 2, item 3) ──────────────
 
 /**
+ * Light strips on unthemed wall runs, the GoldenEye corridor: a thin lit band
+ * at a fixed height on a share of runs, chosen per face plane and stretch so
+ * a strip reads as one fixture with dark ends. Emissive only; no lights.
+ */
+export const WALL_LIGHT_STRIP = Object.freeze({
+    /** Share of stretches that carry a strip. */
+    share: 0.22,
+    /** Stretch length along a run (metres). */
+    stretch: 6,
+    /** The band, metres above the floor: under the lowest wall (0.6 x 2.8 m). */
+    bottom: 1.5,
+    top: 1.6,
+    intensity: 2.0
+});
+
+/**
  * Wall fragment shading, inserted after the wall shader has blended
- * finalWallColor (inside its USE_MAP block, where cryoMix, bioMix and the
- * grunge samples exist). The N64 lesson: light painted into the
- * architecture.
+ * finalWallColor (inside its USE_MAP block, where cryoMix, bioMix, the
+ * grunge samples and hbWallEmissive exist). The N64 lesson: light painted
+ * into the architecture.
  *   - Sides: a bright lip along the top edge, so a run's silhouette reads
  *     crisply from the isometric camera. Side UVs run 0 at the base to 1 at
  *     the top (box and corner-cut prism alike) and walls stand on y = 0, so
  *     the top is vWorldPos.y / v.
+ *   - Sides of unthemed walls: sparse light strips (WALL_LIGHT_STRIP), amber
+ *     in the bunker, cyan in cryo, green in bio. Diagonal facets carry none.
  *   - Tops, which the camera looks down on: frost settles on cryo walls and
  *     growth creeps over bio walls, each where its grunge map gathers.
  */
@@ -368,6 +386,25 @@ export const WALL_LIGHT_SHAPE_FRAGMENT = `
                         float hbFromTop = vWorldPos.y / hbWallV - vWorldPos.y;
                         float hbLip = 1.0 - smoothstep( 0.03, 0.1, hbFromTop );
                         finalWallColor = mix( finalWallColor, finalWallColor * 1.45 + vec3( 0.03 ), hbLip * 0.85 );
+                        bool hbAxisFace = abs( vWorldNormal.x ) > 0.95 || abs( vWorldNormal.z ) > 0.95;
+                        if ( uRoomStyleId <= 0.5 && hbAxisFace ) {
+                            bool hbFacesX = abs( vWorldNormal.x ) > abs( vWorldNormal.z );
+                            float hbPlane = floor( ( hbFacesX ? vWorldPos.x : vWorldPos.z ) * 2.0 + 0.5 );
+                            float hbAlong = ( hbFacesX ? vWorldPos.z : vWorldPos.x ) / ${WALL_LIGHT_STRIP.stretch.toFixed(1)};
+                            float hbSide = hbFacesX ? sign( vWorldNormal.x ) : sign( vWorldNormal.z );
+                            float hbStripPick = fract( sin( dot( vec3( hbPlane, floor( hbAlong ), hbSide ), vec3( 12.9898, 78.233, 37.719 ) ) ) * 43758.5453 );
+                            if ( hbStripPick < ${WALL_LIGHT_STRIP.share.toFixed(3)} ) {
+                                float hbStripBand = smoothstep( ${WALL_LIGHT_STRIP.bottom.toFixed(3)}, ${(WALL_LIGHT_STRIP.bottom + 0.02).toFixed(3)}, vWorldPos.y )
+                                    * ( 1.0 - smoothstep( ${(WALL_LIGHT_STRIP.top - 0.02).toFixed(3)}, ${WALL_LIGHT_STRIP.top.toFixed(3)}, vWorldPos.y ) );
+                                float hbStripRun = fract( hbAlong );
+                                float hbStripEnds = smoothstep( 0.05, 0.1, hbStripRun ) * ( 1.0 - smoothstep( 0.9, 0.95, hbStripRun ) );
+                                vec3 hbStripColor = mix( vec3( 1.0, 0.55, 0.18 ), vec3( 0.35, 0.85, 1.0 ), cryoMix );
+                                hbStripColor = mix( hbStripColor, vec3( 0.5, 1.0, 0.35 ), bioMix );
+                                float hbStrip = hbStripBand * hbStripEnds;
+                                finalWallColor = mix( finalWallColor, vec3( 0.04 ), hbStrip * 0.5 );
+                                hbWallEmissive += hbStripColor * hbStrip * ${WALL_LIGHT_STRIP.intensity.toFixed(2)};
+                            }
+                        }
                     } else if ( vWorldNormal.y > 0.5 ) {
                         float hbFrost = smoothstep( 0.32, 0.62, cryoWallGrunge.g + cryoWallGrunge.r * 0.4 ) * cryoMix * ( 1.0 - bioMix );
                         finalWallColor = mix( finalWallColor, vec3( 0.78, 0.86, 0.94 ), hbFrost * 0.8 );

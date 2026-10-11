@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import {
     CORNER_BIT,
     WALL_LIGHT_SHAPE_FRAGMENT,
+    WALL_LIGHT_STRIP,
     CORNER_CUT_ACTIVE,
     WALL_CHAMFER,
     cornerCutPositions,
@@ -221,13 +222,24 @@ describe('isWallAutotileEnabled', () => {
 });
 
 describe('WALL_LIGHT_SHAPE_FRAGMENT', () => {
+    it('lights sparse strips along unthemed wall runs, in the district\'s colour', () => {
+        expect(WALL_LIGHT_SHAPE_FRAGMENT).toContain('hbStrip');
+        // Room walls keep their authored materials.
+        expect(WALL_LIGHT_SHAPE_FRAGMENT).toContain('uRoomStyleId <= 0.5');
+        // Light, not a light source: emissive only.
+        expect(WALL_LIGHT_SHAPE_FRAGMENT).toContain('hbWallEmissive +=');
+        expect(WALL_LIGHT_STRIP.share).toBeLessThanOrEqual(0.25);
+        expect(WALL_LIGHT_STRIP.top).toBeLessThan(0.6 * 2.8);
+    });
+
+
     it('lights the top lip of every side and dresses tops per area', () => {
         expect(WALL_LIGHT_SHAPE_FRAGMENT).toContain('vMapUv.y');
         expect(WALL_LIGHT_SHAPE_FRAGMENT).toContain('hbLip');
         expect(WALL_LIGHT_SHAPE_FRAGMENT).toContain('cryoMix');
         expect(WALL_LIGHT_SHAPE_FRAGMENT).toContain('bioMix');
         // Only reads names the wall shader declares before its insertion point.
-        for (const name of ['cryoWallGrunge', 'bioWallGrunge', 'finalWallColor', 'vWorldNormal', 'vWorldPos']) {
+        for (const name of ['cryoWallGrunge', 'bioWallGrunge', 'finalWallColor', 'vWorldNormal', 'vWorldPos', 'hbWallEmissive', 'uRoomStyleId']) {
             expect(WALL_LIGHT_SHAPE_FRAGMENT).toContain(name);
         }
     });
