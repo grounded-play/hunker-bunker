@@ -696,8 +696,15 @@ This shows whether the blocky read changes before any room is rebuilt.
   turns.
 - *Unchanged:* rim rubble, draw calls, collision. `hb_wall_autotile=0` restores the cylinders.
 - *Evidence:* [before/after](../reports/assets/world-feel-2026-10-10/08-lane-d-cliff-edges-before-after.jpg).
-- *Next for D:* depth inside the void (under-floor structure, girders, faint light far down,
-  height fog), and grated floor over visible depth.
+- *Void depth: done, `6c2145c1`.*
+  - The void mask's shader casts each pixel down to a floor 14 m below and lights it faintly
+    with slow-drifting embers: amber in the bunker, teal in cryo, green in bio, fading with
+    distance like fog.
+  - It moves with parallax, so a pit reads as a drop.
+  - One shader patch: no geometry, draw calls or lights.
+  - [Before/after](../reports/assets/world-feel-2026-10-10/10-lane-d-void-depth-before-after.jpg).
+- *Next for D:* grated floor over visible depth, and girders or under-floor structure
+  glimpsed under the rim.
 
 **Found while testing, fixed for lane A (`e40ae21a`).** Authored room selection took the first
 eligible build of the family, so three ship-goal objectives landed in rooms without their anchor
@@ -793,3 +800,4 @@ Implemented Owner Decision D2 and the world pacing rhythm from §7.3:
   of stacked coins (`7af0989c`).
 - 2026-10-10: Bio walls bend into organic forms (`83cddb62`). Lane B tall tiers held: tall
   silhouettes go to lane F landmarks instead of a grid of tall borders.
+- 2026-10-10: Lane D: faint light far below the void, so pits read as deep (`6c2145c1`).
