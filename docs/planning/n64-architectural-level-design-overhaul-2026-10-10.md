@@ -707,7 +707,16 @@ This shows whether the blocky read changes before any room is rebuilt.
    - About one face in five. Never over a pit or a door, never against room walls, and gone
      with its wall.
    - [Before/after](../reports/assets/world-feel-2026-10-10/14-lane-b-wall-feet-before-after.jpg).
-7. **Tall tiers (D3): on hold, by design.**
+7. **Performance, all of lane B against `hb_wall_autotile=0`.** Same eight spots (bunker,
+   cryo, bio), one run, shaders warmed first, 30 frames per spot, measured in both orders
+   ([numbers](../reports/assets/world-feel-2026-10-10/lane-b-perf-ab.json)).
+   - *Draw calls:* +23 per view (about 6%) with the off pass first, flat with the on pass first.
+     That matches the dressing pools, two or three per chunk.
+   - *Frame time:* within noise (+1.7 ms in one order, −1.6 ms in the other).
+   - *Triangles:* follow which chunks are loaded, in both directions.
+   - *Not measured on the Deck.* If the dressing pools show there, they can merge into one
+     static mesh per chunk without losing anything on screen.
+8. **Tall tiers (D3): on hold, by design.**
    - Making chunk-border walls tall would draw a 49 m grid of tall lines across the world, which
      is more blocky, not less.
    - Non-room walls have no cutaway, so tall walls would hide the player.
@@ -832,3 +841,5 @@ Implemented Owner Decision D2 and the world pacing rhythm from §7.3:
 - 2026-10-10: Wall heights hold long runs and step boldly (`d698fd0f`). Corrected the void-depth
   commit reference to `0d58bc4f` (amended).
 - 2026-10-10: Wall feet: drifts, growth and rubble soften the wall–floor crease (`cf956c73`).
+- 2026-10-10: Lane B performance A/B logged: about 6% more draw calls from dressing, frame time
+  unchanged within noise on the dev GPU; the Deck is still unmeasured.
