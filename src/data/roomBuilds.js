@@ -497,10 +497,21 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         family: 'engineering',
         themeStyle: 'cryo_deck',
         partitionThickness: 0.5,
-        pattern: rectRoomPattern(15, 11, [
-            { x: 3, y: 3, w: 2, h: 5 },
-            { x: 10, y: 3, w: 2, h: 5 },
-            { x: 6, y: 2, w: 3, h: 2 }
+        // P2 pressure-space proof: a single broken C reads as a false vent
+        // throat. The west service crescent owns the objective; the east
+        // route exposes the reward and encounter floor. Both rejoin north.
+        pattern: authoredRoomPattern([
+            '...............',
+            '...............',
+            '...............',
+            '......####.....',
+            '......#........',
+            '......#........',
+            '......#........',
+            '......####.....',
+            '...............',
+            '...............',
+            '...............'
         ]),
         sockets: [
             { id: 'entry', side: 's', width: 3, required: true },
@@ -511,20 +522,27 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         biomeEligibility: ['active', 'cryo'],
         roles: ['questDestination', 'objective'],
         structuralAnchors: [
-            { id: 'vent_stack_a', type: 'prop_conduit_hub', x: 4, y: 5 },
-            { id: 'vent_stack_b', type: 'prop_conduit_hub', x: 11, y: 5 }
+            { id: 'vent_stack_a', type: 'prop_conduit_hub', x: 8, y: 3 },
+            { id: 'vent_stack_b', type: 'prop_conduit_hub', x: 8, y: 7 }
         ],
         interactionAnchors: [
-            { id: 'reactor_vent_control', type: 'prop_valve_wheel_fused', x: 7, y: 8 }
+            { id: 'reactor_vent_control', type: 'prop_valve_wheel_fused', x: 4, y: 5 }
         ],
         signatureAnchorId: 'reactor_vent_control',
         compassAnchors: { approach: 'entry', objective: 'reactor_vent_control' },
-        coverZones: [{ x: 2, y: 2, w: 4, h: 7 }, { x: 9, y: 2, w: 4, h: 7 }],
-        encounterZones: [{ id: 'vent_floor', x: 6, y: 4, w: 3, h: 4 }],
-        rewardAnchors: [{ id: 'vent_service_cache', type: 'prop_bunker_supplies', x: 12, y: 8 }],
-        loreAnchors: [{ id: 'vent_shift_log', type: 'lore_terminal', x: 2, y: 8 }],
-        hazardZones: [{ id: 'steam_plume', x: 6, y: 2, w: 3, h: 2 }],
-        quietZones: [],
+        coverZones: [
+            { x: 6, y: 3, w: 4, h: 1 },
+            { x: 6, y: 3, w: 1, h: 5 },
+            { x: 6, y: 7, w: 4, h: 1 }
+        ],
+        encounterZones: [{ id: 'vent_floor', x: 7, y: 3, w: 7, h: 5 }],
+        rewardAnchors: [{ id: 'vent_service_cache', type: 'prop_bunker_supplies', x: 12, y: 5 }],
+        loreAnchors: [{ id: 'vent_shift_log', type: 'lore_terminal', x: 2, y: 7 }],
+        hazardZones: [{ id: 'steam_plume', x: 7, y: 4, w: 3, h: 3 }],
+        quietZones: [
+            { x: 5, y: 8, w: 5, h: 3 },
+            { x: 1, y: 3, w: 5, h: 5 }
+        ],
         safeZone: false,
         containmentBounds: { minX: 0, minY: 0, maxX: 14, maxY: 10 },
         presentationVariants: ['pressurized', 'venting', 'stabilized'],

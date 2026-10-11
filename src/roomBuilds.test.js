@@ -59,6 +59,41 @@ describe('ROOM_BUILD_CATALOG', () => {
         }));
     });
 
+    it('turns the reactor vent station into a two-route false throat', () => {
+        const build = ROOM_BUILD_CATALOG.find((entry) => entry.id === 'reactor_vent_station');
+        expect(build.pattern).toEqual([
+            '...............',
+            '...............',
+            '...............',
+            '......####.....',
+            '......#........',
+            '......#........',
+            '......#........',
+            '......####.....',
+            '...............',
+            '...............',
+            '...............'
+        ]);
+        const approach = computeApproachPoint(build);
+        const farSide = { x: 7, y: 2 };
+        const westOpening = new Set(Array.from({ length: 6 }, (_, x) => `${x},7`));
+        const eastOpening = new Set(Array.from({ length: 5 }, (_, offset) => `${offset + 10},7`));
+        expect(approach).toEqual({ x: 7, y: 8 });
+        expect(build.pattern[7][approach.x]).toBe('#');
+        expect(shortestPatternPath(build.pattern, approach, farSide, westOpening)).toBeLessThan(Infinity);
+        expect(shortestPatternPath(build.pattern, approach, farSide, eastOpening)).toBeLessThan(Infinity);
+        expect(shortestPatternPath(build.pattern, approach, { x: 4, y: 5 })).toBeLessThan(Infinity);
+        expect(shortestPatternPath(build.pattern, approach, { x: 12, y: 5 })).toBeLessThan(Infinity);
+        expect(build.structuralAnchors).toEqual(expect.arrayContaining([
+            expect.objectContaining({ id: 'vent_stack_a', x: 8, y: 3 }),
+            expect.objectContaining({ id: 'vent_stack_b', x: 8, y: 7 })
+        ]));
+        expect(build.structuralAnchors.every((anchor) => build.pattern[anchor.y][anchor.x] === '#')).toBe(true);
+        expect(build.interactionAnchors[0]).toMatchObject({ id: 'reactor_vent_control', x: 4, y: 5 });
+        expect(build.rewardAnchors[0]).toMatchObject({ id: 'vent_service_cache', x: 12, y: 5 });
+        expect(build.hazardZones[0]).toMatchObject({ id: 'steam_plume', x: 7, y: 4, w: 3, h: 3 });
+    });
+
     it('uses the medical P0A proof to create a reveal pivot and supply-side loop', () => {
         const build = ROOM_BUILD_CATALOG.find((entry) => entry.id === 'medical_triage');
         expect(build.pattern).toEqual([

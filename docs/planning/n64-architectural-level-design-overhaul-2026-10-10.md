@@ -762,10 +762,28 @@ interaction and reward records share a cell and render once, but no controller c
 animation, payout, practical-light change, and persistent emptied state. `rewardCache.js` owns a
 separate high-stakes cache at its own coordinates; its O₂ siphon, defender wave, and lockdown must
 not be claimed here until the systems are deliberately bridged. A local future controller may
-animate and dim the prop without changing walls or routes. Next flat P2 candidate:
-`reactor_vent_station`; `ring_crossing_landmark` remains a detached progression proof.
+animate and dim the prop without changing walls or routes.
 
-### 9.6.5 Authored-geometry persistence gate
+### 9.6.5 Lane A P2: false vent throat
+
+`reactor_vent_station` is the fourth P2 spatial proof. A broken C-shaped throat replaces two
+generic rectangular cover islands. Its lower lip screens the south entry, the quiet western
+crescent reveals the quest-critical fused valve, and the eastern/inner side carries encounter,
+steam, and reward pressure before both routes rejoin at the optional north exit. Paired conduit
+hubs mount on the throat rather than reading as unrelated pillars. The valve now owns a restrained
+warning-red practical. Exact-pattern tests force both routes independently and preserve the
+canonical objective ID; four gameplay-camera/cutaway captures live at
+`docs/reports/assets/furnished-rooms/p2-reactor_vent_station-game-camera-r*.png`.
+
+Capability correction: the room anchor really is selected by the `reactor_venting` reservation,
+but it is not wired to the camp quest's separately spawned three-valve cluster. The valve GLB has
+vent particles but no use profile or articulated wheel; the encounter and steam rectangles are
+placement metadata, not activation or damage; and presentation/state labels do not drive effects.
+Future bounded response may change wheel strain, steam/sparks, light, and audio without changing
+collision or routes. Next flat P2 candidate: `hull_fabrication_bay`;
+`ring_crossing_landmark` remains a detached progression proof.
+
+### 9.6.6 Authored-geometry persistence gate
 
 The existing `ROOM_BUILD_VERSION` is only exported; it is not serialized or compared. Neither
 campaign `interiorVersion`, macro `layoutVersion`, nor `WORLD_PLAN_VERSION` pins room-pattern data.
@@ -1136,6 +1154,11 @@ chunk mounts.
   two-route and four-camera proofs pass, and authored supply caches no longer receive a redundant
   generic ammo pile. Opening animation, payout/light synchronization, and persistent emptied state
   remain future controller work.
+- 2026-10-11: Lane A rebuilt the reactor vent station around a single false C-throat. The quiet
+  western crescent now reveals its preserved quest valve while the hotter eastern route owns the
+  encounter, steam metadata, and service reward; both rejoin at the north exit. Exact two-route and
+  four-camera proofs pass. Valve articulation, steam damage, and state-driven FX remain future
+  controller work.
 - 2026-10-10: Round 2 done (`1b0fce7c`): chasm landmarks plus tactical-map glyphs. Criteria 1,
   3, 4 and 5 met; criterion 2 not met as written, with the reason and the map-based answer in
   §9.10.

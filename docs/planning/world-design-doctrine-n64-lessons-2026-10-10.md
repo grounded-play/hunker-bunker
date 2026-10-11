@@ -612,8 +612,26 @@ container-state controller. The colocated interaction and reward records produce
 but there is no proven synchronization among opening animation, reward claim, light state, and
 persistent emptied state. The separate high-stakes cache system in `rewardCache.js` is not wired to
 this room anchor. A future local controller may open or dim the cache and persist collection, but
-must not alter the C-screen or close either return route. The next flat P2 candidate is
-`reactor_vent_station`; the ring crossing remains a detached progression-integration proof.
+must not alter the C-screen or close either return route.
+
+`reactor_vent_station` is the fourth P2 spatial proof. One broken C-shaped obstruction replaces the
+paired cover blocks and reads as a false vent throat: vapor and light can rise over its lower lip
+without implying a traversable upper tier. The quiet western service crescent reveals the
+quest-critical `reactor_vent_control` under a warning-red practical; the eastern/inner route owns
+enemy placement, steam metadata, and the service cache. Both routes remain open and rejoin before
+the optional north exit. Tests pin the exact throat, both conduit-hub mounts, objective/reward
+coordinates, and force each route independently by blocking the opposite opening. Four
+gameplay-camera/cutaway captures live at
+`docs/reports/assets/furnished-rooms/p2-reactor_vent_station-game-camera-r*.png`.
+
+Capability correction: the objective ID genuinely satisfies the camp-quest reservation, but the
+room anchor is not the camp's three-valve quest-object cluster. `prop_valve_wheel_fused` has vent FX
+but no shipped use profile or wheel articulation; `vent_floor` constrains enemy placement;
+`steam_plume` is metadata without room-hazard damage; and the pressurized/venting/stabilized labels
+do not drive GLBs, particles, or navigation. Future response may strain the wheel, reduce local
+steam/sparks, and change status light/audio, but may not open a shortcut or close either route. The
+next flat P2 candidate is `hull_fabrication_bay`; the ring crossing remains a detached
+progression-integration proof.
 
 ## Greybox process
 
