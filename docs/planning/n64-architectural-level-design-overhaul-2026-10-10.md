@@ -615,7 +615,8 @@ Verification for this slice:
   supply-side return, and quiet threshold apron.
 - `reactor_compressor_hall`: one asymmetric compressor island, subordinate heat shield, wide safe
   service loop, shorter hazardous bypass, chamfered opposing corners, and a flank control that
-  both routes can reach.
+  both routes can reach. Rotation review widened its drive aperture from one cell to three so the
+  machine, rather than its enclosing wall, owns the focal silhouette.
 - `room_biomech_machine_nave`: seven-cell processional axis, open transept, four shallow side
   chapels, reward/lore opposition, and a combat zone that stops short of the apse.
 - Authored signature hierarchy: the population planner promotes a structural or interaction anchor
@@ -624,11 +625,42 @@ Verification for this slice:
   and apse lectern rather than a random theme prop.
 - Route tests prove the compressor's hot path is shorter, its plume-blocked service route remains
   legal, its north exit remains reachable, and the two-cell bypass preserves companion clearance.
+- Medical beds and Tesla drives now map to the restrained cyan practical family. Authored
+  signatures in all three proof rooms therefore produce an actual focal light, not only metadata.
 
 The fixed orthographic review harness now captures all four rotations with the production cutaway
 planner; evidence lives at `docs/reports/assets/furnished-rooms/p0a-*-game-camera-r*.png`.
-Remaining P0A gates: live in-campaign threshold/return captures, biome contrast review, companion
-passage, and an explicit saved-campaign geometry policy.
+Remaining P0A gates: live in-campaign threshold/return captures, biome contrast review, and
+companion passage. Save policy is now explicit below; its required version gate is not implemented.
+
+### 9.6.1 Lane A P1: mandatory O2 broken ring
+
+`o2_scrubber` is the first P1 extension because it is the mandatory O2 ship-goal destination,
+eligible in tiers 1–3 and all biomes. The old centered 3×3 block is now a thin stepped U-shaped
+housing. Its verb is **split → circle → rejoin → enter**: the north approach divides around the
+crown; a leaking east exhaust and clean west service route reconnect south of the machine; the
+player then turns back into the quiet control cavity. The progression-stable `o2_control` id is
+unchanged and now owns signature status and a cyan task light.
+
+Route tests prove that either flank remains sufficient when the other is blocked. Four fixed
+orthographic rotation/cutaway captures live at
+`docs/reports/assets/furnished-rooms/p1-o2_scrubber-game-camera-r*.png`.
+
+P1 pacing order after this systemic room: `room_stasis_bunk_sepulcher` for quiet human-scale
+release, then `room_quarantine_airlock_threshold` for renewed compression.
+
+### 9.6.2 Authored-geometry persistence gate
+
+The existing `ROOM_BUILD_VERSION` is only exported; it is not serialized or compared. Neither
+campaign `interiorVersion`, macro `layoutVersion`, nor `WORLD_PLAN_VERSION` pins room-pattern data.
+An old reload can therefore stamp new geometry and reapply coordinate-keyed walls, doors,
+discovery, dressing damage, or suspended actors to the wrong cells.
+
+Policy until implementation: redesigned authored rooms are new-map/disposable-profile only. Before
+shipping them into a build that promises campaign resume, persist a distinct `roomBuildVersion` in
+authored-world and suspend identity; missing or mismatched versions must discard map-local state
+and enter `beginNewRun`, preserving story and world transformations but not coordinates. Do not
+reuse `interiorVersion`, whose contract is room-grammar selection.
 
 ### 9.7 Lane B work log (Claude lived-in lane)
 
@@ -923,3 +955,7 @@ that, differently from §7.5's first idea of distant beacons, which this camera 
 - 2026-10-10: Lane A's three P0A rooms now have fixed orthographic gameplay-camera and production
   cutaway review captures in all four rotations. Twelve views pass structural review; live
   threshold/return play and persistence remain open.
+- 2026-10-10: Lane A widened the compressor focal aperture, added cyan practicals for the medical
+  bed and Tesla drive, and replaced the mandatory O2 room's generic block with a tested broken-ring
+  repair route. Four O2 rotation captures pass. Authored-geometry persistence policy is explicit;
+  the version gate remains implementation work.

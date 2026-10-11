@@ -451,12 +451,42 @@ Verified so far: catalog validation, all rotations, connector reachability, sema
 hazardous compressor routes, companion-width hot bypass, population, dressing, destruction
 handling, and fixed orthographic gameplay-camera/cutaway captures for all four rotations. Those
 captures live at `docs/reports/assets/furnished-rooms/p0a-*-game-camera-r*.png`. Live in-campaign
-threshold/return views and saved-campaign geometry policy remain open before P0A sign-off.
+threshold/return views remain open before P0A sign-off. The compressor drive aperture was widened
+to three cells after the rotation review showed the original one-cell recess was visually owned by
+its walls. Medical beds and Tesla drives now receive the same restrained cyan task-light family as
+oxygen/coolant equipment, so authored signature promotion produces a real focal pool.
 
 ### P1 — extend proven shapes
 
 `armory_cage`, `o2_scrubber`, `field_fabricator`, `room_quarantine_airlock_threshold`,
 `room_cyber_surgical_fabrication_ward`, and `room_stasis_bunk_sepulcher`.
+
+`o2_scrubber` is the first P1 proof because it is a mandatory ship-goal room used across three
+tiers and every biome. Its generic centered block is replaced by a thin broken U-ring: the north
+approach splits around a stepped scrubber crown, both routes rejoin south of the machine, and the
+player turns back into a quiet three-cell control cavity. The east exhaust is hazardous; the west
+intake remains the service route. `o2_control` keeps its progression-critical identity and owns the
+cyan focal practical. All four rotation/cutaway captures live at
+`docs/reports/assets/furnished-rooms/p1-o2_scrubber-game-camera-r*.png`.
+
+The next pacing proof is `room_stasis_bunk_sepulcher`, followed by
+`room_quarantine_airlock_threshold`: monumental nave → intimate human-scale release → compressed
+decontamination threshold.
+
+### Authored-geometry save policy
+
+`ROOM_BUILD_VERSION` is not currently persisted or compared. `interiorVersion` selects the room-
+grammar pilot, `layoutVersion` pins macro geography, and `WORLD_PLAN_VERSION` pins reservations;
+none pins the authored pattern catalog. Reloading an older map therefore stamps current patterns
+and can reapply coordinate-keyed wall damage, doors, discovery, or suspended actor positions to
+different geometry.
+
+Until a dedicated authored-geometry version gate lands, these redesigns are approved only for new
+maps/disposable review profiles. A live build with resumable campaigns must persist
+`roomBuildVersion` in authored-world and suspend identity, reject missing/mismatched map-local
+state, and route the player through `beginNewRun`, which already preserves story/world
+transformations while clearing coordinate-local geometry state. Do not repurpose
+`interiorVersion` or claim old-map compatibility.
 
 ### P2 — complete the authored catalog
 

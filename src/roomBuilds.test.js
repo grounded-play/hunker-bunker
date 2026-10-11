@@ -87,21 +87,21 @@ describe('ROOM_BUILD_CATALOG', () => {
             '...................',
             '.......#####..##...',
             '......######..##...',
-            '......###.##..##...',
-            '.......##.##..##...',
-            '.......##.##..##...',
+            '......###.....##...',
+            '.......##.....##...',
+            '.......##.....##...',
             '..............##...',
             '..................#',
             '.................##',
             '................###'
         ]);
-        expect(build.pattern[6]).toBe('......###.##..##...');
+        expect(build.pattern[6]).toBe('......###.....##...');
         expect(build.pattern[6].slice(12, 14)).toBe('..');
         expect(build.hazardZones).toContainEqual(expect.objectContaining({
             id: 'coolant_plume', x: 12, y: 4, w: 2, h: 5
         }));
         expect(build.signatureAnchors).toContainEqual(expect.objectContaining({
-            id: 'compressor_drive', type: 'prop_tesla_coil_node', x: 9, y: 6
+            id: 'compressor_drive', type: 'prop_tesla_coil_node', x: 10, y: 6
         }));
         expect(build.structuralAnchors).toContainEqual(expect.objectContaining({
             id: 'coolant_manifold', x: 14, y: 6
@@ -119,6 +119,40 @@ describe('ROOM_BUILD_CATALOG', () => {
         for (let y = 4; y < 9; y += 1) {
             expect(build.pattern[y].slice(12, 14), `hot bypass clearance row ${y}`).toBe('..');
         }
+    });
+
+    it('turns the mandatory O2 room into a two-sided broken-ring repair route', () => {
+        const build = ROOM_BUILD_CATALOG.find((entry) => entry.id === 'o2_scrubber');
+        expect(build.pattern).toEqual([
+            '.............',
+            '.............',
+            '.............',
+            '.....###.....',
+            '....##.##....',
+            '....#...#....',
+            '....#...#....',
+            '.............',
+            '.............',
+            '.............',
+            '.............'
+        ]);
+        expect(computeApproachPoint(build)).toEqual({ x: 6, y: 2 });
+        expect(build.signatureAnchorId).toBe('o2_control');
+        expect(build.interactionAnchors).toContainEqual(expect.objectContaining({
+            id: 'o2_control', x: 6, y: 5
+        }));
+        expect(build.hazardZones).toContainEqual(expect.objectContaining({
+            id: 'exhaust_leak', x: 9, y: 4, w: 3, h: 3
+        }));
+
+        const approach = computeApproachPoint(build);
+        const control = { x: 6, y: 5 };
+        const eastExhaust = new Set();
+        for (let y = 4; y < 7; y += 1) for (let x = 9; x < 12; x += 1) eastExhaust.add(`${x},${y}`);
+        const westService = new Set();
+        for (let y = 3; y < 8; y += 1) for (let x = 0; x < 4; x += 1) westService.add(`${x},${y}`);
+        expect(shortestPatternPath(build.pattern, approach, control, eastExhaust)).toBeLessThan(Infinity);
+        expect(shortestPatternPath(build.pattern, approach, control, westService)).toBeLessThan(Infinity);
     });
 
     it.each(ROOM_BUILD_CATALOG.map((build) => [build.id, build]))('%s is internally valid', (_, build) => {

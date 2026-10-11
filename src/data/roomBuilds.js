@@ -140,27 +140,47 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'o2_scrubber',
         family: 'o2',
-        pattern: rectRoomPattern(13, 11, [{ x: 5, y: 4, w: 3, h: 3 }]),
+        // P1 broken-ring proof. The crown and two legs form an open-bottomed
+        // scrubber housing: entry from the north splits around it, both paths
+        // rejoin at the south, and only then can the player turn back into the
+        // protected control cavity. Geometry stays fixed across repair states.
+        pattern: authoredRoomPattern([
+            '.............',
+            '.............',
+            '.............',
+            '.....###.....',
+            '....##.##....',
+            '....#...#....',
+            '....#...#....',
+            '.............',
+            '.............',
+            '.............',
+            '.............'
+        ]),
         sockets: [{ id: 'entry', side: 'n', width: 3, required: true }],
         rotationPolicy: 'cardinal',
         tierEligibility: [1, 2, 3],
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['objective', 'shipGoalObjective'],
-        structuralAnchors: [{ id: 'scrubber_column', type: 'prop_conduit_hub', x: 6, y: 5 }],
+        structuralAnchors: [{ id: 'scrubber_column', type: 'prop_conduit_hub', x: 6, y: 3 }],
         // 'o2_control' matches src/ringManifest.js's MANDATORY_SHIP_GOALS
         // objectiveAnchorId for the o2Bubble goal exactly — this is the
         // ship-critical objective the manifest layer resolves by that id.
         // prop_o2_filter_vat: dedicated signature sprite for the ship-goal
         // objective anchor, replacing the placeholder 'console' type that
         // resolved to no texture.
-        interactionAnchors: [{ id: 'o2_control', type: 'prop_o2_filter_vat', x: 6, y: 8 }],
+        interactionAnchors: [{ id: 'o2_control', type: 'prop_o2_filter_vat', x: 6, y: 5 }],
+        signatureAnchorId: 'o2_control',
         compassAnchors: { approach: 'entry', objective: 'o2_control' },
-        coverZones: [{ x: 5, y: 4, w: 3, h: 3 }],
-        encounterZones: [{ id: 'scrubber_guard', x: 1, y: 1, w: 11, h: 3 }],
+        coverZones: [{ x: 4, y: 3, w: 2, h: 4 }, { x: 7, y: 3, w: 2, h: 4 }],
+        encounterZones: [{ id: 'scrubber_guard', x: 1, y: 7, w: 11, h: 3 }],
         rewardAnchors: [],
-        loreAnchors: [{ id: 'engineering_log', type: 'lore_terminal', x: 1, y: 9 }],
-        hazardZones: [],
-        quietZones: [],
+        loreAnchors: [{ id: 'engineering_log', type: 'lore_terminal', x: 2, y: 8 }],
+        // The east exhaust is hazardous while the west intake remains the
+        // clean service route. Repair changes presentation/state, never the
+        // collision layout, so deterministic saves see one stable room.
+        hazardZones: [{ id: 'exhaust_leak', x: 9, y: 4, w: 3, h: 3 }],
+        quietZones: [{ x: 5, y: 4, w: 3, h: 3 }],
         safeZone: false,
         containmentBounds: { minX: 0, minY: 0, maxX: 12, maxY: 10 },
         presentationVariants: ['idle', 'leaking', 'repaired'],
@@ -479,9 +499,9 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
             '...................',
             '.......#####..##...',
             '......######..##...',
-            '......###.##..##...',
-            '.......##.##..##...',
-            '.......##.##..##...',
+            '......###.....##...',
+            '.......##.....##...',
+            '.......##.....##...',
             '..............##...',
             '..................#',
             '.................##',
@@ -503,7 +523,7 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         // not an interaction/objective anchor, so it does not invent a second
         // gameplay prompt beside the real compressor control.
         signatureAnchors: [
-            { id: 'compressor_drive', type: 'prop_tesla_coil_node', x: 9, y: 6, blocking: true }
+            { id: 'compressor_drive', type: 'prop_tesla_coil_node', x: 10, y: 6, blocking: true }
         ],
         // MANDATORY_SHIP_GOALS reactorCompressor -> objectiveAnchorId, exactly.
         interactionAnchors: [
