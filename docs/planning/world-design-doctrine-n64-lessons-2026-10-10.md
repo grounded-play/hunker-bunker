@@ -505,7 +505,22 @@ route shorter. All four rotation/cutaway captures live at
 This is a fixed architectural reward choice, not yet an opening locker simulation. The ammo crate
 retains its existing generic interaction; opening panels, lock-state animation, contents reveal,
 and synchronized light/audio feedback remain presentation work and must not alter the two routes.
-The next P1 candidate is `field_fabricator`.
+
+`field_fabricator` is the fifth P1 proof. Two unequal loading shoulders compress the south entry
+into a three-cell material-intake notch before releasing into an asymmetric work cell. The existing
+`fabricator_terminal` moves to the east bay, remains the fallback-resource compass objective, and
+owns a cyan practical; an L-shaped fabrication island separates it from the west schematic-output
+pocket. The island can be circled on either its close southern crosscut or quieter northern side, so
+the room remains a fixed safe loop in every machine state. Tests pin the exact pattern, clear intake,
+both loop paths, anchor identities, and all four rotations. Captures live at
+`docs/reports/assets/furnished-rooms/p1-field_fabricator-game-camera-r*.png`.
+
+The structural bench and interactive terminal currently resolve to the same workstation GLB. This
+proof separates their projection lines and hierarchy, but future art should give the bench a low
+amber work treatment and the terminal the dominant cyan screen. A bounded nozzle, carriage, clamp,
+or output-tray cycle may animate inside the prop footprint; it must never become navigation
+collision or change the loop. The next P1 candidate is
+`room_cyber_surgical_fabrication_ward`.
 
 ### Authored-geometry save policy
 

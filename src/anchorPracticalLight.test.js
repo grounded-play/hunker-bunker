@@ -12,6 +12,7 @@ describe('anchor practical light (lived-in world M4)', () => {
         expect(anchorPaletteFor('life_water_still')).toBe('cyan');
         expect(anchorPaletteFor('prop_medical_bed')).toBe('cyan');
         expect(anchorPaletteFor('prop_tesla_coil_node')).toBe('cyan');
+        expect(anchorPaletteFor('prop_fabricator_workstation')).toBe('cyan');
         expect(anchorPaletteFor('prop_pipe_organ_heat_exchanger')).toBe('amber');
         expect(anchorPaletteFor('prop_ammo_crate_stack')).toBe('amber');
         expect(anchorPaletteFor('life_barrel_heater')).toBe('amber');

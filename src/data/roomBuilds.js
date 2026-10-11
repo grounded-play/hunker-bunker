@@ -205,12 +205,22 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         family: 'fabricator',
         themeStyle: 'bunker',
         partitionThickness: 0.5,
-        pattern: rectRoomPattern(15, 11, [
-            { x: 0, y: 0, w: 2, h: 2 },
-            { x: 13, y: 0, w: 2, h: 2 },
-            { x: 0, y: 9, w: 2, h: 2 },
-            { x: 13, y: 9, w: 2, h: 2 },
-            { x: 6, y: 4, w: 3, h: 2 }
+        // P1 workshop proof: offset loading shoulders compress the south
+        // approach before it releases into an asymmetric work cell. The
+        // L-shaped island supports a small fixed loop between the terminal
+        // and output cache; fabrication states never change this topology.
+        pattern: authoredRoomPattern([
+            '...............',
+            '...............',
+            '...............',
+            '...............',
+            '.....####......',
+            '.....#.........',
+            '.....#.........',
+            '...............',
+            '....##...###...',
+            '....##...###...',
+            '...............'
         ]),
         sockets: [{ id: 'entry', side: 's', width: 3, required: true }],
         rotationPolicy: 'cardinal',
@@ -226,15 +236,24 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         // prop_fabricator_workstation: dedicated signature sprite,
         // replacing the placeholder 'console' type that resolved to no
         // texture.
-        interactionAnchors: [{ id: 'fabricator_terminal', type: 'prop_fabricator_workstation', x: 7, y: 7 }],
+        interactionAnchors: [{ id: 'fabricator_terminal', type: 'prop_fabricator_workstation', x: 9, y: 5 }],
         signatureAnchorId: 'fabricator_terminal',
         compassAnchors: { approach: 'entry', objective: 'fabricator_terminal' },
-        coverZones: [{ x: 6, y: 4, w: 3, h: 2 }],
+        coverZones: [
+            { x: 5, y: 4, w: 4, h: 1 },
+            { x: 5, y: 4, w: 1, h: 3 },
+            { x: 4, y: 8, w: 2, h: 2 },
+            { x: 9, y: 8, w: 3, h: 2 }
+        ],
         encounterZones: [],
-        rewardAnchors: [{ id: 'schematic_cache', type: 'prop_bunker_supplies', x: 2, y: 2 }],
+        rewardAnchors: [{ id: 'schematic_cache', type: 'prop_bunker_supplies', x: 3, y: 5 }],
         loreAnchors: [],
         hazardZones: [],
-        quietZones: [{ x: 0, y: 0, w: 15, h: 11 }],
+        quietZones: [
+            { x: 6, y: 7, w: 3, h: 4 },
+            { x: 7, y: 3, w: 6, h: 4 },
+            { x: 1, y: 3, w: 4, h: 4 }
+        ],
         safeZone: true,
         containmentBounds: { minX: 0, minY: 0, maxX: 14, maxY: 10 },
         presentationVariants: ['intact', 'depleted', 'broken'],

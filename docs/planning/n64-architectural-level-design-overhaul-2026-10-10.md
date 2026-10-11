@@ -676,7 +676,20 @@ production-cutaway captures live at
 
 The locker does not physically open yet: panel animation, lock-state binding, contents reveal, and
 coordinated light/audio feedback remain presentation work. The geometry stays fixed when those
-states land. Next P1 candidate: `field_fabricator`.
+states land.
+
+The fifth P1 proof is `field_fabricator`. Unequal loading shoulders compress the south approach into
+a clear three-cell material-intake notch, then release into an offset work cell around an L-shaped
+fabrication island. The preserved `fabricator_terminal` remains the fallback-resource compass
+objective, moves into the east bay, and receives a cyan task light. The schematic cache becomes a
+west output pocket reached around either the close southern crosscut or quieter northern side.
+Exact-pattern tests prove the intake and both loop paths; four gameplay-camera/cutaway captures live
+at `docs/reports/assets/furnished-rooms/p1-field_fabricator-game-camera-r*.png`.
+
+The bench and terminal currently share one workstation GLB. Distinct light, grime, screen, and
+interaction treatment must carry their separate roles until the bench receives unique art. Future
+nozzle, carriage, clamp, or output-tray animation stays bounded inside the prop footprint and never
+changes navigation collision. Next P1 candidate: `room_cyber_surgical_fabrication_ward`.
 
 ### 9.6.2 Authored-geometry persistence gate
 
@@ -1027,6 +1040,10 @@ chunk mounts.
   covered flank. The preserved lock console remains the progression objective, while the ammo cache
   owns amber signature light and reward hierarchy. Exact geometry, route, exit, and four-rotation
   camera proofs pass; animated locker state remains future presentation work.
+- 2026-10-11: Lane A rebuilt the field fabricator as an offset loading notch opening onto an
+  asymmetric work-cell loop. Its fallback-resource terminal keeps identity and now owns cyan focal
+  light; both island paths and all four camera rotations pass. Bench/terminal GLB duplication and
+  bounded fabrication articulation remain presentation work.
 - 2026-10-10: Round 2 done (`1b0fce7c`): chasm landmarks plus tactical-map glyphs. Criteria 1,
   3, 4 and 5 met; criterion 2 not met as written, with the reason and the map-based answer in
   §9.10.

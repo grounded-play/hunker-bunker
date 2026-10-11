@@ -184,6 +184,41 @@ describe('ROOM_BUILD_CATALOG', () => {
         expect(build.rewardAnchors[0]).toMatchObject({ id: 'ammo_crate', x: 8, y: 3 });
     });
 
+    it('turns the field fabricator into an offset intake and fixed work-cell loop', () => {
+        const build = ROOM_BUILD_CATALOG.find((entry) => entry.id === 'field_fabricator');
+        expect(build.pattern).toEqual([
+            '...............',
+            '...............',
+            '...............',
+            '...............',
+            '.....####......',
+            '.....#.........',
+            '.....#.........',
+            '...............',
+            '....##...###...',
+            '....##...###...',
+            '...............'
+        ]);
+        const approach = computeApproachPoint(build);
+        const terminal = { x: 9, y: 5 };
+        const cache = { x: 3, y: 5 };
+        const northCrosscut = new Set();
+        const southCrosscut = new Set();
+        for (let x = 4; x <= 9; x += 1) {
+            northCrosscut.add(`${x},3`);
+            southCrosscut.add(`${x},7`);
+        }
+        expect(approach).toEqual({ x: 7, y: 8 });
+        expect(build.pattern[8].slice(6, 9)).toBe('...');
+        expect(shortestPatternPath(build.pattern, approach, terminal)).toBeLessThan(Infinity);
+        expect(shortestPatternPath(build.pattern, terminal, cache, northCrosscut)).toBeLessThan(Infinity);
+        expect(shortestPatternPath(build.pattern, terminal, cache, southCrosscut)).toBeLessThan(Infinity);
+        expect(build.signatureAnchorId).toBe('fabricator_terminal');
+        expect(build.structuralAnchors[0]).toMatchObject({ id: 'fabricator_bench', x: 7, y: 4 });
+        expect(build.interactionAnchors[0]).toMatchObject({ id: 'fabricator_terminal', x: 9, y: 5 });
+        expect(build.rewardAnchors[0]).toMatchObject({ id: 'schematic_cache', x: 3, y: 5 });
+    });
+
     it.each(ROOM_BUILD_CATALOG.map((build) => [build.id, build]))('%s is internally valid', (_, build) => {
         expect(validateRoomBuild(build)).toEqual([]);
     });
