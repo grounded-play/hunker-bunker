@@ -344,6 +344,82 @@ SFX_PROMPT_CATALOG = {
         "out_dir": "public/audio/generated",
         "prompt": "rhythmic deep biological womb peristaltic pumping, thick amniotic slime expulsion and heavy wet organic squelch",
     },
+
+    # =========================================================================
+    # 5. CONTINUOUS ROOM TONE ATMOSPHERIC BEDS (Long, subtle, seamless loops)
+    # =========================================================================
+    "room_tone_exterior_wind": {
+        "category": "ambience",
+        "duration": 65.00,
+        "segments": 3,
+        "segment_duration": 25.00,
+        "variants": 1,
+        "bus": "world",
+        "out_dir": "public/audio/ambient",
+        "loop": True,
+        "crossfade_sec": 4.0,
+        "prompt": "subtle continuous freezing arctic wind blowing across barren snowy exterior wasteland, distant cold whistling blizzard draft, wide open sub-zero winter expanse, soft atmospheric room tone",
+    },
+    "room_tone_interior_bunker": {
+        "category": "ambience",
+        "duration": 65.00,
+        "segments": 3,
+        "segment_duration": 25.00,
+        "variants": 1,
+        "bus": "world",
+        "out_dir": "public/audio/ambient",
+        "loop": True,
+        "crossfade_sec": 4.0,
+        "prompt": "subtle quiet subterranean bunker interior room tone, low continuous 50Hz ventilation air handling unit hum, soft hollow duct airflow, distant deep metallic pipe resonance",
+    },
+    "room_tone_cryo_subzero": {
+        "category": "ambience",
+        "duration": 65.00,
+        "segments": 3,
+        "segment_duration": 25.00,
+        "variants": 1,
+        "bus": "world",
+        "out_dir": "public/audio/ambient",
+        "loop": True,
+        "crossfade_sec": 4.0,
+        "prompt": "subtle freezing cryogenic vault atmospheric room tone, deep thermal contraction creaks in metal struts, quiet cold refrigerant pipe hiss, hypothermic subterranean cavern air",
+    },
+    "room_tone_bio_hive": {
+        "category": "ambience",
+        "duration": 65.00,
+        "segments": 3,
+        "segment_duration": 25.00,
+        "variants": 1,
+        "bus": "world",
+        "out_dir": "public/audio/ambient",
+        "loop": True,
+        "crossfade_sec": 4.0,
+        "prompt": "subtle alien biological hive cavern room tone, low organic respiratory breathing drone, distant subterranean moisture drips, quiet damp amniotic reverberation",
+    },
+    "room_tone_cathedral_crypt": {
+        "category": "ambience",
+        "duration": 65.00,
+        "segments": 3,
+        "segment_duration": 25.00,
+        "variants": 1,
+        "bus": "world",
+        "out_dir": "public/audio/ambient",
+        "loop": True,
+        "crossfade_sec": 4.0,
+        "prompt": "subtle cavernous stone vaulted cathedral crypt room tone, hollow cold drafts sweeping across ancient masonry, distant deep monastic echo, quiet subterranean stillness",
+    },
+    "room_tone_safe_ship": {
+        "category": "ambience",
+        "duration": 65.00,
+        "segments": 3,
+        "segment_duration": 25.00,
+        "variants": 1,
+        "bus": "world",
+        "out_dir": "public/audio/ambient",
+        "loop": True,
+        "crossfade_sec": 4.0,
+        "prompt": "subtle pressurized starship cockpit interior room tone, quiet avionics cooling fan hum, gentle life support oxygen circulation, warm insulated safe sanctuary",
+    },
 }
 
 # Curated test subset for immediate validation and auditioning
@@ -373,26 +449,77 @@ TEST_SUBSET_KEYS = [
 ]
 
 
-def post_process_audio(waveform: np.ndarray, sample_rate: int) -> np.ndarray:
-    """Normalize, high-pass filter rumble, and apply anti-click envelope."""
+def make_seamless_loop(waveform: np.ndarray, sample_rate: int, crossfade_sec: float = 2.5) -> np.ndarray:
+    """Turn audio into a seamless loop by equal-power crossfading tail onto head."""
+    if waveform.ndim > 1:
+        waveform = waveform.squeeze()
+    cf_samples = int(sample_rate * crossfade_sec)
+    if len(waveform) <= cf_samples * 2:
+        return waveform
+
+    # The loop body length will be len(waveform) - cf_samples
+    body = waveform[:-cf_samples].copy()
+    tail = waveform[-cf_samples:]
+
+    # Equal-power crossfade curve: sin^2 + cos^2 = 1 maintains constant energy
+    t = np.linspace(0.0, 1.0, cf_samples, endpoint=False)
+    fade_in = np.sin(t * (np.pi / 2))
+    fade_out = np.cos(t * (np.pi / 2))
+
+    body[:cf_samples] = body[:cf_samples] * fade_in + tail * fade_out
+    return body
+
+
+def stitch_segments(segments: list, sample_rate: int, crossfade_sec: float = 4.0) -> np.ndarray:
+    """Stitch multiple sequential audio segments with equal-power crossfades for organic long beds."""
+    if not segments:
+        return np.zeros(0, dtype=np.float32)
+    if len(segments) == 1:
+        return segments[0]
+
+    cf_samples = int(sample_rate * crossfade_sec)
+    stitched = segments[0]
+    t = np.linspace(0.0, 1.0, cf_samples, endpoint=False)
+    fade_in = np.sin(t * (np.pi / 2))
+    fade_out = np.cos(t * (np.pi / 2))
+
+    for nxt in segments[1:]:
+        if len(stitched) < cf_samples or len(nxt) < cf_samples:
+            stitched = np.concatenate([stitched, nxt])
+            continue
+
+        overlap_a = stitched[-cf_samples:]
+        overlap_b = nxt[:cf_samples]
+        blended = overlap_a * fade_out + overlap_b * fade_in
+        stitched = np.concatenate([stitched[:-cf_samples], blended, nxt[cf_samples:]])
+
+    return stitched
+
+
+def post_process_audio(waveform: np.ndarray, sample_rate: int, target_peak: float = 0.89, loop: bool = False, crossfade_sec: float = 2.5) -> np.ndarray:
+    """Normalize, high-pass filter rumble, seamlessly loop if requested, and apply anti-click envelope."""
     # Ensure 1D float array
     if waveform.ndim > 1:
         waveform = waveform.squeeze()
 
-    # Peak normalization to -1 dB (approx 0.89)
+    if loop:
+        waveform = make_seamless_loop(waveform, sample_rate, crossfade_sec)
+
+    # Peak normalization
     peak = np.max(np.abs(waveform))
     if peak > 1e-4:
-        waveform = waveform * (0.89 / peak)
+        waveform = waveform * (target_peak / peak)
 
-    # Micro-fade in (3ms) and fade out (15ms) to eliminate clicks
-    fade_in_samples = int(sample_rate * 0.003)
-    fade_out_samples = int(sample_rate * 0.015)
+    if not loop:
+        # Micro-fade in (3ms) and fade out (15ms) to eliminate clicks for one-shot SFX
+        fade_in_samples = int(sample_rate * 0.003)
+        fade_out_samples = int(sample_rate * 0.015)
 
-    if len(waveform) > fade_in_samples + fade_out_samples:
-        fade_in = np.linspace(0.0, 1.0, fade_in_samples)
-        fade_out = np.linspace(1.0, 0.0, fade_out_samples)
-        waveform[:fade_in_samples] *= fade_in
-        waveform[-fade_out_samples:] *= fade_out
+        if len(waveform) > fade_in_samples + fade_out_samples:
+            fade_in = np.linspace(0.0, 1.0, fade_in_samples)
+            fade_out = np.linspace(1.0, 0.0, fade_out_samples)
+            waveform[:fade_in_samples] *= fade_in
+            waveform[-fade_out_samples:] *= fade_out
 
     return waveform.astype(np.float32)
 
@@ -419,9 +546,11 @@ def generate_sfx(keys_to_generate, dry_run=False, device="cuda"):
         print(f"--- Dry Run Mode: {len(keys_to_generate)} soundsets to generate ---")
         for key in keys_to_generate:
             spec = SFX_PROMPT_CATALOG[key]
-            print(f"[{spec['category'].upper()}] Key: '{key}' ({spec['variants']} variants, {spec['duration']}s)")
+            num_segs = spec.get("segments", 1)
+            seg_dur = spec.get("segment_duration", spec["duration"])
+            print(f"[{spec['category'].upper()}] Key: '{key}' ({spec['variants']} variants, {spec['duration']}s total across {num_segs} segments of {seg_dur}s)")
             print(f"    Prompt: \"{spec['prompt']}\"")
-            print(f"    Target: {spec['out_dir']}/{key}_000.wav + .ogg\n")
+            print(f"    Target: {spec['out_dir']}/{key}.wav + .ogg\n")
         return
 
     import soundfile as sf
@@ -438,32 +567,58 @@ def generate_sfx(keys_to_generate, dry_run=False, device="cuda"):
         num_variants = spec["variants"]
         duration = spec["duration"]
         prompt = spec["prompt"]
+        num_segs = spec.get("segments", 1)
+        seg_duration = spec.get("segment_duration", duration)
+        is_loop = spec.get("loop", False)
+        crossfade = spec.get("crossfade_sec", 4.0 if num_segs > 1 else 2.5)
+        target_peak = 0.62 if spec["category"] == "ambience" else 0.89
         out_dir = ROOT / spec["out_dir"]
         out_dir.mkdir(parents=True, exist_ok=True)
 
-        print(f"\n[{idx}/{total_keys}] Generating '{key}' ({num_variants} takes, {duration}s)...")
+        print(f"\n[{idx}/{total_keys}] Generating '{key}' ({num_variants} takes, {duration}s total via {num_segs} segments of {seg_duration}s)...")
         print(f"    Prompt: \"{prompt}\"")
 
-        model.set_generation_params(duration=duration)
+        model.set_generation_params(duration=seg_duration)
 
-        # Generate each variant with a distinct random seed
+        # Generate each variant
         for v in range(num_variants):
             var_seed = (hash(key) + v * 7919) & 0x7FFFFFFF
-            torch.manual_seed(var_seed)
-            if torch.cuda.is_available():
-                torch.cuda.manual_seed(var_seed)
 
             # Variant filename suffix
-            # For footsteps: footstep_metal_grate_000, footstep_metal_grate_001, etc.
-            # For single/numbered props: key_000 or key1, key2
-            suffix = f"_{v:03d}" if spec["category"] == "footsteps" else f"_{v:03d}"
-            variant_name = f"{key}{suffix}"
+            if spec["category"] == "ambience" and num_variants == 1:
+                variant_name = key
+            else:
+                suffix = f"_{v:03d}"
+                variant_name = f"{key}{suffix}"
+
             wav_path = out_dir / f"{variant_name}.wav"
             ogg_path = out_dir / f"{variant_name}.ogg"
 
-            wav_tensor = model.generate([prompt])
-            raw_audio = wav_tensor[0, 0].cpu().numpy()
-            processed_audio = post_process_audio(raw_audio, sample_rate)
+            # Generate multiple segments if requested to construct long organic beds
+            generated_segments = []
+            for s in range(num_segs):
+                seg_seed = (var_seed + s * 104729) & 0x7FFFFFFF
+                torch.manual_seed(seg_seed)
+                if torch.cuda.is_available():
+                    torch.cuda.manual_seed(seg_seed)
+
+                print(f"    -> Generating segment {s + 1}/{num_segs} ({seg_duration}s)...")
+                wav_tensor = model.generate([prompt])
+                raw_seg = wav_tensor[0, 0].cpu().numpy().squeeze()
+                generated_segments.append(raw_seg)
+
+            if num_segs > 1:
+                stitched = stitch_segments(generated_segments, sample_rate, crossfade_sec=crossfade)
+            else:
+                stitched = generated_segments[0]
+
+            processed_audio = post_process_audio(
+                stitched,
+                sample_rate,
+                target_peak=target_peak,
+                loop=is_loop,
+                crossfade_sec=crossfade
+            )
 
             # Write WAV
             sf.write(str(wav_path), processed_audio, sample_rate, subtype="PCM_16")

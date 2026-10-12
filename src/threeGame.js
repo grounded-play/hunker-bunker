@@ -26432,6 +26432,9 @@ export class ThreeGame {
             rightZ: this.cameraPlanarRight?.y ?? 0
         });
 
+        // Update dynamic acoustic environment (outdoor wind vs indoor hum/reverb, room tone crossfades)
+        this.updateRoomToneAcoustics?.(delta);
+
         // Update kinetic control timers
         this.dashCooldownTimer = Math.max(0, (this.dashCooldownTimer ?? 0) - delta);
         this.meleeCooldownTimer = Math.max(0, (this.meleeCooldownTimer ?? 0) - delta);
@@ -27029,6 +27032,212 @@ export class ThreeGame {
         return BIOME_LABELS[biomeKey] ?? BIOME_LABELS[BIOME_KEYS.ACTIVE];
     }
 
+    /**
+     * Determine if the player is exposed to exterior elements (blizzard, polar winds)
+     * vs sheltered inside structures (safe ship, bunker starting room, camp structures).
+     */
+    isOutdoors() {
+        if (!this.player?.position) return false;
+        // Inside the safe ship interior / no fire sanctuary
+        if (this.isInsideNoFireZone?.()) return false;
+
+        const px = this.player.position.x;
+        const pz = this.player.position.z;
+
+        // Inside the starting bunker crash room: south of blast door (Z > doorZ, X inside room walls)
+        const doorZ = this.bunkerBlastDoorState?.doorZ ?? 3;
+        if (pz > doorZ && px >= -4 && px <= 22) {
+            return false;
+        }
+
+        // Inside sheltered camp radius (Tallow hearth, Vesper bunkhouse, Meridian crypt)
+        if (Array.isArray(this.camps)) {
+            for (const camp of this.camps) {
+                const cx = camp?.pos?.x ?? camp?.tileX;
+                const cz = camp?.pos?.z ?? camp?.tileZ;
+                if (Number.isFinite(cx) && Number.isFinite(cz)) {
+                    if (Math.hypot(px - cx, pz - cz) <= 6.5) return false;
+                }
+            }
+        }
+
+        // Otherwise, open exterior surface expedition / labyrinth
+        return true;
+    }
+
+    /**
+     * Resolve the active acoustic bed and environment filter for the player's current location.
+     */
+    getAcousticEnvironment() {
+        const outdoors = this.isOutdoors();
+        const px = this.player?.position?.x ?? 0;
+        const pz = this.player?.position?.z ?? 0;
+        const biome = (this.currentBiomeKey || BIOME_KEYS.ACTIVE || 'active').toLowerCase();
+
+        // 1. Outdoors: exposed howling polar wind and blizzard drafts
+        if (outdoors) {
+            return {
+                roomTone: 'room_tone_exterior_wind',
+                outdoors: true,
+                filterCutoff: 22000 // crisp open air highs
+            };
+        }
+
+        // 2. Safe starship sanctuary
+        if (this.isInsideNoFireZone?.()) {
+            return {
+                roomTone: 'room_tone_safe_ship',
+                outdoors: false,
+                filterCutoff: 18000
+            };
+        }
+
+        // 3. Camps
+        if (Array.isArray(this.camps)) {
+            for (const camp of this.camps) {
+                const cx = camp?.pos?.x ?? camp?.tileX;
+                const cz = camp?.pos?.z ?? camp?.tileZ;
+                if (Number.isFinite(cx) && Number.isFinite(cz) && Math.hypot(px - cx, pz - cz) <= 7.0) {
+                    if (camp.id === 'camp_meridian') {
+                        return { roomTone: 'room_tone_cathedral_crypt', outdoors: false, filterCutoff: 14000 };
+                    }
+                    if (camp.id === 'camp_tallow') {
+                        return { roomTone: 'room_tone_interior_bunker', outdoors: false, filterCutoff: 16000 };
+                    }
+                    if (camp.id === 'camp_vesper') {
+                        return { roomTone: 'room_tone_interior_bunker', outdoors: false, filterCutoff: 16000 };
+                    }
+                }
+            }
+        }
+
+        // 4. Biome-specific indoor acoustic beds
+        if (biome === 'cryo') {
+            return { roomTone: 'room_tone_cryo_subzero', outdoors: false, filterCutoff: 15000 };
+        }
+        if (biome === 'bio') {
+            return { roomTone: 'room_tone_bio_hive', outdoors: false, filterCutoff: 12000 };
+        }
+
+        // 5. Default subterranean bunker
+        return { roomTone: 'room_tone_interior_bunker', outdoors: false, filterCutoff: 16000 };
+    }
+
+    /**
+     * Dynamic acoustic loop: crossfades room tones as player moves between
+     * outside and inside, or between biomes / large rooms.
+     */
+    updateRoomToneAcoustics(delta) {
+        if (!this.player || !window.AudioManager?.setRoomTone) return;
+
+        this._roomToneCheckTimer = (this._roomToneCheckTimer ?? 0) - delta;
+        if (this._roomToneCheckTimer > 0) return;
+        this._roomToneCheckTimer = 0.35; // evaluate 3 times per second
+
+        const env = this.getAcousticEnvironment();
+        if (env.roomTone !== this._currentRoomToneKey) {
+            this._currentRoomToneKey = env.roomTone;
+            window.AudioManager.setRoomTone(env.roomTone, { fadeSeconds: 2.8, volume: 0.38 });
+            window.AudioManager.setLowPassMuffle?.(!env.outdoors, env.filterCutoff);
+        }
+
+        // Check for active boss encounter or combat threat
+        let activeBossContext = null;
+        let anyAggressiveHostile = false;
+        const inShip = Boolean(this.isInsideNoFireZone?.());
+
+        if (!inShip && Array.isArray(this.scatterSprites)) {
+            const px = this.player.position.x;
+            const pz = this.player.position.z;
+            for (const s of this.scatterSprites) {
+                if (!s.visible || !s.userData || s.userData.dead) continue;
+                const dist = Math.hypot(s.position.x - px, s.position.z - pz);
+                if (s.userData.isBoss || s.userData.type?.startsWith('boss_')) {
+                    if (dist <= 30) {
+                        const bType = s.userData.type;
+                        if (bType === 'boss_cybersnail') activeBossContext = 'boss_cybersnail';
+                        else if (bType === 'boss_cryosnail') activeBossContext = 'boss_cryosnail';
+                        else if (bType === 'boss_sporesnail') activeBossContext = 'boss_sporesnail';
+                        else if (s.userData.corruptedOperator) {
+                            const opClass = s.userData.operatorClass;
+                            activeBossContext = opClass === 'tank' ? 'boss_tank' : opClass === 'engineer' ? 'boss_engineer' : 'boss_scout';
+                        } else if (s.userData.queenFight) {
+                            activeBossContext = 'boss_queen';
+                        } else {
+                            activeBossContext = 'boss_cybersnail';
+                        }
+                        break;
+                    }
+                } else if (dist <= 12 && (s.userData.enraged || s.userData.aggroTarget)) {
+                    anyAggressiveHostile = true;
+                }
+            }
+        }
+
+        const currentCombatState = activeBossContext ? activeBossContext : (anyAggressiveHostile ? 'combat' : null);
+        if (currentCombatState !== this._lastCombatState) {
+            this._lastCombatState = currentCombatState;
+            if (activeBossContext) {
+                window.AudioManager?.setMusicTension?.('boss');
+                window.AudioManager?.setMusicContext?.(activeBossContext);
+            } else if (anyAggressiveHostile) {
+                window.AudioManager?.setMusicTension?.('threatened');
+                window.AudioManager?.setMusicContext?.('combat');
+            } else {
+                window.AudioManager?.setMusicTension?.(inShip ? 'safe' : 'exploring');
+                if (inShip) {
+                    window.AudioManager?.setMusicContext?.('safe_ship');
+                } else if (this._nearCampMusicId) {
+                    window.AudioManager?.setMusicContext?.(this._nearCampMusicId);
+                } else {
+                    const biome = (this.currentBiomeKey || BIOME_KEYS.ACTIVE || 'active').toLowerCase();
+                    const ctx = biome === 'cryo' ? 'cryo_explore' : biome === 'bio' ? 'bio_explore' : 'active_explore';
+                    window.AudioManager?.setMusicContext?.(ctx);
+                }
+            }
+        }
+
+        // Proximity to camp or safe ship when not in active combat
+        if (!currentCombatState) {
+            if (inShip !== this._wasInShip) {
+                this._wasInShip = inShip;
+                if (inShip) {
+                    window.AudioManager?.setMusicTension?.('safe');
+                    window.AudioManager?.setMusicContext?.('safe_ship');
+                } else {
+                    window.AudioManager?.setMusicTension?.('exploring');
+                    const biome = (this.currentBiomeKey || BIOME_KEYS.ACTIVE || 'active').toLowerCase();
+                    const ctx = biome === 'cryo' ? 'cryo_explore' : biome === 'bio' ? 'bio_explore' : 'active_explore';
+                    window.AudioManager?.setMusicContext?.(ctx);
+                }
+            }
+
+            if (!inShip && Array.isArray(this.camps)) {
+                const px = this.player.position.x;
+                const pz = this.player.position.z;
+                let nearCampId = null;
+                for (const camp of this.camps) {
+                    const cx = camp?.pos?.x ?? camp?.tileX;
+                    const cz = camp?.pos?.z ?? camp?.tileZ;
+                    if (Number.isFinite(cx) && Number.isFinite(cz) && Math.hypot(px - cx, pz - cz) <= 6.5) {
+                        nearCampId = camp.id;
+                        break;
+                    }
+                }
+                if (nearCampId !== this._nearCampMusicId) {
+                    this._nearCampMusicId = nearCampId;
+                    if (nearCampId) {
+                        window.AudioManager?.setMusicContext?.(nearCampId);
+                    } else if (!inShip) {
+                        const biome = (this.currentBiomeKey || BIOME_KEYS.ACTIVE || 'active').toLowerCase();
+                        const ctx = biome === 'cryo' ? 'cryo_explore' : biome === 'bio' ? 'bio_explore' : 'active_explore';
+                        window.AudioManager?.setMusicContext?.(ctx);
+                    }
+                }
+            }
+        }
+    }
+
     emitBiomeChanged(biomeKey, distanceFromAnchor = 0) {
         const key = BIOME_ORDER.includes(biomeKey) ? biomeKey : BIOME_KEYS.ACTIVE;
         if (key === this._lastEmittedBiomeKey) return;
@@ -27052,6 +27261,16 @@ export class ThreeGame {
                 message: BIOME_NOTIFICATION_MESSAGES[key] ?? ''
             }
         }));
+
+        // Dynamic exploration music context trigger on biome shifts
+        if (window.AudioManager?.setMusicContext && !this._nearCampMusicId && !this._wasInShip) {
+            const musicContext = key === BIOME_KEYS.CRYO
+                ? 'cryo_explore'
+                : key === BIOME_KEYS.BIO
+                    ? 'bio_explore'
+                    : 'active_explore';
+            window.AudioManager.setMusicContext(musicContext);
+        }
     }
 
     blendBiomeColor(activeHex, cryoHex, bioHex, cryoMix, bioMix, lowColor, highColor) {

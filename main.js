@@ -17057,6 +17057,14 @@ whenDocumentParsed(async () => {
                     // Starter Camp Ambient Weather Bed
                     { key: 'amb_camp_rain_loop', url: '/audio/ambient/amb_camp_rain_loop.wav' },
 
+                    // Atmospheric Long Room Tones (Continuous, subtle, evolving beds)
+                    { key: 'room_tone_exterior_wind', url: '/audio/ambient/room_tone_exterior_wind.ogg', fallbackUrl: '/audio/ambient/room_tone_exterior_wind.wav' },
+                    { key: 'room_tone_interior_bunker', url: '/audio/ambient/room_tone_interior_bunker.ogg', fallbackUrl: '/audio/ambient/room_tone_interior_bunker.wav' },
+                    { key: 'room_tone_cryo_subzero', url: '/audio/ambient/room_tone_cryo_subzero.ogg', fallbackUrl: '/audio/ambient/room_tone_cryo_subzero.wav' },
+                    { key: 'room_tone_bio_hive', url: '/audio/ambient/room_tone_bio_hive.ogg', fallbackUrl: '/audio/ambient/room_tone_bio_hive.wav' },
+                    { key: 'room_tone_cathedral_crypt', url: '/audio/ambient/room_tone_cathedral_crypt.ogg', fallbackUrl: '/audio/ambient/room_tone_cathedral_crypt.wav' },
+                    { key: 'room_tone_safe_ship', url: '/audio/ambient/room_tone_safe_ship.ogg', fallbackUrl: '/audio/ambient/room_tone_safe_ship.wav' },
+
                     // Foley Set 01: Mothership Comms
                     { key: 'foley_mothership_room_loop', url: '/audio/foley/mothership/foley_mothership_room_loop.wav' },
                     { key: 'foley_mothership_link_acquire_1', url: '/audio/foley/mothership/foley_mothership_link_acquire_1.wav' },

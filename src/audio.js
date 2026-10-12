@@ -147,6 +147,20 @@ export class AudioManager {
     static ambientSource = null;
     static musicSource = null;
 
+    // Dedicated Room Tone (Long, subtle, seamless ambient bed) Gain Node & State
+    static roomToneGain = audioCtx.createGain();
+    static activeRoomTone = null;
+    static fadingRoomTone = null;
+    static _roomToneFadeSeconds = 2.8;
+    static _pendingRoomToneKey = null;
+
+    // Atmospheric Breathing Cycle & Non-Infinite Exploration Music
+    static _musicCycleDuration = 110.0;
+    static _musicBreathingDuration = 35.0;
+    static _musicBreathingTimer = null;
+    static _musicCycleTimer = null;
+    static _musicPlaylistIndices = new Map();
+
     // Gain nodes for volume control
     static masterGain = audioCtx.createGain();
     static sfxGain = audioCtx.createGain();
@@ -205,12 +219,14 @@ export class AudioManager {
         this.voiceGain.connect(this.masterGain);
         this.foleyGain.connect(this.masterGain);
         this.rainGain.connect(this.worldGain);
+        this.roomToneGain.connect(this.worldGain);
         this.musicTensionGain.connect(this.musicGain);
 
         // Base volume mix
         this.masterGain.gain.value = 1.0;
         this.sfxGain.gain.value = 1.0;
         this.worldGain.gain.value = 1.0;
+        this.roomToneGain.gain.value = 1.0;
         this.musicGain.gain.value = 1.0;
         this.voiceGain.gain.value = 1.0;
         this.foleyGain.gain.value = 1.0;
@@ -272,9 +288,11 @@ export class AudioManager {
                         ? this.worldGain
                         : (channel === 'ambient' || channel === 'rain')
                             ? this.rainGain
-                            : (channel === 'vfx' || channel === 'sfx')
-                                ? this.sfxGain
-                                : null;
+                            : (channel === 'roomtone' || channel === 'room_tone' || channel === 'tone')
+                                ? this.roomToneGain
+                                : (channel === 'vfx' || channel === 'sfx')
+                                    ? this.sfxGain
+                                    : null;
 
         if (!gainNode) return;
         gainNode.gain.setTargetAtTime(clamped, audioCtx.currentTime, 0.05);
@@ -282,6 +300,10 @@ export class AudioManager {
         if (channel === 'vfx' || channel === 'sfx') {
             this.worldGain.gain.setTargetAtTime(clamped, audioCtx.currentTime, 0.05);
             this.foleyGain.gain.setTargetAtTime(clamped, audioCtx.currentTime, 0.05);
+            this.roomToneGain.gain.setTargetAtTime(clamped, audioCtx.currentTime, 0.05);
+        }
+        if (channel === 'world' || channel === 'env' || channel === 'environment') {
+            this.roomToneGain.gain.setTargetAtTime(clamped, audioCtx.currentTime, 0.05);
         }
     }
 
@@ -291,13 +313,19 @@ export class AudioManager {
         if (mix.music !== undefined) this.setChannelVolume('music', mix.music);
         if (mix.voice !== undefined) this.setChannelVolume('voice', mix.voice);
         if (mix.voiceEnabled !== undefined) this.voiceEnabled = Boolean(mix.voiceEnabled);
+        if (mix.roomTone !== undefined || mix.roomtone !== undefined) {
+            this.setChannelVolume('roomtone', mix.roomTone ?? mix.roomtone);
+        }
 
         const sfxVol = mix.vfx !== undefined ? mix.vfx : mix.sfx;
         if (sfxVol !== undefined) {
             this.setChannelVolume('vfx', sfxVol);
-            // World and foley layers follow sfx volume unless explicitly specified
+            // World, foley, and room tone layers follow sfx volume unless explicitly specified
             this.setChannelVolume('world', mix.world !== undefined ? mix.world : sfxVol);
             this.setChannelVolume('foley', mix.foley !== undefined ? mix.foley : sfxVol);
+            if (mix.roomTone === undefined && mix.roomtone === undefined) {
+                this.setChannelVolume('roomtone', mix.world !== undefined ? mix.world : sfxVol);
+            }
         } else if (mix.world !== undefined) {
             this.setChannelVolume('world', mix.world);
         }
@@ -2054,61 +2082,325 @@ export class AudioManager {
         return started;
     }
 
-    static resolveMusicTrackKey(context) {
-        const mapped = this.MUSIC_CONTEXT_TRACKS[context];
-        if (mapped && this.buffers[mapped]) return mapped;
-        return this.buffers.mainbg_music ? 'mainbg_music' : mapped;
+    static ROOM_TONE_MANIFEST = Object.freeze({
+        room_tone_exterior_wind:   '/audio/ambient/room_tone_exterior_wind.ogg',
+        room_tone_interior_bunker: '/audio/ambient/room_tone_interior_bunker.ogg',
+        room_tone_cryo_subzero:    '/audio/ambient/room_tone_cryo_subzero.ogg',
+        room_tone_bio_hive:        '/audio/ambient/room_tone_bio_hive.ogg',
+        room_tone_cathedral_crypt: '/audio/ambient/room_tone_cathedral_crypt.ogg',
+        room_tone_safe_ship:       '/audio/ambient/room_tone_safe_ship.ogg'
+    });
+
+    static MUSIC_CONTEXT_PLAYLISTS = Object.freeze({
+        safe_ship: Object.freeze([
+            'music_safe_ship',
+            'music_interstitial_01', // Someone Is Still Alive
+            'music_interstitial_09', // Mothership Customer Support
+            'music_interstitial_34', // Four Seats, One Survivor
+            'music_interstitial_36'  // We Escaped Together, Technically
+        ]),
+        cryo_explore: Object.freeze([
+            'music_cryo_explore',
+            'music_interstitial_04', // Warmth Beneath the Ice
+            'music_interstitial_14', // Cold Enough to Think
+            'music_interstitial_37', // The Ice Gets Smaller
+            'music_interstitial_07'  // Your Name Was Written Twice
+        ]),
+        bio_explore: Object.freeze([
+            'music_bio_explore',
+            'music_interstitial_15', // The Spores Know Your Name
+            'music_interstitial_08', // Dr. Nahl Remembers the Tissue
+            'music_interstitial_33', // The Cave Was Breathing
+            'music_interstitial_12'  // The Queen Makes a Reasonable Offer
+        ]),
+        active_explore: Object.freeze([
+            'music_interstitial_03', // The Math Is Beautiful Now
+            'music_interstitial_05', // The Pipes Are Singing
+            'music_interstitial_10', // Mothership Is Not Feeling Well
+            'music_interstitial_13', // A Snail Blocks the Hallway
+            'music_interstitial_16', // We Could Avoid Doing This
+            'music_interstitial_18'  // The Creature Lets You Pass
+        ]),
+        camp_tallow: Object.freeze([
+            'music_interstitial_20', // Tallow Keeps the Steam
+            'music_interstitial_04'  // Warmth Beneath the Ice
+        ]),
+        camp_vesper: Object.freeze([
+            'music_interstitial_21', // Vesper Sleeps in Shifts
+            'music_interstitial_06'  // Briggs Keeps the Ledger
+        ]),
+        camp_meridian: Object.freeze([
+            'music_interstitial_19', // Meridian Remembers You
+            'music_interstitial_23'  // They Still Have Their Faces
+        ]),
+        camp_robbed: Object.freeze([
+            'music_interstitial_22'  // You Robbed the Only People Left
+        ]),
+        combat: Object.freeze([
+            'music_combat_threatened',
+            'music_interstitial_17', // It Understands the Gun
+            'music_interstitial_32'  // Black Box Stain
+        ]),
+        boss_cybersnail: Object.freeze(['music_interstitial_25']), // Gigawatt Goliath
+        boss_cryosnail:  Object.freeze(['music_interstitial_26']), // Absolute Zero Has a Shell
+        boss_sporesnail: Object.freeze(['music_interstitial_27']), // The Bloom That Hunts
+        boss_scout:      Object.freeze(['music_interstitial_28']), // Martha Runs Faster Now
+        boss_tank:       Object.freeze(['music_interstitial_29']), // Briggs Became the Barricade
+        boss_engineer:   Object.freeze(['music_interstitial_30']), // Kaelen Is the Grid
+        boss_queen:      Object.freeze(['music_interstitial_31']), // Mother of the Last World
+        story_climax: Object.freeze([
+            'music_interstitial_02', // Kaelen's Sleeping Machine
+            'music_interstitial_11', // Her Voice Inside Your Helmet
+            'music_interstitial_24', // Nobody Says Goodbye
+            'music_interstitial_35', // Contraband Sunrise
+            'music_interstitial_38'  // Destination Core Worlds
+        ])
+    });
+
+    static async preloadRoomTone(toneKey) {
+        if (!toneKey) return null;
+        if (this.buffers[toneKey]) return this.buffers[toneKey];
+        const url = this.ROOM_TONE_MANIFEST[toneKey];
+        if (!url) return null;
+        try {
+            const buffer = await this.decodeAudioAsset(url);
+            this.buffers[toneKey] = buffer;
+            return buffer;
+        } catch {
+            try {
+                const wavUrl = url.replace('.ogg', '.wav');
+                const buffer = await this.decodeAudioAsset(wavUrl);
+                this.buffers[toneKey] = buffer;
+                return buffer;
+            } catch {
+                return null;
+            }
+        }
     }
 
-    // Crossfade the looping background track for the given gameplay context so
-    // music is always present and only the tone changes on biome/threat shifts.
-    static setMusicContext(context = 'safe_ship') {
+    /**
+     * Crossfade smoothly into a new room tone bed.
+     * The previous tone fades to silence while the new tone begins at zero and
+     * linearly ramps up to target volume on the dedicated roomToneGain bus.
+     */
+    static setRoomTone(toneKey, { fadeSeconds = this._roomToneFadeSeconds, volume = 0.38 } = {}) {
+        if (!toneKey) {
+            this.stopRoomTone({ fadeSeconds });
+            return;
+        }
         if (!this.isUnlocked) {
-            this._pendingMusicContext = context; // applied on unlock/startAmbience
+            this._pendingRoomToneKey = toneKey;
             return;
         }
-        const bufferKey = this.resolveMusicTrackKey(context);
-        if (!bufferKey) return;
-        if (!this.buffers[bufferKey]) {
-            // Trigger asynchronous on-demand decode so contextual boss/exploration tracks load smoothly
-            this.playOST(context, { loop: true, context, volume: 0.62 }).catch(() => {});
+        if (this.activeRoomTone && this.activeRoomTone.key === toneKey) {
             return;
         }
 
-        // Already on the right context, or two contexts share the fallback track.
-        if (this.activeMusic && this.activeMusic.context === context) return;
-        if (this.activeMusic && this.activeMusic.bufferKey === bufferKey) {
-            this.activeMusic.context = context;
-            return;
-        }
-
-        const fade = this._musicFadeSeconds;
+        const fade = Math.max(0.1, Number(fadeSeconds) || this._roomToneFadeSeconds);
         const now = audioCtx.currentTime;
 
-        // Fade out and retire the previous track.
+        // Gracefully retire active room tone
+        if (this.activeRoomTone?.source && this.activeRoomTone?.gainNode) {
+            const prev = this.activeRoomTone;
+            const pg = prev.gainNode.gain;
+            try {
+                pg.cancelScheduledValues(now);
+                pg.setValueAtTime(pg.value, now);
+                pg.linearRampToValueAtTime(0.0001, now + fade);
+            } catch { /* ignore */ }
+            setTimeout(() => {
+                try { prev.source.stop(); } catch { /* ignore */ }
+            }, Math.round((fade + 0.15) * 1000));
+            this.fadingRoomTone = prev;
+            this.activeRoomTone = null;
+        }
+
+        const startTone = (buffer) => {
+            if (!buffer || this.globalMuted) return null;
+            const source = audioCtx.createBufferSource();
+            source.buffer = buffer;
+            source.loop = true;
+
+            const gainNode = audioCtx.createGain();
+            try {
+                gainNode.gain.cancelScheduledValues(now);
+                gainNode.gain.setValueAtTime(0.0001, now);
+                gainNode.gain.linearRampToValueAtTime(volume, now + fade);
+            } catch {
+                gainNode.gain.value = volume;
+            }
+
+            source.connect(gainNode);
+            gainNode.connect(this.roomToneGain);
+            try { source.start(0); } catch { /* ignore */ }
+
+            this.activeRoomTone = { key: toneKey, source, gainNode, targetVolume: volume };
+            return this.activeRoomTone;
+        };
+
+        if (this.buffers[toneKey]) {
+            return startTone(this.buffers[toneKey]);
+        } else {
+            this.preloadRoomTone(toneKey).then((buf) => {
+                if (buf && (!this.activeRoomTone || this.activeRoomTone.key === toneKey)) {
+                    startTone(buf);
+                }
+            });
+            return null;
+        }
+    }
+
+    static stopRoomTone({ fadeSeconds = this._roomToneFadeSeconds } = {}) {
+        const fade = Math.max(0.05, Number(fadeSeconds) || 0.4);
+        const now = audioCtx.currentTime;
+        if (this.activeRoomTone?.gainNode && this.activeRoomTone?.source) {
+            const current = this.activeRoomTone;
+            try {
+                current.gainNode.gain.cancelScheduledValues(now);
+                current.gainNode.gain.setValueAtTime(current.gainNode.gain.value, now);
+                current.gainNode.gain.linearRampToValueAtTime(0.0001, now + fade);
+            } catch { /* ignore */ }
+            setTimeout(() => {
+                try { current.source.stop(); } catch { /* ignore */ }
+            }, Math.round((fade + 0.1) * 1000));
+            this.activeRoomTone = null;
+        }
+    }
+
+    static advancePlaylistIndex(context) {
+        const playlist = this.MUSIC_CONTEXT_PLAYLISTS[context];
+        if (!Array.isArray(playlist) || playlist.length <= 1) return;
+        const currentIdx = this._musicPlaylistIndices.get(context) ?? 0;
+        this._musicPlaylistIndices.set(context, (currentIdx + 1) % playlist.length);
+    }
+
+    static resolveMusicTrackKey(context) {
+        const playlist = this.MUSIC_CONTEXT_PLAYLISTS[context];
+        if (Array.isArray(playlist) && playlist.length > 0) {
+            const currentIdx = this._musicPlaylistIndices.get(context) ?? 0;
+            return playlist[currentIdx % playlist.length];
+        }
+        const mapped = this.MUSIC_CONTEXT_TRACKS[context];
+        if (mapped && this.buffers[mapped]) return mapped;
+        return this.buffers.mainbg_music ? 'mainbg_music' : (mapped || 'mainbg_music');
+    }
+
+    /**
+     * Set active musical context with seamless crossfading, contextual playlist rotation,
+     * and atmospheric room tone breathing intervals.
+     */
+    static setMusicContext(context = 'safe_ship', options = {}) {
+        if (!this.isUnlocked) {
+            this._pendingMusicContext = context;
+            return;
+        }
+
+        // Cancel pending breathing or track timeout when a new context request arrives
+        if (this._musicBreathingTimeout) {
+            clearTimeout(this._musicBreathingTimeout);
+            this._musicBreathingTimeout = null;
+        }
+        if (this._musicCycleTimeout) {
+            clearTimeout(this._musicCycleTimeout);
+            this._musicCycleTimeout = null;
+        }
+
+        const isCombatOrBoss = context === 'combat' || context.startsWith('boss_');
+
+        // Already playing the correct context and music is actively audible
+        if (this.activeMusic && this.activeMusic.context === context && !options.forceNext) {
+            return;
+        }
+
+        const bufferKey = this.resolveMusicTrackKey(context);
+        if (!bufferKey) return;
+
+        if (!this.buffers[bufferKey]) {
+            // Trigger asynchronous on-demand decode and start once loaded
+            this.playOST(bufferKey, {
+                loop: isCombatOrBoss,
+                context,
+                volume: 0.62,
+                fadeSeconds: this._musicFadeSeconds
+            }).catch(() => {});
+            return;
+        }
+
+        const fade = Math.max(0.2, Number(options.fadeSeconds ?? this._musicFadeSeconds) || this._musicFadeSeconds);
+        const now = audioCtx.currentTime;
+
+        // Fade out and retire the previous track
         const previous = this.activeMusic;
         if (previous?.gainNode && previous?.source) {
             const g = previous.gainNode.gain;
-            g.cancelScheduledValues(now);
-            g.setValueAtTime(g.value, now);
-            g.linearRampToValueAtTime(0.0001, now + fade);
-            try { previous.source.stop(now + fade + 0.05); } catch (err) { void err; }
+            try {
+                g.cancelScheduledValues(now);
+                g.setValueAtTime(g.value, now);
+                g.linearRampToValueAtTime(0.0001, now + fade);
+                previous.source.stop(now + fade + 0.05);
+            } catch { /* ignore */ }
         }
 
-        // Start the new track silent and fade it up.
-        const started = this.play(bufferKey, { volume: 0.0001, loop: true, bus: 'music', varyPitch: false });
+        const targetVolume = Number.isFinite(options.volume) ? options.volume : 0.62;
+        const started = this.play(bufferKey, {
+            volume: 0.0001,
+            loop: isCombatOrBoss, // Bosses & combat loop until encounter finishes
+            bus: 'music',
+            varyPitch: false
+        });
         if (!started) return;
-        const ng = started.gainNode.gain;
-        ng.cancelScheduledValues(now);
-        ng.setValueAtTime(0.0001, now);
-        ng.linearRampToValueAtTime(1.0, now + fade);
 
-        this.activeMusic = { source: started.source, gainNode: started.gainNode, bufferKey, context };
-        this.musicSource = started.source; // keep legacy reference current
+        const ng = started.gainNode.gain;
+        try {
+            ng.cancelScheduledValues(now);
+            ng.setValueAtTime(0.0001, now);
+            ng.linearRampToValueAtTime(targetVolume, now + fade);
+        } catch {
+            ng.value = targetVolume;
+        }
+
+        this.activeMusic = {
+            source: started.source,
+            gainNode: started.gainNode,
+            bufferKey,
+            context
+        };
+        this.musicSource = started.source;
+
+        // For non-looping exploration, schedule cycle fade and room tone breathing room
+        if (!isCombatOrBoss) {
+            const buffer = this.buffers[bufferKey];
+            const trackDuration = (buffer && Number.isFinite(buffer.duration) && buffer.duration > 20)
+                ? buffer.duration
+                : this._musicCycleDuration;
+            const cycleDuration = Math.min(this._musicCycleDuration, Math.max(45, trackDuration));
+
+            this._musicCycleTimeout = setTimeout(() => {
+                if (this.activeMusic && this.activeMusic.context === context && this.activeMusic.source === started.source) {
+                    const cNow = audioCtx.currentTime;
+                    try {
+                        ng.cancelScheduledValues(cNow);
+                        ng.setValueAtTime(ng.value, cNow);
+                        ng.linearRampToValueAtTime(0.0001, cNow + fade);
+                        started.source.stop(cNow + fade + 0.05);
+                    } catch { /* ignore */ }
+                    this.activeMusic = null;
+                    this.musicSource = null;
+
+                    // Atmospheric Room Tone Breathing Window (35s)
+                    // The room tone bed plays completely unobstructed under the world
+                    this._musicBreathingTimeout = setTimeout(() => {
+                        this._musicBreathingTimeout = null;
+                        this.advancePlaylistIndex(context);
+                        this.setMusicContext(context);
+                    }, Math.round(this._musicBreathingDuration * 1000));
+                }
+            }, Math.round((cycleDuration - fade) * 1000));
+        }
     }
 
     static startAmbience() {
-        if (this.ambientSource) return; // Already playing
+        if (this.ambientSource) return;
 
         // Play Drone
         const drone = this.play('amb_bunker_loop', { volume: 0.005, loop: true, bus: 'world', varyPitch: false });
@@ -2117,23 +2409,28 @@ export class AudioManager {
         // Start Starter Camp rain ambience bed if available
         this.startCampRainAmbience(0.22);
 
-        // Start contextual background music (crossfade-managed). Honour any
-        // context requested before the audio graph was unlocked.
+        // Start Room Tone bed (apply pending or default safe ship bed)
+        if (this._pendingRoomToneKey) {
+            this.setRoomTone(this._pendingRoomToneKey);
+            this._pendingRoomToneKey = null;
+        } else {
+            this.setRoomTone('room_tone_safe_ship', { volume: 0.38 });
+        }
+
+        // Start contextual background music
         this.setMusicContext(this._pendingMusicContext ?? 'safe_ship');
         this._pendingMusicContext = null;
 
-        // Start random ambient pings (drips only; static now comes from
-        // specific gameplay cues so it doesn't wash over the whole menu flow).
+        // Ambient drips
         if (!this.randInterval) {
             this.randInterval = setInterval(() => {
-                if (this.globalMuted || Math.random() > 0.6) return; // 40% chance to play something
-
+                if (this.globalMuted || Math.random() > 0.6) return;
                 this.play('amb_drip', {
                     bus: 'world',
                     volume: 0.12 + (Math.random() * 0.08),
-                    playbackRate: 0.8 + (Math.random() * 0.4) // randomize pitch slightly
+                    playbackRate: 0.8 + (Math.random() * 0.4)
                 });
-            }, 5000); // Check every 5 seconds
+            }, 5000);
         }
     }
 
@@ -2142,14 +2439,20 @@ export class AudioManager {
             this._pendingMusicContext = 'safe_ship';
             return;
         }
-        // The menu should only carry the title music. Any looping ambience
-        // from gameplay needs to stop here so it can't bleed under the theme.
         this.stopAmbience({ stopMusic: false });
         this.setMusicTension('safe');
         this.setMusicContext('safe_ship');
     }
 
     static stopMusic({ fadeSeconds = this._musicFadeSeconds } = {}) {
+        if (this._musicBreathingTimeout) {
+            clearTimeout(this._musicBreathingTimeout);
+            this._musicBreathingTimeout = null;
+        }
+        if (this._musicCycleTimeout) {
+            clearTimeout(this._musicCycleTimeout);
+            this._musicCycleTimeout = null;
+        }
         if (!this.activeMusic?.source || !this.activeMusic?.gainNode) {
             this.activeMusic = null;
             this.musicSource = null;
@@ -2160,20 +2463,23 @@ export class AudioManager {
         const fade = Math.max(0, Number(fadeSeconds) || 0);
         const { source, gainNode } = this.activeMusic;
         const gain = gainNode.gain;
-        gain.cancelScheduledValues(now);
-        gain.setValueAtTime(gain.value, now);
-        gain.linearRampToValueAtTime(0.0001, now + fade);
-        try { source.stop(now + fade + 0.05); } catch (err) { void err; }
+        try {
+            gain.cancelScheduledValues(now);
+            gain.setValueAtTime(gain.value, now);
+            gain.linearRampToValueAtTime(0.0001, now + fade);
+            source.stop(now + fade + 0.05);
+        } catch { /* ignore */ }
         this.activeMusic = null;
         this.musicSource = null;
     }
 
     static stopAmbience({ stopMusic = false, musicFadeSeconds = this._musicFadeSeconds } = {}) {
         if (this.ambientSource) {
-            try { this.ambientSource.stop(); } catch (err) { void err; }
+            try { this.ambientSource.stop(); } catch { /* ignore */ }
             this.ambientSource = null;
         }
         this.stopCampRainAmbience(musicFadeSeconds);
+        this.stopRoomTone({ fadeSeconds: musicFadeSeconds });
         if (stopMusic) this.stopMusic({ fadeSeconds: musicFadeSeconds });
         if (this.randInterval) {
             clearInterval(this.randInterval);
