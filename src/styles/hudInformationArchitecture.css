@@ -505,8 +505,8 @@ html[data-hud-layout="dock"] #game-viewport #ui .hud-corner-settings .calibrate-
 }
 
 html[data-hud-layout="dock"] #game-viewport {
-  --hud-console-h: calc(136 * var(--u));
-  --hud-console-w: min(calc(1560 * var(--u)), calc(100% - 2 * var(--hud-margin)));
+  --hud-console-h: calc(196 * var(--u));
+  --hud-console-w: 100%;
 }
 
 html[data-hud-layout="dock"] #game-viewport #ui :is(.dock-glass, .dock-housing) {
@@ -515,16 +515,17 @@ html[data-hud-layout="dock"] #game-viewport #ui :is(.dock-glass, .dock-housing) 
 
 html[data-hud-layout="dock"] #game-viewport #ui .hud-console {
   position: absolute;
-  left: 50%;
-  right: auto;
-  top: auto;
-  bottom: var(--hud-margin);
-  width: var(--hud-console-w);
-  height: var(--hud-console-h);
-  transform: translateX(-50%);
+  left: 0 !important;
+  right: 0 !important;
+  top: auto !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: var(--hud-console-h) !important;
+  transform: none !important;
   display: grid;
-  grid-template-columns: minmax(0, 30fr) minmax(0, 38fr) minmax(0, 32fr);
-  padding: calc(10 * var(--u)) calc(14 * var(--u));
+  grid-template-columns: calc(300 * var(--u)) minmax(0, 1fr) calc(420 * var(--u));
+  padding: calc(6 * var(--u)) calc(10 * var(--u)) calc(6 * var(--u));
+  gap: calc(10 * var(--u));
   box-sizing: border-box;
   isolation: isolate;
   pointer-events: none;
@@ -542,22 +543,19 @@ html[data-hud-layout="dock"] #game-viewport #ui .hud-console__wear {
 html[data-hud-layout="dock"] #game-viewport #ui .hud-console__glass {
   z-index: -2;
   background:
-    linear-gradient(90deg, rgba(0, 210, 255, .05), transparent 30%, transparent 68%, rgba(255, 159, 28, .06)),
-    linear-gradient(180deg, rgba(10, 17, 23, .94), rgba(4, 8, 12, .98));
-  border: calc(1 * var(--u)) solid color-mix(in srgb, var(--hud-primary, #67e3e1) 54%, transparent);
-  border-left-width: calc(3 * var(--u));
-  border-right-color: rgba(255, 159, 28, .48);
-  clip-path: polygon(calc(12 * var(--u)) 0, calc(100% - 12 * var(--u)) 0, 100% calc(12 * var(--u)), 100% 100%, 0 100%, 0 calc(12 * var(--u)));
-  box-shadow: 0 calc(7 * var(--u)) calc(24 * var(--u)) rgba(0, 0, 0, .72);
+    linear-gradient(90deg, rgba(0, 210, 255, .06), transparent 30%, transparent 68%, rgba(255, 159, 28, .07)),
+    linear-gradient(180deg, rgba(8, 14, 20, .96), rgba(3, 6, 9, .99));
+  border-top: calc(2 * var(--u)) solid color-mix(in srgb, var(--hud-primary, #67e3e1) 50%, transparent);
+  box-shadow: 0 calc(-6 * var(--u)) calc(24 * var(--u)) rgba(0, 0, 0, .85);
 }
 
 html[data-hud-layout="dock"] #game-viewport #ui .hud-console__frame {
   z-index: 4;
   opacity: .9;
   background:
-    linear-gradient(90deg, transparent 29.9%, color-mix(in srgb, var(--hud-primary, #67e3e1) 38%, transparent) 30%, transparent 30.15%),
-    linear-gradient(90deg, transparent 67.9%, rgba(255, 159, 28, .34) 68%, transparent 68.15%),
-    linear-gradient(90deg, var(--hud-primary, #67e3e1), rgba(255, 159, 28, .7)) top/calc(100% - 24 * var(--u)) calc(2 * var(--u)) no-repeat;
+    linear-gradient(90deg, transparent 30.9%, color-mix(in srgb, var(--hud-primary, #67e3e1) 38%, transparent) 31%, transparent 31.15%),
+    linear-gradient(90deg, transparent 69.9%, rgba(255, 159, 28, .34) 70%, transparent 70.15%),
+    linear-gradient(90deg, var(--hud-primary, #67e3e1), rgba(255, 159, 28, .7)) top/100% calc(2 * var(--u)) no-repeat;
 }
 
 html[data-hud-layout="dock"] #game-viewport #ui .hud-console__wear {
@@ -575,10 +573,121 @@ html[data-hud-layout="dock"] #game-viewport #ui :is(
   position: relative;
   min-width: 0;
   min-height: 0;
-  padding: 0 calc(12 * var(--u));
+  padding: calc(6 * var(--u)) calc(8 * var(--u));
   box-sizing: border-box;
   pointer-events: auto;
   z-index: 2;
+  border-radius: calc(3 * var(--u));
+  overflow: hidden;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui :is(
+  .hud-console__map-slot,
+  .hud-console__suit-slot,
+  .hud-console__mission-slot
+) > * {
+  position: relative;
+  z-index: 10 !important;
+}
+
+/* Glass backing texture for each section */
+html[data-hud-layout="dock"] #game-viewport #ui :is(
+  .hud-console__map-slot,
+  .hud-console__suit-slot,
+  .hud-console__mission-slot
+)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none;
+  z-index: -1;
+  opacity: .88;
+}
+
+/* Stylized painted cutout frame overlay for each section */
+html[data-hud-layout="dock"] #game-viewport #ui :is(
+  .hud-console__map-slot,
+  .hud-console__suit-slot,
+  .hud-console__mission-slot
+)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none;
+  z-index: 8;
+}
+
+/* Scout skins (default fallback) */
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot::before,
+html[data-hud-layout="dock"][data-operator-class="scout"] #game-viewport #ui .hud-console__map-slot::before {
+  background-image: url("/ui/dock/scout-map-glass.webp");
+}
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot::before,
+html[data-hud-layout="dock"][data-operator-class="scout"] #game-viewport #ui .hud-console__suit-slot::before {
+  background-image: url("/ui/dock/scout-status-glass.webp");
+}
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot::before,
+html[data-hud-layout="dock"][data-operator-class="scout"] #game-viewport #ui .hud-console__mission-slot::before {
+  background-image: url("/ui/dock/scout-arms-glass.webp");
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot::after,
+html[data-hud-layout="dock"][data-operator-class="scout"] #game-viewport #ui .hud-console__map-slot::after {
+  background-image: url("/ui/dock/scout-map.webp");
+}
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot::after,
+html[data-hud-layout="dock"][data-operator-class="scout"] #game-viewport #ui .hud-console__suit-slot::after {
+  background-image: url("/ui/dock/scout-status.webp");
+}
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot::after,
+html[data-hud-layout="dock"][data-operator-class="scout"] #game-viewport #ui .hud-console__mission-slot::after {
+  background-image: url("/ui/dock/scout-arms.webp");
+}
+
+/* Tank skins */
+html[data-hud-layout="dock"][data-operator-class="tank"] #game-viewport #ui .hud-console__map-slot::before {
+  background-image: url("/ui/dock/tank-map-glass.webp");
+}
+html[data-hud-layout="dock"][data-operator-class="tank"] #game-viewport #ui .hud-console__suit-slot::before {
+  background-image: url("/ui/dock/tank-status-glass.webp");
+}
+html[data-hud-layout="dock"][data-operator-class="tank"] #game-viewport #ui .hud-console__mission-slot::before {
+  background-image: url("/ui/dock/tank-arms-glass.webp");
+}
+html[data-hud-layout="dock"][data-operator-class="tank"] #game-viewport #ui .hud-console__map-slot::after {
+  background-image: url("/ui/dock/tank-map.webp");
+}
+html[data-hud-layout="dock"][data-operator-class="tank"] #game-viewport #ui .hud-console__suit-slot::after {
+  background-image: url("/ui/dock/tank-status.webp");
+}
+html[data-hud-layout="dock"][data-operator-class="tank"] #game-viewport #ui .hud-console__mission-slot::after {
+  background-image: url("/ui/dock/tank-arms.webp");
+}
+
+/* Engineer skins */
+html[data-hud-layout="dock"][data-operator-class="engineer"] #game-viewport #ui .hud-console__map-slot::before {
+  background-image: url("/ui/dock/engineer-map-glass.webp");
+}
+html[data-hud-layout="dock"][data-operator-class="engineer"] #game-viewport #ui .hud-console__suit-slot::before {
+  background-image: url("/ui/dock/engineer-status-glass.webp");
+}
+html[data-hud-layout="dock"][data-operator-class="engineer"] #game-viewport #ui .hud-console__mission-slot::before {
+  background-image: url("/ui/dock/engineer-arms-glass.webp");
+}
+html[data-hud-layout="dock"][data-operator-class="engineer"] #game-viewport #ui .hud-console__map-slot::after {
+  background-image: url("/ui/dock/engineer-map.webp");
+}
+html[data-hud-layout="dock"][data-operator-class="engineer"] #game-viewport #ui .hud-console__suit-slot::after {
+  background-image: url("/ui/dock/engineer-status.webp");
+}
+html[data-hud-layout="dock"][data-operator-class="engineer"] #game-viewport #ui .hud-console__mission-slot::after {
+  background-image: url("/ui/dock/engineer-arms.webp");
 }
 
 /* Map + place: room name gets the top line, rectangular blueprint below. */
@@ -655,25 +764,27 @@ html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot #desktop-
   height: 100% !important;
   min-height: 0 !important;
   margin: 0 !important;
-  padding: calc(5 * var(--u)) !important;
-  display: block !important;
-  overflow: hidden !important;
-  background: rgba(1, 8, 13, .72) !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  background: transparent !important;
   border: 0 !important;
-  border-radius: calc(3 * var(--u)) !important;
   box-sizing: border-box !important;
 }
 
 html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot #hud-blueprint-canvas {
-  position: absolute !important;
-  left: calc(5 * var(--u)) !important;
-  top: calc(5 * var(--u)) !important;
-  width: calc(72% - 8 * var(--u)) !important;
-  height: calc(100% - 10 * var(--u)) !important;
-  max-height: none !important;
+  position: relative !important;
+  left: calc(32 * var(--u)) !important;
+  top: auto !important;
+  width: calc(118 * var(--u)) !important;
+  height: calc(118 * var(--u)) !important;
+  flex: 0 0 calc(118 * var(--u)) !important;
+  aspect-ratio: 1 / 1 !important;
+  border-radius: 50% !important;
+  border: calc(2 * var(--u)) solid rgba(0, 210, 255, .55) !important;
+  box-shadow: 0 0 calc(12 * var(--u)) rgba(0, 210, 255, .25), inset 0 0 calc(12 * var(--u)) rgba(0, 210, 255, .15) !important;
   margin: 0 !important;
-  border: calc(1 * var(--u)) solid rgba(103, 227, 225, .32) !important;
-  border-radius: calc(2 * var(--u)) !important;
   object-fit: fill !important;
 }
 
@@ -687,27 +798,28 @@ html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot .desktop-
 
 html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot .desktop-compass__ring {
   position: absolute !important;
-  left: 36% !important;
+  left: calc(32 * var(--u) + 59 * var(--u)) !important;
   top: 50% !important;
-  width: calc(30 * var(--u)) !important;
-  height: calc(30 * var(--u)) !important;
+  width: calc(34 * var(--u)) !important;
+  height: calc(34 * var(--u)) !important;
   transform: translate(-50%, -50%) !important;
   margin: 0 !important;
 }
 
 html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot .desktop-compass__readout {
-  position: absolute !important;
-  left: 73% !important;
-  right: calc(4 * var(--u)) !important;
-  top: calc(8 * var(--u)) !important;
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
   width: auto !important;
-  height: calc(100% - 16 * var(--u)) !important;
+  height: auto !important;
+  flex: 1 1 auto !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: center !important;
-  gap: calc(7 * var(--u)) !important;
+  gap: calc(8 * var(--u)) !important;
+  padding-left: calc(24 * var(--u)) !important;
   margin: 0 !important;
-  padding: 0 !important;
 }
 
 html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot .desktop-compass__row,
@@ -722,6 +834,7 @@ html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot {
   grid-template-columns: minmax(0, 58fr) minmax(0, 42fr);
   grid-template-rows: 1fr 1fr;
   gap: calc(5 * var(--u)) calc(10 * var(--u));
+  padding: calc(24 * var(--u)) calc(20 * var(--u)) calc(18 * var(--u)) !important;
 }
 
 html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot > :is(
@@ -934,13 +1047,13 @@ html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot .hud-
    than occupying independent screen corners. */
 html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays {
   position: absolute;
-  left: 50%;
-  right: auto;
+  left: 0;
+  right: 0;
   top: auto;
-  bottom: calc(var(--hud-margin) + var(--hud-console-h) + 8 * var(--u));
-  width: var(--hud-console-w);
+  bottom: var(--hud-console-h);
+  width: 100%;
   height: min(calc(180 * var(--u)), 22vh);
-  transform: translateX(-50%);
+  transform: none;
   display: block;
   pointer-events: none;
   z-index: 16920;
@@ -950,11 +1063,11 @@ html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays .hud-missi
 html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays #loop-step-hud,
 html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays #tutorial-prompt {
   position: absolute !important;
-  left: 30% !important;
+  left: calc(300 * var(--u) + 10 * var(--u)) !important;
   right: auto !important;
   top: auto !important;
   bottom: 0 !important;
-  width: 38% !important;
+  width: calc(100% - 720 * var(--u) - 20 * var(--u)) !important;
   max-width: none !important;
   transform: none !important;
   box-sizing: border-box !important;
@@ -1002,23 +1115,23 @@ html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays :is(
 
 @media (max-width: 1100px) {
   html[data-hud-layout="dock"] #game-viewport {
-    --hud-console-h: calc(128 * var(--u));
+    --hud-console-h: calc(160 * var(--u));
   }
   html[data-hud-layout="dock"] #game-viewport #ui .hud-console {
-    grid-template-columns: minmax(0, 31fr) minmax(0, 39fr) minmax(0, 30fr);
-    padding-inline: calc(8 * var(--u));
+    grid-template-columns: calc(240 * var(--u)) minmax(0, 1fr) calc(340 * var(--u));
+    padding: calc(4 * var(--u)) calc(6 * var(--u));
   }
   html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot {
     grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
   }
   html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot .hud-corner-settings {
-    grid-column: 4 / 6;
+    grid-column: 5;
   }
   html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays .hud-mission-stack,
   html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays #loop-step-hud,
   html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays #tutorial-prompt {
-    left: 31% !important;
-    width: 39% !important;
+    left: calc(240 * var(--u) + 6 * var(--u)) !important;
+    width: calc(100% - 580 * var(--u) - 12 * var(--u)) !important;
   }
-  html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays .hud-right-rail { width: 30% !important; }
+  html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays .hud-right-rail { width: calc(340 * var(--u)) !important; }
 }
