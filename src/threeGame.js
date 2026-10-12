@@ -1183,8 +1183,6 @@ const ADAPTIVE_GAMEPLAY_GRACE_SECONDS = 12;
 // Sustained FPS that restores full resolution, and for how long.
 const ADAPTIVE_GAMEPLAY_RESTORE_FPS = 58;
 const ADAPTIVE_GAMEPLAY_RESTORE_SECONDS = 10;
-// Re-engaging this soon after a restore keeps it reduced for the run.
-const ADAPTIVE_GAMEPLAY_FLAP_SECONDS = 30;
 // Lowering resolution only buys frames when the GPU is what is slow. Both
 // 2026-09 QA logs were main-thread bound (PC: 8.4 ms GPU in ~48 ms frames;
 // Deck: GPU well under 1 ms), so a blurrier picture bought nothing there.

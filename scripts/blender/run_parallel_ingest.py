@@ -54,7 +54,6 @@ ALL_PROPS = [
 
 
 def process_prop(name):
-    dest = os.path.join(ROOT, 'public/3d/runtime/new3ds', f'{name}.glb')
     env = os.environ.copy()
     env['HB_PROPS'] = name
     cmd = [BLENDER, '-b', '-P', SCRIPT]

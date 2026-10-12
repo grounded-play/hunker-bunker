@@ -18,7 +18,6 @@ Already-converted files are skipped.
 import argparse
 import io
 import json
-import os
 import struct
 import subprocess
 import sys
@@ -223,6 +222,7 @@ def main():
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
         for line in pool.map(run, files):
             print(line, flush=True)
+    return 0
 
 
 if __name__ == '__main__':

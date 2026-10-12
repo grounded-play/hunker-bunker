@@ -10,6 +10,7 @@ import {
     FLOOR_SURFACE_COUNT,
     ROOM_THEME_SURFACE,
     SURFACE_LAYER_FIRST,
+    routeSurfaceForCell,
     floorSurfaceFileNames,
     stackCompressedLayers,
     surfaceForLayer,
@@ -133,16 +134,21 @@ describe('new floor surfaces', () => {
 
     it('gives hallways the deck plate, rooms their theme surface and field ground regolith', () => {
         const splat = build();
-        expect(surfaceForLayer(at(splat, 1, 0).layer).id).toBe('tex_floor_deck_drain');
-        expect(surfaceForLayer(at(splat, 3, 1).layer).id).toBe('tex_floor_deck_drain');
-        expect(surfaceForLayer(at(splat, 2, 3).layer).id).toBe('tex_floor_slush_ice');
-        expect(surfaceForLayer(at(splat, 0, 3).layer).id).toBe('tex_ground_regolith');
+        expect(['tex_floor_deck_drain', 'tex_path_worn_deck', 'tex_path_polished_concrete', 'tex_shoulder_swept_grit'])
+            .toContain(surfaceForLayer(at(splat, 1, 0).layer).id);
+        expect(['tex_floor_deck_drain', 'tex_path_worn_deck', 'tex_path_polished_concrete', 'tex_shoulder_swept_grit'])
+            .toContain(surfaceForLayer(at(splat, 3, 1).layer).id);
+        expect(['tex_floor_slush_ice', 'tex_path_packed_snow', 'tex_path_slush_track', 'tex_shoulder_ice_crust'])
+            .toContain(surfaceForLayer(at(splat, 2, 3).layer).id);
+        expect(['tex_ground_regolith', 'tex_path_gravel_scree', 'tex_shoulder_swept_grit'])
+            .toContain(surfaceForLayer(at(splat, 0, 3).layer).id);
     });
 
     it('keeps the atlas floor for themes without a new surface and rock in canyons', () => {
         const splat = build({ metadata: { roomInstances: [{ ...ROOM, theme: 'cryo-medical' }] }, landform: 'canyon' });
         expect(at(splat, 2, 3).layer).toBe(FLOOR_LAYER.CRYO);
-        expect(at(splat, 0, 3).layer).toBe(FLOOR_LAYER.GROUND);
+        expect([FLOOR_LAYER.GROUND, 'tex_path_gravel_scree', 'tex_shoulder_swept_grit'])
+            .toContain(surfaceForLayer(at(splat, 0, 3).layer)?.id ?? at(splat, 0, 3).layer);
     });
 
     it('picks a stable version per key and uses every version somewhere', () => {
@@ -156,6 +162,30 @@ describe('new floor surfaces', () => {
         expect(floorSurfaceFileNames()).toHaveLength(FLOOR_SURFACE_COUNT);
         expect(floorSurfaceFileNames()[4]).toBe('tex_floor_concrete_stained_a');
         expect(SURFACE_LAYER_FIRST + FLOOR_SURFACE_COUNT).toBeLessThan(FLOOR_LAYER.NONE);
+    });
+
+    it('uses every authored path, shoulder and puddle family in a reachable route state', () => {
+        const cases = [
+            [FLOOR_LAYER.HALLWAY, 255, 0, ['tex_path_worn_deck', 'tex_path_polished_concrete']],
+            [FLOOR_LAYER.CRYO, 255, 0, ['tex_path_packed_snow', 'tex_path_slush_track']],
+            [FLOOR_LAYER.BIO, 255, 0, ['tex_path_resin_trail', 'tex_path_trodden_spores']],
+            [FLOOR_LAYER.CAMP, 255, 0, ['tex_path_mud_track']],
+            [FLOOR_LAYER.GROUND, 255, 0, ['tex_path_gravel_scree']],
+            [FLOOR_LAYER.HALLWAY, 80, 0, ['tex_shoulder_swept_grit']],
+            [FLOOR_LAYER.CRYO, 80, 0, ['tex_shoulder_ice_crust']],
+            [FLOOR_LAYER.BIO, 80, 0, ['tex_shoulder_resin_lip']]
+        ];
+        const seen = new Set();
+        for (const [layer, wear, wetness, expected] of cases) {
+            for (let i = 0; i < 64; i += 1) {
+                const id = surfaceForLayer(routeSurfaceForCell(layer, { wear, wetness, key: `route-${i}` }))?.id;
+                if (expected.includes(id)) seen.add(id);
+            }
+        }
+        for (const expected of cases.flatMap((entry) => entry[3])) expect(seen.has(expected), expected).toBe(true);
+        const puddleKey = Array.from({ length: 64 }, (_, i) => `puddle-${i}`).find((key) =>
+            surfaceForLayer(routeSurfaceForCell(FLOOR_LAYER.HALLWAY, { wear: 0, wetness: 0.8, key }))?.id === 'tex_overlay_puddles');
+        expect(puddleKey).toBeDefined();
     });
 
     it('draws each surface as its fallback until the arrays load', () => {

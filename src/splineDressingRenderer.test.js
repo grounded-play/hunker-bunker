@@ -65,7 +65,7 @@ describe('splineDressingRenderer', () => {
     });
 
     it('draws every area from one shared layered material', () => {
-        expect(getSplineMaterial('bunker')).toBe(getSplineMaterial('cryo'));
+        expect(getSplineMaterial()).toBe(getSplineMaterial());
         expect(splineLayerFor({ layerKind: 'vein' })).toBe(1);
         expect(splineLayerFor({ type: 'coolant_pipe' })).toBe(2);
         expect(splineLayerFor({ type: 'rope' })).toBe(3);

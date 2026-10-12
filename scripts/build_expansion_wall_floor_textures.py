@@ -409,7 +409,6 @@ def generate_toxic_sump_floor():
     color = base * (1.0 - hole_mask) + drain_void * hole_mask
 
     # Center drainage channel with yellow hazard safety edging
-    trench_y = (y > 0.44) & (y < 0.56)
     trench_edge = ((y > 0.43) & (y < 0.45)) | ((y > 0.55) & (y < 0.57))
     hazard_yellow = np.array([0.88, 0.72, 0.08], dtype=np.float32)
     color[trench_edge] = hazard_yellow

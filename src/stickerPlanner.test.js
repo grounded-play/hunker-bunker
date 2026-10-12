@@ -5,7 +5,7 @@ import { read as readKtx2 } from 'three/examples/jsm/libs/ktx-parse.module.js';
 import { FLOOR_LAYER, buildFloorSplatData } from './floorSplat.js';
 import { STICKER_LAYERS } from './data/stickerLayers.js';
 import { STICKER_FAMILIES, planChunkStickers, surfaceCategory } from './stickerPlanner.js';
-import { buildStickerMesh, createStickerMaterial, stickerLayerIndex, stickerTransform } from './stickerDecals.js';
+import { buildStickerMesh, createStickerMaterial, legacyDecalLayerIndex, stickerLayerIndex, stickerTransform } from './stickerDecals.js';
 
 // A cryo room (x 2-6, y 2-6) behind a door at (4, 1), a hallway above it and
 // exterior ground down the left side.
@@ -124,13 +124,28 @@ describe('room-dressing PNG decals on the PBR path', () => {
     it('gives every public/decal_*.png a baked PBR layer and ships both maps', async () => {
         const { LEGACY_DECAL_LAYERS } = await import('./data/legacyDecalLayers.js');
         const pngs = fs.readdirSync('public')
-            .filter((file) => /^decal_.*\.png$/.test(file) && !/_[abcd]\.png$/.test(file) && file !== 'decal_strip_drain_gutter.png')
+            .filter((file) => /^decal_.*\.png$/.test(file))
             .map((file) => file.slice(0, -4))
             .sort();
         expect(LEGACY_DECAL_LAYERS.map((layer) => layer.name)).toEqual(pngs);
         for (const { name } of LEGACY_DECAL_LAYERS) {
             for (const map of ['albedo', 'detail']) {
                 expect(fs.existsSync(`public/3d/runtime/decals/legacy/${name}_${map}.ktx2`), `${name}_${map}`).toBe(true);
+            }
+        }
+    });
+
+    it('maps all four delivered route-decal variants into the PBR array', async () => {
+        const { LEGACY_DECAL_LAYERS } = await import('./data/legacyDecalLayers.js');
+        for (const family of [
+            'decal_door_wear_apron', 'decal_junction_turn_wear', 'decal_sled_tracks',
+            'decal_strip_cart_ruts', 'decal_strip_drag_marks', 'decal_strip_drain_gutter',
+            'decal_strip_hive_veins', 'decal_walkway_borders'
+        ]) {
+            for (let variant = 0; variant < 4; variant += 1) {
+                const layer = legacyDecalLayerIndex(family, variant);
+                expect(layer, `${family} ${variant}`).toBeGreaterThanOrEqual(0);
+                expect(LEGACY_DECAL_LAYERS[layer].name).toBe(`${family}${['', '_b', '_c', '_d'][variant]}`);
             }
         }
     });

@@ -98,7 +98,11 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // public/3d/runtime/sprites, 55 MiB of UASTC KTX2): sprite GPU memory in a
 // pinned run fell 449 -> 333 MiB, total textures 1717 -> 1560 MiB. Measured
 // payload with them 3548 MiB, before other uncommitted art.
-const PUBLIC_BUDGET = 3700 * 1024 * 1024;
+// Raised 3700->4200 MiB for Sprint 51 world completion: 39 authored 25k-triangle
+// landmark/lived-in GLBs and 48 route/shoulder surface maps. The route-decal
+// audit removed 38 byte-identical public aliases before this increase; measured
+// payload is 4112 MiB, leaving 88 MiB rather than hiding duplicate growth.
+const PUBLIC_BUDGET = 4200 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus

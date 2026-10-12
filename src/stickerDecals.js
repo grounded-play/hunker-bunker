@@ -14,8 +14,9 @@ const LAYER_INDEX = new Map(STICKER_LAYERS.map((entry, index) => [entry.name, in
 const LEGACY_INDEX = new Map(LEGACY_DECAL_LAYERS.map((entry, index) => [entry.name, index]));
 
 /** The PBR layer of a room-dressing PNG decal type, or -1 (it stays on the PNG path). */
-export function legacyDecalLayerIndex(type) {
-    return LEGACY_INDEX.get(type) ?? -1;
+export function legacyDecalLayerIndex(type, variant = 0) {
+    const suffix = ['', '_b', '_c', '_d'][Math.abs(variant) % 4];
+    return LEGACY_INDEX.get(`${type}${suffix}`) ?? LEGACY_INDEX.get(type) ?? -1;
 }
 const VARIANT_LETTERS = 'abcd';
 
@@ -225,7 +226,9 @@ const LEGACY_HIDDEN = new THREE.Matrix4().makeScale(0, 0, 0);
  * batchInstances entry, so breaking a wall still hides its decals.
  */
 export function buildLegacyDecalMesh(items, material) {
-    const placed = items.map((item) => ({ item, layer: legacyDecalLayerIndex(item.type) })).filter(({ layer }) => layer >= 0);
+    const placed = items
+        .map((item, index) => ({ item, layer: legacyDecalLayerIndex(item.type, item.variant ?? index) }))
+        .filter(({ layer }) => layer >= 0);
     if (placed.length === 0) return null;
     const info = new Float32Array(placed.length * 4);
     const geometry = new THREE.PlaneGeometry(1, 1);

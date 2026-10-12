@@ -54,8 +54,6 @@ def generate_substation_wall():
         im = Image.open(master_path).convert('RGB').resize((SIZE, SIZE), Image.Resampling.LANCZOS)
         arr = np.array(im, dtype=np.float32) / 255.0
     else:
-        rng = np.random.default_rng(7001)
-        y, x = np.mgrid[0:SIZE, 0:SIZE] / float(SIZE)
         arr = np.full((SIZE, SIZE, 3), 0.45, dtype=np.float32)
 
     seamless = make_seamless(arr, margin_ratio=0.15)

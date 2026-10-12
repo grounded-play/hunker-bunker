@@ -117,6 +117,21 @@ export const FLOOR_SURFACE_COUNT = FLOOR_SURFACES.reduce((sum, surface) => sum +
 const SURFACE_BY_ID = new Map(FLOOR_SURFACES.map((surface) => [surface.id, surface]));
 const VARIANT_LETTERS = 'abcdefgh';
 
+const PATH_SURFACES = Object.freeze({
+    bunker: Object.freeze(['tex_path_worn_deck', 'tex_path_polished_concrete']),
+    cryo: Object.freeze(['tex_path_packed_snow', 'tex_path_slush_track']),
+    bio: Object.freeze(['tex_path_resin_trail', 'tex_path_trodden_spores']),
+    camp: Object.freeze(['tex_path_mud_track']),
+    ground: Object.freeze(['tex_path_gravel_scree'])
+});
+const SHOULDER_SURFACES = Object.freeze({
+    bunker: 'tex_shoulder_swept_grit',
+    cryo: 'tex_shoulder_ice_crust',
+    bio: 'tex_shoulder_resin_lip',
+    camp: 'tex_shoulder_swept_grit',
+    ground: 'tex_shoulder_swept_grit'
+});
+
 /** Runtime pack names in array order: tex_floor_deck_drain_a, ... */
 export function floorSurfaceFileNames() {
     return FLOOR_SURFACES.flatMap((surface) =>
@@ -178,6 +193,42 @@ export function surfaceLayer(surfaceId, key) {
 export function surfaceForLayer(layer) {
     const index = layer - SURFACE_LAYER_FIRST;
     return FLOOR_SURFACES.find((surface) => index >= surface.first && index < surface.first + surface.variants) ?? null;
+}
+
+function routeCategoryForLayer(layer) {
+    const surface = surfaceForLayer(layer);
+    const id = surface?.id ?? '';
+    const fallback = surface?.fallback ?? layer;
+    if (surface?.groundLike || fallback === FLOOR_LAYER.GROUND) return 'ground';
+    if (fallback === FLOOR_LAYER.CRYO || id.includes('snow') || id.includes('slush') || id.includes('ice')) return 'cryo';
+    if (fallback === FLOOR_LAYER.BIO || fallback === FLOOR_LAYER.HIVE || id.includes('resin') || id.includes('spore')) return 'bio';
+    if (fallback === FLOOR_LAYER.CAMP || id.includes('camp') || id.includes('mud')) return 'camp';
+    return 'bunker';
+}
+
+/**
+ * Selects authored path, shoulder and puddle art from the deterministic traffic
+ * field. This keeps the path-wear channel's shader polish while ensuring the
+ * corresponding PBR deliveries are actually visible in play rather than only
+ * occupying layers in the texture array.
+ */
+export function routeSurfaceForCell(layer, { wear = 0, wetness = 0, key = '' } = {}) {
+    const current = surfaceForLayer(layer);
+    if (current && /^(?:tex_path_|tex_shoulder_|tex_overlay_)/.test(current.id)) return layer;
+    const category = routeCategoryForLayer(layer);
+    if (wear >= 150) {
+        const choices = PATH_SURFACES[category];
+        const id = choices[hashKey(`${key}:path`) % choices.length];
+        return surfaceLayer(id, `${key}:path-variant`) ?? layer;
+    }
+    if (wear >= 24) {
+        return surfaceLayer(SHOULDER_SURFACES[category], `${key}:shoulder-variant`) ?? layer;
+    }
+    // Wet rooms get sparse pooled cells away from the polished traffic centre.
+    if (wetness >= 0.6 && hashKey(`${key}:puddle`) % 11 === 0) {
+        return surfaceLayer('tex_overlay_puddles', `${key}:puddle-variant`) ?? layer;
+    }
+    return layer;
 }
 
 const FAMILY_LAYER = Object.freeze({
@@ -474,6 +525,18 @@ export function buildFloorSplatData({
     }
 
     const pathWear = computeChunkPathWear({ grid, size, metadata });
+    if (surfaces) {
+        for (let index = 0; index < count; index += 1) {
+            if (layer[index] === FLOOR_LAYER.NONE) continue;
+            const x = index % size;
+            const y = (index - x) / size;
+            layer[index] = routeSurfaceForCell(layer[index], {
+                wear: pathWear[index],
+                wetness: wetness[index],
+                key: `${variantKey}:${x},${y}`
+            });
+        }
+    }
     const data = new Uint8Array(count * 4);
     for (let index = 0; index < count; index += 1) {
         data[index * 4] = layer[index];

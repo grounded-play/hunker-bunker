@@ -134,6 +134,7 @@ def main():
                 print(f'[sprites] {key} -> {record["url"]} ({note})', flush=True)
     write_manifest(manifest)
     print(f'[sprites] manifest: {len(manifest)} baked sprites')
+    return 0
 
 
 if __name__ == '__main__':

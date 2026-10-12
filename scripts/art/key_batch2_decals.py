@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Chroma-key all 32 magenta decals/strips (8 prompts x 4 variants) from world expansion 2026-10."""
 
-import os
 from pathlib import Path
 from PIL import Image
 import numpy as np
