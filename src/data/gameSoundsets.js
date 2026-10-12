@@ -301,6 +301,93 @@ export const GAME_SOUNDSETS = Object.freeze({
         variants: Object.freeze(['metalClick']),
         fallback: 'metalClick', bus: 'sfx', gain: 0.25,
         pitch: Object.freeze([1.2, 1.7]), noImmediateRepeat: false, retrigger: 'replace-oldest'
+    }),
+
+    // =========================================================================
+    // EJECTED BRASS SHELL CASINGS (SURFACE IMPACT FOLEY)
+    // =========================================================================
+    shell_drop_metal: Object.freeze({
+        variants: Object.freeze(['shell_drop_metal_000', 'shell_drop_metal_001', 'shell_drop_metal_002']),
+        fallback: 'shell_drop_metal_000', bus: 'world', gain: 0.38,
+        pitch: Object.freeze([0.94, 1.08]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    shell_drop_snow: Object.freeze({
+        variants: Object.freeze(['shell_drop_snow_000', 'shell_drop_snow_001', 'shell_drop_snow_002']),
+        fallback: 'shell_drop_snow_000', bus: 'world', gain: 0.35,
+        pitch: Object.freeze([0.92, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    shell_drop_stone: Object.freeze({
+        variants: Object.freeze(['shell_drop_stone_000', 'shell_drop_stone_001', 'shell_drop_stone_002']),
+        fallback: 'shell_drop_stone_000', bus: 'world', gain: 0.36,
+        pitch: Object.freeze([0.94, 1.08]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    shell_drop_slime: Object.freeze({
+        variants: Object.freeze(['shell_drop_slime_000', 'shell_drop_slime_001', 'shell_drop_slime_002']),
+        fallback: 'shell_drop_slime_000', bus: 'world', gain: 0.36,
+        pitch: Object.freeze([0.92, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    shell_drop_wood: Object.freeze({
+        variants: Object.freeze(['shell_drop_wood_000', 'shell_drop_wood_001', 'shell_drop_wood_002']),
+        fallback: 'shell_drop_wood_000', bus: 'world', gain: 0.36,
+        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+
+    // =========================================================================
+    // WEAPON FIRE SOUNDSETS (DISTINCT KINETIC & ENERGY ARCHETYPES)
+    // =========================================================================
+    weapon_fire_shotgun: Object.freeze({
+        variants: Object.freeze(['weapon_fire_shotgun_000', 'weapon_fire_shotgun_001', 'weapon_fire_shotgun_002']),
+        fallback: 'weapon_fire_shotgun_000', bus: 'sfx', gain: 0.52,
+        pitch: Object.freeze([0.95, 1.05]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    weapon_fire_carbine: Object.freeze({
+        variants: Object.freeze(['weapon_fire_carbine_000', 'weapon_fire_carbine_001', 'weapon_fire_carbine_002']),
+        fallback: 'weapon_fire_carbine_000', bus: 'sfx', gain: 0.44,
+        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    weapon_fire_smg: Object.freeze({
+        variants: Object.freeze(['weapon_fire_smg_000', 'weapon_fire_smg_001', 'weapon_fire_smg_002']),
+        fallback: 'weapon_fire_smg_000', bus: 'sfx', gain: 0.40,
+        pitch: Object.freeze([0.95, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    weapon_fire_railgun: Object.freeze({
+        variants: Object.freeze(['weapon_fire_railgun_000', 'weapon_fire_railgun_001', 'weapon_fire_railgun_002']),
+        fallback: 'weapon_fire_railgun_000', bus: 'sfx', gain: 0.54,
+        pitch: Object.freeze([0.96, 1.04]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    weapon_fire_cryo: Object.freeze({
+        variants: Object.freeze(['weapon_fire_cryo_000', 'weapon_fire_cryo_001', 'weapon_fire_cryo_002']),
+        fallback: 'weapon_fire_cryo_000', bus: 'sfx', gain: 0.46,
+        pitch: Object.freeze([0.95, 1.05]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    weapon_fire_tesla: Object.freeze({
+        variants: Object.freeze(['weapon_fire_tesla_000', 'weapon_fire_tesla_001', 'weapon_fire_tesla_002']),
+        fallback: 'weapon_fire_tesla_000', bus: 'sfx', gain: 0.46,
+        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+
+    // =========================================================================
+    // TRACER FLYBY SNAPS & WHOOSHES
+    // =========================================================================
+    tracer_flyby_ballistic: Object.freeze({
+        variants: Object.freeze(['tracer_flyby_ballistic_000', 'tracer_flyby_ballistic_001', 'tracer_flyby_ballistic_002']),
+        fallback: 'tracer_flyby_ballistic_000', bus: 'sfx', gain: 0.34,
+        pitch: Object.freeze([0.92, 1.08]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    tracer_flyby_frost: Object.freeze({
+        variants: Object.freeze(['tracer_flyby_frost_000', 'tracer_flyby_frost_001']),
+        fallback: 'tracer_flyby_frost_000', bus: 'sfx', gain: 0.32,
+        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    tracer_flyby_heavy: Object.freeze({
+        variants: Object.freeze(['tracer_flyby_heavy_000', 'tracer_flyby_heavy_001']),
+        fallback: 'tracer_flyby_heavy_000', bus: 'sfx', gain: 0.35,
+        pitch: Object.freeze([0.92, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    tracer_flyby_chitin: Object.freeze({
+        variants: Object.freeze(['tracer_flyby_chitin_000', 'tracer_flyby_chitin_001']),
+        fallback: 'tracer_flyby_chitin_000', bus: 'sfx', gain: 0.34,
+        pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
     })
 });
 

@@ -420,7 +420,192 @@ SFX_PROMPT_CATALOG = {
         "crossfade_sec": 4.0,
         "prompt": "subtle pressurized starship cockpit interior room tone, quiet avionics cooling fan hum, gentle life support oxygen circulation, warm insulated safe sanctuary",
     },
+
+    # =========================================================================
+    # 5. EJECTED SHELL CASINGS (SURFACE IMPACT FOLEY)
+    # =========================================================================
+    "shell_drop_metal": {
+        "category": "casings",
+        "duration": 1.10,
+        "variants": 3,
+        "bus": "world",
+        "out_dir": "public/audio/foley/casings",
+        "prompt": "brass bullet shell casing falling and bouncing on hollow steel grating, sharp metallic ting and clink, clean realistic foley",
+    },
+    "shell_drop_snow": {
+        "category": "casings",
+        "duration": 1.10,
+        "variants": 3,
+        "bus": "world",
+        "out_dir": "public/audio/foley/casings",
+        "prompt": "empty brass shell casing dropping into deep soft cold snow, muffled delicate metal tap, subzero winter foley",
+    },
+    "shell_drop_stone": {
+        "category": "casings",
+        "duration": 1.10,
+        "variants": 3,
+        "bus": "world",
+        "out_dir": "public/audio/foley/casings",
+        "prompt": "empty bullet cartridge casing landing on hard concrete stone floor, crisp ceramic rock ping and bounce, clean crisp foley",
+    },
+    "shell_drop_slime": {
+        "category": "casings",
+        "duration": 1.10,
+        "variants": 3,
+        "bus": "world",
+        "out_dir": "public/audio/foley/casings",
+        "prompt": "metal bullet shell landing in thick wet biological alien slime muck, damp squishy thud, viscous absorption foley",
+    },
+    "shell_drop_wood": {
+        "category": "casings",
+        "duration": 1.10,
+        "variants": 3,
+        "bus": "world",
+        "out_dir": "public/audio/foley/casings",
+        "prompt": "brass casing bouncing on hollow dry wooden floor planks, gentle timber clatter and roll, realistic foley",
+    },
+
+    # =========================================================================
+    # 6. WEAPON FIRING SOUNDSETS (DIVERSE KINETIC & ENERGY ARCHETYPES)
+    # =========================================================================
+    "weapon_fire_shotgun": {
+        "category": "weapons",
+        "duration": 1.30,
+        "variants": 3,
+        "bus": "sfx",
+        "out_dir": "public/audio/weapons",
+        "prompt": "heavy concussive tactical shotgun blast, deep punchy low end boom, mechanical pump chamber action, crisp punchy gunshot",
+    },
+    "weapon_fire_carbine": {
+        "category": "weapons",
+        "duration": 1.10,
+        "variants": 3,
+        "bus": "sfx",
+        "out_dir": "public/audio/weapons",
+        "prompt": "punchy military assault rifle gunshot, snappy kinetic supersonic crack, crisp brass ejection chirp, clean powerful fire",
+    },
+    "weapon_fire_smg": {
+        "category": "weapons",
+        "duration": 0.90,
+        "variants": 3,
+        "bus": "sfx",
+        "out_dir": "public/audio/weapons",
+        "prompt": "rapid compact submachine gun burst shot, crisp high frequency mechanical pop, light snappy firearm discharge",
+    },
+    "weapon_fire_railgun": {
+        "category": "weapons",
+        "duration": 1.50,
+        "variants": 3,
+        "bus": "sfx",
+        "out_dir": "public/audio/weapons",
+        "prompt": "high tech electromagnetic railgun firing, high voltage capacitor whine, supersonic magnetic crack, heavy sci-fi discharge",
+    },
+    "weapon_fire_cryo": {
+        "category": "weapons",
+        "duration": 1.30,
+        "variants": 3,
+        "bus": "sfx",
+        "out_dir": "public/audio/weapons",
+        "prompt": "cryogenic freeze beam cannon firing, pressurized liquid nitrogen hiss, shattering ice crystal splinter, futuristic cold blast",
+    },
+    "weapon_fire_tesla": {
+        "category": "weapons",
+        "duration": 1.30,
+        "variants": 3,
+        "bus": "sfx",
+        "out_dir": "public/audio/weapons",
+        "prompt": "high energy tesla electrical arc zap, violent ionized plasma spark crackle, humming electric discharge",
+    },
+
+    # =========================================================================
+    # 7. TRACER FLYBY SNAPS & WHOOSHES
+    # =========================================================================
+    "tracer_flyby_ballistic": {
+        "category": "tracers",
+        "duration": 0.70,
+        "variants": 3,
+        "bus": "sfx",
+        "out_dir": "public/audio/tracers",
+        "prompt": "bullet supersonic flyby whip crack, fast whiz by camera, high velocity bullet snap",
+    },
+    "tracer_flyby_frost": {
+        "category": "tracers",
+        "duration": 0.80,
+        "variants": 2,
+        "bus": "sfx",
+        "out_dir": "public/audio/tracers",
+        "prompt": "freezing ice shard whizzing by in cold air, crystalline whistling flyby, delicate frosty whoosh",
+    },
+    "tracer_flyby_heavy": {
+        "category": "tracers",
+        "duration": 0.80,
+        "variants": 2,
+        "bus": "sfx",
+        "out_dir": "public/audio/tracers",
+        "prompt": "heavy caliber bullet slug passing by closely, deep resonant concussive air displacement whoosh",
+    },
+    "tracer_flyby_chitin": {
+        "category": "tracers",
+        "duration": 0.80,
+        "variants": 2,
+        "bus": "sfx",
+        "out_dir": "public/audio/tracers",
+        "prompt": "alien acid spore needle flying past, viscous liquid hiss and insectoid aerodynamic whoosh",
+    },
+
+    # =========================================================================
+    # 8. HYPER-LOCALIZED POINT-SOURCE AMBIENCE (CAMPS & HIVES)
+    # =========================================================================
+    "amb_point_tallow_forge": {
+        "category": "points",
+        "duration": 30.00,
+        "segments": 2,
+        "segment_duration": 18.00,
+        "variants": 1,
+        "bus": "world",
+        "out_dir": "public/audio/ambient/points",
+        "loop": True,
+        "crossfade_sec": 3.0,
+        "prompt": "subtle geothermal forge steam hiss, distant rhythmic anvil blacksmith clangs, warm coal hearth embers crackling",
+    },
+    "amb_point_vesper_generator": {
+        "category": "points",
+        "duration": 30.00,
+        "segments": 2,
+        "segment_duration": 18.00,
+        "variants": 1,
+        "bus": "world",
+        "out_dir": "public/audio/ambient/points",
+        "loop": True,
+        "crossfade_sec": 3.0,
+        "prompt": "heavy industrial diesel electric generator turbine hum, rhythmic electrical relay clicks, low vibrating drone",
+    },
+    "amb_point_meridian_chimes": {
+        "category": "points",
+        "duration": 30.00,
+        "segments": 2,
+        "segment_duration": 18.00,
+        "variants": 1,
+        "bus": "world",
+        "out_dir": "public/audio/ambient/points",
+        "loop": True,
+        "crossfade_sec": 3.0,
+        "prompt": "resonant ancient brass chimes tinkling in cold subterranean draft, vaulted cathedral stone resonance, quiet spiritual echo",
+    },
+    "amb_point_hive_sac": {
+        "category": "points",
+        "duration": 25.00,
+        "segments": 2,
+        "segment_duration": 15.00,
+        "variants": 1,
+        "bus": "world",
+        "out_dir": "public/audio/ambient/points",
+        "loop": True,
+        "crossfade_sec": 3.0,
+        "prompt": "pulsating alien bio organic egg sac membrane, slow wet biological heartbeat, damp fluid sloshing, unsettling creature cocoon",
+    },
 }
+
 
 # Curated test subset for immediate validation and auditioning
 TEST_SUBSET_KEYS = [

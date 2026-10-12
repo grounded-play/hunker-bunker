@@ -128,9 +128,11 @@ export class AudioManager {
     static resolveSpatial(options = {}) {
         const listener = AudioManager._listener;
         if (!listener) return null;
-        if (!Number.isFinite(options.worldX) || !Number.isFinite(options.worldZ)) return null;
+        const wx = Number.isFinite(options.worldX) ? options.worldX : options.x;
+        const wz = Number.isFinite(options.worldZ) ? options.worldZ : options.z;
+        if (!Number.isFinite(wx) || !Number.isFinite(wz)) return null;
         return calculateScreenSpaceAudio({
-            source: { x: options.worldX, z: options.worldZ },
+            source: { x: wx, z: wz },
             listener: { x: listener.x, z: listener.z },
             cameraRight: { x: listener.rightX, z: listener.rightZ },
             obstructed: Boolean(options.obstructed),

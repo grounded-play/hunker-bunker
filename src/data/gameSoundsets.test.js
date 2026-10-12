@@ -42,7 +42,11 @@ describe('game soundset selection', () => {
             'chen_sealed_confession_console', 'evac_manifest_allocation_terminal',
             'scout_tracking_beacon_core', 'relay_false_beacon_spire',
             'ind_biomass_grinder', 'hive_visceral_ovipositor',
-            'enemy_idle_snail', 'enemy_idle_crawler'
+            'enemy_idle_snail', 'enemy_idle_crawler',
+            'shell_drop_metal', 'shell_drop_snow', 'shell_drop_stone', 'shell_drop_slime', 'shell_drop_wood',
+            'weapon_fire_shotgun', 'weapon_fire_carbine', 'weapon_fire_smg', 'weapon_fire_railgun',
+            'weapon_fire_cryo', 'weapon_fire_tesla',
+            'tracer_flyby_ballistic', 'tracer_flyby_frost', 'tracer_flyby_heavy', 'tracer_flyby_chitin'
         ]);
         expect(Object.values(GAME_SOUNDSETS).every(validateSoundset)).toBe(true);
         expect(Object.isFrozen(GAME_SOUNDSETS)).toBe(true);

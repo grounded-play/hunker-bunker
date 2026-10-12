@@ -60,6 +60,8 @@ export const WEAPON_TRAUMA_TABLE = Object.freeze({
 export function create3DMuzzleFlash({
     color = 0xffd27a,
     isCryo = false,
+    weaponType = null,
+    tracerFxId = null,
     camera = null,
     _forwardVec = null,
     _barrelHeight = 0.55
@@ -67,9 +69,76 @@ export function create3DMuzzleFlash({
     const group = new THREE.Group();
     group.name = 'MuzzleFlash3D';
 
-    const flashColor = isCryo ? 0x9beaff : color;
-    const coreRadius = isCryo ? 0.18 : 0.13;
-    const glowRadius = isCryo ? 0.48 : 0.36;
+    // Base parameters configured by weapon type archetype
+    let flashColor = isCryo ? 0x9beaff : color;
+    let coreRadius = isCryo ? 0.18 : 0.13;
+    let glowRadius = isCryo ? 0.48 : 0.36;
+    let particleCount = 4;
+    let particleColor = isCryo ? 0x88e2ff : 0xff9933;
+    let flashDuration = 0.14;
+
+    if (weaponType === 'scatter_rep' || weaponType === 'siege_breaker') {
+        // Concussive shotgun blast: wide orange conical flare + 8 hot ember sparks
+        flashColor = 0xff6611;
+        coreRadius = 0.22;
+        glowRadius = 0.58;
+        particleCount = 8;
+        particleColor = 0xff4400;
+        flashDuration = 0.18;
+    } else if (weaponType === 'rail_marksman') {
+        // High-voltage railgun: blinding cyan-white arc needle + 6 ion sparks
+        flashColor = 0x38e1ff;
+        coreRadius = 0.16;
+        glowRadius = 0.52;
+        particleCount = 6;
+        particleColor = 0x88ffff;
+        flashDuration = 0.16;
+    } else if (weaponType === 'cryo_lance') {
+        // Cryogenic lance: freezing pale blue frost star + ice vapor shards
+        flashColor = 0xa5f3fc;
+        coreRadius = 0.18;
+        glowRadius = 0.48;
+        particleCount = 6;
+        particleColor = 0xa5f3fc;
+        flashDuration = 0.15;
+    } else if (weaponType === 'tesla_lock') {
+        // Tesla lock: violent violet-electric plasma blossom + spark arcs
+        flashColor = 0xc084fc;
+        coreRadius = 0.16;
+        glowRadius = 0.46;
+        particleCount = 7;
+        particleColor = 0xe879f9;
+        flashDuration = 0.15;
+    } else if (weaponType === 'neon_smg') {
+        // Compact SMG: snappy amber micro-flare with fast dissipation
+        flashColor = 0xffe066;
+        coreRadius = 0.10;
+        glowRadius = 0.28;
+        particleCount = 3;
+        particleColor = 0xffaa00;
+        flashDuration = 0.09;
+    }
+
+    // Tracer cosmetic mutators override/enhance flash chromatic colors
+    if (tracerFxId === '4152' || tracerFxId === 'fx_emerald_void_tracer') {
+        flashColor = 0x10b981;
+        particleColor = 0x34d399;
+    } else if (tracerFxId === '4205' || tracerFxId === 'fx_tracer_deep_frost') {
+        flashColor = 0x38bdf8;
+        particleColor = 0xa5f3fc;
+    } else if (tracerFxId === '4212' || tracerFxId === 'fx_tracer_rust_bone') {
+        flashColor = 0xc2410c;
+        particleColor = 0xf97316;
+    } else if (tracerFxId === '4219' || tracerFxId === 'fx_tracer_hive_chitin') {
+        flashColor = 0x84cc16;
+        particleColor = 0xd9f99d;
+    } else if (tracerFxId === '4233' || tracerFxId === 'fx_tracer_bunker404') {
+        flashColor = 0xa21caf;
+        particleColor = 0xd946ef;
+    } else if (tracerFxId === '4240' || tracerFxId === 'fx_tracer_grand_marshal') {
+        flashColor = 0xb45309;
+        particleColor = 0xf59e0b;
+    }
 
     // Cross-quad billboard geometry for omnidirectional 3D volume
     const quadGeo = new THREE.PlaneGeometry(coreRadius * 2, coreRadius * 2);
@@ -103,11 +172,10 @@ export function create3DMuzzleFlash({
     group.add(aura1, aura2);
 
     // Ejecting micro-particles (spent brass / heat vapor)
-    const particleCount = 4;
     const particles = [];
     const shardGeo = new THREE.PlaneGeometry(0.04, 0.08);
     const shardMat = new THREE.MeshBasicMaterial({
-        color: isCryo ? 0x88e2ff : 0xff9933,
+        color: particleColor,
         transparent: true,
         opacity: 0.9,
         blending: THREE.AdditiveBlending,
@@ -131,7 +199,7 @@ export function create3DMuzzleFlash({
 
     group.userData = {
         age: 0,
-        duration: 0.14,
+        duration: flashDuration,
         is3DMuzzleFlash: true,
         update: (dt) => {
             group.userData.age += dt;

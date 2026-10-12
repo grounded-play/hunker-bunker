@@ -33,5 +33,12 @@ export const GAME_AUDIO_ALIASES = Object.freeze({
     // Enemy noise triggers: attack abilities
     enemy_attack_sporesnail: 'hive_spores_puff',
     enemy_shockwave_cryosnail: 'fx_tank_shockwave',
-    enemy_hit_hard: 'prop_impact_metal'
+    enemy_hit_hard: 'prop_impact_metal',
+    // Spent brass shell casing Foley bounces across surface biomes
+    shell_drop_metal: 'prop_impact_metal',
+    shell_drop_snow: 'footstep_snow',
+    shell_drop_stone: 'footstep_concrete',
+    shell_drop_slime: 'footstep_hive_slime',
+    shell_drop_wood: 'footstep_wood_plank',
+    casing_drop: 'prop_impact_metal'
 });

@@ -589,6 +589,7 @@ import { bindRoomGrammarSites } from './roomGrammarSiteSelection.js';
 import { trimCampPromptActions } from './campActionMenu.js';
 import { MYSTERY_BOX_KINDS, MYSTERY_OUTCOME_LINE_KEYS, mysteryBoxChance, mysteryOpenSeconds, mysteryRewardDrops, pickMysteryBoxKind, rollMysteryOutcome, seededRandom } from './mysteryBoxes.js';
 import { createTrackField, slimeColorFor, stepBoots, trackSurfaceForType } from './trackField.js';
+import { CasingSystem } from './casingSystem.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
 import { groupDangerZones, lipEdgeQuads } from './dangerZones.js';
 import { GATE_CHALLENGES, GATE_CHALLENGE_TUNING, planGateChallenges } from './gateChallenges.js';
@@ -2501,6 +2502,8 @@ export class ThreeGame {
         // Footprints and trails (src/trackField.js): one pooled field for the run.
         this.trackField = createTrackField();
         this.scene.add(this.trackField.group);
+        // Synchronized physical shell casings & landing Foley pool (src/casingSystem.js)
+        this.casingSystem = new CasingSystem(this.scene);
         this.scene.background = new THREE.Color(0x0b0d0f);
         this.scene.fog = new THREE.Fog(0x0b0d0f, 18, 40);
         // Create all eight renderer-visible slots before the loading-screen
@@ -6664,9 +6667,8 @@ export class ThreeGame {
                 fromRemote: true
             }
         });
-        // Remote player's shot: this one genuinely needs placing -- it is the
-        // only weapon fire that does not originate at the listener.
         window.AudioManager?.play?.('weapon_fire_sidearm', (this.audioAt?.(originX, originZ, { volume: 0.28, varyPitch: true }) ?? { volume: 0.28, varyPitch: true }));
+        this.casingSystem?.spawnCasing(originX, 0.9, originZ, data?.dirX || 0, data?.dirZ || 1, data?.weaponType || 'kinetic');
     }
 
     handleRemotePlayerDamaged(data) {
@@ -9415,6 +9417,12 @@ export class ThreeGame {
         this.emitWeaponClipState();
 
         this.spawnPlayerShot(normX, normZ);
+        if (this.casingSystem && this.player) {
+            const ox = this.player.position.x;
+            const oy = (this.player.position.y || 0) + 0.9;
+            const oz = this.player.position.z;
+            this.casingSystem.spawnCasing(ox, oy, oz, normX, normZ, this.currentWeaponType || 'kinetic');
+        }
 
         presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_ACCEPTED, {
             weaponType: this.currentWeaponType || 'plasma_carbine',
@@ -11793,6 +11801,7 @@ export class ThreeGame {
         fp.measure('updateEnvLightBudget', () => this.updateEnvLightBudget?.(delta));
         fp.measure('updateTransientEffects', () => this.updateTransientEffects(delta, now));
         fp.measure('updateTrackField', () => this.trackField?.update(now / 1000));
+        fp.measure('updateCasingSystem', () => this.casingSystem?.update(delta, this));
         this.killstreakFeedback?.update(delta);
         fp.measure('updateHiddenPlayerMarker', () => this.updateHiddenPlayerMarker(now));
         fp.measure('updateVitals', () => this.updateVitals(delta));
