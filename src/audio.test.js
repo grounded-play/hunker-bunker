@@ -92,6 +92,36 @@ describe('AudioManager Voice Channel & Soundsets Toggle', () => {
         expect(AudioManager.voiceEnabled).toBe(false);
     });
 
+    it('scales and silences layered sfx, world, and foley channels via the vfx mixer control', () => {
+        AudioManager.setMix({ vfx: 0.35 });
+        expect(AudioManager.sfxGain.gain.value).toBe(0.35);
+        expect(AudioManager.worldGain.gain.value).toBe(0.35);
+        expect(AudioManager.foleyGain.gain.value).toBe(0.35);
+
+        // Turning VFX completely down to 0 silences all 3 Foley & mechanism layers
+        AudioManager.setMix({ vfx: 0 });
+        expect(AudioManager.sfxGain.gain.value).toBe(0);
+        expect(AudioManager.worldGain.gain.value).toBe(0);
+        expect(AudioManager.foleyGain.gain.value).toBe(0);
+    });
+
+    it('allows independent channel control for world and foley when explicitly provided', () => {
+        AudioManager.setMix({ vfx: 0.8, world: 0.25, foley: 0.5 });
+        expect(AudioManager.sfxGain.gain.value).toBe(0.8);
+        expect(AudioManager.worldGain.gain.value).toBe(0.25);
+        expect(AudioManager.foleyGain.gain.value).toBe(0.5);
+    });
+
+    it('mutes and restores master audio bus correctly', () => {
+        AudioManager.toggleMute(true);
+        expect(AudioManager.globalMuted).toBe(true);
+        expect(AudioManager.masterGain.gain.value).toBe(0);
+
+        AudioManager.toggleMute(false);
+        expect(AudioManager.globalMuted).toBe(false);
+        expect(AudioManager.masterGain.gain.value).toBe(1.0);
+    });
+
     it('returns null for playVoiceForMessage when voice is disabled or muted', () => {
         AudioManager.voiceEnabled = false;
         const resultDisabled = AudioManager.playVoiceForMessage('MOTHERSHIP COMMAND', 'Agent Scout.');

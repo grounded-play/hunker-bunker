@@ -28541,13 +28541,47 @@ export class ThreeGame {
                         // Real sampled footsteps now that the soundset registry
                         // has them; the procedural blip remains the fallback for
                         // when the buffers have not decoded yet. Surface picks
-                        // the set -- snow outside the bunker, concrete within.
-                        const surface = this.currentBiome === 'cryo' || this.isOutdoors?.()
-                            ? 'footstep_snow'
-                            : 'footstep_concrete';
+                        // the set across all 10 dynamic material layers.
+                        const px = this.player?.position?.x ?? 0;
+                        const pz = this.player?.position?.z ?? 0;
+                        const underfoot = this.getTrackSurfaceAt?.(px, pz);
+                        const biome = (this.currentBiomeKey || this.currentBiome || '').toLowerCase();
+                        let surface = 'footstep_concrete';
+                        if (underfoot === 'water' || underfoot === 'oil') {
+                            surface = 'footstep_wet_puddle';
+                        } else if (underfoot === 'slime' || underfoot === 'blood' || biome === 'bio') {
+                            surface = 'footstep_hive_slime';
+                        } else if (underfoot === 'snow' || this.isOutdoors?.()) {
+                            surface = 'footstep_deep_snow';
+                        } else if (biome === 'cryo') {
+                            surface = 'footstep_ice_crunch';
+                        } else if (biome === 'camp') {
+                            surface = 'footstep_wood_plank';
+                        } else {
+                            const chunkX = Math.floor(px / 16);
+                            const chunkY = Math.floor(pz / 16);
+                            const roomMeta = this.wfcMetadataCache?.get?.(`${chunkX},${chunkY}`);
+                            const localX = Math.floor(px - chunkX * 16);
+                            const localY = Math.floor(pz - chunkY * 16);
+                            const room = roomMeta?.roomInstances?.find?.(r => r.floorCells?.some?.(c => c.x === localX && c.y === localY));
+                            const style = (room?.themeConfig?.floorSurface || room?.themeConfig?.wallStyle || room?.type || '').toLowerCase();
+                            if (style.includes('bone') || style.includes('cathedral')) {
+                                surface = 'footstep_bone_terrazzo';
+                            } else if (style.includes('casing') || style.includes('armory') || style.includes('security')) {
+                                surface = 'footstep_shell_casings';
+                            } else if (style.includes('grate') || style.includes('trench') || style.includes('workshop') || style.includes('storage')) {
+                                surface = 'footstep_metal_grate';
+                            } else if (style.includes('plank') || style.includes('camp')) {
+                                surface = 'footstep_wood_plank';
+                            } else if (style.includes('permafrost') || style.includes('cryo')) {
+                                surface = 'footstep_ice_crunch';
+                            } else if (style.includes('resin') || style.includes('slime') || style.includes('bio')) {
+                                surface = 'footstep_hive_slime';
+                            }
+                        }
                         const played = window.AudioManager?.play?.(
                             surface,
-                            this.audioAt?.(this.player?.position?.x, this.player?.position?.z, { volume: 0.5 })
+                            this.audioAt?.(px, pz, { volume: 0.5 })
                                 ?? { volume: 0.5 }
                         );
                         if (!played) window.AudioManager?.playProceduralFootstep?.(this.playerType);

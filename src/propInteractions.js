@@ -251,7 +251,7 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
     ind_biomass_grinder: statefulInteraction(
         '[E] CYCLE BIOMASS GRINDER',
         (state) => `BIOMASS GRINDER: ${state === 'working' ? 'AUGERS TURNING' : 'EMERGENCY STOP'}.`,
-        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'crane_motor' }
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'ind_biomass_grinder' }
     ),
     crash_cockpit_canopy: statefulInteraction(
         '[E] RELEASE COCKPIT CANOPY',
@@ -268,12 +268,12 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
     chen_sealed_confession_console: statefulInteraction(
         '[E] PLAY CONFESSION TAPE',
         () => 'CONFESSION CONSOLE: DEPUTY CHEN\'S DIARY UNLOCKED. CONTRABAND COORDINATES MARKED.',
-        { repeatable: false, nextState: () => 'spent', sound: 'terminal_beep', onUse: (game) => game.addScrap?.(30) }
+        { repeatable: false, nextState: () => 'spent', sound: 'chen_sealed_confession_console', onUse: (game) => game.addScrap?.(30) }
     ),
     decon_exosuit_scrubber_station: statefulInteraction(
         '[E] CYCLE DECON SCRUBBER',
         () => 'EXOSUIT SCRUBBER: PRESSURIZED DECON FOAM CYCLED. BIOLOGICAL STATUS CLEANSED.',
-        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'power_hum', onUse: (game) => {
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'water_shower', onUse: (game) => {
             game.healPlayer?.(15);
         } }
     ),
@@ -317,12 +317,12 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
     vass_acoustic_resonator_tank: statefulInteraction(
         '[E] HARMONIZE ACOUSTIC RESONATOR',
         (state) => `ACOUSTIC RESONATOR: ${state === 'working' ? 'HARMONIC DISORIENTATION PULSE BROADCAST' : 'DAMPED'}.`,
-        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'power_hum' }
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'neural_tap' }
     ),
     vass_hybrid_embryo_incubator: statefulInteraction(
         '[E] ABORT INCUBATOR SEQUENCE',
         () => 'HYBRID INCUBATOR: SPECIMEN DRAINED. GENETIC CORE EXTRACTED. +35 SCRAP.',
-        { repeatable: false, nextState: () => 'spent', sound: 'power_hum', onUse: (game) => game.addScrap?.(35) }
+        { repeatable: false, nextState: () => 'spent', sound: 'flesh_squish', onUse: (game) => game.addScrap?.(35) }
     ),
     suture_mercy_cocoon_canopy: statefulInteraction(
         '[E] ENTER MERCY CANOPY',
@@ -334,7 +334,7 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
     relay_false_beacon_spire: statefulInteraction(
         '[E] REPROGRAM FALSE BEACON',
         (state) => `FALSE BEACON SPIRE: ${state === 'working' ? 'SWARM LURE ACTIVE' : 'TRANSMISSION QUIET'}.`,
-        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'terminal_beep' }
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'relay_false_beacon_spire' }
     ),
 
     corp_biometric_collar_chute: statefulInteraction(
@@ -350,17 +350,17 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
     evac_manifest_allocation_terminal: statefulInteraction(
         '[E] SPOOF EVAC MANIFEST',
         () => 'MANIFEST TERMINAL: EVACUATION POD SEALS REMOTELY OVERRIDDEN. +30 SCRAP.',
-        { repeatable: false, nextState: () => 'spent', sound: 'terminal_beep', onUse: (game) => game.addScrap?.(30) }
+        { repeatable: false, nextState: () => 'spent', sound: 'evac_manifest_allocation_terminal', onUse: (game) => game.addScrap?.(30) }
     ),
     evac_preflight_fuel_umbilical: statefulInteraction(
         '[E] VENT FUEL UMBILICAL',
         () => 'FUEL UMBILICAL: HYDRAZINE PRESSURE BLED OFF. +30 SCRAP.',
-        { repeatable: false, nextState: () => 'spent', sound: 'power_hum', onUse: (game) => game.addScrap?.(30) }
+        { repeatable: false, nextState: () => 'spent', sound: 'chem_siphon', onUse: (game) => game.addScrap?.(30) }
     ),
     scout_tracking_beacon_core: statefulInteraction(
         '[E] DOWNLOAD BEACON TELEMETRY',
         () => 'TRACKING BEACON: FALLEN SCOUT SUPPLY VECTOR LOGGED. +25 SCRAP.',
-        { repeatable: false, nextState: () => 'spent', sound: 'terminal_beep', onUse: (game) => game.addScrap?.(25) }
+        { repeatable: false, nextState: () => 'spent', sound: 'scout_tracking_beacon_core', onUse: (game) => game.addScrap?.(25) }
     ),
     sector_zero_bore_drillhead: statefulInteraction(
         '[E] ENGAGE BORE DRILLHEAD',
@@ -372,7 +372,7 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
     corp_interrogation_chair: statefulInteraction(
         '[E] EXTRACT BURNED MEMORY',
         () => 'INTERROGATION CHAIR: RESIDUAL NEURAL TRACE EXTRACTED. EXECUTIVE CODES RECOVERED. +30 SCRAP.',
-        { repeatable: false, nextState: () => 'spent', sound: 'power_hum', onUse: (game) => game.addScrap?.(30) }
+        { repeatable: false, nextState: () => 'spent', sound: 'neural_tap', onUse: (game) => game.addScrap?.(30) }
     ),
     corp_debt_severing_kiosk: statefulInteraction(
         '[E] SPOOF LIQUIDATION RECORD',
@@ -464,7 +464,7 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
     hive_visceral_ovipositor: statefulInteraction(
         '[E] JAM OVIPOSITOR',
         () => 'VISCERAL OVIPOSITOR: REPRODUCTIVE DUCT CLAMPED. LOCAL BREEDING HALTED. +30 SCRAP.',
-        { repeatable: false, nextState: () => 'spent', sound: 'flesh_seal', onUse: (game) => game.addScrap?.(30) }
+        { repeatable: false, nextState: () => 'spent', sound: 'hive_visceral_ovipositor', onUse: (game) => game.addScrap?.(30) }
     ),
     hive_vivisected_engineer: statefulInteraction(
         '[E] TERMINATE SUFFERING',

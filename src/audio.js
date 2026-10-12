@@ -6,7 +6,13 @@ const AudioContextClass = (typeof window !== 'undefined' ? window.AudioContext |
     }
     createGain() {
         return {
-            gain: { value: 1, setTargetAtTime: () => {}, setValueAtTime: () => {}, linearRampToValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} },
+            gain: {
+                value: 1,
+                setTargetAtTime(val) { this.value = val; },
+                setValueAtTime(val) { this.value = val; },
+                linearRampToValueAtTime(val) { this.value = val; },
+                exponentialRampToValueAtTime(val) { this.value = val; }
+            },
             connect: () => {}
         };
     }
@@ -262,27 +268,39 @@ export class AudioManager {
                 ? this.voiceGain
                 : channel === 'foley'
                     ? this.foleyGain
-                    : (channel === 'ambient' || channel === 'rain')
-                        ? this.rainGain
-                        : (channel === 'vfx' || channel === 'sfx')
-                            ? this.sfxGain
-                            : null;
+                    : (channel === 'world' || channel === 'env' || channel === 'environment')
+                        ? this.worldGain
+                        : (channel === 'ambient' || channel === 'rain')
+                            ? this.rainGain
+                            : (channel === 'vfx' || channel === 'sfx')
+                                ? this.sfxGain
+                                : null;
 
         if (!gainNode) return;
         gainNode.gain.setTargetAtTime(clamped, audioCtx.currentTime, 0.05);
         if (channel === 'voice') this.voiceVolume = clamped;
+        if (channel === 'vfx' || channel === 'sfx') {
+            this.worldGain.gain.setTargetAtTime(clamped, audioCtx.currentTime, 0.05);
+            this.foleyGain.gain.setTargetAtTime(clamped, audioCtx.currentTime, 0.05);
+        }
     }
 
     static setMix(mix = {}) {
         if (mix.master !== undefined) this.setChannelVolume('master', mix.master);
-        else if (mix.world !== undefined) this.setChannelVolume('master', mix.world);
 
         if (mix.music !== undefined) this.setChannelVolume('music', mix.music);
         if (mix.voice !== undefined) this.setChannelVolume('voice', mix.voice);
         if (mix.voiceEnabled !== undefined) this.voiceEnabled = Boolean(mix.voiceEnabled);
 
-        if (mix.vfx !== undefined) this.setChannelVolume('vfx', mix.vfx);
-        else if (mix.sfx !== undefined) this.setChannelVolume('vfx', mix.sfx);
+        const sfxVol = mix.vfx !== undefined ? mix.vfx : mix.sfx;
+        if (sfxVol !== undefined) {
+            this.setChannelVolume('vfx', sfxVol);
+            // World and foley layers follow sfx volume unless explicitly specified
+            this.setChannelVolume('world', mix.world !== undefined ? mix.world : sfxVol);
+            this.setChannelVolume('foley', mix.foley !== undefined ? mix.foley : sfxVol);
+        } else if (mix.world !== undefined) {
+            this.setChannelVolume('world', mix.world);
+        }
     }
 
     static async loadAssets(manifest, onProgress) {
