@@ -12528,6 +12528,14 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
     const height = canvas.height;
     ctx.clearRect(0, 0, width, height);
 
+    if (compact) {
+        ctx.save();
+        ctx.beginPath();
+        const radarRadius = Math.min(width, height) / 2;
+        ctx.arc(width / 2, height / 2, radarRadius, 0, Math.PI * 2);
+        ctx.clip();
+    }
+
     ctx.fillStyle = getMapFogPattern(ctx) ?? '#04080e';
     ctx.fillRect(0, 0, width, height);
 
@@ -12842,6 +12850,7 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
     // type instead of painting every 8px label over its neighbours.
     {
         const kindPriority = { crash_site: 0, landmark: 1, room: 2, hall: 3 };
+        const radarRadius = Math.min(width, height) / 2;
         const candidates = detailedChunks.flatMap((chunk) => chunk.labels ?? [])
             .filter((label) => label?.text && (!compact || label.kind !== 'hall'))
             .map((label) => ({
@@ -12850,7 +12859,10 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
                 distance: Math.hypot(label.x - player.x, label.z - player.z),
                 priority: kindPriority[label.kind] ?? 4
             }))
-            .filter((label) => label.point.x >= 8 && label.point.x <= width - 8 && label.point.y >= 8 && label.point.y <= height - 8)
+            .filter((label) => {
+                if (!compact) return label.point.x >= 8 && label.point.x <= width - 8 && label.point.y >= 8 && label.point.y <= height - 8;
+                return Math.hypot(label.point.x - width / 2, label.point.y - height / 2) <= radarRadius - 14;
+            })
             .sort((a, b) => a.priority - b.priority || a.distance - b.distance);
         const labelBudget = compact ? 4 : 36;
         const accepted = [];
@@ -13058,6 +13070,7 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
     ctx.fillStyle = 'rgba(0, 229, 255, 0.6)';
     ctx.textAlign = 'left';
     if (!compact) ctx.fillText(`ZOOM: ${view.zoom.toFixed(1)}x`, 12, height - 12);
+    if (compact) ctx.restore();
 }
 
 function toggleTacticalMapModal(forceState) {
