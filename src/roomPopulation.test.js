@@ -153,6 +153,39 @@ describe('room population', () => {
         }));
     });
 
+    it('builds a readable focal wall, separated large anchor, and nearby support clusters', () => {
+        const interior = Array.from({ length: 25 }, (_, index) => ({
+            x: index % 5 + 1,
+            y: Math.floor(index / 5) + 1
+        }));
+        const room = {
+            id: 'zoned-engineering-room',
+            role: 'engineering',
+            interior,
+            navigation: { doorLanes: [{ x: 1, y: 3 }] },
+            populationBudget: { signature: 1, large: 1, small: 2, pickup: 0, enemy: 0 },
+            themeConfig: {
+                signatureProps: ['hero-machine'],
+                largeProps: ['support-machine'],
+                smallProps: ['tool-kit'],
+                ambientProps: ['service-decal']
+            }
+        };
+        const grid = Array.from({ length: 7 }, () => Array(7).fill('#'));
+        for (const cell of interior) grid[cell.y][cell.x] = '.';
+        const plan = planRoomPopulation(room, grid, () => 0.5, { grounding: false });
+        const signature = plan.placements.find(({ kind }) => kind === 'signature');
+        const large = plan.placements.find(({ kind }) => kind === 'large');
+        const support = plan.placements.filter(({ kind }) => ['small', 'ambient'].includes(kind));
+
+        expect(signature).toMatchObject({ layoutZone: 'focal-edge' });
+        expect(Math.abs(signature.x - 1) + Math.abs(signature.y - 3)).toBeGreaterThanOrEqual(5);
+        expect(large).toMatchObject({ layoutZone: 'perimeter-anchor' });
+        expect(Math.hypot(large.x - signature.x, large.y - signature.y)).toBeGreaterThanOrEqual(3);
+        expect(support.every(({ layoutZone }) => layoutZone === 'support-cluster')).toBe(true);
+        expect(support.some((item) => Math.hypot(item.x - signature.x, item.y - signature.y) <= 2)).toBe(true);
+    });
+
     it('keeps three medical fixtures and adds bounded non-blocking story dressing', () => {
         const room = {
             id: 'medical-room',

@@ -29,6 +29,18 @@ const mechanism = (color, behaviors = ['use', 'damage']) => freezeProfile({
 });
 
 export const PROP_EXPERIENCE_PROFILES = Object.freeze({
+    life_arcade_cabinet: terminal(0x55d9ff, { intensity: 2.1 }),
+    life_surgical_lamp: terminal(0xe9fff4, { duration: 0.35, intensity: 1.5 }),
+    cryo_heater_station: terminal(0xff7a24, { duration: 0.4, intensity: 1.7 }),
+    hive_brood_dome: terminal(0x92d65c, { duration: 0.5, intensity: 1.5 }),
+    chasm_beacon_post: terminal(0xef4444, { duration: 0.35, intensity: 2 }),
+    corp_executive_sarcophagus: terminal(0xd946ef, { intensity: 2 }),
+    corp_suppression_barrier: mechanism(0xef4444),
+    meridian_capacitor_bomb: terminal(0xffa648, { duration: 0.45, intensity: 2.2 }),
+    tina_covert_nursery_chest: terminal(0x76d95c, { duration: 0.5, intensity: 1.6 }),
+    hive_sphincter_iris: mechanism(0xa3e635),
+    ind_biomass_grinder: mechanism(0xff8a2b, ['use', 'ambient', 'damage']),
+    crash_cockpit_canopy: terminal(0xff7a24, { duration: 0.45, intensity: 1.7 }),
     life_ribcage_rescue_cabinet: mechanism(0xef4444),
     life_confessional: mechanism(0xffb84d),
     life_seismic_drill: mechanism(0xffa648, ['use', 'ambient', 'damage']),
@@ -129,6 +141,7 @@ export function createPropExperience(root, model, type) {
     const pulseColor = new THREE.Color(presentation?.acknowledgeColor ?? 0xffffff);
     const duration = presentation?.acknowledgeDuration ?? 0;
     let remaining = 0;
+    let declaredState = 'ready';
     let disposed = false;
 
     const applyStrength = (strength) => {
@@ -145,12 +158,23 @@ export function createPropExperience(root, model, type) {
         registered: false,
         articulation,
         get state() {
-            if (articulation) return articulation.state;
+            if (declaredState !== 'ready') return declaredState;
             return remaining > 0 ? 'acknowledging' : 'ready';
         },
-        acknowledge() {
+        setState(next) {
             if (disposed) return false;
-            articulation?.toggle();
+            declaredState = String(next || 'ready');
+            if (articulation?.set) {
+                articulation.set({
+                    open: declaredState === 'open',
+                    working: declaredState === 'working' || declaredState === 'on'
+                });
+            }
+            return declaredState;
+        },
+        acknowledge({ toggleArticulation = true } = {}) {
+            if (disposed) return false;
+            if (toggleArticulation) articulation?.toggle();
             if (duration > 0) {
                 remaining = duration;
                 applyStrength(0.12);

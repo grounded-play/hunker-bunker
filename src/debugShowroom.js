@@ -376,7 +376,26 @@ export const SHOWROOM_CATEGORIES = Object.freeze({
         'ind_biomass_grinder',
         'ind_hydraulic_manifold',
         'ind_fuel_rod_cask',
-        'crash_cockpit_canopy'
+        'crash_cockpit_canopy',
+        'bay_c_pod_312_rupture',
+        'carapace_sentry_chrysalis',
+        'chen_sealed_confession_console',
+        'corp_biometric_collar_chute',
+        'crawler_signal_antenna_rig',
+        'decon_exosuit_scrubber_station',
+        'engineer_wave_relay_dynamo',
+        'evac_four_seat_cockpit_module',
+        'evac_manifest_allocation_terminal',
+        'evac_preflight_fuel_umbilical',
+        'queen_royal_brood_throne',
+        'relay_false_beacon_spire',
+        'royal_egg_clutch_caul',
+        'scout_tracking_beacon_core',
+        'sector_zero_bore_drillhead',
+        'suture_mercy_cocoon_canopy',
+        'tank_orbital_siege_cannon',
+        'vass_acoustic_resonator_tank',
+        'vass_hybrid_embryo_incubator'
     ],
     // Dead enemies as they lie on the floor (ThreeGame.attachCorpse3d).
     CORPSES: [

@@ -226,5 +226,26 @@ export const DRESSING_TRIANGLES = Object.freeze({
     ind_biomass_grinder: 25000,
     ind_hydraulic_manifold: 25000,
     ind_fuel_rod_cask: 25000,
-    crash_cockpit_canopy: 25000
+    crash_cockpit_canopy: 25000,
+
+    // 2026-10-12 World story expansion pass 2 mature props (19 models)
+    bay_c_pod_312_rupture: 25000,
+    carapace_sentry_chrysalis: 25000,
+    chen_sealed_confession_console: 25000,
+    corp_biometric_collar_chute: 25000,
+    crawler_signal_antenna_rig: 25000,
+    decon_exosuit_scrubber_station: 25000,
+    engineer_wave_relay_dynamo: 25000,
+    evac_four_seat_cockpit_module: 25000,
+    evac_manifest_allocation_terminal: 25000,
+    evac_preflight_fuel_umbilical: 25000,
+    queen_royal_brood_throne: 25000,
+    relay_false_beacon_spire: 25000,
+    royal_egg_clutch_caul: 25000,
+    scout_tracking_beacon_core: 25000,
+    sector_zero_bore_drillhead: 25000,
+    suture_mercy_cocoon_canopy: 25000,
+    tank_orbital_siege_cannon: 25000,
+    vass_acoustic_resonator_tank: 25000,
+    vass_hybrid_embryo_incubator: 25000
 });

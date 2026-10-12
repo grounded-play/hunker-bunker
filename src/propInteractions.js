@@ -51,6 +51,53 @@ function safePlaySound(sound, options) {
     }
 }
 
+function propWorldRoot(prop) {
+    return prop?.userData?.world3dRoot
+        ?? prop?.userData?.dynamicRoot
+        ?? prop?.userData?.dressingItem?.dynamicRoot
+        ?? prop?.dynamicRoot
+        ?? null;
+}
+
+function nextBinaryState(prop, active, inactive = 'off') {
+    return prop?.userData?.propState === active ? inactive : active;
+}
+
+function statefulInteraction(interactPrompt, responseFor, {
+    hp = 35,
+    repeatable = true,
+    sound = 'terminal_beep',
+    nextState,
+    solidForState = null,
+    onUse = null
+} = {}) {
+    return Object.freeze({
+        hp,
+        canInteract: true,
+        repeatable,
+        interactPrompt,
+        onInteract: (game, prop) => {
+            const state = nextState(game, prop);
+            onUse?.(game, prop, state);
+            game.showBunkerLine?.(responseFor(state));
+            safePlaySound(sound, {
+                volume: 0.48,
+                playbackRate: 0.94 + Math.random() * 0.08,
+                worldX: prop.position?.x,
+                worldZ: prop.position?.z,
+                maxDistance: 12
+            });
+            return {
+                success: true,
+                state,
+                fxMode: state,
+                solid: solidForState ? solidForState(state) : undefined,
+                spent: !repeatable
+            };
+        }
+    });
+}
+
 function terminalInteraction(interactPrompt, response, { hp = 35, sound = 'terminal_beep' } = {}) {
     return Object.freeze({
         hp,
@@ -97,7 +144,7 @@ const genericSpecCache = new Map();
  */
 export function genericInteractionSpec(type, sprite = null) {
     if (!type) return null;
-    const root = sprite?.userData?.world3dRoot ?? null;
+    const root = propWorldRoot(sprite);
     if (root?.userData?.propFx?.setEnabled) {
         const key = `switch:${type}`;
         if (!genericSpecCache.has(key)) {
@@ -109,7 +156,7 @@ export function genericInteractionSpec(type, sprite = null) {
                 generic: 'switch',
                 interactPrompt: `[E] SWITCH ${label}`,
                 onInteract: (game, target) => {
-                    const fx = target?.userData?.world3dRoot?.userData?.propFx;
+                    const fx = propWorldRoot(target)?.userData?.propFx;
                     if (!fx?.toggle) return false;
                     const on = fx.toggle();
                     game.showBunkerLine?.(`${label}: ${on ? 'RUNNING' : 'SHUT DOWN'}.`);
@@ -148,6 +195,70 @@ export function isSearchableType(type) {
 }
 
 export const PROP_INTERACTION_SPECS = Object.freeze({
+    life_arcade_cabinet: statefulInteraction(
+        '[E] PLAY ARCADE CABINET',
+        () => 'ARCADE CABINET: HIGH SCORE TABLE RECOVERED. INITIALS: T.I.N.A.',
+        { nextState: () => 'working', sound: 'terminal_beep' }
+    ),
+    life_surgical_lamp: statefulInteraction(
+        '[E] TOGGLE SURGICAL LAMP',
+        (state) => `SURGICAL LAMP: ${state === 'on' ? 'OPERATING FIELD LIT' : 'DARK'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'on'), sound: 'power_hum' }
+    ),
+    cryo_heater_station: statefulInteraction(
+        '[E] CYCLE HEATER STATION',
+        (state) => `CRYO HEATER: ${state === 'on' ? 'THAW COILS ENGAGED' : 'BANKED'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'on'), sound: 'power_hum' }
+    ),
+    hive_brood_dome: statefulInteraction(
+        '[E] CAUTERIZE BROOD DOME',
+        () => 'BROOD DOME: NUTRIENT CIRCULATION CAUTERIZED.',
+        { repeatable: false, nextState: () => 'spent', sound: 'flesh_seal', onUse: (game) => game.addScrap?.(12) }
+    ),
+    chasm_beacon_post: statefulInteraction(
+        '[E] TOGGLE CHASM BEACON',
+        (state) => `CHASM BEACON: ${state === 'on' ? 'GUIDANCE PULSE ACTIVE' : 'BLACKOUT'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'on'), sound: 'terminal_beep' }
+    ),
+    corp_executive_sarcophagus: statefulInteraction(
+        '[E] OVERRIDE EXECUTIVE SARCOPHAGUS',
+        () => 'EXECUTIVE SARCOPHAGUS: SEVERANCE PACKAGE RECLAIMED. +40 SCRAP.',
+        { repeatable: false, nextState: () => 'open', sound: 'vault_open', onUse: (game) => game.addScrap?.(40) }
+    ),
+    corp_suppression_barrier: statefulInteraction(
+        '[E] CYCLE SUPPRESSION BARRIER',
+        (state) => `SUPPRESSION BARRIER: ${state === 'open' ? 'PASSAGE RELEASED' : 'LOCKED'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'open', 'closed'), solidForState: (state) => state !== 'open', sound: 'vault_open' }
+    ),
+    meridian_capacitor_bomb: statefulInteraction(
+        '[E] DISARM CAPACITOR BOMB',
+        () => 'MERIDIAN CAPACITOR: CHARGE BLED OFF. +30 SCRAP.',
+        { repeatable: false, nextState: () => 'disabled', sound: 'power_hum', onUse: (game, prop) => {
+            game.addScrap?.(30);
+            game.spawnPhysicalBurst?.(prop.position.x, prop.position.z, { color: 0xffa648, count: 8, upward: 0.2 });
+        } }
+    ),
+    tina_covert_nursery_chest: statefulInteraction(
+        '[E] OPEN COVERT NURSERY CHEST',
+        () => 'NURSERY CHEST: A FALSE BOTTOM YIELDS ORGANIC COMPONENTS. +25 SCRAP.',
+        { repeatable: false, nextState: () => 'open', sound: 'flesh_seal', onUse: (game) => game.addScrap?.(25) }
+    ),
+    hive_sphincter_iris: statefulInteraction(
+        '[E] WORK SPHINCTER IRIS',
+        (state) => `SPHINCTER IRIS: ${state === 'open' ? 'PASSAGE DILATED' : 'SEALED'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'open', 'closed'), solidForState: (state) => state !== 'open', sound: 'flesh_seal' }
+    ),
+    ind_biomass_grinder: statefulInteraction(
+        '[E] CYCLE BIOMASS GRINDER',
+        (state) => `BIOMASS GRINDER: ${state === 'working' ? 'AUGERS TURNING' : 'EMERGENCY STOP'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'crane_motor' }
+    ),
+    crash_cockpit_canopy: statefulInteraction(
+        '[E] RELEASE COCKPIT CANOPY',
+        () => 'COCKPIT CANOPY: EMERGENCY LATCH RELEASED. +20 SCRAP.',
+        { repeatable: false, nextState: () => 'open', sound: 'vault_open', onUse: (game) => game.addScrap?.(20) }
+    ),
+
     life_ribcage_rescue_cabinet: mechanismInteraction('[E] WORK RESCUE CABINET', 'RESCUE CABINET: RIB DOOR UNLATCHED.', { sound: 'flesh_seal' }),
     life_confessional: mechanismInteraction('[E] WORK CONFESSIONAL DOORS', 'CONFESSIONAL: THE BOOTH DOORS SWING.', { sound: 'vault_open' }),
     life_seismic_drill: mechanismInteraction('[E] RUN SEISMIC DRILL', 'SEISMIC DRILL: AUGER ENGAGED.', { sound: 'crane_motor' }),
@@ -776,16 +887,40 @@ export function interactWithCustomProp(game, nearestInfo) {
     if (!nearestInfo || !nearestInfo.spec || typeof nearestInfo.spec.onInteract !== 'function') {
         return false;
     }
-    const success = nearestInfo.spec.onInteract(game, nearestInfo.sprite);
+    const outcome = nearestInfo.spec.onInteract(game, nearestInfo.sprite);
+    const result = outcome && typeof outcome === 'object' ? outcome : { success: Boolean(outcome) };
+    const success = Boolean(result.success);
     if (success) {
-        game.acknowledgePropExperience?.(nearestInfo.sprite);
-        nearestInfo.sprite.userData.hasBeenInteracted = true;
+        applyPropInteractionState(nearestInfo.sprite, result);
+        if (result.state == null) game.acknowledgePropExperience?.(nearestInfo.sprite);
+        else game.acknowledgePropExperience?.(nearestInfo.sprite, { toggleArticulation: false });
+        nearestInfo.sprite.userData.hasBeenInteracted = result.spent ?? !nearestInfo.spec.repeatable;
         const key = nearestInfo.sprite.userData.scatterKey;
+        if (key && (result.state != null || result.fxMode != null || typeof result.solid === 'boolean')) {
+            (game.propInteractionStates ??= new Map()).set(key, {
+                state: result.state,
+                fxMode: result.fxMode,
+                solid: result.solid
+            });
+        }
         if (!nearestInfo.spec.repeatable && !nearestInfo.sprite.userData.interactionSpec && key) {
             (game.spentPropScatterKeys ??= new Set()).add(key);
         }
     }
     return success;
+}
+
+/** Applies the visual/collision portion of a local or replicated interaction. */
+export function applyPropInteractionState(sprite, result = {}) {
+    if (!sprite?.userData || !result) return false;
+    const root = propWorldRoot(sprite);
+    if (result.state != null) {
+        sprite.userData.propState = String(result.state);
+        root?.userData?.propExperience?.setState?.(result.state);
+    }
+    if (result.fxMode != null) root?.userData?.propFx?.setMode?.(result.fxMode);
+    if (typeof result.solid === 'boolean') sprite.userData.isSolidProp = result.solid;
+    return true;
 }
 
 // A catalogue prop (PROP_INTERACTION_SPECS) pays out once: it is a cache of

@@ -116,6 +116,14 @@ const organicProfile = (options = {}) => profile({
             radius: options.sporeRadius ?? 0.2
         })])
     ],
+    light: options.lit ? {
+        bounds: options.lightAt ?? options.glowAt ?? [0.5, 0.48, 0.5],
+        color: options.color ?? 0x76d95c,
+        intensity: options.intensity ?? 0.45,
+        distance: options.distance ?? 2.2,
+        decay: 2,
+        pulse: options.pulse ?? 0.16
+    } : null,
     motion: { kind: 'breathe', amount: options.motion ?? 0.012, speed: options.speed ?? 1.25 }
 });
 
@@ -223,6 +231,21 @@ const HERO_PROFILES = {
 // Ambient recipes use normalized model bounds, so they survive art re-exports
 // without hand-retuning. Hero props above still prefer Blender-authored empties.
 const AMBIENT_PROFILES = {
+    // Recent world-story GLBs, vertical slice 1. Bounds coordinates are the
+    // fallback contract; authored FX_* empties take precedence when present.
+    life_arcade_cabinet: poweredProfile({ glowAt: [0.5, 0.7, 0.58], color: 0x55d9ff, radius: 0.2, pulse: 0.18, intensity: 0.62, distance: 2.5 }),
+    life_surgical_lamp: lampProfile({ glowAt: [0.5, 0.88, 0.52], color: 0xe9fff4, radius: 0.24, pulse: 0.025, intensity: 1.15, distance: 3.6 }),
+    cryo_heater_station: thermalProfile({ flameAt: [0.5, 0.38, 0.58], glowAt: [0.5, 0.42, 0.58], scale: 0.45, intensity: 1.05, distance: 3.2 }),
+    hive_brood_dome: organicProfile({ glowAt: [0.5, 0.48, 0.5], color: 0x92d65c, radius: 0.34, pulse: 0.2, motion: 0.015, lit: true, intensity: 0.62, distance: 2.7 }),
+    chasm_beacon_post: lampProfile({ glowAt: [0.5, 0.94, 0.5], color: 0xff3b2f, radius: 0.16, pulse: 0.48, intensity: 1.2, distance: 4.2 }),
+    corp_executive_sarcophagus: poweredProfile({ glowAt: [0.5, 0.66, 0.56], color: 0xd946ef, radius: 0.18, pulse: 0.12, intensity: 0.72, distance: 2.8 }),
+    corp_suppression_barrier: poweredProfile({ glowAt: [0.5, 0.72, 0.56], color: 0xef4444, radius: 0.2, pulse: 0.28, intensity: 0.82, distance: 3.1 }),
+    meridian_capacitor_bomb: poweredProfile({ glowAt: [0.5, 0.55, 0.5], sparkAt: [0.5, 0.7, 0.5], color: 0xffa648, radius: 0.2, pulse: 0.32, intensity: 0.9, distance: 3, sparks: true, sparkCount: 7 }),
+    tina_covert_nursery_chest: organicProfile({ glowAt: [0.5, 0.38, 0.55], color: 0x76d95c, radius: 0.22, pulse: 0.14, spores: false, motion: 0.009, lit: true, intensity: 0.42, distance: 2 }),
+    hive_sphincter_iris: organicProfile({ glowAt: [0.5, 0.5, 0.54], color: 0xa3e635, radius: 0.3, pulse: 0.22, spores: false, motion: 0.018, lit: true, intensity: 0.58, distance: 2.6 }),
+    ind_biomass_grinder: poweredProfile({ glowAt: [0.5, 0.48, 0.58], sparkAt: [0.56, 0.63, 0.55], color: 0xff8a2b, radius: 0.18, pulse: 0.1, intensity: 0.75, distance: 2.8, sparks: true, sparkCount: 6 }),
+    crash_cockpit_canopy: smoulderProfile({ at: [0.5, 0.72, 0.5], glowAt: [0.52, 0.34, 0.55], count: 5, intensity: 0.55, distance: 2.5 }),
+
     ...profilesFor([
         'life_galley_hotplate', 'life_barrel_heater', 'life_warmth_hearth',
         'life_pheromone_censer'
@@ -794,16 +817,25 @@ export function createPropFx(root, model, type) {
     let elapsed = (seed % 4096) / 193;
     let disposed = false;
     let enabled = true;
+    let mode = 'idle';
     const api = {
         type,
         group,
         lightSources,
         get enabled() { return enabled; },
+        get mode() { return mode; },
         /** Switch the effects and their pooled light (never `.visible` on a light). */
         setEnabled(next) {
             enabled = Boolean(next);
             api.update(0);
             return enabled;
+        },
+        /** Named interaction state for persistence and authored prop behavior. */
+        setMode(next) {
+            mode = String(next || 'idle');
+            if (['off', 'spent', 'disabled', 'destroyed'].includes(mode)) api.setEnabled(false);
+            else if (['idle', 'on', 'working', 'open', 'armed'].includes(mode)) api.setEnabled(true);
+            return mode;
         },
         toggle() { return api.setEnabled(!enabled); },
         update(delta = 0, cameraPosition = null) {

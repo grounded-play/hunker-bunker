@@ -6,10 +6,59 @@ import {
     interactionSpecKeyFor,
     handleCustomPropDestruction,
     interactWithCustomProp,
+    applyPropInteractionState,
     PROP_INTERACTION_SPECS
 } from './propInteractions.js';
 
 describe('propInteractions', () => {
+    const recentVerticalSlice = [
+        'life_arcade_cabinet', 'life_surgical_lamp', 'cryo_heater_station',
+        'hive_brood_dome', 'chasm_beacon_post', 'corp_executive_sarcophagus',
+        'corp_suppression_barrier', 'meridian_capacitor_bomb',
+        'tina_covert_nursery_chest', 'hive_sphincter_iris',
+        'ind_biomass_grinder', 'crash_cockpit_canopy'
+    ];
+
+    it('gives every first-slice recent GLB a bespoke action', () => {
+        for (const type of recentVerticalSlice) {
+            expect(PROP_INTERACTION_SPECS[type]?.canInteract, type).toBe(true);
+            expect(PROP_INTERACTION_SPECS[type]?.interactPrompt, type).toMatch(/^\[E\]/);
+        }
+    });
+
+    it('applies named visual state and collision changes through dressing roots', () => {
+        const setState = vi.fn();
+        const setMode = vi.fn();
+        const root = { userData: { propExperience: { setState }, propFx: { setMode } } };
+        const sprite = { userData: { dressingItem: { dynamicRoot: root }, isSolidProp: true } };
+        expect(applyPropInteractionState(sprite, { state: 'open', fxMode: 'open', solid: false })).toBe(true);
+        expect(sprite.userData.propState).toBe('open');
+        expect(sprite.userData.isSolidProp).toBe(false);
+        expect(setState).toHaveBeenCalledWith('open');
+        expect(setMode).toHaveBeenCalledWith('open');
+    });
+
+    it('persists named state by scatter key for a reloaded chunk instance', () => {
+        const barrier = {
+            position: { x: 1, z: 0 },
+            userData: { type: 'corp_suppression_barrier', scatterKey: 'room-9:barrier', isSolidProp: true }
+        };
+        const game = {
+            player: { position: { x: 0, z: 0 } },
+            scatterSprites: [barrier],
+            showBunkerLine: vi.fn(),
+            acknowledgePropExperience: vi.fn()
+        };
+        expect(interactWithCustomProp(game, findNearestInteractableProp(game))).toBe(true);
+        expect(barrier.userData.propState).toBe('open');
+        expect(barrier.userData.isSolidProp).toBe(false);
+
+        const reloaded = { userData: { isSolidProp: true } };
+        applyPropInteractionState(reloaded, game.propInteractionStates.get('room-9:barrier'));
+        expect(reloaded.userData.propState).toBe('open');
+        expect(reloaded.userData.isSolidProp).toBe(false);
+    });
+
     it('defines interaction specs for the new biomechanical & cathedral props', () => {
         expect(PROP_INTERACTION_SPECS.prop_oxygen_bottle_cascade_rack).toBeDefined();
         expect(PROP_INTERACTION_SPECS.prop_oxygen_bottle_cascade_rack.canInteract).toBe(true);

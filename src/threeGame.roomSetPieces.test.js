@@ -114,7 +114,7 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
         expect(lit[0]).toMatchObject({ scatterKey: 'room_plan:cathedral:signature:0', practicalLight: { palette: 'cyan' } });
     });
 
-    it('gives authored rooms one open kit gateway without changing collision authority', () => {
+    it('gives authored room approaches an open kit gateway without changing collision authority', () => {
         const game = makeFakeGame();
         game.getBiomeKeyForWorldPosition = () => 'active';
         game.wfcMetadataCache = new Map([['0,0', {
@@ -149,6 +149,34 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
             groupType: 'architecture',
             isSolidProp: false
         });
+    });
+
+    it('frames primary and secondary room approaches but caps extra doorway repetition', () => {
+        const game = makeFakeGame();
+        game.getBiomeKeyForWorldPosition = () => 'active';
+        game.wfcMetadataCache = new Map([['0,0', {
+            generatorId: 'authored-room',
+            roomInstances: [{
+                id: 'junction-room',
+                doors: [
+                    { id: 'north', side: 'n', cells: [{ x: 7, y: 2 }] },
+                    { id: 'east', side: 'e', cells: [{ x: 12, y: 7 }] },
+                    { id: 'south', side: 's', cells: [{ x: 7, y: 12 }] }
+                ],
+                populationPlan: { placements: [] }
+            }]
+        }]]);
+
+        const placements = ThreeGame.prototype.createChunkSetPiecePlacements.call(
+            game, 0, 0, buildTwoBlockGrid(17)
+        );
+        const gateways = placements.filter(({ scatterKey }) => scatterKey.startsWith('room-gateway:'));
+        expect(gateways).toHaveLength(2);
+        expect(gateways.every(({ isSolidProp }) => isSolidProp === false)).toBe(true);
+        expect(gateways.map(({ scatterKey }) => scatterKey)).toEqual([
+            'room-gateway:junction-room:north',
+            'room-gateway:junction-room:east'
+        ]);
     });
 
     it.each([

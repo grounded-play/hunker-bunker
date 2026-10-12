@@ -35,6 +35,7 @@ import {
     interactionSpecKeyFor,
     findNearestInteractableProp,
     interactWithCustomProp,
+    applyPropInteractionState,
     isSearchableType,
     PROP_INTERACTION_SPECS
 } from './propInteractions.js';
@@ -1877,6 +1878,25 @@ const PROMPT_KEY_ACTIONS = Object.freeze({ E: 'interact', T: 'tacticalPing', C: 
 /** Dressing props E can reach: bespoke specs, searchable containers, switchable effects. */
 function isInteractiveDressingType(type) {
     return Boolean(PROP_INTERACTION_SPECS[type] || isSearchableType(type) || getPropFxProfile(type));
+}
+
+// A chunk may only afford a small number of per-instance roots. Reserve those
+// roots for props with bespoke E actions before ambient-only decoration so an
+// interactive light or machine never silently falls back to a static batch.
+function assignDynamicPropExperiences(items, limit = 12) {
+    for (const item of items) item.dynamicExperience = false;
+    let assigned = 0;
+    const candidates = [
+        ...items.filter((item) => Boolean(PROP_INTERACTION_SPECS[item.type])),
+        ...items.filter((item) => !PROP_INTERACTION_SPECS[item.type])
+    ];
+    for (const item of candidates) {
+        if (assigned >= limit) break;
+        if (!isDynamicPropExperienceType(item.type) && !getPropFxProfile(item.type)) continue;
+        item.dynamicExperience = true;
+        assigned += 1;
+    }
+    return assigned;
 }
 
 export class ThreeGame {
@@ -17630,12 +17650,13 @@ export class ThreeGame {
         return experience;
     }
 
-    acknowledgePropExperience(target) {
+    acknowledgePropExperience(target, options) {
         const root = target?.userData?.world3dRoot
             ?? target?.userData?.dynamicRoot
+            ?? target?.userData?.dressingItem?.dynamicRoot
             ?? target?.dynamicRoot
             ?? (target?.userData?.propExperience ? target : null);
-        return root?.userData?.propExperience?.acknowledge?.() ?? false;
+        return root?.userData?.propExperience?.acknowledge?.(options) ?? false;
     }
 
     disposeWorld3dPropFx(root) {
@@ -30912,12 +30933,14 @@ export class ThreeGame {
         const originX = chunkX * this.chunkSize;
         const originZ = chunkY * this.chunkSize;
         const rotation = new THREE.Quaternion();
+        const yawRotation = new THREE.Quaternion();
         const localOffset = new THREE.Vector3();
         const worldPosition = new THREE.Vector3();
 
-        const matrixFor = (plan, offsetX, y, offsetZ, scaleX, scaleY, scaleZ) => {
-            rotation.setFromEuler(new THREE.Euler(0, plan.rotationY, 0));
-            localOffset.set(offsetX, 0, offsetZ).applyQuaternion(rotation);
+        const matrixFor = (plan, offsetX, y, offsetZ, scaleX, scaleY, scaleZ, tiltZ = 0) => {
+            yawRotation.setFromEuler(new THREE.Euler(0, plan.rotationY, 0));
+            rotation.setFromEuler(new THREE.Euler(0, plan.rotationY, tiltZ));
+            localOffset.set(offsetX, 0, offsetZ).applyQuaternion(yawRotation);
             worldPosition.set(originX + plan.x + localOffset.x, y, originZ + plan.z + localOffset.z);
             return new THREE.Matrix4().compose(
                 worldPosition.clone(),
@@ -30926,18 +30949,65 @@ export class ThreeGame {
             );
         };
 
+        const addSquareFrame = (plan, span, edge, offsetZ = 0) => {
+            structures.push(matrixFor(plan, 0, this.wallHeight - 0.22, offsetZ, span, 0.1, 0.12));
+            structures.push(matrixFor(plan, -edge, 1.16, offsetZ, 0.1, 2.25, 0.12));
+            structures.push(matrixFor(plan, edge, 1.16, offsetZ, 0.1, 2.25, 0.12));
+        };
+
+        // Five-piece open arch: its shoulders rise away from the centre, so
+        // the route retains full player clearance while reading as a vault.
+        const addOpenArch = (plan, span, edge, {
+            crownY = this.wallHeight - 0.13,
+            shoulderY = this.wallHeight - 0.48,
+            postHeight = 1.72,
+            shoulderTilt = 0.42,
+            depth = 0.14
+        } = {}) => {
+            structures.push(matrixFor(plan, -edge, postHeight * 0.5, 0, 0.12, postHeight, depth));
+            structures.push(matrixFor(plan, edge, postHeight * 0.5, 0, 0.12, postHeight, depth));
+            structures.push(matrixFor(plan, -edge * 0.58, shoulderY, 0, span * 0.31, 0.11, depth, shoulderTilt));
+            structures.push(matrixFor(plan, edge * 0.58, shoulderY, 0, span * 0.31, 0.11, depth, -shoulderTilt));
+            structures.push(matrixFor(plan, 0, crownY, 0, span * 0.38, 0.12, depth));
+        };
+
         for (const plan of plans) {
             const span = Math.max(1.6, plan.width + 0.34);
             const edge = span * 0.5;
-            if (plan.structure === 'rail') {
+            const structure = plan.landmark && plan.structure !== 'rail'
+                ? 'monumental-arch'
+                : plan.structure;
+            if (structure === 'rail') {
                 structures.push(matrixFor(plan, -edge, 0.72, 0, 0.1, 1.35, 0.1));
                 structures.push(matrixFor(plan, edge, 0.72, 0, 0.1, 1.35, 0.1));
                 structures.push(matrixFor(plan, -edge, 1.18, 0, 0.08, 0.08, 2.7));
                 structures.push(matrixFor(plan, edge, 1.18, 0, 0.08, 0.08, 2.7));
+            } else if (structure === 'double-frame') {
+                addSquareFrame(plan, span, edge, -0.22);
+                addSquareFrame(plan, span, edge, 0.22);
+            } else if (structure === 'service-rib') {
+                addOpenArch(plan, span, edge, { shoulderTilt: 0.34, depth: 0.11 });
+            } else if (structure === 'braced-frame') {
+                addSquareFrame(plan, span, edge);
+                structures.push(matrixFor(plan, -edge * 0.62, 1.45, 0, span * 0.36, 0.1, 0.13, -0.62));
+                structures.push(matrixFor(plan, edge * 0.62, 1.45, 0, span * 0.36, 0.1, 0.13, 0.62));
+            } else if (structure === 'low-rib') {
+                addOpenArch(plan, span, edge, { crownY: this.wallHeight - 0.34, shoulderY: this.wallHeight - 0.62, postHeight: 1.58, shoulderTilt: 0.34, depth: 0.1 });
+            } else if (structure === 'camp-arch') {
+                addOpenArch(plan, span, edge, { shoulderTilt: 0.28, depth: 0.1 });
+                structures.push(matrixFor(plan, edge * 0.72, 1.72, 0.04, 0.08, 0.72, 0.08));
+            } else if (structure === 'transition-arch') {
+                addOpenArch(plan, span, edge, { shoulderTilt: 0.5, depth: 0.16 });
+                addSquareFrame(plan, span * 0.94, edge * 0.94, 0.28);
+            } else if (structure === 'organic-arch') {
+                addOpenArch(plan, span, edge, { crownY: this.wallHeight - 0.2, shoulderTilt: 0.68, depth: 0.18 });
+                structures.push(matrixFor(plan, 0, this.wallHeight - 0.52, 0.08, 0.1, 0.58, 0.1, plan.cadence % 2 ? 0.18 : -0.18));
+            } else if (structure === 'monumental-arch') {
+                addOpenArch(plan, span, edge, { crownY: this.wallHeight - 0.05, shoulderY: this.wallHeight - 0.42, postHeight: 1.86, shoulderTilt: 0.48, depth: 0.2 });
+                structures.push(matrixFor(plan, -edge, 2.18, 0, 0.22, 0.34, 0.22));
+                structures.push(matrixFor(plan, edge, 2.18, 0, 0.22, 0.34, 0.22));
             } else {
-                structures.push(matrixFor(plan, 0, this.wallHeight - 0.22, 0, span, 0.1, 0.12));
-                structures.push(matrixFor(plan, -edge, 1.16, 0, 0.1, 2.25, 0.12));
-                structures.push(matrixFor(plan, edge, 1.16, 0, 0.1, 2.25, 0.12));
+                addSquareFrame(plan, span, edge);
             }
             for (let index = 0; index < plan.cableCount; index += 1) {
                 const side = index % 2 === 0 ? -1 : 1;
@@ -30957,6 +31027,15 @@ export class ThreeGame {
                         0.07,
                         0.035
                     )
+                });
+            }
+            const guideSpacing = 0.28;
+            const guideStart = -((plan.floorGuideCount - 1) * guideSpacing) / 2;
+            for (let index = 0; index < plan.floorGuideCount; index += 1) {
+                signals.push({
+                    color: plan.signalColor,
+                    floorGuide: true,
+                    matrix: matrixFor(plan, guideStart + index * guideSpacing, 0.025, 0, 0.045, 0.025, plan.landmark ? 3.4 : 2.4)
                 });
             }
         }
@@ -30985,6 +31064,7 @@ export class ThreeGame {
         const signalPool = addPool(signals, this.hallwaySignalMaterial, {
             isHallwayRouteSignalPool: true,
             signalCount: signals.length,
+            floorGuideCount: signals.filter((signal) => signal.floorGuide).length,
             lightingRhythms: [...new Set(plans.map((plan) => plan.lightingRhythm))]
         });
         signals.forEach((signal, index) => signalPool?.setColorAt(index, new THREE.Color(signal.color)));
@@ -31084,11 +31164,7 @@ export class ThreeGame {
         }));
         // Stateful props (moving parts, terminals) leave the instanced batch,
         // under the same per-chunk cap room dressing uses.
-        let dynamicCount = 0;
-        for (const item of worldItems) {
-            item.dynamicExperience = isDynamicPropExperienceType(item.type) && dynamicCount < 12;
-            if (item.dynamicExperience) dynamicCount += 1;
-        }
+        assignDynamicPropExperiences(worldItems);
         for (const item of worldItems) {
             const interactive = isInteractiveDressingType(item.type);
             if (!item.blocking && !interactive) continue;
@@ -31108,6 +31184,7 @@ export class ThreeGame {
                     dressingItem: item
                 };
                 item.collider = target;
+                applyPropInteractionState(target, this.propInteractionStates?.get(item.id));
                 group.add(target);
                 this.scatterSprites.push(target);
                 continue;
@@ -31128,6 +31205,8 @@ export class ThreeGame {
                     dressingItem: item
                 };
                 item.collider ??= collider;
+                applyPropInteractionState(collider, this.propInteractionStates?.get(collider.userData.scatterKey)
+                    ?? this.propInteractionStates?.get(item.id));
                 group.add(collider);
                 this.scatterSprites.push(collider);
             }
@@ -31159,6 +31238,8 @@ export class ThreeGame {
                     if (!item.dynamicRoot) continue;
                     this.registerWorld3dPropFx?.(item.dynamicRoot);
                     this.registerWorld3dPropExperience?.(item.dynamicRoot);
+                    applyPropInteractionState(item.collider, this.propInteractionStates?.get(item.collider?.userData?.scatterKey)
+                        ?? this.propInteractionStates?.get(item.id));
                 }
             }).catch((error) => console.warn('[ThreeGame] Lived-in dressing failed to build', error));
         }
@@ -31237,13 +31318,7 @@ export class ThreeGame {
         // single console can acknowledge E without changing every shared copy.
         // The hard cap preserves the chunk draw/update budget; excess copies
         // remain static but visually identical.
-        let dynamicExperienceCount = 0;
-        for (const item of items) {
-            const eligible = isDynamicPropExperienceType(item.type)
-                || Boolean(getPropFxProfile(item.type));
-            item.dynamicExperience = eligible && dynamicExperienceCount < 12;
-            if (item.dynamicExperience) dynamicExperienceCount += 1;
-        }
+        assignDynamicPropExperiences(items);
 
         for (const item of items) {
             if (item.isDestroyed) continue;
@@ -31267,6 +31342,8 @@ export class ThreeGame {
                 dressingItem: item
             };
             item.collider = collider;
+            applyPropInteractionState(collider, this.propInteractionStates?.get(item.id)
+                ?? this.propInteractionStates?.get(item.stableId));
             group.add(collider);
             this.scatterSprites.push(collider);
             if (item.practicalLight) {
@@ -31300,6 +31377,8 @@ export class ThreeGame {
                 if (!item.dynamicRoot) continue;
                 this.registerWorld3dPropFx?.(item.dynamicRoot);
                 this.registerWorld3dPropExperience?.(item.dynamicRoot);
+                applyPropInteractionState(item.collider, this.propInteractionStates?.get(item.id)
+                    ?? this.propInteractionStates?.get(item.stableId));
                 if (item.dynamicRoot.userData?.mixer) {
                     this.world3dMixers ??= new Set();
                     this.world3dMixers.add(item.dynamicRoot.userData.mixer);
@@ -34535,22 +34614,22 @@ export class ThreeGame {
 
         if (wfcMeta?.roomInstances?.length) {
             for (const room of wfcMeta.roomInstances) {
-                // Hallway-connector chunks were absent from the Thursday
-                // census, so their kit path was practically invisible. Give
-                // every authored room one open, non-colliding socket-safe
-                // gateway frame. Procedural doors and grid collision remain
-                // authoritative; this is presentation only.
-                const roomDoor = (room.doors ?? []).find((door) => (
-                    isRoomGatewayFrameEligible(room, door, wfcMeta)
-                ));
-                const doorCell = roomDoor?.cells?.[Math.floor(roomDoor.cells.length / 2)];
-                const doorWorldX = Number.isFinite(doorCell?.x) ? chunkX * this.chunkSize + doorCell.x : null;
-                const doorWorldZ = Number.isFinite(doorCell?.y) ? chunkY * this.chunkSize + doorCell.y : null;
-                const doorBiome = Number.isFinite(doorWorldX) && Number.isFinite(doorWorldZ)
-                    ? (this.getBiomeKeyForWorldPosition?.(doorWorldX, doorWorldZ) ?? BIOME_KEYS.ACTIVE)
-                    : BIOME_KEYS.ACTIVE;
-                const gateway = roomGatewayKitPlacement(roomDoor, doorBiome);
-                if (gateway) {
+                // Frame the primary entry and, for multi-route rooms, one
+                // secondary exit. These kit gates are open arches: collision
+                // remains with the grid/door slab, so the player walks cleanly
+                // beneath them while the room reads from either approach.
+                const gatewayDoors = (room.doors ?? [])
+                    .filter((door) => isRoomGatewayFrameEligible(room, door, wfcMeta))
+                    .slice(0, 2);
+                for (const roomDoor of gatewayDoors) {
+                    const doorCell = roomDoor.cells[Math.floor(roomDoor.cells.length / 2)];
+                    const doorWorldX = Number.isFinite(doorCell?.x) ? chunkX * this.chunkSize + doorCell.x : null;
+                    const doorWorldZ = Number.isFinite(doorCell?.y) ? chunkY * this.chunkSize + doorCell.y : null;
+                    const doorBiome = Number.isFinite(doorWorldX) && Number.isFinite(doorWorldZ)
+                        ? (this.getBiomeKeyForWorldPosition?.(doorWorldX, doorWorldZ) ?? BIOME_KEYS.ACTIVE)
+                        : BIOME_KEYS.ACTIVE;
+                    const gateway = roomGatewayKitPlacement(roomDoor, doorBiome);
+                    if (!gateway) continue;
                     placements.push({
                         x: chunkX * this.chunkSize + gateway.x,
                         z: chunkY * this.chunkSize + gateway.y,

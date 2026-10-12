@@ -39,10 +39,11 @@ export const DRESSING_KITS = Object.freeze({
             'life_memorial_board', 'life_tally_bulkhead', 'life_vending_machine', 'life_mask_rack',
             'life_cochlear_intercom', 'life_ribcage_rescue_cabinet', 'life_pneumatic_tube_node',
             'life_fire_station', 'life_server_racks', 'life_planning_board', 'life_filing_cabinets',
-            'corp_interrogation_chair', 'corp_debt_severing_kiosk', 'corp_incinerator_hopper'],
+            'corp_interrogation_chair', 'corp_debt_severing_kiosk', 'corp_incinerator_hopper',
+            'corp_biometric_collar_chute', 'chen_sealed_confession_console', 'decon_exosuit_scrubber_station'],
         wallDecals: [...COMMON.wallDecals, 'decal_wall_panel_grille_01', 'decal_wall_panel_grille_02', 'decal_hazard_stripes',
             'decal_meridian_stencil', 'prop_torn_warning_poster', 'decal_substation_stencil', 'decal_wall_conduit_patch',
-            'decal_wall_grime_drip', 'decal_wall_breach'],
+            'decal_wall_grime_drip', 'decal_wall_breach', 'decal_pod_312_rupture_splatter'],
         clutter: [...COMMON.clutter, 'prop_storage_drum_dented', 'prop_camp_crates', 'prop_valve_wheel_fused', 'prop_vent_grate_exploded',
             'life_footlocker_open', 'life_galley_hotplate', 'life_sanitation_bidet', 'life_vulval_drain_sump',
             'camp_water_barrel', 'salvage_tagged_heap', 'life_arcade_cabinet'],
@@ -50,41 +51,46 @@ export const DRESSING_KITS = Object.freeze({
             'life_bunk_stack', 'life_suit_drying_rack', 'life_latrine_stall', 'life_pallet_racking', 'life_forklift',
             'life_transformer_bank', 'life_conveyor_section', 'life_laundry_machines', 'life_weight_bench',
             'life_overseer_desk', 'life_scaffold_tower', 'life_cistern_tank',
-            'corp_suppression_barrier', 'corp_executive_sarcophagus', 'ind_biomass_grinder', 'ind_hydraulic_manifold', 'ind_fuel_rod_cask'],
+            'corp_suppression_barrier', 'corp_executive_sarcophagus', 'ind_biomass_grinder', 'ind_hydraulic_manifold', 'ind_fuel_rod_cask',
+            'tank_orbital_siege_cannon', 'evac_four_seat_cockpit_module', 'evac_manifest_allocation_terminal', 'evac_preflight_fuel_umbilical'],
         floorDecals: [...COMMON.floorDecals, 'decal_floor_grate_01', 'decal_floor_grate_02', 'decal_floor_grate_04', 'decal_scorch_bloom', 'prop_blood_trail',
             'decal_electrical_scorch', 'decal_hazard_chevron', 'decal_door_wear_apron', 'decal_junction_turn_wear',
             'decal_strip_cart_ruts', 'decal_walkway_borders', 'decal_strip_drag_marks', 'decal_puddle_slick',
             'decal_strip_drain_gutter', 'decal_corner_grit_pocket',
-            'decal_strip_arterial_spray', 'decal_strip_high_voltage_scorch', 'decal_execution_wall_splatter']
+            'decal_strip_arterial_spray', 'decal_strip_high_voltage_scorch', 'decal_execution_wall_splatter',
+            'decal_pod_312_rupture_splatter', 'decal_strip_exosuit_coolant']
     },
     cryo: {
         wallProps: ['prop_icey_frost_manifold', 'prop_wall_cable_tray_swag', 'prop_conduit_junction_box', 'prop_locker_bulged',
             'prop_decon_eyewash_shower_station', 'prop_overhead_cage_fluorescent', 'fixture_clock_dead', 'life_parka_hooks',
-            'cryo_frozen_cascade', 'cryo_ruptured_pod'],
+            'cryo_frozen_cascade', 'cryo_ruptured_pod', 'bay_c_pod_312_rupture', 'suture_mercy_cocoon_canopy'],
         wallDecals: ['decal_water_stain', 'decal_rust_bleed_1', 'decal_hand_smears_1', 'decal_hand_smears_2',
             'decal_graffiti_tally_1', 'decal_wall_panel_grille_03', 'decal_biohazard_stencil', 'decal_scars',
-            'decal_permafrost_icicles', 'decal_wall_grime_drip'],
+            'decal_permafrost_icicles', 'decal_wall_grime_drip', 'decal_pod_312_rupture_splatter'],
         clutter: [...COMMON.clutter, 'prop_body_human_frozen', 'prop_storage_drum_dented', 'prop_vent_grate_exploded',
             'life_water_still', 'life_footlocker_open', 'life_vulval_drain_sump', 'camp_water_barrel'],
         corners: ['prop_icey_thermal_pod', 'prop_coolant_drum_leaking_pool', 'prop_icey_frost_vent', 'state_column_shattered',
             'life_cargo_pallet_netted', 'life_barrel_heater', 'life_sleep_sleeve',
             'life_ice_sled', 'life_ice_core_rack', 'life_ice_bore_winch', 'cryo_ice_crawler', 'cryo_snowbound_crates',
             'cryo_heater_station', 'cryo_ice_blocks', 'life_cistern_tank',
-            'cryo_cannibal_butchery_table', 'cryo_ice_core_specimen', 'cryo_thawing_trough', 'cryo_frozen_shelter_pod'],
+            'cryo_cannibal_butchery_table', 'cryo_ice_core_specimen', 'cryo_thawing_trough', 'cryo_frozen_shelter_pod',
+            'sector_zero_bore_drillhead', 'relay_false_beacon_spire'],
         floorDecals: ['decal_frost_bloom_1', 'decal_frost_bloom_2', 'decal_condensation_run', 'scatter_coolant_puddle',
             'decal_footprints_mud', 'decal_floor_grate_03', 'decal_cryo_fracture', 'decal_door_wear_apron',
             'decal_strip_cart_ruts', 'decal_sled_tracks', 'decal_strip_drag_marks', 'decal_puddle_slick',
-            'decal_strip_drain_gutter', 'decal_corner_grit_pocket', 'decal_strip_frost_heave']
+            'decal_strip_drain_gutter', 'decal_corner_grit_pocket', 'decal_strip_frost_heave',
+            'decal_pod_312_rupture_splatter', 'decal_strip_exosuit_coolant']
     },
     bio: {
         wallProps: ['prop_biomech_tracheal_wall_pipe', 'prop_vertebral_cable_riser', 'prop_biomech_flesh_locker',
             'fixture_sconce_vine', 'prop_light_cluster_dripping', 'prop_biomech_respirator', 'life_mask_rack',
             'life_umbilical_tether', 'life_lung_filter_bellows', 'life_vertebral_restraint_rack',
             'life_brood_comb', 'life_fungal_cable_bundle', 'hive_resin_pillar', 'hive_tendril_arch',
-            'hive_vivisected_engineer', 'hive_visceral_ovipositor', 'hive_sphincter_iris', 'hive_pulmonary_bellows'],
+            'hive_vivisected_engineer', 'hive_visceral_ovipositor', 'hive_sphincter_iris', 'hive_pulmonary_bellows',
+            'vass_hybrid_embryo_incubator', 'carapace_sentry_chrysalis'],
         wallDecals: ['decal_spore_stain_01', 'decal_spore_stain_02', 'decal_spore_stain_03', 'decal_vine_iron_shadow_1',
             'decal_vine_iron_shadow_2', 'decal_claw_scratches', 'decal_bite_marks_02', 'decal_hand_smears_2',
-            'decal_wall_grime_drip', 'decal_hive_growth'],
+            'decal_wall_grime_drip', 'decal_hive_growth', 'decal_vass_acoustic_diagram'],
         clutter: ['prop_hive_resin_sac', 'state_growth_overrun_2', 'scatter_bolts', 'scatter_cable_coil',
             'prop_biomech_respirator', 'prop_cave_bones', 'bunker_junk_rare', 'prop_body_empty_exosuit',
             'life_sanitation_bidet', 'life_vulval_drain_sump', 'life_peristaltic_feeder', 'life_scent_distiller'],
@@ -92,19 +98,22 @@ export const DRESSING_KITS = Object.freeze({
             'life_sleep_sleeve', 'life_resin_extractor', 'life_pheromone_censer', 'life_warmth_hearth',
             'life_hive_dew_funnel', 'life_hive_feeding_bladder', 'life_assimilated_desk', 'hive_assimilated_generator',
             'hive_brood_dome', 'hive_cocooned_crew', 'hive_pheromone_node', 'life_algae_tank',
-            'hive_gestation_sac', 'hive_amniotic_feeder_trough', 'tina_molted_carapace', 'tina_covert_nursery_chest', 'tina_mimic_vanity', 'tina_trophy_trove'],
+            'hive_gestation_sac', 'hive_amniotic_feeder_trough', 'tina_molted_carapace', 'tina_covert_nursery_chest', 'tina_mimic_vanity', 'tina_trophy_trove',
+            'queen_royal_brood_throne', 'royal_egg_clutch_caul', 'vass_acoustic_resonator_tank'],
         floorDecals: ['decal_growth_creep_1', 'decal_growth_creep_2', 'decal_spore_growth_patch', 'scatter_slime_puddle',
             'decal_fluid_seep', 'prop_blood_trail', 'decal_bio_mycelium', 'decal_chitin_cluster', 'decal_bio_spore_vent',
             'decal_door_wear_apron', 'decal_strip_hive_veins', 'decal_puddle_slick', 'decal_flesh_press',
             'decal_strip_drain_gutter', 'decal_corner_grit_pocket',
-            'decal_strip_umbilical_veins', 'decal_strip_acid_trench', 'decal_queen_oviposition_pool']
+            'decal_strip_umbilical_veins', 'decal_strip_acid_trench', 'decal_queen_oviposition_pool',
+            'decal_strip_crawler_acid', 'decal_vass_acoustic_diagram']
     },
     camp: {
         wallProps: ['prop_wall_cable_tray_swag', 'prop_locker_bulged', 'fixture_sconce_vine', 'prop_overhead_cage_fluorescent',
             'life_memorial_board', 'life_tally_bulkhead', 'life_mask_rack',
-            'meridian_cyber_graft_bench', 'meridian_servitor_dock', 'vesper_reloading_station'],
+            'meridian_cyber_graft_bench', 'meridian_servitor_dock', 'vesper_reloading_station',
+            'crawler_signal_antenna_rig', 'scout_tracking_beacon_core'],
         wallDecals: [...COMMON.wallDecals, 'decal_graffiti_tally_2', 'prop_torn_warning_poster', 'decal_camp_map',
-            'decal_childlike_cave_map', 'decal_wall_grime_drip'],
+            'decal_childlike_cave_map', 'decal_wall_grime_drip', 'decal_vass_acoustic_diagram'],
         clutter: ['prop_camp_crates', 'prop_camp_crate', 'prop_camp_cot', 'scatter_bolts', 'scatter_cable_coil', 'bunker_junk_uncommon',
             'life_footlocker_open', 'life_galley_hotplate', 'life_sanitation_bidet', 'life_vulval_drain_sump',
             'camp_water_barrel'],
@@ -112,25 +121,29 @@ export const DRESSING_KITS = Object.freeze({
             'life_latrine_stall', 'life_barrel_heater', 'life_pipe_hammock', 'life_hydro_rack',
             'life_barber_chair', 'life_devotion_tree', 'camp_canvas_tent', 'life_cistern_tank', 'salvage_tagged_heap',
             'meridian_mainframe_altar', 'meridian_capacitor_bomb', 'tallow_compost_fermenter', 'tallow_spore_cradle',
-            'tallow_flesh_trellis', 'tallow_sacrificial_altar', 'vesper_amputation_rig', 'vesper_autocannon_bipod', 'vesper_hanging_cage'],
+            'tallow_flesh_trellis', 'tallow_sacrificial_altar', 'vesper_amputation_rig', 'vesper_autocannon_bipod', 'vesper_hanging_cage',
+            'engineer_wave_relay_dynamo', 'tank_orbital_siege_cannon'],
         floorDecals: ['decal_footprints_mud', 'decal_oil_spill_patch', 'decal_tallow_symbol', 'prop_blood_trail', 'decal_evac_treads',
             'decal_door_wear_apron', 'decal_strip_cart_ruts', 'decal_strip_drag_marks', 'decal_puddle_slick',
-            'decal_abandoned_meal_tray', 'decal_worker_sleep_roll', 'decal_corner_grit_pocket', 'decal_strip_viscera_drag']
+            'decal_abandoned_meal_tray', 'decal_worker_sleep_roll', 'decal_corner_grit_pocket', 'decal_strip_viscera_drag',
+            'decal_strip_crawler_acid', 'decal_vass_acoustic_diagram']
     },
     cathedral: {
         wallProps: ['arch_niche_shrine', 'arch_window_stained', 'prop_vertebral_cable_riser', 'fixture_sconce_vine',
             'prop_biomech_tracheal_wall_pipe', 'prop_overhead_cage_fluorescent'],
         wallDecals: ['decal_wall_panel_relief', 'decal_lacquer_blister_01', 'decal_lacquer_blister_02', 'decal_lacquer_blister_03',
             'decal_mirror_tarnished', 'decal_maintenance_shrine', 'decal_vine_iron_shadow_1', 'decal_rust_bleed_2',
-            'decal_giger_relief', 'decal_wall_grime_drip'],
+            'decal_giger_relief', 'decal_wall_grime_drip', 'decal_vass_acoustic_diagram'],
         clutter: ['scatter_bolts', 'scatter_cable_coil', 'bunker_junk_rare', 'prop_cave_bones',
             'life_pheromone_censer', 'life_sanitation_bidet', 'life_vulval_drain_sump'],
         corners: ['arch_pillar_buttress_01', 'arch_pillar_buttress_02', 'arch_pillar_buttress_03', 'arch_pillar_buttress_04',
             'life_confessional', 'life_devotion_tree',
-            'chasm_hanging_elevator', 'chasm_suicide_ledge_cross', 'chasm_dredge_hook_crane', 'crash_cockpit_canopy'],
+            'chasm_hanging_elevator', 'chasm_suicide_ledge_cross', 'chasm_dredge_hook_crane', 'crash_cockpit_canopy',
+            'chen_sealed_confession_console', 'vass_acoustic_resonator_tank'],
         floorDecals: ['decal_floor_medallion_01', 'decal_floor_medallion_02', 'decal_floor_medallion_03', 'decal_floor_medallion_04',
             'decal_fluid_seep', 'decal_growth_creep_1', 'decal_cathedral_runic', 'decal_strip_drag_marks',
-            'decal_puddle_slick', 'decal_corner_grit_pocket']
+            'decal_puddle_slick', 'decal_corner_grit_pocket',
+            'decal_vass_acoustic_diagram', 'decal_pod_312_rupture_splatter']
     }
 });
 
@@ -233,6 +246,14 @@ export const DECAL_WORLD_SCALES = Object.freeze({
     strip_umbilical_vein_bundle: Object.freeze({ min: 2.6, max: 3.4 }),
     decal_execution_wall_splatter: Object.freeze({ min: 2.0, max: 2.6 }),
     decal_queen_oviposition_pool: Object.freeze({ min: 2.4, max: 3.2 }),
+
+    // World story expansion pass 2 strips and decals (2026-10-12)
+    decal_pod_312_rupture_splatter: Object.freeze({ min: 2.2, max: 2.8 }),
+    decal_vass_acoustic_diagram: Object.freeze({ min: 1.8, max: 2.4 }),
+    decal_strip_crawler_acid: Object.freeze({ min: 2.6, max: 3.4 }),
+    strip_crawler_acid_scuttle: Object.freeze({ min: 2.6, max: 3.4 }),
+    decal_strip_exosuit_coolant: Object.freeze({ min: 2.6, max: 3.4 }),
+    strip_exosuit_fuel_coolant_trail: Object.freeze({ min: 2.6, max: 3.4 }),
 
     // Medium-large floor fixtures, grates, medallions, and biological/cryo growth blooms (1.2m - 2.0m)
     decal_floor_grate_01: Object.freeze({ min: 1.4, max: 1.8 }),
@@ -384,7 +405,10 @@ export const VIGNETTES = Object.freeze({
         ['life_scaffold_tower', 'salvage_tagged_heap'],
         ['corp_interrogation_chair', 'corp_debt_severing_kiosk'],
         ['corp_executive_sarcophagus', 'corp_suppression_barrier'],
-        ['ind_biomass_grinder', 'corp_incinerator_hopper']
+        ['ind_biomass_grinder', 'corp_incinerator_hopper'],
+        ['evac_four_seat_cockpit_module', 'evac_manifest_allocation_terminal'],
+        ['evac_preflight_fuel_umbilical', 'decon_exosuit_scrubber_station'],
+        ['corp_biometric_collar_chute', 'tank_orbital_siege_cannon']
     ],
     cryo: [
         ['life_cistern_tank', 'camp_water_barrel', 'life_sink_row'],
@@ -402,7 +426,9 @@ export const VIGNETTES = Object.freeze({
         ['life_ice_bore_winch', 'life_drip_buckets'],
         ['cryo_cannibal_butchery_table', 'cryo_ruptured_pod'],
         ['cryo_ice_core_specimen', 'cryo_thawing_trough'],
-        ['cryo_frozen_shelter_pod', 'cryo_heater_station']
+        ['cryo_frozen_shelter_pod', 'cryo_heater_station'],
+        ['bay_c_pod_312_rupture', 'suture_mercy_cocoon_canopy'],
+        ['sector_zero_bore_drillhead', 'relay_false_beacon_spire']
     ],
     bio: [
         ['hive_resin_pillar', 'hive_cocooned_crew'],
@@ -421,7 +447,10 @@ export const VIGNETTES = Object.freeze({
         ['hive_gestation_sac', 'hive_pulmonary_bellows'],
         ['hive_amniotic_feeder_trough', 'hive_sphincter_iris'],
         ['tina_molted_carapace', 'tina_covert_nursery_chest', 'tina_mimic_vanity'],
-        ['tina_trophy_trove', 'tina_mimic_vanity']
+        ['tina_trophy_trove', 'tina_mimic_vanity'],
+        ['queen_royal_brood_throne', 'royal_egg_clutch_caul'],
+        ['vass_hybrid_embryo_incubator', 'vass_acoustic_resonator_tank'],
+        ['carapace_sentry_chrysalis', 'vass_hybrid_embryo_incubator']
     ],
     camp: [
         ['camp_canvas_tent', 'life_cistern_tank', 'camp_water_barrel'],
@@ -442,7 +471,9 @@ export const VIGNETTES = Object.freeze({
         ['tallow_spore_cradle', 'tallow_compost_fermenter'],
         ['tallow_flesh_trellis', 'tallow_sacrificial_altar'],
         ['vesper_amputation_rig', 'vesper_reloading_station'],
-        ['vesper_autocannon_bipod', 'vesper_hanging_cage']
+        ['vesper_autocannon_bipod', 'vesper_hanging_cage'],
+        ['crawler_signal_antenna_rig', 'scout_tracking_beacon_core'],
+        ['engineer_wave_relay_dynamo', 'tank_orbital_siege_cannon']
     ],
     cathedral: [
         ['life_pheromone_censer', 'life_stigmata_inscriber', 'life_memorial_board'],
@@ -454,7 +485,8 @@ export const VIGNETTES = Object.freeze({
         ['life_pew_segment', 'life_devotion_tree'],
         ['life_confessional', 'life_pew_segment'],
         ['chasm_hanging_elevator', 'chasm_suicide_ledge_cross'],
-        ['chasm_dredge_hook_crane', 'crash_cockpit_canopy']
+        ['chasm_dredge_hook_crane', 'crash_cockpit_canopy'],
+        ['chen_sealed_confession_console', 'vass_acoustic_resonator_tank']
     ]
 });
 
@@ -466,20 +498,23 @@ export const ROLE_VIGNETTES = Object.freeze({
         ['life_pelvic_autopsy_trough', 'life_covered_stretcher', 'prop_surgical_cart'],
         ['prop_medical_bed', 'prop_vital_monitor', 'prop_surgical_cart'],
         ['vesper_amputation_rig', 'corp_incinerator_hopper'],
-        ['corp_dissection_gurney', 'life_surgical_lamp']
+        ['corp_dissection_gurney', 'life_surgical_lamp'],
+        ['decon_exosuit_scrubber_station', 'suture_mercy_cocoon_canopy']
     ],
     'cryo-lab': [
         ['life_cistern_tank', 'camp_water_barrel', 'life_sink_row'],
         ['life_infusion_cradle', 'life_water_still', 'life_bone_clamp_rig'],
         ['prop_medical_bed', 'prop_vital_monitor', 'prop_surgical_cart'],
         ['cryo_cannibal_butchery_table', 'cryo_thawing_trough'],
-        ['cryo_ice_core_specimen', 'cryo_frozen_shelter_pod']
+        ['cryo_ice_core_specimen', 'cryo_frozen_shelter_pod'],
+        ['bay_c_pod_312_rupture', 'suture_mercy_cocoon_canopy']
     ],
     security: [
         ['life_vertebral_restraint_rack', 'life_ammo_ovipositor'],
         ['prop_security_barricade', 'prop_ammo_crate_stack'],
         ['life_checkpoint_post', 'life_dropped_kit_pile'],
-        ['corp_interrogation_chair', 'corp_debt_severing_kiosk']
+        ['corp_interrogation_chair', 'corp_debt_severing_kiosk'],
+        ['corp_biometric_collar_chute', 'tank_orbital_siege_cannon']
     ],
     armory: [
         ['life_reloading_bench', 'life_ammo_ovipositor', 'prop_ammo_crate_stack'],
@@ -502,7 +537,8 @@ export const ROLE_VIGNETTES = Object.freeze({
         ['life_welding_station', 'prop_maintenance_tool_cart'],
         ['life_exosuit_teardown', 'scatter_bolts'],
         ['meridian_cyber_graft_bench', 'meridian_servitor_dock'],
-        ['ind_biomass_grinder', 'ind_hydraulic_manifold']
+        ['ind_biomass_grinder', 'ind_hydraulic_manifold'],
+        ['engineer_wave_relay_dynamo', 'crawler_signal_antenna_rig']
     ],
     workshop: [
         ['life_fuel_probe_boom', 'life_lung_filter_bellows', 'life_umbilical_tether'],
@@ -512,7 +548,8 @@ export const ROLE_VIGNETTES = Object.freeze({
         ['life_welding_station', 'prop_maintenance_tool_cart'],
         ['life_exosuit_teardown', 'scatter_bolts'],
         ['ind_hydraulic_manifold', 'ind_fuel_rod_cask'],
-        ['vesper_reloading_station', 'prop_maintenance_tool_cart']
+        ['vesper_reloading_station', 'prop_maintenance_tool_cart'],
+        ['decon_exosuit_scrubber_station', 'evac_preflight_fuel_umbilical']
     ]
 });
 

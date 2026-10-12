@@ -446,7 +446,28 @@ export const WORLD_3D_MODELS = Object.freeze({
     ind_biomass_grinder: { url: '/3d/runtime/new3ds/ind_biomass_grinder.glb', height: 2.2, yaw: 0 },
     ind_hydraulic_manifold: { url: '/3d/runtime/new3ds/ind_hydraulic_manifold.glb', height: 1.9, yaw: 0 },
     ind_fuel_rod_cask: { url: '/3d/runtime/new3ds/ind_fuel_rod_cask.glb', height: 2.4, yaw: 0 },
-    crash_cockpit_canopy: { url: '/3d/runtime/new3ds/crash_cockpit_canopy.glb', height: 2.2, maxSpan: 3.4, yaw: 0 }
+    crash_cockpit_canopy: { url: '/3d/runtime/new3ds/crash_cockpit_canopy.glb', height: 2.2, maxSpan: 3.4, yaw: 0 },
+
+    // 2026-10-12 World story expansion pass 2 mature props (19 models)
+    bay_c_pod_312_rupture: { url: '/3d/runtime/new3ds/bay_c_pod_312_rupture.glb', height: 2.2, maxSpan: 2.5, yaw: 0 },
+    carapace_sentry_chrysalis: { url: '/3d/runtime/new3ds/carapace_sentry_chrysalis.glb', height: 2.4, yaw: 0 },
+    chen_sealed_confession_console: { url: '/3d/runtime/new3ds/chen_sealed_confession_console.glb', height: 1.8, yaw: 0 },
+    corp_biometric_collar_chute: { url: '/3d/runtime/new3ds/corp_biometric_collar_chute.glb', height: 2.1, yaw: 0 },
+    crawler_signal_antenna_rig: { url: '/3d/runtime/new3ds/crawler_signal_antenna_rig.glb', height: 2.8, yaw: 0 },
+    decon_exosuit_scrubber_station: { url: '/3d/runtime/new3ds/decon_exosuit_scrubber_station.glb', height: 2.4, yaw: 0 },
+    engineer_wave_relay_dynamo: { url: '/3d/runtime/new3ds/engineer_wave_relay_dynamo.glb', height: 2.2, yaw: 0 },
+    evac_four_seat_cockpit_module: { url: '/3d/runtime/new3ds/evac_four_seat_cockpit_module.glb', height: 2.2, maxSpan: 3.5, yaw: 0 },
+    evac_manifest_allocation_terminal: { url: '/3d/runtime/new3ds/evac_manifest_allocation_terminal.glb', height: 1.9, yaw: 0 },
+    evac_preflight_fuel_umbilical: { url: '/3d/runtime/new3ds/evac_preflight_fuel_umbilical.glb', height: 2.6, yaw: 0 },
+    queen_royal_brood_throne: { url: '/3d/runtime/new3ds/queen_royal_brood_throne.glb', height: 3.0, maxSpan: 2.8, yaw: 0 },
+    relay_false_beacon_spire: { url: '/3d/runtime/new3ds/relay_false_beacon_spire.glb', height: 3.2, yaw: 0 },
+    royal_egg_clutch_caul: { url: '/3d/runtime/new3ds/royal_egg_clutch_caul.glb', height: 1.6, maxSpan: 2.2, yaw: 0 },
+    scout_tracking_beacon_core: { url: '/3d/runtime/new3ds/scout_tracking_beacon_core.glb', height: 1.7, yaw: 0 },
+    sector_zero_bore_drillhead: { url: '/3d/runtime/new3ds/sector_zero_bore_drillhead.glb', height: 2.5, maxSpan: 2.8, yaw: 0 },
+    suture_mercy_cocoon_canopy: { url: '/3d/runtime/new3ds/suture_mercy_cocoon_canopy.glb', height: 2.0, maxSpan: 2.4, yaw: 0 },
+    tank_orbital_siege_cannon: { url: '/3d/runtime/new3ds/tank_orbital_siege_cannon.glb', height: 3.0, maxSpan: 4.5, yaw: 0 },
+    vass_acoustic_resonator_tank: { url: '/3d/runtime/new3ds/vass_acoustic_resonator_tank.glb', height: 2.3, yaw: 0 },
+    vass_hybrid_embryo_incubator: { url: '/3d/runtime/new3ds/vass_hybrid_embryo_incubator.glb', height: 2.1, yaw: 0 }
 });
 
 // Metric-scale set-piece shells are deliberately separate from prop models.

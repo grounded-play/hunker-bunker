@@ -3,6 +3,38 @@ import * as THREE from 'three';
 import { PROP_FX_ANCHORS, PROP_FX_PROFILES, applyPropFxQuality, createPropFx, getPropFxProfile, setPropFxQuality } from './propFx.js';
 
 describe('prop FX recipes', () => {
+    const recentVerticalSlice = [
+        'life_arcade_cabinet', 'life_surgical_lamp', 'cryo_heater_station',
+        'hive_brood_dome', 'chasm_beacon_post', 'corp_executive_sarcophagus',
+        'corp_suppression_barrier', 'meridian_capacitor_bomb',
+        'tina_covert_nursery_chest', 'hive_sphincter_iris',
+        'ind_biomass_grinder', 'crash_cockpit_canopy'
+    ];
+
+    it('gives every first-slice recent GLB a bounded authored effect recipe', () => {
+        for (const type of recentVerticalSlice) {
+            const recipe = getPropFxProfile(type);
+            expect(recipe, type).toBeDefined();
+            expect(recipe.maxDistance, type).toBeLessThanOrEqual(24);
+        }
+    });
+
+    it('keeps all first-slice practical sources shadowless and state-switchable', () => {
+        for (const type of recentVerticalSlice) {
+            const root = new THREE.Group();
+            const model = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1));
+            root.add(model);
+            const fx = createPropFx(root, model, type);
+            expect(fx.lightSources.length, type).toBe(1);
+            for (const light of fx.lightSources) expect(light.castShadow, type).toBe(false);
+            fx.setMode('disabled');
+            expect(fx.enabled, type).toBe(false);
+            fx.setMode('on');
+            expect(fx.enabled, type).toBe(true);
+            fx.dispose();
+        }
+    });
+
     it('covers the representative fire, liquid, mechanical, electrical, organic and rupture slice', () => {
         for (const type of [
             'prop_camp_cookfire_lit', 'life_water_still', 'prop_specimen_tank',
