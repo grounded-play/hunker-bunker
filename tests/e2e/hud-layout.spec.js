@@ -33,6 +33,19 @@ test.describe('HUD layout system and lower dock spec', () => {
             return px;
         });
         expect(desktopU).toBeCloseTo(1.0, 1);
+
+        // Native 4K keeps the 1080p physical proportion instead of stopping at
+        // the former 1.3 cap, which made the PC playtest HUD illegible.
+        await page.setViewportSize({ width: 3840, height: 2160 });
+        const fourKU = await page.evaluate(() => {
+            const div = document.createElement('div');
+            div.style.width = 'calc(10 * var(--hud-u))';
+            document.body.appendChild(div);
+            const px = parseFloat(getComputedStyle(div).width) / 10;
+            div.remove();
+            return px;
+        });
+        expect(fourKU).toBeCloseTo(2.0, 1);
     });
 
     test('defaults to the dock layout when no flag is stored', async ({ page }) => {
@@ -125,5 +138,62 @@ test.describe('HUD layout system and lower dock spec', () => {
             expect(stageBox.x + stageBox.width - (gearBox.x + gearBox.width)).toBeLessThan(80);
             expect(gearBox.y - stageBox.y).toBeLessThan(80);
         }
+
+        // Persistent context uses the lower side wings: readable without
+        // filling the centre-bottom corridor around the operator and prompts.
+        const perimeter = await page.evaluate(() => {
+            const stage = document.getElementById('game-viewport').getBoundingClientRect();
+            const dockTop = Math.min(...[...document.querySelectorAll('.dock-housing')]
+                .filter((element) => element.checkVisibility())
+                .map((element) => element.getBoundingClientRect().top));
+            const relative = (selector) => {
+                const box = document.querySelector(selector).getBoundingClientRect();
+                return {
+                    left: box.left - stage.left,
+                    right: box.right - stage.left,
+                    top: box.top - stage.top,
+                    bottom: box.bottom - stage.top
+                };
+            };
+            return {
+                stage: { width: stage.width, height: stage.height },
+                dockTop: dockTop - stage.top,
+                sector: relative('#ui .level-indicator'),
+                rightRail: relative('.hud-right-rail')
+            };
+        });
+        for (const [name, box] of [['sector', perimeter.sector], ['right rail', perimeter.rightRail]]) {
+            expect(box.top, `${name} starts in lower 40%`).toBeGreaterThanOrEqual(perimeter.stage.height * 0.60);
+            expect(box.bottom, `${name} clears lower dock`).toBeLessThanOrEqual(perimeter.dockTop - 4);
+        }
+        expect(perimeter.sector.right, 'sector rail clears centre corridor')
+            .toBeLessThanOrEqual(perimeter.stage.width * 0.35);
+        expect(perimeter.rightRail.left, 'objective/radio rail clears centre corridor')
+            .toBeGreaterThanOrEqual(perimeter.stage.width * 0.65);
+
+        await page.setViewportSize({ width: 1280, height: 800 });
+        await page.waitForTimeout(150);
+        const deckLanes = await page.evaluate(() => {
+            const box = (selector) => {
+                const rect = document.querySelector(selector)?.getBoundingClientRect();
+                return rect ? { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom } : null;
+            };
+            const overlaps = (a, b) => Boolean(a && b)
+                && a.left < b.right && a.right > b.left
+                && a.top < b.bottom && a.bottom > b.top;
+            const prompt = box('.hud-mission-stack');
+            const sector = box('#ui .level-indicator');
+            const rightRail = box('.hud-right-rail');
+            return {
+                sectorPromptOverlap: overlaps(sector, prompt),
+                rightPromptOverlap: overlaps(rightRail, prompt),
+                sideGap: prompt && sector && rightRail
+                    ? Math.min(prompt.left - sector.right, rightRail.left - prompt.right)
+                    : null
+            };
+        });
+        expect(deckLanes.sectorPromptOverlap, 'Deck sector rail clears prompt lane').toBe(false);
+        expect(deckLanes.rightPromptOverlap, 'Deck objective/radio rail clears prompt lane').toBe(false);
+        expect(deckLanes.sideGap, 'Deck preserves a visible gutter around prompt lane').toBeGreaterThanOrEqual(6);
     });
 });

@@ -412,3 +412,86 @@ html[data-hud-layout="dock"] #game-viewport #ui #ship-status-panel .ship-status-
   max-width: none !important;
   flex: 0 0 auto !important;
 }
+
+/* Sprint 52 playtest remediation: readable lower-third perimeter.
+   Persistent context occupies the quiet lower side wings instead of the top
+   corners. The centre remains open for the operator, reticle and prompt lane;
+   only urgent boss/hazard alerts may interrupt the top of the playfield. */
+html[data-hud-layout="dock"] #game-viewport {
+  /* The second bound keys off the 560u centre prompt lane. This matters on a
+     letterboxed 16:10 Deck stage, where 34vw would let the side rails touch
+     the prompt even though they remain outside the nominal 30% keep-out. */
+  --hud-side-stack-width: min(
+    calc(420 * var(--u)),
+    calc(50% - 280 * var(--u) - var(--hud-margin) - 12 * var(--u))
+  );
+  --hud-side-stack-bottom: calc(var(--dock-bottom) + var(--dock-band-h, calc(64 * var(--u))) + 12 * var(--u));
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .level-indicator {
+  top: auto !important;
+  right: auto !important;
+  bottom: var(--hud-side-stack-bottom) !important;
+  left: var(--hud-margin) !important;
+  width: var(--hud-side-stack-width) !important;
+  min-height: calc(52 * var(--u)) !important;
+  padding: calc(9 * var(--u)) calc(14 * var(--u)) !important;
+  row-gap: calc(7 * var(--u)) !important;
+  background: rgba(8, 14, 21, .94) !important;
+  border-color: rgba(255, 159, 28, .52) !important;
+  box-shadow: 0 calc(4 * var(--u)) calc(18 * var(--u)) rgba(0, 0, 0, .58) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui :is(
+  #level-num,
+  .level-indicator__biome,
+  .level-indicator__location,
+  #campaign-day-indicator
+) {
+  font-size: max(12px, calc(15 * var(--u))) !important;
+  line-height: 1.2 !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .level-indicator__location {
+  flex: 1 1 calc(210 * var(--u)) !important;
+  min-width: 0 !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport .hud-right-rail {
+  top: auto !important;
+  right: var(--hud-margin) !important;
+  bottom: var(--hud-side-stack-bottom) !important;
+  width: var(--hud-side-stack-width) !important;
+  max-height: min(calc(250 * var(--u)), 31vh) !important;
+  gap: calc(8 * var(--u)) !important;
+  justify-content: flex-end;
+}
+
+html[data-hud-layout="dock"] #game-viewport .objective-drawer__toggle {
+  min-height: calc(46 * var(--u)) !important;
+  padding: calc(9 * var(--u)) calc(12 * var(--u)) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport :is(
+  .objective-drawer__kicker,
+  .objective-drawer__progress,
+  .objective-drawer__count
+) {
+  font-size: max(12px, calc(12 * var(--u))) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport .objective-drawer__label {
+  font-size: max(13px, calc(16 * var(--u))) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport .hud-right-rail > .hud-notification-stack {
+  max-height: min(calc(180 * var(--u)), 22vh) !important;
+}
+
+/* Chat/settings are the only persistent top-corner controls. Keep their hit
+   targets legible at native high resolutions without adding another panel. */
+html[data-hud-layout="dock"] #game-viewport #ui .hud-corner-settings .calibrate-btn {
+  width: max(44px, calc(44 * var(--u))) !important;
+  height: max(44px, calc(44 * var(--u))) !important;
+  font-size: max(13px, calc(14 * var(--u))) !important;
+}

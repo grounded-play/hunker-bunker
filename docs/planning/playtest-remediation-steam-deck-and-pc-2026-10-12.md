@@ -73,6 +73,33 @@ Performance gates:
 6. **Mismatched Texture Scaling & Texel Density:** Adjacent modular wall sections show starkly mismatched texel proportions (e.g. coarse, low-resolution green metal panels immediately bordering ultra-fine dark fluted paneling).
 7. **Overlapping / Unsupported Architecture:** Tall wall masses, wall-top ledges, and trim bands intersect or extend beyond credible support, producing stacked faces and implausible overhangs.
 8. **Bad Floor-Edge Placement:** Debris, grates, and stain decals cross floor/wall/void boundaries; some are partly buried while others visibly hover. This is a support-surface validation problem in addition to decal orientation.
+9. **HUD Too Small and Split Across the Top:** Sector telemetry occupies the upper-left while objectives and radio traffic occupy the upper-right. At the native 3840×2160 capture, the HUD unit capped at `1.3px` instead of scaling to `2px`, making text substantially smaller than the 1080p reference. The useful lower side wings remain mostly empty while the eye must travel between four screen edges.
+
+### HUD lower-third layout decision and implementation
+
+The screenshot calls for a **lower-third perimeter**, not a full-width opaque lower bar. Persistent information is grouped into three glance paths while the centre play corridor remains clear:
+
+| Lower-third zone | Contents | Behavior |
+|---|---|---|
+| Left wing | sector, location, day/cycle, run modifiers and bounty | grows upward from above the map housing |
+| Centre dock | map, vitals, hull, loot, weapon, abilities; contextual prompt above | unchanged narrow 64-unit band; never covered by side rails |
+| Right wing | next objective and one queued radio/tutorial card | grows upward from above the arsenal housing; expanded objective detail may scroll |
+| Top exceptions | chat/settings; boss/hazard/critical alerts | utility stays in the corner; urgent alerts retain top-centre interruption priority |
+
+Implemented in `src/styles/expeditionHud.css` and `src/styles/hudInformationArchitecture.css`:
+
+1. HUD units now scale from `0.8px` on Steam Deck through `1px` at 1080p to `2px` at native 4K. This preserves perceived size instead of stopping at the old `1.3px` cap. The existing player HUD-scale setting remains multiplicative.
+2. Sector telemetry and the objective/radio rail anchor above the lower dock's left and right housings. Their width is bounded by the 560-unit centre prompt lane (with a 12-unit gutter), so neither enters the player/reticle corridor or touches interaction copy on the letterboxed Deck stage.
+3. Sector, objective, status and utility typography/hit targets receive explicit readable floors. No new backdrop filter or full-width opaque surface is introduced, preserving the Deck render budget and world visibility.
+4. `tests/e2e/hud-layout.spec.js` gates 4K scaling, lower-third placement, dock clearance and the empty centre corridor.
+
+Acceptance:
+
+- [x] Persistent sector, objective and transmission UI sits in the lower 40% at the 1920×1080 reference stage.
+- [x] Left/right context rails do not enter the central 30% gameplay corridor or overlap the dock.
+- [x] Native 4K uses a 2× HUD unit; Steam Deck retains its 0.8px legibility floor.
+- [ ] Re-capture on installed Steam Deck and the 3840×2160 PC display and confirm comfortable couch/handheld reading at the default 100% HUD scale.
+- [ ] Confirm long localized objective/location strings at 100%, 115%, 130% and 150% player HUD scale.
 
 ---
 
