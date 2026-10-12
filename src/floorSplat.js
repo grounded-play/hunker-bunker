@@ -94,7 +94,20 @@ export const FLOOR_SURFACES = Object.freeze([
     { id: 'tex_floor_bone_terrazzo', variants: 4, scale: 4, fallback: FLOOR_LAYER.BASE },
     { id: 'tex_floor_latex_mat', variants: 4, scale: 2.5, fallback: FLOOR_LAYER.MEDICAL },
     { id: 'tex_floor_camp_planks', variants: 4, scale: 4, fallback: FLOOR_LAYER.CAMP },
-    { id: 'tex_floor_grate_trench', variants: 4, scale: 3, fallback: FLOOR_LAYER.UTILITY }
+    { id: 'tex_floor_grate_trench', variants: 4, scale: 3, fallback: FLOOR_LAYER.UTILITY },
+    // 2026-10-11 World completion path & shoulder surfaces
+    { id: 'tex_path_worn_deck', variants: 4, scale: 2, fallback: FLOOR_LAYER.HALLWAY },
+    { id: 'tex_path_polished_concrete', variants: 4, scale: 2, fallback: FLOOR_LAYER.UTILITY },
+    { id: 'tex_path_packed_snow', variants: 4, scale: 2, fallback: FLOOR_LAYER.CRYO },
+    { id: 'tex_path_slush_track', variants: 4, scale: 2, fallback: FLOOR_LAYER.CRYO },
+    { id: 'tex_path_resin_trail', variants: 4, scale: 2, fallback: FLOOR_LAYER.HIVE },
+    { id: 'tex_path_trodden_spores', variants: 4, scale: 2, fallback: FLOOR_LAYER.BIO },
+    { id: 'tex_path_mud_track', variants: 4, scale: 2, fallback: FLOOR_LAYER.CAMP },
+    { id: 'tex_path_gravel_scree', variants: 4, scale: 2, fallback: FLOOR_LAYER.GROUND, groundLike: true },
+    { id: 'tex_shoulder_swept_grit', variants: 4, scale: 2, fallback: FLOOR_LAYER.BASE },
+    { id: 'tex_shoulder_ice_crust', variants: 4, scale: 2, fallback: FLOOR_LAYER.CRYO },
+    { id: 'tex_shoulder_resin_lip', variants: 4, scale: 2, fallback: FLOOR_LAYER.BIO },
+    { id: 'tex_overlay_puddles', variants: 4, scale: 3, fallback: FLOOR_LAYER.HALLWAY }
 ].map((surface, index, all) => Object.freeze({
     ...surface,
     groundLike: Boolean(surface.groundLike),
@@ -110,24 +123,34 @@ export function floorSurfaceFileNames() {
         Array.from({ length: surface.variants }, (_, variant) => `${surface.id}_${VARIANT_LETTERS[variant]}`));
 }
 
-/** Room themes that moved to a new surface; the rest keep their atlas floor. */
-export const ROOM_THEME_SURFACE = Object.freeze({
-    'bunker-medical': 'tex_floor_latex_mat',
-    'bunker-security': 'tex_floor_concrete_stained',
-    'bunker-armory': 'tex_floor_concrete_stained',
-    'bunker-storage': 'tex_floor_concrete_stained',
-    'reward-cache': 'tex_floor_concrete_stained',
-    'bunker-workshop': 'tex_floor_grate_trench',
-    'cryo-engineering': 'tex_floor_grate_trench',
-    'bio-engineering': 'tex_floor_grate_trench',
-    'cryo-rough': 'tex_floor_slush_ice',
-    'cryo-recovery': 'tex_floor_slush_ice',
-    'bio-nest': 'tex_floor_chitin_resin',
-    'bio-medical': 'tex_floor_chitin_resin',
-    'bio-feeding-chamber': 'tex_floor_chitin_resin',
-    'camp-fortified': 'tex_floor_camp_planks',
-    'giger-cathedral': 'tex_floor_bone_terrazzo'
+/** Room themes mapped to interchangeable palettes so rooms do not repeat identical styles */
+export const ROOM_THEME_SURFACES = Object.freeze({
+    'bunker-medical': ['tex_floor_latex_mat', 'tex_floor_bone_terrazzo'],
+    'bunker-security': ['tex_floor_concrete_stained', 'tex_path_polished_concrete'],
+    'bunker-armory': ['tex_floor_concrete_stained', 'tex_path_worn_deck'],
+    'bunker-storage': ['tex_floor_concrete_stained', 'tex_path_polished_concrete', 'tex_floor_grate_trench'],
+    'reward-cache': ['tex_floor_concrete_stained', 'tex_path_polished_concrete'],
+    'bunker-workshop': ['tex_floor_grate_trench', 'tex_path_polished_concrete'],
+    'cryo-engineering': ['tex_floor_grate_trench', 'tex_path_slush_track'],
+    'bio-engineering': ['tex_floor_grate_trench', 'tex_path_resin_trail'],
+    'cryo-rough': ['tex_floor_slush_ice', 'tex_path_packed_snow', 'tex_path_slush_track'],
+    'cryo-recovery': ['tex_floor_slush_ice', 'tex_path_slush_track'],
+    'bio-nest': ['tex_floor_chitin_resin', 'tex_path_resin_trail', 'tex_path_trodden_spores'],
+    'bio-medical': ['tex_floor_chitin_resin', 'tex_path_resin_trail'],
+    'bio-feeding-chamber': ['tex_floor_chitin_resin', 'tex_path_resin_trail'],
+    'camp-fortified': ['tex_floor_camp_planks', 'tex_path_mud_track'],
+    'giger-cathedral': ['tex_floor_bone_terrazzo', 'tex_path_worn_deck']
 });
+
+export const ROOM_THEME_SURFACE = Object.freeze(Object.fromEntries(
+    Object.entries(ROOM_THEME_SURFACES).map(([k, v]) => [k, v[0]])
+));
+
+export function surfaceForTheme(theme, roomKey = '') {
+    const palette = ROOM_THEME_SURFACES[theme];
+    if (!palette || palette.length === 0) return ROOM_THEME_SURFACE[theme] ?? null;
+    return palette[hashKey(`${theme}:${roomKey}:palette`) % palette.length];
+}
 /** Exterior ground per landform; the rest keep the biome rock. */
 export const LANDFORM_GROUND_SURFACE = Object.freeze({
     field: 'tex_ground_regolith',
@@ -407,11 +430,13 @@ export function buildFloorSplatData({
     }
     for (const room of metadata?.roomInstances ?? []) {
         const style = room.themeConfig?.floorStyle ?? 'bunker-standard';
-        const themeSurface = surfaces ? ROOM_THEME_SURFACE[room.theme ?? room.themeConfig?.id] : null;
-        const value = (themeSurface && surfaceLayer(themeSurface, room.id ?? variantKey)) || floorLayerForStyle(style);
-        const wet = value === FLOOR_LAYER.BASE ? 0 : floorWetnessForStyle(style);
+        const themeSurface = surfaces ? (ROOM_THEME_SURFACE[room.theme ?? room.themeConfig?.id] ?? surfaceForTheme(room.theme ?? room.themeConfig?.id, room.id ?? variantKey)) : null;
         for (const cell of room.interior ?? []) {
             if (cell.x < 0 || cell.y < 0 || cell.x >= size || cell.y >= size) continue;
+            // Distribute interchangeable duplicate variants (_a, _b, _c, _d) across the room in 2x2 clusters
+            const cellKey = `${room.id ?? variantKey}:${cell.x >> 1}:${cell.y >> 1}`;
+            const value = (themeSurface && surfaceLayer(themeSurface, cellKey)) || floorLayerForStyle(style);
+            const wet = value === FLOOR_LAYER.BASE ? 0 : floorWetnessForStyle(style);
             set(cell.x, cell.y, value, wet);
         }
     }
