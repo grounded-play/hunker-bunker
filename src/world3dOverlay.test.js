@@ -8,6 +8,7 @@ describe('world 3D replacement catalog', () => {
         expect(isWorld3dOnlyPlacementType('arch_bulkhead_frame')).toBe(true);
         expect(isWorld3dOnlyPlacementType('state_wall_breached_01')).toBe(true);
         expect(isWorld3dOnlyPlacementType('fixture_clock_dead')).toBe(true);
+        expect(isWorld3dOnlyPlacementType('hive_tendril_arch')).toBe(true);
         expect(isWorld3dOnlyPlacementType('prop_bunker_supplies')).toBe(false);
         expect(isWorld3dOnlyPlacementType('arch_missing')).toBe(false);
     });

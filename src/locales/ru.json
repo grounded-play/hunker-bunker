@@ -504,7 +504,9 @@
       "accent_credits": "// ТИТРЫ"
     },
     "hero_detail": {
-      "chassis_spec": "СПЕЦИФИКАЦИЯ ШАССИ"
+      "chassis_spec": "СПЕЦИФИКАЦИЯ ШАССИ",
+      "initializing_3d_operator": "ИНИЦИАЛИЗАЦИЯ 3D-ОПЕРАТОРА {type}…",
+      "preview_3d_unavailable": "3D-ПРЕДПРОСМОТР {type} НЕДОСТУПЕН"
     },
     "archive": {
       "bunker_archive": "◈ АРХИВ БУНКЕРА",

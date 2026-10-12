@@ -3,7 +3,7 @@
 **Branch:** `dev/sprint-52`
 **Target:** Sprint 52 Gameplay & Controller Hardening
 **Owner:** Tuesday Cinema Club
-**Status:** Acceptance reopened — P0/P1 fixes required
+**Status:** Code remediation implemented — installed PC/Deck acceptance pending
 
 ---
 
@@ -271,6 +271,21 @@ Performance gates:
 ---
 
 ## 4. Implementation & Remediation Roadmap
+
+### Implementation update (2026-10-12)
+
+- [x] T1: Gameplay weapon calibration now carries the corrected authored forward axis and hand-local rotation for every base archetype, with profile coverage.
+- [x] T2: Instanced floor coverage is derived by a testable mask, portal-adjacent canyon/cliff errors are repaired, and terrain textures use an immediate opaque procedural fallback while decoded assets load.
+- [x] T3: Wall decals recognize generated/destructible wall types and abort placement when no real support surface exists.
+- [x] T4: Wall-prop offsets use per-model bounding depth instead of the fixed `0.28m` inset.
+- [x] T5: Population, room dressing, and general scatter all reserve the door lane plus a `1.6m` clearance apron.
+- [x] T6: Procedural wall projections use the authored wall suite's `2.8m` vertical/horizontal scale contract instead of mismatched axis multipliers.
+- [x] T7: Inspected doorway families use local-space dual-post collision transformed by the model world matrix; openings no longer inherit a central collider.
+- [x] T8: Hero Select and Armory have semantic Down-to-advance edges, an Up return edge, and focus-route telemetry.
+- [x] T9: Hero Select no longer mounts or reveals 2D operator portraits/sprites; loading and failure remain explicit 3D-preview states.
+- [x] T10: The resident chunk window is bounded to `5×5`, chunk mounting remains frame-budgeted, diagnostics distinguish mounted/retained/visible chunks, and renderer/composer/material/shadow work has separate profiler buckets.
+
+These checks mean the branch is ready for installed-build validation, not that hardware acceptance has passed. The 25-minute physical Deck route, 10-minute RTX route, and golden PC captures below still require a new packaged build and human playthrough.
 
 ```
 +----+------------------------------------+------------------------------------------+-------------------------------------+

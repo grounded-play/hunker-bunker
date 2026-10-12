@@ -70,6 +70,53 @@ function pickSubset(list, count, random) {
 
 const keyOf = (x, y) => `${x},${y}`;
 
+export const PROP_BOUNDING_DEPTHS = Object.freeze({
+    life_server_racks: 0.55,
+    life_filing_cabinets: 0.50,
+    life_vending_machine: 0.52,
+    life_fire_station: 0.44,
+    life_ribcage_rescue_cabinet: 0.48,
+    prop_locker_bulged: 0.50,
+    prop_terminal_ruptured: 0.48,
+    prop_decon_eyewash_shower_station: 0.52,
+    prop_biomech_flesh_locker: 0.50,
+    life_vertebral_restraint_rack: 0.46,
+    life_memorial_board: 0.22,
+    life_tally_bulkhead: 0.20,
+    life_cochlear_intercom: 0.20,
+    life_mask_rack: 0.30,
+    life_pneumatic_tube_node: 0.32,
+    life_planning_board: 0.24,
+    prop_wall_cable_tray_swag: 0.22,
+    prop_conduit_junction_box: 0.24,
+    prop_exhaust_blower_fan_hood: 0.38,
+    fixture_clock_dead: 0.18,
+    fixture_sconce_vine: 0.22,
+    prop_overhead_cage_fluorescent: 0.28,
+    prop_vertebral_cable_riser: 0.24,
+    prop_biomech_tracheal_wall_pipe: 0.26,
+    prop_light_cluster_dripping: 0.30,
+    prop_biomech_respirator: 0.32,
+    prop_icey_frost_manifold: 0.40,
+    life_parka_hooks: 0.25,
+    cryo_frozen_cascade: 0.35,
+    life_umbilical_tether: 0.28,
+    life_lung_filter_bellows: 0.36,
+    life_brood_comb: 0.34,
+    life_fungal_cable_bundle: 0.30,
+    hive_resin_pillar: 0.50,
+    hive_tendril_arch: 0.50
+});
+
+export function getPropBoundingDepth(type) {
+    if (PROP_BOUNDING_DEPTHS[type] !== undefined) return PROP_BOUNDING_DEPTHS[type];
+    const id = String(type ?? '');
+    if (id.includes('rack') || id.includes('cabinet') || id.includes('locker') || id.includes('machine')) return 0.52;
+    if (id.includes('console') || id.includes('station') || id.includes('terminal')) return 0.46;
+    if (id.includes('board') || id.includes('tray') || id.includes('box') || id.includes('clock')) return 0.24;
+    return 0.36;
+}
+
 /**
  * @param {object} room  { id, theme, role, interior: [{x,y}] }
  * @param {string[][]} grid  '#' wall, '.' floor
@@ -115,6 +162,18 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
     };
 
     const blocked = new Set(reserved);
+    const doorLanes = [
+        ...(room?.navigation?.doorLanes ?? []),
+        ...(room?.navigation?.doors ?? []),
+        ...(room?.doors ?? [])
+    ];
+    for (const door of doorLanes) {
+        for (let dy = -1; dy <= 1; dy += 1) {
+            for (let dx = -1; dx <= 1; dx += 1) {
+                blocked.add(keyOf(door.x + dx, door.y + dy));
+            }
+        }
+    }
     const taken = new Set((occupied ?? []).map(({ x, y }) => keyOf(x, y)));
     const floorCells = (room?.interior ?? [])
         .filter(({ x, y }) => grid?.[y]?.[x] === '.')
@@ -229,11 +288,14 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
                 walls: [[wx, wy]],
                 random
             });
+            const depth = getPropBoundingDepth(type);
+            const halfDepth = depth / 2;
+            const wallOffset = Math.max(0.12, Math.min(0.28, 0.48 - halfDepth));
             items.push({
                 layer: 'wallProp',
                 type,
-                x: cell.x + wx * 0.28,
-                y: cell.y + wy * 0.28,
+                x: cell.x + wx * wallOffset,
+                y: cell.y + wy * wallOffset,
                 yaw,
                 mountY: WALL_MOUNT_HEIGHT[type] ?? 0,
                 supportCell: { x: cell.x + wx, y: cell.y + wy },

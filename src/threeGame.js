@@ -455,6 +455,41 @@ export const CLIFF_TILE = 'C';
 // Tiles around the spawn where lethal edges block movement instead of killing.
 export const SPAWN_SAFE_EDGE_RADIUS = 24;
 export const LEDGE_TILE = 'O';
+
+// Build the render mask and repair only impossible portal-edge voids. Canyon
+// and cliff cells remain real holes everywhere else; a doorway/threshold may
+// never open onto an uncovered cell. Keeping this pure makes the collision ↔
+// floor-coverage contract testable without mounting a WebGL chunk.
+export function planInstancedFloorCoverage(grid) {
+    const floorCells = [];
+    const exteriorGroundCells = [];
+    const repairedCells = [];
+    const height = grid?.length ?? 0;
+    const width = grid?.[0]?.length ?? 0;
+    for (let localY = 0; localY < height; localY += 1) {
+        for (let localX = 0; localX < width; localX += 1) {
+            let tileChar = grid[localY][localX];
+            if (tileChar === EXTERIOR_CANYON_TILE || tileChar === CLIFF_TILE) {
+                const touchesPortal = [[-1, 0], [1, 0], [0, -1], [0, 1]].some(([dx, dy]) => {
+                    const neighbor = grid?.[localY + dy]?.[localX + dx];
+                    return neighbor === 'D' || neighbor === 'T';
+                });
+                if (touchesPortal) {
+                    tileChar = '.';
+                    grid[localY][localX] = tileChar;
+                    repairedCells.push({ localX, localY });
+                }
+            }
+            if (tileChar === LEDGE_TILE) exteriorGroundCells.push({ localX, localY });
+            else if (tileChar !== EXTERIOR_CANYON_TILE && tileChar !== CLIFF_TILE) floorCells.push({ localX, localY });
+        }
+    }
+    return { floorCells, exteriorGroundCells, repairedCells };
+}
+
+export function isOutsideDoorApron(x, y, doorCells, clearance = 1.6) {
+    return (doorCells ?? []).every((door) => Math.hypot(x - door.x, y - door.y) >= clearance);
+}
 import {
     rollEnemyLootDrop,
     computeActiveSynergies,
@@ -2205,7 +2240,12 @@ export class ThreeGame {
         // inside the current chunk. This enlarges the loading scan without
         // making the always-visible set jump from 3x3 to an expensive 5x5.
         this.chunkPrefetchMargin = 20;
-        this.chunkResidentPadding = 3;
+        // Keep one hidden ring around the visible 3x3 plus the directional
+        // prefetch row. The previous three-ring hysteresis retained up to an
+        // entire 9x9 neighborhood and real Deck walks climbed to 38 mounted
+        // chunks / ~1.85 GiB. A 5x5 resident window still prevents boundary
+        // churn while placing a hard, inspectable ceiling on live geometry.
+        this.chunkResidentPadding = 1;
         this.destroyedWallKeys = new Set();
         this.destroyedExteriorWallKeys = new Set();
         this.wallMeshes = [];
@@ -3120,11 +3160,11 @@ export class ThreeGame {
                     blendWeights /= ( blendWeights.x + blendWeights.y + blendWeights.z );
 
                     vec2 uvY = vWorldPos.xz * 0.12; 
-                    vec2 uvX = vec2( vWorldPos.z * 0.45, vWorldPos.y * 0.35 );
-                    vec2 uvZ = vec2( vWorldPos.x * 0.45, vWorldPos.y * 0.35 );
+                    vec2 uvX = vec2( vWorldPos.z * (1.0 / 2.8), vWorldPos.y * (1.0 / 2.8) );
+                    vec2 uvZ = vec2( vWorldPos.x * (1.0 / 2.8), vWorldPos.y * (1.0 / 2.8) );
                     vec2 uvGrungeY = vWorldPos.xz * 0.053;
-                    vec2 uvGrungeX = vec2( vWorldPos.z * 0.25, vWorldPos.y * 0.2 );
-                    vec2 uvGrungeZ = vec2( vWorldPos.x * 0.25, vWorldPos.y * 0.2 );
+                    vec2 uvGrungeX = vec2( vWorldPos.z * 0.2, vWorldPos.y * 0.2 );
+                    vec2 uvGrungeZ = vec2( vWorldPos.x * 0.2, vWorldPos.y * 0.2 );
 
                     vec4 bunkerY = texture2D( tWallTop, uvY );
                     vec4 bunkerX = texture2D( tWallSide, uvX );
@@ -7747,12 +7787,27 @@ export class ThreeGame {
         const behavior = getPropBehavior(source?.userData?.type);
         if (behavior.collision !== PROP_COLLISION.PILLARS || !root) return null;
         root.updateMatrixWorld?.(true);
-        const box = new THREE.Box3().setFromObject(root);
-        if (box.isEmpty()) return null;
-        const size = box.getSize(new THREE.Vector3());
-        const center = box.getCenter(new THREE.Vector3());
+        const inverseRoot = new THREE.Matrix4().copy(root.matrixWorld).invert();
+        const localBox = new THREE.Box3().makeEmpty();
+        const objectToRoot = new THREE.Matrix4();
+        root.traverse((object) => {
+            if (!object.isMesh || !object.geometry) return;
+            object.geometry.computeBoundingBox?.();
+            if (!object.geometry.boundingBox) return;
+            objectToRoot.multiplyMatrices(inverseRoot, object.matrixWorld);
+            localBox.union(object.geometry.boundingBox.clone().applyMatrix4(objectToRoot));
+        });
+        if (localBox.isEmpty()) return null;
+        const size = localBox.getSize(new THREE.Vector3());
+        const center = localBox.getCenter(new THREE.Vector3());
+        const localPosts = archPillarColliders({ x: center.x, z: center.z, width: size.x, depth: size.z });
+        const worldScale = root.getWorldScale(new THREE.Vector3());
+        const radiusScale = Math.max(Math.abs(worldScale.x), Math.abs(worldScale.z));
         source.userData.propBehavior = behavior;
-        source.userData.pillarColliders = archPillarColliders({ x: center.x, z: center.z, width: size.x, depth: size.z });
+        source.userData.pillarColliders = localPosts.map((post) => {
+            const world = root.localToWorld(new THREE.Vector3(post.x, 0, post.z));
+            return { x: world.x, z: world.z, radius: post.radius * radiusScale };
+        });
         return source.userData.pillarColliders;
     }
 
@@ -10363,6 +10418,7 @@ export class ThreeGame {
         const safeFallbackPath = this.resolveRelativeAssetPath(fallbackPath);
         const texture = textureLoader.load(safePath, (loadedTexture) => {
             this.configureTerrainTexture(loadedTexture, maxAnisotropy);
+            loadedTexture.userData.isProceduralFallback = false;
         }, undefined, (error) => {
             if (!safeFallbackPath || safeFallbackPath === safePath) {
                 console.warn(`[ThreeGame] Failed to load terrain texture from ${safePath}`, error);
@@ -10378,6 +10434,31 @@ export class ThreeGame {
                 console.warn(`[ThreeGame] Failed to load terrain fallback texture from ${safeFallbackPath}`, fallbackError);
             });
         });
+
+        // TextureLoader returns before network/decode completes. Give floors
+        // and walls a dark, opaque industrial pattern immediately so a slow or
+        // failed decode can never expose the scene's pale clear color as a
+        // seemingly missing surface.
+        if (typeof document !== 'undefined') {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            const context = canvas.getContext('2d');
+            if (context) {
+                const isFloor = /floor|base|grunge|scratch|growth|frost|rock/i.test(String(path));
+                context.fillStyle = isFloor ? '#18232a' : '#111a20';
+                context.fillRect(0, 0, 32, 32);
+                context.fillStyle = isFloor ? '#263740' : '#202c33';
+                context.fillRect(0, 0, 15, 15);
+                context.fillRect(16, 16, 16, 16);
+                context.strokeStyle = '#50616a';
+                context.globalAlpha = 0.35;
+                context.strokeRect(0.5, 0.5, 31, 31);
+                texture.image = canvas;
+                texture.needsUpdate = true;
+                texture.userData.isProceduralFallback = true;
+            }
+        }
 
         this.configureTerrainTexture(texture, maxAnisotropy);
         return texture;
@@ -11305,6 +11386,11 @@ export class ThreeGame {
 
     getPerformanceDiagnosticsSnapshot() {
         const info = this.renderer?.info;
+        const mountedChunks = this.chunkMeshes?.size ?? null;
+        const retainedChunks = this._residentChunkKeys?.size ?? mountedChunks;
+        const visibleChunks = this.chunkMeshes
+            ? [...this.chunkMeshes.values()].filter((group) => group?.visible !== false).length
+            : null;
         const gpuFrame = this.gpuFrameTimer?.snapshot?.() ?? null;
         const gpuMemory = this.gpuMemoryTracker?.snapshot?.({
             scene: this.scene,
@@ -11323,7 +11409,12 @@ export class ThreeGame {
             wallMeshes: this.wallMeshes?.length ?? null,
             destroyedWallCount: this.destroyedWallKeys?.size ?? null,
             pendingChunkMounts: this.pendingChunkMounts?.length ?? null,
-            activeChunks: this.chunkMeshes?.size ?? null,
+            // Keep activeChunks for older log readers; the explicit counters
+            // distinguish allocation residency from actual submission.
+            activeChunks: mountedChunks,
+            mountedChunks,
+            retainedChunks,
+            visibleChunks,
             geometries: info?.memory?.geometries ?? null,
             textures: info?.memory?.textures ?? null,
             programs: info?.programs?.length ?? null,
@@ -11366,9 +11457,10 @@ export class ThreeGame {
         const span = beginPerfPhase(label, { profile: this.performanceProfile });
         // Flat double-sided effects added at runtime draw in one pass, not two
         // (src/singlePassFlatMaterials.js); chunks and GLBs are done on mount.
+        const fp = this.frameProfiler ?? (this.frameProfiler = createFrameProfiler());
         this._flatMaterialSweep ??= createFlatMaterialSweeper();
-        this._flatMaterialSweep(this.scene);
-        updateKitMaterials(performance.now() / 1000);
+        fp.measure('render:scene-material-sweep', () => this._flatMaterialSweep(this.scene));
+        fp.measure('render:wall-floor-decal-materials', () => updateKitMaterials(performance.now() / 1000));
         const gpuQueryStarted = this.gpuFrameTimer?.beginFrame?.() ?? false;
         // three.js resets renderer.info at the start of every render() call,
         // and the composer makes one call per pass, so draw-call/triangle
@@ -11383,14 +11475,16 @@ export class ThreeGame {
         // Settings > Graphics > Shadows: Reduced redraws the shadow maps every
         // other frame (autoUpdate is off; the map keeps the last frame).
         if (this._shadowUpdateEveryOtherFrame && this.renderer?.shadowMap) {
-            this._shadowFrameParity = !this._shadowFrameParity;
-            this.renderer.shadowMap.needsUpdate = this._shadowFrameParity;
+            fp.measure('render:shadow-schedule', () => {
+                this._shadowFrameParity = !this._shadowFrameParity;
+                this.renderer.shadowMap.needsUpdate = this._shadowFrameParity;
+            });
         }
         try {
             if (this.composer && usesGameplayFocusEffects(this)) {
-                this.composer.render();
+                fp.measure('render:effect-composer-submit', () => this.composer.render());
             }
-            else this.renderer.render(this.scene, this.camera);
+            else fp.measure('render:renderer-submit', () => this.renderer.render(this.scene, this.camera));
         } finally {
             if (info) info.autoReset = autoReset;
             if (gpuQueryStarted) this.gpuFrameTimer?.endFrame?.();
@@ -32670,20 +32764,15 @@ export class ThreeGame {
         // One blended floor material per chunk replaces the room, hallway,
         // threshold and crash-room overlays (src/floorSplat.js).
         const instancedFloor = landform === LANDFORMS.MAZE || hasExteriorCanyon;
+        // Repair the geometry contract before generating splat data so both
+        // systems see the same tile classification for portal-edge cells.
+        const floorCoverage = instancedFloor ? planInstancedFloorCoverage(grid) : null;
         const floorSplatMaterial = this.createChunkFloorSplatMaterial(chunkX, chunkY, grid, {
             landform,
             ledgeGround: instancedFloor
         });
         if (instancedFloor) {
-            const floorCells = [];
-            const exteriorGroundCells = [];
-            for (let localY = 0; localY < this.chunkSize; localY += 1) {
-                for (let localX = 0; localX < this.chunkSize; localX += 1) {
-                    const tileChar = grid[localY][localX];
-                    if (tileChar === LEDGE_TILE) exteriorGroundCells.push({ localX, localY });
-                    else if (tileChar !== EXTERIOR_CANYON_TILE && tileChar !== CLIFF_TILE) floorCells.push({ localX, localY });
-                }
-            }
+            const { floorCells, exteriorGroundCells } = floorCoverage;
             const floors = new THREE.InstancedMesh(this.floorGeometry, floorSplatMaterial ?? this.floorMaterial, floorCells.length);
             const matrix = new THREE.Matrix4();
             const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
@@ -34390,7 +34479,23 @@ export class ThreeGame {
         const placements = [];
         const rng = this.createSeededRandom(((this.hashTile(chunkX * 811 + 17, chunkY * 919 + 23) + 404) ^ this.runEntropy) >>> 0);
         const wfcMeta = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
+        const doorApronCells = [
+            ...(wfcMeta?.roomInstances ?? []).flatMap((room) => room.navigation?.doorLanes ?? []),
+            ...(wfcMeta?.doors ?? []).flatMap((door) => [
+                ...(Number.isFinite(door.localX) && Number.isFinite(door.localY)
+                    ? [{ x: door.localX, y: door.localY }]
+                    : []),
+                ...(door.cells ?? [])
+            ])
+        ];
         const reservedCells = new Set();
+        for (let localY = 0; localY < this.chunkSize; localY += 1) {
+            for (let localX = 0; localX < this.chunkSize; localX += 1) {
+                if (!isOutsideDoorApron(localX, localY, doorApronCells)) {
+                    reservedCells.add(`${localX},${localY}`);
+                }
+            }
+        }
         const hasAuthoredRoomPopulation = Boolean(
             wfcMeta?.roomInstances?.some((room) => room.populationPlan?.placements?.length)
             || wfcMeta?.anchors?.length
@@ -34769,6 +34874,15 @@ export class ThreeGame {
         const random = this.createSeededRandom(((this.hashTile(chunkX * 523 + 43, chunkY * 859 + 71) ^ (this.runEntropy ?? 0)) >>> 0));
         const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
         const wfcMeta = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
+        const doorApronCells = [
+            ...(wfcMeta?.roomInstances ?? []).flatMap((room) => room.navigation?.doorLanes ?? []),
+            ...(wfcMeta?.doors ?? []).flatMap((door) => [
+                ...(Number.isFinite(door.localX) && Number.isFinite(door.localY)
+                    ? [{ x: door.localX, y: door.localY }]
+                    : []),
+                ...(door.cells ?? [])
+            ])
+        ];
         const authoredRoomCells = new Set(
             (wfcMeta?.roomInstances ?? []).flatMap((room) => (
                 room.interior.map(({ x, y }) => `${x},${y}`)
@@ -34799,6 +34913,7 @@ export class ThreeGame {
 
                 // Keep the entire ship/start room clear of general scatter deterministically for all clients
                 if (isNearSpawnClearing(worldX, worldZ)) continue;
+                if (!isOutsideDoorApron(localX, localY, doorApronCells)) continue;
 
                 candidates.push({
                     localX,
@@ -34845,6 +34960,7 @@ export class ThreeGame {
             const localX = Math.round(x - chunkX * this.chunkSize);
             const localY = Math.round(z - chunkY * this.chunkSize);
             if (localX < 0 || localX >= this.chunkSize || localY < 0 || localY >= this.chunkSize) return false;
+            if (!isOutsideDoorApron(localX, localY, doorApronCells)) return false;
             // Only structural room/hall floor is valid. The old "not wall"
             // test also accepted canyon, cliff, ledge, and door glyphs, which
             // left snails and props visibly floating over void bands.
@@ -35385,13 +35501,16 @@ export class ThreeGame {
                     { dx: -1, dz: 0, nx: 1, nz: 0 },  // West wall -> faces East (+X)
                     { dx: 1, dz: 0,  nx: -1, nz: 0 }  // East wall -> faces West (-X)
                 ];
-                const foundNeighbor = neighbors.find((n) => this.getTileType?.(tileX + n.dx, tileZ + n.dz) === '#');
+                const foundNeighbor = neighbors.find((n) => {
+                    const tile = this.getTileType?.(tileX + n.dx, tileZ + n.dz);
+                    return tile === '#' || tile === 'W' || Boolean(this.isWallTile?.(tileX + n.dx, tileZ + n.dz));
+                });
                 if (foundNeighbor) {
                     nx = foundNeighbor.nx;
                     nz = foundNeighbor.nz;
                 } else {
-                    nx = 0;
-                    nz = 1;
+                    wallDecalGeo.dispose();
+                    return null;
                 }
             }
 
@@ -35484,6 +35603,7 @@ export class ThreeGame {
         if (isWorld3dOnlyPlacementType(placement.type)) {
             const anchor = new THREE.Object3D();
             const isDestructibleProp = placement.type.startsWith('prop_');
+            const propBehavior = getPropBehavior(placement.type);
             anchor.position.set(placement.x, anchoredY, placement.z);
             anchor.rotation.y = placement.rotation ?? 0;
             anchor.scale.set(scaleX, scaleY, 1);
@@ -35500,7 +35620,9 @@ export class ThreeGame {
                 maxPropHp: isDestructibleProp ? (placement.hp ?? 3) : undefined,
                 burstTriggered: false,
                 burstTimer: 0,
-                isSolidProp: placement.isSolidProp ?? placement.type.startsWith('arch_'),
+                isSolidProp: placement.isSolidProp
+                    ?? (propBehavior.collision === PROP_COLLISION.PILLARS || placement.type.startsWith('arch_')),
+                propBehavior,
                 collisionRadius: placement.collisionRadius ?? Math.max(0.3, scaleX * 0.35),
                 type: placement.type,
                 scatterKey: placement.scatterKey,
@@ -43051,7 +43173,7 @@ export class ThreeGame {
         if (!this.chunkCache.has(key)) {
             // Evict oldest cache entries if over limit (prevents memory growth in long sessions).
             // Must comfortably exceed the max resident window (visibleChunkRadius +
-            // chunkResidentPadding can reach a 9x9 = 81 chunk neighborhood) plus
+            // chunkResidentPadding is capped at a 5x5 = 25 chunk neighborhood) plus
             // headroom for non-mounted lookups (AI pathing, getTileType/getRoomTypeGrid)
             // that populate this cache without ever mounting — a cap too close to the
             // resident window thrashed those non-mounted entries, forcing repeated

@@ -12,15 +12,21 @@ test.describe('controller-ready modal focus', () => {
 
         await expect(page.locator('#roster-callsign-input')).toBeVisible();
 
-        // The class rail contains only classes; down exits through the shared
-        // bottom-right advance dock.
+        // Down is the semantic advance edge from every class. Left/right
+        // still browse the class rail without forcing a pointer detour.
         await page.locator('.char-selection .char-card[data-type="SCOUT"]').focus();
         await page.keyboard.press('KeyS');
+        await expect(page.locator('#start-game')).toBeFocused();
+
+        await page.locator('.char-selection .char-card[data-type="SCOUT"]').focus();
+        await page.keyboard.press('KeyD');
         await expect(page.locator('.char-selection .char-card[data-type="TANK"]')).toBeFocused();
-
-        await page.keyboard.press('KeyS');
+        await page.keyboard.press('KeyD');
         await expect(page.locator('.char-selection .char-card[data-type="ENGINEER"]')).toBeFocused();
+        await page.keyboard.press('KeyS');
+        await expect(page.locator('#start-game')).toBeFocused();
 
+        await page.locator('#season-pass-btn').focus();
         await page.keyboard.press('KeyS');
         await expect(page.locator('#start-game')).toBeFocused();
 
@@ -282,6 +288,36 @@ test.describe('controller-ready modal focus', () => {
         // The modal closes and the slot reports the new fitting.
         await expect(page.locator('#armory-picker-modal')).toBeHidden();
         await expect(slot.locator('.armory-slot__name')).not.toHaveText(before ?? '');
+    });
+
+    test('Armory terminal Down reaches Embark and Up returns to content', async ({ page }) => {
+        await page.setViewportSize({ width: 1280, height: 800 });
+        await bootToOperatorMenu(page);
+        await page.locator('#start-game').click();
+        await expect(page.locator('#armory-screen')).toBeVisible({ timeout: 30_000 });
+        await page.evaluate(() => document.body.classList.add('controller-mode'));
+
+        const terminalId = await page.evaluate(() => {
+            const root = document.getElementById('armory-screen');
+            const controls = [...root.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+                .filter((element) => element.offsetParent !== null && !element.closest('.armory-footer') && !element.closest('.hidden'));
+            controls.sort((a, b) => {
+                const ar = a.getBoundingClientRect();
+                const br = b.getBoundingClientRect();
+                return (br.top + br.height / 2) - (ar.top + ar.height / 2);
+            });
+            controls[0]?.focus();
+            return controls[0]?.id ?? null;
+        });
+        expect(terminalId).toBeTruthy();
+
+        const nav = (action) => page.evaluate((nextAction) => {
+            window.dispatchEvent(new CustomEvent('gamepad-menu-nav', { detail: { action: nextAction } }));
+        }, action);
+        await nav('menu_down');
+        await expect(page.locator('#armory-btn-embark')).toBeFocused();
+        await nav('menu_up');
+        await expect(page.locator(`#${terminalId}`)).toBeFocused();
     });
 
     // Owner 2026-10-08: choosing skins, the D-pad only moved left and right.

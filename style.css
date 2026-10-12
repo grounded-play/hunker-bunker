@@ -2483,18 +2483,6 @@ body:not(.controller-mode) .settings-choice-control > .settings-controller-hint 
               box-shadow 0.38s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-#char-preview-sprite {
-  position: relative;
-  z-index: 1;
-  width: calc(var(--vu) * 14.5);
-  height: auto;
-  image-rendering: pixelated;
-  filter:
-    drop-shadow(0 0 18px var(--sprite-glow, rgba(255, 159, 28, 0.25)))
-    drop-shadow(0 calc(var(--vu) * 0.8) calc(var(--vu) * 1.4) rgba(0, 0, 0, 0.55));
-  transform: translateY(calc(var(--vu) * 0.25)) scale(1.3);
-}
-
 #char-preview-3d {
   position: absolute;
   inset: 0;
@@ -2507,20 +2495,22 @@ body:not(.controller-mode) .settings-choice-control > .settings-controller-hint 
     drop-shadow(0 calc(var(--vu) * 0.7) calc(var(--vu) * 1.2) rgba(0, 0, 0, 0.6));
 }
 
-.char-preview-fallback {
+.char-preview-loading {
   position: absolute;
-  inset: 4% 8% 0;
-  z-index: 1;
-  width: 84%;
-  height: 96%;
-  object-fit: contain;
-  object-position: center bottom;
-  filter: drop-shadow(0 0 12px var(--sprite-glow, rgba(255, 255, 255, 0.25)));
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: calc(var(--vu) * 1.5);
+  color: rgba(213, 237, 246, 0.78);
+  font: 700 calc(var(--vu) * 0.72) / 1.35 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
 }
 
-#char-preview-sprite {
-  position: relative;
-  z-index: 2;
+.char-preview-loading[data-state="error"] {
+  color: #ff9d86;
 }
 
 .char-preview-stage::after {
@@ -23765,7 +23755,7 @@ body.contrast-max .hud-panel {
 /* Hero-select commands occupy a stable 3×3 command deck above INITIALIZE.
    The semantic column wrappers remain for controller navigation, but do not
    impose narrow visual rails or an inner scrollbar. */
-#menu .menu-header-actions { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); grid-auto-rows: minmax(0,1fr); align-content: stretch; gap: clamp(8px,1vw,15px); overflow: hidden; }
+#menu .menu-header-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); grid-auto-rows: minmax(0,1fr); align-content: stretch; gap: clamp(8px,1vw,15px); overflow: hidden; }
 #menu .menu-command-column { display: contents; overflow: visible; }
 #menu .menu-command-column::before { display: none; }
 #menu .menu-command { min-height: 0; justify-content: center; padding: 4px; border: 1px solid rgba(255,159,28,.1); background: rgba(0,0,0,.18); }
@@ -23910,11 +23900,6 @@ body.contrast-max .hud-panel {
   max-width: 100%;
   max-height: calc(var(--vu) * 33);
   flex: 1 1 auto;
-}
-
-#menu #char-preview-sprite {
-  width: calc(var(--vu) * 24);
-  transform: translateY(calc(var(--vu) * 0.2)) scale(1.4);
 }
 
 #menu #char-preview-name {

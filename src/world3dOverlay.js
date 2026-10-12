@@ -621,7 +621,8 @@ const WORLD_3D_ONLY_TYPES = Object.freeze(new Set([
     'prop_pipe_organ_heat_exchanger',
     'prop_vertebral_cable_riser',
     'prop_votive_candle_shrine',
-    'prop_wall_cable_tray_swag'
+    'prop_wall_cable_tray_swag',
+    'hive_tendril_arch'
 ]));
 
 // Scattered body sprites alternate between the two models of each body, by

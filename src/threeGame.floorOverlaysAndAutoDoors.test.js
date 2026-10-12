@@ -1,12 +1,35 @@
 import * as THREE from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ThreeGame } from './threeGame.js';
+import { CLIFF_TILE, EXTERIOR_CANYON_TILE, isOutsideDoorApron, planInstancedFloorCoverage, ThreeGame } from './threeGame.js';
 
 afterEach(() => {
     vi.unstubAllGlobals();
 });
 
 describe('floor overlays', () => {
+    it('reserves a 1.6m doorway apron from general scatter', () => {
+        const doors = [{ x: 5, y: 5 }];
+        expect(isOutsideDoorApron(5, 5, doors)).toBe(false);
+        expect(isOutsideDoorApron(6, 6, doors)).toBe(false);
+        expect(isOutsideDoorApron(7, 5, doors)).toBe(true);
+    });
+
+    it('covers every walkable corridor and repairs voids directly outside portals', () => {
+        const grid = [
+            [EXTERIOR_CANYON_TILE, EXTERIOR_CANYON_TILE, EXTERIOR_CANYON_TILE],
+            [EXTERIOR_CANYON_TILE, 'D', '.'],
+            [CLIFF_TILE, 'T', '.']
+        ];
+        const coverage = planInstancedFloorCoverage(grid);
+        const covered = new Set(coverage.floorCells.map(({ localX, localY }) => `${localX},${localY}`));
+        expect(covered).toEqual(new Set(['1,0', '0,1', '1,1', '2,1', '0,2', '1,2', '2,2']));
+        expect(coverage.repairedCells).toEqual(expect.arrayContaining([
+            { localX: 1, localY: 0 },
+            { localX: 0, localY: 1 },
+            { localX: 0, localY: 2 }
+        ]));
+        expect(grid[0][0]).toBe(EXTERIOR_CANYON_TILE);
+    });
     it('honors the authored blocking contract for room props', () => {
         const texture = new THREE.Texture();
         const material = new THREE.SpriteMaterial({ map: texture });
@@ -256,6 +279,25 @@ describe('wall decals and showroom gallery', () => {
         expect(decal.position.z).toBeCloseTo(7 - 0.5 + 0.02);
 
         decal.material.dispose();
+        texture.dispose();
+    });
+
+    it('discards wall decals when no adjacent wall exists instead of floating in midair', () => {
+        const texture = new THREE.Texture();
+        const game = Object.assign(Object.create(ThreeGame.prototype), {
+            wallHeight: 2.8,
+            scatterTextures: { decal_wall_breach: texture },
+            getTileType: vi.fn(() => '.')
+        });
+
+        const decal = ThreeGame.prototype.createScatterInstance.call(game, {
+            type: 'decal_wall_breach',
+            x: 10,
+            z: 10,
+            scale: 1.0
+        });
+
+        expect(decal).toBeNull();
         texture.dispose();
     });
 

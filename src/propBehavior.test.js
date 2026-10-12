@@ -7,13 +7,13 @@ import { ThreeGame } from './threeGame.js';
 // to be walk-underable", "the floor pieces shouldn't block you", "the fungus
 // should break when you walk over it".
 describe('each prop behaves for its style', () => {
-    it('lets you walk under the grand archways and the biomech arch, by their posts only', () => {
-        for (const type of ['arch_deco_archway_grand_01', 'arch_deco_archway_grand_04', 'prop_biomech_arch']) {
+    it('lets you walk under archways, doorway frames and ceiling vaults by their posts only', () => {
+        for (const type of ['arch_deco_archway_grand_01', 'arch_deco_archway_grand_04', 'prop_biomech_arch', 'arch_bulkhead_frame', 'arch_rib_ceiling_vault_01', 'hive_tendril_arch']) {
             expect(getPropBehavior(type).collision).toBe(PROP_COLLISION.PILLARS);
         }
-        // A closed hatch frame and a column are still walls.
-        expect(getPropBehavior('arch_bulkhead_frame').collision).toBe(PROP_COLLISION.SOLID);
+        // Buttress columns and shrines remain solid walls.
         expect(getPropBehavior('arch_pillar_buttress_01').collision).toBe(PROP_COLLISION.SOLID);
+        expect(getPropBehavior('arch_niche_shrine').collision).toBe(PROP_COLLISION.SOLID);
     });
 
     it('never blocks on floor pieces', () => {
@@ -100,6 +100,27 @@ describe('an arch gets its posts when its model lands', () => {
         expect((posts[0].x + posts[1].x) / 2).toBeCloseTo(20, 1);
         expect((posts[0].z + posts[1].z) / 2).toBeCloseTo(8, 1);
         expect(Math.hypot(posts[0].x - posts[1].x, posts[0].z - posts[1].z)).toBeGreaterThan(1.4);
+    });
+
+    it('transforms local post positions with a rotated arch instead of using a world AABB', async () => {
+        const game = Object.create(ThreeGame.prototype);
+        const parent = new THREE.Group();
+        const source = new THREE.Object3D();
+        source.position.set(4, 0, 7);
+        source.material = { rotation: Math.PI / 2 };
+        source.userData = { type: 'arch_bulkhead_frame', isSolidProp: true };
+        parent.add(source);
+        const model = new THREE.Group();
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(3, 2.4, 0.35));
+        mesh.position.y = 1.2;
+        model.add(mesh);
+        game.createWorld3dModel = async () => model;
+        await game.setupWorld3dReplacement(source, 'arch_bulkhead_frame');
+        const [a, b] = source.userData.pillarColliders;
+        expect(Math.abs(a.z - b.z)).toBeGreaterThan(2);
+        expect(Math.abs(a.x - b.x)).toBeLessThan(0.2);
+        expect((a.x + b.x) / 2).toBeCloseTo(4, 1);
+        expect((a.z + b.z) / 2).toBeCloseTo(7, 1);
     });
 });
 
@@ -302,4 +323,3 @@ describe('V2 facing rule: props face into room away from walls', async () => {
         }
     });
 });
-

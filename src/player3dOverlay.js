@@ -158,6 +158,11 @@ export async function createClassWeapon(archetypeId, { position = null, skinId =
     const size = bounds.getSize(new THREE.Vector3());
     const calibration = getWeaponCalibration(archetypeId, 'gameplay');
     const scale = getWeaponScaleForBounds(size, archetypeId, 'gameplay');
+    weapon.userData.weaponCalibration = {
+        gripAnchor: calibration.anchor,
+        muzzleAxis: calibration.muzzleAxis,
+        handAimAxis: calibration.handAimAxis
+    };
     weapon.scale.multiplyScalar(scale);
     // Preserve the hand-alignment turn and rotate the flat source around its
     // remaining axis so the weapon sits upright in the Scout's grip.

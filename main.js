@@ -77,7 +77,7 @@ import {
     shouldPreferBrowserGamepad
 } from './src/inputActions.js';
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
-import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSpriteLayouts.js';
+import { PLAYER_SPRITE_LAYOUTS } from './src/playerSpriteLayouts.js';
 import { clearChromaGreen, repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { PRESENTATION_LAYER_SELECTOR, isPresentationMutation } from './src/presentationLayer.js';
 import { resolveAmmoPickup } from './src/ammoSurplus.js';
@@ -1386,13 +1386,28 @@ function moveAchievementsDirectionalFocus(code) {
 // One directional step in a menu, shared by the Steam Input poll and the
 // gamepad-menu-nav event so both behave the same.
 function moveControllerDirectional(root, code, backward) {
-    if (root?.id === 'menu') return moveMenuDirectionalFocus(code);
-    if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(code)) return true;
-    if (moveTabBarSelection(document.activeElement, code)) return true;
-    if (root?.id === 'achievements-modal' && moveAchievementsDirectionalFocus(code)) return true;
-    if (scrollFocuslessRegion(root, code)) return true;
-    if (moveSpatialControllerFocus(root, code)) return true;
-    return moveControllerFocus(backward ? -1 : 1);
+    const from = document.activeElement;
+    let handled;
+    if (root?.id === 'menu') handled = moveMenuDirectionalFocus(code);
+    else if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(code)) handled = true;
+    else if (moveTabBarSelection(document.activeElement, code)) handled = true;
+    else if (root?.id === 'achievements-modal' && moveAchievementsDirectionalFocus(code)) handled = true;
+    else if (scrollFocuslessRegion(root, code)) handled = true;
+    else if (moveArmoryAdvanceFocus(root, code)) handled = true;
+    else if (moveSpatialControllerFocus(root, code)) handled = true;
+    else handled = Boolean(moveControllerFocus(backward ? -1 : 1));
+
+    const to = document.activeElement;
+    if (handled && from !== to) {
+        debugLog.info('INPUT', 'focus-route', {
+            root: root?.id ?? null,
+            from: from?.id || from?.getAttribute?.('data-type') || from?.className || null,
+            direction: code,
+            to: to?.id || to?.getAttribute?.('data-type') || to?.className || null,
+            inputSource: steamInputState.lastInputMode
+        });
+    }
+    return handled;
 }
 
 const SPATIAL_FOCUS_ROOT_IDS = new Set([
@@ -1428,6 +1443,47 @@ function moveSpatialControllerFocus(root, code) {
     const rects = focusables.map((element) => element.getBoundingClientRect());
     const nextIndex = spatialFocusIndex(rects, currentIndex, direction);
     return focusControllerTarget(focusables[nextIndex], { playHover: true });
+}
+
+let lastArmoryContentFocus = null;
+
+// Geometry-only wrapping cannot express the Armory's semantic exit. Preserve
+// spatial movement inside the panels, but give the final content row and the
+// footer a deterministic Down -> Embark edge. Up returns to the last panel
+// control instead of wrapping to an unrelated header action.
+function moveArmoryAdvanceFocus(root, code) {
+    if (root?.id !== 'armory-screen') return false;
+    const active = document.activeElement;
+    const embark = document.getElementById('armory-btn-embark');
+    if (!active || !embark) return false;
+    const isDown = code === 'ArrowDown' || code === 'KeyS';
+    const isUp = code === 'ArrowUp' || code === 'KeyW';
+
+    if (active === embark && isUp) {
+        const focusables = getVisibleControllerFocusables(root);
+        const remembered = lastArmoryContentFocus && focusables.includes(lastArmoryContentFocus)
+            ? lastArmoryContentFocus
+            : focusables.filter((element) => !element.closest('.armory-footer')).at(-1);
+        return remembered ? focusControllerTarget(remembered, { playHover: true }) : true;
+    }
+    if (!isDown || !root.contains(active)) return false;
+    if (active.closest('.armory-footer')) {
+        return focusControllerTarget(embark, { playHover: true });
+    }
+
+    lastArmoryContentFocus = active;
+    const activeRect = active.getBoundingClientRect();
+    const activeBottom = activeRect.top + activeRect.height / 2;
+    const activeLeft = activeRect.left;
+    const activeRight = activeRect.right;
+    const hasContentBelow = getVisibleControllerFocusables(root).some((element) => {
+        if (element === active || element.closest('.armory-footer')) return false;
+        const rect = element.getBoundingClientRect();
+        const horizOverlap = Math.min(activeRight, rect.right) - Math.max(activeLeft, rect.left);
+        if (horizOverlap < -60) return false;
+        return rect.top + rect.height / 2 > activeBottom + 2;
+    });
+    return hasContentBelow ? false : focusControllerTarget(embark, { playHover: true });
 }
 
 // Left / right (arrows, A / D, D-pad) on a focused tab selects its neighbour
@@ -1540,6 +1596,7 @@ function moveHeroSelectPanelFocus(code) {
 
     if (commandRail) {
         lastHeroMenuCommandFocus = active;
+        if (isDown) return focusControllerTarget(document.getElementById('start-game'), { playHover: true });
         if (!isRight) return true;
         const target = document.getElementById('hero-polish-btn')
             ?? selectedHero
@@ -1552,16 +1609,14 @@ function moveHeroSelectPanelFocus(code) {
         const index = Math.max(0, focusableElements.indexOf(active));
         let target = null;
         if (isUp) {
-            if (index === 0) target = document.querySelector('.menu-corner-settings .open-settings-btn');
-            else target = focusableElements[index - 1];
-        } else if (isDown) {
-            if (index < focusableElements.length - 1) target = focusableElements[index + 1];
-            else target = document.getElementById('start-game');
-        } else if (isLeft) {
-            if (active === heroBackBtn) target = document.getElementById('start-game');
-            else target = document.getElementById('hero-polish-btn');
-        } else if (isRight) {
             target = document.querySelector('.menu-corner-settings .open-settings-btn');
+        } else if (isDown) {
+            target = document.getElementById('start-game');
+        } else if (isLeft) {
+            target = focusableElements[index - 1] ?? document.getElementById('hero-polish-btn');
+        } else if (isRight) {
+            target = focusableElements[index + 1]
+                ?? document.querySelector('.menu-corner-settings .open-settings-btn');
         }
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
@@ -1702,12 +1757,11 @@ function moveMenuCommandGridFocus(code) {
             ? commands[index - columnCount]
             : (recordsBtn && isElementVisible(recordsBtn) ? recordsBtn : commands[index]);
     } else if (code === 'KeyS' || code === 'ArrowDown') {
-        if (index + columnCount >= commands.length) {
-            lastHeroMenuCommandFocus = active;
-            target = document.getElementById('hero-select-back-btn') ?? document.getElementById('start-game');
-        } else {
-            target = commands[index + columnCount];
-        }
+        // Down is the semantic "advance" edge on Hero Select. Keeping it in
+        // the command grid made players walk an unpredictable zig-zag before
+        // they could initialize a run, especially on Steam Deck.
+        lastHeroMenuCommandFocus = active;
+        target = document.getElementById('start-game');
     } else if (code === 'KeyA' || code === 'ArrowLeft') {
         if (columnIndex === 0) return false;
         target = commands[index - 1];
@@ -5247,7 +5301,6 @@ function renderOperatorPolishUi() {
                 window.game?.setOperatorPolish?.(next.color);
                 scoutHeroPreview?.setOperatorPolish?.(next.color);
                 armorySceneInstance?.setOperatorPolish?.(next.color);
-                void renderPreviewFrame(activePreviewType, previewFrameIndex);
                 renderOperatorPolishUi();
                 armoryUiInstance?.refresh?.();
                 window.AudioManager?.play?.('ui_click', { volume: 0.5 });
@@ -9600,19 +9653,12 @@ function ensureScoutHeroPreview() {
             .then((preview) => {
                 scoutHeroPreview = preview;
                 preview.setOperatorPolish(getSelectedPolish?.()?.color ?? 0xffffff);
-                const targetType = (typeof activePreviewType !== 'undefined' ? activePreviewType : null)
-                    ?? document.querySelector('.char-card.selected')?.getAttribute('data-type')
-                    ?? 'SCOUT';
-                void preview.setType(targetType);
-                preview.setVisible(true);
-                const sprite = document.getElementById('char-preview-sprite');
-                const fallback = document.getElementById('char-preview-fallback');
-                sprite?.classList.add('hidden');
-                fallback?.classList.add('hidden');
+                preview.setVisible(false);
                 return preview;
             })
             .catch((error) => {
-                console.warn('[scout-hero-preview] keeping 2D fallback', error);
+                scoutHeroPreviewPromise = null;
+                console.warn('[scout-hero-preview] 3D preview unavailable', error);
                 return null;
             });
     }
@@ -15819,26 +15865,16 @@ function spawnSmoke(x, y, count, isVertical = true) {
 
 // Character Selection Logic
 const charCards = document.querySelectorAll('.char-card');
-const previewSprite = document.getElementById('char-preview-sprite');
-const previewFallback = document.getElementById('char-preview-fallback');
-const preview3dCanvas = document.getElementById('char-preview-3d');
+const previewLoading = document.getElementById('char-preview-loading');
 const previewDoor = document.getElementById('char-preview-door');
 const previewName = document.getElementById('char-preview-name');
-const previewSpriteContext = previewSprite?.getContext('2d', { willReadFrequently: true }) ?? null;
-const PREVIEW_FRAME_MS = 110;
 const PREVIEW_DOOR_CLOSE_MS = 360;
 const PREVIEW_DOOR_HOLD_MS = 220;
 const PREVIEW_DOOR_OPEN_MS = 520;
-let previewFrameIndex = 0;
-let previewAnimationTimer = null;
 let previewDoorTimer = null;
 let pendingPreviewType = null;
+let heroPreviewRequestGeneration = 0;
 const previewSpriteImages = new Map();
-const PREVIEW_PORTRAITS = Object.freeze({
-    SCOUT: '/Scout.full_v2.webp',
-    TANK: '/Tank.full_v2.webp',
-    ENGINEER: '/Eng.Full_v2.webp'
-});
 
 charCards.forEach((card) => {
     card.setAttribute('role', 'button');
@@ -15886,75 +15922,19 @@ function getPreviewSpriteImage(path, layout) {
     return imagePromise;
 }
 
-async function renderPreviewFrame(type, frameIndex = previewFrameIndex) {
-    const data = heroData[type];
-    if (!data || !previewSprite || !previewSpriteContext) return;
-    // The preview is on the loadout screen (#menu). Drawing it anywhere else
-    // decoded and chroma-keyed a 2048x2048 sheet during boot, behind the
-    // title (issue #106), and redrew it every 110 ms through a whole run. The
-    // interval draws the first frame within a tick of the menu opening; the
-    // fallback portrait covers that tick, as it does a slow load.
-    if (appPhase !== 'menu') return;
-
-    const image = await getPreviewSpriteImage(data.path, data).catch(() => null);
-    if (!image || !heroData[type] || heroData[type].path !== data.path) {
-        previewFallback?.classList.remove('hidden');
-        return;
-    }
-
-    const frameWidth = Math.floor(image.width / data.columns);
-    const frameHeight = Math.floor(image.height / data.rows);
-    const walkFrame = ((frameIndex % data.walkFrames) + data.walkFrames) % data.walkFrames;
-    const previewCell = data.directionCells[data.previewDirection];
-    const sourceX = (previewCell.baseColumn + walkFrame) * frameWidth;
-    const sourceY = previewCell.row * frameHeight;
-
-    if (previewSprite.width !== frameWidth || previewSprite.height !== frameHeight) {
-        previewSprite.width = frameWidth;
-        previewSprite.height = frameHeight;
-    }
-
-    previewSpriteContext.clearRect(0, 0, frameWidth, frameHeight);
-    previewSpriteContext.imageSmoothingEnabled = false;
-    previewSpriteContext.drawImage(
-        image,
-        sourceX,
-        sourceY,
-        frameWidth,
-        frameHeight,
-        0,
-        0,
-        frameWidth,
-        frameHeight
-    );
-    const polish = getSelectedPolish();
-    if (polish.id !== 0) {
-        previewSpriteContext.save();
-        previewSpriteContext.globalCompositeOperation = 'multiply';
-        previewSpriteContext.fillStyle = polish.color;
-        previewSpriteContext.fillRect(0, 0, frameWidth, frameHeight);
-        previewSpriteContext.restore();
-    }
-    previewFallback?.classList.add('hidden');
-
-}
-
 async function syncHeroPreview(type) {
     const data = heroData[type];
     if (!data) return;
+    // A door transition may still be closing for an older selection. Do not
+    // let that stale callback replace the label or start another GLB load when
+    // the player has already queued a newer operator.
+    if (pendingPreviewType && pendingPreviewType !== type) return;
+    const requestGeneration = ++heroPreviewRequestGeneration;
 
     activePreviewType = type;
-    const is3dActive = scoutHeroPreview && preview3dCanvas && !preview3dCanvas.classList.contains('hidden');
-    if (!is3dActive) {
-        scoutHeroPreview?.setVisible(false);
-        previewSprite?.classList.remove('hidden');
-        if (previewFallback) {
-            previewFallback.src = assetUrl(PREVIEW_PORTRAITS[type] ?? PREVIEW_PORTRAITS.SCOUT);
-            previewFallback.classList.remove('hidden');
-        }
-        previewFrameIndex = 0;
-        void renderPreviewFrame(type, previewFrameIndex);
-    }
+    previewLoading?.classList.remove('hidden');
+    previewLoading?.setAttribute('data-state', 'loading');
+    if (previewLoading) previewLoading.textContent = t('ui.hero_detail.initializing_3d_operator', { type });
     if (previewName) previewName.textContent = data.name;
 
     const activeChassisSpec = type === 'TANK'
@@ -15966,25 +15946,30 @@ async function syncHeroPreview(type) {
     if (summaryEl) summaryEl.textContent = `${t('ui.hero_detail.chassis_spec')} // ${activeChassisSpec}`;
     renderHeroLoadoutStrip(type);
 
-    if (scoutHeroPreview) {
+    const preview = scoutHeroPreview ?? await ensureScoutHeroPreview();
+    if (requestGeneration !== heroPreviewRequestGeneration) return;
+    if (preview) {
         const loaded = await Promise.race([
-            scoutHeroPreview.setType(type).catch((error) => {
-                console.warn('[hero-preview] keeping posed sprite fallback', error);
+            preview.setType(type).catch((error) => {
+                console.warn('[hero-preview] 3D operator failed to load', error);
                 return false;
             }),
             new Promise((resolve) => window.setTimeout(() => resolve(false), 8000))
         ]);
+        if (requestGeneration !== heroPreviewRequestGeneration) return;
         if (activePreviewType === type) {
             if (loaded) {
-                scoutHeroPreview.setVisible(true);
-                previewSprite?.classList.add('hidden');
-                previewFallback?.classList.add('hidden');
-            } else if (!is3dActive) {
-                scoutHeroPreview.setVisible(false);
-                previewSprite?.classList.remove('hidden');
-                previewFallback?.classList.remove('hidden');
+                preview.setVisible(true);
+                previewLoading?.classList.add('hidden');
+            } else {
+                preview.setVisible(false);
+                previewLoading?.setAttribute('data-state', 'error');
+                if (previewLoading) previewLoading.textContent = t('ui.hero_detail.preview_3d_unavailable', { type });
             }
         }
+    } else if (activePreviewType === type) {
+        previewLoading?.setAttribute('data-state', 'error');
+        if (previewLoading) previewLoading.textContent = t('ui.hero_detail.preview_3d_unavailable', { type });
     }
 
     // Update custom properties on preview stage wrapper for matching class glow colors
@@ -16022,18 +16007,14 @@ async function syncHeroPreview(type) {
     }
 }
 
-function startHeroPreviewAnimation() {
-    if (!previewSprite || previewAnimationTimer !== null) return;
-
-    previewAnimationTimer = window.setInterval(() => {
-        const frameCount = getPlayerSpriteLayout(activePreviewType).walkFrames;
-        previewFrameIndex = (previewFrameIndex + 1) % frameCount;
-        void renderPreviewFrame(activePreviewType, previewFrameIndex);
-    }, PREVIEW_FRAME_MS);
-}
-
 function triggerHeroPreviewSwap(type) {
     if (!heroData[type]) return;
+
+    // Selection state is immediate even though the blast-door/model swap is
+    // staged. This also makes the latest requested type authoritative while
+    // an older door timer is still in flight.
+    activePreviewType = type;
+    if (previewName) previewName.textContent = heroData[type].name;
 
     if (!previewDoor) {
         syncHeroPreview(type);
@@ -16645,7 +16626,6 @@ whenDocumentParsed(async () => {
         updateHeroStats(initialType);
     }
     renderOperatorPolishUi();
-    startHeroPreviewAnimation();
     if (mainDebugToggle) mainDebugToggle.checked = false;
 
     // Check if player has active save data to enable CONTINUE
