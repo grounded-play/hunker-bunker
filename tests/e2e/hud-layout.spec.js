@@ -77,6 +77,19 @@ test.describe('HUD layout system and lower dock spec', () => {
         await bootToOperatorMenu(page);
         await startRunAndSkipIntro(page);
 
+        // A cold Vite boot can finish dependency optimization after gameplay
+        // first appears and reload back to the title. Restore the run before
+        // taking geometry measurements instead of auditing an empty shell.
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+            const gameplayHudReady = await page.evaluate(() => (
+                ['scout', 'tank', 'engineer'].includes(document.documentElement.dataset.operatorClass)
+                && !document.getElementById('ui')?.classList.contains('hidden')
+            )).catch(() => false);
+            if (gameplayHudReady) break;
+            await bootToOperatorMenu(page);
+            await startRunAndSkipIntro(page);
+        }
+
         // Verify the keep-out area: center 30% width x 34% height
         const keepOut = {
             x0: 1920 * 0.35,
@@ -138,7 +151,16 @@ test.describe('HUD layout system and lower dock spec', () => {
             expect(el.rect.r, el.id).toBeLessThanOrEqual(c.r + 2);
             expect(el.rect.y, el.id).toBeGreaterThanOrEqual(c.y - 2);
             expect(el.rect.bottom, el.id).toBeLessThanOrEqual(c.bottom + 2);
+
+            const slot = consoleData.slots[el.panel];
+            expect(el.rect.x, `${el.id} left edge`).toBeGreaterThanOrEqual(slot.x - 2);
+            expect(el.rect.r, `${el.id} right edge`).toBeLessThanOrEqual(slot.r + 2);
+            expect(el.rect.y, `${el.id} top edge`).toBeGreaterThanOrEqual(slot.y - 2);
+            expect(el.rect.bottom, `${el.id} bottom edge`).toBeLessThanOrEqual(slot.bottom + 2);
         }
+
+
+        expect(consoleData.slots.map.w / c.w, 'map receives a useful share of the console').toBeGreaterThanOrEqual(0.28);
 
         // Prompt lane sits above the console and does not overlap keep-out
         const lane = await page.evaluate(() => {

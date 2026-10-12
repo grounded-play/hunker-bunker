@@ -12528,13 +12528,7 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
     const height = canvas.height;
     ctx.clearRect(0, 0, width, height);
 
-    if (compact) {
-        ctx.save();
-        ctx.beginPath();
-        const radarRadius = Math.min(width, height) / 2;
-        ctx.arc(width / 2, height / 2, radarRadius, 0, Math.PI * 2);
-        ctx.clip();
-    }
+    if (compact) ctx.save();
 
     ctx.fillStyle = getMapFogPattern(ctx) ?? '#04080e';
     ctx.fillRect(0, 0, width, height);
@@ -12850,7 +12844,6 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
     // type instead of painting every 8px label over its neighbours.
     {
         const kindPriority = { crash_site: 0, landmark: 1, room: 2, hall: 3 };
-        const radarRadius = Math.min(width, height) / 2;
         const candidates = detailedChunks.flatMap((chunk) => chunk.labels ?? [])
             .filter((label) => label?.text && (!compact || label.kind !== 'hall'))
             .map((label) => ({
@@ -12861,10 +12854,10 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
             }))
             .filter((label) => {
                 if (!compact) return label.point.x >= 8 && label.point.x <= width - 8 && label.point.y >= 8 && label.point.y <= height - 8;
-                return Math.hypot(label.point.x - width / 2, label.point.y - height / 2) <= radarRadius - 14;
+                return label.point.x >= 12 && label.point.x <= width - 12 && label.point.y >= 12 && label.point.y <= height - 12;
             })
             .sort((a, b) => a.priority - b.priority || a.distance - b.distance);
-        const labelBudget = compact ? 4 : 36;
+        const labelBudget = compact ? 5 : 36;
         const accepted = [];
         ctx.save();
         ctx.textAlign = 'center';
@@ -12874,7 +12867,7 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
         for (const label of candidates) {
             if (accepted.length >= labelBudget) break;
             const isHighlight = label.kind === 'room' || label.kind === 'crash_site' || label.kind === 'landmark';
-            const fontSize = compact ? (isHighlight ? 12 : 11) : (isHighlight ? 15 : 13);
+            const fontSize = compact ? (isHighlight ? 13 : 12) : (isHighlight ? 15 : 13);
             ctx.font = `${isHighlight ? 'bold ' : ''}${fontSize}px Space Mono, monospace`;
             const textWidth = ctx.measureText(label.text).width;
             const rect = {
@@ -13009,16 +13002,14 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
         ctx.restore();
     }
 
-    // Minimap bezel radial falloff: softens outer edges so waves and unmapped borders fade smoothly
+    // Console map edge falloff. Keep it rectangular so room labels can use the
+    // full width instead of disappearing outside a legacy circular mask.
     if (compact) {
         ctx.save();
-        const edgeGrad = ctx.createRadialGradient(
-            width / 2, height / 2, Math.min(width, height) * 0.44,
-            width / 2, height / 2, Math.max(width, height) * 0.58
-        );
+        const edgeGrad = ctx.createLinearGradient(0, 0, 0, height);
         edgeGrad.addColorStop(0, 'rgba(4, 10, 18, 0)');
-        edgeGrad.addColorStop(0.75, 'rgba(4, 10, 18, 0.35)');
-        edgeGrad.addColorStop(1, 'rgba(4, 10, 18, 0.75)');
+        edgeGrad.addColorStop(0.72, 'rgba(4, 10, 18, 0.08)');
+        edgeGrad.addColorStop(1, 'rgba(4, 10, 18, 0.38)');
         ctx.fillStyle = edgeGrad;
         ctx.fillRect(0, 0, width, height);
         ctx.restore();
