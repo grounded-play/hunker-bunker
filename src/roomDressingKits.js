@@ -339,6 +339,13 @@ export function dressingKitFor(themeId, role) {
  */
 export const VIGNETTES = Object.freeze({
     bunker: [
+        ['life_mess_table', 'life_galley_hotplate', 'life_vending_machine'],
+        ['life_route_map_table', 'life_tactile_console', 'life_acoustic_ear_horn'],
+        ['life_bunk_stack', 'life_footlocker_open', 'life_suit_drying_rack'],
+        ['prop_maintenance_tool_cart', 'prop_conduit_junction_box', 'scatter_cable_coil'],
+        ['prop_camp_crates', 'prop_storage_drum_dented', 'scatter_bolts'],
+        ['prop_chair_operator_wrecked', 'prop_terminal_ruptured'],
+        ['prop_body_empty_exosuit', 'bunker_junk_rare', 'scatter_bolts'],
         ['life_cistern_tank', 'camp_water_barrel', 'life_sink_row'],
         ['life_cistern_tank', 'camp_water_barrel', 'life_shower_stall'],
         ['life_cistern_tank', 'camp_water_barrel', 'life_laundry_machines'],
@@ -347,14 +354,7 @@ export const VIGNETTES = Object.freeze({
         ['life_transformer_bank', 'life_conveyor_section'],
         ['life_planning_board', 'life_filing_cabinets'],
         ['life_weight_bench', 'life_arcade_cabinet'],
-        ['life_scaffold_tower', 'salvage_tagged_heap'],
-        ['life_mess_table', 'life_galley_hotplate', 'life_vending_machine'],
-        ['life_route_map_table', 'life_tactile_console', 'life_acoustic_ear_horn'],
-        ['life_bunk_stack', 'life_footlocker_open', 'life_suit_drying_rack'],
-        ['prop_maintenance_tool_cart', 'prop_conduit_junction_box', 'scatter_cable_coil'],
-        ['prop_camp_crates', 'prop_storage_drum_dented', 'scatter_bolts'],
-        ['prop_chair_operator_wrecked', 'prop_terminal_ruptured'],
-        ['prop_body_empty_exosuit', 'bunker_junk_rare', 'scatter_bolts']
+        ['life_scaffold_tower', 'salvage_tagged_heap']
     ],
     cryo: [
         ['life_cistern_tank', 'camp_water_barrel', 'life_sink_row'],
@@ -436,8 +436,6 @@ export const ROLE_VIGNETTES = Object.freeze({
     ],
     reward: [['prop_bunker_supplies', 'prop_ammo_crate_stack']],
     engineering: [
-        ['life_transformer_bank', 'life_conveyor_section'],
-        ['life_scaffold_tower', 'salvage_tagged_heap'],
         ['life_fuel_probe_boom', 'life_lung_filter_bellows', 'life_umbilical_tether'],
         ['prop_fabricator_workstation', 'prop_maintenance_tool_cart', 'scatter_cable_coil'],
         ['prop_pipe_organ_heat_exchanger', 'prop_maintenance_tool_cart', 'prop_floor_drainage_sump_trough'],
@@ -446,8 +444,6 @@ export const ROLE_VIGNETTES = Object.freeze({
         ['life_exosuit_teardown', 'scatter_bolts']
     ],
     workshop: [
-        ['life_transformer_bank', 'life_conveyor_section'],
-        ['life_scaffold_tower', 'salvage_tagged_heap'],
         ['life_fuel_probe_boom', 'life_lung_filter_bellows', 'life_umbilical_tether'],
         ['prop_fabricator_workstation', 'prop_maintenance_tool_cart', 'scatter_cable_coil'],
         ['prop_pipe_organ_heat_exchanger', 'prop_maintenance_tool_cart', 'prop_floor_drainage_sump_trough'],

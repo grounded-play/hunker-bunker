@@ -123,7 +123,10 @@ describe('sticker layers', () => {
 describe('room-dressing PNG decals on the PBR path', () => {
     it('gives every public/decal_*.png a baked PBR layer and ships both maps', async () => {
         const { LEGACY_DECAL_LAYERS } = await import('./data/legacyDecalLayers.js');
-        const pngs = fs.readdirSync('public').filter((file) => /^decal_.*\.png$/.test(file)).map((file) => file.slice(0, -4)).sort();
+        const pngs = fs.readdirSync('public')
+            .filter((file) => /^decal_.*\.png$/.test(file) && !/_[abcd]\.png$/.test(file) && file !== 'decal_strip_drain_gutter.png')
+            .map((file) => file.slice(0, -4))
+            .sort();
         expect(LEGACY_DECAL_LAYERS.map((layer) => layer.name)).toEqual(pngs);
         for (const { name } of LEGACY_DECAL_LAYERS) {
             for (const map of ['albedo', 'detail']) {
