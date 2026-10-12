@@ -107,7 +107,20 @@ export const FLOOR_SURFACES = Object.freeze([
     { id: 'tex_shoulder_swept_grit', variants: 4, scale: 2, fallback: FLOOR_LAYER.BASE },
     { id: 'tex_shoulder_ice_crust', variants: 4, scale: 2, fallback: FLOOR_LAYER.CRYO },
     { id: 'tex_shoulder_resin_lip', variants: 4, scale: 2, fallback: FLOOR_LAYER.BIO },
-    { id: 'tex_overlay_puddles', variants: 4, scale: 3, fallback: FLOOR_LAYER.HALLWAY }
+    { id: 'tex_overlay_puddles', variants: 4, scale: 3, fallback: FLOOR_LAYER.HALLWAY },
+    // 2026-10-12 World story expansion mature floor surfaces (12 surfaces x 4 variants = 48)
+    { id: 'tex_floor_blood_drain_grate', variants: 4, scale: 3, fallback: FLOOR_LAYER.UTILITY },
+    { id: 'tex_floor_charred_crematorium', variants: 4, scale: 4, fallback: FLOOR_LAYER.UTILITY },
+    { id: 'tex_floor_amniotic_slime_crust', variants: 4, scale: 3, fallback: FLOOR_LAYER.HIVE },
+    { id: 'tex_floor_frostbitten_trench', variants: 4, scale: 4, fallback: FLOOR_LAYER.CRYO },
+    { id: 'tex_floor_battery_acid_corrosion', variants: 4, scale: 3, fallback: FLOOR_LAYER.UTILITY },
+    { id: 'tex_floor_chitinous_eggshell_drift', variants: 4, scale: 3, fallback: FLOOR_LAYER.BIO },
+    { id: 'tex_floor_cannibal_butchery_planks', variants: 4, scale: 3, fallback: FLOOR_LAYER.CAMP },
+    { id: 'tex_floor_necrotic_bio_sludge', variants: 4, scale: 3, fallback: FLOOR_LAYER.BIO },
+    { id: 'tex_floor_shattered_safety_glass', variants: 4, scale: 3, fallback: FLOOR_LAYER.HALLWAY },
+    { id: 'tex_floor_hydraulic_oil_slick', variants: 4, scale: 4, fallback: FLOOR_LAYER.UTILITY },
+    { id: 'tex_floor_tallow_spore_fungus', variants: 4, scale: 3, fallback: FLOOR_LAYER.CAMP },
+    { id: 'tex_floor_scorched_plasma_crater', variants: 4, scale: 3, fallback: FLOOR_LAYER.UTILITY }
 ].map((surface, index, all) => Object.freeze({
     ...surface,
     groundLike: Boolean(surface.groundLike),
@@ -140,21 +153,21 @@ export function floorSurfaceFileNames() {
 
 /** Room themes mapped to interchangeable palettes so rooms do not repeat identical styles */
 export const ROOM_THEME_SURFACES = Object.freeze({
-    'bunker-medical': ['tex_floor_latex_mat', 'tex_floor_bone_terrazzo'],
-    'bunker-security': ['tex_floor_concrete_stained', 'tex_path_polished_concrete'],
-    'bunker-armory': ['tex_floor_concrete_stained', 'tex_path_worn_deck'],
-    'bunker-storage': ['tex_floor_concrete_stained', 'tex_path_polished_concrete', 'tex_floor_grate_trench'],
-    'reward-cache': ['tex_floor_concrete_stained', 'tex_path_polished_concrete'],
-    'bunker-workshop': ['tex_floor_grate_trench', 'tex_path_polished_concrete'],
-    'cryo-engineering': ['tex_floor_grate_trench', 'tex_path_slush_track'],
-    'bio-engineering': ['tex_floor_grate_trench', 'tex_path_resin_trail'],
-    'cryo-rough': ['tex_floor_slush_ice', 'tex_path_packed_snow', 'tex_path_slush_track'],
-    'cryo-recovery': ['tex_floor_slush_ice', 'tex_path_slush_track'],
-    'bio-nest': ['tex_floor_chitin_resin', 'tex_path_resin_trail', 'tex_path_trodden_spores'],
-    'bio-medical': ['tex_floor_chitin_resin', 'tex_path_resin_trail'],
-    'bio-feeding-chamber': ['tex_floor_chitin_resin', 'tex_path_resin_trail'],
-    'camp-fortified': ['tex_floor_camp_planks', 'tex_path_mud_track'],
-    'giger-cathedral': ['tex_floor_bone_terrazzo', 'tex_path_worn_deck']
+    'bunker-medical': ['tex_floor_latex_mat', 'tex_floor_bone_terrazzo', 'tex_floor_blood_drain_grate'],
+    'bunker-security': ['tex_floor_concrete_stained', 'tex_path_polished_concrete', 'tex_floor_battery_acid_corrosion', 'tex_floor_scorched_plasma_crater'],
+    'bunker-armory': ['tex_floor_concrete_stained', 'tex_path_worn_deck', 'tex_floor_scorched_plasma_crater'],
+    'bunker-storage': ['tex_floor_concrete_stained', 'tex_path_polished_concrete', 'tex_floor_grate_trench', 'tex_floor_hydraulic_oil_slick'],
+    'reward-cache': ['tex_floor_concrete_stained', 'tex_path_polished_concrete', 'tex_floor_scorched_plasma_crater'],
+    'bunker-workshop': ['tex_floor_grate_trench', 'tex_path_polished_concrete', 'tex_floor_hydraulic_oil_slick', 'tex_floor_battery_acid_corrosion'],
+    'cryo-engineering': ['tex_floor_grate_trench', 'tex_path_slush_track', 'tex_floor_frostbitten_trench'],
+    'bio-engineering': ['tex_floor_grate_trench', 'tex_path_resin_trail', 'tex_floor_necrotic_bio_sludge'],
+    'cryo-rough': ['tex_floor_slush_ice', 'tex_path_packed_snow', 'tex_path_slush_track', 'tex_floor_frostbitten_trench'],
+    'cryo-recovery': ['tex_floor_slush_ice', 'tex_path_slush_track', 'tex_floor_frostbitten_trench'],
+    'bio-nest': ['tex_floor_chitin_resin', 'tex_path_resin_trail', 'tex_path_trodden_spores', 'tex_floor_amniotic_slime_crust', 'tex_floor_chitinous_eggshell_drift'],
+    'bio-medical': ['tex_floor_chitin_resin', 'tex_path_resin_trail', 'tex_floor_blood_drain_grate', 'tex_floor_amniotic_slime_crust'],
+    'bio-feeding-chamber': ['tex_floor_chitin_resin', 'tex_path_resin_trail', 'tex_floor_necrotic_bio_sludge', 'tex_floor_amniotic_slime_crust'],
+    'camp-fortified': ['tex_floor_camp_planks', 'tex_path_mud_track', 'tex_floor_cannibal_butchery_planks', 'tex_floor_tallow_spore_fungus'],
+    'giger-cathedral': ['tex_floor_bone_terrazzo', 'tex_path_worn_deck', 'tex_floor_charred_crematorium', 'tex_floor_shattered_safety_glass']
 });
 
 export const ROOM_THEME_SURFACE = Object.freeze(Object.fromEntries(

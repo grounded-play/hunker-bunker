@@ -387,7 +387,66 @@ export const WORLD_3D_MODELS = Object.freeze({
     life_surgical_lamp: { url: '/3d/runtime/new3ds/life_surgical_lamp.glb', height: 2.3, yaw: 0 },
     life_transformer_bank: { url: '/3d/runtime/new3ds/life_transformer_bank.glb', height: 2.2, yaw: 0 },
     life_weight_bench: { url: '/3d/runtime/new3ds/life_weight_bench.glb', height: 1.4, maxSpan: 2.2, yaw: 0 },
-    salvage_tagged_heap: { url: '/3d/runtime/new3ds/salvage_tagged_heap.glb', height: 1.4, yaw: 0 }
+    salvage_tagged_heap: { url: '/3d/runtime/new3ds/salvage_tagged_heap.glb', height: 1.4, yaw: 0 },
+
+    // 2026-10-12 World story expansion mature props (40 models)
+    // A. Corporate Horizon Atrocities & Governance
+    corp_interrogation_chair: { url: '/3d/runtime/new3ds/corp_interrogation_chair.glb', height: 1.6, yaw: 0 },
+    corp_debt_severing_kiosk: { url: '/3d/runtime/new3ds/corp_debt_severing_kiosk.glb', height: 1.8, yaw: 0 },
+    corp_dissection_gurney: { url: '/3d/runtime/new3ds/corp_dissection_gurney.glb', height: 1.1, maxSpan: 2.2, yaw: 0 },
+    corp_executive_sarcophagus: { url: '/3d/runtime/new3ds/corp_executive_sarcophagus.glb', height: 2.2, yaw: 0 },
+    corp_incinerator_hopper: { url: '/3d/runtime/new3ds/corp_incinerator_hopper.glb', height: 2.4, yaw: 0 },
+    corp_suppression_barrier: { url: '/3d/runtime/new3ds/corp_suppression_barrier.glb', height: 1.7, maxSpan: 2.4, yaw: 0 },
+
+    // B. Meridian Camp & Cyber-Deity Rites
+    meridian_cyber_graft_bench: { url: '/3d/runtime/new3ds/meridian_cyber_graft_bench.glb', height: 1.3, maxSpan: 2.0, yaw: 0 },
+    meridian_mainframe_altar: { url: '/3d/runtime/new3ds/meridian_mainframe_altar.glb', height: 2.6, yaw: 0 },
+    meridian_capacitor_bomb: { url: '/3d/runtime/new3ds/meridian_capacitor_bomb.glb', height: 1.4, yaw: 0 },
+    meridian_servitor_dock: { url: '/3d/runtime/new3ds/meridian_servitor_dock.glb', height: 2.1, yaw: 0 },
+
+    // C. Tallow Camp & Spore Gestation
+    tallow_compost_fermenter: { url: '/3d/runtime/new3ds/tallow_compost_fermenter.glb', height: 2.3, yaw: 0 },
+    tallow_spore_cradle: { url: '/3d/runtime/new3ds/tallow_spore_cradle.glb', height: 1.2, maxSpan: 1.5, yaw: 0 },
+    tallow_flesh_trellis: { url: '/3d/runtime/new3ds/tallow_flesh_trellis.glb', height: 2.5, yaw: 0 },
+    tallow_sacrificial_altar: { url: '/3d/runtime/new3ds/tallow_sacrificial_altar.glb', height: 1.3, maxSpan: 2.4, yaw: 0 },
+
+    // D. Vesper Iron Guild & Frontline Butchery
+    vesper_amputation_rig: { url: '/3d/runtime/new3ds/vesper_amputation_rig.glb', height: 1.2, maxSpan: 2.0, yaw: 0 },
+    vesper_autocannon_bipod: { url: '/3d/runtime/new3ds/vesper_autocannon_bipod.glb', height: 1.4, maxSpan: 2.2, yaw: 0 },
+    vesper_hanging_cage: { url: '/3d/runtime/new3ds/vesper_hanging_cage.glb', height: 2.5, yaw: 0 },
+    vesper_reloading_station: { url: '/3d/runtime/new3ds/vesper_reloading_station.glb', height: 1.5, yaw: 0 },
+
+    // E. Mayor Tina's Infiltration & Metamorphosis
+    tina_molted_carapace: { url: '/3d/runtime/new3ds/tina_molted_carapace.glb', height: 1.9, yaw: 0 },
+    tina_covert_nursery_chest: { url: '/3d/runtime/new3ds/tina_covert_nursery_chest.glb', height: 1.0, maxSpan: 1.4, yaw: 0 },
+    tina_mimic_vanity: { url: '/3d/runtime/new3ds/tina_mimic_vanity.glb', height: 1.6, yaw: 0 },
+    tina_trophy_trove: { url: '/3d/runtime/new3ds/tina_trophy_trove.glb', height: 1.3, yaw: 0 },
+
+    // F. The PregAlien Hive & Visceral Assimilation
+    hive_visceral_ovipositor: { url: '/3d/runtime/new3ds/hive_visceral_ovipositor.glb', height: 2.8, yaw: 0 },
+    hive_vivisected_engineer: { url: '/3d/runtime/new3ds/hive_vivisected_engineer.glb', height: 2.2, yaw: 0 },
+    hive_gestation_sac: { url: '/3d/runtime/new3ds/hive_gestation_sac.glb', height: 2.0, yaw: 0 },
+    hive_pulmonary_bellows: { url: '/3d/runtime/new3ds/hive_pulmonary_bellows.glb', height: 2.2, yaw: 0 },
+    hive_amniotic_feeder_trough: { url: '/3d/runtime/new3ds/hive_amniotic_feeder_trough.glb', height: 1.1, maxSpan: 2.6, yaw: 0 },
+    hive_sphincter_iris: { url: '/3d/runtime/new3ds/hive_sphincter_iris.glb', height: 2.8, yaw: 0 },
+
+    // G. Cryo District: Hypothermic Brutality
+    cryo_ruptured_pod: { url: '/3d/runtime/new3ds/cryo_ruptured_pod.glb', height: 2.4, yaw: 0 },
+    cryo_cannibal_butchery_table: { url: '/3d/runtime/new3ds/cryo_cannibal_butchery_table.glb', height: 1.2, maxSpan: 2.2, yaw: 0 },
+    cryo_ice_core_specimen: { url: '/3d/runtime/new3ds/cryo_ice_core_specimen.glb', height: 1.8, yaw: 0 },
+    cryo_thawing_trough: { url: '/3d/runtime/new3ds/cryo_thawing_trough.glb', height: 1.0, maxSpan: 1.8, yaw: 0 },
+    cryo_frozen_shelter_pod: { url: '/3d/runtime/new3ds/cryo_frozen_shelter_pod.glb', height: 1.7, maxSpan: 2.4, yaw: 0 },
+
+    // H. The Chasm Void & Final Drops
+    chasm_hanging_elevator: { url: '/3d/runtime/new3ds/chasm_hanging_elevator.glb', height: 3.2, yaw: 0 },
+    chasm_suicide_ledge_cross: { url: '/3d/runtime/new3ds/chasm_suicide_ledge_cross.glb', height: 2.0, yaw: 0 },
+    chasm_dredge_hook_crane: { url: '/3d/runtime/new3ds/chasm_dredge_hook_crane.glb', height: 2.8, maxSpan: 3.0, yaw: 0 },
+
+    // I. Industrial Meat & Crash Debris
+    ind_biomass_grinder: { url: '/3d/runtime/new3ds/ind_biomass_grinder.glb', height: 2.2, yaw: 0 },
+    ind_hydraulic_manifold: { url: '/3d/runtime/new3ds/ind_hydraulic_manifold.glb', height: 1.9, yaw: 0 },
+    ind_fuel_rod_cask: { url: '/3d/runtime/new3ds/ind_fuel_rod_cask.glb', height: 2.4, yaw: 0 },
+    crash_cockpit_canopy: { url: '/3d/runtime/new3ds/crash_cockpit_canopy.glb', height: 2.2, maxSpan: 3.4, yaw: 0 }
 });
 
 // Metric-scale set-piece shells are deliberately separate from prop models.
