@@ -77,6 +77,8 @@ Performance gates:
 
 ### HUD lower-third layout decision and implementation
 
+> **Direction update (2026-10-12):** The side-wing implementation below was a readability remediation, but the approved destination is now one unified lower console with a larger named map and multiplayer-only chat. See [Unified Lower Console HUD Plan](hud-unified-lower-console-2026-10-12.md). That plan supersedes the separated left/right rails while retaining their text-size and center-clearance findings.
+
 The screenshot calls for a **lower-third perimeter**, not a full-width opaque lower bar. Persistent information is grouped into three glance paths while the centre play corridor remains clear:
 
 | Lower-third zone | Contents | Behavior |

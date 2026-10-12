@@ -1,5 +1,7 @@
 # HUD Lower Dock — Layout Plan (expanded)
 
+> **Superseded layout direction (2026-10-12):** The three-panel map/status/arms geometry in this document is retained as implementation history and measurement evidence. The approved successor combines those instruments into one styled lower console, enlarges and labels the HUD map, attaches transient overlays to the console, and makes chat multiplayer-only. See [Unified Lower Console HUD Plan](hud-unified-lower-console-2026-10-12.md).
+
 > Expands the Gemini draft `ui_redesign_layout_plan.md` (2026-09-25, Antigravity brain
 > `6b5e702e…`). The owner likes the **lower dock** direction
 > (`ui_concept_lower_dock_1790353433507.jpg`) and asked for **templates that are not as
