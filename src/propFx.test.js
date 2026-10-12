@@ -35,6 +35,40 @@ describe('prop FX recipes', () => {
         }
     });
 
+    const pass2Props = [
+        'bay_c_pod_312_rupture', 'chen_sealed_confession_console', 'decon_exosuit_scrubber_station',
+        'engineer_wave_relay_dynamo', 'evac_four_seat_cockpit_module', 'tank_orbital_siege_cannon',
+        'queen_royal_brood_throne', 'carapace_sentry_chrysalis', 'royal_egg_clutch_caul',
+        'vass_acoustic_resonator_tank', 'vass_hybrid_embryo_incubator', 'suture_mercy_cocoon_canopy',
+        'relay_false_beacon_spire', 'corp_biometric_collar_chute', 'crawler_signal_antenna_rig',
+        'evac_manifest_allocation_terminal', 'evac_preflight_fuel_umbilical', 'scout_tracking_beacon_core',
+        'sector_zero_bore_drillhead'
+    ];
+
+    it('gives every pass 2 GLB a bounded authored effect recipe', () => {
+        for (const type of pass2Props) {
+            const recipe = getPropFxProfile(type);
+            expect(recipe, type).toBeDefined();
+            expect(recipe.maxDistance, type).toBeLessThanOrEqual(24);
+        }
+    });
+
+    it('keeps all pass 2 practical sources shadowless and state-switchable', () => {
+        for (const type of pass2Props) {
+            const root = new THREE.Group();
+            const model = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1));
+            root.add(model);
+            const fx = createPropFx(root, model, type);
+            expect(fx.lightSources.length, type).toBe(1);
+            for (const light of fx.lightSources) expect(light.castShadow, type).toBe(false);
+            fx.setMode('disabled');
+            expect(fx.enabled, type).toBe(false);
+            fx.setMode('on');
+            expect(fx.enabled, type).toBe(true);
+            fx.dispose();
+        }
+    });
+
     it('covers the representative fire, liquid, mechanical, electrical, organic and rupture slice', () => {
         for (const type of [
             'prop_camp_cookfire_lit', 'life_water_still', 'prop_specimen_tank',

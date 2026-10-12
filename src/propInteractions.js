@@ -259,6 +259,115 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
         { repeatable: false, nextState: () => 'open', sound: 'vault_open', onUse: (game) => game.addScrap?.(20) }
     ),
 
+    // Pass 2 World-Story Props (Waves A, B, C)
+    bay_c_pod_312_rupture: statefulInteraction(
+        '[E] SEARCH RUPTURED CRYO POD',
+        () => 'CRYO POD 312: EMERGENCY EVACUATION LOG RECOVERED. +25 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'flesh_seal', onUse: (game) => game.addScrap?.(25) }
+    ),
+    chen_sealed_confession_console: statefulInteraction(
+        '[E] PLAY CONFESSION TAPE',
+        () => 'CONFESSION CONSOLE: DEPUTY CHEN\'S DIARY UNLOCKED. CONTRABAND COORDINATES MARKED.',
+        { repeatable: false, nextState: () => 'spent', sound: 'terminal_beep', onUse: (game) => game.addScrap?.(30) }
+    ),
+    decon_exosuit_scrubber_station: statefulInteraction(
+        '[E] CYCLE DECON SCRUBBER',
+        () => 'EXOSUIT SCRUBBER: PRESSURIZED DECON FOAM CYCLED. BIOLOGICAL STATUS CLEANSED.',
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'power_hum', onUse: (game) => {
+            game.healPlayer?.(15);
+        } }
+    ),
+    engineer_wave_relay_dynamo: statefulInteraction(
+        '[E] ENGAGE WAVE DYNAMO',
+        (state) => `WAVE DYNAMO: ${state === 'working' ? 'HARMONIC INDUCTION BUS ENERGIZED' : 'STANDBY'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'power_hum' }
+    ),
+    evac_four_seat_cockpit_module: statefulInteraction(
+        '[E] SALVAGE FLIGHT RECORDER',
+        () => 'COCKPIT MODULE: FLIGHT TELEMETRY BLACK BOX RECOVERED. +40 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'vault_open', onUse: (game) => game.addScrap?.(40) }
+    ),
+    tank_orbital_siege_cannon: statefulInteraction(
+        '[E] FIRE CALIBRATION ROUND',
+        () => 'SIEGE CANNON: CALIBRATION ROUND DISCHARGED INTO THE ABYSS.',
+        { repeatable: false, nextState: () => 'spent', sound: 'crane_motor', onUse: (game, prop) => {
+            game.shakeCamera?.(0.6, 0.4);
+            game.spawnPhysicalBurst?.(prop?.position?.x ?? 0, prop?.position?.z ?? 0, { color: 0xff4433, count: 12, upward: 0.4 });
+        } }
+    ),
+
+    queen_royal_brood_throne: statefulInteraction(
+        '[E] EXTRACT ROYAL JELLY',
+        () => 'BROOD THRONE: ROYAL JELLY EXTRACTED. MAXIMUM VITALITY RESTORED.',
+        { repeatable: false, nextState: () => 'spent', sound: 'flesh_seal', onUse: (game) => {
+            game.healPlayer?.(50);
+            game.addScrap?.(50);
+        } }
+    ),
+    carapace_sentry_chrysalis: statefulInteraction(
+        '[E] HARVEST SENTINEL CHITIN',
+        () => 'SENTRY CHRYSALIS: REINFORCED CHITIN COMPOSITE HARVESTED. +20 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'flesh_seal', onUse: (game) => game.addScrap?.(20) }
+    ),
+    royal_egg_clutch_caul: statefulInteraction(
+        '[E] PUNCTURE EGG CLUTCH',
+        () => 'ROYAL EGG CLUTCH: DEVELOPING LARVAE CAUTERIZED. +20 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'flesh_seal', onUse: (game) => game.addScrap?.(20) }
+    ),
+    vass_acoustic_resonator_tank: statefulInteraction(
+        '[E] HARMONIZE ACOUSTIC RESONATOR',
+        (state) => `ACOUSTIC RESONATOR: ${state === 'working' ? 'HARMONIC DISORIENTATION PULSE BROADCAST' : 'DAMPED'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'power_hum' }
+    ),
+    vass_hybrid_embryo_incubator: statefulInteraction(
+        '[E] ABORT INCUBATOR SEQUENCE',
+        () => 'HYBRID INCUBATOR: SPECIMEN DRAINED. GENETIC CORE EXTRACTED. +35 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'power_hum', onUse: (game) => game.addScrap?.(35) }
+    ),
+    suture_mercy_cocoon_canopy: statefulInteraction(
+        '[E] ENTER MERCY CANOPY',
+        () => 'MERCY CANOPY: MEDICAL GEL SUTURE COMPLETE. SUIT INTEGRITY RESTORED.',
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'flesh_seal', onUse: (game) => {
+            game.healPlayer?.(25);
+        } }
+    ),
+    relay_false_beacon_spire: statefulInteraction(
+        '[E] REPROGRAM FALSE BEACON',
+        (state) => `FALSE BEACON SPIRE: ${state === 'working' ? 'SWARM LURE ACTIVE' : 'TRANSMISSION QUIET'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'terminal_beep' }
+    ),
+
+    corp_biometric_collar_chute: statefulInteraction(
+        '[E] OVERRIDE COLLAR CHUTE',
+        () => 'BIOMETRIC COLLAR CHUTE: DETONATOR SAFE. UNCLAIMED BOUNTY RECOVERED. +35 SCRAP.',
+        { repeatable: false, nextState: () => 'open', sound: 'vault_open', onUse: (game) => game.addScrap?.(35) }
+    ),
+    crawler_signal_antenna_rig: statefulInteraction(
+        '[E] RETUNE SIGNAL RIG',
+        (state) => `SIGNAL ANTENNA RIG: ${state === 'working' ? 'EXPEDITION CHANNELS LOCKED' : 'FREQUENCY FLOATING'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'terminal_beep' }
+    ),
+    evac_manifest_allocation_terminal: statefulInteraction(
+        '[E] SPOOF EVAC MANIFEST',
+        () => 'MANIFEST TERMINAL: EVACUATION POD SEALS REMOTELY OVERRIDDEN. +30 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'terminal_beep', onUse: (game) => game.addScrap?.(30) }
+    ),
+    evac_preflight_fuel_umbilical: statefulInteraction(
+        '[E] VENT FUEL UMBILICAL',
+        () => 'FUEL UMBILICAL: HYDRAZINE PRESSURE BLED OFF. +30 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'power_hum', onUse: (game) => game.addScrap?.(30) }
+    ),
+    scout_tracking_beacon_core: statefulInteraction(
+        '[E] DOWNLOAD BEACON TELEMETRY',
+        () => 'TRACKING BEACON: FALLEN SCOUT SUPPLY VECTOR LOGGED. +25 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'terminal_beep', onUse: (game) => game.addScrap?.(25) }
+    ),
+    sector_zero_bore_drillhead: statefulInteraction(
+        '[E] ENGAGE BORE DRILLHEAD',
+        (state) => `BORE DRILLHEAD: ${state === 'working' ? 'CARBIDE CUTTERS ENGAGED' : 'HYDRAULIC CLAMP ENGAGED'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'crane_motor' }
+    ),
+
     life_ribcage_rescue_cabinet: mechanismInteraction('[E] WORK RESCUE CABINET', 'RESCUE CABINET: RIB DOOR UNLATCHED.', { sound: 'flesh_seal' }),
     life_confessional: mechanismInteraction('[E] WORK CONFESSIONAL DOORS', 'CONFESSIONAL: THE BOOTH DOORS SWING.', { sound: 'vault_open' }),
     life_seismic_drill: mechanismInteraction('[E] RUN SEISMIC DRILL', 'SEISMIC DRILL: AUGER ENGAGED.', { sound: 'crane_motor' }),

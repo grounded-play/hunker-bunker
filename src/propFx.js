@@ -246,6 +246,29 @@ const AMBIENT_PROFILES = {
     ind_biomass_grinder: poweredProfile({ glowAt: [0.5, 0.48, 0.58], sparkAt: [0.56, 0.63, 0.55], color: 0xff8a2b, radius: 0.18, pulse: 0.1, intensity: 0.75, distance: 2.8, sparks: true, sparkCount: 6 }),
     crash_cockpit_canopy: smoulderProfile({ at: [0.5, 0.72, 0.5], glowAt: [0.52, 0.34, 0.55], count: 5, intensity: 0.55, distance: 2.5 }),
 
+    // Pass 2 world-story mature models (19 models)
+    bay_c_pod_312_rupture: coldProfile({ at: [0.5, 0.75, 0.52], glowAt: [0.5, 0.88, 0.52] }),
+    chen_sealed_confession_console: poweredProfile({ glowAt: [0.5, 0.72, 0.58], color: 0xffa834, radius: 0.22, pulse: 0.12, intensity: 0.75, distance: 2.6 }),
+    decon_exosuit_scrubber_station: profile({ maxDistance: 22, effects: [atBounds('glow', [0.5, 0.92, 0.52], { color: 0xd8f8ff, radius: 0.25, pulse: 0.04 }), atBounds('steam', [0.5, 0.75, 0.52], { color: 0xe0f7fa, count: 10, height: 1.2, radius: 0.35 })], light: { bounds: [0.5, 0.92, 0.52], color: 0xd8f8ff, intensity: 1.25, distance: 3.8, decay: 2 } }),
+    engineer_wave_relay_dynamo: poweredProfile({ glowAt: [0.5, 0.55, 0.5], sparkAt: [0.5, 0.65, 0.5], color: 0x38bdf8, radius: 0.25, pulse: 0.22, intensity: 1.1, distance: 3.5, sparks: true, sparkCount: 8 }),
+    evac_four_seat_cockpit_module: smoulderProfile({ at: [0.5, 0.72, 0.5], glowAt: [0.5, 0.58, 0.55], count: 6, intensity: 0.8, distance: 3.0 }),
+    tank_orbital_siege_cannon: profile({ maxDistance: 24, effects: [atBounds('glow', [0.5, 0.78, 0.65], { color: 0xff4433, radius: 0.24, pulse: 0.15 }), atBounds('steam', [0.5, 0.65, 0.5], { color: 0x94a3b8, count: 7, height: 0.8, radius: 0.3 })], light: { bounds: [0.5, 0.78, 0.65], color: 0xff4433, intensity: 1.35, distance: 4.2, decay: 2 } }),
+
+    queen_royal_brood_throne: organicProfile({ glowAt: [0.5, 0.75, 0.5], sporeAt: [0.5, 0.82, 0.5], color: 0xa855f7, sporeColor: 0xd8b4fe, radius: 0.45, pulse: 0.12, motion: 0.02, lit: true, intensity: 1.4, distance: 4.0 }),
+    carapace_sentry_chrysalis: organicProfile({ glowAt: [0.5, 0.65, 0.5], color: 0xa3e635, radius: 0.28, pulse: 0.18, motion: 0.015, lit: true, intensity: 0.8, distance: 2.8 }),
+    royal_egg_clutch_caul: organicProfile({ glowAt: [0.5, 0.42, 0.5], color: 0xf59e0b, radius: 0.32, pulse: 0.14, spores: false, motion: 0.01, lit: true, intensity: 0.65, distance: 2.2 }),
+    vass_acoustic_resonator_tank: liquidProfile({ surfaceAt: [0.5, 0.75, 0.5], bubblesAt: [0.5, 0.45, 0.5], color: 0x06b6d4, bubbleColor: 0x67e8f9, count: 12, intensity: 1.05, distance: 3.2 }),
+    vass_hybrid_embryo_incubator: liquidProfile({ surfaceAt: [0.5, 0.72, 0.5], bubblesAt: [0.5, 0.4, 0.5], color: 0x84cc16, bubbleColor: 0xbef264, count: 12, intensity: 0.95, distance: 3.0 }),
+    suture_mercy_cocoon_canopy: liquidProfile({ surfaceAt: [0.5, 0.7, 0.5], bubblesAt: [0.5, 0.4, 0.5], color: 0x2dd4bf, bubbleColor: 0x99f6e4, count: 8, intensity: 0.85, distance: 2.8 }),
+    relay_false_beacon_spire: lampProfile({ glowAt: [0.5, 0.96, 0.5], color: 0xfbbf24, radius: 0.3, pulse: 0.4, intensity: 1.5, distance: 5.0 }),
+
+    corp_biometric_collar_chute: poweredProfile({ glowAt: [0.5, 0.78, 0.54], sparkAt: [0.5, 0.82, 0.54], color: 0xef4444, radius: 0.2, pulse: 0.25, intensity: 0.85, distance: 2.6, sparks: true, sparkCount: 5 }),
+    crawler_signal_antenna_rig: lampProfile({ glowAt: [0.5, 0.98, 0.5], color: 0xff3333, radius: 0.22, pulse: 0.5, intensity: 1.3, distance: 4.5 }),
+    evac_manifest_allocation_terminal: poweredProfile({ glowAt: [0.5, 0.74, 0.56], color: 0x4ade80, radius: 0.2, pulse: 0.15, intensity: 0.75, distance: 2.4 }),
+    evac_preflight_fuel_umbilical: profile({ maxDistance: 20, effects: [atBounds('glow', [0.5, 0.65, 0.5], { color: 0xfacc15, radius: 0.18, pulse: 0.12 }), atBounds('steam', [0.5, 0.72, 0.5], { color: 0xfef08a, count: 6, height: 0.5, radius: 0.2 })], light: { bounds: [0.5, 0.65, 0.5], color: 0xfacc15, intensity: 0.9, distance: 2.8, decay: 2 } }),
+    scout_tracking_beacon_core: lampProfile({ glowAt: [0.5, 0.62, 0.5], color: 0x60a5fa, radius: 0.18, pulse: 0.45, intensity: 0.9, distance: 3.0 }),
+    sector_zero_bore_drillhead: profile({ maxDistance: 22, effects: [atBounds('glow', [0.5, 0.72, 0.58], { color: 0xffedd5, radius: 0.25, pulse: 0.05 }), atBounds('smoke', [0.5, 0.85, 0.5], { color: 0x52525b, count: 7, height: 0.7, radius: 0.25 })], light: { bounds: [0.5, 0.72, 0.58], color: 0xffedd5, intensity: 1.3, distance: 3.8, decay: 2 } }),
+
     ...profilesFor([
         'life_galley_hotplate', 'life_barrel_heater', 'life_warmth_hearth',
         'life_pheromone_censer'
