@@ -1940,6 +1940,101 @@ html[data-hud-layout="dock"] #game-viewport #ui .hud-console :is(
   }
 }
 
+/* Pickup telemetry: four discrete, color-coded resource sets. Keep the
+   compact horizontal footprint, but give each glyph and tabular count enough
+   visual weight and spacing to read instantly on Deck. */
+html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui .hud-console__suit-slot {
+  grid-template-columns: minmax(0, 1.12fr) minmax(180px, .88fr) !important;
+}
+
+html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui .hud-console__suit-slot #pickup-counter-panel {
+  display: grid !important;
+  grid-template-columns: repeat(4, max-content) !important;
+  align-items: center !important;
+  justify-content: space-evenly !important;
+  column-gap: clamp(8px, .7vw, 15px) !important;
+  padding: 5px clamp(8px, calc(10 * var(--u)), 14px) !important;
+}
+
+html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui .hud-console__suit-slot #pickup-counter-panel > .pickup-counter-panel__row:not(
+  .pickup-counter-panel__row--total
+) {
+  display: grid !important;
+  grid-template-columns: auto minmax(1.4ch, auto) !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: clamp(4px, calc(5 * var(--u)), 7px) !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  white-space: nowrap !important;
+}
+
+html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui .hud-console__suit-slot #pickup-counter-panel .pickup-counter-panel__label {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: max(17px, calc(20 * var(--u))) !important;
+}
+
+html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui .hud-console__suit-slot #pickup-counter-panel .pickup-counter-panel__icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 1.15em !important;
+  margin: 0 !important;
+  font-size: max(16px, calc(19 * var(--u))) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui .hud-console__suit-slot #pickup-counter-panel .pickup-counter-panel__row > span[id^="pickup-count-"] {
+  min-width: 1.4ch !important;
+  font-family: 'Space Mono', monospace !important;
+  font-size: max(15px, calc(18 * var(--u))) !important;
+  font-weight: 900 !important;
+  font-variant-numeric: tabular-nums !important;
+  letter-spacing: .04em !important;
+  line-height: 1 !important;
+  text-align: left !important;
+  color: #f4f7f8 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .9) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui #pickup-counter-panel .pickup-counter-panel__row:has(#pickup-count-health) .pickup-counter-panel__icon {
+  color: #5de08b !important;
+  text-shadow: 0 0 8px rgba(93, 224, 139, .5) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui #pickup-counter-panel .pickup-counter-panel__row:has(#pickup-count-weapon) .pickup-counter-panel__icon {
+  color: #58c9ff !important;
+  text-shadow: 0 0 8px rgba(88, 201, 255, .5) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui #pickup-counter-panel .pickup-counter-panel__row:has(#pickup-count-coin) .pickup-counter-panel__icon {
+  color: #ffd15c !important;
+  text-shadow: 0 0 8px rgba(255, 209, 92, .5) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui #pickup-counter-panel .pickup-counter-panel__row:has(#pickup-count-shells) .pickup-counter-panel__icon {
+  color: #d998ff !important;
+  text-shadow: 0 0 8px rgba(217, 152, 255, .5) !important;
+}
+
+@media (max-width: 1350px) {
+  html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui .hud-console__suit-slot #pickup-counter-panel {
+    column-gap: 8px !important;
+    padding-inline: 7px !important;
+  }
+
+  html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui .hud-console__suit-slot #pickup-counter-panel .pickup-counter-panel__icon {
+    font-size: 16px !important;
+  }
+
+  html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui .hud-console__suit-slot #pickup-counter-panel .pickup-counter-panel__row > span[id^="pickup-count-"] {
+    font-size: 16px !important;
+  }
+}
+
 /* Final collision guards are intentionally last: older painted-housing rules
    also use !important and otherwise reintroduce the Deck ammo/loot overlap. */
 html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui .hud-console__suit-slot #weapon-status-panel {
