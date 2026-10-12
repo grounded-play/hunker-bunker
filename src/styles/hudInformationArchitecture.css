@@ -1497,7 +1497,7 @@ html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays :is(
    The class paintings are decoration, not layout masks: every operator now
    uses the same instrument geometry and the live content sits above the art. */
 html[data-hud-layout="dock"] #game-viewport {
-  --hud-console-h: clamp(160px, 18.5vh, 210px);
+  --hud-console-h: clamp(160px, calc(196 * var(--u)), 392px);
 }
 
 html[data-hud-layout="dock"] #game-viewport #ui .hud-console {
@@ -1977,4 +1977,102 @@ html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui .hud-consol
 html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot #ship-status-panel .ship-status-panel__title {
   display: inline !important;
   flex: 0 0 auto !important;
+}
+
+/* Hero-select frame language. The former per-class overlays used incompatible
+   aperture maps, which produced stray cyan/orange bars and frames that missed
+   their live controls. A single vector rail now shares the console's grid. */
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console {
+  grid-template-columns: minmax(0, 30fr) minmax(0, 38fr) minmax(0, 32fr) !important;
+  gap: .625vw !important;
+  padding: calc(var(--hud-console-h) * .057142) .625vw !important;
+  background: linear-gradient(180deg, rgba(10, 13, 15, .96), rgba(2, 4, 6, .99));
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__glass {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .025), transparent 18%),
+    linear-gradient(180deg, rgba(9, 13, 16, .97), rgba(2, 4, 6, .995)) !important;
+  border-top: 0 !important;
+  box-shadow: 0 -5px 22px rgba(0, 0, 0, .82) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__frame {
+  inset: 0 !important;
+  z-index: 30 !important;
+  opacity: 1 !important;
+  background: url('/ui/hud/unified-console-frame.svg') center / 100% 100% no-repeat !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__wear {
+  z-index: 31 !important;
+  opacity: .08 !important;
+  background: repeating-linear-gradient(104deg, transparent 0 42px, rgba(255,255,255,.055) 43px, transparent 44px) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui :is(
+  .hud-console__map-slot,
+  .hud-console__suit-slot,
+  .hud-console__mission-slot
+) {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: rgba(3, 9, 13, .78) !important;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, .62) !important;
+}
+
+/* Retire all class-specific glass/cutout artwork. Class identity remains in
+   typography and ability color, while the physical console stays aligned. */
+html[data-hud-layout="dock"] #game-viewport #ui :is(
+  .hud-console__map-slot,
+  .hud-console__suit-slot,
+  .hud-console__mission-slot
+)::before,
+html[data-hud-layout="dock"] #game-viewport #ui :is(
+  .hud-console__map-slot,
+  .hud-console__suit-slot,
+  .hud-console__mission-slot
+)::after {
+  display: none !important;
+  content: none !important;
+  background-image: none !important;
+}
+
+/* Keep the live modules visually related to the hero-select telemetry cards:
+   neutral glass, one quiet hairline, and color reserved for actual state. */
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console :is(
+  .level-indicator,
+  #desktop-compass,
+  #vitals-panel,
+  #ship-status-panel,
+  #weapon-status-panel,
+  #pickup-counter-panel,
+  #objective-drawer .objective-drawer__toggle,
+  #class-ability-panel,
+  #radar-scan-panel,
+  #dash-cooldown-panel,
+  #melee-cooldown-panel
+) {
+  background: linear-gradient(180deg, rgba(12, 18, 21, .86), rgba(3, 8, 11, .9)) !important;
+  border-color: rgba(157, 154, 143, .24) !important;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, .34) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console :is(
+  #class-ability-panel,
+  #radar-scan-panel,
+  #dash-cooldown-panel,
+  #melee-cooldown-panel
+) .class-ability-panel__bar-track {
+  background: rgba(255, 255, 255, .1) !important;
+  border: 1px solid rgba(255, 255, 255, .08) !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 1350px) {
+  html[data-hud-layout="dock"] #game-viewport #ui .hud-console {
+    grid-template-columns: minmax(0, 30fr) minmax(0, 38fr) minmax(0, 32fr) !important;
+    gap: .625vw !important;
+    padding: calc(var(--hud-console-h) * .057142) .625vw !important;
+  }
 }

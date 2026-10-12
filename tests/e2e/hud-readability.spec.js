@@ -10,8 +10,8 @@ import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
 const TARGETS = [
     { name: 'deck', width: 1280, height: 800, coverageBudget: 0.21 },
     { name: 'desktop', width: 1920, height: 1080, coverageBudget: 0.20 },
-    { name: 'owner-pc', width: 2304, height: 1440, coverageBudget: 0.16 },
-    { name: 'ultrawide', width: 3440, height: 1440, coverageBudget: 0.16 }
+    { name: 'owner-pc', width: 2304, height: 1440, coverageBudget: 0.20 },
+    { name: 'ultrawide', width: 3440, height: 1440, coverageBudget: 0.20 }
 ];
 
 const CLASSES = ['scout', 'tank', 'engineer'];

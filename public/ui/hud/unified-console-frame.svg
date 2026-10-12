@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 210" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="rail" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#343638"/>
+      <stop offset="0.22" stop-color="#16191b"/>
+      <stop offset="0.72" stop-color="#090b0d"/>
+      <stop offset="1" stop-color="#25282a"/>
+    </linearGradient>
+    <linearGradient id="bevel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#817968"/>
+      <stop offset="0.12" stop-color="#393a37"/>
+      <stop offset="0.62" stop-color="#111416"/>
+      <stop offset="1" stop-color="#615b50"/>
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-30%" width="110%" height="160%">
+      <feDropShadow dx="0" dy="-3" stdDeviation="5" flood-color="#000" flood-opacity="0.82"/>
+    </filter>
+  </defs>
+
+  <!-- One frame, three windows. The openings follow the same 30/38/32 grid
+       as the live console so artwork can never drift away from the controls. -->
+  <path fill="url(#rail)" fill-rule="evenodd" filter="url(#shadow)"
+        d="M0 0H1920V210H0Z
+           M24 12H562L574 24V186L562 198H24L12 186V24Z
+           M598 12H1286L1298 24V186L1286 198H598L586 186V24Z
+           M1322 12H1896L1908 24V186L1896 198H1322L1310 186V24Z"/>
+
+  <!-- Warm worn-metal bevels echo the hero-select frame without obscuring data. -->
+  <path d="M24 12H562L574 24V186L562 198H24L12 186V24Z
+           M598 12H1286L1298 24V186L1286 198H598L586 186V24Z
+           M1322 12H1896L1908 24V186L1896 198H1322L1310 186V24Z"
+        fill="none" stroke="url(#bevel)" stroke-width="6"/>
+  <path d="M27 18H559L568 27V183L559 192H27L18 183V27Z
+           M601 18H1283L1292 27V183L1283 192H601L592 183V27Z
+           M1325 18H1893L1902 27V183L1893 192H1325L1316 183V27Z"
+        fill="none" stroke="#080a0b" stroke-width="2" opacity="0.95"/>
+
+  <!-- Structural spine details. -->
+  <path d="M0 7H1920M0 203H1920" stroke="#777062" stroke-width="2" opacity="0.55"/>
+  <path d="M579 0V210M1304 0V210" stroke="#050607" stroke-width="5"/>
+  <path d="M581 0V210M1306 0V210" stroke="#4a4740" stroke-width="2" opacity="0.72"/>
+
+  <!-- Small status lamps replace the previous full-height cyan/orange bars. -->
+  <g fill="#d98924">
+    <rect x="40" y="5" width="28" height="3" rx="1.5"/>
+    <rect x="616" y="5" width="28" height="3" rx="1.5"/>
+    <rect x="1338" y="5" width="28" height="3" rx="1.5"/>
+    <rect x="1852" y="202" width="28" height="3" rx="1.5"/>
+  </g>
+  <g fill="#08090a" stroke="#646056" stroke-width="1">
+    <circle cx="20" cy="16" r="4"/><circle cx="570" cy="194" r="4"/>
+    <circle cx="594" cy="16" r="4"/><circle cx="1290" cy="194" r="4"/>
+    <circle cx="1318" cy="16" r="4"/><circle cx="1900" cy="194" r="4"/>
+  </g>
+</svg>
