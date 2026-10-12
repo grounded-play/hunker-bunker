@@ -175,7 +175,7 @@ export function initPlayerChatUI({ chat = playerChat, onBoundaryChange = () => {
     document.body.append(feed);
     const feedTimers = new Set();
     function showFeedLine(message) {
-        if (chat.visible || !notifications) return;
+        if (!chat.roomCode || chat.visible || !notifications) return;
         const line = element('div', 'player-chat-feed-line');
         line.append(element('span', 'player-chat-feed-name', message.senderName), element('span', 'player-chat-feed-text', message.text));
         feed.append(line);
@@ -191,6 +191,7 @@ export function initPlayerChatUI({ chat = playerChat, onBoundaryChange = () => {
     const unsubscribeFeed = chat.onMessage(showFeedLine);
 
     function open(event) {
+        if (!chat.roomCode) return;
         invoker = event?.currentTarget ?? document.activeElement;
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
@@ -203,13 +204,13 @@ export function initPlayerChatUI({ chat = playerChat, onBoundaryChange = () => {
         log.scrollTop = log.scrollHeight;
     }
 
-    function close() {
+    function close({ restoreFocus = true } = {}) {
         modal.classList.add('hidden');
         modal.setAttribute('aria-hidden', 'true');
         chat.setVisible(false);
         window.game?.clearGameplayInputState?.();
         onBoundaryChange();
-        if (invoker?.isConnected) invoker.focus();
+        if (restoreFocus && invoker?.isConnected) invoker.focus();
     }
 
     async function submit() {
@@ -261,6 +262,38 @@ export function initPlayerChatUI({ chat = playerChat, onBoundaryChange = () => {
         }
     }
 
+    function renderAvailability() {
+        // roomCode persists across socket reconnects, so it is the multiplayer
+        // session authority. `ready` only controls whether sending is enabled.
+        const available = Boolean(chat.roomCode);
+        if (document.documentElement?.dataset) {
+            document.documentElement.dataset.multiplayerActive = String(available);
+        }
+        const liveButtons = document.querySelectorAll('[data-player-chat-open]');
+        for (const entry of liveButtons) {
+            entry.classList.toggle('player-chat-trigger--unavailable', !available);
+            entry.setAttribute('aria-hidden', String(!available));
+            if (available) {
+                entry.removeAttribute('inert');
+                if (typeof entry.style?.removeProperty === 'function') entry.style.removeProperty('display');
+                else if (entry.style) entry.style.display = '';
+            } else {
+                entry.setAttribute('inert', '');
+                if (typeof entry.style?.setProperty === 'function') entry.style.setProperty('display', 'none', 'important');
+                else if (entry.style) entry.style.display = 'none';
+            }
+        }
+        if (!available) {
+            modal.classList.add('hidden');
+            modal.setAttribute('aria-hidden', 'true');
+            feed.replaceChildren();
+            invoker = null;
+            chat.visible = false;
+            chat.unread = 0;
+        }
+        return available;
+    }
+
     function renderMessages() {
         const focused = document.activeElement?.dataset.chatMessage;
         const oldScroll = log.scrollTop;
@@ -290,6 +323,7 @@ export function initPlayerChatUI({ chat = playerChat, onBoundaryChange = () => {
     }
 
     function render() {
+        const available = renderAvailability();
         if (chat.roomCode !== lastRoom) {
             composer.value = '';
             selectedId = null;
@@ -300,10 +334,10 @@ export function initPlayerChatUI({ chat = playerChat, onBoundaryChange = () => {
         composer.placeholder = tr('placeholder');
         log.setAttribute('aria-label', tr('history'));
         reason.setAttribute('aria-label', tr('reportReason'));
-        composer.disabled = !chat.ready;
+        composer.disabled = !available || !chat.ready;
         composer.readOnly = chat.sending;
-        send.disabled = !chat.ready || chat.sending;
-        for (const entry of quickButtons) entry.disabled = !chat.ready || chat.sending;
+        send.disabled = !available || !chat.ready || chat.sending;
+        for (const entry of quickButtons) entry.disabled = !available || !chat.ready || chat.sending;
         const filterError = ['filter_unavailable', 'unsupported-script', 'unsupported-control', 'invalid-unicode'].includes(chat.error);
         status.textContent = !chat.ready ? tr('disconnected') : chat.sending ? tr('sending')
             : chat.error === 'rate_limited' ? tr('rateLimited')

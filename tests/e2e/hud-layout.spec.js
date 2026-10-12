@@ -85,115 +85,108 @@ test.describe('HUD layout system and lower dock spec', () => {
             y1: 1080 * 0.69
         };
 
-        // The band: the three painted class housings share one bottom edge, sit
-        // inside the stage and below the keep-out, and never overlap; every live
-        // element sits inside its housing; the prompt lane sits above the band.
-        const band = await page.evaluate(() => {
-            const r = (el) => { const b = el.getBoundingClientRect(); return { x: b.x, y: b.y, r: b.right, bottom: b.bottom, w: b.width, h: b.height }; };
-            const housings = ['map', 'status', 'arms'].map((p) => ({ id: p, ...r(document.querySelector(`.dock-housing--${p}`)) }));
-            const members = { map: ['desktop-compass'], status: ['vitals-panel', 'pickup-counter-panel'], arms: ['weapon-status-panel', 'class-ability-panel', 'radar-scan-panel'] };
+        const stage = await page.locator('#game-viewport').boundingBox();
+        expect(stage).not.toBeNull();
+
+        // One unified lower console housing
+        const consoleData = await page.evaluate(() => {
+            const r = (el) => {
+                if (!el) return null;
+                const b = el.getBoundingClientRect();
+                return { x: b.x, y: b.y, r: b.right, bottom: b.bottom, w: b.width, h: b.height };
+            };
+            const consoleEl = document.getElementById('hud-console');
+            const slots = {
+                map: r(document.querySelector('.hud-console__map-slot')),
+                suit: r(document.querySelector('.hud-console__suit-slot')),
+                mission: r(document.querySelector('.hud-console__mission-slot'))
+            };
+            const members = {
+                map: ['desktop-compass'],
+                suit: ['vitals-panel', 'ship-status-panel', 'pickup-counter-panel', 'weapon-status-panel'],
+                mission: ['objective-drawer', 'class-ability-panel', 'radar-scan-panel']
+            };
             const inside = [];
             for (const [panel, ids] of Object.entries(members)) {
-                for (const id of ids) inside.push({ id, panel, ...r(document.getElementById(id)) });
+                for (const id of ids) {
+                    const el = document.getElementById(id) ?? document.querySelector(`.${id}`);
+                    inside.push({ id, panel, rect: r(el) });
+                }
             }
-            return { housings, inside, cls: document.documentElement.dataset.operatorClass };
+            return {
+                console: r(consoleEl),
+                slots,
+                inside,
+                cls: document.documentElement.dataset.operatorClass
+            };
         });
-        expect(['scout', 'tank', 'engineer']).toContain(band.cls);
-        const stage = await page.locator('#game-viewport').boundingBox();
-        const hs = band.housings;
-        for (const p of hs) {
-            expect(p.w, p.id).toBeGreaterThan(0);
-            expect(Math.abs(p.bottom - hs[0].bottom), p.id).toBeLessThan(1.5);
-            expect(p.y, p.id).toBeGreaterThanOrEqual(keepOut.y1);
-            expect(p.x, p.id).toBeGreaterThanOrEqual(stage.x - 1);
-            expect(p.r, p.id).toBeLessThanOrEqual(stage.x + stage.width + 1);
+
+        expect(['scout', 'tank', 'engineer']).toContain(consoleData.cls);
+        const c = consoleData.console;
+        expect(c).not.toBeNull();
+        expect(c.w).toBeGreaterThan(0);
+        expect(c.h).toBeGreaterThan(0);
+        // Console sits inside the stage and below the keep-out
+        expect(c.y).toBeGreaterThanOrEqual(keepOut.y1);
+        expect(c.x).toBeGreaterThanOrEqual(stage.x - 2);
+        expect(c.r).toBeLessThanOrEqual(stage.x + stage.width + 2);
+
+        // All instruments sit inside the unified console bounds
+        for (const el of consoleData.inside) {
+            expect(el.rect, el.id).not.toBeNull();
+            expect(el.rect.x, el.id).toBeGreaterThanOrEqual(c.x - 2);
+            expect(el.rect.r, el.id).toBeLessThanOrEqual(c.r + 2);
+            expect(el.rect.y, el.id).toBeGreaterThanOrEqual(c.y - 2);
+            expect(el.rect.bottom, el.id).toBeLessThanOrEqual(c.bottom + 2);
         }
-        for (let i = 0; i < hs.length; i += 1) {
-            for (let j = i + 1; j < hs.length; j += 1) {
-                const overlap = Math.min(hs[i].r, hs[j].r) - Math.max(hs[i].x, hs[j].x);
-                expect(overlap, `${hs[i].id} overlaps ${hs[j].id}`).toBeLessThan(1.5);
-            }
-        }
-        for (const el of band.inside) {
-            const h = hs.find((p) => p.id === el.panel);
-            expect(el.x, el.id).toBeGreaterThanOrEqual(h.x - 1);
-            expect(el.r, el.id).toBeLessThanOrEqual(h.r + 1);
-            expect(el.y, el.id).toBeGreaterThanOrEqual(h.y - 1);
-            expect(el.bottom, el.id).toBeLessThanOrEqual(h.bottom + 1);
-        }
+
+        // Prompt lane sits above the console and does not overlap keep-out
         const lane = await page.evaluate(() => {
-            const el = document.getElementById('loop-step-hud');
+            const el = document.getElementById('loop-step-hud') ?? document.querySelector('.hud-mission-stack');
             return el && !el.classList.contains('hidden') ? el.getBoundingClientRect().bottom : null;
         });
-        if (lane !== null) expect(lane).toBeLessThanOrEqual(Math.min(...hs.map((p) => p.y)) + 1);
+        if (lane !== null) expect(lane).toBeLessThanOrEqual(c.y + 1);
 
-        // The gear stays in its fixed slot: the stage's top-right corner. The
-        // stage is 16:10, so at 1920x1080 it is letterboxed inside the window;
-        // measure against #game-viewport, not the window.
-        const stageBox = await page.locator('#game-viewport').boundingBox();
-        const gearBox = await page.locator('.hud-corner-settings').boundingBox();
-        expect(stageBox).not.toBeNull();
+        // The gear is consolidated inside the console's mission slot
+        const gearBox = await page.locator('.hud-console__mission-slot .hud-corner-settings').boundingBox();
         expect(gearBox).not.toBeNull();
-        if (stageBox && gearBox) {
-            expect(stageBox.x + stageBox.width - (gearBox.x + gearBox.width)).toBeLessThan(80);
-            expect(gearBox.y - stageBox.y).toBeLessThan(80);
+        if (gearBox) {
+            expect(gearBox.x).toBeGreaterThanOrEqual(c.x);
+            expect(gearBox.y).toBeGreaterThanOrEqual(c.y);
+            expect(gearBox.y + gearBox.height).toBeLessThanOrEqual(c.bottom + 2);
         }
 
-        // Persistent context uses the lower side wings: readable without
-        // filling the centre-bottom corridor around the operator and prompts.
-        const perimeter = await page.evaluate(() => {
-            const stage = document.getElementById('game-viewport').getBoundingClientRect();
-            const dockTop = Math.min(...[...document.querySelectorAll('.dock-housing')]
-                .filter((element) => element.checkVisibility())
-                .map((element) => element.getBoundingClientRect().top));
-            const relative = (selector) => {
-                const box = document.querySelector(selector).getBoundingClientRect();
-                return {
-                    left: box.left - stage.left,
-                    right: box.right - stage.left,
-                    top: box.top - stage.top,
-                    bottom: box.bottom - stage.top
-                };
-            };
-            return {
-                stage: { width: stage.width, height: stage.height },
-                dockTop: dockTop - stage.top,
-                sector: relative('#ui .level-indicator'),
-                rightRail: relative('.hud-right-rail')
-            };
+        // Overlay rail attached above the console
+        const overlays = await page.evaluate(() => {
+            const ov = document.getElementById('hud-console-overlays');
+            if (!ov) return null;
+            const b = ov.getBoundingClientRect();
+            return { x: b.x, y: b.y, bottom: b.bottom, w: b.width, h: b.height };
         });
-        for (const [name, box] of [['sector', perimeter.sector], ['right rail', perimeter.rightRail]]) {
-            expect(box.top, `${name} starts in lower 40%`).toBeGreaterThanOrEqual(perimeter.stage.height * 0.60);
-            expect(box.bottom, `${name} clears lower dock`).toBeLessThanOrEqual(perimeter.dockTop - 4);
+        if (overlays) {
+            expect(overlays.bottom).toBeLessThanOrEqual(c.y + 1);
         }
-        expect(perimeter.sector.right, 'sector rail clears centre corridor')
-            .toBeLessThanOrEqual(perimeter.stage.width * 0.35);
-        expect(perimeter.rightRail.left, 'objective/radio rail clears centre corridor')
-            .toBeGreaterThanOrEqual(perimeter.stage.width * 0.65);
 
+        await page.screenshot({ path: 'playwright-report/screenshots/hud-console-1080p.png' }).catch(() => {});
+
+        // Steam Deck test
         await page.setViewportSize({ width: 1280, height: 800 });
         await page.waitForTimeout(150);
-        const deckLanes = await page.evaluate(() => {
+        const deckConsole = await page.evaluate(() => {
             const box = (selector) => {
                 const rect = document.querySelector(selector)?.getBoundingClientRect();
-                return rect ? { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom } : null;
+                return rect ? { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width } : null;
             };
-            const overlaps = (a, b) => Boolean(a && b)
-                && a.left < b.right && a.right > b.left
-                && a.top < b.bottom && a.bottom > b.top;
-            const prompt = box('.hud-mission-stack');
-            const sector = box('#ui .level-indicator');
-            const rightRail = box('.hud-right-rail');
+            const cBox = box('#hud-console');
+            const prompt = box('.hud-mission-stack') ?? box('#loop-step-hud');
             return {
-                sectorPromptOverlap: overlaps(sector, prompt),
-                rightPromptOverlap: overlaps(rightRail, prompt),
-                sideGap: prompt && sector && rightRail
-                    ? Math.min(prompt.left - sector.right, rightRail.left - prompt.right)
-                    : null
+                console: cBox,
+                promptOverlapsConsole: prompt && cBox ? (prompt.top < cBox.bottom && prompt.bottom > cBox.top) : false
             };
         });
-        expect(deckLanes.sectorPromptOverlap, 'Deck sector rail clears prompt lane').toBe(false);
-        expect(deckLanes.rightPromptOverlap, 'Deck objective/radio rail clears prompt lane').toBe(false);
-        expect(deckLanes.sideGap, 'Deck preserves a visible gutter around prompt lane').toBeGreaterThanOrEqual(6);
+        expect(deckConsole.console.width).toBeGreaterThan(0);
+        expect(deckConsole.promptOverlapsConsole).toBe(false);
+
+        await page.screenshot({ path: 'playwright-report/screenshots/hud-console-deck-800p.png' }).catch(() => {});
     });
 });

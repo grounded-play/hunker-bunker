@@ -495,3 +495,530 @@ html[data-hud-layout="dock"] #game-viewport #ui .hud-corner-settings .calibrate-
   height: max(44px, calc(44 * var(--u))) !important;
   font-size: max(13px, calc(14 * var(--u))) !important;
 }
+
+/* Sprint 52 unified lower console. Existing instrument nodes are reparented by
+   src/hudConsole.js; these final rules deliberately outrank the historical
+   three-housing and side-rail placement above. */
+.hud-console,
+.hud-console-overlays {
+  display: contents;
+}
+
+html[data-hud-layout="dock"] #game-viewport {
+  --hud-console-h: calc(136 * var(--u));
+  --hud-console-w: min(calc(1560 * var(--u)), calc(100% - 2 * var(--hud-margin)));
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui :is(.dock-glass, .dock-housing) {
+  display: none !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console {
+  position: absolute;
+  left: 50%;
+  right: auto;
+  top: auto;
+  bottom: var(--hud-margin);
+  width: var(--hud-console-w);
+  height: var(--hud-console-h);
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: minmax(0, 30fr) minmax(0, 38fr) minmax(0, 32fr);
+  padding: calc(10 * var(--u)) calc(14 * var(--u));
+  box-sizing: border-box;
+  isolation: isolate;
+  pointer-events: none;
+  z-index: 16820;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__glass,
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__frame,
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__wear {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__glass {
+  z-index: -2;
+  background:
+    linear-gradient(90deg, rgba(0, 210, 255, .05), transparent 30%, transparent 68%, rgba(255, 159, 28, .06)),
+    linear-gradient(180deg, rgba(10, 17, 23, .94), rgba(4, 8, 12, .98));
+  border: calc(1 * var(--u)) solid color-mix(in srgb, var(--hud-primary, #67e3e1) 54%, transparent);
+  border-left-width: calc(3 * var(--u));
+  border-right-color: rgba(255, 159, 28, .48);
+  clip-path: polygon(calc(12 * var(--u)) 0, calc(100% - 12 * var(--u)) 0, 100% calc(12 * var(--u)), 100% 100%, 0 100%, 0 calc(12 * var(--u)));
+  box-shadow: 0 calc(7 * var(--u)) calc(24 * var(--u)) rgba(0, 0, 0, .72);
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__frame {
+  z-index: 4;
+  opacity: .9;
+  background:
+    linear-gradient(90deg, transparent 29.9%, color-mix(in srgb, var(--hud-primary, #67e3e1) 38%, transparent) 30%, transparent 30.15%),
+    linear-gradient(90deg, transparent 67.9%, rgba(255, 159, 28, .34) 68%, transparent 68.15%),
+    linear-gradient(90deg, var(--hud-primary, #67e3e1), rgba(255, 159, 28, .7)) top/calc(100% - 24 * var(--u)) calc(2 * var(--u)) no-repeat;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__wear {
+  z-index: 5;
+  opacity: .16;
+  background: repeating-linear-gradient(104deg, transparent 0 calc(31 * var(--u)), rgba(255,255,255,.08) calc(32 * var(--u)), transparent calc(33 * var(--u)));
+  mix-blend-mode: screen;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui :is(
+  .hud-console__map-slot,
+  .hud-console__suit-slot,
+  .hud-console__mission-slot
+) {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 calc(12 * var(--u));
+  box-sizing: border-box;
+  pointer-events: auto;
+  z-index: 2;
+}
+
+/* Map + place: room name gets the top line, rectangular blueprint below. */
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot {
+  display: grid;
+  grid-template-rows: calc(32 * var(--u)) minmax(0, 1fr);
+  padding-left: calc(6 * var(--u));
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot .level-indicator {
+  position: static !important;
+  width: 100% !important;
+  height: calc(32 * var(--u)) !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: calc(7 * var(--u)) !important;
+  padding: 0 calc(6 * var(--u)) !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: calc(1 * var(--u)) solid rgba(103, 227, 225, .24) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot :is(#level-num, .level-indicator__biome) {
+  font-size: max(11px, calc(13 * var(--u))) !important;
+  white-space: nowrap !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot #level-num {
+  grid-column: 1;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot .level-indicator__biome {
+  display: none !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot .level-indicator__location {
+  grid-column: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #f5fbff !important;
+  font-size: max(14px, calc(18 * var(--u))) !important;
+  font-weight: 900 !important;
+  letter-spacing: .025em !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot #campaign-day-indicator {
+  grid-column: 3;
+  font-size: max(11px, calc(13 * var(--u))) !important;
+  white-space: nowrap;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot :is(
+  .level-indicator__title,
+  .level-indicator__cycle-track,
+  #hud-run-seed,
+  #hud-run-cards,
+  #hud-bounty-chip,
+  #hud-event-chip
+) {
+  display: none !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot #desktop-compass {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: calc(5 * var(--u)) !important;
+  display: block !important;
+  overflow: hidden !important;
+  background: rgba(1, 8, 13, .72) !important;
+  border: 0 !important;
+  border-radius: calc(3 * var(--u)) !important;
+  box-sizing: border-box !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot #hud-blueprint-canvas {
+  position: absolute !important;
+  left: calc(5 * var(--u)) !important;
+  top: calc(5 * var(--u)) !important;
+  width: calc(72% - 8 * var(--u)) !important;
+  height: calc(100% - 10 * var(--u)) !important;
+  max-height: none !important;
+  margin: 0 !important;
+  border: calc(1 * var(--u)) solid rgba(103, 227, 225, .32) !important;
+  border-radius: calc(2 * var(--u)) !important;
+  object-fit: fill !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot .desktop-compass__face {
+  position: absolute !important;
+  inset: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  pointer-events: none;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot .desktop-compass__ring {
+  position: absolute !important;
+  left: 36% !important;
+  top: 50% !important;
+  width: calc(30 * var(--u)) !important;
+  height: calc(30 * var(--u)) !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot .desktop-compass__readout {
+  position: absolute !important;
+  left: 73% !important;
+  right: calc(4 * var(--u)) !important;
+  top: calc(8 * var(--u)) !important;
+  width: auto !important;
+  height: calc(100% - 16 * var(--u)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: calc(7 * var(--u)) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot .desktop-compass__row,
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__map-slot :is(.desktop-compass__label, .desktop-compass__value) {
+  font-size: max(11px, calc(13 * var(--u))) !important;
+  line-height: 1.2 !important;
+}
+
+/* Suit + inventory: two readable rows inside one uninterrupted chassis. */
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot {
+  display: grid;
+  grid-template-columns: minmax(0, 58fr) minmax(0, 42fr);
+  grid-template-rows: 1fr 1fr;
+  gap: calc(5 * var(--u)) calc(10 * var(--u));
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot > :is(
+  #vitals-panel,
+  #ship-status-panel,
+  #pickup-counter-panel,
+  #weapon-status-panel
+) {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: calc(5 * var(--u)) calc(8 * var(--u)) !important;
+  background: rgba(2, 9, 14, .42) !important;
+  border: 0 !important;
+  border-radius: calc(3 * var(--u)) !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot #vitals-panel {
+  grid-column: 1;
+  grid-row: 1;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: calc(7 * var(--u)) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot #vitals-hearts,
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot #vitals-panel .vitals-panel__o2-row,
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot #vitals-cover-row,
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot #vitals-fatigue-row {
+  position: static !important;
+  inset: auto !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot #vitals-panel :is(#vitals-cover-row, #vitals-fatigue-row).hidden,
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot #vitals-cover-row.hidden,
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot #vitals-fatigue-row.hidden {
+  display: none !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot #vitals-hearts {
+  font-size: max(14px, calc(18 * var(--u))) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot #vitals-panel .vitals-panel__o2-row {
+  display: flex !important;
+  font-size: max(12px, calc(15 * var(--u))) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot #vitals-panel .vitals-panel__o2-bar-track {
+  width: auto !important;
+  min-width: calc(70 * var(--u)) !important;
+  height: calc(6 * var(--u)) !important;
+  flex: 1 1 auto !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot #weapon-status-panel {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: calc(8 * var(--u)) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot .weapon-status-panel__title {
+  font-size: max(12px, calc(15 * var(--u))) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot .weapon-status-panel__clip {
+  font-size: max(16px, calc(21 * var(--u))) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot #ship-status-panel {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex !important;
+  align-items: center !important;
+  gap: calc(8 * var(--u)) !important;
+  font-size: max(12px, calc(15 * var(--u))) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot #ship-status-panel .ship-status-panel__track {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  height: calc(6 * var(--u)) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot #pickup-counter-panel {
+  grid-column: 2;
+  grid-row: 2;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  align-items: center !important;
+  gap: calc(4 * var(--u)) !important;
+  font-size: max(11px, calc(13 * var(--u))) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__suit-slot #pickup-counter-panel .pickup-counter-panel__row {
+  display: flex !important;
+  justify-content: center !important;
+  gap: calc(3 * var(--u)) !important;
+  font-size: inherit !important;
+}
+
+/* Mission + action: objective on top, abilities and utilities below. */
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  grid-template-rows: calc(48 * var(--u)) minmax(0, 1fr);
+  gap: calc(6 * var(--u));
+  padding-right: calc(6 * var(--u));
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot #objective-drawer {
+  display: block !important;
+  position: relative !important;
+  inset: auto !important;
+  grid-column: 1 / -1;
+  grid-row: 1;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot #objective-drawer.hidden {
+  display: none !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot .objective-drawer__toggle {
+  height: 100% !important;
+  min-height: 0 !important;
+  padding: calc(7 * var(--u)) calc(9 * var(--u)) !important;
+  background: rgba(2, 9, 14, .46) !important;
+  border: 0 !important;
+  border-left: calc(2 * var(--u)) solid rgba(103, 227, 225, .6) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot .objective-drawer__label {
+  font-size: max(14px, calc(18 * var(--u))) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot > :is(
+  #class-ability-panel,
+  #radar-scan-panel,
+  #dash-cooldown-panel,
+  #melee-cooldown-panel
+) {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: calc(4 * var(--u)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: calc(3 * var(--u)) !important;
+  background: rgba(2, 9, 14, .38) !important;
+  border: 0 !important;
+  border-radius: calc(3 * var(--u)) !important;
+  box-sizing: border-box !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot .class-ability-panel__name {
+  font-size: max(11px, calc(13 * var(--u))) !important;
+  line-height: 1.1 !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot .class-ability-panel__key {
+  display: none !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot .hud-corner-settings {
+  position: static !important;
+  inset: auto !important;
+  grid-column: 5;
+  grid-row: 2;
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: flex-end !important;
+  gap: calc(5 * var(--u)) !important;
+  margin: 0 !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot .hud-corner-settings .calibrate-btn {
+  width: auto !important;
+  min-width: max(40px, calc(42 * var(--u))) !important;
+  height: 100% !important;
+  padding: 0 calc(8 * var(--u)) !important;
+  font-size: max(12px, calc(14 * var(--u))) !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot .hud-corner-settings .calibrate-btn.player-chat-trigger--unavailable {
+  display: none !important;
+}
+
+/* Attached overlay rail: transient information rises from the console rather
+   than occupying independent screen corners. */
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays {
+  position: absolute;
+  left: 50%;
+  right: auto;
+  top: auto;
+  bottom: calc(var(--hud-margin) + var(--hud-console-h) + 8 * var(--u));
+  width: var(--hud-console-w);
+  height: min(calc(180 * var(--u)), 22vh);
+  transform: translateX(-50%);
+  display: block;
+  pointer-events: none;
+  z-index: 16920;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays .hud-mission-stack,
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays #loop-step-hud,
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays #tutorial-prompt {
+  position: absolute !important;
+  left: 30% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: 0 !important;
+  width: 38% !important;
+  max-width: none !important;
+  transform: none !important;
+  box-sizing: border-box !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays .hud-right-rail {
+  position: absolute !important;
+  left: auto !important;
+  right: 0 !important;
+  top: auto !important;
+  bottom: 0 !important;
+  width: 32% !important;
+  max-height: 100% !important;
+  justify-content: flex-end !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays :is(
+  #boss-status-panel,
+  #hazard-status-panel,
+  #queens-ledger-hud
+) {
+  position: absolute !important;
+  left: 20% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: calc(62 * var(--u)) !important;
+  width: 60% !important;
+  transform: none !important;
+  margin: 0 !important;
+}
+
+html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays :is(
+  #expedition-briefing-card,
+  #compound-location-title
+) {
+  position: absolute !important;
+  left: 0 !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: 0 !important;
+  width: 30% !important;
+  transform: none !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 1100px) {
+  html[data-hud-layout="dock"] #game-viewport {
+    --hud-console-h: calc(128 * var(--u));
+  }
+  html[data-hud-layout="dock"] #game-viewport #ui .hud-console {
+    grid-template-columns: minmax(0, 31fr) minmax(0, 39fr) minmax(0, 30fr);
+    padding-inline: calc(8 * var(--u));
+  }
+  html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  }
+  html[data-hud-layout="dock"] #game-viewport #ui .hud-console__mission-slot .hud-corner-settings {
+    grid-column: 4 / 6;
+  }
+  html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays .hud-mission-stack,
+  html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays #loop-step-hud,
+  html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays #tutorial-prompt {
+    left: 31% !important;
+    width: 39% !important;
+  }
+  html[data-hud-layout="dock"] #game-viewport #ui .hud-console-overlays .hud-right-rail { width: 30% !important; }
+}

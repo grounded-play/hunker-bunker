@@ -12510,6 +12510,17 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
     const view = compact ? { zoom: 2.6, panX: 0, panY: 0, debugRevealAll: false } : tacticalMapState;
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
+    // The HUD canvas used to retain its 300x180 backing store while CSS
+    // squeezed it into a tiny circle. Match the rectangular console slot so
+    // map text and geometry are drawn at their actual display size.
+    if (compact && canvas.clientWidth > 0 && canvas.clientHeight > 0) {
+        const nextWidth = Math.max(1, Math.round(canvas.clientWidth));
+        const nextHeight = Math.max(1, Math.round(canvas.clientHeight));
+        if (canvas.width !== nextWidth || canvas.height !== nextHeight) {
+            canvas.width = nextWidth;
+            canvas.height = nextHeight;
+        }
+    }
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -12826,24 +12837,49 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
         ctx.restore();
     }
 
-    // Names of scanned rooms and hallways (src/locationNames.js). Unscanned
-    // places carry no label; the full map only, the minimap stays clean.
-    if (!compact) {
+    // Scanned place names. The HUD map gets a strict label budget and omits
+    // ordinary hallways; the full map uses the same collision pass at larger
+    // type instead of painting every 8px label over its neighbours.
+    {
+        const kindPriority = { crash_site: 0, landmark: 1, room: 2, hall: 3 };
+        const candidates = detailedChunks.flatMap((chunk) => chunk.labels ?? [])
+            .filter((label) => label?.text && (!compact || label.kind !== 'hall'))
+            .map((label) => ({
+                ...label,
+                point: worldToMap(label.x, label.z),
+                distance: Math.hypot(label.x - player.x, label.z - player.z),
+                priority: kindPriority[label.kind] ?? 4
+            }))
+            .filter((label) => label.point.x >= 8 && label.point.x <= width - 8 && label.point.y >= 8 && label.point.y <= height - 8)
+            .sort((a, b) => a.priority - b.priority || a.distance - b.distance);
+        const labelBudget = compact ? 4 : 36;
+        const accepted = [];
         ctx.save();
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = 'rgba(2, 6, 11, 0.85)';
-        for (const chunk of detailedChunks) {
-            for (const label of chunk.labels ?? []) {
-                const point = worldToMap(label.x, label.z);
-                if (point.x < -80 || point.x > width + 80 || point.y < -20 || point.y > height + 20) continue;
-                const isHighlight = label.kind === 'room' || label.kind === 'crash_site' || label.kind === 'landmark';
-                ctx.font = isHighlight ? 'bold 9px Space Mono, monospace' : '8px Space Mono, monospace';
-                ctx.fillStyle = label.kind === 'crash_site' ? 'rgba(255, 230, 110, 0.96)' : isHighlight ? 'rgba(255, 214, 140, 0.92)' : 'rgba(150, 215, 235, 0.7)';
-                ctx.strokeText(label.text, point.x, point.y);
-                ctx.fillText(label.text, point.x, point.y);
-            }
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = 'rgba(2, 6, 11, 0.92)';
+        for (const label of candidates) {
+            if (accepted.length >= labelBudget) break;
+            const isHighlight = label.kind === 'room' || label.kind === 'crash_site' || label.kind === 'landmark';
+            const fontSize = compact ? (isHighlight ? 12 : 11) : (isHighlight ? 15 : 13);
+            ctx.font = `${isHighlight ? 'bold ' : ''}${fontSize}px Space Mono, monospace`;
+            const textWidth = ctx.measureText(label.text).width;
+            const rect = {
+                left: label.point.x - textWidth / 2 - 4,
+                right: label.point.x + textWidth / 2 + 4,
+                top: label.point.y - fontSize / 2 - 3,
+                bottom: label.point.y + fontSize / 2 + 3
+            };
+            if (rect.left < 4 || rect.right > width - 4 || rect.top < 4 || rect.bottom > height - 4) continue;
+            if (accepted.some((other) => rect.left < other.right && rect.right > other.left && rect.top < other.bottom && rect.bottom > other.top)) continue;
+            accepted.push(rect);
+            ctx.lineWidth = compact ? 3 : 4;
+            ctx.fillStyle = label.kind === 'crash_site'
+                ? 'rgba(255, 230, 110, 0.98)'
+                : isHighlight ? 'rgba(255, 222, 158, 0.96)' : 'rgba(170, 225, 240, 0.82)';
+            ctx.strokeText(label.text, label.point.x, label.point.y);
+            ctx.fillText(label.text, label.point.x, label.point.y);
         }
         ctx.restore();
     }
@@ -15005,6 +15041,10 @@ const coverPct = document.getElementById('vitals-cover-pct');
 
 function renderCoverBar(humanity = 100, stage = 'latent') {
     if (!coverRow) return;
+    if (stage === 'latent' && humanity >= 100) {
+        coverRow.classList.add('hidden');
+        return;
+    }
     coverRow.classList.remove('hidden');
     const pct = Math.max(0, Math.min(100, Math.round(humanity)));
     if (coverBar) {

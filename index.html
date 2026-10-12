@@ -1381,6 +1381,18 @@
       <div class="dock-housing dock-housing--map" aria-hidden="true"></div>
       <div class="dock-housing dock-housing--status" aria-hidden="true"></div>
       <div class="dock-housing dock-housing--arms" aria-hidden="true"></div>
+      <!-- Unified lower console. src/hudConsole.js moves the existing live HUD
+           nodes into these slots before the information controller starts, so
+           gameplay systems retain their established IDs and update ownership. -->
+      <section id="hud-console" class="hud-console">
+        <div class="hud-console__glass" aria-hidden="true"></div>
+        <div class="hud-console__map-slot"></div>
+        <div class="hud-console__suit-slot"></div>
+        <div class="hud-console__mission-slot"></div>
+        <div class="hud-console__frame" aria-hidden="true"></div>
+        <div class="hud-console__wear" aria-hidden="true"></div>
+      </section>
+      <div id="hud-console-overlays" class="hud-console-overlays"></div>
       <div class="header-bar hud-header">
         <div class="hud-header__center">
           <div id="weapon-status-panel" class="weapon-status-panel" aria-live="polite">
