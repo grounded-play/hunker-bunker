@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { performSteamRecipeExchange, planSteamRecipe } from './steamRecipeExchange.js';
+import { performSteamRecipeExchange, planSteamRecipe, recipeExchangeJournalKey } from './steamRecipeExchange.js';
 
 const input = { steamId: '76561198000000000', appId: 4957040, key: 'test-key', requestId: 'craft-1', recipeId: 2200, materials: ['1', '2'] };
 const rows = [{ itemid: '1', itemdefid: 1000, quantity: 20 }, { itemid: '2', itemdefid: 1100, quantity: 5 }];
@@ -232,5 +232,68 @@ describe('cache-open duplicate shards', () => {
         const result = await performSteamRecipeExchange({ ...cacheInput, ...f });
         expect(result).toMatchObject({ status: 200, body: { ok: true, duplicateBonus: { itemdefid: 4159, quantity: 40, ok: false } } });
         expect(result.body.granted.map((item) => item.itemdefid)).toEqual([2100]);
+    });
+
+    it('retries a failed shard grant on the same cache-open replay without rerolling', async () => {
+        const grantImpl = vi.fn()
+            .mockResolvedValueOnce({ ok: false, reason: 'steam_api_error' })
+            .mockResolvedValueOnce({ ok: true, granted: [{ itemId: 'shards', itemdefid: 4159, quantity: 40 }] });
+        const f = cacheFixture({
+            owned: [{ itemid: '13', itemdefid: 2100, quantity: 1 }],
+            rolled: { itemid: '14', itemdefid: 2100, quantity: 1 },
+            grantImpl
+        });
+
+        const failed = await performSteamRecipeExchange({ ...cacheInput, ...f });
+        const recovered = await performSteamRecipeExchange({ ...cacheInput, ...f });
+
+        expect(failed.body.duplicateBonus.ok).toBe(false);
+        expect(recovered.body.duplicateBonus).toEqual({ itemdefid: 4159, quantity: 40, ok: true });
+        expect(recovered.body.granted.map((item) => item.itemdefid)).toEqual([2100, 4159]);
+        expect(f.fetchImpl).toHaveBeenCalledTimes(2);
+        expect(grantImpl).toHaveBeenCalledTimes(2);
+        expect(grantImpl.mock.calls[1][0].requestId).toBe(grantImpl.mock.calls[0][0].requestId);
+    });
+
+    it('sweeps a failed shard grant before the player starts a later exchange', async () => {
+        const grantImpl = vi.fn()
+            .mockResolvedValueOnce({ ok: false, reason: 'steam_api_error' })
+            .mockResolvedValueOnce({ ok: true, granted: [{ itemId: 'recovered-shards', itemdefid: 4159, quantity: 40 }] })
+            .mockResolvedValueOnce({ ok: true, granted: [{ itemId: 'new-shards', itemdefid: 4159, quantity: 40 }] });
+        const f = cacheFixture({
+            owned: [{ itemid: '13', itemdefid: 2100, quantity: 1 }],
+            rolled: { itemid: '14', itemdefid: 2100, quantity: 1 },
+            grantImpl
+        });
+        await performSteamRecipeExchange({ ...cacheInput, ...f });
+
+        const later = await performSteamRecipeExchange({
+            ...cacheInput,
+            ...f,
+            requestId: 'open-2'
+        });
+
+        expect(later.status).toBe(200);
+        expect(grantImpl).toHaveBeenCalledTimes(3);
+        const originalKey = recipeExchangeJournalKey({ appId: input.appId, steamId: input.steamId, requestId: cacheInput.requestId });
+        const recovered = f.read(originalKey);
+        expect(recovered.body.duplicateBonus).toEqual({ itemdefid: 4159, quantity: 40, ok: true });
+        expect(grantImpl.mock.calls[1][0].requestId).toBe(grantImpl.mock.calls[0][0].requestId);
+        expect(grantImpl.mock.calls[2][0].requestId).not.toBe(grantImpl.mock.calls[0][0].requestId);
+    });
+});
+
+// Sprint 51: boss kills grant the non-marketable earned key 4154, and the
+// cache generator (4002) accepts either key.
+describe('either key opens a cache', () => {
+    it('plans a cache open with the earned key', () => {
+        expect(planSteamRecipe(4100, ['a', 'b'], [{ itemId: 'a', itemdefid: 4000, quantity: 1 }, { itemId: 'b', itemdefid: 4154, quantity: 2 }]))
+            .toMatchObject({ ok: true, outputItemdefid: 4002, consumed: [{ itemdefid: 4000, quantity: 1 }, { itemdefid: 4154, quantity: 1 }] });
+    });
+
+    it('refuses two keys at once', () => {
+        expect(planSteamRecipe(4100, ['a', 'b', 'c'], [
+            { itemId: 'a', itemdefid: 4000, quantity: 1 }, { itemId: 'b', itemdefid: 4154, quantity: 1 }, { itemId: 'c', itemdefid: 4001, quantity: 1 }
+        ])).toMatchObject({ ok: false });
     });
 });

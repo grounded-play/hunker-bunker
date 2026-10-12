@@ -255,7 +255,8 @@
       "placeholder_agent": "AGENT",
       "commentary_list": "ENTWICKLERKOMMENTAR",
       "commentary_read_all": "ALLE LESEN",
-      "content_guide": "INHALTSLEITFADEN (REIFE THEMEN)"
+      "content_guide": "INHALTSLEITFADEN (REIFE THEMEN)",
+      "graphics": "GRAFIK"
     },
     "action": {
       "open": "ÖFFNEN",
@@ -1236,7 +1237,20 @@
       "purchase_awaiting_sandbox": "Beta-Testkauf: Bestätige ihn im Steam-Overlay. Steam-Sandbox, keine Abbuchung.",
       "purchase_declined": "Kauf in Steam abgebrochen. Es wurde nichts abgebucht.",
       "purchase_complete": "+{count} Cache-Schlüssel zu deinem Inventar hinzugefügt.",
-      "purchase_pending": "Steam hat die Zahlung noch nicht bestätigt. Deine Schlüssel kommen beim nächsten Öffnen des Shops an."
+      "purchase_pending": "Steam hat die Zahlung noch nicht bestätigt. Deine Schlüssel kommen beim nächsten Öffnen des Shops an.",
+      "quartermaster_title": "QUARTIERMEISTER",
+      "quartermaster_sub": "SPLITTER GEGEN REAGENZIEN · WÖCHENTLICHE LIMITS",
+      "assembly_title": "MONTAGEBUCHT",
+      "assembly_sub": "BARREN + REAGENZIEN → ÜBERTAKTUNGSMODULE",
+      "trade": "TAUSCHEN",
+      "assemble": "MONTIEREN",
+      "week_count": "DIESE WOCHE {used}/{max}",
+      "shard_cost": "{cost} SPLITTER",
+      "traded": "{item} ERHALTEN.",
+      "assembled": "{item} MONTIERT.",
+      "trade_failed": "Tausch fehlgeschlagen: {reason}.",
+      "assemble_failed": "Montage fehlgeschlagen: {reason}.",
+      "reagents_owned": "BARREN {ingots} · MATRIX {matrix} · AMBRA {ambergris}"
     },
     "lobby": {
       "connecting": "VERBINDE...",
@@ -1592,7 +1606,10 @@
       "listen_hint": "Hör zu und entscheide dann, wie du helfen willst.",
       "quote": "„{text}“",
       "next_action": "Deine nächste Handlung ändert die Startliste und den Endverlauf.",
-      "scar_gained": "DIE NACHT HAT SPUREN HINTERLASSEN: {scar}"
+      "scar_gained": "DIE NACHT HAT SPUREN HINTERLASSEN: {scar}",
+      "services": "LAGERDIENSTE ({count})",
+      "services_kicker": "LAGERDIENSTE",
+      "services_aria_close": "Lagerdienste schließen"
     },
     "title": {
       "pregalien_command": "PREGALIEN | NEST-KOMMANDO",
@@ -2021,7 +2038,221 @@
         "access_way": "ZUGANGSWEG",
         "unmarked": "UNMARKIERTER GANG"
       },
+      "site": {
+        "impact_site": "EINSCHLAGSTELLE",
+        "foundry": "FERTIGUNGSGIESSEREI",
+        "cave_mouth": "UNTERIRDISCHER ABGRUND",
+        "o2_generator": "ATMOSPHÄRISCHER REGENERATOR",
+        "wreck": {
+          "scout": "SCOUT-WRACK",
+          "tank": "PANZER-WRACK",
+          "engineer": "INGENIEUR-WRACK",
+          "infiltrator": "INFILTRATOR-WRACK"
+        }
+      },
+      "role": {
+        "generic": "SEKTOR",
+        "utility": "VERSORGUNG",
+        "medical": "MEDIZIN",
+        "security": "SICHERHEIT",
+        "engineering": "TECHNIK",
+        "storage": "LAGER",
+        "reward": "DEPOT",
+        "camp": "AUSSENPOSTEN",
+        "hive": "STOCK",
+        "nest": "NEST",
+        "cryo_lab": "KRYO-FORSCHUNG",
+        "foundry": "SCHWERINDUSTRIE",
+        "cave": "SEKTOR NULL",
+        "life_support": "LEBENSERHALTUNG",
+        "transit": "TRANSIT",
+        "home": "OBERFLÄCHEN-ANKER"
+      },
       "unscanned": "??? · ZUM IDENTIFIZIEREN SCANNEN"
+    },
+    "equipment": {
+      "effect": {
+        "4130": "Kryo-Effekte halten 5 % länger.",
+        "4131": "Projektile durchschlagen +1 Ziel.",
+        "4132": "Sporen- und Gasschaden −8 %.",
+        "4133": "Feuerrate +8 %.",
+        "4134": "Magazin +1 Schuss.",
+        "4135": "Entdeckt verborgene Wege und Verstecke im Umkreis von 10 m.",
+        "4136": "+5 % Schaden gegen Gegner, die keine Bosse sind.",
+        "4137": "Erhaltene Heilung +10 %.",
+        "4138": "Aufsammelradius +12 %.",
+        "4139": "Bergungswert +10 %.",
+        "4140": "Kryo-Dauer +8 %.",
+        "4141": "Aufsammelradius +20 %.",
+        "4142": "Sporen- und Gasschaden −12 %.",
+        "4143": "Kinetische Projektile durchschlagen +1 Ziel.",
+        "4144": "Schild-Aufladeverzögerung −10 %.",
+        "4145": "Entdeckt verborgene Wege im Umkreis von 15 m.",
+        "4146": "+15 % Tempo unter 25 % Gesundheit.",
+        "4147": "Fünf schnelle Kills erstatten den Dash.",
+        "4160": "+2 max. Gesundheit; −15 % Bewegungstempo.",
+        "4161": "Zerstörte Objekte lassen Bergungsgut fallen; −10 % Feuerrate.",
+        "4162": "+25 % Bossschaden; −10 % sonstiger Schaden.",
+        "4163": "Lore-Funde gewähren Bergungsgut; −1 Magazinschuss.",
+        "4164": "+1 Relikt-Seltenheitsstufe; −10 % max. O₂.",
+        "4165": "Doppelte Relikte werden zu Splittern; −15 % Bergungswert.",
+        "4166": "O₂ sinkt 25 % langsamer; −40 % erhaltene Heilung.",
+        "4167": "Ringübergänge kosten kein O₂, rufen aber einen Elitegegner."
+      },
+      "weapon_profile": {
+        "mk1_sidearm": "Stabiles, effizientes Seitenwaffenprofil.",
+        "pulse_carbine": "Schneller Mitteldistanz-Puls mit weniger Wucht.",
+        "scatter_rep": "Drei Nahbereichsprojektile pro Schuss.",
+        "rail_marksman": "Langsamer, schwerer Durchschlag mit großer Reichweite.",
+        "neon_smg": "Hohe Feuerrate mit leichteren Geschossen.",
+        "cryo_lance": "Präzises, langlebiges Kryo-Projektil."
+      },
+      "frame": "Werkswaffe. Ein Foundry-Profil ändert, wie sie feuert.",
+      "cosmetic": "Kosmetisch: ändert nur das Aussehen.",
+      "summary": "WAS DIESE AUSRÜSTUNG BEWIRKT",
+      "none": "Noch nichts angelegt. Wähle einen Platz aus.",
+      "change": "Wähle einen Platz, um ihn zu ändern."
+    },
+    "unlock": {
+      "buy_shells": "FÜR {shells} HÜLSEN KAUFEN",
+      "slay_the_queen": "FREIGESCHALTET DURCH DEN SIEG ÜBER DIE KÖNIGIN",
+      "archivist": "FREIGESCHALTET DURCH DEN ERFOLG „ARCHIVAR“",
+      "reach_depth": "FREIGESCHALTET AB TIEFE {depth}",
+      "class_runs": "FREIGESCHALTET NACH {runs} {cls}-EINSÄTZEN",
+      "achievement": "FREIGESCHALTET DURCH EINEN ERFOLG",
+      "confirm_buy": "ZUM KAUFEN ERNEUT KLICKEN",
+      "not_enough_shells": "NICHT GENUG HÜLSEN"
+    },
+    "camp_resident": {
+      "role": {
+        "mechanic": "MECHANIKER",
+        "medic": "SANITÄTER",
+        "lookout": "WACHPOSTEN",
+        "cook": "KOCH",
+        "radio": "FUNKER",
+        "scavenger": "PLÜNDERER",
+        "settler": "SIEDLER"
+      },
+      "mechanic": {
+        "1": "Jedes Scharnier hier quietscht. Ich öle sie trotzdem.",
+        "2": "Bring mir Schrott, dann hält der Generator noch eine Woche durch.",
+        "3": "Dein Anzug hält nur noch durch Hoffnung zusammen. Genau wie die Wände."
+      },
+      "medic": {
+        "1": "Halt still. Du blutest auf meinen sauberen Boden.",
+        "2": "Uns fehlt alles außer Sturheit. Sturheit heilt langsam.",
+        "3": "Was du da draußen eingeatmet hast, atme es hier drinnen nicht aus."
+      },
+      "lookout": {
+        "1": "Die ganze Nacht Bewegung hinter dem Grat. Nichts kam näher. Noch nicht.",
+        "2": "Ich zähle die Lichter in der Dunkelheit. Jede Woche weniger.",
+        "3": "Wenn du eine Schnecke so groß wie ein Lastwagen siehst, hast du sie nicht von hier gesehen."
+      },
+      "cook": {
+        "1": "Es ist Brühe. Gestern war es Brühe. Morgen wird es Brühe sein.",
+        "2": "Iss etwas. Hungrig kämpft niemand gut.",
+        "3": "Frag nicht, was drin ist. Es ist warm. Das ist das ganze Rezept."
+      },
+      "radio": {
+        "1": "Das Relais summt nachts. Manchmal summt es zurück.",
+        "2": "Ich rufe die anderen Lager. An manchen Tagen antwortet jemand.",
+        "3": "Wieder Funkverkehr vom Mutterschiff. Höflich, und nicht über uns."
+      },
+      "scavenger": {
+        "1": "Die Osttunnel sind leergeräumt. Versuch es tiefer.",
+        "2": "Hab einen Stiefel gefunden, der Fuß steckte noch drin. Den Stiefel hab ich behalten.",
+        "3": "Wenn es glänzt und nicht festgenagelt ist, ist es schon in meinem Rucksack."
+      },
+      "settler": {
+        "1": "Ich gewöhne mich noch daran, ohne ein offenes Auge zu schlafen. Danke.",
+        "2": "Sie haben mir eine Koje und eine Arbeit gegeben. Seit Monaten das erste Mal beides.",
+        "3": "Sag es allen da draußen: Es gibt einen Ort, an dem man aus der Kälte kommt."
+      },
+      "worried": {
+        "1": "Die Mauer hat letzte Nacht nicht gehalten. Wir flicken sie mit allem, was wir haben.",
+        "2": "Zwei von uns sind nicht zurückgekommen. Bitte hilf uns, das zu befestigen."
+      }
+    },
+    "input_hint": {
+      "pad": {
+        "map_pan": "[L-STICK / STEUERKREUZ] SCHWENKEN",
+        "map_zoom": "[LB / RB] ZOOM",
+        "map_operator": "[A] OPERATOR",
+        "map_close": "[B] / [VIEW] SCHLIESSEN",
+        "dialogue_choose": "STEUERKREUZ ZUM WÄHLEN • [A] AUSWÄHLEN • [B] ZURÜCKZIEHEN",
+        "compass_map": "[VIEW]",
+        "radar_scan": "Radarscan [LB]",
+        "armory_cycle": "[LB / RB WECHSELN]",
+        "menu_back": "[B]"
+      }
+    },
+    "sleep": {
+      "night_falls": "DIE NACHT BRICHT HEREIN",
+      "night_body": "Der Operator schläft. Etwas da draußen nicht.",
+      "morning_title": "TAG {day} · 06:00",
+      "morning_status": "{site} // EIN NEUER TAG BEGINNT",
+      "skip": "Beliebige Taste zum Aufwachen"
+    },
+    "mystery": {
+      "kind": {
+        "courier": "KURIERKISTE",
+        "quarantine": "QUARANTÄNEKAPSEL",
+        "reliquary": "SCHWARMRELIQUIAR",
+        "blacksite": "BLACK-SITE-SCHLIESSFACH"
+      },
+      "open": "{box} ÖFFNEN",
+      "opening": "{box} WIRD GEÖFFNET · {pct}%",
+      "locked": "{box} ist per Keycard gesperrt. Ein Engineer könnte es knacken.",
+      "outcome": {
+        "supplies": "{box}: Vorräte darin.",
+        "salvage": "{box}: Bergungsgut, noch brauchbar.",
+        "lore": "{box}: Jemand hat eine Aufzeichnung hinterlassen.",
+        "ambush": "{box}: Das war ein Nest. Zurück!",
+        "hazard": "{box}: Siegelbruch. Weg hier.",
+        "quest_hook": "{box}: Ein Routenchip. Neue Spur auf der Karte."
+      }
+    },
+    "graphics": {
+      "intro": "Alles startet auf Hoch. Wenn das Spiel ins Stocken gerät, senkt die automatische Anpassung eine Einstellung nach der anderen und vermerkt unten den Grund. Du kannst alles jederzeit wieder erhöhen.",
+      "preset": "QUALITÄTSVORGABE",
+      "preset_high": "HOCH",
+      "preset_medium": "MITTEL",
+      "preset_low": "NIEDRIG",
+      "preset_custom": "BENUTZERDEFINIERT",
+      "auto_adjust": "AUTOMATISCH ANPASSEN, WENN DAS SPIEL STOCKT",
+      "label_resolution": "RENDERAUFLÖSUNG",
+      "label_shadows": "SCHATTEN",
+      "label_postProcessing": "NACHBEARBEITUNG (BLOOM, FOKUS)",
+      "label_worldDetail": "WELTDETAILS (ROHRE, VERWEHUNGEN, EISZAPFEN)",
+      "label_landmarks": "SCHLUCHT-WAHRZEICHEN",
+      "label_effects": "EFFEKTE (DAMPF, FUNKEN, STAUB)",
+      "val_resolution_100": "100 % (NATIV)",
+      "val_resolution_85": "85 %",
+      "val_resolution_70": "70 %",
+      "val_shadows_full": "VOLL",
+      "val_shadows_reduced": "REDUZIERT (HALBE RATE)",
+      "val_shadows_off": "AUS",
+      "val_postProcessing_on": "AN",
+      "val_postProcessing_off": "AUS",
+      "val_worldDetail_high": "HOCH",
+      "val_worldDetail_low": "NIEDRIG",
+      "val_landmarks_on": "AN",
+      "val_landmarks_off": "AUS",
+      "val_effects_full": "VOLL",
+      "val_effects_reduced": "REDUZIERT (OHNE STAUB)",
+      "val_effects_off": "AUS",
+      "auto_changes": "AUTOMATISCHE ÄNDERUNGEN",
+      "auto_none": "Bisher wurde nichts automatisch gesenkt.",
+      "restore": "WIEDERHERSTELLEN",
+      "restore_label": "AUTOMATISCH GESENKTES WIEDERHERSTELLEN",
+      "change_entry": "{time} — {setting}: {from} → {to}. {fps} FPS für {seconds} s {area}; {cause}.",
+      "cause_gpu": "die Grafikkarte war am Limit",
+      "cause_cpu": "der Haupt-Thread (CPU) war am Limit",
+      "area_active": "im Bunker",
+      "area_cryo": "im Kryo-Sektor",
+      "area_bio": "im Bio-Sektor",
+      "area_unknown": "im Gelände",
+      "notice": "Anzeige: {setting} auf {to} gesenkt, damit das Spiel flüssig bleibt. Siehe Einstellungen › Grafik."
     }
   },
   "narrative": {

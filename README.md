@@ -20,44 +20,30 @@
 
 🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord Server](https://discord.gg/XXwwz3rauu)** • 📚 **[Documentation Map](docs/README.md)**
 
-> **Status (2026-10-06):** Sprint 49 is ready to merge: `dev/sprint-49` at `v2.4.14-beta`, release PR #100 into `mothership`. The Steam `beta` branch runs this release (`f9093289`), and so does the relay server.
+> **Status (2026-10-11):** Sprint 51 World Completion on `dev/sprint-51`.
 >
-> New since 2026-10-04:
-> - **The Steam store works end to end.**
->   - BUY opens Steam's approval dialog, the keys land in your inventory, and every outcome shows under the buttons.
->   - Beta builds buy through Valve's no-charge sandbox, for listed testers only.
->   - Verified live: a cancel, then two purchases granting 16 keys.
-> - **Season 1 is held by the server.** Dossier ranks, directives and fragments are tracked by the backend per Steam account, so rank rewards reach Steam inventory instead of staying "Pending". Verified live: an imported Rank 12 granted its five rank items and three rare fragments. The Dossier opens on your rank, and the Fragment Workshop crafts through Steam.
-> - **Records & Leaderboards:** Archive → RECORDS shows a service record, personal bests and per-class records, plus the five Steam boards.
-> - **Fixes:**
->   - walls that were invisible on many Windows PCs
->   - a black gameplay screen
->   - placeholder props that are now 3D models
->   - interactable props that paid out on every press
->   - the cache reveal, which played in a hidden window
->   - tab bars that skipped tabs
->   - the PvP winner screen
+> **New in Sprint 51 (World Completion, 2026-10-11):**
+> - **39 High-Detail 3D Models (Zero-Loss 25k Triangles):**
+>   - Ingested 39 game-ready models at the 25,000 triangle ceiling with `gltfpack` meshopt compression and Basis Universal KTX2 textures (`KHR_texture_basisu`).
+>   - **Bunker Operations:** Pallet racking, server cabinets, transformer bank, fire station, conveyor line, water cistern, scaffold tower, forklift.
+>   - **Daily Life:** Sink rows, shower stalls, laundry machines, weight bench, arcade cabinet, filing cabinets, overseer's desk, planning whiteboard, surgical lamp.
+>   - **District Landmarks & Vistas:** Cryo crawler, frozen pipe cascade, snowbound crates, radiant heater, cut ice blocks; Hive resin pillar, cocooned crew, brood dome, pheromone node, tendril arch, assimilated generator; Crash site engine nacelle, hull panels, drag chute, tagged salvage heap; Chasm cable gondola, collapsed catwalk, rappel anchor, edge beacon post; Survivor canvas tent, water barrel.
+>   - **Mandatory Pairing Rule:** `camp_water_barrel` is always paired with `life_cistern_tank` near sinks (`life_sink_row`) and showers (`life_shower_stall`).
+> - **48 Interchangeable PBR Floor & Path Surfaces:**
+>   - 12 surface prompts across 4 variants (`_a`, `_b`, `_c`, `_d`) as dual-array BC7 KTX2 textures (sRGB albedo + metalness; linear normal + roughness + height).
+>   - **Multi-Layer Blending:** 2x2m variant clustering within rooms and 4-tap height-map blending with noise breakup jitter break uniform repeating tiles.
+>   - **Deterministic BFS Traffic Wear:** Shortest-path routing writes traffic weight into DataTexture channel B, polishing high-traffic centers and depositing shoulder grit.
+> - **32 Chroma-Keyed Route Strips & Landing Marks:**
+>   - 8 prompts across 4 variants (`_a`, `_b`, `_c`, `_d`) chroma-keyed from magenta with despill.
+>   - Route strips (cart ruts, drag marks, walkway borders, drain gutters, sled tracks, hive veins) and high-traffic door wear aprons and junction turn arcs.
 >
-> Already in this release:
-> - **Voiced narrative** in seven languages, with developer commentary in the developer's own voice.
+> See [`docs/planning/world-completion-assets-and-path-layers-2026-10-11.md`](docs/planning/world-completion-assets-and-path-layers-2026-10-11.md) and [`world_completion_assets_and_texture_blending_plan.md`](file:///home/caveman/.gemini/antigravity-ide/brain/9873b1bc-55b8-4901-bcbf-260e25799862/world_completion_assets_and_texture_blending_plan.md).
+>
+> Prior releases (`v2.4.14-beta` / Sprint 49):
 > - **Filtered player chat** in co-op and PvP, with mute, block and report.
-> - **Lived-in rooms:** modular gateways, dense instanced dressing that can be destroyed (and stays destroyed), and cathedral, cryo-medical and biomech room grammar.
-> - **3D overhaul:**
->   - 80 modular kit pieces
->   - 35 restored props
->   - new rigged enemies
->   - hive leaders in 3D
->   - camps, hives and corpses as models
-> - **Economy compliance:** Belgium paid-key restriction, Steam price tiers, `GetReport` reconciliation, durable paid grants, and 7-day trade holds.
-> - **Co-op and PvP fixes,** and the isometric camera as the default.
->
-> **Still open:**
-> - a completed two-account co-op expedition (#85)
-> - PvP certification (#51), which includes a remote-health drift found on 2026-10-06
-> - a physical Deck controller-only route (#53)
-> - frame pacing (#52)
->
-> See [`docs/releases/v2.4.14-beta.md`](docs/releases/v2.4.14-beta.md) and PR #100.
+> - **Steam store end-to-end sandbox purchases** with `GetReport` reconciliation.
+> - **Voiced narrative** in seven languages with developer commentary.
+> - **Modular lived-in rooms** with instanced destructible props and custom grammar.
 >
 > `v2.4.13-beta` answered Steam build review 25475189 in code:
 > - **Multiplayer:** now on the title menu.
@@ -176,15 +162,6 @@ registered in `MENU_FOCUS_ROOT_IDS` (`src/inputActions.js`) and covered by the
 | **Enter Text** | **A** (Steam keyboard; in-game keyboard fallback) | type | Callsign and chat. |
 | **Pointer** | Right trackpad / stick cursor + **A** | Mouse | Optional; never the only way to reach a control. |
 
---- | :--- | :--- | :--- |
-| **Navigate Menus & Grids** | **D-Pad** / **Left Stick** | `W`, `A`, `S`, `D` or Arrows | Visual spatial roving focus across buttons, cards, and slots. |
-| **Activate / Select** | **A** or **Right Trigger (RT)** | `Enter` or `Space` | Equips gear, confirms upgrades, selects operative. |
-| **Back / Cancel** | **B** | `Escape` | Closes topmost modal or returns to previous briefing screen. |
-| **Switch Tabs** | **Left Bumper (LB)** / **Right Bumper (RB)** | `Q` / `E` | Cycles tabs in Settings, Armory, Archives, and Terminals. |
-| **Adjust Values** | **D-Pad Left** / **Right** (focused) | `Left` / `Right` Arrows | Adjusts sliders, audio volume, UI scale, and dropdown options. |
-| **Scroll Text Panels** | **D-Pad Up** / **Down** (text views) | `Page Up` / `Page Down` | Scrolls lore logs, transcripts, and commentary text. |
-| **Open Chat** | **View / Select** (or HUD Chat button) | `Enter` or `T` (in gameplay) | Opens the filtered in-game and lobby tactical chat. |
-| **Tactical Pointer** | **Right Stick** + **A** click | Mouse Move + Left Click | Optional virtual mouse cursor for freeform pointing. |
 
 ---
 
@@ -228,6 +205,7 @@ unmerged branch.
 ## 🛠️ Tech Architecture
 
 - **WebGL 3D Engine**: Powered by **Three.js** (r186) with procedural dungeon generation, dynamic fog of war, and WebAudio spatial soundscapes.
+- **3D & Surface Pipeline**: Zero-detail-loss 25,000 triangle GLTF assets optimized with `gltfpack` meshopt vertex compression and Basis Universal KTX2 textures (`KHR_texture_basisu`). Dual-array BC7 KTX2 floor surfaces with multi-layer height-blend shaders, procedural noise jitter, and deterministic BFS traffic wear mapping.
 - **Desktop & Steam Shell**: Built with **Electron** featuring native **Steamworks** integration for Steam Cloud saves, Steam Input, real Steam Lobbies (Friends invite, Join Game, Rich Presence), and 24 Steam Achievements.
 - **Trusted Relay Server**: Node.js & Express server running in **Docker Compose** behind **Caddy** (`steam.tuesdaycinema.club`), enforcing verified score validation for 5 Steam Leaderboards and Steam-session-authenticated multiplayer.
 

@@ -3,7 +3,7 @@ import { sideStoryManager } from './sideStorySystem.js';
 /**
  * NPC Interactive Branching Dialogue Trees & Sensual Mature Storylines
  * Covers deep, choice-driven interactions with Camp Leaders and Entities:
- * - Sister Val (Camp Tallow: Flesh Cult & Thermal Suture Medic)
+ * - Sister Martha (Camp Tallow: Flesh Cult & Thermal Suture Medic)
  * - Commander Briggs (Camp Vesper: Heavy Vanguard Strike Leader)
  * - Overseer Kaelen (Camp Meridian: Cybernetic Grid & Bio-Link Engineer)
  * - Specimen 0047-B / "Aria" (The Hive Queen's Psychic Mimic)
@@ -12,7 +12,7 @@ import { sideStoryManager } from './sideStorySystem.js';
 export const NPC_DIALOGUE_TREES = Object.freeze({
     sister_val: {
         id: 'sister_val',
-        name: 'Sister Val',
+        name: 'Sister Martha',
         faction: 'CAMP TALLOW // SUTURE SANCTUARY',
         portrait: 'public/lore_portraits/tallow_val.png',
         icon: '🩸',
@@ -21,7 +21,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
         nodes: {
             val_greeting: {
                 id: 'val_greeting',
-                speaker: 'Sister Val',
+                speaker: 'Sister Martha',
                 interstitial: 'val_hearth_warmth',
                 narration: 'She sets down a steaming bronze kettle of heated botanical resin. Her eyes, luminous and amber from spore exposure, linger on the ice crusted across your collarbone.',
                 dialogue: "You're shivering, contractor. That corporate suit is bleeding heat by the second. Step closer to the thermal hearth... let me unfasten your seals and see where the cold has bitten your skin.",
@@ -29,7 +29,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
                     {
                         id: 'val_warmth_touch',
                         tone: '[INTIMATE TOUCH]',
-                        text: 'Your hands are surprisingly warm, Sister Val. What are you putting on my skin?',
+                        text: 'Your hands are surprisingly warm, Sister Martha. What are you putting on my skin?',
                         nextNode: 'val_massage_response'
                     },
                     {
@@ -54,7 +54,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             },
             val_massage_response: {
                 id: 'val_massage_response',
-                speaker: 'Sister Val',
+                speaker: 'Sister Martha',
                 interstitial: 'val_spore_communion',
                 narration: 'Her fingertips are slick with warm, fragrant amber resin. She gently presses against the hollow of your throat, working down along the stiffened muscles of your shoulders. A shiver of intense, intoxicating heat cascades through your chest.',
                 dialogue: "Refined tallow-root and bioluminescent spore tallow. It sinks directly into your capillaries, melting away the frostbite. Feel how your skin warms under my palms? Out there, you're just corporate meat. In here... every breath between us is sacred.",
@@ -74,14 +74,14 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
                     {
                         id: 'val_thank_return',
                         tone: '[GRATEFUL COMMUNION]',
-                        text: 'My body feels revitalized. Thank you, Val.',
+                        text: 'My body feels revitalized. Thank you, Martha.',
                         nextNode: 'val_ready_buff'
                     }
                 ]
             },
             val_embrace_response: {
                 id: 'val_embrace_response',
-                speaker: 'Sister Val',
+                speaker: 'Sister Martha',
                 interstitial: 'val_hearth_warmth',
                 narration: 'She steps into your space without hesitation, the heavy scent of crushed crimson petals and body heat wrapping around your senses. Her hands rest on your chest plate, feeling your frantic heartbeat.',
                 dialogue: "We are all walking ghosts on this glacier, love. But tonight... our flesh is hot, alive, and unyielding. Lie with me beside the burner. Let the ice rage against the bulkhead while we burn together.",
@@ -95,20 +95,20 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
                     {
                         id: 'val_lie_down',
                         tone: '[PASSIONATE EMBRACE]',
-                        text: 'Hold me close, Val. Let’s make this frozen rock burn.',
+                        text: 'Hold me close, Martha. Let’s make this frozen rock burn.',
                         nextNode: 'val_intimate_climax'
                     },
                     {
                         id: 'val_restrain',
                         tone: '[GENTLE RESTRAINT]',
-                        text: 'I want this, Val. But I have to finish this expedition first.',
+                        text: 'I want this, Martha. But I have to finish this expedition first.',
                         nextNode: 'val_ready_buff'
                     }
                 ]
             },
             val_spores_response: {
                 id: 'val_spores_response',
-                speaker: 'Sister Val',
+                speaker: 'Sister Martha',
                 narration: 'She smiles cryptically, trailing one delicate fingernail across a blooming scarlet fungal cluster that pulses with soft biological light.',
                 dialogue: "The Queen thinks she owns these spores, but life finds its own pleasure in symbiosis. When filtered properly, the resin heightens sensory nerve endings by tenfold. Pain becomes euphoria. Cold becomes anticipation.",
                 bondDelta: 15,
@@ -129,7 +129,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             },
             val_intimate_climax: {
                 id: 'val_intimate_climax',
-                speaker: 'Sister Val',
+                speaker: 'Sister Martha',
                 interstitial: 'val_eternal_hearth',
                 narration: 'Her lips brush against your jawline, whispered words of devotion mixing with the gentle crackle of the thermal burner. Her bare shoulder presses firmly against your chest, sharing an intense, quiet sanctuary of human passion in the dark.',
                 dialogue: "Remember this heat when you descend into the abyss, my fierce contractor. When the cold tries to take you, remember the taste of my breath on your neck. You belong to Tallow now... and to me.",
@@ -138,20 +138,20 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
                     {
                         id: 'val_parting_kiss',
                         tone: '[PARTING KISS]',
-                        text: 'I’ll come back to you, Val. Keep the hearth hot.',
+                        text: 'I’ll come back to you, Martha. Keep the hearth hot.',
                         nextNode: null
                     }
                 ]
             },
             val_ready_buff: {
                 id: 'val_ready_buff',
-                speaker: 'Sister Val',
+                speaker: 'Sister Martha',
                 dialogue: 'Go with my blessing, contractor. The warmth in your veins will carry you through the storm.',
                 choices: [
                     {
                         id: 'val_depart',
                         tone: '[DEPART]',
-                        text: 'Until next time, Val.',
+                        text: 'Until next time, Martha.',
                         nextNode: null
                     }
                 ]
@@ -685,7 +685,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
 });
 
 export class NpcDialogueTreeManager {
-    constructor({ onStateChanged = null } = {}) {
+    constructor({ onStateChanged = null, stories = sideStoryManager } = {}) {
         this.onStateChanged = onStateChanged;
         this.activeTree = null;
         this.currentNode = null;
@@ -698,6 +698,17 @@ export class NpcDialogueTreeManager {
         };
         this.activePerks = new Set();
         this.history = [];
+        this.restoreFromSideStories(stories);
+    }
+
+    // Perks and bond used to live only in memory, so everything earned here
+    // vanished on reload. The side stories are saved with the profile
+    // (hb_side_stories_v1, src/profile.js): rebuild from them.
+    restoreFromSideStories(stories) {
+        for (const [storyId, story] of Object.entries(stories?.state ?? {})) {
+            for (const perk of story?.perks ?? []) this.activePerks.add(perk);
+            if (Number.isFinite(story?.bondScore) && story.bondScore > 0) this.bondState[storyId] = story.bondScore;
+        }
     }
 
     startDialogue(treeId, { bypassPrereq = false } = {}) {
@@ -750,16 +761,8 @@ export class NpcDialogueTreeManager {
             }
         }
 
-        const hasPause = this.currentNode.choices.some((c) => c.id === 'pause_story_choice');
-        if (!hasPause) {
-            this.currentNode.choices.push({
-                id: 'pause_story_choice',
-                tone: '[PAUSE / COME BACK LATER]',
-                text: 'I have other urgent sector duties. Keep this between us until I return.',
-                nextNode: null,
-                isPauseAction: true
-            });
-        }
+        // No appended [PAUSE / COME BACK LATER]: nothing ever resumed or read a
+        // paused story, so it was only a third way to leave (owner, 2026-10-08).
 
         this.history = [this.currentNode.id];
         this.notifyChange();
@@ -810,10 +813,9 @@ export class NpcDialogueTreeManager {
 
         this.currentNode = { ...nextNode, choices: [...nextNode.choices] };
         this.history.push(nextNode.id);
-
-        if (typeof window !== 'undefined' && nextNode.interstitial && typeof window.playSideStoryInterstitial === 'function') {
-            window.playSideStoryInterstitial(nextNode.interstitial);
-        }
+        // No music video per choice: a camp plays one title card, on first
+        // contact only (owner, 2026-10-08). Nodes keep their `interstitial`
+        // for the codex and side-story screens.
 
         // Apply bond delta if arriving at a node with bondDelta
         if (nextNode.bondDelta && this.activeTree) {

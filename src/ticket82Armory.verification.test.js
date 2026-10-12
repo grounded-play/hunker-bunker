@@ -124,7 +124,8 @@ describe('Ticket #82 — Armory Presentation, Polish Placement & Equipment Mount
         const cssFile = path.resolve(process.cwd(), 'src/styles/armory.css');
         const css = fs.readFileSync(cssFile, 'utf8');
         expect(css).toContain('overflow-wrap: anywhere');
-        expect(css).toContain('#armory-picker-modal .armory-tile__name');
+        // The picker's rules also cover the Sprint 51 picker-only modal.
+        expect(css).toMatch(/#armory-picker-modal[^{]*\.armory-tile__name/);
         expect(css).toContain('#armory-picker-readout-name');
         expect(css).toContain('#armory-screen .armory-stage-readout__chip');
     });

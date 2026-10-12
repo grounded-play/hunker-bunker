@@ -94,6 +94,47 @@ describe('getChunkLandform — per-run archetype variation', () => {
     });
 });
 
+describe('getChunkLandform — neighbour avoidance is order-independent', () => {
+    function fakeGame(runEntropy = 4242) {
+        return {
+            performanceProfile: 'gameplay',
+            chunkSize: 19,
+            runEntropy,
+            hashTile: ThreeGame.prototype.hashTile,
+            createSeededRandom: ThreeGame.prototype.createSeededRandom,
+            getBiomeKeyForWorldPosition: () => 'active',
+            getBiomeAnchorPosition: () => ({ x: 0, z: 0 })
+        };
+    }
+    const landformOf = (game, x, y) => ThreeGame.prototype.getChunkLandform.call(game, x, y);
+
+    it('gives a chunk the same landform whichever chunks were explored first', () => {
+        // The map must not depend on exploration order: TRY AGAIN keeps the map
+        // and co-op peers generate it independently.
+        for (let x = 6; x < 26; x += 1) {
+            const fresh = fakeGame();
+            const explored = fakeGame();
+            landformOf(explored, x - 1, 9);
+            landformOf(explored, x, 8);
+            expect(landformOf(explored, x, 9), `chunk ${x},9`).toBe(landformOf(fresh, x, 9));
+        }
+    });
+
+    it('rarely repeats the landform of the chunk to the west', () => {
+        const game = fakeGame(77);
+        let repeats = 0;
+        let pairs = 0;
+        for (let y = 6; y < 16; y += 1) {
+            for (let x = 6; x < 26; x += 1) {
+                pairs += 1;
+                if (landformOf(game, x, y) === landformOf(game, x - 1, y)) repeats += 1;
+            }
+        }
+        // Raw seeded picks repeat a neighbour about 30% of the time.
+        expect(repeats / pairs).toBeLessThan(0.15);
+    });
+});
+
 describe('clearLoadedChunksForRunReset — stale landform cache', () => {
     it('clears _chunkLandformCache along with the other chunk caches so a new run re-rolls landforms', () => {
         const fakeThis = {

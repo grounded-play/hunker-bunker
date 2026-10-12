@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
+import { DEFAULT_GRAPHICS_SETTINGS } from './graphicsSettings.js';
 
 const originalWindow = globalThis.window;
 
@@ -12,6 +13,8 @@ function makeAdaptiveGame() {
     return {
         performanceProfile: 'gameplay',
         adaptiveGameplayPerformanceMode: false,
+        // Past the deploy grace period unless a test says otherwise.
+        _adaptiveGameplaySeconds: 60,
         gameplayPostProcessingEnabled: true,
         gameplayPixelRatio: 1.15,
         visibleChunkRadius: 2,
@@ -29,17 +32,35 @@ function makeAdaptiveGame() {
         tiltShiftOverlay: { classList: { toggle: vi.fn() } },
         resize: vi.fn(),
         getPerformanceDiagnosticsSnapshot: () => ({ drawCalls: 12 }),
+        // Settings > Graphics (src/graphicsSettings.js): automatic steps land here.
+        graphicsSettings: DEFAULT_GRAPHICS_SETTINGS,
+        chunkMeshes: new Map(),
+        saveGraphics: vi.fn(),
+        announceGraphicsChange: vi.fn(),
+        gameplayTargetPixelRatio() {
+            return ThreeGame.prototype.gameplayTargetPixelRatio.call(this);
+        },
+        applyGraphicsSettings() {
+            return ThreeGame.prototype.applyGraphicsSettings.call(this);
+        },
+        autoLowerGraphics(options) {
+            return ThreeGame.prototype.autoLowerGraphics.call(this, options);
+        },
         setAdaptiveGameplayPerformanceMode(enabled, options) {
             return ThreeGame.prototype.setAdaptiveGameplayPerformanceMode.call(this, enabled, options);
+        },
+        updateAdaptiveGameplayRecovery(fps, sample) {
+            return ThreeGame.prototype.updateAdaptiveGameplayRecovery.call(this, fps, sample);
         }
     };
 }
 
 describe('ThreeGame adaptive gameplay quality', () => {
-    // Owner rule (2026-08-26, restated 2026-09-25): adaptive quality lowers
-    // render resolution only, and only when that can help (GPU-bound).
-    // Post-processing, live shadows, 3D models and animation stay at full
-    // quality on every tier.
+    // Owner rules: full quality first, on the Deck too (2026-09-25); never
+    // switch post-processing or shadows off automatically, never swap models
+    // (2026-08-26, 2026-09-25). Owner 2026-10-11: when the game stalls, turn
+    // things down one at a time in Settings > Graphics and say why there, by
+    // what holds the frame up (src/graphicsSettings.js).
     it('does not drop the Steam Deck to a lower resolution on its first frame', () => {
         globalThis.window = { __hbSteamStatus: { isSteamDeck: true } };
         const fake = makeAdaptiveGame();
@@ -76,7 +97,7 @@ describe('ThreeGame adaptive gameplay quality', () => {
         expect(fake.renderer.setPixelRatio).not.toHaveBeenCalled();
     });
 
-    it('lowers resolution when the GPU fills most of each slow frame', () => {
+    it('lowers resolution in the settings when the GPU fills most of each slow frame', () => {
         globalThis.window = { __hbSteamStatus: { isSteamDeck: false } };
         const fake = makeAdaptiveGame();
         fake.gpuFrameTimer = { snapshot: () => ({ supported: true, samples: 500, averageMs: 36 }) };
@@ -84,8 +105,12 @@ describe('ThreeGame adaptive gameplay quality', () => {
         for (let i = 0; i < 60; i += 1) {
             ThreeGame.prototype.updateAdaptiveGameplayQuality.call(fake, 0.04);
         }
-        expect(fake.adaptiveGameplayPerformanceMode).toBe(true);
+        expect(fake.graphicsSettings.values.resolution).toBe('85');
+        expect(fake.graphicsSettings.autoChanges[0]).toMatchObject({ key: 'resolution', from: '100', to: '85', bound: 'gpu' });
+        expect(fake.renderer.setPixelRatio).toHaveBeenCalledWith(expect.closeTo(1.15 * 0.85, 5));
         expect(fake.gameplayPostProcessingEnabled).toBe(true);
+        expect(fake.renderer.shadowMap.enabled).toBe(true);
+        expect(fake.renderer.shadowMap.autoUpdate).toBe(true);
     });
 
     it('waits for sustained low FPS on ordinary hardware', () => {
@@ -95,10 +120,10 @@ describe('ThreeGame adaptive gameplay quality', () => {
         for (let i = 0; i < 37; i += 1) {
             ThreeGame.prototype.updateAdaptiveGameplayQuality.call(fake, 0.04);
         }
-        expect(fake.adaptiveGameplayPerformanceMode).toBe(false);
+        expect(fake.graphicsSettings.autoChanges).toEqual([]);
 
         ThreeGame.prototype.updateAdaptiveGameplayQuality.call(fake, 0.04);
-        expect(fake.adaptiveGameplayPerformanceMode).toBe(true);
+        expect(fake.graphicsSettings.autoChanges).toHaveLength(1);
     });
 
     it('does not degrade after one isolated stall and clears pressure after recovery', () => {
@@ -148,4 +173,35 @@ describe('ThreeGame adaptive gameplay quality', () => {
         expect(src).not.toMatch(/adaptiveGameplayPerformanceMode/);
         expect(() => ThreeGame.prototype.loadNearbyWorld3dReplacement.call(fake, source)).not.toThrow();
     });
+
+    // Deck log 2026-10-07: the deploy stall (frames of 1-3.6 s) engaged
+    // adaptive mode at 3.5 FPS, and nothing ever turned it off again.
+    it('ignores the first seconds after deploy', () => {
+        const fake = makeAdaptiveGame();
+        fake._adaptiveGameplaySeconds = 0;
+        for (let i = 0; i < 40; i++) ThreeGame.prototype.updateAdaptiveGameplayQuality.call(fake, 0.25);
+        expect(fake.adaptiveGameplayPerformanceMode).toBe(false);
+        expect(fake.graphicsSettings.autoChanges).toEqual([]);
+    });
+
+    it('never raises anything back on its own: the player restores it in Settings', () => {
+        const fake = makeAdaptiveGame();
+        fake.gpuFrameTimer = { snapshot: () => ({ supported: true, samples: 60, averageMs: 36 }) };
+        for (let i = 0; i < 60; i++) ThreeGame.prototype.updateAdaptiveGameplayQuality.call(fake, 0.04);
+        expect(fake.graphicsSettings.values.resolution).toBe('85');
+        for (let i = 0; i < 60 * 20; i++) ThreeGame.prototype.updateAdaptiveGameplayQuality.call(fake, 1 / 60);
+        expect(fake.graphicsSettings.values.resolution).toBe('85');
+        expect(fake.adaptiveGameplayPerformanceMode).toBe(false);
+    });
+
+    it('steps one setting at a time, waiting between steps to see whether the last helped', () => {
+        const fake = makeAdaptiveGame();
+        fake.gpuFrameTimer = { snapshot: () => ({ supported: true, samples: 60, averageMs: 36 }) };
+        for (let i = 0; i < 25 * 5; i++) ThreeGame.prototype.updateAdaptiveGameplayQuality.call(fake, 0.04);
+        expect(fake.graphicsSettings.autoChanges.map((change) => change.key)).toEqual(['resolution']);
+        for (let i = 0; i < 25 * 8; i++) ThreeGame.prototype.updateAdaptiveGameplayQuality.call(fake, 0.04);
+        expect(fake.graphicsSettings.autoChanges.map((change) => change.key)).toEqual(['resolution', 'shadows']);
+        expect(fake.graphicsSettings.values.shadows).toBe('reduced');
+    });
 });
+

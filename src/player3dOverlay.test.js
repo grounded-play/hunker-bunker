@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import {
+    bindFollowerBones,
     ENGINEER_GESTURES,
     INJURED_LOCOMOTION_VARIANTS,
     computeOperatorPolishMaterialState,
@@ -15,6 +16,34 @@ import {
 } from './player3dOverlay.js';
 
 describe('player 3D cosmetic overlay', () => {
+    it('drives hbFollow bones from the bone they name', () => {
+        // Mayor Tina's outer legs: extra bones that no clip names, tagged
+        // (glTF extras -> userData) to copy a thigh's rotation every frame.
+        const root = new THREE.Group();
+        const hips = new THREE.Bone();
+        hips.name = 'mixamorig1Hips';
+        const thigh = new THREE.Bone();
+        thigh.name = 'mixamorig1LeftUpLeg';
+        const follower = new THREE.Bone();
+        follower.name = 'TinaMidLegLeft';
+        follower.userData.hbFollow = 'mixamorig1:LeftUpLeg';
+        follower.position.set(0.2, -0.1, 0);
+        hips.add(thigh, follower);
+        root.add(hips);
+
+        const sync = bindFollowerBones(root);
+        thigh.quaternion.setFromEuler(new THREE.Euler(0.6, 0.1, -0.2));
+        sync();
+        expect(follower.quaternion.equals(thigh.quaternion)).toBe(true);
+        expect(follower.position.toArray()).toEqual([0.2, -0.1, 0]);
+    });
+
+    it('binds nothing on rigs without hbFollow bones', () => {
+        const root = new THREE.Group();
+        root.add(new THREE.Bone());
+        expect(() => bindFollowerBones(root)()).not.toThrow();
+    });
+
     it('retargets an already-compatible mixamorig1 clip without doubling its prefix', () => {
         const root = new THREE.Group();
         const hips = new THREE.Bone();

@@ -3,6 +3,7 @@
  * Connects directly to server/relay.js Socket.IO server or local LAN loopback.
  */
 
+import { mountDeferredMarkup, onDeferredMarkupMounted } from './deferredMarkup.js';
 import { planMultiplayerCrashSites } from './multiplayerCrashPlanner.js';
 import { createFreshRunEntropy } from './runEntropy.js';
 import { clearMultiplayerSession, startMultiplayerRun } from './gameController.js';
@@ -304,7 +305,8 @@ export class MultiplayerLobby {
     }
 
     init() {
-        this.bindUi();
+        // The briefing's markup is built on first open (src/deferredMarkup.js).
+        onDeferredMarkupMounted('multiplayer-modal', () => this.bindUi());
         // docs/steam-lobby-integration-plan-2026-08-20.md step 4: listens
         // regardless of whether the multiplayer modal is even open --
         // fires for cold-start +connect_lobby, a second-instance relaunch,
@@ -314,8 +316,16 @@ export class MultiplayerLobby {
         onSteamLobbyJoinRequested((lobbyId) => this.handleSteamLobbyJoinRequested(lobbyId));
     }
 
+    // Builds the briefing's markup if it has not been yet; every path that
+    // touches the screen's children starts here.
+    ensureUi() {
+        mountDeferredMarkup('multiplayer-modal');
+    }
+
     bindUi() {
-        if (typeof document === 'undefined') return;
+        if (typeof document === 'undefined' || this.uiBound) return;
+        if (!document.getElementById('net-connect-btn')) return;
+        this.uiBound = true;
 
         // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 1: this
         // modal no longer opens itself from a title/briefing-screen button --
@@ -392,6 +402,7 @@ export class MultiplayerLobby {
      *   ({ date, seedLabel, state, score, grade }) for the goals panel.
      */
     openModal({ onLaunch, onCancel, onDailyLaunch, getDailyOpsStatus, getDeploymentBriefing } = {}) {
+        this.ensureUi();
         const modal = document.getElementById('multiplayer-modal');
         if (!modal) return;
         this.onLaunch = onLaunch ?? null;
@@ -451,6 +462,7 @@ export class MultiplayerLobby {
     }
 
     async connect() {
+        this.ensureUi();
         // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: connect()
         // Host action and invite/public-join callbacks reach connect(); mode
         // selection alone must never create a lobby. Keep the DOM guard for
@@ -922,6 +934,7 @@ export class MultiplayerLobby {
     // mid-match elsewhere) worth revisiting once this is live-tested, not
     // guessed at now.
     async handleSteamLobbyJoinRequested(lobbyId) {
+        this.ensureUi();
         if (!lobbyId) return;
         // Leave the current relay/Steam party before joining the target. The
         // old order joined target first and then called disconnect();
@@ -1256,6 +1269,7 @@ export class MultiplayerLobby {
     }
 
     updateUiState() {
+        this.ensureUi();
         if (typeof document === 'undefined') return;
 
         const isSolo = this.currentMode === MULTIPLAYER_MODES.SOLO;

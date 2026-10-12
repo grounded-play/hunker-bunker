@@ -12,7 +12,7 @@ function matrixScaleAndPosition(mesh, index = 0) {
     return { matrix, position, scale };
 }
 
-function makeGame({ destroyed = false } = {}) {
+function makeGame({ destroyed = false, capScale, cutawayFrom = 'nw' } = {}) {
     const wallPool = new THREE.InstancedMesh(
         new THREE.BoxGeometry(1, 2.8, 1),
         new THREE.MeshBasicMaterial(),
@@ -48,12 +48,13 @@ function makeGame({ destroyed = false } = {}) {
         quadrant: 'se',
         wallRecords: [record],
         capPool,
+        ...(capScale ? { capScale } : {}),
         capIndexByWallKey: new Map([['4,2', 0]]),
         cutawayWallKeysByQuadrant: {
-            se: new Set(['4,2']),
+            se: new Set(cutawayFrom === 'se' ? [] : ['4,2']),
             sw: new Set(),
             ne: new Set(),
-            nw: new Set()
+            nw: new Set(cutawayFrom === 'se' ? ['4,2'] : [])
         }
     };
     return {
@@ -91,5 +92,17 @@ describe('ThreeGame room cutaway rotation', () => {
         const cap = matrixScaleAndPosition(capPool).matrix.elements;
         expect([wall[0], wall[5], wall[10]]).toEqual([0, 0, 0]);
         expect([cap[0], cap[5], cap[10]]).toEqual([0, 0, 0]);
+    });
+
+    it('keeps a corner-cut cap at its full footprint when the wall is cut away again', () => {
+        // Corner-cut caps draw a unit prism scaled by the instance matrix
+        // (src/wallAutotile.js); a plain box cap is already full size.
+        const { game, capPool } = makeGame({ capScale: 1.03, cutawayFrom: 'se' });
+        ThreeGame.prototype.updateRoomCutawaysForCamera.call(game);
+        const cap = matrixScaleAndPosition(capPool);
+        expect(cap.scale.x).toBeCloseTo(1.03, 5);
+        expect(cap.scale.y).toBeCloseTo(1, 5);
+        expect(cap.scale.z).toBeCloseTo(1.03, 5);
+        expect(cap.position.y).toBeCloseTo(0.86, 5);
     });
 });

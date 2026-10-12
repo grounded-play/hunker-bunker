@@ -17,16 +17,25 @@ function buildPattern(width, height, wallCells = []) {
 }
 
 export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
-    // Blueprint 1: The Machine God Nave (21 x 11) - Monumental Hall with buttress arches & aisle
+    // Blueprint 1: The Machine God Nave (21 x 11) - processional axis,
+    // lateral chapels and an open cross-cut under the current flat contract.
     Object.freeze({
         id: 'room_biomech_machine_nave',
         family: 'gate',
         themeStyle: 'giger',
         pattern: buildPattern(21, 11, [
-            { x: 3, y: 2, w: 2, h: 2 },
-            { x: 3, y: 7, w: 2, h: 2 },
-            { x: 16, y: 2, w: 2, h: 2 },
-            { x: 16, y: 7, w: 2, h: 2 }
+            // North chapel returns: the outer stems conceal side pockets
+            // while the seven-cell central nave remains readable from entry.
+            { x: 3, y: 2, w: 4, h: 1 },
+            { x: 3, y: 2, w: 1, h: 3 },
+            { x: 14, y: 2, w: 4, h: 1 },
+            { x: 17, y: 2, w: 1, h: 3 },
+            // South returns compress the threshold, then release at the
+            // clear transept on row five.
+            { x: 3, y: 6, w: 1, h: 3 },
+            { x: 3, y: 8, w: 4, h: 1 },
+            { x: 17, y: 6, w: 1, h: 3 },
+            { x: 14, y: 8, w: 4, h: 1 }
         ]),
         sockets: [
             { id: 'approach', side: 's', width: 3, required: true },
@@ -37,22 +46,28 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['ringCrossing', 'objective'],
         structuralAnchors: [
-            { id: 'buttress_nw', type: 'prop_pipe_organ_heat_exchanger', x: 4, y: 3 },
+            { id: 'buttress_nw', type: 'prop_pipe_organ_heat_exchanger', x: 4, y: 2 },
             { id: 'buttress_sw', type: 'prop_pipe_organ_heat_exchanger', x: 4, y: 8 },
-            { id: 'buttress_ne', type: 'prop_pipe_organ_heat_exchanger', x: 16, y: 3 },
+            { id: 'buttress_ne', type: 'prop_pipe_organ_heat_exchanger', x: 16, y: 2 },
             { id: 'buttress_se', type: 'prop_pipe_organ_heat_exchanger', x: 16, y: 8 }
         ],
         interactionAnchors: [
             { id: 'apse_scripture_terminal', type: 'prop_liturgical_terminal_lectern', x: 10, y: 3 },
-            { id: 'conduit_bridge_controls', type: 'base_console', x: 10, y: 6 }
+            { id: 'conduit_bridge_controls', type: 'base_console', x: 12, y: 6 }
         ],
+        signatureAnchorId: 'apse_scripture_terminal',
         compassAnchors: { approach: 'approach', objective: 'apse_scripture_terminal' },
-        coverZones: [{ x: 3, y: 2, w: 3, h: 3 }, { x: 15, y: 2, w: 3, h: 3 }],
-        encounterZones: [{ id: 'nave_concourse', x: 7, y: 3, w: 7, h: 5 }],
-        rewardAnchors: [{ id: 'votive_shrine_relic', type: 'prop_bunker_supplies', x: 10, y: 2 }],
-        loreAnchors: [{ id: 'nave_catechism_log', type: 'lore_terminal', x: 2, y: 5 }],
+        coverZones: [
+            { x: 3, y: 2, w: 4, h: 3 },
+            { x: 14, y: 2, w: 4, h: 3 },
+            { x: 3, y: 6, w: 4, h: 3 },
+            { x: 14, y: 6, w: 4, h: 3 }
+        ],
+        encounterZones: [{ id: 'nave_concourse', x: 7, y: 5, w: 7, h: 4 }],
+        rewardAnchors: [{ id: 'votive_shrine_relic', type: 'prop_bunker_supplies', x: 2, y: 3 }],
+        loreAnchors: [{ id: 'nave_catechism_log', type: 'lore_terminal', x: 18, y: 3 }],
         hazardZones: [],
-        quietZones: [],
+        quietZones: [{ x: 0, y: 2, w: 3, h: 3 }],
         safeZone: false,
         containmentBounds: { minX: 0, minY: 0, maxX: 20, maxY: 10 },
         presentationVariants: ['intact', 'consecrated', 'desecrated'],
@@ -192,10 +207,14 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         id: 'room_cyber_surgical_fabrication_ward',
         family: 'medical',
         themeStyle: 'giger',
+        // P1 dual-process proof: opposing returns make one S-shaped divider.
+        // The south threshold offers a short fabrication route or a longer,
+        // private care route; both reconnect through the permanent north
+        // crosscut. Presentation states never change this topology.
         pattern: buildPattern(19, 11, [
-            // Dividing wall between Bay A and Bay B with open center threshold and approach
-            { x: 9, y: 1, w: 1, h: 3 },
-            { x: 9, y: 5, w: 1, h: 2 }
+            { x: 9, y: 3, w: 5, h: 1 },
+            { x: 9, y: 4, w: 1, h: 3 },
+            { x: 4, y: 7, w: 6, h: 1 }
         ]),
         sockets: [
             { id: 'entry', side: 's', width: 3, required: true }
@@ -205,20 +224,29 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['support', 'questDestination'],
         structuralAnchors: [
-            { id: 'bay_divider_north', type: 'prop_vital_monitor', x: 9, y: 2 },
-            { id: 'bay_divider_south', type: 'prop_vital_monitor', x: 9, y: 6 }
+            { id: 'bay_divider_north', type: 'prop_vital_monitor', x: 11, y: 3 },
+            { id: 'bay_divider_south', type: 'prop_vital_monitor', x: 7, y: 7 }
         ],
         interactionAnchors: [
             { id: 'surgical_slab_controls', type: 'prop_medical_bed', x: 5, y: 5 },
             { id: 'fabricator_ward_terminal', type: 'prop_fabricator_workstation', x: 14, y: 5 }
         ],
+        signatureAnchorId: 'surgical_slab_controls',
         compassAnchors: { approach: 'entry', objective: 'surgical_slab_controls' },
-        coverZones: [{ x: 8, y: 1, w: 3, h: 9 }],
+        coverZones: [
+            { x: 9, y: 3, w: 5, h: 1 },
+            { x: 9, y: 3, w: 1, h: 5 },
+            { x: 4, y: 7, w: 6, h: 1 }
+        ],
         encounterZones: [],
-        rewardAnchors: [{ id: 'surgical_supplies', type: 'prop_bunker_supplies', x: 2, y: 2 }],
-        loreAnchors: [{ id: 'surgical_triage_log', type: 'lore_terminal', x: 16, y: 2 }],
+        rewardAnchors: [{ id: 'surgical_supplies', type: 'prop_bunker_supplies', x: 3, y: 4 }],
+        loreAnchors: [{ id: 'surgical_triage_log', type: 'lore_terminal', x: 16, y: 6 }],
         hazardZones: [],
-        quietZones: [{ x: 0, y: 0, w: 19, h: 11 }],
+        quietZones: [
+            { x: 1, y: 3, w: 8, h: 5 },
+            { x: 10, y: 3, w: 8, h: 5 },
+            { x: 7, y: 8, w: 5, h: 3 }
+        ],
         safeZone: true,
         containmentBounds: { minX: 0, minY: 0, maxX: 18, maxY: 10 },
         presentationVariants: ['sterile', 'field_dressing', 'abandoned'],
@@ -274,12 +302,18 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         id: 'room_stasis_bunk_sepulcher',
         family: 'fabricator',
         themeStyle: 'giger',
+        // P1 quiet-release proof: an offset sleeping comb frames a completely
+        // open three-cell inspection spine. Shallow north/south niches invite
+        // observation without turning the room into another forced puzzle.
         pattern: buildPattern(15, 9, [
-            // Pod divider buttresses along north and south walls
-            { x: 4, y: 1, w: 2, h: 1 },
-            { x: 9, y: 1, w: 2, h: 1 },
-            { x: 4, y: 7, w: 2, h: 1 },
-            { x: 9, y: 7, w: 2, h: 1 }
+            { x: 3, y: 1, w: 3, h: 1 },
+            { x: 9, y: 1, w: 3, h: 1 },
+            { x: 3, y: 2, w: 1, h: 1 },
+            { x: 11, y: 2, w: 1, h: 1 },
+            { x: 4, y: 6, w: 1, h: 1 },
+            { x: 12, y: 6, w: 1, h: 1 },
+            { x: 4, y: 7, w: 3, h: 1 },
+            { x: 10, y: 7, w: 3, h: 1 }
         ]),
         sockets: [
             { id: 'entry', side: 'w', width: 3, required: true },
@@ -290,19 +324,25 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['support', 'questDestination'],
         structuralAnchors: [
-            { id: 'stasis_rack_north', type: 'prop_exosuit_docking_gantry', x: 4, y: 1 },
-            { id: 'stasis_rack_south', type: 'prop_exosuit_docking_gantry', x: 9, y: 7 }
+            { id: 'stasis_rack_north', type: 'prop_flesh_steel_cradle', x: 4, y: 1 },
+            { id: 'stasis_rack_south', type: 'prop_flesh_steel_cradle', x: 11, y: 7 }
         ],
         interactionAnchors: [
-            { id: 'chrysalis_pod_console', type: 'prop_liturgical_terminal_lectern', x: 7, y: 4 }
+            { id: 'chrysalis_pod_console', type: 'prop_icey_thermal_pod', x: 7, y: 2 }
         ],
+        signatureAnchorId: 'chrysalis_pod_console',
         compassAnchors: { approach: 'entry', objective: 'chrysalis_pod_console' },
-        coverZones: [{ x: 3, y: 1, w: 4, h: 2 }, { x: 8, y: 6, w: 4, h: 2 }],
+        coverZones: [{ x: 3, y: 1, w: 4, h: 2 }, { x: 9, y: 6, w: 4, h: 2 }],
         encounterZones: [],
-        rewardAnchors: [{ id: 'scavenged_ration_cache', type: 'prop_bunker_supplies', x: 12, y: 4 }],
-        loreAnchors: [{ id: 'sepulcher_survivor_slate', type: 'lore_terminal', x: 2, y: 2 }],
+        // Supplies and the final slate share one optional southeast survivor
+        // pocket, leaving the threshold and inspection spine visually calm.
+        rewardAnchors: [{ id: 'scavenged_ration_cache', type: 'prop_bunker_supplies', x: 11, y: 6 }],
+        loreAnchors: [{ id: 'sepulcher_survivor_slate', type: 'lore_terminal', x: 13, y: 6 }],
         hazardZones: [],
-        quietZones: [{ x: 0, y: 0, w: 15, h: 9 }],
+        quietZones: [
+            { x: 0, y: 3, w: 15, h: 3 },
+            { x: 6, y: 1, w: 3, h: 3 }
+        ],
         safeZone: true,
         containmentBounds: { minX: 0, minY: 0, maxX: 14, maxY: 8 },
         presentationVariants: ['huddled', 'abandoned', 'dormant'],
@@ -316,15 +356,19 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         id: 'room_quarantine_airlock_threshold',
         family: 'puzzle',
         themeStyle: 'bunker',
+        // P1 compression proof: two offset three-cell sluice openings create
+        // an immutable S-shaped crossing. Presentation can purge the central
+        // gallery, but no state ever changes floor/wall topology.
         pattern: buildPattern(13, 9, [
-            // Chamfered 45-degree blast corners
             { x: 0, y: 0, w: 2, h: 2 },
             { x: 11, y: 0, w: 2, h: 2 },
             { x: 0, y: 7, w: 2, h: 2 },
             { x: 11, y: 7, w: 2, h: 2 },
-            // Wall jambs
-            { x: 3, y: 4, w: 1, h: 1 },
-            { x: 9, y: 4, w: 1, h: 1 }
+            // Upper opening x=7..9; lower opening x=3..5.
+            { x: 0, y: 3, w: 7, h: 1 },
+            { x: 10, y: 3, w: 3, h: 1 },
+            { x: 0, y: 5, w: 3, h: 1 },
+            { x: 6, y: 5, w: 7, h: 1 }
         ]),
         sockets: [
             { id: 'entry', side: 's', width: 3, required: true },
@@ -335,19 +379,23 @@ export const CATHEDRAL_ROOM_BLUEPRINTS = Object.freeze([
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['challenge', 'questDestination'],
         structuralAnchors: [
-            { id: 'decon_station_west', type: 'prop_decon_eyewash_shower_station', x: 3, y: 4 },
-            { id: 'decon_station_east', type: 'prop_decon_eyewash_shower_station', x: 9, y: 4 }
+            { id: 'decon_station_west', type: 'prop_decon_eyewash_shower_station', x: 2, y: 5 },
+            { id: 'decon_station_east', type: 'prop_decon_eyewash_shower_station', x: 10, y: 3 }
         ],
         interactionAnchors: [
-            { id: 'airlock_purge_override', type: 'prop_pipe_organ_heat_exchanger', x: 6, y: 4 }
+            { id: 'airlock_purge_override', type: 'prop_pipe_organ_heat_exchanger', x: 1, y: 4 }
         ],
+        signatureAnchorId: 'airlock_purge_override',
         compassAnchors: { approach: 'entry', objective: 'airlock_purge_override' },
-        coverZones: [{ x: 2, y: 3, w: 3, h: 3 }, { x: 8, y: 3, w: 3, h: 3 }],
+        coverZones: [{ x: 1, y: 6, w: 5, h: 3 }, { x: 7, y: 0, w: 5, h: 3 }],
         encounterZones: [],
-        rewardAnchors: [{ id: 'emergency_o2_pack', type: 'prop_oxygen_bottle_cascade_rack', x: 6, y: 2 }],
+        rewardAnchors: [{ id: 'emergency_o2_pack', type: 'prop_oxygen_bottle_cascade_rack', x: 10, y: 1 }],
         loreAnchors: [],
-        hazardZones: [{ id: 'decon_purge_plume', x: 4, y: 3, w: 5, h: 3 }],
-        quietZones: [{ x: 0, y: 0, w: 13, h: 9 }],
+        hazardZones: [{ id: 'decon_purge_plume', x: 3, y: 4, w: 7, h: 1 }],
+        quietZones: [
+            { x: 2, y: 6, w: 9, h: 3 },
+            { x: 2, y: 0, w: 9, h: 3 }
+        ],
         safeZone: true,
         containmentBounds: { minX: 0, minY: 0, maxX: 12, maxY: 8 },
         presentationVariants: ['pressurized', 'purging', 'sealed'],

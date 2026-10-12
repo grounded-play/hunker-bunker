@@ -1,0 +1,539 @@
+{
+  "uploaded": "2026-10-11",
+  "note": "World completion 2026-10-11: 39 3D props and 20 layered texture prompts (4 variants each)",
+  "models": {
+    "life_pallet_racking": {
+      "number": 1,
+      "district": "storage, cargo halls",
+      "size": "2.6m x 2.8m",
+      "accent": "amber",
+      "placedBy": "storage room kit"
+    },
+    "life_server_racks": {
+      "number": 2,
+      "district": "ops, astrogation, security",
+      "size": "2.1m",
+      "accent": "amber",
+      "placedBy": "room kit"
+    },
+    "life_transformer_bank": {
+      "number": 3,
+      "district": "power, reactor",
+      "size": "2.2m",
+      "accent": "red",
+      "placedBy": "room kit"
+    },
+    "life_fire_station": {
+      "number": 4,
+      "district": "corridors, room walls",
+      "size": "1.8m",
+      "accent": "red",
+      "placedBy": "hallway dressing"
+    },
+    "life_conveyor_section": {
+      "number": 5,
+      "district": "fabrication, process lines",
+      "size": "0.9m x 3.0m",
+      "accent": "amber",
+      "placedBy": "room kit"
+    },
+    "life_cistern_tank": {
+      "number": 6,
+      "district": "utility, camp",
+      "size": "2.8m",
+      "accent": "cyan",
+      "placedBy": "room kit, camp",
+      "pairsWith": "camp_water_barrel"
+    },
+    "life_scaffold_tower": {
+      "number": 7,
+      "district": "damaged halls",
+      "size": "2.7m",
+      "accent": "amber",
+      "placedBy": "chunk dressing near damaged walls"
+    },
+    "life_forklift": {
+      "number": 8,
+      "district": "storage, cargo, cryo",
+      "size": "2.2m x 2.6m",
+      "accent": "amber",
+      "placedBy": "room kit"
+    },
+    "life_sink_row": {
+      "number": 9,
+      "district": "quarters, decon",
+      "size": "1.1m x 2.4m",
+      "accent": "none",
+      "placedBy": "room kit (quarters)",
+      "pairsWith": [
+        "life_cistern_tank",
+        "camp_water_barrel"
+      ]
+    },
+    "life_shower_stall": {
+      "number": 10,
+      "district": "quarters, decon",
+      "size": "2.2m",
+      "accent": "none",
+      "placedBy": "room kit",
+      "pairsWith": [
+        "life_cistern_tank",
+        "camp_water_barrel"
+      ]
+    },
+    "life_laundry_machines": {
+      "number": 11,
+      "district": "quarters, camp",
+      "size": "1.2m",
+      "accent": "amber",
+      "placedBy": "room kit, camp"
+    },
+    "life_weight_bench": {
+      "number": 12,
+      "district": "quarters, rec",
+      "size": "1.4m",
+      "accent": "none",
+      "placedBy": "room kit"
+    },
+    "life_arcade_cabinet": {
+      "number": 13,
+      "district": "rec, mess",
+      "size": "1.8m",
+      "accent": "amber",
+      "placedBy": "room kit"
+    },
+    "life_filing_cabinets": {
+      "number": 14,
+      "district": "ops, admin, crypt",
+      "size": "1.4m x 1.8m",
+      "accent": "none",
+      "placedBy": "room kit"
+    },
+    "life_overseer_desk": {
+      "number": 15,
+      "district": "ops, executive crypt",
+      "size": "1.2m x 2.0m",
+      "accent": "amber",
+      "placedBy": "room kit"
+    },
+    "life_planning_board": {
+      "number": 16,
+      "district": "ops, engineering",
+      "size": "1.9m",
+      "accent": "red",
+      "placedBy": "room kit"
+    },
+    "life_algae_tank": {
+      "number": 17,
+      "district": "hydro, medical, camp",
+      "size": "1.6m",
+      "accent": "green",
+      "placedBy": "room kit"
+    },
+    "life_surgical_lamp": {
+      "number": 18,
+      "district": "medical, surgical ward",
+      "size": "2.3m",
+      "accent": "amber",
+      "placedBy": "medical kit"
+    },
+    "cryo_ice_crawler": {
+      "number": 19,
+      "district": "cryo halls, ledges",
+      "size": "2.0m x 3.2m",
+      "accent": "cyan",
+      "placedBy": "chunk dressing (cryo)"
+    },
+    "cryo_frozen_cascade": {
+      "number": 20,
+      "district": "cryo walls",
+      "size": "2.8m",
+      "accent": "cyan",
+      "placedBy": "wall dressing (cryo)"
+    },
+    "cryo_snowbound_crates": {
+      "number": 21,
+      "district": "cryo storage",
+      "size": "1.6m",
+      "accent": "cyan",
+      "placedBy": "room kit (cryo)"
+    },
+    "cryo_heater_station": {
+      "number": 22,
+      "district": "cryo camps, airlocks",
+      "size": "1.7m",
+      "accent": "amber",
+      "placedBy": "camp, airlock"
+    },
+    "cryo_ice_blocks": {
+      "number": 23,
+      "district": "cryo water harvesting",
+      "size": "1.2m",
+      "accent": "cyan",
+      "placedBy": "room kit (cryo)"
+    },
+    "hive_resin_pillar": {
+      "number": 24,
+      "district": "hive, bio rooms",
+      "size": "2.8m",
+      "accent": "green",
+      "placedBy": "wall dressing (bio)"
+    },
+    "hive_cocooned_crew": {
+      "number": 25,
+      "district": "hive walls",
+      "size": "2.0m",
+      "accent": "green",
+      "placedBy": "hive site, story pocket"
+    },
+    "hive_brood_dome": {
+      "number": 26,
+      "district": "hive nests",
+      "size": "1.8m x 2.6m",
+      "accent": "green",
+      "placedBy": "hive site"
+    },
+    "hive_pheromone_node": {
+      "number": 27,
+      "district": "hive trails",
+      "size": "1.3m",
+      "accent": "green",
+      "placedBy": "hive trail"
+    },
+    "hive_tendril_arch": {
+      "number": 28,
+      "district": "bio doorways",
+      "size": "3.2m x 3.0m",
+      "accent": "green",
+      "placedBy": "door frames (bio)"
+    },
+    "hive_assimilated_generator": {
+      "number": 29,
+      "district": "bio engineering",
+      "size": "1.9m",
+      "accent": "green",
+      "placedBy": "room kit (bio)"
+    },
+    "crash_engine_nacelle": {
+      "number": 30,
+      "district": "crash site",
+      "size": "2.0m x 4.0m",
+      "accent": "amber",
+      "placedBy": "crash-site slots"
+    },
+    "crash_hull_panels": {
+      "number": 31,
+      "district": "crash site, impact trails",
+      "size": "1.0m x 3.0m",
+      "accent": "none",
+      "placedBy": "crash-site slots, scatter"
+    },
+    "crash_drag_chute": {
+      "number": 32,
+      "district": "crash site",
+      "size": "0.6m x 4.0m",
+      "accent": "red",
+      "placedBy": "crash-site slots"
+    },
+    "salvage_tagged_heap": {
+      "number": 33,
+      "district": "crash site, camps, base",
+      "size": "1.4m",
+      "accent": "amber",
+      "placedBy": "base, camp"
+    },
+    "chasm_gondola": {
+      "number": 34,
+      "district": "in the void",
+      "size": "3.0m",
+      "accent": "amber",
+      "placedBy": "src/chasmLandmarks.js sites"
+    },
+    "chasm_broken_catwalk": {
+      "number": 35,
+      "district": "ledge edge, drooping into void",
+      "size": "5.0m",
+      "accent": "none",
+      "placedBy": "chasm sites facing a ledge"
+    },
+    "chasm_rappel_anchor": {
+      "number": 36,
+      "district": "ledges",
+      "size": "1.2m",
+      "accent": "red",
+      "placedBy": "ledge dressing"
+    },
+    "chasm_beacon_post": {
+      "number": 37,
+      "district": "ledges near void",
+      "size": "1.8m",
+      "accent": "red",
+      "placedBy": "ledge dressing"
+    },
+    "camp_canvas_tent": {
+      "number": 38,
+      "district": "camps",
+      "size": "2.0m x 3.0m",
+      "accent": "amber",
+      "placedBy": "camp courts"
+    },
+    "camp_water_barrel": {
+      "number": 40,
+      "district": "camps, utility",
+      "size": "1.2m",
+      "accent": "cyan",
+      "placedBy": "camp courts, paired with life_cistern_tank near sinks/showers",
+      "pairsWith": "life_cistern_tank"
+    }
+  },
+  "surfaces": {
+    "tex_path_worn_deck": {
+      "district": "bunker",
+      "worldScale": 2.0,
+      "variants": [
+        "tex_path_worn_deck_a.jpg",
+        "tex_path_worn_deck_b.jpg",
+        "tex_path_worn_deck_c.jpg",
+        "tex_path_worn_deck_d.jpg"
+      ],
+      "keyMode": "opaque"
+    },
+    "tex_path_polished_concrete": {
+      "district": "bunker",
+      "worldScale": 2.0,
+      "variants": [
+        "tex_path_polished_concrete_a.jpg",
+        "tex_path_polished_concrete_b.jpg",
+        "tex_path_polished_concrete_c.jpg",
+        "tex_path_polished_concrete_d.jpg"
+      ],
+      "keyMode": "opaque"
+    },
+    "tex_path_packed_snow": {
+      "district": "cryo",
+      "worldScale": 2.0,
+      "variants": [
+        "tex_path_packed_snow_a.jpg",
+        "tex_path_packed_snow_b.jpg",
+        "tex_path_packed_snow_c.jpg",
+        "tex_path_packed_snow_d.jpg"
+      ],
+      "keyMode": "opaque"
+    },
+    "tex_path_slush_track": {
+      "district": "cryo",
+      "worldScale": 2.0,
+      "variants": [
+        "tex_path_slush_track_a.jpg",
+        "tex_path_slush_track_b.jpg",
+        "tex_path_slush_track_c.jpg",
+        "tex_path_slush_track_d.jpg"
+      ],
+      "keyMode": "opaque"
+    },
+    "tex_path_resin_trail": {
+      "district": "bio",
+      "worldScale": 2.0,
+      "variants": [
+        "tex_path_resin_trail_a.jpg",
+        "tex_path_resin_trail_b.jpg",
+        "tex_path_resin_trail_c.jpg",
+        "tex_path_resin_trail_d.jpg"
+      ],
+      "keyMode": "opaque"
+    },
+    "tex_path_trodden_spores": {
+      "district": "bio",
+      "worldScale": 2.0,
+      "variants": [
+        "tex_path_trodden_spores_a.jpg",
+        "tex_path_trodden_spores_b.jpg",
+        "tex_path_trodden_spores_c.jpg",
+        "tex_path_trodden_spores_d.jpg"
+      ],
+      "keyMode": "opaque"
+    },
+    "tex_path_mud_track": {
+      "district": "camp",
+      "worldScale": 2.0,
+      "variants": [
+        "tex_path_mud_track_a.jpg",
+        "tex_path_mud_track_b.jpg",
+        "tex_path_mud_track_c.jpg",
+        "tex_path_mud_track_d.jpg"
+      ],
+      "keyMode": "opaque"
+    },
+    "tex_path_gravel_scree": {
+      "district": "ledge",
+      "worldScale": 2.0,
+      "variants": [
+        "tex_path_gravel_scree_a.jpg",
+        "tex_path_gravel_scree_b.jpg",
+        "tex_path_gravel_scree_c.jpg",
+        "tex_path_gravel_scree_d.jpg"
+      ],
+      "keyMode": "opaque"
+    },
+    "tex_shoulder_swept_grit": {
+      "district": "bunker",
+      "worldScale": 2.0,
+      "variants": [
+        "tex_shoulder_swept_grit_a.jpg",
+        "tex_shoulder_swept_grit_b.jpg",
+        "tex_shoulder_swept_grit_c.jpg",
+        "tex_shoulder_swept_grit_d.jpg"
+      ],
+      "keyMode": "opaque"
+    },
+    "tex_shoulder_ice_crust": {
+      "district": "cryo",
+      "worldScale": 2.0,
+      "variants": [
+        "tex_shoulder_ice_crust_a.jpg",
+        "tex_shoulder_ice_crust_b.jpg",
+        "tex_shoulder_ice_crust_c.jpg",
+        "tex_shoulder_ice_crust_d.jpg"
+      ],
+      "keyMode": "opaque"
+    },
+    "tex_shoulder_resin_lip": {
+      "district": "bio",
+      "worldScale": 2.0,
+      "variants": [
+        "tex_shoulder_resin_lip_a.jpg",
+        "tex_shoulder_resin_lip_b.jpg",
+        "tex_shoulder_resin_lip_c.jpg",
+        "tex_shoulder_resin_lip_d.jpg"
+      ],
+      "keyMode": "opaque"
+    },
+    "tex_overlay_puddles": {
+      "district": "bunker",
+      "worldScale": 3.0,
+      "variants": [
+        "tex_overlay_puddles_a.jpg",
+        "tex_overlay_puddles_b.jpg",
+        "tex_overlay_puddles_c.jpg",
+        "tex_overlay_puddles_d.jpg"
+      ],
+      "keyMode": "opaque"
+    }
+  },
+  "decals": {
+    "strip_cart_ruts": {
+      "kind": "strip_1:4",
+      "surface": "floor",
+      "worldScale": [
+        1.0,
+        4.0
+      ],
+      "keyMode": "magenta",
+      "variants": [
+        "strip_cart_ruts_a.jpg",
+        "strip_cart_ruts_b.jpg",
+        "strip_cart_ruts_c.jpg",
+        "strip_cart_ruts_d.jpg"
+      ]
+    },
+    "strip_drag_marks": {
+      "kind": "strip_1:4",
+      "surface": "floor",
+      "worldScale": [
+        1.0,
+        4.0
+      ],
+      "keyMode": "magenta",
+      "variants": [
+        "strip_drag_marks_a.jpg",
+        "strip_drag_marks_b.jpg",
+        "strip_drag_marks_c.jpg",
+        "strip_drag_marks_d.jpg"
+      ]
+    },
+    "strip_walkway_borders": {
+      "kind": "strip_1:4",
+      "surface": "floor",
+      "worldScale": [
+        1.5,
+        6.0
+      ],
+      "keyMode": "magenta",
+      "variants": [
+        "strip_walkway_borders_a.jpg",
+        "strip_walkway_borders_b.jpg",
+        "strip_walkway_borders_c.jpg",
+        "strip_walkway_borders_d.jpg"
+      ]
+    },
+    "strip_drain_gutter": {
+      "kind": "strip_1:4",
+      "surface": "floor",
+      "worldScale": [
+        0.6,
+        4.0
+      ],
+      "keyMode": "magenta",
+      "variants": [
+        "strip_drain_gutter_a.jpg",
+        "strip_drain_gutter_b.jpg",
+        "strip_drain_gutter_c.jpg",
+        "strip_drain_gutter_d.jpg"
+      ]
+    },
+    "strip_sled_tracks": {
+      "kind": "strip_1:4",
+      "surface": "floor",
+      "worldScale": [
+        1.0,
+        4.0
+      ],
+      "keyMode": "magenta",
+      "variants": [
+        "strip_sled_tracks_a.jpg",
+        "strip_sled_tracks_b.jpg",
+        "strip_sled_tracks_c.jpg",
+        "strip_sled_tracks_d.jpg"
+      ]
+    },
+    "strip_hive_veins": {
+      "kind": "strip_1:4",
+      "surface": "floor",
+      "worldScale": [
+        1.0,
+        4.0
+      ],
+      "keyMode": "magenta",
+      "variants": [
+        "strip_hive_veins_a.jpg",
+        "strip_hive_veins_b.jpg",
+        "strip_hive_veins_c.jpg",
+        "strip_hive_veins_d.jpg"
+      ]
+    },
+    "decal_door_wear_apron": {
+      "kind": "square",
+      "surface": "floor",
+      "worldScale": 3.0,
+      "keyMode": "magenta",
+      "variants": [
+        "decal_door_wear_apron_a.jpg",
+        "decal_door_wear_apron_b.jpg",
+        "decal_door_wear_apron_c.jpg",
+        "decal_door_wear_apron_d.jpg"
+      ]
+    },
+    "decal_junction_turn_wear": {
+      "kind": "square",
+      "surface": "floor",
+      "worldScale": 2.5,
+      "keyMode": "magenta",
+      "variants": [
+        "decal_junction_turn_wear_a.jpg",
+        "decal_junction_turn_wear_b.jpg",
+        "decal_junction_turn_wear_c.jpg",
+        "decal_junction_turn_wear_d.jpg"
+      ]
+    }
+  }
+}

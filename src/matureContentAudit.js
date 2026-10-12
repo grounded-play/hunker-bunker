@@ -34,9 +34,9 @@ export const MATURE_CONTENT_MANIFEST = Object.freeze([
         rating: 'Adult / Mature (18+) Romance',
         description: 'Interactive branching dialogue trees with camp leaders and entities featuring intense physical and emotional intimacy, thermal shelter body heat, seductive touch, erotic bio-link synchronization, and sensual spore massages.',
         tags: ['Erotic Sci-Fi', 'Sensual Choices', 'Camp Romance', 'Intimate Touch', 'Adult Themes'],
-        inPlay: 'Text dialogue with still artwork; non-explicit, no nudity is depicted. In play: talk to Sister Val at Camp Tallow (also Briggs at Camp Vesper, Kaelen at Camp Meridian, Aria at hive relays, Dr. Nahl at the bio-lab).',
+        inPlay: 'Text dialogue with still artwork; non-explicit, no nudity is depicted. In play: talk to Sister Martha at Camp Tallow (also Briggs at Camp Vesper, Kaelen at Camp Meridian, Aria at hive relays, Dr. Nahl at the bio-lab).',
         dialogueTrees: [
-            { id: 'sister_val', label: '🩸 SISTER VAL (TALLOW FLESH COMMUNION)' },
+            { id: 'sister_val', label: '🩸 SISTER MARTHA (TALLOW FLESH COMMUNION)' },
             { id: 'commander_briggs', label: '🛡️ BRIGGS (VESPER COMBAT ADRENALINE)' },
             { id: 'overseer_kaelen', label: '⚡ KAELEN (MERIDIAN BIO-LINK OVERCLOCK)' },
             { id: 'aria_queen_mimic', label: '👑 ARIA (HIVE QUEEN SEDUCTIVE MIMIC)' },

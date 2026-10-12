@@ -255,7 +255,8 @@
       "placeholder_agent": "AGENT",
       "commentary_list": "DEVELOPER COMMENTARY",
       "commentary_read_all": "READ ALL",
-      "content_guide": "CONTENT GUIDE (MATURE THEMES)"
+      "content_guide": "CONTENT GUIDE (MATURE THEMES)",
+      "graphics": "GRAPHICS"
     },
     "action": {
       "open": "OPEN",
@@ -1236,7 +1237,20 @@
       "purchase_awaiting_sandbox": "Beta test purchase: approve it in the Steam overlay. Steam sandbox, no charge.",
       "purchase_declined": "Purchase cancelled in Steam. Nothing was charged.",
       "purchase_complete": "+{count} Cache Key(s) added to your inventory.",
-      "purchase_pending": "Steam has not confirmed the payment yet. Your keys arrive the next time you open the store."
+      "purchase_pending": "Steam has not confirmed the payment yet. Your keys arrive the next time you open the store.",
+      "quartermaster_title": "QUARTERMASTER",
+      "quartermaster_sub": "SHARDS FOR REAGENTS · WEEKLY LIMITS",
+      "assembly_title": "ASSEMBLY BAY",
+      "assembly_sub": "INGOTS + REAGENTS → OVERCLOCK MODULES",
+      "trade": "TRADE",
+      "assemble": "ASSEMBLE",
+      "week_count": "THIS WEEK {used}/{max}",
+      "shard_cost": "{cost} SHARDS",
+      "traded": "{item} ACQUIRED.",
+      "assembled": "{item} ASSEMBLED.",
+      "trade_failed": "Trade failed: {reason}.",
+      "assemble_failed": "Assembly failed: {reason}.",
+      "reagents_owned": "INGOTS {ingots} · MATRIX {matrix} · AMBERGRIS {ambergris}"
     },
     "lobby": {
       "connecting": "CONNECTING...",
@@ -1592,7 +1606,10 @@
       "listen_hint": "Listen, then decide how you want to help.",
       "quote": "\"{text}\"",
       "next_action": "Your next action changes the launch manifest and the ending vector.",
-      "scar_gained": "LAST NIGHT LEFT ITS MARK: {scar}"
+      "scar_gained": "LAST NIGHT LEFT ITS MARK: {scar}",
+      "services": "CAMP SERVICES ({count})",
+      "services_kicker": "CAMP SERVICES",
+      "services_aria_close": "Close camp services"
     },
     "title": {
       "pregalien_command": "PREGALIEN | HIVE COMMAND",
@@ -2021,7 +2038,221 @@
         "access_way": "ACCESS WAY",
         "unmarked": "UNMARKED PASSAGE"
       },
+      "site": {
+        "impact_site": "IMPACT SITE",
+        "foundry": "FABRICATION FOUNDRY",
+        "cave_mouth": "SUBTERRANEAN CHASM",
+        "o2_generator": "ATMOSPHERIC RECLAIMER",
+        "wreck": {
+          "scout": "SCOUT WRECK",
+          "tank": "TANK WRECK",
+          "engineer": "ENGINEER WRECK",
+          "infiltrator": "INFILTRATOR WRECK"
+        }
+      },
+      "role": {
+        "generic": "SECTOR",
+        "utility": "UTILITY",
+        "medical": "MEDICAL",
+        "security": "SECURITY",
+        "engineering": "ENGINEERING",
+        "storage": "STORAGE",
+        "reward": "CACHE",
+        "camp": "OUTPOST",
+        "hive": "HIVE",
+        "nest": "NEST",
+        "cryo_lab": "CRYO RESEARCH",
+        "foundry": "HEAVY INDUSTRY",
+        "cave": "SECTOR ZERO",
+        "life_support": "LIFE SUPPORT",
+        "transit": "TRANSIT",
+        "home": "SURFACE ANCHOR"
+      },
       "unscanned": "??? · SCAN TO IDENTIFY"
+    },
+    "equipment": {
+      "effect": {
+        "4130": "Cryo effects last 5% longer.",
+        "4131": "Projectiles gain +1 pierce.",
+        "4132": "Spore and gas damage −8%.",
+        "4133": "Fire rate +8%.",
+        "4134": "Magazine +1 round.",
+        "4135": "Detects hidden routes and caches within 10 m.",
+        "4136": "+5% damage to non-boss hostiles.",
+        "4137": "Healing received +10%.",
+        "4138": "Pickup magnet radius +12%.",
+        "4139": "Salvage value +10%.",
+        "4140": "Cryo duration +8%.",
+        "4141": "Pickup magnet radius +20%.",
+        "4142": "Spore and gas damage −12%.",
+        "4143": "Kinetic projectiles +1 pierce.",
+        "4144": "Shield recharge delay −10%.",
+        "4145": "Detects hidden routes within 15 m.",
+        "4146": "+15% speed below 25% health.",
+        "4147": "Five rapid kills refund Dash.",
+        "4160": "+2 max health; −15% movement speed.",
+        "4161": "Destroyed props drop salvage; −10% fire rate.",
+        "4162": "+25% boss damage; −10% other damage.",
+        "4163": "Lore drops grant salvage; −1 magazine round.",
+        "4164": "+1 relic rarity tier; −10% max O₂.",
+        "4165": "Duplicate relics become shards; −15% salvage value.",
+        "4166": "O₂ drains 25% slower; −40% healing received.",
+        "4167": "Ring crossings cost no O₂ but spawn an elite."
+      },
+      "weapon_profile": {
+        "mk1_sidearm": "Stable, efficient sidearm profile.",
+        "pulse_carbine": "Fast mid-range pulse with reduced impact.",
+        "scatter_rep": "Three close-range projectiles per shot.",
+        "rail_marksman": "Slow heavy penetrator with extended reach.",
+        "neon_smg": "High fire rate with lighter rounds.",
+        "cryo_lance": "Precise long-life cryogenic projectile."
+      },
+      "frame": "Factory weapon. Fit a Foundry profile to change how it fires.",
+      "cosmetic": "Cosmetic: changes the look only.",
+      "summary": "WHAT THIS LOADOUT DOES",
+      "none": "Nothing fitted yet. Click a slot to choose.",
+      "change": "Click a slot to change it."
+    },
+    "unlock": {
+      "buy_shells": "BUY FOR {shells} SHELLS",
+      "slay_the_queen": "EARNED BY KILLING THE QUEEN",
+      "archivist": "EARNED BY THE ARCHIVIST ACHIEVEMENT",
+      "reach_depth": "EARNED BY REACHING DEPTH {depth}",
+      "class_runs": "EARNED AFTER {runs} {cls} RUNS",
+      "achievement": "EARNED BY AN ACHIEVEMENT",
+      "confirm_buy": "CLICK AGAIN TO BUY",
+      "not_enough_shells": "NOT ENOUGH SHELLS"
+    },
+    "camp_resident": {
+      "role": {
+        "mechanic": "MECHANIC",
+        "medic": "MEDIC",
+        "lookout": "LOOKOUT",
+        "cook": "COOK",
+        "radio": "RADIO OPERATOR",
+        "scavenger": "SCAVENGER",
+        "settler": "SETTLER"
+      },
+      "mechanic": {
+        "1": "Every hinge in this place squeals. I keep oiling them anyway.",
+        "2": "Bring me scrap and I can keep the generator honest another week.",
+        "3": "That suit of yours is held together by hope. Same as the walls."
+      },
+      "medic": {
+        "1": "Sit still. You are bleeding on my clean floor.",
+        "2": "We are out of everything but stubbornness. Stubbornness heals slow.",
+        "3": "Whatever you breathed out there, do not breathe it in here."
+      },
+      "lookout": {
+        "1": "Movement past the ridge all night. Nothing came closer. Yet.",
+        "2": "I count lights in the dark. Fewer every week.",
+        "3": "If you see a snail the size of a truck, you did not see it from here."
+      },
+      "cook": {
+        "1": "It is broth. It was broth yesterday. It will be broth tomorrow.",
+        "2": "Eat something. Nobody fights well hungry.",
+        "3": "Do not ask what is in it. It is warm. That is the whole recipe."
+      },
+      "radio": {
+        "1": "The relay hums at night. Sometimes it hums back.",
+        "2": "I keep calling the other camps. Some days somebody answers.",
+        "3": "Mothership chatter again. Polite, and not about us."
+      },
+      "scavenger": {
+        "1": "Picked the east tunnels clean. You should try deeper.",
+        "2": "Found a boot with the foot still in it. Kept the boot.",
+        "3": "If it is shiny and not nailed down, it is already in my pack."
+      },
+      "settler": {
+        "1": "Still getting used to sleeping without one eye open. Thank you.",
+        "2": "They gave me a bunk and a job. First time in months I have had either.",
+        "3": "Tell anyone out there: there is a place to come in from the cold."
+      },
+      "worried": {
+        "1": "The wall did not hold last night. We are patching it with whatever we have.",
+        "2": "Two of ours did not make it back in. Please, help us shore this up."
+      }
+    },
+    "input_hint": {
+      "pad": {
+        "map_pan": "[L-STICK / D-PAD] PAN",
+        "map_zoom": "[LB / RB] ZOOM",
+        "map_operator": "[A] OPERATOR",
+        "map_close": "[B] / [VIEW] CLOSE",
+        "dialogue_choose": "D-PAD TO CHOOSE • [A] SELECT • [B] WITHDRAW",
+        "compass_map": "[VIEW]",
+        "radar_scan": "Radar Scan [LB]",
+        "armory_cycle": "[LB / RB CYCLE]",
+        "menu_back": "[B]"
+      }
+    },
+    "sleep": {
+      "night_falls": "NIGHT FALLS",
+      "night_body": "The operator sleeps. Something out there does not.",
+      "morning_title": "DAY {day} · 06:00",
+      "morning_status": "{site} // A NEW DAY BEGINS",
+      "skip": "Press any key to wake"
+    },
+    "mystery": {
+      "kind": {
+        "courier": "COURIER CRATE",
+        "quarantine": "QUARANTINE POD",
+        "reliquary": "HIVE RELIQUARY",
+        "blacksite": "BLACK-SITE LOCKBOX"
+      },
+      "open": "OPEN {box}",
+      "opening": "OPENING {box} · {pct}%",
+      "locked": "{box} is keycard-locked. An Engineer could crack it.",
+      "outcome": {
+        "supplies": "{box}: supplies inside.",
+        "salvage": "{box}: salvage, still good.",
+        "lore": "{box}: someone left a record.",
+        "ambush": "{box}: it was a nest. Back off!",
+        "hazard": "{box}: seal breach. Get clear.",
+        "quest_hook": "{box}: a route chit. New lead on the map."
+      }
+    },
+    "graphics": {
+      "intro": "Everything starts at High. If the game stalls, auto-adjust lowers one setting at a time and records why below. Raise anything back whenever you like.",
+      "preset": "QUALITY PRESET",
+      "preset_high": "HIGH",
+      "preset_medium": "MEDIUM",
+      "preset_low": "LOW",
+      "preset_custom": "CUSTOM",
+      "auto_adjust": "AUTO-ADJUST WHEN THE GAME STALLS",
+      "label_resolution": "RENDER RESOLUTION",
+      "label_shadows": "SHADOWS",
+      "label_postProcessing": "POST-PROCESSING (BLOOM, FOCUS)",
+      "label_worldDetail": "WORLD DETAIL (PIPES, DRIFTS, ICICLES)",
+      "label_landmarks": "CHASM LANDMARKS",
+      "label_effects": "EFFECTS (STEAM, SPARKS, DUST)",
+      "val_resolution_100": "100% (NATIVE)",
+      "val_resolution_85": "85%",
+      "val_resolution_70": "70%",
+      "val_shadows_full": "FULL",
+      "val_shadows_reduced": "REDUCED (HALF RATE)",
+      "val_shadows_off": "OFF",
+      "val_postProcessing_on": "ON",
+      "val_postProcessing_off": "OFF",
+      "val_worldDetail_high": "HIGH",
+      "val_worldDetail_low": "LOW",
+      "val_landmarks_on": "ON",
+      "val_landmarks_off": "OFF",
+      "val_effects_full": "FULL",
+      "val_effects_reduced": "REDUCED (NO DUST)",
+      "val_effects_off": "OFF",
+      "auto_changes": "AUTOMATIC CHANGES",
+      "auto_none": "Nothing has been lowered automatically.",
+      "restore": "RESTORE",
+      "restore_label": "RESTORE WHAT AUTO-ADJUST LOWERED",
+      "change_entry": "{time} — {setting}: {from} → {to}. {fps} FPS for {seconds} s {area}; {cause}.",
+      "cause_gpu": "the graphics card was the limit",
+      "cause_cpu": "the game's main thread (CPU) was the limit",
+      "area_active": "in the bunker",
+      "area_cryo": "in the cryo sector",
+      "area_bio": "in the bio sector",
+      "area_unknown": "in the field",
+      "notice": "Display: {setting} lowered to {to} to keep the game smooth. See Settings › Graphics."
     }
   },
   "narrative": {

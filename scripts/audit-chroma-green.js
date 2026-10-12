@@ -45,7 +45,6 @@ export const CHROMA_GREEN_ALLOWLIST = new Set([
     'public/decal_failed_decon_kit.png',
     'public/decal_emergency_oxygen_nest.png',
     'public/decal_oil_spill_patch.png',
-    'public/decal_tallow_herb_cache.png',
     'public/decal_claw_scratches.png',
     'public/decal_hazard_stripes.png',
     'public/decal_hive_growth.png',
@@ -117,6 +116,7 @@ export const CHROMA_GREEN_ALLOWLIST = new Set([
     'public/Eng.Full_v2.webp',
     'public/Scout.full_v2.webp',
     'public/lore_portraits/queen_00.webp',
+    'public/3d/runtime/kits/textures/hive_resin_floor_emissive.webp',
 ]);
 
 export function decodeAndSamplePng(buffer) {

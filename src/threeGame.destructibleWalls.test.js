@@ -342,6 +342,42 @@ describe('instanced wall tile identity', () => {
         expect(grid[5][4]).toBe('.');
     });
 
+    it('takes everything on a destroyed wall down with it: top dressing and face decorations', () => {
+        const pool = { setMatrixAt: vi.fn(), instanceMatrix: { needsUpdate: false } };
+        const pipes = { setMatrixAt: vi.fn(), instanceMatrix: { needsUpdate: false } };
+        const vents = { setMatrixAt: vi.fn(), instanceMatrix: { needsUpdate: false } };
+        const wall = makeRecord(4, 5, 0, pool);
+        // The pools are filled in after the walls' records exist.
+        wall.dressingPools = {};
+        wall.dressing = [{ kind: 'pipe', index: 3 }, { kind: 'vent', index: 7 }, { kind: 'hatch', index: 0 }];
+        wall.dressingPools.pipe = pipes;
+        wall.dressingPools.vent = vents;
+        const fakeThis = {
+            chunkSize: 19,
+            chunkCache: new Map([['0,0', makeGrid()]]),
+            chunkMeshes: new Map(),
+            destroyedWallKeys: new Set(),
+            destroyedExteriorWallKeys: new Set(),
+            _chunkRoomTypeCache: new Map(),
+            _chunkTemplateCache: new Map(),
+            _wallInstanceIndex: new Map([[wall.wallKey, wall]]),
+            wallMeshes: [pool],
+            getWallKey: ThreeGame.prototype.getWallKey,
+            getChunkLocalFromWorld: ThreeGame.prototype.getChunkLocalFromWorld,
+            findWallMeshAt: ThreeGame.prototype.findWallMeshAt,
+            isExteriorWallTile: () => false
+        };
+
+        call('markWallTileDestroyed', fakeThis, 4, 5);
+
+        for (const [dressingPool, index] of [[pipes, 3], [vents, 7]]) {
+            expect(dressingPool.setMatrixAt).toHaveBeenCalledTimes(1);
+            expect(dressingPool.setMatrixAt.mock.calls[0][0]).toBe(index);
+            expect(dressingPool.setMatrixAt.mock.calls[0][1].elements.slice(0, 11).every((value) => value === 0)).toBe(true);
+            expect(dressingPool.instanceMatrix.needsUpdate).toBe(true);
+        }
+    });
+
     it('tints an instanced wall via setColorAt with a white lerp base, not a hardcoded gray', () => {
         const pool = {
             setColorAt: vi.fn(),

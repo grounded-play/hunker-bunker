@@ -24,6 +24,9 @@ export const PVP_DEFAULT_MAX_HP = 4;
 // old value of 10 against 3 max HP made the server declare a target dead
 // after one hit while the client only removed one displayed heart.
 const PVP_WEAPON_DAMAGE = 1;
+// Reported PvP heals: at most this many hearts banked, one more every 2 s.
+const PVP_HEAL_BUDGET_MAX = 1;
+const PVP_HEAL_REFILL_MS = 2000;
 // Real client projectile reach is PROJECTILE_SPEED(13.4) * PROJECTILE_TTL(1.15)
 // =~15.4 units; this adds slack for the lag between when the attacker's
 // origin was sampled and when the hit report arrives.
@@ -84,6 +87,8 @@ function sanitizeAngle(value) {
     if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
     return Math.max(-Math.PI * 2, Math.min(Math.PI * 2, value));
 }
+
+const ENEMY_AGGRO_MODES = new Set(['hunt', 'wander']);
 
 function sanitizeString(value, maxLen = 32, fallback = 'AGENT') {
     if (typeof value !== 'string') return fallback;
@@ -1010,7 +1015,11 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                     // host-spawned boss was invisible to everyone else. These let
                     // it recreate one faithfully.
                     isBoss: Boolean(state.isBoss),
-                    scale: Number.isFinite(state.scale) ? Math.max(0.1, Math.min(12, state.scale)) : null
+                    scale: Number.isFinite(state.scale) ? Math.max(0.1, Math.min(12, state.scale)) : null,
+                    // Who the host's AI is chasing (a socket id, 'ship' or
+                    // 'base-turret'), so the guest's copy bites the same player.
+                    targetId: typeof state.targetId === 'string' ? sanitizeString(state.targetId, 64, '') || null : null,
+                    mode: ENEMY_AGGRO_MODES.has(state.mode) ? state.mode : null
                 }];
             });
             const companions = Array.isArray(data.companions) ? data.companions.slice(0, 16).flatMap((state) => {
@@ -1142,6 +1151,28 @@ export function attachRelay(server, { allowedOrigins = [], chatPolicy = createCh
                 remainingHp: target.hp,
                 roundId: player.pvpRoundId ?? null
             });
+        });
+
+        // PvP heals (Sprint 51). The relay lowered its copy of a player's
+        // health on every hit but never saw a heal, so it drifted below the
+        // real value. The healed player reports the heal; the relay accepts it
+        // within a budget that refills a heart every PVP_HEAL_REFILL_MS (so a
+        // client cannot simply claim full health), never above max or above
+        // the client's own claim, and tells the room.
+        socket.on('playerHealed', (data) => {
+            const player = players.get(socket.id);
+            if (!player || player.mode !== 'pvp' || player.hp <= 0 || !data || typeof data !== 'object') return;
+            const now = Date.now();
+            const elapsed = now - (player.healBudgetAt ?? now);
+            player.healBudget = Math.min(PVP_HEAL_BUDGET_MAX, (player.healBudget ?? PVP_HEAL_BUDGET_MAX) + elapsed / PVP_HEAL_REFILL_MS);
+            player.healBudgetAt = now;
+            const amount = Math.max(0, Math.min(Number(data.amount) || 0, Math.floor(player.healBudget)));
+            const claimed = Number.isFinite(Number(data.hp)) ? Number(data.hp) : PVP_DEFAULT_MAX_HP;
+            const next = Math.min(PVP_DEFAULT_MAX_HP, claimed, player.hp + amount);
+            if (!(next > player.hp)) return;
+            player.healBudget -= next - player.hp;
+            player.hp = next;
+            io.to(player.roomCode).emit('playerHealthSync', { playerId: player.id, hp: player.hp });
         });
 
         // Operative Field Trade & Barter relay

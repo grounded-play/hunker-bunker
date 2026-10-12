@@ -1,4 +1,4 @@
-const UNPACKED_EXTENSIONS = new Set(['.mp4', '.webm', '.glb', '.mp3', '.wav', '.ogg']);
+const UNPACKED_EXTENSIONS = new Set(['.mp4', '.webm', '.glb', '.ktx2', '.mp3', '.wav', '.ogg']);
 
 /**
  * Resolve a public asset for both the web build and Electron's file:// build.

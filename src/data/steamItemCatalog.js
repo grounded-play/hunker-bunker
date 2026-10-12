@@ -735,7 +735,7 @@ const catalog = {
         "rarity": "rare",
         "desc": "Bundle pack containing 5 Relic Decryption Keys.",
         "tradable": true,
-        "marketable": true,
+        "marketable": false,
         "img": "https://hunkerbunker.netlify.app/economy/reagent_relic_key_master_pack.png",
         "localImg": "/economy/reagent_relic_key_master_pack.png",
         "localImgLarge": "/economy/reagent_relic_key_master_pack_large.png"

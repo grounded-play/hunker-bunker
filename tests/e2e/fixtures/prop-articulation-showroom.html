@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <base href="/">
+  <title>Prop articulation showroom</title>
+  <style>
+    html, body { margin: 0; overflow: hidden; background: #080b10; color: #d8e4ec; font: 13px monospace; }
+    #status { position: fixed; z-index: 2; padding: 8px 10px; background: #02050acc; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <div id="status">loading articulated props…</div>
+  <script type="module">
+    import * as THREE from 'three';
+    import { createWorld3dModel } from '/src/world3dOverlay.js';
+
+    const TYPES = [
+      'life_ribcage_rescue_cabinet',
+      'life_confessional',
+      'life_seismic_drill',
+      'life_ice_bore_winch',
+      'life_supply_drop_pod'
+    ];
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x080b10);
+    scene.fog = new THREE.Fog(0x080b10, 18, 34);
+    const camera = new THREE.PerspectiveCamera(36, innerWidth / innerHeight, 0.05, 100);
+    camera.position.set(0, 7.5, 15.5);
+    camera.lookAt(0, 1.0, 0);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    document.body.append(renderer.domElement);
+
+    scene.add(new THREE.HemisphereLight(0xa8cfff, 0x191315, 2.1));
+    const key = new THREE.DirectionalLight(0xffe4c2, 4.0);
+    key.position.set(-4, 8, 6);
+    scene.add(key);
+    const rim = new THREE.DirectionalLight(0x5ca8ff, 2.6);
+    rim.position.set(6, 5, -5);
+    scene.add(rim);
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(28, 10),
+      new THREE.MeshStandardMaterial({ color: 0x18202a, roughness: 0.88, metalness: 0.12 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const roots = [];
+    for (const [index, type] of TYPES.entries()) {
+      const root = await createWorld3dModel(type);
+      root.position.set((index - 2) * 3.2, 0, 0);
+      root.rotation.y = -0.18;
+      // This fixture reviews cut geometry and pivots. Ambient smoke, sparks
+      // and glow have their own probe and can resemble detached mesh islands
+      // in a still frame.
+      if (root.userData.propFx?.group) root.userData.propFx.group.visible = false;
+      scene.add(root);
+      roots.push(root);
+    }
+
+    let last = performance.now();
+    function frame(now) {
+      const delta = Math.min((now - last) / 1000, 0.1);
+      last = now;
+      for (const root of roots) {
+        root.userData.propExperience?.update?.(delta);
+      }
+      renderer.render(scene, camera);
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+
+    const states = () => roots.map((root) => ({
+      type: root.userData.modelType,
+      parts: root.userData.propExperience?.articulation?.parts.length ?? 0,
+      state: root.userData.propExperience?.state
+    }));
+    window.__articulation = {
+      ready: true,
+      states,
+      activate() { return roots.map((root) => root.userData.propExperience?.acknowledge?.() ?? false); }
+    };
+    document.getElementById('status').textContent = states().map((item) => `${item.type}: ${item.state}`).join('  •  ');
+  </script>
+</body>
+</html>

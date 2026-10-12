@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { campResidents } from './data/campResidents.js';
 import { getCampClassMapping } from './act2.js';
 import { applyBlackChromaKey } from './textureKeying.js';
 import { assetUrl } from './assetUrl.js';
@@ -44,19 +45,68 @@ export const CAMP_DRESSING_MODELS = Object.freeze({
         { type: 'prop_conduit_junction_box', x: -3.1, z: 2.4, yaw: 0.6 },
         { type: 'prop_light_cluster_dripping', x: 3.0, z: -2.7, yaw: -0.4 },
         { type: 'prop_conduit_hub', x: 2.8, z: 2.7, yaw: 0.8 },
-        { type: 'prop_fabricator_workstation', x: -2.7, z: -2.8, yaw: -1.2 }
+        { type: 'prop_fabricator_workstation', x: -2.7, z: -2.8, yaw: -1.2 },
+        { type: 'life_route_map_table', x: -4.4, z: -0.6, yaw: 1.35 },
+        { type: 'life_flood_lamp_tripod', x: 4.2, z: 0.5, yaw: -1.35 },
+        { type: 'life_umbilical_tether', x: -3.8, z: 3.7, yaw: 2.35 },
+        { type: 'life_tactile_console', x: 3.8, z: 3.8, yaw: -2.35 },
+        { type: 'life_acoustic_ear_horn', x: 0.3, z: 4.7, yaw: Math.PI },
+        { type: 'life_card_table', x: -4.7, z: -2.6, yaw: 0.9 },
+        { type: 'life_memorial_board', x: 4.8, z: -2.3, yaw: -0.9 },
+        { type: 'life_latrine_stall', x: -5.2, z: 1.7, yaw: 1.25 },
+        { type: 'life_pipe_hammock', x: 5.1, z: 1.8, yaw: -1.2 },
+        { type: 'life_sanitation_bidet', x: -2.2, z: -4.8, yaw: 0.4 },
+        { type: 'life_vulval_drain_sump', x: 2.3, z: -4.8, yaw: -0.4 },
+        // Lived-in batch 2026-10-09: the camp's own piece, then the barber
+        // chair and devotion tree every camp shares.
+        { type: 'life_lookout_perch', x: -5.9, z: 0.6, yaw: Math.PI / 2 },
+        { type: 'life_barber_chair', x: 5.8, z: -0.7, yaw: -Math.PI / 2 },
+        { type: 'life_devotion_tree', x: 0.1, z: -5.9, yaw: 0 }
     ]),
     camp_tallow: Object.freeze([
         { type: 'prop_fungal_resin_basin', x: -3.0, z: 2.6, yaw: 0.2 },
         { type: 'prop_pipe_rupture', x: 3.2, z: -2.5, yaw: 1.1 },
         { type: 'prop_specimen_tank', x: 2.9, z: 2.7, yaw: -0.5 },
-        { type: 'prop_o2_filter_vat', x: -2.8, z: -2.8, yaw: 0.7 }
+        { type: 'prop_o2_filter_vat', x: -2.8, z: -2.8, yaw: 0.7 },
+        { type: 'life_galley_hotplate', x: -4.3, z: -0.5, yaw: 1.35 },
+        { type: 'life_hydro_rack', x: 4.4, z: 0.4, yaw: -1.35 },
+        { type: 'life_barrel_heater', x: 0.2, z: 4.2, yaw: Math.PI },
+        { type: 'life_scent_distiller', x: -3.8, z: 3.8, yaw: 2.35 },
+        { type: 'life_warmth_hearth', x: 3.8, z: 3.8, yaw: -2.35 },
+        { type: 'life_peristaltic_feeder', x: 0.2, z: -4.3, yaw: 0 },
+        { type: 'life_card_table', x: -4.8, z: -2.3, yaw: 0.9 },
+        { type: 'life_memorial_board', x: 4.8, z: -2.3, yaw: -0.9 },
+        { type: 'life_latrine_stall', x: -5.1, z: 1.8, yaw: 1.2 },
+        { type: 'life_pipe_hammock', x: 5.1, z: 1.8, yaw: -1.2 },
+        { type: 'life_sanitation_bidet', x: -2.3, z: -4.8, yaw: 0.4 },
+        { type: 'life_vulval_drain_sump', x: 2.4, z: -4.8, yaw: -0.4 },
+        // Lived-in batch 2026-10-09: the camp's own piece, then the barber
+        // chair and devotion tree every camp shares.
+        { type: 'life_meat_smoking_rack', x: -5.9, z: 0.6, yaw: Math.PI / 2 },
+        { type: 'life_barber_chair', x: 5.8, z: -0.7, yaw: -Math.PI / 2 },
+        { type: 'life_devotion_tree', x: 0.1, z: -5.9, yaw: 0 }
     ]),
     camp_vesper: Object.freeze([
         { type: 'prop_base_defense_turret', x: -3.2, z: -2.6, yaw: 0.9 },
         { type: 'prop_storage_drum_dented', x: 3.1, z: 2.5, yaw: -0.7 },
         { type: 'prop_ammo_crate_stack', x: 2.8, z: -2.9, yaw: 1.4 },
-        { type: 'prop_security_barricade', x: -2.9, z: 2.7, yaw: -0.3 }
+        { type: 'prop_security_barricade', x: -2.9, z: 2.7, yaw: -0.3 },
+        { type: 'life_reloading_bench', x: -4.3, z: -0.5, yaw: 1.35 },
+        { type: 'life_tally_bulkhead', x: 4.4, z: 0.4, yaw: -1.35 },
+        { type: 'life_ammo_ovipositor', x: -3.8, z: 3.8, yaw: 2.35 },
+        { type: 'life_bone_clamp_rig', x: 3.8, z: 3.8, yaw: -2.35 },
+        { type: 'life_stigmata_inscriber', x: 0.2, z: -4.4, yaw: 0 },
+        { type: 'life_card_table', x: -4.8, z: -2.3, yaw: 0.9 },
+        { type: 'life_memorial_board', x: 4.8, z: -2.3, yaw: -0.9 },
+        { type: 'life_latrine_stall', x: -5.1, z: 1.8, yaw: 1.2 },
+        { type: 'life_pipe_hammock', x: 5.1, z: 1.8, yaw: -1.2 },
+        { type: 'life_sanitation_bidet', x: -2.3, z: -4.9, yaw: 0.4 },
+        { type: 'life_vulval_drain_sump', x: 2.4, z: -4.9, yaw: -0.4 },
+        // Lived-in batch 2026-10-09: the camp's own piece, then the barber
+        // chair and devotion tree every camp shares.
+        { type: 'life_training_dummy', x: -5.9, z: 0.6, yaw: Math.PI / 2 },
+        { type: 'life_barber_chair', x: 5.8, z: -0.7, yaw: -Math.PI / 2 },
+        { type: 'life_devotion_tree', x: 0.1, z: -5.9, yaw: 0 }
     ])
 });
 
@@ -433,6 +483,8 @@ export class SurvivorCamp {
             { home: { x: -2.2, z: 1.9 }, radius: 0.72, speed: 0.65, phase: 0.3, scale: 0.95 },
             { home: { x: 2.35, z: -1.7 }, radius: 0.68, speed: 0.85, phase: 2.1, scale: 0.86 }
         ];
+        const residents = campResidents(this.id);
+        this.campWorkerGroup = group;
         this.campWorkers = specs.map((spec, index) => {
             const mesh = this.createCampWorkerFigure(this.leaderColor, spec.scale);
             mesh.position.set(spec.home.x, 0.02, spec.home.z);
@@ -440,8 +492,30 @@ export class SurvivorCamp {
             mesh.userData.campId = this.id;
             mesh.userData.index = index;
             group.add(mesh);
-            return { ...spec, mesh, humanState: 'unaware' };
+            return { ...spec, mesh, humanState: 'unaware', resident: residents[index] ?? null };
         });
+    }
+
+    // A survivor settled here stays (Sprint 51; session 2026-10-06: "I tried
+    // to drop the companion off, but they didn't stay"): a resident figure
+    // that walks the camp and can be talked to.
+    addSettlerResident(name) {
+        const group = this.campWorkerGroup;
+        const label = String(name ?? '').trim();
+        if (!group || !label || this.campWorkers.some((worker) => worker.resident?.name === label)) return null;
+        const slot = this.campWorkers.length;
+        const angle = slot * 2.1;
+        const spec = { home: { x: Math.cos(angle) * 1.9, z: Math.sin(angle) * 1.9 }, radius: 0.6, speed: 0.7, phase: slot * 0.9, scale: 0.9 };
+        const mesh = this.createCampWorkerFigure(this.leaderColor, spec.scale);
+        mesh.position.set(spec.home.x, 0.02, spec.home.z);
+        mesh.userData.kind = 'camp-worker';
+        mesh.userData.campId = this.id;
+        mesh.userData.index = slot;
+        mesh.visible = this.workersVisible !== false && this.status !== 'culled';
+        group.add(mesh);
+        const worker = { ...spec, mesh, humanState: 'unaware', resident: { name: label, role: 'settler' } };
+        this.campWorkers.push(worker);
+        return worker;
     }
 
     setWorkerColors(color = this.leaderColor, emissiveIntensity = 0.06) {

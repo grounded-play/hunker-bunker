@@ -95,12 +95,12 @@ describe('room themes', () => {
         expect(room.themeConfig).toMatchObject({ stateVariant, appliedDecal });
     });
 
-    it('defines a signature prop for every theme', () => {
+    it('defines at least four signature silhouettes for every theme', () => {
         for (const theme of ROOM_THEME_CATALOG) {
-            expect(theme.signatureProps.length, theme.id).toBeGreaterThan(0);
+            expect(new Set(theme.signatureProps).size, theme.id).toBeGreaterThanOrEqual(4);
             expect(theme.ambientProps.length, theme.id).toBeGreaterThan(0);
         }
-        expect(new Set(Object.values(LIVED_IN_DECALS).flat()).size).toBe(48);
+        expect(new Set(Object.values(LIVED_IN_DECALS).flat()).size).toBe(60);
     });
 
     it('places every survival-pack prefab through the fortified camp theme', () => {

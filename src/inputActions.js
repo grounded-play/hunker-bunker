@@ -21,6 +21,9 @@ export const MENU_FOCUS_ROOT_IDS = Object.freeze([
     'player-chat-modal',
     'progression-reward-overlay',
     'vault-reveal-overlay',
+    // The Armory's slot picker opened from the Foundry or the hero screen
+    // (Sprint 51); it sits above both.
+    'loadout-picker-modal',
     'mature-audit-scene-viewer',
     'progression-scene-viewer',
     'qa-nexus-modal',
@@ -64,6 +67,7 @@ export const MENU_FOCUS_ROOT_IDS = Object.freeze([
     'expedition-event-modal',
     'camp-choice-modal',
     'field-workbench-modal',
+    'camp-services-modal',
     'leader-conversation-modal',
     'npc-dialogue-modal',
     'mothership-dialogue',

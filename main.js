@@ -20,7 +20,7 @@ import { ObjectiveRegistry } from './src/objectiveRegistry.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { ExpeditionReceipt } from './src/economyReceipt.js';
 import { renderReturnManifest } from './src/returnManifest.js';
-import { renderLoadoutStrip } from './src/itemCard.js';
+import { loadoutCardViews, loadoutEffectSummaryHtml, renderLoadoutStrip } from './src/itemCard.js';
 import { FabricatorManager, FAB_RECIPES, getFabricatedOutputIds } from './src/fabricator.js';
 import { createFabricationBay, fabMissingResourceText as fabMissingResourceTextFor } from './src/fabricationBay.js';
 import { ProfileManager, exportSaveCode, importSaveCode, resetAllDataFactory, startNewCampaign } from './src/profile.js';
@@ -47,6 +47,7 @@ import { registerStoryManager } from './src/storyScope.js';
 import { CaveRevealController } from './src/caveReveal.js';
 import { Act2Manager, ACT2_LINES, getAct2EndingLines, pickAct2Ending, buildAct2Manifest, resolveEndingCutscene } from './src/act2.js';
 import { isDemoBuild, isGoreEnabled, setGoreEnabled } from './src/featureFlags.js';
+import { applyGraphicsPreset, graphicsPresetOf, loadGraphicsSettings, restoreAutoGraphicsChanges, saveGraphicsSettings, setGraphicsAutoAdjust, setGraphicsValue } from './src/graphicsSettings.js';
 import {
     loadAccessibilitySettings,
     applyAccessibilitySettings,
@@ -80,8 +81,10 @@ import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSprite
 import { clearChromaGreen, repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { PRESENTATION_LAYER_SELECTOR, isPresentationMutation } from './src/presentationLayer.js';
 import { resolveAmmoPickup } from './src/ammoSurplus.js';
+import { applyInputHints } from './src/inputHints.js';
+import { computeProgressionUnlocks, loadRigPurchases } from './src/progressionUnlocks.js';
 import { createArmoryUi } from './src/armoryUi.js';
-import { initSteamVaultUI, isVaultExchangeAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, renderStorePanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
+import { initSteamVaultUI, isVaultExchangeAvailable, isVaultStoreAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, renderStorePanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
 import { createFoundryHub, isFoundryHubEnabled } from './src/foundryHub.js';
 import { initSeasonPassUI, cancelXpFeedback, beginSeasonRun, getSeasonRunSummary, openSeasonPassModal, seasonPass } from './src/seasonPassUi.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
@@ -98,6 +101,7 @@ import { matureContentAudit } from './src/matureContentAudit.js';
 import { progressionWalkthrough } from './src/progressionWalkthrough.js';
 import { getGameOverLeaderboardBoard, renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { createFieldWorkbenchUi } from './src/fieldWorkbenchUi.js';
+import { createCampServicesUi } from './src/campServicesUi.js';
 import { createQuickCommandRadialUi } from './src/quickCommandRadialUi.js';
 import { flushPendingRunSubmits, submitRunWithRetryQueue } from './src/steam/runSubmitQueue.js';
 import { FATIGUE_STATE_KEY, describeScars, normalizeFatigueState } from './src/fatigue.js';
@@ -110,7 +114,11 @@ import { getResolution, previewCampLeaderLinchpin } from './src/storyLinchpins.j
 import { buildEndingArchive, getLeaderReaction } from './src/storyArchive.js';
 import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
-import { getLocale, setLocale, t, t as i18nT, getAvailableLocales } from './src/i18n.js';
+import { getLocale, setLocale, t, t as i18nT, getAvailableLocales, applyStaticTranslations } from './src/i18n.js';
+import { mountDeferredMarkup, onDeferredMarkupMounted, setDeferredMarkupDecorator, watchDeferredMarkup } from './src/deferredMarkup.js';
+import { isSleepCutsceneShipped, sleepCutsceneBase } from './src/sleepCutscene.js';
+import { formatLocationName } from './src/locationNames.js';
+import { planDeckVisibility } from './src/hudDeck.js';
 import { createDeveloperCommentary } from './src/developerCommentary.js';
 import { createVoiceLineLibrary, VOICE_LINES_ROOT } from './src/voiceLines.js';
 import { trackStartupStages } from './src/perfPhases.js';
@@ -607,6 +615,7 @@ function setAppPhase(phase) {
             window.npcDialogueTreeManager.closeDialogue();
         }
         document.getElementById('wanderer-encounter-modal')?.remove();
+        window.campServicesUi?.close?.();
         document.getElementById('npc-dialogue-modal')?.classList.add('hidden');
         document.getElementById('mothership-dialogue')?.classList.add('hidden');
         document.getElementById('leader-conversation-modal')?.classList.add('hidden');
@@ -672,6 +681,18 @@ window.HunkerTriggerBoot = () => {
         window.game.setLoadingPaused(false);
     }
 };
+
+// Re-apply keyboard/pad hint text to freshly rendered markup (src/inputHints.js).
+window.applyInputHints = (root = document) => applyInputHints(root, isSteamControllerInputActive(), t);
+
+// Screens built on first open (src/deferredMarkup.js) get the same
+// translation and hint pass the boot gave everything else.
+setDeferredMarkupDecorator((root) => {
+    applyStaticTranslations(root);
+    window.applyInputHints(root);
+});
+watchDeferredMarkup();
+window.mountDeferredMarkup = mountDeferredMarkup;
 
 window.HunkerInputState = {
     getPromptKeyText,
@@ -783,6 +804,7 @@ function setLastInputMode(mode, { refresh = true } = {}) {
     }
 
     if (changed && refresh) refreshInteractivePromptKeys();
+    if (changed) applyInputHints(document, isController, t);
     if (changed && isController) ensureControllerMenuFocus();
     if (changed) {
         debugLog.info('INPUT', 'input-mode-changed', {
@@ -872,7 +894,10 @@ function getVisibleControllerFocusables(root = document) {
     }
     return elements.filter((element) => {
         if (!isElementVisible(element)) return false;
-        if (element.disabled || element.getAttribute('aria-disabled') === 'true') return false;
+        // aria-disabled controls stay out of the pad's reach unless they opt
+        // in: locked Armory tiles still explain how they unlock, or buy.
+        if (element.disabled) return false;
+        if (element.getAttribute('aria-disabled') === 'true' && !element.hasAttribute('data-controller-focusable')) return false;
         if (element.closest('.hidden, [hidden], [inert]')) return false;
         if (element.closest('[aria-hidden="true"]')) return false;
         const style = window.getComputedStyle(element);
@@ -1373,6 +1398,9 @@ function moveControllerDirectional(root, code, backward) {
 const SPATIAL_FOCUS_ROOT_IDS = new Set([
     'achievements-modal',
     'steam-vault-modal',
+    // The Armory tile picker (skins, sheens, charms...) is its own focus
+    // root; without this the D-pad's up / down stepped through DOM order.
+    'armory-picker-modal',
     'armory-screen',
     'foundry-hub-modal',
     'fabrication-modal',
@@ -1381,6 +1409,7 @@ const SPATIAL_FOCUS_ROOT_IDS = new Set([
     'multiplayer-modal',
     'console-terminal-modal',
     'field-workbench-modal',
+    'camp-services-modal',
     'mature-content-audit-modal',
     'season-pass-modal'
 ]);
@@ -2318,8 +2347,11 @@ function handleSteamMenuInput(actions) {
             tacticalMapState.panX -= panX * 7;
             tacticalMapState.panY -= panY * 7;
         }
-        if (actions.menuTabLeft) adjustTacticalMapZoom(-0.02);
-        if (actions.menuTabRight) adjustTacticalMapZoom(0.02);
+        // The menu actions are named tabLeft/tabRight; reading menuTab* here
+        // meant controller zoom never worked on the map (Sprint 51).
+        if (actions.tabLeft || actions.menuTabLeft) adjustTacticalMapZoom(-0.25);
+        if (actions.tabRight || actions.menuTabRight) adjustTacticalMapZoom(0.25);
+        if (actions.confirm) focusTacticalMapOnPlayer();
         return;
     }
 
@@ -3332,6 +3364,20 @@ function syncFabricatorOutputOwnership() {
     getOwnershipStore().setExternalOwnership('fabricator', getFabricatedOutputIds(fabricator));
 }
 syncFabricatorOutputOwnership();
+
+// What this save has earned (src/progressionUnlocks.js): achievement rewards,
+// Rig Modules and community skins, derived from the saved progress. Set before
+// the Vault's first ownership reconcile, so earned items are never stripped.
+// Works on Steam too, where local item grants are off.
+function syncProgressionOwnership() {
+    getOwnershipStore().setExternalOwnership('progression', computeProgressionUnlocks(
+        achievementEngine.getState(),
+        { purchases: loadRigPurchases() }
+    ));
+}
+syncProgressionOwnership();
+window.addEventListener('achievement-state-changed', syncProgressionOwnership);
+window.addEventListener('rig-module-purchased', syncProgressionOwnership);
 
 const loadout = new LoadoutManager();
 window.loadout = loadout;
@@ -4638,6 +4684,19 @@ function updateHudNotificationDeck() {
         card.style.zIndex = String(17090 - index);
         card.classList.toggle('is-top-card', index === 0);
     });
+    // Docked layout: the deck has a height cap, so a card shows whole or
+    // waits its turn, never cut off at the cap (src/hudDeck.js).
+    if (document.documentElement.dataset.hudLayout === 'dock') {
+        cards.forEach((card) => card.classList.remove('is-deck-queued'));
+        const style = getComputedStyle(stack);
+        const available = parseFloat(style.maxHeight);
+        if (Number.isFinite(available)) {
+            const visible = planDeckVisibility(cards.map((card) => card.getBoundingClientRect().height), available, {
+                gap: parseFloat(style.rowGap) || 0
+            });
+            cards.forEach((card, index) => card.classList.toggle('is-deck-queued', !visible[index]));
+        }
+    }
     stack.classList.toggle('has-decked-cards', hasCards);
     document.querySelector('.hud-mission-stack')?.classList.toggle('is-below-notifications', hasCards);
     scheduleTopHudNotificationTimer();
@@ -7049,16 +7108,39 @@ window.addEventListener('expedition-briefing', (event) => {
 window.addEventListener('location-discovered', (event) => {
     const detail = event?.detail ?? {};
     const card = document.getElementById('compound-location-title');
-    const siteKey = COMPOUND_SITE_KEYS[detail.siteId];
-    const roomKey = COMPOUND_ROOM_KEYS[detail.family]?.[detail.beatKey];
-    if (!card || !siteKey || !roomKey || !isGameplayHudActive()) return;
-    setHudCardText('compound-location-text', t('ui.expedition.location', { site: t(siteKey), room: t(roomKey) }));
+    if (!card || !isGameplayHudActive()) return;
+
+    const siteKey = detail.siteId ? COMPOUND_SITE_KEYS[detail.siteId] : null;
+    const roomKey = (detail.family && detail.beatKey) ? COMPOUND_ROOM_KEYS[detail.family]?.[detail.beatKey] : null;
+
+    let titleText;
+    let subtitleText;
+    const isHallway = detail.kind === 'hall';
+
+    if (siteKey && roomKey) {
+        titleText = t('ui.expedition.location', { site: t(siteKey), room: t(roomKey) });
+        subtitleText = detail.subtitle || '';
+    } else if (detail.title || detail.label) {
+        titleText = detail.title || detail.label;
+        subtitleText = detail.subtitle || '';
+    } else {
+        return;
+    }
+
+    setHudCardText('compound-location-text', titleText);
+    const subtitleEl = document.getElementById('compound-location-subtitle');
+    if (subtitleEl) {
+        subtitleEl.textContent = subtitleText;
+        subtitleEl.classList.toggle('hidden', !subtitleText);
+    }
+    card.classList.toggle('is-hallway', Boolean(isHallway));
     const tag = document.getElementById('compound-location-tag');
     if (tag) {
         tag.textContent = t('ui.expedition.first_visit');
         tag.classList.toggle('hidden', !detail.firstVisit);
     }
-    fadeHudCard(card, COMPOUND_LOCATION_VISIBLE_MS, compoundLocationTimerRef);
+    const duration = isHallway ? 2400 : COMPOUND_LOCATION_VISIBLE_MS;
+    fadeHudCard(card, duration, compoundLocationTimerRef);
 });
 
 const GATE_CHALLENGE_KEYS = Object.freeze({
@@ -9449,6 +9531,7 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
             document.body.classList.remove('mission-intro-active');
         }
         game?.setCinematicLock?.(false);
+        game?.syncPlayerLocationLabel?.({ force: true });
         window.AudioManager?.playVoiceCallout?.('comms_online', { volume: 0.95 });
 
         if (startTutorial) {
@@ -10969,7 +11052,6 @@ function populateDevAchievementDropdowns() {
 document.getElementById('debug-open-console')?.addEventListener('click', openDevConsoleModal);
 document.getElementById('debug-launch-rgb')?.addEventListener('click', () => launchRgb());
 document.getElementById('debug-open-showroom')?.addEventListener('click', () => openDebugShowroom());
-document.getElementById('dev-btn-open-showroom')?.addEventListener('click', () => openDebugShowroom());
 document.getElementById('debug-achievement-select')?.addEventListener('change', (e) => {
     const key = e.target.value;
     if (key) {
@@ -10979,122 +11061,126 @@ document.getElementById('debug-achievement-select')?.addEventListener('change', 
     }
 });
 
-document.getElementById('close-dev-console')?.addEventListener('click', closeDevConsoleModal);
-
-document.getElementById('dev-btn-unlock-ach')?.addEventListener('click', () => {
-    const select = document.getElementById('dev-ach-dropdown');
-    if (select?.value) {
-        const res = devUnlockAchievement(select.value);
-        logDevConsole(res, 'success');
-    } else {
-        logDevConsole('Please select an achievement from the dropdown.', 'error');
-    }
-});
 document.getElementById('debug-unlock-all-ach')?.addEventListener('click', () => {
     const res = devUnlockAllAchievements();
     showBiomePrompt(`> DEBUG: ${res}`);
 });
+
 document.getElementById('debug-unlock-all-codex')?.addEventListener('click', () => {
     const res = devUnlockAllCodex();
     showBiomePrompt(`> DEBUG: ${res}`);
 });
+
 document.getElementById('debug-unlock-all-skins')?.addEventListener('click', () => {
     const res = devSetCosmeticUnlockAll('1');
     showBiomePrompt(`> DEBUG: ${res}`);
 });
-document.getElementById('dev-btn-unlock-all-ach')?.addEventListener('click', () => {
-    const res = devUnlockAllAchievements();
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-btn-unlock-all-codex')?.addEventListener('click', () => {
-    const res = devUnlockAllCodex();
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-btn-unlock-all-skins')?.addEventListener('click', () => {
-    const res = devSetCosmeticUnlockAll('1');
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-btn-reset-save')?.addEventListener('click', () => {
-    closeDevConsoleModal();
-    openFullSaveResetConfirm();
-});
-document.getElementById('dev-btn-launch-rgb')?.addEventListener('click', () => {
-    const res = devLaunchRgb();
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-btn-jump-rgb-chapter')?.addEventListener('click', () => {
-    const select = document.getElementById('dev-rgb-chapter-select');
-    const res = devLaunchRgb(select?.value || null);
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-btn-god')?.addEventListener('click', () => {
-    const res = devToggleGodMode();
-    logDevConsole(res, 'system');
-});
-document.getElementById('dev-btn-noclip')?.addEventListener('click', () => {
-    const res = devToggleNoclip();
-    logDevConsole(res, 'system');
-});
-document.getElementById('dev-btn-open-nexus')?.addEventListener('click', () => {
-    closeDevConsoleModal();
-    openQaNexusModal();
-});
-document.getElementById('dev-btn-open-museum')?.addEventListener('click', () => {
-    closeDevConsoleModal();
-    logDevConsole('Opening Debug Museum at (9000, 9000)...', 'system');
-    void window.__DEBUG__.openMuseum();
-});
-document.getElementById('dev-tp-select')?.addEventListener('change', (e) => {
-    const target = e.target.value;
-    if (!target) return;
-    executeDevCommand(`tp ${target}`);
-    e.target.value = '';
-});
-document.getElementById('dev-btn-resources')?.addEventListener('click', () => {
-    const res = devGrantResources();
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-btn-heal')?.addEventListener('click', () => {
-    const res = devHealPlayer();
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-btn-nuke')?.addEventListener('click', () => {
-    const res = devKillSnails();
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-res-select')?.addEventListener('change', (e) => {
-    const res = devSetResolution(e.target.value);
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-uiscale-select')?.addEventListener('change', (e) => {
-    const res = devSetUiScale(e.target.value);
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-textfloor-select')?.addEventListener('change', (e) => {
-    const res = devSetTextFloor(e.target.value);
-    logDevConsole(res, 'success');
-});
-document.getElementById('dev-btn-layout')?.addEventListener('click', () => {
-    const res = devGetLayoutMetrics();
-    logDevConsole(res, 'system');
-});
 
-const devConsoleInput = document.getElementById('dev-console-input');
-const devConsoleSubmit = document.getElementById('dev-console-submit');
-
-devConsoleSubmit?.addEventListener('click', () => {
-    if (devConsoleInput) {
-        executeDevCommand(devConsoleInput.value);
-        devConsoleInput.value = '';
-    }
-});
-
-devConsoleInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        executeDevCommand(devConsoleInput.value);
-        devConsoleInput.value = '';
-    }
+// The legacy dev console modal is built on first open (src/deferredMarkup.js);
+// the tilde console (src/debugConsole.js) is what openDevConsoleModal shows.
+onDeferredMarkupMounted('dev-console-modal', () => {
+    document.getElementById('dev-btn-open-showroom')?.addEventListener('click', () => openDebugShowroom());
+    document.getElementById('close-dev-console')?.addEventListener('click', closeDevConsoleModal);
+    document.getElementById('dev-btn-unlock-ach')?.addEventListener('click', () => {
+        const select = document.getElementById('dev-ach-dropdown');
+        if (select?.value) {
+            const res = devUnlockAchievement(select.value);
+            logDevConsole(res, 'success');
+        } else {
+            logDevConsole('Please select an achievement from the dropdown.', 'error');
+        }
+    });
+    document.getElementById('dev-btn-unlock-all-ach')?.addEventListener('click', () => {
+        const res = devUnlockAllAchievements();
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-btn-unlock-all-codex')?.addEventListener('click', () => {
+        const res = devUnlockAllCodex();
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-btn-unlock-all-skins')?.addEventListener('click', () => {
+        const res = devSetCosmeticUnlockAll('1');
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-btn-reset-save')?.addEventListener('click', () => {
+        closeDevConsoleModal();
+        openFullSaveResetConfirm();
+    });
+    document.getElementById('dev-btn-launch-rgb')?.addEventListener('click', () => {
+        const res = devLaunchRgb();
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-btn-jump-rgb-chapter')?.addEventListener('click', () => {
+        const select = document.getElementById('dev-rgb-chapter-select');
+        const res = devLaunchRgb(select?.value || null);
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-btn-god')?.addEventListener('click', () => {
+        const res = devToggleGodMode();
+        logDevConsole(res, 'system');
+    });
+    document.getElementById('dev-btn-noclip')?.addEventListener('click', () => {
+        const res = devToggleNoclip();
+        logDevConsole(res, 'system');
+    });
+    document.getElementById('dev-btn-open-nexus')?.addEventListener('click', () => {
+        closeDevConsoleModal();
+        openQaNexusModal();
+    });
+    document.getElementById('dev-btn-open-museum')?.addEventListener('click', () => {
+        closeDevConsoleModal();
+        logDevConsole('Opening Debug Museum at (9000, 9000)...', 'system');
+        void window.__DEBUG__.openMuseum();
+    });
+    document.getElementById('dev-tp-select')?.addEventListener('change', (e) => {
+        const target = e.target.value;
+        if (!target) return;
+        executeDevCommand(`tp ${target}`);
+        e.target.value = '';
+    });
+    document.getElementById('dev-btn-resources')?.addEventListener('click', () => {
+        const res = devGrantResources();
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-btn-heal')?.addEventListener('click', () => {
+        const res = devHealPlayer();
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-btn-nuke')?.addEventListener('click', () => {
+        const res = devKillSnails();
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-res-select')?.addEventListener('change', (e) => {
+        const res = devSetResolution(e.target.value);
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-uiscale-select')?.addEventListener('change', (e) => {
+        const res = devSetUiScale(e.target.value);
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-textfloor-select')?.addEventListener('change', (e) => {
+        const res = devSetTextFloor(e.target.value);
+        logDevConsole(res, 'success');
+    });
+    document.getElementById('dev-btn-layout')?.addEventListener('click', () => {
+        const res = devGetLayoutMetrics();
+        logDevConsole(res, 'system');
+    });
+    const devConsoleInput = document.getElementById('dev-console-input');
+    const devConsoleSubmit = document.getElementById('dev-console-submit');
+    devConsoleSubmit?.addEventListener('click', () => {
+        if (devConsoleInput) {
+            executeDevCommand(devConsoleInput.value);
+            devConsoleInput.value = '';
+        }
+    });
+    devConsoleInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            executeDevCommand(devConsoleInput.value);
+            devConsoleInput.value = '';
+        }
+    });
 });
 
 if (fpsDisplay) {
@@ -11237,6 +11323,115 @@ function organizeSettingsPanels() {
     ].forEach(([id, target]) => moveControl(id, target));
 }
 organizeSettingsPanels();
+
+// ── Settings > Graphics (src/graphicsSettings.js) ─────────────────────
+// Everything starts at High. Auto-adjust may lower one setting at a time when
+// the game stalls; each step is listed here with why, and the player can
+// change or restore anything. ThreeGame owns the live settings once it
+// exists; before that they are read and written in storage.
+const GRAPHICS_CONTROLS = Object.freeze({
+    resolution: 'setting-graphics-resolution',
+    shadows: 'setting-graphics-shadows',
+    postProcessing: 'setting-graphics-post',
+    worldDetail: 'setting-graphics-detail',
+    landmarks: 'setting-graphics-landmarks',
+    effects: 'setting-graphics-effects'
+});
+// Literal keys (the i18n audit finds references by their full text).
+const GRAPHICS_LABEL_KEYS = Object.freeze({
+    resolution: 'ui.graphics.label_resolution',
+    shadows: 'ui.graphics.label_shadows',
+    postProcessing: 'ui.graphics.label_postProcessing',
+    worldDetail: 'ui.graphics.label_worldDetail',
+    landmarks: 'ui.graphics.label_landmarks',
+    effects: 'ui.graphics.label_effects'
+});
+const GRAPHICS_CAUSE_KEYS = Object.freeze({ gpu: 'ui.graphics.cause_gpu', cpu: 'ui.graphics.cause_cpu' });
+const GRAPHICS_AREA_KEYS = Object.freeze({
+    active: 'ui.graphics.area_active',
+    cryo: 'ui.graphics.area_cryo',
+    bio: 'ui.graphics.area_bio',
+    unknown: 'ui.graphics.area_unknown'
+});
+
+function currentGraphicsSettings() {
+    return window.game?.graphicsSettings ?? loadGraphicsSettings();
+}
+
+function graphicsValueLabel(key, value) {
+    // Option labels double as the value names in the change list.
+    const option = document.querySelector(`#${GRAPHICS_CONTROLS[key]} option[value="${value}"]`);
+    return option?.textContent?.trim() || String(value);
+}
+
+function describeGraphicsChange(change) {
+    const at = new Date(change.at);
+    return t('ui.graphics.change_entry', {
+        time: Number.isNaN(at.getTime()) ? '' : at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        setting: t(GRAPHICS_LABEL_KEYS[change.key]),
+        from: graphicsValueLabel(change.key, change.from),
+        to: graphicsValueLabel(change.key, change.to),
+        fps: change.fps ?? '?',
+        seconds: change.seconds ?? '?',
+        area: t(GRAPHICS_AREA_KEYS[change.area] ?? GRAPHICS_AREA_KEYS.unknown),
+        cause: t(GRAPHICS_CAUSE_KEYS[change.bound] ?? GRAPHICS_CAUSE_KEYS.gpu)
+    });
+}
+
+function renderGraphicsSettingsTab() {
+    const settings = currentGraphicsSettings();
+    const preset = document.getElementById('setting-graphics-preset');
+    if (preset) preset.value = graphicsPresetOf(settings.values);
+    const auto = document.getElementById('setting-graphics-auto');
+    if (auto) auto.checked = settings.autoAdjust !== false;
+    for (const [key, id] of Object.entries(GRAPHICS_CONTROLS)) {
+        const select = document.getElementById(id);
+        if (select) select.value = settings.values[key];
+    }
+    const list = document.getElementById('graphics-auto-changes');
+    if (list) {
+        list.replaceChildren(...settings.autoChanges.map((change) => {
+            const item = document.createElement('li');
+            item.textContent = describeGraphicsChange(change);
+            return item;
+        }));
+    }
+    document.getElementById('graphics-auto-none')?.classList.toggle('hidden', settings.autoChanges.length > 0);
+    const restore = document.getElementById('graphics-auto-restore');
+    if (restore) restore.disabled = settings.autoChanges.length === 0;
+}
+
+function commitGraphicsSettings(next) {
+    if (window.game?.setGraphicsSettings) window.game.setGraphicsSettings(next);
+    else saveGraphicsSettings(next);
+    renderGraphicsSettingsTab();
+}
+
+document.getElementById('setting-graphics-preset')?.addEventListener('change', (event) => {
+    commitGraphicsSettings(applyGraphicsPreset(currentGraphicsSettings(), event.target.value));
+});
+document.getElementById('setting-graphics-auto')?.addEventListener('change', (event) => {
+    commitGraphicsSettings(setGraphicsAutoAdjust(currentGraphicsSettings(), event.target.checked));
+});
+for (const [key, id] of Object.entries(GRAPHICS_CONTROLS)) {
+    document.getElementById(id)?.addEventListener('change', (event) => {
+        commitGraphicsSettings(setGraphicsValue(currentGraphicsSettings(), key, event.target.value));
+    });
+}
+document.getElementById('graphics-auto-restore')?.addEventListener('click', () => {
+    commitGraphicsSettings(restoreAutoGraphicsChanges(currentGraphicsSettings()));
+});
+window.addEventListener('hb:graphics-auto-lowered', (event) => {
+    renderGraphicsSettingsTab();
+    const change = event?.detail?.change;
+    if (!change || !isGameplayPhase()) return;
+    showBiomePrompt(`> ${t('ui.graphics.notice', {
+        setting: t(GRAPHICS_LABEL_KEYS[change.key]),
+        to: graphicsValueLabel(change.key, change.to)
+    })}`);
+});
+window.addEventListener('locale-changed', () => renderGraphicsSettingsTab());
+renderGraphicsSettingsTab();
 
 if (settingsPopup) {
     new MutationObserver(() => syncSteamInputPhase()).observe(settingsPopup, {
@@ -11853,6 +12048,7 @@ function updatePlayerTradeUi(state) {
         return;
     }
 
+    mountDeferredMarkup('player-trade-modal');
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
 
@@ -11917,44 +12113,47 @@ function setupPlayerTradeEvents() {
 
     playerTradeManager.onStateChanged = updatePlayerTradeUi;
 
-    // Local Steppers
-    const bindStepper = (minusId, plusId, key, step, maxSupplier) => {
-        document.getElementById(minusId)?.addEventListener('click', () => {
-            const current = playerTradeManager.myOffer[key] || 0;
-            playerTradeManager.setOfferItem(key, Math.max(0, current - step));
-            window.AudioManager?.play?.('ui_click', { volume: 0.25 });
+    // The trade window's markup is built on first open (src/deferredMarkup.js).
+    onDeferredMarkupMounted('player-trade-modal', () => {
+        // Local Steppers
+        const bindStepper = (minusId, plusId, key, step, maxSupplier) => {
+            document.getElementById(minusId)?.addEventListener('click', () => {
+                const current = playerTradeManager.myOffer[key] || 0;
+                playerTradeManager.setOfferItem(key, Math.max(0, current - step));
+                window.AudioManager?.play?.('ui_click', { volume: 0.25 });
+            });
+            document.getElementById(plusId)?.addEventListener('click', () => {
+                const current = playerTradeManager.myOffer[key] || 0;
+                const maxVal = maxSupplier();
+                playerTradeManager.setOfferItem(key, Math.min(maxVal, current + step));
+                window.AudioManager?.play?.('ui_click', { volume: 0.25 });
+            });
+        };
+
+        const inv = () => getCurrentInventoryForTrade();
+        bindStepper('trade-self-shells-minus', 'trade-self-shells-plus', TRADEABLE_RESOURCES.SHELLS, 10, () => inv().shells);
+        bindStepper('trade-self-ammo-minus', 'trade-self-ammo-plus', TRADEABLE_RESOURCES.AMMO, 10, () => inv().ammo);
+        bindStepper('trade-self-meds-minus', 'trade-self-meds-plus', TRADEABLE_RESOURCES.MEDKITS, 1, () => inv().medkits);
+        bindStepper('trade-self-o2-minus', 'trade-self-o2-plus', TRADEABLE_RESOURCES.O2, 1, () => inv().o2Canisters);
+
+        document.getElementById('close-player-trade-modal')?.addEventListener('click', () => {
+            playerTradeManager.closeTrade();
+            window.AudioManager?.play?.('ui_click', { volume: 0.3 });
         });
-        document.getElementById(plusId)?.addEventListener('click', () => {
-            const current = playerTradeManager.myOffer[key] || 0;
-            const maxVal = maxSupplier();
-            playerTradeManager.setOfferItem(key, Math.min(maxVal, current + step));
-            window.AudioManager?.play?.('ui_click', { volume: 0.25 });
+        document.getElementById('trade-cancel-btn')?.addEventListener('click', () => {
+            playerTradeManager.closeTrade();
+            window.AudioManager?.play?.('ui_click', { volume: 0.3 });
         });
-    };
 
-    const inv = () => getCurrentInventoryForTrade();
-    bindStepper('trade-self-shells-minus', 'trade-self-shells-plus', TRADEABLE_RESOURCES.SHELLS, 10, () => inv().shells);
-    bindStepper('trade-self-ammo-minus', 'trade-self-ammo-plus', TRADEABLE_RESOURCES.AMMO, 10, () => inv().ammo);
-    bindStepper('trade-self-meds-minus', 'trade-self-meds-plus', TRADEABLE_RESOURCES.MEDKITS, 1, () => inv().medkits);
-    bindStepper('trade-self-o2-minus', 'trade-self-o2-plus', TRADEABLE_RESOURCES.O2, 1, () => inv().o2Canisters);
-
-    document.getElementById('close-player-trade-modal')?.addEventListener('click', () => {
-        playerTradeManager.closeTrade();
-        window.AudioManager?.play?.('ui_click', { volume: 0.3 });
-    });
-    document.getElementById('trade-cancel-btn')?.addEventListener('click', () => {
-        playerTradeManager.closeTrade();
-        window.AudioManager?.play?.('ui_click', { volume: 0.3 });
-    });
-
-    document.getElementById('trade-confirm-btn')?.addEventListener('click', () => {
-        const invState = getCurrentInventoryForTrade();
-        const success = playerTradeManager.acceptTrade(invState);
-        if (success) {
-            window.AudioManager?.play?.('fx_menu_confirm', { volume: 0.4 });
-        } else {
-            window.AudioManager?.play?.('ui_error', { volume: 0.35 });
-        }
+        document.getElementById('trade-confirm-btn')?.addEventListener('click', () => {
+            const invState = getCurrentInventoryForTrade();
+            const success = playerTradeManager.acceptTrade(invState);
+            if (success) {
+                window.AudioManager?.play?.('fx_menu_confirm', { volume: 0.4 });
+            } else {
+                window.AudioManager?.play?.('ui_error', { volume: 0.35 });
+            }
+        });
     });
 
     window.openPlayerTradeWith = (peerData) => {
@@ -11964,6 +12163,10 @@ function setupPlayerTradeEvents() {
 }
 
 let npcDialogueEventsInitialized = false;
+// Where the choice tree draws. 'leader': inside the camp conversation, which
+// it continues once the staged lines end (owner, 2026-10-08: one
+// conversation per camp, never a second modal).
+let npcTreeHost = null;
 
 function updateNpcDialogueUi(state = {}) {
     const modal = document.getElementById('npc-dialogue-modal');
@@ -12065,7 +12268,9 @@ function setupNpcDialogueEvents() {
     if (npcDialogueEventsInitialized) return;
     npcDialogueEventsInitialized = true;
 
-    npcDialogueTreeManager.onStateChanged = updateNpcDialogueUi;
+    npcDialogueTreeManager.onStateChanged = (state) => (npcTreeHost === 'leader'
+        ? renderLeaderConversationTree(state)
+        : updateNpcDialogueUi(state));
 
     document.getElementById('close-npc-dialogue-modal')?.addEventListener('click', () => {
         npcDialogueTreeManager.closeDialogue();
@@ -12096,11 +12301,9 @@ function setupNpcDialogueEvents() {
     window.openNpcDialogueTree = async (treeId) => {
         if (!isGameplayPhase() || !isGameplayHudActive()) return null;
         setupNpcDialogueEvents();
-        const node = npcDialogueTreeManager.startDialogue(treeId);
-        if (node?.interstitial && typeof window.playSideStoryInterstitial === 'function') {
-            await window.playSideStoryInterstitial(node.interstitial);
-        }
-        return node;
+        // No music video per node: a camp's title card plays on first
+        // contact only (owner, 2026-10-08).
+        return npcDialogueTreeManager.startDialogue(treeId);
     };
     window.NPC_DIALOGUE_TREES = NPC_DIALOGUE_TREES;
     window.npcDialogueTreeManager = npcDialogueTreeManager;
@@ -12589,8 +12792,9 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
             for (const label of chunk.labels ?? []) {
                 const point = worldToMap(label.x, label.z);
                 if (point.x < -80 || point.x > width + 80 || point.y < -20 || point.y > height + 20) continue;
-                ctx.font = label.kind === 'room' ? 'bold 9px Space Mono, monospace' : '8px Space Mono, monospace';
-                ctx.fillStyle = label.kind === 'room' ? 'rgba(255, 214, 140, 0.92)' : 'rgba(150, 215, 235, 0.7)';
+                const isHighlight = label.kind === 'room' || label.kind === 'crash_site' || label.kind === 'landmark';
+                ctx.font = isHighlight ? 'bold 9px Space Mono, monospace' : '8px Space Mono, monospace';
+                ctx.fillStyle = label.kind === 'crash_site' ? 'rgba(255, 230, 110, 0.96)' : isHighlight ? 'rgba(255, 214, 140, 0.92)' : 'rgba(150, 215, 235, 0.7)';
                 ctx.strokeText(label.text, point.x, point.y);
                 ctx.fillText(label.text, point.x, point.y);
             }
@@ -12644,6 +12848,18 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
             ctx.fillStyle = '#d0e0f0';
             ctx.font = '10px Space Mono, monospace';
             if (!compact) ctx.fillText(landmark.label ?? '', lx, ly + 14);
+        } else if (landmark.type?.startsWith('chasm_')) {
+            // Landmarks rising out of the chasm (src/chasmLandmarks.js): small,
+            // in the district's colour, named on the full map only.
+            const glyph = { chasm_mast: ['▲', '#ff5a44'], chasm_spire: ['◆', '#7fe3ff'], chasm_arch: ['∩', '#9cff6a'] }[landmark.type] ?? ['▲', '#ff5a44'];
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillStyle = glyph[1];
+            ctx.fillText(glyph[0], lx, ly);
+            if (!compact) {
+                ctx.fillStyle = 'rgba(208, 224, 240, 0.75)';
+                ctx.font = '8px Space Mono, monospace';
+                ctx.fillText(landmark.label ?? '', lx, ly + 11);
+            }
         } else if (landmark.type === 'hive') {
             ctx.fillStyle = '#ff0055';
             ctx.fillText('⚡', lx, ly);
@@ -13294,7 +13510,9 @@ window.openArchiveModal = openArchiveModal;
 
 document.getElementById('archive-btn')?.addEventListener('click', () => openArchiveModal());
 document.getElementById('homebase-records-btn')?.addEventListener('click', () => openArchiveModal({ tab: 'records', view: 'service' }));
-document.getElementById('net-records-btn')?.addEventListener('click', () => openArchiveModal({ tab: 'records', view: 'service', overlay: true }));
+onDeferredMarkupMounted('multiplayer-modal', () => {
+    document.getElementById('net-records-btn')?.addEventListener('click', () => openArchiveModal({ tab: 'records', view: 'service', overlay: true }));
+});
 document.getElementById('go-records-btn')?.addEventListener('click', () => openArchiveModal({
     tab: 'records',
     view: 'boards',
@@ -13361,7 +13579,10 @@ const foundryHub = createFoundryHub({
     getBank: () => bankManager.getState(),
     getClassId: () => loadout.activeClassId,
     isFoundryActivated: () => bankManager.isFoundryActivated(),
-    isStoreAvailable: () => !document.getElementById('vault-tab-store')?.classList.contains('hidden'),
+    isStoreAvailable: () => isVaultStoreAvailable(),
+    preparePanels: (ids) => {
+        if (ids.some((id) => id.startsWith('vault-'))) mountDeferredMarkup('steam-vault-modal');
+    },
     isTradeUpAvailable: () => isVaultExchangeAvailable(),
     focus: (element) => { if (element) focusControllerTarget(element); },
     onTabShown: {
@@ -13377,16 +13598,7 @@ const foundryHub = createFoundryHub({
         },
         store: () => showVaultPanels(renderStorePanel)
     },
-    renderLoadout: (container) => {
-        if (!container) return;
-        container.innerHTML = `<div class="item-card-strip" id="foundry-hub-loadout-strip"></div><p class="foundry-hub__hint">${t('ui.foundry_hub.loadout_hint')}</p>`;
-        const classId = loadout.activeClassId;
-        const chassisId = loadout.getEquippedChassisSkinId();
-        renderLoadoutStrip(container.querySelector('#foundry-hub-loadout-strip'), loadout.getClassLoadout(classId), {
-            classId,
-            chassisId: loadout.isChassisSupportedForClass(classId, chassisId) ? chassisId : null
-        });
-    },
+    renderLoadout: (container) => renderFoundryLoadout(container),
     onClose: () => finishFabricationSession(),
     log: (event, detail) => debugLog.info('FOUNDRY', `hub-${event}`, detail)
 });
@@ -13764,8 +13976,57 @@ dayRestWarningConfirm?.addEventListener('click', () => {
     closeDayRestWarning();
     confirm?.();
 });
+// Sleep (Sprint 53 S1-S3): the rest has already reset the world to morning;
+// the sleep cutscene plays over that change, then the morning card, then the
+// overnight debrief and the Bay. Until a style's video ships
+// (src/sleepCutscene.js SHIPPED_SLEEP_CUTSCENES) a short night card plays.
+const SLEEP_INTERSTITIAL_MS = 2600;
+function playSleepInterstitial() {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'sleep-interstitial';
+        overlay.setAttribute('role', 'presentation');
+        for (const [part, key] of [['title', 'ui.sleep.night_falls'], ['body', 'ui.sleep.night_body'], ['skip', 'ui.sleep.skip']]) {
+            const line = document.createElement('div');
+            line.className = `sleep-interstitial__${part}`;
+            line.textContent = t(key);
+            overlay.appendChild(line);
+        }
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.classList.add('is-visible'));
+        let done = false;
+        const finish = () => {
+            if (done) return;
+            done = true;
+            window.removeEventListener('keydown', onKey, true);
+            overlay.classList.remove('is-visible');
+            window.setTimeout(() => { overlay.remove(); resolve(); }, 450);
+        };
+        const onKey = (event) => { event.preventDefault(); finish(); };
+        window.addEventListener('keydown', onKey, true);
+        overlay.addEventListener('pointerup', finish);
+        window.setTimeout(finish, SLEEP_INTERSTITIAL_MS);
+    });
+}
+async function playSleepCutscene(style) {
+    if (isSleepCutsceneShipped(style)) {
+        await playCutsceneVideo(sleepCutsceneBase(style), { tone: 'event' });
+        return;
+    }
+    await playSleepInterstitial();
+}
 window.addEventListener('day-rest-open', (event) => {
     const detail = event?.detail ?? {};
+    void playSleepCutscene(detail.sleepStyle).then(() => openMorningAfterRest(detail));
+});
+function openMorningAfterRest(detail) {
+    const site = detail.crashSiteName ? formatLocationName(detail.crashSiteName, t) : '';
+    showTacticalOverlay({
+        title: t('ui.sleep.morning_title', { day: detail.day ?? 1 }),
+        status: site ? t('ui.sleep.morning_status', { site }) : '',
+        progress: 100,
+        duration: 2600
+    });
     fabricationBay.beginCampRest();
     showBiomePrompt(`> DAY ${detail.day} // ${detail.campLabel ?? 'CAMP'} REST CYCLE COMPLETE // THREAT ${Number(detail.difficulty ?? 1).toFixed(2)}×`);
     if (detail.expired?.length) {
@@ -13781,7 +14042,7 @@ window.addEventListener('day-rest-open', (event) => {
         showBiomePrompt(`> ${t('ui.camp.scar_gained', { scar: String(detail.gainedScar).replaceAll('_', ' ') })}`);
     }
     openFabricationModal();
-});
+}
 
 function updateCampaignCycleIndicator(detail = {}) {
     const host = document.querySelector('.level-indicator');
@@ -14361,10 +14622,10 @@ window.playSideStoryInterstitial = async (id) => {
     return await songInterstitial.show(id, { holdMs: 1400 });
 };
 
-window.addEventListener('camp-choice-open', async (event) => {
-    const detail = event?.detail ?? {};
-    await songInterstitial.show(selectCampInterstitial(detail));
-    renderCampChoice(detail);
+// The camp's title card plays once, on first contact (owner, 2026-10-08:
+// "first contact only"); the decision opens straight away.
+window.addEventListener('camp-choice-open', (event) => {
+    renderCampChoice(event?.detail ?? {});
 });
 
 // First contact with a camp (any act) gets the same song title card as the
@@ -14412,6 +14673,8 @@ const leaderConversation3d = {
 let leaderConversationLines = [];
 let leaderConversationLineIndex = 0;
 let leaderConversationIdentity = null;
+let leaderConversationTreeId = null;
+const leaderConversationChoices = document.getElementById('leader-conversation-choices');
 
 function cleanLeaderDialogueLine(line, speakerName = '') {
     const text = String(line ?? '').trim();
@@ -14435,7 +14698,97 @@ function renderLeaderConversationLine() {
     }
 }
 
+// A camp conversation or its services menu is open: the HUD layers that sit
+// above every modal step aside (style.css, html[data-camp-dialog]).
+const openCampDialogs = new Set();
+function setCampDialogOpen(name, open) {
+    if (open) openCampDialogs.add(name);
+    else openCampDialogs.delete(name);
+    if (openCampDialogs.size) document.documentElement.dataset.campDialog = 'open';
+    else delete document.documentElement.dataset.campDialog;
+}
+window.setCampDialogOpen = setCampDialogOpen;
+
+// The staged lines are done: the leader's choice tree carries on here.
+function openLeaderConversationTree() {
+    if (!leaderConversationTreeId || npcTreeHost === 'leader') return false;
+    setupNpcDialogueEvents();
+    npcTreeHost = 'leader';
+    const treeId = leaderConversationTreeId;
+    leaderConversationTreeId = null;
+    if (!npcDialogueTreeManager.startDialogue(treeId)) {
+        npcTreeHost = null;
+        return false;
+    }
+    return true;
+}
+
+function renderLeaderConversationTree(state = {}) {
+    if (!state.isOpen || !state.node) {
+        closeLeaderConversation();
+        return;
+    }
+    const node = state.node;
+    if (leaderConversationLine) {
+        leaderConversationLine.classList.add('is-tree');
+        leaderConversationLine.textContent = '';
+        if (node.narration) {
+            const narration = document.createElement('em');
+            narration.className = 'leader-conversation-narration';
+            narration.textContent = node.narration;
+            leaderConversationLine.append(narration);
+        }
+        const spoken = document.createElement('span');
+        spoken.textContent = cleanLeaderDialogueLine(node.dialogue ?? '', leaderConversationIdentity?.name);
+        leaderConversationLine.append(spoken);
+    }
+    leaderConversation3d.react(dialogueReactionForLine(node.dialogue ?? ''));
+    if (leaderConversationGuidance && state.bond) {
+        leaderConversationGuidance.textContent = t('ui.bond.badge', { label: state.bond.label, score: state.bondScore || 0 });
+    }
+    if (leaderConversationContinue) leaderConversationContinue.hidden = true;
+    leaderConversationModal?.classList.add('is-choosing');
+    if (!leaderConversationChoices) return;
+    leaderConversationChoices.textContent = '';
+    leaderConversationChoices.hidden = false;
+    (node.choices ?? []).forEach((choice, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'npc-choice-btn';
+        button.dataset.choiceId = choice.id;
+        for (const [className, text] of [['npc-choice-key', `[${index + 1}]`], ['npc-choice-tone', choice.tone ?? ''], ['npc-choice-text', choice.text ?? '']]) {
+            const part = document.createElement('span');
+            part.className = className;
+            part.textContent = text;
+            button.append(part);
+        }
+        button.addEventListener('click', () => {
+            window.AudioManager?.play?.('ui_click', { volume: 0.3 });
+            npcDialogueTreeManager.selectChoice(choice.id);
+        });
+        leaderConversationChoices.append(button);
+    });
+    leaderConversationChoices.querySelector('button')?.focus();
+}
+
+function resetLeaderConversationTree() {
+    leaderConversationTreeId = null;
+    if (npcTreeHost === 'leader') {
+        npcTreeHost = null;
+        if (npcDialogueTreeManager.activeTree) npcDialogueTreeManager.closeDialogue();
+    }
+    if (leaderConversationChoices) {
+        leaderConversationChoices.textContent = '';
+        leaderConversationChoices.hidden = true;
+    }
+    if (leaderConversationContinue) leaderConversationContinue.hidden = false;
+    leaderConversationLine?.classList.remove('is-tree');
+    leaderConversationModal?.classList.remove('is-choosing');
+}
+
 function closeLeaderConversation() {
+    resetLeaderConversationTree();
+    setCampDialogOpen('leader', false);
     leaderConversationModal?.classList.add('hidden');
     leaderConversationModal?.setAttribute('aria-hidden', 'true');
     leaderConversation3d.hide();
@@ -14447,6 +14800,7 @@ function closeLeaderConversation() {
 leaderConversationContinue?.addEventListener('click', () => {
     window.AudioManager?.play?.('ui_click', { volume: 0.4 });
     if (leaderConversationLineIndex >= leaderConversationLines.length - 1) {
+        if (openLeaderConversationTree()) return;
         closeLeaderConversation();
         return;
     }
@@ -14461,6 +14815,8 @@ window.addEventListener('leader-dialogue', async (event) => {
     const detail = event?.detail ?? {};
     const identity = resolveLeaderIdentity(detail);
     leaderConversationIdentity = identity;
+    resetLeaderConversationTree();
+    leaderConversationTreeId = detail.treeId ?? null;
     const { beatType, leaderName, leaderClassId } = detail;
     let lines = (detail.lines ?? []).map((line) => String(line ?? '')).filter(Boolean);
 
@@ -14538,6 +14894,7 @@ window.addEventListener('leader-dialogue', async (event) => {
     renderLeaderConversationLine();
     leaderConversationModal.classList.remove('hidden');
     leaderConversationModal.setAttribute('aria-hidden', 'false');
+    setCampDialogOpen('leader', true);
     window.game?.setInputEnabled?.(false);
     leaderConversationContinue?.focus();
     window.AudioManager?.play?.('door_slide_horiz', { volume: 0.32 });
@@ -14999,9 +15356,83 @@ function renderHeroLoadoutStrip(type = activePreviewType) {
     const chassisId = loadout.getEquippedChassisSkinId();
     renderLoadoutStrip(document.getElementById('hero-loadout-strip'), loadout.getClassLoadout(classId), {
         classId,
-        chassisId: loadout.isChassisSupportedForClass(classId, chassisId) ? chassisId : null
+        chassisId: loadout.isChassisSupportedForClass(classId, chassisId) ? chassisId : null,
+        interactive: true
     });
 }
+
+// The Foundry LOADOUT tab (Sprint 51): what each slot does, a summary of the
+// whole loadout, and every slot -- empty ones too -- opens its picker.
+function renderFoundryLoadout(container = document.getElementById('foundry-hub-loadout')) {
+    if (!container) return;
+    const classId = String(loadout.activeClassId ?? 'scout').toLowerCase();
+    const chassisId = loadout.getEquippedChassisSkinId();
+    const options = {
+        classId,
+        chassisId: loadout.isChassisSupportedForClass(classId, chassisId) ? chassisId : null,
+        interactive: true
+    };
+    container.innerHTML = `<div class="item-card-strip" id="foundry-hub-loadout-strip"></div>`
+        + loadoutEffectSummaryHtml(loadoutCardViews(loadout.getClassLoadout(classId), options))
+        + `<p class="foundry-hub__hint">${t('ui.equipment.change')}</p>`;
+    renderLoadoutStrip(container.querySelector('#foundry-hub-loadout-strip'), loadout.getClassLoadout(classId), options);
+}
+
+// One slot picker for the Foundry and the hero screen: the Armory's own
+// (src/armoryUi.js) in picker-only mode, so ownership, locked tiles, unlock
+// hints and equipping all follow the Armory's rules.
+const LOADOUT_SLOT_FIELDS = Object.freeze({ weapon: 'weapon', charm: 'charm', bay_a: 'mod1', bay_b: 'mod2', chassis: 'chassis' });
+let loadoutSlotPicker = null;
+let loadoutPickerReturnFocus = null;
+
+function getLoadoutSlotPicker() {
+    if (loadoutSlotPicker) return loadoutSlotPicker;
+    const host = document.createElement('div');
+    host.id = 'loadout-picker-host';
+    host.className = 'hidden';
+    (document.getElementById('game-viewport') ?? document.body).appendChild(host);
+    loadoutSlotPicker = {
+        host,
+        ui: createArmoryUi({
+            container: host,
+            loadoutManager: loadout,
+            armoryScene: null,
+            ownership: getOwnershipStore(),
+            pickerOnly: true,
+            onEquip: () => {
+                renderHeroLoadoutStrip();
+                if (window.foundryHub?.isOpen?.()) renderFoundryLoadout();
+                if (activePreviewType) void syncHeroPreview(activePreviewType);
+            },
+            onPickerClose: () => {
+                host.classList.add('hidden');
+                loadoutPickerReturnFocus?.focus?.({ preventScroll: true });
+                loadoutPickerReturnFocus = null;
+            }
+        })
+    };
+    return loadoutSlotPicker;
+}
+
+function openLoadoutSlotPicker(slot, classId, returnFocus = null) {
+    const field = LOADOUT_SLOT_FIELDS[slot];
+    if (!field) return;
+    const picker = getLoadoutSlotPicker();
+    loadoutPickerReturnFocus = returnFocus;
+    picker.host.classList.remove('hidden');
+    AudioManager.play('ui_click', { volume: 0.5 });
+    picker.ui.openSlot(field, String(classId ?? loadout.activeClassId ?? 'scout').toLowerCase());
+}
+
+document.addEventListener('click', (event) => {
+    const card = event.target?.closest?.('button.item-card[data-slot]');
+    if (!card) return;
+    if (card.closest('#hero-loadout-strip')) {
+        openLoadoutSlotPicker(card.dataset.slot, activePreviewType ?? loadout.activeClassId, card);
+    } else if (card.closest('#foundry-hub-loadout-strip')) {
+        openLoadoutSlotPicker(card.dataset.slot, loadout.activeClassId, card);
+    }
+});
 
 function syncEquippedWeaponLabel() {
     const titleEl = document.querySelector('#weapon-status-panel .weapon-status-panel__title');
@@ -17456,6 +17887,7 @@ progressionWalkthrough.init();
 initVirtualKeyboard();
 setupNpcDialogueEvents();
 createFieldWorkbenchUi();
+window.campServicesUi = createCampServicesUi();
 createQuickCommandRadialUi();
 
 // Keep the title art alive at rest while making pointer movement feel like a

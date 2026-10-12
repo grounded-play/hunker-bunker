@@ -38,12 +38,13 @@ function reachable(start, allowed) {
 // Pure bounded motif solver, not a claim of a complete WFC implementation.
 // Caller must integrate chunk portals, runtime damage and persisted versions.
 export function planInterior({ seed, areaId = 'industrial', roomId = 'room',
-    generatorVersion = ROOM_GRAMMAR_VERSION, tier = 'standard', sockets = [], reservations = [] } = {}) {
+    generatorVersion = ROOM_GRAMMAR_VERSION, tier = 'standard', motifId = null,
+    sockets = [], reservations = [] } = {}) {
     if (!Number.isSafeInteger(seed) || generatorVersion !== ROOM_GRAMMAR_VERSION) throw new Error('Unsupported room seed/version');
     const profile = getRoomGrammarProfile(areaId);
     if (!Object.hasOwn(profile.tiers, tier)) throw new Error('Unsupported room tier');
     if (!Array.isArray(sockets) || sockets.length < 1 || sockets.length > 4) throw new Error('Expected one to four sockets');
-    const identity = [generatorVersion, seed, areaId, roomId];
+    const identity = [generatorVersion, seed, areaId, roomId, motifId];
     const sizeRandom = randomStream([...identity, 'envelope']);
     const [width, height] = profile.tiers[tier][Math.floor(sizeRandom() * profile.tiers[tier].length)];
     const orderedSockets = sockets.map(socket => ({ ...socket })).sort((a, b) => SIDES.indexOf(a.side) - SIDES.indexOf(b.side));
@@ -81,7 +82,17 @@ export function planInterior({ seed, areaId = 'industrial', roomId = 'room',
     const corners = [{ x: 3, y: 3 }, { x: width - 4, y: 3 },
         { x: width - 4, y: height - 4 }, { x: 3, y: height - 4 }];
     corners.forEach((p, i) => line(p, corners[(i + 1) % 4]));
-    const anchors = ['arrival', 'work-access', 'storage', 'quiet-corner'].map((role, i) => ({ ...corners[i], role }));
+    const anchorSpecs = profile.anchors ?? ['arrival', 'work-access', 'storage', 'quiet-corner']
+        .map((role, index) => ({ ...corners[index], role, absolute: true }));
+    const anchors = anchorSpecs.map((anchor) => ({
+        role: anchor.role,
+        x: anchor.absolute ? anchor.x : Math.round(anchor.x * (width - 1)),
+        y: anchor.absolute ? anchor.y : Math.round(anchor.y * (height - 1))
+    }));
+    if (anchors.some(({ x, y }) => x < 3 || x > width - 4 || y < 3 || y > height - 4)) {
+        throw new Error('Profile anchor requires the three-cell circulation envelope');
+    }
+    for (const anchor of anchors) protect(anchor.x, anchor.y);
     const doors = orderedSockets.map(socket => {
         const vertical = socket.side === 'e' || socket.side === 'w';
         const center = vertical ? { x: socket.side === 'w' ? 0 : width - 1, y: socket.offset }
@@ -101,14 +112,18 @@ export function planInterior({ seed, areaId = 'industrial', roomId = 'room',
         return targets.every(p => wideReach.has(key(p.x, p.y)))
             && reachable(start, floor).size === grid.flat().filter(c => c === '.' || c === 'D').length;
     };
+    const eligibleMotifs = motifId == null
+        ? profile.motifs
+        : profile.motifs.filter((motif) => motif.id === motifId);
+    if (!eligibleMotifs.length) throw new Error('Unsupported room motif');
     const motifRandom = randomStream([...identity, 'motif']);
-    const first = Math.floor(motifRandom() * profile.motifs.length);
+    const first = Math.floor(motifRandom() * eligibleMotifs.length);
     // Try one bounded asymmetric rewrite and the canonical form of each motif.
     // These streams cannot change the envelope, sockets or another room.
-    const candidateCount = profile.motifs.length * 2;
+    const candidateCount = eligibleMotifs.length * 2;
     for (let attempt = 0; attempt <= candidateCount; attempt += 1) {
         const fallback = attempt === candidateCount;
-        const motif = fallback ? { id: 'open-service-court', blocks: [] } : profile.motifs[(first + Math.floor(attempt / 2)) % profile.motifs.length];
+        const motif = fallback ? { id: 'open-service-court', blocks: [] } : eligibleMotifs[(first + Math.floor(attempt / 2)) % eligibleMotifs.length];
         const detailRandom = randomStream([...identity, motif.id, 'module-offsets']);
         const grid = Array.from({ length: height }, (_, y) => Array.from({ length: width }, (_, x) =>
             x === 0 || y === 0 || x === width - 1 || y === height - 1 ? '#' : '.'));

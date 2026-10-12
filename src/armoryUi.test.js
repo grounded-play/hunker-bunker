@@ -357,6 +357,9 @@ describe('createArmoryUi ownership gating', () => {
         // Cryo-Vanguard Scout (4113) is a scout chassis skin nobody owns here.
         expect(html).toContain('data-value="4113"');
         expect(html).toMatch(/data-value="4113"[^>]*aria-disabled/);
+        // A pad must still reach it (to read how it unlocks, or buy it):
+        // the controller focus list skips aria-disabled without this.
+        expect(html).toMatch(/data-value="4113"[^>]*data-controller-focusable/);
         // Present but unnamed: the tile is there, the name is not.
         const tile = html.slice(html.indexOf('data-value="4113"'));
         expect(tile.slice(0, 400)).toContain('Locked');
@@ -365,10 +368,14 @@ describe('createArmoryUi ownership gating', () => {
 
     it('still offers community chassis skins, which live outside the Steam catalog', () => {
         mount();
-        // All 30 comm_* skins ship unlocked, so they must render enabled --
+        // Earned with runs (Sprint 51), so a fresh save lists them locked --
         // a catalog-only lookup would have dropped them from the list entirely.
-        const html = openSlotHtml(container, 'chassis');
+        let html = openSlotHtml(container, 'chassis');
         expect(html).toContain('comm_scout_foxhole_shadow');
+        expect(html).toMatch(/data-value="comm_scout_foxhole_shadow"[^>]*aria-disabled/);
+        ownership.setExternalOwnership('progression', ['comm_scout_foxhole_shadow']);
+        mount();
+        html = openSlotHtml(container, 'chassis');
         expect(html).not.toMatch(/data-value="comm_scout_foxhole_shadow"[^>]*aria-disabled/);
     });
 

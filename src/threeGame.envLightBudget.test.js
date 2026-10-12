@@ -6,7 +6,7 @@
 // because three.js bakes `numPointLights` into every material's program cache
 // key (WebGLPrograms.js:472-474), so a fluctuating count forces every material
 // in view to recompile its shader mid-frame.
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { ThreeGame } from './threeGame.js';
 
@@ -151,5 +151,61 @@ describe('env light budget', () => {
         expect(litColors).toContain(0xffa648);
         expect(litColors).not.toContain(0x5fe3ff);
         expect(visibleLightCount(game.scene)).toBe(8);
+    });
+
+    it('registers prop FX lights as hidden sources and updates their effects', () => {
+        const light = new THREE.PointLight(0xff8844, 1.2, 4);
+        light.visible = false;
+        const propFx = {
+            registered: false,
+            lightSources: [light],
+            update: vi.fn(),
+            dispose: vi.fn()
+        };
+        const root = new THREE.Group();
+        root.userData.propFx = propFx;
+        root.add(light);
+        game.world3dPropEffects = new Set();
+        game.registerWorld3dPropFx = ThreeGame.prototype.registerWorld3dPropFx;
+        game.updateWorld3dMixers = ThreeGame.prototype.updateWorld3dMixers;
+        game.disposeWorld3dPropFx = ThreeGame.prototype.disposeWorld3dPropFx;
+
+        game.registerWorld3dPropFx(root);
+        expect(light.visible).toBe(false);
+        expect(light.userData.envLightEnabled).toBe(true);
+        expect(game.envDynamicLights).toContain(light);
+        game.updateWorld3dMixers(0.016);
+        expect(propFx.update).toHaveBeenCalledWith(0.016, game.camera.position);
+
+        game.disposeWorld3dPropFx(root);
+        expect(propFx.dispose).toHaveBeenCalledOnce();
+        expect(game.world3dPropEffects.size).toBe(0);
+    });
+
+    it('registers, acknowledges, updates and disposes per-instance prop presentation', () => {
+        const experience = {
+            registered: false,
+            acknowledge: vi.fn(() => true),
+            update: vi.fn(),
+            dispose: vi.fn()
+        };
+        const root = new THREE.Group();
+        root.userData.propExperience = experience;
+        const source = new THREE.Object3D();
+        source.userData.world3dRoot = root;
+        game.registerWorld3dPropExperience = ThreeGame.prototype.registerWorld3dPropExperience;
+        game.acknowledgePropExperience = ThreeGame.prototype.acknowledgePropExperience;
+        game.disposeWorld3dPropExperience = ThreeGame.prototype.disposeWorld3dPropExperience;
+        game.updateWorld3dMixers = ThreeGame.prototype.updateWorld3dMixers;
+
+        game.registerWorld3dPropExperience(root);
+        expect(game.acknowledgePropExperience(source)).toBe(true);
+        expect(experience.acknowledge).toHaveBeenCalledOnce();
+        game.updateWorld3dMixers(0.016);
+        expect(experience.update).toHaveBeenCalledWith(0.016);
+
+        game.disposeWorld3dPropExperience(root);
+        expect(experience.dispose).toHaveBeenCalledOnce();
+        expect(game.world3dPropExperiences.size).toBe(0);
     });
 });

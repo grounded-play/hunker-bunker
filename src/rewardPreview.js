@@ -1,18 +1,17 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { assetUrl } from './assetUrl.js';
 import { CHARM_GLB_MAP, MOD_GLB_MAP } from './armoryScene.js';
 import { CHASSIS_SKIN_MODELS, WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES } from './player3dOverlay.js';
 import { getCharmSocketTransform, resolveCharmModelOffset } from './charmSockets.js';
 import { getWeaponCalibration, getWeaponScaleForBounds } from './weaponCalibration.js';
 import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
+import { createGltfLoader } from './gltfLoaderFactory.js';
 
 const templateCache = new Map();
 const NON_3D_CATEGORIES = new Set(['decal', 'emblem', 'currency', 'cache', 'voice', 'voice_pack', 'hud', 'hud_theme', 'reagent', 'token']);
 
 function createLoader() {
-    return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    return createGltfLoader();
 }
 
 function normalizeCategory(category) {

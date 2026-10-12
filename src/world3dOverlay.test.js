@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import fs from 'node:fs';
 import * as THREE from 'three';
 import { WORLD_3D_FACING_YAW, WORLD_3D_MODELS, hasWorld3dModel, isWorld3dOnlyPlacementType, syncWorld3dReplacement } from './world3dOverlay.js';
 
@@ -17,6 +18,38 @@ describe('world 3D replacement catalog', () => {
         expect(WORLD_3D_MODELS.basic_pile.url).toBe('/3d/runtime/basic-pile.glb');
         expect(WORLD_3D_MODELS.storage_locker.url).toBe('/3d/runtime/storage-locker.glb');
         expect(WORLD_3D_MODELS.frozen_tanker.url).toBe('/3d/runtime/frozen-tanker.glb');
+    });
+
+    it('ships the lived-in batch at the prompt-sheet metric dimensions', () => {
+        const expected = {
+            life_mess_table: [0.9, 2.4],
+            life_bunk_stack: [2.1],
+            life_card_table: [0.8, 1.6],
+            life_tally_bulkhead: [2.0, 1.4],
+            life_sleep_sleeve: [2.2, 1.1],
+            life_vulval_drain_sump: [0.35, 1.4],
+            life_pelvic_autopsy_trough: [0.95, 2.3],
+            life_vertebral_restraint_rack: [2.1, 0.8]
+        };
+        expect(Object.keys(WORLD_3D_MODELS).filter((type) => type.startsWith('life_'))).toHaveLength(97);
+        for (const [type, [height, span]] of Object.entries(expected)) {
+            expect(WORLD_3D_MODELS[type].height, type).toBe(height);
+            if (span) expect(WORLD_3D_MODELS[type].span, type).toBe(span);
+        }
+        for (const [type, config] of Object.entries(WORLD_3D_MODELS).filter(([type]) => type.startsWith('life_'))) {
+            expect(config.url, type).toBe(`/3d/runtime/new3ds/${type}.glb`);
+            expect(fs.existsSync(`public${config.url}`), type).toBe(true);
+        }
+    });
+
+    it('fits authored height and footprint independently when both are specified', async () => {
+        const { prepareWorld3dModel } = await import('./world3dOverlay.js');
+        const raw = new THREE.Group();
+        raw.add(new THREE.Mesh(new THREE.BoxGeometry(4, 1, 2)));
+        const model = prepareWorld3dModel(raw, 'authored_fixture', { height: 2, span: 3, yaw: 0 });
+        const size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
+        expect(size.y).toBeCloseTo(2);
+        expect(Math.max(size.x, size.z)).toBeCloseTo(3);
     });
 
     // Modular kit pieces take one uniform scale instead (src/kitMaterials.js):
@@ -183,5 +216,25 @@ describe('world 3D replacement catalog', () => {
         expect(syncWorld3dReplacement(source, { delta: 0.016 })).toBe(true);
         expect(root.rotation.y).toBeCloseTo(1.25);
     });
-});
 
+    it('attaches a registered prop FX recipe to normalized world models', async () => {
+        const { prepareWorld3dModel } = await import('./world3dOverlay.js');
+        const model = new THREE.Group();
+        model.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial()));
+        const root = prepareWorld3dModel(model, 'life_water_still', { height: 1.3, yaw: 0 });
+        expect(root.userData.propFx?.type).toBe('life_water_still');
+        expect(root.getObjectByName('PropFx:life_water_still')).toBeDefined();
+    });
+
+    it('attaches an isolated presentation controller to interactive terminals', async () => {
+        const { prepareWorld3dModel } = await import('./world3dOverlay.js');
+        const model = new THREE.Group();
+        model.add(new THREE.Mesh(
+            new THREE.BoxGeometry(1, 1, 1),
+            new THREE.MeshStandardMaterial({ emissive: 0x000000 })
+        ));
+        const root = prepareWorld3dModel(model, 'prop_diagnostic_console', { height: 1.2, yaw: 0 });
+        expect(root.userData.propExperience?.type).toBe('prop_diagnostic_console');
+        expect(root.userData.propExperience?.state).toBe('ready');
+    });
+});

@@ -87,3 +87,80 @@
   max-width: 32px;
   margin: 0 auto;
 }
+
+/* Sprint 51: a card that opens its slot's picker (Foundry LOADOUT tab, hero
+   screen). A button, so mouse, touch and controller all reach it. */
+button.item-card {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  appearance: none;
+}
+
+button.item-card:hover,
+button.item-card:focus-visible {
+  border-color: rgba(var(--rar), 0.95);
+  box-shadow: 0 0 0 1px rgba(var(--rar), 0.6), 0 0 12px rgba(var(--rar), 0.35);
+  outline: none;
+}
+
+button.item-card--empty:hover .item-card__art,
+button.item-card--empty:focus-visible .item-card__art {
+  background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.14), transparent 70%);
+}
+
+button.item-card--empty .item-card__art::after {
+  content: '+';
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: 22px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.item-card__effect {
+  font-size: 11px;
+  line-height: 1.25;
+  color: rgba(226, 240, 250, 0.82);
+  text-align: left;
+}
+
+/* "What this loadout does" under the Foundry strip. */
+.loadout-effects {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 4px;
+  background: rgba(4, 12, 18, 0.6);
+}
+
+.loadout-effects__title {
+  margin: 0 0 6px;
+  font: 700 12px / 1.2 'Space Mono', monospace;
+  letter-spacing: 0.1em;
+  color: #b8f4ff;
+}
+
+.loadout-effects__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 3px;
+  font-size: 12px;
+  color: rgba(226, 240, 250, 0.9);
+}
+
+.loadout-effects__list b {
+  display: inline-block;
+  min-width: 7em;
+  color: rgba(0, 229, 255, 0.85);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.loadout-effects__none {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(226, 240, 250, 0.6);
+}

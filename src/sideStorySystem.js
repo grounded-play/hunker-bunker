@@ -3,7 +3,7 @@
  *
  * Preserves the main extraction run path while providing deep, multi-stage
  * opt-in companion storylines for:
- * - Sister Val ("Warmth of the Suture" // Camp Tallow)
+ * - Sister Martha ("Warmth of the Suture" // Camp Tallow)
  * - Commander Briggs ("Blood & Vanguard" // Camp Vesper)
  * - Overseer Kaelen ("Synaptic Overclock" // Camp Meridian)
  * - Specimen 0047-B / Aria ("The Queen's Siren Song" // The Hive Brood)
@@ -22,7 +22,7 @@ export const SIDE_STORIES_CONFIG = Object.freeze({
     sister_val: {
         id: 'sister_val',
         title: 'Warmth of the Suture',
-        npcName: 'Sister Val',
+        npcName: 'Sister Martha',
         faction: 'CAMP TALLOW // SUTURE SANCTUARY',
         icon: '🩸',
         themeColor: '#ff4f64',

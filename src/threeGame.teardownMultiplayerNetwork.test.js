@@ -90,6 +90,8 @@ describe('ThreeGame.teardownMultiplayerNetwork', () => {
             // PvP spawn readiness: the relay's round id for this player.
             'pvpRoundState',
             'playerMoved', 'playerFired', 'playerDamaged', 'playerRevived',
+            // PvP heals the relay accepted (Sprint 51).
+            'playerHealthSync',
             'playerDownedBroadcast', 'playerExtractedBroadcast', 'enemyDamaged', 'enemyHitReported', 'enemyStateSnapshot',
             // Co-op shared world beats and the friendly-fire shove.
             'worldEventBroadcast', 'playerNudged',

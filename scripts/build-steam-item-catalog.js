@@ -51,17 +51,22 @@ function parseSteamBundle(raw) {
     });
 }
 
+// Steam exchange recipes are `;`-separated alternatives: a cache opens with
+// either key.
+export const CACHE_RESOLVER_EXCHANGE = '4000x1,4001x1;4000x1,4154x1';
+
 /**
- * ItemDef 4002 must be an exchange generator (cache 4000 + key 4001) whose
- * weighted entries equal the server's disclosed drop table. An entry may
- * point at a hidden one-item bundle to grant a quantity above one.
+ * ItemDef 4002 must be an exchange generator (cache 4000 + the purchased key
+ * 4001, or the earned key 4154 a boss kill grants) whose weighted entries
+ * equal the server's disclosed drop table. An entry may point at a hidden
+ * one-item bundle to grant a quantity above one.
  */
 export function validateResolverOdds(schema, dropTable = DEEP_RELIC_CACHE_DROP_TABLE) {
     const byId = new Map(schema.items.map((entry) => [entry.itemdefid, entry]));
     const resolver = byId.get(4002);
     if (!resolver?.bundle) throw new Error('ItemDef 4002 resolver bundle is missing.');
     if (resolver.type !== 'generator') throw new Error('ItemDef 4002 must be a generator for ExchangeItem.');
-    if (resolver.exchange !== '4000x1,4001x1') throw new Error('ItemDef 4002 exchange must be 4000x1,4001x1.');
+    if (resolver.exchange !== CACHE_RESOLVER_EXCHANGE) throw new Error(`ItemDef 4002 exchange must be ${CACHE_RESOLVER_EXCHANGE}.`);
     const configured = parseSteamBundle(resolver.bundle).map(({ itemdefid, n: weight }) => {
         const target = byId.get(itemdefid);
         if (target?.type === 'bundle') {

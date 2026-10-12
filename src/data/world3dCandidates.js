@@ -35,7 +35,9 @@ export const WORLD_3D_CANDIDATES = Object.freeze([
     { type: 'prop_cryo_sleep_pod', sprite: '/prop_cryo_sleep_pod.png', site: 'scatter', status: 'wired', candidates: ['prop_flesh_steel_coffin', 'prop_icey_thermal_pod'] },
     { type: 'prop_engineering_bench', sprite: '/prop_engineering_bench.png', site: 'scatter', status: 'wired', candidates: ['prop_fabricator_workstation', 'prop_maintenance_tool_cart', 'prop_surgical_cart'] },
     { type: 'prop_ruptured_coolant_pump', sprite: '/prop_ruptured_coolant_pump.png', site: 'scatter', status: 'wired', candidates: ['prop_icey_frost_manifold', 'prop_pipe_rupture', 'prop_o2_filter_vat'] },
-    { type: 'lore_terminal', sprite: '/console.png', site: 'scatter', status: 'review', candidates: ['prop_terminal_ruptured', 'prop_liturgical_terminal_lectern'] },
+    { type: 'lore_terminal', sprite: '/console.png', site: 'scatter', status: 'wired', candidates: ['prop_terminal_ruptured', 'prop_liturgical_terminal_lectern'] },
+    { type: 'scatter_horizon_black_box', sprite: '/drop_survey_probe.png', site: 'scatter', status: 'wired', candidates: ['prop_camp_meridian_radio'] },
+    { type: 'prop_hydraulic_piston_actuator', sprite: null, site: 'room-anchor', status: 'wired', candidates: ['prop_exosuit_docking_gantry'] },
 
     { type: 'prop_hive_chitin_hatchery', sprite: '/prop_hive_chitin_hatchery.jpg', site: 'hive', status: 'wired', candidates: ['prop_biomech_incubator'] },
     { type: 'prop_hive_synaptic_web', sprite: '/prop_hive_synaptic_web.jpg', site: 'hive', status: 'wired', candidates: ['prop_biomech_neural_synapse'] },

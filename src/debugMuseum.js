@@ -5,20 +5,21 @@
  * `window.__DEBUG__.openMuseum()`, matching the existing dev-tool console pattern.
  */
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { assetUrl } from './assetUrl.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
 import { createDebugWallDecalDisplay } from './debugShowroom.js';
 import { createWorld3dModel, createWorld3dStructure } from './world3dOverlay.js';
 import { createEnemy3dVisual } from './enemy3dOverlay.js';
+import { PROP_COLLISION, getPropBehavior } from './propBehavior.js';
 import { MUSEUM_OPERATOR_HEIGHT, buildMuseumExhibitPlan } from './debugMuseumPlan.js';
 import { updateKitMaterials } from './kitMaterials.js';
 import { AudioManager } from './audio.js';
 import { getVoiceScriptRows, getVoiceAudioManifest } from './data/voiceBanks.js';
 import { SONG_INTERSTITIALS } from './songInterstitials.js';
 import { GAMEPLAY_FOLEY_MANIFEST, GAMEPLAY_ENEMY_MANIFEST } from './data/gameSoundsets.js';
+import { createGltfLoader } from './gltfLoaderFactory.js';
+import { createConduitExhibit } from './debugConduitExhibit.js';
 
 // Far outside any real generated terrain so the museum never overlaps a real run's chunks.
 const MUSEUM_ORIGIN = Object.freeze({ x: 9000, z: 9000 });
@@ -41,7 +42,7 @@ async function forEachLimited(items, limit, fn) {
 const CATEGORY_GAP = 3.5;
 
 function createMuseumGltfLoader() {
-    return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    return createGltfLoader();
 }
 
 function makeLabelSprite(text, { color = '#e2e8f0', fontSize = 48 } = {}) {
@@ -235,6 +236,15 @@ function spawnPedestal(x, z) {
     return pedestal;
 }
 
+// How the exhibit acts in a run (src/propBehavior.js), on its placard.
+export function museumBehaviorTag(type) {
+    const behavior = getPropBehavior(type);
+    if (behavior.collision === PROP_COLLISION.PILLARS) return 'WALK UNDER';
+    if (behavior.crushable) return 'CRUSHES UNDERFOOT';
+    if (behavior.floor) return 'FLOOR';
+    return '';
+}
+
 // Counts triangles across a model's meshes for the placard's polycount readout.
 function countTriangles(object3d) {
     let tris = 0;
@@ -282,10 +292,13 @@ async function spawnComparePair(game, entry, x, z) {
         const image = texture?.image;
         if (image?.width > 1 && image?.height > 1) sprite.scale.set(height * (image.width / image.height), height, 1);
     };
-    material.map = typeof game?.loadKeyedSpriteTexture === 'function'
-        ? game.loadKeyedSpriteTexture(entry.sprite, 14, fitAspect)
-        : new THREE.TextureLoader().load(assetUrl(entry.sprite), fitAspect);
-    pair.add(sprite);
+    // A 3D-only room anchor never had 2D art: show its model alone.
+    if (entry.sprite) {
+        material.map = typeof game?.loadKeyedSpriteTexture === 'function'
+            ? game.loadKeyedSpriteTexture(entry.sprite, 14, fitAspect)
+            : new THREE.TextureLoader().load(assetUrl(entry.sprite), fitAspect);
+        pair.add(sprite);
+    }
 
     const tag = makeLabelSprite(entry.status === 'wired' ? 'WIRED' : 'REVIEW', {
         color: entry.status === 'wired' ? '#4ade80' : '#f59e0b', fontSize: 34
@@ -616,6 +629,19 @@ export async function openDebugMuseum(game) {
         group.userData.restoreChunkGroupsVisible = game.chunkGroups.visible;
         game.chunkGroups.visible = false;
     }
+    // Some world entities sit on the scene itself rather than in a chunk:
+    // camp civilians, lore drops, snail trails, spore puddles, beacons. Hide
+    // those too, so the only creatures in the hall are its own exhibits,
+    // standing in place (owner, 2026-10-07: "enemies static / not placed").
+    group.userData.restoreWorldEntities = [];
+    for (const child of [...game.scene.children]) {
+        if (child === group || child === game.player || child === game.chunkGroups || !child.visible) continue;
+        const data = child.userData ?? {};
+        if (data.type || data.isScatter || data.isCampCivilian || data.isEnemy || data.isLoreDrop) {
+            group.userData.restoreWorldEntities.push(child);
+            child.visible = false;
+        }
+    }
     // The biome sky rig paints a lit horizon and cloud layers behind
     // everything. That is world dressing too -- a QA backdrop should be flat
     // so an exhibit's own silhouette and colour are what you are judging.
@@ -727,7 +753,12 @@ export async function openDebugMuseum(game) {
             return display;
         },
         floorDecal: (entry, x, zPos) => game.createScatterInstance({ type: entry.type, x, z: zPos, scale: 1, tiltX: 0, elevation: 0.05, rotation: 0 }),
-        compare: (entry, x, zPos) => spawnComparePair(game, entry, x, zPos)
+        compare: (entry, x, zPos) => spawnComparePair(game, entry, x, zPos),
+        conduit: (entry, x, zPos) => {
+            const exhibit = createConduitExhibit(entry.theme);
+            exhibit.position.set(x, 0, zPos);
+            return exhibit;
+        }
     };
     const LIFE_SIZE = new Set(['character', 'world', 'enemy']);
 
@@ -792,7 +823,9 @@ export async function openDebugMuseum(game) {
             const triCount = countTriangles(intact);
 
             Object.assign(row, { ok: true, tris: triCount, yaw: obj.rotation.y }, measured ?? {});
-            const placardText = triCount > 0 ? `${entry.label} // ${triCount} TRIS` : entry.label;
+            const behaviorTag = category.kind === 'world' ? museumBehaviorTag(entry.type) : '';
+            const placardText = [entry.label, triCount > 0 ? `${triCount} TRIS` : '', behaviorTag].filter(Boolean).join(' // ');
+            row.behavior = behaviorTag || null;
             const nameLabel = makeLabelSprite(placardText, { fontSize: 26 });
             nameLabel.position.set(itemX, PEDESTAL_HEIGHT + Math.max(1.1, (measured?.size.y ?? 0) + 0.3), itemZ + 1.0);
             nameLabel.scale.set(1.8, 0.45, 1);
@@ -828,6 +861,7 @@ export function closeDebugMuseum(game) {
     for (const [display, visible] of group.userData.restoreTransientVisibility ?? []) {
         display.visible = visible;
     }
+    for (const entity of group.userData.restoreWorldEntities ?? []) entity.visible = true;
     game._debugMuseumSessionActive = group.userData.restoreMuseumSessionActive ?? false;
     if (typeof game.setNoclip === 'function') game.setNoclip(false);
     if (typeof game.setGodMode === 'function') game.setGodMode(group.userData.restoreGodMode ?? false);

@@ -1,5 +1,6 @@
 import { SURVIVOR_REWARDS } from './survivorContract.js';
 import { BANK_CURRENCY_KEYS, describeBankTransaction } from './economyReceipt.js';
+import { mergeSquadProgress } from './squadProgress.js';
 
 const STORAGE_KEY = 'hb_bank';
 const BANK_SCHEMA_VERSION = 8;
@@ -736,6 +737,20 @@ export class BankManager {
         this.state.tech -= requested.tech;
         this.state.coin -= requested.coin;
         this.save();
+        return true;
+    }
+
+    // Co-op: take a squadmate's ship and base progress (src/squadProgress.js).
+    // Never charges and never lowers anything; returns whether it changed.
+    applySquadProgress(progress) {
+        const previousLevel = this.state.o2GeneratorLevel;
+        const { state, changed } = mergeSquadProgress(this.state, progress);
+        if (!changed) return false;
+        this.save(state);
+        emit('bank-updated', { bank: this.getState(), shared: true });
+        if (this.state.o2GeneratorLevel > previousLevel) {
+            emit('o2-generator-upgraded', { level: this.state.o2GeneratorLevel, bank: this.getState(), shared: true });
+        }
         return true;
     }
 

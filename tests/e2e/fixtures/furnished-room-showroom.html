@@ -30,23 +30,35 @@
   -->
   <script type="module">
     import * as THREE from 'three';
-    import { ROOM_BUILD_CATALOG, ALL_ROOM_BUILDS, stampRoomBuild, buildRoomInstanceFromBuild } from '/src/roomBuilds.js';
+    import { ROOM_BUILD_CATALOG, ALL_ROOM_BUILDS, rotateRoomBuild, stampRoomBuild, buildRoomInstanceFromBuild } from '/src/roomBuilds.js';
+    import { RING_CROSSING_SPATIAL_PROOF } from '/src/data/ringCrossingSpatialProof.js';
     import { assignRoomThemes } from '/src/roomThemes.js';
     import { bindRoomContent } from '/src/roomContent.js';
     import { planRoomPopulation } from '/src/roomPopulation.js';
     import { wallShellPlacements, roomGatewayKitPlacement } from '/src/kitGrammar.js';
-    import { createWorld3dModel, WORLD_3D_MODELS, WORLD_3D_FACING_YAW } from '/src/world3dOverlay.js';
+    import { createWorld3dModel, WORLD_3D_MODELS, WORLD_3D_FACING_YAW, world3dModelTypeFor } from '/src/world3dOverlay.js';
     import { roomPracticalLightPlacement } from '/src/anchorPracticalLight.js';
     import { applyBlackChromaKey, applyGreenChromaKey } from '/src/textureKeying.js';
     import { planRoomDressing } from '/src/roomDressing.js';
     import { buildRoomDressingGroup, loadKeyedDecalTexture, hideRoomDressingSupport } from '/src/roomDressingRenderer.js';
     import { buildGrammarRoomChunk } from '/src/roomGrammarChunk.js';
+    import { planRoomCutawayCells, ROOM_CUTAWAY_HEIGHT } from '/src/roomPresentation.js';
+    import { createCornerCutWallGeometry, createSlimWallGeometry, detectWallPartitionProfile, wallCornerCutMask, cornerCutPositions } from '/src/wallAutotile.js';
+    import { ROOM_THEME_SURFACE, SURFACE_LAYER_FIRST, surfaceForLayer, surfaceLayer } from '/src/floorSplat.js';
 
     const params = new URLSearchParams(location.search);
     const catalog = ALL_ROOM_BUILDS ?? ROOM_BUILD_CATALOG;
+    const requestedBuildId = params.get('build');
     const isGrammar = params.get('build') === 'maintenance_hall' || params.get('grammar') === '1';
     const isBreached = params.get('view') === 'breached' || params.get('breach') === '1';
-    const build = isGrammar ? null : (catalog.find((b) => b.id === params.get('build')) ?? ROOM_BUILD_CATALOG[0]);
+    const detachedProof = requestedBuildId === RING_CROSSING_SPATIAL_PROOF.id;
+    const greyboxReview = params.get('greybox') === '1';
+    const sourceBuild = isGrammar ? null : (
+      detachedProof ? RING_CROSSING_SPATIAL_PROOF : (catalog.find((b) => b.id === requestedBuildId) ?? ROOM_BUILD_CATALOG[0])
+    );
+    const reviewMode = params.get('review') === 'gameplay';
+    const rotation = Math.max(0, Math.min(3, Number.parseInt(params.get('rotation') ?? '0', 10) || 0));
+    const build = sourceBuild && rotation ? rotateRoomBuild(sourceBuild, rotation) : sourceBuild;
     const biome = ['active', 'cryo', 'bio', 'cave'].includes(params.get('biome')) ? params.get('biome') : 'active';
     let state = Number(params.get('seed')) || 11;
     const random = () => (state = (state * 16807) % 2147483647) / 2147483647;
@@ -106,19 +118,42 @@
     const shellCells = new Set(shells.flatMap(({ cells }) => cells.map(({ x, y }) => `${x},${y}`)));
 
     // ---- textures -----------------------------------------------------------
-    const PBR_SUITES = {
-      giger: { wall: '/3d/runtime/kits/textures/giger_biomech_wall_diffuse.webp', wallNormal: '/3d/runtime/kits/textures/giger_biomech_wall_normal.webp', floor: '/3d/runtime/kits/textures/giger_biomech_floor_diffuse.webp', top: '/3d/runtime/kits/textures/giger_biomech_floor_diffuse.webp' },
-      reliquary: { wall: '/3d/runtime/kits/textures/reliquary_crypt_wall_diffuse.webp', wallNormal: '/3d/runtime/kits/textures/reliquary_crypt_wall_normal.webp', floor: '/3d/runtime/kits/textures/reliquary_floor_diffuse.webp', top: '/3d/runtime/kits/textures/reliquary_floor_diffuse.webp' },
-      cryo_deck: { wall: '/3d/runtime/kits/textures/cryo_deck_wall_diffuse.webp', wallNormal: '/3d/runtime/kits/textures/cryo_deck_wall_normal.webp', floor: '/3d/runtime/kits/textures/cryo_deck_floor_diffuse.webp', top: '/3d/runtime/kits/textures/cryo_deck_floor_diffuse.webp' },
-      cathedral: { wall: '/3d/runtime/kits/textures/cathedral_wall_diffuse.webp', wallNormal: '/3d/runtime/kits/textures/cathedral_wall_normal.webp', floor: '/3d/runtime/kits/textures/cathedral_floor_diffuse.webp', top: '/3d/runtime/kits/textures/cathedral_floor_diffuse.webp' },
-      bunker: { wall: '/3d/runtime/kits/textures/bunker_wall_diffuse.webp', wallNormal: '/3d/runtime/kits/textures/bunker_wall_normal.webp', floor: '/3d/runtime/kits/textures/bunker_floor_diffuse.webp', top: '/3d/runtime/kits/textures/bunker_floor_diffuse.webp' },
-      biomech: { wall: '/3d/runtime/kits/textures/biomech_wall_diffuse.webp', wallNormal: '/3d/runtime/kits/textures/biomech_wall_normal.webp', floor: '/3d/runtime/kits/textures/biomech_floor_diffuse.webp', top: '/3d/runtime/kits/textures/biomech_floor_diffuse.webp' }
+    const ALL_THEMES = ['giger', 'reliquary', 'cryo_deck', 'cathedral', 'bunker', 'biomech', 'substation', 'permafrost', 'cleanroom', 'mycelium', 'obsidian', 'toxic_sump', 'geothermal', 'hive_resin', 'space', 'cave'];
+    const PBR_SUITES = Object.fromEntries(ALL_THEMES.map((name) => [
+      name,
+      {
+        wall: `/3d/runtime/kits/textures/${name}_wall_color.webp`,
+        wallNormal: `/3d/runtime/kits/textures/${name}_wall_normal.webp`,
+        floor: `/3d/runtime/kits/textures/${name}_floor_color.webp`,
+        top: `/3d/runtime/kits/textures/${name}_floor_color.webp`
+      }
+    ]));
+    const FAMILY_DEFAULT_STYLES = {
+      medical: 'cleanroom',
+      security: 'substation',
+      engineering: 'substation',
+      o2: 'permafrost',
+      fabricator: 'bunker',
+      puzzle: 'substation',
+      armory: 'substation',
+      trap_reward: 'obsidian',
+      reward: 'reliquary',
+      cache: 'reliquary',
+      gate: 'cathedral'
     };
-    const TERRAIN = PBR_SUITES[themeStyle] ?? {
-      active: { floor: '/bunker_base_metal.png', wall: '/bunker_wall_metal.png', wallNormal: '/bunker_wall_metal_normal.png', top: '/bunker_base_metal.png' },
-      cryo: { floor: '/cryo_base_frost.png', wall: '/cryo_wall_conduit.png', wallNormal: '/cryo_wall_conduit_normal.png', top: '/cryo_base_frost.png' },
-      bio: { floor: '/bio_base_growth.png', wall: '/bio_wall_veins.png', wallNormal: '/bio_wall_veins_normal.png', top: '/bio_base_growth.png' }
-    }[biome === 'cave' ? 'bio' : biome];
+    const resolvedThemeStyle = themeStyle ?? FAMILY_DEFAULT_STYLES[build?.family] ?? (biome === 'cryo' ? 'cryo_deck' : biome === 'bio' ? 'biomech' : 'bunker');
+    const TERRAIN = { ...(PBR_SUITES[resolvedThemeStyle] ?? PBR_SUITES.bunker) };
+    // The live renderer gives selected room themes a lived-in pass-2 surface
+    // before it falls back to the older suite atlas. Mirror that precedence in
+    // review captures; otherwise a bunker-security room such as trap_vault is
+    // incorrectly shown with the build's neon obsidian kit floor.
+    const themeSurfaceId = ROOM_THEME_SURFACE[room.theme ?? room.themeConfig?.id];
+    if (themeSurfaceId) {
+      const layer = surfaceLayer(themeSurfaceId, room.id ?? build?.id ?? 'showroom');
+      const surface = surfaceForLayer(layer);
+      const variant = 'abcdefgh'[layer - SURFACE_LAYER_FIRST - surface.first];
+      TERRAIN.floor = `/art/source/textures/lived-in-pass-2/pbr/${themeSurfaceId}_${variant}_albedo.png`;
+    }
     const textureLoader = new THREE.TextureLoader();
     const tiled = (path, repeatX = 1, repeatY = 1) => {
       const texture = textureLoader.load(path);
@@ -199,19 +234,72 @@
         #endif`);
     };
     const wallTop = new THREE.MeshStandardMaterial({ map: tiled(TERRAIN.top, 0.5, 0.5), roughness: 0.8, metalness: 0.2 });
-    const wallMaterials = [wallSide, wallSide, wallTop, wallTop, wallSide, wallSide];
-    const wallGeo = new THREE.BoxGeometry(1, WALL_HEIGHT, 1);
-    const edgeGeo = new THREE.EdgesGeometry(wallGeo);
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x0b0d0f, transparent: true, opacity: 0.55 });
+    const wallMaterials = [wallSide, wallTop];
+    const isSolid = (x, y) => currentGrid[y]?.[x] === '#';
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x0b0d0f, transparent: true, opacity: 0.45 });
+    const wallMeshes = new Map();
+
+    // Match the live renderer's default +X/+Z camera cutaway in gameplay review mode.
+    const cutawayCells = reviewMode ? planRoomCutawayCells(room, currentGrid, 'se') : [];
+    const cutawayCellKeys = new Set(cutawayCells.map(({ x, y }) => `${x},${y}`));
+
     for (let y = top - 1; y <= bottom + 1; y += 1) {
       for (let x = left - 1; x <= right + 1; x += 1) {
         if (currentGrid[y]?.[x] !== '#' || shellCells.has(`${x},${y}`)) continue;
-        const wall = new THREE.Mesh(wallGeo, wallMaterials);
-        wall.position.set(x, WALL_HEIGHT / 2, y);
+        const isCutaway = cutawayCellKeys.has(`${x},${y}`);
+        const height = isCutaway ? ROOM_CUTAWAY_HEIGHT : WALL_HEIGHT;
+        const profile = detectWallPartitionProfile(isSolid, x, y);
+        const cornerMask = wallCornerCutMask(isSolid, x, y);
+
+        let cellGeo;
+        if (profile) {
+          const thickness = build?.partitionThickness ?? 0.5;
+          cellGeo = createSlimWallGeometry({ height, thickness, orientation: profile });
+          const cutPos = cornerCutPositions(cellGeo, cornerMask, {
+            thicknessX: cellGeo.userData.thicknessX,
+            thicknessZ: cellGeo.userData.thicknessZ
+          });
+          cellGeo.setAttribute('position', new THREE.BufferAttribute(cutPos, 3));
+        } else {
+          cellGeo = createCornerCutWallGeometry({ height });
+          const cutPos = cornerCutPositions(cellGeo, cornerMask);
+          cellGeo.setAttribute('position', new THREE.BufferAttribute(cutPos, 3));
+        }
+        cellGeo.computeVertexNormals();
+
+        const wall = new THREE.Mesh(cellGeo, wallMaterials);
+        wall.position.set(x, height / 2, y);
         scene.add(wall);
+
+        const edgeGeo = new THREE.EdgesGeometry(cellGeo, 24);
         const edges = new THREE.LineSegments(edgeGeo, edgeMat);
         edges.position.copy(wall.position);
         scene.add(edges);
+
+        let capMesh = null;
+        if (isCutaway) {
+          const capGeo = createCornerCutWallGeometry({
+            height: 0.08,
+            thicknessX: cellGeo.userData?.thicknessX ?? 1.0,
+            thicknessZ: cellGeo.userData?.thicknessZ ?? 1.0
+          });
+          const capPos = cornerCutPositions(capGeo, cornerMask, {
+            thicknessX: capGeo.userData.thicknessX,
+            thicknessZ: capGeo.userData.thicknessZ
+          });
+          capGeo.setAttribute('position', new THREE.BufferAttribute(capPos, 3));
+          capGeo.computeVertexNormals();
+          const capMat = new THREE.MeshStandardMaterial({
+            color: 0x3f4852,
+            roughness: 0.45,
+            metalness: 0.5
+          });
+          capMesh = new THREE.Mesh(capGeo, capMat);
+          capMesh.position.set(x, ROOM_CUTAWAY_HEIGHT + 0.04, y);
+          scene.add(capMesh);
+        }
+
+        wallMeshes.set(`${x},${y}`, { wall, edges, cap: capMesh });
       }
     }
 
@@ -222,7 +310,10 @@
       const model = await kitCache.get(type);
       return model ? model.clone(true) : null;
     };
+    const shellPieces = new Set(shells);
     for (const piece of [...shells, ...gateways]) {
+      if (reviewMode && shellPieces.has(piece)
+        && piece.cells?.some(({ x, y }) => cutawayCellKeys.has(`${x},${y}`))) continue;
       const root = await kit(piece.type);
       if (!root) continue;
       root.position.set(piece.x, 0, piece.y);
@@ -238,8 +329,13 @@
     for (const placement of plan.placements) {
       if (placement.kind === 'pickup') continue;
       const wn = placement.wallNormal;
-      if (WORLD_3D_MODELS[placement.type]) {
-        const root = await kit(placement.type);
+      const rawModelType = world3dModelTypeFor(placement.type);
+      const modelType = WORLD_3D_MODELS[rawModelType]
+        ? rawModelType
+        : (WORLD_3D_MODELS[placement.type] ? placement.type : (placement.kind === 'signature' ? 'prop_conduit_hub' : 'prop_bunker_supplies'));
+
+      if (WORLD_3D_MODELS[modelType]) {
+        const root = await kit(modelType);
         if (!root) { missing.push(placement.type); continue; }
         root.position.set(placement.x, 0, placement.y);
         if (wn && (wn.x || wn.z)) {
@@ -260,24 +356,42 @@
       if (flat) {
         const quad = new THREE.Mesh(
           new THREE.PlaneGeometry(1.1 * sprite.aspect, 1.1),
-          new THREE.MeshStandardMaterial({ map: sprite.texture, transparent: true, alphaTest: 0.05, depthWrite: false, roughness: 0.9 })
+          new THREE.MeshStandardMaterial({
+            map: sprite.texture,
+            transparent: true,
+            alphaTest: 0.05,
+            depthWrite: false,
+            roughness: 0.9,
+            polygonOffset: true,
+            polygonOffsetFactor: -1
+          })
         );
         quad.rotation.x = -Math.PI / 2;
         quad.position.set(placement.x, 0.035, placement.y);
         scene.add(quad);
         decals += 1;
       } else {
-        const billboard = new THREE.Sprite(new THREE.SpriteMaterial({ map: sprite.texture, transparent: true, alphaTest: 0.05 }));
-        billboard.center.set(0.5, 0);
-        billboard.scale.set(1.4 * sprite.aspect, 1.4, 1);
-        billboard.position.set(placement.x, 0, placement.y);
-        scene.add(billboard);
-        props += 1;
+        const fallbackRoot = await kit('prop_bunker_supplies');
+        if (fallbackRoot) {
+          fallbackRoot.position.set(placement.x, 0, placement.y);
+          fallbackRoot.rotation.y = WORLD_3D_FACING_YAW;
+          scene.add(fallbackRoot);
+          props += 1;
+        } else {
+          const billboard = new THREE.Sprite(new THREE.SpriteMaterial({ map: sprite.texture, transparent: true, alphaTest: 0.05 }));
+          billboard.center.set(0.5, 0);
+          billboard.scale.set(1.4 * sprite.aspect, 1.4, 1);
+          billboard.position.set(placement.x, 0, placement.y);
+          scene.add(billboard);
+          props += 1;
+        }
       }
     }
 
     // Lived-in dressing layer: the same planner and instanced renderer the game uses.
-    const dressing = planRoomDressing(room, currentGrid, { reserved: plan.reserved, occupied: plan.placements });
+    const dressing = greyboxReview
+      ? { items: [] }
+      : planRoomDressing(room, currentGrid, { reserved: plan.reserved, occupied: plan.placements });
     const dressingGroup = await buildRoomDressingGroup(dressing.items, {
       loadModel: (type) => kit(type),
       loadDecalTexture: (type) => loadKeyedDecalTexture(type)
@@ -310,9 +424,11 @@
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     document.body.append(renderer.domElement);
 
-    const overview = new THREE.PerspectiveCamera(38, (width * 0.58) / height, 0.1, 300);
-    overview.position.set(cx + 9, 21, cz + 17);
-    overview.lookAt(cx, 0, cz);
+    const overview = reviewMode
+      ? new THREE.OrthographicCamera(-10.3, 10.3, 10, -10, 0.1, 100)
+      : new THREE.PerspectiveCamera(38, (width * 0.58) / height, 0.1, 300);
+    overview.position.set(cx + (reviewMode ? 8 : 9), reviewMode ? 12.5 : 21, cz + (reviewMode ? 8 : 17));
+    overview.lookAt(cx, reviewMode ? 0.4 : 0, cz);
     // Close-up on the room's focal object: the signature anchor, else the first
     // authored interaction/structural piece. The camera stands on the room-centre
     // side of it so it never starts inside a wall.
@@ -322,9 +438,10 @@
     if (toCentre.lengthSq() < 0.01) toCentre.set(1, 1);
     toCentre.normalize();
     const close = new THREE.PerspectiveCamera(50, (width * 0.42) / height, 0.1, 300);
-    // High and back (above the 2.8 m walls) so the view never starts inside a partition.
-    close.position.set(signature.x + toCentre.x * 5.2, 5.4, signature.y + toCentre.y * 5.2);
-    close.lookAt(signature.x, 0.9, signature.y);
+    // High and elevated so the view never starts inside or against a wall partition.
+    const closeDistance = Math.min(4.8, Math.max(3.2, Math.hypot(toCentre.x * 4.0, toCentre.y * 4.0)));
+    close.position.set(signature.x + toCentre.x * closeDistance, 5.8, signature.y + toCentre.y * closeDistance);
+    close.lookAt(signature.x, 0.85, signature.y);
 
     const renderAll = () => {
       renderer.setViewport(0, 0, width * 0.58, height);
@@ -344,7 +461,7 @@
     label.style.top = '8px';
     const roomTitle = isGrammar
       ? `maintenance_hall (${room.grammar?.motif ?? 'industrial'}) · ${isBreached ? 'BREACHED' : 'INTACT'}`
-      : `${build.id} · ${biome} · theme ${room.theme}`;
+      : `${build.id}${detachedProof ? ' · DETACHED SPATIAL PROOF' : ''}${greyboxReview ? ' · GREYBOX' : ''} · ${biome} · theme ${room.theme}${reviewMode ? ` · GAME CAMERA R${rotation}` : ''}`;
     label.textContent = `${roomTitle} · ${props} props, ${decals} decals, `
       + `${shells.length} wall shells, ${gateways.length} gateway${gateways.length === 1 ? '' : 's'} · `
       + `dressing ${dressing.items.length} pieces in ${dressingGroup.userData.drawCalls} draw calls`
@@ -372,7 +489,12 @@
       gateways: gateways.length,
       missing,
       degraded: plan.degraded,
-      onWalls
+      onWalls,
+      reviewMode,
+      detachedProof,
+      greyboxReview,
+      rotation,
+      cutawayCells: cutawayCells.length
     };
   </script>
 </body>

@@ -47,16 +47,23 @@ What the owner said:
 
 ## Planned (design needed)
 
-- [ ] **Named rooms near the start.** The rooms with title cards ("MERIDIAN · WORKSHOP") are authored compound rooms. They only exist around camps and sites, and the nearest camp here was 19 min out. Options:
+- [x] **Named rooms near the start.** The rooms with title cards ("MERIDIAN · WORKSHOP") are authored compound rooms. They only exist around camps and sites, and the nearest camp here was 19 min out. Options:
   - (a) place one authored compound (a supply depot or outpost) in the spawn ring of every run;
   - (b) give ordinary rooms with a non-generic role a title card from role and theme ("CRYO ENGINEERING BAY"), and make `generic` rarer in `chooseRoomRole`. Today `generic` is a third of shallow rooms.
 
   Either needs names in all seven languages.
-- [ ] **Talk to camp members.** A camp has one interaction slot, filled in priority order: settle survivor, workbench, lockdown, talk (only when the leader has a new story beat), support, quest, favor. So "talk" disappears behind other actions and after the story beats run out.
+  - Done (option b, Sprint 50 commits): every room and most hallways have a deterministic name (`src/locationNames.js`, all seven languages). The name is learned when a radar pulse reaches it, spawn included, and shows in the location label and on the tactical map.
+- [x] **Talk to camp members.** A camp has one interaction slot, filled in priority order: settle survivor, workbench, lockdown, talk (only when the leader has a new story beat), support, quest, favor. So "talk" disappears behind other actions and after the story beats run out.
   - Proposal: a camp menu, or interaction cycling (C / right-stick click) across the camp's actions.
   - Then add a TALK that always works: ambient lines once the beats are used.
   - Individual camp members are not interactable at all yet.
-- [ ] **Companion stuck.** From 8 min on, the companion logged `companion-repath`/`companion-relocated` every 5–10 s (with `id: null`) for the rest of the run: it couldn't path and kept teleporting. Investigate the follow pathing in maze chunks, and why the id is null in the log.
+  - Done in Sprint 51 (`44f00b5f`): C / right-stick click cycles a camp's actions (`cycleCampAction`). TALK always works, with ambient lines once the beats are used. Each camp's two workers are named residents you can talk to (`src/data/campResidents.js`).
+- [x] **Companion stuck.** From 8 min on, the companion logged `companion-repath`/`companion-relocated` every 5–10 s (with `id: null`) for the rest of the run: it couldn't path and kept teleporting. Investigate the follow pathing in maze chunks, and why the id is null in the log.
+  - Done in Sprint 51 (`44f00b5f`): the companion relocated onto wall tiles and then could never path. It now steps out to open ground (`nearestWalkableCell`), and a settled companion stays at the camp as a resident.
 - [ ] **Verify on hardware:**
   - settle a survivor at a camp with a lore terminal nearby, by button and by tap;
   - confirm a Foundry is affordable within one ~25-minute run.
+  - 2026-10-10, from the logs: the 10-07 Deck run entered a Foundry at 16.9 minutes
+    (`foundry-entered`, `6d5fc7ed`). Activation is a saved bank flag, so the log doesn't
+    show it was bought in that run. A survivor settle writes no session-log event, so
+    the logs can't show it either way. Both still need an owner run.

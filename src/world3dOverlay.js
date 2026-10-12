@@ -1,17 +1,19 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { assetUrl } from './assetUrl.js';
 import { recordAssetLoad } from './assetLoadTelemetry.js';
 import { measurePerfPhase } from './perfPhases.js';
 import { useSinglePassForFlatMaterials } from './singlePassFlatMaterials.js';
 import { KIT_SCALE, applyKitMaterials } from './kitMaterials.js';
+import { createPropFx } from './propFx.js';
+import { createPropExperience } from './propExperience.js';
+import { applyClothFlutter } from './clothFlutter.js';
+import { createGltfLoader as createSharedGltfLoader } from './gltfLoaderFactory.js';
 
 // docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws without this registered first.
 function createGltfLoader() {
-    return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    return createSharedGltfLoader();
 }
 
 export const WORLD_3D_MODELS = Object.freeze({
@@ -226,8 +228,8 @@ export const WORLD_3D_MODELS = Object.freeze({
     prop_fungal_spore_dispenser: { url: '/3d/runtime/new3ds/prop_fungal_spore_dispenser.glb', height: 1.25, yaw: 0 },
     prop_fungal_tendril_altar: { url: '/3d/runtime/new3ds/prop_fungal_tendril_altar.glb', height: 2.10, yaw: 0 },
     prop_icey_frost_manifold: { url: '/3d/runtime/new3ds/prop_icey_frost_manifold.glb', height: 1.20, yaw: 0 },
-    prop_icey_frost_vent: { url: '/3d/runtime/new3ds/prop_icey_frost_vent.glb', height: 1.10, yaw: 0 },
-    prop_icey_thermal_pod: { url: '/3d/runtime/new3ds/prop_icey_thermal_pod.glb', height: 1.40, yaw: 0 },
+    prop_icey_frost_vent: { url: '/3d/runtime/new3ds/prop_icey_frost_vent.glb', height: 1.10, yaw: 0, maxSpan: 2.2 },
+    prop_icey_thermal_pod: { url: '/3d/runtime/new3ds/prop_icey_thermal_pod.glb', height: 1.40, yaw: 0, maxSpan: 2.6 },
     prop_light_cluster_dripping: { url: '/3d/runtime/new3ds/prop_light_cluster_dripping.glb', height: 1.20, yaw: -Math.PI / 2 },
     prop_locker_bulged: { url: '/3d/runtime/new3ds/prop_locker_bulged.glb', height: 1.35, yaw: -Math.PI / 2 },
     prop_pipe_rupture: { url: '/3d/runtime/new3ds/prop_pipe_rupture.glb', height: 0.85, yaw: 0 },
@@ -249,7 +251,7 @@ export const WORLD_3D_MODELS = Object.freeze({
     prop_exhaust_blower_fan_hood: { url: '/3d/runtime/new3ds/prop_exhaust_blower_fan_hood.glb', height: 2.20, yaw: 0 },
     prop_exosuit_docking_gantry: { url: '/3d/runtime/new3ds/prop_exosuit_docking_gantry.glb', height: 2.40, yaw: 0 },
     prop_floor_conduit_bridge: { url: '/3d/runtime/new3ds/prop_floor_conduit_bridge.glb', height: 0.25, yaw: 0 },
-    prop_floor_drainage_sump_trough: { url: '/3d/runtime/new3ds/prop_floor_drainage_sump_trough.glb', height: 0.30, yaw: 0 },
+    prop_floor_drainage_sump_trough: { url: '/3d/runtime/new3ds/prop_floor_drainage_sump_trough.glb', height: 0.30, yaw: 0, maxSpan: 3.0 },
     prop_liturgical_terminal_lectern: { url: '/3d/runtime/new3ds/prop_liturgical_terminal_lectern.glb', height: 1.25, yaw: 0 },
     prop_maintenance_tool_cart: { url: '/3d/runtime/new3ds/prop_maintenance_tool_cart.glb', height: 0.85, yaw: 0 },
     prop_overhead_cage_fluorescent: { url: '/3d/runtime/new3ds/prop_overhead_cage_fluorescent.glb', height: 0.65, yaw: 0 },
@@ -257,7 +259,135 @@ export const WORLD_3D_MODELS = Object.freeze({
     prop_pipe_organ_heat_exchanger: { url: '/3d/runtime/new3ds/prop_pipe_organ_heat_exchanger.glb', height: 2.40, yaw: 0 },
     prop_vertebral_cable_riser: { url: '/3d/runtime/new3ds/prop_vertebral_cable_riser.glb', height: 2.30, yaw: 0 },
     prop_votive_candle_shrine: { url: '/3d/runtime/new3ds/prop_votive_candle_shrine.glb', height: 1.30, yaw: 0 },
-    prop_wall_cable_tray_swag: { url: '/3d/runtime/new3ds/prop_wall_cable_tray_swag.glb', height: 1.10, yaw: 0 }
+    prop_wall_cable_tray_swag: { url: '/3d/runtime/new3ds/prop_wall_cable_tray_swag.glb', height: 1.10, yaw: 0 },
+
+    // Lived-in batch 2026-10-08. Heights and span caps are the real-world
+    // dimensions authored in the prompt sheet, not source-export dimensions.
+    life_mess_table: { url: '/3d/runtime/new3ds/life_mess_table.glb', height: 0.9, span: 2.4, yaw: 0 },
+    life_bunk_stack: { url: '/3d/runtime/new3ds/life_bunk_stack.glb', height: 2.1, yaw: 0 },
+    life_galley_hotplate: { url: '/3d/runtime/new3ds/life_galley_hotplate.glb', height: 1.0, yaw: 0 },
+    life_card_table: { url: '/3d/runtime/new3ds/life_card_table.glb', height: 0.8, span: 1.6, yaw: 0 },
+    life_memorial_board: { url: '/3d/runtime/new3ds/life_memorial_board.glb', height: 1.6, yaw: 0 },
+    life_hydro_rack: { url: '/3d/runtime/new3ds/life_hydro_rack.glb', height: 1.8, yaw: 0 },
+    life_water_still: { url: '/3d/runtime/new3ds/life_water_still.glb', height: 1.3, yaw: 0 },
+    life_suit_drying_rack: { url: '/3d/runtime/new3ds/life_suit_drying_rack.glb', height: 1.9, yaw: 0 },
+    life_latrine_stall: { url: '/3d/runtime/new3ds/life_latrine_stall.glb', height: 2.1, yaw: 0 },
+    life_barrel_heater: { url: '/3d/runtime/new3ds/life_barrel_heater.glb', height: 1.4, yaw: 0 },
+    life_route_map_table: { url: '/3d/runtime/new3ds/life_route_map_table.glb', height: 1.1, yaw: 0 },
+    life_reloading_bench: { url: '/3d/runtime/new3ds/life_reloading_bench.glb', height: 1.0, span: 1.8, yaw: 0 },
+    life_covered_stretcher: { url: '/3d/runtime/new3ds/life_covered_stretcher.glb', height: 0.7, maxSpan: 2.2, yaw: 0 },
+    life_pipe_hammock: { url: '/3d/runtime/new3ds/life_pipe_hammock.glb', height: 1.6, maxSpan: 2.2, yaw: 0 },
+    life_flood_lamp_tripod: { url: '/3d/runtime/new3ds/life_flood_lamp_tripod.glb', height: 1.9, yaw: 0 },
+    life_vending_machine: { url: '/3d/runtime/new3ds/life_vending_machine.glb', height: 1.9, yaw: 0 },
+    life_cargo_pallet_netted: { url: '/3d/runtime/new3ds/life_cargo_pallet_netted.glb', height: 1.4, yaw: 0 },
+    life_footlocker_open: { url: '/3d/runtime/new3ds/life_footlocker_open.glb', height: 0.5, maxSpan: 1.2, yaw: 0 },
+    life_tally_bulkhead: { url: '/3d/runtime/new3ds/life_tally_bulkhead.glb', height: 2.0, span: 1.4, yaw: 0 },
+    life_mask_rack: { url: '/3d/runtime/new3ds/life_mask_rack.glb', height: 1.7, yaw: 0 },
+    life_infusion_cradle: { url: '/3d/runtime/new3ds/life_infusion_cradle.glb', height: 1.1, span: 2.1, yaw: 0 },
+    life_sanitation_bidet: { url: '/3d/runtime/new3ds/life_sanitation_bidet.glb', height: 0.85, span: 0.9, yaw: 0 },
+    life_sleep_sleeve: { url: '/3d/runtime/new3ds/life_sleep_sleeve.glb', height: 2.2, span: 1.1, yaw: 0 },
+    life_pheromone_censer: { url: '/3d/runtime/new3ds/life_pheromone_censer.glb', height: 1.5, span: 0.7, yaw: 0 },
+    life_ammo_ovipositor: { url: '/3d/runtime/new3ds/life_ammo_ovipositor.glb', height: 1.4, span: 1.2, yaw: 0 },
+    life_sensory_chair: { url: '/3d/runtime/new3ds/life_sensory_chair.glb', height: 1.6, span: 1.2, yaw: 0 },
+    life_resin_extractor: { url: '/3d/runtime/new3ds/life_resin_extractor.glb', height: 1.3, span: 1.0, yaw: 0 },
+    life_umbilical_tether: { url: '/3d/runtime/new3ds/life_umbilical_tether.glb', height: 1.8, span: 0.8, yaw: 0 },
+    life_vulval_drain_sump: { url: '/3d/runtime/new3ds/life_vulval_drain_sump.glb', height: 0.35, span: 1.4, yaw: 0 },
+    life_tactile_console: { url: '/3d/runtime/new3ds/life_tactile_console.glb', height: 1.15, span: 1.1, yaw: 0 },
+    life_scent_distiller: { url: '/3d/runtime/new3ds/life_scent_distiller.glb', height: 1.25, span: 0.85, yaw: 0 },
+    life_bone_clamp_rig: { url: '/3d/runtime/new3ds/life_bone_clamp_rig.glb', height: 1.2, span: 0.9, yaw: 0 },
+    life_fuel_probe_boom: { url: '/3d/runtime/new3ds/life_fuel_probe_boom.glb', height: 1.7, span: 2.2, yaw: 0 },
+    life_warmth_hearth: { url: '/3d/runtime/new3ds/life_warmth_hearth.glb', height: 1.1, span: 1.3, yaw: 0 },
+    life_peristaltic_feeder: { url: '/3d/runtime/new3ds/life_peristaltic_feeder.glb', height: 1.3, span: 0.6, yaw: 0 },
+    life_pelvic_autopsy_trough: { url: '/3d/runtime/new3ds/life_pelvic_autopsy_trough.glb', height: 0.95, span: 2.3, yaw: 0 },
+    life_acoustic_ear_horn: { url: '/3d/runtime/new3ds/life_acoustic_ear_horn.glb', height: 1.6, span: 0.9, yaw: 0 },
+    life_stigmata_inscriber: { url: '/3d/runtime/new3ds/life_stigmata_inscriber.glb', height: 1.7, span: 1.1, yaw: 0 },
+    life_lung_filter_bellows: { url: '/3d/runtime/new3ds/life_lung_filter_bellows.glb', height: 1.4, span: 1.2, yaw: 0 },
+    life_vertebral_restraint_rack: { url: '/3d/runtime/new3ds/life_vertebral_restraint_rack.glb', height: 2.1, span: 0.8, yaw: 0 },
+
+    // Lived-in batch 2026-10-09 (props 41-79; 80 was not delivered). 25k
+    // triangles each: these keep their detail rather than the prompt-sheet
+    // budgets. Heights are the prompt sheet's; maxSpan caps the few models
+    // that run longer than the sheet without stretching them.
+    life_cochlear_intercom: { url: '/3d/runtime/new3ds/life_cochlear_intercom.glb', height: 0.9, yaw: 0 },
+    life_ceiling_collapse: { url: '/3d/runtime/new3ds/life_ceiling_collapse.glb', height: 0.6, maxSpan: 2.2, yaw: 0 },
+    life_ribcage_rescue_cabinet: { url: '/3d/runtime/new3ds/life_ribcage_rescue_cabinet.glb', height: 1.4, yaw: 0 },
+    life_checkpoint_post: { url: '/3d/runtime/new3ds/life_checkpoint_post.glb', height: 1.3, yaw: 0 },
+    life_pneumatic_tube_node: { url: '/3d/runtime/new3ds/life_pneumatic_tube_node.glb', height: 1.8, yaw: 0 },
+    life_janitor_cart: { url: '/3d/runtime/new3ds/life_janitor_cart.glb', height: 1.0, yaw: 0 },
+    life_wayfinding_totem: { url: '/3d/runtime/new3ds/life_wayfinding_totem.glb', height: 2.0, yaw: 0 },
+    life_dropped_kit_pile: { url: '/3d/runtime/new3ds/life_dropped_kit_pile.glb', height: 0.35, maxSpan: 1.1, yaw: 0 },
+    life_seismic_drill: { url: '/3d/runtime/new3ds/life_seismic_drill.glb', height: 2.2, yaw: 0 },
+    life_supply_drop_pod: { url: '/3d/runtime/new3ds/life_supply_drop_pod.glb', height: 1.6, maxSpan: 3.0, yaw: 0 },
+    life_colossal_limb: { url: '/3d/runtime/new3ds/life_colossal_limb.glb', height: 3.5, maxSpan: 8.0, yaw: 0 },
+    life_wind_mast: { url: '/3d/runtime/new3ds/life_wind_mast.glb', height: 3.0, yaw: 0 },
+    life_guide_rope_stakes: { url: '/3d/runtime/new3ds/life_guide_rope_stakes.glb', height: 1.1, maxSpan: 3.0, yaw: 0 },
+    life_fallen_comm_dish: { url: '/3d/runtime/new3ds/life_fallen_comm_dish.glb', height: 1.8, maxSpan: 3.4, yaw: 0 },
+    life_tarp_leanto: { url: '/3d/runtime/new3ds/life_tarp_leanto.glb', height: 1.5, maxSpan: 2.8, yaw: 0 },
+    life_pipeline_trestle: { url: '/3d/runtime/new3ds/life_pipeline_trestle.glb', height: 2.0, maxSpan: 4.4, yaw: 0 },
+    life_ice_sled: { url: '/3d/runtime/new3ds/life_ice_sled.glb', height: 0.9, maxSpan: 2.4, yaw: 0 },
+    life_ice_core_rack: { url: '/3d/runtime/new3ds/life_ice_core_rack.glb', height: 1.6, maxSpan: 2.4, yaw: 0 },
+    life_ice_bore_winch: { url: '/3d/runtime/new3ds/life_ice_bore_winch.glb', height: 2.1, yaw: 0 },
+    life_parka_hooks: { url: '/3d/runtime/new3ds/life_parka_hooks.glb', height: 1.7, yaw: 0 },
+    life_brood_comb: { url: '/3d/runtime/new3ds/life_brood_comb.glb', height: 1.8, maxSpan: 2.4, yaw: 0 },
+    life_hive_dew_funnel: { url: '/3d/runtime/new3ds/life_hive_dew_funnel.glb', height: 1.5, yaw: 0 },
+    life_hive_feeding_bladder: { url: '/3d/runtime/new3ds/life_hive_feeding_bladder.glb', height: 1.0, yaw: 0 },
+    life_assimilated_desk: { url: '/3d/runtime/new3ds/life_assimilated_desk.glb', height: 1.3, yaw: 0 },
+    life_fungal_cable_bundle: { url: '/3d/runtime/new3ds/life_fungal_cable_bundle.glb', height: 1.2, yaw: 0 },
+    life_ore_cart: { url: '/3d/runtime/new3ds/life_ore_cart.glb', height: 1.0, yaw: 0 },
+    life_drip_buckets: { url: '/3d/runtime/new3ds/life_drip_buckets.glb', height: 0.5, maxSpan: 1.2, yaw: 0 },
+    life_rope_anchor_post: { url: '/3d/runtime/new3ds/life_rope_anchor_post.glb', height: 1.4, yaw: 0 },
+    life_confessional: { url: '/3d/runtime/new3ds/life_confessional.glb', height: 2.3, yaw: 0 },
+    life_devotion_tree: { url: '/3d/runtime/new3ds/life_devotion_tree.glb', height: 1.9, yaw: 0 },
+    life_pew_segment: { url: '/3d/runtime/new3ds/life_pew_segment.glb', height: 1.0, yaw: 0 },
+    life_barber_chair: { url: '/3d/runtime/new3ds/life_barber_chair.glb', height: 1.3, yaw: 0 },
+    life_meat_smoking_rack: { url: '/3d/runtime/new3ds/life_meat_smoking_rack.glb', height: 1.8, yaw: 0 },
+    life_training_dummy: { url: '/3d/runtime/new3ds/life_training_dummy.glb', height: 1.9, yaw: 0 },
+    life_lookout_perch: { url: '/3d/runtime/new3ds/life_lookout_perch.glb', height: 2.6, yaw: 0 },
+    life_welding_station: { url: '/3d/runtime/new3ds/life_welding_station.glb', height: 1.4, yaw: 0 },
+    life_exosuit_teardown: { url: '/3d/runtime/new3ds/life_exosuit_teardown.glb', height: 1.1, maxSpan: 2.6, yaw: 0 },
+    life_fuse_bypass_panel: { url: '/3d/runtime/new3ds/life_fuse_bypass_panel.glb', height: 1.6, yaw: 0 },
+    life_pod_seat_row: { url: '/3d/runtime/new3ds/life_pod_seat_row.glb', height: 1.4, maxSpan: 2.4, yaw: 0 },
+
+    // 2026-10-11 World completion batch (39 models)
+    camp_canvas_tent: { url: '/3d/runtime/new3ds/camp_canvas_tent.glb', height: 2.0, maxSpan: 3.4, yaw: 0 },
+    camp_water_barrel: { url: '/3d/runtime/new3ds/camp_water_barrel.glb', height: 1.2, yaw: 0 },
+    chasm_beacon_post: { url: '/3d/runtime/new3ds/chasm_beacon_post.glb', height: 1.8, yaw: 0 },
+    chasm_broken_catwalk: { url: '/3d/runtime/new3ds/chasm_broken_catwalk.glb', height: 2.5, maxSpan: 5.5, yaw: 0 },
+    chasm_gondola: { url: '/3d/runtime/new3ds/chasm_gondola.glb', height: 3.0, yaw: 0 },
+    chasm_rappel_anchor: { url: '/3d/runtime/new3ds/chasm_rappel_anchor.glb', height: 1.2, yaw: 0 },
+    crash_drag_chute: { url: '/3d/runtime/new3ds/crash_drag_chute.glb', height: 0.6, maxSpan: 4.5, yaw: 0 },
+    crash_engine_nacelle: { url: '/3d/runtime/new3ds/crash_engine_nacelle.glb', height: 2.0, maxSpan: 4.5, yaw: 0 },
+    crash_hull_panels: { url: '/3d/runtime/new3ds/crash_hull_panels.glb', height: 1.0, maxSpan: 3.5, yaw: 0 },
+    cryo_frozen_cascade: { url: '/3d/runtime/new3ds/cryo_frozen_cascade.glb', height: 2.8, yaw: 0 },
+    cryo_heater_station: { url: '/3d/runtime/new3ds/cryo_heater_station.glb', height: 1.7, yaw: 0 },
+    cryo_ice_blocks: { url: '/3d/runtime/new3ds/cryo_ice_blocks.glb', height: 1.2, yaw: 0 },
+    cryo_ice_crawler: { url: '/3d/runtime/new3ds/cryo_ice_crawler.glb', height: 2.0, maxSpan: 3.6, yaw: 0 },
+    cryo_snowbound_crates: { url: '/3d/runtime/new3ds/cryo_snowbound_crates.glb', height: 1.6, yaw: 0 },
+    hive_assimilated_generator: { url: '/3d/runtime/new3ds/hive_assimilated_generator.glb', height: 1.9, yaw: 0 },
+    hive_brood_dome: { url: '/3d/runtime/new3ds/hive_brood_dome.glb', height: 1.8, maxSpan: 2.8, yaw: 0 },
+    hive_cocooned_crew: { url: '/3d/runtime/new3ds/hive_cocooned_crew.glb', height: 2.0, yaw: 0 },
+    hive_pheromone_node: { url: '/3d/runtime/new3ds/hive_pheromone_node.glb', height: 1.3, yaw: 0 },
+    hive_resin_pillar: { url: '/3d/runtime/new3ds/hive_resin_pillar.glb', height: 2.8, yaw: 0 },
+    hive_tendril_arch: { url: '/3d/runtime/new3ds/hive_tendril_arch.glb', height: 3.0, maxSpan: 3.4, yaw: 0 },
+    life_algae_tank: { url: '/3d/runtime/new3ds/life_algae_tank.glb', height: 1.6, yaw: 0 },
+    life_arcade_cabinet: { url: '/3d/runtime/new3ds/life_arcade_cabinet.glb', height: 1.8, yaw: 0 },
+    life_cistern_tank: { url: '/3d/runtime/new3ds/life_cistern_tank.glb', height: 2.8, yaw: 0 },
+    life_conveyor_section: { url: '/3d/runtime/new3ds/life_conveyor_section.glb', height: 0.9, maxSpan: 3.2, yaw: 0 },
+    life_filing_cabinets: { url: '/3d/runtime/new3ds/life_filing_cabinets.glb', height: 1.4, maxSpan: 2.2, yaw: 0 },
+    life_fire_station: { url: '/3d/runtime/new3ds/life_fire_station.glb', height: 1.8, yaw: 0 },
+    life_forklift: { url: '/3d/runtime/new3ds/life_forklift.glb', height: 2.2, maxSpan: 3.0, yaw: 0 },
+    life_laundry_machines: { url: '/3d/runtime/new3ds/life_laundry_machines.glb', height: 1.2, maxSpan: 2.4, yaw: 0 },
+    life_overseer_desk: { url: '/3d/runtime/new3ds/life_overseer_desk.glb', height: 1.2, maxSpan: 2.4, yaw: 0 },
+    life_pallet_racking: { url: '/3d/runtime/new3ds/life_pallet_racking.glb', height: 2.6, maxSpan: 3.2, yaw: 0 },
+    life_planning_board: { url: '/3d/runtime/new3ds/life_planning_board.glb', height: 1.9, yaw: 0 },
+    life_scaffold_tower: { url: '/3d/runtime/new3ds/life_scaffold_tower.glb', height: 2.7, yaw: 0 },
+    life_server_racks: { url: '/3d/runtime/new3ds/life_server_racks.glb', height: 2.1, yaw: 0 },
+    life_shower_stall: { url: '/3d/runtime/new3ds/life_shower_stall.glb', height: 2.2, yaw: 0 },
+    life_sink_row: { url: '/3d/runtime/new3ds/life_sink_row.glb', height: 1.1, maxSpan: 2.6, yaw: 0 },
+    life_surgical_lamp: { url: '/3d/runtime/new3ds/life_surgical_lamp.glb', height: 2.3, yaw: 0 },
+    life_transformer_bank: { url: '/3d/runtime/new3ds/life_transformer_bank.glb', height: 2.2, yaw: 0 },
+    life_weight_bench: { url: '/3d/runtime/new3ds/life_weight_bench.glb', height: 1.4, maxSpan: 2.2, yaw: 0 },
+    salvage_tagged_heap: { url: '/3d/runtime/new3ds/salvage_tagged_heap.glb', height: 1.4, yaw: 0 }
 });
 
 // Metric-scale set-piece shells are deliberately separate from prop models.
@@ -365,7 +495,17 @@ export function prepareWorld3dModel(model, type, config, animations = null) {
     model.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(model);
     const size = bounds.getSize(new THREE.Vector3());
-    model.scale.multiplyScalar(config.height / Math.max(size.y, 1e-6));
+    // Sized by height; a low, wide model can then sprawl across a room
+    // (the frost vent measured 6.5 units), so `maxSpan` caps it across too.
+    const heightScale = config.height / Math.max(size.y, 1e-6);
+    if (Number.isFinite(config.span)) {
+        const horizontalScale = config.span / Math.max(size.x, size.z, 1e-6);
+        model.scale.multiply(new THREE.Vector3(horizontalScale, heightScale, horizontalScale));
+    } else {
+        const span = Math.max(size.x, size.z) * heightScale;
+        const spanScale = Number.isFinite(config.maxSpan) && span > config.maxSpan ? config.maxSpan / span : 1;
+        model.scale.multiplyScalar(heightScale * spanScale);
+    }
     model.updateMatrixWorld(true);
     const scaled = new THREE.Box3().setFromObject(model);
     const center = scaled.getCenter(new THREE.Vector3());
@@ -388,6 +528,7 @@ export function prepareWorld3dModel(model, type, config, animations = null) {
         object.frustumCulled = true;
     });
     useSinglePassForFlatMaterials(model);
+    applyClothFlutter(model);
 
     let mixer = null;
     if (animations && animations.length > 0) {
@@ -416,9 +557,13 @@ export function prepareWorld3dModel(model, type, config, animations = null) {
                 mixer.stopAllAction();
                 mixer.uncacheRoot(model);
             }
+            root.userData.propFx?.dispose?.();
+            root.userData.propExperience?.dispose?.();
         }
     };
     root.add(model);
+    root.userData.propFx = createPropFx(root, model, type);
+    root.userData.propExperience = createPropExperience(root, model, type);
     return root;
 }
 
@@ -514,6 +659,11 @@ export const WORLD_3D_MODEL_ALIASES = Object.freeze({
     prop_alien_respiratory_vent: 'prop_biomech_sphincter_hatch_vent',
     prop_engineering_bench: 'prop_fabricator_workstation',
     prop_ruptured_coolant_pump: 'prop_icey_frost_manifold',
+    // Authored interaction ids keep their gameplay meaning while reviewed
+    // stand-ins remove the last flat/missing anchors from furnished rooms.
+    lore_terminal: 'prop_terminal_ruptured',
+    scatter_horizon_black_box: 'prop_camp_meridian_radio',
+    prop_hydraulic_piston_actuator: 'prop_exosuit_docking_gantry',
     // Camp and hive signature/service props: their sprites are placeholder
     // tiles (dashed box + initials), so any fitting model is an upgrade.
     prop_camp_meridian_repair_rig: 'prop_maintenance_tool_cart',
@@ -614,7 +764,11 @@ export function syncWorld3dReplacement(source, { scale = 1, visible, delta } = {
         root.rotation.y = socketRotation;
     } else if (source.userData?.wallNormal) {
         const wn = source.userData.wallNormal;
-        root.rotation.y = Math.atan2(wn.x, wn.z);
+        if (Number.isFinite(source.userData?.yaw)) {
+            root.rotation.y = source.userData.yaw;
+        } else {
+            root.rotation.y = Math.atan2(wn.x, wn.z);
+        }
         if (source.userData.isWallBackedProp) {
             root.position.x -= wn.x * 0.22;
             root.position.z -= wn.z * 0.22;

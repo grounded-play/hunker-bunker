@@ -200,7 +200,11 @@ describe('Server Relay: co-op enemy-hit-sync validation', () => {
         host.emit('enemyState', {
             enemies: [{
                 scatterKey: '1,1:0:crawler', enemyType: 'crawler',
-                x: 12, z: 13, hp: 2, burstTriggered: false
+                x: 12, z: 13, hp: 2, burstTriggered: false,
+                targetId: 'guest-socket', mode: 'hunt'
+            }, {
+                scatterKey: '1,1:1:crawler', enemyType: 'crawler',
+                x: 14, z: 13, hp: 2, targetId: 42, mode: 'teleport'
             }]
         });
         const snapshot = await snapshotPromise;
@@ -209,7 +213,13 @@ describe('Server Relay: co-op enemy-hit-sync validation', () => {
             x: 12, z: 13, hp: 2, burstTriggered: false,
             // Carried so a peer can recreate a host-owned boss it has never
             // seen; an ordinary crawler reports the defaults.
-            isBoss: false, scale: null
+            isBoss: false, scale: null,
+            // Who it is chasing, so the guest's copy bites the same player.
+            targetId: 'guest-socket', mode: 'hunt'
+        }, {
+            scatterKey: '1,1:1:crawler', enemyType: 'crawler',
+            x: 14, z: 13, hp: 2, burstTriggered: false,
+            isBoss: false, scale: null, targetId: null, mode: null
         }]);
 
         const rejectedPromise = waitForEvent(host, 'enemyStateSnapshot', 300);

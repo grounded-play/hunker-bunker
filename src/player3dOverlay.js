@@ -1,8 +1,6 @@
 import { loadGltfTemplate } from './gltfTemplateCache.js';
 import { createOperatorPatch } from './operatorPatch.js';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { assetUrl } from './assetUrl.js';
 import { recordAssetLoad } from './assetLoadTelemetry.js';
@@ -17,7 +15,7 @@ import { createOperatorEquipmentController } from './operatorEquipmentSockets.js
 // EXT_meshopt_compression; GLTFLoader throws "setMeshoptDecoder must be called
 // before loading compressed files" without this registered first.
 function createGltfLoader() {
-    return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    return createSharedGltfLoader();
 }
 
 const MODEL_URL = '/3d/scouting-scout/Scout.game.glb';
@@ -40,6 +38,7 @@ const MODEL_URL = '/3d/scouting-scout/Scout.game.glb';
 
 import { COMMUNITY_GESTURES } from './data/communitySkins.js';
 import { WEAPON_URL, WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES, CHASSIS_SKIN_MODELS } from './data/operatorModelUrls.js';
+import { createGltfLoader as createSharedGltfLoader } from './gltfLoaderFactory.js';
 
 // Defined in data/operatorModelUrls.js (Three.js-free); re-exported for existing importers.
 export { WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES, CHASSIS_SKIN_MODELS };
@@ -413,6 +412,23 @@ export function retargetMixamoClip(source, fromPrefix, toPrefix, targetRoot) {
     return clip;
 }
 
+// Rig bones tagged with an `hbFollow` extra (glTF node extras arrive as
+// userData) copy the named bone's local rotation each frame. No clip names
+// them. Mayor Tina's outer legs use it to stride with her thighs while
+// pivoting at their own roots (scripts/blender/rig_mayor_tina.py).
+export function bindFollowerBones(root) {
+    const pairs = [];
+    root.traverse((object) => {
+        const sourceName = object.isBone ? object.userData?.hbFollow : null;
+        if (!sourceName) return;
+        const source = root.getObjectByName(THREE.PropertyBinding.sanitizeNodeName(sourceName));
+        if (source) pairs.push([object, source]);
+    });
+    return () => {
+        for (const [bone, source] of pairs) bone.quaternion.copy(source.quaternion);
+    };
+}
+
 function normalizeModel(root, targetHeight) {
     root.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(root);
@@ -675,10 +691,12 @@ export async function createPlayer3dOverlay({
     }
     // Prime the idle action immediately with full weight and tick the mixer so the
     // skinned mesh starts in its natural idle pose instead of its T-pose bind pose.
+    const syncFollowerBones = bindFollowerBones(root);
     if (activeIdleName && actions.has(activeIdleName)) {
         smoothedWeights[activeIdleName] = 1;
         actions.get(activeIdleName)?.setEffectiveWeight(1).play();
         mixer.update(0);
+        syncFollowerBones();
     }
 
     const charmPhysics = {
@@ -698,6 +716,7 @@ export async function createPlayer3dOverlay({
     return {
         root,
         actions,
+        syncFollowerBones,
         hasAnimation(name) { return actions.has(name); },
         getAnimationNames() { return [...actions.keys()]; },
         weapon,
@@ -835,6 +854,7 @@ export async function createPlayer3dOverlay({
                 mixer.timeScale = THREE.MathUtils.damp(mixer.timeScale, 1.0, 10, delta);
             }
             mixer.update(delta);
+            syncFollowerBones();
             const targetUpperBodyTurn = followMovement && state.hasAim
                 ? computeUpperBodyAimOffset(root.rotation.y, state.aimX, state.aimZ)
                 : 0;

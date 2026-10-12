@@ -32,6 +32,7 @@ describe('campaign deadline bindings', () => {
             player: { position: { x: 0, z: 0 } },
             act2: {},
             getActionableCampAt: () => ({ camp, action: 'talk' }),
+            getSelectedCampAction: () => ({ camp, action: 'talk' }),
             getCampRecord: () => ({ status: 'alive', bond: 0 }),
             talkToLeader: vi.fn(() => true)
         });
@@ -52,6 +53,7 @@ describe('campaign deadline bindings', () => {
             player: { position: { x: 0, z: 0 } },
             act2: {},
             getActionableCampAt: () => ({ camp, action: 'talk' }),
+            getSelectedCampAction: () => ({ camp, action: 'talk' }),
             getCampRecord: () => ({ status: 'alive', bond: 0 }),
             talkToLeader: vi.fn(() => true),
             showBunkerLine: vi.fn()

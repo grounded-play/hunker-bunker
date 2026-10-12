@@ -220,6 +220,23 @@ describe('propInteractions', () => {
         interactWithCustomProp(game, findNearestInteractableProp(game, 2.5));
         expect(findNearestInteractableProp(game, 2.5)?.sprite).toBe(wreck);
     });
+
+    it('keeps terminal interactions repeatable and acknowledges their 3D presentation', () => {
+        const consoleProp = {
+            position: { x: 1, z: 0 },
+            userData: { type: 'prop_diagnostic_console', scatterKey: 'diagnostic:1' }
+        };
+        const game = {
+            player: { position: { x: 0, z: 0 } },
+            scatterSprites: [consoleProp],
+            showBunkerLine: vi.fn(),
+            acknowledgePropExperience: vi.fn()
+        };
+        expect(interactWithCustomProp(game, findNearestInteractableProp(game))).toBe(true);
+        expect(game.acknowledgePropExperience).toHaveBeenCalledWith(consoleProp);
+        expect(findNearestInteractableProp(game)?.sprite).toBe(consoleProp);
+        expect(game.spentPropScatterKeys?.size ?? 0).toBe(0);
+    });
     // A 2D placeholder type that draws as a catalogue model (a Meridian repair
     // rig drawn as the tool cart) behaves like the model the player sees.
     it('a prop drawn as a catalogue model takes that model\'s interaction', () => {
@@ -243,6 +260,46 @@ describe('propInteractions', () => {
             });
             spec.onInteract(game, { position: { x: 0, z: 0 }, userData: {} });
             for (const [amount] of takeDamage.mock.calls) expect(amount, key).toBeLessThanOrEqual(1);
+        }
+    });
+});
+
+describe('generic prop interactions', () => {
+    it('offers a switch only when the prop has live effects to switch', async () => {
+        const { genericInteractionSpec } = await import('./propInteractions.js');
+        let enabled = true;
+        const fx = { setEnabled: () => enabled, toggle: () => (enabled = !enabled) };
+        const sprite = { userData: { world3dRoot: { userData: { propFx: fx } } } };
+        const spec = genericInteractionSpec('life_barrel_heater', sprite);
+        expect(spec.interactPrompt).toBe('[E] SWITCH BARREL HEATER');
+        expect(spec.repeatable).toBe(true);
+        const lines = [];
+        expect(spec.onInteract({ showBunkerLine: (line) => lines.push(line) }, sprite)).toBe(true);
+        expect(enabled).toBe(false);
+        expect(lines[0]).toBe('BARREL HEATER: SHUT DOWN.');
+        expect(genericInteractionSpec('life_barrel_heater', { userData: {} })).toBe(null);
+    });
+
+    it('lets containers be searched once and leaves inert furniture alone', async () => {
+        const { genericInteractionSpec } = await import('./propInteractions.js');
+        const crate = genericInteractionSpec('prop_camp_crates', { userData: {} });
+        expect(crate.interactPrompt).toBe('[E] SEARCH CAMP CRATES');
+        expect(crate.repeatable).toBe(false);
+        expect(genericInteractionSpec('life_pew_segment', { userData: {} })).toBe(null);
+        expect(genericInteractionSpec('arch_pillar_buttress_01', { userData: {} })).toBe(null);
+    });
+});
+
+describe('cuttable spline conduits', () => {
+    it('can be cut by hand with E, through the same break as shooting them', () => {
+        for (const type of ['spline_wire_bunker', 'spline_vein_bio', 'spline_pipe_cryo', 'spline_vine_camp']) {
+            const spec = PROP_INTERACTION_SPECS[type];
+            expect(spec.canInteract, type).toBe(true);
+            expect(spec.interactPrompt, type).toMatch(/^\[E\] /);
+            const sprite = { userData: { type } };
+            const breakScatterProp = vi.fn(() => true);
+            expect(spec.onInteract({ breakScatterProp }, sprite)).toBe(true);
+            expect(breakScatterProp).toHaveBeenCalledWith(sprite);
         }
     });
 });

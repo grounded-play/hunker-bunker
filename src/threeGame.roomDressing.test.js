@@ -6,6 +6,8 @@ import { assignRoomThemes } from './roomThemes.js';
 import { bindRoomContent } from './roomContent.js';
 import { planRoomPopulation } from './roomPopulation.js';
 import { planRoomDressing } from './roomDressing.js';
+import { PROP_INTERACTION_SPECS, isSearchableType } from './propInteractions.js';
+import { getPropFxProfile } from './propFx.js';
 
 function chunkRoom() {
     const build = ROOM_BUILD_CATALOG.find((b) => b.id === 'medical_triage');
@@ -33,7 +35,9 @@ describe('ThreeGame room dressing (lived-in rooms)', () => {
 
         const allItems = planRoomDressing(room, grid, { reserved: room.populationPlan.reserved, occupied: room.populationPlan.placements }).items;
         const expectedBlocking = allItems.filter((item) => item.blocking);
-        const expectedTotal = allItems.filter((item) => item.blocking || item.destructible);
+        // Interactive props get an E target even when they don't block.
+        const interactive = (type) => Boolean(PROP_INTERACTION_SPECS[type] || isSearchableType(type) || getPropFxProfile(type));
+        const expectedTotal = allItems.filter((item) => item.blocking || item.destructible || interactive(item.type));
         expect(expectedBlocking.length).toBeGreaterThan(0);
         expect(game.scatterSprites).toHaveLength(expectedTotal.length);
         const blockingSprites = game.scatterSprites.filter((s) => s.userData.isSolidProp);

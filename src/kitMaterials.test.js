@@ -77,6 +77,21 @@ describe('kit surface materials', () => {
         expect(biomechWall.emissiveIntensity).not.toBe(baseIntensity);
     });
 
+    it('keeps obsidian floor linework subordinate to walls and authored practicals', () => {
+        const wall = getKitMaterial('obsidian', 'wall', loader);
+        const floor = getKitMaterial('obsidian', 'floor', loader);
+        expect(wall.emissiveIntensity).toBe(0.16);
+        expect(wall.color.getHex()).toBe(0x3a303f);
+        expect(wall.emissive.getHex()).toBe(0x421850);
+        expect(floor.emissiveIntensity).toBe(0.04);
+        expect(floor.color.getHex()).toBe(0x24202a);
+        expect(floor.emissive.getHex()).toBe(0x421850);
+        updateKitMaterials(1.0);
+        expect(floor.emissiveIntensity).toBeGreaterThanOrEqual(0.025);
+        expect(floor.emissiveIntensity).toBeLessThanOrEqual(0.055);
+        expect(floor.emissiveIntensity).toBeLessThan(wall.emissiveIntensity);
+    });
+
     it('swaps the exported kit_wall / kit_floor materials for the shared ones', () => {
         const root = new THREE.Group();
         const wall = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ name: 'kit_wall' }));

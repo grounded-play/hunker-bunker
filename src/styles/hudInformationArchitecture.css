@@ -160,7 +160,9 @@ html[data-hud-layout="dock"] #game-viewport .hud-right-rail > .hud-notification-
   width: 100% !important;
   max-height: min(calc(220 * var(--u)), 32vh);
   min-height: 0 !important;
-  overflow: hidden;
+  /* Visible: a lone card taller than the cap shows whole; the deck queues
+     the rest so the stack never grows past it otherwise. */
+  overflow: visible;
   flex: 0 1 auto;
   z-index: auto !important;
   pointer-events: none;
@@ -170,8 +172,14 @@ html[data-hud-layout="dock"] #game-viewport .hud-right-rail > .hud-notification-
   position: relative !important;
   inset: auto !important;
   width: 100% !important;
-  max-height: inherit;
+  max-height: none;
   overflow: hidden;
+}
+
+/* A card that does not fit whole under the cap waits its turn (main.js
+   updateHudNotificationDeck, src/hudDeck.js) instead of being cut off. */
+html[data-hud-layout="dock"] #game-viewport .hud-right-rail > .hud-notification-stack > .is-deck-queued {
+  display: none !important;
 }
 
 /* One alert lane: active states stay live, but only the highest priority is

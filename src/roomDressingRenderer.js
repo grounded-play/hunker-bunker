@@ -9,8 +9,10 @@
  * review images show exactly what the game draws.
  */
 import * as THREE from 'three';
+import { buildLegacyDecalMesh, legacyDecalLayerIndex } from './stickerDecals.js';
 import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
 import { assetUrl } from './assetUrl.js';
+import { isDynamicPropExperienceType } from './propExperience.js';
 
 const keyedDecalCache = new Map();
 
@@ -59,6 +61,7 @@ const HIDDEN_INSTANCE = new THREE.Matrix4().makeScale(0, 0, 0);
 export function hideRoomDressingItem(item) {
     if (!item) return;
     item.isDestroyed = true;
+    if (item.dynamicRoot) item.dynamicRoot.visible = false;
     for (const { batch, index } of item.batchInstances ?? []) {
         batch.setMatrixAt(index, HIDDEN_INSTANCE);
         batch.instanceMatrix.needsUpdate = true;
@@ -107,7 +110,15 @@ const textureAspect = (texture) => {
  * @param {(type: string) => THREE.Texture|null|Promise<THREE.Texture|null>} deps.loadDecalTexture
  * @returns {Promise<THREE.Group>} group.userData.drawCalls counts the batches
  */
-export async function buildRoomDressingGroup(items, { loadModel, loadDecalTexture, isDestroyed = null } = {}) {
+export async function buildRoomDressingGroup(items, {
+    loadModel,
+    loadDecalTexture,
+    isDestroyed = null,
+    onDynamicModel = null,
+    // When set (its PBR arrays loaded), decals with a baked layer draw from it
+    // as one mesh; the rest keep the runtime-keyed PNG batches.
+    decalMaterial: pbrDecalMaterial = null
+} = {}) {
     const group = new THREE.Group();
     group.name = 'room-dressing';
     group.userData.isRoomDressing = true;
@@ -115,7 +126,10 @@ export async function buildRoomDressingGroup(items, { loadModel, loadDecalTextur
     const load = async (loader, type) => {
         try { return await loader(type); }
         catch (error) {
-            group.traverse(node => { if (node.isInstancedMesh) node.dispose(); });
+            group.traverse((node) => {
+                if (node.isInstancedMesh) node.dispose();
+                node.userData?.propExperience?.dispose?.();
+            });
             throw error;
         }
     };
@@ -133,10 +147,41 @@ export async function buildRoomDressingGroup(items, { loadModel, loadDecalTextur
     const euler = new THREE.Euler(0, 0, 0, 'YXZ');
     let drawCalls = 0;
 
+    const pbrDecals = [];
     for (const [type, list] of byType) {
+        if (pbrDecalMaterial && !MODEL_LAYERS.has(list[0].layer) && legacyDecalLayerIndex(type) >= 0) {
+            pbrDecals.push(...list);
+            continue;
+        }
         if (MODEL_LAYERS.has(list[0].layer)) {
+            const usesDynamicExperience = (item) => item.dynamicExperience
+                ?? isDynamicPropExperienceType(item.type);
+            const dynamic = list.filter((item) => usesDynamicExperience(item) && !item.isDestroyed);
+            const staticList = list.filter((item) => !usesDynamicExperience(item));
+            for (const item of dynamic) {
+                const root = await load(loadModel, type);
+                if (!root) continue;
+                root.position.set(item.x, item.mountY ?? 0, item.y);
+                root.rotation.y = item.yaw ?? 0;
+                root.scale.setScalar(item.scale ?? 1);
+                root.userData.dressingItem = item;
+                item.dynamicRoot = root;
+                if (item.collider?.userData) item.collider.userData.world3dRoot = root;
+                group.add(root);
+                let rootCalls = 0;
+                root.traverse((node) => { if (node.isMesh) rootCalls += 1; });
+                drawCalls += rootCalls;
+                onDynamicModel?.(root, item);
+            }
+            if (staticList.length === 0) continue;
+
             const root = await load(loadModel, type);
             if (!root) continue;
+            // This copy only supplies geometry/materials to an instanced batch;
+            // undo per-instance presentation clones before the batch captures
+            // them. Stateful copies took the standalone branch above.
+            root.userData?.propFx?.dispose?.();
+            root.userData?.propExperience?.dispose?.();
             root.updateMatrixWorld(true);
             const toRoot = new THREE.Matrix4().copy(root.matrixWorld).invert();
             const meshes = [];
@@ -145,8 +190,8 @@ export async function buildRoomDressingGroup(items, { loadModel, loadDecalTextur
             });
             for (const mesh of meshes) {
                 const local = new THREE.Matrix4().multiplyMatrices(toRoot, mesh.matrixWorld);
-                const batch = new THREE.InstancedMesh(mesh.geometry, mesh.material, list.length);
-                list.forEach((item, index) => {
+                const batch = new THREE.InstancedMesh(mesh.geometry, mesh.material, staticList.length);
+                staticList.forEach((item, index) => {
                     item.batchInstances = item.batchInstances || [];
                     item.batchInstances.push({ batch, index });
                     if (item.collider?.userData) {
@@ -207,6 +252,12 @@ export async function buildRoomDressingGroup(items, { loadModel, loadDecalTextur
         batch.computeBoundingSphere();
         batch.userData.roomDressingType = type;
         group.add(batch);
+        drawCalls += 1;
+    }
+
+    const decalMesh = pbrDecals.length ? buildLegacyDecalMesh(pbrDecals, pbrDecalMaterial) : null;
+    if (decalMesh) {
+        group.add(decalMesh);
         drawCalls += 1;
     }
 

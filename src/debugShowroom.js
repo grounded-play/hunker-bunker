@@ -1,6 +1,4 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { createWorld3dModel } from './world3dOverlay.js';
 import { assetUrl } from './assetUrl.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
@@ -16,6 +14,7 @@ import {
 } from './debugAssetCatalogs.js';
 export { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y, SHOWROOM_CHUNK_KEY } from './debugWorldLayout.js';
 import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugWorldLayout.js';
+import { createGltfLoader } from './gltfLoaderFactory.js';
 
 // Categorized catalog for exhibition
 export const SHOWROOM_CATEGORIES = Object.freeze({
@@ -217,6 +216,126 @@ export const SHOWROOM_CATEGORIES = Object.freeze({
         'prop_cave_lichen',
         'prop_hive_carapace_molt'
     ],
+    LIVED_IN_PROPS: [
+        'life_mess_table',
+        'life_bunk_stack',
+        'life_galley_hotplate',
+        'life_card_table',
+        'life_memorial_board',
+        'life_hydro_rack',
+        'life_water_still',
+        'life_suit_drying_rack',
+        'life_latrine_stall',
+        'life_barrel_heater',
+        'life_route_map_table',
+        'life_reloading_bench',
+        'life_covered_stretcher',
+        'life_pipe_hammock',
+        'life_flood_lamp_tripod',
+        'life_vending_machine',
+        'life_cargo_pallet_netted',
+        'life_footlocker_open',
+        'life_tally_bulkhead',
+        'life_mask_rack',
+        'life_infusion_cradle',
+        'life_sanitation_bidet',
+        'life_sleep_sleeve',
+        'life_pheromone_censer',
+        'life_ammo_ovipositor',
+        'life_sensory_chair',
+        'life_resin_extractor',
+        'life_umbilical_tether',
+        'life_vulval_drain_sump',
+        'life_tactile_console',
+        'life_scent_distiller',
+        'life_bone_clamp_rig',
+        'life_fuel_probe_boom',
+        'life_warmth_hearth',
+        'life_peristaltic_feeder',
+        'life_pelvic_autopsy_trough',
+        'life_acoustic_ear_horn',
+        'life_stigmata_inscriber',
+        'life_lung_filter_bellows',
+        'life_vertebral_restraint_rack',
+        'life_cochlear_intercom',
+        'life_ceiling_collapse',
+        'life_ribcage_rescue_cabinet',
+        'life_checkpoint_post',
+        'life_pneumatic_tube_node',
+        'life_janitor_cart',
+        'life_wayfinding_totem',
+        'life_dropped_kit_pile',
+        'life_seismic_drill',
+        'life_supply_drop_pod',
+        'life_colossal_limb',
+        'life_wind_mast',
+        'life_guide_rope_stakes',
+        'life_fallen_comm_dish',
+        'life_tarp_leanto',
+        'life_pipeline_trestle',
+        'life_ice_sled',
+        'life_ice_core_rack',
+        'life_ice_bore_winch',
+        'life_parka_hooks',
+        'life_brood_comb',
+        'life_hive_dew_funnel',
+        'life_hive_feeding_bladder',
+        'life_assimilated_desk',
+        'life_fungal_cable_bundle',
+        'life_ore_cart',
+        'life_drip_buckets',
+        'life_rope_anchor_post',
+        'life_confessional',
+        'life_devotion_tree',
+        'life_pew_segment',
+        'life_barber_chair',
+        'life_meat_smoking_rack',
+        'life_training_dummy',
+        'life_lookout_perch',
+        'life_welding_station',
+        'life_exosuit_teardown',
+        'life_fuse_bypass_panel',
+        'life_pod_seat_row',
+        'camp_canvas_tent',
+        'camp_water_barrel',
+        'chasm_beacon_post',
+        'chasm_broken_catwalk',
+        'chasm_gondola',
+        'chasm_rappel_anchor',
+        'crash_drag_chute',
+        'crash_engine_nacelle',
+        'crash_hull_panels',
+        'cryo_frozen_cascade',
+        'cryo_heater_station',
+        'cryo_ice_blocks',
+        'cryo_ice_crawler',
+        'cryo_snowbound_crates',
+        'hive_assimilated_generator',
+        'hive_brood_dome',
+        'hive_cocooned_crew',
+        'hive_pheromone_node',
+        'hive_resin_pillar',
+        'hive_tendril_arch',
+        'life_algae_tank',
+        'life_arcade_cabinet',
+        'life_cistern_tank',
+        'life_conveyor_section',
+        'life_filing_cabinets',
+        'life_fire_station',
+        'life_forklift',
+        'life_laundry_machines',
+        'life_overseer_desk',
+        'life_pallet_racking',
+        'life_planning_board',
+        'life_scaffold_tower',
+        'life_server_racks',
+        'life_shower_stall',
+        'life_sink_row',
+        'life_surgical_lamp',
+        'life_transformer_bank',
+        'life_weight_bench',
+        'salvage_tagged_heap'
+    ],
     // Dead enemies as they lie on the floor (ThreeGame.attachCorpse3d).
     CORPSES: [
         'cybersnail_dead',
@@ -417,7 +536,7 @@ function createLabelSprite(text, { color = '#00f0ff', bgColor = 'rgba(10, 16, 26
 let _showroomGltfLoader = null;
 const _showroomGltfCache = new Map();
 function getShowroomGltfLoader() {
-    if (!_showroomGltfLoader) _showroomGltfLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    if (!_showroomGltfLoader) _showroomGltfLoader = createGltfLoader();
     return _showroomGltfLoader;
 }
 async function loadShowroomGlb(url) {
@@ -555,6 +674,7 @@ export async function buildShowroomScene(threeGame) {
         ...SHOWROOM_CATEGORIES.CRYO_PROPS.map((id) => ({ id, type: 'prop', category: 'CRYO' })),
         ...SHOWROOM_CATEGORIES.RUINED_INDUSTRIAL_PROPS.map((id) => ({ id, type: 'prop', category: 'INDUSTRIAL' })),
         ...SHOWROOM_CATEGORIES.CAMP_PROPS.map((id) => ({ id, type: 'prop', category: 'CAMP' })),
+        ...SHOWROOM_CATEGORIES.LIVED_IN_PROPS.map((id) => ({ id, type: 'prop', category: 'LIVED_IN' })),
         ...SHOWROOM_CATEGORIES.SECRETS.map((id) => ({ id, type: 'prop', category: 'SECRETS' })),
         ...SHOWROOM_CATEGORIES.AFTERMATH_STATES.map((id) => ({ id, type: 'prop', category: 'AFTERMATH' })),
         ...SHOWROOM_CATEGORIES.ARCHITECTURE_3D.map((id) => ({ id, type: 'prop', category: 'ARCHITECTURE' })),

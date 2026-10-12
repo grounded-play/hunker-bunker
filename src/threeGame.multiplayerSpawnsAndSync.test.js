@@ -326,7 +326,8 @@ describe('ThreeGame multiplayer spawn separation & synchronization', () => {
                 isMultiplayerHost: false,
                 findSnailPath: vi.fn(),
                 selectSnailTarget: vi.fn(),
-                updateSnailBehavior: ThreeGame.prototype.updateSnailBehavior
+                updateSnailBehavior: ThreeGame.prototype.updateSnailBehavior,
+                updateRemoteEnemyReplica: ThreeGame.prototype.updateRemoteEnemyReplica
             };
 
             guestGame.updateSnailBehavior(sprite, 0.05, null);

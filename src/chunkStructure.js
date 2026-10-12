@@ -4,6 +4,7 @@ import { generateArchitecturalMazeChunk } from './architecturalMaze.js';
 import { ALL_ROOM_BUILDS, selectRoomBuild, rotateRoomBuild, stampRoomBuild, buildRoomInstanceFromBuild } from './roomBuilds.js';
 import { HALLWAY_BUILD_CATALOG, selectHallwayArchetype, realizeHallwayConnector } from './hallwayConnector.js';
 import { createTerritoryRoomBuild } from './territoryStructures.js';
+import { buildGrammarRoomChunk } from './roomGrammarChunk.js';
 
 // Sprint 23 Phase 0A / Lane B.
 //
@@ -208,6 +209,33 @@ function anchorsOf(room) {
  *
  * @returns {ChunkStructureResult | null}
  */
+function buildAnchorIds(build) {
+    return [
+        ...(build.interactionAnchors ?? []),
+        ...(build.structuralAnchors ?? []),
+        ...(build.rewardAnchors ?? []),
+        ...(build.loreAnchors ?? [])
+    ].map((anchor) => anchor.id);
+}
+
+/**
+ * A reservation that names its objective's anchor gets a room built for that
+ * objective: the family also holds rooms built for other objectives (a
+ * reactor vent among the engineering rooms), and taking the first eligible
+ * one put the hull fabrication goal in the vent room. The built room wins
+ * over biome eligibility (themes reskin it per biome; its anchor is what the
+ * objective resolves to). Without one, selection is what it always was.
+ */
+function selectObjectiveRoomBuild({ family, tier, biome, roles, roll, objectiveAnchorId }) {
+    if (objectiveAnchorId) {
+        const built = ALL_ROOM_BUILDS.filter((build) => buildAnchorIds(build).includes(objectiveAnchorId));
+        const match = selectRoomBuild(built, { family, tier, biome, roles, roll })
+            ?? selectRoomBuild(built, { family, tier, biome: null, roles, roll });
+        if (match) return match;
+    }
+    return selectRoomBuild(ALL_ROOM_BUILDS, { family, tier, biome, roles, roll });
+}
+
 export function buildAuthoredRoomChunkStructure(random, {
     chunkX = 0,
     chunkY = 0,
@@ -219,9 +247,10 @@ export function buildAuthoredRoomChunkStructure(random, {
     roles = null,
     rotationSteps = 0,
     roll = 0,
-    roomBuild = null
+    roomBuild = null,
+    objectiveAnchorId = null
 } = {}) {
-    const catalogBuild = roomBuild ?? selectRoomBuild(ALL_ROOM_BUILDS, { family, tier, biome, roles, roll });
+    const catalogBuild = roomBuild ?? selectObjectiveRoomBuild({ family, tier, biome, roles, roll, objectiveAnchorId });
     if (!catalogBuild) return null;
     const build = rotateRoomBuild(catalogBuild, rotationSteps);
     const stamped = stampRoomBuild(build, random, { size: chunkSize, openings });
@@ -283,12 +312,26 @@ export function resolveChunkStructureForReservation(random, reservation, options
     if (!reservation?.roomFamily || !Number.isInteger(reservation?.chunkX) || !Number.isInteger(reservation?.chunkY)) {
         return null;
     }
+    if (reservation.roomGrammarProfile) {
+        return buildGrammarRoomChunk({
+            seed: reservation.roomGrammarSeed,
+            chunkX: reservation.chunkX,
+            chunkY: reservation.chunkY,
+            areaId: reservation.roomGrammarProfile,
+            tier: reservation.roomGrammarTier ?? 'standard',
+            motifId: reservation.roomGrammarMotif ?? null,
+            roomOrigin: reservation.roomGrammarOrigin ?? null,
+            role: reservation.role === 'campTerritory' || reservation.role === 'campStateAnchor' ? 'camp' : null,
+            ...options
+        });
+    }
     return buildAuthoredRoomChunkStructure(random, {
         chunkX: reservation.chunkX,
         chunkY: reservation.chunkY,
         family: reservation.roomFamily,
         tier: Number.isInteger(reservation.ring) ? reservation.ring : null,
         roomBuild: createTerritoryRoomBuild(reservation),
+        objectiveAnchorId: reservation.objectiveAnchorId ?? null,
         ...options
     });
 }

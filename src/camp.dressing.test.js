@@ -36,7 +36,25 @@ describe('camp 3D dressing', () => {
     it('gives each camp a distinct palette', () => {
         // Shared props would undo the point: the camps read the same today
         // precisely because their dressing does not differentiate them.
-        const all = Object.values(CAMP_DRESSING_MODELS).flat().map((s) => s.type);
+        const intentionallyShared = new Set([
+            'life_card_table', 'life_memorial_board', 'life_latrine_stall',
+            'life_pipe_hammock', 'life_sanitation_bidet', 'life_vulval_drain_sump',
+            'life_barber_chair', 'life_devotion_tree'
+        ]);
+        const all = Object.values(CAMP_DRESSING_MODELS).flat().map((s) => s.type)
+            .filter((type) => !intentionallyShared.has(type));
         expect(new Set(all).size).toBe(all.length);
+    });
+
+    it('gives every camp the shared daily-life layer from the prompt sheet', () => {
+        const shared = [
+            'life_card_table', 'life_memorial_board', 'life_latrine_stall',
+            'life_pipe_hammock', 'life_sanitation_bidet', 'life_vulval_drain_sump',
+            'life_barber_chair', 'life_devotion_tree'
+        ];
+        for (const specs of Object.values(CAMP_DRESSING_MODELS)) {
+            const types = new Set(specs.map(({ type }) => type));
+            for (const type of shared) expect(types.has(type), type).toBe(true);
+        }
     });
 });

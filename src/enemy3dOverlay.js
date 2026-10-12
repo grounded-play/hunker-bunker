@@ -1,14 +1,13 @@
 import { loadGltfTemplate } from './gltfTemplateCache.js';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { prewarmEnemyGibs } from './enemyGibs.js';
+import { createGltfLoader as createSharedGltfLoader } from './gltfLoaderFactory.js';
 
 // docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws without this registered first.
 function createGltfLoader() {
-    return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    return createSharedGltfLoader();
 }
 
 const MODEL_CONFIG = {
@@ -96,7 +95,7 @@ export function getEnemyAssetYaw(type) {
 // moment -- a lazy-load pause there is far less disruptive than the same
 // pause mid-firefight against a common enemy. Preload only the regular
 // roster; bosses keep the original lazy path.
-const PRELOAD_TYPES = ['cybersnail', 'sporesnail', 'fungal_spore_vent', 'spore_mortar', 'crawler', 'mycelium_stalker'];
+const PRELOAD_TYPES = ['cybersnail', 'cryosnail', 'sporesnail', 'fungal_spore_vent', 'spore_mortar', 'crawler', 'mycelium_stalker'];
 
 // Enemy GLBs used to load lazily on each type's first spawn -- fine on paper
 // since it's async, but GLTFLoader's parse step (meshopt decompress, skeleton

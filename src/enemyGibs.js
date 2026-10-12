@@ -316,6 +316,29 @@ function getCutMaterial(organic = true) {
     return cutMaterials[key];
 }
 
+function cloneGibSkinMaterial(baseMaterial) {
+    const material = baseMaterial?.clone?.() ?? new THREE.MeshBasicMaterial({ color: 0x6b7280 });
+    material.transparent = true;
+    material.side = THREE.FrontSide;
+    material.skinning = false;
+    return material;
+}
+
+export function createEnemyGibShaderWarmup(type, root) {
+    const source = extractGibSource(root);
+    const chunks = getGibChunks(type, () => source?.geometry ?? null);
+    if (!source || !chunks.length) return null;
+    const group = new THREE.Group();
+    group.name = 'enemy-gib-shader-warmup';
+    // Use a real cached chunk and the source GLB's material features. Maps,
+    // physical extensions and colour-space flags all participate in the key.
+    group.add(
+        new THREE.Mesh(chunks[0], cloneGibSkinMaterial(source.material)),
+        new THREE.Mesh(chunks[0], getCutMaterial(true))
+    );
+    return group;
+}
+
 /**
  * Blow an enemy's 3D visual apart into physical chunks.
  *
@@ -368,10 +391,7 @@ export function spawnGibsFor(game, sprite, { direction = null, isBoss = false, o
     group.scale.setFromMatrixScale(root.matrixWorld);
 
     const pieces = [];
-    const skinMaterial = baseMaterial?.clone?.() ?? new THREE.MeshBasicMaterial({ color: 0x6b7280 });
-    skinMaterial.transparent = true;
-    skinMaterial.side = THREE.FrontSide;
-    skinMaterial.skinning = false;
+    const skinMaterial = cloneGibSkinMaterial(baseMaterial);
 
     const dirX = direction?.x ?? 0;
     const dirZ = direction?.z ?? 0;

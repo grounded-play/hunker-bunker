@@ -2,14 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
     GROUNDING_DECAL_LIMIT, GROUNDING_RULES, areaRoomObjectLimit, groundingRuleFor, normalizePopulationBudget, planRoomPopulation
 } from './roomPopulation.js';
-import fs from 'node:fs';
+import { FLOOR_OVERLAY_TYPES } from './propBehavior.js';
 
-// The renderer's flat floor-overlay set (threeGame.js FLOOR_OVERLAY_TYPES).
+// The renderer's flat floor-overlay set (src/propBehavior.js FLOOR_OVERLAY_TYPES).
 // Anything else is drawn upright, so grounding must stay inside this set.
 function rendererFloorOverlayTypes() {
-    const source = fs.readFileSync(new URL('./threeGame.js', import.meta.url), 'utf8');
-    const body = source.match(/const FLOOR_OVERLAY_TYPES = new Set\(\[([\s\S]*?)\]\);/)?.[1] ?? '';
-    return new Set([...body.matchAll(/'([^']+)'/g)].map((match) => match[1]));
+    return FLOOR_OVERLAY_TYPES;
 }
 
 describe('room population', () => {
@@ -99,6 +97,31 @@ describe('room population', () => {
         expect(plan.budget.signature).toBe(0);
         expect(plan.placements).toEqual([]);
         expect(plan.signaturePlaced).toBe(false);
+        expect(plan.degraded).toBe(false);
+    });
+
+    it('promotes an authored focal anchor instead of adding a random theme signature', () => {
+        const room = {
+            id: 'authored-hero-room',
+            role: 'engineering',
+            interior: [{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 1 }],
+            navigation: { doorLanes: [] },
+            populationBudget: { signature: 1, large: 0, small: 0, pickup: 0, enemy: 0 },
+            signatureAnchorId: 'hero_machine',
+            structuralAnchors: [{ id: 'hero_machine', type: 'prop_fusion_generator', x: 2, y: 2 }],
+            themeConfig: { signatureProps: ['wrong_random_signature'] }
+        };
+        const grid = Array.from({ length: 4 }, () => Array(5).fill('#'));
+        for (const cell of room.interior) grid[cell.y][cell.x] = '.';
+
+        const plan = planRoomPopulation(room, grid, () => 0);
+
+        expect(plan.placements).toContainEqual(expect.objectContaining({
+            anchorId: 'hero_machine', kind: 'signature', authoredKind: 'structural',
+            type: 'prop_fusion_generator', x: 2, y: 2
+        }));
+        expect(plan.placements).not.toContainEqual(expect.objectContaining({ type: 'wrong_random_signature' }));
+        expect(plan.signaturePlaced).toBe(true);
         expect(plan.degraded).toBe(false);
     });
 
@@ -293,6 +316,25 @@ describe('room population', () => {
                 kind: 'ammo-cache', type: 'prop_bunker_supplies', blocking: true
             }));
         }
+    });
+
+    it('does not duplicate an authored supply vault with a generic ammo cache', () => {
+        const grid = Array.from({ length: 7 }, () => Array(9).fill('.'));
+        const room = {
+            id: 'authored-reward',
+            role: 'reward',
+            interior: Array.from({ length: 7 }, (_, index) => ({ x: index + 1, y: 3 })),
+            navigation: { doorLanes: [] },
+            interactionAnchors: [{ id: 'reward_vault', type: 'prop_bunker_supplies', x: 4, y: 3 }],
+            signatureAnchorId: 'reward_vault',
+            populationBudget: { signature: 1, large: 0, small: 0, pickup: 0, enemy: 0 },
+            themeConfig: { signatureProps: ['prop_bunker_supplies'] }
+        };
+        const plan = planRoomPopulation(room, grid, () => 0);
+        expect(plan.placements.filter((placement) => placement.type === 'prop_bunker_supplies')).toEqual([
+            expect.objectContaining({ anchorId: 'reward_vault', kind: 'signature', x: 4, y: 3 })
+        ]);
+        expect(plan.placements.some((placement) => placement.kind === 'ammo-cache')).toBe(false);
     });
 
     it('restricts wall-backed props (altars, cradles) to cells adjacent to walls with wallNormal', () => {
@@ -508,4 +550,3 @@ describe('room population', () => {
         });
     });
 });
-

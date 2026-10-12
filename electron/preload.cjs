@@ -370,6 +370,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // the client names the tier or target, the backend picks what to consume.
     tradeUpSteamInventory: (rarity, requestId) => withSteamSession('/steam/inventory/trade-up', { rarity, requestId }),
     redeemSteamItem: (itemdefid, requestId) => withSteamSession('/steam/inventory/redeem', { itemdefid, requestId }),
+    // Sprint 51 reagent loop (server/quartermaster.js).
+    quartermasterTrade: (itemdefid, requestId) => withSteamSession('/steam/inventory/quartermaster', { itemdefid, requestId }),
+    assembleOverclock: (itemdefid, requestId) => withSteamSession('/steam/inventory/assemble', { itemdefid, requestId }),
+    getQuartermasterWeek: () => withSteamSessionGet('/steam/inventory/quartermaster-week'),
     getSteamMarketEligibility: () => withSteamSessionGet('/steam/market/eligibility'),
     getSteamStoreCatalog: () => requestSteamBackend('/steam/store/catalog'),
     // Server-held Dossier progress (server/seasonRoutes.js). Only these verbs.

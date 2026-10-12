@@ -284,6 +284,59 @@ test.describe('controller-ready modal focus', () => {
         await expect(slot.locator('.armory-slot__name')).not.toHaveText(before ?? '');
     });
 
+    // Owner 2026-10-08: choosing skins, the D-pad only moved left and right.
+    // The picker modal is its own focus root and was missing from the spatial
+    // list, so up / down stepped to the previous / next tile in DOM order.
+    test('D-pad moves up and down between rows of the Armory picker', async ({ page }) => {
+        await bootToOperatorMenu(page);
+        await page.locator('#start-game').click();
+        await expect(page.locator('#armory-screen')).toBeVisible({ timeout: 30_000 });
+        await page.evaluate(() => document.body.classList.add('controller-mode'));
+
+        const rowsOf = () => page.evaluate(() => [...document.querySelectorAll('#armory-picker-grid .armory-tile')]
+            .map((tile) => Math.round(tile.getBoundingClientRect().top)));
+        let opened = null;
+        for (const field of ['chassis', 'decal', 'charm', 'sheen', 'hud']) {
+            const slot = page.locator(`#armory-slot-${field}`);
+            if (!(await slot.isVisible())) continue;
+            await slot.click();
+            await expect(page.locator('#armory-picker-modal')).toBeVisible();
+            if (new Set(await rowsOf()).size >= 2) { opened = field; break; }
+            await page.locator('#armory-picker-close').click();
+            await expect(page.locator('#armory-picker-modal')).toBeHidden();
+        }
+        expect(opened, 'a picker with at least two rows').not.toBeNull();
+
+        const nav = (action) => page.evaluate((a) => {
+            window.dispatchEvent(new CustomEvent('gamepad-menu-nav', { detail: { action: a } }));
+        }, action);
+        const focused = () => page.evaluate(() => {
+            const tiles = [...document.querySelectorAll('#armory-picker-grid .armory-tile')];
+            const r = document.activeElement.getBoundingClientRect();
+            return { index: tiles.indexOf(document.activeElement), left: Math.round(r.left), top: Math.round(r.top) };
+        });
+
+        await page.locator('#armory-picker-grid .armory-tile').first().focus();
+        const start = await focused();
+        expect(start.index).toBe(0);
+
+        await nav('menu_down');
+        const below = await focused();
+        expect(below.index).toBeGreaterThan(0);
+        expect(below.top).toBeGreaterThan(start.top);
+        expect(Math.abs(below.left - start.left)).toBeLessThan(8);
+
+        await nav('menu_right');
+        const right = await focused();
+        expect(right.top).toBe(below.top);
+        expect(right.left).toBeGreaterThan(below.left);
+
+        await nav('menu_up');
+        const above = await focused();
+        expect(above.top).toBe(start.top);
+        expect(Math.abs(above.left - right.left)).toBeLessThan(8);
+    });
+
     test('controller can choose a visible right-stick sensitivity preset', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();

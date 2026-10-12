@@ -585,7 +585,7 @@ describe('POST /steam/inventory/grant-milestone (Tier B)', () => {
         expect(res.status).toBe(200);
         const body = await res.json();
         expect(body.ok).toBe(true);
-        expect(body.granted[0].itemdefid).toBe(4001);
+        expect(body.granted[0].itemdefid).toBe(4154);
     });
 
     it('is idempotent per run for boss_kill (same runKey never double-grants)', async () => {
@@ -603,7 +603,9 @@ describe('POST /steam/inventory/grant-milestone (Tier B)', () => {
         }
 
         const inv = getMockInventory(testId);
-        expect(inv.find((i) => i.itemdefid === 4001)?.quantity).toBe(1);
+        expect(inv.find((i) => i.itemdefid === 4154)?.quantity).toBe(1);
+        // Sprint 51: a boss kill also yields 5 ingots, once per run.
+        expect(inv.find((i) => i.itemdefid === 4156)?.quantity).toBe(5);
     });
 
     it('rejects boss_kill without a runKey', async () => {

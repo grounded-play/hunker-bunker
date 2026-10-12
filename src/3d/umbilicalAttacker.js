@@ -3,10 +3,21 @@ import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.j
 
 /**
  * Umbilical Squid-Arm Attacker
- * Room-centric living biomechanical hazard that hangs from the ceiling or wall breach,
- * tracking the player with multi-bone inverse kinematic flexion, lunging with whip strikes,
- * and convulsing upon destruction.
+ * Room-centric living biomechanical hazard: a tentacle rising from a floor hatch that
+ * turns to track the player, lunges with whip strikes, and convulses upon destruction.
+ *
+ * The rig (scripts/blender/rig_umbilical_tentacle.py) keeps the hatch on a static
+ * Umbilical_Base bone. Tracking turns only Umbilical_Root, the tentacle's first bone,
+ * so the hatch stays put; no clip keys either bone.
  */
+const YAW_UP = new THREE.Vector3(0, 1, 0);
+const _yawTurn = new THREE.Quaternion();
+const _yawTarget = new THREE.Vector3();
+
+function shortestAngle(from, to) {
+    return Math.atan2(Math.sin(to - from), Math.cos(to - from));
+}
+
 export class UmbilicalAttacker {
     constructor(gltfData, options = {}) {
         this.x = options.x || 0;
@@ -80,6 +91,8 @@ export class UmbilicalAttacker {
                 }
             });
 
+            this._setupYawBone();
+
             // Set up animation mixer
             const anims = gltfData?.animations || options.animations || [];
             if (anims.length > 0) {
@@ -96,6 +109,29 @@ export class UmbilicalAttacker {
                 }
             }
         }
+    }
+
+    _setupYawBone() {
+        const bone = this.bones.find((b) => b.name === 'Umbilical_Root');
+        if (!bone?.parent) return;
+        this.yawBone = bone;
+        this.yaw = 0;
+        this._yawRest = bone.quaternion.clone();
+        // Strikes pitch the chain toward the bones' local +Z; that is "forward".
+        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this._yawRest);
+        this._yawForward = Math.atan2(forward.x, forward.z);
+    }
+
+    // Yaw about the parent bone's up axis (the static base points straight up).
+    _trackYaw(dt, playerPos, rate = 3.0) {
+        const bone = this.yawBone;
+        if (!bone) return;
+        bone.parent.updateWorldMatrix(true, false);
+        bone.parent.worldToLocal(_yawTarget.set(playerPos.x, playerPos.y ?? 0, playerPos.z)).sub(bone.position);
+        if (_yawTarget.x * _yawTarget.x + _yawTarget.z * _yawTarget.z < 1e-8) return;
+        const target = Math.atan2(_yawTarget.x, _yawTarget.z) - this._yawForward;
+        this.yaw += shortestAngle(this.yaw, target) * Math.min(1, dt * rate);
+        bone.quaternion.copy(_yawTurn.setFromAxisAngle(YAW_UP, this.yaw)).multiply(this._yawRest);
     }
 
     playAction(name, crossFadeDuration = 0.2, loop = THREE.LoopRepeat) {
@@ -252,12 +288,7 @@ export class UmbilicalAttacker {
                     break;
                 }
 
-                // Dynamic IK / FK bone flex toward player coordinates
-                if (this.bones && this.bones.length > 0) {
-                    const targetAngle = Math.atan2(dx, dz);
-                    // Gradually yaw root & upper spine toward player
-                    this.mesh.rotation.y = THREE.MathUtils.lerp(this.mesh.rotation.y, targetAngle, dt * 3.0);
-                }
+                this._trackYaw(dt, playerPos);
 
                 if (dist <= this.strikeRadius && this.cooldownTimer <= 0) {
                     this.state = 'ANTICIPATION';
@@ -268,6 +299,8 @@ export class UmbilicalAttacker {
                 break;
 
             case 'ANTICIPATION':
+                // Square up during the coil, so a lash from IDLE still lands on the player.
+                this._trackYaw(dt, playerPos, 10.0);
                 this.stateTimer -= dt;
                 if (this.stateTimer <= 0) {
                     this.state = 'STRIKE';

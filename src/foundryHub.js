@@ -82,6 +82,9 @@ export function createFoundryHub({
     isTradeUpAvailable = () => true,
     onTabShown = {},
     renderLoadout = () => {},
+    // Called with a tab's panel ids before they are looked up, so a window
+    // whose markup is built on first open (the Vault) can build it.
+    preparePanels = () => {},
     focus = (element) => element?.focus?.({ preventScroll: true }),
     onClose = () => {},
     log = () => {}
@@ -125,7 +128,9 @@ export function createFoundryHub({
     }
 
     function borrowPanels(tab) {
-        for (const id of HUB_TAB_PANELS[tab] ?? []) {
+        const ids = HUB_TAB_PANELS[tab] ?? [];
+        if (ids.length) preparePanels([...ids]);
+        for (const id of ids) {
             const element = doc.getElementById(id);
             if (!element || element.closest?.('#foundry-hub-panel')) continue;
             const parent = element.parentNode;

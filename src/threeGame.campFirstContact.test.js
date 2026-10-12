@@ -23,6 +23,7 @@ function makeFakeThis(camp) {
         player: { position: { x: 0, z: 0 } },
         act2: {},
         getActionableCampAt: () => ({ camp, action: 'talk' }),
+        getSelectedCampAction: () => ({ camp, action: 'talk', index: 0, count: 1 }),
         getCampRecord: () => ({ status: 'alive', bond: 0 }),
         talkToLeader: () => true
     };
@@ -63,6 +64,7 @@ describe('interactWithAct2Camp — first contact interstitial', () => {
 
         ThreeGame.prototype.interactWithAct2Camp.call(fakeThis);
         fakeThis.getActionableCampAt = () => ({ camp: campB, action: 'talk' });
+        fakeThis.getSelectedCampAction = () => ({ camp: campB, action: 'talk', index: 0, count: 1 });
         ThreeGame.prototype.interactWithAct2Camp.call(fakeThis);
 
         const ids = dispatchedEvents

@@ -255,7 +255,8 @@
       "placeholder_agent": "AGENTE",
       "commentary_list": "COMENTÁRIOS DOS DESENVOLVEDORES",
       "commentary_read_all": "LER TUDO",
-      "content_guide": "GUIA DE CONTEÚDO (TEMAS ADULTOS)"
+      "content_guide": "GUIA DE CONTEÚDO (TEMAS ADULTOS)",
+      "graphics": "GRÁFICOS"
     },
     "action": {
       "open": "ABRIR",
@@ -1236,7 +1237,20 @@
       "purchase_awaiting_sandbox": "Compra de teste beta: aprove no overlay da Steam. Sandbox da Steam, sem cobrança.",
       "purchase_declined": "Compra cancelada na Steam. Nada foi cobrado.",
       "purchase_complete": "+{count} chave(s) de cache adicionada(s) ao seu inventário.",
-      "purchase_pending": "A Steam ainda não confirmou o pagamento. Suas chaves chegam na próxima vez que você abrir a loja."
+      "purchase_pending": "A Steam ainda não confirmou o pagamento. Suas chaves chegam na próxima vez que você abrir a loja.",
+      "quartermaster_title": "INTENDENTE",
+      "quartermaster_sub": "FRAGMENTOS POR REAGENTES · LIMITES SEMANAIS",
+      "assembly_title": "BAIA DE MONTAGEM",
+      "assembly_sub": "LINGOTES + REAGENTES → MÓDULOS DE OVERCLOCK",
+      "trade": "TROCAR",
+      "assemble": "MONTAR",
+      "week_count": "ESTA SEMANA {used}/{max}",
+      "shard_cost": "{cost} FRAGMENTOS",
+      "traded": "{item} OBTIDO.",
+      "assembled": "{item} MONTADO.",
+      "trade_failed": "A troca falhou: {reason}.",
+      "assemble_failed": "A montagem falhou: {reason}.",
+      "reagents_owned": "LINGOTES {ingots} · MATRIZ {matrix} · ÂMBAR CINZENTO {ambergris}"
     },
     "lobby": {
       "connecting": "CONECTANDO...",
@@ -1592,7 +1606,10 @@
       "listen_hint": "Ouça e então decida como quer ajudar.",
       "quote": "“{text}”",
       "next_action": "Sua próxima ação muda o manifesto de lançamento e o vetor do final.",
-      "scar_gained": "A NOITE DEIXOU SUA MARCA: {scar}"
+      "scar_gained": "A NOITE DEIXOU SUA MARCA: {scar}",
+      "services": "SERVIÇOS DO ACAMPAMENTO ({count})",
+      "services_kicker": "SERVIÇOS DO ACAMPAMENTO",
+      "services_aria_close": "Fechar serviços do acampamento"
     },
     "title": {
       "pregalien_command": "PREGALIEN | COMANDO DA COLMEIA",
@@ -2021,7 +2038,221 @@
         "access_way": "VIA DE ACESSO",
         "unmarked": "PASSAGEM SEM MARCAÇÃO"
       },
+      "site": {
+        "impact_site": "LOCAL DO IMPACTO",
+        "foundry": "FUNDIÇÃO DE FABRICAÇÃO",
+        "cave_mouth": "ABISMO SUBTERRÂNEO",
+        "o2_generator": "RECUPERADOR ATMOSFÉRICO",
+        "wreck": {
+          "scout": "DESTROÇOS DO BATEDOR",
+          "tank": "DESTROÇOS DO TANQUE",
+          "engineer": "DESTROÇOS DO ENGENHEIRO",
+          "infiltrator": "DESTROÇOS DO INFILTRADOR"
+        }
+      },
+      "role": {
+        "generic": "SETOR",
+        "utility": "UTILITÁRIOS",
+        "medical": "MÉDICO",
+        "security": "SEGURANÇA",
+        "engineering": "ENGENHARIA",
+        "storage": "ARMAZENAMENTO",
+        "reward": "ESCONDERIJO",
+        "camp": "POSTO AVANÇADO",
+        "hive": "COLMÉIA",
+        "nest": "NINHO",
+        "cryo_lab": "PESQUISA CRIOGÊNICA",
+        "foundry": "INDÚSTRIA PESADA",
+        "cave": "SETOR ZERO",
+        "life_support": "SUPORTE DE VIDA",
+        "transit": "TRÂNSITO",
+        "home": "ÂNCORA DE SUPERFÍCIE"
+      },
       "unscanned": "??? · ESCANEIE PARA IDENTIFICAR"
+    },
+    "equipment": {
+      "effect": {
+        "4130": "Efeitos crio duram 5% a mais.",
+        "4131": "Projéteis perfuram +1 alvo.",
+        "4132": "Dano de esporos e gás −8%.",
+        "4133": "Cadência de tiro +8%.",
+        "4134": "Carregador +1 bala.",
+        "4135": "Detecta rotas e esconderijos ocultos a 10 m.",
+        "4136": "+5% de dano em hostis que não são chefes.",
+        "4137": "Cura recebida +10%.",
+        "4138": "Raio de atração de itens +12%.",
+        "4139": "Valor de sucata +10%.",
+        "4140": "Duração crio +8%.",
+        "4141": "Raio de atração de itens +20%.",
+        "4142": "Dano de esporos e gás −12%.",
+        "4143": "Projéteis cinéticos perfuram +1 alvo.",
+        "4144": "Atraso de recarga do escudo −10%.",
+        "4145": "Detecta rotas ocultas a 15 m.",
+        "4146": "+15% de velocidade abaixo de 25% de vida.",
+        "4147": "Cinco abates rápidos recarregam o avanço.",
+        "4160": "+2 de vida máxima; −15% de velocidade.",
+        "4161": "Objetos destruídos soltam sucata; −10% de cadência.",
+        "4162": "+25% de dano em chefes; −10% no resto.",
+        "4163": "Achados de lore dão sucata; −1 bala no carregador.",
+        "4164": "+1 nível de raridade de relíquias; −10% de O₂ máximo.",
+        "4165": "Relíquias duplicadas viram fragmentos; −15% de valor de sucata.",
+        "4166": "O₂ cai 25% mais devagar; −40% de cura recebida.",
+        "4167": "Cruzar anéis não custa O₂, mas surge um elite."
+      },
+      "weapon_profile": {
+        "mk1_sidearm": "Perfil de pistola estável e eficiente.",
+        "pulse_carbine": "Pulso rápido de média distância com menos impacto.",
+        "scatter_rep": "Três projéteis de curto alcance por disparo.",
+        "rail_marksman": "Perfurador lento e pesado de longo alcance.",
+        "neon_smg": "Alta cadência com balas mais leves.",
+        "cryo_lance": "Projétil criogênico preciso e duradouro."
+      },
+      "frame": "Arma de fábrica. Instale um perfil da Fundição para mudar como ela atira.",
+      "cosmetic": "Cosmético: muda só a aparência.",
+      "summary": "O QUE ESTE EQUIPAMENTO FAZ",
+      "none": "Nada equipado ainda. Escolha um espaço.",
+      "change": "Escolha um espaço para trocá-lo."
+    },
+    "unlock": {
+      "buy_shells": "COMPRAR POR {shells} CÁPSULAS",
+      "slay_the_queen": "OBTIDO AO MATAR A RAINHA",
+      "archivist": "OBTIDO COM A CONQUISTA ARQUIVISTA",
+      "reach_depth": "OBTIDO AO ALCANÇAR A PROFUNDIDADE {depth}",
+      "class_runs": "OBTIDO APÓS {runs} PARTIDAS DE {cls}",
+      "achievement": "OBTIDO COM UMA CONQUISTA",
+      "confirm_buy": "CLIQUE DE NOVO PARA COMPRAR",
+      "not_enough_shells": "CÁPSULAS INSUFICIENTES"
+    },
+    "camp_resident": {
+      "role": {
+        "mechanic": "MECÂNICO",
+        "medic": "MÉDICA",
+        "lookout": "VIGIA",
+        "cook": "COZINHEIRO",
+        "radio": "OPERADORA DE RÁDIO",
+        "scavenger": "CATADORA",
+        "settler": "COLONO"
+      },
+      "mechanic": {
+        "1": "Toda dobradiça deste lugar range. Eu continuo lubrificando assim mesmo.",
+        "2": "Traga sucata e o gerador aguenta mais uma semana.",
+        "3": "Esse seu traje está inteiro só na base da esperança. Igual às paredes."
+      },
+      "medic": {
+        "1": "Fique parado. Você está sangrando no meu chão limpo.",
+        "2": "Falta tudo aqui menos teimosia. Teimosia cura devagar.",
+        "3": "O que você respirou lá fora, não respire aqui dentro."
+      },
+      "lookout": {
+        "1": "Movimento atrás da crista a noite toda. Nada chegou mais perto. Ainda.",
+        "2": "Eu conto as luzes no escuro. Menos a cada semana.",
+        "3": "Se você vir um caracol do tamanho de um caminhão, não foi daqui que viu."
+      },
+      "cook": {
+        "1": "É caldo. Ontem era caldo. Amanhã vai ser caldo.",
+        "2": "Coma alguma coisa. Ninguém luta bem com fome.",
+        "3": "Não pergunte o que tem dentro. Está quente. Essa é a receita inteira."
+      },
+      "radio": {
+        "1": "O retransmissor zumbe à noite. Às vezes o zumbido responde.",
+        "2": "Continuo chamando os outros acampamentos. Alguns dias alguém atende.",
+        "3": "Conversa da nave-mãe de novo. Educada, e não é sobre nós."
+      },
+      "scavenger": {
+        "1": "Limpei os túneis do leste. Tente mais fundo.",
+        "2": "Achei uma bota com o pé ainda dentro. Fiquei com a bota.",
+        "3": "Se brilha e não está pregado, já está na minha mochila."
+      },
+      "settler": {
+        "1": "Ainda me acostumando a dormir sem um olho aberto. Obrigado.",
+        "2": "Me deram um beliche e um trabalho. Primeira vez em meses que tenho os dois.",
+        "3": "Diga a todos lá fora: existe um lugar para sair do frio."
+      },
+      "worried": {
+        "1": "O muro não aguentou ontem à noite. Estamos remendando com o que temos.",
+        "2": "Dois dos nossos não voltaram. Por favor, ajude a reforçar isto aqui."
+      }
+    },
+    "input_hint": {
+      "pad": {
+        "map_pan": "[ANALÓGICO ESQ. / D-PAD] MOVER",
+        "map_zoom": "[LB / RB] ZOOM",
+        "map_operator": "[A] OPERADOR",
+        "map_close": "[B] / [VIEW] FECHAR",
+        "dialogue_choose": "D-PAD PARA ESCOLHER • [A] SELECIONAR • [B] RECUAR",
+        "compass_map": "[VIEW]",
+        "radar_scan": "Varredura de radar [LB]",
+        "armory_cycle": "[LB / RB ALTERNAR]",
+        "menu_back": "[B]"
+      }
+    },
+    "sleep": {
+      "night_falls": "A NOITE CAI",
+      "night_body": "O operador dorme. Algo lá fora, não.",
+      "morning_title": "DIA {day} · 06:00",
+      "morning_status": "{site} // UM NOVO DIA COMEÇA",
+      "skip": "Pressione qualquer tecla para acordar"
+    },
+    "mystery": {
+      "kind": {
+        "courier": "CAIXA DE COURIER",
+        "quarantine": "CÁPSULA DE QUARENTENA",
+        "reliquary": "RELICÁRIO DA COLMEIA",
+        "blacksite": "COFRE SIGILOSO"
+      },
+      "open": "ABRIR {box}",
+      "opening": "ABRINDO {box} · {pct}%",
+      "locked": "{box} está travado por cartão. Um Engenheiro conseguiria abrir.",
+      "outcome": {
+        "supplies": "{box}: suprimentos lá dentro.",
+        "salvage": "{box}: sucata ainda boa.",
+        "lore": "{box}: alguém deixou um registro.",
+        "ambush": "{box}: era um ninho. Recue!",
+        "hazard": "{box}: lacre rompido. Afaste-se.",
+        "quest_hook": "{box}: um chip de rota. Nova pista no mapa."
+      }
+    },
+    "graphics": {
+      "intro": "Tudo começa no Alto. Se o jogo travar, o ajuste automático reduz uma opção por vez e registra o motivo abaixo. Você pode aumentar qualquer coisa de novo quando quiser.",
+      "preset": "PREDEFINIÇÃO DE QUALIDADE",
+      "preset_high": "ALTO",
+      "preset_medium": "MÉDIO",
+      "preset_low": "BAIXO",
+      "preset_custom": "PERSONALIZADO",
+      "auto_adjust": "AJUSTE AUTOMÁTICO QUANDO O JOGO TRAVAR",
+      "label_resolution": "RESOLUÇÃO DE RENDERIZAÇÃO",
+      "label_shadows": "SOMBRAS",
+      "label_postProcessing": "PÓS-PROCESSAMENTO (BLOOM, FOCO)",
+      "label_worldDetail": "DETALHES DO MUNDO (CANOS, NEVE, PINGENTES)",
+      "label_landmarks": "MARCOS DO ABISMO",
+      "label_effects": "EFEITOS (VAPOR, FAÍSCAS, POEIRA)",
+      "val_resolution_100": "100% (NATIVA)",
+      "val_resolution_85": "85%",
+      "val_resolution_70": "70%",
+      "val_shadows_full": "COMPLETAS",
+      "val_shadows_reduced": "REDUZIDAS (METADE DA TAXA)",
+      "val_shadows_off": "DESLIGADAS",
+      "val_postProcessing_on": "LIGADO",
+      "val_postProcessing_off": "DESLIGADO",
+      "val_worldDetail_high": "ALTO",
+      "val_worldDetail_low": "BAIXO",
+      "val_landmarks_on": "LIGADOS",
+      "val_landmarks_off": "DESLIGADOS",
+      "val_effects_full": "COMPLETOS",
+      "val_effects_reduced": "REDUZIDOS (SEM POEIRA)",
+      "val_effects_off": "DESLIGADOS",
+      "auto_changes": "MUDANÇAS AUTOMÁTICAS",
+      "auto_none": "Nada foi reduzido automaticamente.",
+      "restore": "RESTAURAR",
+      "restore_label": "RESTAURAR O QUE O AJUSTE AUTOMÁTICO REDUZIU",
+      "change_entry": "{time} — {setting}: {from} → {to}. {fps} FPS por {seconds} s {area}; {cause}.",
+      "cause_gpu": "a placa de vídeo estava no limite",
+      "cause_cpu": "a thread principal (CPU) estava no limite",
+      "area_active": "no bunker",
+      "area_cryo": "no setor criogênico",
+      "area_bio": "no setor bio",
+      "area_unknown": "no terreno",
+      "notice": "Tela: {setting} reduzido para {to} para manter o jogo fluido. Veja Configurações › Gráficos."
     }
   },
   "narrative": {

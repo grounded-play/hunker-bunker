@@ -69,3 +69,30 @@ describe('createFrameProfiler', () => {
         expect(profiler.snapshot()).toEqual({ frames: 0, totalMs: 0, sections: [] });
     });
 });
+
+describe('the session-log frame breakdown (Sprint 52)', async () => {
+    const { summarizeFrameBreakdown } = await import('./frameProfiler.js');
+    it('keeps the costliest systems per frame, with the load that drives them', () => {
+        const summary = summarizeFrameBreakdown({
+            frames: 600,
+            totalMs: 36000,
+            sections: [
+                { name: 'updateScatter', calls: 600, totalMs: 18000, maxMs: 80, avgMsPerFrame: 30 },
+                { name: 'renderFrame', calls: 600, totalMs: 9000, maxMs: 40, avgMsPerFrame: 15 },
+                { name: 'updatePlayer', calls: 600, totalMs: 600, maxMs: 4, avgMsPerFrame: 1 },
+                { name: 'tiny', calls: 600, totalMs: 6, maxMs: 1, avgMsPerFrame: 0.01 }
+            ]
+        }, { enemies: 120, props: 900, chunks: 41 }, { top: 2 });
+        expect(summary.avgFrameMs).toBe(60);
+        expect(summary.top).toEqual([
+            { name: 'updateScatter', avgMs: 30, maxMs: 80 },
+            { name: 'renderFrame', avgMs: 15, maxMs: 40 }
+        ]);
+        expect(summary.load).toEqual({ enemies: 120, props: 900, chunks: 41 });
+    });
+
+    it('reports nothing for an empty window', () => {
+        expect(summarizeFrameBreakdown({ frames: 0, totalMs: 0, sections: [] }, {})).toBeNull();
+        expect(summarizeFrameBreakdown(null, {})).toBeNull();
+    });
+});

@@ -34,7 +34,7 @@ describe('SideStoryManager & Multi-Path Story Progression', () => {
     });
 
     it('evaluates environmental and gameplay triggers to unlock Stage 1', () => {
-        // Sister Val unlocks on low O2 or Tallow visit
+        // Sister Martha (sister_val) unlocks on low O2 or Tallow visit
         manager.evaluateTriggers({ lowO2Exposures: 1 });
         expect(manager.getStoryState('sister_val').status).toBe(SIDE_STORY_STATUS.AVAILABLE);
 

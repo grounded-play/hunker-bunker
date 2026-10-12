@@ -4,7 +4,7 @@
  *
  * The key art lights the functional anchor, not the room: cryogenic cyan on
  * racks and coolant, liturgical amber on lecterns and shrines, bioluminescent
- * green on biomech growth. None of the anchor GLBs ship an emissive map yet
+ * green on biomech growth, warning red on traps. None of the anchor GLBs ship an emissive map yet
  * (audit 2026-10-04), so the light is a single pooled source: it is registered
  * with ThreeGame's environment light pool (ENV_LIGHT_BUDGET), which keeps the
  * number of lit point lights constant and lights only the nearest sources, so
@@ -13,13 +13,15 @@
 export const ANCHOR_LIGHT_PALETTE = Object.freeze({
     cyan: Object.freeze({ color: 0x5fe3ff, intensity: 1.6, distance: 4.5, decay: 2 }),
     amber: Object.freeze({ color: 0xffa648, intensity: 1.7, distance: 4.5, decay: 2 }),
-    green: Object.freeze({ color: 0x7dff6a, intensity: 1.4, distance: 4.0, decay: 2 })
+    green: Object.freeze({ color: 0x7dff6a, intensity: 1.4, distance: 4.0, decay: 2 }),
+    warning: Object.freeze({ color: 0xff4055, intensity: 1.8, distance: 4.0, decay: 2 })
 });
 
 // First match wins; cyan before green so a "biomech oxygen" piece reads cold.
 const PALETTE_RULES = Object.freeze([
-    { palette: 'cyan', match: /oxygen|coolant|cryo|o2_|frost|icey|thermal/ },
-    { palette: 'amber', match: /lectern|votive|shrine|reliquary|saint|liturgical|candle/ },
+    { palette: 'cyan', match: /oxygen|coolant|cryo|o2_|frost|icey|thermal|water_still|medical_bed|tesla_coil|fabricator|cyber_junction|radar/ },
+    { palette: 'warning', match: /reactor_vent_control|valve_wheel_fused|false_cache|laser_trap|trap_emitter/ },
+    { palette: 'amber', match: /reward_vault|lectern|votive|shrine|reliquary|saint|liturgical|candle|barrel_heater|flood_lamp|pheromone_censer|scent_distiller|warmth_hearth|checkpoint_post|wayfinding_totem|seismic_drill|devotion_tree|meat_smoking_rack|pipe_organ_heat_exchanger|ammo_crate/ },
     { palette: 'green', match: /biomech|spore|fungal|hive|flesh|umbilical|alien|incubator|mycelium/ }
 ]);
 
@@ -41,6 +43,6 @@ export function anchorLightFor(type) {
  */
 export function roomPracticalLightPlacement(placements = []) {
     const signature = placements.find((placement) => placement?.kind === 'signature');
-    const light = signature ? anchorLightFor(signature.type) : null;
+    const light = signature ? anchorLightFor(`${signature.anchorId ?? ''} ${signature.type ?? ''}`) : null;
     return light ? { placementId: signature.id, light } : null;
 }

@@ -31,7 +31,7 @@ describe('Steam renderer catalog generation', () => {
     it('keeps the Steam resolver weights equal to server loot odds', () => {
         expect(validateResolverOdds(schema)).toBe(true);
         expect(() => validateResolverOdds({
-            items: [{ itemdefid: 4002, type: 'generator', exchange: '4000x1,4001x1', bundle: '1000x100' }]
+            items: [{ itemdefid: 4002, type: 'generator', exchange: '4000x1,4001x1;4000x1,4154x1', bundle: '1000x100' }]
         })).toThrow(/does not match/);
     });
 
@@ -43,7 +43,7 @@ describe('Steam renderer catalog generation', () => {
     // live cache open fail (session logs 2026-10-05, 409 review holds).
     it('makes the cache resolver a valid Steam exchange generator', () => {
         const byId = Object.fromEntries(schema.items.map((item) => [item.itemdefid, item]));
-        expect(byId[4002]).toMatchObject({ type: 'generator', exchange: '4000x1,4001x1', store_hidden: true, tradable: false, marketable: false });
+        expect(byId[4002]).toMatchObject({ type: 'generator', exchange: '4000x1,4001x1;4000x1,4154x1', store_hidden: true, tradable: false, marketable: false });
         expect(byId[4002].bundle).toMatch(/^\d+x\d+(;\d+x\d+)*$/);
         expect(byId[4003]).toMatchObject({ type: 'bundle', bundle: '1000x3', store_hidden: true, tradable: false, marketable: false });
         expect(() => validateResolverOdds({

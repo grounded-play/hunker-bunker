@@ -255,7 +255,8 @@
       "placeholder_agent": "エージェント",
       "commentary_list": "開発者コメンタリー",
       "commentary_read_all": "すべて読む",
-      "content_guide": "コンテンツガイド（成人向けテーマ）"
+      "content_guide": "コンテンツガイド（成人向けテーマ）",
+      "graphics": "グラフィック"
     },
     "action": {
       "open": "開く",
@@ -1236,7 +1237,20 @@
       "purchase_awaiting_sandbox": "ベータのテスト購入：Steam オーバーレイで承認してください。Steam サンドボックスのため請求はありません。",
       "purchase_declined": "Steam で購入がキャンセルされました。請求はありません。",
       "purchase_complete": "キャッシュキー +{count} 個がインベントリに追加されました。",
-      "purchase_pending": "Steam はまだ支払いを確認していません。次にストアを開いたときにキーが届きます。"
+      "purchase_pending": "Steam はまだ支払いを確認していません。次にストアを開いたときにキーが届きます。",
+      "quartermaster_title": "補給係",
+      "quartermaster_sub": "シャードで試薬と交換 · 週ごとの上限",
+      "assembly_title": "組立ベイ",
+      "assembly_sub": "インゴット + 試薬 → オーバークロックモジュール",
+      "trade": "交換",
+      "assemble": "組み立て",
+      "week_count": "今週 {used}/{max}",
+      "shard_cost": "{cost} シャード",
+      "traded": "{item} を入手。",
+      "assembled": "{item} を組み立てた。",
+      "trade_failed": "交換に失敗: {reason}。",
+      "assemble_failed": "組み立てに失敗: {reason}。",
+      "reagents_owned": "インゴット {ingots} · マトリクス {matrix} · アンバーグリス {ambergris}"
     },
     "lobby": {
       "connecting": "接続中...",
@@ -1592,7 +1606,10 @@
       "listen_hint": "話を聞いてから、どう助けるか決めよ。",
       "quote": "「{text}」",
       "next_action": "次の行動が打ち上げ目録とエンディングの方向を変える。",
-      "scar_gained": "昨夜の代償: {scar}"
+      "scar_gained": "昨夜の代償: {scar}",
+      "services": "キャンプのサービス（{count}）",
+      "services_kicker": "キャンプのサービス",
+      "services_aria_close": "キャンプのサービスを閉じる"
     },
     "title": {
       "pregalien_command": "PREGALIEN | ハイブ司令部",
@@ -2021,7 +2038,221 @@
         "access_way": "アクセス通路",
         "unmarked": "無標識の通路"
       },
+      "site": {
+        "impact_site": "墜落地点",
+        "foundry": "製造ファウンドリ",
+        "cave_mouth": "地下の深淵",
+        "o2_generator": "大気再生装置",
+        "wreck": {
+          "scout": "偵察機の残骸",
+          "tank": "戦車の残骸",
+          "engineer": "技術班の残骸",
+          "infiltrator": "潜入機の残骸"
+        }
+      },
+      "role": {
+        "generic": "セクター",
+        "utility": "設備",
+        "medical": "医療",
+        "security": "保安",
+        "engineering": "工学",
+        "storage": "保管庫",
+        "reward": "隠し場所",
+        "camp": "前哨基地",
+        "hive": "ハイブ",
+        "nest": "巣",
+        "cryo_lab": "極低温研究",
+        "foundry": "重工業",
+        "cave": "セクター・ゼロ",
+        "life_support": "生命維持",
+        "transit": "通路",
+        "home": "地表アンカー"
+      },
       "unscanned": "??? · スキャンで識別"
+    },
+    "equipment": {
+      "effect": {
+        "4130": "クライオ効果の持続 +5%。",
+        "4131": "弾が対象を +1 貫通。",
+        "4132": "胞子・ガスダメージ −8%。",
+        "4133": "連射速度 +8%。",
+        "4134": "装弾数 +1。",
+        "4135": "10 m 以内の隠しルートと隠し物資を探知。",
+        "4136": "ボス以外の敵へのダメージ +5%。",
+        "4137": "受ける回復 +10%。",
+        "4138": "アイテム吸引範囲 +12%。",
+        "4139": "サルベージ価値 +10%。",
+        "4140": "クライオ持続 +8%。",
+        "4141": "アイテム吸引範囲 +20%。",
+        "4142": "胞子・ガスダメージ −12%。",
+        "4143": "実弾が対象を +1 貫通。",
+        "4144": "シールド再充電の遅延 −10%。",
+        "4145": "15 m 以内の隠しルートを探知。",
+        "4146": "体力 25% 未満で移動速度 +15%。",
+        "4147": "素早い 5 キルでダッシュが回復。",
+        "4160": "最大体力 +2、移動速度 −15%。",
+        "4161": "破壊した物からサルベージが出る、連射速度 −10%。",
+        "4162": "ボスへのダメージ +25%、その他 −10%。",
+        "4163": "ロア発見でサルベージを獲得、装弾数 −1。",
+        "4164": "遺物のレア度 +1 段階、最大 O₂ −10%。",
+        "4165": "重複した遺物はシャードになる、サルベージ価値 −15%。",
+        "4166": "O₂ の減少が 25% 遅くなる、受ける回復 −40%。",
+        "4167": "リング越えで O₂ を消費しないが、エリートが出現。"
+      },
+      "weapon_profile": {
+        "mk1_sidearm": "安定した効率的なサイドアーム。",
+        "pulse_carbine": "中距離の速いパルス、威力は控えめ。",
+        "scatter_rep": "1 発ごとに近距離弾を 3 発。",
+        "rail_marksman": "遅く重い貫通弾、射程が長い。",
+        "neon_smg": "高い連射速度、軽い弾。",
+        "cryo_lance": "正確で持続する低温弾。"
+      },
+      "frame": "標準装備の武器。ファウンドリのプロファイルで射撃特性を変えられる。",
+      "cosmetic": "外観のみ：見た目だけが変わる。",
+      "summary": "この装備の効果",
+      "none": "まだ何も装備していません。スロットを選んでください。",
+      "change": "スロットを選んで変更します。"
+    },
+    "unlock": {
+      "buy_shells": "{shells} シェルで購入",
+      "slay_the_queen": "女王を倒すと入手",
+      "archivist": "実績「アーキビスト」で入手",
+      "reach_depth": "深度 {depth} に到達で入手",
+      "class_runs": "{cls} で {runs} 回出撃すると入手",
+      "achievement": "実績で入手",
+      "confirm_buy": "もう一度クリックで購入",
+      "not_enough_shells": "シェルが足りません"
+    },
+    "camp_resident": {
+      "role": {
+        "mechanic": "整備士",
+        "medic": "医療係",
+        "lookout": "見張り",
+        "cook": "料理番",
+        "radio": "通信士",
+        "scavenger": "回収屋",
+        "settler": "入植者"
+      },
+      "mechanic": {
+        "1": "ここの蝶番は全部きしむ。それでも油を差し続けてる。",
+        "2": "スクラップを持ってきてくれ。発電機をもう一週間もたせてみせる。",
+        "3": "あんたのスーツは希望だけでもってる。この壁と同じだ。"
+      },
+      "medic": {
+        "1": "じっとして。私のきれいな床に血を垂らしてる。",
+        "2": "頑固さ以外は何もかも足りない。頑固さは治りが遅い。",
+        "3": "外で何を吸い込んだにせよ、ここでは吐き出さないで。"
+      },
+      "lookout": {
+        "1": "一晩中、尾根の向こうで動きがあった。近づいては来なかった。まだね。",
+        "2": "暗闇の明かりを数えてる。週ごとに減っていく。",
+        "3": "トラックほどのカタツムリを見たなら、ここから見たんじゃないことにしてくれ。"
+      },
+      "cook": {
+        "1": "スープだよ。昨日もスープだった。明日もスープだ。",
+        "2": "何か食べな。腹ぺこじゃ誰もまともに戦えない。",
+        "3": "中身は聞かないで。温かい。それがレシピの全部だ。"
+      },
+      "radio": {
+        "1": "夜になると中継器がうなる。ときどき、うなり返してくる。",
+        "2": "ほかのキャンプを呼び続けてる。日によっては誰かが答える。",
+        "3": "また母船の通信。丁寧で、私たちのことじゃない。"
+      },
+      "scavenger": {
+        "1": "東のトンネルはあさり尽くした。もっと深くを当たってみな。",
+        "2": "足が入ったままのブーツを見つけた。ブーツはもらっといた。",
+        "3": "光ってて釘で打ちつけてなけりゃ、もう私の袋の中さ。"
+      },
+      "settler": {
+        "1": "片目を開けずに眠ることに、まだ慣れてない。ありがとう。",
+        "2": "寝床と仕事をもらった。どっちも何か月ぶりだ。",
+        "3": "外のみんなに伝えて。寒さから逃れられる場所があるって。"
+      },
+      "worried": {
+        "1": "昨夜、壁がもたなかった。あるもので継ぎ当てしてる。",
+        "2": "仲間が二人戻らなかった。お願い、守りを固めるのを手伝って。"
+      }
+    },
+    "input_hint": {
+      "pad": {
+        "map_pan": "[左スティック / 十字キー] 移動",
+        "map_zoom": "[LB / RB] ズーム",
+        "map_operator": "[A] オペレーター",
+        "map_close": "[B] / [VIEW] 閉じる",
+        "dialogue_choose": "十字キーで選択 • [A] 決定 • [B] 退く",
+        "compass_map": "[VIEW]",
+        "radar_scan": "レーダースキャン [LB]",
+        "armory_cycle": "[LB / RB 切替]",
+        "menu_back": "[B]"
+      }
+    },
+    "sleep": {
+      "night_falls": "夜が訪れる",
+      "night_body": "オペレーターは眠る。外の何かは眠らない。",
+      "morning_title": "{day}日目 · 06:00",
+      "morning_status": "{site} // 新しい一日が始まる",
+      "skip": "いずれかのキーで目覚める"
+    },
+    "mystery": {
+      "kind": {
+        "courier": "運送クレート",
+        "quarantine": "隔離ポッド",
+        "reliquary": "ハイブの聖遺物箱",
+        "blacksite": "機密ロックボックス"
+      },
+      "open": "{box}を開ける",
+      "opening": "{box}を開封中 · {pct}%",
+      "locked": "{box}はキーカードでロックされている。エンジニアなら破れるかもしれない。",
+      "outcome": {
+        "supplies": "{box}：物資が入っていた。",
+        "salvage": "{box}：まだ使える回収品。",
+        "lore": "{box}：誰かが記録を残していた。",
+        "ambush": "{box}：巣だった。下がれ！",
+        "hazard": "{box}：封印が破れた。離れろ。",
+        "quest_hook": "{box}：ルートチップ。マップに新しい手がかり。"
+      }
+    },
+    "graphics": {
+      "intro": "すべて「高」から始まります。ゲームがカクついたときは、自動調整が設定を1つずつ下げ、その理由を下に記録します。いつでも元に戻せます。",
+      "preset": "品質プリセット",
+      "preset_high": "高",
+      "preset_medium": "中",
+      "preset_low": "低",
+      "preset_custom": "カスタム",
+      "auto_adjust": "カクつき時に自動調整",
+      "label_resolution": "描画解像度",
+      "label_shadows": "影",
+      "label_postProcessing": "ポストエフェクト（ブルーム、フォーカス）",
+      "label_worldDetail": "ワールドの細部（配管、雪だまり、つらら）",
+      "label_landmarks": "奈落のランドマーク",
+      "label_effects": "エフェクト（蒸気、火花、ほこり）",
+      "val_resolution_100": "100%（ネイティブ）",
+      "val_resolution_85": "85%",
+      "val_resolution_70": "70%",
+      "val_shadows_full": "フル",
+      "val_shadows_reduced": "軽減（更新頻度半分）",
+      "val_shadows_off": "オフ",
+      "val_postProcessing_on": "オン",
+      "val_postProcessing_off": "オフ",
+      "val_worldDetail_high": "高",
+      "val_worldDetail_low": "低",
+      "val_landmarks_on": "オン",
+      "val_landmarks_off": "オフ",
+      "val_effects_full": "フル",
+      "val_effects_reduced": "軽減（ほこりなし）",
+      "val_effects_off": "オフ",
+      "auto_changes": "自動で行った変更",
+      "auto_none": "自動で下げた設定はまだありません。",
+      "restore": "元に戻す",
+      "restore_label": "自動調整で下げた設定を元に戻す",
+      "change_entry": "{time} — {setting}：{from} → {to}。{area}で{seconds}秒間 {fps} FPS、{cause}。",
+      "cause_gpu": "グラフィックカードが限界でした",
+      "cause_cpu": "メインスレッド（CPU）が限界でした",
+      "area_active": "バンカー",
+      "area_cryo": "クライオ区画",
+      "area_bio": "バイオ区画",
+      "area_unknown": "フィールド",
+      "notice": "表示：動作をなめらかに保つため{setting}を{to}に下げました。設定 › グラフィックを参照。"
     }
   },
   "narrative": {

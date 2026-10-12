@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { bindRoomGrammarSites } from './roomGrammarSiteSelection.js';
 // Deliberately imports Lane A's real, shipped modules — this file exists
 // to prove src/chunkStructure.js's resolveChunkStructureForReservation
 // actually interoperates with src/ringManifest.js's real output, not a
@@ -12,7 +13,7 @@ import {
     buildAuthoredRoomChunkStructure,
     STRUCTURE_GENERATOR
 } from './chunkStructure.js';
-import { ROOM_BUILD_CATALOG } from './roomBuilds.js';
+import { ALL_ROOM_BUILDS, ROOM_BUILD_CATALOG } from './roomBuilds.js';
 
 function seededRandom(seed) {
     let state = (seed >>> 0) || 1;
@@ -62,6 +63,34 @@ describe('resolveChunkStructureForReservation against Lane A\'s real WorldPlan',
         expect(anchor).toBeDefined();
     });
 
+    it('puts every objective in a room that carries its anchor, in every biome', () => {
+        // Selection takes the first eligible build of the family; the same
+        // family also holds rooms built for other objectives (reactor vent,
+        // cryo exchanger, the N64 blueprints), which must not take the slot.
+        const anchorIds = (build) => [...build.interactionAnchors, ...build.structuralAnchors, ...build.rewardAnchors, ...build.loreAnchors]
+            .map((a) => a.id);
+        // Only objectives some room was built for (a lost probe, say, is placed on its own).
+        const objectives = worldPlan.reservations.filter((r) => r.roomFamily && r.objectiveAnchorId
+            && ALL_ROOM_BUILDS.some((build) => build.family === r.roomFamily && anchorIds(build).includes(r.objectiveAnchorId)));
+        expect(objectives.length).toBeGreaterThan(0);
+        const misses = [];
+        for (const reservation of objectives) {
+            for (const biome of ['active', 'cryo', 'bio']) {
+                const result = resolveChunkStructureForReservation(seededRandom(3), reservation, {
+                    openings: { south: { open: true, offset: 4 } },
+                    biome
+                });
+                if (!result || result.generatorId !== STRUCTURE_GENERATOR.AUTHORED_ROOM) continue;
+                const room = result.rooms[0];
+                const anchors = [...room.interactionAnchors, ...room.structuralAnchors, ...room.rewardAnchors, ...room.loreAnchors];
+                if (!anchors.some((a) => a.id === reservation.objectiveAnchorId)) {
+                    misses.push(`${reservation.goalKey ?? reservation.questId} (${biome}): ${room.buildId} lacks ${reservation.objectiveAnchorId}`);
+                }
+            }
+        }
+        expect(misses).toEqual([]);
+    });
+
     it('resolves the armory_breach camp-quest destination to an authored room whose anchor matches its objectiveAnchorId', () => {
         const reservation = worldPlan.reservations.find((r) => r.questId === 'armory_breach');
         expect(reservation).toBeDefined();
@@ -100,6 +129,19 @@ describe('resolveChunkStructureForReservation against Lane A\'s real WorldPlan',
         });
         expect(result).not.toBeNull();
         expect(result.diagnostics.buildId).toBe('ring_crossing_landmark');
+    });
+
+    it('builds the G5 camp court through the grammar producer once the pilot binds it', () => {
+        const bound = bindRoomGrammarSites(worldPlan.reservations, worldPlan.roomGrammarSites, worldPlan.seed);
+        const camp = bound.find((entry) => entry.role === 'campTerritory' && entry.roomGrammarProfile === 'camp-court');
+        const openings = { south: { open: true, offset: 7 } };
+        const campResult = resolveChunkStructureForReservation(seededRandom(6), camp, { openings });
+        expect(campResult.generatorId).toBe('grammar-room');
+        expect(campResult.rooms[0]).toMatchObject({ safeZone: true, role: 'camp' });
+        expect(campResult.anchors.find((anchor) => anchor.role === 'hearth')).toBeTruthy();
+        // Unbound, the same reservation stays the authored territory chamber.
+        const plain = worldPlan.reservations.find((entry) => entry.id === camp.id);
+        expect(resolveChunkStructureForReservation(seededRandom(6), plain, { openings })?.generatorId).not.toBe('grammar-room');
     });
 
     it('returns null (not a thrown error) for a reservation whose family the vertical-slice catalog does not cover yet', () => {

@@ -7,13 +7,12 @@
  * trace). Callers clone the scene (SkeletonUtils) and clone a material before
  * editing it, so the shared template is never mutated.
  */
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { assetUrl } from './assetUrl.js';
+import { createGltfLoader } from './gltfLoaderFactory.js';
 
 const templates = new Map();
 
-export function loadGltfTemplate(url, { createLoader = () => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder) } = {}) {
+export function loadGltfTemplate(url, { createLoader = () => createGltfLoader() } = {}) {
     if (!templates.has(url)) {
         const promise = createLoader().loadAsync(assetUrl(url)).catch((error) => {
             templates.delete(url);

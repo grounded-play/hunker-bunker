@@ -51,7 +51,145 @@ function safePlaySound(sound, options) {
     }
 }
 
+function terminalInteraction(interactPrompt, response, { hp = 35, sound = 'terminal_beep' } = {}) {
+    return Object.freeze({
+        hp,
+        canInteract: true,
+        repeatable: true,
+        interactPrompt,
+        onInteract: (game) => {
+            game.showBunkerLine?.(response);
+            safePlaySound(sound, { volume: 0.48, playbackRate: 0.96 });
+            return true;
+        }
+    });
+}
+
+// Props with cut-out moving parts (src/propArticulation.js): E opens/closes
+// the doors or starts/stops the rotor; the prop experience does the motion.
+function mechanismInteraction(interactPrompt, response, { hp = 40, sound = 'vault_open' } = {}) {
+    return Object.freeze({
+        hp,
+        canInteract: true,
+        repeatable: true,
+        interactPrompt,
+        onInteract: (game) => {
+            game.showBunkerLine?.(response);
+            safePlaySound(sound, { volume: 0.5, playbackRate: 0.95 + Math.random() * 0.1 });
+            return true;
+        }
+    });
+}
+
+const propLabel = (type) => String(type)
+    .replace(/^(life_|prop_|state_|scatter_|fixture_|body_)/, '')
+    .replace(/_\d+$/, '')
+    .replace(/_/g, ' ')
+    .toUpperCase();
+
+const genericSpecCache = new Map();
+
+/**
+ * E for props without a bespoke spec (world-prop-interactivity master plan,
+ * Wave 1): anything running effects can be switched on and off, and
+ * containers, piles and bodies can be searched once. Only offered when the
+ * prop can visibly answer: a switch needs the prop's live effects.
+ */
+export function genericInteractionSpec(type, sprite = null) {
+    if (!type) return null;
+    const root = sprite?.userData?.world3dRoot ?? null;
+    if (root?.userData?.propFx?.setEnabled) {
+        const key = `switch:${type}`;
+        if (!genericSpecCache.has(key)) {
+            const label = propLabel(type);
+            genericSpecCache.set(key, Object.freeze({
+                hp: 30,
+                canInteract: true,
+                repeatable: true,
+                generic: 'switch',
+                interactPrompt: `[E] SWITCH ${label}`,
+                onInteract: (game, target) => {
+                    const fx = target?.userData?.world3dRoot?.userData?.propFx;
+                    if (!fx?.toggle) return false;
+                    const on = fx.toggle();
+                    game.showBunkerLine?.(`${label}: ${on ? 'RUNNING' : 'SHUT DOWN'}.`);
+                    safePlaySound(on ? 'power_hum' : 'metal_stress', { volume: 0.4, playbackRate: on ? 1 : 1.3 });
+                    return true;
+                }
+            }));
+        }
+        return genericSpecCache.get(key);
+    }
+    if (isSearchableType(type)) {
+        const key = `search:${type}`;
+        if (!genericSpecCache.has(key)) {
+            const label = propLabel(type);
+            genericSpecCache.set(key, Object.freeze({
+                hp: 25,
+                canInteract: true,
+                repeatable: false,
+                generic: 'search',
+                interactPrompt: `[E] SEARCH ${label}`,
+                onInteract: (game) => {
+                    game.showBunkerLine?.(`${label}: SEARCHED. NOTHING LEFT WORTH CARRYING.`);
+                    safePlaySound('toolbox_open', { volume: 0.42, playbackRate: 0.9 + Math.random() * 0.2 });
+                    return true;
+                }
+            }));
+        }
+        return genericSpecCache.get(key);
+    }
+    return null;
+}
+
+const SEARCHABLE = /crate|locker|supplies|pile|footlocker|drum|kit_pile|cargo_pallet|bunk|body_|exosuit|frozen_human|stretcher|janitor_cart|surgical_cart|parka/;
+export function isSearchableType(type) {
+    return SEARCHABLE.test(String(type ?? '')) && !/^arch_/.test(String(type));
+}
+
 export const PROP_INTERACTION_SPECS = Object.freeze({
+    life_ribcage_rescue_cabinet: mechanismInteraction('[E] WORK RESCUE CABINET', 'RESCUE CABINET: RIB DOOR UNLATCHED.', { sound: 'flesh_seal' }),
+    life_confessional: mechanismInteraction('[E] WORK CONFESSIONAL DOORS', 'CONFESSIONAL: THE BOOTH DOORS SWING.', { sound: 'vault_open' }),
+    life_seismic_drill: mechanismInteraction('[E] RUN SEISMIC DRILL', 'SEISMIC DRILL: AUGER ENGAGED.', { sound: 'crane_motor' }),
+    life_supply_drop_pod: mechanismInteraction('[E] WORK DROP POD HATCH', 'DROP POD: HATCH SEALS CYCLE.', { sound: 'vault_open' }),
+    life_ice_bore_winch: mechanismInteraction('[E] WORK ICE-BORE WINCH', 'ICE-BORE WINCH: DRUM TURNING.', { sound: 'crane_motor' }),
+
+    prop_diagnostic_console: terminalInteraction(
+        '[E] RUN DIAGNOSTIC SWEEP',
+        'DIAGNOSTIC CONSOLE: LOCAL SYSTEMS RESPONDING.'
+    ),
+    prop_fabricator_workstation: terminalInteraction(
+        '[E] WAKE FABRICATOR WORKSTATION',
+        'FABRICATOR WORKSTATION: STANDBY BUS ONLINE.'
+    ),
+    life_tactile_console: terminalInteraction(
+        '[E] ACCESS TACTILE CONSOLE',
+        'TACTILE CONSOLE: MEMBRANE INPUT ACKNOWLEDGED.'
+    ),
+    life_route_map_table: terminalInteraction(
+        '[E] REVIEW ROUTE MAP',
+        'ROUTE TABLE: LOCAL PATH DATA ILLUMINATED.'
+    ),
+    life_assimilated_desk: terminalInteraction(
+        '[E] ACCESS ASSIMILATED WORKSTATION',
+        'ASSIMILATED WORKSTATION: ORGANIC BUS ANSWERS.'
+    ),
+    life_cochlear_intercom: terminalInteraction(
+        '[E] KEY COCHLEAR INTERCOM',
+        'INTERCOM: CARRIER TONE RECEIVED.',
+        { hp: 25 }
+    ),
+    prop_camp_meridian_radio: terminalInteraction(
+        '[E] TUNE MERIDIAN RADIO',
+        'MERIDIAN RADIO: SIGNAL LOCKED.',
+        { hp: 30 }
+    ),
+    prop_terminal_ruptured: terminalInteraction(
+        '[E] QUERY RUPTURED TERMINAL',
+        'TERMINAL FAULT: MEMORY BUS CORRUPTED.',
+        { hp: 20 }
+    ),
+
     // 01. Oxygen Cascade Rack: Rupture gives massive O2 + cryo knockback; Interact bleeds O2 safely
     prop_oxygen_bottle_cascade_rack: {
         hp: 35,
@@ -502,6 +640,73 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
                 }
             }
         }
+    },
+
+    // 20. Cuttable Procedural Splines: Wires, Biomech Veins, Cryo Pipes, Camp Vines.
+    //     Shoot them or cut them with E; either way they sever (threeGame.severSplineRun).
+    spline_wire_bunker: {
+        hp: 15,
+        canInteract: true,
+        interactPrompt: '[E] CUT POWER CABLE',
+        // Cut by hand: the same break as shooting it (severed halves, effects, co-op).
+        onInteract: (game, sprite) => Boolean(game.breakScatterProp?.(sprite)),
+        onDestroy: (game, prop) => {
+            game.spawnPhysicalBurst?.(prop.position.x, prop.position.z, { color: 0x38bdf8, count: 14, upward: 0.35, spread: 1.8 });
+            safePlaySound('ambient_sparks', { volume: 0.7, playbackRate: 1.2 });
+            game.triggerCameraShake?.(0.04, 0.1);
+            if (game.snails) {
+                for (const snail of game.snails) {
+                    if (!snail || !snail.isAlive) continue;
+                    const d = Math.hypot(snail.x - prop.position.x, snail.z - prop.position.z);
+                    if (d <= 3.5) {
+                        game.applyPlayerDamageToEnemy?.(snail, 25, { element: 'electric' });
+                    }
+                }
+            }
+        }
+    },
+    spline_vein_bio: {
+        hp: 15,
+        canInteract: true,
+        interactPrompt: '[E] SEVER VEIN',
+        // Cut by hand: the same break as shooting it (severed halves, effects, co-op).
+        onInteract: (game, sprite) => Boolean(game.breakScatterProp?.(sprite)),
+        onDestroy: (game, prop) => {
+            game.spawnPhysicalBurst?.(prop.position.x, prop.position.z, { color: 0x84cc16, count: 18, upward: 0.3, spread: 1.5 });
+            safePlaySound('enemy_hit_soft', { volume: 0.8, playbackRate: 0.6 });
+            applyBileInRadius(game, prop, 3.5);
+        }
+    },
+    spline_pipe_cryo: {
+        hp: 20,
+        canInteract: true,
+        interactPrompt: '[E] CRACK COOLANT PIPE',
+        // Cut by hand: the same break as shooting it (severed halves, effects, co-op).
+        onInteract: (game, sprite) => Boolean(game.breakScatterProp?.(sprite)),
+        onDestroy: (game, prop) => {
+            game.spawnPhysicalBurst?.(prop.position.x, prop.position.z, { color: 0xa5f3fc, count: 20, upward: 0.4, spread: 2.0 });
+            safePlaySound('ambient_steam_hiss', { volume: 0.7, playbackRate: 0.9 });
+            if (game.snails) {
+                for (const snail of game.snails) {
+                    if (!snail || !snail.isAlive) continue;
+                    const d = Math.hypot(snail.x - prop.position.x, snail.z - prop.position.z);
+                    if (d <= 4.0) {
+                        game.applyPlayerDamageToEnemy?.(snail, 20, { element: 'cryo' });
+                    }
+                }
+            }
+        }
+    },
+    spline_vine_camp: {
+        hp: 10,
+        canInteract: true,
+        interactPrompt: '[E] CUT VINE',
+        // Cut by hand: the same break as shooting it (severed halves, effects, co-op).
+        onInteract: (game, sprite) => Boolean(game.breakScatterProp?.(sprite)),
+        onDestroy: (game, prop) => {
+            game.spawnPhysicalBurst?.(prop.position.x, prop.position.z, { color: 0xd97706, count: 10, upward: 0.2, spread: 1.2 });
+            safePlaySound('metal_stress', { volume: 0.4, playbackRate: 2.2 });
+        }
     }
 });
 
@@ -549,7 +754,8 @@ export function findNearestInteractableProp(game, maxDist = 2.5) {
     for (const sprite of game.scatterSprites) {
         if (!sprite || sprite.userData?.burstTriggered) continue;
         const propKey = interactionSpecKeyFor(sprite.userData);
-        const spec = sprite.userData?.interactionSpec || PROP_INTERACTION_SPECS[propKey];
+        const spec = sprite.userData?.interactionSpec || PROP_INTERACTION_SPECS[propKey]
+            || genericInteractionSpec(sprite.userData?.world3dModelType ?? propKey, sprite);
         if (!spec || !spec.canInteract) continue;
         if (isSpentProp(game, sprite)) continue;
 
@@ -572,9 +778,10 @@ export function interactWithCustomProp(game, nearestInfo) {
     }
     const success = nearestInfo.spec.onInteract(game, nearestInfo.sprite);
     if (success) {
+        game.acknowledgePropExperience?.(nearestInfo.sprite);
         nearestInfo.sprite.userData.hasBeenInteracted = true;
         const key = nearestInfo.sprite.userData.scatterKey;
-        if (!nearestInfo.sprite.userData.interactionSpec && key) {
+        if (!nearestInfo.spec.repeatable && !nearestInfo.sprite.userData.interactionSpec && key) {
             (game.spentPropScatterKeys ??= new Set()).add(key);
         }
     }
@@ -588,5 +795,8 @@ export function interactWithCustomProp(game, nearestInfo) {
 function isSpentProp(game, sprite) {
     const data = sprite.userData ?? {};
     if (data.interactionSpec) return false;
+    const key = interactionSpecKeyFor(data);
+    const spec = PROP_INTERACTION_SPECS[key] ?? genericInteractionSpec(data.world3dModelType ?? key, sprite);
+    if (spec?.repeatable) return false;
     return Boolean(data.hasBeenInteracted || (data.scatterKey && game.spentPropScatterKeys?.has(data.scatterKey)));
 }

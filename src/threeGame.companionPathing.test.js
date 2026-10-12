@@ -76,3 +76,27 @@ describe('the companion fights', () => {
         expect(g.fireCompanionBasicShot({}, root(3, 0), 1)).toBe(false);
     });
 });
+
+// Session 2026-10-06 (solo, 27 min): from minute 8 the companion logged
+// repath / relocate every 5-10 s. When the follow point behind the player
+// sat inside a wall, relocate() teleported the companion onto it -- into
+// the wall -- where every step was blocked, so it stuck again at once.
+describe('the companion never relocates into a wall', () => {
+    it('relocates beside the player, onto open ground, when the follow point is inside a wall', () => {
+        const g = game({ player: { position: { x: 6, y: 0, z: 0 } } });
+        const companion = { wanderer: { id: 'meridian_recruit' } };
+        const body = root(60, 0); // far out of range, forcing a relocate
+        const goalInWall = { x: 5, z: 0 };
+        g.stepCompanionAlongPath(companion, body, goalInWall, 0.05);
+        expect(isWall(Math.round(body.position.x), Math.round(body.position.z))).toBe(false);
+        expect(Math.hypot(body.position.x - 6, body.position.z)).toBeLessThan(3);
+    });
+
+    it('steps out of a wall it finds itself inside', () => {
+        const g = game();
+        const companion = { wanderer: { id: 'meridian_recruit' } };
+        const body = root(5, 0); // inside the wall
+        g.stepCompanionAlongPath(companion, body, { x: 8, z: 0 }, 0.05);
+        expect(isWall(Math.round(body.position.x), Math.round(body.position.z))).toBe(false);
+    });
+});

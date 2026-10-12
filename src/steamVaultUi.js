@@ -1,4 +1,5 @@
 import { LocalVaultLedger } from './localVaultLedger.js';
+import { mountDeferredMarkup, onDeferredMarkupMounted } from './deferredMarkup.js';
 /**
  * Steam Vault & Store UI Frontend Implementation
  * Extracted from main.js for modular UI architecture.
@@ -6,6 +7,7 @@ import { LocalVaultLedger } from './localVaultLedger.js';
 import { STEAM_ITEM_CATALOG } from './data/steamItemCatalog.js';
 import { getItemView } from './data/itemCatalog.js';
 import { TRADE_UP_ITEMS } from '../server/tradeUpCatalog.js';
+import { ASSEMBLY_RECIPES, QUARTERMASTER_OFFERS, isoWeekKey, planAssembly, planQuartermasterTrade } from '../server/quartermaster.js';
 import { CATALOG_ITEMS } from './armoryUi.js';
 import {
     DETERMINISTIC_RECIPES,
@@ -137,6 +139,7 @@ let marketEligibility = 'unknown';
 let hudCardSeq = 0;
 let cacheOpeningBusy = false;
 const DEV_VAULT_STORAGE_KEY = 'hb_dev_vault_inventory_v1';
+const EARNED_KEY_ITEMDEFID = 4154;
 const DEV_INFINITE_CACHE_STORAGE_KEY = 'hb_dev_infinite_cache_v1';
 
 function isBrowserSandbox() {
@@ -201,6 +204,7 @@ export function openSteamVaultModal() {
         window.hbLog('STEAM', 'info', 'Steam Vault modal opened');
     }
     initSteamVaultUI();
+    ensureVaultMarkup();
     const modal = document.getElementById('steam-vault-modal');
     if (!modal) return;
     modal.classList.remove('hidden');
@@ -375,9 +379,23 @@ export function renderSteamMilestoneGrants(grants = []) {
     grantNote.classList.remove('hidden');
 }
 
+// The Vault's markup is built on first open (src/deferredMarkup.js). Every
+// path that shows or animates it builds it first.
+function ensureVaultMarkup() {
+    if (typeof document !== 'undefined') mountDeferredMarkup('steam-vault-modal');
+}
+
+// Whether the Store tab shows: decided by the store catalog, which loads at
+// boot, before the tab itself may exist.
+let storeTabVisible = true;
+export function isVaultStoreAvailable() {
+    return storeTabVisible;
+}
+
+let vaultMarkupWiringRegistered = false;
+
 export function initSteamVaultUI() {
     const vaultBtn = document.getElementById('steam-vault-btn');
-    const closeBtn = document.getElementById('close-steam-vault-modal');
     const modal = document.getElementById('steam-vault-modal');
 
     if (!modal) return;
@@ -385,6 +403,7 @@ export function initSteamVaultUI() {
     if (vaultBtn && !vaultBtn.dataset.bound) {
         vaultBtn.dataset.bound = 'true';
         vaultBtn.addEventListener('click', async () => {
+            ensureVaultMarkup();
             modal.classList.remove('hidden');
             modal.setAttribute('aria-hidden', 'false');
             if (typeof window.showDeveloperCommentary === 'function') {
@@ -399,11 +418,6 @@ export function initSteamVaultUI() {
         modal.setAttribute('aria-hidden', 'true');
     };
 
-    if (closeBtn && !closeBtn.dataset.bound) {
-        closeBtn.dataset.bound = 'true';
-        closeBtn.addEventListener('click', closeModal);
-    }
-
     if (!modal.dataset.escBound) {
         modal.dataset.escBound = 'true';
         window.addEventListener('keydown', (e) => {
@@ -414,6 +428,9 @@ export function initSteamVaultUI() {
                 closeModal();
                 return;
             }
+            const tabInventory = document.getElementById('vault-tab-inventory');
+            const tabStore = document.getElementById('vault-tab-store');
+            const tabSmelter = document.getElementById('vault-tab-smelter');
             if (e.code === 'KeyQ') {
                 e.preventDefault();
                 const tabs = [tabInventory, tabStore, tabSmelter].filter((tab) => tab && !tab.classList.contains('hidden'));
@@ -435,9 +452,41 @@ export function initSteamVaultUI() {
         });
     }
 
-    if (typeof window.setupClickOutside === 'function') {
+    if (typeof window.setupClickOutside === 'function' && !modal.dataset.clickOutsideBound) {
+        modal.dataset.clickOutsideBound = 'true';
         window.setupClickOutside('steam-vault-modal', closeModal);
     }
+
+    // The Store tab shows whenever keys can actually be bought: through
+    // Steam's hosted Item Store (Steam Inventory items; Steam runs checkout
+    // and the Wallet) or the Microtransactions checkout. With neither, it is
+    // removed, so no priced surface appears that can't complete a purchase.
+    // Re-checked on every open; applied to the tab whenever it exists.
+    loadStoreCatalog().then(() => {
+        storeTabVisible = Boolean(storePurchasesEnabled || hostedItemStoreEnabled());
+        applyStoreVisibility();
+    }).catch(() => {
+        storeTabVisible = false;
+        applyStoreVisibility();
+    });
+
+    if (vaultMarkupWiringRegistered) return;
+    vaultMarkupWiringRegistered = true;
+    onDeferredMarkupMounted('steam-vault-modal', () => wireVaultMarkup({ closeModal }));
+}
+
+function applyStoreVisibility() {
+    const tabStore = document.getElementById('vault-tab-store');
+    const storeLayout = document.getElementById('vault-store-layout');
+    tabStore?.classList.toggle('hidden', !storeTabVisible);
+    if (!storeTabVisible) {
+        storeLayout?.classList.add('hidden');
+        if (tabStore?.classList.contains('active')) document.getElementById('vault-tab-inventory')?.click();
+    }
+}
+
+function wireVaultMarkup({ closeModal }) {
+    document.getElementById('close-steam-vault-modal')?.addEventListener('click', closeModal);
 
     const tabInventory = document.getElementById('vault-tab-inventory');
     const tabStore = document.getElementById('vault-tab-store');
@@ -452,22 +501,6 @@ export function initSteamVaultUI() {
         activeBtn?.classList.add('active');
         activeLayout?.classList.remove('hidden');
     };
-
-    // The Store tab shows whenever keys can actually be bought: through
-    // Steam's hosted Item Store (Steam Inventory items; Steam runs checkout
-    // and the Wallet) or the Microtransactions checkout. With neither, it is
-    // removed, so no priced surface appears that can't complete a purchase.
-    loadStoreCatalog().then(() => {
-        const storeVisible = storePurchasesEnabled || hostedItemStoreEnabled();
-        tabStore?.classList.toggle('hidden', !storeVisible);
-        if (!storeVisible) {
-            storeLayout?.classList.add('hidden');
-            if (tabStore?.classList.contains('active')) activateTab(tabInventory, inventoryLayout);
-        }
-    }).catch(() => {
-        tabStore?.classList.add('hidden');
-        storeLayout?.classList.add('hidden');
-    });
 
     tabInventory?.addEventListener('click', () => {
         activateTab(tabInventory, inventoryLayout);
@@ -490,6 +523,7 @@ export function initSteamVaultUI() {
         if (!window.electronAPI?.openSteamOverlayToUrl) return;
         window.electronAPI.openSteamOverlayToUrl('https://steamcommunity.com/market/search?appid=4957040');
     });
+    applyStoreVisibility();
 }
 
 function isMarketEligibilityAllowed(result) {
@@ -549,6 +583,7 @@ export async function loadVaultData() {
         if (result?.ok && Array.isArray(result.inventory)) {
             vaultSource = 'steam';
             steamCapabilities = new Set(Array.isArray(result.capabilities) ? result.capabilities : []);
+            void refreshSteamQuartermasterWeek();
             vaultItems = result.inventory;
             // Feed the unified ownership store (src/itemOwnership.js) so the
             // Armory gates on the same entitlements the Vault renders. Only the
@@ -999,6 +1034,7 @@ export function renderOddsTable() {
 }
 
 export async function purchaseKeys(sku) {
+    ensureVaultMarkup();
     const skuInfo = storeCatalog?.find((row) => row.sku === sku);
     if (!storePurchasesEnabled || !skuInfo) {
         showStorePurchaseStatus({ key: 'offline', tone: 'error' });
@@ -1131,9 +1167,11 @@ async function finishPendingStorePurchases() {
 
 export function updateKeyCacheCounts() {
     const cache = vaultItems.find((i) => i.itemdefid === 4000);
-    const key = vaultItems.find((i) => i.itemdefid === 4001);
     const cacheQty = cache ? Number(cache.quantity) || 0 : 0;
-    const keyQty = key ? Number(key.quantity) || 0 : 0;
+    // Bought (4001) and earned (4154) keys both open caches.
+    const keyQty = vaultItems
+        .filter((i) => i.itemdefid === 4001 || i.itemdefid === EARNED_KEY_ITEMDEFID)
+        .reduce((sum, i) => sum + (Number(i.quantity) || 0), 0);
 
     const cacheEl = document.getElementById('vault-cache-count');
     const keyEl = document.getElementById('vault-key-count');
@@ -1146,9 +1184,11 @@ export function updateKeyCacheCounts() {
     if (storeKeyEl) storeKeyEl.textContent = String(keyQty);
 }
 
+// The earned key (4154, from boss kills) is spent before a bought one.
 function findOwnedCacheAndKey() {
-    const cache = vaultItems.find((i) => i.itemdefid === 4000);
-    const key = vaultItems.find((i) => i.itemdefid === 4001);
+    const cache = vaultItems.find((i) => i.itemdefid === 4000 && Number(i.quantity) > 0);
+    const key = vaultItems.find((i) => i.itemdefid === EARNED_KEY_ITEMDEFID && Number(i.quantity) > 0)
+        ?? vaultItems.find((i) => i.itemdefid === 4001 && Number(i.quantity) > 0);
     return cache && key ? { cache, key } : null;
 }
 
@@ -1189,6 +1229,7 @@ function mountRevealOverlay(overlay) {
 }
 
 export function playCacheRevealAnimation(openingOrReward, onClaim) {
+    ensureVaultMarkup();
     const overlay = document.getElementById('vault-reveal-overlay');
     const titleEl = document.getElementById('vault-reveal-title');
     const statusEl = document.getElementById('vault-reveal-status');
@@ -1416,6 +1457,7 @@ export function renderSmelterPanel() {
             dispensaryGrid.appendChild(card);
         }
     }
+    renderReagentPanels();
 }
 
 function handleIngotPackPurchase() {
@@ -1457,6 +1499,119 @@ function exchangeMode() {
     if (isBrowserSandbox() && vaultSource === 'local') return 'local';
     if (vaultSource === 'steam' && steamCapabilities.has('trade-up') && typeof window.electronAPI?.tradeUpSteamInventory === 'function') return 'steam';
     return null;
+}
+
+// The Sprint 51 reagent loop runs only where the backend advertises it.
+function reagentExchangeMode(capability, method) {
+    if (isBrowserSandbox() && vaultSource === 'local') return 'local';
+    if (vaultSource === 'steam' && steamCapabilities.has(capability) && typeof window.electronAPI?.[method] === 'function') return 'steam';
+    return null;
+}
+
+const LOCAL_QUARTERMASTER_KEY = 'hb_quartermaster_week_v1';
+let steamQuartermasterWeek = { week: null, counts: {} };
+
+function quartermasterWeekCounts() {
+    const week = isoWeekKey();
+    if (reagentExchangeMode('quartermaster', 'quartermasterTrade') === 'steam') {
+        return steamQuartermasterWeek.week === week ? steamQuartermasterWeek.counts : {};
+    }
+    try {
+        const stored = JSON.parse(window.localStorage?.getItem(LOCAL_QUARTERMASTER_KEY) ?? 'null');
+        return stored?.week === week ? stored.counts ?? {} : {};
+    } catch {
+        return {};
+    }
+}
+
+function recordLocalQuartermasterTrade(itemdefid) {
+    const counts = { ...quartermasterWeekCounts() };
+    counts[itemdefid] = (Number(counts[itemdefid]) || 0) + 1;
+    try {
+        window.localStorage?.setItem(LOCAL_QUARTERMASTER_KEY, JSON.stringify({ week: isoWeekKey(), counts }));
+    } catch { /* the trade stands; only the weekly count is not kept */ }
+}
+
+async function refreshSteamQuartermasterWeek() {
+    if (reagentExchangeMode('quartermaster', 'quartermasterTrade') !== 'steam') return;
+    const result = await window.electronAPI.getQuartermasterWeek?.().catch(() => null);
+    if (result?.ok) {
+        steamQuartermasterWeek = { week: result.week, counts: result.counts ?? {} };
+        renderReagentPanels();
+    }
+}
+
+const reagentCount = (items, itemdefid) => items
+    .filter((item) => Number(item.itemdefid) === itemdefid)
+    .reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+
+function renderReagentPanels() {
+    const qmGrid = document.getElementById('vault-quartermaster-grid');
+    const asmGrid = document.getElementById('vault-assembly-grid');
+    const items = vaultItems;
+    if (qmGrid) {
+        const mode = reagentExchangeMode('quartermaster', 'quartermasterTrade');
+        const counts = quartermasterWeekCounts();
+        const shards = getShardBalance(items);
+        qmGrid.innerHTML = '';
+        for (const [id, offer] of Object.entries(QUARTERMASTER_OFFERS)) {
+            const itemdefid = Number(id);
+            const cat = getItemCatalogEntry(itemdefid);
+            const used = Number(counts[id]) || 0;
+            const enabled = mode && !exchangeBusy && shards >= offer.shards && used < offer.weeklyMax;
+            const card = document.createElement('div');
+            card.className = 'vault-smelter-card';
+            card.innerHTML = `
+                <div class="vault-smelter-card__title" style="color:${getRarityColor(cat?.rarity ?? 'rare')}">${cat?.name ?? `ITEM #${id}`}</div>
+                <div class="vault-smelter-card__sub">${t('ui.vault.shard_cost', { cost: offer.shards })} · ${t('ui.vault.week_count', { used, max: offer.weeklyMax })}</div>
+                <button class="vault-smelter-card__btn" ${enabled ? '' : 'disabled'} data-qm-id="${itemdefid}">${t('ui.vault.trade')}</button>
+            `;
+            card.querySelector('button')?.addEventListener('click', () => handleQuartermasterTrade(itemdefid));
+            qmGrid.appendChild(card);
+        }
+    }
+    if (asmGrid) {
+        const mode = reagentExchangeMode('assemble', 'assembleOverclock');
+        const owned = { ingots: reagentCount(items, 4156), matrix: reagentCount(items, 4157), ambergris: reagentCount(items, 4158) };
+        asmGrid.innerHTML = '';
+        for (const [id, recipe] of Object.entries(ASSEMBLY_RECIPES)) {
+            const itemdefid = Number(id);
+            const cat = getItemCatalogEntry(itemdefid);
+            const enabled = mode && !exchangeBusy && planAssembly({ inventory: items, itemdefid }).ok;
+            const card = document.createElement('div');
+            card.className = 'vault-smelter-card';
+            card.innerHTML = `
+                <div class="vault-smelter-card__title" style="color:${getRarityColor(cat?.rarity ?? 'uncommon')}">${cat?.name ?? `ITEM #${id}`}</div>
+                <div class="vault-smelter-card__sub">${t('ui.vault.reagents_owned', { ingots: `${owned.ingots}/${recipe[4156] ?? 0}`, matrix: `${owned.matrix}/${recipe[4157] ?? 0}`, ambergris: `${owned.ambergris}/${recipe[4158] ?? 0}` })}</div>
+                <button class="vault-smelter-card__btn" ${enabled ? '' : 'disabled'} data-assemble-id="${itemdefid}">${t('ui.vault.assemble')}</button>
+            `;
+            card.querySelector('button')?.addEventListener('click', () => handleAssembly(itemdefid));
+            asmGrid.appendChild(card);
+        }
+    }
+}
+
+function handleQuartermasterTrade(itemdefid) {
+    return runExchange({
+        kind: 'quartermaster',
+        modeFn: () => reagentExchangeMode('quartermaster', 'quartermasterTrade'),
+        localPlan: (items) => planQuartermasterTrade({ inventory: items, itemdefid, weeklyCount: Number(quartermasterWeekCounts()[itemdefid]) || 0 }),
+        steamCall: (requestId) => window.electronAPI.quartermasterTrade(itemdefid, requestId),
+        failedKey: 'ui.vault.trade_failed',
+        onSuccessText: (item) => t('ui.vault.traded', { item }),
+        onCommitted: (mode) => (mode === 'local' ? recordLocalQuartermasterTrade(itemdefid) : refreshSteamQuartermasterWeek())
+    });
+}
+
+function handleAssembly(itemdefid) {
+    return runExchange({
+        kind: 'assembly',
+        modeFn: () => reagentExchangeMode('assemble', 'assembleOverclock'),
+        localPlan: (items) => planAssembly({ inventory: items, itemdefid }),
+        steamCall: (requestId) => window.electronAPI.assembleOverclock(itemdefid, requestId),
+        failedKey: 'ui.vault.assemble_failed',
+        onSuccessText: (item) => t('ui.vault.assembled', { item })
+    });
 }
 
 /** Whether trade-ups and redemptions can run on the inventory the Vault shows. */
@@ -1529,9 +1684,9 @@ function exchangeFailureText(key, reason) {
     return t(key, { reason: String(reason ?? 'unknown').replace(/_/g, ' ') });
 }
 
-async function runExchange({ kind, localPlan, steamCall, failedKey, onSuccessText }) {
+async function runExchange({ kind, localPlan, steamCall, failedKey, onSuccessText, modeFn = exchangeMode, onCommitted = null }) {
     const statusEl = document.getElementById('vault-smelter-status');
-    const mode = exchangeMode();
+    const mode = modeFn();
     if (!mode) {
         logExchange('warn', `${kind} unavailable on this build`, {});
         if (statusEl) statusEl.textContent = t('ui.vault.exchange_needs_service');
@@ -1558,6 +1713,7 @@ async function runExchange({ kind, localPlan, steamCall, failedKey, onSuccessTex
             window.AudioManager?.play?.('ui_error', { volume: 0.5 });
             return;
         }
+        await onCommitted?.(mode);
         const reward = getItemCatalogEntry(result.grantedItemdefid);
         if (statusEl) statusEl.textContent = onSuccessText(reward?.name ?? result.grantedItemdefid);
         if (result.grantedItemdefid != null) showSteamDropToast(result.grantedItemdefid, 1);
@@ -1601,6 +1757,7 @@ function handleDispensaryRedeem(targetItemdefid) {
 }
 
 export async function openDeepRelicCache() {
+    ensureVaultMarkup();
     if (cacheOpeningBusy) return;
     cacheOpeningBusy = true;
     if (!window.electronAPI?.openSteamCache && isDevInfiniteCacheMode()) {

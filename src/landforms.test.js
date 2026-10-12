@@ -98,6 +98,29 @@ describe('pickLandform', () => {
         expect(tally('cryo')[LANDFORMS.CANYON]).toBeGreaterThan(active[LANDFORMS.CANYON]);
         expect(tally('bio')[LANDFORMS.FIELD]).toBeGreaterThan(active[LANDFORMS.FIELD]);
     });
+
+    it('caps maze share at 25% or less across all biomes (Decision D2)', () => {
+        for (const biome of ['active', 'cryo', 'bio']) {
+            let mazeCount = 0;
+            const total = 1000;
+            for (let seed = 1; seed <= total; seed++) {
+                if (pickLandform(mulberry32(seed * 4391), biome) === LANDFORMS.MAZE) {
+                    mazeCount += 1;
+                }
+            }
+            const ratio = mazeCount / total;
+            expect(ratio).toBeLessThanOrEqual(0.26);
+        }
+    });
+
+    it('respects the avoid option to eliminate adjacent repetition', () => {
+        for (const target of Object.values(LANDFORMS)) {
+            for (let seed = 1; seed <= 100; seed++) {
+                const picked = pickLandform(mulberry32(seed), 'active', { avoid: target });
+                expect(picked).not.toBe(target);
+            }
+        }
+    });
 });
 
 describe('applyLandform', () => {

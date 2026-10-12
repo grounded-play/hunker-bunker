@@ -1,0 +1,411 @@
+import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { stackCompressedLayers } from './floorSplat.js';
+import { buildPrismTubeGeometry, buildTerminationCollarGeometry } from './splineGeometry.js';
+
+/**
+ * Conduit surfaces, one texture-array layer each, baked from bands of the
+ * owner's sticker art by scripts/art/build_spline_textures.py: the bunker's
+ * taped rubber cable, the hive's braided sinew, cryo's frost-sheathed coolant
+ * pipe, the camp's tangled vine roots and the gunmetal of the wall collars.
+ * `turns` is how many circumferences of length one texture repeat covers, so
+ * the art keeps its proportions on any radius. `fallback` is the flat colour
+ * drawn until the arrays load (or for good on a GPU without BC7).
+ */
+export const SPLINE_LAYERS = Object.freeze([
+    Object.freeze({ kind: 'wire', turns: 2, fallback: 0x2a2f36 }),
+    Object.freeze({ kind: 'vein', turns: 2, fallback: 0x4a2414 }),
+    Object.freeze({ kind: 'pipe', turns: 2, fallback: 0xbfd8e4 }),
+    Object.freeze({ kind: 'vine', turns: 2, fallback: 0x5a3a1c }),
+    Object.freeze({ kind: 'metal', turns: 1, fallback: 0x4b5563 })
+]);
+const LAYER_BY_KIND = new Map(SPLINE_LAYERS.map((layer, index) => [layer.kind, index]));
+/**
+ * Finishes painted in the shader past the baked layers (texture lookups clamp
+ * to the last layer, the gunmetal): the bunker's hazard-striped collars and
+ * brackets, and the camps' glowing work bulbs.
+ */
+export const SPLINE_PAINT = Object.freeze({ hazardMetal: SPLINE_LAYERS.length, bulb: SPLINE_LAYERS.length + 1 });
+const BULB_DROP = 0.16;
+const BULB_RADIUS = 0.05;
+const KIND_ALIASES = Object.freeze({
+    wire: 'wire', cable: 'wire', power: 'wire', data: 'wire',
+    vein: 'vein', sinew: 'vein', trachea: 'vein',
+    coolant_pipe: 'pipe', pipe: 'pipe', coolant: 'pipe',
+    vine: 'vine', rope: 'vine'
+});
+
+/** The conduit layer a planned spline draws with. */
+export function splineLayerFor(item) {
+    const kind = item?.layerKind ?? KIND_ALIASES[item?.type] ?? 'wire';
+    return LAYER_BY_KIND.get(kind) ?? 0;
+}
+
+/** Texture repeats per metre, so one repeat spans `turns` circumferences. */
+export function splineVRepeat(radius, layer) {
+    const turns = SPLINE_LAYERS[layer]?.turns ?? 2;
+    return 1 / (turns * 2 * Math.PI * Math.max(0.005, radius));
+}
+
+export function isSplineArraysEnabled(storage = globalThis.localStorage) {
+    try {
+        return storage?.getItem?.('hb_spline_textures') !== '0';
+    } catch {
+        return true;
+    }
+}
+
+export async function loadSplineArrays({ loader, resolveUrl = (path) => path, baseUrl = '/3d/runtime/splines/' }) {
+    const albedo = [];
+    const detail = [];
+    for (const { kind } of SPLINE_LAYERS) {
+        albedo.push(await loader.loadAsync(resolveUrl(`${baseUrl}spline_${kind}_albedo.ktx2`)));
+        detail.push(await loader.loadAsync(resolveUrl(`${baseUrl}spline_${kind}_detail.ktx2`)));
+    }
+    try {
+        return {
+            albedo: stackCompressedLayers(albedo, THREE.SRGBColorSpace),
+            detail: stackCompressedLayers(detail, THREE.NoColorSpace)
+        };
+    } finally {
+        for (const texture of [...albedo, ...detail]) texture.dispose();
+    }
+}
+
+function placeholderArray() {
+    const texture = new THREE.DataArrayTexture(new Uint8Array(4), 1, 1, 1);
+    texture.needsUpdate = true;
+    return texture;
+}
+
+let sharedMaterial = null;
+
+/**
+ * The one conduit material: every run in a chunk merges into one mesh and one
+ * draw, each vertex picking its layer. Normals come from the detail map in a
+ * screen-space tangent frame (u around the tube, v along it).
+ */
+function createSplineMaterial() {
+    const uniforms = {
+        uSplineAlbedo: { value: placeholderArray() },
+        uSplineDetail: { value: placeholderArray() },
+        uSplineReady: { value: 0 },
+        uSplineTime: { value: 0 },
+        uSplineFallback: { value: SPLINE_LAYERS.map((layer) => new THREE.Color(layer.fallback)) }
+    };
+    // A 1x1 map switches on three's UV path (vMapUv); the shader replaces its use.
+    const unit = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
+    unit.needsUpdate = true;
+    const material = new THREE.MeshStandardMaterial({ map: unit, roughness: 0.6, metalness: 0.2 });
+    material.name = 'splineMat:layered';
+    material.userData.splineUniforms = uniforms;
+    material.onBeforeCompile = (shader) => {
+        Object.assign(shader.uniforms, uniforms);
+        shader.vertexShader = shader.vertexShader
+            .replace('#include <common>', `#include <common>
+                attribute float splineLayer;
+                attribute float splineSway;
+                uniform float uSplineTime;
+                varying float vSplineLayer;`)
+            .replace('#include <uv_vertex>', `#include <uv_vertex>
+                vSplineLayer = splineLayer;`)
+            // Hanging spans drift in the air handling: a slow swing across the
+            // run, weighted by how freely each point hangs. The phase drifts a
+            // little with position (geometry is in world space), so neighbouring
+            // cables move apart and one cable flexes without ever tearing.
+            .replace('#include <begin_vertex>', `#include <begin_vertex>
+                if (splineSway > 0.0) {
+                    float hbSwayPhase = dot(position.xz, vec2(0.11, 0.07));
+                    transformed.x += sin(uSplineTime * 1.1 + hbSwayPhase) * 0.045 * splineSway;
+                    transformed.z += sin(uSplineTime * 0.83 + hbSwayPhase * 1.7) * 0.035 * splineSway;
+                    transformed.y += sin(uSplineTime * 1.6 + hbSwayPhase) * 0.008 * splineSway;
+                }
+                // The hive's veins push slow peristaltic pulses along their length.
+                if (abs(splineLayer - 1.0) < 0.5) {
+                    float hbVeinPulse = pow(max(0.0, sin(uSplineTime * 2.6 - uv.y * 2.4)), 6.0);
+                    transformed += objectNormal * 0.009 * hbVeinPulse;
+                }`);
+        shader.fragmentShader = shader.fragmentShader
+            .replace('#include <common>', `#include <common>
+                uniform sampler2DArray uSplineAlbedo;
+                uniform sampler2DArray uSplineDetail;
+                uniform float uSplineReady;
+                uniform float uSplineTime;
+                uniform vec3 uSplineFallback[${SPLINE_LAYERS.length}];
+                varying float vSplineLayer;
+                vec4 hbSplineDetail;
+                mat3 hbSplineTangentFrame(vec3 eyePos, vec3 surfNormal, vec2 uv) {
+                    vec3 q0 = dFdx(eyePos);
+                    vec3 q1 = dFdy(eyePos);
+                    vec2 st0 = dFdx(uv);
+                    vec2 st1 = dFdy(uv);
+                    vec3 q1perp = cross(q1, surfNormal);
+                    vec3 q0perp = cross(surfNormal, q0);
+                    vec3 T = q1perp * st0.x + q0perp * st1.x;
+                    vec3 B = q1perp * st0.y + q0perp * st1.y;
+                    float det = max(dot(T, T), dot(B, B));
+                    float scale = det == 0.0 ? 0.0 : inversesqrt(det);
+                    return mat3(T * scale, B * scale, surfNormal);
+                }`)
+            .replace('#include <map_fragment>', `
+                float splineLayerIndex = floor(vSplineLayer + 0.5);
+                hbSplineDetail = vec4(0.5, 0.5, 0.6, 0.2);
+                if (uSplineReady > 0.5) {
+                    vec3 splineUvw = vec3(vMapUv, splineLayerIndex);
+                    diffuseColor.rgb *= texture(uSplineAlbedo, splineUvw).rgb;
+                    hbSplineDetail = texture(uSplineDetail, splineUvw);
+                } else {
+                    vec3 fallbackColor = uSplineFallback[0];
+                    for (int i = 1; i < ${SPLINE_LAYERS.length}; i++) {
+                        if (abs(splineLayerIndex - float(i)) < 0.5) fallbackColor = uSplineFallback[i];
+                    }
+                    diffuseColor.rgb *= fallbackColor;
+                }
+                // Bunker collars and brackets: yellow and black hazard bands over the grime.
+                if (abs(splineLayerIndex - ${SPLINE_PAINT.hazardMetal}.0) < 0.5) {
+                    float hbGrime = dot(diffuseColor.rgb, vec3(0.333));
+                    float hbHazard = step(0.5, fract((vMapUv.x + vMapUv.y * 2.0) * 3.0));
+                    diffuseColor.rgb = mix(vec3(0.04), vec3(0.92, 0.66, 0.06), hbHazard) * (0.45 + 0.9 * hbGrime);
+                }
+                // Work bulbs: warm glass.
+                if (abs(splineLayerIndex - ${SPLINE_PAINT.bulb}.0) < 0.5) {
+                    diffuseColor.rgb = vec3(1.0, 0.7, 0.35);
+                    hbSplineDetail = vec4(0.5, 0.5, 0.15, 0.0);
+                }`)
+            .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+                roughnessFactor = hbSplineDetail.b;`)
+            .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>
+                metalnessFactor = hbSplineDetail.a;`)
+            .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+                if (uSplineReady > 0.5) {
+                    vec2 splineXY = hbSplineDetail.rg * 2.0 - 1.0;
+                    vec3 splineNormal = vec3(splineXY, sqrt(max(1.0 - dot(splineXY, splineXY), 0.0)));
+                    normal = normalize(hbSplineTangentFrame(-vViewPosition, normal, vMapUv) * splineNormal);
+                }
+                // Cryo's coolant pipes frost over on top; the bloom thickens and thins slowly.
+                float hbFrost = 0.0;
+                if (abs(splineLayerIndex - 2.0) < 0.5) {
+                    vec3 hbUp = normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
+                    hbFrost = smoothstep(0.1, 0.8, dot(normal, hbUp)) * (0.7 + 0.3 * sin(uSplineTime * 0.35 + vMapUv.y * 0.8));
+                    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.94, 1.0), hbFrost * 0.6);
+                    roughnessFactor = mix(roughnessFactor, 0.32, hbFrost);
+                }`)
+            .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+                if (abs(splineLayerIndex - ${SPLINE_PAINT.bulb}.0) < 0.5) {
+                    totalEmissiveRadiance += vec3(1.0, 0.42, 0.1) * (1.5 + 0.18 * sin(uSplineTime * 7.0));
+                }
+                // Ice crystals in the frost catch the light.
+                if (hbFrost > 0.0) {
+                    vec2 hbCell = floor(vMapUv * vec2(24.0, 60.0));
+                    float hbGlint = fract(sin(dot(hbCell, vec2(12.9898, 78.233))) * 43758.5453);
+                    totalEmissiveRadiance += vec3(0.7, 0.85, 1.0) * step(0.985, hbGlint) * hbFrost * (0.5 + 0.5 * sin(uSplineTime * 3.0 + hbGlint * 40.0));
+                }`);
+    };
+    material.customProgramCacheKey = () => 'hb-spline-layered';
+    return material;
+}
+
+/** The shared conduit material (every theme draws from the same layers). */
+export function getSplineMaterial() {
+    if (!sharedMaterial) sharedMaterial = createSplineMaterial();
+    return sharedMaterial;
+}
+
+/** Advances the hanging-cable sway; called once a frame. */
+export function setSplineTime(seconds) {
+    getSplineMaterial().userData.splineUniforms.uSplineTime.value = seconds;
+}
+
+export function setSplineArrays({ albedo, detail }) {
+    const uniforms = getSplineMaterial().userData.splineUniforms;
+    const previous = [uniforms.uSplineAlbedo.value, uniforms.uSplineDetail.value];
+    uniforms.uSplineAlbedo.value = albedo;
+    uniforms.uSplineDetail.value = detail;
+    uniforms.uSplineReady.value = 1;
+    for (const texture of previous) texture?.dispose?.();
+}
+
+function tubeGeometry(points, item, layer, sway = item.sway) {
+    const radius = item.radius ?? 0.035;
+    return buildPrismTubeGeometry(points, {
+        radius,
+        sides: item.sides ?? 4,
+        vRepeat: splineVRepeat(radius, layer),
+        layer,
+        sway
+    });
+}
+
+function collarGeometry(collar, item) {
+    const bunker = splineLayerFor(item) === LAYER_BY_KIND.get('wire');
+    return buildTerminationCollarGeometry(collar.pos, collar.normal, {
+        radius: collar.radius ?? item.radius ?? 0.035,
+        sides: collar.sides ?? 6,
+        layer: bunker ? SPLINE_PAINT.hazardMetal : LAYER_BY_KIND.get('metal')
+    });
+}
+
+// A work bulb on a short drop cord, swinging with the rope it is clipped to.
+function bulbGeometries(position, item, sway) {
+    const anchor = position.isVector3 ? position : new THREE.Vector3(position.x, position.y, position.z);
+    const socket = anchor.clone().add(new THREE.Vector3(0, -BULB_DROP, 0));
+    const cord = buildPrismTubeGeometry([anchor, socket], {
+        radius: 0.008, sides: 6, vRepeat: 4, layer: LAYER_BY_KIND.get('wire'), sway: [sway, sway]
+    });
+    const bulb = new THREE.SphereGeometry(BULB_RADIUS, 10, 8).toNonIndexed();
+    bulb.translate(socket.x, socket.y - BULB_RADIUS * 0.8, socket.z);
+    const count = bulb.getAttribute('position').count;
+    bulb.setAttribute('splineLayer', new THREE.BufferAttribute(new Float32Array(count).fill(SPLINE_PAINT.bulb), 1));
+    bulb.setAttribute('splineSway', new THREE.BufferAttribute(new Float32Array(count).fill(sway), 1));
+    const indices = Array.from({ length: count }, (_, index) => index);
+    bulb.setIndex(indices);
+    return [cord, bulb].filter(Boolean);
+}
+
+function itemGeometries(item) {
+    const geometries = [];
+    if (item.category === 'termination_collar') {
+        const collar = collarGeometry({ pos: item.pos, normal: item.normal, radius: item.radius, sides: item.sides }, item);
+        if (collar) geometries.push(collar);
+        return geometries;
+    }
+    if (item.points && item.points.length >= 2) {
+        const tube = tubeGeometry(item.points, item, splineLayerFor(item));
+        if (tube) geometries.push(tube);
+    }
+    for (const collar of item.collars ?? []) {
+        const geometry = collarGeometry(collar, item);
+        if (geometry) geometries.push(geometry);
+    }
+    for (const bulb of item.bulbs ?? []) {
+        const nearest = item.points?.reduce((best, point, index) => (point.distanceToSquared(bulb) < item.points[best].distanceToSquared(bulb) ? index : best), 0) ?? 0;
+        geometries.push(...bulbGeometries(bulb, item, item.sway?.[nearest] ?? 0));
+    }
+    return geometries;
+}
+
+function mergeOwned(geometries) {
+    if (geometries.length === 0) return null;
+    if (geometries.length === 1) return geometries[0];
+    const merged = mergeGeometries(geometries, false);
+    for (const geometry of geometries) geometry.dispose();
+    return merged;
+}
+
+/**
+ * Merges a list of spline definitions into a single THREE.Mesh using at most 1 draw call,
+ * with optional extraction of cuttable sub-meshes so they can be severed independently.
+ *
+ * @param {Array<object>} splineManifest  List of splines and collars from splineRouter
+ * @param {object} [options]
+ * @param {Function} [options.onCuttableMesh=null] Callback (cuttableMesh, splineItem) => void
+ * @returns {THREE.Mesh|null}
+ */
+export function buildChunkSplinesMesh(splineManifest, { onCuttableMesh = null } = {}) {
+    if (!splineManifest || splineManifest.length === 0) return null;
+
+    const staticGeometries = [];
+    const material = getSplineMaterial();
+
+    for (const item of splineManifest) {
+        if (item.cuttable && typeof onCuttableMesh === 'function') {
+            const geometry = mergeOwned(itemGeometries(item));
+            if (geometry) {
+                const cuttableMesh = new THREE.Mesh(geometry, material);
+                cuttableMesh.name = `cuttable-spline-${item.id}`;
+                cuttableMesh.castShadow = true;
+                cuttableMesh.receiveShadow = true;
+                cuttableMesh.userData = {
+                    isSplineDressing: true,
+                    isCuttableSpline: true,
+                    splineId: item.id
+                };
+                onCuttableMesh(cuttableMesh, item);
+            }
+            continue;
+        }
+        staticGeometries.push(...itemGeometries(item));
+    }
+
+    const mergedGeometry = mergeOwned(staticGeometries);
+    if (!mergedGeometry) return null;
+
+    const mesh = new THREE.Mesh(mergedGeometry, material);
+    mesh.name = 'chunk-splines-batch';
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.userData = {
+        isSplineDressing: true,
+        blocking: false,
+        destructible: false,
+        splineCount: splineManifest.length
+    };
+
+    return mesh;
+}
+
+/**
+ * A severed run: the two halves either side of the cut, each still fastened
+ * at its anchored end, with the free end sagging under its own weight (a
+ * parabola growing toward the cut). Returns the merged geometry and the two
+ * free ends, where the cut keeps sparking, oozing or venting.
+ */
+export function buildSeveredSplineGeometry(item) {
+    const points = (item.points ?? []).map((point) => (point.isVector3 ? point.clone() : new THREE.Vector3(point.x, point.y, point.z)));
+    if (points.length < 3) return null;
+    let cut = Math.floor(points.length / 2);
+    if (item.cutPoint) {
+        let best = Infinity;
+        points.forEach((point, index) => {
+            const distance = point.distanceToSquared(item.cutPoint);
+            if (distance < best && index > 0 && index < points.length - 1) {
+                best = distance;
+                cut = index;
+            }
+        });
+    }
+    const gap = 0.06;
+    const halves = [points.slice(0, cut + 1), points.slice(cut).reverse()];
+    const geometries = [];
+    const ends = [];
+    const layer = splineLayerFor(item);
+    for (const half of halves) {
+        if (half.length < 2) continue;
+        const lengths = [0];
+        for (let i = 1; i < half.length; i += 1) lengths.push(lengths[i - 1] + half[i].distanceTo(half[i - 1]));
+        const total = lengths[lengths.length - 1] || 1;
+        const freeEnd = half[half.length - 1];
+        // How far the loose end can fall: a third of its length, never through the floor.
+        const drop = Math.max(0, Math.min(total * 0.35, freeEnd.y - 0.04));
+        const pull = half[half.length - 1].clone().sub(half[half.length - 2]).setY(0).normalize().multiplyScalar(gap);
+        const sagged = half.map((point, index) => {
+            const t = lengths[index] / total;
+            return point.clone().add(new THREE.Vector3(0, -drop * t * t, 0)).addScaledVector(pull, -t);
+        });
+        // The loose end swings; the end still fastened holds.
+        const tube = tubeGeometry(sagged, item, layer, lengths.map((length) => (length / total) ** 2));
+        if (tube) geometries.push(tube);
+        const tip = sagged[sagged.length - 1];
+        ends.push({ position: tip.clone(), direction: tip.clone().sub(sagged[sagged.length - 2]).normalize() });
+    }
+    for (const collar of item.collars ?? []) {
+        const geometry = collarGeometry(collar, item);
+        if (geometry) geometries.push(geometry);
+    }
+    const geometry = mergeOwned(geometries);
+    return geometry ? { geometry, ends } : null;
+}
+
+/**
+ * Cleanly disposes a spline mesh's GPU buffer geometry on chunk unload.
+ * @param {THREE.Mesh} mesh
+ */
+export function disposeSplineMesh(mesh) {
+    if (!mesh) return;
+    if (mesh.geometry) {
+        mesh.geometry.dispose();
+    }
+    if (mesh.parent) {
+        mesh.parent.remove(mesh);
+    }
+}

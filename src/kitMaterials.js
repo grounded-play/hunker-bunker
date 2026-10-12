@@ -31,7 +31,15 @@ export const KIT_THEMES = Object.freeze({
     BIOMECH: 'biomech',
     GIGER: 'giger',
     RELIQUARY: 'reliquary',
-    CRYO_DECK: 'cryo_deck'
+    CRYO_DECK: 'cryo_deck',
+    GEOTHERMAL: 'geothermal',
+    HIVE_RESIN: 'hive_resin',
+    SUBSTATION: 'substation',
+    PERMAFROST: 'permafrost',
+    CLEANROOM: 'cleanroom',
+    MYCELIUM: 'mycelium',
+    OBSIDIAN: 'obsidian',
+    TOXIC_SUMP: 'toxic_sump'
 });
 
 const TEXTURE_ROOT = '/3d/runtime/kits/textures';
@@ -43,11 +51,32 @@ const SURFACES = Object.freeze({
     biomech: { wall: { metalness: 0.2 }, floor: { metalness: 0.15 } },
     giger: { wall: { metalness: 0.45 }, floor: { metalness: 0.50 } },
     reliquary: { wall: { metalness: 0.50 }, floor: { metalness: 0.55 } },
-    cryo_deck: { wall: { metalness: 0.60 }, floor: { metalness: 0.65 } }
+    cryo_deck: { wall: { metalness: 0.60 }, floor: { metalness: 0.65 } },
+    geothermal: { wall: { metalness: 0.65 }, floor: { metalness: 0.65 } },
+    hive_resin: { wall: { metalness: 0.25 }, floor: { metalness: 0.20 } },
+    substation: { wall: { metalness: 0.70 }, floor: { metalness: 0.75 } },
+    permafrost: { wall: { metalness: 0.15 }, floor: { metalness: 0.10 } },
+    cleanroom: { wall: { metalness: 0.40 }, floor: { metalness: 0.35 } },
+    mycelium: { wall: { metalness: 0.15 }, floor: { metalness: 0.08 } },
+    obsidian: {
+        wall: {
+            metalness: 0.55,
+            emissiveIntensity: 0.16,
+            color: 0x3a303f,
+            emissiveColor: 0x421850
+        },
+        floor: {
+            metalness: 0.65,
+            emissiveIntensity: 0.04,
+            color: 0x24202a,
+            emissiveColor: 0x421850
+        }
+    },
+    toxic_sump: { wall: { metalness: 0.70 }, floor: { metalness: 0.60 } }
 });
 
 export function kitSkinForType(type) {
-    const match = /^kit_(cave|space|cathedral|bunker|biomech|giger|reliquary|cryo_deck)_/.exec(String(type ?? ''));
+    const match = /^kit_(cave|space|cathedral|bunker|biomech|giger|reliquary|cryo_deck|geothermal|hive_resin|substation|permafrost|cleanroom|mycelium|obsidian|toxic_sump)_/.exec(String(type ?? ''));
     return match ? match[1] : null;
 }
 
@@ -58,7 +87,7 @@ export function kitTextureUrls(skin, surface) {
         normal: `${base}_normal.webp`,
         rough: `${base}_rough.webp`
     };
-    if (skin === 'biomech' || skin === 'giger' || skin === 'reliquary' || skin === 'cryo_deck') {
+    if (skin === 'biomech' || skin === 'giger' || skin === 'reliquary' || skin === 'cryo_deck' || skin === 'geothermal' || skin === 'hive_resin' || skin === 'permafrost' || skin === 'cleanroom' || skin === 'mycelium' || skin === 'obsidian' || skin === 'toxic_sump') {
         urls.emissive = `${base}_emissive.webp`;
     }
     return urls;
@@ -88,14 +117,15 @@ export function getKitMaterial(skin, surface, loader = null) {
         roughnessMap: loadTiling(textureLoader, urls.rough),
         roughness: 1,
         metalness: SURFACES[skin]?.[surface]?.metalness ?? 0,
+        color: SURFACES[skin]?.[surface]?.color ?? 0xffffff,
         vertexColors: true,
         // Kenney pieces are authored double-sided: a corridor wall is one sheet.
         side: THREE.DoubleSide
     };
     if (urls.emissive) {
         matConfig.emissiveMap = loadTiling(textureLoader, urls.emissive);
-        matConfig.emissive = new THREE.Color(0xffffff);
-        matConfig.emissiveIntensity = 1.0;
+        matConfig.emissive = new THREE.Color(SURFACES[skin]?.[surface]?.emissiveColor ?? 0xffffff);
+        matConfig.emissiveIntensity = SURFACES[skin]?.[surface]?.emissiveIntensity ?? 1.0;
     }
     const material = new THREE.MeshStandardMaterial(matConfig);
     materials.set(key, material);
@@ -103,8 +133,8 @@ export function getKitMaterial(skin, surface, loader = null) {
 }
 
 /**
- * Dynamic pulsing for bioluminescent emissive channels.
- * Called in the animation tick to breathe life into biomech and synthesis spaces.
+ * Dynamic pulsing for bioluminescent and high-energy emissive channels.
+ * Called in the animation tick to breathe life into biomech, mycelium, and obsidian spaces.
  */
 export function updateKitMaterials(elapsedSeconds) {
     const time = Number(elapsedSeconds) || 0;
@@ -115,6 +145,27 @@ export function updateKitMaterials(elapsedSeconds) {
     }
     if (floor?.emissiveMap) {
         floor.emissiveIntensity = 0.9 + 0.25 * Math.sin(time * 2.2 + 1.2);
+    }
+
+    const myceliumWall = materials.get('mycelium:wall');
+    const myceliumFloor = materials.get('mycelium:floor');
+    if (myceliumWall?.emissiveMap) {
+        myceliumWall.emissiveIntensity = 1.0 + 0.40 * Math.sin(time * 1.8);
+    }
+    if (myceliumFloor?.emissiveMap) {
+        myceliumFloor.emissiveIntensity = 0.95 + 0.35 * Math.sin(time * 1.8 + 0.8);
+    }
+
+    const obsidianWall = materials.get('obsidian:wall');
+    const obsidianFloor = materials.get('obsidian:floor');
+    if (obsidianWall?.emissiveMap) {
+        obsidianWall.emissiveIntensity = 0.16 + 0.05 * Math.sin(time * 1.4);
+    }
+    if (obsidianFloor?.emissiveMap) {
+        // Obsidian linework is wayfinding, not room-wide key light. Keeping
+        // it below the wall pulse lets authored warning/reward practicals
+        // establish hierarchy instead of competing with every floor tile.
+        obsidianFloor.emissiveIntensity = 0.04 + 0.015 * Math.sin(time * 1.4 + 1.5);
     }
 }
 

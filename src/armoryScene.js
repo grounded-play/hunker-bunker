@@ -1,6 +1,4 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { assetUrl } from './assetUrl.js';
 import {
     CHASSIS_SKIN_MODELS,
@@ -18,6 +16,7 @@ export { MOD_GLB_MAP } from './operatorEquipmentSockets.js';
 
 import { CHARM_GLB_MAP } from './charmModels.js';
 import { decodeChassisChoice, resolveChassisModelUrl } from './chassisBodies.js';
+import { createGltfLoader } from './gltfLoaderFactory.js';
 export { CHARM_GLB_MAP } from './charmModels.js';
 
 export const CHASSIS_SKIN_GLB_MAP = CHASSIS_SKIN_MODELS;
@@ -380,7 +379,7 @@ export async function createArmoryScene(canvas) {
     // docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
     // EXT_meshopt_compression to every charm/mod/skin asset this scene loads; GLTFLoader
     // throws without this registered first.
-    const gltfLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    const gltfLoader = createGltfLoader();
     let currentWeaponMesh = null;
     let weaponLoadGen = 0;
 
@@ -721,6 +720,14 @@ export async function createArmoryScene(canvas) {
         setDecal(decalItemdefId) {
             currentDecalId = decalItemdefId || null;
             applyDecalSprite(currentDecalId);
+        },
+        // Tooling (scripts/capture-equipment-fit.mjs): face the operator and
+        // read its root, to check how equipment sits on every chassis.
+        setOperatorYaw(yaw = 0) {
+            if (currentOverlay?.root) currentOverlay.root.rotation.y = Number(yaw) || 0;
+        },
+        getOperatorRoot() {
+            return currentOverlay?.root ?? null;
         },
         updateFromLoadout(loadoutManager, classType = activeClass) {
             const cls = String(classType).toLowerCase();

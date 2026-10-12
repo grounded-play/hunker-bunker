@@ -255,7 +255,8 @@
       "placeholder_agent": "特工",
       "commentary_list": "开发者评论",
       "commentary_read_all": "全部阅读",
-      "content_guide": "内容指南（成人主题）"
+      "content_guide": "内容指南（成人主题）",
+      "graphics": "图形"
     },
     "action": {
       "open": "打开",
@@ -1236,7 +1237,20 @@
       "purchase_awaiting_sandbox": "Beta 测试购买：请在 Steam 界面中确认。Steam 沙盒，不会扣款。",
       "purchase_declined": "已在 Steam 中取消购买，未产生任何扣款。",
       "purchase_complete": "已向你的库存添加 {count} 把缓存钥匙。",
-      "purchase_pending": "Steam 尚未确认付款。下次打开商店时钥匙将会到账。"
+      "purchase_pending": "Steam 尚未确认付款。下次打开商店时钥匙将会到账。",
+      "quartermaster_title": "军需官",
+      "quartermaster_sub": "用碎片换取试剂 · 每周限量",
+      "assembly_title": "组装舱",
+      "assembly_sub": "锭 + 试剂 → 超频模块",
+      "trade": "交换",
+      "assemble": "组装",
+      "week_count": "本周 {used}/{max}",
+      "shard_cost": "{cost} 碎片",
+      "traded": "已获得{item}。",
+      "assembled": "已组装{item}。",
+      "trade_failed": "交换失败：{reason}。",
+      "assemble_failed": "组装失败：{reason}。",
+      "reagents_owned": "锭 {ingots} · 矩阵 {matrix} · 龙涎香 {ambergris}"
     },
     "lobby": {
       "connecting": "正在连接…",
@@ -1592,7 +1606,10 @@
       "listen_hint": "先倾听，再决定你想如何帮忙。",
       "quote": "“{text}”",
       "next_action": "你的下一步行动将改变发射清单与结局走向。",
-      "scar_gained": "昨夜留下了印记: {scar}"
+      "scar_gained": "昨夜留下了印记: {scar}",
+      "services": "营地服务（{count}）",
+      "services_kicker": "营地服务",
+      "services_aria_close": "关闭营地服务"
     },
     "title": {
       "pregalien_command": "PREGALIEN | 虫巢指挥",
@@ -2021,7 +2038,221 @@
         "access_way": "通行道",
         "unmarked": "无标记通道"
       },
+      "site": {
+        "impact_site": "撞击点",
+        "foundry": "制造工厂",
+        "cave_mouth": "地下深渊",
+        "o2_generator": "大气再生器",
+        "wreck": {
+          "scout": "侦察机残骸",
+          "tank": "坦克残骸",
+          "engineer": "工程师残骸",
+          "infiltrator": "潜入者残骸"
+        }
+      },
+      "role": {
+        "generic": "扇区",
+        "utility": "公用设施",
+        "medical": "医疗",
+        "security": "安保",
+        "engineering": "工程",
+        "storage": "仓储",
+        "reward": "储藏点",
+        "camp": "前哨站",
+        "hive": "虫巢",
+        "nest": "巢穴",
+        "cryo_lab": "冷冻研究",
+        "foundry": "重工业",
+        "cave": "零号扇区",
+        "life_support": "生命保障",
+        "transit": "通道",
+        "home": "地表锚点"
+      },
       "unscanned": "??? · 扫描以识别"
+    },
+    "equipment": {
+      "effect": {
+        "4130": "冷冻效果持续时间 +5%。",
+        "4131": "弹体穿透 +1 个目标。",
+        "4132": "孢子与毒气伤害 −8%。",
+        "4133": "射速 +8%。",
+        "4134": "弹匣容量 +1。",
+        "4135": "探测 10 米内的隐藏路线与物资。",
+        "4136": "对非首领敌人伤害 +5%。",
+        "4137": "受到的治疗 +10%。",
+        "4138": "拾取吸附半径 +12%。",
+        "4139": "回收价值 +10%。",
+        "4140": "冷冻持续时间 +8%。",
+        "4141": "拾取吸附半径 +20%。",
+        "4142": "孢子与毒气伤害 −12%。",
+        "4143": "动能弹体穿透 +1 个目标。",
+        "4144": "护盾充能延迟 −10%。",
+        "4145": "探测 15 米内的隐藏路线。",
+        "4146": "生命低于 25% 时移速 +15%。",
+        "4147": "快速击杀五个敌人可返还冲刺。",
+        "4160": "最大生命 +2；移速 −15%。",
+        "4161": "被摧毁的物体会掉落回收物；射速 −10%。",
+        "4162": "对首领伤害 +25%；对其他敌人 −10%。",
+        "4163": "发现资料时获得回收物；弹匣 −1。",
+        "4164": "遗物稀有度 +1 级；最大氧气 −10%。",
+        "4165": "重复遗物转为碎片；回收价值 −15%。",
+        "4166": "氧气消耗减慢 25%；受到的治疗 −40%。",
+        "4167": "穿越环区不消耗氧气，但会出现精英敌人。"
+      },
+      "weapon_profile": {
+        "mk1_sidearm": "稳定高效的副武器配置。",
+        "pulse_carbine": "快速中距离脉冲，冲击力较低。",
+        "scatter_rep": "每次射击发射三枚近距离弹体。",
+        "rail_marksman": "缓慢沉重的穿甲弹，射程更远。",
+        "neon_smg": "高射速，弹体更轻。",
+        "cryo_lance": "精准持久的低温弹体。"
+      },
+      "frame": "出厂武器。安装铸造厂配置可改变射击方式。",
+      "cosmetic": "外观：只改变样子。",
+      "summary": "此装备的效果",
+      "none": "尚未装备任何物品。请选择一个槽位。",
+      "change": "选择一个槽位进行更换。"
+    },
+    "unlock": {
+      "buy_shells": "花费 {shells} 弹壳购买",
+      "slay_the_queen": "击败女王后获得",
+      "archivist": "完成“档案员”成就后获得",
+      "reach_depth": "到达深度 {depth} 后获得",
+      "class_runs": "以 {cls} 完成 {runs} 次出击后获得",
+      "achievement": "完成成就后获得",
+      "confirm_buy": "再次点击以购买",
+      "not_enough_shells": "弹壳不足"
+    },
+    "camp_resident": {
+      "role": {
+        "mechanic": "机械师",
+        "medic": "医护",
+        "lookout": "哨兵",
+        "cook": "厨师",
+        "radio": "无线电员",
+        "scavenger": "拾荒者",
+        "settler": "定居者"
+      },
+      "mechanic": {
+        "1": "这里每个合页都在吱吱响。我还是照样给它们上油。",
+        "2": "给我带点废料来，我能让发电机再撑一周。",
+        "3": "你那身装甲全靠希望撑着。跟这些墙一样。"
+      },
+      "medic": {
+        "1": "别动。你在我干净的地板上流血。",
+        "2": "除了倔强，我们什么都缺。倔强好得慢。",
+        "3": "不管你在外面吸进了什么，别在这里呼出来。"
+      },
+      "lookout": {
+        "1": "山脊后面整夜都有动静。没有东西靠近。暂时没有。",
+        "2": "我在黑暗里数灯光。一周比一周少。",
+        "3": "要是你看见卡车那么大的蜗牛，你不是在这儿看见的。"
+      },
+      "cook": {
+        "1": "是汤。昨天是汤。明天还是汤。",
+        "2": "吃点东西。饿着肚子谁也打不好仗。",
+        "3": "别问里面是什么。它是热的。这就是全部配方。"
+      },
+      "radio": {
+        "1": "中继器夜里会嗡嗡响。有时候它会嗡嗡回应。",
+        "2": "我一直在呼叫其他营地。有些日子会有人回答。",
+        "3": "又是母舰的通讯。很客气，但跟我们无关。"
+      },
+      "scavenger": {
+        "1": "东边的隧道我已经搜刮干净了。往深处试试。",
+        "2": "找到一只靴子，脚还在里面。靴子我留下了。",
+        "3": "只要是亮的、没钉死的，早就进我的背包了。"
+      },
+      "settler": {
+        "1": "我还在习惯不用睁着一只眼睡觉。谢谢你。",
+        "2": "他们给了我一张床和一份活。几个月来头一回两样都有。",
+        "3": "告诉外面的每个人：这里有个能躲开寒冷的地方。"
+      },
+      "worried": {
+        "1": "昨晚墙没撑住。我们正用手头的一切修补。",
+        "2": "我们有两个人没回来。求你，帮我们把这里加固。"
+      }
+    },
+    "input_hint": {
+      "pad": {
+        "map_pan": "[左摇杆 / 方向键] 平移",
+        "map_zoom": "[LB / RB] 缩放",
+        "map_operator": "[A] 操作员",
+        "map_close": "[B] / [VIEW] 关闭",
+        "dialogue_choose": "方向键选择 • [A] 确认 • [B] 撤退",
+        "compass_map": "[VIEW]",
+        "radar_scan": "雷达扫描 [LB]",
+        "armory_cycle": "[LB / RB 切换]",
+        "menu_back": "[B]"
+      }
+    },
+    "sleep": {
+      "night_falls": "夜幕降临",
+      "night_body": "操作员睡着了。外面的某些东西没有。",
+      "morning_title": "第 {day} 天 · 06:00",
+      "morning_status": "{site} // 新的一天开始了",
+      "skip": "按任意键醒来"
+    },
+    "mystery": {
+      "kind": {
+        "courier": "快递箱",
+        "quarantine": "隔离舱",
+        "reliquary": "虫巢圣物匣",
+        "blacksite": "黑站保险箱"
+      },
+      "open": "打开{box}",
+      "opening": "正在打开{box} · {pct}%",
+      "locked": "{box}需要钥匙卡。工程师也许能撬开。",
+      "outcome": {
+        "supplies": "{box}：里面有补给。",
+        "salvage": "{box}：还能用的废料。",
+        "lore": "{box}：有人留下了记录。",
+        "ambush": "{box}：是个巢穴。后退！",
+        "hazard": "{box}：密封破裂。快离开。",
+        "quest_hook": "{box}：一枚路线芯片。地图上有新线索。"
+      }
+    },
+    "graphics": {
+      "intro": "所有选项从“高”开始。如果游戏卡顿，自动调整会一次降低一项设置，并在下方记录原因。你可以随时调回。",
+      "preset": "画质预设",
+      "preset_high": "高",
+      "preset_medium": "中",
+      "preset_low": "低",
+      "preset_custom": "自定义",
+      "auto_adjust": "游戏卡顿时自动调整",
+      "label_resolution": "渲染分辨率",
+      "label_shadows": "阴影",
+      "label_postProcessing": "后期处理（泛光、景深）",
+      "label_worldDetail": "世界细节（管道、积雪、冰柱）",
+      "label_landmarks": "深渊地标",
+      "label_effects": "特效（蒸汽、火花、灰尘）",
+      "val_resolution_100": "100%（原生）",
+      "val_resolution_85": "85%",
+      "val_resolution_70": "70%",
+      "val_shadows_full": "完整",
+      "val_shadows_reduced": "降低（半速更新）",
+      "val_shadows_off": "关闭",
+      "val_postProcessing_on": "开启",
+      "val_postProcessing_off": "关闭",
+      "val_worldDetail_high": "高",
+      "val_worldDetail_low": "低",
+      "val_landmarks_on": "开启",
+      "val_landmarks_off": "关闭",
+      "val_effects_full": "完整",
+      "val_effects_reduced": "降低（无灰尘）",
+      "val_effects_off": "关闭",
+      "auto_changes": "自动更改",
+      "auto_none": "尚未自动降低任何设置。",
+      "restore": "恢复",
+      "restore_label": "恢复自动调整降低的设置",
+      "change_entry": "{time} — {setting}：{from} → {to}。在{area}持续 {seconds} 秒 {fps} FPS；{cause}。",
+      "cause_gpu": "显卡已达上限",
+      "cause_cpu": "主线程（CPU）已达上限",
+      "area_active": "地堡",
+      "area_cryo": "冷冻区",
+      "area_bio": "生物区",
+      "area_unknown": "野外",
+      "notice": "显示：为保持流畅，{setting}已降至{to}。见 设置 › 图形。"
     }
   },
   "narrative": {

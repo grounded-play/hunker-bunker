@@ -1,4 +1,6 @@
 import { AudioManager } from './audio.js';
+import { describeProgressionUnlock, purchaseRigModule } from './progressionUnlocks.js';
+import { itemEffectText } from './itemEffects.js';
 import { t, applyStaticTranslations } from './i18n.js';
 import { assetUrl } from './assetUrl.js';
 import { buildEquipOptions } from './armoryOptions.js';
@@ -127,7 +129,12 @@ export function createArmoryUi({
     onOpenSettings,
     onClassChange,
     ownership,
-    qaToolsEnabled = false
+    qaToolsEnabled = false,
+    // Sprint 51: the same slot picker opened from the Foundry LOADOUT tab and
+    // the hero screen. Only the picker modal shows; no scene, no bench.
+    pickerOnly = false,
+    onPickerClose = null,
+    onEquip = null
 }) {
     if (!container) throw new Error('Armory UI requires a container DOM element');
     if (!ownership) throw new Error('Armory UI requires an ownership store');
@@ -466,7 +473,7 @@ export function createArmoryUi({
                     data-value="${tile.id}"
                     aria-pressed="${tile.selected}"
                     data-rarity="${rarity}"
-                    ${tile.locked ? 'aria-disabled="true"' : ''}
+                    ${tile.locked ? 'aria-disabled="true" data-controller-focusable' : ''}
                     aria-label="${tile.ariaLabel}"
                     title="${tile.locked ? 'Locked' : tile.realName}">
                     <span class="armory-tile__art">${art}${tile.locked ? '<span class="armory-tile__glyph">?</span>' : ''}</span>
@@ -482,12 +489,22 @@ export function createArmoryUi({
     // than merely left in the DOM.
     let openField = null;
 
+    // The picker-only instance renames its modal so it never shares an id
+    // with the Armory's own (the controller focus roots look it up by id).
+    function pickerModal() {
+        return container.querySelector?.('.armory-picker-modal') ?? null;
+    }
+
     function closePickerModal() {
         const fieldKey = openField;
         openField = null;
-        const modal = container.querySelector?.('#armory-picker-modal');
+        const modal = pickerModal();
         modal?.classList?.add?.('hidden');
         modal?.setAttribute?.('aria-hidden', 'true');
+        if (pickerOnly) {
+            if (fieldKey) onPickerClose?.(fieldKey);
+            return;
+        }
         if (fieldKey) container.querySelector?.(`#armory-slot-${fieldKey}`)?.focus?.({ preventScroll: true });
     }
 
@@ -495,7 +512,7 @@ export function createArmoryUi({
         const field = pickerFields()[fieldKey];
         if (!field) return;
         openField = fieldKey;
-        const modal = container.querySelector?.('#armory-picker-modal');
+        const modal = pickerModal();
         if (!modal) return;
         const selectedId = field.current();
         const options = field.options
@@ -790,8 +807,17 @@ export function createArmoryUi({
         // while a non-English locale is active is localised immediately. Later
         // locale changes are picked up by the global locale-changed listener.
         applyStaticTranslations(container);
+        globalThis.applyInputHints?.(container);
 
         bindEvents();
+        if (pickerOnly) {
+            const modal = pickerModal();
+            if (modal) {
+                modal.id = 'loadout-picker-modal';
+                container.appendChild?.(modal);
+            }
+            container.classList?.add?.('armory-ui--picker-only');
+        }
         // A re-render rebuilds the container, so a modal that was open has to
         // be reopened rather than merely surviving in the DOM.
         if (openField) openPickerModal(openField);
@@ -804,6 +830,31 @@ export function createArmoryUi({
     // `data-value`; the empty-string tile is the "none equipped" entry. Locked
     // tiles are refused here AND by equipGuard, so a hand-edited DOM still
     // cannot equip something unearned.
+    // A locked Rig Module sold for shells: the first click asks, a second
+    // click within a few seconds buys it (src/progressionUnlocks.js).
+    function tryBuyLockedTile(tile) {
+        const unlock = describeProgressionUnlock(tile.dataset.value);
+        if (unlock?.key !== 'ui.unlock.buy_shells') return false;
+        const state = container.querySelector?.('#armory-picker-readout-state');
+        const now = Date.now();
+        if (Number(tile.dataset.buyArmedAt) + 4000 < now || !tile.dataset.buyArmedAt) {
+            tile.dataset.buyArmedAt = String(now);
+            if (state) state.textContent = `${t(unlock.key, unlock.params)} · ${t('ui.unlock.confirm_buy')}`;
+            playSound('ui_click');
+            return true;
+        }
+        const result = purchaseRigModule(tile.dataset.value, { bank: globalThis.bankManager });
+        if (!result.ok) {
+            if (state) state.textContent = t('ui.unlock.not_enough_shells');
+            return false;
+        }
+        globalThis.dispatchEvent?.(new CustomEvent('rig-module-purchased', { detail: { itemdefid: tile.dataset.value } }));
+        playSound('sfx_overclock_socket');
+        const fieldKey = openField;
+        if (fieldKey) openPickerModal(fieldKey);
+        return true;
+    }
+
     function bindPickerGrid() {
         const grid = container.querySelector?.('#armory-picker-grid');
         const tiles = [...(grid?.querySelectorAll?.('.armory-tile') ?? [])];
@@ -816,13 +867,19 @@ export function createArmoryUi({
                 const name = container.querySelector?.('#armory-picker-readout-name');
                 const state = container.querySelector?.('#armory-picker-readout-state');
                 if (name) name.textContent = locked ? t('ui.armory.unknown_equipment') : tile.getAttribute('aria-label');
+                const unlock = locked ? describeProgressionUnlock(tile.dataset.value) : null;
                 if (state) state.textContent = locked
-                    ? (sheen?.hint ?? (entry?.source === 'achievement'
-                        ? t('ui.armory.locked_achievement')
-                        : t('ui.armory.locked_rewards')))
-                    : field?.current() === tile.dataset.value
+                    ? (sheen?.hint ?? (unlock
+                        ? t(unlock.key, unlock.params)
+                        : entry?.source === 'achievement'
+                            ? t('ui.armory.locked_achievement')
+                            : t('ui.armory.locked_rewards')))
+                    : [field?.current() === tile.dataset.value
                         ? t('ui.armory.equipped')
-                        : t('ui.armory.select_to_equip');
+                        : t('ui.armory.select_to_equip'),
+                    // What it does, so the choice is made on effect, not name.
+                    tile.dataset.value ? itemEffectText(armoryItemView(tile.dataset.value)) : ''
+                    ].filter(Boolean).join(' · ');
             };
             tile.addEventListener('focus', showDetails);
             tile.addEventListener('mouseenter', showDetails);
@@ -840,7 +897,7 @@ export function createArmoryUi({
             const tile = event.target.closest?.('.armory-tile');
             if (!tile) return;
             if (tile.classList.contains('is-locked')) {
-                playSound('sfx_ui_denied');
+                if (!tryBuyLockedTile(tile)) playSound('sfx_ui_denied');
                 return;
             }
             const field = pickerFields()[openField];
@@ -849,6 +906,7 @@ export function createArmoryUi({
             if (!field.apply(value)) return;
             playSound(field.sound);
             field.after?.(value);
+            onEquip?.(openField, value || null);
             const selectedField = openField;
             closePickerModal();
             render();
@@ -868,7 +926,7 @@ export function createArmoryUi({
             playSound('ui_click');
             closePickerModal();
         });
-        container.querySelector?.('#armory-picker-modal')?.addEventListener?.('click', (event) => {
+        pickerModal()?.addEventListener?.('click', (event) => {
             if (event.target?.id === 'armory-picker-modal') closePickerModal();
         });
 
@@ -973,7 +1031,7 @@ export function createArmoryUi({
                         event.stopImmediatePropagation();
                         closePickerModal();
                     } else if (event.key === 'Tab') {
-                        const modal = container.querySelector?.('#armory-picker-modal');
+                        const modal = pickerModal();
                         const buttons = [...(modal?.querySelectorAll?.('button') ?? [])];
                         const index = buttons.indexOf(document.activeElement);
                         const next = (index + (event.shiftKey ? -1 : 1) + buttons.length) % buttons.length;
@@ -1033,6 +1091,18 @@ export function createArmoryUi({
 
     return {
         setClass,
+        // Open one slot's picker for a class (the picker-only surfaces).
+        openSlot(fieldKey, classId = activeClass) {
+            const normalized = String(classId ?? '').toLowerCase();
+            if (ALLOWED_CLASSES.has(normalized) && normalized !== activeClass) {
+                activeClass = normalized;
+                loadoutManager.setActiveClass(activeClass);
+                render();
+            } else if (!pickerModal()) {
+                render();
+            }
+            openPickerModal(fieldKey);
+        },
         getActiveClass() {
             return activeClass;
         },

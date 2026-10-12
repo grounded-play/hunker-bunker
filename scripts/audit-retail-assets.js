@@ -84,7 +84,25 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // Raised 3040->3080 MiB for the 2026-10-05 2D->3D gap batch: 19 runtime GLBs
 // (cave/hive floor, camp props, four corpses) at ~1-2 MB each with WebP
 // textures (~37 MiB; PNG would have been ~85); measured payload ~3065 MiB.
-const PUBLIC_BUDGET = 3080 * 1024 * 1024;
+// Raised 3080->3400 MiB for lived-in pass 2 (2026-10-09): 39 props at 25k
+// triangles with 2048px WebP textures and meshopt geometry (~88 MB), 44 BC7
+// KTX2 floor surfaces (~95 MB) and 84 BC7 KTX2 sticker layers (~74 MB), all
+// of them new art; the committed payload was already 3104 MiB, and measured
+// with this batch it is 3357 MiB. KTX2 joins .glb in asarUnpack.
+// Raised 3400->3600 MiB when every GLB's textures moved to KTX2 (Basis UASTC,
+// scripts/art/convert_glb_textures_ktx2.py) plus the spline conduit layers:
+// GPU texture memory in a pinned run fell 3737 -> 1717 MiB, and disk grew
+// only ~150 MB because UASTC beats the old PNGs (lossy WebP sources grew).
+// Measured payload 3520 MiB.
+// Raised 3600->3700 MiB for the baked keyed sprites (src/keyedSpriteBakes.js,
+// public/3d/runtime/sprites, 55 MiB of UASTC KTX2): sprite GPU memory in a
+// pinned run fell 449 -> 333 MiB, total textures 1717 -> 1560 MiB. Measured
+// payload with them 3548 MiB, before other uncommitted art.
+// Raised 3700->4200 MiB for Sprint 51 world completion: 39 authored 25k-triangle
+// landmark/lived-in GLBs and 48 route/shoulder surface maps. The route-decal
+// audit removed 38 byte-identical public aliases before this increase; measured
+// payload is 4112 MiB, leaving 88 MiB rather than hiding duplicate growth.
+const PUBLIC_BUDGET = 4200 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus
@@ -180,6 +198,11 @@ export function classifyPublicAsset(relativePath, referenced) {
     // to filenames at runtime, so no literal `/asset.png` string exists for
     // the static reference scanner to discover.
     if (/^(?:ach|door|decal|prop|scatter)_[^/]+\.(?:avif|gif|jpe?g|png|svg|webp)$/i.test(relativePath)) {
+        return 'runtime-required';
+    }
+    // Lived-in floor surfaces, stickers, modular kit textures and spline conduits: src/floorSplat.js,
+    // src/kitMaterials.js, src/stickerDecals.js and src/splineDressingRenderer.js build each name from their layer tables.
+    if (/^3d\/runtime\/(?:surfaces|decals|splines|kits\/textures|sprites)\/(?:legacy\/)?[^/]+\.(?:ktx2|webp)$/i.test(relativePath)) {
         return 'runtime-required';
     }
     if (/(?:^|\/)(?:concepts?|references?|rejected-candidates|sources-keyed|strips|identity|keyart)(?:\/|$)/.test(lower)

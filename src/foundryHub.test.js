@@ -95,6 +95,25 @@ describe('Foundry hub focus', () => {
         expect(focused.at(-1)).toBe(opener);
     });
 
+    // Sprint 51: the Vault's markup is built on first open, so the hub asks
+    // for a tab's panels to exist before it looks them up.
+    it("prepares a tab's panels before borrowing them", async () => {
+        const { createFoundryHub } = await import('./foundryHub.js');
+        const doc = fakeDocument(fakeElement('steam-vault-btn'));
+        const stash = fakeElement('vault-inventory-layout');
+        const prepared = [];
+        const getElementById = doc.getElementById;
+        doc.getElementById = (id) => (id === 'vault-inventory-layout' && prepared.length ? stash : getElementById(id));
+        const panel = doc.getElementById('foundry-hub-panel');
+        const appended = [];
+        panel.appendChild = (el) => appended.push(el);
+        stash.parentNode = fakeElement('steam-vault-modal');
+        const hub = createFoundryHub({ document: doc, preparePanels: (ids) => prepared.push(ids) });
+        hub.open('stash');
+        expect(prepared[0]).toEqual(['vault-inventory-layout']);
+        expect(appended).toContain(stash);
+    });
+
     it('does not focus an opener that has left the page', async () => {
         const { createFoundryHub } = await import('./foundryHub.js');
         const opener = fakeElement('steam-vault-btn');
