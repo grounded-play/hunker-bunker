@@ -69,6 +69,74 @@ describe('prop FX recipes', () => {
         }
     });
 
+    const waveDProps = [
+        'corp_interrogation_chair', 'corp_debt_severing_kiosk', 'corp_dissection_gurney',
+        'corp_incinerator_hopper', 'meridian_cyber_graft_bench', 'meridian_mainframe_altar',
+        'meridian_servitor_dock', 'tallow_compost_fermenter', 'tallow_spore_cradle',
+        'tallow_flesh_trellis', 'tallow_sacrificial_altar', 'vesper_amputation_rig',
+        'vesper_autocannon_bipod', 'vesper_hanging_cage', 'vesper_reloading_station'
+    ];
+
+    it('gives every Wave D world-story GLB a bounded authored effect recipe', () => {
+        for (const type of waveDProps) {
+            const recipe = getPropFxProfile(type);
+            expect(recipe, type).toBeDefined();
+            expect(recipe.maxDistance, type).toBeLessThanOrEqual(24);
+        }
+    });
+
+    it('keeps all Wave D practical sources shadowless and state-switchable', () => {
+        for (const type of waveDProps) {
+            const root = new THREE.Group();
+            const model = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1));
+            root.add(model);
+            const fx = createPropFx(root, model, type);
+            expect(fx.lightSources.length, type).toBe(1);
+            for (const light of fx.lightSources) expect(light.castShadow, type).toBe(false);
+            fx.setMode('disabled');
+            expect(fx.enabled, type).toBe(false);
+            fx.setMode('on');
+            expect(fx.enabled, type).toBe(true);
+            fx.dispose();
+        }
+    });
+
+    const waveEProps = [
+        'tina_molted_carapace', 'tina_mimic_vanity', 'tina_trophy_trove',
+        'hive_visceral_ovipositor', 'hive_vivisected_engineer', 'hive_gestation_sac',
+        'hive_pulmonary_bellows', 'hive_amniotic_feeder_trough', 'cryo_ruptured_pod',
+        'cryo_cannibal_butchery_table', 'cryo_ice_core_specimen', 'cryo_thawing_trough',
+        'cryo_frozen_shelter_pod', 'chasm_hanging_elevator', 'chasm_suicide_ledge_cross',
+        'chasm_dredge_hook_crane', 'ind_hydraulic_manifold', 'ind_fuel_rod_cask'
+    ];
+
+    it('gives every Wave E world-story GLB a bounded authored effect recipe', () => {
+        for (const type of waveEProps) {
+            const recipe = getPropFxProfile(type);
+            expect(recipe, type).toBeDefined();
+            expect(recipe.maxDistance, type).toBeLessThanOrEqual(24);
+        }
+    });
+
+    const waveFFxProps = [
+        'life_server_racks', 'life_transformer_bank', 'life_fire_station',
+        'life_conveyor_section', 'life_cistern_tank', 'life_scaffold_tower',
+        'life_forklift', 'life_shower_stall', 'life_laundry_machines',
+        'life_overseer_desk', 'life_planning_board', 'life_algae_tank',
+        'cryo_ice_crawler', 'cryo_frozen_cascade', 'cryo_snowbound_crates',
+        'cryo_ice_blocks', 'hive_resin_pillar', 'hive_cocooned_crew',
+        'hive_pheromone_node', 'hive_tendril_arch', 'hive_assimilated_generator',
+        'crash_engine_nacelle', 'salvage_tagged_heap', 'camp_canvas_tent'
+    ];
+
+    it('gives all Wave F machinery & camps authored effect recipes', () => {
+        for (const type of waveFFxProps) {
+            const recipe = getPropFxProfile(type);
+            expect(recipe, type).toBeDefined();
+            expect(recipe.maxDistance, type).toBeLessThanOrEqual(24);
+        }
+    });
+
     it('covers the representative fire, liquid, mechanical, electrical, organic and rupture slice', () => {
         for (const type of [
             'prop_camp_cookfire_lit', 'life_water_still', 'prop_specimen_tank',

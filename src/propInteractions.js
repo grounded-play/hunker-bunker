@@ -368,6 +368,317 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
         { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'crane_motor' }
     ),
 
+    // Wave D: Pass 1 Corporate, Meridian, Tallow & Vesper (15 models)
+    corp_interrogation_chair: statefulInteraction(
+        '[E] EXTRACT BURNED MEMORY',
+        () => 'INTERROGATION CHAIR: RESIDUAL NEURAL TRACE EXTRACTED. EXECUTIVE CODES RECOVERED. +30 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'power_hum', onUse: (game) => game.addScrap?.(30) }
+    ),
+    corp_debt_severing_kiosk: statefulInteraction(
+        '[E] SPOOF LIQUIDATION RECORD',
+        () => 'DEBT SEVERING KIOSK: IDENTITY LIQUIDATED. CORP STIPEND DISPENSED. +35 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'terminal_beep', onUse: (game) => game.addScrap?.(35) }
+    ),
+    corp_dissection_gurney: statefulInteraction(
+        '[E] SCAN TISSUE SPECIMEN',
+        () => 'DISSECTION GURNEY: PATHOLOGY SCAN COMPLETE. EMERGENCY SUTURES RETRIEVED. +20 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'terminal_beep', onUse: (game) => { game.addScrap?.(20); game.healPlayer?.(15); } }
+    ),
+    corp_incinerator_hopper: statefulInteraction(
+        '[E] CYCLE INCINERATOR HOPPER',
+        (state) => `INCINERATOR HOPPER: ${state === 'working' ? 'THERMAL PURGE ENGAGED' : 'STANDBY'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'crane_motor' }
+    ),
+    meridian_cyber_graft_bench: statefulInteraction(
+        '[E] CALIBRATE CYBER GRAFT',
+        (state) => `CYBER GRAFT BENCH: ${state === 'working' ? 'SERVO LINK SYNCHRONIZED' : 'IDLE'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'power_hum' }
+    ),
+    meridian_mainframe_altar: statefulInteraction(
+        '[E] COMMUNE WITH MAINFRAME',
+        () => 'MAINFRAME ALTAR: ARCHIVAL RUNES COMMUNICATED. SECTOR SCHEMATICS DOWNLOADED. +30 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'terminal_beep', onUse: (game) => game.addScrap?.(30) }
+    ),
+    meridian_servitor_dock: statefulInteraction(
+        '[E] DRAIN RESERVE CHARGE',
+        () => 'SERVITOR DOCK: CAPACITOR BANK DRAINED. POWER PACK REPLENISHED. +25 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'power_hum', onUse: (game) => { game.addScrap?.(25); game.healPlayer?.(10); } }
+    ),
+    tallow_compost_fermenter: statefulInteraction(
+        '[E] TAP FERMENTER SLURRY',
+        () => 'COMPOST FERMENTER: ENRICHED BIO-STIMULANT EXTRACTED. +25 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'steam_burst', onUse: (game) => { game.addScrap?.(25); game.healPlayer?.(10); } }
+    ),
+    tallow_spore_cradle: statefulInteraction(
+        '[E] STERILIZE SPORE CRADLE',
+        () => 'SPORE CRADLE: FUNGAL NURSERY CAUTERIZED. BIO-MASS COLLECTED. +15 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'flesh_seal', onUse: (game) => game.addScrap?.(15) }
+    ),
+    tallow_flesh_trellis: statefulInteraction(
+        '[E] PRUNE FLESH TRELLIS',
+        () => 'FLESH TRELLIS: TENDON VINES CUT. ELASTIC FIBERS HARVESTED. +20 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'flesh_seal', onUse: (game) => game.addScrap?.(20) }
+    ),
+    tallow_sacrificial_altar: statefulInteraction(
+        '[E] INSPECT SACRIFICIAL ALTAR',
+        () => 'SACRIFICIAL ALTAR: ANCIENT BONE TALISMAN UNSEALED. +30 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'flesh_seal', onUse: (game) => game.addScrap?.(30) }
+    ),
+    vesper_amputation_rig: statefulInteraction(
+        '[E] SALVAGE TRAUMA RIG',
+        () => 'AMPUTATION RIG: STERILE SURGICAL CLAMPS SALVAGED. +30 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'crane_motor', onUse: (game) => game.addScrap?.(30) }
+    ),
+    vesper_autocannon_bipod: statefulInteraction(
+        '[E] CLEAR AUTOCANNON FEED',
+        () => 'AUTOCANNON BIPOD: BREECH CLEARED. ORDNANCE ROUNDS RECOVERED. +25 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'crane_motor', onUse: (game) => game.addScrap?.(25) }
+    ),
+    vesper_hanging_cage: statefulInteraction(
+        '[E] UNLATCH HANGING CAGE',
+        () => 'HANGING CAGE: IRON HASP CRACKED. SCAVENGER STASH RECOVERED. +25 SCRAP.',
+        { repeatable: false, nextState: () => 'open', sound: 'vault_open', onUse: (game) => game.addScrap?.(25) }
+    ),
+    vesper_reloading_station: statefulInteraction(
+        '[E] PRESS MUNITIONS',
+        (state) => `RELOADING STATION: ${state === 'working' ? 'DIE PRESS CRANKED' : 'READY'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'crane_motor', onUse: (game) => game.addScrap?.(15) }
+    ),
+
+    // Wave E: Pass 1 Hive, Cryo Brutality, Tina & Chasm (18 models)
+    tina_molted_carapace: statefulInteraction(
+        '[E] SCAN MOLTED CARAPACE',
+        () => "MOLTED CARAPACE: MAYOR TINA'S EPIDERMAL SHEDDING SCANNED. LORE ARCHIVED. +20 SCRAP.",
+        { repeatable: false, nextState: () => 'spent', sound: 'terminal_beep', onUse: (game) => game.addScrap?.(20) }
+    ),
+    tina_mimic_vanity: statefulInteraction(
+        '[E] SEARCH MIMIC VANITY',
+        () => 'MIMIC VANITY: PROSTHETIC DERMIS AND COSMETIC STASH FOUND. +30 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'vault_open', onUse: (game) => game.addScrap?.(30) }
+    ),
+    tina_trophy_trove: statefulInteraction(
+        '[E] LOOT TROPHY TROVE',
+        () => 'TROPHY TROVE: RARE MAYORAL RELICS RECOVERED. +50 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'vault_open', onUse: (game) => game.addScrap?.(50) }
+    ),
+    hive_visceral_ovipositor: statefulInteraction(
+        '[E] JAM OVIPOSITOR',
+        () => 'VISCERAL OVIPOSITOR: REPRODUCTIVE DUCT CLAMPED. LOCAL BREEDING HALTED. +30 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'flesh_seal', onUse: (game) => game.addScrap?.(30) }
+    ),
+    hive_vivisected_engineer: statefulInteraction(
+        '[E] TERMINATE SUFFERING',
+        () => 'VIVISECTED ENGINEER: LIFE SUPPORT SILENCED. KEYCARD RETRIEVED. +40 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'terminal_beep', onUse: (game) => game.addScrap?.(40) }
+    ),
+    hive_gestation_sac: statefulInteraction(
+        '[E] EXCISE GESTATION SAC',
+        () => 'GESTATION SAC: EMBRYO EXCISED. BIOLOGICAL SAMPLE ACQUIRED. +25 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'flesh_seal', onUse: (game) => game.addScrap?.(25) }
+    ),
+    hive_pulmonary_bellows: statefulInteraction(
+        '[E] CLAMP PULMONARY BELLOWS',
+        (state) => `PULMONARY BELLOWS: ${state === 'working' ? 'TRACHEA CONSTRICTED' : 'VENTILATING'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'steam_burst' }
+    ),
+    hive_amniotic_feeder_trough: statefulInteraction(
+        '[E] CONTAMINATE FEEDER TROUGH',
+        () => 'FEEDER TROUGH: CHEMICAL TAINT INTRODUCED. +25 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'steam_burst', onUse: (game) => game.addScrap?.(25) }
+    ),
+    cryo_ruptured_pod: statefulInteraction(
+        '[E] SEARCH RUPTURED CRYO POD',
+        () => 'CRYO POD: OCCUPANT COLD-STORAGE SUPPLIES RECOVERED. +25 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'flesh_seal', onUse: (game) => game.addScrap?.(25) }
+    ),
+    cryo_cannibal_butchery_table: statefulInteraction(
+        '[E] INSPECT BUTCHERY TABLE',
+        () => 'BUTCHERY TABLE: EMERGENCY DRIED PROTEIN CACHE FOUND. +25 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'flesh_seal', onUse: (game) => { game.addScrap?.(25); game.healPlayer?.(20); } }
+    ),
+    cryo_ice_core_specimen: statefulInteraction(
+        '[E] ANALYZE ICE CORE',
+        () => 'ICE CORE: PREHISTORIC STRATA LOGGED. RARE MINERAL SAMPLES HARVESTED. +30 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'terminal_beep', onUse: (game) => game.addScrap?.(30) }
+    ),
+    cryo_thawing_trough: statefulInteraction(
+        '[E] ENGAGE THAWING COILS',
+        (state) => `THAWING TROUGH: ${state === 'working' ? 'HEATING HEURISTIC ACTIVE' : 'COLD'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'steam_burst', onUse: (game) => game.healPlayer?.(10) }
+    ),
+    cryo_frozen_shelter_pod: statefulInteraction(
+        '[E] PRY SHELTER POD HATCH',
+        () => "SHELTER POD: SURVIVOR'S THERMAL FLARES AND SUPPLIES FOUND. +20 SCRAP.",
+        { repeatable: false, nextState: () => 'open', sound: 'vault_open', onUse: (game) => game.addScrap?.(20) }
+    ),
+    chasm_hanging_elevator: statefulInteraction(
+        '[E] CYCLE ELEVATOR CABLES',
+        (state) => `HANGING ELEVATOR: ${state === 'working' ? 'WINCH TENSION LOCKED' : 'SLACK'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'crane_motor' }
+    ),
+    chasm_suicide_ledge_cross: statefulInteraction(
+        '[E] READ MEMORIAL INSCRIPTION',
+        () => "MEMORIAL CROSS: 'LET THE ICE FORGET WHAT THE HORIZON TOOK.' STASH NOTED. +20 SCRAP.",
+        { repeatable: false, nextState: () => 'spent', sound: 'terminal_beep', onUse: (game) => game.addScrap?.(20) }
+    ),
+    chasm_dredge_hook_crane: statefulInteraction(
+        '[E] HOIST DREDGE CRANE',
+        () => 'DREDGE CRANE: CHASM SALVAGE CRATE HAULED UP. +45 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'crane_motor', onUse: (game) => game.addScrap?.(45) }
+    ),
+    ind_hydraulic_manifold: statefulInteraction(
+        '[E] VENT HYDRAULIC PRESSURE',
+        (state) => `HYDRAULIC MANIFOLD: ${state === 'working' ? 'BYPASS OPEN' : 'HOLDING PRESSURE'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'steam_burst' }
+    ),
+    ind_fuel_rod_cask: statefulInteraction(
+        '[E] EXTRACT SPENT FUEL ROD',
+        () => 'FUEL ROD CASK: HIGH-ENERGY CELL DISLODGED. +50 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'vault_open', onUse: (game) => game.addScrap?.(50) }
+    ),
+
+    // Wave F: 2026-10-11 World Completion Machinery, Daily Life & Camps (28 models)
+    life_pallet_racking: statefulInteraction(
+        '[E] SEARCH PALLET RACK',
+        () => 'PALLET RACKING: BOXED RATION PACKS AND HARDWARE SALVAGED. +20 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'vault_open', onUse: (game) => game.addScrap?.(20) }
+    ),
+    life_server_racks: statefulInteraction(
+        '[E] ACCESS ARCHIVED LOGS',
+        () => 'SERVER RACK: SECTOR COMM LOGS HARVESTED. +25 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'terminal_beep', onUse: (game) => game.addScrap?.(25) }
+    ),
+    life_transformer_bank: statefulInteraction(
+        '[E] RESET CIRCUIT BREAKER',
+        (state) => `TRANSFORMER BANK: ${state === 'working' ? 'BUS RE-ENERGIZED' : 'FAULT TRIP'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'power_hum' }
+    ),
+    life_fire_station: statefulInteraction(
+        '[E] BREAK FIRE STATION GLASS',
+        () => 'EMERGENCY FIRE STATION: CHEMICAL EXTINGUISHER & MEDIKIT RETRIEVED. +25 SCRAP.',
+        { repeatable: false, nextState: () => 'open', sound: 'vault_open', onUse: (game) => { game.addScrap?.(25); game.healPlayer?.(20); } }
+    ),
+    life_conveyor_section: statefulInteraction(
+        '[E] ENGAGE CONVEYOR ROLLERS',
+        (state) => `CONVEYOR: ${state === 'working' ? 'ROLLERS ENGAGED' : 'STOPPED'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'crane_motor', onUse: (game) => game.addScrap?.(15) }
+    ),
+    life_cistern_tank: statefulInteraction(
+        '[E] PURIFY CISTERN WATER',
+        () => 'CISTERN TANK: CLEAN RESERVE WATER TAPPED. HYDRATION RESTORED.',
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'water_drain', onUse: (game) => game.healPlayer?.(15) }
+    ),
+    life_scaffold_tower: statefulInteraction(
+        '[E] SEARCH TOOL TRAY',
+        () => 'SCAFFOLD TOWER: HARDWARE & SPARE BOLTS RECOVERED. +15 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'vault_open', onUse: (game) => game.addScrap?.(15) }
+    ),
+    life_forklift: statefulInteraction(
+        '[E] CRANK FORKLIFT LIFT',
+        (state) => `FORKLIFT: ${state === 'working' ? 'HYDRAULIC MAST RAISED' : 'LOWERED'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'crane_motor' }
+    ),
+    life_sink_row: statefulInteraction(
+        '[E] WASH CONTAMINANTS',
+        () => 'SINK ROW: STERILIZATION WASH RUN. TOXINS RINSED.',
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'steam_burst', onUse: (game) => game.healPlayer?.(10) }
+    ),
+    life_shower_stall: statefulInteraction(
+        '[E] RUN DECON SHOWER',
+        () => 'SHOWER STALL: HIGH-PRESSURE DECONTAMINATION SPRAY APPLIED.',
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'steam_burst', onUse: (game) => game.healPlayer?.(20) }
+    ),
+    life_laundry_machines: statefulInteraction(
+        '[E] SEARCH LAUNDRY DRUM',
+        () => 'LAUNDRY MACHINE: FORGOTTEN COINS AND LINEN SCRAP FOUND. +15 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'vault_open', onUse: (game) => game.addScrap?.(15) }
+    ),
+    life_weight_bench: statefulInteraction(
+        '[E] WORK OUT ON BENCH',
+        () => 'WEIGHT BENCH: EXERTION COMPLETE. ENDURANCE SURGE GRANTED.',
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'power_hum', onUse: (game) => game.healPlayer?.(5) }
+    ),
+    life_filing_cabinets: statefulInteraction(
+        '[E] SEARCH PERSONNEL FILES',
+        () => 'FILING CABINETS: REDACTED CREW DOSSIER RETRIEVED. +20 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'vault_open', onUse: (game) => game.addScrap?.(20) }
+    ),
+    life_overseer_desk: statefulInteraction(
+        '[E] INSPECT OVERSEER LEDGER',
+        () => 'OVERSEER DESK: AUDIT LEDGER DECODED. SUPPLY CACHES LOCATED. +30 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'terminal_beep', onUse: (game) => game.addScrap?.(30) }
+    ),
+    life_planning_board: statefulInteraction(
+        '[E] STUDY DEFENSE TACTICS',
+        () => 'PLANNING BOARD: BUNKER CHOKEPOINTS MEMORIZED. +20 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'terminal_beep', onUse: (game) => game.addScrap?.(20) }
+    ),
+    life_algae_tank: statefulInteraction(
+        '[E] HARVEST ALGAE OXYGEN',
+        () => 'ALGAE TANK: PHOTOSYNTHETIC O2 ENRICHED. BREATHING PURIFIED.',
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'water_drain', onUse: (game) => game.healPlayer?.(15) }
+    ),
+    cryo_ice_crawler: statefulInteraction(
+        '[E] SIPHON CRAWLER FUEL',
+        () => 'ICE CRAWLER: SYNTHETIC DIESEL SIPHONED. +25 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'crane_motor', onUse: (game) => game.addScrap?.(25) }
+    ),
+    cryo_snowbound_crates: statefulInteraction(
+        '[E] PRY FROZEN CRATES',
+        () => 'SNOWBOUND CRATES: ICE SHATTERED. EMERGENCY SUPPLIES FREED. +20 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'vault_open', onUse: (game) => game.addScrap?.(20) }
+    ),
+    cryo_ice_blocks: statefulInteraction(
+        '[E] CHIP ICE BLOCKS',
+        () => 'ICE BLOCKS: MELTWATER CHIPPED. FRESH MOISTURE OBTAINED.',
+        { repeatable: false, nextState: () => 'spent', sound: 'flesh_seal', onUse: (game) => game.healPlayer?.(10) }
+    ),
+    hive_resin_pillar: statefulInteraction(
+        '[E] TAP RESIN PILLAR',
+        () => 'RESIN PILLAR: BIOLOGICAL ADHESIVE HARVESTED. +20 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'flesh_seal', onUse: (game) => game.addScrap?.(20) }
+    ),
+    hive_cocooned_crew: statefulInteraction(
+        '[E] CUT OPEN COCOON',
+        () => 'COCOONED CREW: VICTIM CUT FREE. DOGTAGS & DOGEAR SALVAGED. +30 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'flesh_seal', onUse: (game) => game.addScrap?.(30) }
+    ),
+    hive_pheromone_node: statefulInteraction(
+        '[E] MASK ODOR AT NODE',
+        () => 'PHEROMONE NODE: SCENT GLANDS CRUSHED. SWARM PHEROMONES MASKED.',
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'flesh_seal' }
+    ),
+    hive_assimilated_generator: statefulInteraction(
+        '[E] OVERCHARGE ASSIMILATED GENERATOR',
+        (state) => `ASSIMILATED GENERATOR: ${state === 'working' ? 'BIO-ELECTRIC SURGE DISCHARGING' : 'STABILIZED'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'power_hum' }
+    ),
+    crash_engine_nacelle: statefulInteraction(
+        '[E] SALVAGE ENGINE NACELLE',
+        () => 'ENGINE NACELLE: TITANIUM TURBINE BLADES REMOVED. +35 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'vault_open', onUse: (game) => game.addScrap?.(35) }
+    ),
+    crash_hull_panels: statefulInteraction(
+        '[E] PRY HULL PANEL',
+        () => 'CRASH HULL PANEL: REINFORCED ALLOY STRIPPED. +20 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'vault_open', onUse: (game) => game.addScrap?.(20) }
+    ),
+    salvage_tagged_heap: statefulInteraction(
+        '[E] SORT TAGGED SALVAGE',
+        () => 'TAGGED SALVAGE HEAP: SORTED RECOVERABLE METALS & PARTS. +30 SCRAP.',
+        { repeatable: false, nextState: () => 'spent', sound: 'vault_open', onUse: (game) => game.addScrap?.(30) }
+    ),
+    camp_canvas_tent: statefulInteraction(
+        '[E] REST AT TENT',
+        () => 'CANVAS TENT: BRIEF RESPITE TAKEN. VITALITY RECOVERED.',
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'vault_open', onUse: (game) => game.healPlayer?.(25) }
+    ),
+    camp_water_barrel: statefulInteraction(
+        '[E] REFILL FLASK AT BARREL',
+        () => 'WATER BARREL: CANTEEN REFILLED WITH CLEAN WATER.',
+        { nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'water_drain', onUse: (game) => game.healPlayer?.(15) }
+    ),
+
     life_ribcage_rescue_cabinet: mechanismInteraction('[E] WORK RESCUE CABINET', 'RESCUE CABINET: RIB DOOR UNLATCHED.', { sound: 'flesh_seal' }),
     life_confessional: mechanismInteraction('[E] WORK CONFESSIONAL DOORS', 'CONFESSIONAL: THE BOOTH DOORS SWING.', { sound: 'vault_open' }),
     life_seismic_drill: mechanismInteraction('[E] RUN SEISMIC DRILL', 'SEISMIC DRILL: AUGER ENGAGED.', { sound: 'crane_motor' }),

@@ -43,6 +43,57 @@ describe('propInteractions', () => {
         }
     });
 
+    const waveDProps = [
+        'corp_interrogation_chair', 'corp_debt_severing_kiosk', 'corp_dissection_gurney',
+        'corp_incinerator_hopper', 'meridian_cyber_graft_bench', 'meridian_mainframe_altar',
+        'meridian_servitor_dock', 'tallow_compost_fermenter', 'tallow_spore_cradle',
+        'tallow_flesh_trellis', 'tallow_sacrificial_altar', 'vesper_amputation_rig',
+        'vesper_autocannon_bipod', 'vesper_hanging_cage', 'vesper_reloading_station'
+    ];
+
+    it('gives every Wave D world-story GLB a bespoke action', () => {
+        for (const type of waveDProps) {
+            expect(PROP_INTERACTION_SPECS[type]?.canInteract, type).toBe(true);
+            expect(PROP_INTERACTION_SPECS[type]?.interactPrompt, type).toMatch(/^\[E\]/);
+        }
+    });
+
+    const waveEProps = [
+        'tina_molted_carapace', 'tina_mimic_vanity', 'tina_trophy_trove',
+        'hive_visceral_ovipositor', 'hive_vivisected_engineer', 'hive_gestation_sac',
+        'hive_pulmonary_bellows', 'hive_amniotic_feeder_trough', 'cryo_ruptured_pod',
+        'cryo_cannibal_butchery_table', 'cryo_ice_core_specimen', 'cryo_thawing_trough',
+        'cryo_frozen_shelter_pod', 'chasm_hanging_elevator', 'chasm_suicide_ledge_cross',
+        'chasm_dredge_hook_crane', 'ind_hydraulic_manifold', 'ind_fuel_rod_cask'
+    ];
+
+    it('gives every Wave E world-story GLB a bespoke action', () => {
+        for (const type of waveEProps) {
+            expect(PROP_INTERACTION_SPECS[type]?.canInteract, type).toBe(true);
+            expect(PROP_INTERACTION_SPECS[type]?.interactPrompt, type).toMatch(/^\[E\]/);
+        }
+    });
+
+    const waveFProps = [
+        'life_pallet_racking', 'life_server_racks', 'life_transformer_bank',
+        'life_fire_station', 'life_conveyor_section', 'life_cistern_tank',
+        'life_scaffold_tower', 'life_forklift', 'life_sink_row',
+        'life_shower_stall', 'life_laundry_machines', 'life_weight_bench',
+        'life_filing_cabinets', 'life_overseer_desk', 'life_planning_board',
+        'life_algae_tank', 'cryo_ice_crawler', 'cryo_snowbound_crates',
+        'cryo_ice_blocks', 'hive_resin_pillar', 'hive_cocooned_crew',
+        'hive_pheromone_node', 'hive_assimilated_generator', 'crash_engine_nacelle',
+        'crash_hull_panels', 'salvage_tagged_heap', 'camp_canvas_tent',
+        'camp_water_barrel'
+    ];
+
+    it('gives every Wave F world-completion GLB a bespoke action', () => {
+        for (const type of waveFProps) {
+            expect(PROP_INTERACTION_SPECS[type]?.canInteract, type).toBe(true);
+            expect(PROP_INTERACTION_SPECS[type]?.interactPrompt, type).toMatch(/^\[E\]/);
+        }
+    });
+
     it('applies named visual state and collision changes through dressing roots', () => {
         const setState = vi.fn();
         const setMode = vi.fn();
