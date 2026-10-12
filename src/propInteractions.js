@@ -291,7 +291,7 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
         '[E] FIRE CALIBRATION ROUND',
         () => 'SIEGE CANNON: CALIBRATION ROUND DISCHARGED INTO THE ABYSS.',
         { repeatable: false, nextState: () => 'spent', sound: 'crane_motor', onUse: (game, prop) => {
-            game.shakeCamera?.(0.6, 0.4);
+            game.triggerCameraShake?.(0.6, 0.4);
             game.spawnPhysicalBurst?.(prop?.position?.x ?? 0, prop?.position?.z ?? 0, { color: 0xff4433, count: 12, upward: 0.4 });
         } }
     ),
