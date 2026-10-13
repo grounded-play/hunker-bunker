@@ -32,13 +32,15 @@ function baseGame() {
 describe('physical first-night cargo runtime', () => {
     beforeEach(() => browserStub());
 
-    it('bootstraps one folded cot beside the wreck and a sealed berth without a sleep anchor', () => {
+    it('bootstraps three physical recovery pieces beside the incomplete berth', () => {
         const game = baseGame();
         const result = ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
         expect(result.addedCot).toBe(true);
-        expect(game.carryState.worldObjects).toEqual([
-            expect.objectContaining({ definitionId: 'cot_bed', modelType: 'carry_field_cot_folded' })
-        ]);
+        expect(game.carryState.worldObjects).toEqual(expect.arrayContaining([
+            expect.objectContaining({ definitionId: 'cot_bed', modelType: 'carry_field_cot_folded' }),
+            expect.objectContaining({ definitionId: 'hull_patch_panel', modelType: 'crash_hull_panels' }),
+            expect.objectContaining({ definitionId: 'door_seal_kit', modelType: 'mod_pressure_seal' })
+        ]));
         expect(game.carryState.installed.some(({ definitionId }) => definitionId === 'cot_bed')).toBe(false);
     });
 
@@ -68,19 +70,26 @@ describe('physical first-night cargo runtime', () => {
         ]));
     });
 
-    it('allows bunker sleep only after the installed cot completes the oxygenated berth', () => {
+    it('allows bunker sleep only after the cot, wall patch, and door seal complete the berth', () => {
         const game = baseGame();
         game.dayState = createDayState();
         game.canRestAt = ThreeGame.prototype.canRestAt;
         ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
         const site = { id: 'bunker_cot', ...game.getFirstNightBasePlan().installSocket.transform };
-        expect(game.canRestAt(site)).toMatchObject({ allowed: false, reason: 'lacks-installed-bed' });
+        expect(game.canRestAt(site)).toMatchObject({ allowed: false, reason: 'unsealed:missing_wall' });
 
         const cotId = game.carryState.worldObjects[0].instanceId;
         ThreeGame.prototype.beginCarryObject.call(game, cotId);
         game.player.position.x = site.x;
         game.player.position.z = site.z;
         ThreeGame.prototype.installCurrentCarryObject.call(game);
+        expect(game.canRestAt(site)).toMatchObject({ allowed: false, reason: 'unsealed:missing_wall' });
+
+        for (const definitionId of ['hull_patch_panel', 'door_seal_kit']) {
+            const object = game.carryState.worldObjects.find((entry) => entry.definitionId === definitionId);
+            ThreeGame.prototype.beginCarryObject.call(game, object.instanceId);
+            ThreeGame.prototype.installCurrentCarryObject.call(game);
+        }
         expect(game.canRestAt(site)).toMatchObject({ allowed: true, nextDay: 2 });
     });
 });

@@ -634,10 +634,13 @@ unwinnable seed, and stays within the projectile/FX frame budget.
   GLB in world and in both hands, supports obstruction-aware safe drop, and snaps to the ship berth
   through the shared interaction selector (`src/firstNightBase.js`, `src/carryPresentation.js`,
   `src/threeGame.js`);
+- [x] extend that route to a crash-hull patch and pressure-door seal: both are separate run cargo,
+  use authored GLBs while carried, select tag-compatible occupied-safe sockets, persist only after
+  installation, render their installed models, and replace the legacy pre-sealed giveaway berth;
 - [x] while the operator carries cargo, recruited companions move into a forward cover formation
   and retain their normal basic/assist fire; a co-op partner's weapon state is untouched;
-- remaining: freeform/half-grid placement preview, generalized sockets for wall/door/ship modules,
-  and host-authoritative co-op carry event sequencing;
+- remaining: freeform/half-grid placement preview, ship-module sockets beyond the first-night
+  wall/door/cot set, and host-authoritative co-op carry event sequencing;
 - [x] bed, walls, sealable door, O2 duct/regulator definitions (`src/data/baseModules.js`);
 - [x] bind installed/carry GLBs for the cot and all four recoverable ship modules;
 - [x] live seal-gated bunker sleep: the pre-placed cosmetic cot shortcut is gone; a persisted
@@ -648,8 +651,8 @@ unwinnable seed, and stays within the projectile/FX frame budget.
 - [x] strict edge-addressed seal validation (one wall/door per perimeter edge), deterministic cabin
   fill/depressurization, sleep pressure threshold, and a five-segment emissive berth gauge with a
   practical status light (`src/baseSealGraph.js`, `src/baseAtmospherePresentation.js`);
-- remaining: camp-authored cot handoff, lost-cargo recovery/map marker, damaged wall/door recovery,
-  and hive logistics variants.
+- remaining: camp-authored cot handoff, lost-cargo recovery/map marker, damage/repair states for the
+  recovered wall and door, and hive logistics variants.
 
 Exit: a new campaign can recover the bed, finish a sealed room, fill it with O2, and sleep; firing
 is impossible while carrying; the partner/companion can defend the carrier.

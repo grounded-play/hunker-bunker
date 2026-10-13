@@ -1,35 +1,70 @@
 import { describe, expect, it } from 'vitest';
-import { createCarryState, beginCarry, installCarriedObject } from './carrySystem.js';
+import { beginCarry, createCarryState, installCarriedObject } from './carrySystem.js';
 import { evaluateRoomSealGraph } from './baseSealGraph.js';
-import { ensureFirstNightBaseState, installedCot, planFirstNightBase } from './firstNightBase.js';
+import {
+    availableFirstNightSocket,
+    ensureFirstNightBaseState,
+    installedCot,
+    planFirstNightBase
+} from './firstNightBase.js';
+
+function installDefinition(state, plan, definitionId) {
+    const object = state.worldObjects.find((entry) => entry.definitionId === definitionId);
+    let next = beginCarry(state, object.instanceId, 'local').state;
+    const socket = availableFirstNightSocket(next, plan, next.carried);
+    return installCarriedObject(next, socket, { carrierPlayerId: 'local' }).state;
+}
 
 describe('first-night base recovery', () => {
-    it('places the folded cot outside a sealed oxygenated starter berth', () => {
+    it('places the cot, hull patch, and pressure seal on a short route beside an incomplete berth', () => {
         const result = ensureFirstNightBaseState(createCarryState('run-a'), { shipX: 10, shipZ: 20 });
-        expect(result.addedCot).toBe(true);
-        expect(result.state.worldObjects[0]).toMatchObject({
-            definitionId: 'cot_bed',
-            missionId: 'first-night-cot-recovery',
-            modelType: 'carry_field_cot_folded',
-            worldPosition: { x: 15, z: 22 }
-        });
+        expect(result.addedCargo.map(({ definitionId }) => definitionId)).toEqual([
+            'cot_bed', 'hull_patch_panel', 'door_seal_kit'
+        ]);
+        expect(result.state.worldObjects).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                definitionId: 'cot_bed',
+                missionId: 'first-night-cot-recovery',
+                modelType: 'carry_field_cot_folded',
+                worldPosition: { x: 15, z: 22 }
+            }),
+            expect.objectContaining({ definitionId: 'hull_patch_panel', modelType: 'crash_hull_panels' }),
+            expect.objectContaining({ definitionId: 'door_seal_kit', modelType: 'mod_pressure_seal' })
+        ]));
         const seal = evaluateRoomSealGraph({ modules: result.state.installed, defaultSafeBubble: null });
-        expect(seal).toMatchObject({ isEnclosed: true, isOxygenated: true, isSleepSafe: false });
+        expect(seal).toMatchObject({ isEnclosed: false, isOxygenated: false, isSleepSafe: false });
+        expect(seal.leaks.map(({ side }) => side).sort()).toEqual(['east', 'west']);
     });
 
-    it('becomes sleep-safe only after the recovered cot reaches its ship socket', () => {
+    it('becomes sleep-safe only after all three recovered pieces reach compatible sockets', () => {
         let { state, plan } = ensureFirstNightBaseState(createCarryState('run-a'), { shipX: 10, shipZ: 20 });
-        state = beginCarry(state, state.worldObjects[0].instanceId, 'local').state;
-        state = installCarriedObject(state, plan.installSocket, { carrierPlayerId: 'local' }).state;
+        state = installDefinition(state, plan, 'cot_bed');
         expect(installedCot(state)?.socketId).toBe('ship-sleep-bay');
+        expect(evaluateRoomSealGraph({ modules: state.installed, defaultSafeBubble: null }).isSleepSafe).toBe(false);
+        state = installDefinition(state, plan, 'hull_patch_panel');
+        expect(evaluateRoomSealGraph({ modules: state.installed, defaultSafeBubble: null }).isSleepSafe).toBe(false);
+        state = installDefinition(state, plan, 'door_seal_kit');
         expect(evaluateRoomSealGraph({ modules: state.installed, defaultSafeBubble: null }).isSleepSafe).toBe(true);
     });
 
-    it('does not duplicate the mission cot or starter shell across bootstrap calls', () => {
+    it('does not duplicate recovery cargo or shell modules across bootstrap calls', () => {
         const first = ensureFirstNightBaseState(createCarryState('run-a'), { shipX: 0, shipZ: 0 });
         const second = ensureFirstNightBaseState(first.state, { shipX: 0, shipZ: 0 });
-        expect(second.addedCot).toBe(false);
-        expect(second.state.worldObjects.filter(({ definitionId }) => definitionId === 'cot_bed')).toHaveLength(1);
+        expect(second.addedCargo).toEqual([]);
+        expect(second.state.worldObjects).toHaveLength(3);
         expect(second.state.installed).toHaveLength(planFirstNightBase().shell.length);
+    });
+
+    it('migrates legacy giveaway wall and door records back into physical recovery cargo', () => {
+        const legacy = createCarryState('run-a');
+        legacy.installed = [
+            { instanceId: 'starter-berth-wall-w', definitionId: 'straight_wall_1x1' },
+            { instanceId: 'starter-berth-door-e', definitionId: 'sealable_door_1x1' }
+        ];
+        const result = ensureFirstNightBaseState(legacy);
+        expect(result.state.installed.some(({ instanceId }) => instanceId === 'starter-berth-wall-w')).toBe(false);
+        expect(result.state.worldObjects.map(({ definitionId }) => definitionId)).toEqual([
+            'cot_bed', 'hull_patch_panel', 'door_seal_kit'
+        ]);
     });
 });

@@ -84,6 +84,30 @@ export const BASE_MODULE_CATALOG = Object.freeze({
         massClass: 'medium',
         buildTags: ['ceiling', 'structural', 'airtight']
     }),
+    hull_patch_panel: Object.freeze({
+        id: 'hull_patch_panel',
+        label: 'CRASH-HULL PATCH PANEL',
+        category: BASE_MODULE_CATEGORIES.STRUCTURE,
+        modelType: 'crash_hull_panels',
+        carryModelType: 'crash_hull_panels',
+        footprint: { w: 1, d: 0.2, h: 2.4 },
+        socketTypes: ['wall_edge_snap'],
+        seals: ['vertical_perimeter'],
+        massClass: 'heavy',
+        buildTags: ['wall', 'hull_patch', 'structural', 'airtight']
+    }),
+    door_seal_kit: Object.freeze({
+        id: 'door_seal_kit',
+        label: 'BERTH PRESSURE-DOOR SEAL',
+        category: BASE_MODULE_CATEGORIES.STRUCTURE,
+        modelType: 'base_door_sealable_bulkhead',
+        carryModelType: 'mod_pressure_seal',
+        footprint: { w: 1, d: 0.2, h: 2.6 },
+        socketTypes: ['door_mount'],
+        seals: ['door_seal'],
+        massClass: 'medium',
+        buildTags: ['door', 'seal_kit', 'airtight']
+    }),
 
     // Life support and utilities
     o2_regulator: Object.freeze({

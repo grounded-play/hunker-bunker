@@ -99,6 +99,8 @@ export function installCarriedObject(state, socket, { carrierPlayerId = null } =
         carrierPlayerId: null,
         socketId: socket.id,
         transform: socket.transform ?? null,
+        ...(socket.side ? { side: socket.side } : {}),
+        ...(state.carried.buildTags?.includes('door') ? { isOpen: false } : {}),
         ...(Number.isFinite(socket.transform?.x) ? { x: socket.transform.x } : {}),
         ...(Number.isFinite(socket.transform?.z) ? { z: socket.transform.z } : {}),
         ...(Number.isFinite(socket.transform?.yaw) ? { yaw: socket.transform.yaw } : {})

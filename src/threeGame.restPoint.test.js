@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
 import { REST_PHASES, createDayState } from './dayCycle.js';
 import { beginCarry, createCarryState, installCarriedObject } from './carrySystem.js';
-import { ensureFirstNightBaseState } from './firstNightBase.js';
+import { availableFirstNightSocket, ensureFirstNightBaseState } from './firstNightBase.js';
 
 function stubs() {
     globalThis.CustomEvent = class CustomEvent {
@@ -13,8 +13,13 @@ function stubs() {
 
 function installedCarryState() {
     let { state, plan } = ensureFirstNightBaseState(createCarryState('run-test'), { shipX: 100, shipZ: 200 });
-    state = beginCarry(state, state.worldObjects[0].instanceId, 'local').state;
-    return installCarriedObject(state, plan.installSocket, { carrierPlayerId: 'local' }).state;
+    for (const definitionId of ['cot_bed', 'hull_patch_panel', 'door_seal_kit']) {
+        const object = state.worldObjects.find((entry) => entry.definitionId === definitionId);
+        state = beginCarry(state, object.instanceId, 'local').state;
+        const socket = availableFirstNightSocket(state, plan, state.carried);
+        state = installCarriedObject(state, socket, { carrierPlayerId: 'local' }).state;
+    }
+    return state;
 }
 
 const bunkerGame = (overrides = {}) => ({

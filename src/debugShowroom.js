@@ -472,6 +472,7 @@ export const SHOWROOM_CATEGORIES = Object.freeze({
         'wall_macro_straight_4',
         'base_cot_installed',
         'carry_field_cot_folded',
+        'mod_pressure_seal',
         'base_door_sealable_bulkhead',
         'base_o2_atmospheric_regulator',
         'base_o2_overhead_duct',

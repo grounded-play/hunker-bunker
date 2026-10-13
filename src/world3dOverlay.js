@@ -479,6 +479,7 @@ export const WORLD_3D_MODELS = Object.freeze({
     base_o2_overhead_duct: { url: '/3d/runtime/new3ds/base_o2_overhead_duct.glb', height: 0.35, span: 1.0, yaw: 0 },
     base_power_junction_box: { url: '/3d/runtime/new3ds/base_power_junction_box.glb', height: 0.7, span: 0.55, yaw: 0 },
     carry_field_cot_folded: { url: '/3d/runtime/new3ds/carry_field_cot_folded.glb', height: 0.35, span: 1.1, yaw: 0 },
+    mod_pressure_seal: { url: '/3d/runtime/new3ds/mod_pressure_seal.glb', height: 0.42, span: 0.55, yaw: 0 },
     door_arch_guillotine_assembled: { url: '/3d/runtime/new3ds/door_arch_guillotine_assembled.glb', height: 4.2, span: 2.4, yaw: 0 },
     door_arch_guillotine_frame: { url: '/3d/runtime/new3ds/door_arch_guillotine_frame.glb', height: 4.2, span: 2.4, yaw: 0 },
     door_arch_guillotine_slab: { url: '/3d/runtime/new3ds/door_arch_guillotine_slab.glb', height: 3.0, span: 2.2, yaw: 0 },

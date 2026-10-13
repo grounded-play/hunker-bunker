@@ -49,8 +49,20 @@ import {
     disposeBaseAtmosphereIndicator,
     updateBaseAtmosphereIndicator
 } from './baseAtmospherePresentation.js';
-import { ensureFirstNightBaseState, installedCot, planFirstNightBase } from './firstNightBase.js';
+import {
+    createInstalledBaseModuleVisual,
+    disposeInstalledBaseModuleVisual,
+    FIRST_NIGHT_VISIBLE_MODULES,
+    updateInstalledBaseModuleVisual
+} from './installedBasePresentation.js';
+import {
+    availableFirstNightSocket,
+    ensureFirstNightBaseState,
+    installedCot,
+    planFirstNightBase
+} from './firstNightBase.js';
 import { loadInstalledBaseModules, saveInstalledBaseModules } from './baseRebuildStore.js';
+import { getBaseModuleDefinition } from './data/baseModules.js';
 import { buildRunResourceTelemetry } from './runTelemetry.js';
 import { createRelicPickup, animateRelicPickup, createImpactBurst, disposeExpeditionEffect } from './expeditionVfx.js';
 import { TraumaManager, create3DMuzzleFlash, WEAPON_TRAUMA_TABLE } from './combatJuice.js';
@@ -2494,6 +2506,8 @@ export class ThreeGame {
         this.baseAtmosphereState = createRoomAtmosphereState();
         this.baseAtmosphereSeal = null;
         this.baseAtmosphereIndicator = null;
+        this.installedBaseModuleVisuals = new Map();
+        this._installedBaseVisualLoadTokens = new Map();
         this.snailsKilledThisRun = 0;
         this.runStartTime = Date.now();
         this._threatAudioTimer = 0;
@@ -9080,14 +9094,19 @@ export class ThreeGame {
         }
         const carriedObject = this.carryState?.carried;
         if (carriedObject) {
-            const socket = this.getFirstNightBasePlan?.().installSocket;
+            const socket = availableFirstNightSocket(
+                this.carryState,
+                this.getFirstNightBasePlan?.(),
+                carriedObject
+            );
             const socketDistance = socket
                 ? Math.hypot(px - socket.transform.x, pz - socket.transform.z)
                 : Infinity;
             if (socketDistance <= 2.5) {
+                const label = getBaseModuleDefinition(carriedObject.definitionId)?.label ?? 'RECOVERED MODULE';
                 candidates.push({
                     id: `install-cargo:${carriedObject.instanceId}`,
-                    label: 'INSTALL RECOVERY COT IN SEALED SHIP BERTH',
+                    label: `INSTALL ${label} AT SHIP BERTH`,
                     distance: socketDistance,
                     interact: () => this.installCurrentCarryObject()
                 });
@@ -9102,9 +9121,10 @@ export class ThreeGame {
         } else {
             const carryObject = this.getNearestCarryObject?.();
             if (carryObject) {
+                const label = getBaseModuleDefinition(carryObject.object.definitionId)?.label ?? 'RECOVERED CARGO';
                 candidates.push({
                     id: `carry-object:${carryObject.object.instanceId}`,
-                    label: 'LIFT FOLDED RECOVERY COT · BOTH HANDS',
+                    label: `LIFT ${label} · BOTH HANDS`,
                     distance: carryObject.distance,
                     interact: () => this.beginCarryObject(carryObject.object.instanceId)
                 });
@@ -9735,6 +9755,7 @@ export class ThreeGame {
         this.carryState = result.state;
         saveInstalledBaseModules(this.carryState.installed);
         this.reconcileCarryObjectVisuals?.();
+        this.reconcileInstalledBaseModuleVisuals?.();
         this.syncBunkerCot?.();
         return result;
     }
@@ -9808,6 +9829,66 @@ export class ThreeGame {
         disposeCarryObjectVisual(this.carriedObjectVisual);
         this.carriedObjectVisual = null;
         this._carryVisualLoadTokens?.clear?.();
+    }
+
+    async ensureInstalledBaseModuleVisual(module) {
+        if (!module?.instanceId || !FIRST_NIGHT_VISIBLE_MODULES.has(module.definitionId) || !this.scene) return null;
+        if (this.installedBaseModuleVisuals.has(module.instanceId)) return this.installedBaseModuleVisuals.get(module.instanceId);
+        if (this._installedBaseVisualLoadTokens.has(module.instanceId)) return null;
+        const token = {};
+        this._installedBaseVisualLoadTokens.set(module.instanceId, token);
+        const root = await createInstalledBaseModuleVisual(module).catch((error) => {
+            console.warn(`[base-rebuild] ${module.definitionId} visual unavailable`, error);
+            return null;
+        });
+        if (this._installedBaseVisualLoadTokens.get(module.instanceId) !== token) {
+            disposeInstalledBaseModuleVisual(root);
+            return null;
+        }
+        this._installedBaseVisualLoadTokens.delete(module.instanceId);
+        const current = this.carryState?.installed?.find(({ instanceId }) => instanceId === module.instanceId);
+        if (!root || !current || !this.scene) {
+            disposeInstalledBaseModuleVisual(root);
+            return null;
+        }
+        updateInstalledBaseModuleVisual(
+            root,
+            current,
+            this.getTerrainHeightAt?.(current.x, current.z) ?? 0,
+            this.performanceProfile === 'gameplay'
+        );
+        this.scene.add(root);
+        this.installedBaseModuleVisuals.set(module.instanceId, root);
+        return root;
+    }
+
+    reconcileInstalledBaseModuleVisuals() {
+        const modules = (this.carryState?.installed ?? []).filter(({ definitionId }) => FIRST_NIGHT_VISIBLE_MODULES.has(definitionId));
+        const wanted = new Set(modules.map(({ instanceId }) => instanceId));
+        for (const [instanceId, root] of this.installedBaseModuleVisuals ?? []) {
+            if (wanted.has(instanceId)) continue;
+            disposeInstalledBaseModuleVisual(root);
+            this.installedBaseModuleVisuals.delete(instanceId);
+        }
+        for (const module of modules) {
+            const root = this.installedBaseModuleVisuals.get(module.instanceId);
+            if (root) {
+                updateInstalledBaseModuleVisual(
+                    root,
+                    module,
+                    this.getTerrainHeightAt?.(module.x, module.z) ?? 0,
+                    this.performanceProfile === 'gameplay'
+                );
+            } else {
+                void this.ensureInstalledBaseModuleVisual(module);
+            }
+        }
+    }
+
+    clearInstalledBaseModuleVisuals() {
+        for (const root of this.installedBaseModuleVisuals?.values?.() ?? []) disposeInstalledBaseModuleVisual(root);
+        this.installedBaseModuleVisuals?.clear?.();
+        this._installedBaseVisualLoadTokens?.clear?.();
     }
 
     updateCarryObjectVisuals(_delta, now = performance.now()) {
@@ -9921,7 +10002,8 @@ export class ThreeGame {
     installCurrentCarryObject() {
         const carried = this.carryState?.carried;
         if (!carried || !this.player) return false;
-        const socket = this.getFirstNightBasePlan().installSocket;
+        const socket = availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan(), carried);
+        if (!socket) return false;
         if (Math.hypot(this.player.position.x - socket.transform.x, this.player.position.z - socket.transform.z) > 2.5) return false;
         const result = installCarriedObject(this.carryState, socket, {
             carrierPlayerId: this.multiplayerLocalPlayerId ?? 'local'
@@ -9931,8 +10013,15 @@ export class ThreeGame {
         saveInstalledBaseModules(this.carryState.installed);
         disposeCarryObjectVisual(this.carriedObjectVisual);
         this.carriedObjectVisual = null;
+        this.reconcileInstalledBaseModuleVisuals?.();
         this.syncBunkerCot?.();
-        this.showBunkerLine?.('RECOVERY COT LOCKED TO SHIP BERTH — SEALED SLEEP ANCHOR ONLINE.');
+        const label = getBaseModuleDefinition(result.installed.definitionId)?.label ?? 'RECOVERED MODULE';
+        const remaining = this.getFirstNightBasePlan().recoveryCargo.filter(({ definitionId }) => (
+            !this.carryState.installed.some((module) => module.definitionId === definitionId)
+        ));
+        this.showBunkerLine?.(remaining.length
+            ? `${label} INSTALLED — ${remaining.length} BERTH MODULE${remaining.length === 1 ? '' : 'S'} STILL MISSING.`
+            : `${label} INSTALLED — BERTH SEALED. O2 PRESSURIZATION STARTING.`);
         this.spawnPhysicalBurst?.(socket.transform.x, socket.transform.z, { color: 0x66e6ff, count: 14, upward: 0.2 });
         this.triggerCameraShake?.(0.08, 0.18);
         window.AudioManager?.play?.('ui_confirm', { volume: 0.72, playbackRate: 0.86 });
@@ -11771,6 +11860,7 @@ export class ThreeGame {
         if (this.bunkerCotSprite) {
             this.syncBunkerCot?.();
         }
+        this.reconcileInstalledBaseModuleVisuals?.();
         if (nextProfile === 'menu' && this.darknessOverlay) {
             this.darknessOverlay.style.opacity = '0';
         }
@@ -45729,6 +45819,8 @@ export class ThreeGame {
         });
         this.baseDefenseTurretGroup?.removeFromParent?.();
         this.baseDefenseTurretLight?.removeFromParent?.();
+        this.clearCarryObjectVisuals?.();
+        this.clearInstalledBaseModuleVisuals?.();
         disposeBaseAtmosphereIndicator(this.baseAtmosphereIndicator);
         this.baseAtmosphereIndicator = null;
         this.renderer.domElement.removeEventListener('pointerdown', this.handleCanvasPointerDown);
