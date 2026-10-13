@@ -1,6 +1,7 @@
 import { getRunRating } from './runRating.js';
 import { computeRunScore } from './runScore.js';
 import { getFieldWeaponProfile } from './fieldWeapon.js';
+import { createFieldWeaponRunState, resetFieldWeaponRunState } from './fieldWeaponDrops.js';
 import { buildRunResourceTelemetry } from './runTelemetry.js';
 import { createRelicPickup, animateRelicPickup, createImpactBurst, disposeExpeditionEffect } from './expeditionVfx.js';
 import { TraumaManager, create3DMuzzleFlash, WEAPON_TRAUMA_TABLE } from './combatJuice.js';
@@ -2428,6 +2429,7 @@ export class ThreeGame {
         this.runShardCount = 0;
         this.activeSynergies = [];
         this.inRunLootDrops = [];
+        this.fieldWeaponRunState = createFieldWeaponRunState();
         this.snailsKilledThisRun = 0;
         this.runStartTime = Date.now();
         this._threatAudioTimer = 0;
@@ -9295,6 +9297,7 @@ export class ThreeGame {
         this._eliteContactScan = 0;
         for (const pickup of this.inRunLootDrops ?? []) disposeExpeditionEffect(pickup);
         this.inRunLootDrops = [];
+        this.fieldWeaponRunState = resetFieldWeaponRunState(`run:${Date.now()}`);
         this.runOverclocks = [];
         this.runRelics = [];
         this.runShardCount = 0;

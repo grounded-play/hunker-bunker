@@ -537,7 +537,10 @@ only its consumers; fixed cable rendering remains one merged draw call per chunk
 
 ### Phase 3 — physical run weapons
 
-- field drop reducer, GLB pickups, single-slot swaps, reset and co-op authority;
+- [x] pure run-scoped field-drop reducer with atomic single-slot swaps, preserved ammo,
+  duplicate/cross-run rejection, weapon-specific reloads, and hard run reset
+  (`src/fieldWeaponDrops.js`);
+- remaining: GLB pickup/runtime interaction, co-op authority events, and HUD presentation;
 - ballistic/shell/rail/cryo ammo families and UI;
 - encounter/drop tables with seeded rarity and guaranteed tutorial QA hooks.
 
