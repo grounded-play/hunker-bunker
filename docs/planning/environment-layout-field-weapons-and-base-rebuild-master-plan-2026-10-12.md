@@ -95,9 +95,9 @@ Automated and manual ingestion checks establish the current resource envelope:
   PBR, pivot, and source-color review.
 
 The cohort is runtime-capable, but asset availability is not feature completion. World placement
-still needs to consume more of the base/carry module mappings, and Phase 6 still needs damaged and
-installed ship variants, character-held flamethrower mounting, melted ice aftermath, construction
-preview meshes, and split/iris/camp/damaged-shutter door families.
+now consumes all four ship-system carry/install mappings and their live source-color practicals;
+Phase 6 still needs damaged ship variants, character-held flamethrower mounting, melted ice
+aftermath, construction preview meshes, and split/iris/camp/damaged-shutter door families.
 
 ### Systems to extend, not replace
 
@@ -658,8 +658,8 @@ unwinnable seed, and stays within the projectile/FX frame budget.
   installation, render their installed models, and replace the legacy pre-sealed giveaway berth;
 - [x] while the operator carries cargo, recruited companions move into a forward cover formation
   and retain their normal basic/assist fire; a co-op partner's weapon state is untouched;
-- remaining: freeform/half-grid placement preview, ship-module sockets beyond the first-night
-  wall/door/cot set, and host-authoritative co-op carry event sequencing;
+- remaining: freeform/half-grid placement preview and host-authoritative co-op carry event
+  sequencing; the dedicated ship-system sockets are implemented in Phase 6;
 - [x] bed, walls, sealable door, O2 duct/regulator definitions (`src/data/baseModules.js`);
 - [x] bind installed/carry GLBs for the cot and all four recoverable ship modules;
 - [x] live seal-gated bunker sleep: the pre-placed cosmetic cot shortcut is gone; a persisted
@@ -693,11 +693,21 @@ is impossible while carrying; the partner/companion can defend the carrier.
 
 ### Phase 6 — ship rebuild campaign
 
-- physicalize ship modules and objective packages;
+- [x] physicalize the life-support, navigation, comms, and engine GLBs as two-handed run cargo;
+- [x] stage those parts at the matching ring 1–4 authored objective reservations rather than at
+  the ship, with previous-goal eligibility, navigable offset selection, and a door-clearance veto;
+- [x] add four dedicated ship-bay sockets with exact tag/definition compatibility, persistent
+  install commits, 1/4–4/4 rebuild feedback, compass/map tracking, recovery, and run-reset rules
+  (`src/shipRebuild.js`, `src/threeGame.js`);
+- [x] render installed ship systems from their authored GLBs and register their cyan/green/orange
+  source effects with the fixed environmental-light pool so they illuminate nearby PBR surfaces
+  without adding shadow maps or an unbounded light count;
+- physicalize the final objective-package handoff: installation should authorize the matching
+  abstract goal purchase/effect, with a migration rule for saves that already own that goal;
 - fabricator becomes repair/adapter station;
 - [x] prove one camp return handoff and one hive-to-ship staging handoff on the shared carry reducer;
-- additional camp/hive logistics variants and dedicated ship-module staging sockets;
-- visible ship assembly states, campaign save/migration, rejoin and rollback tests.
+- additional camp/hive logistics variants;
+- damaged ship-system states, campaign save migration, rejoin, and rollback tests.
 
 Exit: at least three current abstract progression steps require a recoverable world part, a carry
 home, and an installation that visibly changes the ship/base.
@@ -712,6 +722,7 @@ home, and an installation that visibly changes the ship/base.
 | `src/wallRunPlanner.js` (new), `src/wallAutotile.js` | macro runs while retaining per-cell damage identity |
 | `src/proceduralDoors.js` | family/motion/frame schema and structural validator |
 | `src/threeGame.js` | orchestration/rendering only; avoid adding more catalogs inline |
+| `src/shipRebuild.js` | pure ring-source eligibility, ship sockets, cargo staging, and progress |
 | `src/utilityNetworkPlanner.js` (new) | producer/consumer/boundary graph |
 | `src/splineRouter.js`, `src/data/propSockets.js` | route graph nodes, boundary continuation, more sockets |
 | `src/propFx.js`, `src/propInteractions.js` | complete audit classifications and source-matched FX |

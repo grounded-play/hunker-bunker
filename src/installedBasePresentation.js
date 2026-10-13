@@ -1,14 +1,19 @@
 import { getBaseModuleDefinition } from './data/baseModules.js';
 import { createWorld3dModel } from './world3dOverlay.js';
 
-export const FIRST_NIGHT_VISIBLE_MODULES = Object.freeze(new Set([
+export const VISIBLE_INSTALLED_BASE_MODULES = Object.freeze(new Set([
     'hull_patch_panel',
-    'door_seal_kit'
+    'door_seal_kit',
+    'ship_navigation_core',
+    'ship_comms_array',
+    'ship_engine_manifold',
+    'ship_life_support_core'
 ]));
+export const FIRST_NIGHT_VISIBLE_MODULES = VISIBLE_INSTALLED_BASE_MODULES;
 
 export async function createInstalledBaseModuleVisual(module) {
     const definition = getBaseModuleDefinition(module?.definitionId);
-    if (!definition?.modelType || !FIRST_NIGHT_VISIBLE_MODULES.has(module.definitionId)) return null;
+    if (!definition?.modelType || !VISIBLE_INSTALLED_BASE_MODULES.has(module.definitionId)) return null;
     const damageState = module.isDestroyed ? 'breached' : (module.damageState ?? 'intact');
     const modelType = damageState === 'breached'
         ? (definition.breachedModelType ?? definition.damagedModelType ?? definition.modelType)

@@ -63,4 +63,17 @@ describe('installed base module presentation', () => {
         expect(createWorld3dModel).toHaveBeenCalledWith('state_wall_breached_01');
         expect(root.userData.damageState).toBe('damaged');
     });
+
+    it('loads recovered ship systems as persistent installed GLBs', async () => {
+        const root = rootStub();
+        createWorld3dModel.mockResolvedValue(root);
+        const module = {
+            instanceId: 'life-1', definitionId: 'ship_life_support_core',
+            transform: { x: -4.1, z: -0.9, yaw: Math.PI / 2 }
+        };
+        expect(await createInstalledBaseModuleVisual(module)).toBe(root);
+        expect(createWorld3dModel).toHaveBeenCalledWith('ship_module_life_support_core');
+        expect(updateInstalledBaseModuleVisual(root, module, 0.2, true)).toBe(true);
+        expect(root.position.set).toHaveBeenCalledWith(-4.1, 0.2, -0.9);
+    });
 });

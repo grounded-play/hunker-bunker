@@ -66,6 +66,13 @@ import {
     installedCot,
     planFirstNightBase
 } from './firstNightBase.js';
+import {
+    availableShipRebuildSocket,
+    ensureShipRebuildState,
+    planShipRebuild,
+    SHIP_REBUILD_STAGES,
+    shipRebuildProgress
+} from './shipRebuild.js';
 import { loadInstalledBaseModules, saveInstalledBaseModules } from './baseRebuildStore.js';
 import { getBaseModuleDefinition } from './data/baseModules.js';
 import {
@@ -9129,9 +9136,9 @@ export class ThreeGame {
                 });
             }
             const socket = availableFirstNightSocket(
-                this.carryState,
-                this.getFirstNightBasePlan?.(),
-                carriedObject
+                this.carryState, this.getFirstNightBasePlan?.(), carriedObject
+            ) ?? availableShipRebuildSocket(
+                this.carryState, this.getShipRebuildPlan?.(), carriedObject
             );
             const socketDistance = socket
                 ? Math.hypot(px - socket.transform.x, pz - socket.transform.z)
@@ -9803,6 +9810,88 @@ export class ThreeGame {
         });
     }
 
+    getShipRebuildSourcePositions() {
+        const plan = this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
+        const positions = {};
+        for (const [index, stage] of SHIP_REBUILD_STAGES.entries()) {
+            const reservationId = `goal:${stage.goalKey}:objective`;
+            const reservation = plan?.reservations?.find((entry) => entry.id === reservationId);
+            if (!reservation) continue;
+            const resolved = resolveObjectiveTarget({
+                reservationId,
+                interactionAnchorId: reservation.objectiveAnchorId,
+                exactRevealed: true
+            }, {
+                worldPlan: plan,
+                chunkStructures: this.wfcMetadataCache,
+                worldOffset: { x: 0, z: 0 }
+            });
+            const target = resolved?.exact && Number.isFinite(resolved.x)
+                ? { x: resolved.x, z: resolved.z }
+                : Number.isInteger(reservation.chunkX)
+                    ? {
+                        x: (reservation.chunkX + 0.5) * this.chunkSize,
+                        z: (reservation.chunkY + 0.5) * this.chunkSize
+                    }
+                    : null;
+            if (!target) continue;
+            const offsets = index % 2 === 0
+                ? [[1.35, 0], [0, 1.35], [-1.35, 0], [0, -1.35], [0, 0]]
+                : [[-1.35, 0], [0, -1.35], [1.35, 0], [0, 1.35], [0, 0]];
+            const doors = this.getActiveDoors?.() ?? [];
+            const staging = offsets.map(([dx, dz]) => ({ x: target.x + dx, z: target.z + dz }))
+                .find(({ x, z }) => {
+                    const tile = this.getTileType?.(Math.round(x), Math.round(z));
+                    if (tile === '#' || tile === 'W' || tile === 'X') return false;
+                    return !doors.some((door) => {
+                        const bounds = door?.bounds;
+                        return bounds && x >= bounds.minX - 1 && x <= bounds.maxX + 1
+                            && z >= bounds.minZ - 1 && z <= bounds.maxZ + 1;
+                    });
+                }) ?? target;
+            positions[stage.goalKey] = staging;
+        }
+        return positions;
+    }
+
+    getShipRebuildPlan() {
+        const ship = this.getActiveShip?.();
+        return planShipRebuild({
+            shipX: Number(ship?.tileX) || 0,
+            shipZ: Number(ship?.tileZ) || 0,
+            sourcePositions: this.getShipRebuildSourcePositions?.() ?? {}
+        });
+    }
+
+    getAvailableCarryInstallSocket(object = this.carryState?.carried) {
+        return availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan?.(), object)
+            ?? availableShipRebuildSocket(this.carryState, this.getShipRebuildPlan?.(), object);
+    }
+
+    updateShipRebuildRecovery(delta = 0) {
+        this._shipRebuildAuditTimer = (this._shipRebuildAuditTimer ?? 0) + Math.max(0, Number(delta) || 0);
+        if (this._shipRebuildAuditTimer < 1 || !this.carryState || !this.getActiveShip?.()) return null;
+        this._shipRebuildAuditTimer %= 1;
+        const sourcePositions = this.getShipRebuildSourcePositions?.() ?? {};
+        if (!Object.keys(sourcePositions).length) return null;
+        const ship = this.getActiveShip();
+        const result = ensureShipRebuildState(this.carryState, {
+            shipX: ship.tileX,
+            shipZ: ship.tileZ,
+            sourcePositions,
+            builtGoalKeys: this.getBuiltGoalKeys?.() ?? []
+        });
+        this.carryState = result.state;
+        if (result.addedCargo.length) {
+            this.reconcileCarryObjectVisuals?.();
+            this.syncMissionCargoMapLandmarks?.();
+            window.dispatchEvent(new CustomEvent('ship-rebuild-cargo-staged', {
+                detail: { cargo: result.addedCargo }
+            }));
+        }
+        return result;
+    }
+
     bootstrapFirstNightBaseRecovery() {
         const ship = this.getActiveShip?.();
         if (!ship || !this.carryState) return null;
@@ -9887,6 +9976,17 @@ export class ThreeGame {
             return null;
         }
         this.scene.add(root);
+        const propFx = this.registerWorld3dPropFx?.(root);
+        const cargoSourceLight = root.userData?.cargoSourceLight;
+        if (cargoSourceLight && (propFx?.lightSources?.length ?? 0) > 0) {
+            // The GLB profile is the authoritative practical. Keep the small
+            // presentation fallback from consuming a second pooled/direct light.
+            cargoSourceLight.visible = false;
+            cargoSourceLight.userData.envLightEnabled = false;
+        } else if (cargoSourceLight) {
+            this.registerEnvLight?.(cargoSourceLight);
+        }
+        this.registerWorld3dPropExperience?.(root);
         if (isCarried) {
             root.visible = this.performanceProfile === 'gameplay';
             this.carriedObjectVisual = root;
@@ -9912,11 +10012,15 @@ export class ThreeGame {
                 this.carriedObjectVisual = root;
                 continue;
             }
+            this.disposeWorld3dPropFx?.(root);
+            this.disposeWorld3dPropExperience?.(root);
             disposeCarryObjectVisual(root);
             this.carryObjectVisuals.delete(instanceId);
         }
         const carriedId = this.carryState?.carried?.instanceId ?? null;
         if (this.carriedObjectVisual && this.carriedObjectVisual.userData?.instanceId !== carriedId) {
+            this.disposeWorld3dPropFx?.(this.carriedObjectVisual);
+            this.disposeWorld3dPropExperience?.(this.carriedObjectVisual);
             disposeCarryObjectVisual(this.carriedObjectVisual);
             this.carriedObjectVisual = null;
         }
@@ -9925,8 +10029,14 @@ export class ThreeGame {
     }
 
     clearCarryObjectVisuals() {
-        for (const root of this.carryObjectVisuals?.values?.() ?? []) disposeCarryObjectVisual(root);
+        for (const root of this.carryObjectVisuals?.values?.() ?? []) {
+            this.disposeWorld3dPropFx?.(root);
+            this.disposeWorld3dPropExperience?.(root);
+            disposeCarryObjectVisual(root);
+        }
         this.carryObjectVisuals?.clear?.();
+        this.disposeWorld3dPropFx?.(this.carriedObjectVisual);
+        this.disposeWorld3dPropExperience?.(this.carriedObjectVisual);
         disposeCarryObjectVisual(this.carriedObjectVisual);
         this.carriedObjectVisual = null;
         this._carryVisualLoadTokens?.clear?.();
@@ -9959,6 +10069,8 @@ export class ThreeGame {
             this.performanceProfile === 'gameplay'
         );
         this.scene.add(root);
+        this.registerWorld3dPropFx?.(root);
+        this.registerWorld3dPropExperience?.(root);
         this.installedBaseModuleVisuals.set(module.instanceId, root);
         return root;
     }
@@ -9968,6 +10080,8 @@ export class ThreeGame {
         const wanted = new Set(modules.map(({ instanceId }) => instanceId));
         for (const [instanceId, root] of this.installedBaseModuleVisuals ?? []) {
             if (wanted.has(instanceId)) continue;
+            this.disposeWorld3dPropFx?.(root);
+            this.disposeWorld3dPropExperience?.(root);
             disposeInstalledBaseModuleVisual(root);
             this.installedBaseModuleVisuals.delete(instanceId);
         }
@@ -9975,6 +10089,8 @@ export class ThreeGame {
             let root = this.installedBaseModuleVisuals.get(module.instanceId);
             const damageState = module.isDestroyed ? 'breached' : (module.damageState ?? 'intact');
             if (root && root.userData?.damageState !== damageState) {
+                this.disposeWorld3dPropFx?.(root);
+                this.disposeWorld3dPropExperience?.(root);
                 disposeInstalledBaseModuleVisual(root);
                 this.installedBaseModuleVisuals.delete(module.instanceId);
                 root = null;
@@ -10007,7 +10123,11 @@ export class ThreeGame {
     }
 
     clearInstalledBaseModuleVisuals() {
-        for (const root of this.installedBaseModuleVisuals?.values?.() ?? []) disposeInstalledBaseModuleVisual(root);
+        for (const root of this.installedBaseModuleVisuals?.values?.() ?? []) {
+            this.disposeWorld3dPropFx?.(root);
+            this.disposeWorld3dPropExperience?.(root);
+            disposeInstalledBaseModuleVisual(root);
+        }
         this.installedBaseModuleVisuals?.clear?.();
         this._installedBaseVisualLoadTokens?.clear?.();
     }
@@ -10083,7 +10203,8 @@ export class ThreeGame {
                     mode: 'cargo-delivery'
                 };
             }
-            const socket = availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan?.(), carried);
+            const socket = this.getAvailableCarryInstallSocket?.(carried)
+                ?? availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan?.(), carried);
             if (!socket) return null;
             const definition = getBaseModuleDefinition(carried.definitionId);
             return {
@@ -10437,6 +10558,8 @@ export class ThreeGame {
         });
         if (!result.ok) return false;
         this.carryState = result.state;
+        this.disposeWorld3dPropFx?.(this.carriedObjectVisual);
+        this.disposeWorld3dPropExperience?.(this.carriedObjectVisual);
         disposeCarryObjectVisual(this.carriedObjectVisual);
         this.carriedObjectVisual = null;
         this.reconcileCarryObjectVisuals?.();
@@ -10470,7 +10593,8 @@ export class ThreeGame {
     installCurrentCarryObject() {
         const carried = this.carryState?.carried;
         if (!carried || !this.player) return false;
-        const socket = availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan(), carried);
+        const socket = this.getAvailableCarryInstallSocket?.(carried)
+            ?? availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan(), carried);
         if (!socket) return false;
         if (Math.hypot(this.player.position.x - socket.transform.x, this.player.position.z - socket.transform.z) > 2.5) return false;
         const result = installCarriedObject(this.carryState, socket, {
@@ -10479,17 +10603,28 @@ export class ThreeGame {
         if (!result.ok) return false;
         this.carryState = result.state;
         saveInstalledBaseModules(this.carryState.installed);
+        this.disposeWorld3dPropFx?.(this.carriedObjectVisual);
+        this.disposeWorld3dPropExperience?.(this.carriedObjectVisual);
         disposeCarryObjectVisual(this.carriedObjectVisual);
         this.carriedObjectVisual = null;
         this.reconcileInstalledBaseModuleVisuals?.();
         this.syncBunkerCot?.();
         const label = getBaseModuleDefinition(result.installed.definitionId)?.label ?? 'RECOVERED MODULE';
-        const remaining = this.getFirstNightBasePlan().recoveryCargo.filter(({ definitionId }) => (
-            !this.carryState.installed.some((module) => module.definitionId === definitionId)
-        ));
-        this.showBunkerLine?.(remaining.length
-            ? `${label} INSTALLED — ${remaining.length} BERTH MODULE${remaining.length === 1 ? '' : 'S'} STILL MISSING.`
-            : `${label} INSTALLED — BERTH SEALED. O2 PRESSURIZATION STARTING.`);
+        const isShipPart = SHIP_REBUILD_STAGES.some(({ definitionId }) => definitionId === result.installed.definitionId);
+        if (isShipPart) {
+            const progress = shipRebuildProgress(this.carryState);
+            this.showBunkerLine?.(progress.complete
+                ? `${label} INSTALLED — ALL PRIMARY SHIP SYSTEMS PHYSICALLY ONLINE.`
+                : `${label} INSTALLED — SHIP REBUILD ${progress.installed}/${progress.total}.`);
+            window.dispatchEvent(new CustomEvent('ship-rebuild-progress', { detail: progress }));
+        } else {
+            const remaining = this.getFirstNightBasePlan().recoveryCargo.filter(({ definitionId }) => (
+                !this.carryState.installed.some((module) => module.definitionId === definitionId)
+            ));
+            this.showBunkerLine?.(remaining.length
+                ? `${label} INSTALLED — ${remaining.length} BERTH MODULE${remaining.length === 1 ? '' : 'S'} STILL MISSING.`
+                : `${label} INSTALLED — BERTH SEALED. O2 PRESSURIZATION STARTING.`);
+        }
         this.spawnPhysicalBurst?.(socket.transform.x, socket.transform.z, { color: 0x66e6ff, count: 14, upward: 0.2 });
         this.triggerCameraShake?.(0.08, 0.18);
         window.AudioManager?.play?.('ui_confirm', { volume: 0.72, playbackRate: 0.86 });
@@ -13153,6 +13288,7 @@ export class ThreeGame {
             fp.measure('updateTerminalClockTick', () => this.updateTerminalClockTick(now));
             fp.measure('updatePickups', () => this.updatePickups(delta, now));
             fp.measure('updateFieldWeaponDrops', () => this.updateFieldWeaponDrops?.(delta, now));
+            fp.measure('updateShipRebuildRecovery', () => this.updateShipRebuildRecovery?.(delta));
             fp.measure('updateCarryObjectVisuals', () => this.updateCarryObjectVisuals?.(delta, now));
             fp.measure('updateInstalledBaseModuleVisuals', () => this.updateInstalledBaseModuleVisuals?.(delta));
             fp.measure('updateMissionCargoRecovery', () => this.updateMissionCargoRecovery?.(delta));
