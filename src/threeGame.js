@@ -141,6 +141,7 @@ import { handleCriticalServiceDestruction } from './criticalServiceRecovery.js';
 
 import * as THREE from 'three';
 import { fitWallShaderSamplerBudget, INSTANCED_WORLD_POSITION } from './wallShaderCompatibility.js';
+import { fitFloorShaderSamplerBudget } from './floorShaderCompatibility.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import { getKtx2Loader, registerKtx2Renderer } from './gltfLoaderFactory.js';
@@ -2760,7 +2761,11 @@ export class ThreeGame {
         // (docs/log1-perf-and-telemetry-followups-2026-08-18.md #1). This
         // cost was invisible to every earlier reproduction attempt because
         // repeated testing in the same tab reused already-compiled programs.
-        this.renderer.debug.checkShaderErrors = false;
+        // Opt-in diagnostics keep retail compilation asynchronous while still
+        // allowing automated/browser playtests to report the actual shader
+        // compiler failure instead of only repeating `program not valid`.
+        this.renderer.debug.checkShaderErrors = typeof location !== 'undefined'
+            && new URLSearchParams(location.search).has('shaderDebug');
 
         // PHASE A1 (docs/planning/visual-overhaul-reflective-hdr-2026-09-13.md).
         //
@@ -3225,6 +3230,13 @@ export class ThreeGame {
                 `
             );
         };
+        const compileFloorShader = this.floorMaterial.onBeforeCompile;
+        const floorMaxTextures = this.renderer?.capabilities?.maxTextures ?? 16;
+        this.floorMaterial.onBeforeCompile = function onCompatibleFloorBeforeCompile(shader) {
+            compileFloorShader.call(this, shader);
+            fitFloorShaderSamplerBudget(shader, floorMaxTextures);
+        };
+        this.floorMaterial.customProgramCacheKey = () => `floor-samplers:${floorMaxTextures}`;
 
         const wallMetalTex = activeTerrainTextures.wallSide;
         const wallGrungeTex = activeTerrainTextures.wallGrunge;
@@ -5428,13 +5440,17 @@ export class ThreeGame {
 
     setupBunkerBlastDoor() {
         this.bunkerBlastDoorState = {
-            open: false,
+            // The crash room has exactly one authored exit. It must never
+            // begin as a sealed combat gate: players can walk out immediately,
+            // then deliberately close or destroy the slab via interaction.
+            open: true,
             destroyed: false,
             hp: 25,
             maxHp: 25,
-            y: 1.4,
-            targetY: 1.4,
+            y: -2.4,
+            targetY: -2.4,
             speed: 5.5,
+            autoClose: false,
             doorWidth: 3,
             doorZ: 3,
             startTileX: 8,
@@ -5443,7 +5459,7 @@ export class ThreeGame {
 
         // Three-tile blast door across the crash room's only north hallway.
         const doorGroup = new THREE.Group();
-        doorGroup.position.set(9, 1.4, 3);
+        doorGroup.position.set(9, this.bunkerBlastDoorState.y, 3);
 
         const doorGeo = new THREE.BoxGeometry(3, 2.8, 0.72);
         const doorMat = this.doorMaterial;
@@ -14447,7 +14463,7 @@ export class ThreeGame {
             }
 
             if (!state.open && distance <= PROCEDURAL_DOOR_OPEN_RADIUS) this.toggleBunkerBlastDoor();
-            else if (state.open && distance >= PROCEDURAL_DOOR_CLOSE_RADIUS) this.toggleBunkerBlastDoor();
+            else if (state.open && state.autoClose !== false && distance >= PROCEDURAL_DOOR_CLOSE_RADIUS) this.toggleBunkerBlastDoor();
         }
         state.y = THREE.MathUtils.lerp(state.y, state.targetY, Math.min(1.0, state.speed * delta));
         this.bunkerBlastDoorGroup.position.y = state.y;
@@ -14532,11 +14548,11 @@ export class ThreeGame {
         this._lastBunkerBlastDoorToggleAt = 0;
         const state = this.bunkerBlastDoorState;
         if (!state) return;
-        state.open = false;
+        state.open = true;
         state.destroyed = false;
         state.hp = state.maxHp;
-        state.y = 1.4;
-        state.targetY = 1.4;
+        state.y = -2.4;
+        state.targetY = -2.4;
         if (this.bunkerBlastDoorGroup) {
             this.bunkerBlastDoorGroup.position.y = state.y;
             this.bunkerBlastDoorGroup.visible = true;

@@ -231,6 +231,32 @@ describe('automatic doors', () => {
         expect(state.open).toBe(false);
         expect(game.toggleBunkerBlastDoor).toHaveBeenCalledTimes(2);
     });
+
+    it('does not auto-close the crash-room door when it is the only start exit', () => {
+        installHudStubs();
+        const state = {
+            open: true,
+            destroyed: false,
+            autoClose: false,
+            doorCenterX: 9,
+            doorZ: 3,
+            y: -2.4,
+            targetY: -2.4,
+            speed: 5.5
+        };
+        const game = {
+            bunkerBlastDoorGroup: { position: { y: -2.4 } },
+            bunkerBlastDoorState: state,
+            player: { position: { x: 20, z: 20 } },
+            isGameplayInputActive: () => true,
+            toggleBunkerBlastDoor: vi.fn()
+        };
+
+        ThreeGame.prototype.updateBunkerBlastDoor.call(game, 0.016);
+
+        expect(state.open).toBe(true);
+        expect(game.toggleBunkerBlastDoor).not.toHaveBeenCalled();
+    });
 });
 
 describe('procedural door reinforcement ribs', () => {

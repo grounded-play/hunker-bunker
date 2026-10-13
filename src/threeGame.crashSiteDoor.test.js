@@ -100,29 +100,30 @@ describe('clearSpawnArea — door/portal alignment', () => {
         expect(grid[spawn.y][spawn.x]).toBe('.');
     });
 
-    it('starts the north blast door closed across that three-wide hallway', () => {
+    it('starts with the north blast door retracted so the only exit is traversable', () => {
         const game = {
             scene: { add: () => {} }
         };
         ThreeGame.prototype.setupBunkerBlastDoor.call(game);
 
         expect(game.bunkerBlastDoorState).toMatchObject({
-            open: false,
+            open: true,
             destroyed: false,
             doorZ: 3,
             startTileX: 8,
             endTileX: 10,
-            targetY: 1.4
+            targetY: -2.4,
+            autoClose: false
         });
         expect(game.bunkerDoorButtons.interior.z).toBeGreaterThan(game.bunkerBlastDoorState.doorZ);
         expect(game.bunkerDoorButtons.exterior.z).toBeLessThan(game.bunkerBlastDoorState.doorZ);
         expect(game.bunkerFogVeilMesh).toBeUndefined();
     });
 
-    it('resets a previously opened or destroyed blast door to its closed run-start state', () => {
+    it('resets a previously destroyed blast door to its open run-start state', () => {
         const game = {
             bunkerBlastDoorState: {
-                open: true,
+                open: false,
                 destroyed: true,
                 hp: 0,
                 maxHp: 25,
@@ -138,13 +139,13 @@ describe('clearSpawnArea — door/portal alignment', () => {
         ThreeGame.prototype.resetBunkerBlastDoor.call(game);
 
         expect(game.bunkerBlastDoorState).toMatchObject({
-            open: false,
+            open: true,
             destroyed: false,
             hp: 25,
-            y: 1.4,
-            targetY: 1.4
+            y: -2.4,
+            targetY: -2.4
         });
-        expect(game.bunkerBlastDoorGroup.position.y).toBe(1.4);
+        expect(game.bunkerBlastDoorGroup.position.y).toBe(-2.4);
         expect(game.bunkerBlastDoorGroup.visible).toBe(true);
     });
 
