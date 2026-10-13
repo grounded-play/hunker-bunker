@@ -98,7 +98,10 @@ export function installCarriedObject(state, socket, { carrierPlayerId = null } =
         ...state.carried,
         carrierPlayerId: null,
         socketId: socket.id,
-        transform: socket.transform ?? null
+        transform: socket.transform ?? null,
+        ...(Number.isFinite(socket.transform?.x) ? { x: socket.transform.x } : {}),
+        ...(Number.isFinite(socket.transform?.z) ? { z: socket.transform.z } : {}),
+        ...(Number.isFinite(socket.transform?.yaw) ? { yaw: socket.transform.yaw } : {})
     };
     return {
         ok: true,
@@ -117,6 +120,17 @@ export function getCarrierTacticalStance(state) {
 
 export function shouldCompanionCoverCarrier(state) {
     return Boolean(state?.carried);
+}
+
+export function companionCarrierCoverPosition(playerPosition, facing = { dirX: 0, dirZ: 1 }, index = 0) {
+    const length = Math.hypot(Number(facing?.dirX) || 0, Number(facing?.dirZ) || 0) || 1;
+    const forwardX = (Number(facing?.dirX) || 0) / length;
+    const forwardZ = (Number(facing?.dirZ) || 1) / length;
+    const side = index % 2 === 0 ? 1 : -1;
+    return {
+        x: (Number(playerPosition?.x) || 0) + forwardX * 0.75 + forwardZ * 1.05 * side,
+        z: (Number(playerPosition?.z) || 0) + forwardZ * 0.75 - forwardX * 1.05 * side
+    };
 }
 
 export function resetCarryRunState(nextRunId = null, installed = []) {

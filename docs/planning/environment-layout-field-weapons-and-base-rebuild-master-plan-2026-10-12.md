@@ -630,11 +630,23 @@ unwinnable seed, and stays within the projectile/FX frame budget.
   run reset, and installed-module preservation (`src/carrySystem.js`);
 - [x] firing, melee, and reload inputs are refused while carrying;
 - [x] companion cover-carrier tactical stance (`src/carrySystem.js`);
-- remaining: world pickup/render sockets, placement preview, co-op event wiring;
+- [x] live first-night cargo loop: the folded cot spawns beside the wreck, uses the authored carry
+  GLB in world and in both hands, supports obstruction-aware safe drop, and snaps to the ship berth
+  through the shared interaction selector (`src/firstNightBase.js`, `src/carryPresentation.js`,
+  `src/threeGame.js`);
+- [x] while the operator carries cargo, recruited companions move into a forward cover formation
+  and retain their normal basic/assist fire; a co-op partner's weapon state is untouched;
+- remaining: freeform/half-grid placement preview, generalized sockets for wall/door/ship modules,
+  and host-authoritative co-op carry event sequencing;
 - [x] bed, walls, sealable door, O2 duct/regulator definitions (`src/data/baseModules.js`);
 - [x] bind installed/carry GLBs for the cot and all four recoverable ship modules;
-- [x] seal graph, leak visualization, safe-space sleep integration (`src/baseSealGraph.js`);
-- first-night camp mission and recovery fail-safes.
+- [x] live seal-gated bunker sleep: the pre-placed cosmetic cot shortcut is gone; a persisted
+  installed cot plus the sealed starter hull and active O2 regulator are evaluated by
+  `src/baseSealGraph.js` before the bunker rest prompt can advance the day;
+- [x] installed modules persist as campaign/base state while loose cargo remains run-scoped
+  (`src/baseRebuildStore.js`);
+- remaining: camp-authored cot handoff, lost-cargo recovery/map marker, damaged wall/door recovery,
+  visible pressure fill/leak indicators, and hive logistics variants.
 
 Exit: a new campaign can recover the bed, finish a sealed room, fill it with O2, and sleep; firing
 is impossible while carrying; the partner/companion can defend the carrier.

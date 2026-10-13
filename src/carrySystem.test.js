@@ -3,6 +3,7 @@ import {
     addCarryObject,
     beginCarry,
     canUseWeaponWhileCarrying,
+    companionCarrierCoverPosition,
     createCarryObject,
     createCarryState,
     dropCarriedObject,
@@ -68,5 +69,7 @@ describe('two-handed carry state', () => {
         state = beginCarry(state, 'bed-1', 'player-a').state;
         expect(getCarrierTacticalStance(state)).toBe('cover-carrier');
         expect(shouldCompanionCoverCarrier(state)).toBe(true);
+        expect(companionCarrierCoverPosition({ x: 10, z: 10 }, { dirX: 0, dirZ: 1 }, 0))
+            .toEqual({ x: 11.05, z: 10.75 });
     });
 });

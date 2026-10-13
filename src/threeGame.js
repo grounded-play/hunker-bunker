@@ -23,7 +23,23 @@ import {
     disposeFieldWeaponDropVisual,
     updateFieldWeaponDropVisual
 } from './fieldWeaponPresentation.js';
-import { canUseWeaponWhileCarrying, createCarryState, resetCarryRunState } from './carrySystem.js';
+import {
+    beginCarry,
+    canUseWeaponWhileCarrying,
+    companionCarrierCoverPosition,
+    dropCarriedObject,
+    installCarriedObject,
+    createCarryState,
+    resetCarryRunState
+} from './carrySystem.js';
+import {
+    createCarryObjectVisual,
+    disposeCarryObjectVisual,
+    updateCarryObjectVisual
+} from './carryPresentation.js';
+import { evaluateRoomSealGraph, isPositionSafeForRest } from './baseSealGraph.js';
+import { ensureFirstNightBaseState, installedCot, planFirstNightBase } from './firstNightBase.js';
+import { loadInstalledBaseModules, saveInstalledBaseModules } from './baseRebuildStore.js';
 import { buildRunResourceTelemetry } from './runTelemetry.js';
 import { createRelicPickup, animateRelicPickup, createImpactBurst, disposeExpeditionEffect } from './expeditionVfx.js';
 import { TraumaManager, create3DMuzzleFlash, WEAPON_TRAUMA_TABLE } from './combatJuice.js';
@@ -848,7 +864,6 @@ const RING_ROUTE_STAGE_LABELS = Object.freeze({
 // The operator's cot, offset from the bunker spawn so it sits inside the hab
 // rather than on the airlock threshold. Reachable from a little further than a
 // normal prop: a bed the player has to hunt for is a bed they will not use.
-const BUNKER_COT_OFFSET = Object.freeze({ x: -2.4, z: 1.9 });
 const BUNKER_COT_REACH = 2.6;
 const MENU_SHOWROOM_FLOOR_SIZE = 160;
 // World units per major grid cell. The floor snaps to this when it follows the
@@ -2461,6 +2476,10 @@ export class ThreeGame {
         this.iceBarrierAnchors = new Set();
         this.spawnedFireGateSources = new Set();
         this.carryState = createCarryState();
+        this.carryState.installed = loadInstalledBaseModules();
+        this.carryObjectVisuals = new Map();
+        this.carriedObjectVisual = null;
+        this._carryVisualLoadTokens = new Map();
         this.snailsKilledThisRun = 0;
         this.runStartTime = Date.now();
         this._threatAudioTimer = 0;
@@ -4885,6 +4904,7 @@ export class ThreeGame {
         this.chunkGroups.visible = this.performanceProfile === 'gameplay';
         this.scene.add(this.chunkGroups);
         this.setupCrashedShips();
+        this.bootstrapFirstNightBaseRecovery();
         this.setupBunkerBlastDoor();
         this.setupBaseDefenseTurret();
         this.setupBunkerCot();
@@ -4909,7 +4929,7 @@ export class ThreeGame {
         // never shows a bed bigger than the operator (playthrough 2026-10-07).
         sprite.scale.set(BUNKER_COT_SPRITE_WIDTH, BUNKER_COT_SPRITE_HEIGHT, 1);
         sprite.position.set(point.x, BUNKER_COT_SPRITE_HEIGHT / 2, point.z);
-        sprite.visible = this.performanceProfile === 'gameplay';
+        sprite.visible = this.performanceProfile === 'gameplay' && Boolean(installedCot(this.carryState));
         sprite.userData = { isBunkerCot: true };
         this.bunkerCotSprite = sprite;
         this.scene.add(sprite);
@@ -4920,12 +4940,12 @@ export class ThreeGame {
         void this.attachBunkerCot3d?.();
     }
 
-    // The cot as the same 3D camp cot the camps use; the sprite stays the
+    // The installed cot uses the dedicated ship-berth model; the sprite stays the
     // position/visibility owner and the fallback if the model cannot load.
     async attachBunkerCot3d() {
-        if (!hasWorld3dModel('prop_camp_cot')) return;
+        if (!hasWorld3dModel('base_cot_installed')) return;
         try {
-            const root = await (this.createWorld3dModel?.('prop_camp_cot') ?? createWorld3dModel('prop_camp_cot'));
+            const root = await (this.createWorld3dModel?.('base_cot_installed') ?? createWorld3dModel('base_cot_installed'));
             if (!root || !this.bunkerCotSprite || !this.scene) return;
             await this.prewarmLateModel?.(root);
             root.rotation.y = WORLD_3D_FACING_YAW;
@@ -4946,14 +4966,18 @@ export class ThreeGame {
     syncBunkerCot() {
         const sprite = this.bunkerCotSprite;
         if (!sprite) return;
+        const installed = installedCot(this.carryState);
+        const shouldShow = this.performanceProfile === 'gameplay' && Boolean(installed);
         if (this.performanceProfile === 'gameplay') {
             const point = this.getBunkerRestPoint();
             if (sprite.position.x !== point.x || sprite.position.z !== point.z) sprite.position.set(point.x, BUNKER_COT_SPRITE_HEIGHT / 2, point.z);
         }
+        sprite.visible = shouldShow;
         const root = this.bunkerCot3d;
         if (root) {
             root.position.set(sprite.position.x, 0, sprite.position.z);
-            root.visible = sprite.visible;
+            root.rotation.y = (installed?.transform?.yaw ?? installed?.yaw ?? 0) + WORLD_3D_FACING_YAW;
+            root.visible = shouldShow;
         }
     }
 
@@ -9002,6 +9026,38 @@ export class ThreeGame {
                 });
             }
         }
+        const carriedObject = this.carryState?.carried;
+        if (carriedObject) {
+            const socket = this.getFirstNightBasePlan?.().installSocket;
+            const socketDistance = socket
+                ? Math.hypot(px - socket.transform.x, pz - socket.transform.z)
+                : Infinity;
+            if (socketDistance <= 2.5) {
+                candidates.push({
+                    id: `install-cargo:${carriedObject.instanceId}`,
+                    label: 'INSTALL RECOVERY COT IN SEALED SHIP BERTH',
+                    distance: socketDistance,
+                    interact: () => this.installCurrentCarryObject()
+                });
+            }
+            candidates.push({
+                id: `drop-cargo:${carriedObject.instanceId}`,
+                label: 'SET CARGO DOWN',
+                distance: 2.15,
+                secondary: true,
+                interact: () => this.dropCurrentCarryObject()
+            });
+        } else {
+            const carryObject = this.getNearestCarryObject?.();
+            if (carryObject) {
+                candidates.push({
+                    id: `carry-object:${carryObject.object.instanceId}`,
+                    label: 'LIFT FOLDED RECOVERY COT · BOTH HANDS',
+                    distance: carryObject.distance,
+                    interact: () => this.beginCarryObject(carryObject.object.instanceId)
+                });
+            }
+        }
         const fieldWeapon = this.getNearestFieldWeaponDrop?.();
         if (fieldWeapon) {
             const profile = getFieldWeaponProfile(fieldWeapon.drop.profileId, true);
@@ -9419,7 +9475,9 @@ export class ThreeGame {
             this.syncIceBarrierVisual?.(anchor);
         }
         this.applyWeaponUpgrades?.();
+        this.clearCarryObjectVisuals?.();
         this.carryState = resetCarryRunState(`run:${Date.now()}`, this.carryState?.installed ?? []);
+        this.bootstrapFirstNightBaseRecovery?.();
         this.runOverclocks = [];
         this.runRelics = [];
         this.runShardCount = 0;
@@ -9605,6 +9663,229 @@ export class ThreeGame {
             anchor.userData.isSolidProp = barrier.collisionActive;
             if (resolveIceBarrierModel(barrier) !== before) void this.syncIceBarrierVisual(anchor);
         }
+    }
+
+    getFirstNightBasePlan() {
+        const ship = this.getActiveShip?.();
+        return planFirstNightBase({
+            shipX: Number(ship?.tileX) || 0,
+            shipZ: Number(ship?.tileZ) || 0
+        });
+    }
+
+    bootstrapFirstNightBaseRecovery() {
+        const ship = this.getActiveShip?.();
+        if (!ship || !this.carryState) return null;
+        const result = ensureFirstNightBaseState(this.carryState, {
+            shipX: ship.tileX,
+            shipZ: ship.tileZ
+        });
+        this.carryState = result.state;
+        saveInstalledBaseModules(this.carryState.installed);
+        this.reconcileCarryObjectVisuals?.();
+        this.syncBunkerCot?.();
+        return result;
+    }
+
+    async ensureCarryObjectVisual(object) {
+        if (!object?.instanceId || !object.modelType || !this.scene) return null;
+        if (this.carryObjectVisuals?.has(object.instanceId)
+            || this.carriedObjectVisual?.userData?.instanceId === object.instanceId) {
+            return this.carryObjectVisuals.get(object.instanceId) ?? this.carriedObjectVisual;
+        }
+        if (this._carryVisualLoadTokens?.has(object.instanceId)) return null;
+        const token = {};
+        this._carryVisualLoadTokens.set(object.instanceId, token);
+        const root = await createCarryObjectVisual(object).catch((error) => {
+            console.warn(`[carry] ${object.modelType} unavailable`, error);
+            return null;
+        });
+        if (this._carryVisualLoadTokens.get(object.instanceId) !== token) {
+            disposeCarryObjectVisual(root);
+            return null;
+        }
+        this._carryVisualLoadTokens.delete(object.instanceId);
+        if (!root || !this.scene) return null;
+        const worldObject = this.carryState?.worldObjects?.find(({ instanceId }) => instanceId === object.instanceId);
+        const isCarried = this.carryState?.carried?.instanceId === object.instanceId;
+        if (!worldObject && !isCarried) {
+            disposeCarryObjectVisual(root);
+            return null;
+        }
+        this.scene.add(root);
+        if (isCarried) {
+            root.visible = this.performanceProfile === 'gameplay';
+            this.carriedObjectVisual = root;
+        } else {
+            updateCarryObjectVisual(root, {
+                mode: 'world',
+                x: worldObject.worldPosition.x,
+                y: this.getTerrainHeightAt?.(worldObject.worldPosition.x, worldObject.worldPosition.z) ?? 0,
+                z: worldObject.worldPosition.z,
+                visible: this.performanceProfile === 'gameplay'
+            });
+            this.carryObjectVisuals.set(object.instanceId, root);
+        }
+        return root;
+    }
+
+    reconcileCarryObjectVisuals() {
+        const wanted = new Set((this.carryState?.worldObjects ?? []).map(({ instanceId }) => instanceId));
+        for (const [instanceId, root] of this.carryObjectVisuals ?? []) {
+            if (wanted.has(instanceId)) continue;
+            if (this.carryState?.carried?.instanceId === instanceId) {
+                this.carryObjectVisuals.delete(instanceId);
+                this.carriedObjectVisual = root;
+                continue;
+            }
+            disposeCarryObjectVisual(root);
+            this.carryObjectVisuals.delete(instanceId);
+        }
+        const carriedId = this.carryState?.carried?.instanceId ?? null;
+        if (this.carriedObjectVisual && this.carriedObjectVisual.userData?.instanceId !== carriedId) {
+            disposeCarryObjectVisual(this.carriedObjectVisual);
+            this.carriedObjectVisual = null;
+        }
+        for (const object of this.carryState?.worldObjects ?? []) void this.ensureCarryObjectVisual(object);
+        if (this.carryState?.carried) void this.ensureCarryObjectVisual(this.carryState.carried);
+    }
+
+    clearCarryObjectVisuals() {
+        for (const root of this.carryObjectVisuals?.values?.() ?? []) disposeCarryObjectVisual(root);
+        this.carryObjectVisuals?.clear?.();
+        disposeCarryObjectVisual(this.carriedObjectVisual);
+        this.carriedObjectVisual = null;
+        this._carryVisualLoadTokens?.clear?.();
+    }
+
+    updateCarryObjectVisuals(_delta, now = performance.now()) {
+        const visible = this.performanceProfile === 'gameplay';
+        for (const object of this.carryState?.worldObjects ?? []) {
+            const root = this.carryObjectVisuals.get(object.instanceId);
+            if (!root) continue;
+            updateCarryObjectVisual(root, {
+                mode: 'world',
+                x: object.worldPosition.x,
+                y: this.getTerrainHeightAt?.(object.worldPosition.x, object.worldPosition.z) ?? 0,
+                z: object.worldPosition.z,
+                yaw: 0,
+                elapsedSeconds: now * 0.001,
+                visible
+            });
+        }
+        const carried = this.carryState?.carried;
+        if (carried && this.carriedObjectVisual && this.player) {
+            const length = Math.hypot(this.aimDirX ?? 0, this.aimDirZ ?? 0) || 1;
+            const dx = (this.aimDirX ?? 0) / length;
+            const dz = (this.aimDirZ ?? 1) / length;
+            updateCarryObjectVisual(this.carriedObjectVisual, {
+                mode: 'held',
+                x: this.player.position.x + dx * 0.58,
+                y: (this.player.position.y ?? 0) + 0.74 + Math.sin(now * 0.006) * 0.025,
+                z: this.player.position.z + dz * 0.58,
+                yaw: Math.atan2(dx, dz) + WORLD_3D_FACING_YAW,
+                visible
+            });
+        }
+    }
+
+    getNearestCarryObject(maxDistance = 2.2) {
+        if (!this.player || this.carryState?.carried) return null;
+        let nearest = null;
+        let nearestDistance = maxDistance;
+        for (const object of this.carryState?.worldObjects ?? []) {
+            const distance = Math.hypot(
+                this.player.position.x - object.worldPosition.x,
+                this.player.position.z - object.worldPosition.z
+            );
+            if (distance > nearestDistance) continue;
+            nearest = object;
+            nearestDistance = distance;
+        }
+        return nearest ? { object: nearest, distance: nearestDistance } : null;
+    }
+
+    beginCarryObject(instanceId = null) {
+        const nearest = instanceId
+            ? { object: this.carryState?.worldObjects?.find((object) => object.instanceId === instanceId) }
+            : this.getNearestCarryObject();
+        if (!nearest?.object) return false;
+        const carrierPlayerId = this.multiplayerLocalPlayerId ?? 'local';
+        const result = beginCarry(this.carryState, nearest.object.instanceId, carrierPlayerId);
+        if (!result.ok) return false;
+        this.carryState = result.state;
+        this.reconcileCarryObjectVisuals();
+        this.showBunkerLine?.('CARGO LIFTED — BOTH HANDS OCCUPIED. RETURN TO THE SHIP BERTH.');
+        this.spawnPhysicalBurst?.(this.player.position.x, this.player.position.z, { color: 0xf3d18a, count: 8, upward: 0.12 });
+        window.AudioManager?.play?.('metal_stress', { volume: 0.42, playbackRate: 1.08 });
+        window.dispatchEvent(new CustomEvent('carry-object-began', { detail: { carried: result.carried } }));
+        return true;
+    }
+
+    findSafeCarryDropPosition() {
+        if (!this.player) return null;
+        const length = Math.hypot(this.aimDirX ?? 0, this.aimDirZ ?? 0) || 1;
+        const forward = { x: (this.aimDirX ?? 0) / length, z: (this.aimDirZ ?? 1) / length };
+        const right = { x: forward.z, z: -forward.x };
+        const offsets = [
+            [forward.x * 1.35, forward.z * 1.35],
+            [right.x * 1.2, right.z * 1.2],
+            [-right.x * 1.2, -right.z * 1.2],
+            [-forward.x, -forward.z]
+        ];
+        for (const [dx, dz] of offsets) {
+            const x = this.player.position.x + dx;
+            const z = this.player.position.z + dz;
+            const tile = this.getTileType?.(Math.round(x), Math.round(z));
+            if (tile === '#' || tile === 'W' || tile === 'X') continue;
+            const blocked = (this.scatterSprites ?? []).some((prop) => prop?.parent && prop.userData?.isSolidProp
+                && Math.hypot(prop.position.x - x, prop.position.z - z) < (prop.userData.collisionRadius ?? 0.5) + 0.45);
+            if (!blocked) return { x, z };
+        }
+        return null;
+    }
+
+    dropCurrentCarryObject() {
+        if (!this.carryState?.carried) return false;
+        const position = this.findSafeCarryDropPosition();
+        if (!position) {
+            this.showBunkerLine?.('NO CLEAR SPACE TO SET CARGO DOWN.');
+            return false;
+        }
+        const result = dropCarriedObject(this.carryState, position, {
+            carrierPlayerId: this.multiplayerLocalPlayerId ?? 'local'
+        });
+        if (!result.ok) return false;
+        this.carryState = result.state;
+        const root = this.carriedObjectVisual;
+        this.carriedObjectVisual = null;
+        if (root) this.carryObjectVisuals.set(result.dropped.instanceId, root);
+        this.reconcileCarryObjectVisuals();
+        window.AudioManager?.play?.('metal_stress', { volume: 0.34, playbackRate: 0.82 });
+        window.dispatchEvent(new CustomEvent('carry-object-dropped', { detail: { dropped: result.dropped } }));
+        return true;
+    }
+
+    installCurrentCarryObject() {
+        const carried = this.carryState?.carried;
+        if (!carried || !this.player) return false;
+        const socket = this.getFirstNightBasePlan().installSocket;
+        if (Math.hypot(this.player.position.x - socket.transform.x, this.player.position.z - socket.transform.z) > 2.5) return false;
+        const result = installCarriedObject(this.carryState, socket, {
+            carrierPlayerId: this.multiplayerLocalPlayerId ?? 'local'
+        });
+        if (!result.ok) return false;
+        this.carryState = result.state;
+        saveInstalledBaseModules(this.carryState.installed);
+        disposeCarryObjectVisual(this.carriedObjectVisual);
+        this.carriedObjectVisual = null;
+        this.syncBunkerCot?.();
+        this.showBunkerLine?.('RECOVERY COT LOCKED TO SHIP BERTH — SEALED SLEEP ANCHOR ONLINE.');
+        this.spawnPhysicalBurst?.(socket.transform.x, socket.transform.z, { color: 0x66e6ff, count: 14, upward: 0.2 });
+        this.triggerCameraShake?.(0.08, 0.18);
+        window.AudioManager?.play?.('ui_confirm', { volume: 0.72, playbackRate: 0.86 });
+        window.dispatchEvent(new CustomEvent('base-module-installed', { detail: { installed: result.installed } }));
+        return true;
     }
 
     getNearestFieldWeaponDrop(maxDistance = 2.2) {
@@ -11436,7 +11717,6 @@ export class ThreeGame {
             this.menuShowroomReticle.visible = nextProfile === 'menu';
         }
         if (this.bunkerCotSprite) {
-            this.bunkerCotSprite.visible = nextProfile === 'gameplay';
             this.syncBunkerCot?.();
         }
         if (nextProfile === 'menu' && this.darknessOverlay) {
@@ -12263,6 +12543,7 @@ export class ThreeGame {
             fp.measure('updateTerminalClockTick', () => this.updateTerminalClockTick(now));
             fp.measure('updatePickups', () => this.updatePickups(delta, now));
             fp.measure('updateFieldWeaponDrops', () => this.updateFieldWeaponDrops?.(delta, now));
+            fp.measure('updateCarryObjectVisuals', () => this.updateCarryObjectVisuals?.(delta, now));
             fp.measure('updateIceBarriers', () => this.updateIceBarriers?.(delta));
             fp.measure('updateScatter', () => this.updateScatter(delta, now));
             fp.measure('updateUnderfootCrush', () => this.updateUnderfootCrush());
@@ -21016,21 +21297,23 @@ export class ThreeGame {
      */
     getRestRefusalAt(x, z) {
         if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
+        if (!installedCot(this.carryState)) return null;
         const cot = this.getBunkerRestPoint();
         if (Math.hypot(cot.x - x, cot.z - z) > BUNKER_COT_REACH) return null;
         const check = this.canRestAt(cot, { status: 'alive', safeSpace: true });
         if (check.allowed) return null;
-        return ['active_quest', 'camp-unsafe', 'hostiles_nearby'].includes(check.reason) ? check.reason : null;
+        return check.reason ?? null;
     }
 
     /** Where the bunker cot stands, in world coordinates. */
     getBunkerRestPoint() {
-        const spawn = this.getSpawnTile?.() ?? null;
+        const installed = installedCot(this.carryState);
+        const transform = installed?.transform ?? installed ?? this.getFirstNightBasePlan?.().installSocket?.transform;
         return {
             id: 'bunker_cot',
             label: 'BUNKER COT',
-            x: (spawn?.x ?? 0) + BUNKER_COT_OFFSET.x,
-            z: (spawn?.y ?? 0) + BUNKER_COT_OFFSET.z
+            x: Number(transform?.x) || 0,
+            z: Number(transform?.z) || 0
         };
     }
 
@@ -21041,6 +21324,7 @@ export class ThreeGame {
      */
     getRestPointAt(x, z) {
         if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
+        if (!installedCot(this.carryState)) return null;
         const cot = this.getBunkerRestPoint();
         if (Math.hypot(cot.x - x, cot.z - z) > BUNKER_COT_REACH) return null;
         const check = this.canRestAt(cot, { status: 'alive', safeSpace: true });
@@ -21057,6 +21341,21 @@ export class ThreeGame {
         // A breached camp is not a safe bed, whatever else the day allows.
         if (site?.id && !getCampConditionEffects(this.getCampCondition?.(site.id)).rest) {
             return { allowed: false, reason: 'camp-unsafe' };
+        }
+        if (site?.id === 'bunker_cot') {
+            const seal = evaluateRoomSealGraph({
+                modules: this.carryState?.installed ?? [],
+                defaultSafeBubble: null
+            });
+            const restSafety = isPositionSafeForRest(seal, site);
+            if (!restSafety.safe) {
+                return {
+                    allowed: false,
+                    reason: restSafety.reason,
+                    leakDetails: restSafety.leakDetails ?? null
+                };
+            }
+            safeSpace = true;
         }
         return canRestNow(this.dayState, {
             safeSpace,
@@ -40143,12 +40442,16 @@ export class ThreeGame {
         const facing = facingLen > 0.0001
             ? { dirX: this.aimDirX, dirZ: this.aimDirZ }
             : { dirX: 0, dirZ: 1 };
+        const coveringCarrier = Boolean(this.carryState?.carried);
 
-        for (const companion of this.companions) {
+        for (const [companionIndex, companion] of this.companions.entries()) {
+            companion.tacticalStance = coveringCarrier ? 'cover-carrier' : 'normal';
             if (companion.isWanderer && companion.instance3d?.root) {
                 companion.isFiring = false;
                 const root = companion.instance3d.root;
-                const trail = computeTrailPosition(this.player.position, facing, 2.0);
+                const trail = coveringCarrier
+                    ? companionCarrierCoverPosition(this.player.position, facing, companionIndex)
+                    : computeTrailPosition(this.player.position, facing, 2.0);
                 this.stepCompanionAlongPath?.(companion, root, trail, delta);
                 root.position.y = this.getTerrainHeightAt?.(root.position.x, root.position.z) ?? root.position.y ?? 0;
                 companion.instance3d.update(delta);
@@ -40163,7 +40466,7 @@ export class ThreeGame {
                 if (companion.assistCooldown <= 0) {
                     companion.assistCooldown = 0.25;
                     let nearestHostile = null;
-                    let nearestDist = 8.0;
+                    let nearestDist = coveringCarrier ? 10.0 : 8.0;
                     for (const other of this.scatterSprites || []) {
                         if (!this.isEnemyType(other?.userData?.type) || other.userData.isCompanion
                             || other.userData.dead || other.userData.burstTriggered || other.userData.isDisplayModel) continue;
@@ -40187,7 +40490,9 @@ export class ThreeGame {
             const sprite = companion.sprite;
             if (!sprite?.userData) continue;
 
-            const trail = computeTrailPosition(this.player.position, facing, TRAIL_DISTANCE);
+            const trail = coveringCarrier
+                ? companionCarrierCoverPosition(this.player.position, facing, companionIndex)
+                : computeTrailPosition(this.player.position, facing, TRAIL_DISTANCE);
             const toTrailX = trail.x - sprite.position.x;
             const toTrailZ = trail.z - sprite.position.z;
             const dist = Math.hypot(toTrailX, toTrailZ);
@@ -40207,7 +40512,7 @@ export class ThreeGame {
             companion.assistCooldown = Math.max(0, (companion.assistCooldown ?? 0) - delta);
             if (companion.assistCooldown <= 0) {
                 let nearestHostile = null;
-                let nearestDist = ASSIST_RADIUS;
+                let nearestDist = coveringCarrier ? 3.6 : ASSIST_RADIUS;
                 for (const other of this.scatterSprites) {
                     if (other === sprite || other.userData?.isCompanion) continue;
                     if (!['cybersnail', 'cryosnail', 'sporesnail'].includes(other.userData?.type)) continue;
