@@ -37,7 +37,18 @@ import {
     disposeCarryObjectVisual,
     updateCarryObjectVisual
 } from './carryPresentation.js';
-import { evaluateRoomSealGraph, isPositionSafeForRest } from './baseSealGraph.js';
+import {
+    advanceRoomAtmosphere,
+    createRoomAtmosphereState,
+    describeRoomAtmosphere,
+    evaluateRoomSealGraph,
+    isPositionSafeForRest
+} from './baseSealGraph.js';
+import {
+    createBaseAtmosphereIndicator,
+    disposeBaseAtmosphereIndicator,
+    updateBaseAtmosphereIndicator
+} from './baseAtmospherePresentation.js';
 import { ensureFirstNightBaseState, installedCot, planFirstNightBase } from './firstNightBase.js';
 import { loadInstalledBaseModules, saveInstalledBaseModules } from './baseRebuildStore.js';
 import { buildRunResourceTelemetry } from './runTelemetry.js';
@@ -2480,6 +2491,9 @@ export class ThreeGame {
         this.carryObjectVisuals = new Map();
         this.carriedObjectVisual = null;
         this._carryVisualLoadTokens = new Map();
+        this.baseAtmosphereState = createRoomAtmosphereState();
+        this.baseAtmosphereSeal = null;
+        this.baseAtmosphereIndicator = null;
         this.snailsKilledThisRun = 0;
         this.runStartTime = Date.now();
         this._threatAudioTimer = 0;
@@ -4908,6 +4922,7 @@ export class ThreeGame {
         this.setupBunkerBlastDoor();
         this.setupBaseDefenseTurret();
         this.setupBunkerCot();
+        this.setupBaseAtmosphereIndicator();
     }
 
     /**
@@ -4979,6 +4994,43 @@ export class ThreeGame {
             root.rotation.y = (installed?.transform?.yaw ?? installed?.yaw ?? 0) + WORLD_3D_FACING_YAW;
             root.visible = shouldShow;
         }
+    }
+
+    setupBaseAtmosphereIndicator() {
+        if (!this.scene || this.baseAtmosphereIndicator) return;
+        const root = createBaseAtmosphereIndicator();
+        const socket = this.getFirstNightBasePlan().installSocket.transform;
+        root.position.set(socket.x + 0.72, 0, socket.z - 0.42);
+        root.rotation.y = socket.yaw ?? 0;
+        root.visible = this.performanceProfile === 'gameplay';
+        this.scene.add(root);
+        this.baseAtmosphereIndicator = root;
+        this.updateBaseAtmosphere?.(0, performance.now());
+    }
+
+    getBaseAtmosphereStatus() {
+        const seal = this.baseAtmosphereSeal ?? evaluateRoomSealGraph({
+            modules: this.carryState?.installed ?? [],
+            defaultSafeBubble: null
+        });
+        return describeRoomAtmosphere(seal, this.baseAtmosphereState);
+    }
+
+    updateBaseAtmosphere(delta, now = performance.now()) {
+        const seal = evaluateRoomSealGraph({
+            modules: this.carryState?.installed ?? [],
+            defaultSafeBubble: null
+        });
+        this.baseAtmosphereSeal = seal;
+        this.baseAtmosphereState = advanceRoomAtmosphere(this.baseAtmosphereState, seal, delta);
+        const status = describeRoomAtmosphere(seal, this.baseAtmosphereState);
+        updateBaseAtmosphereIndicator(
+            this.baseAtmosphereIndicator,
+            status,
+            now * 0.001,
+            this.performanceProfile === 'gameplay'
+        );
+        return status;
     }
 
     setupCrashedShips() {
@@ -12544,6 +12596,7 @@ export class ThreeGame {
             fp.measure('updatePickups', () => this.updatePickups(delta, now));
             fp.measure('updateFieldWeaponDrops', () => this.updateFieldWeaponDrops?.(delta, now));
             fp.measure('updateCarryObjectVisuals', () => this.updateCarryObjectVisuals?.(delta, now));
+            fp.measure('updateBaseAtmosphere', () => this.updateBaseAtmosphere?.(delta, now));
             fp.measure('updateIceBarriers', () => this.updateIceBarriers?.(delta));
             fp.measure('updateScatter', () => this.updateScatter(delta, now));
             fp.measure('updateUnderfootCrush', () => this.updateUnderfootCrush());
@@ -21259,7 +21312,14 @@ export class ThreeGame {
             ? this.getRestRefusalAt?.(this.player.position.x, this.player.position.z)
             : null;
         if (refusal && actionText) {
-            actionText.textContent = refusal === 'active_quest' ? t('ui.prompt.rest_blocked_quest') : t('ui.prompt.rest_blocked_unsafe');
+            const atmosphere = this.getBaseAtmosphereStatus?.();
+            actionText.textContent = refusal === 'active_quest'
+                ? t('ui.prompt.rest_blocked_quest')
+                : refusal === 'cabin-pressurizing'
+                    ? `CABIN PRESSURIZING · ${Math.round((atmosphere?.pressure ?? 0) * 100)}%`
+                    : refusal.startsWith?.('unsealed:')
+                        ? `SLEEP LOCKED · ${atmosphere?.label ?? 'CABIN BREACH'}`
+                        : t('ui.prompt.rest_blocked_unsafe');
             actionText.dataset.restPrompt = '1';
             promptEl.classList.add('visible');
             promptEl.classList.remove('hidden');
@@ -21343,11 +21403,14 @@ export class ThreeGame {
             return { allowed: false, reason: 'camp-unsafe' };
         }
         if (site?.id === 'bunker_cot') {
-            const seal = evaluateRoomSealGraph({
+            const seal = this.baseAtmosphereSeal ?? evaluateRoomSealGraph({
                 modules: this.carryState?.installed ?? [],
                 defaultSafeBubble: null
             });
-            const restSafety = isPositionSafeForRest(seal, site);
+            const restSafety = isPositionSafeForRest({
+                ...seal,
+                pressure: this.baseAtmosphereState?.pressure
+            }, site);
             if (!restSafety.safe) {
                 return {
                     allowed: false,
@@ -45666,6 +45729,8 @@ export class ThreeGame {
         });
         this.baseDefenseTurretGroup?.removeFromParent?.();
         this.baseDefenseTurretLight?.removeFromParent?.();
+        disposeBaseAtmosphereIndicator(this.baseAtmosphereIndicator);
+        this.baseAtmosphereIndicator = null;
         this.renderer.domElement.removeEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.removeEventListener('contextmenu', this.handleCanvasContextMenu);
         this.renderer.domElement.removeEventListener('pointermove', this.handleCanvasPointerMove);

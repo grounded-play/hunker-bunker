@@ -17,6 +17,7 @@ export const SEAL_LEAK_TYPES = Object.freeze({
 });
 
 const DEFAULT_CEILING_HEIGHT = 2.8;
+export const SLEEP_SAFE_PRESSURE = 0.92;
 
 const cellKey = (x, z) => `${Math.round(x)},${Math.round(z)}`;
 
@@ -48,12 +49,9 @@ export function evaluateRoomSealGraph({
         } else if (def.buildTags?.includes('wall')) {
             const side = mod.side ?? 'edge';
             wallsByEdge.set(`${key}:${side}`, mod);
-            // Also store cell presence
-            wallsByEdge.set(key, mod);
         } else if (def.buildTags?.includes('door')) {
             const side = mod.side ?? 'edge';
             doorsByEdge.set(`${key}:${side}`, mod);
-            doorsByEdge.set(key, mod);
         }
 
         if (def.buildTags?.includes('o2_producer')) {
@@ -96,8 +94,8 @@ export function evaluateRoomSealGraph({
                 // This is a boundary perimeter edge! Must have a wall or a sealed door.
                 const edgeKey = `${key}:${dir.side}`;
                 const neighborEdgeKey = `${neighborKey}:${getOppositeSide(dir.side)}`;
-                const wall = wallsByEdge.get(edgeKey) ?? wallsByEdge.get(neighborEdgeKey) ?? wallsByEdge.get(key) ?? wallsByEdge.get(neighborKey);
-                const door = doorsByEdge.get(edgeKey) ?? doorsByEdge.get(neighborEdgeKey) ?? doorsByEdge.get(key) ?? doorsByEdge.get(neighborKey);
+                const wall = wallsByEdge.get(edgeKey) ?? wallsByEdge.get(neighborEdgeKey);
+                const door = doorsByEdge.get(edgeKey) ?? doorsByEdge.get(neighborEdgeKey);
 
                 if (door) {
                     if (door.isOpen || door.state?.isOpen) {
@@ -158,6 +156,47 @@ export function evaluateRoomSealGraph({
     };
 }
 
+export function createRoomAtmosphereState({ pressure = 0 } = {}) {
+    return { pressure: Math.max(0, Math.min(1, Number(pressure) || 0)) };
+}
+
+/**
+ * Advances cabin pressure from the derived seal graph. This intentionally owns
+ * no timers or scene state, so door/breach changes take effect on the next
+ * simulation tick and remain deterministic in tests and multiplayer hosts.
+ */
+export function advanceRoomAtmosphere(state, sealResult, deltaSeconds) {
+    const previous = Math.max(0, Math.min(1, Number(state?.pressure) || 0));
+    const delta = Math.max(0, Math.min(1, Number(deltaSeconds) || 0));
+    const volume = Math.max(DEFAULT_CEILING_HEIGHT, Number(sealResult?.cubicVolume) || DEFAULT_CEILING_HEIGHT);
+    const leakCount = sealResult?.leaks?.length ?? 0;
+    const filling = Boolean(sealResult?.isEnclosed && sealResult?.o2OutputRate > 0);
+    const rate = filling
+        ? Math.max(0.04, Math.min(0.16, (sealResult.o2OutputRate / volume) * 0.015))
+        : -(0.16 + Math.min(0.34, leakCount * 0.045));
+    return {
+        pressure: Math.max(0, Math.min(1, previous + rate * delta)),
+        rate,
+        filling,
+        leakCount
+    };
+}
+
+export function describeRoomAtmosphere(sealResult, atmosphereState) {
+    const pressure = Math.max(0, Math.min(1, Number(atmosphereState?.pressure) || 0));
+    if (!sealResult?.isEnclosed) {
+        const leak = sealResult?.leaks?.[0] ?? null;
+        return { state: 'leaking', pressure, color: 0xff3b30, label: leak?.message ?? 'CABIN BREACH' };
+    }
+    if (!(sealResult?.o2OutputRate > 0)) {
+        return { state: 'offline', pressure, color: 0xff9f0a, label: 'O2 REGULATOR OFFLINE' };
+    }
+    if (pressure < SLEEP_SAFE_PRESSURE) {
+        return { state: 'filling', pressure, color: 0x5ac8fa, label: `PRESSURIZING ${Math.round(pressure * 100)}%` };
+    }
+    return { state: 'ready', pressure, color: 0x30d158, label: 'BERTH SEALED · O2 READY' };
+}
+
 function getOppositeSide(side) {
     if (side === 'north') return 'south';
     if (side === 'south') return 'north';
@@ -192,6 +231,14 @@ export function isPositionSafeForRest(sealResult, position) {
 
     if (!sealResult.isOxygenated) {
         return { safe: false, reason: 'lacks-oxygen-production' };
+    }
+
+    if (Number.isFinite(sealResult.pressure) && sealResult.pressure < SLEEP_SAFE_PRESSURE) {
+        return {
+            safe: false,
+            reason: 'cabin-pressurizing',
+            pressure: sealResult.pressure
+        };
     }
 
     if (sealResult.bedCount <= 0) {

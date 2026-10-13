@@ -645,8 +645,11 @@ unwinnable seed, and stays within the projectile/FX frame budget.
   `src/baseSealGraph.js` before the bunker rest prompt can advance the day;
 - [x] installed modules persist as campaign/base state while loose cargo remains run-scoped
   (`src/baseRebuildStore.js`);
+- [x] strict edge-addressed seal validation (one wall/door per perimeter edge), deterministic cabin
+  fill/depressurization, sleep pressure threshold, and a five-segment emissive berth gauge with a
+  practical status light (`src/baseSealGraph.js`, `src/baseAtmospherePresentation.js`);
 - remaining: camp-authored cot handoff, lost-cargo recovery/map marker, damaged wall/door recovery,
-  visible pressure fill/leak indicators, and hive logistics variants.
+  and hive logistics variants.
 
 Exit: a new campaign can recover the bed, finish a sealed room, fill it with O2, and sleep; firing
 is impossible while carrying; the partner/companion can defend the carrier.
