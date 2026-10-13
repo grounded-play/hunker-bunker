@@ -2789,6 +2789,26 @@ export class ThreeGame {
             metalness: 0.78,
             roughness: 0.38
         });
+        // Door state stays universal, but each architectural family needs a
+        // distinct PBR read. These share the same texture allocation and add
+        // only four reusable materials rather than cloning one per doorway.
+        this.doorFamilyMaterials = {
+            'blast-slab': this.doorMaterial,
+            'split-bulkhead': this.doorMaterial.clone(),
+            'arch-guillotine': this.doorMaterial.clone(),
+            'camp-barricade': this.doorMaterial.clone()
+        };
+        this.doorFamilyMaterials['split-bulkhead'].color.setHex(0xb8d2da);
+        this.doorFamilyMaterials['split-bulkhead'].metalness = 0.9;
+        this.doorFamilyMaterials['split-bulkhead'].roughness = 0.28;
+        this.doorFamilyMaterials['arch-guillotine'].color.setHex(0x73926c);
+        this.doorFamilyMaterials['arch-guillotine'].emissive.setHex(0x10240d);
+        this.doorFamilyMaterials['arch-guillotine'].emissiveIntensity = 0.3;
+        this.doorFamilyMaterials['arch-guillotine'].metalness = 0.22;
+        this.doorFamilyMaterials['arch-guillotine'].roughness = 0.62;
+        this.doorFamilyMaterials['camp-barricade'].color.setHex(0xa97851);
+        this.doorFamilyMaterials['camp-barricade'].metalness = 0.48;
+        this.doorFamilyMaterials['camp-barricade'].roughness = 0.7;
         const activeTerrainTextures = this.biomeTerrainTextures[BIOME_KEYS.ACTIVE];
         const cryoTerrainTextures = this.biomeTerrainTextures[BIOME_KEYS.CRYO];
         const bioTerrainTextures = this.biomeTerrainTextures[BIOME_KEYS.BIO];
@@ -33589,7 +33609,14 @@ export class ThreeGame {
                     const horizontal = doorRecord
                         ? doorRecord.orientation === 'horizontal'
                         : grid[localY]?.[localX - 1] === '#' || grid[localY]?.[localX + 1] === '#';
-                    const doorMesh = new THREE.Mesh(this.wallGeometry, this.doorMaterial);
+                    const persistedDoor = doorRecord
+                        ? (this.proceduralDoorStates.get(doorRecord.id) ?? doorRecord)
+                        : null;
+                    const doorFamily = persistedDoor?.family ?? 'blast-slab';
+                    const doorMesh = new THREE.Mesh(
+                        this.wallGeometry,
+                        this.doorFamilyMaterials?.[doorFamily] ?? this.doorMaterial
+                    );
                     const blastDoorHeightScale = 1.72;
                     doorMesh.position.set(worldX, (this.wallHeight * blastDoorHeightScale) / 2, worldZ);
                     doorMesh.scale.set(
@@ -33602,14 +33629,15 @@ export class ThreeGame {
                     this.configureWallMesh(doorMesh, {
                         chunkX, chunkY, localX, localY, worldX, worldZ, landform, variant: 'door', isDoor: true
                     });
-                    const persistedDoor = doorRecord
-                        ? (this.proceduralDoorStates.get(doorRecord.id) ?? doorRecord)
-                        : null;
                     doorMesh.userData.isProceduralDoor = true;
                     doorMesh.userData.proceduralDoorId = persistedDoor?.id ?? null;
                     doorMesh.userData.doorStyle = persistedDoor?.style ?? 'bunker';
+                    doorMesh.userData.doorFamily = doorFamily;
+                    doorMesh.userData.doorMotion = persistedDoor?.motion ?? 'sink-floor';
                     doorMesh.userData.closedY = (this.wallHeight * blastDoorHeightScale) / 2;
-                    doorMesh.userData.openY = -(this.wallHeight * blastDoorHeightScale);
+                    doorMesh.userData.openY = persistedDoor?.motion === 'retract-crown'
+                        ? this.wallHeight * (blastDoorHeightScale + 1.05)
+                        : -(this.wallHeight * blastDoorHeightScale);
                     doorMesh.userData.indestructible = Boolean(
                         persistedDoor?.lock
                         && !isGateRequirementMet(persistedDoor.lock, this.mazeAccessState)
@@ -44779,6 +44807,9 @@ export class ThreeGame {
         this.voidMaterial?.dispose?.();
         Object.values(this.exteriorCanyonTextures ?? {}).forEach((texture) => texture?.dispose?.());
         this.wallMaterial?.dispose?.();
+        for (const [family, material] of Object.entries(this.doorFamilyMaterials ?? {})) {
+            if (family !== 'blast-slab') material?.dispose?.();
+        }
         this.doorMaterial?.dispose?.();
         this.doorTexture?.dispose?.();
         this.wallGeometry?.dispose();

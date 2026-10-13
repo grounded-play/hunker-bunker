@@ -12,6 +12,51 @@ const SIDE_ORIENTATION = Object.freeze({
     w: 'vertical'
 });
 
+export const DOOR_FAMILIES = Object.freeze({
+    'blast-slab': Object.freeze({ motion: 'sink-floor', frameStyle: 'reinforced-bulkhead', materialVariant: 'bunker' }),
+    'split-bulkhead': Object.freeze({ motion: 'split-sideways', frameStyle: 'pressure-frame', materialVariant: 'industrial' }),
+    'arch-guillotine': Object.freeze({ motion: 'retract-crown', frameStyle: 'arched-rib', materialVariant: 'organic' }),
+    'camp-barricade': Object.freeze({ motion: 'swing-fold', frameStyle: 'salvage-brace', materialVariant: 'camp' })
+});
+
+const STYLE_FAMILY = Object.freeze({
+    bunker: 'blast-slab',
+    security: 'blast-slab',
+    utility: 'split-bulkhead',
+    'medical-seal': 'split-bulkhead',
+    cryo: 'split-bulkhead',
+    'cryo-security': 'split-bulkhead',
+    hive: 'arch-guillotine',
+    resin: 'arch-guillotine',
+    camp: 'camp-barricade'
+});
+
+export function doorPresentationForStyle(style = 'bunker') {
+    const family = STYLE_FAMILY[style] ?? 'blast-slab';
+    return { family, ...DOOR_FAMILIES[family] };
+}
+
+function doorRecord(room, doorway, center, tutorial) {
+    const style = room.themeConfig?.doorStyle ?? 'bunker';
+    return {
+        id: doorway.id,
+        roomId: room.id,
+        chunkKey: room.chunkKey,
+        localX: center.x,
+        localY: center.y,
+        cells: doorway.cells.map((cell) => ({ x: cell.x, y: cell.y })),
+        side: doorway.side,
+        orientation: SIDE_ORIENTATION[doorway.side],
+        style,
+        ...doorPresentationForStyle(style),
+        state: 'closed',
+        lock: null,
+        hp: tutorial ? 3 : 6,
+        maxHp: tutorial ? 3 : 6,
+        autoClose: true
+    };
+}
+
 function doorChanceForRoom(_room) {
     return 1;
 }
@@ -26,22 +71,7 @@ export function planProceduralDoors(rooms, random, { tutorial = false, forceAtLe
             const key = `${center.x},${center.y}`;
             if (occupied.has(key) || random() > doorChanceForRoom(room)) continue;
             occupied.add(key);
-            records.push({
-                id: doorway.id,
-                roomId: room.id,
-                chunkKey: room.chunkKey,
-                localX: center.x,
-                localY: center.y,
-                cells: doorway.cells.map((cell) => ({ x: cell.x, y: cell.y })),
-                side: doorway.side,
-                orientation: SIDE_ORIENTATION[doorway.side],
-                style: room.themeConfig?.doorStyle ?? 'bunker',
-                state: 'closed',
-                lock: null,
-                hp: tutorial ? 3 : 6,
-                maxHp: tutorial ? 3 : 6,
-                autoClose: true
-            });
+            records.push(doorRecord(room, doorway, center, tutorial));
         }
     }
     if (forceAtLeastOne && records.length === 0) {
@@ -49,29 +79,50 @@ export function planProceduralDoors(rooms, random, { tutorial = false, forceAtLe
         const doorway = room?.doors?.[0];
         const center = doorway?.cells?.[Math.floor((doorway.cells?.length ?? 1) / 2)];
         if (room && doorway && center) {
-            records.push({
-                id: doorway.id,
-                roomId: room.id,
-                chunkKey: room.chunkKey,
-                localX: center.x,
-                localY: center.y,
-                cells: doorway.cells.map((cell) => ({ x: cell.x, y: cell.y })),
-                side: doorway.side,
-                orientation: SIDE_ORIENTATION[doorway.side],
-                style: room.themeConfig?.doorStyle ?? 'bunker',
-                state: 'closed',
-                lock: null,
-                hp: tutorial ? 3 : 6,
-                maxHp: tutorial ? 3 : 6,
-                autoClose: true
-            });
+            records.push(doorRecord(room, doorway, center, tutorial));
         }
     }
     return records;
 }
 
+export function doorThresholdSupportCells(door) {
+    const cells = door?.cells?.length
+        ? door.cells.filter((cell) => Number.isFinite(cell?.x) && Number.isFinite(cell?.y))
+        : Number.isFinite(door?.localX) && Number.isFinite(door?.localY)
+            ? [{ x: door.localX, y: door.localY }]
+            : [];
+    if (!cells.length) return [];
+    if (door.orientation === 'vertical') {
+        const x = door.localX ?? cells[0].x;
+        const ys = cells.map((cell) => cell.y);
+        return [{ x, y: Math.min(...ys) - 1 }, { x, y: Math.max(...ys) + 1 }];
+    }
+    const y = door.localY ?? cells[0].y;
+    const xs = cells.map((cell) => cell.x);
+    return [{ x: Math.min(...xs) - 1, y }, { x: Math.max(...xs) + 1, y }];
+}
+
+const isStructuralSupport = (tile) => tile === '#' || tile === 'W';
+
+export function validateDoorThresholdSupports(grid, door) {
+    const supports = doorThresholdSupportCells(door);
+    const missing = supports.filter(({ x, y }) => !isStructuralSupport(grid?.[y]?.[x]));
+    return { valid: supports.length === 2 && missing.length === 0, supports, missing };
+}
+
+export function ensureDoorThresholdSupports(grid, door) {
+    const height = grid?.length ?? 0;
+    const width = grid?.[0]?.length ?? 0;
+    for (const { x, y } of doorThresholdSupportCells(door)) {
+        if (x < 0 || y < 0 || x >= width || y >= height) continue;
+        if (!isStructuralSupport(grid[y][x])) grid[y][x] = '#';
+    }
+    return validateDoorThresholdSupports(grid, door);
+}
+
 export function stampDoorRecords(grid, records) {
     for (const door of records ?? []) {
+        ensureDoorThresholdSupports(grid, door);
         const cells = door.cells?.length
             ? door.cells
             : [{ x: door.localX, y: door.localY }];

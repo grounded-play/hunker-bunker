@@ -518,7 +518,10 @@ door apron; current performance and 157-test spatial suite remain green.
 - seeded authored-template exposure budget and debug telemetry;
 - 5/7-cell hallway footprints and enlarged two-zone start;
 - wall-run planner and first bunker/cryo macro modules;
-- gateway validator and blast/arch-guillotine door families.
+- [x] structural threshold support repair/validation and deterministic door presentation records;
+- [x] blast-slab, split-bulkhead, camp-barricade, and arch-guillotine families are assigned by
+  room style; the arch-guillotine runtime retracts into its crown and closes downward;
+- remaining gateway visuals: family-specific frames/materials plus split and swing animation.
 
 Exit: a 20-seed visual tour shows recognizable starts, transitions, camps, and hives; every door
 has two supports and every arch passes controller clearance.
