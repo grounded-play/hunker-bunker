@@ -1347,6 +1347,7 @@
       "online": "ONLINE",
       "ready_deficit": "BEREIT – RESSOURCENMANGEL",
       "ready_permitted": "BEREIT – BAU ERLAUBT",
+      "install_required": "{module} BERGEN UND INSTALLIEREN",
       "resolved": "GELÖST",
       "choice_required": "ENTSCHEIDUNG ERFORDERLICH",
       "event_resolved": "Terminal-Ereignis gelöst. Shop-Systeme bleiben verfügbar.",

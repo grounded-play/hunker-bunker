@@ -1347,6 +1347,7 @@
       "online": "在线",
       "ready_deficit": "就绪 — 资源不足",
       "ready_permitted": "就绪 — 允许建造",
+      "install_required": "回收并安装{module}",
       "resolved": "已解决",
       "choice_required": "需要抉择",
       "event_resolved": "终端事件已解决。商店系统仍可使用。",

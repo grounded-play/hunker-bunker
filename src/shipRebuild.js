@@ -123,3 +123,14 @@ export function shipRebuildProgress(state) {
             .map(({ definitionId }) => definitionId)
     };
 }
+
+export function getShipRebuildStageForGoal(goalKey) {
+    return SHIP_REBUILD_STAGES.find((stage) => stage.goalKey === goalKey) ?? null;
+}
+
+export function isShipModuleInstalledForGoal(state, goalKey) {
+    const stage = getShipRebuildStageForGoal(goalKey);
+    return Boolean(stage && state?.installed?.some(({ definitionId, socketId }) => (
+        definitionId === stage.definitionId && socketId === stage.socketId
+    )));
+}

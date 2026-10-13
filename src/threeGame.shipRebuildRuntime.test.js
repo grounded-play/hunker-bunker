@@ -57,4 +57,29 @@ describe('ship rebuild runtime', () => {
         ]));
         expect(game.showBunkerLine).toHaveBeenLastCalledWith(expect.stringContaining('SHIP REBUILD 1/4'));
     });
+
+    it('blocks abstract ship builds until their matching physical module is installed', () => {
+        const game = gameStub();
+        game.bank = {
+            getState: () => ({ o2GeneratorLevel: 0, unlocks: { o2Bubble: true, hullExpansion: false } }),
+            canAfford: vi.fn(() => true),
+            spend: vi.fn(),
+            upgradeO2Generator: vi.fn()
+        };
+        game.getShipGoalAssemblyStatus = ThreeGame.prototype.getShipGoalAssemblyStatus;
+        game.renderConsoleBanking = vi.fn();
+        game.getO2GeneratorState = () => ({ level: 0, nextUpgrade: { cost: { tech: 10 } } });
+
+        expect(ThreeGame.prototype.attemptGoalUnlock.call(game, null, {
+            goalKey: 'hullExpansion', prereqKey: 'o2Bubble'
+        })).toBe(false);
+        expect(game.bank.spend).not.toHaveBeenCalled();
+        expect(game.showBunkerLine).toHaveBeenCalledWith(expect.stringContaining('STELLAR NAVIGATION CORE REQUIRED'));
+
+        expect(ThreeGame.prototype.attemptO2GeneratorUpgrade.call(game, null)).toBe(false);
+        expect(game.bank.upgradeO2Generator).not.toHaveBeenCalled();
+        expect(ThreeGame.prototype.getO2GeneratorButtonState.call(game, {
+            level: 0, maxed: false, nextUpgrade: { cost: { tech: 10 } }
+        })).toMatchObject({ enabled: false, label: 'INSTALL SHIP LIFE-SUPPORT SYSTEM' });
+    });
 });

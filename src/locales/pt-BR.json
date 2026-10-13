@@ -1347,6 +1347,7 @@
       "online": "ONLINE",
       "ready_deficit": "PRONTO — DÉFICIT DE RECURSOS",
       "ready_permitted": "PRONTO — CONSTRUÇÃO PERMITIDA",
+      "install_required": "RECUPERE E INSTALE {module}",
       "resolved": "RESOLVIDO",
       "choice_required": "ESCOLHA NECESSÁRIA",
       "event_resolved": "Evento do terminal resolvido. Os sistemas da loja continuam disponíveis.",

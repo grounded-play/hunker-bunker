@@ -702,8 +702,9 @@ is impossible while carrying; the partner/companion can defend the carrier.
 - [x] render installed ship systems from their authored GLBs and register their cyan/green/orange
   source effects with the fixed environmental-light pool so they illuminate nearby PBR surfaces
   without adding shadow maps or an unbounded light count;
-- physicalize the final objective-package handoff: installation should authorize the matching
-  abstract goal purchase/effect, with a migration rule for saves that already own that goal;
+- [x] make physical installation authorize the matching O2, hull, radar, or reactor build: terminal
+  cards and direct actions refuse the abstract purchase before the exact module reaches its socket,
+  while saves that already own the goal are grandfathered and may install the visible part later;
 - fabricator becomes repair/adapter station;
 - [x] prove one camp return handoff and one hive-to-ship staging handoff on the shared carry reducer;
 - additional camp/hive logistics variants;

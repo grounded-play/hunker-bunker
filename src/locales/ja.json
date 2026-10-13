@@ -1347,6 +1347,7 @@
       "online": "オンライン",
       "ready_deficit": "準備完了 — 資源不足",
       "ready_permitted": "準備完了 — 建設可能",
+      "install_required": "{module}を回収して設置",
       "resolved": "解決済み",
       "choice_required": "選択が必要",
       "event_resolved": "端末イベントは解決した。ショップ機能は引き続き利用できる。",

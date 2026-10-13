@@ -3,6 +3,7 @@ import { beginCarry, createCarryState, installCarriedObject, resetCarryRunState 
 import {
     availableShipRebuildSocket,
     ensureShipRebuildState,
+    isShipModuleInstalledForGoal,
     planShipRebuild,
     shipRebuildProgress
 } from './shipRebuild.js';
@@ -43,6 +44,8 @@ describe('physical ship rebuild', () => {
         expect(socket.id).toBe('ship-bay-life');
         state = installCarriedObject(state, socket, { carrierPlayerId: 'local' }).state;
         expect(state.installed[0]).toMatchObject({ definitionId: 'ship_life_support_core', socketId: 'ship-bay-life' });
+        expect(isShipModuleInstalledForGoal(state, 'o2Bubble')).toBe(true);
+        expect(isShipModuleInstalledForGoal(state, 'hullExpansion')).toBe(false);
         expect(resetCarryRunState('run-b', state.installed).installed).toEqual(state.installed);
     });
 

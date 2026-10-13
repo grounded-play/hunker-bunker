@@ -69,6 +69,8 @@ import {
 import {
     availableShipRebuildSocket,
     ensureShipRebuildState,
+    getShipRebuildStageForGoal,
+    isShipModuleInstalledForGoal,
     planShipRebuild,
     SHIP_REBUILD_STAGES,
     shipRebuildProgress
@@ -9868,6 +9870,23 @@ export class ThreeGame {
             ?? availableShipRebuildSocket(this.carryState, this.getShipRebuildPlan?.(), object);
     }
 
+    getShipGoalAssemblyStatus(goalKey) {
+        const stage = getShipRebuildStageForGoal(goalKey);
+        const bankState = this.bank?.getState?.() ?? {};
+        const grandfathered = goalKey === 'o2Bubble'
+            ? (bankState.o2GeneratorLevel ?? 0) >= 1
+            : Boolean(bankState.unlocks?.[goalKey]);
+        const installed = isShipModuleInstalledForGoal(this.carryState, goalKey);
+        const definition = getBaseModuleDefinition(stage?.definitionId);
+        return {
+            stage,
+            installed,
+            grandfathered,
+            ready: installed || grandfathered,
+            label: definition?.label ?? 'RECOVERED SHIP MODULE'
+        };
+    }
+
     updateShipRebuildRecovery(delta = 0) {
         this._shipRebuildAuditTimer = (this._shipRebuildAuditTimer ?? 0) + Math.max(0, Number(delta) || 0);
         if (this._shipRebuildAuditTimer < 1 || !this.carryState || !this.getActiveShip?.()) return null;
@@ -16099,6 +16118,16 @@ export class ThreeGame {
             };
         }
 
+        const assembly = this.getShipGoalAssemblyStatus?.('o2Bubble');
+        if (generatorState.level === 0 && assembly && !assembly.ready) {
+            return {
+                stateClass: 'btn-state--locked',
+                label: `INSTALL ${assembly.label}`,
+                hint: `${assembly.label} MUST BE RECOVERED AND INSTALLED AT THE SHIP.`,
+                enabled: false
+            };
+        }
+
         const effectiveCost = this.getEffectiveCost(generatorState.nextUpgrade.cost);
         const affordable = this.bank.canAfford(effectiveCost);
         if (!affordable) {
@@ -16118,7 +16147,7 @@ export class ThreeGame {
         };
     }
 
-    getGoalCardButtonState({ unlocked, prereqMet, affordable }) {
+    getGoalCardButtonState({ unlocked, prereqMet, affordable, moduleInstalled = true, moduleLabel = 'SHIP MODULE' }) {
         if (unlocked) {
             return {
                 stateClass: 'btn-state--online',
@@ -16131,6 +16160,14 @@ export class ThreeGame {
             return {
                 stateClass: 'btn-state--locked',
                 label: 'LOCKED',
+                enabled: false
+            };
+        }
+
+        if (!moduleInstalled) {
+            return {
+                stateClass: 'btn-state--locked',
+                label: `INSTALL ${moduleLabel}`,
                 enabled: false
             };
         }
@@ -16165,6 +16202,7 @@ export class ThreeGame {
             ? Boolean(bankState?.unlocks?.[cardConfig.prereqKey])
             : true;
         const affordable = this.bank.canAfford(cost);
+        const assembly = this.getShipGoalAssemblyStatus?.(cardConfig.goalKey);
         const isDiscounted = this.playerType === 'ENGINEER';
 
         const statusEl = document.getElementById(cardConfig.statusId);
@@ -16173,6 +16211,8 @@ export class ThreeGame {
                 statusEl.textContent = t('ui.console.online');
             } else if (!prereqMet) {
                 statusEl.textContent = cardConfig.lockedStatusText;
+            } else if (assembly && !assembly.ready) {
+                statusEl.textContent = t('ui.console.install_required', { module: assembly.label });
             } else if (!affordable) {
                 statusEl.textContent = t('ui.console.ready_deficit');
             } else {
@@ -16193,7 +16233,9 @@ export class ThreeGame {
         const buttonState = this.getGoalCardButtonState({
             unlocked,
             prereqMet,
-            affordable
+            affordable,
+            moduleInstalled: assembly?.ready ?? true,
+            moduleLabel: assembly?.label
         });
 
         button.textContent = buttonState.label;
@@ -16680,6 +16722,10 @@ export class ThreeGame {
 
             const breakdown = this.getResourceCostBreakdown(activeGoal.cost, bankState);
             const canAfford = this.bank.canAfford(activeGoal.cost);
+            const assembly = activeGoal.type === 'o2' || activeGoal.type === 'goal'
+                ? this.getShipGoalAssemblyStatus?.(activeGoal.key)
+                : null;
+            const canBuild = canAfford && (assembly?.ready ?? true);
 
             costOutlineEl.innerHTML = '';
             for (const entry of breakdown) {
@@ -16689,14 +16735,18 @@ export class ThreeGame {
                 costOutlineEl.appendChild(chip);
             }
 
-            buyBtn.disabled = !canAfford;
-            buyBtn.textContent = activeGoal.key === 'o2Bubble'
-                ? 'REPAIR GENERATOR'
+            buyBtn.disabled = !canBuild;
+            buyBtn.textContent = assembly && !assembly.ready
+                ? `INSTALL ${assembly.label}`
+                : activeGoal.key === 'o2Bubble'
+                    ? 'REPAIR GENERATOR'
                 : activeGoal.type === 'goal-upgrade'
                     ? 'INITIATE UPGRADE'
                     : 'INITIATE BUILD';
-            buyBtn.classList.remove('btn-state--available', 'btn-state--insufficient');
-            buyBtn.classList.add(canAfford ? 'btn-state--available' : 'btn-state--insufficient');
+            buyBtn.classList.remove('btn-state--available', 'btn-state--insufficient', 'btn-state--locked');
+            buyBtn.classList.add(canBuild
+                ? 'btn-state--available'
+                : assembly && !assembly.ready ? 'btn-state--locked' : 'btn-state--insufficient');
 
             buyBtn.onclick = () => {
                 this.closeConsoleModal();
@@ -16709,7 +16759,9 @@ export class ThreeGame {
                 }
             };
 
-            setText('terminal-current-objective-status', canAfford ? t('ui.console.ready') : t('ui.console.insufficient'));
+            setText('terminal-current-objective-status', assembly && !assembly.ready
+                ? t('ui.console.install_required', { module: assembly.label })
+                : canAfford ? t('ui.console.ready') : t('ui.console.insufficient'));
         } else {
             if (purchaseZone) {
                 purchaseZone.classList.add('hidden');
@@ -16996,6 +17048,13 @@ export class ThreeGame {
     }
 
     attemptGoalUnlock(ship, cardConfig) {
+        const assembly = this.getShipGoalAssemblyStatus?.(cardConfig.goalKey);
+        if (assembly && !assembly.ready) {
+            this.showBunkerLine?.(`${assembly.label} REQUIRED — RECOVER IT IN THE EXPEDITION AND INSTALL IT AT THE SHIP.`);
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            this.renderConsoleBanking(ship);
+            return false;
+        }
         const rawCost = this.getGoalBuildCost(cardConfig.goalKey);
         if (!rawCost) {
             window.AudioManager?.play('ui_error', { volume: 0.58 });
@@ -17054,6 +17113,13 @@ export class ThreeGame {
 
     attemptO2GeneratorUpgrade(ship) {
         const generatorState = this.getO2GeneratorState();
+        const assembly = this.getShipGoalAssemblyStatus?.('o2Bubble');
+        if (generatorState.level === 0 && assembly && !assembly.ready) {
+            this.showBunkerLine?.(`${assembly.label} REQUIRED — RECOVER IT IN THE EXPEDITION AND INSTALL IT AT THE SHIP.`);
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            this.renderConsoleBanking(ship);
+            return false;
+        }
         const nextUpgrade = generatorState.nextUpgrade;
         let upgrade;
         if (nextUpgrade && this.playerType === 'ENGINEER') {

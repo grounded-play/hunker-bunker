@@ -1347,6 +1347,7 @@
       "online": "ONLINE",
       "ready_deficit": "READY — RESOURCE DEFICIT",
       "ready_permitted": "READY — BUILD PERMITTED",
+      "install_required": "RECOVER AND INSTALL {module}",
       "resolved": "RESOLVED",
       "choice_required": "CHOICE REQUIRED",
       "event_resolved": "TERMINAL EVENT RESOLVED. SHOP SYSTEMS REMAIN AVAILABLE.",
