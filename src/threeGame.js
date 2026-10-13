@@ -588,7 +588,7 @@ import { applySpecialVariant } from './specialVariants.js';
 import { bindRoomGrammarSites } from './roomGrammarSiteSelection.js';
 import { trimCampPromptActions } from './campActionMenu.js';
 import { MYSTERY_BOX_KINDS, MYSTERY_OUTCOME_LINE_KEYS, mysteryBoxChance, mysteryOpenSeconds, mysteryRewardDrops, pickMysteryBoxKind, rollMysteryOutcome, seededRandom } from './mysteryBoxes.js';
-import { createTrackField, slimeColorFor, stepBoots, trackSurfaceForType } from './trackField.js';
+import { createTrackField, slimeColorFor, slimeLifeFor, stepBoots, trackSurfaceForType } from './trackField.js';
 import { CasingSystem } from './casingSystem.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
 import { groupDangerZones, lipEdgeQuads } from './dangerZones.js';
@@ -6667,7 +6667,8 @@ export class ThreeGame {
                 fromRemote: true
             }
         });
-        window.AudioManager?.play?.('weapon_fire_sidearm', (this.audioAt?.(originX, originZ, { volume: 0.28, varyPitch: true }) ?? { volume: 0.28, varyPitch: true }));
+        const remoteFireSound = this.resolveWeaponFireSound?.(data?.weaponType) ?? 'weapon_fire_sidearm';
+        window.AudioManager?.play?.(remoteFireSound, (this.audioAt?.(originX, originZ, { volume: 0.28, varyPitch: true }) ?? { volume: 0.28, varyPitch: true }));
         this.casingSystem?.spawnCasing(originX, 0.9, originZ, data?.dirX || 0, data?.dirZ || 1, data?.weaponType || 'kinetic');
     }
 
@@ -9446,7 +9447,8 @@ export class ThreeGame {
             });
         }
 
-        window.AudioManager?.play('weapon_fire_sidearm', (this.audioAt?.(this.player?.position?.x, this.player?.position?.z, { volume: 0.34 }) ?? { volume: 0.34 }));
+        const localFireSound = this.resolveWeaponFireSound?.(this.currentWeaponType, this.fieldWeapon) ?? 'weapon_fire_sidearm';
+        window.AudioManager?.play(localFireSound, (this.audioAt?.(this.player?.position?.x, this.player?.position?.z, { volume: 0.36, varyPitch: true }) ?? { volume: 0.36, varyPitch: true }));
 
         if (this.weaponClipAmmo <= 0 && !this.unlimitedAmmo) {
             this.requestReload();
@@ -29351,6 +29353,11 @@ export class ThreeGame {
         group.position.set(x, 0.42, z);
         this.scene.add(group);
 
+        if (Math.random() < 0.35) {
+            const tracerSound = this.resolveTracerFlybySound?.(tracerFxId || options.tracerFx) ?? 'tracer_flyby_ballistic';
+            window.AudioManager?.play?.(tracerSound, (this.audioAt?.(x, z, { volume: 0.24, varyPitch: true }) ?? { volume: 0.24, varyPitch: true }));
+        }
+
         // FIFO-evict the oldest active projectile once at the cap, same
         // cleanup path expiry already uses, instead of letting the pool grow
         // without bound.
@@ -29639,11 +29646,14 @@ export class ThreeGame {
         this.traumaManager?.addTrauma(WEAPON_TRAUMA_TABLE.rifle || 0.12);
     }
 
-    spawnProjectileImpactEffect(x, z) {
+    spawnProjectileImpactEffect(x, z, surface = 'metal') {
         const effect = createImpactBurst();
         effect.position.set(x, (this.getTerrainHeightAt?.(x, z) ?? 0), z);
         this.scene.add(effect);
         registerTransientEffect(this, effect);
+
+        const impactSound = this.resolveBulletImpactSound?.(surface) ?? 'bullet_impact_metal';
+        window.AudioManager?.play?.(impactSound, (this.audioAt?.(x, z, { volume: 0.32, varyPitch: true }) ?? { volume: 0.32, varyPitch: true }));
     }
 
     spawnTextureBurstEffect(x, z, {
@@ -30002,7 +30012,7 @@ export class ThreeGame {
             if (wallHit) {
                 const hx = wallHit.point?.x ?? projectile.mesh.position.x;
                 const hz = wallHit.point?.z ?? projectile.mesh.position.z;
-                this.spawnProjectileImpactEffect(hx, hz);
+                this.spawnProjectileImpactEffect(hx, hz, 'wall');
                 const sparkColor = projectile.isEnemy ? 0xff6a4a : 0xffd27a;
                 this.spawnPhysicalBurst(hx, hz, { color: sparkColor, count: 5, upward: 0.16 });
                 const destroyedWall = this.damageWall(wallHit.wall, projectile.damage, {
@@ -30038,7 +30048,7 @@ export class ThreeGame {
                     } else {
                         this.takeDamage(projectile.damage, 'enemy-projectile', projectile.mesh.position.x, projectile.mesh.position.z);
                     }
-                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z, 'flesh');
                     toRemove.add(projectile);
                     continue;
                 }
@@ -30052,7 +30062,7 @@ export class ThreeGame {
                 const rival = this.checkProjectileRivalHit(projectile);
                 if (rival) {
                     this.reportProjectileRivalHit(rival, projectile);
-                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z, 'flesh');
                     toRemove.add(projectile);
                     continue;
                 }
@@ -30065,7 +30075,7 @@ export class ThreeGame {
                     });
                     if (projectile.pierceRemaining && projectile.pierceRemaining > 0) {
                         projectile.pierceRemaining -= 1;
-                        this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                        this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z, 'flesh');
                     } else {
                         toRemove.add(projectile);
                     }
@@ -30079,20 +30089,20 @@ export class ThreeGame {
                 const squadmate = this.checkProjectileSquadmateHit?.(projectile);
                 if (squadmate) {
                     this.nudgeSquadmate(squadmate, projectile);
-                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z, 'flesh');
                     toRemove.add(projectile);
                     continue;
                 }
 
                 if (this.checkProjectileMayorTinaHit(projectile)) {
-                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z, 'flesh');
                     toRemove.add(projectile);
                     continue;
                 }
                 const destructibleProp = this.checkProjectileDestructiblePropHit(projectile);
                 if (destructibleProp) {
                     this.damageScatterProp(destructibleProp, projectile.damage);
-                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z, 'prop');
                     toRemove.add(projectile);
                     continue;
                 }

@@ -49,9 +49,21 @@ export function trackAlpha(baseAlpha, age, life) {
 
 // What a snail's slime looks like, by type.
 export function slimeColorFor(type = '') {
-    if (type.includes('cryo')) return 0xa3e2ff;
-    if (type.includes('spore')) return 0x55ff55;
+    const t = String(type ?? '').toLowerCase();
+    if (t.includes('cryo')) return 0xa3e2ff;
+    if (t.includes('spore')) return 0x55ff55;
+    if (t.includes('cyber') || t.includes('mech')) return 0x1e1b18;
     return 0x2fb8e0;
+}
+
+// How long a slime trail lingers on the terrain before decaying.
+export function slimeLifeFor(type = '', isBoss = false) {
+    if (isBoss) return 36;
+    const t = String(type ?? '').toLowerCase();
+    if (t.includes('cryo')) return 22;
+    if (t.includes('spore')) return 24;
+    if (t.includes('cyber') || t.includes('mech')) return 25;
+    return 18;
 }
 
 // A right boot print, toe up: a rounded toe, a wide ball, a narrow arch on

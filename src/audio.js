@@ -248,6 +248,26 @@ export class AudioManager {
         }
     }
 
+    static setEnvironmentFilter({ cutoff = 22000, resonance = 1.0, type = 'lowpass' } = {}) {
+        if (!this.environmentFilter) return;
+        const now = audioCtx.currentTime || 0;
+        try { this.environmentFilter.type = type; } catch { /* ignore */ }
+        if (this.environmentFilter.frequency) {
+            if (typeof this.environmentFilter.frequency.setTargetAtTime === 'function') {
+                this.environmentFilter.frequency.setTargetAtTime(cutoff, now, 0.2);
+            } else {
+                this.environmentFilter.frequency.value = cutoff;
+            }
+        }
+        if (this.environmentFilter.Q) {
+            if (typeof this.environmentFilter.Q.setTargetAtTime === 'function') {
+                this.environmentFilter.Q.setTargetAtTime(resonance, now, 0.2);
+            } else {
+                this.environmentFilter.Q.value = resonance;
+            }
+        }
+    }
+
     static async unlock() {
         if (!this.isUnlocked) {
             if (audioCtx.state === 'suspended') {

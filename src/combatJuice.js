@@ -43,12 +43,22 @@ export class TraumaManager {
 
 export const WEAPON_TRAUMA_TABLE = Object.freeze({
     pistol: 0.08,
+    mk1_sidearm: 0.08,
     shotgun: 0.32,
+    scatter_rep: 0.32,
+    siege_breaker: 0.36,
     rifle: 0.12,
+    pulse_carbine: 0.14,
+    neon_smg: 0.09,
     railgun: 0.48,
+    rail_marksman: 0.48,
+    cryo_lance: 0.20,
+    tesla_lock: 0.22,
     sniper: 0.45,
+    rocket: 0.55,
     explosion: 0.72,
     boss_stomp: 0.65,
+    bossSlam: 0.65,
     heavy_hit: 0.38,
     default: 0.14
 });
