@@ -82,4 +82,40 @@ describe('ship rebuild runtime', () => {
             level: 0, maxed: false, nextUpgrade: { cost: { tech: 10 } }
         })).toMatchObject({ enabled: false, label: 'INSTALL SHIP LIFE-SUPPORT SYSTEM' });
     });
+
+    it('makes installed life-support and engine GLBs actionable with per-instance cooldowns', () => {
+        const game = gameStub();
+        game.getInstalledBaseModuleWorldPosition = ThreeGame.prototype.getInstalledBaseModuleWorldPosition;
+        game.adjustOxygen = ThreeGame.prototype.adjustOxygen;
+        game.emitO2State = vi.fn();
+        game.installedBaseModuleVisuals = new Map();
+        game.playerVitals = { o2: 40, maxO2: 100 };
+        game.carryState.installed = [
+            {
+                instanceId: 'life-1', definitionId: 'ship_life_support_core',
+                transform: { x: 0, z: 0, yaw: 0 }, socketId: 'ship-bay-life'
+            },
+            {
+                instanceId: 'engine-1', definitionId: 'ship_engine_manifold',
+                transform: { x: 2, z: 0, yaw: 0 }, socketId: 'ship-bay-engine'
+            }
+        ];
+
+        expect(ThreeGame.prototype.interactWithInstalledShipModule.call(game, 'life-1', 10)).toBe(true);
+        expect(game.playerVitals.o2).toBe(80);
+        expect(ThreeGame.prototype.interactWithInstalledShipModule.call(game, 'life-1', 11)).toBe(false);
+        expect(game.showBunkerLine).toHaveBeenLastCalledWith(expect.stringContaining('RECHARGING'));
+
+        game.player.position.x = 2;
+        game.fieldWeaponRunState = {
+            runId: 'run-rebuild', worldDrops: [],
+            equipped: { profileId: 'flamethrower', ammoType: 'fuel-tanks', ammoInWeapon: 20, reserveAmmo: 200 }
+        };
+        game.syncEquippedFieldWeapon = vi.fn();
+        game.dashCooldownTimer = 0.8;
+        expect(ThreeGame.prototype.interactWithInstalledShipModule.call(game, 'engine-1', 10)).toBe(true);
+        expect(game.fieldWeaponRunState.equipped.reserveAmmo).toBe(230);
+        expect(game.dashCooldownTimer).toBe(0);
+        expect(game.syncEquippedFieldWeapon).toHaveBeenCalledWith({ announce: false });
+    });
 });

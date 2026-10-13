@@ -708,6 +708,11 @@ is impossible while carrying; the partner/companion can defend the carrier.
 - [x] make physical installation authorize the matching O2, hull, radar, or reactor build: terminal
   cards and direct actions refuse the abstract purchase before the exact module reaches its socket,
   while saves that already own the goal are grandfathered and may install the visible part later;
+- [x] make every installed ship GLB a proximity interactable with its own authored behavior and
+  cooldown: life support purges 40% O2, navigation locks the next cargo/build route for 45 seconds,
+  comms emits a deep radar scan, and the engine resets mobility capacitors while servicing the
+  equipped gun's unique reserve (including 30 units of flamethrower fuel); activation drives the
+  model's interaction animation/glow and source-colored PBR burst;
 - fabricator becomes repair/adapter station;
 - [x] prove one camp return handoff and one hive-to-ship staging handoff on the shared carry reducer;
 - additional camp/hive logistics variants;

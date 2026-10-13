@@ -16,6 +16,7 @@ import {
     getFieldWeaponDropDefinition,
     reloadFieldWeapon,
     resetFieldWeaponRunState,
+    serviceEquippedFieldWeapon,
     swapFieldWeapon
 } from './fieldWeaponDrops.js';
 import {
@@ -79,6 +80,11 @@ import {
     shipRebuildProgress
 } from './shipRebuild.js';
 import { loadInstalledBaseModules, saveInstalledBaseModules } from './baseRebuildStore.js';
+import {
+    commitShipModuleActionCooldown,
+    getShipModuleAction,
+    shipModuleActionCooldownRemaining
+} from './shipModuleActions.js';
 import { getBaseModuleDefinition } from './data/baseModules.js';
 import {
     baseModuleRepairCost,
@@ -9195,6 +9201,19 @@ export class ThreeGame {
                 interact: () => this.toggleInstalledBaseDoor(baseDoor.module.instanceId)
             });
         }
+        const shipModule = this.getNearestInstalledShipModule?.();
+        if (shipModule) {
+            const action = getShipModuleAction(shipModule.module.definitionId);
+            const remaining = this.getShipModuleActionCooldown?.(shipModule.module.instanceId) ?? 0;
+            candidates.push({
+                id: `use-ship-module:${shipModule.module.instanceId}`,
+                label: remaining > 0
+                    ? `${action?.label ?? 'SHIP SYSTEM'} · RECHARGING ${Math.ceil(remaining)}s`
+                    : action?.label ?? 'USE SHIP SYSTEM',
+                distance: shipModule.distance,
+                interact: () => this.interactWithInstalledShipModule(shipModule.module.instanceId)
+            });
+        }
         const fieldWeapon = this.getNearestFieldWeaponDrop?.();
         if (fieldWeapon) {
             const profile = getFieldWeaponProfile(fieldWeapon.drop.profileId, true);
@@ -10469,6 +10488,98 @@ export class ThreeGame {
             nearestDistance = distance;
         }
         return nearest ? { module: nearest, distance: nearestDistance } : null;
+    }
+
+    getShipModuleActionCooldown(instanceId, nowSeconds = performance.now() * 0.001) {
+        return shipModuleActionCooldownRemaining(
+            this._shipModuleActionCooldowns,
+            instanceId,
+            nowSeconds
+        );
+    }
+
+    getNearestInstalledShipModule(maxDistance = 2.6) {
+        if (!this.player || this.carryState?.carried) return null;
+        let nearest = null;
+        let nearestDistance = maxDistance;
+        for (const module of this.carryState?.installed ?? []) {
+            if (!getShipModuleAction(module.definitionId)) continue;
+            const position = this.getInstalledBaseModuleWorldPosition(module);
+            const distance = Math.hypot(position.x - this.player.position.x, position.z - this.player.position.z);
+            if (distance >= nearestDistance) continue;
+            nearest = module;
+            nearestDistance = distance;
+        }
+        return nearest ? { module: nearest, distance: nearestDistance } : null;
+    }
+
+    interactWithInstalledShipModule(instanceId, nowSeconds = performance.now() * 0.001) {
+        const module = this.carryState?.installed?.find((entry) => entry.instanceId === instanceId);
+        const action = getShipModuleAction(module?.definitionId);
+        if (!module || !action || !this.player || this.carryState?.carried) return false;
+        const position = this.getInstalledBaseModuleWorldPosition(module);
+        if (Math.hypot(position.x - this.player.position.x, position.z - this.player.position.z) > 2.6) return false;
+        this._shipModuleActionCooldowns ??= new Map();
+        const remaining = shipModuleActionCooldownRemaining(this._shipModuleActionCooldowns, instanceId, nowSeconds);
+        if (remaining > 0) {
+            this.showBunkerLine?.(`${action.label} RECHARGING — ${Math.ceil(remaining)}s.`);
+            window.AudioManager?.play?.('ui_error', { volume: 0.3 });
+            return false;
+        }
+
+        let detail = {};
+        if (action.id === 'oxygen-purge') {
+            const before = this.playerVitals?.o2 ?? 0;
+            this.adjustOxygen?.(40);
+            detail = { restored: Math.max(0, (this.playerVitals?.o2 ?? before) - before) };
+            this.showBunkerLine?.(`LIFE-SUPPORT PURGE COMPLETE — O2 +${Math.round(detail.restored)}%.`);
+        } else if (action.id === 'route-lock') {
+            const target = this.getMissionCargoGuidance?.() ?? this.getNextBuildSite?.();
+            if (target && Number.isFinite(target.x) && Number.isFinite(target.z)) {
+                this._meridianCompassLock = {
+                    x: target.x, z: target.z,
+                    label: target.label ?? 'NAVIGATION ROUTE',
+                    mode: 'navigation-route',
+                    expiresAt: performance.now() + 45000
+                };
+                this.spawnTacticalPingMarker?.({
+                    x: target.x, z: target.z, kind: 'item',
+                    label: target.label ?? 'NAVIGATION ROUTE', duration: 8
+                });
+                detail = { target };
+                this.showBunkerLine?.(`NAVIGATION LOCKED — ${target.label ?? 'ROUTE TARGET'} FOR 45s.`);
+            } else {
+                this.showBunkerLine?.('NAVIGATION SWEEP COMPLETE — NO UNRESOLVED ROUTE TARGETS.');
+            }
+        } else if (action.id === 'deep-scan') {
+            this.radarScanCooldownRemaining = 0;
+            this.triggerRadarScan?.();
+            this.showBunkerLine?.('COMMS ARRAY DEEP SCAN TRANSMITTED.');
+        } else if (action.id === 'field-service') {
+            const ammoAmount = this.fieldWeaponRunState?.equipped?.ammoType === 'fuel-tanks' ? 30 : 12;
+            const serviced = serviceEquippedFieldWeapon(this.fieldWeaponRunState, ammoAmount);
+            if (serviced.ok) {
+                this.fieldWeaponRunState = serviced.state;
+                this.syncEquippedFieldWeapon?.({ announce: false });
+            }
+            this.dashCooldownTimer = 0;
+            detail = { ammoAdded: serviced.added ?? 0, dashReady: true };
+            this.showBunkerLine?.(serviced.ok
+                ? `MANIFOLD FIELD SERVICE — ${serviced.added} ${serviced.equipped.ammoType.toUpperCase()} RESTORED.`
+                : 'MANIFOLD VENTED — MOBILITY CAPACITORS READY.');
+        }
+
+        commitShipModuleActionCooldown(this._shipModuleActionCooldowns, module, nowSeconds);
+        const root = this.installedBaseModuleVisuals?.get?.(module.instanceId);
+        root?.userData?.propExperience?.acknowledge?.({ action: 'use' });
+        root?.userData?.propFx?.setMode?.('working');
+        this.spawnPhysicalBurst?.(position.x, position.z, { color: action.color, count: 12, upward: 0.18 });
+        this.triggerCameraShake?.(0.04, 0.1);
+        window.AudioManager?.play?.('ui_confirm', { volume: 0.58, playbackRate: 0.9 });
+        window.dispatchEvent(new CustomEvent('ship-module-activated', {
+            detail: { instanceId, definitionId: module.definitionId, actionId: action.id, ...detail }
+        }));
+        return true;
     }
 
     toggleInstalledBaseDoor(instanceId) {

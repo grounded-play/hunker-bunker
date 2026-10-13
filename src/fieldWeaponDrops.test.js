@@ -6,6 +6,7 @@ import {
     createFieldWeaponRunState,
     reloadFieldWeapon,
     resetFieldWeaponRunState,
+    serviceEquippedFieldWeapon,
     swapFieldWeapon
 } from './fieldWeaponDrops.js';
 
@@ -44,6 +45,16 @@ describe('run-only field weapon drops', () => {
         expect(result).toMatchObject({ ok: true, loaded: 4 });
         expect(result.state.equipped).toMatchObject({ ammoType: 'shells', ammoInWeapon: 5, reserveAmmo: 0 });
         expect(reloadFieldWeapon(result.state)).toMatchObject({ ok: false, reason: 'no-reserve' });
+    });
+
+    it('services only the equipped gun reserve and clamps to its unique capacity', () => {
+        let state = createFieldWeaponRunState('run-a');
+        state = addFieldWeaponDrop(state, drop('flame-1', 'flamethrower', 10, 230)).state;
+        state = swapFieldWeapon(state, 'flame-1').state;
+        const result = serviceEquippedFieldWeapon(state, 30);
+        expect(result).toMatchObject({ ok: true, added: 10 });
+        expect(result.state.equipped).toMatchObject({ ammoType: 'fuel-tanks', reserveAmmo: 240 });
+        expect(serviceEquippedFieldWeapon(result.state, 30)).toMatchObject({ ok: false, reason: 'full' });
     });
 
     it('rejects duplicate and cross-run instances', () => {

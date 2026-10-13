@@ -125,6 +125,19 @@ export function reloadFieldWeapon(state) {
     return { ok: true, loaded, state: { ...state, equipped }, equipped };
 }
 
+export function serviceEquippedFieldWeapon(state, amount = 0) {
+    if (!state?.equipped) return { ok: false, reason: 'no-field-weapon', state };
+    const definition = FIELD_WEAPON_DROP_CATALOG[state.equipped.profileId];
+    if (!definition) return { ok: false, reason: 'unknown-profile', state };
+    const added = Math.min(
+        Math.max(0, Math.floor(Number(amount) || 0)),
+        Math.max(0, definition.reserveCapacity - state.equipped.reserveAmmo)
+    );
+    if (added <= 0) return { ok: false, reason: 'full', state };
+    const equipped = { ...state.equipped, reserveAmmo: state.equipped.reserveAmmo + added };
+    return { ok: true, added, state: { ...state, equipped }, equipped };
+}
+
 export function resetFieldWeaponRunState(nextRunId = null) {
     return createFieldWeaponRunState(nextRunId);
 }
