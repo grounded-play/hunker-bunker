@@ -11498,7 +11498,10 @@ function selectSettingsTab(tabName = 'session', { focus = false } = {}) {
         tab.tabIndex = active ? 0 : -1;
     });
     panels.forEach((panel) => panel.classList.toggle('hidden', panel.dataset.settingsPanel !== selected?.dataset.settingsTab));
-    if (focus) selected?.focus();
+    if (focus) {
+        selected?.focus({ preventScroll: true });
+        selected?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
 }
 
 settingsPopup?.querySelector('.settings-tabs')?.addEventListener('click', (event) => {
@@ -11515,10 +11518,16 @@ settingsPopup?.querySelector('.settings-tabs')?.addEventListener('keydown', (eve
         moveSettingsDirectionalFocus(event.key);
         return;
     }
-    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
     const tabs = [...settingsPopup.querySelectorAll('[data-settings-tab]')];
     const index = tabs.indexOf(document.activeElement);
     if (index < 0) return;
+    if (event.key === 'Home' || event.key === 'End') {
+        event.preventDefault();
+        const target = event.key === 'Home' ? tabs[0] : tabs[tabs.length - 1];
+        selectSettingsTab(target.dataset.settingsTab, { focus: true });
+        return;
+    }
+    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
     event.preventDefault();
     const direction = event.key === 'ArrowRight' ? 1 : -1;
     selectSettingsTab(tabs[(index + direction + tabs.length) % tabs.length].dataset.settingsTab, { focus: true });

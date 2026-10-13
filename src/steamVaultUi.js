@@ -33,6 +33,12 @@ import {
 import { t, getLocale, onLocaleChange } from './i18n.js';
 import { adaptStoreCatalogResponse, formatStorePrice } from './steamStoreCatalog.js';
 import { finishPendingPurchases, runSteamKeyPurchase } from './steamStorePurchase.js';
+import {
+    DEFAULT_VAULT_VIEW_STATE,
+    normalizeVaultViewState,
+    projectVaultInventory,
+    reconcileVaultSelection
+} from './vaultInventoryView.js';
 
 export { STEAM_ITEM_CATALOG };
 
@@ -48,6 +54,7 @@ export function getItemCatalogEntry(itemdefid) {
         ...(legacy ?? { itemdefid: view.id, desc: view.name, tradable: false, marketable: false }),
         name: view.name,
         rarity: view.rarity,
+        kind: view.kind,
         icon: view.icon ?? legacy?.localImg ?? null
     };
 }
@@ -134,7 +141,8 @@ let vaultSource = 'local';
 // Exchanges the backend commits (GET /steam/inventory `capabilities`).
 let steamCapabilities = new Set();
 let vaultSteamAccount = null;
-let selectedVaultItem = null;
+let selectedVaultStackKey = null;
+let vaultViewState = { ...DEFAULT_VAULT_VIEW_STATE };
 let marketEligibility = 'unknown';
 let hudCardSeq = 0;
 let cacheOpeningBusy = false;
@@ -186,7 +194,8 @@ export function isDevInfiniteCacheMode() {
 
 export function resetDevVaultInventory() {
     vaultItems = [];
-    selectedVaultItem = null;
+    selectedVaultStackKey = null;
+    vaultViewState = { ...DEFAULT_VAULT_VIEW_STATE };
     if (isBrowserSandbox()) {
         try { window.localStorage?.removeItem(DEV_VAULT_STORAGE_KEY); } catch { /* best effort */ }
         syncDevOwnership();
@@ -495,6 +504,26 @@ function wireVaultMarkup({ closeModal }) {
     const storeLayout = document.getElementById('vault-store-layout');
     const smelterLayout = document.getElementById('vault-smelter-layout');
 
+    const search = document.getElementById('vault-search-input');
+    const group = document.getElementById('vault-group-filter');
+    const rarity = document.getElementById('vault-rarity-filter');
+    const sort = document.getElementById('vault-sort-select');
+    const updateView = (patch) => {
+        vaultViewState = normalizeVaultViewState({ ...vaultViewState, ...patch });
+        renderInventoryGrid();
+    };
+    search?.addEventListener('input', () => updateView({ query: search.value }));
+    group?.addEventListener('change', () => updateView({ group: group.value }));
+    rarity?.addEventListener('change', () => updateView({ rarity: rarity.value }));
+    sort?.addEventListener('change', () => updateView({ sort: sort.value }));
+    document.getElementById('vault-filter-clear')?.addEventListener('click', () => {
+        vaultViewState = { ...DEFAULT_VAULT_VIEW_STATE };
+        syncVaultFilterControls();
+        renderInventoryGrid();
+        search?.focus({ preventScroll: true });
+    });
+    syncVaultFilterControls();
+
     const activateTab = (activeBtn, activeLayout) => {
         for (const btn of [tabInventory, tabStore, tabSmelter]) btn?.classList.remove('active');
         for (const layout of [inventoryLayout, storeLayout, smelterLayout]) layout?.classList.add('hidden');
@@ -556,6 +585,9 @@ export async function loadVaultData() {
         const account = identity?.active ? identity.steamId64 : null;
         if (account !== vaultSteamAccount || !account) {
             vaultItems = [];
+            selectedVaultStackKey = null;
+            vaultViewState = { ...DEFAULT_VAULT_VIEW_STATE };
+            syncVaultFilterControls();
             window.itemOwnership?.setSteamInventory([]);
             reconcileCosmeticsOwnership([]);
             vaultSteamAccount = account;
@@ -622,21 +654,38 @@ export function renderInventoryGrid() {
 
     if (!grid) return;
     grid.innerHTML = '';
+    const projection = projectVaultInventory(vaultItems, vaultViewState, getItemCatalogEntry);
+    selectedVaultStackKey = reconcileVaultSelection(selectedVaultStackKey, projection.visible);
+    const selectedStack = projection.visible.find((stack) => stack.key === selectedVaultStackKey) ?? null;
+    const summary = document.getElementById('vault-inventory-summary');
+    if (summary) {
+        summary.textContent = projection.filtered
+            ? t('ui.vault.count_filtered', { visible: projection.visibleItems, total: projection.totalItems, types: projection.visible.length })
+            : t('ui.vault.count_summary', { types: projection.totalTypes, total: projection.totalItems });
+    }
 
-    if (vaultItems.length === 0) {
+    if (projection.stacks.length === 0) {
         emptyState?.classList.remove('hidden');
+        if (emptyState) emptyState.textContent = t('ui.vault.no_items');
+        updateDetailsPanel(null);
+        return;
+    }
+
+    if (projection.visible.length === 0) {
+        emptyState?.classList.remove('hidden');
+        if (emptyState) emptyState.textContent = t('ui.vault.no_matching_items');
+        updateDetailsPanel(null);
         return;
     }
 
     emptyState?.classList.add('hidden');
 
-    vaultItems.forEach(item => {
-        const catalog = getItemCatalogEntry(item.itemdefid);
-        if (!catalog) return;
+    projection.visible.forEach(item => {
+        const catalog = item.catalog;
 
         const card = document.createElement('div');
         const rarityClass = `vault-item--${catalog.rarity}`;
-        const isSelected = selectedVaultItem && selectedVaultItem.itemId === item.itemId;
+        const isSelected = selectedVaultStackKey === item.key;
 
         card.className = `vault-item-card ${rarityClass} ${isSelected ? 'selected' : ''}`;
         // Focusable and pressable, so a controller can pick items (Full
@@ -645,6 +694,7 @@ export function renderInventoryGrid() {
         card.setAttribute('role', 'button');
         card.setAttribute('aria-label', `${catalog.name}${item.quantity > 1 ? ` x${item.quantity}` : ''}`);
         card.setAttribute('aria-pressed', String(Boolean(isSelected)));
+        card.dataset.stackKey = item.key;
         card.addEventListener('keydown', (event) => {
             if (event.key !== 'Enter' && event.key !== ' ') return;
             event.preventDefault();
@@ -664,7 +714,7 @@ export function renderInventoryGrid() {
         }
 
         card.addEventListener('click', () => {
-            selectedVaultItem = item;
+            selectedVaultStackKey = item.key;
             document.querySelectorAll('.vault-item-card').forEach((c) => {
                 c.classList.remove('selected');
                 c.setAttribute('aria-pressed', 'false');
@@ -677,12 +727,21 @@ export function renderInventoryGrid() {
         grid.appendChild(card);
     });
 
-    if (!selectedVaultItem && vaultItems.length > 0) {
-        selectedVaultItem = vaultItems[0];
-    }
     // Called unconditionally: with an empty vault this paints the localized
     // empty state, which previously stayed on its English markup placeholder.
-    updateDetailsPanel(selectedVaultItem);
+    updateDetailsPanel(selectedStack);
+}
+
+function syncVaultFilterControls() {
+    const view = normalizeVaultViewState(vaultViewState);
+    const search = document.getElementById('vault-search-input');
+    const group = document.getElementById('vault-group-filter');
+    const rarity = document.getElementById('vault-rarity-filter');
+    const sort = document.getElementById('vault-sort-select');
+    if (search && search.value !== view.query) search.value = view.query;
+    if (group) group.value = view.group;
+    if (rarity) rarity.value = view.rarity;
+    if (sort) sort.value = view.sort;
 }
 
 export function updateDetailsPanel(item) {

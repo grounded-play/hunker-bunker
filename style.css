@@ -16179,6 +16179,46 @@ body.cutscene-video-active .tactical-overlay {
   font-weight: 800;
 }
 
+.vault-inventory-toolbar {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.5fr) repeat(3, minmax(112px, .8fr)) auto;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.vault-filter-control,
+.vault-filter-clear {
+  min-width: 0;
+  min-height: 34px;
+  border: 1px solid rgba(var(--vault-glow-rgb), .3);
+  border-radius: 4px;
+  background: rgba(3, 10, 18, .88);
+  color: #c9edf5;
+  padding: 5px 8px;
+  font: 800 10px 'Space Mono', monospace;
+  letter-spacing: .04em;
+}
+
+.vault-filter-clear {
+  cursor: pointer;
+  color: #22d3ee;
+}
+
+.vault-filter-clear:hover,
+.vault-filter-clear:focus-visible {
+  border-color: #22d3ee;
+  background: rgba(var(--vault-glow-rgb), .12);
+}
+
+.vault-inventory-summary {
+  min-height: 15px;
+  margin-bottom: 5px;
+  color: rgba(165, 243, 252, .62);
+  font: 800 9px 'Space Mono', monospace;
+  letter-spacing: .1em;
+  text-align: right;
+}
+
 .vault-right-column {
   flex: 1.2;
   min-width: calc(var(--vu) * 32);
@@ -17019,6 +17059,38 @@ body.cutscene-video-active .tactical-overlay {
   box-shadow: 0 0 30px rgba(34, 211, 238, 0.7) !important;
 }
 
+.vault-reveal-skip-btn {
+  display: none;
+  margin-top: 10px;
+  background: rgba(3, 10, 18, 0.85) !important;
+  color: #22d3ee !important;
+  border: 1px solid rgba(34, 211, 238, 0.6) !important;
+  font-family: 'Space Mono', monospace !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.1em !important;
+  padding: 6px 16px !important;
+  border-radius: 4px !important;
+  cursor: pointer;
+  transition: all 0.2s ease !important;
+}
+
+.vault-reveal-skip-btn:hover,
+.vault-reveal-skip-btn:focus-visible {
+  background: rgba(34, 211, 238, 0.2) !important;
+  border-color: #22d3ee !important;
+}
+
+.vault-reveal-overlay[data-state="spinning"] .vault-reveal-skip-btn {
+  display: inline-block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vault-reveal-strip {
+    transition: none !important;
+  }
+}
+
 /* Sequential Season Pass promotion ceremony. The DOM is created lazily by
    seasonPassUi.js so normal boot and menu layouts pay no cost until XP crosses
    a tier. */
@@ -17730,8 +17802,10 @@ body.cutscene-video-active .tactical-overlay {
   .vault-grid {
     grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)) !important;
     gap: 6px !important;
-    max-height: 220px !important;
+    max-height: none !important;
   }
+  .vault-inventory-toolbar { grid-template-columns: minmax(150px, 1.3fr) repeat(3, minmax(100px, .8fr)) auto; }
+  .vault-filter-control, .vault-filter-clear { min-height: 30px; padding: 4px 6px; font-size: 8px; }
   .vault-details-panel {
     padding: 10px !important;
   }
@@ -23688,8 +23762,8 @@ body.contrast-max .hud-panel {
 
 /* Full-screen, paged settings: categories replace the continuous scroll. */
 .modal-content.settings-modal-panel { width: calc(100% - 24px) !important; height: min(94vh, 1040px) !important; max-width: 1680px !important; max-height: 94vh !important; }
-.settings-tabs { flex: 0 0 auto; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; padding: 10px clamp(14px, 2vw, 34px); border-bottom: 1px solid rgba(255,159,28,.3); background: rgba(8,12,17,.72); }
-.settings-tab { min-height: 44px; border: 1px solid rgba(255,159,28,.28); border-radius: 5px; background: rgba(255,159,28,.04); color: rgba(255,224,180,.68); font: 900 clamp(13px,1.15vw,18px) 'Outfit',sans-serif; letter-spacing: .12em; cursor: pointer; }
+.settings-tabs { flex: 0 0 auto; display: flex; flex-wrap: nowrap; gap: 8px; padding: 10px clamp(14px, 2vw, 34px); overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; overscroll-behavior-x: contain; scroll-snap-type: x proximity; border-bottom: 1px solid rgba(255,159,28,.3); background: rgba(8,12,17,.72); }
+.settings-tab { flex: 1 1 0; min-width: 0; min-height: 44px; scroll-snap-align: nearest; white-space: nowrap; border: 1px solid rgba(255,159,28,.28); border-radius: 5px; background: rgba(255,159,28,.04); color: rgba(255,224,180,.68); font: 900 clamp(11px,1vw,16px) 'Outfit',sans-serif; letter-spacing: clamp(.05em,.08vw,.12em); cursor: pointer; }
 .settings-tab.active { color: #fff2d4; border-color: #ff9f1c; background: rgba(255,159,28,.2); box-shadow: inset 0 -3px 0 #ff9f1c,0 0 16px rgba(255,159,28,.14); }
 .settings-modal-panel .settings-modal-content { overflow: hidden !important; padding: clamp(12px,1.7vw,28px) !important; }
 .settings-modal-content > .settings-category-group:not(.hidden) { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-content: start; gap: clamp(7px,.8vh,12px) clamp(14px,2vw,30px); height: 100%; margin: 0; overflow: hidden; }
@@ -23743,12 +23817,12 @@ body.contrast-max .hud-panel {
 
 @media (max-width: 760px), (max-height: 620px) {
   .settings-modal-content > .settings-category-group:not(.hidden), .terminal-objectives-grid { grid-template-columns: 1fr; overflow-y: auto; }
-  .settings-tabs { grid-template-columns: repeat(2,1fr); }
+  .settings-tab { flex: 0 0 auto; min-width: max(128px, 28vw); }
   .terminal-objective-log-summary { grid-template-columns: repeat(2,1fr); }
 }
 
 @media (min-width: 761px) and (max-width: 1180px) and (min-height: 621px) {
-  .settings-tabs { grid-template-columns: repeat(3, 1fr); }
+  .settings-tab { flex: 0 0 auto; min-width: max(136px, 18vw); }
   .terminal-objective-log-summary { grid-template-columns: repeat(3, 1fr); }
 }
 

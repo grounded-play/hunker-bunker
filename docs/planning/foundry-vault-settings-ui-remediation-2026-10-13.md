@@ -13,6 +13,35 @@ owner. Then harden the cache reveal as a modal state machine and make Settings u
 Do not change the underlying Steam instance ledger or exchange inputs: stacking is a presentation
 projection, while Steam item instance IDs remain authoritative for consumption and trading.
 
+## Implementation progress — 2026-10-13
+
+Implemented in the current working tree:
+
+- **Phases 1–2:** `src/vaultInventoryView.js` now builds a presentation-only inventory projection
+  with stable stack keys, summed quantities, search, catalog-backed group and rarity filters, sort,
+  diagnostics, and selection reconciliation. `src/steamVaultUi.js` renders that projection while
+  leaving the raw Steam rows and instance IDs intact for exchanges. The Stash now exposes localized
+  search/filter/sort/clear controls and live visible/total counts.
+- **Phase 3:** the 220 px Deck grid cap is removed. The Foundry Stash gives the inventory the
+  available height, keeps one bounded scroll owner, limits the detail rail to roughly one third of
+  the panel, and collapses to a single-column inventory/details flow at the narrow breakpoint.
+- **Phase 5:** all seven Settings categories now remain in one non-wrapping bar, with horizontal
+  overflow at narrow widths. Tabs and panels have explicit ARIA relationships; Left/Right,
+  Home/End, Q/E, and bumper navigation retain the existing behavior and scroll the active tab into
+  view.
+- **Regression coverage:** projection unit tests cover duplicate Steam rows and filters; the new
+  Foundry E2E test proves duplicate stacking, discovery controls, and a grid taller than the old
+  220 px cap; the Settings E2E contract now covers all seven pages in one row. The localization
+  audit reports zero unannotated markup and zero unlocalized runtime strings.
+
+Still open:
+
+- **Phase 4:** replace the cache reveal's independent timers and boolean busy flag with the planned
+  transactional modal state machine, focus containment/restoration, reduced-motion/skip path,
+  stale-timer guards, committed-result-first rendering, and refresh recovery UI.
+- Run the broader multi-resolution/reduced-motion snapshot matrix and packaged Steam manual checks
+  after Phase 4 lands; the focused 1280×800 browser contracts are now automated.
+
 ## Evidence reviewed
 
 - The newest files currently present in `logs/` are October 12 sessions built from commit

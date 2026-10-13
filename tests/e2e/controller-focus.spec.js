@@ -123,12 +123,15 @@ test.describe('controller-ready modal focus', () => {
         expect(await toggle.isChecked()).toBe(!before);
     });
 
-    test('six settings pages fit and native pointer sweeps never scroll them', async ({ page }) => {
+    test('seven settings pages fit in one bar and native pointer sweeps never scroll them', async ({ page }) => {
         await page.setViewportSize({ width: 1280, height: 800 });
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
-        const names = ['session', 'audio', 'controls', 'camera', 'accessibility', 'profile'];
-        await expect(page.locator('.settings-tab')).toHaveCount(6);
+        const names = ['session', 'audio', 'controls', 'camera', 'graphics', 'accessibility', 'profile'];
+        const tabs = page.locator('.settings-tab');
+        await expect(tabs).toHaveCount(7);
+        const tabTops = await tabs.evaluateAll((elements) => elements.map((element) => Math.round(element.getBoundingClientRect().top)));
+        expect(new Set(tabTops).size, 'settings categories wrapped onto multiple rows').toBe(1);
 
         for (const name of names) {
             await page.locator(`[data-settings-tab="${name}"]`).click();
