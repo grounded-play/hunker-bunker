@@ -45,4 +45,22 @@ describe('installed base module presentation', () => {
         })).toBeNull();
         expect(createWorld3dModel).not.toHaveBeenCalled();
     });
+
+    it('swaps a breached module to authored damaged-state art', async () => {
+        createWorld3dModel.mockResolvedValue(rootStub());
+        const root = await createInstalledBaseModuleVisual({
+            instanceId: 'door-1', definitionId: 'door_seal_kit', isDestroyed: true
+        });
+        expect(createWorld3dModel).toHaveBeenCalledWith('state_wall_breached_03');
+        expect(root.userData.damageState).toBe('breached');
+    });
+
+    it('uses the intermediate damaged model before full breach', async () => {
+        createWorld3dModel.mockResolvedValue(rootStub());
+        const root = await createInstalledBaseModuleVisual({
+            instanceId: 'wall-1', definitionId: 'hull_patch_panel', damageState: 'damaged'
+        });
+        expect(createWorld3dModel).toHaveBeenCalledWith('state_wall_breached_01');
+        expect(root.userData.damageState).toBe('damaged');
+    });
 });

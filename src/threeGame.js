@@ -64,6 +64,12 @@ import {
 } from './firstNightBase.js';
 import { loadInstalledBaseModules, saveInstalledBaseModules } from './baseRebuildStore.js';
 import { getBaseModuleDefinition } from './data/baseModules.js';
+import {
+    baseModuleRepairCost,
+    damageBaseModule,
+    getBaseModuleDurability,
+    repairBaseModule
+} from './baseModuleDamage.js';
 import { buildRunResourceTelemetry } from './runTelemetry.js';
 import { createRelicPickup, animateRelicPickup, createImpactBurst, disposeExpeditionEffect } from './expeditionVfx.js';
 import { TraumaManager, create3DMuzzleFlash, WEAPON_TRAUMA_TABLE } from './combatJuice.js';
@@ -9133,6 +9139,25 @@ export class ThreeGame {
                 });
             }
         }
+        const damagedModule = this.getNearestDamagedBaseModule?.();
+        if (damagedModule) {
+            const label = getBaseModuleDefinition(damagedModule.module.definitionId)?.label ?? 'BASE MODULE';
+            candidates.push({
+                id: `repair-base:${damagedModule.module.instanceId}`,
+                label: `REPAIR ${label} · ${damagedModule.cost} SHELLS`,
+                distance: damagedModule.distance,
+                interact: () => this.repairInstalledBaseModule(damagedModule.module.instanceId)
+            });
+        }
+        const baseDoor = this.getNearestInstalledBaseDoor?.();
+        if (baseDoor) {
+            candidates.push({
+                id: `cycle-base-door:${baseDoor.module.instanceId}`,
+                label: baseDoor.module.isOpen ? 'SEAL BERTH PRESSURE DOOR' : 'OPEN BERTH PRESSURE DOOR',
+                distance: baseDoor.distance,
+                interact: () => this.toggleInstalledBaseDoor(baseDoor.module.instanceId)
+            });
+        }
         const fieldWeapon = this.getNearestFieldWeaponDrop?.();
         if (fieldWeapon) {
             const profile = getFieldWeaponProfile(fieldWeapon.drop.profileId, true);
@@ -9879,7 +9904,13 @@ export class ThreeGame {
             this.installedBaseModuleVisuals.delete(instanceId);
         }
         for (const module of modules) {
-            const root = this.installedBaseModuleVisuals.get(module.instanceId);
+            let root = this.installedBaseModuleVisuals.get(module.instanceId);
+            const damageState = module.isDestroyed ? 'breached' : (module.damageState ?? 'intact');
+            if (root && root.userData?.damageState !== damageState) {
+                disposeInstalledBaseModuleVisual(root);
+                this.installedBaseModuleVisuals.delete(module.instanceId);
+                root = null;
+            }
             if (root) {
                 updateInstalledBaseModuleVisual(
                     root,
@@ -9890,6 +9921,20 @@ export class ThreeGame {
             } else {
                 void this.ensureInstalledBaseModuleVisual(module);
             }
+        }
+    }
+
+    updateInstalledBaseModuleVisuals(delta) {
+        for (const module of this.carryState?.installed ?? []) {
+            const root = this.installedBaseModuleVisuals?.get?.(module.instanceId);
+            if (!root) continue;
+            updateInstalledBaseModuleVisual(
+                root,
+                module,
+                this.getTerrainHeightAt?.(module.x, module.z) ?? 0,
+                this.performanceProfile === 'gameplay',
+                delta
+            );
         }
     }
 
@@ -10042,6 +10087,157 @@ export class ThreeGame {
         }
         this._carryLandmarkIds = activeIds;
         return [...activeIds];
+    }
+
+    getInstalledBaseModuleWorldPosition(module) {
+        const transform = module?.transform ?? module;
+        const offset = {
+            north: { x: 0, z: -0.5 }, south: { x: 0, z: 0.5 },
+            east: { x: 0.5, z: 0 }, west: { x: -0.5, z: 0 }
+        }[module?.side] ?? { x: 0, z: 0 };
+        return {
+            x: (Number(transform?.x) || 0) + offset.x,
+            z: (Number(transform?.z) || 0) + offset.z
+        };
+    }
+
+    blocksInstalledBaseModulePosition(x, z, playerRadius = this.playerRadius) {
+        const radius = Number(playerRadius) || 0.28;
+        for (const module of this.carryState?.installed ?? []) {
+            if (!['hull_patch_panel', 'door_seal_kit'].includes(module.definitionId)
+                || module.isDestroyed || (module.definitionId === 'door_seal_kit' && module.isOpen)) continue;
+            const position = this.getInstalledBaseModuleWorldPosition(module);
+            const vertical = module.side === 'east' || module.side === 'west';
+            const normalDistance = vertical ? Math.abs(x - position.x) : Math.abs(z - position.z);
+            const alongDistance = vertical ? Math.abs(z - position.z) : Math.abs(x - position.x);
+            if (normalDistance < radius + 0.14 && alongDistance < 0.52 + radius) return true;
+        }
+        return false;
+    }
+
+    checkProjectileInstalledBaseModuleHit(projectile, from = null) {
+        if (!projectile?.mesh?.position || projectile.isEnemy) return null;
+        const start = from ?? projectile.mesh.position;
+        const end = projectile.mesh.position;
+        const vx = end.x - start.x;
+        const vz = end.z - start.z;
+        const lengthSq = vx * vx + vz * vz;
+        let nearest = null;
+        let nearestT = Infinity;
+        for (const module of this.carryState?.installed ?? []) {
+            if (!getBaseModuleDurability(module.definitionId) || module.isDestroyed) continue;
+            const point = this.getInstalledBaseModuleWorldPosition(module);
+            const t = lengthSq > 1e-8
+                ? Math.max(0, Math.min(1, ((point.x - start.x) * vx + (point.z - start.z) * vz) / lengthSq))
+                : 1;
+            const hitX = start.x + vx * t;
+            const hitZ = start.z + vz * t;
+            const radius = module.definitionId === 'door_seal_kit' ? 0.72 : 0.85;
+            if (Math.hypot(point.x - hitX, point.z - hitZ) > radius || t >= nearestT) continue;
+            nearest = module;
+            nearestT = t;
+        }
+        return nearest;
+    }
+
+    damageInstalledBaseModule(instanceId, amount, { source = 'player-projectile' } = {}) {
+        const result = damageBaseModule(this.carryState?.installed ?? [], instanceId, amount);
+        if (!result.ok) return false;
+        this.carryState = { ...this.carryState, installed: result.modules };
+        saveInstalledBaseModules(this.carryState.installed);
+        this.baseAtmosphereSeal = null;
+        this.reconcileInstalledBaseModuleVisuals?.();
+        const position = this.getInstalledBaseModuleWorldPosition(result.module);
+        this.spawnDamagePip?.(position.x, position.z, Math.max(1, Math.round(amount)));
+        this.spawnPhysicalBurst?.(position.x, position.z, {
+            color: result.destroyed ? 0xff3b30 : 0xffb347,
+            count: result.destroyed ? 18 : 6,
+            upward: result.destroyed ? 0.28 : 0.12
+        });
+        if (result.destroyed) {
+            this.triggerCameraShake?.(0.18, 0.28);
+            this.showBunkerLine?.('BASE HULL BREACH — CABIN LOSING PRESSURE. REPAIR REQUIRED.');
+            window.AudioManager?.playMetalStress?.({ volume: 0.72, playbackRate: 0.68, force: true });
+        } else {
+            window.AudioManager?.play?.('enemy_hit_soft', { volume: 0.32, playbackRate: 0.72 });
+        }
+        window.dispatchEvent(new CustomEvent('base-module-damaged', {
+            detail: { module: result.module, source, destroyed: result.destroyed }
+        }));
+        return result.destroyed;
+    }
+
+    getNearestDamagedBaseModule(maxDistance = 2.4) {
+        if (!this.player || this.carryState?.carried) return null;
+        let nearest = null;
+        let nearestDistance = maxDistance;
+        for (const module of this.carryState?.installed ?? []) {
+            if (baseModuleRepairCost(module) <= 0) continue;
+            const position = this.getInstalledBaseModuleWorldPosition(module);
+            const distance = Math.hypot(position.x - this.player.position.x, position.z - this.player.position.z);
+            if (distance >= nearestDistance) continue;
+            nearest = module;
+            nearestDistance = distance;
+        }
+        return nearest ? { module: nearest, distance: nearestDistance, cost: baseModuleRepairCost(nearest) } : null;
+    }
+
+    repairInstalledBaseModule(instanceId) {
+        const preview = repairBaseModule(this.carryState?.installed ?? [], instanceId);
+        if (!preview.ok) return false;
+        if (!this.bank?.spendShells?.(preview.cost)) {
+            this.showBunkerLine?.(`REPAIR REQUIRES ${preview.cost} SHELLS.`);
+            window.AudioManager?.play?.('ui_error', { volume: 0.42 });
+            return false;
+        }
+        this.carryState = { ...this.carryState, installed: preview.modules };
+        saveInstalledBaseModules(this.carryState.installed);
+        this.baseAtmosphereSeal = null;
+        this.reconcileInstalledBaseModuleVisuals?.();
+        const position = this.getInstalledBaseModuleWorldPosition(preview.module);
+        this.spawnPhysicalBurst?.(position.x, position.z, { color: 0x30d158, count: 16, upward: 0.2 });
+        this.triggerCameraShake?.(0.06, 0.12);
+        this.showBunkerLine?.('PRESSURE SEAL RESTORED — CABIN REPRESSURIZING.');
+        window.AudioManager?.play?.('ui_confirm', { volume: 0.64, playbackRate: 0.82 });
+        window.dispatchEvent(new CustomEvent('base-module-repaired', { detail: { module: preview.module, cost: preview.cost } }));
+        return true;
+    }
+
+    getNearestInstalledBaseDoor(maxDistance = 2.4) {
+        if (!this.player || this.carryState?.carried) return null;
+        let nearest = null;
+        let nearestDistance = maxDistance;
+        for (const module of this.carryState?.installed ?? []) {
+            if (module.definitionId !== 'door_seal_kit' || module.isDestroyed) continue;
+            const position = this.getInstalledBaseModuleWorldPosition(module);
+            const distance = Math.hypot(position.x - this.player.position.x, position.z - this.player.position.z);
+            if (distance >= nearestDistance) continue;
+            nearest = module;
+            nearestDistance = distance;
+        }
+        return nearest ? { module: nearest, distance: nearestDistance } : null;
+    }
+
+    toggleInstalledBaseDoor(instanceId) {
+        const index = (this.carryState?.installed ?? []).findIndex((module) => (
+            module.instanceId === instanceId && module.definitionId === 'door_seal_kit'
+        ));
+        if (index < 0 || this.carryState.installed[index].isDestroyed) return false;
+        const installed = [...this.carryState.installed];
+        const module = { ...installed[index], isOpen: !installed[index].isOpen };
+        installed[index] = module;
+        this.carryState = { ...this.carryState, installed };
+        saveInstalledBaseModules(installed);
+        this.baseAtmosphereSeal = null;
+        this.reconcileInstalledBaseModuleVisuals?.();
+        this.showBunkerLine?.(module.isOpen
+            ? 'BERTH DOOR OPEN — PRESSURE VENTING.'
+            : 'BERTH DOOR SEALED — O2 REPRESSURIZING.');
+        window.AudioManager?.play?.('vault_open', { volume: 0.58, playbackRate: module.isOpen ? 1.08 : 0.82 });
+        window.dispatchEvent(new CustomEvent('base-door-toggled', {
+            detail: { instanceId, isOpen: module.isOpen }
+        }));
+        return true;
     }
 
     getNearestCarryObject(maxDistance = 2.2) {
@@ -12808,6 +13004,7 @@ export class ThreeGame {
             fp.measure('updatePickups', () => this.updatePickups(delta, now));
             fp.measure('updateFieldWeaponDrops', () => this.updateFieldWeaponDrops?.(delta, now));
             fp.measure('updateCarryObjectVisuals', () => this.updateCarryObjectVisuals?.(delta, now));
+            fp.measure('updateInstalledBaseModuleVisuals', () => this.updateInstalledBaseModuleVisuals?.(delta));
             fp.measure('updateMissionCargoRecovery', () => this.updateMissionCargoRecovery?.(delta));
             fp.measure('updateBaseAtmosphere', () => this.updateBaseAtmosphere?.(delta, now));
             fp.measure('updateIceBarriers', () => this.updateIceBarriers?.(delta));
@@ -31231,6 +31428,13 @@ export class ThreeGame {
                     toRemove.add(projectile);
                     continue;
                 }
+                const installedModule = this.checkProjectileInstalledBaseModuleHit?.(projectile, { x: oldX, z: oldZ });
+                if (installedModule) {
+                    this.damageInstalledBaseModule?.(installedModule.instanceId, projectile.damage, { source: 'player-projectile' });
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z, 'prop');
+                    toRemove.add(projectile);
+                    continue;
+                }
                 const destructibleProp = this.checkProjectileDestructiblePropHit(projectile);
                 if (destructibleProp) {
                     this.damageScatterProp(destructibleProp, projectile.damage);
@@ -42693,6 +42897,8 @@ export class ThreeGame {
                 }
             }
         }
+
+        if (!this.isInPocket && this.blocksInstalledBaseModulePosition?.(x, z)) return false;
 
         if (!this.isInPocket && this.scatterSprites) {
             // Most scatter entries are decoration or enemies. Cache the much

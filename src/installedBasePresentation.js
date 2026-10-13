@@ -9,12 +9,19 @@ export const FIRST_NIGHT_VISIBLE_MODULES = Object.freeze(new Set([
 export async function createInstalledBaseModuleVisual(module) {
     const definition = getBaseModuleDefinition(module?.definitionId);
     if (!definition?.modelType || !FIRST_NIGHT_VISIBLE_MODULES.has(module.definitionId)) return null;
-    const root = await createWorld3dModel(definition.modelType);
+    const damageState = module.isDestroyed ? 'breached' : (module.damageState ?? 'intact');
+    const modelType = damageState === 'breached'
+        ? (definition.breachedModelType ?? definition.damagedModelType ?? definition.modelType)
+        : damageState === 'damaged'
+            ? (definition.damagedModelType ?? definition.modelType)
+            : definition.modelType;
+    const root = await createWorld3dModel(modelType);
     if (!root) return null;
     root.name = `InstalledBaseModule:${module.instanceId}`;
     root.userData.isInstalledBaseModuleVisual = true;
     root.userData.instanceId = module.instanceId;
     root.userData.definitionId = module.definitionId;
+    root.userData.damageState = damageState;
     root.traverse((node) => {
         if (!node.isMesh) return;
         node.castShadow = true;
@@ -23,7 +30,7 @@ export async function createInstalledBaseModuleVisual(module) {
     return root;
 }
 
-export function updateInstalledBaseModuleVisual(root, module, terrainHeight = 0, visible = true) {
+export function updateInstalledBaseModuleVisual(root, module, terrainHeight = 0, visible = true, delta = 0) {
     if (!root?.userData?.isInstalledBaseModuleVisual || !module) return false;
     const transform = module.transform ?? module;
     const edgeOffset = {
@@ -37,6 +44,14 @@ export function updateInstalledBaseModuleVisual(root, module, terrainHeight = 0,
     );
     root.rotation.y = Number(transform.yaw) || 0;
     root.visible = Boolean(visible);
+    if (module.definitionId === 'door_seal_kit') {
+        const nextState = module.isOpen ? 'open' : 'closed';
+        if (root.userData.doorState !== nextState) {
+            root.userData.propExperience?.setState?.(nextState);
+            root.userData.doorState = nextState;
+        }
+    }
+    root.userData.propExperience?.update?.(delta);
     return true;
 }
 

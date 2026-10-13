@@ -654,8 +654,10 @@ unwinnable seed, and stays within the projectile/FX frame budget.
 - [x] mission cargo cannot disappear silently: every loose piece has an amber world beacon, compass
   target, tactical-map landmark, authored/last-safe staging positions, three-check off-navigation
   recovery, and death/compatible co-op retry drops that preserve the same instance;
-- remaining: camp-authored cot handoff, damage/repair states for the recovered wall and door, and
-  hive logistics variants.
+- [x] recovered wall/door modules have persistent durability, projectile collision, authored
+  damaged/breached GLB swaps, physical collision, shell-cost repair, and immediate seal/pressure
+  invalidation; the pressure door cycles its authored `HB_DOOR_00` hinge and only blocks when shut;
+- remaining: camp-authored cot handoff and hive logistics variants.
 
 Exit: a new campaign can recover the bed, finish a sealed room, fill it with O2, and sleep; firing
 is impossible while carrying; the partner/companion can defend the carrier.
