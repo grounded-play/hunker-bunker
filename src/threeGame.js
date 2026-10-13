@@ -24,13 +24,17 @@ import {
     updateFieldWeaponDropVisual
 } from './fieldWeaponPresentation.js';
 import {
+    addCarryObject,
     beginCarry,
     canUseWeaponWhileCarrying,
     companionCarrierCoverPosition,
+    createCarryObject,
+    deliverCarriedObject,
     dropCarriedObject,
     installCarriedObject,
     createCarryState,
     recoverStrandedCarryObjects,
+    removeMissionCarryObjects,
     resetCarryRunState
 } from './carrySystem.js';
 import {
@@ -727,6 +731,9 @@ import {
     claimRewardCache,
     REWARD_CACHE_I18N_KEYS
 } from './rewardCache.js';
+
+const CAMP_PROBE_MISSION_ID = 'camp-quest:camp_meridian:lost_probe';
+const HIVE_MEMBRANE_MISSION_ID = 'hive-quest:hive_suture:host_mercy';
 
 /**
  * Boss display names by spawn type. Was an eight-branch if/else assigning
@@ -9103,6 +9110,18 @@ export class ThreeGame {
         }
         const carriedObject = this.carryState?.carried;
         if (carriedObject) {
+            const delivery = this.getMissionCargoDelivery?.(carriedObject);
+            const deliveryDistance = delivery
+                ? Math.hypot(px - delivery.x, pz - delivery.z)
+                : Infinity;
+            if (delivery && deliveryDistance <= delivery.radius) {
+                candidates.push({
+                    id: `deliver-cargo:${carriedObject.instanceId}`,
+                    label: delivery.label,
+                    distance: deliveryDistance,
+                    interact: () => this.deliverCurrentMissionCargo()
+                });
+            }
             const socket = availableFirstNightSocket(
                 this.carryState,
                 this.getFirstNightBasePlan?.(),
@@ -9111,7 +9130,7 @@ export class ThreeGame {
             const socketDistance = socket
                 ? Math.hypot(px - socket.transform.x, pz - socket.transform.z)
                 : Infinity;
-            if (socketDistance <= 2.5) {
+            if (!delivery && socketDistance <= 2.5) {
                 const label = getBaseModuleDefinition(carriedObject.definitionId)?.label ?? 'RECOVERED MODULE';
                 candidates.push({
                     id: `install-cargo:${carriedObject.instanceId}`,
@@ -9793,6 +9812,49 @@ export class ThreeGame {
         return result;
     }
 
+    spawnMissionCarryCargo({ definitionId, missionId, worldPosition, instanceId = null } = {}) {
+        if (!this.carryState || !definitionId || !missionId || !worldPosition) return null;
+        const existing = [
+            ...(this.carryState.worldObjects ?? []),
+            ...(this.carryState.carried ? [this.carryState.carried] : [])
+        ].find((object) => object.missionId === missionId);
+        if (existing) return existing;
+        const definition = getBaseModuleDefinition(definitionId);
+        if (!definition) return null;
+        const object = createCarryObject({
+            instanceId: instanceId ?? `${definitionId}:${this.carryState.runId ?? 'run'}`,
+            definitionId,
+            missionId,
+            massClass: definition.massClass ?? 'medium',
+            worldPosition,
+            carrySocket: 'both-hands',
+            buildTags: definition.buildTags ?? [],
+            runId: this.carryState.runId
+        });
+        const result = addCarryObject(this.carryState, object);
+        if (!result.ok) return null;
+        this.carryState = result.state;
+        this.reconcileCarryObjectVisuals?.();
+        return object;
+    }
+
+    spawnHiveCargoMission(hive) {
+        if (!hive) return null;
+        let position = { x: hive.pos.x + 1.8, z: hive.pos.z + 0.8 };
+        if (this.findCampQuestSpawnSpot) position = this.findCampQuestSpawnSpot(hive, 0, 1);
+        return this.spawnMissionCarryCargo?.({
+            definitionId: 'hive_air_membrane',
+            missionId: HIVE_MEMBRANE_MISSION_ID,
+            worldPosition: position
+        }) ?? null;
+    }
+
+    restoreActiveHiveCargoMission() {
+        const record = this.getHiveRecord?.('hive_suture');
+        if (record?.questFlags?.host_mercy !== 'active') return null;
+        return this.spawnHiveCargoMission?.(this.getHiveById?.('hive_suture')) ?? null;
+    }
+
     async ensureCarryObjectVisual(object) {
         if (!object?.instanceId || !object.modelType || !this.scene) return null;
         if (this.carryObjectVisuals?.has(object.instanceId)
@@ -9975,9 +10037,46 @@ export class ThreeGame {
         }
     }
 
+    getMissionCargoDelivery(carried = this.carryState?.carried) {
+        if (!carried?.missionId) return null;
+        if (carried.missionId === CAMP_PROBE_MISSION_ID) {
+            const quest = this._activeCampQuest;
+            const camp = quest?.campId === 'camp_meridian' && quest.quest?.id === 'lost_probe'
+                ? this.getCampById?.(quest.campId)
+                : null;
+            if (!camp) return null;
+            return {
+                type: 'camp-quest', campId: quest.campId, questId: quest.quest.id,
+                x: camp.pos.x, z: camp.pos.z, radius: 3.5,
+                label: 'RETURN HORIZON METRIC PROBE TO MERIDIAN'
+            };
+        }
+        if (carried.missionId === HIVE_MEMBRANE_MISSION_ID) {
+            const plan = this.getFirstNightBasePlan?.();
+            const berth = plan?.installSocket?.transform;
+            if (!berth) return null;
+            return {
+                type: 'hive-quest', hiveId: 'hive_suture', questId: 'host_mercy',
+                x: berth.x, z: berth.z, radius: 3.5,
+                label: 'DELIVER LIVING AIR MEMBRANE TO THE SHIP BERTH'
+            };
+        }
+        return null;
+    }
+
     getMissionCargoGuidance() {
         const carried = this.carryState?.carried;
         if (carried?.missionId) {
+            const delivery = this.getMissionCargoDelivery?.(carried);
+            if (delivery) {
+                return {
+                    id: carried.instanceId,
+                    x: delivery.x,
+                    z: delivery.z,
+                    label: delivery.label,
+                    mode: 'cargo-delivery'
+                };
+            }
             const socket = availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan?.(), carried);
             if (!socket) return null;
             const definition = getBaseModuleDefinition(carried.definitionId);
@@ -10266,7 +10365,10 @@ export class ThreeGame {
         if (!result.ok) return false;
         this.carryState = result.state;
         this.reconcileCarryObjectVisuals();
-        this.showBunkerLine?.('CARGO LIFTED — BOTH HANDS OCCUPIED. RETURN TO THE SHIP BERTH.');
+        const delivery = this.getMissionCargoDelivery?.(result.carried);
+        this.showBunkerLine?.(delivery
+            ? `CARGO LIFTED — BOTH HANDS OCCUPIED. ${delivery.label}.`
+            : 'CARGO LIFTED — BOTH HANDS OCCUPIED. RETURN TO THE SHIP BERTH.');
         this.spawnPhysicalBurst?.(this.player.position.x, this.player.position.z, { color: 0xf3d18a, count: 8, upward: 0.12 });
         window.AudioManager?.play?.('metal_stress', { volume: 0.42, playbackRate: 1.08 });
         window.dispatchEvent(new CustomEvent('carry-object-began', { detail: { carried: result.carried } }));
@@ -10314,6 +10416,48 @@ export class ThreeGame {
         this.reconcileCarryObjectVisuals();
         window.AudioManager?.play?.('metal_stress', { volume: 0.34, playbackRate: 0.82 });
         window.dispatchEvent(new CustomEvent('carry-object-dropped', { detail: { dropped: result.dropped } }));
+        return true;
+    }
+
+    deliverCurrentMissionCargo() {
+        const carried = this.carryState?.carried;
+        if (!carried || !this.player) return false;
+        const delivery = this.getMissionCargoDelivery?.(carried);
+        if (!delivery || Math.hypot(this.player.position.x - delivery.x, this.player.position.z - delivery.z) > delivery.radius) {
+            return false;
+        }
+        const result = deliverCarriedObject(this.carryState, {
+            carrierPlayerId: this.multiplayerLocalPlayerId ?? 'local'
+        });
+        if (!result.ok) return false;
+        this.carryState = result.state;
+        disposeCarryObjectVisual(this.carriedObjectVisual);
+        this.carriedObjectVisual = null;
+        this.reconcileCarryObjectVisuals?.();
+
+        if (delivery.type === 'camp-quest') {
+            this.advanceCampQuestProgress?.(1);
+        } else if (delivery.type === 'hive-quest') {
+            this.act2?.completeHiveQuest?.(delivery.hiveId, delivery.questId, 1);
+            const hive = this.getHiveById?.(delivery.hiveId);
+            const record = this.getHiveRecord?.(delivery.hiveId);
+            hive?.syncFromRecord?.(record);
+            this.resolveDayDeadline?.('hive_suture_parley');
+            this.syncWorldTransformations?.();
+        }
+        this.spawnPhysicalBurst?.(delivery.x, delivery.z, {
+            color: delivery.type === 'hive-quest' ? 0xf43f5e : 0x60a5fa,
+            count: 16,
+            upward: 0.22
+        });
+        this.triggerCameraShake?.(0.07, 0.16);
+        this.showBunkerLine?.(delivery.type === 'hive-quest'
+            ? 'LIVING AIR MEMBRANE SECURED — NAHL\'S HOST MERCY RITE IS COMPLETE.'
+            : 'HORIZON METRIC PROBE RETURNED — MERIDIAN HAS ITS SURVEY DATA.');
+        window.AudioManager?.play?.('ui_confirm', { volume: 0.68, playbackRate: 0.9 });
+        window.dispatchEvent(new CustomEvent('mission-cargo-delivered', {
+            detail: { delivered: result.delivered, delivery }
+        }));
         return true;
     }
 
@@ -19431,6 +19575,7 @@ export class ThreeGame {
             return hive;
         });
         this._hiveSitesReady = true;
+        this.restoreActiveHiveCargoMission?.();
     }
 
     getHiveRecord(id) {
@@ -19655,6 +19800,7 @@ export class ThreeGame {
         const quest = questByHive[record.id];
         if (quest) {
             const done = record.questFlags?.[quest.id] === 'done';
+            const active = record.questFlags?.[quest.id] === 'active';
             const locked = record.bond < 2;
             const deadlineExpired = parleyExpired;
             options.push({
@@ -19662,12 +19808,14 @@ export class ThreeGame {
                 hiveId: record.id,
                 questId: quest.id,
                 label: done ? `${quest.label} — COMPLETE`
+                    : active ? `${quest.label} — CARGO IN TRANSIT`
                     : deadlineExpired ? `${quest.label} — MISSED`
                         : locked ? `${quest.label} — LOCKED` : quest.label,
                 desc: deadlineExpired && !done
                     ? 'The parley window closed while you slept.'
+                    : active ? 'Carry the living air membrane to the ship berth. Both hands are required.'
                     : locked && !done ? `Requires bond 2. Current bond ${record.bond}.` : `${quest.desc} Gain 1 bond. ${bondBenefit}`,
-                disabled: done || locked || deadlineExpired
+                disabled: done || active || locked || deadlineExpired
             });
         }
 
@@ -19755,7 +19903,13 @@ export class ThreeGame {
             this.act2.adjustHiveBond(hive.id, 1);
             this.act2.healHiveExtraction(hive.id, 1);
         } else if (action === 'hive-quest') {
-            this.act2.completeHiveQuest(hive.id, payload.questId, 1);
+            if (hive.id === 'hive_suture' && payload.questId === 'host_mercy') {
+                const cargo = this.spawnHiveCargoMission?.(hive);
+                if (!cargo) return deny('cargo-unavailable');
+                this.act2.setHiveQuestActive(hive.id, payload.questId);
+            } else {
+                this.act2.completeHiveQuest(hive.id, payload.questId, 1);
+            }
         } else if (action === 'hive-network') {
             this.act2.setHiveNetworked(hive.id, true);
         } else if (action === 'hive-rescue') {
@@ -20140,6 +20294,18 @@ export class ThreeGame {
     }
 
     clearActiveCampQuestEntities() {
+        const cargoMissionId = this._activeCampQuest?.kind === 'carry'
+            ? `camp-quest:${this._activeCampQuest.campId}:${this._activeCampQuest.quest?.id}`
+            : null;
+        if (cargoMissionId && this.carryState) {
+            const removed = removeMissionCarryObjects(this.carryState, cargoMissionId);
+            this.carryState = removed.state;
+            if (removed.removed.length) {
+                disposeCarryObjectVisual(this.carriedObjectVisual);
+                this.carriedObjectVisual = null;
+                this.reconcileCarryObjectVisuals?.();
+            }
+        }
         const questEntities = new Set([
             ...(this._activeCampQuest?.props ?? []),
             ...(this._activeCampQuest?.landmarks ?? []),
@@ -20453,7 +20619,7 @@ export class ThreeGame {
             this._activeCampQuest.kind = 'pickup';
             this.spawnHiveArchiveObject(camp, quest);
         } else if (quest.id === 'lost_probe') {
-            this._activeCampQuest.kind = 'pickup';
+            this._activeCampQuest.kind = 'carry';
             this.spawnLostProbeObject(camp);
         } else if (quest.id === 'spore_cleansing') {
             this._activeCampQuest.kind = 'shoot';
@@ -20481,8 +20647,13 @@ export class ThreeGame {
             this._activeCampQuest = null;
             return;
         }
-        if (this._activeCampQuest.props.length === 0
-            || (this._activeCampQuest.kind !== 'wave' && this._activeCampQuest.props.length < target)) {
+        if (this._activeCampQuest.kind !== 'carry' && (this._activeCampQuest.props.length === 0
+            || (this._activeCampQuest.kind !== 'wave' && this._activeCampQuest.props.length < target))) {
+            this.clearActiveCampQuestEntities?.();
+            this._activeCampQuest = null;
+            return;
+        }
+        if (this._activeCampQuest.kind === 'carry' && !this._activeCampQuest.cargoInstanceId) {
             this.clearActiveCampQuestEntities?.();
             this._activeCampQuest = null;
             return;
@@ -20589,7 +20760,7 @@ export class ThreeGame {
         }
     }
 
-    // The Lost Probe (Meridian): single pickup, placed out in the CRYO biome
+    // The Lost Probe (Meridian): two-handed recovery cargo placed in the CRYO biome
     // band away from camp — falls back to a near-camp spot if the band
     // search can't find a walkable tile (never leave the quest uncompletable).
     spawnLostProbeObject(camp) {
@@ -20604,14 +20775,22 @@ export class ThreeGame {
             const tileX = Math.round(anchor.x + Math.cos(angle) * dist);
             const tileZ = Math.round(anchor.z + Math.sin(angle) * dist);
             if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
-                const sprite = this.spawnCampQuestMarkerProp(camp, { type: 'quest_prop', x: tileX, z: tileZ, index: 0, scale: 1.0 });
-                if (sprite) this._activeCampQuest.props.push(sprite);
+                const cargo = this.spawnMissionCarryCargo?.({
+                    definitionId: 'camp_salvage_probe',
+                    missionId: CAMP_PROBE_MISSION_ID,
+                    worldPosition: { x: tileX, z: tileZ }
+                });
+                if (cargo) this._activeCampQuest.cargoInstanceId = cargo.instanceId;
                 return;
             }
         }
         const { x, z } = this.findCampQuestSpawnSpot(camp, 0, 1);
-        const sprite = this.spawnCampQuestMarkerProp(camp, { type: 'quest_prop', x, z, index: 0 });
-        if (sprite) this._activeCampQuest.props.push(sprite);
+        const cargo = this.spawnMissionCarryCargo?.({
+            definitionId: 'camp_salvage_probe',
+            missionId: CAMP_PROBE_MISSION_ID,
+            worldPosition: { x, z }
+        });
+        if (cargo) this._activeCampQuest.cargoInstanceId = cargo.instanceId;
     }
 
     spawnHiveArchiveObject(camp, _quest) {
@@ -21130,6 +21309,11 @@ export class ThreeGame {
     getActiveCampQuestTargetPos() {
         const aq = this._activeCampQuest;
         if (!aq) return null;
+        if (aq.kind === 'carry') {
+            const cargo = (this.carryState?.worldObjects ?? [])
+                .find((object) => object.instanceId === aq.cargoInstanceId);
+            if (cargo) return { x: cargo.worldPosition.x, z: cargo.worldPosition.z };
+        }
         const alive = (aq.props ?? []).find((sprite) =>
             sprite?.parent && !sprite.userData?.burstTriggered && !sprite.userData?.questClaimed);
         if (alive) return { x: alive.position.x, z: alive.position.z };

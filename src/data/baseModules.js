@@ -174,6 +174,31 @@ export const BASE_MODULE_CATALOG = Object.freeze({
         buildTags: ['storage']
     }),
 
+    // Run-scoped objective cargo. These use the same two-hand reducer as base
+    // modules but are delivered to characters/ship staging instead of sockets.
+    camp_salvage_probe: Object.freeze({
+        id: 'camp_salvage_probe',
+        label: 'HORIZON METRIC PROBE',
+        category: BASE_MODULE_CATEGORIES.SHIP_PART,
+        modelType: 'scout_tracking_beacon_core',
+        carryModelType: 'scout_tracking_beacon_core',
+        footprint: { w: 0.8, d: 0.8, h: 1.1 },
+        socketTypes: [],
+        massClass: 'medium',
+        buildTags: ['camp_delivery', 'probe', 'mission_cargo']
+    }),
+    hive_air_membrane: Object.freeze({
+        id: 'hive_air_membrane',
+        label: 'LIVING AIR MEMBRANE',
+        category: BASE_MODULE_CATEGORIES.SHIP_PART,
+        modelType: 'hive_pulmonary_bellows',
+        carryModelType: 'hive_pulmonary_bellows',
+        footprint: { w: 1.0, d: 0.8, h: 1.0 },
+        socketTypes: [],
+        massClass: 'heavy',
+        buildTags: ['hive_cargo', 'living_cargo', 'base_delivery', 'mission_cargo']
+    }),
+
     // Recovered Ship Modules
     ship_navigation_core: Object.freeze({
         id: 'ship_navigation_core',

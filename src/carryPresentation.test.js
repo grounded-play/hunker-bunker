@@ -47,4 +47,18 @@ describe('carry object presentation', () => {
         expect(root.userData.dispose).toHaveBeenCalledOnce();
         expect(remove).toHaveBeenCalledOnce();
     });
+
+    it.each([
+        ['camp_salvage_probe', 0x60a5fa],
+        ['hive_air_membrane', 0xf43f5e]
+    ])('casts authored source light for %s onto nearby PBRs', async (definitionId, color) => {
+        const root = await createCarryObjectVisual({
+            instanceId: definitionId, definitionId, modelType: definitionId, missionId: 'mission'
+        });
+        const light = root.getObjectByName('CargoSourceLight');
+        expect(light).toBeInstanceOf(THREE.PointLight);
+        expect(light.color.getHex()).toBe(color);
+        expect(light.castShadow).toBe(false);
+        expect(root.getObjectByName('CargoSourceGlow')).toBeTruthy();
+    });
 });

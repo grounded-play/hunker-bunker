@@ -33,6 +33,43 @@ function attachMissionCargoBeacon(root) {
     };
 }
 
+const CARGO_SOURCE_LIGHTS = Object.freeze({
+    camp_salvage_probe: Object.freeze({ color: 0x60a5fa, intensity: 0.75, distance: 3.0, y: 0.62 }),
+    hive_air_membrane: Object.freeze({ color: 0xf43f5e, intensity: 0.8, distance: 2.8, y: 0.6 })
+});
+
+function attachCargoSourceLight(root, definitionId) {
+    const profile = CARGO_SOURCE_LIGHTS[definitionId];
+    if (!profile) return;
+    const bounds = new THREE.Box3().setFromObject(root);
+    const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+    const position = new THREE.Vector3(center.x, bounds.min.y + size.y * profile.y, center.z);
+    const light = new THREE.PointLight(profile.color, profile.intensity, profile.distance, 2);
+    light.name = 'CargoSourceLight';
+    light.position.copy(position);
+    light.castShadow = false;
+    const material = new THREE.MeshBasicMaterial({
+        color: profile.color,
+        transparent: true,
+        opacity: 0.8,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        fog: false
+    });
+    const glow = new THREE.Mesh(new THREE.SphereGeometry(Math.max(0.025, size.y * 0.025), 10, 8), material);
+    glow.name = 'CargoSourceGlow';
+    glow.position.copy(position);
+    root.add(light, glow);
+    root.userData.cargoSourceLight = light;
+    root.userData.disposeCargoSourceLight = () => {
+        glow.geometry.dispose();
+        material.dispose();
+        light.removeFromParent();
+        glow.removeFromParent();
+    };
+}
+
 export async function createCarryObjectVisual(object) {
     if (!object?.modelType) return null;
     const root = await createWorld3dModel(object.modelType);
@@ -43,6 +80,7 @@ export async function createCarryObjectVisual(object) {
     root.userData.definitionId = object.definitionId;
     root.userData.presentationMode = 'world';
     if (object.missionId) attachMissionCargoBeacon(root);
+    attachCargoSourceLight(root, object.definitionId);
     root.traverse((node) => {
         if (!node.isMesh) return;
         // Cargo is close to the player but small; receive world light without
@@ -80,6 +118,7 @@ export function updateCarryObjectVisual(root, {
 export function disposeCarryObjectVisual(root) {
     if (!root) return;
     root.userData?.disposeMissionCargoBeacon?.();
+    root.userData?.disposeCargoSourceLight?.();
     root.userData?.dispose?.();
     root.removeFromParent?.();
 }

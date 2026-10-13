@@ -96,6 +96,39 @@ export function dropCarriedObject(state, worldPosition, { carrierPlayerId = null
 }
 
 /**
+ * Completes a hand-delivery without turning mission cargo into a permanent
+ * installed base module. Ownership is checked exactly like drop/install so a
+ * remote player cannot resolve the local carrier's objective.
+ */
+export function deliverCarriedObject(state, { carrierPlayerId = null } = {}) {
+    if (!state?.carried) return { ok: false, reason: 'empty-hands', state };
+    if (carrierPlayerId != null && state.carried.carrierPlayerId !== carrierPlayerId) {
+        return { ok: false, reason: 'not-owner', state };
+    }
+    return {
+        ok: true,
+        delivered: { ...state.carried, carrierPlayerId: null },
+        state: { ...state, carried: null }
+    };
+}
+
+/** Remove run-scoped cargo belonging to an abandoned/reset mission. */
+export function removeMissionCarryObjects(state, missionId) {
+    if (!state || !missionId) return { state, removed: [] };
+    const removed = state.worldObjects.filter((object) => object.missionId === missionId);
+    const carriedMatches = state.carried?.missionId === missionId;
+    if (carriedMatches) removed.push(state.carried);
+    return {
+        state: {
+            ...state,
+            carried: carriedMatches ? null : state.carried,
+            worldObjects: state.worldObjects.filter((object) => object.missionId !== missionId)
+        },
+        removed
+    };
+}
+
+/**
  * Audits loose mission cargo without consulting rendering state. An invalid
  * location must fail repeatedly before recovery, avoiding one-frame terrain
  * streaming gaps; relocation preserves identity and returns it to the latest

@@ -6,10 +6,12 @@ import {
     companionCarrierCoverPosition,
     createCarryObject,
     createCarryState,
+    deliverCarriedObject,
     dropCarriedObject,
     getCarrierTacticalStance,
     installCarriedObject,
     recoverStrandedCarryObjects,
+    removeMissionCarryObjects,
     resetCarryRunState,
     shouldCompanionCoverCarrier
 } from './carrySystem.js';
@@ -44,6 +46,21 @@ describe('two-handed carry state', () => {
         expect(result.dropped).toMatchObject({ instanceId: 'bed-1', worldPosition: { x: 3.5, z: 4.5 } });
         expect(result.state.carried).toBeNull();
         expect(canUseWeaponWhileCarrying(result.state)).toBe(true);
+    });
+
+    it('delivers owned cargo without installing it and removes reset mission cargo', () => {
+        let state = addCarryObject(createCarryState('run-a'), bed()).state;
+        state = beginCarry(state, 'bed-1', 'player-a').state;
+        expect(deliverCarriedObject(state, { carrierPlayerId: 'player-b' }))
+            .toMatchObject({ ok: false, reason: 'not-owner' });
+        const delivered = deliverCarriedObject(state, { carrierPlayerId: 'player-a' });
+        expect(delivered.delivered).toMatchObject({ instanceId: 'bed-1', carrierPlayerId: null });
+        expect(delivered.state).toMatchObject({ carried: null, worldObjects: [], installed: [] });
+
+        const staged = addCarryObject(createCarryState('run-a'), bed()).state;
+        const removed = removeMissionCarryObjects(staged, 'first-night');
+        expect(removed.removed).toHaveLength(1);
+        expect(removed.state.worldObjects).toEqual([]);
     });
 
     it('installs only into a compatible socket and preserves installed modules across run reset', () => {

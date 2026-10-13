@@ -657,7 +657,17 @@ unwinnable seed, and stays within the projectile/FX frame budget.
 - [x] recovered wall/door modules have persistent durability, projectile collision, authored
   damaged/breached GLB swaps, physical collision, shell-cost repair, and immediate seal/pressure
   invalidation; the pressure door cycles its authored `HB_DOOR_00` hinge and only blocks when shut;
-- remaining: camp-authored cot handoff and hive logistics variants.
+- [x] first camp logistics route: Meridian's existing Lost Probe quest now stages the authored
+  `scout_tracking_beacon_core` as run-scoped, two-handed cargo in the cryo band; completion requires
+  carrying it back into the camp handoff radius rather than tapping a generic pickup;
+- [x] first hive logistics route: Nahl's Host Mercy Rite now enters an authoritative `active` state,
+  stages `hive_pulmonary_bellows` as a living air membrane, and grants its bond/deadline completion
+  only after a two-handed ship-berth delivery; interrupted runs restore active cargo at the hive;
+- [x] both routes inherit mission beacons, compass/map guidance, last-safe recovery, death drops,
+  weapon lockout, and companion cover. Their authored blue/red source lamps remain visible while
+  loose or carried and cast shadowless point light onto nearby PBR surfaces;
+- remaining: a camp-authored cot handoff, additional hive logistics variants, and host-authoritative
+  co-op delivery sequencing.
 
 Exit: a new campaign can recover the bed, finish a sealed room, fill it with O2, and sleep; firing
 is impossible while carrying; the partner/companion can defend the carrier.
@@ -666,7 +676,8 @@ is impossible while carrying; the partner/companion can defend the carrier.
 
 - physicalize ship modules and objective packages;
 - fabricator becomes repair/adapter station;
-- camp/hive logistics variants and staging sockets;
+- [x] prove one camp return handoff and one hive-to-ship staging handoff on the shared carry reducer;
+- additional camp/hive logistics variants and dedicated ship-module staging sockets;
 - visible ship assembly states, campaign save/migration, rejoin and rollback tests.
 
 Exit: at least three current abstract progression steps require a recoverable world part, a carry
