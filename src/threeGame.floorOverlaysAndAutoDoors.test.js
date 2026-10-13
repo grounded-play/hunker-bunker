@@ -170,6 +170,45 @@ describe('automatic doors', () => {
         expect(game.proceduralDoorStates.get('door').state).toBe('closed');
     });
 
+    it('animates crown, split, and swing families with distinct geometry poses', () => {
+        installHudStubs();
+        const makeMesh = (x) => {
+            const mesh = new THREE.Object3D();
+            mesh.position.set(x, 2, 0);
+            mesh.scale.set(3.35, 1.72, 0.58);
+            mesh.userData = {
+                worldX: x, worldZ: 0, openY: -4, closedY: 2,
+                closedPosition: { x, z: 0 },
+                closedScale: { x: 3.35, y: 1.72, z: 0.58 },
+                doorOpenAmount: 0,
+                doorOrientation: 'horizontal'
+            };
+            new THREE.Group().add(mesh);
+            return mesh;
+        };
+        const crown = makeMesh(0);
+        const split = makeMesh(5);
+        const swing = makeMesh(10);
+        const game = {
+            wallHeight: 2.8,
+            player: null,
+            proceduralDoorMeshes: new Map([['crown', crown], ['split', split], ['swing', swing]]),
+            proceduralDoorStates: new Map([
+                ['crown', { id: 'crown', state: 'open', motion: 'retract-crown', orientation: 'horizontal' }],
+                ['split', { id: 'split', state: 'open', motion: 'split-sideways', orientation: 'horizontal' }],
+                ['swing', { id: 'swing', state: 'open', motion: 'swing-fold', orientation: 'horizontal' }]
+            ]),
+            mazeAccessState: {},
+            isGameplayInputActive: () => false,
+            activeInteractiveConsole: null
+        };
+        ThreeGame.prototype.updateProceduralDoors.call(game, 1);
+        expect(crown.position.y).toBeGreaterThan(2);
+        expect(split.scale.x).toBeCloseTo(3.35 * 0.04);
+        expect(swing.rotation.y).toBeCloseTo(Math.PI / 2);
+        expect(swing.position.z).toBeLessThan(-1);
+    });
+
     it('uses the same approach behavior for the crash-room blast door', () => {
         installHudStubs();
         const state = { open: false, destroyed: false, doorCenterX: 9, doorZ: 3, y: 1.4, targetY: 1.4, speed: 5.5 };

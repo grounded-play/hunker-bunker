@@ -5,20 +5,57 @@ function finiteCell(cell) {
     return { x: cell.x, y: cell.y };
 }
 
+function doorOrientation(door) {
+    if (door?.orientation === 'horizontal' || door?.orientation === 'vertical') return door.orientation;
+    if (door?.side === 'n' || door?.side === 's') return 'horizontal';
+    if (door?.side === 'e' || door?.side === 'w') return 'vertical';
+    return null;
+}
+
+/**
+ * Expands a threshold into the non-negotiable placement envelope: the full
+ * door width, one cell beyond each jamb, and two cells of approach/departure
+ * depth on both sides. This is intentionally cell-based so large props cannot
+ * pass a center-point-only radius check while still clipping the route.
+ */
+export function doorApronCellsForDoor(door, { lateral = 1, longitudinal = 2 } = {}) {
+    const cells = (door?.cells ?? []).map(finiteCell).filter(Boolean);
+    if (!cells.length && Number.isFinite(door?.localX) && Number.isFinite(door?.localY)) {
+        cells.push({ x: door.localX, y: door.localY });
+    }
+    const orientation = doorOrientation(door);
+    if (!cells.length || !orientation) return cells;
+    const lateralPad = Math.max(0, Math.round(Number(lateral) || 0));
+    const depth = Math.max(0, Math.round(Number(longitudinal) || 0));
+    const fixed = orientation === 'horizontal'
+        ? Math.round(cells.reduce((sum, cell) => sum + cell.y, 0) / cells.length)
+        : Math.round(cells.reduce((sum, cell) => sum + cell.x, 0) / cells.length);
+    const lateralValues = cells.map((cell) => orientation === 'horizontal' ? cell.x : cell.y);
+    const start = Math.min(...lateralValues) - lateralPad;
+    const end = Math.max(...lateralValues) + lateralPad;
+    const apron = [];
+    for (let along = start; along <= end; along += 1) {
+        for (let normal = fixed - depth; normal <= fixed + depth; normal += 1) {
+            apron.push(orientation === 'horizontal'
+                ? { x: along, y: normal }
+                : { x: normal, y: along });
+        }
+    }
+    return apron;
+}
+
 /**
  * One canonical doorway list for every chunk-level placement planner.
  * Room navigation lanes catch open authored thresholds; runtime door records
  * catch locked/destroyable slabs. De-duplicating them keeps audits readable.
  */
 export function collectDoorApronCells(metadata) {
+    const roomDoors = (metadata?.roomInstances ?? []).flatMap((room) => room.doors ?? []);
+    const recordedDoors = metadata?.doors ?? [];
     const cells = [
         ...(metadata?.roomInstances ?? []).flatMap((room) => room.navigation?.doorLanes ?? []),
-        ...(metadata?.doors ?? []).flatMap((door) => [
-            ...(Number.isFinite(door.localX) && Number.isFinite(door.localY)
-                ? [{ x: door.localX, y: door.localY }]
-                : []),
-            ...(door.cells ?? [])
-        ])
+        ...roomDoors.flatMap((door) => doorApronCellsForDoor(door)),
+        ...recordedDoors.flatMap((door) => doorApronCellsForDoor(door))
     ];
     const unique = new Map();
     for (const raw of cells) {

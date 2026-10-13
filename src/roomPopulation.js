@@ -1,4 +1,5 @@
 import { computePropFacingYaw, chooseSpacedModel } from './propBehavior.js';
+import { doorApronCellsForDoor } from './placementSafety.js';
 
 function cellKey(cell) {
     return `${cell.x},${cell.y}`;
@@ -201,7 +202,8 @@ export function planRoomPopulation(room, grid, random, { grounding = true, areaB
     const budget = normalizePopulationBudget(room.populationBudget);
     const doorLanes = room.navigation?.doorLanes ?? [];
     const fixtureCells = room.navigation?.reserved ?? [];
-    const reserved = new Set([...doorLanes, ...fixtureCells].map(cellKey));
+    const directionalDoorAprons = (room.doors ?? []).flatMap((door) => doorApronCellsForDoor(door));
+    const reserved = new Set([...doorLanes, ...directionalDoorAprons, ...fixtureCells].map(cellKey));
     for (const door of doorLanes) {
         for (let dy = -1; dy <= 1; dy += 1) {
             for (let dx = -1; dx <= 1; dx += 1) reserved.add(`${door.x + dx},${door.y + dy}`);

@@ -2,16 +2,33 @@ import { describe, expect, it } from 'vitest';
 import {
     auditDoorApronPlacements,
     collectDoorApronCells,
+    doorApronCellsForDoor,
     filterDoorApronPlacements,
     isOutsideDoorApron
 } from './placementSafety.js';
 
 describe('placementSafety', () => {
     it('collects and de-duplicates authored lanes and runtime door cells', () => {
-        expect(collectDoorApronCells({
+        const cells = collectDoorApronCells({
             roomInstances: [{ navigation: { doorLanes: [{ x: 4, y: 5 }, { x: 5, y: 5 }] } }],
             doors: [{ localX: 4, localY: 5, cells: [{ x: 5, y: 5 }, { x: 6, y: 5 }] }]
-        })).toEqual([{ x: 4, y: 5 }, { x: 5, y: 5 }, { x: 6, y: 5 }]);
+        });
+        expect(cells).toEqual([{ x: 4, y: 5 }, { x: 5, y: 5 }, { x: 6, y: 5 }]);
+    });
+
+    it('reserves one cell beyond both jambs and two cells through the approach', () => {
+        const horizontal = doorApronCellsForDoor({
+            side: 'n', cells: [{ x: 3, y: 5 }, { x: 4, y: 5 }, { x: 5, y: 5 }]
+        });
+        expect(horizontal).toHaveLength(25);
+        expect(horizontal).toContainEqual({ x: 2, y: 3 });
+        expect(horizontal).toContainEqual({ x: 6, y: 7 });
+        const vertical = doorApronCellsForDoor({
+            orientation: 'vertical', cells: [{ x: 8, y: 4 }]
+        });
+        expect(vertical).toHaveLength(15);
+        expect(vertical).toContainEqual({ x: 6, y: 3 });
+        expect(vertical).toContainEqual({ x: 10, y: 5 });
     });
 
     it('uses world, local, and pickup coordinates in the final audit', () => {

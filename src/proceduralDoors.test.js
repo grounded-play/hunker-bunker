@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
     doorPresentationForStyle,
+    doorClearanceEnvelope,
     doorThresholdSupportCells,
     ensureDoorThresholdSupports,
     planProceduralDoors,
     restoreDoorStates,
+    resolveDoorMotionPose,
     serializeDoorStates,
     stampDoorRecords,
     transitionDoorState,
@@ -71,6 +73,23 @@ describe('procedural doors', () => {
             motion: 'split-sideways'
         });
         expect(doorPresentationForStyle('camp')).toMatchObject({ family: 'camp-barricade' });
+    });
+
+    it('gives each built door a controller-height clearance envelope', () => {
+        const [door] = planProceduralDoors([room], () => 0);
+        expect(door.clearanceEnvelope).toEqual({
+            minX: 1, maxX: 5, minY: 4, maxY: 8, playerHeight: 2.15
+        });
+        expect(doorClearanceEnvelope(door)).toEqual(door.clearanceEnvelope);
+    });
+
+    it('resolves visibly different open poses while sharing logical states', () => {
+        expect(resolveDoorMotionPose({ motion: 'sink-floor' }, 1, { closedY: 2, openY: -4 }).y).toBe(-4);
+        expect(resolveDoorMotionPose({ motion: 'retract-crown' }, 1, { closedY: 2, openY: -4 }).y).toBe(8);
+        expect(resolveDoorMotionPose({ motion: 'split-sideways' }, 1).spanScale).toBe(0.04);
+        const swing = resolveDoorMotionPose({ motion: 'swing-fold', orientation: 'horizontal' }, 1);
+        expect(swing.yaw).toBeCloseTo(Math.PI / 2);
+        expect(Math.abs(swing.offsetX) + Math.abs(swing.offsetZ)).toBeGreaterThan(2);
     });
 
     it('repairs both jamb supports for horizontal and vertical wide doors', () => {

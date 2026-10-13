@@ -129,7 +129,14 @@ The first environment pass is already implemented and should remain the baseline
 - the hallway catalog includes biome-transition and hive-warning approaches;
 - authored rooms frame up to two eligible doorways rather than decorating only one;
 - prop scoring separates focal edges, perimeter anchors, access lanes, and support clusters;
-- door aprons remain reserved and gateway dressing does not become collision geometry.
+- door aprons remain reserved and gateway dressing does not become collision geometry;
+- the shared placement audit now expands every oriented threshold to a directional 5×5 envelope:
+  the full three-cell opening, one cell beyond both jambs, and two cells on both approach sides.
+  Room population, dressing, pickups, encounters, and set pieces consume that same reservation;
+- generated door records carry a controller-height clearance envelope and four live presentation
+  families now move differently without forking door authority: blast slabs sink, hive guillotines
+  retract into the crown, cryo/corporate leaves withdraw symmetrically, and camp barriers hinge
+  aside. Both structural jambs are repaired and validated before the door is stamped.
 
 The focused environment suite currently passes 157 tests across 12 files. Preserve those
 contracts while expanding the systems below.
@@ -231,6 +238,11 @@ Target: at least 65% of visible straight wall frontage should use a 2–4 cell m
 four identical silhouettes consecutively.
 
 ### B2. Door families
+
+Status: the shared logical record, structural-support repair, clearance envelope, and the first
+four presentation families are live. `iris membrane` and `damaged shutter` remain art/runtime
+follow-ups; split bulkheads currently use a single symmetric paired-leaf draw object until their
+dedicated two-leaf GLB lands.
 
 Extend procedural door records with `family`, `motion`, `frameStyle`, `materialVariant`, and
 `clearanceEnvelope`:

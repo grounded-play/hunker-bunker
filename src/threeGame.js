@@ -273,6 +273,7 @@ import { isWallBackedPropType, planChunkRoomPopulation } from './roomPopulation.
 import { collectReachableCells, planChunkRoomEncounters } from './roomEncounters.js';
 import {
     planProceduralDoors,
+    resolveDoorMotionPose,
     restoreDoorStates,
     serializeDoorStates,
     stampDoorRecords,
@@ -14444,10 +14445,28 @@ export class ThreeGame {
             }
             const door = this.proceduralDoorStates.get(id);
             if (!door) continue;
-            const targetY = door.state === 'open' || door.state === 'destroyed'
-                ? (mesh.userData.openY ?? -this.wallHeight)
-                : (mesh.userData.closedY ?? this.wallHeight / 2);
-            mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, targetY, Math.min(1, delta * 7));
+            const targetOpenAmount = door.state === 'open' || door.state === 'destroyed' ? 1 : 0;
+            const openness = THREE.MathUtils.lerp(
+                Number(mesh.userData.doorOpenAmount) || 0,
+                targetOpenAmount,
+                Math.min(1, delta * 7)
+            );
+            mesh.userData.doorOpenAmount = openness;
+            const orientation = door.orientation ?? mesh.userData.doorOrientation;
+            const pose = resolveDoorMotionPose({ ...door, orientation }, openness, {
+                closedY: mesh.userData.closedY ?? this.wallHeight / 2,
+                openY: mesh.userData.openY ?? -this.wallHeight,
+                span: PROCEDURAL_DOOR_SLAB_SPAN
+            });
+            const closedPosition = mesh.userData.closedPosition ?? { x: mesh.position.x, z: mesh.position.z };
+            const closedScale = mesh.userData.closedScale ?? { x: mesh.scale.x, y: mesh.scale.y, z: mesh.scale.z };
+            mesh.position.set(closedPosition.x + pose.offsetX, pose.y, closedPosition.z + pose.offsetZ);
+            mesh.rotation.y = pose.yaw;
+            mesh.scale.set(
+                closedScale.x * (orientation === 'horizontal' ? pose.spanScale : 1),
+                closedScale.y,
+                closedScale.z * (orientation === 'vertical' ? pose.spanScale : 1)
+            );
             mesh.visible = door.state !== 'destroyed';
             const targetState = door.state === 'locked' ? 'locked' : door.state === 'open' ? 'open' : 'closed';
             const nextStatusMaterial = this.doorStatusMaterials?.[targetState];
@@ -35140,10 +35159,18 @@ export class ThreeGame {
                     doorMesh.userData.doorStyle = persistedDoor?.style ?? 'bunker';
                     doorMesh.userData.doorFamily = doorFamily;
                     doorMesh.userData.doorMotion = persistedDoor?.motion ?? 'sink-floor';
+                    doorMesh.userData.doorOrientation = persistedDoor?.orientation ?? (horizontal ? 'horizontal' : 'vertical');
                     doorMesh.userData.closedY = (this.wallHeight * blastDoorHeightScale) / 2;
                     doorMesh.userData.openY = persistedDoor?.motion === 'retract-crown'
                         ? this.wallHeight * (blastDoorHeightScale + 1.05)
                         : -(this.wallHeight * blastDoorHeightScale);
+                    doorMesh.userData.closedPosition = { x: worldX, z: worldZ };
+                    doorMesh.userData.closedScale = {
+                        x: doorMesh.scale.x,
+                        y: doorMesh.scale.y,
+                        z: doorMesh.scale.z
+                    };
+                    doorMesh.userData.doorOpenAmount = persistedDoor?.state === 'open' ? 1 : 0;
                     doorMesh.userData.indestructible = Boolean(
                         persistedDoor?.lock
                         && !isGateRequirementMet(persistedDoor.lock, this.mazeAccessState)
@@ -35218,9 +35245,17 @@ export class ThreeGame {
                         group.add(button);
                     }
                     if (persistedDoor?.id) {
-                        doorMesh.position.y = persistedDoor.state === 'open' || persistedDoor.state === 'destroyed'
-                            ? doorMesh.userData.openY
-                            : doorMesh.userData.closedY;
+                        const pose = resolveDoorMotionPose(persistedDoor, doorMesh.userData.doorOpenAmount, {
+                            closedY: doorMesh.userData.closedY,
+                            openY: doorMesh.userData.openY
+                        });
+                        doorMesh.position.set(worldX + pose.offsetX, pose.y, worldZ + pose.offsetZ);
+                        doorMesh.rotation.y = pose.yaw;
+                        doorMesh.scale.set(
+                            doorMesh.userData.closedScale.x * (doorMesh.userData.doorOrientation === 'horizontal' ? pose.spanScale : 1),
+                            doorMesh.userData.closedScale.y,
+                            doorMesh.userData.closedScale.z * (doorMesh.userData.doorOrientation === 'vertical' ? pose.spanScale : 1)
+                        );
                         this.proceduralDoorMeshes.set(persistedDoor.id, doorMesh);
                     }
                     group.add(doorMesh);

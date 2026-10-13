@@ -28,6 +28,28 @@ describe('room population', () => {
         expect(plan.placements.every((placement) => !(placement.x <= 2 && placement.y >= 2 && placement.y <= 4))).toBe(true);
     });
 
+    it('keeps the full two-cell directional approach clear for a wide threshold', () => {
+        const grid = Array.from({ length: 11 }, () => Array(11).fill('.'));
+        const room = {
+            id: 'north-threshold-room',
+            role: 'storage',
+            interior: Array.from({ length: 81 }, (_, index) => ({
+                x: 1 + (index % 9), y: 1 + Math.floor(index / 9)
+            })),
+            doors: [{ side: 'n', cells: [{ x: 4, y: 5 }, { x: 5, y: 5 }, { x: 6, y: 5 }] }],
+            navigation: { doorLanes: [{ x: 4, y: 5 }, { x: 5, y: 5 }, { x: 6, y: 5 }] },
+            populationBudget: { signature: 1, large: 2, small: 4 },
+            themeConfig: { signatureProps: ['signature'], largeProps: ['large'], smallProps: ['small'] }
+        };
+        const plan = planRoomPopulation(room, grid, () => 0.5);
+        for (let y = 3; y <= 7; y += 1) {
+            for (let x = 3; x <= 7; x += 1) {
+                expect(plan.reserved).toContain(`${x},${y}`);
+                expect(plan.placements).not.toContainEqual(expect.objectContaining({ x, y }));
+            }
+        }
+    });
+
     it('normalizes legacy numeric budgets', () => {
         expect(normalizePopulationBudget({ large: 1, small: 3, pickup: 1, enemy: 0 })).toEqual({
             signature: 1,

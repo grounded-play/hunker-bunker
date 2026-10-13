@@ -31,6 +31,56 @@ const STYLE_FAMILY = Object.freeze({
     camp: 'camp-barricade'
 });
 
+export function doorClearanceEnvelope(door) {
+    const cells = doorThresholdSupportCells(door);
+    const threshold = door?.cells?.length
+        ? door.cells
+        : Number.isFinite(door?.localX) && Number.isFinite(door?.localY)
+            ? [{ x: door.localX, y: door.localY }]
+            : [];
+    const all = [...threshold, ...cells];
+    if (!all.length) return null;
+    return {
+        minX: Math.min(...all.map(({ x }) => x)) - (door.orientation === 'vertical' ? 2 : 0),
+        maxX: Math.max(...all.map(({ x }) => x)) + (door.orientation === 'vertical' ? 2 : 0),
+        minY: Math.min(...all.map(({ y }) => y)) - (door.orientation === 'horizontal' ? 2 : 0),
+        maxY: Math.max(...all.map(({ y }) => y)) + (door.orientation === 'horizontal' ? 2 : 0),
+        playerHeight: 2.15
+    };
+}
+
+/** Presentation-only pose shared by every logical door state machine. */
+export function resolveDoorMotionPose(door, openness, {
+    span = PROCEDURAL_DOOR_SLAB_SPAN,
+    closedY = 2.4,
+    openY = -4.8
+} = {}) {
+    const t = Math.max(0, Math.min(1, Number(openness) || 0));
+    const motion = door?.motion ?? 'sink-floor';
+    const pose = { y: closedY, yaw: 0, offsetX: 0, offsetZ: 0, spanScale: 1 };
+    if (motion === 'retract-crown') {
+        pose.y = closedY + Math.abs(openY - closedY) * t;
+    } else if (motion === 'split-sideways') {
+        // One draw object represents the paired leaves; collapsing its long
+        // axis symmetrically reads as both halves withdrawing into the jambs.
+        pose.spanScale = Math.max(0.04, 1 - t);
+    } else if (motion === 'swing-fold') {
+        const yaw = t * Math.PI * 0.5;
+        const half = span * 0.5;
+        pose.yaw = yaw;
+        if (door?.orientation === 'vertical') {
+            pose.offsetX = half * Math.sin(yaw);
+            pose.offsetZ = half * (Math.cos(yaw) - 1);
+        } else {
+            pose.offsetX = half * (Math.cos(yaw) - 1);
+            pose.offsetZ = -half * Math.sin(yaw);
+        }
+    } else {
+        pose.y = closedY + (openY - closedY) * t;
+    }
+    return pose;
+}
+
 export function doorPresentationForStyle(style = 'bunker') {
     const family = STYLE_FAMILY[style] ?? 'blast-slab';
     return { family, ...DOOR_FAMILIES[family] };
@@ -38,7 +88,7 @@ export function doorPresentationForStyle(style = 'bunker') {
 
 function doorRecord(room, doorway, center, tutorial) {
     const style = room.themeConfig?.doorStyle ?? 'bunker';
-    return {
+    const record = {
         id: doorway.id,
         roomId: room.id,
         chunkKey: room.chunkKey,
@@ -55,6 +105,8 @@ function doorRecord(room, doorway, center, tutorial) {
         maxHp: tutorial ? 3 : 6,
         autoClose: true
     };
+    record.clearanceEnvelope = doorClearanceEnvelope(record);
+    return record;
 }
 
 function doorChanceForRoom(_room) {

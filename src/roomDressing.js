@@ -19,6 +19,7 @@ import { DRESSING_TRIANGLES } from './data/dressingTriangles.js';
 import { roomDressingIdentity } from './roomDressingIdentity.js';
 import { computePropFacingYaw, chooseSpacedModel } from './propBehavior.js';
 import { anchorLightFor } from './anchorPracticalLight.js';
+import { doorApronCellsForDoor } from './placementSafety.js';
 
 export const DRESSING_LIMITS = Object.freeze({
     // Distinct types per room, per layer: the instanced renderer draws one
@@ -164,8 +165,7 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
     const blocked = new Set(reserved);
     const doorLanes = [
         ...(room?.navigation?.doorLanes ?? []),
-        ...(room?.navigation?.doors ?? []),
-        ...(room?.doors ?? [])
+        ...(room?.navigation?.doors ?? [])
     ];
     for (const door of doorLanes) {
         for (let dy = -1; dy <= 1; dy += 1) {
@@ -173,6 +173,9 @@ export function planRoomDressing(room, grid, { reserved = [], occupied = [], rec
                 blocked.add(keyOf(door.x + dx, door.y + dy));
             }
         }
+    }
+    for (const cell of (room?.doors ?? []).flatMap((door) => doorApronCellsForDoor(door))) {
+        blocked.add(keyOf(cell.x, cell.y));
     }
     const taken = new Set((occupied ?? []).map(({ x, y }) => keyOf(x, y)));
     const floorCells = (room?.interior ?? [])
