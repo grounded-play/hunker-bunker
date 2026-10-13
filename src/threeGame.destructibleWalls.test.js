@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import * as THREE from 'three';
 import { LEDGE_TILE, ThreeGame } from './threeGame.js';
 
 function call(method, fakeThis, ...args) {
@@ -312,8 +313,15 @@ describe('instanced wall tile identity', () => {
             setMatrixAt: vi.fn(),
             instanceMatrix: { needsUpdate: false }
         };
+        const facadePool = {
+            setMatrixAt: vi.fn(),
+            instanceMatrix: { needsUpdate: false }
+        };
         const first = makeRecord(4, 5, 0, pool);
         const second = makeRecord(5, 5, 1, pool);
+        const facade = { pool: facadePool, instanceIndex: 3, runId: 'run-a', hidden: false };
+        first.wallRunFacade = facade;
+        second.wallRunFacade = facade;
         const grid = makeGrid();
         const fakeThis = {
             chunkSize: 19,
@@ -336,6 +344,10 @@ describe('instanced wall tile identity', () => {
         expect(pool.setMatrixAt).toHaveBeenCalledTimes(1);
         expect(pool.setMatrixAt.mock.calls[0][0]).toBe(0);
         expect(pool.instanceMatrix.needsUpdate).toBe(true);
+        expect(facadePool.setMatrixAt).toHaveBeenCalledOnce();
+        expect(facadePool.setMatrixAt).toHaveBeenCalledWith(3, expect.any(THREE.Matrix4));
+        expect(facadePool.instanceMatrix.needsUpdate).toBe(true);
+        expect(facade.hidden).toBe(true);
         expect(fakeThis._wallInstanceIndex.has(first.wallKey)).toBe(false);
         expect(fakeThis._wallInstanceIndex.get(second.wallKey)).toBe(second);
         expect(fakeThis.wallMeshes).toEqual([pool]);

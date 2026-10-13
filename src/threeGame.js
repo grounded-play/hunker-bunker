@@ -395,6 +395,7 @@ import { applyVoidDepth, setVoidDepthTime } from './voidDepth.js';
 import { chasmLandmarkForm, chasmLandmarkMapEntry, chasmLandmarkYaw, createChasmLandmarkGeometry, createChasmLandmarkMaterial, isChasmLandmarksEnabled, pickChasmLandmarkSites } from './chasmLandmarks.js';
 import { DOOR_LIGHT_POOL, createDoorLightPoolGeometry, createDoorLightPoolMaterial, doorLightPoolMatrices } from './doorLightPools.js';
 import { WALL_LIGHT_SHAPE_FRAGMENT, planWallFootDressing, planWallIcicles, planWallTopDressing, createCornerCutDepthMaterial, createCornerCutPoolGeometry, createCornerCutWallGeometry, isWallAutotileEnabled, patchCornerCutVertexShader, wallCornerCutMask, wallHeightScale } from './wallAutotile.js';
+import { planWallRuns, wallRunFacadeSpec, wallRunMaterialFamily } from './wallRunPlanner.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
 import { corridorKitPlacement, roomGatewayKitPlacement } from './kitGrammar.js';
 import {
@@ -25115,7 +25116,7 @@ export class ThreeGame {
             // Wall-top dressing and door pools share their geometry; their instance buffers go.
             if (child.userData?.isWallTopDressing || child.userData?.isDoorLightPool || child.userData?.isChasmLandmark) child.dispose?.();
             // A wall or cap pool owns its corner-cut geometry and its instance buffers.
-            if (child.userData?.isInstancedWallPool || child.userData?.isRoomCutawayCapPool
+            if (child.userData?.isInstancedWallPool || child.userData?.isWallRunFacadePool || child.userData?.isRoomCutawayCapPool
                 || (child.userData?.isCliff && child.geometry?.userData?.ownedByWallPool)) {
                 if (child.geometry?.userData?.ownedByWallPool) child.geometry.dispose();
                 child.dispose?.();
@@ -32556,6 +32557,12 @@ export class ThreeGame {
         }
         const wallMesh = this.findWallMeshAt?.(coord.tileX, coord.tileZ);
         if (wallMesh?.isInstancedWall) {
+            const facade = wallMesh.wallRunFacade;
+            if (facade && !facade.hidden) {
+                facade.pool?.setMatrixAt(facade.instanceIndex, new THREE.Matrix4().makeScale(0, 0, 0));
+                if (facade.pool) facade.pool.instanceMatrix.needsUpdate = true;
+                facade.hidden = true;
+            }
             wallMesh.instancedMesh?.setMatrixAt(
                 wallMesh.instanceIndex,
                 new THREE.Matrix4().makeScale(0, 0, 0)
@@ -32701,6 +32708,10 @@ export class ThreeGame {
                 .lerp(new THREE.Color(0xff3300), damageRatio * 0.75);
             wall.instancedMesh?.setColorAt(wall.instanceIndex, color);
             if (wall.instancedMesh?.instanceColor) wall.instancedMesh.instanceColor.needsUpdate = true;
+            if (wall.wallRunFacade && !wall.wallRunFacade.hidden) {
+                wall.wallRunFacade.pool?.setColorAt(wall.wallRunFacade.instanceIndex, color);
+                if (wall.wallRunFacade.pool?.instanceColor) wall.wallRunFacade.pool.instanceColor.needsUpdate = true;
+            }
             return;
         }
 
@@ -34476,6 +34487,99 @@ export class ThreeGame {
             });
             group.add(pool);
         }
+
+        // Semantic macro facades span 2–4 adjacent wall cells without
+        // replacing their tile-authoritative collision/destruction records.
+        // One facade instance hides the per-cell seams; breaking any member
+        // hides only that facade and reveals the surviving cell walls below.
+        const macroMetaByCell = new Map();
+        for (const [roomStyleId, metaList] of wallMetaByRoomStyle.entries()) {
+            for (const meta of metaList) {
+                if (meta.variant !== 'standard' || meta.roomBoundary || (meta.cornerCut ?? 0) !== 0) continue;
+                macroMetaByCell.set(`${meta.localX},${meta.localY}`, { ...meta, roomStyleId });
+            }
+        }
+        const wallRunPlan = planWallRuns(grid, {
+            eligibleCells: new Set(macroMetaByCell.keys()),
+            groupForCell: (x, y) => macroMetaByCell.get(`${x},${y}`)?.roomStyleId ?? 0
+        });
+        const facadeEntriesByStyle = new Map();
+        for (const run of wallRunPlan.runs) {
+            const memberMeta = run.cells.map(({ key }) => macroMetaByCell.get(key)).filter(Boolean);
+            if (memberMeta.length !== run.length) continue;
+            const minHeightScale = Math.min(...memberMeta.map(({ heightScale }) => heightScale ?? 1));
+            const facade = wallRunFacadeSpec(run, { wallHeight: this.wallHeight, heightScale: minHeightScale });
+            if (!facade) continue;
+            const matrix = new THREE.Matrix4().compose(
+                new THREE.Vector3(
+                    chunkX * this.chunkSize + facade.position.x,
+                    facade.position.y,
+                    chunkY * this.chunkSize + facade.position.z
+                ),
+                new THREE.Quaternion(),
+                new THREE.Vector3(facade.scale.x, facade.scale.y, facade.scale.z)
+            );
+            const roomStyleId = memberMeta[0].roomStyleId ?? 0;
+            if (!facadeEntriesByStyle.has(roomStyleId)) facadeEntriesByStyle.set(roomStyleId, []);
+            facadeEntriesByStyle.get(roomStyleId).push({ run, matrix, memberMeta });
+        }
+        const wallRunFamilies = new Set();
+        for (const [roomStyleId, entries] of facadeEntriesByStyle) {
+            if (entries.length === 0) continue;
+            const pool = new THREE.InstancedMesh(this.wallGeometry, this.wallMaterial, entries.length);
+            const undamagedColor = new THREE.Color(0xffffff);
+            entries.forEach(({ matrix }, index) => {
+                pool.setMatrixAt(index, matrix);
+                pool.setColorAt(index, undamagedColor);
+            });
+            pool.instanceMatrix.needsUpdate = true;
+            if (pool.instanceColor) pool.instanceColor.needsUpdate = true;
+            pool.castShadow = true;
+            pool.receiveShadow = true;
+            const centerX = chunkX * this.chunkSize + this.chunkSize * 0.5;
+            const centerZ = chunkY * this.chunkSize + this.chunkSize * 0.5;
+            const biome = this.getBiomeKeyForWorldPosition?.(centerX, centerZ) ?? BIOME_KEYS.ACTIVE;
+            const materialFamilies = entries.map(({ memberMeta }) => wallRunMaterialFamily({
+                biome,
+                roomStyle: memberMeta[0]?.roomWallStyle ?? null
+            }));
+            for (const family of materialFamilies) wallRunFamilies.add(family);
+            pool.userData = {
+                isWallRunFacadePool: true,
+                runCount: entries.length,
+                roomStyleId,
+                materialFamilies,
+                silhouettes: entries.map(({ run }) => run.silhouette)
+            };
+            pool.onBeforeRender = () => {
+                if (this.wallShaderUniforms) {
+                    this.wallShaderUniforms.uLandformId.value = landformShaderId;
+                    this.wallShaderUniforms.uRoomStyleId.value = roomStyleId;
+                }
+            };
+            entries.forEach(({ run }, instanceIndex) => {
+                const facadeState = {
+                    pool,
+                    instanceIndex,
+                    runId: run.id,
+                    memberKeys: run.cells.map(({ x, y }) => this.getWallKey(
+                        chunkX * this.chunkSize + x,
+                        chunkY * this.chunkSize + y
+                    )),
+                    hidden: false
+                };
+                for (const wallKey of facadeState.memberKeys) {
+                    const record = this._wallInstanceIndex.get(wallKey);
+                    if (record) record.wallRunFacade = facadeState;
+                }
+            });
+            group.add(pool);
+        }
+        group.userData.wallRunPresentation = {
+            ...wallRunPlan.coverage,
+            runCount: wallRunPlan.runs.length,
+            materialFamilies: [...wallRunFamilies]
+        };
 
         let cutawayCapPool = null;
         if (cutawayCapMatrices.length > 0) {

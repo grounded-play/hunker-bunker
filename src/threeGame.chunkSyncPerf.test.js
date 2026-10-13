@@ -69,6 +69,11 @@ describe('Chunk children indexing & syncVisibleChunks optimization', () => {
         expect(Array.isArray(group.userData.walls)).toBe(true);
         expect(Array.isArray(group.userData.pickups)).toBe(true);
         expect(Array.isArray(group.userData.scatters)).toBe(true);
+        expect(group.userData.wallRunPresentation).toMatchObject({
+            runCount: expect.any(Number),
+            macroCells: expect.any(Number),
+            materialFamilies: expect.any(Array)
+        });
     });
 
     it('indexes added and removed children dynamically via wrapped group methods', () => {
