@@ -2,6 +2,7 @@ import { getRunRating } from './runRating.js';
 import { computeRunScore } from './runScore.js';
 import { getFieldWeaponProfile } from './fieldWeapon.js';
 import { createFieldWeaponRunState, resetFieldWeaponRunState } from './fieldWeaponDrops.js';
+import { canUseWeaponWhileCarrying, createCarryState, resetCarryRunState } from './carrySystem.js';
 import { buildRunResourceTelemetry } from './runTelemetry.js';
 import { createRelicPickup, animateRelicPickup, createImpactBurst, disposeExpeditionEffect } from './expeditionVfx.js';
 import { TraumaManager, create3DMuzzleFlash, WEAPON_TRAUMA_TABLE } from './combatJuice.js';
@@ -593,7 +594,7 @@ import { applySpecialVariant } from './specialVariants.js';
 import { bindRoomGrammarSites } from './roomGrammarSiteSelection.js';
 import { trimCampPromptActions } from './campActionMenu.js';
 import { MYSTERY_BOX_KINDS, MYSTERY_OUTCOME_LINE_KEYS, mysteryBoxChance, mysteryOpenSeconds, mysteryRewardDrops, pickMysteryBoxKind, rollMysteryOutcome, seededRandom } from './mysteryBoxes.js';
-import { createTrackField, slimeColorFor, stepBoots, trackSurfaceForType } from './trackField.js';
+import { createTrackField, slimeColorFor, slimeLifeFor, stepBoots, trackSurfaceForType } from './trackField.js';
 import { CasingSystem } from './casingSystem.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
 import { groupDangerZones, lipEdgeQuads } from './dangerZones.js';
@@ -2430,6 +2431,7 @@ export class ThreeGame {
         this.activeSynergies = [];
         this.inRunLootDrops = [];
         this.fieldWeaponRunState = createFieldWeaponRunState();
+        this.carryState = createCarryState();
         this.snailsKilledThisRun = 0;
         this.runStartTime = Date.now();
         this._threatAudioTimer = 0;
@@ -9298,6 +9300,7 @@ export class ThreeGame {
         for (const pickup of this.inRunLootDrops ?? []) disposeExpeditionEffect(pickup);
         this.inRunLootDrops = [];
         this.fieldWeaponRunState = resetFieldWeaponRunState(`run:${Date.now()}`);
+        this.carryState = resetCarryRunState(`run:${Date.now()}`, this.carryState?.installed ?? []);
         this.runOverclocks = [];
         this.runRelics = [];
         this.runShardCount = 0;
@@ -9401,6 +9404,16 @@ export class ThreeGame {
 
         presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.FIRE_INPUT, { source, aimX: this.aimDirX, aimZ: this.aimDirZ });
 
+        if (!canUseWeaponWhileCarrying(this.carryState)) {
+            presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, {
+                reason: 'carrying',
+                carriedObjectId: this.carryState.carried?.instanceId ?? null
+            }, { level: 'warn' });
+            this.playThrottledUiError('_lastCarryBlockedCueAt', { volume: 0.42, playbackRate: 0.78 });
+            this.showBunkerLine?.('HANDS FULL — DROP CARGO TO FIRE.');
+            return false;
+        }
+
         if (this.isInsideNoFireZone()) {
             presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, { reason: 'no_fire_zone', clip: this.weaponClipAmmo, reserve: this.getAvailableAmmo() }, { level: 'warn' });
             this.playThrottledUiError('_lastNoFireCueAt', { volume: 0.42 }, 'combat-no-fire-zone');
@@ -9483,6 +9496,43 @@ export class ThreeGame {
         return true;
     }
 
+    resolveWeaponFireSound(weaponType, fieldWeapon = null) {
+        const weaponId = String(fieldWeapon?.id || weaponType || '').toLowerCase();
+        if (weaponId.includes('shotgun') || weaponId.includes('scatter') || weaponId.includes('siege')) {
+            return 'weapon_fire_shotgun';
+        }
+        if (weaponId.includes('smg') || weaponId.includes('talon') || weaponId.includes('neon')) {
+            return 'weapon_fire_smg';
+        }
+        if (weaponId.includes('rail') || weaponId.includes('marksman')) {
+            return 'weapon_fire_railgun';
+        }
+        if (weaponId.includes('cryo') || weaponId.includes('frost') || weaponId.includes('lance')) {
+            return 'weapon_fire_cryo';
+        }
+        if (weaponId.includes('tesla') || weaponId.includes('arc') || weaponId.includes('plasma')) {
+            return 'weapon_fire_tesla';
+        }
+        if (weaponId.includes('carbine') || weaponId.includes('rifle')) {
+            return 'weapon_fire_carbine';
+        }
+        return 'weapon_fire_sidearm';
+    }
+
+    resolveTracerFlybySound(tracerFx) {
+        const fx = String(tracerFx || '').toLowerCase();
+        if (fx.includes('frost') || fx.includes('ice') || fx.includes('cyan') || fx.includes('4205')) {
+            return 'tracer_flyby_frost';
+        }
+        if (fx.includes('heavy') || fx.includes('rust') || fx.includes('orange') || fx.includes('4212')) {
+            return 'tracer_flyby_heavy';
+        }
+        if (fx.includes('chitin') || fx.includes('acid') || fx.includes('green') || fx.includes('spore') || fx.includes('4219')) {
+            return 'tracer_flyby_chitin';
+        }
+        return 'tracer_flyby_ballistic';
+    }
+
     triggerControllerFire({ source = 'controller' } = {}) {
         if (this.aimAssistSetting !== 'off' && this.player) {
             const maxAngle = this.aimAssistSetting === 'low' ? (8 * Math.PI / 180) : (15 * Math.PI / 180);
@@ -9505,6 +9555,7 @@ export class ThreeGame {
 
     triggerGameplayMelee({ source = 'manual' } = {}) {
         if (!this.isGameplayInputActive() || !this.player || this.isPlayerDead) return false;
+        if (!canUseWeaponWhileCarrying(this.carryState)) return false;
         if ((this.meleeCooldownTimer ?? 0) > 0) return false;
         if (this.isInsideNoFireZone()) return false;
 
@@ -29066,6 +29117,7 @@ export class ThreeGame {
 
     requestReload({ manual = false } = {}) {
         if (!this.isGameplayInputActive()) return false;
+        if (!canUseWeaponWhileCarrying(this.carryState)) return false;
         if (this.weaponReloading) return false;
 
         const availableAmmo = this.getAvailableAmmo();
@@ -40487,7 +40539,7 @@ export class ThreeGame {
             size: isBoss ? 1.5 : 0.8,
             color: slimeColorFor(type),
             alpha: isBoss ? 0.32 : 0.36,
-            life: isBoss ? 10 : 6,
+            life: slimeLifeFor(type, isBoss),
             now
         });
     }

@@ -558,7 +558,11 @@ unwinnable seed, and stays within the projectile/FX frame budget.
 
 ### Phase 5 — carrying and first-night base seal
 
-- carry reducer, sockets, placement preview, co-op ownership, companion cover stance;
+- [x] pure one-slot carry reducer with ownership, safe drop result, compatible installation,
+  run reset, and installed-module preservation (`src/carrySystem.js`);
+- [x] firing, melee, and reload inputs are refused while carrying;
+- remaining: world pickup/render sockets, placement preview, co-op event wiring, and companion
+  cover stance;
 - bed, walls, sealable door, O2 duct/regulator;
 - seal graph, leak visualization, safe-space sleep integration;
 - first-night camp mission and recovery fail-safes.
