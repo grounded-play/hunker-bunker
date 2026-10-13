@@ -540,8 +540,11 @@ only its consumers; fixed cable rendering remains one merged draw call per chunk
 - [x] pure run-scoped field-drop reducer with atomic single-slot swaps, preserved ammo,
   duplicate/cross-run rejection, weapon-specific reloads, and hard run reset
   (`src/fieldWeaponDrops.js`);
-- remaining: GLB pickup/runtime interaction, co-op authority events, and HUD presentation;
-- ballistic/shell/rail/cryo ammo families and UI;
+- [x] physical authored-GLB drops, proximity swap interaction, boss rare-drop hook, active combat
+  profile/ammo mirroring, per-weapon reload consumption, and HUD ammo-family payloads
+  (`src/fieldWeaponPresentation.js`, `src/threeGame.js`);
+- remaining: server/host-authoritative co-op race resolution and final HUD art/copy;
+- [x] ballistic/shell/rail/cryo ammo families are distinct in runtime state and HUD events;
 - encounter/drop tables with seeded rarity and guaranteed tutorial QA hooks.
 
 Exit: two players can race for, swap, drop, empty, and lose run-only guns with no duplication and
@@ -595,6 +598,7 @@ home, and an installation that visibly changes the ship/base.
 | `src/propFx.js`, `src/propInteractions.js` | complete audit classifications and source-matched FX |
 | `scripts/blender/manifests/prop-fx-anchors.json` | explicit recent-GLB anchors |
 | `src/fieldWeaponDrops.js` (new), `src/fieldWeapon.js` | physical run gun state, ammo, flamethrower profile |
+| `src/fieldWeaponPresentation.js` (new) | cached authored gun GLBs, grounded drop fit, halo lifecycle |
 | `src/statusEffects.js` (new or consolidated) | deterministic burning lifecycle |
 | `src/carrySystem.js` (new) | pure carry/drop/install state and validation |
 | `src/data/baseModules.js` (new) | modules, sockets, seal and utility ports |

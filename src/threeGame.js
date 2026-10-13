@@ -1,7 +1,21 @@
 import { getRunRating } from './runRating.js';
 import { computeRunScore } from './runScore.js';
 import { getFieldWeaponProfile } from './fieldWeapon.js';
-import { createFieldWeaponRunState, resetFieldWeaponRunState } from './fieldWeaponDrops.js';
+import {
+    addFieldWeaponDrop,
+    consumeFieldWeaponAmmo,
+    createFieldWeaponDrop,
+    createFieldWeaponRunState,
+    getFieldWeaponDropDefinition,
+    reloadFieldWeapon,
+    resetFieldWeaponRunState,
+    swapFieldWeapon
+} from './fieldWeaponDrops.js';
+import {
+    createFieldWeaponDropVisual,
+    disposeFieldWeaponDropVisual,
+    updateFieldWeaponDropVisual
+} from './fieldWeaponPresentation.js';
 import { canUseWeaponWhileCarrying, createCarryState, resetCarryRunState } from './carrySystem.js';
 import { buildRunResourceTelemetry } from './runTelemetry.js';
 import { createRelicPickup, animateRelicPickup, createImpactBurst, disposeExpeditionEffect } from './expeditionVfx.js';
@@ -2431,6 +2445,8 @@ export class ThreeGame {
         this.activeSynergies = [];
         this.inRunLootDrops = [];
         this.fieldWeaponRunState = createFieldWeaponRunState();
+        this.fieldWeaponDropVisuals = new Map();
+        this._fieldWeaponDropSequence = 0;
         this.carryState = createCarryState();
         this.snailsKilledThisRun = 0;
         this.runStartTime = Date.now();
@@ -8909,6 +8925,16 @@ export class ThreeGame {
                 });
             }
         }
+        const fieldWeapon = this.getNearestFieldWeaponDrop?.();
+        if (fieldWeapon) {
+            const profile = getFieldWeaponProfile(fieldWeapon.drop.profileId, true);
+            candidates.push({
+                id: `field-weapon:${fieldWeapon.drop.instanceId}`,
+                label: `SWAP TO ${profile?.label ?? fieldWeapon.drop.profileId} · ${fieldWeapon.drop.ammoInWeapon}/${fieldWeapon.drop.reserveAmmo}`,
+                distance: fieldWeapon.distance,
+                interact: () => this.interactWithFieldWeaponDrop(fieldWeapon.drop.instanceId)
+            });
+        }
         if (this.playerType === 'ENGINEER' && (this.currentDepthTier ?? 0) === 0) {
             const dirLen = Math.hypot(this.aimDirX, this.aimDirZ) || 1;
             const hx = Math.round(px + (this.aimDirX / dirLen) * 1.5);
@@ -9299,7 +9325,10 @@ export class ThreeGame {
         this._eliteContactScan = 0;
         for (const pickup of this.inRunLootDrops ?? []) disposeExpeditionEffect(pickup);
         this.inRunLootDrops = [];
+        this.clearFieldWeaponDropVisuals?.();
         this.fieldWeaponRunState = resetFieldWeaponRunState(`run:${Date.now()}`);
+        this._fieldWeaponDropSequence = 0;
+        this.applyWeaponUpgrades?.();
         this.carryState = resetCarryRunState(`run:${Date.now()}`, this.carryState?.installed ?? []);
         this.runOverclocks = [];
         this.runRelics = [];
@@ -9307,6 +9336,147 @@ export class ThreeGame {
         this._deepAnchorSpawnedCrossings = new Set();
         this.activeSynergies = [];
         window.dispatchEvent(new CustomEvent('in-run-drops-reset', { detail: { timestamp: Date.now() } }));
+    }
+
+    syncEquippedFieldWeapon({ announce = true } = {}) {
+        const equipped = this.fieldWeaponRunState?.equipped ?? null;
+        if (!equipped) {
+            this.applyWeaponUpgrades();
+            this.emitWeaponClipState?.();
+            return null;
+        }
+        const definition = getFieldWeaponDropDefinition(equipped.profileId);
+        this.fieldWeapon = getFieldWeaponProfile(equipped.profileId, true);
+        this.weaponClipSize = definition?.clipCapacity ?? Math.max(1, equipped.ammoInWeapon);
+        this.weaponClipAmmo = equipped.ammoInWeapon;
+        this.weaponReloading = false;
+        this.weaponReloadTimer = 0;
+        this.weaponAmmoRefillTimer = 0;
+        this.emitWeaponClipState?.();
+        if (announce) {
+            window.dispatchEvent(new CustomEvent('field-weapon-equipped', {
+                detail: { ...equipped, clipCapacity: this.weaponClipSize }
+            }));
+        }
+        return equipped;
+    }
+
+    spawnFieldWeaponDrop(profileId, x, z, {
+        ammoInWeapon,
+        reserveAmmo,
+        sourceEncounterId = null,
+        instanceId = null
+    } = {}) {
+        if (!this.scene || !Number.isFinite(x) || !Number.isFinite(z)) return null;
+        const runId = this.fieldWeaponRunState?.runId;
+        this._fieldWeaponDropSequence = (this._fieldWeaponDropSequence ?? 0) + 1;
+        const id = instanceId ?? `field-gun:${runId ?? 'run'}:${this._fieldWeaponDropSequence}`;
+        const drop = createFieldWeaponDrop({
+            instanceId: id,
+            profileId,
+            ammoInWeapon,
+            reserveAmmo,
+            worldPosition: { x, z },
+            sourceEncounterId,
+            runId
+        });
+        const result = addFieldWeaponDrop(this.fieldWeaponRunState, drop);
+        if (!result.ok) return null;
+        this.fieldWeaponRunState = result.state;
+        this.ensureFieldWeaponDropVisual(drop);
+        return drop;
+    }
+
+    async ensureFieldWeaponDropVisual(drop) {
+        if (!drop || this.fieldWeaponDropVisuals?.has(drop.instanceId)) return null;
+        const visual = await createFieldWeaponDropVisual(drop.profileId).catch((error) => {
+            console.warn(`[field-weapon] ${drop.profileId} model unavailable`, error);
+            return null;
+        });
+        if (!visual) return null;
+        const stillInWorld = this.fieldWeaponRunState?.worldDrops?.some(({ instanceId }) => instanceId === drop.instanceId);
+        if (!stillInWorld || !this.scene) {
+            disposeFieldWeaponDropVisual(visual);
+            return null;
+        }
+        visual.position.set(
+            drop.worldPosition.x,
+            (this.getTerrainHeightAt?.(drop.worldPosition.x, drop.worldPosition.z) ?? 0) + 0.05,
+            drop.worldPosition.z
+        );
+        visual.rotation.y = ((this._fieldWeaponDropSequence * 1.618) % 2) * Math.PI;
+        visual.userData.instanceId = drop.instanceId;
+        this.scene.add(visual);
+        this.fieldWeaponDropVisuals.set(drop.instanceId, visual);
+        return visual;
+    }
+
+    reconcileFieldWeaponDropVisuals() {
+        const worldDrops = this.fieldWeaponRunState?.worldDrops ?? [];
+        const wanted = new Set(worldDrops.map(({ instanceId }) => instanceId));
+        for (const [instanceId, visual] of this.fieldWeaponDropVisuals ?? []) {
+            if (wanted.has(instanceId)) continue;
+            disposeFieldWeaponDropVisual(visual);
+            this.fieldWeaponDropVisuals.delete(instanceId);
+        }
+        for (const drop of worldDrops) this.ensureFieldWeaponDropVisual(drop);
+    }
+
+    clearFieldWeaponDropVisuals() {
+        for (const visual of this.fieldWeaponDropVisuals?.values?.() ?? []) {
+            disposeFieldWeaponDropVisual(visual);
+        }
+        this.fieldWeaponDropVisuals?.clear?.();
+    }
+
+    updateFieldWeaponDrops(_delta, now = performance.now()) {
+        for (const visual of this.fieldWeaponDropVisuals?.values?.() ?? []) {
+            updateFieldWeaponDropVisual(visual, now * 0.001);
+        }
+    }
+
+    getNearestFieldWeaponDrop(maxDistance = 2.2) {
+        if (!this.player) return null;
+        let nearest = null;
+        let nearestDistance = maxDistance;
+        for (const drop of this.fieldWeaponRunState?.worldDrops ?? []) {
+            const distance = Math.hypot(
+                this.player.position.x - drop.worldPosition.x,
+                this.player.position.z - drop.worldPosition.z
+            );
+            if (distance > nearestDistance) continue;
+            nearest = drop;
+            nearestDistance = distance;
+        }
+        return nearest ? { drop: nearest, distance: nearestDistance } : null;
+    }
+
+    interactWithFieldWeaponDrop(instanceId = null) {
+        if (!canUseWeaponWhileCarrying(this.carryState)) {
+            this.showBunkerLine?.('HANDS FULL — DROP CARGO TO SWAP WEAPONS.');
+            return false;
+        }
+        const nearest = instanceId
+            ? { drop: this.fieldWeaponRunState?.worldDrops?.find((drop) => drop.instanceId === instanceId) }
+            : this.getNearestFieldWeaponDrop();
+        if (!nearest?.drop) return false;
+        const result = swapFieldWeapon(this.fieldWeaponRunState, nearest.drop.instanceId);
+        if (!result.ok) return false;
+        this.fieldWeaponRunState = result.state;
+        this.reconcileFieldWeaponDropVisuals();
+        this.syncEquippedFieldWeapon();
+        const profile = getFieldWeaponProfile(result.equipped.profileId, true);
+        this.showBunkerLine?.(`${profile?.label ?? result.equipped.profileId} EQUIPPED — ${result.equipped.ammoInWeapon}/${result.equipped.reserveAmmo}`);
+        window.AudioManager?.play?.('ui_confirm', { volume: 0.6, playbackRate: 1.08 });
+        window.dispatchEvent(new CustomEvent('field-weapon-swapped', {
+            detail: {
+                runId: this.fieldWeaponRunState.runId,
+                selectedInstanceId: nearest.drop.instanceId,
+                equipped: result.equipped,
+                dropped: result.dropped
+            }
+        }));
+        return true;
     }
 
     spawnPhysicalLootDrop(x, z, item) {
@@ -9449,6 +9619,11 @@ export class ThreeGame {
 
         if (this.unlimitedAmmo) {
             this.weaponClipAmmo = this.weaponClipSize;
+        } else if (this.fieldWeaponRunState?.equipped) {
+            const result = consumeFieldWeaponAmmo(this.fieldWeaponRunState);
+            if (!result.ok) return false;
+            this.fieldWeaponRunState = result.state;
+            this.weaponClipAmmo = result.equipped.ammoInWeapon;
         } else {
             this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
         }
@@ -11915,6 +12090,7 @@ export class ThreeGame {
             fp.measure('updateSky', () => this.updateSky(delta));
             fp.measure('updateTerminalClockTick', () => this.updateTerminalClockTick(now));
             fp.measure('updatePickups', () => this.updatePickups(delta, now));
+            fp.measure('updateFieldWeaponDrops', () => this.updateFieldWeaponDrops?.(delta, now));
             fp.measure('updateScatter', () => this.updateScatter(delta, now));
             fp.measure('updateUnderfootCrush', () => this.updateUnderfootCrush());
             fp.measure('updateMysteryBoxes', () => this.updateMysteryBoxes(delta));
@@ -16548,7 +16724,10 @@ export class ThreeGame {
     // spawnPlayerShot() and the reload/clip logic. Called whenever upgrades change.
     applyWeaponUpgrades() {
         const craftedId = typeof window !== 'undefined' ? window.loadout?.getEquippedId?.(this.playerType) : null;
-        this.fieldWeapon = getFieldWeaponProfile(craftedId, typeof window !== 'undefined' && window.fabricator?.isFabricated?.(craftedId));
+        const runWeapon = this.fieldWeaponRunState?.equipped ?? null;
+        this.fieldWeapon = runWeapon
+            ? getFieldWeaponProfile(runWeapon.profileId, true)
+            : getFieldWeaponProfile(craftedId, typeof window !== 'undefined' && window.fabricator?.isFabricated?.(craftedId));
         const levels = this.bank?.getWeaponUpgrades?.() ?? {};
         const ammoCapacity = Math.max(0, Math.floor(levels.ammoCapacity ?? 0));
         const shotSpeed = Math.max(0, Math.floor(levels.shotSpeed ?? 0));
@@ -16559,7 +16738,9 @@ export class ThreeGame {
         if (this.playerType === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_ammo_1')) {
             baseClipSize += 3;
         }
-        this.weaponClipSize = Math.max(1, baseClipSize + (Number(this.loadoutMods?.clipSizeBonus) || 0));
+        this.weaponClipSize = runWeapon
+            ? (getFieldWeaponDropDefinition(runWeapon.profileId)?.clipCapacity ?? Math.max(1, runWeapon.ammoInWeapon))
+            : Math.max(1, baseClipSize + (Number(this.loadoutMods?.clipSizeBonus) || 0));
 
         let extraDamage = shotDamage;
         if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_damage_1')) {
@@ -16575,7 +16756,9 @@ export class ThreeGame {
             shotAmount
         };
         // Never leave more rounds chambered than the (possibly shrunk) clip allows.
-        this.weaponClipAmmo = Math.min(this.weaponClipAmmo, this.weaponClipSize);
+        this.weaponClipAmmo = runWeapon
+            ? runWeapon.ammoInWeapon
+            : Math.min(this.weaponClipAmmo, this.weaponClipSize);
     }
 
     hasUpgrade(goalKey) {
@@ -22870,7 +23053,9 @@ export class ThreeGame {
                 reloading: this.weaponReloading,
                 reloadProgress,
                 autoRefillProgress,
-                unlimitedAmmo: Boolean(this.unlimitedAmmo)
+                unlimitedAmmo: Boolean(this.unlimitedAmmo),
+                fieldWeaponId: this.fieldWeaponRunState?.equipped?.profileId ?? null,
+                ammoType: this.fieldWeaponRunState?.equipped?.ammoType ?? 'shared-cache'
             }
         }));
     }
@@ -22893,7 +23078,7 @@ export class ThreeGame {
             projectile?.mesh?.material?.dispose?.();
             projectile?.mesh?.geometry?.dispose?.();
         }
-        this.weaponClipAmmo = this.weaponClipSize;
+        this.weaponClipAmmo = this.fieldWeaponRunState?.equipped?.ammoInWeapon ?? this.weaponClipSize;
         this.weaponReloading = false;
         this.weaponReloadTimer = 0;
         this.weaponAmmoRefillTimer = 0;
@@ -28989,6 +29174,10 @@ export class ThreeGame {
 
     updateWeaponAmmoRefill(delta) {
         if (!Number.isFinite(delta) || delta <= 0) return;
+        if (this.fieldWeaponRunState?.equipped) {
+            this.weaponAmmoRefillTimer = 0;
+            return;
+        }
         if (this.weaponReloading || this.weaponClipAmmo >= this.weaponClipSize) {
             this.weaponAmmoRefillTimer = 0;
             return;
@@ -29036,6 +29225,13 @@ export class ThreeGame {
         if (this.weaponReloadTimer > 0) return;
 
         this.weaponReloading = false;
+        if (this.fieldWeaponRunState?.equipped) {
+            const result = reloadFieldWeapon(this.fieldWeaponRunState);
+            if (result.ok) this.fieldWeaponRunState = result.state;
+            this.syncEquippedFieldWeapon({ announce: false });
+            window.AudioManager?.play('ui_click', { volume: 0.28, playbackRate: 1.18 });
+            return;
+        }
         const availableAmmo = this.getAvailableAmmo();
         const missingAmmo = Math.max(0, this.weaponClipSize - this.weaponClipAmmo);
         const ammoLoaded = Math.min(missingAmmo, availableAmmo);
@@ -29049,6 +29245,9 @@ export class ThreeGame {
 
     getAvailableAmmo() {
         if (this.unlimitedAmmo) return 9999;
+        if (this.fieldWeaponRunState?.equipped) {
+            return Math.max(0, Math.floor(this.fieldWeaponRunState.equipped.reserveAmmo ?? 0));
+        }
         return Number.isFinite(window.pickupCounterState?.ammo)
             ? Math.max(0, Math.floor(window.pickupCounterState.ammo))
             : 0;
@@ -37255,6 +37454,15 @@ export class ThreeGame {
             const pickup = this.createPickupInstance(placement);
             parent.add(pickup);
             this.pickupMeshes.push(pickup);
+        }
+
+        if (isBoss) {
+            const rareProfiles = ['rail_marksman', 'cryo_lance', 'neon_smg'];
+            const profileId = rareProfiles[(this.snailsKilledThisRun ?? 0) % rareProfiles.length];
+            this.spawnFieldWeaponDrop?.(profileId, x + 1.15, z, {
+                sourceEncounterId: sprite.uuid,
+                reserveAmmo: getFieldWeaponDropDefinition(profileId)?.clipCapacity ?? 0
+            });
         }
     }
 

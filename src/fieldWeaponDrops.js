@@ -17,6 +17,10 @@ export const FIELD_WEAPON_DROP_CATALOG = Object.freeze({
     cryo_lance: Object.freeze({ rarity: 'rare', ammoType: FIELD_AMMO_TYPES.CRYO_CANISTERS, clipCapacity: 5, reserveCapacity: 20 })
 });
 
+export function getFieldWeaponDropDefinition(profileId) {
+    return FIELD_WEAPON_DROP_CATALOG[profileId] ?? null;
+}
+
 const clampAmmo = (value, capacity) => Math.min(capacity, Math.max(0, Math.floor(Number(value) || 0)));
 const copyPosition = (position) => ({
     x: Number(position?.x) || 0,
