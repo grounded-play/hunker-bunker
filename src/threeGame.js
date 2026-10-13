@@ -1,6 +1,13 @@
 import { getRunRating } from './runRating.js';
 import { computeRunScore } from './runScore.js';
 import { getFieldWeaponProfile } from './fieldWeapon.js';
+import { resolveSweptConeHits } from './flameWeapon.js';
+import {
+    applyHeatToBarrier,
+    createIceBarrier,
+    resolveIceBarrierModel,
+    tickIceBarrier
+} from './iceGateSystem.js';
 import {
     addFieldWeaponDrop,
     consumeFieldWeaponAmmo,
@@ -2450,6 +2457,9 @@ export class ThreeGame {
         this.fieldWeaponRunState = createFieldWeaponRunState();
         this.fieldWeaponDropVisuals = new Map();
         this._fieldWeaponDropSequence = 0;
+        this.iceBarrierStates = new Map();
+        this.iceBarrierAnchors = new Set();
+        this.spawnedFireGateSources = new Set();
         this.carryState = createCarryState();
         this.snailsKilledThisRun = 0;
         this.runStartTime = Date.now();
@@ -9395,6 +9405,19 @@ export class ThreeGame {
         this.clearFieldWeaponDropVisuals?.();
         this.fieldWeaponRunState = resetFieldWeaponRunState(`run:${Date.now()}`);
         this._fieldWeaponDropSequence = 0;
+        this.spawnedFireGateSources?.clear?.();
+        this.iceBarrierStates?.clear?.();
+        for (const anchor of this.iceBarrierAnchors ?? []) {
+            if (!anchor?.parent) continue;
+            const barrier = createIceBarrier({
+                id: anchor.userData?.iceBarrierId,
+                worldPosition: anchor.position
+            });
+            anchor.userData.iceBarrier = barrier;
+            anchor.userData.isSolidProp = true;
+            if (barrier) this.iceBarrierStates.set(barrier.id, barrier);
+            this.syncIceBarrierVisual?.(anchor);
+        }
         this.applyWeaponUpgrades?.();
         this.carryState = resetCarryRunState(`run:${Date.now()}`, this.carryState?.installed ?? []);
         this.runOverclocks = [];
@@ -9499,6 +9522,88 @@ export class ThreeGame {
     updateFieldWeaponDrops(_delta, now = performance.now()) {
         for (const visual of this.fieldWeaponDropVisuals?.values?.() ?? []) {
             updateFieldWeaponDropVisual(visual, now * 0.001);
+        }
+    }
+
+    ensureFireGateWeaponSource(placement) {
+        const sourceId = placement?.fireGateSourceId;
+        if (!sourceId || this.spawnedFireGateSources?.has(sourceId)) return null;
+        const alreadyExists = this.fieldWeaponRunState?.worldDrops?.some((drop) => drop.sourceEncounterId === sourceId)
+            || this.fieldWeaponRunState?.equipped?.sourceEncounterId === sourceId;
+        if (alreadyExists) {
+            this.spawnedFireGateSources.add(sourceId);
+            return null;
+        }
+        const drop = this.spawnFieldWeaponDrop('flamethrower', placement.x, placement.z, {
+            reserveAmmo: 120,
+            sourceEncounterId: sourceId,
+            instanceId: `${this.fieldWeaponRunState?.runId ?? 'run'}:${sourceId}:m70`
+        });
+        if (drop) this.spawnedFireGateSources.add(sourceId);
+        return drop;
+    }
+
+    registerIceBarrierAnchor(anchor, placement) {
+        if (!anchor || !placement?.iceBarrierId) return null;
+        const barrier = this.iceBarrierStates.get(placement.iceBarrierId) ?? createIceBarrier({
+            id: placement.iceBarrierId,
+            worldPosition: { x: placement.x, z: placement.z },
+            returnRoute: { hasReturnRoute: true, type: 'same-threshold' }
+        });
+        if (!barrier) return null;
+        this.iceBarrierStates.set(barrier.id, barrier);
+        this.iceBarrierAnchors.add(anchor);
+        anchor.userData.isIceBarrier = true;
+        anchor.userData.iceBarrierId = barrier.id;
+        anchor.userData.iceBarrier = barrier;
+        anchor.userData.isSolidProp = barrier.collisionActive;
+        anchor.userData.collisionRadius = 1.05;
+        anchor.userData.iceBarrierVisualType = resolveIceBarrierModel(barrier);
+        return barrier;
+    }
+
+    async syncIceBarrierVisual(anchor) {
+        if (!anchor?.userData?.isIceBarrier || !anchor.parent) return null;
+        const desired = resolveIceBarrierModel(anchor.userData.iceBarrier);
+        anchor.userData.iceBarrierVisualType = desired;
+        const current = anchor.userData.world3dRoot;
+        if (current?.userData?.modelType === desired) return current;
+        if (current) {
+            this.world3dMixers?.delete?.(current.userData?.mixer);
+            current.userData?.dispose?.();
+            current.removeFromParent?.();
+            anchor.userData.world3dRoot = null;
+            anchor.userData.replacedBy3d = false;
+        }
+        if (!desired) {
+            anchor.userData.world3dModelType = null;
+            anchor.visible = false;
+            return null;
+        }
+        anchor.visible = true;
+        anchor.userData.world3dModelType = desired;
+        const loaded = await this.setupWorld3dReplacement(anchor, desired);
+        if (anchor.userData.iceBarrierVisualType !== desired && loaded) {
+            loaded.userData?.dispose?.();
+            loaded.removeFromParent?.();
+            if (anchor.userData.world3dRoot === loaded) anchor.userData.world3dRoot = null;
+            return this.syncIceBarrierVisual(anchor);
+        }
+        return loaded;
+    }
+
+    updateIceBarriers(delta) {
+        for (const anchor of [...(this.iceBarrierAnchors ?? [])]) {
+            if (!anchor?.parent) {
+                this.iceBarrierAnchors.delete(anchor);
+                continue;
+            }
+            const barrier = anchor.userData?.iceBarrier;
+            if (!barrier) continue;
+            const before = resolveIceBarrierModel(barrier);
+            tickIceBarrier(barrier, delta);
+            anchor.userData.isSolidProp = barrier.collisionActive;
+            if (resolveIceBarrierModel(barrier) !== before) void this.syncIceBarrierVisual(anchor);
         }
     }
 
@@ -12158,6 +12263,7 @@ export class ThreeGame {
             fp.measure('updateTerminalClockTick', () => this.updateTerminalClockTick(now));
             fp.measure('updatePickups', () => this.updatePickups(delta, now));
             fp.measure('updateFieldWeaponDrops', () => this.updateFieldWeaponDrops?.(delta, now));
+            fp.measure('updateIceBarriers', () => this.updateIceBarriers?.(delta));
             fp.measure('updateScatter', () => this.updateScatter(delta, now));
             fp.measure('updateUnderfootCrush', () => this.updateUnderfootCrush());
             fp.measure('updateMysteryBoxes', () => this.updateMysteryBoxes(delta));
@@ -29428,6 +29534,84 @@ export class ThreeGame {
         return this.fireWeaponAtCurrentAim({ source: this._canvasPointerType || 'pointer' });
     }
 
+    isFlameHitOccluded(originX, originZ, hit) {
+        if (!this.wallMeshes?.length || !(hit?.distance > 0.15)) return false;
+        const dx = hit.x - originX;
+        const dz = hit.z - originZ;
+        const length = Math.hypot(dx, dz);
+        if (!(length > 0)) return false;
+        this._projRaycaster.set(
+            new THREE.Vector3(originX, 0.55, originZ),
+            new THREE.Vector3(dx / length, 0, dz / length)
+        );
+        this._projRaycaster.far = Math.max(0.05, hit.distance - 0.2);
+        return intersectWallMeshes(this._projRaycaster, this.wallMeshes).length > 0;
+    }
+
+    spawnSweptFlame(normX, normZ, damage) {
+        const profile = this.fieldWeapon;
+        const originX = this.player?.position?.x ?? 0;
+        const originZ = this.player?.position?.z ?? 0;
+        const range = profile?.coneRange ?? 6.5;
+        const halfAngle = profile?.coneHalfAngle ?? 0.38;
+        const candidates = (this.scatterSprites ?? []).filter((target) => (
+            target?.parent
+            && !target.userData?.burstTriggered
+            && (this.isEnemyType?.(target.userData?.type) || target.userData?.isDestructibleProp)
+        ));
+        for (const barrier of this.iceBarrierAnchors ?? []) {
+            if (barrier?.parent && barrier.userData?.iceBarrier?.state !== 'melted') candidates.push(barrier);
+        }
+        const hits = resolveSweptConeHits({
+            origin: { x: originX, z: originZ },
+            direction: { x: normX, z: normZ },
+            range,
+            halfAngle,
+            targets: candidates
+        });
+        let blockedAfter = Infinity;
+        for (const hit of hits) {
+            if (hit.distance > blockedAfter || this.isFlameHitOccluded(originX, originZ, hit)) continue;
+            const target = hit.target;
+            if (target.userData?.isIceBarrier) {
+                const barrier = target.userData.iceBarrier;
+                const before = resolveIceBarrierModel(barrier);
+                applyHeatToBarrier(barrier, profile?.heatPerShot ?? 18, {
+                    onMelted: () => {
+                        this.showBunkerLine?.('THERMAL BARRIER BREACHED. CACHE ACCESS OPEN.');
+                        window.dispatchEvent(new CustomEvent('ice-barrier-melted', { detail: { id: barrier.id } }));
+                    }
+                });
+                target.userData.isSolidProp = barrier.collisionActive;
+                if (resolveIceBarrierModel(barrier) !== before) void this.syncIceBarrierVisual(target);
+                this.spawnPhysicalBurst(hit.x, hit.z, { color: 0x7dd3fc, count: 7, upward: 0.2 });
+                if (barrier.collisionActive) blockedAfter = hit.distance;
+                continue;
+            }
+            this.applyPlayerDamageToEnemy(target, damage, { element: 'fire' });
+            if (this.isEnemyType?.(target.userData?.type) && !target.userData?.burstTriggered) {
+                applyStatus(target, 'burning', profile?.burnStacks ?? 1, {
+                    source: 'flamethrower',
+                    duration: 3.5,
+                    tickDamage: 1,
+                    tickInterval: 0.7
+                });
+                target.material?.color?.setHex?.(0xff7a28);
+            }
+        }
+        this.spawnMuzzleFlash?.(originX + normX * 0.65, originZ + normZ * 0.65);
+        for (const distance of [1.4, 2.8, 4.4, 5.8]) {
+            this.spawnPhysicalBurst(
+                originX + normX * distance,
+                originZ + normZ * distance,
+                { color: distance > 4 ? 0xff5a1f : 0xffb12b, count: 3, upward: 0.18 }
+            );
+        }
+        window.dispatchEvent(new CustomEvent('flamethrower-swept', {
+            detail: { x: originX, z: originZ, dirX: normX, dirZ: normZ, range }
+        }));
+    }
+
     spawnPlayerShot(normX, normZ) {
         this.player3dOverlay?.trigger('fire');
         const classDamage = CLASS_STATS[this.playerType]?.projectileDamage ?? PROJECTILE_DAMAGE;
@@ -29476,6 +29660,11 @@ export class ThreeGame {
 
         this.recoilBloom = Math.min(0.8, (this.recoilBloom ?? 0) + 0.15);
         this.triggerCameraShake?.(0.04, 0.08);
+
+        if (this.fieldWeapon?.isSweptCone) {
+            this.spawnSweptFlame(normX, normZ, damage);
+            return;
+        }
 
         const shotAmount = (FEATURE_MULTISHOT ? (bonuses?.shotAmount ?? 0) : 0) + extraBullets;
         const spreads = this.fieldWeapon?.spreads ?? (extraBullets > 0
@@ -34942,10 +35131,15 @@ export class ThreeGame {
         // Spawn room set pieces & walkable biomechanical archway pillars
         const setPiecePlacements = this.createChunkSetPiecePlacements(chunkX, chunkY, grid);
         for (const placement of setPiecePlacements) {
+            if (placement.fireGateSourceId) {
+                this.ensureFireGateWeaponSource(placement);
+                continue;
+            }
             const propSprite = this.createScatterInstance(placement);
             if (propSprite) {
                 group.add(propSprite);
                 this.scatterSprites.push(propSprite);
+                if (placement.iceBarrierId) this.registerIceBarrierAnchor(propSprite, placement);
                 // A sibling, not a child: a prop hides itself once its GLB
                 // loads, and the env-light pool skips lights under hidden
                 // parents. breakScatterProp retires it with the prop.
@@ -35402,7 +35596,16 @@ export class ThreeGame {
                         worldDressing: planned.kind === 'ambient',
                         practicalLight: practical?.placementId === planned.id ? practical.light : null,
                         isSolidProp: planned.blocking !== false,
-                        isWallBacked
+                        isWallBacked,
+                        roomId: room.id,
+                        roomBuildId: room.buildId ?? null,
+                        anchorId: planned.anchorId ?? null,
+                        fireGateSourceId: planned.anchorId === 'fire_weapon_source'
+                            ? `${room.id}:fire-weapon-source`
+                            : null,
+                        iceBarrierId: planned.anchorId === 'fire_gate'
+                            ? `${room.id}:fire-gate`
+                            : null
                     });
                     reservedCells.add(`${planned.x},${planned.y}`);
                 }
@@ -40312,6 +40515,13 @@ export class ThreeGame {
             onCorrosionTick: (target, dmg) => {
                 this.damageSnail(target, dmg);
                 this.spawnPhysicalBurst(target.position.x, target.position.z, { color: 0x66ff66, count: 4, upward: 0.1 });
+            },
+            onBurningTick: (target, dmg) => {
+                this.damageSnail(target, dmg);
+                this.spawnPhysicalBurst(target.position.x, target.position.z, { color: 0xff6a21, count: 5, upward: 0.18 });
+            },
+            onBurningExpired: () => {
+                sprite.material?.color?.setHex?.(data.biomeTint ?? 0x88ff88);
             },
             onThaw: () => {
                 sprite.material?.color?.setHex?.(data.biomeTint ?? 0x88ff88);

@@ -5,7 +5,18 @@ const FIELD_WEAPON_PROFILES = Object.freeze({
     rail_marksman: Object.freeze({ label: 'RAIL MARKSMAN', spreads: [0], damageMultiplier: 2.1, lifetimeMultiplier: 1.65, cooldownMultiplier: 2.0 }),
     neon_smg: Object.freeze({ label: 'NEON SMG', spreads: [-0.035, 0.035], damageMultiplier: 0.42, lifetimeMultiplier: 0.75, cooldownMultiplier: 0.48 }),
     cryo_lance: Object.freeze({ label: 'CRYO LANCE', spreads: [0], damageMultiplier: 1.25, lifetimeMultiplier: 1.45, cooldownMultiplier: 1.35 }),
-    flamethrower: Object.freeze({ label: 'M-70 FLAMETHROWER', spreads: [-0.12, -0.06, 0, 0.06, 0.12], damageMultiplier: 0.38, lifetimeMultiplier: 0.52, cooldownMultiplier: 0.28, coneRange: 6.5, isSweptCone: true })
+    flamethrower: Object.freeze({
+        label: 'M-70 FLAMETHROWER',
+        spreads: [0],
+        damageMultiplier: 0.38,
+        lifetimeMultiplier: 0.52,
+        cooldownMultiplier: 0.28,
+        coneRange: 6.5,
+        coneHalfAngle: 0.38,
+        heatPerShot: 18,
+        burnStacks: 1,
+        isSweptCone: true
+    })
 });
 
 // Fabricated guns change actual projectile damage/range/cadence in the current

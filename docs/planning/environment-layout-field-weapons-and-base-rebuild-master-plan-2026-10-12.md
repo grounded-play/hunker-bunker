@@ -616,7 +616,10 @@ no persistence outside the expedition.
 - [x] staged meltable barrier and reachability-safe generation (`src/iceGateSystem.js`);
 - [x] bind the physical M70, hinged case, fuel canister, and three heat-state ice GLBs to their
   authoritative weapon/drop/barrier catalogs;
-- first optional fire-gated cache, then one authored alternate route.
+- [x] first optional cryo fire-gated cache: a room-within-a-room whose only reward threshold is
+  staged ice, with a physical open-case M-70 source guaranteed on the reachable approach side
+  (`src/data/roomBuilds.js`, `src/threeGame.js`, `src/flameWeapon.js`);
+- remaining: one authored alternate-route gate and host-authoritative co-op heat/status events.
 
 Exit: fire damages and burns valid enemies, respects cover, melts only marked ice, cannot create an
 unwinnable seed, and stays within the projectile/FX frame budget.

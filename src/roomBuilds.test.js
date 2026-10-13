@@ -46,7 +46,7 @@ describe('ROOM_BUILD_CATALOG', () => {
     it('has exactly the vertical-slice families the plan requires', () => {
         const families = ROOM_BUILD_CATALOG.map((build) => build.family).sort();
         expect(families).toEqual([
-            'armory', 'cache', 'engineering', 'engineering', 'engineering', 'fabricator', 'gate',
+            'armory', 'cache', 'cache', 'engineering', 'engineering', 'engineering', 'fabricator', 'gate',
             'medical', 'o2', 'puzzle', 'security', 'trap_reward'
         ].sort());
     });
@@ -444,6 +444,21 @@ describe('ROOM_BUILD_CATALOG', () => {
         expect(build.rewardAnchors[0]).toMatchObject({ id: 'reward_vault', x: 6, y: 5 });
         expect(build.loreAnchors[0]).toMatchObject({ id: 'cache_provenance_log', x: 2, y: 5 });
         expect(shortestPatternPath(build.pattern, vault, { x: 2, y: 5 })).toBeLessThan(Infinity);
+    });
+
+    it('locks the cryo cache behind one ice threshold with its M-70 source outside', () => {
+        const build = ROOM_BUILD_CATALOG.find((entry) => entry.id === 'fire_gate_cache');
+        const approach = computeApproachPoint(build);
+        const source = build.interactionAnchors.find(({ id }) => id === 'fire_weapon_source');
+        const gate = build.interactionAnchors.find(({ id }) => id === 'fire_gate');
+        const reward = build.rewardAnchors.find(({ id }) => id === 'fire_cache');
+        expect(build).toMatchObject({ family: 'cache', biomeEligibility: ['cryo'], tierEligibility: [2, 3, 4] });
+        expect(shortestPatternPath(build.pattern, approach, source)).toBeLessThan(Infinity);
+        expect(shortestPatternPath(build.pattern, approach, reward, new Set([`${gate.x},${gate.y}`]))).toBe(Infinity);
+        expect(shortestPatternPath(build.pattern, approach, reward)).toBeLessThan(Infinity);
+        expect(source.x).not.toBe(approach.x);
+        expect(source.y).toBeGreaterThan(gate.y);
+        expect(reward.y).toBeLessThan(gate.y);
     });
 
     it.each(ROOM_BUILD_CATALOG.map((build) => [build.id, build]))('%s is internally valid', (_, build) => {

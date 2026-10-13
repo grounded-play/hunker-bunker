@@ -704,6 +704,7 @@ const WORLD_3D_ONLY_PREFIXES = Object.freeze(['arch_', 'state_', 'fixture_', 'ki
 // placement of them found no scatter material and was silently dropped.
 const WORLD_3D_ONLY_TYPES = Object.freeze(new Set([
     'frozen_tanker', 'prop_body_human_frozen', 'prop_body_empty_exosuit', 'body_frozen_human',
+    'barrier_ice_intact', 'barrier_ice_melting', 'barrier_ice_fractured',
     'prop_autopsy_dissection_slab',
     'prop_biomech_sphincter_hatch_vent',
     'prop_biomech_spore_umbilical_cable',

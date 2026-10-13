@@ -431,6 +431,60 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         contentBudget: { structuralLarge: 0, activityZones: 1, pickupsMin: 1, enemiesMax: 0 }
     }),
     Object.freeze({
+        id: 'fire_gate_cache',
+        family: 'cache',
+        themeStyle: 'cryo-vault',
+        partitionThickness: 0.65,
+        // The cache is a closed room-within-a-room. Its single southern
+        // threshold is blocked by authored meltable ice; the M-70 source is
+        // on the approach side, so generation never asks for a weapon that is
+        // already behind the lock it opens.
+        pattern: authoredRoomPattern([
+            '...............',
+            '...............',
+            '...#########...',
+            '...#.......#...',
+            '...#.......#...',
+            '...#.......#...',
+            '...####.####...',
+            '...............',
+            '...............',
+            '...............',
+            '...............'
+        ]),
+        sockets: [{ id: 'entry', side: 's', width: 3, required: true }],
+        rotationPolicy: 'cardinal',
+        tierEligibility: [2, 3, 4],
+        biomeEligibility: ['cryo'],
+        roles: ['reward'],
+        structuralAnchors: [],
+        interactionAnchors: [
+            { id: 'fire_weapon_source', type: 'weapon_flamethrower_case', x: 10, y: 8, blocking: false },
+            { id: 'fire_gate', type: 'barrier_ice_intact', x: 7, y: 6, blocking: true }
+        ],
+        signatureAnchorId: 'fire_cache',
+        compassAnchors: { approach: 'entry', objective: 'fire_cache' },
+        coverZones: [
+            { x: 3, y: 2, w: 9, h: 1 },
+            { x: 3, y: 3, w: 1, h: 4 },
+            { x: 11, y: 3, w: 1, h: 4 }
+        ],
+        encounterZones: [],
+        rewardAnchors: [{ id: 'fire_cache', type: 'prop_bunker_supplies', x: 7, y: 4 }],
+        loreAnchors: [{ id: 'thermal_breach_log', type: 'lore_terminal', x: 9, y: 4 }],
+        hazardZones: [],
+        quietZones: [
+            { x: 4, y: 3, w: 7, h: 3 },
+            { x: 5, y: 7, w: 5, h: 4 }
+        ],
+        safeZone: true,
+        containmentBounds: { minX: 0, minY: 0, maxX: 14, maxY: 10 },
+        presentationVariants: ['frozen', 'thawing', 'breached', 'emptied'],
+        stateVariants: ['dormant', 'questActive', 'resolved'],
+        adjacency: { prefers: ['cryo'], forbids: ['camp'] },
+        contentBudget: { structuralLarge: 0, activityZones: 2, pickupsMin: 1, enemiesMax: 0 }
+    }),
+    Object.freeze({
         id: 'ring_crossing_landmark',
         family: 'gate',
         themeStyle: 'cathedral',
