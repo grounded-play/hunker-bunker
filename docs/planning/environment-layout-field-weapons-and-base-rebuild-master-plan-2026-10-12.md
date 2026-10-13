@@ -507,22 +507,22 @@ particle state, or audio handles.
 - [x] add one final composed-manifest doorway invariant across pickups, set pieces, scatter,
   and room encounters (`src/placementSafety.js`); non-solid gateway frames are the only default
   exemption;
-- add practical-light source/color debug view and 98-prop audit artifact;
-- coordinate with the audio branch through resolver hooks only.
+- [x] add practical-light source/color debug view and 98-prop audit artifact (`docs/audit/recent-98-prop-audit-2026-10-12.md`);
+- [x] coordinate with the audio branch through resolver hooks only (AudioCraft Foley & room tone beds integrated).
 
 Exit: no hero prop without a declared light/FX policy and interaction policy; no generated prop in a
 door apron; current performance and 157-test spatial suite remain green.
 
 ### Phase 1 — architecture visibility
 
-- seeded authored-template exposure budget and debug telemetry;
+- [x] seeded authored-template exposure budget and debug telemetry (`src/roomExposureBudget.js`);
 - [x] data-driven 17×16 origin chamber plus an unavoidable seven-cell-wide north service
   approach/release chamber with topology-preserving exits and modular-kit route markers
   (`src/data/crashSiteBuild.js`, `src/crashSiteBuild.js`);
 - remaining start work: offset build/tutorial side bay and runtime consumption of the declared
   half-grid bed/seal construction sockets;
 - remaining general hallway work: enforce the 5/7-cell exposure budget beyond the start;
-- wall-run planner and first bunker/cryo macro modules;
+- [x] wall-run planner and first bunker/cryo macro modules (`src/wallRunPlanner.js`);
 - [x] structural threshold support repair/validation and deterministic door presentation records;
 - [x] blast-slab, split-bulkhead, camp-barricade, and arch-guillotine families are assigned by
   room style; the arch-guillotine runtime retracts into its crown and closes downward;
@@ -533,8 +533,8 @@ has two supports and every arch passes controller clearance.
 
 ### Phase 2 — utility continuity
 
-- utility graph, room boundary ports, cable-tray sockets, powered network state;
-- downstream sever/restore behavior for a small authored utility room;
+- [x] utility graph, room boundary ports, cable-tray sockets, powered network state (`src/utilityNetworkPlanner.js`, `src/data/propSockets.js`);
+- [x] downstream sever/restore behavior for a small authored utility room;
 - extend to camps/hives after bunker profiling.
 
 Exit: one generator visibly feeds a door, two machines, and room lights; cutting a branch affects
@@ -557,8 +557,8 @@ no persistence outside the expedition.
 
 ### Phase 4 — flamethrower and fire gates
 
-- swept flame volume, fuel, burn status, resistances, visuals/audio integration;
-- staged meltable barrier and reachability-safe generation;
+- [x] swept flame volume, fuel, burn status, resistances, visuals/audio integration (`src/statusEffects.js`, `src/fieldWeapon.js`, `src/fieldWeaponDrops.js`);
+- [x] staged meltable barrier and reachability-safe generation (`src/iceGateSystem.js`);
 - first optional fire-gated cache, then one authored alternate route.
 
 Exit: fire damages and burns valid enemies, respects cover, melts only marked ice, cannot create an
@@ -569,10 +569,10 @@ unwinnable seed, and stays within the projectile/FX frame budget.
 - [x] pure one-slot carry reducer with ownership, safe drop result, compatible installation,
   run reset, and installed-module preservation (`src/carrySystem.js`);
 - [x] firing, melee, and reload inputs are refused while carrying;
-- remaining: world pickup/render sockets, placement preview, co-op event wiring, and companion
-  cover stance;
-- bed, walls, sealable door, O2 duct/regulator;
-- seal graph, leak visualization, safe-space sleep integration;
+- [x] companion cover-carrier tactical stance (`src/carrySystem.js`);
+- remaining: world pickup/render sockets, placement preview, co-op event wiring;
+- [x] bed, walls, sealable door, O2 duct/regulator definitions (`src/data/baseModules.js`);
+- [x] seal graph, leak visualization, safe-space sleep integration (`src/baseSealGraph.js`);
 - first-night camp mission and recovery fail-safes.
 
 Exit: a new campaign can recover the bed, finish a sealed room, fill it with O2, and sleep; firing

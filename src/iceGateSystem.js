@@ -126,6 +126,7 @@ export function validateFireGateReachability({
     hasReturnPath = true
 } = {}) {
     if (barriers.length === 0) return { valid: true };
+    if (!hasReturnPath) return { valid: false, reason: 'missing-return-route' };
 
     // Weapon source must spawn at or before the gate ring
     if (weaponSourceRing > gateRing) {
