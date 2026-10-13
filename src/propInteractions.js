@@ -1173,6 +1173,54 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
         }
     },
 
+    // 2026-10-12 rebuild cohort. Physical weapon/cargo pickup remains owned
+    // by its dedicated reducer; these are the placed-world machine actions.
+    base_door_sealable_bulkhead: statefulInteraction(
+        '[E] CYCLE SEALABLE BULKHEAD',
+        (state) => `BULKHEAD: ${state === 'open' ? 'PASSAGE OPEN' : 'PRESSURE SEAL ENGAGED'}.`,
+        { nextState: (_game, prop) => nextBinaryState(prop, 'open', 'closed'), solidForState: (state) => state !== 'open', sound: 'vault_open' }
+    ),
+    door_arch_guillotine_assembled: statefulInteraction(
+        '[E] CYCLE GUILLOTINE ARCH',
+        (state) => `GUILLOTINE ARCH: ${state === 'open' ? 'SLAB RETRACTED ABOVE CLEARANCE' : 'THRESHOLD BARRED'}.`,
+        { hp: 70, nextState: (_game, prop) => nextBinaryState(prop, 'open', 'closed'), solidForState: (state) => state !== 'open', sound: 'vault_open' }
+    ),
+    weapon_flamethrower_case: statefulInteraction(
+        '[E] OPEN INCENDIARY WEAPON CASE',
+        (state) => `WEAPON CASE: ${state === 'open' ? 'LID RELEASED — M70 CRADLE ACCESSIBLE' : 'LID SECURED'}.`,
+        { hp: 45, nextState: (_game, prop) => nextBinaryState(prop, 'open', 'closed'), sound: 'toolbox_open' }
+    ),
+    ship_module_navigation_core: statefulInteraction(
+        '[E] SPIN UP NAVIGATION GYRO',
+        (state) => `NAVIGATION CORE: ${state === 'working' ? 'GYRO HOLDING A STAR FIX' : 'ROTOR BRAKED'}.`,
+        { hp: 65, nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'power_hum' }
+    ),
+    ship_module_comms_transceiver: statefulInteraction(
+        '[E] SWEEP COMMS ARRAY',
+        (state) => `COMMS TRANSCEIVER: ${state === 'working' ? 'SCANNING EMERGENCY BANDS' : 'DISH PARKED'}.`,
+        { hp: 55, nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'ui_scan_ping' }
+    ),
+    ship_module_engine_manifold: statefulInteraction(
+        '[E] PURGE ENGINE MANIFOLD',
+        (state) => `ENGINE MANIFOLD: ${state === 'working' ? 'THERMAL PURGE ACTIVE' : 'VALVES CLOSED'}.`,
+        { hp: 70, nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'ambient_steam_hiss' }
+    ),
+    ship_module_life_support_core: statefulInteraction(
+        '[E] CYCLE LIFE-SUPPORT CORE',
+        (state) => `LIFE-SUPPORT CORE: ${state === 'on' ? 'AIR LOOP PRESSURIZING' : 'ISOLATED'}.`,
+        { hp: 70, nextState: (_game, prop) => nextBinaryState(prop, 'on'), sound: 'power_hum' }
+    ),
+    base_o2_atmospheric_regulator: statefulInteraction(
+        '[E] CYCLE O2 REGULATOR',
+        (state) => `O2 REGULATOR: ${state === 'on' ? 'FLOW NOMINAL' : 'FLOW LOCKED'}.`,
+        { hp: 50, nextState: (_game, prop) => nextBinaryState(prop, 'on'), sound: 'power_hum' }
+    ),
+    base_power_junction_box: statefulInteraction(
+        '[E] ROUTE BASE POWER',
+        (state) => `POWER JUNCTION: ${state === 'on' ? 'BRANCH ENERGIZED' : 'BRANCH ISOLATED'}.`,
+        { hp: 35, nextState: (_game, prop) => nextBinaryState(prop, 'on'), sound: 'power_hum' }
+    ),
+
     // 20. Cuttable Procedural Splines: Wires, Biomech Veins, Cryo Pipes, Camp Vines.
     //     Shoot them or cut them with E; either way they sever (threeGame.severSplineRun).
     spline_wire_bunker: {

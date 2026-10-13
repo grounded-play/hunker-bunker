@@ -5320,6 +5320,7 @@ export class ThreeGame {
             maxWallHp: 25
         };
         doorGroup.add(doorSlab);
+        this.bunkerBlastDoorCollisionMesh = doorSlab;
 
         // Heavy steel reinforcement ribs across the door face
         for (let i = -1; i <= 1; i += 1) {
@@ -5402,6 +5403,69 @@ export class ThreeGame {
             interior: { x: 7.1, z: 4.2 },
             exterior: { x: 7.1, z: 1.8 }
         };
+        this.upgradeBunkerBlastDoorToModel?.();
+    }
+
+    async upgradeBunkerBlastDoorToModel() {
+        if (!this.bunkerBlastDoorGroup || !this.scene?.add) return false;
+        try {
+            const framePromise = (this.createWorld3dModel?.('door_arch_guillotine_frame') ?? createWorld3dModel('door_arch_guillotine_frame'))
+                .catch(() => null);
+            const slabPromise = (this.createWorld3dModel?.('door_arch_guillotine_slab') ?? createWorld3dModel('door_arch_guillotine_slab'))
+                .catch(() => null);
+            const [frameModel, slabModel] = await Promise.all([framePromise, slabPromise]);
+
+            const frameRoot = frameModel?.root ?? frameModel;
+            const slabRoot = slabModel?.root ?? slabModel;
+            if (!frameRoot || !slabRoot || this._destroyed || !this.bunkerBlastDoorGroup || !this.scene?.add) {
+                frameRoot?.userData?.dispose?.();
+                slabRoot?.userData?.dispose?.();
+                return false;
+            }
+
+            // Frame stays static at the portal doorway opening (9, 0, 3)
+            const frameGroup = new THREE.Group();
+            frameGroup.position.set(9, 0, 3);
+            frameGroup.add(frameRoot);
+            this.scene.add(frameGroup);
+            this.bunkerBlastDoorFrameGroup = frameGroup;
+            this.registerWorld3dPropFx?.(frameRoot);
+
+            // The moving group is positioned at the procedural slab's center;
+            // normalized GLBs are grounded, so offset by half the 2.8 m slab.
+            slabRoot.position.y = -1.4;
+            slabRoot.traverse?.((object) => {
+                if (!object.isMesh) return;
+                object.userData = {
+                    ...object.userData,
+                    isWall: true,
+                    isBunkerBlastDoor: true,
+                    worldX: 9,
+                    worldZ: 3,
+                    wallKey: '9,3'
+                };
+            });
+            this.bunkerBlastDoorGroup.add(slabRoot);
+            this.bunkerBlastDoorSlabModel = slabRoot;
+            this.registerWorld3dPropFx?.(slabRoot);
+
+            // Preserve an invisible-but-raycastable proxy. `visible=false`
+            // would also make Three.Raycaster skip the mesh.
+            for (const child of this.bunkerBlastDoorGroup.children) {
+                if (child === slabRoot || !child.isMesh) continue;
+                if (child.userData?.isBunkerBlastDoor) {
+                    child.material.colorWrite = false;
+                    child.material.depthWrite = false;
+                } else if (child.material !== this._bunkerDoorBarMat) child.visible = false;
+            }
+            // The authored frame now owns the visible red practical. Detach
+            // the provisional light so the fixed pool does not rank both.
+            this._bunkerDoorStatusLight?.removeFromParent?.();
+            return true;
+        } catch (err) {
+            console.warn('[bunker-blast-door] 3d model upgrade failed, keeping procedural meshes', err);
+            return false;
+        }
     }
 
     setupBaseDefenseTurret() {
@@ -45054,6 +45118,7 @@ export class ThreeGame {
     }
 
     destroy() {
+        this._destroyed = true;
         this.propDebrisPrewarm?.dispose();
         this.clearCompanions();
         this.applyMilestoneBossRuntimeEvent?.({ type: MILESTONE_BOSS_EVENT_TYPES.QUIT });
@@ -45260,6 +45325,16 @@ export class ThreeGame {
             this.scene.remove(this.o2BubbleObjects.light);
             this.o2BubbleObjects = null;
         }
+        for (const root of [this.bunkerBlastDoorSlabModel, this.bunkerBlastDoorFrameGroup?.children?.[0]]) {
+            if (!root) continue;
+            this.disposeWorld3dPropFx?.(root);
+            this.disposeWorld3dPropExperience?.(root);
+            root.userData?.dispose?.();
+            root.removeFromParent?.();
+        }
+        this.bunkerBlastDoorFrameGroup?.removeFromParent?.();
+        this.bunkerBlastDoorSlabModel = null;
+        this.bunkerBlastDoorFrameGroup = null;
         this.baseLights?.dispose();
         this.removeMenuGyroListeners();
         this.gpuFrameTimer?.dispose?.();

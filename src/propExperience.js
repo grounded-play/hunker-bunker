@@ -28,6 +28,8 @@ const mechanism = (color, behaviors = ['use', 'damage']) => freezeProfile({
     presentation: { acknowledgeColor: color, acknowledgeDuration: 0.45, acknowledgeIntensity: 1.2 }
 });
 
+const passive = (behaviors) => freezeProfile({ behaviors });
+
 export const PROP_EXPERIENCE_PROFILES = Object.freeze({
     life_arcade_cabinet: terminal(0x55d9ff, { intensity: 2.1 }),
     life_surgical_lamp: terminal(0xe9fff4, { duration: 0.35, intensity: 1.5 }),
@@ -146,7 +148,30 @@ export const PROP_EXPERIENCE_PROFILES = Object.freeze({
     life_route_map_table: terminal(0x55d9ff),
     life_tactile_console: terminal(0x76d95c),
     life_assimilated_desk: terminal(0x76d95c),
-    life_cochlear_intercom: terminal(0xf59e0b, { duration: 0.4, intensity: 1.8 })
+    life_cochlear_intercom: terminal(0xf59e0b, { duration: 0.4, intensity: 1.8 }),
+
+    // 2026-10-12 Rebuild cohort: Doors, base modules, ship salvage, weapons & barriers
+    base_door_sealable_bulkhead: mechanism(0x38bdf8, ['use', 'ambient', 'damage']),
+    door_arch_guillotine_assembled: mechanism(0xff4433, ['use', 'ambient', 'damage']),
+    weapon_flamethrower_case: mechanism(0xf59e0b, ['use', 'inspect', 'damage']),
+    ship_module_navigation_core: mechanism(0x38bdf8, ['use', 'ambient', 'damage']),
+    ship_module_comms_transceiver: mechanism(0x22c55e, ['use', 'ambient', 'damage']),
+    ship_module_engine_manifold: terminal(0xf97316, { duration: 0.45, intensity: 2.0 }),
+    ship_module_life_support_core: terminal(0x38bdf8, { duration: 0.5, intensity: 2.2 }),
+    base_o2_atmospheric_regulator: terminal(0x38bdf8, { duration: 0.4, intensity: 2.0 }),
+    base_o2_overhead_duct: terminal(0x22c55e, { duration: 0.3, intensity: 1.5 }),
+    base_power_junction_box: terminal(0xfacc15, { duration: 0.45, intensity: 2.2 }),
+    base_cot_installed: passive(['use', 'sleep-anchor']),
+    carry_field_cot_folded: passive(['carry', 'inspect']),
+    weapon_flamethrower_m70: passive(['pickup', 'inspect']),
+    weapon_fuel_canister_heavy: passive(['pickup', 'inspect']),
+    barrier_ice_intact: passive(['ambient', 'fire-damage']),
+    barrier_ice_fractured: passive(['ambient', 'fire-damage']),
+    barrier_ice_melting: passive(['ambient', 'fire-damage']),
+    wall_macro_buttress_3: passive(['structural', 'damage']),
+    wall_macro_straight_4: passive(['structural', 'damage']),
+    door_arch_guillotine_frame: passive(['structural']),
+    door_arch_guillotine_slab: passive(['structural', 'damage'])
 });
 
 const BASE_ENVIRONMENT_TYPES = new Set([
@@ -157,7 +182,7 @@ const BASE_ENVIRONMENT_TYPES = new Set([
 export function isEnvironmentExperienceType(type) {
     if (typeof type !== 'string') return false;
     if (BASE_ENVIRONMENT_TYPES.has(type)) return true;
-    return /^(prop_|life_|scatter_|state_|arch_|fixture_|body_)/.test(type);
+    return /^(prop_|life_|scatter_|state_|arch_|fixture_|body_|base_|barrier_|carry_|door_|ship_|wall_|weapon_)/.test(type);
 }
 
 function inferredProfile(type) {

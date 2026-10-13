@@ -467,7 +467,30 @@ export const WORLD_3D_MODELS = Object.freeze({
     suture_mercy_cocoon_canopy: { url: '/3d/runtime/new3ds/suture_mercy_cocoon_canopy.glb', height: 2.0, maxSpan: 2.4, yaw: 0 },
     tank_orbital_siege_cannon: { url: '/3d/runtime/new3ds/tank_orbital_siege_cannon.glb', height: 3.0, maxSpan: 4.5, yaw: 0 },
     vass_acoustic_resonator_tank: { url: '/3d/runtime/new3ds/vass_acoustic_resonator_tank.glb', height: 2.3, yaw: 0 },
-    vass_hybrid_embryo_incubator: { url: '/3d/runtime/new3ds/vass_hybrid_embryo_incubator.glb', height: 2.1, yaw: 0 }
+    vass_hybrid_embryo_incubator: { url: '/3d/runtime/new3ds/vass_hybrid_embryo_incubator.glb', height: 2.1, yaw: 0 },
+
+    // 2026-10-12 Weapons, base rebuild, architecture, and ship modules
+    barrier_ice_fractured: { url: '/3d/runtime/new3ds/barrier_ice_fractured.glb', height: 2.7, span: 2.4, yaw: 0 },
+    barrier_ice_intact: { url: '/3d/runtime/new3ds/barrier_ice_intact.glb', height: 2.7, span: 2.4, yaw: 0 },
+    barrier_ice_melting: { url: '/3d/runtime/new3ds/barrier_ice_melting.glb', height: 2.7, span: 2.4, yaw: 0 },
+    base_cot_installed: { url: '/3d/runtime/new3ds/base_cot_installed.glb', height: 0.65, span: 2.1, yaw: 0 },
+    base_door_sealable_bulkhead: { url: '/3d/runtime/new3ds/base_door_sealable_bulkhead.glb', height: 2.4, span: 1.8, yaw: 0 },
+    base_o2_atmospheric_regulator: { url: '/3d/runtime/new3ds/base_o2_atmospheric_regulator.glb', height: 1.6, span: 1.3, yaw: 0 },
+    base_o2_overhead_duct: { url: '/3d/runtime/new3ds/base_o2_overhead_duct.glb', height: 0.35, span: 1.0, yaw: 0 },
+    base_power_junction_box: { url: '/3d/runtime/new3ds/base_power_junction_box.glb', height: 0.7, span: 0.55, yaw: 0 },
+    carry_field_cot_folded: { url: '/3d/runtime/new3ds/carry_field_cot_folded.glb', height: 0.35, span: 1.1, yaw: 0 },
+    door_arch_guillotine_assembled: { url: '/3d/runtime/new3ds/door_arch_guillotine_assembled.glb', height: 4.2, span: 2.4, yaw: 0 },
+    door_arch_guillotine_frame: { url: '/3d/runtime/new3ds/door_arch_guillotine_frame.glb', height: 4.2, span: 2.4, yaw: 0 },
+    door_arch_guillotine_slab: { url: '/3d/runtime/new3ds/door_arch_guillotine_slab.glb', height: 3.0, span: 2.2, yaw: 0 },
+    ship_module_comms_transceiver: { url: '/3d/runtime/new3ds/ship_module_comms_transceiver.glb', height: 2.0, span: 1.4, yaw: 0 },
+    ship_module_engine_manifold: { url: '/3d/runtime/new3ds/ship_module_engine_manifold.glb', height: 1.2, span: 1.5, yaw: 0 },
+    ship_module_life_support_core: { url: '/3d/runtime/new3ds/ship_module_life_support_core.glb', height: 1.8, span: 1.5, yaw: 0 },
+    ship_module_navigation_core: { url: '/3d/runtime/new3ds/ship_module_navigation_core.glb', height: 1.4, span: 1.25, yaw: 0 },
+    wall_macro_buttress_3: { url: '/3d/runtime/new3ds/wall_macro_buttress_3.glb', height: 2.8, span: 3.0, yaw: 0 },
+    wall_macro_straight_4: { url: '/3d/runtime/new3ds/wall_macro_straight_4.glb', height: 2.8, span: 4.0, yaw: 0 },
+    weapon_flamethrower_case: { url: '/3d/runtime/new3ds/weapon_flamethrower_case.glb', height: 0.40, span: 1.45, yaw: 0 },
+    weapon_flamethrower_m70: { url: '/3d/runtime/new3ds/weapon_flamethrower_m70.glb', height: 0.42, span: 1.2, yaw: 0 },
+    weapon_fuel_canister_heavy: { url: '/3d/runtime/new3ds/weapon_fuel_canister_heavy.glb', height: 0.70, span: 0.55, yaw: 0 }
 });
 
 // Metric-scale set-piece shells are deliberately separate from prop models.

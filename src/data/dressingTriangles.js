@@ -247,5 +247,28 @@ export const DRESSING_TRIANGLES = Object.freeze({
     suture_mercy_cocoon_canopy: 25000,
     tank_orbital_siege_cannon: 25000,
     vass_acoustic_resonator_tank: 25000,
-    vass_hybrid_embryo_incubator: 25000
+    vass_hybrid_embryo_incubator: 25000,
+
+    // 2026-10-12 Weapons, base rebuild, architecture, and ship modules
+    barrier_ice_fractured: 25000,
+    barrier_ice_intact: 25000,
+    barrier_ice_melting: 25000,
+    base_cot_installed: 12000,
+    base_door_sealable_bulkhead: 18000,
+    base_o2_atmospheric_regulator: 15000,
+    base_o2_overhead_duct: 9999,
+    base_power_junction_box: 12000,
+    carry_field_cot_folded: 10000,
+    door_arch_guillotine_assembled: 34999,
+    door_arch_guillotine_frame: 25000,
+    door_arch_guillotine_slab: 15000,
+    ship_module_comms_transceiver: 22000,
+    ship_module_engine_manifold: 25000,
+    ship_module_life_support_core: 25000,
+    ship_module_navigation_core: 22000,
+    wall_macro_buttress_3: 25000,
+    wall_macro_straight_4: 25000,
+    weapon_flamethrower_case: 12000,
+    weapon_flamethrower_m70: 15000,
+    weapon_fuel_canister_heavy: 10000
 });

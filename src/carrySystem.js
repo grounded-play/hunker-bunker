@@ -1,3 +1,5 @@
+import { getBaseModuleDefinition } from './data/baseModules.js';
+
 const copyPosition = (position) => ({
     x: Number(position?.x) || 0,
     z: Number(position?.z) || 0
@@ -16,9 +18,11 @@ export function createCarryObject({
     carrySocket = 'both-hands',
     buildTags = [],
     condition = 1,
+    modelType = null,
     runId = null
 } = {}) {
     if (!instanceId || !definitionId) return null;
+    const moduleDef = getBaseModuleDefinition(definitionId);
     return {
         instanceId: String(instanceId),
         definitionId,
@@ -26,6 +30,7 @@ export function createCarryObject({
         massClass,
         worldPosition: copyPosition(worldPosition),
         carrySocket,
+        modelType: modelType ?? moduleDef?.carryModelType ?? moduleDef?.modelType ?? null,
         buildTags: [...new Set(buildTags)].sort(),
         condition: Math.min(1, Math.max(0, Number(condition) || 0)),
         carrierPlayerId: null,

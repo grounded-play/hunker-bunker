@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import * as THREE from 'three';
 import { ThreeGame } from './threeGame.js';
 import { CHUNK_SIZE } from './tileCatalog.js';
 import { CRASH_SITE_BUILD } from './data/crashSiteBuild.js';
@@ -145,6 +146,41 @@ describe('clearSpawnArea — door/portal alignment', () => {
         });
         expect(game.bunkerBlastDoorGroup.position.y).toBe(1.4);
         expect(game.bunkerBlastDoorGroup.visible).toBe(true);
+    });
+
+    it('fits authored frame/slab art while retaining an invisible raycast proxy', async () => {
+        const scene = new THREE.Group();
+        const doorGroup = new THREE.Group();
+        doorGroup.position.set(9, 1.4, 3);
+        const proxy = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial());
+        proxy.userData.isBunkerBlastDoor = true;
+        const rib = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial());
+        doorGroup.add(proxy, rib);
+        scene.add(doorGroup);
+        const provisionalLight = new THREE.PointLight(0xff0000, 1, 3);
+        scene.add(provisionalLight);
+        const roots = new Map();
+        const game = {
+            scene,
+            bunkerBlastDoorGroup: doorGroup,
+            _bunkerDoorStatusLight: provisionalLight,
+            createWorld3dModel: async (type) => {
+                const root = new THREE.Group();
+                root.name = type;
+                root.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial()));
+                roots.set(type, root);
+                return root;
+            }
+        };
+
+        expect(await ThreeGame.prototype.upgradeBunkerBlastDoorToModel.call(game)).toBe(true);
+        expect(roots.get('door_arch_guillotine_frame').parent.position.toArray()).toEqual([9, 0, 3]);
+        expect(roots.get('door_arch_guillotine_slab').parent).toBe(doorGroup);
+        expect(roots.get('door_arch_guillotine_slab').position.y).toBe(-1.4);
+        expect(proxy.visible).toBe(true);
+        expect(proxy.material.colorWrite).toBe(false);
+        expect(rib.visible).toBe(false);
+        expect(provisionalLight.parent).toBeNull();
     });
 
     it('forces the shared north edge portal to the authored hallway center', () => {

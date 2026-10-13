@@ -55,7 +55,8 @@ const WORLD_CATEGORY_KEYS = Object.freeze([
     ['FUNGAL PROPS', 'FUNGAL_PROPS'],
     ['CRYO PROPS', 'CRYO_PROPS'],
     ['RUINED INDUSTRIAL PROPS', 'RUINED_INDUSTRIAL_PROPS'],
-    ['LIVED-IN PROPS', 'LIVED_IN_PROPS']
+    ['LIVED-IN PROPS', 'LIVED_IN_PROPS'],
+    ['BASE REBUILD KIT', 'BASE_REBUILD_KIT']
 ]);
 
 const byId = (a, b) => String(a).localeCompare(String(b), 'en', { numeric: true });

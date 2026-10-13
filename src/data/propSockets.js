@@ -99,6 +99,31 @@ export const PROP_SOCKET_REGISTRY = Object.freeze({
     prop_fabricator_station: Object.freeze([
         { id: 'power_in', type: 'cable', pos: [-0.4, 0.3, -0.3], normal: [0, 0, -1], radius: 0.035, sides: 4, vAtlasOffset: 0.25 },
         { id: 'coolant_in', type: 'pipe', pos: [0.4, 0.3, -0.3], normal: [0, 0, -1], radius: 0.045, sides: 6, vAtlasOffset: 0.75 }
+    ]),
+
+    // 2026-10-12 Base rebuild & ship modules
+    base_power_junction_box: Object.freeze([
+        { id: 'power_in', type: 'cable', pos: [0.0, -0.32, 0.0], normal: [0, -1, 0], radius: 0.03, sides: 4, vAtlasOffset: 0.25 },
+        { id: 'power_out', type: 'cable', pos: [0.0, 0.32, 0.0], normal: [0, 1, 0], radius: 0.03, sides: 4, vAtlasOffset: 0.25 }
+    ]),
+    base_o2_atmospheric_regulator: Object.freeze([
+        { id: 'power_in', type: 'cable', pos: [0.35, -0.4, 0.0], normal: [1, 0, 0], radius: 0.03, sides: 4, vAtlasOffset: 0.25 },
+        { id: 'duct_out', type: 'pipe', pos: [0.0, 0.75, 0.0], normal: [0, 1, 0], radius: 0.05, sides: 6, vAtlasOffset: 0.75 }
+    ]),
+    base_o2_overhead_duct: Object.freeze([
+        { id: 'duct_in', type: 'pipe', pos: [-0.48, 0.0, 0.0], normal: [-1, 0, 0], radius: 0.05, sides: 6, vAtlasOffset: 0.75 },
+        { id: 'duct_out', type: 'pipe', pos: [0.48, 0.0, 0.0], normal: [1, 0, 0], radius: 0.05, sides: 6, vAtlasOffset: 0.75 }
+    ]),
+    wall_macro_straight_4: Object.freeze([
+        { id: 'tray_in', type: 'cable', pos: [-1.95, 0.4, 0.0], normal: [-1, 0, 0], radius: 0.04, sides: 4, vAtlasOffset: 0.25 },
+        { id: 'tray_out', type: 'cable', pos: [1.95, 0.4, 0.0], normal: [1, 0, 0], radius: 0.04, sides: 4, vAtlasOffset: 0.25 }
+    ]),
+    ship_module_life_support_core: Object.freeze([
+        { id: 'duct_out', type: 'pipe', pos: [0.0, 0.85, 0.0], normal: [0, 1, 0], radius: 0.06, sides: 6, vAtlasOffset: 0.75 },
+        { id: 'power_in', type: 'cable', pos: [0.0, -0.4, 0.0], normal: [0, -1, 0], radius: 0.04, sides: 4, vAtlasOffset: 0.25 }
+    ]),
+    ship_module_engine_manifold: Object.freeze([
+        { id: 'fuel_in', type: 'pipe', pos: [0.0, -0.5, 0.0], normal: [0, -1, 0], radius: 0.06, sides: 6, vAtlasOffset: 0.75 }
     ])
 });
 

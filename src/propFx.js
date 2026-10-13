@@ -28,12 +28,13 @@ const atBounds = (kind, bounds, values = {}) => ({ kind, bounds, ...values });
 const thermalProfile = (options = {}) => profile({
     maxDistance: options.maxDistance ?? 20,
     effects: [
-        atBounds('flame', options.flameAt ?? [0.5, 0.72, 0.5], { scale: options.scale ?? 0.5 }),
+        atBounds('flame', options.flameAt ?? [0.5, 0.72, 0.5], { anchor: PROP_FX_ANCHORS.FLAME, scale: options.scale ?? 0.5 }),
         atBounds('glow', options.glowAt ?? [0.5, 0.68, 0.5], {
-            color: options.color ?? 0xff7a24, radius: options.radius ?? 0.18
+            anchor: PROP_FX_ANCHORS.GLOW, color: options.color ?? 0xff7a24, radius: options.radius ?? 0.18
         })
     ],
     light: {
+        anchor: PROP_FX_ANCHORS.LIGHT,
         bounds: options.lightAt ?? options.glowAt ?? [0.5, 0.70, 0.5],
         color: options.color ?? 0xff7a24,
         intensity: options.intensity ?? 0.85,
@@ -47,9 +48,11 @@ const liquidProfile = (options = {}) => profile({
     maxDistance: options.maxDistance ?? 20,
     effects: [
         atBounds('water', options.surfaceAt ?? [0.5, 0.64, 0.5], {
+            anchor: PROP_FX_ANCHORS.WATER,
             color: options.color ?? 0x54cbd4, radius: options.radius ?? 0.24
         }),
         atBounds('bubbles', options.bubblesAt ?? [0.5, 0.18, 0.5], {
+            anchor: PROP_FX_ANCHORS.BUBBLES,
             color: options.bubbleColor ?? 0xb6fff5,
             count: options.count ?? 7,
             height: options.height ?? 0.48,
@@ -57,6 +60,7 @@ const liquidProfile = (options = {}) => profile({
         })
     ],
     light: options.lit === false ? null : {
+        anchor: PROP_FX_ANCHORS.LIGHT,
         bounds: options.lightAt ?? [0.5, 0.62, 0.5],
         color: options.color ?? 0x54cbd4,
         intensity: options.intensity ?? 0.55,
@@ -70,11 +74,13 @@ const poweredProfile = (options = {}) => profile({
     maxDistance: options.maxDistance ?? 18,
     effects: [
         atBounds('glow', options.glowAt ?? [0.5, 0.66, 0.56], {
+            anchor: PROP_FX_ANCHORS.GLOW,
             color: options.color ?? 0x55d9ff,
             radius: options.radius ?? 0.13,
             pulse: options.pulse ?? 0.10
         }),
         ...(options.sparks ? [atBounds('sparks', options.sparkAt ?? [0.5, 0.72, 0.53], {
+            anchor: PROP_FX_ANCHORS.SPARKS,
             color: options.sparkColor ?? 0xffb45b,
             count: options.sparkCount ?? 5,
             height: options.sparkHeight ?? 0.34,
@@ -82,6 +88,7 @@ const poweredProfile = (options = {}) => profile({
         })] : [])
     ],
     light: options.lit === false ? null : {
+        anchor: PROP_FX_ANCHORS.LIGHT,
         bounds: options.lightAt ?? options.glowAt ?? [0.5, 0.66, 0.56],
         color: options.color ?? 0x55d9ff,
         intensity: options.intensity ?? 0.42,
@@ -94,6 +101,7 @@ const poweredProfile = (options = {}) => profile({
 const ventProfile = (options = {}) => profile({
     maxDistance: options.maxDistance ?? 20,
     effects: [atBounds('steam', options.at ?? [0.5, 0.72, 0.5], {
+        anchor: PROP_FX_ANCHORS.STEAM,
         color: options.color ?? 0xc5e0e3,
         count: options.count ?? 7,
         height: options.height ?? 0.6,
@@ -105,11 +113,13 @@ const organicProfile = (options = {}) => profile({
     maxDistance: options.maxDistance ?? 18,
     effects: [
         atBounds('glow', options.glowAt ?? [0.5, 0.48, 0.5], {
+            anchor: PROP_FX_ANCHORS.GLOW,
             color: options.color ?? 0x76d95c,
             radius: options.radius ?? 0.18,
             pulse: options.pulse ?? 0.16
         }),
         ...(options.spores === false ? [] : [atBounds('spores', options.sporeAt ?? [0.5, 0.56, 0.5], {
+            anchor: PROP_FX_ANCHORS.SPORES,
             color: options.sporeColor ?? 0xb8e889,
             count: options.count ?? 5,
             height: options.height ?? 0.42,
@@ -117,6 +127,7 @@ const organicProfile = (options = {}) => profile({
         })])
     ],
     light: options.lit ? {
+        anchor: PROP_FX_ANCHORS.LIGHT,
         bounds: options.lightAt ?? options.glowAt ?? [0.5, 0.48, 0.5],
         color: options.color ?? 0x76d95c,
         intensity: options.intensity ?? 0.45,
@@ -132,12 +143,13 @@ const smoulderProfile = (options = {}) => profile({
     maxDistance: options.maxDistance ?? 22,
     effects: [
         atBounds('smoke', options.at ?? [0.5, 0.7, 0.5], {
+            anchor: PROP_FX_ANCHORS.SMOKE,
             color: options.color ?? 0x7d756c, count: options.count ?? 6, height: options.height ?? 0.9, radius: options.radius ?? 0.22
         }),
-        atBounds('glow', options.glowAt ?? [0.5, 0.45, 0.5], { color: 0xff6a18, radius: options.glowRadius ?? 0.16, pulse: 0.2 })
+        atBounds('glow', options.glowAt ?? [0.5, 0.45, 0.5], { anchor: PROP_FX_ANCHORS.GLOW, color: 0xff6a18, radius: options.glowRadius ?? 0.16, pulse: 0.2 })
     ],
     light: options.lit === false ? null : {
-        bounds: options.glowAt ?? [0.5, 0.45, 0.5], color: 0xff7a24, intensity: 0.6, distance: 2.6, decay: 2, flicker: 0.18
+        anchor: PROP_FX_ANCHORS.LIGHT, bounds: options.glowAt ?? [0.5, 0.45, 0.5], color: 0xff7a24, intensity: 0.6, distance: 2.6, decay: 2, flicker: 0.18
     }
 });
 
@@ -146,12 +158,13 @@ const coldProfile = (options = {}) => profile({
     maxDistance: options.maxDistance ?? 20,
     effects: [
         atBounds('steam', options.at ?? [0.5, 0.6, 0.5], {
+            anchor: PROP_FX_ANCHORS.STEAM,
             color: 0xd8f4ff, count: options.count ?? 6, height: options.height ?? 0.4, radius: options.radius ?? 0.24
         }),
-        ...(options.glowAt ? [atBounds('glow', options.glowAt, { color: 0x5fe3ff, radius: options.glowRadius ?? 0.12, pulse: 0.1 })] : [])
+        ...(options.glowAt ? [atBounds('glow', options.glowAt, { anchor: PROP_FX_ANCHORS.GLOW, color: 0x5fe3ff, radius: options.glowRadius ?? 0.12, pulse: 0.1 })] : [])
     ],
     light: options.glowAt ? {
-        bounds: options.glowAt, color: 0x5fe3ff, intensity: 0.7, distance: 2.6, decay: 2, pulse: 0.08
+        anchor: PROP_FX_ANCHORS.LIGHT, bounds: options.glowAt, color: 0x5fe3ff, intensity: 0.7, distance: 2.6, decay: 2, pulse: 0.08
     } : null
 });
 
@@ -351,6 +364,27 @@ const AMBIENT_PROFILES = {
         count: 3,
         lit: false
     }),
+
+    // 2026-10-12 rebuild cohort. Colors intentionally match each modeled
+    // practical source; the authored FX_* empties win over these bounds.
+    base_door_sealable_bulkhead: lampProfile({ glowAt: [0.5, 0.55, 0.75], color: 0x38bdf8, pulse: 0.16, intensity: 0.75, distance: 3.0 }),
+    door_arch_guillotine_frame: lampProfile({ glowAt: [0.15, 0.5, 0.5], color: 0xff4433, pulse: 0.28, intensity: 1.0, distance: 3.8 }),
+    door_arch_guillotine_slab: poweredProfile({ glowAt: [0.5, 0.1, 0.5], color: 0xff4433, pulse: 0.22, lit: false }),
+    door_arch_guillotine_assembled: lampProfile({ glowAt: [0.15, 0.5, 0.5], color: 0xff4433, pulse: 0.28, intensity: 1.0, distance: 3.8 }),
+    base_o2_atmospheric_regulator: poweredProfile({ glowAt: [0.5, 0.6, 0.75], color: 0x38bdf8, pulse: 0.12, intensity: 0.85, distance: 3.0 }),
+    base_o2_overhead_duct: poweredProfile({ glowAt: [0.5, 0.5, 0.75], color: 0x22c55e, pulse: 0.06, intensity: 0.35, distance: 1.8 }),
+    base_power_junction_box: poweredProfile({ glowAt: [0.5, 0.6, 0.8], color: 0xfacc15, pulse: 0.16, intensity: 0.65, distance: 2.3 }),
+    ship_module_navigation_core: poweredProfile({ glowAt: [0.5, 0.5, 0.7], color: 0x38bdf8, pulse: 0.18, intensity: 0.95, distance: 3.2 }),
+    ship_module_comms_transceiver: poweredProfile({ glowAt: [0.5, 0.75, 0.5], color: 0x22c55e, pulse: 0.32, intensity: 0.85, distance: 3.4 }),
+    ship_module_engine_manifold: thermalProfile({ flameAt: [0.5, 0.6, 0.5], glowAt: [0.5, 0.6, 0.5], color: 0xf97316, scale: 0.28, intensity: 0.8, distance: 2.8 }),
+    ship_module_life_support_core: poweredProfile({ glowAt: [0.5, 0.6, 0.5], color: 0x38bdf8, pulse: 0.14, intensity: 1.0, distance: 3.3 }),
+    wall_macro_buttress_3: lampProfile({ glowAt: [0.5, 0.4, 0.5], color: 0xff4433, pulse: 0.08, intensity: 0.45, distance: 2.2 }),
+    wall_macro_straight_4: lampProfile({ glowAt: [0.5, 0.85, 0.7], color: 0xb8e5d6, pulse: 0.035, intensity: 0.7, distance: 3.0 }),
+    weapon_flamethrower_m70: thermalProfile({ flameAt: [0.95, 0.45, 0.5], glowAt: [0.7, 0.4, 0.5], color: 0xf97316, scale: 0.18, intensity: 0.45, distance: 1.8 }),
+    weapon_fuel_canister_heavy: poweredProfile({ glowAt: [0.5, 0.75, 0.5], color: 0xf97316, pulse: 0.08, intensity: 0.35, distance: 1.6 }),
+    barrier_ice_intact: coldProfile({ at: [0.5, 0.6, 0.5], glowAt: [0.5, 0.5, 0.5], count: 5 }),
+    barrier_ice_fractured: coldProfile({ at: [0.5, 0.5, 0.5], glowAt: [0.5, 0.45, 0.5], count: 8 }),
+    barrier_ice_melting: liquidProfile({ surfaceAt: [0.5, 0.15, 0.5], bubblesAt: [0.5, 0.1, 0.5], color: 0x7dd3fc, count: 5, intensity: 0.55, distance: 2.4 }),
 
     ...profilesFor([
         'life_galley_hotplate', 'life_barrel_heater', 'life_warmth_hearth',

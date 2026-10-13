@@ -51,6 +51,54 @@ Current code coverage of those 98 props after the Phase 0 closure:
   The first four and the arch are ambient/traversal pieces; the cascade is reserved for the
   planned fire-gate system. These policies are executable in `src/data/recentWorldProps.js`.
 
+### 2026-10-12 production cohort: 20 sources, 21 runtime GLBs
+
+This follow-up cohort is now ingested rather than remaining a request list. The combined
+guillotine is generated from its frame and slab, so 20 raw files intentionally produce 21
+runtime files.
+
+| Runtime model | Runtime job | Authored contract now present |
+|---|---|---|
+| `barrier_ice_intact` | fire-gate collision/initial stage | cold glow anchor; heat-state model route |
+| `barrier_ice_fractured` | damaged fire-gate stage | cold glow/steam response; heat-state model route |
+| `barrier_ice_melting` | near-open fire-gate stage | glow and water-surface anchors; melt FX route |
+| `base_cot_installed` | first-night sleep anchor | installed module mapping and interaction anchor |
+| `carry_field_cot_folded` | two-hand tutorial cargo | cot carry-model mapping and interaction anchor |
+| `base_door_sealable_bulkhead` | player-built airtight door | `HB_DOOR_00` hinge, cyan source, open/closed solidity |
+| `door_arch_guillotine_frame` | monumental supported threshold | red crown practical and 2.4 m opening fit |
+| `door_arch_guillotine_slab` | moving threshold leaf | damage/reactive glow presentation |
+| `door_arch_guillotine_assembled` | showroom/general world gate | `HB_DOOR_00` 2.4 m vertical slide and interaction anchor |
+| `wall_macro_straight_4` | four-cell wall frontage | tray sockets and overhead practical |
+| `wall_macro_buttress_3` | three-cell silhouette break | local red practical; macro-wall mapping |
+| `base_o2_atmospheric_regulator` | room pressurization producer | duct/power sockets, cyan practical, cycle action |
+| `base_o2_overhead_duct` | connected air distribution | paired duct sockets and green status glow |
+| `base_power_junction_box` | utility branch terminator | power-in/out sockets, amber practical, route action |
+| `ship_module_navigation_core` | recoverable ship module | gyro rotor, cyan practical, spin-up action |
+| `ship_module_comms_transceiver` | recoverable ship module | scanning rotor, green practical, sweep action |
+| `ship_module_engine_manifold` | recoverable ship module | fuel socket, orange heat source, purge action |
+| `ship_module_life_support_core` | recoverable ship module/O2 source | duct socket, cyan practical, cycle action |
+| `weapon_flamethrower_case` | rare-drop reveal container | hinged lid and interaction anchor |
+| `weapon_flamethrower_m70` | physical run-only weapon | muzzle/glow anchors and field-drop mapping |
+| `weapon_fuel_canister_heavy` | unique flamethrower ammunition | pickup/glow anchors and ammo-model mapping |
+
+Automated and manual ingestion checks establish the current resource envelope:
+
+- 9,999–34,999 triangles per runtime GLB; every file is under 5 MB;
+- embedded texture sets are 2048×2048 WebP and retain base-color, normal, and packed
+  metal/roughness PBR inputs;
+- all planned `FX_*`, `socket_*`, `INTERACTION_*`, and `HB_*` nodes survive meshopt packing;
+- no baked animation clips are required: hinges, slides, and rotors use deterministic runtime
+  articulation metadata and stop updating when settled;
+- `src/propFx.js` routes visible cyan, red, amber, orange, and green modeled sources through the
+  fixed eight-light pool; all prop practicals remain shadowless;
+- `src/debugShowroom.js` and `src/debugMuseumPlan.js` expose the entire cohort together for fit,
+  PBR, pivot, and source-color review.
+
+The cohort is runtime-capable, but asset availability is not feature completion. World placement
+still needs to consume more of the base/carry module mappings, and Phase 6 still needs damaged and
+installed ship variants, character-held flamethrower mounting, melted ice aftermath, construction
+preview meshes, and split/iris/camp/damaged-shutter door families.
+
 ### Systems to extend, not replace
 
 | Capability | Existing source | Useful foundation | Missing layer |
@@ -509,6 +557,11 @@ particle state, or audio handles.
   exemption;
 - [x] add practical-light source/color debug view and 98-prop audit artifact (`docs/audit/recent-98-prop-audit-2026-10-12.md`);
 - [x] coordinate with the audio branch through resolver hooks only (AudioCraft Foley & room tone beds integrated).
+- [x] ingest and audit the 20-file 2026-10-12 production cohort, including 21 optimized runtime
+  GLBs, named effect/socket/interaction nodes, five articulated parts, and debug-showroom access;
+- [x] give powered cohort models source-colored pooled practical lighting and reserve static
+  architecture/cargo/barriers for structural, pickup, carry, or fire-damage systems instead of
+  manufacturing generic prompt interactions;
 
 Exit: no hero prop without a declared light/FX policy and interaction policy; no generated prop in a
 door apron; current performance and 157-test spatial suite remain green.
@@ -526,7 +579,9 @@ door apron; current performance and 157-test spatial suite remain green.
 - [x] structural threshold support repair/validation and deterministic door presentation records;
 - [x] blast-slab, split-bulkhead, camp-barricade, and arch-guillotine families are assigned by
   room style; the arch-guillotine runtime retracts into its crown and closes downward;
-- remaining gateway visuals: family-specific frames/materials plus split and swing animation.
+- [x] replace the start's procedural blast-door face with authored guillotine frame/slab art while
+  retaining its invisible raycast proxy and grid collision;
+- remaining gateway visuals: family-specific split, iris, camp, and damaged-shutter art/animation.
 
 Exit: a 20-seed visual tour shows recognizable starts, transitions, camps, and hives; every door
 has two supports and every arch passes controller clearance.
@@ -559,6 +614,8 @@ no persistence outside the expedition.
 
 - [x] swept flame volume, fuel, burn status, resistances, visuals/audio integration (`src/statusEffects.js`, `src/fieldWeapon.js`, `src/fieldWeaponDrops.js`);
 - [x] staged meltable barrier and reachability-safe generation (`src/iceGateSystem.js`);
+- [x] bind the physical M70, hinged case, fuel canister, and three heat-state ice GLBs to their
+  authoritative weapon/drop/barrier catalogs;
 - first optional fire-gated cache, then one authored alternate route.
 
 Exit: fire damages and burns valid enemies, respects cover, melts only marked ice, cannot create an
@@ -572,6 +629,7 @@ unwinnable seed, and stays within the projectile/FX frame budget.
 - [x] companion cover-carrier tactical stance (`src/carrySystem.js`);
 - remaining: world pickup/render sockets, placement preview, co-op event wiring;
 - [x] bed, walls, sealable door, O2 duct/regulator definitions (`src/data/baseModules.js`);
+- [x] bind installed/carry GLBs for the cot and all four recoverable ship modules;
 - [x] seal graph, leak visualization, safe-space sleep integration (`src/baseSealGraph.js`);
 - first-night camp mission and recovery fail-safes.
 

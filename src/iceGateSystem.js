@@ -20,6 +20,19 @@ export const ICE_BARRIER_DEFAULTS = Object.freeze({
     meltCoolingDelay: 1.0 // seconds of grace before cooling starts
 });
 
+export const ICE_BARRIER_STAGE_MODELS = Object.freeze({
+    [ICE_BARRIER_STATES.FROZEN]: 'barrier_ice_intact',
+    [ICE_BARRIER_STATES.MELTING]: 'barrier_ice_melting',
+    [ICE_BARRIER_STATES.FRACTURED]: 'barrier_ice_fractured',
+    [ICE_BARRIER_STATES.MELTED]: null
+});
+
+export function resolveIceBarrierModel(barrier) {
+    if (!barrier) return null;
+    if (barrier.state === ICE_BARRIER_STATES.MELTED) return null;
+    return ICE_BARRIER_STAGE_MODELS[barrier.state] ?? 'barrier_ice_intact';
+}
+
 /**
  * Creates an ice barrier run state.
  */
@@ -29,7 +42,7 @@ export function createIceBarrier({
     heatThreshold = ICE_BARRIER_DEFAULTS.heatThreshold,
     coolingRate = ICE_BARRIER_DEFAULTS.coolingRate,
     returnRoute = null,
-    propType = 'cryo_frozen_cascade'
+    propType = 'barrier_ice_intact'
 } = {}) {
     if (!id) return null;
     return {

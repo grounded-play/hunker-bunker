@@ -15,7 +15,15 @@ export const FIELD_WEAPON_DROP_CATALOG = Object.freeze({
     rail_marksman: Object.freeze({ rarity: 'rare', ammoType: FIELD_AMMO_TYPES.RAIL_CELLS, clipCapacity: 4, reserveCapacity: 16 }),
     neon_smg: Object.freeze({ rarity: 'rare', ammoType: FIELD_AMMO_TYPES.BALLISTIC, clipCapacity: 36, reserveCapacity: 144 }),
     cryo_lance: Object.freeze({ rarity: 'rare', ammoType: FIELD_AMMO_TYPES.CRYO_CANISTERS, clipCapacity: 5, reserveCapacity: 20 }),
-    flamethrower: Object.freeze({ rarity: 'rare', ammoType: FIELD_AMMO_TYPES.FUEL_TANKS, clipCapacity: 60, reserveCapacity: 240 })
+    flamethrower: Object.freeze({
+        rarity: 'rare',
+        ammoType: FIELD_AMMO_TYPES.FUEL_TANKS,
+        clipCapacity: 60,
+        reserveCapacity: 240,
+        modelType: 'weapon_flamethrower_m70',
+        caseModelType: 'weapon_flamethrower_case',
+        ammoModelType: 'weapon_fuel_canister_heavy'
+    })
 });
 
 export function getFieldWeaponDropDefinition(profileId) {
@@ -50,6 +58,9 @@ export function createFieldWeaponDrop({
         profileId,
         rarity: rarity ?? definition.rarity,
         ammoType: definition.ammoType,
+        modelType: definition.modelType ?? null,
+        caseModelType: definition.caseModelType ?? null,
+        ammoModelType: definition.ammoModelType ?? null,
         ammoInWeapon: clampAmmo(ammoInWeapon ?? definition.clipCapacity, definition.clipCapacity),
         reserveAmmo: clampAmmo(reserveAmmo, definition.reserveCapacity),
         worldPosition: copyPosition(worldPosition),
