@@ -6,8 +6,10 @@ import {
     createCarryObject,
     createCarryState,
     dropCarriedObject,
+    getCarrierTacticalStance,
     installCarriedObject,
-    resetCarryRunState
+    resetCarryRunState,
+    shouldCompanionCoverCarrier
 } from './carrySystem.js';
 
 const bed = () => createCarryObject({
@@ -56,5 +58,15 @@ describe('two-handed carry state', () => {
         expect(resetCarryRunState('run-b', result.state.installed)).toMatchObject({
             runId: 'run-b', carried: null, worldObjects: [], installed: [{ instanceId: 'bed-1', socketId: 'sleep-bay' }]
         });
+    });
+
+    it('triggers companion cover-carrier tactical stance when carrier has hands full', () => {
+        let state = addCarryObject(createCarryState('run-a'), bed()).state;
+        expect(getCarrierTacticalStance(state)).toBe('normal');
+        expect(shouldCompanionCoverCarrier(state)).toBe(false);
+
+        state = beginCarry(state, 'bed-1', 'player-a').state;
+        expect(getCarrierTacticalStance(state)).toBe('cover-carrier');
+        expect(shouldCompanionCoverCarrier(state)).toBe(true);
     });
 });

@@ -106,6 +106,14 @@ export function canUseWeaponWhileCarrying(state) {
     return !state?.carried;
 }
 
+export function getCarrierTacticalStance(state) {
+    return state?.carried ? 'cover-carrier' : 'normal';
+}
+
+export function shouldCompanionCoverCarrier(state) {
+    return Boolean(state?.carried);
+}
+
 export function resetCarryRunState(nextRunId = null, installed = []) {
     return { runId: nextRunId, carried: null, worldObjects: [], installed: [...installed] };
 }
