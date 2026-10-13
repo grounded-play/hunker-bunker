@@ -2,17 +2,20 @@ import { describe, expect, it } from 'vitest';
 import {
     addCarryObject,
     beginCarry,
+    canDashWhileCarrying,
     canUseWeaponWhileCarrying,
     companionCarrierCoverPosition,
     createCarryObject,
     createCarryState,
     deliverCarriedObject,
     dropCarriedObject,
+    getCarryMobilityProfile,
     getCarrierTacticalStance,
     installCarriedObject,
     recoverStrandedCarryObjects,
     removeMissionCarryObjects,
     resetCarryRunState,
+    shouldStaggerDropCargo,
     shouldCompanionCoverCarrier
 } from './carrySystem.js';
 
@@ -34,7 +37,19 @@ describe('two-handed carry state', () => {
         expect(result.state.worldObjects).toEqual([]);
         expect(result.state.carried).toMatchObject({ instanceId: 'bed-1', carrierPlayerId: 'player-a' });
         expect(canUseWeaponWhileCarrying(result.state)).toBe(false);
+        expect(canDashWhileCarrying(result.state)).toBe(false);
+        expect(getCarryMobilityProfile(result.state)).toMatchObject({
+            moveMultiplier: 0.72, turnMultiplier: 0.78, canSprint: false
+        });
         expect(beginCarry(result.state, 'anything', 'player-a')).toMatchObject({ ok: false, reason: 'hands-full' });
+    });
+
+    it('drops heavy cargo only for landed directional damage, never ambient drain', () => {
+        let state = addCarryObject(createCarryState('run-a'), bed()).state;
+        state = beginCarry(state, 'bed-1', 'player-a').state;
+        expect(shouldStaggerDropCargo(state, { damage: 1, hasDirectionalSource: false })).toBe(false);
+        expect(shouldStaggerDropCargo(state, { damage: 1, hasDirectionalSource: true })).toBe(true);
+        expect(shouldStaggerDropCargo(createCarryState('run-a'), { damage: 5, hasDirectionalSource: true })).toBe(false);
     });
 
     it('drops mission cargo without changing identity or letting another player own the action', () => {

@@ -92,4 +92,44 @@ describe('physical first-night cargo runtime', () => {
         }
         expect(game.canRestAt(site)).toMatchObject({ allowed: true, nextDay: 2 });
     });
+
+    it('disables sprint and dodge while carrying a heavy module', () => {
+        const game = baseGame();
+        ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
+        const cotId = game.carryState.worldObjects[0].instanceId;
+        ThreeGame.prototype.beginCarryObject.call(game, cotId);
+        game.isGameplayInputActive = () => true;
+        game.playerVitals = { o2: 100 };
+        game.sprinting = true;
+        ThreeGame.prototype.updateSprintState.call(game, 0.016);
+        expect(game._sprintMoveSpeedMult).toBe(1);
+        expect(ThreeGame.prototype.triggerGameplayDash.call(game)).toBe(false);
+        expect(game.showBunkerLine).toHaveBeenLastCalledWith('HANDS FULL — SET CARGO DOWN BEFORE DODGING.');
+    });
+
+    it('stagger-drops heavy cargo after a landed directional hit', () => {
+        const game = baseGame();
+        ThreeGame.prototype.bootstrapFirstNightBaseRecovery.call(game);
+        ThreeGame.prototype.beginCarryObject.call(game, game.carryState.worldObjects[0].instanceId);
+        Object.assign(game, {
+            performanceProfile: 'gameplay',
+            playerType: 'SCOUT',
+            playerVitals: { hp: 3, maxHp: 3 },
+            playerShieldMax: 0,
+            playerShieldHp: 0,
+            runOverclocks: [],
+            runRelics: [],
+            scatterSprites: [],
+            dynamicPuddles: [],
+            getActiveContainmentZones: () => [],
+            getActiveDoors: () => [],
+            emergencyDropCarriedObject: vi.fn(() => ({ worldPosition: { x: 0.5, z: 0.5 } })),
+            emitHealthState: vi.fn(),
+            markCombatActivity: vi.fn(),
+            showDirectionalHitIndicator: vi.fn()
+        });
+        expect(ThreeGame.prototype.takeDamage.call(game, 1, 'crawler', 2, 2)).toBe(true);
+        expect(game.emergencyDropCarriedObject).toHaveBeenCalledWith('damage-stagger');
+        expect(game.showBunkerLine).toHaveBeenLastCalledWith('IMPACT STAGGER — HEAVY CARGO DROPPED AT YOUR FEET.');
+    });
 });

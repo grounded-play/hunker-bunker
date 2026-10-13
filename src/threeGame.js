@@ -26,16 +26,19 @@ import {
 import {
     addCarryObject,
     beginCarry,
+    canDashWhileCarrying,
     canUseWeaponWhileCarrying,
     companionCarrierCoverPosition,
     createCarryObject,
     deliverCarriedObject,
     dropCarriedObject,
+    getCarryMobilityProfile,
     installCarriedObject,
     createCarryState,
     recoverStrandedCarryObjects,
     removeMissionCarryObjects,
-    resetCarryRunState
+    resetCarryRunState,
+    shouldStaggerDropCargo
 } from './carrySystem.js';
 import {
     createCarryObjectVisual,
@@ -9501,6 +9504,11 @@ export class ThreeGame {
 
     triggerGameplayDash() {
         if (!this.isGameplayInputActive()) return false;
+        if (!canDashWhileCarrying(this.carryState)) {
+            this.showBunkerLine?.('HANDS FULL — SET CARGO DOWN BEFORE DODGING.');
+            window.AudioManager?.play?.('ui_error', { volume: 0.32 });
+            return false;
+        }
         if (this.dashCooldownTimer > 0 || this.isDashing) return false;
 
         const keyAxisX = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
@@ -26244,6 +26252,25 @@ export class ThreeGame {
             }
         }));
 
+        const appliedDamage = previousHp - this.playerVitals.hp;
+        if (shouldStaggerDropCargo(this.carryState, {
+            damage: appliedDamage,
+            hasDirectionalSource: Number.isFinite(sourceX) && Number.isFinite(sourceZ)
+        })) {
+            const dropped = this.emergencyDropCarriedObject?.('damage-stagger');
+            if (dropped) {
+                this.sprinting = false;
+                this._sprintMoveSpeedMult = 1;
+                this.showBunkerLine?.('IMPACT STAGGER — HEAVY CARGO DROPPED AT YOUR FEET.');
+                this.spawnPhysicalBurst?.(dropped.worldPosition.x, dropped.worldPosition.z, {
+                    color: 0xf6c453, count: 9, upward: 0.12
+                });
+                window.dispatchEvent(new CustomEvent('carry-object-stagger-dropped', {
+                    detail: { dropped, reason, damage: appliedDamage }
+                }));
+            }
+        }
+
         if (this.playerVitals.hp === 1) {
             this.hadNearDeath = true;
         }
@@ -27840,12 +27867,16 @@ export class ThreeGame {
     }
 
     updateSprintState(_delta) {
-        const active = Boolean(this.sprinting) && this.isGameplayInputActive() && (this.playerVitals?.o2 ?? 0) > 0;
+        const mobility = getCarryMobilityProfile(this.carryState);
+        const active = Boolean(this.sprinting) && mobility.canSprint
+            && this.isGameplayInputActive() && (this.playerVitals?.o2 ?? 0) > 0;
         // Fatigue prices sprint, it never revokes it: `active` above is
         // untouched. A tired operator still sprints -- it just costs more air
         // and carries a little less of the bonus.
         const pricing = sprintPricing(this.fatigueState);
-        this._sprintMoveSpeedMult = active ? 1 + (0.6 * pricing.speedBonusScale) : 1.0;
+        this._sprintMoveSpeedMult = active
+            ? 1 + (0.6 * pricing.speedBonusScale * mobility.sprintMultiplier)
+            : 1.0;
         this._sprintO2DrainMult = active ? 2.5 * pricing.o2DrainMultiplier : 1.0;
         if (active && !this._wasSprinting) {
             if (typeof window !== 'undefined') window.AudioManager?.play('fx_scout_sprint', { volume: 0.45, bus: 'sfx' });
@@ -28206,7 +28237,8 @@ export class ThreeGame {
             const prevX = this.player.position.x;
             const prevZ = this.player.position.z;
 
-            let speed = this.moveSpeed * (this._sprintMoveSpeedMult ?? 1.0);
+            const carryMobility = getCarryMobilityProfile(this.carryState);
+            let speed = this.moveSpeed * carryMobility.moveMultiplier * (this._sprintMoveSpeedMult ?? 1.0);
             if ((this._scoutSlipstreamTimer ?? 0) > 0) {
                 speed *= 1.35;
             }
@@ -30371,7 +30403,7 @@ export class ThreeGame {
                     // 2.6-speed TANK and a 4.8-speed SCOUT and at least one of them
                     // slides. Sprint cadence is applied inside the overlay, so this
                     // is the pre-sprint ground speed.
-                    groundSpeed: this.moveSpeed,
+                    groundSpeed: this.moveSpeed * getCarryMobilityProfile(this.carryState).moveMultiplier,
                     isInjured: this.isPlayerInjured(),
                     hasAim: this.hasActiveAim,
                     moveX: visualMoveX,
@@ -32005,6 +32037,7 @@ export class ThreeGame {
         // edge turn: right stick turns the view right (2026-09-25 Deck QA:
         // it turned left).
         const stickOrbit = -(this.cameraRotationInput ?? 0);
+        const carryTurnMultiplier = getCarryMobilityProfile(this.carryState).turnMultiplier;
         if (this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person') {
             const turnSensitivity = THREE.MathUtils.clamp(
                 Number(globalThis.window?.state?.settings?.aimSensitivity) || 1,
@@ -32012,7 +32045,8 @@ export class ThreeGame {
                 2
             );
             const edgeTurn = this._mouseEdgeTurnInput ?? 0;
-            const desiredVelocity = ((stickOrbit * 2.35) + (edgeTurn * 1.85)) * turnSensitivity;
+            const desiredVelocity = ((stickOrbit * 2.35) + (edgeTurn * 1.85))
+                * turnSensitivity * carryTurnMultiplier;
             const velocityBlend = 1 - Math.exp(-delta * Math.max(7, this.cameraFollowRate * 0.55));
             this._cameraTurnVelocity += (desiredVelocity - this._cameraTurnVelocity) * velocityBlend;
             if (Math.abs(desiredVelocity) < 0.0001 && Math.abs(this._cameraTurnVelocity) < 0.005) {
@@ -32036,7 +32070,9 @@ export class ThreeGame {
             // axes around the operator.
             if (this.cameraMode !== 'third-person') {
                 this.cameraAzimuth = wrapAngle(
-                    this.cameraAzimuth + (stickOrbit * delta * 2.8) + (pointerOrbitDelta * 0.008)
+                    this.cameraAzimuth
+                    + (stickOrbit * delta * 2.8 * carryTurnMultiplier)
+                    + (pointerOrbitDelta * 0.008 * carryTurnMultiplier)
                 );
             }
         }

@@ -5,6 +5,38 @@ const copyPosition = (position) => ({
     z: Number(position?.z) || 0
 });
 
+export const CARRY_MOBILITY_PROFILES = Object.freeze({
+    light: Object.freeze({ moveMultiplier: 0.92, turnMultiplier: 0.92, canSprint: true, sprintMultiplier: 0.85, canDash: false, dropDamageThreshold: Infinity }),
+    medium: Object.freeze({ moveMultiplier: 0.82, turnMultiplier: 0.84, canSprint: false, sprintMultiplier: 0, canDash: false, dropDamageThreshold: 2 }),
+    heavy: Object.freeze({ moveMultiplier: 0.72, turnMultiplier: 0.78, canSprint: false, sprintMultiplier: 0, canDash: false, dropDamageThreshold: 1 })
+});
+
+const FREE_MOBILITY = Object.freeze({
+    moveMultiplier: 1,
+    turnMultiplier: 1,
+    canSprint: true,
+    sprintMultiplier: 1,
+    canDash: true,
+    dropDamageThreshold: Infinity
+});
+
+export function getCarryMobilityProfile(state) {
+    if (!state?.carried) return FREE_MOBILITY;
+    return CARRY_MOBILITY_PROFILES[state.carried.massClass] ?? CARRY_MOBILITY_PROFILES.medium;
+}
+
+export function shouldStaggerDropCargo(state, {
+    damage = 0,
+    hasDirectionalSource = false
+} = {}) {
+    const profile = getCarryMobilityProfile(state);
+    return Boolean(
+        state?.carried
+        && hasDirectionalSource
+        && Number(damage) >= profile.dropDamageThreshold
+    );
+}
+
 export function createCarryState(runId = null) {
     return { runId, carried: null, worldObjects: [], installed: [] };
 }
@@ -197,6 +229,10 @@ export function installCarriedObject(state, socket, { carrierPlayerId = null } =
 
 export function canUseWeaponWhileCarrying(state) {
     return !state?.carried;
+}
+
+export function canDashWhileCarrying(state) {
+    return getCarryMobilityProfile(state).canDash;
 }
 
 export function getCarrierTacticalStance(state) {

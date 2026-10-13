@@ -648,6 +648,9 @@ unwinnable seed, and stays within the projectile/FX frame budget.
 - [x] pure one-slot carry reducer with ownership, safe drop result, compatible installation,
   run reset, and installed-module preservation (`src/carrySystem.js`);
 - [x] firing, melee, and reload inputs are refused while carrying;
+- [x] mass-class mobility policy is live: light/medium/heavy cargo applies 0.92/0.82/0.72 stride,
+  proportionate turn response, medium/heavy cargo disables sprint, all two-hand cargo disables
+  dodge, and a landed directional hit safely stagger-drops heavy cargo without deleting it;
 - [x] companion cover-carrier tactical stance (`src/carrySystem.js`);
 - [x] live first-night cargo loop: the folded cot spawns beside the wreck, uses the authored carry
   GLB in world and in both hands, supports obstruction-aware safe drop, and snaps to the ship berth
