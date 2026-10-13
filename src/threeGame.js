@@ -30,6 +30,7 @@ import {
     dropCarriedObject,
     installCarriedObject,
     createCarryState,
+    recoverStrandedCarryObjects,
     resetCarryRunState
 } from './carrySystem.js';
 import {
@@ -2503,6 +2504,8 @@ export class ThreeGame {
         this.carryObjectVisuals = new Map();
         this.carriedObjectVisual = null;
         this._carryVisualLoadTokens = new Map();
+        this._missionCargoAuditTimer = 0;
+        this._carryLandmarkIds = new Set();
         this.baseAtmosphereState = createRoomAtmosphereState();
         this.baseAtmosphereSeal = null;
         this.baseAtmosphereIndicator = null;
@@ -9524,6 +9527,11 @@ export class ThreeGame {
     }
 
     resetRunDrops() {
+        const preserveCoopMissionCargo = Boolean(this.shouldCarryCoopRun?.());
+        if (preserveCoopMissionCargo && this.carryState?.carried) {
+            this.emergencyDropCarriedObject?.('coop-retry');
+        }
+        const retainedCarryState = preserveCoopMissionCargo ? this.carryState : null;
         this._carapaceArmorCredit = 0;
         this._seenEliteContacts = new Set();
         this._eliteContactCooldown = 0;
@@ -9548,7 +9556,7 @@ export class ThreeGame {
         }
         this.applyWeaponUpgrades?.();
         this.clearCarryObjectVisuals?.();
-        this.carryState = resetCarryRunState(`run:${Date.now()}`, this.carryState?.installed ?? []);
+        this.carryState = retainedCarryState ?? resetCarryRunState(`run:${Date.now()}`, this.carryState?.installed ?? []);
         this.bootstrapFirstNightBaseRecovery?.();
         this.runOverclocks = [];
         this.runRelics = [];
@@ -9920,6 +9928,120 @@ export class ThreeGame {
                 visible
             });
         }
+    }
+
+    getMissionCargoGuidance() {
+        const carried = this.carryState?.carried;
+        if (carried?.missionId) {
+            const socket = availableFirstNightSocket(this.carryState, this.getFirstNightBasePlan?.(), carried);
+            if (!socket) return null;
+            const definition = getBaseModuleDefinition(carried.definitionId);
+            return {
+                id: carried.instanceId,
+                x: socket.transform.x,
+                z: socket.transform.z,
+                label: `INSTALL ${definition?.label ?? 'MISSION CARGO'}`,
+                mode: 'cargo-install'
+            };
+        }
+        if (!this.player) return null;
+        let nearest = null;
+        let nearestDistance = Infinity;
+        for (const object of this.carryState?.worldObjects ?? []) {
+            if (!object.missionId) continue;
+            const distance = Math.hypot(
+                object.worldPosition.x - this.player.position.x,
+                object.worldPosition.z - this.player.position.z
+            );
+            if (distance >= nearestDistance) continue;
+            const definition = getBaseModuleDefinition(object.definitionId);
+            nearestDistance = distance;
+            nearest = {
+                id: object.instanceId,
+                x: object.worldPosition.x,
+                z: object.worldPosition.z,
+                label: `RECOVER ${definition?.label ?? 'MISSION CARGO'}`,
+                mode: 'mission-cargo'
+            };
+        }
+        return nearest;
+    }
+
+    updateMissionCargoRecovery(delta) {
+        this._missionCargoAuditTimer = (this._missionCargoAuditTimer ?? 0) + Math.max(0, Number(delta) || 0);
+        if (this._missionCargoAuditTimer < 1) return [];
+        this._missionCargoAuditTimer %= 1;
+        const audit = recoverStrandedCarryObjects(this.carryState, {
+            requiredFailedChecks: 3,
+            isNavigable: (position) => {
+                if (!Number.isFinite(position?.x) || !Number.isFinite(position?.z)) return false;
+                const x = Math.round(position.x);
+                const z = Math.round(position.z);
+                if (this.isSnailTileWalkable && !this.isSnailTileWalkable(x, z)) return false;
+                return this.canOccupyPosition?.(position.x, position.z) ?? true;
+            }
+        });
+        this.carryState = audit.state;
+        if (!audit.recovered.length) return [];
+        this.reconcileCarryObjectVisuals?.();
+        for (const object of audit.recovered) {
+            const definition = getBaseModuleDefinition(object.definitionId);
+            this.spawnPhysicalBurst?.(object.worldPosition.x, object.worldPosition.z, {
+                color: 0xf6c453, count: 10, upward: 0.16
+            });
+            window.dispatchEvent(new CustomEvent('mission-cargo-recovered', {
+                detail: { instanceId: object.instanceId, recoveryCount: object.recoveryCount, position: object.worldPosition }
+            }));
+            this.showBunkerLine?.(`${definition?.label ?? 'MISSION CARGO'} REACQUIRED AT LAST SAFE STAGING POINT.`);
+        }
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.46, playbackRate: 0.78 });
+        return audit.recovered;
+    }
+
+    emergencyDropCarriedObject(reason = 'carrier-unavailable') {
+        if (!this.carryState?.carried) return null;
+        const carried = this.carryState.carried;
+        const position = this.findSafeCarryDropPosition?.()
+            ?? carried.lastSafePosition
+            ?? carried.sourcePosition;
+        const result = dropCarriedObject(this.carryState, position, {
+            carrierPlayerId: this.multiplayerLocalPlayerId ?? 'local'
+        });
+        if (!result.ok) return null;
+        this.carryState = result.state;
+        const root = this.carriedObjectVisual;
+        this.carriedObjectVisual = null;
+        if (root) this.carryObjectVisuals.set(result.dropped.instanceId, root);
+        this.reconcileCarryObjectVisuals?.();
+        window.dispatchEvent(new CustomEvent('carry-object-emergency-dropped', {
+            detail: { reason, dropped: result.dropped }
+        }));
+        return result.dropped;
+    }
+
+    syncMissionCargoMapLandmarks() {
+        if (!this.explorationTracker) return [];
+        const activeIds = new Set();
+        for (const object of this.carryState?.worldObjects ?? []) {
+            if (!object.missionId) continue;
+            const id = `mission-cargo:${object.instanceId}`;
+            activeIds.add(id);
+            const definition = getBaseModuleDefinition(object.definitionId);
+            this.explorationTracker.registerLandmark(id, {
+                x: object.worldPosition.x,
+                z: object.worldPosition.z,
+                label: definition?.label ?? 'MISSION CARGO',
+                type: 'objective',
+                icon: 'objective',
+                priority: 850,
+                revealOnMap: true
+            });
+        }
+        for (const id of this._carryLandmarkIds ?? []) {
+            if (!activeIds.has(id)) this.explorationTracker.removeLandmark(id);
+        }
+        this._carryLandmarkIds = activeIds;
+        return [...activeIds];
     }
 
     getNearestCarryObject(maxDistance = 2.2) {
@@ -12686,6 +12808,7 @@ export class ThreeGame {
             fp.measure('updatePickups', () => this.updatePickups(delta, now));
             fp.measure('updateFieldWeaponDrops', () => this.updateFieldWeaponDrops?.(delta, now));
             fp.measure('updateCarryObjectVisuals', () => this.updateCarryObjectVisuals?.(delta, now));
+            fp.measure('updateMissionCargoRecovery', () => this.updateMissionCargoRecovery?.(delta));
             fp.measure('updateBaseAtmosphere', () => this.updateBaseAtmosphere?.(delta, now));
             fp.measure('updateIceBarriers', () => this.updateIceBarriers?.(delta));
             fp.measure('updateScatter', () => this.updateScatter(delta, now));
@@ -12980,6 +13103,10 @@ export class ThreeGame {
     // The optional objective that rides alongside the primary one. Additive:
     // consumers that only read `label` are unaffected.
     getLoopSecondary() {
+        const cargo = this.getMissionCargoGuidance?.();
+        if (cargo) {
+            return { key: 'mission-cargo', id: cargo.id, label: cargo.label };
+        }
         if (this._blackBoxMarkerActive && this._blackBoxState) {
             return { key: 'blackbox', label: 'OPTIONAL · RECOVER BLACK BOX' };
         }
@@ -12993,7 +13120,7 @@ export class ThreeGame {
         // The dedupe key has to include the secondary, or picking up the black
         // box would leave its line on screen until the primary happened to
         // change.
-        const dedupe = `${key}|${secondary?.key ?? ''}`;
+        const dedupe = `${key}|${secondary?.key ?? ''}|${secondary?.id ?? ''}`;
         if (!force && dedupe === this._lastLoopStepKey) return;
         this._lastLoopStepKey = dedupe;
         window.dispatchEvent(new CustomEvent('loop-step-changed', {
@@ -23864,6 +23991,20 @@ export class ThreeGame {
 
         this.syncActiveCampQuestObjectiveTarget?.();
 
+        const cargo = this.getMissionCargoGuidance?.();
+        if (cargo) {
+            const dx = cargo.x - this.player.position.x;
+            const dz = cargo.z - this.player.position.z;
+            const distance = Math.hypot(dx, dz);
+            return {
+                active: true,
+                mode: cargo.mode,
+                label: cargo.label,
+                angle: this.planarAngleTo(dx, dz, distance),
+                distance
+            };
+        }
+
         if (this._blackBoxMarkerActive && this._blackBoxState?.active) {
             const dx = this._blackBoxState.x - this.player.position.x;
             const dz = this._blackBoxState.z - this.player.position.z;
@@ -24079,6 +24220,7 @@ export class ThreeGame {
         // gameplay update that happened to run first.
         this.ensureAct2Camps?.();
         this.ensureHiveSites?.();
+        this.syncMissionCargoMapLandmarks?.();
 
         if (this.explorationTracker) {
             this.explorationTracker.registerLandmark('home_base', {
@@ -25585,6 +25727,10 @@ export class ThreeGame {
     handleDeath(reason = 'hazard') {
         if (this.isPlayerDead) return;
         if (this.performanceProfile && this.performanceProfile !== 'gameplay') return;
+        // Mission-critical cargo survives the carrier. Resolve its world
+        // position before latching death/input state so a retry, squadmate,
+        // or map marker can still recover the exact same instance.
+        this.emergencyDropCarriedObject?.(`death:${reason}`);
         this.isPlayerDead = true;
         // The results screen names the cause (src/deathReport.js).
         this._lastDeathReason = reason;

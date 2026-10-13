@@ -651,8 +651,11 @@ unwinnable seed, and stays within the projectile/FX frame budget.
 - [x] strict edge-addressed seal validation (one wall/door per perimeter edge), deterministic cabin
   fill/depressurization, sleep pressure threshold, and a five-segment emissive berth gauge with a
   practical status light (`src/baseSealGraph.js`, `src/baseAtmospherePresentation.js`);
-- remaining: camp-authored cot handoff, lost-cargo recovery/map marker, damage/repair states for the
-  recovered wall and door, and hive logistics variants.
+- [x] mission cargo cannot disappear silently: every loose piece has an amber world beacon, compass
+  target, tactical-map landmark, authored/last-safe staging positions, three-check off-navigation
+  recovery, and death/compatible co-op retry drops that preserve the same instance;
+- remaining: camp-authored cot handoff, damage/repair states for the recovered wall and door, and
+  hive logistics variants.
 
 Exit: a new campaign can recover the bed, finish a sealed room, fill it with O2, and sleep; firing
 is impossible while carrying; the partner/companion can defend the carrier.

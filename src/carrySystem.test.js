@@ -9,6 +9,7 @@ import {
     dropCarriedObject,
     getCarrierTacticalStance,
     installCarriedObject,
+    recoverStrandedCarryObjects,
     resetCarryRunState,
     shouldCompanionCoverCarrier
 } from './carrySystem.js';
@@ -71,5 +72,38 @@ describe('two-handed carry state', () => {
         expect(shouldCompanionCoverCarrier(state)).toBe(true);
         expect(companionCarrierCoverPosition({ x: 10, z: 10 }, { dirX: 0, dirZ: 1 }, 0))
             .toEqual({ x: 11.05, z: 10.75 });
+    });
+
+    it('recovers mission cargo only after repeated off-navigation checks', () => {
+        let state = addCarryObject(createCarryState('run-a'), bed()).state;
+        state.worldObjects[0] = {
+            ...state.worldObjects[0],
+            worldPosition: { x: 999, z: 999 },
+            lastSafePosition: { x: 6, z: 7 }
+        };
+        const isNavigable = ({ x }) => x < 100;
+        let audit = recoverStrandedCarryObjects(state, { isNavigable, requiredFailedChecks: 3 });
+        expect(audit.recovered).toEqual([]);
+        audit = recoverStrandedCarryObjects(audit.state, { isNavigable, requiredFailedChecks: 3 });
+        expect(audit.recovered).toEqual([]);
+        audit = recoverStrandedCarryObjects(audit.state, { isNavigable, requiredFailedChecks: 3 });
+        expect(audit.recovered[0]).toMatchObject({
+            instanceId: 'bed-1', worldPosition: { x: 6, z: 7 }, recoveryCount: 1
+        });
+    });
+
+    it('falls back to authored staging when both current and last-safe positions become invalid', () => {
+        let state = addCarryObject(createCarryState('run-a'), bed()).state;
+        state.worldObjects[0] = {
+            ...state.worldObjects[0],
+            worldPosition: { x: 999, z: 999 },
+            lastSafePosition: { x: 888, z: 888 },
+            failedRecoveryChecks: 2
+        };
+        const result = recoverStrandedCarryObjects(state, {
+            isNavigable: ({ x }) => x < 100,
+            requiredFailedChecks: 3
+        });
+        expect(result.recovered[0].worldPosition).toEqual({ x: 12, z: 8 });
     });
 });

@@ -24,6 +24,22 @@ describe('carry object presentation', () => {
         expect(root.position.toArray()).toEqual([2, 0.8, 3]);
     });
 
+    it('adds a pulsing world beacon for mission cargo and hides it in both hands', async () => {
+        const root = await createCarryObjectVisual({
+            instanceId: 'cot-1', definitionId: 'cot_bed', modelType: 'carry_field_cot_folded', missionId: 'first-night'
+        });
+        const beacon = root.getObjectByName('MissionCargoBeacon');
+        expect(beacon).toBeTruthy();
+        updateCarryObjectVisual(root, { mode: 'world', visible: true, elapsedSeconds: 1 });
+        expect(beacon.visible).toBe(true);
+        updateCarryObjectVisual(root, { mode: 'held', visible: true, elapsedSeconds: 2 });
+        expect(beacon.visible).toBe(false);
+        const ringGeometry = beacon.userData.ring.geometry;
+        const dispose = vi.spyOn(ringGeometry, 'dispose');
+        disposeCarryObjectVisual(root);
+        expect(dispose).toHaveBeenCalledOnce();
+    });
+
     it('runs per-instance cleanup when cargo leaves the world', async () => {
         const root = await createCarryObjectVisual({ instanceId: 'cot-1', definitionId: 'cot_bed', modelType: 'carry_field_cot_folded' });
         const remove = vi.spyOn(root, 'removeFromParent');

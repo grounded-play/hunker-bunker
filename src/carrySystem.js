@@ -23,12 +23,16 @@ export function createCarryObject({
 } = {}) {
     if (!instanceId || !definitionId) return null;
     const moduleDef = getBaseModuleDefinition(definitionId);
+    const sourcePosition = copyPosition(worldPosition);
     return {
         instanceId: String(instanceId),
         definitionId,
         missionId,
         massClass,
-        worldPosition: copyPosition(worldPosition),
+        worldPosition: sourcePosition,
+        sourcePosition: { ...sourcePosition },
+        lastSafePosition: { ...sourcePosition },
+        failedRecoveryChecks: 0,
         carrySocket,
         modelType: modelType ?? moduleDef?.carryModelType ?? moduleDef?.modelType ?? null,
         buildTags: [...new Set(buildTags)].sort(),
@@ -76,12 +80,58 @@ export function dropCarriedObject(state, worldPosition, { carrierPlayerId = null
     if (carrierPlayerId != null && state.carried.carrierPlayerId !== carrierPlayerId) {
         return { ok: false, reason: 'not-owner', state };
     }
-    const dropped = { ...state.carried, carrierPlayerId: null, worldPosition: copyPosition(worldPosition) };
+    const position = copyPosition(worldPosition);
+    const dropped = {
+        ...state.carried,
+        carrierPlayerId: null,
+        worldPosition: position,
+        lastSafePosition: { ...position },
+        failedRecoveryChecks: 0
+    };
     return {
         ok: true,
         dropped,
         state: { ...state, carried: null, worldObjects: [...state.worldObjects, dropped] }
     };
+}
+
+/**
+ * Audits loose mission cargo without consulting rendering state. An invalid
+ * location must fail repeatedly before recovery, avoiding one-frame terrain
+ * streaming gaps; relocation preserves identity and returns it to the latest
+ * known-safe point, falling back to its authored staging source.
+ */
+export function recoverStrandedCarryObjects(state, {
+    isNavigable = () => true,
+    requiredFailedChecks = 3
+} = {}) {
+    if (!state) return { state, recovered: [] };
+    const recovered = [];
+    const threshold = Math.max(1, Math.round(Number(requiredFailedChecks) || 3));
+    const worldObjects = state.worldObjects.map((object) => {
+        if (!object.missionId) return object;
+        const position = object.worldPosition;
+        if (isNavigable(position, object)) {
+            if (!object.failedRecoveryChecks) return object;
+            return { ...object, failedRecoveryChecks: 0 };
+        }
+        const failures = (Number(object.failedRecoveryChecks) || 0) + 1;
+        if (failures < threshold) return { ...object, failedRecoveryChecks: failures };
+        const lastSafe = isNavigable(object.lastSafePosition, object)
+            ? object.lastSafePosition
+            : object.sourcePosition;
+        const relocation = copyPosition(lastSafe);
+        const next = {
+            ...object,
+            worldPosition: relocation,
+            lastSafePosition: { ...relocation },
+            failedRecoveryChecks: 0,
+            recoveryCount: (Number(object.recoveryCount) || 0) + 1
+        };
+        recovered.push(next);
+        return next;
+    });
+    return { state: { ...state, worldObjects }, recovered };
 }
 
 export function installCarriedObject(state, socket, { carrierPlayerId = null } = {}) {
