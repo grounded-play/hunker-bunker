@@ -14,7 +14,8 @@ export const FIELD_WEAPON_DROP_CATALOG = Object.freeze({
     scatter_rep: Object.freeze({ rarity: 'uncommon', ammoType: FIELD_AMMO_TYPES.SHELLS, clipCapacity: 6, reserveCapacity: 30 }),
     rail_marksman: Object.freeze({ rarity: 'rare', ammoType: FIELD_AMMO_TYPES.RAIL_CELLS, clipCapacity: 4, reserveCapacity: 16 }),
     neon_smg: Object.freeze({ rarity: 'rare', ammoType: FIELD_AMMO_TYPES.BALLISTIC, clipCapacity: 36, reserveCapacity: 144 }),
-    cryo_lance: Object.freeze({ rarity: 'rare', ammoType: FIELD_AMMO_TYPES.CRYO_CANISTERS, clipCapacity: 5, reserveCapacity: 20 })
+    cryo_lance: Object.freeze({ rarity: 'rare', ammoType: FIELD_AMMO_TYPES.CRYO_CANISTERS, clipCapacity: 5, reserveCapacity: 20 }),
+    flamethrower: Object.freeze({ rarity: 'rare', ammoType: FIELD_AMMO_TYPES.FUEL_TANKS, clipCapacity: 60, reserveCapacity: 240 })
 });
 
 export function getFieldWeaponDropDefinition(profileId) {

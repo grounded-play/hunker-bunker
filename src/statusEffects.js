@@ -14,6 +14,8 @@ export const STATUS_IDS = Object.freeze({
     CORROSION: 'corrosion',
     CAUSTIC: 'caustic',
     BIO: 'bio',
+    BURNING: 'burning',
+    FIRE: 'fire',
     CHITIN_VULNERABILITY: 'chitin_vulnerability'
 });
 
@@ -28,6 +30,10 @@ export const STATUS_DEFAULTS = Object.freeze({
     corrosionDuration: 3.0,
     corrosionTickDamage: 2,
     corrosionTickInterval: 0.5,
+    burningDuration: 3.5,
+    burningMaxStacks: 5,
+    burningTickDamage: 3,
+    burningTickInterval: 0.5,
     chitinVulnerabilityDuration: 6.0,
     chitinDamageMultiplier: 1.25
 });
@@ -47,6 +53,13 @@ export function createTargetStatusState(initial = {}) {
         corrosionTickInterval: Number(initial.corrosionTickInterval) || STATUS_DEFAULTS.corrosionTickInterval,
         isCorroded: Boolean(initial.isCorroded),
         corrodedBy: initial.corrodedBy ?? null,
+        burningStacks: Math.max(0, Number(initial.burningStacks) || 0),
+        burningTimer: Math.max(0, Number(initial.burningTimer) || 0),
+        burningTickTimer: Math.max(0, Number(initial.burningTickTimer) || 0),
+        burningTickDamage: Number(initial.burningTickDamage) || STATUS_DEFAULTS.burningTickDamage,
+        burningTickInterval: Number(initial.burningTickInterval) || STATUS_DEFAULTS.burningTickInterval,
+        isBurning: Boolean(initial.isBurning),
+        burnedBy: initial.burnedBy ?? null,
         chitinVulnerabilityTimer: Math.max(0, Number(initial.chitinVulnerabilityTimer) || 0),
         chitinDamageMultiplier: Math.max(1, Number(initial.chitinDamageMultiplier) || 1),
         lastChitinVulnerabilityEventId: initial.lastChitinVulnerabilityEventId ?? null
@@ -103,15 +116,16 @@ function normalizeStatusId(statusId) {
     const id = String(statusId || '').toLowerCase();
     if (id === STATUS_IDS.FREEZE || id === STATUS_IDS.CRYO) return STATUS_IDS.FREEZE;
     if (id === STATUS_IDS.CORROSION || id === STATUS_IDS.CAUSTIC || id === STATUS_IDS.BIO) return STATUS_IDS.CORROSION;
+    if (id === STATUS_IDS.BURNING || id === STATUS_IDS.FIRE) return STATUS_IDS.BURNING;
     return id;
 }
 
 /**
- * Applies a status effect (freeze stacks or corrosion) to a target.
+ * Applies a status effect (freeze stacks, corrosion, or burning) to a target.
  *
  * @param {object} target - Target enemy sprite or entity
- * @param {string} statusId - 'freeze', 'cryo', 'corrosion', 'caustic', or 'bio'
- * @param {number} [amount] - Stacks to add (freeze) or duration in seconds (corrosion)
+ * @param {string} statusId - 'freeze', 'cryo', 'corrosion', 'caustic', 'bio', 'burning', or 'fire'
+ * @param {number} [amount] - Stacks to add (freeze/burning) or duration in seconds (corrosion)
  * @param {object} [options] - Configuration overrides and callbacks
  * @returns {object|null} The updated status container
  */
@@ -162,6 +176,53 @@ export function applyStatus(target, statusId, amount = 1, options = {}) {
         return state;
     }
 
+    if (norm === STATUS_IDS.BURNING) {
+        // Immunity checks: fire-immune entities, machines, or wet volumes
+        const isImmune = Boolean(
+            target.isFireImmune ||
+            target.userData?.isFireImmune ||
+            options.tags?.includes('fire_immune') ||
+            options.tags?.includes('wet')
+        );
+        if (isImmune) return state;
+
+        // Fire cancels freeze / thaws frozen targets
+        if (state.isFrozen || state.freezeStacks > 0) {
+            state.freezeStacks = Math.max(0, state.freezeStacks - 40 * (amount > 0 ? amount : 1));
+            if (state.isFrozen && state.freezeStacks < STATUS_DEFAULTS.freezeThreshold) {
+                state.isFrozen = false;
+                state.freezeTimer = 0;
+                if (target.userData && typeof target.userData === 'object') {
+                    target.userData.frozen = false;
+                    target.userData.frozenTimer = 0;
+                }
+                options.onThaw?.(target, state);
+            }
+        }
+
+        const duration = options.duration ?? STATUS_DEFAULTS.burningDuration;
+        const maxStacks = options.maxStacks ?? STATUS_DEFAULTS.burningMaxStacks;
+        const stacksToAdd = Math.max(1, Number(amount) || 1);
+
+        state.burningStacks = Math.min(maxStacks, state.burningStacks + stacksToAdd);
+        state.burningTimer = Math.max(state.burningTimer, duration);
+        state.burningTickDamage = (options.tickDamage ?? STATUS_DEFAULTS.burningTickDamage) * Math.max(1, state.burningStacks * 0.75);
+        state.burningTickInterval = options.tickInterval ?? STATUS_DEFAULTS.burningTickInterval;
+        if (state.burningTickTimer <= 0) {
+            state.burningTickTimer = state.burningTickInterval;
+        }
+        state.burnedBy = options.source ?? 'player';
+        state.isBurning = true;
+
+        if (target.userData && typeof target.userData === 'object') {
+            target.userData.burning = true;
+            target.userData.burningTimer = state.burningTimer;
+            target.userData.burningStacks = state.burningStacks;
+        }
+        options.onBurningApplied?.(target, state);
+        return state;
+    }
+
     return state;
 }
 
@@ -203,6 +264,20 @@ export function getStatus(target, statusId) {
         };
     }
 
+    if (norm === STATUS_IDS.BURNING) {
+        if (!state) {
+            return { active: false, timer: 0, stacks: 0, tickDamage: 0, tickInterval: 0, burnedBy: null };
+        }
+        return {
+            active: state.isBurning && state.burningTimer > 0,
+            timer: state.burningTimer,
+            stacks: state.burningStacks,
+            tickDamage: state.burningTickDamage,
+            tickInterval: state.burningTickInterval,
+            burnedBy: state.burnedBy
+        };
+    }
+
     return { active: false };
 }
 
@@ -231,6 +306,16 @@ export function clearStatus(target, statusId) {
             target.userData.corroded = false;
             target.userData.corrosionTimer = 0;
         }
+    } else if (norm === STATUS_IDS.BURNING) {
+        state.isBurning = false;
+        state.burningStacks = 0;
+        state.burningTimer = 0;
+        state.burningTickTimer = 0;
+        if (target.userData && typeof target.userData === 'object') {
+            target.userData.burning = false;
+            target.userData.burningTimer = 0;
+            target.userData.burningStacks = 0;
+        }
     }
 }
 
@@ -239,13 +324,13 @@ export function clearStatus(target, statusId) {
  *
  * @param {object} target - Target entity
  * @param {number} delta - Elapsed seconds
- * @param {object} [callbacks] - Handlers for { onCorrosionTick, onThaw, onCorrosionExpired }
+ * @param {object} [callbacks] - Handlers for { onCorrosionTick, onThaw, onCorrosionExpired, onBurningTick, onBurningExpired }
  * @param {object} [tuning] - Tuning parameter overrides
  * @returns {object} Status tick results summary
  */
 export function tickStatusEffects(target, delta, callbacks = {}, tuning = {}) {
     const state = getTargetStatusContainer(target);
-    if (!state || delta <= 0) return { isFrozen: false, isCorroded: false, freezeStacks: 0 };
+    if (!state || delta <= 0) return { isFrozen: false, isCorroded: false, isBurning: false, freezeStacks: 0, burningStacks: 0 };
 
     const decayRate = tuning.freezeDecayRate ?? STATUS_DEFAULTS.freezeDecayRate;
     const thawStacks = tuning.thawRetainedStacks ?? STATUS_DEFAULTS.thawRetainedStacks;
@@ -315,10 +400,42 @@ export function tickStatusEffects(target, delta, callbacks = {}, tuning = {}) {
         }
     }
 
+    // 3. Burning DoT handling
+    if (state.isBurning) {
+        let remainingDelta = delta;
+        while (remainingDelta > 0 && state.isBurning && state.burningTimer > 0) {
+            const step = Math.min(remainingDelta, state.burningTickTimer > 0 ? state.burningTickTimer : state.burningTickInterval, state.burningTimer);
+            if (step <= 0) break;
+            state.burningTimer = Math.max(0, state.burningTimer - step);
+            state.burningTickTimer -= step;
+            remainingDelta -= step;
+
+            if (state.burningTickTimer <= 0 && (state.isBurning || state.burningTimer > 0)) {
+                state.burningTickTimer += state.burningTickInterval;
+                callbacks.onBurningTick?.(target, state.burningTickDamage, state);
+                callbacks.onDamage?.(target, state.burningTickDamage, { type: 'burning', source: state.burnedBy });
+            }
+        }
+
+        if (state.burningTimer <= 0) {
+            state.isBurning = false;
+            state.burningStacks = 0;
+            state.burningTickTimer = 0;
+            if (target.userData && typeof target.userData === 'object') {
+                target.userData.burning = false;
+                target.userData.burningTimer = 0;
+                target.userData.burningStacks = 0;
+            }
+            callbacks.onBurningExpired?.(target, state);
+        }
+    }
+
     return {
         isFrozen: state.isFrozen,
         isCorroded: state.isCorroded,
-        freezeStacks: state.freezeStacks
+        isBurning: state.isBurning,
+        freezeStacks: state.freezeStacks,
+        burningStacks: state.burningStacks
     };
 }
 
@@ -339,6 +456,13 @@ export function serializeTargetStatuses(target) {
         corrosionTickInterval: state.corrosionTickInterval,
         isCorroded: state.isCorroded,
         corrodedBy: state.corrodedBy,
+        burningStacks: state.burningStacks,
+        burningTimer: Math.round(state.burningTimer * 100) / 100,
+        burningTickTimer: Math.round(state.burningTickTimer * 100) / 100,
+        burningTickDamage: state.burningTickDamage,
+        burningTickInterval: state.burningTickInterval,
+        isBurning: state.isBurning,
+        burnedBy: state.burnedBy,
         chitinVulnerabilityTimer: Math.round(state.chitinVulnerabilityTimer * 100) / 100,
         chitinDamageMultiplier: state.chitinDamageMultiplier,
         lastChitinVulnerabilityEventId: state.lastChitinVulnerabilityEventId
@@ -357,6 +481,9 @@ export function deserializeTargetStatuses(target, data) {
         target.userData.frozen = state.isFrozen;
         target.userData.frozenTimer = state.freezeTimer;
         target.userData.corroded = state.isCorroded;
+        target.userData.burning = state.isBurning;
+        target.userData.burningTimer = state.burningTimer;
+        target.userData.burningStacks = state.burningStacks;
         target.userData.chitinVulnerabilityTimer = state.chitinVulnerabilityTimer;
         target.userData.chitinDamageMultiplier = state.chitinDamageMultiplier;
     }
