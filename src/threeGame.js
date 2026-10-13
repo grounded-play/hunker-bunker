@@ -450,6 +450,13 @@ import {
     topologyHasEdge
 } from './mazeExpedition.js';
 import { ExplorationTracker } from './mapSystem.js';
+import {
+    collectDoorApronCells,
+    filterDoorApronPlacements,
+    isOutsideDoorApron
+} from './placementSafety.js';
+
+export { isOutsideDoorApron } from './placementSafety.js';
 
 export const EXTERIOR_CANYON_TILE = 'X';
 export const CLIFF_TILE = 'C';
@@ -488,9 +495,6 @@ export function planInstancedFloorCoverage(grid) {
     return { floorCells, exteriorGroundCells, repairedCells };
 }
 
-export function isOutsideDoorApron(x, y, doorCells, clearance = 1.6) {
-    return (doorCells ?? []).every((door) => Math.hypot(x - door.x, y - door.y) >= clearance);
-}
 import {
     rollEnemyLootDrop,
     computeActiveSynergies,
@@ -588,7 +592,7 @@ import { applySpecialVariant } from './specialVariants.js';
 import { bindRoomGrammarSites } from './roomGrammarSiteSelection.js';
 import { trimCampPromptActions } from './campActionMenu.js';
 import { MYSTERY_BOX_KINDS, MYSTERY_OUTCOME_LINE_KEYS, mysteryBoxChance, mysteryOpenSeconds, mysteryRewardDrops, pickMysteryBoxKind, rollMysteryOutcome, seededRandom } from './mysteryBoxes.js';
-import { createTrackField, slimeColorFor, slimeLifeFor, stepBoots, trackSurfaceForType } from './trackField.js';
+import { createTrackField, slimeColorFor, stepBoots, trackSurfaceForType } from './trackField.js';
 import { CasingSystem } from './casingSystem.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
 import { groupDangerZones, lipEdgeQuads } from './dangerZones.js';
@@ -34669,8 +34673,10 @@ export class ThreeGame {
         const depthLootConfig = getDepthLootConfig(depthTier);
         const spawn = this.getSpawnTile();
         const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
+        const metadata = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
+        const doorApronCells = collectDoorApronCells(metadata);
         const candidates = [];
-        const plannedRoomPickups = (this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)?.roomInstances ?? [])
+        const plannedRoomPickups = (metadata?.roomInstances ?? [])
             .flatMap((room) => (room.populationPlan?.placements ?? [])
                 .filter((placement) => placement.kind === 'pickup')
                 .map((placement) => ({
@@ -34691,7 +34697,7 @@ export class ThreeGame {
                 placement.worldZ - spawn.y
             ) > 9);
         const authoredRoomCells = new Set(
-            (this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)?.roomInstances ?? [])
+            (metadata?.roomInstances ?? [])
                 .flatMap((room) => (room.interior ?? []).map(({ x, y }) => `${x},${y}`))
         );
 
@@ -34707,6 +34713,7 @@ export class ThreeGame {
 
                 if (distToSpawn <= 9.0) continue;
                 if (authoredRoomCells.has(`${localX},${localY}`)) continue;
+                if (!isOutsideDoorApron(localX, localY, doorApronCells)) continue;
 
                 const roomType = roomTypes?.[localY]?.[localX] ?? ROOM_TYPES.CORRIDOR;
                 candidates.push({
@@ -34721,9 +34728,9 @@ export class ThreeGame {
         }
 
         if (candidates.length < 10) {
-            return plannedRoomPickups.map((candidate) => (
+            return filterDoorApronPlacements(plannedRoomPickups.map((candidate) => (
                 this.buildPickupPlacement(candidate, random, depthLootConfig.legendaryBoost)
-            ));
+            )), doorApronCells, { chunkX, chunkY, chunkSize: this.chunkSize });
         }
 
         const occupied = new Set();
@@ -34823,22 +34830,18 @@ export class ThreeGame {
             }
         }
 
-        return placements;
+        return filterDoorApronPlacements(placements, doorApronCells, {
+            chunkX,
+            chunkY,
+            chunkSize: this.chunkSize
+        });
     }
 
     createChunkSetPiecePlacements(chunkX, chunkY, grid) {
         const placements = [];
         const rng = this.createSeededRandom(((this.hashTile(chunkX * 811 + 17, chunkY * 919 + 23) + 404) ^ this.runEntropy) >>> 0);
         const wfcMeta = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
-        const doorApronCells = [
-            ...(wfcMeta?.roomInstances ?? []).flatMap((room) => room.navigation?.doorLanes ?? []),
-            ...(wfcMeta?.doors ?? []).flatMap((door) => [
-                ...(Number.isFinite(door.localX) && Number.isFinite(door.localY)
-                    ? [{ x: door.localX, y: door.localY }]
-                    : []),
-                ...(door.cells ?? [])
-            ])
-        ];
+        const doorApronCells = collectDoorApronCells(wfcMeta);
         const reservedCells = new Set();
         for (let localY = 0; localY < this.chunkSize; localY += 1) {
             for (let localX = 0; localX < this.chunkSize; localX += 1) {
@@ -35095,10 +35098,10 @@ export class ThreeGame {
             }
         }
         const spawn = this.getSpawnTile();
-        return placements.filter((placement) => Math.hypot(
+        return filterDoorApronPlacements(placements.filter((placement) => Math.hypot(
             placement.x - spawn.x,
             placement.z - spawn.y
-        ) > 9);
+        ) > 9), doorApronCells, { chunkX, chunkY, chunkSize: this.chunkSize });
     }
 
     selectClusterCenter(candidates, clusters, random) {
@@ -35225,15 +35228,7 @@ export class ThreeGame {
         const random = this.createSeededRandom(((this.hashTile(chunkX * 523 + 43, chunkY * 859 + 71) ^ (this.runEntropy ?? 0)) >>> 0));
         const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
         const wfcMeta = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
-        const doorApronCells = [
-            ...(wfcMeta?.roomInstances ?? []).flatMap((room) => room.navigation?.doorLanes ?? []),
-            ...(wfcMeta?.doors ?? []).flatMap((door) => [
-                ...(Number.isFinite(door.localX) && Number.isFinite(door.localY)
-                    ? [{ x: door.localX, y: door.localY }]
-                    : []),
-                ...(door.cells ?? [])
-            ])
-        ];
+        const doorApronCells = collectDoorApronCells(wfcMeta);
         const authoredRoomCells = new Set(
             (wfcMeta?.roomInstances ?? []).flatMap((room) => (
                 room.interior.map(({ x, y }) => `${x},${y}`)
@@ -35750,7 +35745,11 @@ export class ThreeGame {
             }
         }
 
-        return finalPlacements;
+        return filterDoorApronPlacements(finalPlacements, doorApronCells, {
+            chunkX,
+            chunkY,
+            chunkSize: this.chunkSize
+        });
     }
 
     createJunkBurstPickupPlacement(originX, originZ, targetX, targetZ, random, junkType = 'bunker_junk') {

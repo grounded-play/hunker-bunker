@@ -331,6 +331,26 @@ const AMBIENT_PROFILES = {
     crash_engine_nacelle: smoulderProfile({ at: [0.5, 0.65, 0.5], glowAt: [0.5, 0.5, 0.5], color: 0x64748b, count: 7, intensity: 1.1, distance: 3.5 }),
     salvage_tagged_heap: lampProfile({ glowAt: [0.5, 0.5, 0.5], color: 0xf59e0b, radius: 0.18, pulse: 0.3, intensity: 0.7, distance: 2.4 }),
     camp_canvas_tent: lampProfile({ glowAt: [0.5, 0.45, 0.5], color: 0xfbbf24, radius: 0.25, pulse: 0.08, intensity: 0.9, distance: 2.8 }),
+    camp_water_barrel: liquidProfile({
+        surfaceAt: [0.5, 0.76, 0.5],
+        bubblesAt: [0.5, 0.72, 0.5],
+        color: 0x6eb7bd,
+        bubbleColor: 0xbce8e8,
+        radius: 0.3,
+        bubbleRadius: 0.24,
+        count: 3,
+        lit: false
+    }),
+    life_sink_row: liquidProfile({
+        surfaceAt: [0.5, 0.68, 0.54],
+        bubblesAt: [0.5, 0.64, 0.54],
+        color: 0x8ec9d1,
+        bubbleColor: 0xd8f4f5,
+        radius: 0.2,
+        bubbleRadius: 0.15,
+        count: 3,
+        lit: false
+    }),
 
     ...profilesFor([
         'life_galley_hotplate', 'life_barrel_heater', 'life_warmth_hearth',
