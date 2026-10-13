@@ -516,7 +516,12 @@ door apron; current performance and 157-test spatial suite remain green.
 ### Phase 1 — architecture visibility
 
 - seeded authored-template exposure budget and debug telemetry;
-- 5/7-cell hallway footprints and enlarged two-zone start;
+- [x] data-driven 17×16 origin chamber plus an unavoidable seven-cell-wide north service
+  approach/release chamber with topology-preserving exits and modular-kit route markers
+  (`src/data/crashSiteBuild.js`, `src/crashSiteBuild.js`);
+- remaining start work: offset build/tutorial side bay and runtime consumption of the declared
+  half-grid bed/seal construction sockets;
+- remaining general hallway work: enforce the 5/7-cell exposure budget beyond the start;
 - wall-run planner and first bunker/cryo macro modules;
 - [x] structural threshold support repair/validation and deterministic door presentation records;
 - [x] blast-slab, split-bulkhead, camp-barricade, and arch-guillotine families are assigned by
@@ -587,7 +592,7 @@ home, and an installation that visibly changes the ship/base.
 
 | File/module | Planned change |
 |---|---|
-| `src/data/crashSiteBuild.js` (new) | origin room, side bay, sockets, reserved north continuation |
+| `src/data/crashSiteBuild.js`, `src/crashSiteBuild.js` (new) | origin room, sockets, reserved wide north continuation |
 | `src/hallwayConnector.js`, `src/data/hallwayBuilds.js` | width classes, landmark cadence, transition footprints |
 | `src/roomBuilds.js`, `src/chunkStructure.js` | exposure budget hooks and diagnostics |
 | `src/wallRunPlanner.js` (new), `src/wallAutotile.js` | macro runs while retaining per-cell damage identity |

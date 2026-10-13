@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ThreeGame } from './threeGame.js';
 import { CHUNK_SIZE } from './tileCatalog.js';
+import { CRASH_SITE_BUILD } from './data/crashSiteBuild.js';
 
 function makeFakeGame() {
     return {
@@ -85,13 +86,13 @@ describe('clearSpawnArea — door/portal alignment', () => {
             expect(grid[0][x], `north edge x=${x}`).toBe(expected);
         }
         expect(grid[9][9]).toBe('.');
-        expect(grid[4].slice(2, 17).every((cell) => cell === '.')).toBe(true);
-        expect(grid[17].slice(2, 17).every((cell) => cell === '.')).toBe(true);
+        const room = CRASH_SITE_BUILD.primaryChamber;
+        expect(grid[room.top].slice(room.left, room.right + 1).every((cell) => cell === '.')).toBe(true);
+        expect(grid[room.bottom].slice(room.left, room.right + 1).every((cell) => cell === '.')).toBe(true);
         expect(grid[1][1]).toBe('X');
-        expect(grid[18][9]).toBe('#');
-        expect(grid[18][0]).toBe('X');
-        expect(grid.every((row) => row[0] === 'X')).toBe(true);
-        expect(grid.every((row) => row[CHUNK_SIZE - 1] === 'X')).toBe(true);
+        expect(grid[room.bottom + 1][9]).toBe('#');
+        expect(grid[room.bottom + 1][CHUNK_SIZE - 1]).toBe('X');
+        expect(grid[1][CHUNK_SIZE - 1]).toBe('X');
 
         const spawn = game.getSpawnTile();
         expect(spawn).toEqual({ x: 9, y: 9 });

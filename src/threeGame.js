@@ -172,6 +172,8 @@ import {
     stampLattice
 } from './wfcGenerator.js';
 import { generateArchitecturalMazeChunk } from './architecturalMaze.js';
+import { stampCrashSiteApproach, stampCrashSiteOrigin } from './crashSiteBuild.js';
+import { CRASH_SITE_BUILD } from './data/crashSiteBuild.js';
 import { applyVerticalBridgeFeature, VERTICAL_TILE } from './verticalWfc.js';
 import {
     ROOM_FLOOR_MATERIAL_FAMILY,
@@ -851,8 +853,8 @@ const MENU_SHOWROOM_FLOOR_OFFSET_Z = 0;
 // origin chunk. Its ship placements, blast door, safe floor, and spawn must
 // share this fixed anchor; deriving any of them from CHUNK_SIZE strands the
 // player in the surrounding lethal canyon when chunk dimensions change.
-const CRASH_SITE_CENTER = 9;
-const CRASH_SITE_EDGE_OFFSET = (CRASH_SITE_CENTER - 1) / 2;
+const CRASH_SITE_CENTER = CRASH_SITE_BUILD.center.x;
+const CRASH_SITE_EDGE_OFFSET = CRASH_SITE_BUILD.edgeOffset;
 const PICKUP_DISTRIBUTION = {
     clustered: 0.7,
     transitional: 0.2,
@@ -35140,7 +35142,7 @@ export class ThreeGame {
         // HallwayConnector records its carved route as sparse wayfinding
         // markers. Dress those markers with the matching reskinned modular
         // kit; topology chooses rotation so sockets stay aligned.
-        if (wfcMeta?.generatorId === 'hallway-connector') {
+        if (wfcMeta?.generatorId === 'hallway-connector' || wfcMeta?.generatorId === 'crash-site-approach') {
             for (const marker of wfcMeta.wayfindingMarkers ?? []) {
                 const worldX = chunkX * this.chunkSize + marker.x;
                 const worldZ = chunkY * this.chunkSize + marker.y;
@@ -44252,12 +44254,17 @@ export class ThreeGame {
             }
         }
 
+        const isCrashApproach = chunkX === CRASH_SITE_BUILD.approachChunk.x
+            && chunkY === CRASH_SITE_BUILD.approachChunk.y;
         if (chunkX === 0 && chunkY === 0) {
             this.buildCrashSiteChunk(grid, chunkX, chunkY);
+        } else if (isCrashApproach) {
+            mazeMetadata = stampCrashSiteApproach(grid);
+            this.wfcMetadataCache?.set(`${chunkX},${chunkY}`, mazeMetadata);
         } else {
             this.clearSpawnArea(grid, chunkX, chunkY);
         }
-        if (landform !== LANDFORMS.MAZE) {
+        if (landform !== LANDFORMS.MAZE && !isCrashApproach) {
             ThreeGame.prototype.addRoomThresholdDoors.call(this, grid, random, chunkX, chunkY);
             this.clearDoorways?.(grid);
         }
@@ -44844,40 +44851,7 @@ export class ThreeGame {
 
     clearSpawnArea(grid, chunkX, chunkY) {
         if (chunkX !== 0 || chunkY !== 0) return;
-
-        // Authored crash platform. Replacing the incoming landform
-        // completely prevents stray procedural portals or wall erosion from
-        // punching extra doors into the starting room. Deep exterior cells
-        // are lethal canyon, a one-cell wall/foundation band frames the room,
-        // and the north blast-door hall is its only bridge to another chunk.
-        for (let localY = 0; localY < this.chunkSize; localY += 1) {
-            for (let localX = 0; localX < this.chunkSize; localX += 1) {
-                grid[localY][localX] = EXTERIOR_CANYON_TILE;
-            }
-        }
-
-        const room = { left: 2, right: 16, top: 4, bottom: 17 };
-        for (let localY = room.top - 1; localY <= room.bottom + 1; localY += 1) {
-            for (let localX = room.left - 1; localX <= room.right + 1; localX += 1) {
-                const inside = localX >= room.left && localX <= room.right
-                    && localY >= room.top && localY <= room.bottom;
-                grid[localY][localX] = inside ? '.' : '#';
-            }
-        }
-
-        // The only door is always centered on the top wall. A three-wide
-        // pre-hall runs from the circular room to the north chunk edge.
-        const doorCenterX = CRASH_SITE_CENTER;
-        for (let localY = 0; localY <= 3; localY += 1) {
-            for (let localX = doorCenterX - 1; localX <= doorCenterX + 1; localX += 1) {
-                grid[localY][localX] = '.';
-            }
-        }
-        // Hall jambs keep canyon on both sides all the way to the chunk seam.
-        for (let localY = 0; localY <= 2; localY += 1) {
-            grid[localY][doorCenterX - 2] = '#';
-            grid[localY][doorCenterX + 2] = '#';
-        }
+        stampCrashSiteOrigin(grid, CRASH_SITE_BUILD, { exteriorTile: EXTERIOR_CANYON_TILE });
     }
 
     getSpawnTile() {

@@ -55,6 +55,17 @@ function reachableFloorCount(grid) {
 }
 
 describe('buildChunk — WFC MAZE generation', () => {
+    it('reserves the north crash neighbor as the authored wide service approach', () => {
+        const game = makeFakeGame(42);
+        const grid = ThreeGame.prototype.buildChunk.call(game, 0, -1);
+        const metadata = game.wfcMetadataCache.get('0,-1');
+
+        expect(metadata).toMatchObject({ generatorId: 'crash-site-approach', width: 7 });
+        expect(grid[grid.length - 1][9]).toBe('.');
+        expect(metadata.wayfindingMarkers).toHaveLength(3);
+        expect(reachableFloorCount(grid).reachable).toBe(reachableFloorCount(grid).floorCount);
+    });
+
     it('mounts an opted-in grammar room through the live chunk path without erosion', () => {
         const fake = makeFakeGame(91, {
             chunkSize: 49, chunkCellCount: 24, authoredWorldTiles: true,
