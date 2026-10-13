@@ -242,7 +242,8 @@ export class CasingSystem {
                         const soundKey = `shell_drop_${c.surface}`;
                         const volume = c.bounces === 0 ? 0.34 : 0.20;
                         const spatial = game?.audioAt?.(c.x, c.z, { volume, maxDistance: 16 }) ?? { volume };
-                        window.AudioManager?.play?.(soundKey, spatial);
+                        const audioMgr = globalThis.window?.AudioManager || globalThis.AudioManager;
+                        audioMgr?.play?.(soundKey, spatial);
 
                         // Restitution bounce & friction
                         c.vy = -c.vy * 0.44;
@@ -316,9 +317,12 @@ export class CasingSystem {
         this.reset();
         if (this.instancedMesh?.parent) {
             this.instancedMesh.parent.remove(this.instancedMesh);
+        } else if (this.scene?.remove && this.instancedMesh) {
+            this.scene.remove(this.instancedMesh);
         }
         this.instancedMesh?.geometry?.dispose();
         this.instancedMesh?.material?.dispose();
+        this.instancedMesh = null;
     }
 
     dispose() {
