@@ -27,6 +27,40 @@ export const TEMPLATE_TYPES = Object.freeze({
     BIOME_TRANSITION: 'biome-transition'
 });
 
+const chunkKey = (value) => `${value.chunkX},${value.chunkY}`;
+
+/**
+ * Converts the abstract budget into load-order-independent world slots. Site
+ * and blocker chunks are excluded so visibility never overwrites progression.
+ */
+export function planRingExposureSlots(plan, ringIndex, { excludedChunkKeys = [] } = {}) {
+    const ring = Number(ringIndex) || 0;
+    const requirements = ring === 0
+        ? RING_EXPOSURE_REQUIREMENTS.TUTORIAL
+        : RING_EXPOSURE_REQUIREMENTS.STANDARD_RING;
+    const excluded = new Set([
+        ...(plan?.nodes ?? []),
+        ...(plan?.blockers ?? [])
+    ].filter((entry) => Number.isInteger(entry.chunkX) && Number.isInteger(entry.chunkY)).map(chunkKey));
+    for (const key of excludedChunkKeys) excluded.add(String(key));
+    const unique = (values) => [...new Set(values.filter(Boolean))];
+    const clusterKeys = unique((plan?.roomClusters ?? [])
+        .filter((cluster) => cluster.ring === ring)
+        .map(chunkKey))
+        .filter((key) => !excluded.has(key));
+    const ringKeys = unique(plan?.topology?.rings?.find((entry) => entry.ring === ring)?.chunkKeys ?? [])
+        .filter((key) => !excluded.has(key));
+    const authoredRoomChunkKeys = clusterKeys.slice(0, requirements.minAuthoredRooms);
+    const availableHallways = ringKeys.filter((key) => !authoredRoomChunkKeys.includes(key));
+    return {
+        ringIndex: ring,
+        authoredRoomChunkKeys,
+        signatureHallwayChunkKey: requirements.minSignatureHallways ? availableHallways[0] ?? null : null,
+        biomeTransitionChunkKey: requirements.minBiomeTransitions ? availableHallways[1] ?? null : null,
+        excludedChunkKeys: [...excluded]
+    };
+}
+
 /**
  * Creates an exposure tracker for a ring.
  */

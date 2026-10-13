@@ -289,6 +289,41 @@ export function buildAuthoredRoomChunkStructure(random, {
     };
 }
 
+export function buildExposureRoomChunkStructure(random, {
+    chunkX = 0,
+    chunkY = 0,
+    chunkSize = CHUNK_SIZE,
+    openings = {},
+    tier = 1,
+    biome = 'active',
+    roll = 0
+} = {}) {
+    const sideKey = { north: 'n', east: 'e', south: 's', west: 'w' };
+    const requiredSides = Object.entries(openings)
+        .filter(([, opening]) => opening?.open)
+        .map(([side]) => sideKey[side]);
+    const effectiveTier = Math.max(1, Math.min(4, Number(tier) || 1));
+    const candidates = [];
+    for (const catalogBuild of ALL_ROOM_BUILDS.filter((build) => (
+        !build.siteId
+        && build.tierEligibility.includes(effectiveTier)
+        && build.biomeEligibility.includes(biome)
+    ))) {
+        for (let rotationSteps = 0; rotationSteps < 4; rotationSteps += 1) {
+            const build = rotateRoomBuild(catalogBuild, rotationSteps);
+            const socketSides = new Set(build.sockets.map((socket) => socket.side));
+            if (requiredSides.every((side) => socketSides.has(side))) candidates.push(build);
+        }
+    }
+    if (!candidates.length) return null;
+    const index = Math.min(candidates.length - 1, Math.floor(Math.max(0, Math.min(0.999999, roll)) * candidates.length));
+    const structure = buildAuthoredRoomChunkStructure(random, {
+        chunkX, chunkY, chunkSize, openings, roomBuild: candidates[index], biome, tier: effectiveTier
+    });
+    if (structure) structure.diagnostics.exposureBudget = true;
+    return structure;
+}
+
 /**
  * Bridges a Lane A `WorldPlan` reservation (`src/ringManifest.js`'s
  * `buildWorldPlan(...).reservations[]`) directly to the authored-room
@@ -352,9 +387,12 @@ export function buildHallwayConnectorChunkStructure(random, {
     fromFamily = null,
     toFamily = null,
     recentArchetypeIds = [],
-    roll = 0
+    roll = 0,
+    archetypeId = null
 } = {}) {
-    const archetype = selectHallwayArchetype(HALLWAY_BUILD_CATALOG, { fromFamily, toFamily, recentArchetypeIds, roll });
+    const archetype = archetypeId
+        ? HALLWAY_BUILD_CATALOG.find((entry) => entry.id === archetypeId) ?? null
+        : selectHallwayArchetype(HALLWAY_BUILD_CATALOG, { fromFamily, toFamily, recentArchetypeIds, roll });
     if (!archetype) return null;
     const realized = realizeHallwayConnector(archetype, random, { size: chunkSize, openings });
     const chunkKey = `${chunkX},${chunkY}`;

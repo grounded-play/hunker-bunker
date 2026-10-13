@@ -297,7 +297,12 @@ import {
     translateContainmentDoor
 } from './roomContainment.js';
 import { bindRoomContent } from './roomContent.js';
-import { buildMazeChunkStructure, buildHallwayConnectorChunkStructure } from './chunkStructure.js';
+import {
+    buildExposureRoomChunkStructure,
+    buildHallwayConnectorChunkStructure,
+    buildMazeChunkStructure
+} from './chunkStructure.js';
+import { planRingExposureSlots } from './roomExposureBudget.js';
 import { buildGrammarRoomChunk } from './roomGrammarChunk.js';
 import { grammarWallExterior } from './roomGrammarBreach.js';
 import {
@@ -43896,6 +43901,13 @@ export class ThreeGame {
         return {
             generationVersion: metadata.generationVersion,
             chunkKey: key,
+            generatorId: metadata.generatorId ?? null,
+            exposureRole: metadata.exposureRole ?? null,
+            buildId: metadata.structureResult?.diagnostics?.buildId ?? null,
+            hallwayArchetypeId: metadata.structureResult?.diagnostics?.archetypeId ?? null,
+            rotation: metadata.structureResult?.diagnostics?.rotationSteps ?? 0,
+            reservationId: metadata.reservationId ?? null,
+            fallbackReason: metadata.authoredResolution?.reason ?? null,
             seamErrors: metadata.seamErrors ?? [],
             radial: metadata.radial ?? null,
             rooms: (metadata.roomInstances ?? []).map((room) => ({
@@ -43925,7 +43937,7 @@ export class ThreeGame {
     }
 
     addWfcDebugOverlay(group, chunkX, chunkY, metadata, grid) {
-        if (!group || !metadata?.lattice || !grid) return;
+        if (!group || !metadata || !grid) return;
         const overlay = new THREE.Group();
         overlay.name = 'wfc-debug-overlay';
         overlay.visible = typeof document !== 'undefined'
@@ -43990,21 +44002,23 @@ export class ThreeGame {
         }
 
         const stride = TILE_SIZE - 1;
-        const seamMaterial = (metadata.seamErrors?.length ?? 0) > 0
-            ? this.wfcDebugMaterials.seamError
-            : this.wfcDebugMaterials.seam;
-        for (let my = 0; my < 3; my += 1) {
-            for (let mx = 0; mx < 3; mx += 1) {
-                const border = new THREE.LineSegments(
-                    this.wfcDebugBorderGeometry,
-                    seamMaterial
-                );
-                border.position.set(
-                    chunkX * this.chunkSize + mx * stride,
-                    0.09,
-                    chunkY * this.chunkSize + my * stride
-                );
-                overlay.add(border);
+        if (metadata.lattice) {
+            const seamMaterial = (metadata.seamErrors?.length ?? 0) > 0
+                ? this.wfcDebugMaterials.seamError
+                : this.wfcDebugMaterials.seam;
+            for (let my = 0; my < 3; my += 1) {
+                for (let mx = 0; mx < 3; mx += 1) {
+                    const border = new THREE.LineSegments(
+                        this.wfcDebugBorderGeometry,
+                        seamMaterial
+                    );
+                    border.position.set(
+                        chunkX * this.chunkSize + mx * stride,
+                        0.09,
+                        chunkY * this.chunkSize + my * stride
+                    );
+                    overlay.add(border);
+                }
             }
         }
 
@@ -44044,7 +44058,7 @@ export class ThreeGame {
         };
 
         // One readable name plate per 7x7 WFC source tile.
-        for (let index = 0; index < metadata.lattice.length; index += 1) {
+        for (let index = 0; index < (metadata.lattice?.length ?? 0); index += 1) {
             const tile = metadata.lattice[index];
             const mx = index % 3;
             const my = Math.floor(index / 3);
@@ -44056,6 +44070,19 @@ export class ThreeGame {
             );
             overlay.add(label);
         }
+
+        const diagnostics = metadata.structureResult?.diagnostics ?? {};
+        const identity = diagnostics.buildId ?? diagnostics.archetypeId ?? metadata.generatorId ?? 'UNKNOWN';
+        const prefix = metadata.exposureRole
+            ? metadata.exposureRole.replace(/-/g, ' ').toUpperCase()
+            : String(metadata.generatorId ?? 'GENERATOR').replace(/-/g, ' ').toUpperCase();
+        const generatorLabel = makeFloorLabel(`${prefix} · ${identity}`, metadata.exposureRole ? '#facc15' : '#ffffff', 5.8, 0.72);
+        generatorLabel.position.set(
+            chunkX * this.chunkSize + this.chunkSize * 0.5,
+            0.2,
+            chunkY * this.chunkSize + this.chunkSize * 0.5
+        );
+        overlay.add(generatorLabel);
 
         // Door plates sit over the full three-cell threshold and show which
         // socket side generated the connection.
@@ -45326,6 +45353,22 @@ export class ThreeGame {
                 chunk.chunkX === chunkX && chunk.chunkY === chunkY
             ));
             const regionalRoles = regionalChunk?.roles ?? [];
+            const exposureWorldPlan = this.authoredWorldTiles
+                ? this.ensureAuthoredWorldPlan?.() ?? this.worldPlan
+                : null;
+            const protectedExposureChunks = [
+                ...(exposureWorldPlan?.reservations ?? []).map((entry) => entry.chunkKey),
+                ...(exposureWorldPlan?.setpieceClaims ?? []).flatMap((claim) => claim.chunkKeys ?? [])
+            ];
+            const exposureSlots = regionalChunk
+                ? planRingExposureSlots(radialPlan, regionalChunk.ring, {
+                    excludedChunkKeys: protectedExposureChunks
+                })
+                : null;
+            const exposureChunkKey = `${chunkX},${chunkY}`;
+            const forcedExposureRoom = exposureSlots?.authoredRoomChunkKeys.includes(exposureChunkKey) ?? false;
+            const forcedSignatureHall = exposureSlots?.signatureHallwayChunkKey === exposureChunkKey;
+            const forcedBiomeTransition = exposureSlots?.biomeTransitionChunkKey === exposureChunkKey;
             const radialAnchor = this.getBiomeAnchorPosition?.() ?? { x: 0, z: 0 };
             const chunkWorldX = chunkX * this.chunkSize + this.chunkSize * 0.5 - radialAnchor.x;
             const chunkWorldZ = chunkY * this.chunkSize + this.chunkSize * 0.5 - radialAnchor.z;
@@ -45393,11 +45436,12 @@ export class ThreeGame {
                 this.wfcMetadataCache?.get(`${chunkX},${chunkY - 1}`)?.roomInstances?.length ||
                 this.wfcMetadataCache?.get(`${chunkX},${chunkY + 1}`)?.roomInstances?.length
                 );
-            const roomMode = !tutorialRing && (isDestination || (!hasAdjacentRoom && (
+            const roomMode = !tutorialRing && (forcedExposureRoom || (!forcedSignatureHall && !forcedBiomeTransition
+                && (isDestination || (!hasAdjacentRoom && (
                 regionalRoles.includes('ring')
                 || (nearestRadialRoom <= this.chunkSize * 0.9 && (Math.abs(chunkX + chunkY) % 2 === 0))
                 || random() < 0.20
-            )));
+                )))));
             if (!this.authoredWorldTiles) {
                 const architectural = generateArchitecturalMazeChunk(random, {
                     size: this.chunkSize,
@@ -45435,6 +45479,10 @@ export class ThreeGame {
             } else {
                 const authoredPlan = this.getRoomGrammarChunkPlan?.(this.ensureAuthoredWorldPlan?.() ?? this.worldPlan)
                     ?? this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
+                const chunkBiome = String(this.getBiomeKeyForWorldPosition?.(
+                    chunkX * this.chunkSize + this.chunkSize * 0.5,
+                    chunkY * this.chunkSize + this.chunkSize * 0.5
+                ) ?? 'active').toLowerCase();
                 const authoredResolution = authoredPlan
                     ? resolveAuthoredChunkStructure(random, authoredPlan, {
                     chunkX,
@@ -45442,15 +45490,34 @@ export class ThreeGame {
                     activeReservationIds: this.getActiveAuthoredReservationIds?.() ?? [],
                     chunkSize: this.chunkSize,
                     openings: architecturalOpenings,
-                    biome: String(this.getBiomeKeyForWorldPosition?.(
-                        chunkX * this.chunkSize + this.chunkSize * 0.5,
-                        chunkY * this.chunkSize + this.chunkSize * 0.5
-                    ) ?? 'active').toLowerCase(),
+                    biome: chunkBiome,
                     tutorialOnly: this.isInTutorialRing(chunkX, chunkY)
                     })
                     : null;
                 let structure = null;
                 if (authoredResolution?.status === 'accepted') structure = authoredResolution.structure;
+                if (!structure && forcedExposureRoom && !authoredResolution?.reservationId) {
+                    structure = buildExposureRoomChunkStructure(random, {
+                        chunkX,
+                        chunkY,
+                        chunkSize: this.chunkSize,
+                        openings: architecturalOpenings,
+                        tier: regionalChunk?.ring ?? 1,
+                        biome: chunkBiome,
+                        roll: random()
+                    });
+                }
+                if (!structure && (forcedSignatureHall || forcedBiomeTransition)
+                    && !authoredResolution?.reservationId) {
+                    structure = buildHallwayConnectorChunkStructure(random, {
+                        chunkX,
+                        chunkY,
+                        chunkSize: this.chunkSize,
+                        openings: architecturalOpenings,
+                        archetypeId: forcedBiomeTransition ? 'biome_transition_hall' : 'boss_staging_approach'
+                    });
+                    if (structure) structure.diagnostics.exposureBudget = true;
+                }
                 const grammarConfig = roomMode && !isDestination && !authoredResolution?.reservationId
                     && !this.isInTutorialRing(chunkX, chunkY) ? this.getRoomGrammarConfig?.() : null;
                 if (!structure && grammarConfig) {
@@ -45503,6 +45570,11 @@ export class ThreeGame {
                 sockets: structure.sockets,
                 wayfindingMarkers: structure.wayfindingMarkers ?? [],
                 generatorId: structure.generatorId,
+                exposureRole: structure.diagnostics.exposureBudget
+                    ? forcedExposureRoom ? 'authored-room'
+                        : forcedSignatureHall ? 'signature-hallway'
+                            : forcedBiomeTransition ? 'biome-transition' : null
+                    : null,
                 reservationId: structure.reservationId ?? authoredResolution?.reservationId ?? null,
                 ringCrossingId: authoredResolution?.reservation?.crossingId ?? null,
                 authoredResolution: authoredResolution?.diagnostics ?? null,

@@ -580,13 +580,20 @@ door apron; current performance and 157-test spatial suite remain green.
 
 ### Phase 1 — architecture visibility
 
-- [x] seeded authored-template exposure budget and debug telemetry (`src/roomExposureBudget.js`);
+- [x] seeded authored-template exposure budget is consumed by live chunk generation, not only its
+  catalog test: every non-tutorial ring deterministically reserves two non-story route chunks for
+  socket-compatible authored room builds, one for a wide signature hall, and one for a biome
+  transition hall. Camp/hive/mission/blocker/set-piece reservations always win; debug snapshots
+  and the in-world debug overlay expose generator, build/archetype, rotation, reservation,
+  fallback, and exposure role (`src/roomExposureBudget.js`, `src/chunkStructure.js`,
+  `src/threeGame.js`);
 - [x] data-driven 17×16 origin chamber plus an unavoidable seven-cell-wide north service
   approach/release chamber with topology-preserving exits and modular-kit route markers
   (`src/data/crashSiteBuild.js`, `src/crashSiteBuild.js`);
 - remaining start work: offset build/tutorial side bay and runtime consumption of the declared
   half-grid bed/seal construction sockets;
-- remaining general hallway work: enforce the 5/7-cell exposure budget beyond the start;
+- [x] enforce 5/7-cell signature and biome-transition exposure beyond the start through authored
+  ring slots; ordinary service passages retain 3-cell compression so every route is not a hall;
 - [x] wall-run planner and first bunker/cryo macro modules (`src/wallRunPlanner.js`);
 - [x] structural threshold support repair/validation and deterministic door presentation records;
 - [x] blast-slab, split-bulkhead, camp-barricade, and arch-guillotine families are assigned by

@@ -5,8 +5,10 @@ import {
     evaluateTemplateSelection,
     recordTemplateSelection,
     validateRingExposureBudget,
-    formatExposureDebugTelemetry
+    formatExposureDebugTelemetry,
+    planRingExposureSlots
 } from './roomExposureBudget.js';
+import { generateRadialMazeExpedition } from './mazeExpedition.js';
 
 describe('RoomExposureBudget (Workstream A3)', () => {
     it('initializes ring trackers with appropriate tutorial vs standard ring budgets', () => {
@@ -96,6 +98,27 @@ describe('RoomExposureBudget (Workstream A3)', () => {
             // Verify no consecutive identical IDs exist in history
             for (let i = 1; i < tracker.recentArchetypeIds.length; i += 1) {
                 expect(tracker.recentArchetypeIds[i]).not.toBe(tracker.recentArchetypeIds[i - 1]);
+            }
+        }
+    });
+
+    it('maps every later ring budget onto real non-story route chunks across 100 seeds', () => {
+        for (let seed = 1; seed <= 100; seed += 1) {
+            const plan = generateRadialMazeExpedition(seed);
+            const protectedKeys = new Set([...plan.nodes, ...plan.blockers]
+                .map((entry) => `${entry.chunkX},${entry.chunkY}`));
+            for (let ring = 1; ring <= 5; ring += 1) {
+                const slots = planRingExposureSlots(plan, ring);
+                expect(slots.authoredRoomChunkKeys).toHaveLength(2);
+                expect(slots.signatureHallwayChunkKey).toBeTruthy();
+                expect(slots.biomeTransitionChunkKey).toBeTruthy();
+                const selected = [
+                    ...slots.authoredRoomChunkKeys,
+                    slots.signatureHallwayChunkKey,
+                    slots.biomeTransitionChunkKey
+                ];
+                expect(new Set(selected).size).toBe(4);
+                expect(selected.every((key) => !protectedKeys.has(key))).toBe(true);
             }
         }
     });
