@@ -67,8 +67,11 @@ import {
 import {
     availableFirstNightSocket,
     ensureFirstNightBaseState,
+    getFirstNightCotHandoff,
     installedCot,
-    planFirstNightBase
+    planFirstNightBase,
+    releaseFirstNightCotHandoff,
+    stageFirstNightCotAtCamp
 } from './firstNightBase.js';
 import {
     availableShipRebuildSocket,
@@ -9962,11 +9965,68 @@ export class ThreeGame {
             shipZ: ship.tileZ
         });
         this.carryState = result.state;
+        this.stageFirstNightCotCampHandoff?.();
         saveInstalledBaseModules(this.carryState.installed);
         this.reconcileCarryObjectVisuals?.();
         this.reconcileInstalledBaseModuleVisuals?.();
         this.syncBunkerCot?.();
-        return result;
+        return { ...result, state: this.carryState };
+    }
+
+    stageFirstNightCotCampHandoff() {
+        if (!this.carryState || !(this.camps?.length)) return null;
+        const ship = this.getActiveShip?.();
+        const shipPosition = {
+            x: Number(ship?.tileX) || 0,
+            z: Number(ship?.tileZ) || 0
+        };
+        const candidates = this.camps.filter((camp) => {
+            const status = this.getCampRecord?.(camp.id)?.status ?? camp.status ?? 'alive';
+            return status === 'alive' && Number.isFinite(camp?.pos?.x) && Number.isFinite(camp?.pos?.z);
+        }).sort((left, right) => {
+            const leftDistance = Math.hypot(left.pos.x - shipPosition.x, left.pos.z - shipPosition.z);
+            const rightDistance = Math.hypot(right.pos.x - shipPosition.x, right.pos.z - shipPosition.z);
+            return leftDistance - rightDistance || left.id.localeCompare(right.id);
+        });
+        if (!candidates.length) {
+            const reserved = this.carryState.worldObjects?.find((object) => object.handoff?.type === 'camp-cot'
+                && object.handoff?.status === 'reserved');
+            if (!reserved) return null;
+            const released = releaseFirstNightCotHandoff(this.carryState, reserved.handoff.campId);
+            if (!released.ok) return null;
+            this.carryState = released.state;
+            this.reconcileCarryObjectVisuals?.();
+            return released.object;
+        }
+        const result = stageFirstNightCotAtCamp(this.carryState, candidates[0]);
+        if (!result.staged) return null;
+        this.carryState = result.state;
+        this.reconcileCarryObjectVisuals?.();
+        this.syncMissionCargoMapLandmarks?.();
+        window.dispatchEvent(new CustomEvent('first-night-cot-staged', {
+            detail: { campId: candidates[0].id, object: result.staged }
+        }));
+        return result.staged;
+    }
+
+    claimFirstNightCotHandoff(camp) {
+        if (!camp) return false;
+        const result = releaseFirstNightCotHandoff(this.carryState, camp.id);
+        if (!result.ok) return false;
+        this.carryState = result.state;
+        this.reconcileCarryObjectVisuals?.();
+        this.syncMissionCargoMapLandmarks?.();
+        this.spawnPhysicalBurst?.(result.object.worldPosition.x, result.object.worldPosition.z, {
+            color: 0xf3d18a,
+            count: 12,
+            upward: 0.16
+        });
+        this.showBunkerLine?.(`${camp.label?.toUpperCase() ?? 'SURVIVOR CAMP'} RELEASED A FOLDED COT — CARRY IT TO THE SHIP SLEEP BERTH. YOUR COMPANION WILL COVER YOU.`);
+        window.AudioManager?.play?.('ui_confirm', { volume: 0.62, playbackRate: 0.92 });
+        window.dispatchEvent(new CustomEvent('first-night-cot-released', {
+            detail: { campId: camp.id, instanceId: result.object.instanceId }
+        }));
+        return true;
     }
 
     spawnMissionCarryCargo({ definitionId, missionId, worldPosition, instanceId = null } = {}) {
@@ -10625,6 +10685,7 @@ export class ThreeGame {
         let nearest = null;
         let nearestDistance = maxDistance;
         for (const object of this.carryState?.worldObjects ?? []) {
+            if (object.handoff?.status === 'reserved') continue;
             const distance = Math.hypot(
                 this.player.position.x - object.worldPosition.x,
                 this.player.position.z - object.worldPosition.z
@@ -10641,6 +10702,10 @@ export class ThreeGame {
             ? { object: this.carryState?.worldObjects?.find((object) => object.instanceId === instanceId) }
             : this.getNearestCarryObject();
         if (!nearest?.object) return false;
+        if (nearest.object.handoff?.status === 'reserved') {
+            this.showBunkerLine?.('CAMP CARGO — SPEAK TO THE SURVIVORS BEFORE TAKING IT.');
+            return false;
+        }
         const carrierPlayerId = this.multiplayerLocalPlayerId ?? 'local';
         const result = beginCarry(this.carryState, nearest.object.instanceId, carrierPlayerId);
         if (!result.ok) return false;
@@ -19434,6 +19499,7 @@ export class ThreeGame {
     updateCamps(delta) {
         if (this.performanceProfile === 'menu' || !this.act2) return;
         this.ensureAct2Camps();
+        this.stageFirstNightCotCampHandoff?.();
         const phase = this.act2.getPhase();
         for (const camp of this.camps) {
             camp.update(delta);
@@ -20393,6 +20459,7 @@ export class ThreeGame {
             }
         }
         this._act2CampsReady = true;
+        this.stageFirstNightCotCampHandoff?.();
         this.restoreActiveCampQuestFromState?.();
     }
 
@@ -22660,6 +22727,16 @@ export class ThreeGame {
             const record = this.getCampRecord(camp.id);
             const status = record?.status ?? camp.status ?? 'alive';
 
+            const cotHandoff = status === 'alive' ? getFirstNightCotHandoff(this.carryState, camp.id) : null;
+            if (cotHandoff && !skip?.has('cot-handoff')) {
+                return {
+                    camp,
+                    action: 'cot-handoff',
+                    object: cotHandoff,
+                    label: 'CLAIM FOLDED COT — FIRST-NIGHT SHELTER'
+                };
+            }
+
             const hasCompanion = (this.companions ?? []).some((c) => c.isWanderer || c.wanderer);
             if (hasCompanion && ['alive', 'robbed'].includes(status)) {
                 if (!skip?.has('settle-companion')) return {
@@ -23581,6 +23658,7 @@ export class ThreeGame {
         }
 
         if (action === 'talk-resident') return this.talkToCampResident(camp, actionable.workerIndex);
+        if (action === 'cot-handoff') return this.claimFirstNightCotHandoff(camp);
         if (action === 'field-workbench') return this.openFieldWorkbench(camp);
         if (action === 'settle-companion') return this.settleCompanionAtCamp(camp);
         if (action === 'treat-scar') return this.treatScarAtCamp(camp, actionable.scarId);

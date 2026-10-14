@@ -692,8 +692,12 @@ unwinnable seed, and stays within the projectile/FX frame budget.
 - [x] both routes inherit mission beacons, compass/map guidance, last-safe recovery, death drops,
   weapon lockout, and companion cover. Their authored blue/red source lamps remain visible while
   loose or carried and cast shadowless point light onto nearby PBR surfaces;
-- remaining: a camp-authored cot handoff, additional hive logistics variants, and host-authoritative
-  co-op delivery sequencing.
+- [x] camp-authored cot handoff: the nearest living survivor camp reserves the physical folded cot
+  at its supply rack, exposes a prioritized first-night shelter action, refuses premature pickup,
+  then releases that same run-cargo instance for the companion-covered return to the ship berth;
+  if no camp survives, the reservation releases rather than deadlocking the first night
+  (`src/firstNightBase.js`, `src/threeGame.js`, `src/campActionMenu.js`);
+- remaining: additional hive logistics variants and host-authoritative co-op delivery sequencing.
 
 Exit: a new campaign can recover the bed, finish a sealed room, fill it with O2, and sleep; firing
 is impossible while carrying; the partner/companion can defend the carrier.

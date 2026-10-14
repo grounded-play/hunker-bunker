@@ -4,8 +4,11 @@ import { evaluateRoomSealGraph } from './baseSealGraph.js';
 import {
     availableFirstNightSocket,
     ensureFirstNightBaseState,
+    getFirstNightCotHandoff,
     installedCot,
-    planFirstNightBase
+    planFirstNightBase,
+    releaseFirstNightCotHandoff,
+    stageFirstNightCotAtCamp
 } from './firstNightBase.js';
 
 function installDefinition(state, plan, definitionId) {
@@ -66,5 +69,34 @@ describe('first-night base recovery', () => {
         expect(result.state.worldObjects.map(({ definitionId }) => definitionId)).toEqual([
             'cot_bed', 'hull_patch_panel', 'door_seal_kit'
         ]);
+    });
+
+    it('stages the unclaimed cot at a camp rack and releases it through one authored handoff', () => {
+        const initial = ensureFirstNightBaseState(createCarryState('run-a'), { shipX: 0, shipZ: 0 });
+        const camp = { id: 'camp_meridian', pos: { x: 40, z: 12 } };
+        const staged = stageFirstNightCotAtCamp(initial.state, camp);
+        expect(staged.staged).toMatchObject({
+            definitionId: 'cot_bed',
+            worldPosition: { x: 37.8, z: 14.6 },
+            sourcePosition: { x: 37.8, z: 14.6 },
+            handoff: { type: 'camp-cot', campId: 'camp_meridian', status: 'reserved' }
+        });
+        expect(getFirstNightCotHandoff(staged.state, camp.id)?.instanceId).toBe(staged.staged.instanceId);
+
+        const released = releaseFirstNightCotHandoff(staged.state, camp.id);
+        expect(released.ok).toBe(true);
+        expect(released.object.handoff.status).toBe('released');
+        expect(getFirstNightCotHandoff(released.state, camp.id)).toBeNull();
+        expect(releaseFirstNightCotHandoff(released.state, camp.id)).toMatchObject({ ok: false, reason: 'missing-handoff' });
+    });
+
+    it('never relocates a cot after the camp has released it', () => {
+        const initial = ensureFirstNightBaseState(createCarryState('run-a'));
+        const firstCamp = { id: 'camp_meridian', pos: { x: 20, z: 20 } };
+        const first = stageFirstNightCotAtCamp(initial.state, firstCamp);
+        const released = releaseFirstNightCotHandoff(first.state, firstCamp.id);
+        const second = stageFirstNightCotAtCamp(released.state, { id: 'camp_tallow', pos: { x: 80, z: 80 } });
+        expect(second.staged).toBeNull();
+        expect(second.state).toBe(released.state);
     });
 });

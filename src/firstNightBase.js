@@ -3,6 +3,7 @@ import { getBaseModuleDefinition } from './data/baseModules.js';
 
 export const FIRST_NIGHT_COT_MISSION_ID = 'first-night-cot-recovery';
 export const FIRST_NIGHT_SEAL_MISSION_ID = 'first-night-berth-seal';
+export const FIRST_NIGHT_COT_HANDOFF_OFFSET = Object.freeze({ x: -2.2, z: 2.6 });
 
 const RECOVERY_DEFINITIONS = Object.freeze([
     Object.freeze({
@@ -131,4 +132,63 @@ export function availableFirstNightSocket(state, plan, object) {
 
 export function installedCot(state) {
     return state?.installed?.find(({ definitionId }) => definitionId === 'cot_bed') ?? null;
+}
+
+/**
+ * Moves the still-unclaimed tutorial cot from the crash debris to an authored
+ * camp supply rack. The camp owns the handoff until its interaction releases
+ * the object; installed/carried/released cots are never teleported.
+ */
+export function stageFirstNightCotAtCamp(state, camp) {
+    if (!state || !camp?.id || !Number.isFinite(camp?.pos?.x) || !Number.isFinite(camp?.pos?.z)) {
+        return { state, staged: null };
+    }
+    const index = state.worldObjects.findIndex((object) => (
+        object.definitionId === 'cot_bed'
+        && object.missionId === FIRST_NIGHT_COT_MISSION_ID
+        && object.handoff?.status !== 'released'
+    ));
+    if (index < 0) return { state, staged: null };
+
+    const position = {
+        x: camp.pos.x + FIRST_NIGHT_COT_HANDOFF_OFFSET.x,
+        z: camp.pos.z + FIRST_NIGHT_COT_HANDOFF_OFFSET.z
+    };
+    const current = state.worldObjects[index];
+    if (current.handoff?.campId === camp.id
+        && current.worldPosition?.x === position.x
+        && current.worldPosition?.z === position.z) {
+        return { state, staged: null };
+    }
+    const staged = {
+        ...current,
+        worldPosition: position,
+        sourcePosition: { ...position },
+        lastSafePosition: { ...position },
+        handoff: { type: 'camp-cot', campId: camp.id, status: 'reserved' }
+    };
+    const worldObjects = [...state.worldObjects];
+    worldObjects[index] = staged;
+    return { state: { ...state, worldObjects }, staged };
+}
+
+export function getFirstNightCotHandoff(state, campId) {
+    return state?.worldObjects?.find((object) => (
+        object.definitionId === 'cot_bed'
+        && object.missionId === FIRST_NIGHT_COT_MISSION_ID
+        && object.handoff?.type === 'camp-cot'
+        && object.handoff?.campId === campId
+        && object.handoff?.status === 'reserved'
+    )) ?? null;
+}
+
+export function releaseFirstNightCotHandoff(state, campId) {
+    const index = state?.worldObjects?.findIndex((object) => object.instanceId === getFirstNightCotHandoff(state, campId)?.instanceId) ?? -1;
+    if (index < 0) return { ok: false, reason: 'missing-handoff', state };
+    const worldObjects = [...state.worldObjects];
+    worldObjects[index] = {
+        ...worldObjects[index],
+        handoff: { ...worldObjects[index].handoff, status: 'released' }
+    };
+    return { ok: true, object: worldObjects[index], state: { ...state, worldObjects } };
 }
