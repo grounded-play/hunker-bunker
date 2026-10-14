@@ -5,6 +5,20 @@ Status: implementation-ready audit and remediation plan
 Branch: `dev/sprint-52`
 
 Planning baseline: `bc3f5b30`
+
+## Implementation progress
+
+- 2026-10-14 — P1 wall-machine foundation implemented: added
+  `modelPresentationRegistry.js`, centralized the existing
+  wall-backed set, classified both exosuit/decon machines, removed the unsafe
+  arbitrary-floor fallback, moved the docking gantry from generic corner
+  dressing to wall dressing, and made both scatter replacement paths consume
+  the shared classification. Focused result: 74 tests passed across model
+  registry, room population/dressing, site props, and floor/door placement.
+- Remaining: complete runtime inventory/audit tooling, migrate all asset
+  families into reviewed profiles, measured contact-plane alignment, decal
+  registry, real weapon marker calibration, armed hero loadout state, contact
+  sheets, and release gates.
 Date: 2026-10-14
 
 ## Player-visible outcome

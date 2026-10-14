@@ -1,5 +1,6 @@
 import { computePropFacingYaw, chooseSpacedModel } from './propBehavior.js';
 import { doorApronCellsForDoor } from './placementSafety.js';
+import { isWallMountedModel } from './modelPresentationRegistry.js';
 
 function cellKey(cell) {
     return `${cell.x},${cell.y}`;
@@ -53,18 +54,7 @@ function findCellWallNormal(cell, grid) {
 }
 
 export function isWallBackedPropType(type) {
-    return type === 'prop_fungal_tendril_altar'
-        || type === 'prop_flesh_steel_cradle'
-        || type === 'prop_shrine_plinth_broken'
-        || type === 'prop_biomech_sphincter_hatch_vent'
-        || type === 'prop_biomech_tracheal_wall_pipe'
-        || type === 'prop_decon_eyewash_shower_station'
-        || type === 'prop_exhaust_blower_fan_hood'
-        || type === 'prop_wall_cable_tray_swag'
-        || type === 'prop_vertebral_cable_riser'
-        || type === 'prop_oxygen_bottle_cascade_rack'
-        || type === 'prop_pipe_organ_heat_exchanger'
-        || type === 'prop_ceiling_crane_hoist';
+    return isWallMountedModel(type);
 }
 
 function pickCandidate(candidates, random, grid, center, {
@@ -80,7 +70,7 @@ function pickCandidate(candidates, random, grid, center, {
     let pool = wallOnly
         ? candidates.filter((cell) => findCellWallNormal(cell, grid) !== null)
         : candidates;
-    if (pool.length === 0 && wallOnly) pool = candidates;
+    if (pool.length === 0 && wallOnly) return null;
     const focalPlacements = placements.filter((placement) => (
         ['signature', 'large', 'structural', 'interaction'].includes(placement.kind)
     ));

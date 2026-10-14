@@ -194,20 +194,20 @@ export const ROLE_DRESSING = Object.freeze({
     },
     reward: { clutter: ['prop_bunker_supplies'], corners: ['prop_ammo_crate_stack'] },
     engineering: {
-        wallProps: ['prop_conduit_junction_box', 'prop_wall_cable_tray_swag', 'prop_exhaust_blower_fan_hood', 'prop_pipe_organ_heat_exchanger', 'life_lung_filter_bellows',
+        wallProps: ['prop_conduit_junction_box', 'prop_wall_cable_tray_swag', 'prop_exhaust_blower_fan_hood', 'prop_pipe_organ_heat_exchanger', 'prop_exosuit_docking_gantry', 'life_lung_filter_bellows',
             'life_fuse_bypass_panel'],
         wallDecals: ['decal_wall_conduit_patch', 'decal_wall_grime_drip', 'decal_hazard_stripes'],
         clutter: ['prop_maintenance_tool_cart', 'scatter_cable_coil', 'scatter_bolts', 'life_umbilical_tether'],
-        corners: ['prop_oxygen_bottle_cascade_rack', 'prop_exosuit_docking_gantry', 'prop_coolant_drum_leaking_pool', 'prop_floor_drainage_sump_trough', 'life_fuel_probe_boom',
+        corners: ['prop_oxygen_bottle_cascade_rack', 'prop_coolant_drum_leaking_pool', 'prop_floor_drainage_sump_trough', 'life_fuel_probe_boom',
             'life_welding_station', 'life_exosuit_teardown'],
         floorDecals: ['decal_grease_pool', 'decal_oil_spill_patch', 'scatter_coolant_puddle', 'decal_floor_grate_01', 'decal_strip_cart_ruts', 'decal_puddle_slick']
     },
     workshop: {
-        wallProps: ['prop_conduit_junction_box', 'prop_wall_cable_tray_swag', 'prop_exhaust_blower_fan_hood', 'prop_pipe_organ_heat_exchanger', 'life_lung_filter_bellows',
+        wallProps: ['prop_conduit_junction_box', 'prop_wall_cable_tray_swag', 'prop_exhaust_blower_fan_hood', 'prop_pipe_organ_heat_exchanger', 'prop_exosuit_docking_gantry', 'life_lung_filter_bellows',
             'life_fuse_bypass_panel'],
         wallDecals: ['decal_wall_conduit_patch', 'decal_wall_grime_drip', 'decal_hazard_stripes'],
         clutter: ['prop_maintenance_tool_cart', 'scatter_cable_coil', 'scatter_bolts', 'life_umbilical_tether'],
-        corners: ['prop_oxygen_bottle_cascade_rack', 'prop_exosuit_docking_gantry', 'prop_coolant_drum_leaking_pool', 'prop_floor_drainage_sump_trough', 'life_fuel_probe_boom',
+        corners: ['prop_oxygen_bottle_cascade_rack', 'prop_coolant_drum_leaking_pool', 'prop_floor_drainage_sump_trough', 'life_fuel_probe_boom',
             'life_welding_station', 'life_exosuit_teardown'],
         floorDecals: ['decal_grease_pool', 'decal_oil_spill_patch', 'scatter_coolant_puddle', 'decal_floor_grate_01', 'decal_strip_cart_ruts', 'decal_puddle_slick']
     }
