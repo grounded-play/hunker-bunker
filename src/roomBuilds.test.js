@@ -46,7 +46,7 @@ describe('ROOM_BUILD_CATALOG', () => {
     it('has exactly the vertical-slice families the plan requires', () => {
         const families = ROOM_BUILD_CATALOG.map((build) => build.family).sort();
         expect(families).toEqual([
-            'armory', 'cache', 'cache', 'engineering', 'engineering', 'engineering', 'fabricator', 'gate',
+            'armory', 'cache', 'cache', 'cache', 'engineering', 'engineering', 'engineering', 'fabricator', 'gate',
             'medical', 'o2', 'puzzle', 'security', 'trap_reward'
         ].sort());
     });
@@ -459,6 +459,27 @@ describe('ROOM_BUILD_CATALOG', () => {
         expect(source.x).not.toBe(approach.x);
         expect(source.y).toBeGreaterThan(gate.y);
         expect(reward.y).toBeLessThan(gate.y);
+    });
+
+    it('authors a second fire gate as an optional shortcut with a longer walkable bypass', () => {
+        const build = ROOM_BUILD_CATALOG.find((entry) => entry.id === 'thermal_bypass_cache');
+        const approach = computeApproachPoint(build);
+        const source = build.interactionAnchors.find(({ id }) => id === 'fire_weapon_source');
+        const gate = build.interactionAnchors.find(({ id }) => id === 'fire_gate');
+        const reward = build.rewardAnchors.find(({ id }) => id === 'thermal_bypass_cache');
+        const frozenGate = new Set([`${gate.x},${gate.y}`]);
+        const bypassDistance = shortestPatternPath(build.pattern, approach, reward, frozenGate);
+        const meltedDistance = shortestPatternPath(build.pattern, approach, reward);
+
+        expect(build).toMatchObject({ family: 'cache', biomeEligibility: ['cryo'], tierEligibility: [2, 3, 4] });
+        expect(shortestPatternPath(build.pattern, approach, source, frozenGate)).toBeLessThan(Infinity);
+        expect(bypassDistance).toBeLessThan(Infinity);
+        expect(meltedDistance).toBeLessThan(bypassDistance);
+        expect(build.pattern[5]).toBe('#######.####...');
+        expect(build.sockets).toEqual(expect.arrayContaining([
+            expect.objectContaining({ id: 'entry', side: 's', required: true }),
+            expect.objectContaining({ id: 'farSide', side: 'n' })
+        ]));
     });
 
     it.each(ROOM_BUILD_CATALOG.map((build) => [build.id, build]))('%s is internally valid', (_, build) => {

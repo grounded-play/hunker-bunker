@@ -4,7 +4,8 @@ import {
     createIceBarrier,
     applyHeatToBarrier,
     tickIceBarrier,
-    validateFireGateReachability
+    validateFireGateReachability,
+    validateAuthoredFireGateRoute
 } from './iceGateSystem.js';
 
 describe('IceGateSystem', () => {
@@ -84,5 +85,34 @@ describe('IceGateSystem', () => {
         });
         expect(invalidReturn.valid).toBe(false);
         expect(invalidReturn.reason).toBe('missing-return-route');
+    });
+
+    it('rejects authored alternate gates that trap the objective or fail to shorten its route', () => {
+        const build = {
+            pattern: [
+                '.....',
+                '##.##',
+                '.....',
+                '.....'
+            ],
+            interactionAnchors: [
+                { id: 'source', x: 3, y: 2 },
+                { id: 'gate', x: 2, y: 1 }
+            ],
+            rewardAnchors: [{ id: 'goal', x: 2, y: 0 }],
+            loreAnchors: [],
+            fireGateRoute: { sourceAnchorId: 'source', gateAnchorId: 'gate', objectiveAnchorId: 'goal' }
+        };
+        expect(validateAuthoredFireGateRoute(build, { x: 2, y: 3 })).toMatchObject({
+            valid: false,
+            reason: 'missing-alternate-route'
+        });
+
+        build.pattern[1] = '.....';
+        build.interactionAnchors[1] = { id: 'gate', x: 0, y: 1 };
+        expect(validateAuthoredFireGateRoute(build, { x: 2, y: 3 })).toMatchObject({
+            valid: false,
+            reason: 'gate-does-not-create-shortcut'
+        });
     });
 });

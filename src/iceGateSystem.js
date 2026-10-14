@@ -163,3 +163,64 @@ export function validateFireGateReachability({
 
     return { valid: true };
 }
+
+function shortestFloorPath(pattern, start, goal, blocked = new Set()) {
+    if (!start || !goal) return Infinity;
+    const key = ({ x, y }) => `${x},${y}`;
+    const queue = [{ x: start.x, y: start.y, distance: 0 }];
+    const seen = new Set([key(start)]);
+    for (let index = 0; index < queue.length; index += 1) {
+        const current = queue[index];
+        if (current.x === goal.x && current.y === goal.y) return current.distance;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const next = { x: current.x + dx, y: current.y + dy };
+            const nextKey = key(next);
+            if (pattern[next.y]?.[next.x] !== '.' || blocked.has(nextKey) || seen.has(nextKey)) continue;
+            seen.add(nextKey);
+            queue.push({ ...next, distance: current.distance + 1 });
+        }
+    }
+    return Infinity;
+}
+
+/**
+ * Proves the topology of an authored optional fire gate from its real floor
+ * grid. The weapon must be reachable while the gate is frozen, the objective
+ * must still have a longer bypass, and melting the gate must create a genuine
+ * shortcut rather than merely changing presentation.
+ */
+export function validateAuthoredFireGateRoute(build, approach) {
+    const route = build?.fireGateRoute;
+    if (!route) return { valid: true };
+
+    const anchors = [
+        ...(build.interactionAnchors ?? []),
+        ...(build.rewardAnchors ?? []),
+        ...(build.loreAnchors ?? [])
+    ];
+    const findAnchor = (id) => anchors.find((anchor) => anchor.id === id);
+    const source = findAnchor(route.sourceAnchorId);
+    const gate = findAnchor(route.gateAnchorId);
+    const objective = findAnchor(route.objectiveAnchorId);
+    if (!source || !gate || !objective || !approach) {
+        return { valid: false, reason: 'missing-route-anchor' };
+    }
+
+    const frozenGate = new Set([`${gate.x},${gate.y}`]);
+    const sourceDistance = shortestFloorPath(build.pattern, approach, source, frozenGate);
+    if (!Number.isFinite(sourceDistance)) {
+        return { valid: false, reason: 'unreachable-weapon-source' };
+    }
+
+    const bypassDistance = shortestFloorPath(build.pattern, approach, objective, frozenGate);
+    if (!Number.isFinite(bypassDistance)) {
+        return { valid: false, reason: 'missing-alternate-route' };
+    }
+
+    const meltedDistance = shortestFloorPath(build.pattern, approach, objective);
+    if (!Number.isFinite(meltedDistance) || meltedDistance >= bypassDistance) {
+        return { valid: false, reason: 'gate-does-not-create-shortcut' };
+    }
+
+    return { valid: true, sourceDistance, bypassDistance, meltedDistance };
+}

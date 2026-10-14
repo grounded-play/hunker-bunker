@@ -7,6 +7,7 @@ import {
     addWallShell
 } from './architecturalMaze.js';
 import { ROOM_BUILD_CATALOG, ROOM_BUILD_VERSION, CATHEDRAL_ROOM_BLUEPRINTS, N64_ROOM_BLUEPRINTS, ALL_ROOM_BUILDS } from './data/roomBuilds.js';
+import { validateAuthoredFireGateRoute } from './iceGateSystem.js';
 
 // Sprint 23 Phase 3 / Lane B — pure validate/rotate/select/stamp API over
 // the authored-room data in src/data/roomBuilds.js. No Three.js/DOM/random
@@ -211,6 +212,10 @@ export function validateRoomBuild(build) {
     }
     if (build.rewardAnchors.length < build.contentBudget.pickupsMin) {
         errors.push('rewardAnchors does not satisfy contentBudget.pickupsMin');
+    }
+    const fireGateProof = validateAuthoredFireGateRoute(build, computeApproachPoint(build));
+    if (!fireGateProof.valid) {
+        errors.push(`fireGateRoute is invalid: ${fireGateProof.reason}`);
     }
 
     return errors;

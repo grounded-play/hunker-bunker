@@ -638,7 +638,11 @@ no persistence outside the expedition.
 - [x] first optional cryo fire-gated cache: a room-within-a-room whose only reward threshold is
   staged ice, with a physical open-case M-70 source guaranteed on the reachable approach side
   (`src/data/roomBuilds.js`, `src/threeGame.js`, `src/flameWeapon.js`);
-- remaining: one authored alternate-route gate and host-authoritative co-op heat/status events.
+- [x] authored alternate-route thermal bypass: the frozen seam is a meaningful shortcut, the M-70
+  remains reachable on the approach side, and grid-topology validation proves the longer service
+  route remains walkable while the ice collision is active (`src/data/roomBuilds.js`,
+  `src/iceGateSystem.js`, `src/roomBuilds.js`);
+- remaining: host-authoritative co-op heat/status events.
 
 Exit: fire damages and burns valid enemies, respects cover, melts only marked ice, cannot create an
 unwinnable seed, and stays within the projectile/FX frame budget.

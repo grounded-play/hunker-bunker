@@ -485,6 +485,69 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         contentBudget: { structuralLarge: 0, activityZones: 2, pickupsMin: 1, enemiesMax: 0 }
     }),
     Object.freeze({
+        id: 'thermal_bypass_cache',
+        family: 'cache',
+        themeStyle: 'cryo-service',
+        partitionThickness: 0.65,
+        // The frozen center seam is the fast route to the cache and north
+        // threshold. A readable service lane curls around the east end of the
+        // bulkhead, so arriving without fuel can never strand the run. The
+        // M-70 case stays on the entry side and turns the long safe route into
+        // an earned shortcut once the player understands the heat language.
+        pattern: authoredRoomPattern([
+            '...............',
+            '...............',
+            '...............',
+            '...........#...',
+            '...........#...',
+            '#######.####...',
+            '...........#...',
+            '...........#...',
+            '...............',
+            '...............',
+            '...............'
+        ]),
+        sockets: [
+            { id: 'entry', side: 's', width: 3, required: true },
+            { id: 'farSide', side: 'n', width: 3, required: false }
+        ],
+        rotationPolicy: 'cardinal',
+        tierEligibility: [2, 3, 4],
+        biomeEligibility: ['cryo'],
+        roles: ['reward'],
+        structuralAnchors: [],
+        interactionAnchors: [
+            { id: 'fire_weapon_source', type: 'weapon_flamethrower_case', x: 9, y: 8, blocking: false },
+            { id: 'fire_gate', type: 'barrier_ice_intact', x: 7, y: 5, blocking: true }
+        ],
+        fireGateRoute: {
+            sourceAnchorId: 'fire_weapon_source',
+            gateAnchorId: 'fire_gate',
+            objectiveAnchorId: 'thermal_bypass_cache'
+        },
+        signatureAnchorId: 'thermal_bypass_cache',
+        compassAnchors: { approach: 'entry', objective: 'thermal_bypass_cache' },
+        coverZones: [
+            { x: 0, y: 5, w: 7, h: 1 },
+            { x: 8, y: 5, w: 4, h: 1 },
+            { x: 11, y: 3, w: 1, h: 5 }
+        ],
+        encounterZones: [],
+        rewardAnchors: [{ id: 'thermal_bypass_cache', type: 'prop_bunker_supplies', x: 7, y: 2 }],
+        loreAnchors: [{ id: 'bypass_maintenance_log', type: 'lore_terminal', x: 13, y: 5 }],
+        hazardZones: [],
+        quietZones: [
+            { x: 4, y: 0, w: 7, h: 5 },
+            { x: 5, y: 6, w: 6, h: 5 }
+        ],
+        safeZone: true,
+        containmentBounds: { minX: 0, minY: 0, maxX: 14, maxY: 10 },
+        presentationVariants: ['frozen', 'bypassed', 'breached', 'emptied'],
+        stateVariants: ['dormant', 'questActive', 'resolved'],
+        adjacency: { prefers: ['cryo'], forbids: ['camp'] },
+        contentBudget: { structuralLarge: 0, activityZones: 2, pickupsMin: 1, enemiesMax: 0 }
+    }),
+    Object.freeze({
         id: 'ring_crossing_landmark',
         family: 'gate',
         themeStyle: 'cathedral',
