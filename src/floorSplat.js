@@ -158,21 +158,31 @@ export function floorSurfaceFileNames() {
 
 /** Room themes mapped to interchangeable palettes so rooms do not repeat identical styles */
 export const ROOM_THEME_SURFACES = Object.freeze({
+    'bunker-standard': ['tex_floor_concrete_stained', 'tex_path_polished_concrete', 'tex_path_worn_deck'],
+    'bunker-utility': ['tex_floor_grate_trench', 'tex_floor_hydraulic_oil_slick', 'tex_path_polished_concrete', 'tex_floor_battery_acid_corrosion'],
     'bunker-medical': ['tex_floor_latex_mat', 'tex_floor_bone_terrazzo', 'tex_floor_blood_drain_grate', 'tex_floor_corporate_decon_foam'],
     'bunker-security': ['tex_floor_concrete_stained', 'tex_path_polished_concrete', 'tex_floor_battery_acid_corrosion', 'tex_floor_scorched_plasma_crater', 'tex_floor_spent_casings_drift'],
     'bunker-armory': ['tex_floor_concrete_stained', 'tex_path_worn_deck', 'tex_floor_scorched_plasma_crater', 'tex_floor_spent_casings_drift'],
     'bunker-storage': ['tex_floor_concrete_stained', 'tex_path_polished_concrete', 'tex_floor_grate_trench', 'tex_floor_hydraulic_oil_slick'],
     'reward-cache': ['tex_floor_concrete_stained', 'tex_path_polished_concrete', 'tex_floor_scorched_plasma_crater', 'tex_floor_spent_casings_drift'],
     'bunker-workshop': ['tex_floor_grate_trench', 'tex_path_polished_concrete', 'tex_floor_hydraulic_oil_slick', 'tex_floor_battery_acid_corrosion'],
+    'bunker-substation': ['tex_floor_grate_trench', 'tex_floor_battery_acid_corrosion', 'tex_path_polished_concrete'],
+    'bunker-cleanroom': ['tex_floor_corporate_decon_foam', 'tex_floor_latex_mat', 'tex_floor_bone_terrazzo'],
+    'bunker-toxic-sump': ['tex_floor_necrotic_bio_sludge', 'tex_floor_battery_acid_corrosion', 'tex_floor_grate_trench', 'tex_floor_hydraulic_oil_slick'],
     'cryo-engineering': ['tex_floor_grate_trench', 'tex_path_slush_track', 'tex_floor_frostbitten_trench', 'tex_floor_cryo_shattered_permafrost'],
-    'bio-engineering': ['tex_floor_grate_trench', 'tex_path_resin_trail', 'tex_floor_necrotic_bio_sludge', 'tex_floor_royal_jelly_calcification'],
     'cryo-rough': ['tex_floor_slush_ice', 'tex_path_packed_snow', 'tex_path_slush_track', 'tex_floor_frostbitten_trench', 'tex_floor_cryo_shattered_permafrost'],
     'cryo-recovery': ['tex_floor_slush_ice', 'tex_path_slush_track', 'tex_floor_frostbitten_trench', 'tex_floor_cryo_shattered_permafrost'],
+    'cryo-permafrost': ['tex_floor_cryo_shattered_permafrost', 'tex_floor_frostbitten_trench', 'tex_floor_slush_ice', 'tex_path_packed_snow'],
+    'bio-resin': ['tex_floor_chitin_resin', 'tex_path_resin_trail', 'tex_floor_amniotic_slime_crust'],
+    'bio-engineering': ['tex_floor_grate_trench', 'tex_path_resin_trail', 'tex_floor_necrotic_bio_sludge', 'tex_floor_royal_jelly_calcification'],
     'bio-nest': ['tex_floor_chitin_resin', 'tex_path_resin_trail', 'tex_path_trodden_spores', 'tex_floor_amniotic_slime_crust', 'tex_floor_chitinous_eggshell_drift', 'tex_floor_royal_jelly_calcification'],
     'bio-medical': ['tex_floor_chitin_resin', 'tex_path_resin_trail', 'tex_floor_blood_drain_grate', 'tex_floor_amniotic_slime_crust', 'tex_floor_royal_jelly_calcification'],
+    'bio-security': ['tex_floor_chitin_resin', 'tex_floor_chitinous_eggshell_drift', 'tex_floor_royal_jelly_calcification'],
     'bio-feeding-chamber': ['tex_floor_chitin_resin', 'tex_path_resin_trail', 'tex_floor_necrotic_bio_sludge', 'tex_floor_amniotic_slime_crust', 'tex_floor_royal_jelly_calcification'],
+    'bio-mycelium': ['tex_floor_tallow_spore_fungus', 'tex_path_trodden_spores', 'tex_floor_necrotic_bio_sludge', 'tex_floor_royal_jelly_calcification'],
     'camp-fortified': ['tex_floor_camp_planks', 'tex_path_mud_track', 'tex_floor_cannibal_butchery_planks', 'tex_floor_tallow_spore_fungus', 'tex_floor_spent_casings_drift'],
-    'giger-cathedral': ['tex_floor_bone_terrazzo', 'tex_path_worn_deck', 'tex_floor_charred_crematorium', 'tex_floor_shattered_safety_glass', 'tex_floor_royal_jelly_calcification']
+    'giger-cathedral': ['tex_floor_bone_terrazzo', 'tex_path_worn_deck', 'tex_floor_charred_crematorium', 'tex_floor_shattered_safety_glass', 'tex_floor_royal_jelly_calcification'],
+    'giger-obsidian': ['tex_floor_bone_terrazzo', 'tex_floor_charred_crematorium', 'tex_floor_royal_jelly_calcification']
 });
 
 export const ROOM_THEME_SURFACE = Object.freeze(Object.fromEntries(
