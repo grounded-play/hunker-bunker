@@ -24,6 +24,25 @@ describe('generateArchitecturalMazeChunk', () => {
         expect(result.grid[0]).toContain('.');
     });
 
+    it('varies optional room size and placement while retaining a wall envelope', () => {
+        const first = generateArchitecturalMazeChunk(seeded([0.9, 0.05, 0.1, 0.1, 0.1]), {
+            roomMode: true,
+            openings: { north: { open: true, offset: 4 } }
+        });
+        const second = generateArchitecturalMazeChunk(seeded([0.9, 0.95, 0.9, 0.9, 0.9]), {
+            roomMode: true,
+            openings: { north: { open: true, offset: 4 } }
+        });
+        expect(first.room.bounds).not.toEqual(second.room.bounds);
+        expect(first.room.interior.length).toBeLessThan(second.room.interior.length);
+        for (const { grid, room } of [first, second]) {
+            for (const cell of room.interior) {
+                expect(grid[cell.y][cell.x]).toBe('.');
+            }
+            expect(grid.flat()).toContain('#');
+        }
+    });
+
     it('records correctly facing doors wherever a hallway enters a room', () => {
         const { grid, room } = generateArchitecturalMazeChunk(seeded([0.8, 0.2, 0.9, 0.1]), {
             openings: {

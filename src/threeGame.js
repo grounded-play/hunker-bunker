@@ -263,6 +263,13 @@ import {
     serializeFragileLedgeStates
 } from './fragileLedges.js';
 import {
+    chunkSpaceMetrics,
+    ensureRoomDoorAprons,
+    sealRoomExteriorEdges,
+    stampNaturalCrossing,
+    validateRoomExteriorEnvelope
+} from './chunkLandscape.js';
+import {
     ROOM_FLOOR_MATERIAL_FAMILY,
     ROOM_FLOOR_WETNESS,
     ROOM_MATERIAL_ATLAS_SLOT,
@@ -44123,7 +44130,11 @@ export class ThreeGame {
         }
         if (tileType === CLIFF_TILE) {
             if (this.isCliffSecretPath(tileX, tileY)) return null;
-            if (this.getFragileLedgeState(tileX, tileY).state !== FRAGILE_LEDGE_STATE.COLLAPSED) return null;
+            const ledgeState = readFragileLedgeState(
+                this.fragileLedgeStates,
+                fragileLedgeKey(tileX, tileY)
+            );
+            if (ledgeState.state !== FRAGILE_LEDGE_STATE.COLLAPSED) return null;
             return {
                 x: tileX,
                 z: tileY,
@@ -46143,6 +46154,7 @@ export class ThreeGame {
                 || role === 'room' || role === 'mission'
             ));
             const tutorialRing = this.isInTutorialRing(chunkX, chunkY);
+            const nearCrashRoute = Math.abs(chunkX) <= 1 && chunkY >= -3 && chunkY <= 0;
             // Keep the two chunks immediately outside the authored crash room
             // readable and collision-light. The old radial-room override made
             // a large chamber appear beside the start almost every run, then
@@ -46160,7 +46172,7 @@ export class ThreeGame {
                 this.wfcMetadataCache?.get(`${chunkX},${chunkY + 1}`)?.roomInstances?.length
                 );
             const roomMode = !tutorialRing && (forcedExposureRoom || (!forcedSignatureHall && !forcedBiomeTransition
-                && (isDestination || (!hasAdjacentRoom && (
+                && (isDestination || (!nearCrashRoute && !hasAdjacentRoom && (
                 regionalRoles.includes('ring')
                 || (nearestRadialRoom <= this.chunkSize * 0.9 && (Math.abs(chunkX + chunkY) % 2 === 0))
                 || random() < 0.20
@@ -46461,7 +46473,9 @@ export class ThreeGame {
         if (chunkX === 0 && chunkY === 0) {
             this.buildCrashSiteChunk(grid, chunkX, chunkY);
         } else if (isCrashApproach) {
-            mazeMetadata = stampCrashSiteApproach(grid);
+            mazeMetadata = stampCrashSiteApproach(grid, CRASH_SITE_BUILD, {
+                variant: Math.floor(random() * 4)
+            });
             this.wfcMetadataCache?.set(`${chunkX},${chunkY}`, mazeMetadata);
         } else {
             this.clearSpawnArea(grid, chunkX, chunkY);
@@ -46659,6 +46673,11 @@ export class ThreeGame {
             }
             stampDoorRecords(grid, gatePlan.doors);
             this.clearDoorways?.(grid);
+            mazeMetadata.doorApronRepairs = ensureRoomDoorAprons(
+                grid,
+                mazeMetadata.roomInstances,
+                { depth: 3 }
+            );
             const blockedDoorCells = new Set(gatePlan.doors
                 .filter((door) => door.state === 'locked')
                 .flatMap((door) => door.cells ?? [])
@@ -46698,6 +46717,18 @@ export class ThreeGame {
                 // tile safe rim and rounded cliff band as stamped chunks.
                 expandExistingCanyon: Boolean(mazeMetadata?.architectural)
             });
+            if (mazeMetadata) {
+                mazeMetadata.roomEdgeRepairs = sealRoomExteriorEdges(grid, mazeMetadata.roomInstances);
+            }
+            const naturalCrossing = stampNaturalCrossing(grid);
+            if (mazeMetadata) {
+                mazeMetadata.naturalCrossings = naturalCrossing ? [naturalCrossing] : [];
+                mazeMetadata.envelopeErrors = validateRoomExteriorEnvelope(
+                    grid,
+                    mazeMetadata.roomInstances,
+                    { apronDepth: 3 }
+                );
+            }
         }
         // Reapply persisted collapses after deterministic generation and
         // before route/render metadata sees the chunk.
@@ -46723,6 +46754,7 @@ export class ThreeGame {
             counts[tile] = (counts[tile] ?? 0) + 1;
             return counts;
         }, {});
+        const spaceMetrics = chunkSpaceMetrics(grid);
         debugLog.debug('WORLD', 'Chunk generated', {
             chunk: chunkRouteRecord.key,
             landform,
@@ -46740,6 +46772,15 @@ export class ThreeGame {
                 ledge: tileCounts[LEDGE_TILE] ?? 0,
                 cliff: tileCounts[CLIFF_TILE] ?? 0,
                 void: tileCounts[EXTERIOR_CANYON_TILE] ?? 0
+            },
+            landscape: {
+                interiorRatio: Number(spaceMetrics.interiorRatio.toFixed(3)),
+                exteriorRatio: Number(spaceMetrics.exteriorRatio.toFixed(3)),
+                bridgeCells: spaceMetrics.bridge,
+                naturalCrossings: mazeMetadata?.naturalCrossings?.length ?? 0,
+                doorApronRepairs: mazeMetadata?.doorApronRepairs?.length ?? 0,
+                roomEdgeRepairs: mazeMetadata?.roomEdgeRepairs?.length ?? 0,
+                envelopeErrors: mazeMetadata?.envelopeErrors?.length ?? 0
             }
         });
         const worldRouteGraph = buildWorldRouteGraph([...this.worldRouteRecords.values()]);

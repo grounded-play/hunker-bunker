@@ -15,7 +15,7 @@ function makeFakeGame() {
 }
 
 describe('clearSpawnArea — door/portal alignment', () => {
-    it('turns touching cliff tops into a walkable secret path while isolated cliffs still fall', () => {
+    it('keeps cliff tops walkable until an isolated fragile ledge has collapsed', () => {
         const tiles = new Map([
             ['4,4', 'C'],
             ['5,4', 'C'],
@@ -30,11 +30,14 @@ describe('clearSpawnArea — door/portal alignment', () => {
             getCachedTileType: (x, z) => tiles.get(`${x},${z}`) ?? 'X',
             getWallKey: (x, z) => `${x},${z}`,
             filledHoleKeys: new Set(),
+            fragileLedgeStates: new Map(),
             isCliffSecretPath: ThreeGame.prototype.isCliffSecretPath
         };
 
         expect(ThreeGame.prototype.isCliffSecretPath.call(game, 4, 4)).toBe(true);
         expect(ThreeGame.prototype.getHoleVisualInfo.call(game, 4, 4)).toBeNull();
+        expect(ThreeGame.prototype.getHoleVisualInfo.call(game, 9, 9)).toBeNull();
+        game.fragileLedgeStates.set('9,9', { state: 'collapsed' });
         expect(ThreeGame.prototype.getHoleVisualInfo.call(game, 9, 9)).toMatchObject({ cliff: true, lethal: true });
     });
 

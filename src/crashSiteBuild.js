@@ -66,7 +66,8 @@ function openingRecord(opening) {
 
 export function stampCrashSiteApproach(grid, build = CRASH_SITE_BUILD, {
     solidTile = 'X',
-    floorTile = '.'
+    floorTile = '.',
+    variant = 0
 } = {}) {
     if (!Array.isArray(grid) || grid.length < 15) return null;
     let captured = borderOpenings(grid);
@@ -80,8 +81,21 @@ export function stampCrashSiteApproach(grid, build = CRASH_SITE_BUILD, {
     const approach = build.serviceApproach;
     const hub = approach.hub;
     const release = approach.releaseBounds;
-    for (let y = release.top; y <= release.bottom; y += 1) {
-        for (let x = release.left; x <= release.right; x += 1) grid[y][x] = floorTile;
+    const layoutVariant = Math.abs(Math.trunc(variant)) % 4;
+    if (layoutVariant === 0) {
+        for (let y = release.top; y <= release.bottom; y += 1) {
+            for (let x = release.left; x <= release.right; x += 1) grid[y][x] = floorTile;
+        }
+    } else {
+        const satellites = layoutVariant === 1
+            ? [{ x: hub.x - 5, y: hub.y + 3 }]
+            : layoutVariant === 2
+                ? [{ x: hub.x - 5, y: hub.y }, { x: hub.x + 5, y: hub.y }]
+                : [{ x: hub.x + 4, y: hub.y - 4 }];
+        for (const satellite of satellites) {
+            carveDisk(grid, satellite.x, satellite.y, 2);
+            carveLine(grid, satellite, hub, 1);
+        }
     }
     carveDisk(grid, hub.x, hub.y, approach.halfWidth);
     for (const opening of captured) carveLine(grid, opening.cell, hub, approach.halfWidth);
@@ -110,6 +124,11 @@ export function stampCrashSiteApproach(grid, build = CRASH_SITE_BUILD, {
     return {
         generatorId: 'crash-site-approach',
         buildId: build.id,
+        variant: layoutVariant,
+        architectural: {
+            mode: 'crash-approach',
+            variant: layoutVariant
+        },
         width: approach.halfWidth * 2 + 1,
         hub: { ...hub },
         openings,

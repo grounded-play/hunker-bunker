@@ -53,6 +53,21 @@ describe('two-zone crash site build', () => {
         });
     });
 
+    it('varies the exterior approach footprint without moving its shared socket', () => {
+        const signatures = [];
+        for (let variant = 0; variant < 4; variant += 1) {
+            const grid = blank('X');
+            const metadata = stampCrashSiteApproach(grid, CRASH_SITE_BUILD, { variant });
+            signatures.push(grid.map((row) => row.join('')).join('\n'));
+            expect(metadata).toMatchObject({
+                variant,
+                architectural: { mode: 'crash-approach', variant }
+            });
+            expect(grid[CHUNK_SIZE - 1].slice(8, 11)).toEqual(['.', '.', '.']);
+        }
+        expect(new Set(signatures).size).toBe(4);
+    });
+
     it('declares a four-meter maneuver lane and half-grid construction sockets', () => {
         expect(CRASH_SITE_BUILD.clearManeuverLane.halfWidth * 2).toBe(4);
         for (const socket of CRASH_SITE_BUILD.constructionSockets) {
