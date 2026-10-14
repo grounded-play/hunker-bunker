@@ -321,7 +321,12 @@ test.describe('S49-10 controller journey', () => {
         // real gesture in a headless run) and is swallowed; press once more.
         if (await page.locator('#settings-popup').isHidden()) await pressStart(page);
         await expect(page.locator('#settings-popup')).toBeVisible({ timeout: 10_000 });
-        await steerTo(page, '#abort-mission');
+        // Paused, Settings opens on RESUME (Session tab); ABORT MISSION is one
+        // row down and across (controller nav remap 2026-10-14).
+        await expect(page.locator('#resume-settings')).toBeFocused();
+        await pad(page, 'menu_down');
+        await pad(page, 'menu_left');
+        await expect(page.locator('#abort-mission')).toBeFocused();
         await pad(page, 'menu_confirm');
         await expect(page.locator('#confirm-modal')).toBeVisible({ timeout: 5_000 });
         await steerTo(page, '#confirm-yes');

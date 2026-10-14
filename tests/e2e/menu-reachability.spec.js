@@ -110,6 +110,10 @@ test.describe('complete menu keyboard and Steam Deck reachability', () => {
                             key: code, code, bubbles: true, cancelable: true
                         }));
                         captureFocus();
+                        // A step along the tab bar switched the open panel.
+                        // Switch it back so the rest of this panel's controls
+                        // are still on screen when the walk reaches them.
+                        if (openTab && openTab.getAttribute('aria-selected') !== 'true') openTab.click();
                     }
                 }
 

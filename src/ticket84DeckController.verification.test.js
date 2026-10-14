@@ -64,11 +64,11 @@ describe('Ticket #84 — Steam Deck Controller-Only Menu Flow Verification', () 
         // Move up from 3 -> 1
         expect(spatialFocusIndex(rects, 3, 'up')).toBe(1);
 
-        // Edge wrapping:
-        // Moving right from 1 wraps to opposite edge (index 0 or 2, preferring row neighbor 0)
-        expect(spatialFocusIndex(rects, 1, 'right')).toBe(0);
-        // Moving down from 2 wraps to top edge (index 0)
-        expect(spatialFocusIndex(rects, 2, 'down')).toBe(0);
+        // Edges stop by default (controller nav remap 2026-10-14); wrapping is
+        // opt-in and still lands on the row / column neighbour.
+        expect(spatialFocusIndex(rects, 1, 'right')).toBe(1);
+        expect(spatialFocusIndex(rects, 1, 'right', { wrap: true })).toBe(0);
+        expect(spatialFocusIndex(rects, 2, 'down', { wrap: true })).toBe(0);
     });
 
     it('proves action router translates gamepad presses with edge-triggering and bumper tabs', () => {

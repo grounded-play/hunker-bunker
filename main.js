@@ -1373,9 +1373,11 @@ function navigateMenu(root, code) {
         const target = getPreferredControllerFocusTarget(root, getVisibleControllerFocusables(root));
         handled = target ? focusControllerTarget(target, { playHover: true }) : false;
     } else if (moveVirtualKeyboardGridFocus(code)) handled = true;
-    // Left / right change a focused slider or dropdown instead of leaving it;
-    // up / down always move on (A opens a dropdown's full list).
-    else if (horizontalStep && (adjustRangeInputValue(from, horizontalStep) || adjustSelectValue(from, horizontalStep))) handled = true;
+    // Left / right change a focused slider, or a dropdown in a settings-style
+    // row, instead of leaving it; up / down always move on (A opens a
+    // dropdown's full list).
+    else if (horizontalStep && adjustsOnHorizontal(from)
+        && (adjustRangeInputValue(from, horizontalStep) || adjustSelectValue(from, horizontalStep))) handled = true;
     else if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(code)) handled = true;
     else if (moveTabBarSelection(from, code)) handled = true;
     else if (scrollFocuslessRegion(root, code)) handled = true;
@@ -1394,6 +1396,17 @@ function navigateMenu(root, code) {
         });
     }
     return handled;
+}
+
+// Sliders always take left / right. A dropdown only does inside a settings
+// row (label left, value right) or a container marked data-nav-adjust; in a
+// toolbar (Vault filters, debug bars) it is an ordinary stop, or focus could
+// never get past it (nav remap 2026-10-14: the Vault search box sat behind
+// a filter dropdown and was unreachable).
+function adjustsOnHorizontal(element) {
+    if (isRangeInputElement(element)) return true;
+    const select = element?.matches?.('select') ? element : null;
+    return Boolean(select?.closest?.('.setting-item, .armory-row, [data-nav-adjust]'));
 }
 
 // A control (or a container around it) can name where a direction goes when
@@ -1421,11 +1434,36 @@ function moveSpatialControllerFocus(root, direction) {
         const target = getPreferredControllerFocusTarget(root, focusables);
         return target ? focusControllerTarget(target, { playHover: true }) : false;
     }
-    const rects = focusables.map((element) => element.getBoundingClientRect());
+    // Nested controls (a commentary entry and its PLAY button): Right steps
+    // into the entry's first inner control, and Left from an inner control
+    // with nothing further left steps back out to the entry.
+    const inner = focusables.filter((element) => element !== active && active.contains(element));
+    if (direction === 'right' && inner.length) return focusControllerTarget(inner[0], { playHover: true });
+    const outer = focusables.filter((element) => element !== active && element.contains(active)).at(-1) ?? null;
+
+    // Otherwise a control never moves to its own container or to a control
+    // nested in it: those aren't "above" or "below" it.
+    const candidates = focusables.filter((element) => element === active
+        || (!element.contains(active) && !active.contains(element)));
+    const rects = candidates.map((element) => element.getBoundingClientRect());
     const wrap = Boolean(active.closest?.('[data-nav-wrap]'));
-    const nextIndex = spatialFocusIndex(rects, currentIndex, direction, { wrap });
-    if (nextIndex === currentIndex) return true;
-    return focusControllerTarget(focusables[nextIndex], { playHover: true });
+    const fromIndex = candidates.indexOf(active);
+    const nextIndex = spatialFocusIndex(rects, fromIndex, direction, { wrap });
+    if (nextIndex === fromIndex) {
+        if (direction === 'left' && outer) return focusControllerTarget(outer, { playHover: true });
+        return true;
+    }
+    let target = candidates[nextIndex];
+    // Moving into a tab bar from outside it lands on the selected tab, not on
+    // whichever tab happens to sit above (Settings: Up from the first row went
+    // to CAMERA & HUD while SESSION was open).
+    const bar = target.matches?.(CONTROLLER_TAB_SELECTOR) ? (target.closest('[role="tablist"]') ?? target.parentElement) : null;
+    if (bar && !bar.contains(active)) {
+        const selected = [...bar.querySelectorAll(CONTROLLER_TAB_SELECTOR)].find((tab) => focusables.includes(tab)
+            && (tab.getAttribute('aria-selected') === 'true' || tab.classList.contains('active') || tab.classList.contains('is-active')));
+        if (selected) target = selected;
+    }
+    return focusControllerTarget(target, { playHover: true });
 }
 
 let lastArmoryContentFocus = null;
@@ -1534,11 +1572,14 @@ function moveVirtualKeyboardGridFocus(code) {
     } else if (code === 'KeyD' || code === 'ArrowRight') {
         target = keysInRow[(colIndex + 1) % keysInRow.length];
     } else if (code === 'KeyW' || code === 'ArrowUp') {
-        const nextRow = rows[(rowIndex - 1 + rows.length) % rows.length];
+        // Off the top row: leave the grid (to ✕ / the field) by geometry.
+        if (rowIndex === 0) return false;
+        const nextRow = rows[rowIndex - 1];
         const nextKeys = Array.from(nextRow.querySelectorAll('.virtual-keyboard-key'));
         target = nextKeys[Math.min(colIndex, nextKeys.length - 1)];
     } else if (code === 'KeyS' || code === 'ArrowDown') {
-        const nextRow = rows[(rowIndex + 1) % rows.length];
+        if (rowIndex === rows.length - 1) return false;
+        const nextRow = rows[rowIndex + 1];
         const nextKeys = Array.from(nextRow.querySelectorAll('.virtual-keyboard-key'));
         target = nextKeys[Math.min(colIndex, nextKeys.length - 1)];
     }
