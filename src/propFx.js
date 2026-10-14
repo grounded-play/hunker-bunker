@@ -427,7 +427,6 @@ const AMBIENT_PROFILES = {
     vass_containment_bell_jar: liquidProfile({ surfaceAt: [0.5, 0.55, 0.5], bubblesAt: [0.5, 0.4, 0.5], color: 0x22c55e, bubbleColor: 0x86efac, count: 4, intensity: 0.95, distance: 3.0 }),
     vass_dissection_stereomicroscope: poweredProfile({ glowAt: [0.5, 0.55, 0.5], color: 0x22d3ee, pulse: 0.08, intensity: 0.75, distance: 2.2 }),
     tina_vocal_mimic_synthesizer: poweredProfile({ glowAt: [0.5, 0.6, 0.5], color: 0xef4444, pulse: 0.35, intensity: 0.85, distance: 2.6 }),
-    tina_pheromone_dispersal_vent: ventProfile({ at: [0.5, 0.7, 0.5], count: 6, color: 0x22c55e }),
     tina_cosmetic_skin_loom: lampProfile({ glowAt: [0.5, 0.7, 0.5], color: 0xef4444, pulse: 0.2, intensity: 0.75, distance: 2.4 }),
     tina_forged_council_ballot_box: lampProfile({ glowAt: [0.5, 0.75, 0.5], color: 0xf59e0b, pulse: 0.15, intensity: 0.65, distance: 2.2 }),
     tina_shedding_cocoon_niche: organicProfile({ glowAt: [0.5, 0.5, 0.5], color: 0xf59e0b, radius: 0.24, motion: 0.006 }),

@@ -1407,11 +1407,6 @@ export const PROP_INTERACTION_SPECS = Object.freeze({
         () => 'VOCAL SYNTHESIZER: DISSECTED CASSETTE & LARYNX EXTRACTED. +30 SCRAP.',
         { hp: 45, repeatable: false, nextState: () => 'spent', sound: 'terminal_beep', onUse: (game) => game.addScrap?.(30) }
     ),
-    tina_pheromone_dispersal_vent: statefulInteraction(
-        '[E] PURGE PHEROMONE CANISTER',
-        (state) => `PHEROMONE VENT: ${state === 'working' ? 'SCENT-MASKING ATOMIZER ACTIVE' : 'PURGED'}.`,
-        { hp: 50, nextState: (_game, prop) => nextBinaryState(prop, 'working'), sound: 'power_hum' }
-    ),
     tina_cosmetic_skin_loom: statefulInteraction(
         '[E] INSPECT SKIN WEAVING LOOM',
         () => 'SKIN WEAVING LOOM: SYNTHETIC HUMAN FACE MASK UNCOVERED.',

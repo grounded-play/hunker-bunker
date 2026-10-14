@@ -42,6 +42,21 @@ Planning baseline: `bc3f5b30`
     alternating between relaxed `ARMED_IDLE` and `AIM_READY` with charm impulses.
   - `main.js` `syncHeroPreview` passes the equipped class loadout into the preview.
   - Verified in `src/ticket81HeroSelection.verification.test.js`.
+- 2026-10-14 — Follow-up review of the 59-GLB world-expansion ingest:
+  - Corrected the audit gate to inspect every shipped GLB and every literal
+    production reference, rather than treating imported catalog entries as the
+    complete asset set. The gate now proves **619 / 619** shipped GLBs are
+    readable and **619 / 619** literal production references resolve.
+  - Removed the six runtime registrations for
+    `tina_pheromone_dispersal_vent`, which was wired into catalogs, showroom,
+    interaction, FX, and triangle data but was not included in the 59-file
+    asset commit. The source-generation manifest remains intact so the model
+    can be integrated when its GLB actually lands.
+  - Expanded the shared wall-support registry from 28 to 89 classified models
+    and added a cross-catalog test requiring every `wallProps` entry in theme
+    and role dressing to have mandatory wall support. This closes the gap
+    introduced when new models were added to wall dressing without placement
+    profiles.
 - Remaining: P2 unified decal support-surface registry, contact sheet visual
   regression probes (P5).
 Date: 2026-10-14
@@ -74,10 +89,10 @@ The 3D presentation should obey six visible rules:
 
 This plan covers runtime assets, not every archival source file:
 
-- `public/3d` currently contains **560 GLBs**.
-- `WORLD_3D_MODELS` registers **426** world models and
+- `public/3d` currently contains **619 GLBs** after the 59-model expansion.
+- `WORLD_3D_MODELS` registers **485** world models and
   `WORLD_3D_STRUCTURES` registers one metric structure.
-- **420 of 426** world registrations use zero asset yaw. Only six declare a
+- **479 of 485** world registrations use zero asset yaw. Only six declare a
   non-zero yaw correction.
 - No `WORLD_3D_MODELS` entry currently declares a mount surface, authored
   forward axis, contact plane, or clearance envelope.

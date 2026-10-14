@@ -310,7 +310,6 @@ export const DRESSING_TRIANGLES = Object.freeze({
     vass_containment_bell_jar: 35000,
     vass_dissection_stereomicroscope: 35000,
     tina_vocal_mimic_synthesizer: 35000,
-    tina_pheromone_dispersal_vent: 35000,
     tina_cosmetic_skin_loom: 35000,
     tina_forged_council_ballot_box: 35000,
     tina_shedding_cocoon_niche: 35000,

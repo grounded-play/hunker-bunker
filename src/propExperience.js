@@ -211,7 +211,6 @@ export const PROP_EXPERIENCE_PROFILES = Object.freeze({
     vass_containment_bell_jar: terminal(0x22d3ee, { duration: 0.4, intensity: 1.8 }),
     vass_dissection_stereomicroscope: terminal(0x22d3ee, { duration: 0.4, intensity: 1.7 }),
     tina_vocal_mimic_synthesizer: mechanism(0x84cc16, ['use', 'ambient', 'damage']),
-    tina_pheromone_dispersal_vent: mechanism(0x84cc16, ['use', 'ambient', 'damage']),
     tina_cosmetic_skin_loom: mechanism(0x84cc16, ['use', 'damage']),
     tina_forged_council_ballot_box: terminal(0x84cc16, { duration: 0.45, intensity: 1.9 }),
     tina_shedding_cocoon_niche: terminal(0x84cc16, { duration: 0.5, intensity: 2.0 }),

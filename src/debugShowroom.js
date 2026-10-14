@@ -523,7 +523,6 @@ export const SHOWROOM_CATEGORIES = Object.freeze({
         'vass_containment_bell_jar',
         'vass_dissection_stereomicroscope',
         'tina_vocal_mimic_synthesizer',
-        'tina_pheromone_dispersal_vent',
         'tina_cosmetic_skin_loom',
         'tina_forged_council_ballot_box',
         'tina_shedding_cocoon_niche',

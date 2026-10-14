@@ -20,10 +20,56 @@ import { getModelPresentationProfile, isWallMountedModel } from '../src/modelPre
 import { getWeaponCalibration } from '../src/weaponCalibration.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const REPORT_JSON = path.join(ROOT, 'docs/reports/model-presentation-audit.json');
-const REPORT_MD = path.join(ROOT, 'docs/reports/model-presentation-audit.md');
-
 const isCheck = process.argv.includes('--check');
+const outputArgIndex = process.argv.indexOf('--output-dir');
+const outputDir = outputArgIndex >= 0 && process.argv[outputArgIndex + 1]
+    ? path.resolve(ROOT, process.argv[outputArgIndex + 1])
+    : path.join(ROOT, 'docs/reports');
+const REPORT_JSON = path.join(outputDir, 'model-presentation-audit.json');
+const REPORT_MD = path.join(outputDir, 'model-presentation-audit.md');
+
+function walkFiles(directory, predicate, output = []) {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+        const filePath = path.join(directory, entry.name);
+        if (entry.isDirectory()) walkFiles(filePath, predicate, output);
+        else if (predicate(filePath)) output.push(filePath);
+    }
+    return output;
+}
+
+function normalizeAssetUrl(url) {
+    return String(url ?? '').split('?')[0];
+}
+
+function discoverShippedGlbs() {
+    return walkFiles(path.join(ROOT, 'public/3d'), (filePath) => filePath.endsWith('.glb'))
+        .map((filePath) => `/${path.relative(path.join(ROOT, 'public'), filePath).split(path.sep).join('/')}`)
+        .sort();
+}
+
+function discoverRuntimeGlbReferences() {
+    const sourceFiles = walkFiles(path.join(ROOT, 'src'), (filePath) => {
+        if (!/\.(?:js|mjs|ts)$/u.test(filePath)) return false;
+        return !/\.(?:test|spec)\.[^.]+$/u.test(filePath);
+    });
+    for (const relativePath of ['main.js', 'index.html']) {
+        const filePath = path.join(ROOT, relativePath);
+        if (fs.existsSync(filePath)) sourceFiles.push(filePath);
+    }
+
+    const references = new Map();
+    const literalGlb = /['"`]([^'"`$]+\.glb(?:\?[^'"`]*)?)['"`]/gu;
+    for (const filePath of sourceFiles) {
+        const source = fs.readFileSync(filePath, 'utf8');
+        for (const match of source.matchAll(literalGlb)) {
+            const url = normalizeAssetUrl(match[1]);
+            if (!url.startsWith('/3d/')) continue;
+            if (!references.has(url)) references.set(url, []);
+            references.get(url).push(path.relative(ROOT, filePath));
+        }
+    }
+    return references;
+}
 
 function inspectGlb(relUrl) {
     if (!relUrl) return { error: 'empty_url' };
@@ -102,6 +148,9 @@ function inspectGlb(relUrl) {
 function runAudit() {
     const records = [];
     const failures = [];
+    const shippedGlbs = discoverShippedGlbs();
+    const shippedSet = new Set(shippedGlbs);
+    const runtimeReferences = discoverRuntimeGlbReferences();
 
     // 1. World models
     for (const [key, entry] of Object.entries(WORLD_3D_MODELS)) {
@@ -232,9 +281,50 @@ function runAudit() {
         }
     }
 
+    // Catalog imports above provide semantic categories, but they are not the
+    // entire runtime. Inspect every shipped GLB and correlate literal runtime
+    // references so newly added assets cannot be omitted from a catalog and
+    // still produce a misleading all-clear report.
+    const catalogUrls = new Set(records.map((record) => normalizeAssetUrl(record.url)));
+    for (const url of shippedGlbs) {
+        if (catalogUrls.has(url)) continue;
+        const inspection = inspectGlb(url);
+        records.push({
+            category: 'shipped_asset',
+            id: path.basename(url, '.glb'),
+            url,
+            sourceReferences: runtimeReferences.get(url) ?? [],
+            ...inspection
+        });
+        if (inspection.error) failures.push({ category: 'shipped_asset', id: url, error: inspection.error, path: inspection.path });
+    }
+
+    for (const [url, sourceReferences] of runtimeReferences) {
+        if (shippedSet.has(url)) continue;
+        failures.push({
+            category: 'runtime_reference',
+            id: url,
+            error: 'file_missing',
+            sourceReferences
+        });
+    }
+
+    for (const record of records) {
+        record.sourceReferences ??= runtimeReferences.get(normalizeAssetUrl(record.url)) ?? [];
+    }
+
+    const auditedUrls = new Set(records
+        .filter((record) => !record.error)
+        .map((record) => normalizeAssetUrl(record.url)));
+    const unreferencedShipped = shippedGlbs.filter((url) => !runtimeReferences.has(url));
+
     const summary = {
         timestamp: new Date().toISOString(),
-        totalModelsAudited: records.length,
+        totalModelsAudited: auditedUrls.size,
+        catalogEntriesAudited: records.filter((record) => record.category !== 'shipped_asset').length,
+        shippedGlbs: shippedGlbs.length,
+        directRuntimeReferences: runtimeReferences.size,
+        unreferencedShipped,
         categories: {
             world: records.filter((r) => r.category === 'world').length,
             weapon_archetype: records.filter((r) => r.category === 'weapon_archetype').length,
@@ -242,20 +332,23 @@ function runAudit() {
             charm: records.filter((r) => r.category === 'charm').length,
             chassis_skin: records.filter((r) => r.category === 'chassis_skin').length,
             rig_mod: records.filter((r) => r.category === 'rig_mod').length,
-            npc: records.filter((r) => r.category === 'npc').length
+            npc: records.filter((r) => r.category === 'npc').length,
+            shipped_asset: records.filter((r) => r.category === 'shipped_asset').length
         },
         wallMountedCount: records.filter((r) => r.isWallMounted).length,
         failuresCount: failures.length,
         failures
     };
 
-    fs.mkdirSync(path.dirname(REPORT_JSON), { recursive: true });
+    fs.mkdirSync(outputDir, { recursive: true });
     fs.writeFileSync(REPORT_JSON, JSON.stringify({ summary, records }, null, 2));
 
     const mdContent = `# Runtime Model Presentation & Orientation Audit Report
 
 Date: ${summary.timestamp}
 Total Models Audited: **${summary.totalModelsAudited}**
+Shipped GLBs: **${summary.shippedGlbs}**
+Direct runtime GLB references: **${summary.directRuntimeReferences}**
 Failures: **${summary.failuresCount}**
 
 ## Category Breakdown
@@ -266,17 +359,23 @@ Failures: **${summary.failuresCount}**
 - **Chassis Skins:** ${summary.categories.chassis_skin}
 - **Rig Overclock Modules:** ${summary.categories.rig_mod}
 - **NPCs:** ${summary.categories.npc}
+- **Shipped assets outside imported catalogs:** ${summary.categories.shipped_asset}
+
+## Coverage
+- **Catalog entries audited:** ${summary.catalogEntriesAudited}
+- **Unique shipped GLBs inspected:** ${summary.totalModelsAudited} / ${summary.shippedGlbs}
+- **Shipped GLBs without a literal production reference:** ${summary.unreferencedShipped.length}
 
 ## Key Calibrations
 - **Weapons:** All 5 base archetypes calibrated with explicit \`forwardAxis\` (+X), \`muzzleAxis\` (+X), \`sightAxis\` (+Z for GG1, +Y for Talon/Siege/Tesla), and verified hand alignment.
-- **Wall Props & Machines:** ${summary.wallMountedCount} models verified for wall attachment and facing into usable room space.
+- **Wall Props & Machines:** ${summary.wallMountedCount} models require wall support; contact-sheet orientation review remains a separate visual gate.
 - **Hero Selection:** Equipped armed loadout displayed by default in armed idle with reactive charm breathing and occasional aim ready transitions.
 
 ${failures.length > 0 ? `## Failures\n\`\`\`json\n${JSON.stringify(failures, null, 2)}\n\`\`\`` : '## Status: All Audited Runtime Models Valid and Accounted For'}
 `;
 
     fs.writeFileSync(REPORT_MD, mdContent);
-    console.log(`[audit-model-presentation] Audited ${records.length} runtime models. Failures: ${failures.length}. Report written to ${REPORT_MD}`);
+    console.log(`[audit-model-presentation] Audited ${summary.totalModelsAudited}/${summary.shippedGlbs} shipped GLBs and ${summary.directRuntimeReferences} direct runtime references. Failures: ${failures.length}. Report written to ${REPORT_MD}`);
 
     if (isCheck && failures.length > 0) {
         console.error(`[audit-model-presentation] FAIL: ${failures.length} model errors detected.`);

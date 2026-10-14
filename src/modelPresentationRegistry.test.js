@@ -5,6 +5,7 @@ import {
     getModelPresentationProfiles,
     isWallMountedModel
 } from './modelPresentationRegistry.js';
+import { DRESSING_KITS, ROLE_DRESSING } from './roomDressingKits.js';
 
 describe('model presentation registry', () => {
     it('classifies exosuit, decon, and wall machine fixtures as reviewed wall mounts', () => {
@@ -35,6 +36,15 @@ describe('model presentation registry', () => {
     it('does not guess a support surface for unaudited models', () => {
         expect(getModelPresentationProfile('prop_unknown')).toBeNull();
         expect(isWallMountedModel('prop_unknown')).toBe(false);
+    });
+
+    it('classifies every wall dressing model as requiring wall support', () => {
+        const wallTypes = [DRESSING_KITS, ROLE_DRESSING]
+            .flatMap((catalog) => Object.values(catalog))
+            .flatMap((kit) => kit.wallProps ?? []);
+
+        expect(wallTypes.length).toBeGreaterThan(0);
+        expect(wallTypes.filter((type) => !isWallMountedModel(type))).toEqual([]);
     });
 
     it('returns a copy of the registry map', () => {

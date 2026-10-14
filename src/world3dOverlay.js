@@ -531,7 +531,6 @@ export const WORLD_3D_MODELS = Object.freeze({
     vass_containment_bell_jar: { url: '/3d/runtime/new3ds/vass_containment_bell_jar.glb', height: 1.5, span: 0.9, yaw: 0 },
     vass_dissection_stereomicroscope: { url: '/3d/runtime/new3ds/vass_dissection_stereomicroscope.glb', height: 1.3, span: 0.8, yaw: 0 },
     tina_vocal_mimic_synthesizer: { url: '/3d/runtime/new3ds/tina_vocal_mimic_synthesizer.glb', height: 1.4, span: 0.8, yaw: 0 },
-    tina_pheromone_dispersal_vent: { url: '/3d/runtime/new3ds/tina_pheromone_dispersal_vent.glb', height: 1.7, span: 0.9, yaw: 0 },
     tina_cosmetic_skin_loom: { url: '/3d/runtime/new3ds/tina_cosmetic_skin_loom.glb', height: 1.8, span: 1.3, yaw: 0 },
     tina_forged_council_ballot_box: { url: '/3d/runtime/new3ds/tina_forged_council_ballot_box.glb', height: 1.2, span: 0.8, yaw: 0 },
     tina_shedding_cocoon_niche: { url: '/3d/runtime/new3ds/tina_shedding_cocoon_niche.glb', height: 2.2, span: 1.4, yaw: 0 },
