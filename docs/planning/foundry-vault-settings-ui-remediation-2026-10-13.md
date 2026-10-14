@@ -43,11 +43,15 @@ Implemented in the current working tree:
 - **Phase 4 regression coverage:** the Foundry browser contract verifies one exchange request,
   Skip/Claim focus handoff, focus containment, refresh failure and retry, reduced motion, and
   close/reopen timer cancellation. `src/cacheOpening.test.js` rejects illegal state transitions.
+- **Layout matrix:** the Stash contract now checks its single scroll owner, toolbar clipping, grid
+  height, and detail-rail ratio at 1280×800, 1920×1080, 2560×1440, and the supported 150% UI scale.
+  Settings checks the same desktop sizes, 150% UI scale, and a 760 px horizontal-overflow case,
+  including automatic scrolling of the keyboard-selected tab.
 
 Still open:
 
-- Run the broader multi-resolution snapshot matrix and packaged Steam manual checks; the focused
-  1280×800 and reduced-motion browser contracts are now automated.
+- Run the packaged Steam manual checks for real Steam overlay/input behavior; the repeatable browser
+  layout, reduced-motion, transaction, and recovery contracts are now automated.
 
 ## Evidence reviewed
 

@@ -144,6 +144,48 @@ test.describe('controller-ready modal focus', () => {
             }
             expect(await page.locator('.settings-modal-content').evaluate((element) => element.scrollTop)).toBe(0);
         }
+
+        const expectSingleRow = async () => {
+            const geometry = await page.locator('.settings-tabs').evaluate((bar) => {
+                const barRect = bar.getBoundingClientRect();
+                const visibleTabs = [...bar.querySelectorAll('.settings-tab')];
+                return {
+                    tops: visibleTabs.map((element) => Math.round(element.getBoundingClientRect().top)),
+                    clientWidth: bar.clientWidth,
+                    scrollWidth: bar.scrollWidth,
+                    barLeft: barRect.left,
+                    barRight: barRect.right
+                };
+            });
+            expect(new Set(geometry.tops).size, 'settings categories wrapped after viewport/scale change').toBe(1);
+            return geometry;
+        };
+
+        for (const viewport of [{ width: 1920, height: 1080 }, { width: 2560, height: 1440 }]) {
+            await page.setViewportSize(viewport);
+            const geometry = await expectSingleRow();
+            expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth + 1);
+        }
+
+        await page.setViewportSize({ width: 1280, height: 800 });
+        await page.locator('#game-viewport').evaluate((element) => {
+            element.style.setProperty('--ui-scale-multiplier', '1.5');
+            element.style.setProperty('--vu-text', '12px');
+        });
+        await expectSingleRow();
+
+        await page.setViewportSize({ width: 760, height: 800 });
+        const narrow = await expectSingleRow();
+        expect(narrow.scrollWidth).toBeGreaterThan(narrow.clientWidth);
+        await page.locator('[data-settings-tab="session"]').focus();
+        await page.keyboard.press('End');
+        await expect(page.locator('[data-settings-tab="profile"]')).toHaveAttribute('aria-selected', 'true');
+        const activeInsideBar = await page.locator('[data-settings-tab="profile"]').evaluate((active) => {
+            const tab = active.getBoundingClientRect();
+            const bar = active.parentElement.getBoundingClientRect();
+            return tab.left >= bar.left - 1 && tab.right <= bar.right + 1;
+        });
+        expect(activeInsideBar, 'active narrow Settings tab was not scrolled into view').toBe(true);
     });
 
     test('controller left and right change focused settings selects', async ({ page }) => {
