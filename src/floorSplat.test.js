@@ -172,6 +172,7 @@ describe('new floor surfaces', () => {
     });
 
     it('maps every room theme surface and file to a layer below the NONE marker', () => {
+        expect(new Set(FLOOR_SURFACES.map((surface) => surface.id)).size).toBe(FLOOR_SURFACES.length);
         for (const id of Object.values(ROOM_THEME_SURFACE)) expect(FLOOR_SURFACES.some((s) => s.id === id), id).toBe(true);
         expect(floorSurfaceFileNames()).toHaveLength(FLOOR_SURFACE_COUNT);
         expect(floorSurfaceFileNames()[4]).toBe('tex_floor_concrete_stained_a');

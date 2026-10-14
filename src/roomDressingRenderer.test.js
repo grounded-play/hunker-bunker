@@ -64,6 +64,23 @@ describe('instanced dressing lifecycle', () => {
         }
     });
 
+    it('rejects a registered wall-only decal when a caller puts it on the floor', async () => {
+        const misplaced = {
+            layer: 'floorDecal',
+            type: 'decal_vass_acoustic_diagram',
+            x: 2,
+            y: 3
+        };
+        const group = await buildRoomDressingGroup([misplaced], {
+            loadModel: async () => null,
+            loadDecalTexture: () => new THREE.Texture()
+        });
+
+        expect(group.children).toHaveLength(0);
+        expect(group.userData.itemCount).toBe(0);
+        expect(group.userData.rejectedSurfaceItems).toEqual([misplaced]);
+    });
+
     it('keeps an interactive terminal as a standalone per-instance root', async () => {
         const collider = new THREE.Object3D();
         const item = {

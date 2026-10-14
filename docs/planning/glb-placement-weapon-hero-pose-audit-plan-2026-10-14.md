@@ -66,8 +66,17 @@ Planning baseline: `bc3f5b30`
   - Made `AIM_READY` visually meaningful: the preview locks its base facing,
     eases into a bounded upper-body aim turn, holds the equipped weapon through
     the motion, then eases back to armed idle while the charm spring reacts.
-- Remaining: P2 unified decal support-surface registry, contact sheet visual
-  regression probes (P5).
+- 2026-10-14 — P2 room-dressing surface contract implemented:
+  - Added `surfaceAssetRegistry.js` with explicit floor/wall support, aspect,
+    depth-offset, and render-order metadata for every theme/role decal.
+  - Corrected the acoustic diagram and execution-wall splatter so they no
+    longer enter floor placement pools. The pod-rupture splash is the sole
+    reviewed dual-surface exception.
+  - The renderer now rejects known wrong-plane placements and uses the shared
+    support offset, preventing flush coplanar wall/floor quads from fighting.
+  - Added registry/renderer coverage and a duplicate floor-surface-id gate.
+- Remaining: route special scatter/setpiece decals through the P2 registry and
+  add contact-sheet visual regression probes (P5).
 Date: 2026-10-14
 
 ## Player-visible outcome
