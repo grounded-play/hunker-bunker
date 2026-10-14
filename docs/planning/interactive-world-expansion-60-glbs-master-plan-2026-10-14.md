@@ -1202,3 +1202,26 @@ Before generating 3D meshes or committing runtime assets, the following verifica
   - `src/propArticulation.cohort20261012.test.js`: 14/14 passing.
   - `src/propArticulation.test.js`: 4/4 passing.
 
+### 8.6 Room Dressing Kits, Wall Mounts, Vignettes & Triangle Registry
+- **`src/roomDressingKits.js`**:
+  - Distributed the 59 optimized GLBs across all family kits (`bunker`, `cryo`, `bio`, `camp`, `cathedral`) across `wallProps`, `clutter`, and `corners` layers.
+  - Layered specialized role additions in `ROLE_DRESSING` for `medical`, `cryo-lab`, `security`, `armory`, `storage`, `engineering`, and `workshop`.
+  - Added wall-mount elevation definitions to `WALL_MOUNT_HEIGHT` for `corp_biometric_wall_safe` (1.30m), `vesper_trench_warning_klaxon` (1.70m), `geo_pressure_relief_siren` (1.75m), and `tina_secret_distress_beacon` (1.40m).
+  - Authored multi-piece focal clusters in `VIGNETTES` and `ROLE_VIGNETTES` for dramatic room centers (e.g. `[corp_quantum_ledger_podium, corp_executive_whisper_booth]`, `[hydro_mycelial_seed_vault, corp_cryo_transport_coffin]`, `[vass_translation_phonograph, vass_containment_bell_jar]`, `[carapace_ossuary_anvil, mothership_docking_umbilical_collar]`).
+  - Authored metric physical bounds for all 12 expansion decals in `DECAL_WORLD_SCALES` (ranging from 0.5m kill tallies to 3.4m crash drag trenches).
+- **`src/data/dressingTriangles.js`**:
+  - Calculated and registered exact binary triangle counts from the optimized GLBs (ranging from 34,999 to 45,000 tris) ensuring strict parity with `roomDressing.test.js`.
+- **Verification**: `src/roomDressing.test.js` passes 19/19 tests.
+
+### 8.7 Procedural Room Population, Theme Catalogs & Environmental Floor Surfaces
+- **`src/roomThemes.js`**:
+  - Integrated the world expansion GLBs into `signatureProps` and `largeProps` across all 25 room themes in `ROOM_THEME_CATALOG`, ensuring procedural dungeons spawn focal story assets and faction landmarks.
+- **`src/floorSplat.js`**:
+  - Expanded `ROOM_THEME_SURFACES` to assign authentic multi-material palettes to all sector themes (`bunker-standard`, `bunker-utility`, `bunker-substation`, `bunker-cleanroom`, `bunker-toxic-sump`, `cryo-permafrost`, `bio-resin`, `bio-security`, `bio-mycelium`, `giger-obsidian`).
+- **Verification**:
+  - `src/roomPopulation.test.js`: 31/31 passing.
+  - `src/roomThemes.test.js`: 20/20 passing.
+  - `src/floorSplat.test.js`: 21/21 passing.
+  - `src/runtimeTextureCoverage.test.js`: 1/1 passing.
+
+
