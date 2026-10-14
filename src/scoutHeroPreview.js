@@ -132,6 +132,7 @@ export async function createScoutHeroPreview(canvas) {
         activePresentationKey = nextKey;
         presentationState = 'ARMED_IDLE';
         nextStateChangeAt = performance.now() + 5400;
+        aimBlend = 0;
         idleState.idleActionName = 'idle';
         overlay.root.position.y = 0.0;
         overlay.root.rotation.y = Math.atan2(camera.position.x, camera.position.z);
@@ -161,11 +162,14 @@ export async function createScoutHeroPreview(canvas) {
         // Match the preview camera's planar position so the operator faces us.
         aimX: camera.position.x,
         aimZ: camera.position.z,
+        lockRootFacing: true,
+        presentationAim: 0,
         idleActionName: 'idle'
     };
 
     let presentationState = 'ARMED_IDLE'; // 'ARMED_IDLE' | 'AIM_READY'
     let nextStateChangeAt = performance.now() + 5400;
+    let aimBlend = 0;
 
     const render = (time) => {
         if (disposed || !visible || document.hidden) {
@@ -187,12 +191,17 @@ export async function createScoutHeroPreview(canvas) {
             }
         }
 
+        aimBlend = THREE.MathUtils.damp(
+            aimBlend,
+            presentationState === 'AIM_READY' ? 1 : 0,
+            presentationState === 'AIM_READY' ? 3.2 : 4.5,
+            delta
+        );
         const cameraYaw = Math.atan2(camera.position.x, camera.position.z);
-        const lookOffset = presentationState === 'AIM_READY'
-            ? Math.sin(time * 0.0012) * 0.14
-            : 0;
+        const lookOffset = (0.18 + Math.sin(time * 0.0012) * 0.035) * aimBlend;
         idleState.aimX = Math.sin(cameraYaw + lookOffset);
         idleState.aimZ = Math.cos(cameraYaw + lookOffset);
+        idleState.presentationAim = aimBlend;
         idleState.idleActionName = 'idle';
         overlay.update(delta, idleState);
         renderer.render(scene, camera);

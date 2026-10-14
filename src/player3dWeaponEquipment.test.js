@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { createClassWeapon } from './player3dOverlay.js';
+import { createClassWeapon, resolveWeaponMountOptions } from './player3dOverlay.js';
 
 const model = () => {
     const scene = new THREE.Group();
@@ -12,6 +12,26 @@ const model = () => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('deployed weapon equipment', () => {
+    it('preserves gameplay cosmetics supplied through weaponMount', () => {
+        expect(resolveWeaponMountOptions({
+            weaponMount: { position: [1, 2, 3], skinId: '4103', sheenColor: '#58efff', charmId: '4138' }
+        })).toEqual({
+            position: [1, 2, 3],
+            skinId: '4103',
+            sheenColor: '#58efff',
+            charmId: '4138'
+        });
+    });
+
+    it('lets explicit hero cosmetics override weaponMount', () => {
+        expect(resolveWeaponMountOptions({
+            weaponMount: { skinId: 'old', sheenColor: '#ffffff', charmId: 'old-charm' },
+            weaponSkinId: 'new',
+            weaponSheenColor: '#ff6262',
+            charmId: 'new-charm'
+        })).toMatchObject({ skinId: 'new', sheenColor: '#ff6262', charmId: 'new-charm' });
+    });
+
     it('mounts the selected charm and tints only the gun', async () => {
         vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockImplementation(async () => model());
         const weapon = await createClassWeapon('tesla_lock', { skinId: '4103', charmId: '4138', sheenColor: '#ff6262' });

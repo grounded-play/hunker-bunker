@@ -57,6 +57,15 @@ Planning baseline: `bc3f5b30`
     and role dressing to have mandatory wall support. This closes the gap
     introduced when new models were added to wall dressing without placement
     profiles.
+- 2026-10-14 — Follow-up review of armed hero/gameplay cosmetics:
+  - Fixed the new top-level `weaponSheenColor` default, which was overriding
+    the existing `weaponMount.sheenColor` path with white in live gameplay.
+    Hero and gameplay now merge weapon skin, finish, charm, and position
+    through one tested resolver with explicit presentation values taking
+    precedence.
+  - Made `AIM_READY` visually meaningful: the preview locks its base facing,
+    eases into a bounded upper-body aim turn, holds the equipped weapon through
+    the motion, then eases back to armed idle while the charm spring reacts.
 - Remaining: P2 unified decal support-surface registry, contact sheet visual
   regression probes (P5).
 Date: 2026-10-14

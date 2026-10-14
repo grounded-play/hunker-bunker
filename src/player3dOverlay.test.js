@@ -11,6 +11,7 @@ import {
     retargetMixamoClip,
     computeOverlayYaw,
     computeUpperBodyAimOffset,
+    computeUpperBodyTurnTarget,
     selectLocomotionActionName,
     selectOverlayAnimation
 } from './player3dOverlay.js';
@@ -134,6 +135,13 @@ describe('player 3D cosmetic overlay', () => {
         expect(computeUpperBodyAimOffset(0, -1, 0)).toBeCloseTo(-Math.PI / 2);
         expect(computeUpperBodyAimOffset(0, 0, -1)).toBeCloseTo(Math.PI);
         expect(computeUpperBodyAimOffset(0, 0, -1, Math.PI / 2)).toBeCloseTo(Math.PI / 2);
+    });
+
+    it('keeps stationary gameplay neutral but blends a bounded hero ready turn', () => {
+        const stationary = { hasAim: true, isMoving: false, aimX: 1, aimZ: 0 };
+        expect(computeUpperBodyTurnTarget(0, stationary)).toBe(0);
+        expect(computeUpperBodyTurnTarget(0, { ...stationary, presentationAim: 0.5 })).toBeCloseTo(0.175);
+        expect(computeUpperBodyTurnTarget(0, { ...stationary, presentationAim: 1 })).toBeCloseTo(0.35);
     });
 
     it('redirects idle/walk/run to their injured counterpart only when hurt and the clip exists', () => {

@@ -261,6 +261,28 @@ export function computeUpperBodyAimOffset(rootYaw, aimX, aimZ, maxTurn = Math.PI
     return THREE.MathUtils.clamp(offset, -maxTurn, maxTurn);
 }
 
+export function computeUpperBodyTurnTarget(rootYaw, state = {}) {
+    if (!state.hasAim) return 0;
+    const aimOffset = computeUpperBodyAimOffset(rootYaw, state.aimX, state.aimZ);
+    if (state.isMoving && Math.hypot(state.moveX ?? 0, state.moveZ ?? 0) > 1e-4) return aimOffset;
+    const presentationAim = THREE.MathUtils.clamp(Number(state.presentationAim) || 0, 0, 1);
+    return THREE.MathUtils.clamp(aimOffset, -0.35, 0.35) * presentationAim;
+}
+
+export function resolveWeaponMountOptions({
+    weaponMount,
+    weaponSkinId = null,
+    weaponSheenColor = null,
+    charmId = null
+} = {}) {
+    return {
+        position: weaponMount?.position ?? null,
+        skinId: weaponSkinId ?? weaponMount?.skinId ?? null,
+        sheenColor: weaponSheenColor ?? weaponMount?.sheenColor ?? 0xffffff,
+        charmId: charmId ?? weaponMount?.charmId ?? null
+    };
+}
+
 export function selectOverlayAnimation({
     isFalling = false,
     isReloading = false,
@@ -503,7 +525,7 @@ export async function createPlayer3dOverlay({
     weaponArchetype = 'gg1',
     weaponMount = undefined,
     weaponSkinId = null,
-    weaponSheenColor = 0xffffff,
+    weaponSheenColor = null,
     charmId = null,
     modelUrl = MODEL_URL,
     animationModelUrl = null,
@@ -569,12 +591,12 @@ export async function createPlayer3dOverlay({
             if (!rightHand && /RightHand$/.test(object.name)) rightHand = object;
         });
     }
-    const resolvedWeaponMount = {
-        position: weaponMount?.position ?? null,
-        skinId: weaponSkinId ?? weaponMount?.skinId ?? null,
-        sheenColor: weaponSheenColor ?? weaponMount?.sheenColor ?? 0xffffff,
-        charmId: charmId ?? weaponMount?.charmId ?? null
-    };
+    const resolvedWeaponMount = resolveWeaponMountOptions({
+        weaponMount,
+        weaponSkinId,
+        weaponSheenColor,
+        charmId
+    });
     const weapon = weaponEnabled && rightHand ? await createClassWeapon(weaponArchetype, resolvedWeaponMount) : null;
     if (weapon) {
         // The Mixamo rig is authored in centimeters and normalized by scaling
@@ -792,7 +814,7 @@ export async function createPlayer3dOverlay({
             const followMovement = state.isMoving && Math.hypot(state.moveX, state.moveZ) > 1e-4;
             const facingX = followMovement ? state.moveX : (state.hasAim ? state.aimX : state.moveX);
             const facingZ = followMovement ? state.moveZ : (state.hasAim ? state.aimZ : state.moveZ);
-            if (Math.hypot(facingX, facingZ) > 1e-4) {
+            if (!state.lockRootFacing && Math.hypot(facingX, facingZ) > 1e-4) {
                 const targetYaw = computeOverlayYaw(facingX, facingZ);
                 const yawDelta = Math.atan2(
                     Math.sin(targetYaw - root.rotation.y),
@@ -869,9 +891,7 @@ export async function createPlayer3dOverlay({
             }
             mixer.update(delta);
             syncFollowerBones();
-            const targetUpperBodyTurn = followMovement && state.hasAim
-                ? computeUpperBodyAimOffset(root.rotation.y, state.aimX, state.aimZ)
-                : 0;
+            const targetUpperBodyTurn = computeUpperBodyTurnTarget(root.rotation.y, state);
             upperBodyTurn = THREE.MathUtils.damp(upperBodyTurn, targetUpperBodyTurn, 12, delta);
             const turnPerBone = upperBodyTurn / Math.max(upperBodyBones.length, 1);
             for (const bone of upperBodyBones) bone.rotation.y += turnPerBone;
