@@ -1,5 +1,76 @@
 import * as THREE from 'three';
 import { createPlayer3dOverlay } from './player3dOverlay.js';
+import { resolveChassisModelUrl } from './chassisBodies.js';
+import { CHASSIS_SKIN_MODELS } from './data/operatorModelUrls.js';
+
+const DEFAULT_ARCHETYPES = Object.freeze({
+    SCOUT: 'talon',
+    ENGINEER: 'tesla_lock',
+    TANK: 'siege_breaker'
+});
+
+function resolveClassConfig(type, loadout = null) {
+    const classType = ['SCOUT', 'ENGINEER', 'TANK'].includes(type) ? type : 'SCOUT';
+    const classId = classType.toLowerCase();
+    const activeLoadout = loadout || globalThis.loadout?.getClassLoadout?.(classId) || null;
+    const archetype = activeLoadout?.archetypeId || DEFAULT_ARCHETYPES[classType] || 'talon';
+    const skinId = activeLoadout?.weaponSkinId ?? null;
+    const sheenColor = activeLoadout?.sheenColor ?? activeLoadout?.weaponSheenColor ?? 0xffffff;
+    const charmId = activeLoadout?.charmId ?? null;
+
+    const baseConfigs = {
+        SCOUT: {
+            targetHeight: 1.95,
+            modelUrl: '/3d/scouting-scout/Scout.game.glb',
+            idleActionName: 'idle',
+            weaponVisible: true,
+            weaponEnabled: true,
+            weaponArchetype: archetype,
+            weaponSkinId: skinId,
+            weaponSheenColor: sheenColor,
+            charmId
+        },
+        ENGINEER: {
+            targetHeight: 1.95,
+            modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
+            animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
+            animationBonePrefix: 'mixamorig',
+            idleActionName: 'idle',
+            weaponVisible: true,
+            weaponEnabled: true,
+            weaponArchetype: archetype,
+            weaponSkinId: skinId,
+            weaponSheenColor: sheenColor,
+            charmId
+        },
+        TANK: {
+            targetHeight: 1.86,
+            modelUrl: '/3d/runtime/tank-rigged.glb',
+            animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
+            animationBonePrefix: 'mixamorig',
+            idleActionName: 'idle',
+            weaponVisible: true,
+            weaponEnabled: true,
+            weaponArchetype: archetype,
+            weaponSkinId: skinId,
+            weaponSheenColor: sheenColor,
+            charmId,
+            weaponMount: { position: [0.03, 0.02, 0.03] }
+        }
+    };
+
+    const config = { ...baseConfigs[classType] };
+    const chassisSkinId = activeLoadout?.chassisSkinId;
+    if (chassisSkinId) {
+        const chassisUrl = resolveChassisModelUrl(chassisSkinId, activeLoadout?.chassisBody, CHASSIS_SKIN_MODELS);
+        if (chassisUrl) {
+            config.modelUrl = chassisUrl;
+            config.animationModelUrl = '/3d/scouting-scout/Scout.game.glb';
+            config.animationBonePrefix = 'mixamorig';
+        }
+    }
+    return { classType, config, archetype, skinId, sheenColor, charmId, chassisSkinId };
+}
 
 export async function createScoutHeroPreview(canvas) {
     if (!canvas) throw new Error('Scout hero preview requires a canvas');
@@ -24,65 +95,54 @@ export async function createScoutHeroPreview(canvas) {
 
     let activeType = 'SCOUT';
     let activePolish = 0xffffff;
-    let overlay = await createPlayer3dOverlay({
-        targetHeight: 1.95,
-        idleActionName: 'heroIdle',
-        weaponVisible: false
-    });
+    let activePresentationKey = '';
+
+    const initial = resolveClassConfig('SCOUT');
+    let overlay = await createPlayer3dOverlay({ ...initial.config });
     // Keep the portrait centered without clipping boots or helmet
     overlay.root.position.y = 0.0;
     overlay.root.rotation.y = Math.atan2(camera.position.x, camera.position.z);
     overlay.setOperatorPolish(activePolish);
     scene.add(overlay.root);
+    activePresentationKey = `${initial.classType}:${initial.archetype}:${initial.skinId ?? ''}:${initial.sheenColor}:${initial.charmId ?? ''}:${initial.chassisSkinId ?? ''}`;
+
     let loadGeneration = 0;
 
-    async function setType(type) {
-        const nextType = ['SCOUT', 'ENGINEER', 'TANK'].includes(type) ? type : 'SCOUT';
+    async function setPresentation({ classType = 'SCOUT', loadout = null } = {}) {
+        const resolved = resolveClassConfig(classType, loadout);
+        const nextKey = `${resolved.classType}:${resolved.archetype}:${resolved.skinId ?? ''}:${resolved.sheenColor}:${resolved.charmId ?? ''}:${resolved.chassisSkinId ?? ''}`;
         const generation = ++loadGeneration;
-        if (nextType === activeType) return true;
-        const configs = {
-            SCOUT: { targetHeight: 1.95, idleActionName: 'heroIdle', weaponVisible: false },
-            ENGINEER: {
-                targetHeight: 1.95,
-                modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
-                animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
-                animationBonePrefix: 'mixamorig',
-                idleActionName: 'heroIdle',
-                weaponVisible: false,
-                weaponEnabled: true,
-            },
-            TANK: {
-                targetHeight: 1.86,
-                modelUrl: '/3d/runtime/tank-rigged.glb',
-                animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
-                animationBonePrefix: 'mixamorig',
-                idleActionName: 'heroIdle',
-                weaponVisible: false,
-                weaponEnabled: true,
-                weaponMount: { position: [0.03, 0.02, 0.03] }
-            }
-        };
-        const nextOverlay = await createPlayer3dOverlay({ ...configs[nextType] });
+        if (nextKey === activePresentationKey && resolved.classType === activeType) return true;
+
+        const nextOverlay = await createPlayer3dOverlay({ ...resolved.config });
         if (disposed || generation !== loadGeneration) {
             nextOverlay.dispose();
             return false;
         }
-        if (!nextOverlay.hasAnimation?.('heroIdle') && !nextOverlay.hasAnimation?.('idle')) {
+        if (!nextOverlay.hasAnimation?.('idle') && !nextOverlay.hasAnimation?.('heroIdle')) {
             nextOverlay.dispose();
-            throw new Error(`${nextType} preview has no validated idle animation`);
+            throw new Error(`${resolved.classType} preview has no validated idle animation`);
         }
+
         overlay.root.removeFromParent();
         overlay.dispose();
         overlay = nextOverlay;
         overlay.setOperatorPolish(activePolish);
-        activeType = nextType;
-        weaponReady = false;
-        idleState.idleActionName = nextType === 'SCOUT' ? 'heroIdle' : configs[nextType].idleActionName;
+        activeType = resolved.classType;
+        activePresentationKey = nextKey;
+        presentationState = 'ARMED_IDLE';
+        nextStateChangeAt = performance.now() + 5400;
+        idleState.idleActionName = 'idle';
         overlay.root.position.y = 0.0;
         overlay.root.rotation.y = Math.atan2(camera.position.x, camera.position.z);
         scene.add(overlay.root);
         overlay.update(0, idleState);
+        overlay.triggerCharmImpulse(1.0);
         return true;
+    }
+
+    async function setType(type) {
+        return setPresentation({ classType: type });
     }
 
     let visible = false;
@@ -101,10 +161,11 @@ export async function createScoutHeroPreview(canvas) {
         // Match the preview camera's planar position so the operator faces us.
         aimX: camera.position.x,
         aimZ: camera.position.z,
-        idleActionName: 'heroIdle'
+        idleActionName: 'idle'
     };
-    let nextReadyChangeAt = performance.now() + 4200;
-    let weaponReady = false;
+
+    let presentationState = 'ARMED_IDLE'; // 'ARMED_IDLE' | 'AIM_READY'
+    let nextStateChangeAt = performance.now() + 5400;
 
     const render = (time) => {
         if (disposed || !visible || document.hidden) {
@@ -113,18 +174,26 @@ export async function createScoutHeroPreview(canvas) {
         }
         const delta = Math.min((time - previousTime) / 1000, 0.05);
         previousTime = time;
-        if (time >= nextReadyChangeAt) {
-            weaponReady = !weaponReady;
-            overlay.setWeaponVisible(weaponReady);
-            idleState.idleActionName = weaponReady ? 'idle' : 'heroIdle';
-            nextReadyChangeAt = time + (weaponReady ? 3200 : 5200);
+
+        if (time >= nextStateChangeAt) {
+            if (presentationState === 'ARMED_IDLE') {
+                presentationState = 'AIM_READY';
+                nextStateChangeAt = time + 2400;
+                overlay.triggerCharmImpulse(1.4);
+            } else {
+                presentationState = 'ARMED_IDLE';
+                nextStateChangeAt = time + 5800;
+                overlay.triggerCharmImpulse(0.7);
+            }
         }
+
         const cameraYaw = Math.atan2(camera.position.x, camera.position.z);
-        const lookOffset = weaponReady
-            ? Math.sin(time * 0.0009) * 0.16
+        const lookOffset = presentationState === 'AIM_READY'
+            ? Math.sin(time * 0.0012) * 0.14
             : 0;
         idleState.aimX = Math.sin(cameraYaw + lookOffset);
         idleState.aimZ = Math.cos(cameraYaw + lookOffset);
+        idleState.idleActionName = 'idle';
         overlay.update(delta, idleState);
         renderer.render(scene, camera);
         frame = requestAnimationFrame(render);
@@ -156,6 +225,7 @@ export async function createScoutHeroPreview(canvas) {
 
     return {
         setType,
+        setPresentation,
         setOperatorPolish(color = 0xffffff) {
             activePolish = color;
             overlay.setOperatorPolish(activePolish);

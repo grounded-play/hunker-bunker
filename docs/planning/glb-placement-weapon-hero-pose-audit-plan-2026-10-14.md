@@ -15,10 +15,35 @@ Planning baseline: `bc3f5b30`
   dressing to wall dressing, and made both scatter replacement paths consume
   the shared classification. Focused result: 74 tests passed across model
   registry, room population/dressing, site props, and floor/door placement.
-- Remaining: complete runtime inventory/audit tooling, migrate all asset
-  families into reviewed profiles, measured contact-plane alignment, decal
-  registry, real weapon marker calibration, armed hero loadout state, contact
-  sheets, and release gates.
+- 2026-10-14 — P0 runtime model presentation inventory & audit script
+  implemented: added `scripts/audit-model-presentation.mjs` and npm scripts
+  `audit:model-presentation` and `audit:model-presentation:check`. Audited all
+  551 runtime GLBs across world props, weapon archetypes, skins, charms, chassis
+  skins, rig modules, and NPCs with 0 failures. Output emitted to
+  `docs/reports/model-presentation-audit.md` and `.json`.
+- 2026-10-14 — P1 expanded wall-machine & fixture classification: expanded
+  `modelPresentationRegistry.js` to cover 28 wall machinery, gantry, teardown,
+  locker, rack, cabinet, and ceiling crane models with explicit surface and
+  contact semantics. Verified in `modelPresentationRegistry.test.js`.
+- 2026-10-14 — P3 weapon rotation & grip calibration: identified that non-GG1
+  frames (`talon`, `talon_c`, `siege_breaker`, `tesla_lock`) have their height
+  along +Y rather than +Z, causing them to render twisted 90° sideways when
+  using GG1's Euler rotation. Updated calibration rotation to
+  `[0, -Math.PI / 2, Math.PI / 2]` with `sightAxis: '+Y'`. Validated in
+  `src/weaponCalibration.test.js` that all archetypes point forward along hand aim
+  and remain upright.
+- 2026-10-14 — P4 armed hero selection loadout presentation & reactive charm:
+  - Hero selection now defaults `weaponVisible: true` in an armed idle (`idle`).
+  - `src/player3dOverlay.js` supports `weaponSkinId`, `weaponSheenColor`, and
+    `charmId`, and drives stationary breathing physics on the charm spring.
+  - `src/scoutHeroPreview.js` provides `setPresentation({ classType, loadout })`
+    with fallback `setType(type)`, equips the selected class weapon, skin,
+    sheen, charm, and chassis, and runs a presentation state machine
+    alternating between relaxed `ARMED_IDLE` and `AIM_READY` with charm impulses.
+  - `main.js` `syncHeroPreview` passes the equipped class loadout into the preview.
+  - Verified in `src/ticket81HeroSelection.verification.test.js`.
+- Remaining: P2 unified decal support-surface registry, contact sheet visual
+  regression probes (P5).
 Date: 2026-10-14
 
 ## Player-visible outcome

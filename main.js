@@ -71,7 +71,6 @@ import {
     actionSetForAppPhase,
     createActionRouter,
     hasControllerContinuePress,
-    menuKeyboardDirection,
     spatialFocusIndex,
     wrapMenuIndex,
     shouldPreferBrowserGamepad
@@ -105,7 +104,7 @@ import { createCampServicesUi } from './src/campServicesUi.js';
 import { createQuickCommandRadialUi } from './src/quickCommandRadialUi.js';
 import { flushPendingRunSubmits, submitRunWithRetryQueue } from './src/steam/runSubmitQueue.js';
 import { FATIGUE_STATE_KEY, describeScars, normalizeFatigueState } from './src/fatigue.js';
-import { unlockSheenForMilestone, reconcileSheenUnlocks, unlockAllSheens } from './src/weaponSheens.js';
+import { unlockSheenForMilestone, reconcileSheenUnlocks, unlockAllSheens, getSelectedSheen } from './src/weaponSheens.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
 import { createOwnershipStore } from './src/itemOwnership.js';
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
@@ -1081,6 +1080,29 @@ function getControllerFocusRoot() {
     return null;
 }
 
+// Entry focus for a surface with no rule of its own (nav map F2 / F7): a
+// confirm dialog opens on its safe choice; anything else on its first real
+// content control -- not its close button, a corner CHAT / settings shortcut
+// or its tab bar, which LB / RB already drive. Those only when nothing else is
+// there.
+const CONTROLLER_CANCEL_SELECTOR = '#quit-cancel-btn, #reset-save-cancel, #confirm-no, #trade-cancel-btn, [data-confirm-cancel]';
+const CONTROLLER_PERIPHERAL_SELECTOR = [
+    '.close-modal', '[data-menu-back]', '[data-player-chat-open]', '.open-settings-btn',
+    '.net-settings-btn', '.armory-settings-btn', '.armory-chat-btn', '[aria-label^="Close"]',
+    'a[target="_blank"]'
+].join(', ');
+const CONTROLLER_TAB_SELECTOR = [
+    '[role="tab"]', '.tab-btn', '.vault-tab-btn', '.terminal-tab-btn', '.season-pass-tab-btn',
+    '.foundry-hub__tab', '.class-tab', '[data-settings-tab]'
+].join(', ');
+
+function getDefaultControllerEntry(focusables) {
+    return focusables.find((element) => element.matches(CONTROLLER_CANCEL_SELECTOR))
+        ?? focusables.find((element) => !element.matches(CONTROLLER_PERIPHERAL_SELECTOR) && !element.matches(CONTROLLER_TAB_SELECTOR))
+        ?? focusables.find((element) => !element.matches(CONTROLLER_PERIPHERAL_SELECTOR))
+        ?? focusables[0];
+}
+
 function getPreferredControllerFocusTarget(root, focusables) {
     if (!focusables.length) return null;
     if (root?.id === 'splash') {
@@ -1099,9 +1121,16 @@ function getPreferredControllerFocusTarget(root, focusables) {
             ?? focusables[0];
     }
     if (root?.id === 'settings-popup') {
-        return focusables.find((element) => element.id === 'main-nightvision-toggle')
-            ?? focusables.find((element) => element.closest?.('.setting-item'))
+        // Paused: RESUME, so A goes straight back to the run. From a menu:
+        // the open tab's first row.
+        return (appPhase === 'gameplay' ? focusables.find((element) => element.id === 'resume-settings') : null)
+            ?? focusables.find((element) => element.closest?.('.setting-item') && element.id !== 'resume-settings')
             ?? focusables[0];
+    }
+    if (root?.id === 'multiplayer-modal') {
+        // The deployment console's job is DEPLOY; it used to open on CHAT.
+        return focusables.find((element) => element.id === 'net-deploy-btn' && !element.disabled)
+            ?? getDefaultControllerEntry(focusables);
     }
     if (root?.id === 'fabrication-modal') {
         return focusables.find((element) => element.id === 'fab-activate-btn' && !element.disabled)
@@ -1147,7 +1176,7 @@ function getPreferredControllerFocusTarget(root, focusables) {
             ?? focusables.find((element) => element.id === 'mothership-choice-tutorial' && isElementVisible(element))
             ?? focusables[0];
     }
-    return focusables[0];
+    return getDefaultControllerEntry(focusables);
 }
 
 let activeControllerFocusRoot = null;
@@ -1240,53 +1269,59 @@ function syncControllerFocusBoundary() {
     let closingInvoker = null;
 
     if (nextRoot !== activeControllerFocusRoot) {
-        if (isModalFocusRoot(nextRoot) && active && active !== document.body && !isElementInFocusRoot(nextRoot, active)) {
-            controllerFocusInvokers.set(nextRoot, active);
+        const previousRoot = activeControllerFocusRoot;
+        if (isModalFocusRoot(nextRoot) && !controllerFocusInvokers.has(nextRoot)) {
+            // The opener: still focused if nothing moved yet, else the last
+            // control the covered surface had (most surfaces focus their own
+            // first control as they open, before this sync runs).
+            const opener = active && active !== document.body && !isElementInFocusRoot(nextRoot, active)
+                ? active
+                : (previousRoot ? controllerFocusMemory.get(previousRoot) : null);
+            if (opener) controllerFocusInvokers.set(nextRoot, opener);
         }
-        if (isModalFocusRoot(activeControllerFocusRoot)) {
-            closingInvoker = controllerFocusInvokers.get(activeControllerFocusRoot) ?? null;
-        }
-        if (isElementInFocusRoot(activeControllerFocusRoot, active)) {
-            controllerFocusMemory.set(activeControllerFocusRoot, active);
+        if (isModalFocusRoot(previousRoot) && !isFocusRootOpen(previousRoot)) {
+            closingInvoker = controllerFocusInvokers.get(previousRoot) ?? null;
+            controllerFocusInvokers.delete(previousRoot);
+            // Closed, not covered: the next time it opens it starts at its
+            // entry target, not wherever the player left it last time.
+            controllerFocusMemory.delete(previousRoot);
+        } else if (isElementInFocusRoot(previousRoot, active)) {
+            controllerFocusMemory.set(previousRoot, active);
         }
         activeControllerFocusRoot = nextRoot;
     }
 
     if (!nextRoot) return null;
+    const focusables = getVisibleControllerFocusables(nextRoot);
+    // B from a sub-surface goes back to the control that opened it, even when
+    // the closing code already parked focus somewhere else (nav map F8).
+    if (closingInvoker && closingInvoker !== active && focusables.includes(closingInvoker)) {
+        focusControllerTarget(closingInvoker);
+        return closingInvoker;
+    }
     if (active && active !== document.body && isElementInFocusRoot(nextRoot, active)) return active;
 
-    const focusables = getVisibleControllerFocusables(nextRoot);
     const remembered = controllerFocusMemory.get(nextRoot);
-    const target = closingInvoker && focusables.includes(closingInvoker)
-        ? closingInvoker
-        : remembered && focusables.includes(remembered)
-            ? remembered
-            : getPreferredControllerFocusTarget(nextRoot, focusables);
+    const target = remembered && focusables.includes(remembered)
+        ? remembered
+        : getPreferredControllerFocusTarget(nextRoot, focusables);
     if (target) focusControllerTarget(target);
     return target ?? null;
 }
 
-function moveControllerFocus(delta) {
-    const root = getControllerFocusRoot();
-    const focusables = getVisibleControllerFocusables(root ?? document);
-    if (!focusables.length) return null;
-
-    let index = focusables.indexOf(document.activeElement);
-    if (index < 0 || (root && !isElementInFocusRoot(root, document.activeElement))) {
-        const preferred = getPreferredControllerFocusTarget(root, focusables);
-        if (preferred) {
-            index = focusables.indexOf(preferred);
-        } else {
-            index = 0;
+// Remember the last focused control of every open surface as focus moves, so
+// a sub-surface knows what opened it and Back can return there.
+document.addEventListener('focusin', (event) => {
+    const target = event.target;
+    if (!target || target === document.body) return;
+    for (const id of STEAM_INPUT_FOCUS_ROOT_IDS) {
+        const root = document.getElementById(id);
+        if (root && isFocusRootOpen(root) && isElementInFocusRoot(root, target)) {
+            controllerFocusMemory.set(root, target);
+            return;
         }
-    } else {
-        index = (index + delta + focusables.length) % focusables.length;
     }
-
-    const target = focusables[index] ?? null;
-    focusControllerTarget(target, { playHover: true });
-    return target;
-}
+});
 
 // A scrollable region with nothing focusable inside it (lore text, a log's
 // body, codex detail) can't be reached by moving focus, so a controller could
@@ -1313,89 +1348,40 @@ function scrollFocuslessRegion(root, code) {
     return true;
 }
 
-function moveAchievementsDirectionalFocus(code) {
-    const modal = document.getElementById('achievements-modal');
-    const active = document.activeElement;
-    if (!modal || !modal.contains(active)) return false;
-    const cards = Array.from(modal.querySelectorAll('#achievements-grid .achievement-card'));
-    if (!cards.length) return false;
+const MENU_DIRECTION_BY_CODE = Object.freeze({
+    ArrowUp: 'up', KeyW: 'up',
+    ArrowDown: 'down', KeyS: 'down',
+    ArrowLeft: 'left', KeyA: 'left',
+    ArrowRight: 'right', KeyD: 'right'
+});
 
-    const isCard = active?.classList?.contains('achievement-card');
-    const isClose = active?.id === 'close-achievements-modal';
-
-    if (isClose) {
-        if (code === 'ArrowDown' || code === 'KeyS' || code === 'ArrowRight' || code === 'KeyD') {
-            return focusControllerTarget(cards[0], { playHover: true });
-        }
-        return false;
-    }
-
-
-    if (!isCard) return false;
-
-    const currentIndex = cards.indexOf(active);
-    if (currentIndex < 0) return false;
-
-    let columns = 1;
-    if (cards.length > 1) {
-        const firstTop = cards[0].offsetTop;
-        for (let i = 1; i < cards.length; i += 1) {
-            if (cards[i].offsetTop === firstTop) {
-                columns += 1;
-            } else {
-                break;
-            }
-        }
-    }
-
-    if (code === 'ArrowDown' || code === 'KeyS') {
-        const nextIndex = currentIndex + columns;
-        if (nextIndex < cards.length) {
-            return focusControllerTarget(cards[nextIndex], { playHover: true });
-        }
-        return true;
-    }
-
-    if (code === 'ArrowUp' || code === 'KeyW') {
-        const prevIndex = currentIndex - columns;
-        if (prevIndex >= 0) {
-            return focusControllerTarget(cards[prevIndex], { playHover: true });
-        }
-        return focusControllerTarget(document.getElementById('close-achievements-modal') || cards[0], { playHover: true });
-    }
-
-    if (code === 'ArrowRight' || code === 'KeyD') {
-        const nextIndex = currentIndex + 1;
-        if (nextIndex < cards.length) {
-            return focusControllerTarget(cards[nextIndex], { playHover: true });
-        }
-        return true;
-    }
-
-    if (code === 'ArrowLeft' || code === 'KeyA') {
-        const prevIndex = currentIndex - 1;
-        if (prevIndex >= 0) {
-            return focusControllerTarget(cards[prevIndex], { playHover: true });
-        }
-        return true;
-    }
-
-    return false;
-}
-
-// One directional step in a menu, shared by the Steam Input poll and the
-// gamepad-menu-nav event so both behave the same.
-function moveControllerDirectional(root, code, backward) {
+// One directional step in any menu. Arrow keys, WASD, the browser gamepad
+// poll, native Steam Input and the gamepad-menu-nav event all land here, so a
+// press means the same thing on every screen and every device
+// (docs/design/controller-navigation-map.md). Every screen moves spatially and
+// stops at its edges; the few semantic rules that geometry can't express come
+// first.
+function navigateMenu(root, code) {
+    const direction = MENU_DIRECTION_BY_CODE[code];
+    if (!direction) return false;
     const from = document.activeElement;
+    const horizontalStep = direction === 'right' ? 1 : direction === 'left' ? -1 : 0;
     let handled;
-    if (root?.id === 'menu') handled = moveMenuDirectionalFocus(code);
+    if (root && (!from || from === document.body || !isElementInFocusRoot(root, from))) {
+        // Nothing on this surface has focus yet: the first press lands on its
+        // entry target rather than moving relative to something behind it.
+        const target = getPreferredControllerFocusTarget(root, getVisibleControllerFocusables(root));
+        handled = target ? focusControllerTarget(target, { playHover: true }) : false;
+    } else if (moveVirtualKeyboardGridFocus(code)) handled = true;
+    // Left / right change a focused slider or dropdown instead of leaving it;
+    // up / down always move on (A opens a dropdown's full list).
+    else if (horizontalStep && (adjustRangeInputValue(from, horizontalStep) || adjustSelectValue(from, horizontalStep))) handled = true;
     else if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(code)) handled = true;
-    else if (moveTabBarSelection(document.activeElement, code)) handled = true;
-    else if (root?.id === 'achievements-modal' && moveAchievementsDirectionalFocus(code)) handled = true;
+    else if (moveTabBarSelection(from, code)) handled = true;
     else if (scrollFocuslessRegion(root, code)) handled = true;
     else if (moveArmoryAdvanceFocus(root, code)) handled = true;
-    else if (moveSpatialControllerFocus(root, code)) handled = true;
-    else handled = Boolean(moveControllerFocus(backward ? -1 : 1));
+    else if (moveExplicitNavTarget(from, direction)) handled = true;
+    else handled = moveSpatialControllerFocus(root, direction);
 
     const to = document.activeElement;
     if (handled && from !== to) {
@@ -1410,38 +1396,35 @@ function moveControllerDirectional(root, code, backward) {
     return handled;
 }
 
-const SPATIAL_FOCUS_ROOT_IDS = new Set([
-    'achievements-modal',
-    'steam-vault-modal',
-    // The Armory tile picker (skins, sheens, charms...) is its own focus
-    // root; without this the D-pad's up / down stepped through DOM order.
-    'armory-picker-modal',
-    'armory-screen',
-    'foundry-hub-modal',
-    'fabrication-modal',
-    'archive-modal',
-    'codex-modal',
-    'multiplayer-modal',
-    'console-terminal-modal',
-    'field-workbench-modal',
-    'camp-services-modal',
-    'mature-content-audit-modal',
-    'season-pass-modal'
-]);
+// A control (or a container around it) can name where a direction goes when
+// the layout alone would pick the wrong neighbour:
+// data-nav-up="#net-mode-solo-btn". The target must be visible and enabled.
+function moveExplicitNavTarget(from, direction) {
+    const holder = from?.closest?.(`[data-nav-${direction}]`);
+    const selector = holder?.getAttribute(`data-nav-${direction}`);
+    if (!selector) return false;
+    const target = [...document.querySelectorAll(selector)]
+        .find((element) => getVisibleControllerFocusables(element.parentElement ?? document).includes(element));
+    return target ? focusControllerTarget(target, { playHover: true }) : false;
+}
 
-function moveSpatialControllerFocus(root, code) {
-    if (!root || !SPATIAL_FOCUS_ROOT_IDS.has(root.id)) return false;
-    const direction = code === 'KeyW' || code === 'ArrowUp' ? 'up'
-        : code === 'KeyS' || code === 'ArrowDown' ? 'down'
-            : code === 'KeyA' || code === 'ArrowLeft' ? 'left'
-                : code === 'KeyD' || code === 'ArrowRight' ? 'right'
-                    : null;
-    if (!direction) return false;
-    const focusables = getVisibleControllerFocusables(root);
+// Spatial focus for every surface: the nearest control in the pressed
+// direction, aligned controls first (spatialFocusIndex). At the edge of the
+// screen focus stays where it is; a container marked data-nav-wrap (a long
+// list) wraps to its far end instead.
+function moveSpatialControllerFocus(root, direction) {
+    const focusables = getVisibleControllerFocusables(root ?? document);
     if (!focusables.length) return false;
-    const currentIndex = Math.max(0, focusables.indexOf(document.activeElement));
+    const active = document.activeElement;
+    const currentIndex = focusables.indexOf(active);
+    if (currentIndex < 0) {
+        const target = getPreferredControllerFocusTarget(root, focusables);
+        return target ? focusControllerTarget(target, { playHover: true }) : false;
+    }
     const rects = focusables.map((element) => element.getBoundingClientRect());
-    const nextIndex = spatialFocusIndex(rects, currentIndex, direction);
+    const wrap = Boolean(active.closest?.('[data-nav-wrap]'));
+    const nextIndex = spatialFocusIndex(rects, currentIndex, direction, { wrap });
+    if (nextIndex === currentIndex) return true;
     return focusControllerTarget(focusables[nextIndex], { playHover: true });
 }
 
@@ -1530,135 +1513,6 @@ function moveSettingsDirectionalFocus(code) {
     return false;
 }
 
-let lastHeroMenuCommandFocus = null;
-
-function moveHeroSelectPanelFocus(code) {
-    const active = document.activeElement;
-    const isLeft = code === 'KeyA' || code === 'ArrowLeft';
-    const isRight = code === 'KeyD' || code === 'ArrowRight';
-    const isUp = code === 'KeyW' || code === 'ArrowUp';
-    const isDown = code === 'KeyS' || code === 'ArrowDown';
-    if (!isLeft && !isRight && !isUp && !isDown) return false;
-
-    const commandRail = active?.closest?.('.menu-header-actions');
-    const heroRail = active?.closest?.('.char-selection');
-    const previewRail = active?.closest?.('.preview-box');
-    const initializeButton = active?.id === 'start-game';
-    const settingsButton = active?.closest?.('.menu-corner-settings .open-settings-btn');
-    const chatButton = active?.closest?.('.menu-corner-settings [data-player-chat-open]');
-    const selectedHero = document.querySelector('.char-selection .char-card.selected')
-        ?? document.querySelector('.char-selection .char-card');
-    const heroBackBtn = document.getElementById('hero-select-back-btn');
-
-    if (active === heroBackBtn) {
-        const visibleCommands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
-        const target = isUp
-            ? (lastHeroMenuCommandFocus && visibleCommands.includes(lastHeroMenuCommandFocus)
-                ? lastHeroMenuCommandFocus
-                : visibleCommands.at(-1))
-            : isRight
-                ? (document.getElementById('hero-polish-btn') ?? selectedHero)
-                : isDown
-                    ? document.getElementById('start-game')
-                    : null;
-        return target ? focusControllerTarget(target, { playHover: true }) : true;
-    }
-
-    if (chatButton) {
-        const target = isRight
-            ? document.querySelector('.menu-corner-settings .open-settings-btn')
-            : isLeft
-                ? document.getElementById('hero-polish-btn')
-                : (isDown ? selectedHero : null);
-        return target ? focusControllerTarget(target, { playHover: true }) : true;
-    }
-
-    if (settingsButton) {
-        const target = isLeft
-            ? (document.querySelector('.menu-corner-settings [data-player-chat-open]') ?? document.getElementById('hero-polish-btn'))
-            : (isDown ? selectedHero : null);
-        return target ? focusControllerTarget(target, { playHover: true }) : true;
-    }
-
-    if (initializeButton) {
-        if (isRight) {
-            return focusControllerTarget(document.getElementById('hero-polish-btn') ?? selectedHero, { playHover: true });
-        }
-        if (isDown) {
-            return (selectedHero || heroBackBtn) ? focusControllerTarget(selectedHero ?? heroBackBtn, { playHover: true }) : true;
-        }
-        const visibleCommands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
-        const target = lastHeroMenuCommandFocus && visibleCommands.includes(lastHeroMenuCommandFocus)
-            ? lastHeroMenuCommandFocus
-            : visibleCommands.at(-1);
-        return target ? focusControllerTarget(target, { playHover: true }) : true;
-    }
-
-    if (commandRail) {
-        lastHeroMenuCommandFocus = active;
-        if (isDown) return focusControllerTarget(document.getElementById('start-game'), { playHover: true });
-        if (!isRight) return true;
-        const target = document.getElementById('hero-polish-btn')
-            ?? selectedHero
-            ?? document.getElementById('start-game');
-        return target ? focusControllerTarget(target, { playHover: true }) : true;
-    }
-
-    if (heroRail) {
-        const focusableElements = getVisibleControllerFocusables(heroRail);
-        const index = Math.max(0, focusableElements.indexOf(active));
-        let target = null;
-        if (isUp) {
-            target = document.querySelector('.menu-corner-settings .open-settings-btn');
-        } else if (isDown) {
-            target = document.getElementById('start-game');
-        } else if (isLeft) {
-            target = focusableElements[index - 1] ?? document.getElementById('hero-polish-btn');
-        } else if (isRight) {
-            target = focusableElements[index + 1]
-                ?? document.querySelector('.menu-corner-settings .open-settings-btn');
-        }
-        return target ? focusControllerTarget(target, { playHover: true }) : true;
-    }
-
-    if (previewRail) {
-        // The rail stacks the callsign row (input + randomize) above the
-        // polish slot. Up/Down walk it in order and only leave at its ends;
-        // Left/Right move along the callsign row before leaving the rail.
-        // Jumping straight out left the callsign row unreachable.
-        const railItems = getVisibleControllerFocusables(previewRail);
-        const railIndex = railItems.indexOf(active);
-        if (railIndex >= 0 && (isUp || isDown)) {
-            const next = railItems[railIndex + (isUp ? -1 : 1)];
-            if (next) return focusControllerTarget(next, { playHover: true });
-        }
-        const row = active?.closest?.('.roster-id-row');
-        if (row && (isLeft || isRight)) {
-            const rowItems = getVisibleControllerFocusables(row);
-            const next = rowItems[rowItems.indexOf(active) + (isLeft ? -1 : 1)];
-            if (next) return focusControllerTarget(next, { playHover: true });
-        }
-        const target = isRight
-            ? (selectedHero ?? heroBackBtn ?? document.getElementById('start-game'))
-            : isLeft
-                ? (lastHeroMenuCommandFocus ?? getVisibleControllerFocusables(document.querySelector('.menu-header-actions'))[0])
-                : isUp
-                    ? document.querySelector('.menu-corner-settings .open-settings-btn')
-                    : document.getElementById('start-game');
-        return target ? focusControllerTarget(target, { playHover: true }) : true;
-    }
-
-    return false;
-}
-
-function moveMenuDirectionalFocus(code) {
-    if (moveVirtualKeyboardGridFocus(code)) return true;
-    if (moveMenuCommandGridFocus(code)) return true;
-    if (moveHeroSelectPanelFocus(code)) return true;
-    const direction = menuKeyboardDirection(code);
-    return direction ? Boolean(moveControllerFocus(direction)) : false;
-}
-
 // Row-aware grid navigation for the on-screen keyboard. Rows are uneven
 // widths (10/10/9/8/2 keys), so this clamps column position against each
 // row's own length rather than assuming a fixed column count.
@@ -1692,87 +1546,6 @@ function moveVirtualKeyboardGridFocus(code) {
     return target ? focusControllerTarget(target, { playHover: true }) : false;
 }
 
-function moveOperatorPolishGridFocus(code) {
-    const active = document.activeElement;
-    if (!active?.classList?.contains('operator-polish-chip')) return false;
-    const chips = Array.from(document.querySelectorAll('#operator-polish-grid .operator-polish-chip'));
-    const index = chips.indexOf(active);
-    if (index < 0 || !chips.length) return false;
-
-    const columnCount = 4;
-    let nextIndex = index;
-    if (code === 'KeyA' || code === 'ArrowLeft') nextIndex = index % columnCount === 0 ? index + columnCount - 1 : index - 1;
-    if (code === 'KeyD' || code === 'ArrowRight') nextIndex = index % columnCount === columnCount - 1 ? index - columnCount + 1 : index + 1;
-    if (code === 'KeyW' || code === 'ArrowUp') {
-        // The close button sits above the grid; wrapping to the bottom row
-        // left it unreachable without a pointer.
-        if (index < columnCount) {
-            const close = document.getElementById('close-operator-polish-modal');
-            if (close && getVisibleControllerFocusables(close.parentElement).includes(close)) {
-                return focusControllerTarget(close, { playHover: true });
-            }
-        }
-        nextIndex = (index - columnCount + chips.length) % chips.length;
-    }
-    if (code === 'KeyS' || code === 'ArrowDown') nextIndex = (index + columnCount) % chips.length;
-    return focusControllerTarget(chips[nextIndex], { playHover: true });
-}
-
-function moveMenuCommandGridFocus(code) {
-    const active = document.activeElement;
-    // CAREER TELEMETRY's RECORDS ▸ sits above the command grid.
-    const recordsBtn = document.getElementById('homebase-records-btn');
-    if (active === recordsBtn) {
-        const commands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
-        const target = (code === 'KeyS' || code === 'ArrowDown')
-            ? commands[0]
-            : (code === 'KeyD' || code === 'ArrowRight')
-                ? (document.getElementById('hero-polish-btn') ?? document.querySelector('.char-selection .char-card.selected'))
-                : null;
-        return target ? focusControllerTarget(target, { playHover: true }) : true;
-    }
-    if (active?.id === 'start-game') {
-        if (code !== 'KeyW' && code !== 'ArrowUp') return false;
-        const visibleCommands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
-        const target = lastHeroMenuCommandFocus && visibleCommands.includes(lastHeroMenuCommandFocus)
-            ? lastHeroMenuCommandFocus
-            : visibleCommands.at(-1);
-        return target ? focusControllerTarget(target, { playHover: true }) : true;
-    }
-    if (!active?.closest?.('.menu-header-actions')) return false;
-
-    // The command wrappers are semantic groups, but CSS flattens them into a
-    // three-column visual grid. Navigate the grid the player can actually see
-    // instead of the old two-column wrapper structure.
-    const commands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'))
-        .filter((element) => element.matches('button, .steam-account-badge--menu'));
-    const index = commands.indexOf(active);
-    if (index < 0) return false;
-    const columnCount = 2;
-    const columnIndex = index % columnCount;
-    let target = null;
-
-    if (code === 'KeyW' || code === 'ArrowUp') {
-        target = index >= columnCount
-            ? commands[index - columnCount]
-            : (recordsBtn && isElementVisible(recordsBtn) ? recordsBtn : commands[index]);
-    } else if (code === 'KeyS' || code === 'ArrowDown') {
-        // Down is the semantic "advance" edge on Hero Select. Keeping it in
-        // the command grid made players walk an unpredictable zig-zag before
-        // they could initialize a run, especially on Steam Deck.
-        lastHeroMenuCommandFocus = active;
-        target = document.getElementById('start-game');
-    } else if (code === 'KeyA' || code === 'ArrowLeft') {
-        if (columnIndex === 0) return false;
-        target = commands[index - 1];
-    } else if (code === 'KeyD' || code === 'ArrowRight') {
-        if (columnIndex === columnCount - 1 || index + 1 >= commands.length) return false;
-        target = commands[index + 1];
-    }
-
-    return target ? focusControllerTarget(target, { playHover: true }) : false;
-}
-
 // Keyboard-style Steam Deck layouts must be able to operate every menu even
 // when the native Steam Input action manifest has not been published yet.
 // Treat WASD like the directional pad; on a vertical menu A/W move up and
@@ -1795,20 +1568,9 @@ document.addEventListener('keydown', (event) => {
     // every nested submenu use Deck/keyboard navigation when opened in-run.
     if (appPhase === 'gameplay' && !isModalFocusRoot(root)) return;
 
-    const direction = menuKeyboardDirection(event.code);
-    if (direction) {
+    if (MENU_DIRECTION_BY_CODE[event.code] && !event.ctrlKey && !event.metaKey && !event.altKey) {
         event.preventDefault();
-        if (root.id === 'operator-polish-modal' && moveOperatorPolishGridFocus(event.code)) return;
-        if (root.id === 'menu' && moveMenuDirectionalFocus(event.code)) return;
-        if (root.id === 'settings-popup' && moveSettingsDirectionalFocus(event.code)) return;
-        if (moveTabBarSelection(document.activeElement, event.code)) return;
-        const horizontal = ['KeyA', 'KeyD', 'ArrowLeft', 'ArrowRight'].includes(event.code);
-        const active = document.activeElement;
-        const adjusted = horizontal && (
-            adjustRangeInputValue(active, direction)
-            || adjustSelectValue(active, direction)
-        );
-        if (!adjusted && !moveSpatialControllerFocus(root, event.code)) moveControllerFocus(direction);
+        navigateMenu(root, event.code);
     } else if (event.code === 'Enter' || event.code === 'Space') {
         event.preventDefault();
         activateControllerFocusedElement();
@@ -2056,6 +1818,9 @@ function activateControllerFocusedElement() {
     if (!activeElement || activeElement === document.body || (root && !isElementInFocusRoot(root, activeElement))) {
         activeElement = getPreferredControllerFocusTarget(root, focusables);
         if (activeElement) focusControllerTarget(activeElement);
+        // On a dialog, a press that only found focus must not also click:
+        // the target could be CONFIRM QUIT or RESET SAVE (nav map F2).
+        if (isModalFocusRoot(root)) return Boolean(activeElement);
     }
 
     if (!activeElement) return false;
@@ -2177,10 +1942,13 @@ function triggerControllerPauseAction() {
         toggleTacticalMapModal(false);
         return true;
     }
+    // isFocusRootOpen, not just the `hidden` class: #hb-debug-console is
+    // always mounted and hides with display:none, so a class-only test read it
+    // as an open modal and Start sent Escape to it instead of pausing.
     const activeModal = STEAM_INPUT_FOCUS_ROOT_IDS
         .filter((id) => id !== 'splash' && id !== 'menu')
         .map((id) => document.getElementById(id))
-        .find((element) => element && !element.classList.contains('hidden') && element !== settingsPopup);
+        .find((element) => element !== settingsPopup && isFocusRootOpen(element));
     if (activeModal) {
         dispatchControllerEscape();
         noteModalClosed('pause-active-modal');
@@ -2411,11 +2179,13 @@ function handleSteamMenuInput(actions) {
 
     const camStickX = Math.abs(Number(actions.camera?.x) || 0) > 0.15 ? Number(actions.camera?.x) : 0;
     const camStickY = Math.abs(Number(actions.camera?.y) || 0) > 0.15 ? Number(actions.camera?.y) : 0;
-    const moveStickX = Math.abs(Number(actions.move?.x) || 0) > 0.25 ? Number(actions.move?.x) : 0;
-    const moveStickY = Math.abs(Number(actions.move?.y) || 0) > 0.25 ? Number(actions.move?.y) : 0;
-
-    const pointerX = Number(actions.pointer?.x) || camStickX || moveStickX || 0;
-    const pointerY = Number(actions.pointer?.y) || camStickY || moveStickY || 0;
+    // The left stick navigates menus exactly like the D-pad (it arrives as
+    // menuUp/Down/Left/Right). It used to also drive this free cursor, which
+    // focused whatever it passed over, so one push moved focus twice and
+    // fought itself (controller nav remap 2026-10-14). The cursor is the right
+    // stick / trackpad only.
+    const pointerX = Number(actions.pointer?.x) || camStickX || 0;
+    const pointerY = Number(actions.pointer?.y) || camStickY || 0;
     const pointerMag = Math.hypot(pointerX, pointerY);
     const deltaY = Number(actions.cameraDelta?.y) || 0;
     const deltaX = Number(actions.cameraDelta?.x) || 0;
@@ -2455,27 +2225,20 @@ function handleSteamMenuInput(actions) {
     }
 
     const moved = Boolean(actions.up || actions.down || actions.left || actions.right);
-    const activeElement = document.activeElement;
-    const horizontalDirection = actions.left ? -1 : actions.right ? 1 : 0;
-    // Left/right quick-adjusts the focused control; up/down always moves focus.
-    // Letting up/down adjust a <select> too meant a focused dropdown swallowed
-    // vertical navigation, so focus could never leave it -- and A now opens the
-    // full option list anyway, which is the discoverable way to change one.
-    const controlAdjusted = Boolean(activeElement && horizontalDirection && (
-        adjustRangeInputValue(activeElement, horizontalDirection)
-        || adjustSelectValue(activeElement, horizontalDirection)
-    ));
 
     const root = getControllerFocusRoot();
+    let rehomed = false;
     if (steamInputState.lastInputMode === 'controller' && (!document.activeElement || document.activeElement === document.body || !isElementInFocusRoot(root, document.activeElement))) {
         const focusables = getVisibleControllerFocusables(root ?? document);
         const preferred = getPreferredControllerFocusTarget(root, focusables);
         if (preferred) focusControllerTarget(preferred);
+        rehomed = Boolean(preferred);
     } else if (actions.tabLeft) {
         handleControllerTabNavigation(root, -1);
     } else if (actions.tabRight) {
         handleControllerTabNavigation(root, 1);
-    } else if (moved && !controlAdjusted) {
+    } else if (moved) {
+        // Left / right on a slider or dropdown adjust it (navigateMenu).
         const code = actions.up
             ? 'ArrowUp'
             : actions.down
@@ -2483,10 +2246,13 @@ function handleSteamMenuInput(actions) {
                 : actions.left
                     ? 'ArrowLeft'
                     : 'ArrowRight';
-        moveControllerDirectional(root, code, actions.up || actions.left);
+        navigateMenu(root, code);
     }
 
-    if (actions.confirm || actions.fire || actions.triggerRight) {
+    // A press that only brought focus back onto a dialog doesn't also click
+    // whatever it landed on (nav map F2: that was RESET SAVE).
+    const confirmSwallowed = rehomed && isModalFocusRoot(root);
+    if (!confirmSwallowed && (actions.confirm || actions.fire || actions.triggerRight)) {
         if (controllerAimCursor) {
             const hovered = document.elementFromPoint(controllerAimCursor.x, controllerAimCursor.y);
             const clickable = hovered?.closest?.('button, select, input, a, .char-card, .class-tab, .armory-btn, .armory-select, .toggle, .splash-btn, .about-btn, [tabindex]:not([tabindex="-1"])');
@@ -2523,7 +2289,7 @@ window.addEventListener('gamepad-menu-nav', (event) => {
             menu_left: 'ArrowLeft',
             menu_right: 'ArrowRight'
         };
-        moveControllerDirectional(getControllerFocusRoot(), codeByAction[action], action === 'menu_up' || action === 'menu_left');
+        navigateMenu(getControllerFocusRoot(), codeByAction[action]);
     } else if (action === 'menu_confirm') {
         activateControllerFocusedElement();
     } else if (action === 'menu_back') {
@@ -5292,6 +5058,9 @@ function renderOperatorPolishUi() {
         button.className = `operator-polish-chip${isUnlocked ? '' : ' is-locked'}${selected.id === polish.id ? ' is-selected' : ''}`;
         button.style.setProperty('--polish-color', polish.color);
         button.setAttribute('aria-disabled', String(!isUnlocked));
+        // Locked finishes stay reachable by pad / keys so their unlock clue can
+        // be read (the focus handler below shows it); they have no click action.
+        if (!isUnlocked) button.setAttribute('data-controller-focusable', '');
         button.setAttribute('aria-label', `${polish.name}${isUnlocked ? '' : ` locked. Clue: ${polish.hint}`}`);
         button.innerHTML = `<span class="operator-polish-chip__swatch"></span><span>${String(polish.id + 1).padStart(2, '0')} // ${polish.name}</span>`;
         if (isUnlocked) {
@@ -6534,6 +6303,11 @@ function buildArchiveModal() {
                 entry.type = 'button';
                 entry.setAttribute('aria-label', t('ui.lore.open_log', { key: String(key).startsWith('drop_') ? (window.game?.getLoreTitle?.(key) ?? key) : key }));
                 entry.addEventListener('click', () => openArchiveLogDetail(key));
+            } else {
+                // Undiscovered logs are focus stops too, so a pad can walk the
+                // whole archive; they open nothing (nav map F9).
+                entry.setAttribute('tabindex', '0');
+                entry.setAttribute('aria-label', `${archiveLogLabel(key, false)}. ${t('ui.lore.encrypted')}`);
             }
 
             const avatar = document.createElement('div');
@@ -11562,7 +11336,11 @@ function openSettingsModal() {
     }
 
     settingsPopup.classList.remove('hidden');
-    selectSettingsTab(settingsPopup.querySelector('.settings-tab.active')?.dataset.settingsTab ?? 'session');
+    // Paused mid-run: always the Session tab, where RESUME is. From a menu:
+    // the tab the player last used.
+    selectSettingsTab(appPhase === 'gameplay'
+        ? 'session'
+        : settingsPopup.querySelector('.settings-tab.active')?.dataset.settingsTab ?? 'session');
     syncSteamInputPhase('menu');
     if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
     if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
@@ -14016,6 +13794,10 @@ function renderCodexModal() {
                     <div class="codex-card__name">${t('ui.codex.uncatalogued')}</div>
                     <div class="codex-card__blurb">${t('ui.codex.encounter_hint')}</div>
                 `;
+                // Focusable so a pad can browse the whole codex and read how to
+                // log an entry; it opens nothing (nav map F9).
+                card.setAttribute('tabindex', '0');
+                card.setAttribute('aria-label', `${t('ui.codex.uncatalogued')}. ${t('ui.codex.encounter_hint')}`);
             }
             section.appendChild(card);
         }
@@ -16005,8 +15787,28 @@ async function syncHeroPreview(type) {
     const preview = scoutHeroPreview ?? await ensureScoutHeroPreview();
     if (requestGeneration !== heroPreviewRequestGeneration) return;
     if (preview) {
+        const classId = String(type).toLowerCase();
+        const classLoadout = window.loadout?.getClassLoadout?.(classId);
+        const chassisSkinId = window.loadout?.getEquippedChassisSkinId?.();
+        const chassisSupported = window.loadout?.isChassisSupportedForClass?.(classId, chassisSkinId) ?? true;
+        const chassisBody = window.loadout?.getEquippedChassisBody?.();
+        const sheenColor = typeof getSelectedSheen === 'function' ? getSelectedSheen().color : 0xffffff;
+        const presentation = {
+            classType: type,
+            loadout: {
+                archetypeId: classLoadout?.archetypeId,
+                weaponSkinId: classLoadout?.weaponSkinId,
+                charmId: classLoadout?.charmId,
+                sheenColor,
+                chassisSkinId: chassisSupported ? chassisSkinId : null,
+                chassisBody
+            }
+        };
+        const loadOp = preview.setPresentation
+            ? preview.setPresentation(presentation)
+            : preview.setType(type);
         const loaded = await Promise.race([
-            preview.setType(type).catch((error) => {
+            loadOp.catch((error) => {
                 console.warn('[hero-preview] 3D operator failed to load', error);
                 return false;
             }),

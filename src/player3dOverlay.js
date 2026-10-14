@@ -502,6 +502,9 @@ export async function createPlayer3dOverlay({
     weaponEnabled = true,
     weaponArchetype = 'gg1',
     weaponMount = undefined,
+    weaponSkinId = null,
+    weaponSheenColor = 0xffffff,
+    charmId = null,
     modelUrl = MODEL_URL,
     animationModelUrl = null,
     animationBonePrefix = null,
@@ -566,7 +569,13 @@ export async function createPlayer3dOverlay({
             if (!rightHand && /RightHand$/.test(object.name)) rightHand = object;
         });
     }
-    const weapon = weaponEnabled && rightHand ? await createClassWeapon(weaponArchetype, weaponMount) : null;
+    const resolvedWeaponMount = {
+        position: weaponMount?.position ?? null,
+        skinId: weaponSkinId ?? weaponMount?.skinId ?? null,
+        sheenColor: weaponSheenColor ?? weaponMount?.sheenColor ?? 0xffffff,
+        charmId: charmId ?? weaponMount?.charmId ?? null
+    };
+    const weapon = weaponEnabled && rightHand ? await createClassWeapon(weaponArchetype, resolvedWeaponMount) : null;
     if (weapon) {
         // The Mixamo rig is authored in centimeters and normalized by scaling
         // its armature. Compensate for the hand's complete inherited scale so
@@ -873,8 +882,8 @@ export async function createPlayer3dOverlay({
                 const isSprinting = Boolean(state?.isSprinting);
                 const speed = state?.groundSpeed || (isMoving ? (isSprinting ? 6.5 : 3.8) : 0);
 
-                let targetAngX = 0;
-                let targetAngZ = 0;
+                let targetAngX;
+                let targetAngZ;
                 const dt = Math.min(delta, 0.1);
                 if (speed > 0.1 && isMoving) {
                     charmPhysics.timer += dt;
@@ -882,6 +891,12 @@ export async function createPlayer3dOverlay({
                     const bobAmp = (isSprinting ? 0.22 : 0.12) * Math.min(speed / 4, 1.5);
                     targetAngX = Math.sin(charmPhysics.timer * bobFreq) * bobAmp;
                     targetAngZ = Math.cos(charmPhysics.timer * bobFreq * 0.5) * (bobAmp * 0.7);
+                } else {
+                    charmPhysics.timer += dt;
+                    const breatheFreq = 2.4;
+                    const breatheAmp = 0.04;
+                    targetAngX = Math.sin(charmPhysics.timer * breatheFreq) * breatheAmp;
+                    targetAngZ = Math.cos(charmPhysics.timer * breatheFreq * 0.7) * (breatheAmp * 0.6);
                 }
 
                 const forceX = -charmPhysics.stiffness * (charmPhysics.angleX - targetAngX) - charmPhysics.damping * charmPhysics.velX;
