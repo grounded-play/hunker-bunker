@@ -69,9 +69,12 @@ export function stampCrashSiteApproach(grid, build = CRASH_SITE_BUILD, {
     floorTile = '.'
 } = {}) {
     if (!Array.isArray(grid) || grid.length < 15) return null;
-    const captured = borderOpenings(grid);
+    let captured = borderOpenings(grid);
     const requiredSouth = { side: 'south', cell: { x: build.center.x, y: grid.length - 1 } };
-    if (!captured.some(({ side }) => side === 'south')) captured.push(requiredSouth);
+    // The origin does not connect to an arbitrary south portal: it connects
+    // to this exact three-cell socket. Preserve the other sides, but replace
+    // any generated south opening with the authored shared boundary.
+    captured = [...captured.filter(({ side }) => side !== 'south'), requiredSouth];
 
     fill(grid, solidTile);
     const approach = build.serviceApproach;
@@ -112,6 +115,40 @@ export function stampCrashSiteApproach(grid, build = CRASH_SITE_BUILD, {
         openings,
         wayfindingMarkers,
         roomInstances: [],
-        doors: []
+        doors: [],
+        sharedPortals: [{
+            id: `portal:${build.originChunk.x},${build.originChunk.y}:${build.approachChunk.x},${build.approachChunk.y}:x${build.center.x}`,
+            side: 'south',
+            center: { ...requiredSouth.cell },
+            cells: [-1, 0, 1].map((dx) => ({ x: build.center.x + dx, y: grid.length - 1 }))
+        }]
     };
+}
+
+export function validateCrashSiteConnection(originGrid, approachGrid, build = CRASH_SITE_BUILD) {
+    if (!Array.isArray(originGrid) || !Array.isArray(approachGrid)) return { valid: false, reason: 'missing-grid' };
+    const centerX = build.center.x;
+    const approachEdgeY = approachGrid.length - 1;
+    const socketClear = [-1, 0, 1].every((dx) => (
+        WALKABLE.has(originGrid[0]?.[centerX + dx])
+        && WALKABLE.has(approachGrid[approachEdgeY]?.[centerX + dx])
+    ));
+    if (!socketClear) return { valid: false, reason: 'shared-socket-blocked' };
+
+    const target = build.serviceApproach.hub;
+    const seen = new Set([`${centerX},${approachEdgeY}`]);
+    const queue = [{ x: centerX, y: approachEdgeY }];
+    for (let index = 0; index < queue.length; index += 1) {
+        const cell = queue[index];
+        if (cell.x === target.x && cell.y === target.y) return { valid: true, reason: null };
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const x = cell.x + dx;
+            const y = cell.y + dy;
+            const key = `${x},${y}`;
+            if (seen.has(key) || !WALKABLE.has(approachGrid[y]?.[x])) continue;
+            seen.add(key);
+            queue.push({ x, y });
+        }
+    }
+    return { valid: false, reason: 'approach-hub-unreachable' };
 }

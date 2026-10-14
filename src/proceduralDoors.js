@@ -12,6 +12,16 @@ const SIDE_ORIENTATION = Object.freeze({
     w: 'vertical'
 });
 
+export function portalKeyForDoorway(room, doorway) {
+    const orientation = SIDE_ORIENTATION[doorway?.side] ?? doorway?.orientation ?? 'unknown';
+    const cells = (doorway?.cells ?? [])
+        .filter((cell) => Number.isFinite(cell?.x) && Number.isFinite(cell?.y))
+        .map((cell) => `${cell.x},${cell.y}`)
+        .sort()
+        .join('|');
+    return `${room?.chunkKey ?? 'unknown'}:${orientation}:${cells}`;
+}
+
 export const DOOR_FAMILIES = Object.freeze({
     'blast-slab': Object.freeze({ motion: 'sink-floor', frameStyle: 'reinforced-bulkhead', materialVariant: 'bunker' }),
     'split-bulkhead': Object.freeze({ motion: 'split-sideways', frameStyle: 'pressure-frame', materialVariant: 'industrial' }),
@@ -90,7 +100,10 @@ function doorRecord(room, doorway, center, tutorial) {
     const style = room.themeConfig?.doorStyle ?? 'bunker';
     const record = {
         id: doorway.id,
+        portalKey: portalKeyForDoorway(room, doorway),
         roomId: room.id,
+        roomIds: [room.id],
+        doorwayIds: [doorway.id],
         chunkKey: room.chunkKey,
         localX: center.x,
         localY: center.y,
@@ -115,15 +128,22 @@ function doorChanceForRoom(_room) {
 
 export function planProceduralDoors(rooms, random, { tutorial = false, forceAtLeastOne = false } = {}) {
     const records = [];
-    const occupied = new Set();
+    const byPortal = new Map();
     for (const room of rooms ?? []) {
         for (const doorway of room.doors ?? []) {
             const center = doorway.cells?.[Math.floor(doorway.cells.length / 2)];
             if (!center) continue;
-            const key = `${center.x},${center.y}`;
-            if (occupied.has(key) || random() > doorChanceForRoom(room)) continue;
-            occupied.add(key);
-            records.push(doorRecord(room, doorway, center, tutorial));
+            const key = portalKeyForDoorway(room, doorway);
+            const existing = byPortal.get(key);
+            if (existing) {
+                if (!existing.roomIds.includes(room.id)) existing.roomIds.push(room.id);
+                if (!existing.doorwayIds.includes(doorway.id)) existing.doorwayIds.push(doorway.id);
+                continue;
+            }
+            if (random() > doorChanceForRoom(room)) continue;
+            const record = doorRecord(room, doorway, center, tutorial);
+            byPortal.set(key, record);
+            records.push(record);
         }
     }
     if (forceAtLeastOne && records.length === 0) {
@@ -172,6 +192,26 @@ export function ensureDoorThresholdSupports(grid, door) {
     return validateDoorThresholdSupports(grid, door);
 }
 
+const isDoorWalkable = (tile) => tile === '.' || tile === 'D' || tile === 'R' || tile === 'B' || tile === 'L';
+
+export function doorPassageCells(door) {
+    const center = { x: door?.localX, y: door?.localY };
+    if (!Number.isFinite(center.x) || !Number.isFinite(center.y)) return [];
+    return door?.orientation === 'vertical'
+        ? [{ x: center.x - 1, y: center.y }, { x: center.x + 1, y: center.y }]
+        : [{ x: center.x, y: center.y - 1 }, { x: center.x, y: center.y + 1 }];
+}
+
+export function ensureDoorPassage(grid, door) {
+    for (const { x, y } of doorPassageCells(door)) {
+        if (!grid?.[y] || x < 0 || x >= grid[y].length) continue;
+        if (grid[y][x] === '#' || grid[y][x] === 'W') grid[y][x] = '.';
+    }
+    const cells = doorPassageCells(door);
+    const blocked = cells.filter(({ x, y }) => !isDoorWalkable(grid?.[y]?.[x]));
+    return { valid: cells.length === 2 && blocked.length === 0, cells, blocked };
+}
+
 export function stampDoorRecords(grid, records) {
     for (const door of records ?? []) {
         ensureDoorThresholdSupports(grid, door);
@@ -183,6 +223,7 @@ export function stampDoorRecords(grid, records) {
                 grid[cell.y][cell.x] = 'D';
             }
         }
+        door.clearBothSides = ensureDoorPassage(grid, door).valid;
     }
     return grid;
 }

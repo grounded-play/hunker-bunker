@@ -57,7 +57,7 @@ describe('clearSpawnArea — door/portal alignment', () => {
         expect([4, 5, 6, 7, 8].some((x) => ThreeGame.prototype.isSnailTileWalkable.call(game, x, 0))).toBe(false);
     });
 
-    it('keeps the crash-floor decal centered under the active class ship', () => {
+    it('keeps the crash heat pulse centered under the active class ship', () => {
         const floorPosition = { x: 0, z: 0 };
         const game = {
             playerType: 'TANK',
@@ -66,7 +66,7 @@ describe('clearSpawnArea — door/portal alignment', () => {
                 { type: 'TANK', tileX: 9, tileZ: 9, isVisible: false },
                 { type: 'ENGINEER', tileX: 9, tileZ: 9, isVisible: false }
             ],
-            crashSiteFloorMesh: { position: floorPosition }
+            crashSiteHeatMesh: { position: floorPosition }
         };
 
         ThreeGame.prototype.updateCrashedShipsVisibility.call(game);

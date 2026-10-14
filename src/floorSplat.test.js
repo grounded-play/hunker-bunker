@@ -93,6 +93,20 @@ describe('buildFloorSplatData', () => {
         expect(at(splat, 3, 1).layer).toBe(FLOOR_LAYER.HALLWAY);
     });
 
+    it('blends crash scorch through the floor splat instead of an overlay plane', () => {
+        const options = {
+            grid: Array.from({ length: 15 }, () => Array(15).fill('.')),
+            size: 15,
+            crashRoom: true,
+            crashImpact: { x: 7, y: 7, radius: 3.75 },
+            variantKey: '0,0'
+        };
+        const splat = buildFloorSplatData(options);
+        expect(surfaceForLayer(at(splat, 7, 7).layer)?.id).toBe('tex_floor_scorched_plasma_crater');
+        expect(surfaceForLayer(at(splat, 0, 0).layer)?.id).not.toBe('tex_floor_scorched_plasma_crater');
+        expect(buildFloorSplatData(options).layer).toEqual(splat.layer);
+    });
+
     it('records the distance to the nearest wall in cells', () => {
         const splat = build();
         expect(at(splat, 1, 1).wall).toBe(0);

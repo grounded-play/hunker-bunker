@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
     doorPresentationForStyle,
     doorClearanceEnvelope,
+    doorPassageCells,
     doorThresholdSupportCells,
     ensureDoorThresholdSupports,
     planProceduralDoors,
+    portalKeyForDoorway,
     restoreDoorStates,
     resolveDoorMotionPose,
     serializeDoorStates,
@@ -24,7 +26,7 @@ describe('procedural doors', () => {
 
     it('plans from explicit room boundaries and stamps a blast-width threshold', () => {
         const records = planProceduralDoors([room], () => 0);
-        const grid = Array.from({ length: 7 }, () => Array(7).fill('.'));
+        const grid = Array.from({ length: 9 }, () => Array(9).fill('.'));
         stampDoorRecords(grid, records);
         expect(records[0]).toMatchObject({
             localX: 3,
@@ -35,12 +37,36 @@ describe('procedural doors', () => {
             motion: 'sink-floor',
             frameStyle: 'reinforced-bulkhead',
             autoClose: true,
+            clearBothSides: true,
             cells: [{ x: 2, y: 6 }, { x: 3, y: 6 }, { x: 4, y: 6 }]
         });
         expect(grid[6].slice(2, 5)).toEqual(['D', 'D', 'D']);
         expect(grid[6][1]).toBe('#');
         expect(grid[6][5]).toBe('#');
         expect(validateDoorThresholdSupports(grid, records[0]).valid).toBe(true);
+    });
+
+    it('merges both room declarations of one physical opening into one portal', () => {
+        const opposite = {
+            ...room,
+            id: 'hall',
+            doors: [{ ...room.doors[0], id: 'hall-door', side: 's' }]
+        };
+        const records = planProceduralDoors([room, opposite], () => 0);
+        expect(records).toHaveLength(1);
+        expect(records[0].portalKey).toBe(portalKeyForDoorway(room, room.doors[0]));
+        expect(records[0].roomIds).toEqual(['room', 'hall']);
+        expect(records[0].doorwayIds).toEqual(['door', 'hall-door']);
+    });
+
+    it('repairs a structural cell directly behind a door and verifies both sides', () => {
+        const [door] = planProceduralDoors([room], () => 0);
+        const grid = Array.from({ length: 9 }, () => Array(9).fill('.'));
+        grid[5][3] = '#';
+        stampDoorRecords(grid, [door]);
+        expect(doorPassageCells(door)).toEqual([{ x: 3, y: 5 }, { x: 3, y: 7 }]);
+        expect(grid[5][3]).toBe('.');
+        expect(door.clearBothSides).toBe(true);
     });
 
     it('opens ordinary doors but denies unmet locked doors', () => {

@@ -2946,23 +2946,6 @@ export class ThreeGame {
         this.terrainFloorPlateTexture = baseMetalTex;
         const grungeRustTex = activeTerrainTextures.floorGrunge;
         const techScratchesTex = activeTerrainTextures.floorDetail;
-        this.crashSiteFloorTexture = this.loadKeyedSpriteTexture('/crash_site_broken_floor_v1.png', 14);
-        this.crashSiteFloorTexture.anisotropy = maxAnisotropy;
-        this.crashSiteFloorMaterial = new THREE.MeshStandardMaterial({
-            map: this.crashSiteFloorTexture,
-            emissiveMap: this.crashSiteFloorTexture,
-            transparent: true,
-            alphaTest: 0.02,
-            depthWrite: true,
-            color: 0x321913,
-            emissive: 0x7a1d08,
-            emissiveIntensity: 0.46,
-            roughness: 0.98,
-            metalness: 0.08,
-            polygonOffset: true,
-            polygonOffsetFactor: -4,
-            polygonOffsetUnits: -4
-        });
         const crashHeatCanvas = document.createElement('canvas');
         crashHeatCanvas.width = 256;
         crashHeatCanvas.height = 256;
@@ -11791,9 +11774,9 @@ export class ThreeGame {
         const activeShip = this.crashedShips.find((ship) => (
             String(ship.type ?? '').trim().toUpperCase() === activeType
         ));
-        if (activeShip && this.crashSiteFloorMesh) {
-            this.crashSiteFloorMesh.position.x = activeShip.tileX;
-            this.crashSiteFloorMesh.position.z = activeShip.tileZ;
+        if (activeShip && this.crashSiteHeatMesh) {
+            this.crashSiteHeatMesh.position.x = activeShip.tileX;
+            this.crashSiteHeatMesh.position.z = activeShip.tileZ;
         }
     }
 
@@ -12094,6 +12077,16 @@ export class ThreeGame {
             metadata: this.wfcMetadataCache?.get(`${chunkX},${chunkY}`),
             maze: landform === LANDFORMS.MAZE,
             crashRoom: chunkX === 0 && chunkY === 0,
+            crashImpact: chunkX === 0 && chunkY === 0
+                ? (() => {
+                    const activeShip = this.crashedShips?.find((ship) => ship.type === this.playerType);
+                    return {
+                        x: activeShip?.tileX ?? CRASH_SITE_CENTER,
+                        y: activeShip?.tileZ ?? CRASH_SITE_CENTER,
+                        radius: 3.75
+                    };
+                })()
+                : null,
             ledgeGround,
             landform,
             variantKey: `${chunkX},${chunkY}`
@@ -13348,9 +13341,6 @@ export class ThreeGame {
         };
         const now = performance.now();
         const crashHeatPulse = Math.sin(now * 0.0026);
-        if (this.crashSiteFloorMaterial) {
-            this.crashSiteFloorMaterial.emissiveIntensity = 0.46 + crashHeatPulse * 0.07;
-        }
         if (this.crashSiteHeatMaterial) {
             this.crashSiteHeatMaterial.opacity = 0.40 + crashHeatPulse * 0.06;
         }
@@ -31131,9 +31121,7 @@ export class ThreeGame {
                 const hits = intersectWallMeshes(this._projRaycaster, this.wallMeshes);
                 if (hits.length > 0) {
                     const hit = hits[0];
-                    const wall = (hit.object?.userData?.isInstancedWallPool && Number.isInteger(hit.instanceId))
-                        ? this.findWallByPoolInstance(hit.object, hit.instanceId)
-                        : hit.object;
+                    const wall = this.resolveDestructibleWallHit(hit);
                     if (wall) {
                         const hx = hit.point?.x ?? spawnX;
                         const hz = hit.point?.z ?? spawnZ;
@@ -31368,6 +31356,35 @@ export class ThreeGame {
         return null;
     }
 
+    // The seamless wall-run facade is what the ray hits, but the tile record
+    // beneath it owns health, persistence, collision and room topology.
+    resolveDestructibleWallHit(hit) {
+        if (!hit?.object) return null;
+        const object = hit.object;
+        if (object.userData?.isInstancedWallPool && Number.isInteger(hit.instanceId)) {
+            return this.findWallByPoolInstance(object, hit.instanceId);
+        }
+        if (object.userData?.isWallRunFacadePool && Number.isInteger(hit.instanceId)) {
+            const facade = object.userData.facadeStates?.[hit.instanceId];
+            if (!facade || facade.hidden) return null;
+            let nearest = null;
+            let nearestDistance = Infinity;
+            for (const wallKey of facade.memberKeys ?? []) {
+                const record = this._wallInstanceIndex?.get(wallKey);
+                if (!record || record.destroyed) continue;
+                const dx = (hit.point?.x ?? record.worldX) - record.worldX;
+                const dz = (hit.point?.z ?? record.worldZ) - record.worldZ;
+                const distance = dx * dx + dz * dz;
+                if (distance < nearestDistance) {
+                    nearest = record;
+                    nearestDistance = distance;
+                }
+            }
+            return nearest;
+        }
+        return object.userData?.isWall ? object : null;
+    }
+
     checkProjectileWallHit(projectile, fromPos = null) {
         const speed = Math.hypot(projectile.vx, projectile.vz);
         if (speed <= 0.0001) return null;
@@ -31395,9 +31412,7 @@ export class ThreeGame {
                 nz = worldNormal.z;
             }
         }
-        const wall = (hit.object?.userData?.isInstancedWallPool && Number.isInteger(hit.instanceId))
-            ? this.findWallByPoolInstance(hit.object, hit.instanceId)
-            : hit.object;
+        const wall = this.resolveDestructibleWallHit(hit);
         // Never pass an unresolved pool into destroyWall: hiding/removing that
         // object would erase every wall in its room-style bucket.
         if (!wall) return null;
@@ -31628,7 +31643,7 @@ export class ThreeGame {
         this.scene.add(effect);
         registerTransientEffect(this, effect);
 
-        const impactSound = this.resolveBulletImpactSound?.(surface) ?? 'bullet_impact_metal';
+        const impactSound = this.resolveBulletImpactSound?.(surface) ?? 'prop_impact_metal';
         window.AudioManager?.play?.(impactSound, (this.audioAt?.(x, z, { volume: 0.32, varyPitch: true }) ?? { volume: 0.32, varyPitch: true }));
     }
 
@@ -34408,6 +34423,11 @@ export class ThreeGame {
         const hp = Math.max(0, wall.userData.wallHp ?? maxHp);
         const damageRatio = Math.min(1, Math.max(0, 1 - hp / maxHp));
         if (damageRatio <= 0) return;
+        wall.userData.damageStage = damageRatio >= 0.67
+            ? 'failing'
+            : damageRatio >= 0.34
+                ? 'cracked'
+                : 'chipped';
 
         if (wall.isInstancedWall) {
             const color = new THREE.Color(0xffffff)
@@ -34446,6 +34466,40 @@ export class ThreeGame {
         return material;
     }
 
+    recordWallImpact(wall, {
+        source = 'player',
+        amount = 0,
+        hpBefore = null,
+        hpAfter = null,
+        destroyed = false,
+        refusalReason = null
+    } = {}) {
+        if (typeof window === 'undefined' || typeof CustomEvent === 'undefined') return;
+        const wallKey = wall?.userData?.wallKey ?? null;
+        const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        this._wallImpactTelemetryAt ??= new Map();
+        const last = this._wallImpactTelemetryAt.get(wallKey) ?? -Infinity;
+        if (!destroyed && !refusalReason && now - last < 250) return;
+        this._wallImpactTelemetryAt.set(wallKey, now);
+        window.dispatchEvent?.(new CustomEvent('wall-impact', {
+            detail: {
+                source,
+                wallKey,
+                x: wall?.userData?.worldX ?? null,
+                z: wall?.userData?.worldZ ?? null,
+                variant: wall?.userData?.wallVariant ?? null,
+                renderedKind: wall?.wallRunFacade ? 'wall-run-facade' : (wall?.isInstancedWall ? 'instanced-wall' : 'wall-mesh'),
+                instanceId: Number.isInteger(wall?.instanceIndex) ? wall.instanceIndex : null,
+                amount,
+                hpBefore,
+                hpAfter,
+                damageStage: wall?.userData?.damageStage ?? 'intact',
+                destroyed,
+                refusalReason
+            }
+        }));
+    }
+
     damageWall(wall, amount = 1, { source = 'player' } = {}) {
         const span = beginPerfPhase('wall:damage', {
             source,
@@ -34461,11 +34515,32 @@ export class ThreeGame {
             span.end(result);
             return result;
         }
+        if (wall.userData.indestructible) {
+            this.recordWallImpact?.(wall, { source, amount, refusalReason: 'protected' });
+            span.end();
+            return false;
+        }
+        if (wall.userData.isProceduralDoor && wall.userData.proceduralDoorId) {
+            const door = this.proceduralDoorStates?.get?.(wall.userData.proceduralDoorId);
+            this.refreshMazeAccessState?.();
+            if (door?.lock && !isGateRequirementMet(door.lock, this.mazeAccessState)) {
+                this.recordWallImpact?.(wall, { source, amount, refusalReason: 'locked-door' });
+                span.end();
+                return false;
+            }
+        }
         const maxHp = Math.max(1, wall.userData.maxWallHp ?? WALL_HP_STANDARD);
         const damage = Math.max(0, Math.round(Number(amount) || 0));
-        wall.userData.wallHp = Math.max(0, (wall.userData.wallHp ?? maxHp) - damage);
+        const hpBefore = wall.userData.wallHp ?? maxHp;
+        wall.userData.wallHp = Math.max(0, hpBefore - damage);
         if (wall.userData.wallHp > 0) {
             this.updateWallDamageColor(wall);
+            this.recordWallImpact?.(wall, {
+                source,
+                amount: damage,
+                hpBefore,
+                hpAfter: wall.userData.wallHp
+            });
             if (typeof window !== 'undefined') {
                 window.dispatchEvent?.(new CustomEvent('wall-damaged', {
                     detail: {
@@ -34481,6 +34556,13 @@ export class ThreeGame {
             return false;
         }
         const result = this.destroyWall(wall, { source });
+        this.recordWallImpact?.(wall, {
+            source,
+            amount: damage,
+            hpBefore,
+            hpAfter: wall.userData.wallHp,
+            destroyed: result
+        });
         span.end(result);
         return result;
     }
@@ -35174,44 +35256,33 @@ export class ThreeGame {
             chunkFloor.receiveShadow = true;
             group.add(chunkFloor);
         }
-        if (chunkX === 0 && chunkY === 0 && this.crashSiteFloorMaterial) {
-            // A separate damaged deck lies over the safe structural floor, only
-            // beneath the ship impact zone. Keeping it inset prevents it from
-            // visually bridging the canyon or covering the door hallway.
-            const crashDeck = new THREE.Mesh(
-                new THREE.PlaneGeometry(7.5, 7.5),
-                this.crashSiteFloorMaterial
+        if (chunkX === 0 && chunkY === 0 && this.crashSiteHeatMaterial) {
+            // Damage albedo/roughness lives in the floor splat. Keep only a
+            // soft, non-depth-writing emissive pulse above it so there is no
+            // second opaque floor texture to fight the blended deck.
+            const heatBed = new THREE.Mesh(
+                new THREE.PlaneGeometry(6.2, 6.2),
+                this.crashSiteHeatMaterial
             );
-            crashDeck.rotation.x = -Math.PI / 2;
+            heatBed.rotation.x = -Math.PI / 2;
             const activeShip = this.crashedShips?.find((ship) => ship.type === this.playerType);
-            crashDeck.position.set(
+            heatBed.position.set(
                 activeShip?.tileX ?? CRASH_SITE_CENTER,
-                0.035,
+                0.028,
                 activeShip?.tileZ ?? CRASH_SITE_CENTER
             );
-            crashDeck.receiveShadow = true;
-            crashDeck.renderOrder = 4;
-            crashDeck.userData = { isCrashSiteFloor: true };
-            if (this.crashSiteHeatMaterial) {
-                const heatBed = new THREE.Mesh(
-                    new THREE.PlaneGeometry(6.8, 6.8),
-                    this.crashSiteHeatMaterial
-                );
-                heatBed.position.z = 0.012;
-                heatBed.renderOrder = 5;
-                heatBed.userData = { isCrashSiteHeat: true };
-                crashDeck.add(heatBed);
+            heatBed.renderOrder = 5;
+            heatBed.userData = { isCrashSiteHeat: true };
 
-                const impactLight = new THREE.PointLight(0xff3b0a, 1.45, 6.5, 2);
-                // The deck is rotated onto the X/Z floor, so local Z is world height.
-                impactLight.position.z = 0.85;
-                impactLight.userData = { isCrashSiteHeatLight: true };
-                crashDeck.add(impactLight);
-                this.registerEnvLight?.(impactLight);
-                this.crashSiteHeatLight = impactLight;
-            }
-            this.crashSiteFloorMesh = crashDeck;
-            group.add(crashDeck);
+            const impactLight = new THREE.PointLight(0xff3b0a, 1.45, 6.5, 2);
+            // Plane is rotated onto X/Z, so local Z becomes world height.
+            impactLight.position.z = 0.85;
+            impactLight.userData = { isCrashSiteHeatLight: true };
+            heatBed.add(impactLight);
+            this.registerEnvLight?.(impactLight);
+            this.crashSiteHeatLight = impactLight;
+            this.crashSiteHeatMesh = heatBed;
+            group.add(heatBed);
         }
         if (!floorSplatMaterial) {
             this.addRoomSurfaceOverlays(
@@ -36266,12 +36337,15 @@ export class ThreeGame {
                 roomStyle: memberMeta[0]?.roomWallStyle ?? null
             }));
             for (const family of materialFamilies) wallRunFamilies.add(family);
+            const facadeStates = [];
             pool.userData = {
+                isWall: true,
                 isWallRunFacadePool: true,
                 runCount: entries.length,
                 roomStyleId,
                 materialFamilies,
-                silhouettes: entries.map(({ run }) => run.silhouette)
+                silhouettes: entries.map(({ run }) => run.silhouette),
+                facadeStates
             };
             pool.onBeforeRender = () => {
                 if (this.wallShaderUniforms) {
@@ -36290,6 +36364,7 @@ export class ThreeGame {
                     )),
                     hidden: false
                 };
+                facadeStates[instanceIndex] = facadeState;
                 for (const wallKey of facadeState.memberKeys) {
                     const record = this._wallInstanceIndex.get(wallKey);
                     if (record) record.wallRunFacade = facadeState;
@@ -46438,6 +46513,11 @@ export class ThreeGame {
             portals: Object.entries(chunkRouteRecord.portals)
                 .filter(([, open]) => open)
                 .map(([side]) => side),
+            portalDetails: mazeMetadata?.sharedPortals ?? mazeMetadata?.doors?.map((door) => ({
+                id: door.portalKey ?? door.id,
+                cells: door.cells,
+                clearBothSides: door.clearBothSides ?? null
+            })) ?? [],
             tiles: {
                 floor: tileCounts['.'] ?? 0,
                 ledge: tileCounts[LEDGE_TILE] ?? 0,
@@ -46943,8 +47023,6 @@ export class ThreeGame {
         this.stickerMaterial = null;
         disposeStickerMaterial(this.roomDecalMaterial);
         this.roomDecalMaterial = null;
-        this.crashSiteFloorMaterial?.dispose?.();
-        this.crashSiteFloorTexture?.dispose?.();
         this.crashSiteHeatMaterial?.dispose?.();
         this.crashSiteHeatTexture?.dispose?.();
         for (const material of this.roomFloorMaterials?.values?.() ?? []) {

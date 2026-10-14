@@ -308,6 +308,52 @@ describe('instanced wall tile identity', () => {
         expect(call('findWallByPoolInstance', fakeThis, pool, 9)).toBeNull();
     });
 
+    it('resolves a visible wall-run facade hit to the nearest destructible tile record', () => {
+        const pool = { userData: { isInstancedWallPool: true } };
+        const first = makeRecord(4, 5, 0, pool);
+        const second = makeRecord(5, 5, 1, pool);
+        const facade = {
+            hidden: false,
+            memberKeys: [first.wallKey, second.wallKey]
+        };
+        const facadePool = {
+            userData: { isWall: true, isWallRunFacadePool: true, facadeStates: [facade] }
+        };
+        const fakeThis = {
+            _wallInstanceIndex: new Map([[first.wallKey, first], [second.wallKey, second]]),
+            findWallByPoolInstance: ThreeGame.prototype.findWallByPoolInstance
+        };
+
+        const resolved = call('resolveDestructibleWallHit', fakeThis, {
+            object: facadePool,
+            instanceId: 0,
+            point: { x: 4.85, z: 5 }
+        });
+
+        expect(resolved).toBe(second);
+    });
+
+    it('does not reduce protected wall HP and reports a protected refusal', () => {
+        const wall = {
+            userData: {
+                isWall: true,
+                indestructible: true,
+                wallKey: '4,5',
+                wallHp: 8,
+                maxWallHp: 8
+            }
+        };
+        const recordWallImpact = vi.fn();
+
+        const result = call('damageWall', { recordWallImpact }, wall, 3, { source: 'player' });
+
+        expect(result).toBe(false);
+        expect(wall.userData.wallHp).toBe(8);
+        expect(recordWallImpact).toHaveBeenCalledWith(wall, expect.objectContaining({
+            refusalReason: 'protected'
+        }));
+    });
+
     it('retires only the destroyed matrix slot and leaves the shared pool active', () => {
         const pool = {
             setMatrixAt: vi.fn(),
@@ -476,7 +522,8 @@ describe('instanced wall tile identity', () => {
                 }]
             },
             wallMeshes: [pool],
-            findWallByPoolInstance: ThreeGame.prototype.findWallByPoolInstance
+            findWallByPoolInstance: ThreeGame.prototype.findWallByPoolInstance,
+            resolveDestructibleWallHit: ThreeGame.prototype.resolveDestructibleWallHit
         };
         const projectile = { mesh: { position: { x: 0, z: 0 } }, vx: 1, vz: 0 };
 

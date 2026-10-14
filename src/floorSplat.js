@@ -460,6 +460,7 @@ export function buildFloorSplatData({
     metadata = null,
     maze = false,
     crashRoom = false,
+    crashImpact = null,
     ledgeGround = false,
     landform = null,
     variantKey = '',
@@ -553,6 +554,29 @@ export function buildFloorSplatData({
                 wetness: wetness[index],
                 key: `${variantKey}:${x},${y}`
             });
+        }
+    }
+    // Ship damage is part of the PBR floor, not a second albedo plane. The
+    // existing splat shader blends these deterministic scorched cells into
+    // the surrounding crash-room deck with its normal breakup/noise path.
+    if (crashRoom && surfaces && crashImpact) {
+        const centerX = Number(crashImpact.x);
+        const centerY = Number(crashImpact.y ?? crashImpact.z);
+        const radius = Math.max(0, Number(crashImpact.radius) || 3.75);
+        if (Number.isFinite(centerX) && Number.isFinite(centerY)) {
+            for (let y = 0; y < size; y += 1) {
+                for (let x = 0; x < size; x += 1) {
+                    const index = y * size + x;
+                    if (layer[index] === FLOOR_LAYER.NONE) continue;
+                    const jitter = ((hashKey(`${variantKey}:crash:${x},${y}`) & 255) / 255 - 0.5) * 0.9;
+                    if (Math.hypot(x - centerX, y - centerY) > radius + jitter) continue;
+                    layer[index] = surfaceLayer(
+                        'tex_floor_scorched_plasma_crater',
+                        `${variantKey}:crash:${x >> 1},${y >> 1}`
+                    ) ?? FLOOR_LAYER.UTILITY;
+                    wetness[index] = Math.min(wetness[index], 0.18);
+                }
+            }
         }
     }
     const data = new Uint8Array(count * 4);
