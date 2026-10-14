@@ -25,6 +25,8 @@
     "audit:playtest-navigation": "node scripts/playtest-navigation-report.js",
     "audit:chroma-green": "node scripts/audit-chroma-green.js",
     "audit:armory-assets": "node scripts/audit-armory-assets.js",
+    "audit:model-presentation": "node scripts/audit-model-presentation.mjs",
+    "audit:model-presentation:check": "node scripts/audit-model-presentation.mjs --check",
     "audit:chroma-green:check": "node scripts/audit-chroma-green.js --check",
     "audit:docs": "node scripts/audit-docs.js",
     "i18n:audit": "node scripts/audit-i18n.js",
