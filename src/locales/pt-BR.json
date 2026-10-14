@@ -1269,7 +1269,8 @@
       "count_filtered": "{visible} DE {total} ITENS ({types} TIPOS)",
       "no_matching_items": "NENHUM ITEM CORRESPONDE AOS FILTROS",
       "no_items": "NENHUM ITEM DETECTADO NO COFRE DA STEAM",
-      "skip_reveal": "REVELAR AGORA"
+      "skip_reveal": "REVELAR AGORA",
+      "retry_sync": "TENTAR SINCRONIZAR"
     },
     "lobby": {
       "connecting": "CONECTANDO...",

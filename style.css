@@ -16695,6 +16695,18 @@ body.cutscene-video-active .tactical-overlay {
   font-size: calc(var(--font-xs) * 0.76);
 }
 
+.vault-store-sync-btn {
+  justify-self: start;
+  border: 1px solid rgba(34, 211, 238, .55);
+  border-radius: 4px;
+  background: rgba(34, 211, 238, .1);
+  color: #a5f3fc;
+  padding: 5px 9px;
+  font: 800 9px 'Space Mono', monospace;
+  letter-spacing: .08em;
+  cursor: pointer;
+}
+
 .vault-store-open-btn {
   flex: 0 0 auto !important;
   min-width: 0 !important;
@@ -17060,7 +17072,7 @@ body.cutscene-video-active .tactical-overlay {
 }
 
 .vault-reveal-skip-btn {
-  display: none;
+  display: none !important;
   margin-top: 10px;
   background: rgba(3, 10, 18, 0.85) !important;
   color: #22d3ee !important;
@@ -17082,7 +17094,7 @@ body.cutscene-video-active .tactical-overlay {
 }
 
 .vault-reveal-overlay[data-state="spinning"] .vault-reveal-skip-btn {
-  display: inline-block;
+  display: inline-flex !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

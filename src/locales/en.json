@@ -1269,7 +1269,8 @@
       "count_filtered": "{visible} OF {total} ITEMS ({types} TYPES)",
       "no_matching_items": "NO ITEMS MATCH THE SELECTED FILTERS",
       "no_items": "NO ITEMS DETECTED IN STEAM VAULT",
-      "skip_reveal": "REVEAL NOW"
+      "skip_reveal": "REVEAL NOW",
+      "retry_sync": "RETRY SYNC"
     },
     "lobby": {
       "connecting": "CONNECTING...",

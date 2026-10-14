@@ -1269,7 +1269,8 @@
       "count_filtered": "{visible} VON {total} GEGENSTÄNDEN ({types} ARTEN)",
       "no_matching_items": "KEINE GEGENSTÄNDE ENTSPRECHEN DEN FILTERN",
       "no_items": "KEINE GEGENSTÄNDE IM STEAM-TRESOR GEFUNDEN",
-      "skip_reveal": "JETZT ENTHÜLLEN"
+      "skip_reveal": "JETZT ENTHÜLLEN",
+      "retry_sync": "SYNC ERNEUT VERSUCHEN"
     },
     "lobby": {
       "connecting": "VERBINDE...",

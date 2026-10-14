@@ -84,7 +84,7 @@ import { resolveAmmoPickup } from './src/ammoSurplus.js';
 import { applyInputHints } from './src/inputHints.js';
 import { computeProgressionUnlocks, loadRigPurchases } from './src/progressionUnlocks.js';
 import { createArmoryUi } from './src/armoryUi.js';
-import { initSteamVaultUI, isVaultExchangeAvailable, isVaultStoreAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, renderStorePanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
+import { cancelCacheReveal, initSteamVaultUI, isVaultExchangeAvailable, isVaultStoreAvailable, loadVaultData, openSteamVaultModal, renderSmelterPanel, renderStorePanel, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
 import { createFoundryHub, isFoundryHubEnabled } from './src/foundryHub.js';
 import { initSeasonPassUI, cancelXpFeedback, beginSeasonRun, getSeasonRunSummary, openSeasonPassModal, seasonPass } from './src/seasonPassUi.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
@@ -13694,7 +13694,10 @@ const foundryHub = createFoundryHub({
         store: () => showVaultPanels(renderStorePanel)
     },
     renderLoadout: (container) => renderFoundryLoadout(container),
-    onClose: () => finishFabricationSession(),
+    onClose: () => {
+        cancelCacheReveal('foundry-closed');
+        finishFabricationSession();
+    },
     log: (event, detail) => debugLog.info('FOUNDRY', `hub-${event}`, detail)
 });
 window.foundryHub = foundryHub;

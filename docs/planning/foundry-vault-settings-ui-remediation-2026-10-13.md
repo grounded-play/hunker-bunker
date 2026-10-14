@@ -33,14 +33,21 @@ Implemented in the current working tree:
   Foundry E2E test proves duplicate stacking, discovery controls, and a grid taller than the old
   220 px cap; the Settings E2E contract now covers all seven pages in one row. The localization
   audit reports zero unannotated markup and zero unlocalized runtime strings.
+- **Phase 4:** cache opening now follows the guarded
+  `idle → submitting → spinning → revealed → settling → idle` lifecycle. The committed receipt is
+  rendered before inventory refresh, the Open action is disabled during the transaction, timers are
+  token-guarded and cancelled with the host, and Claim restores the originating focus and grid
+  scroll. The reveal is an ARIA modal with trapped keyboard focus, a localized Reveal Now action,
+  a reduced-motion fast path, and a localized Retry Sync action if the post-commit inventory read
+  fails. State transitions log the run ID and Foundry/Vault host without Steam identity data.
+- **Phase 4 regression coverage:** the Foundry browser contract verifies one exchange request,
+  Skip/Claim focus handoff, focus containment, refresh failure and retry, reduced motion, and
+  close/reopen timer cancellation. `src/cacheOpening.test.js` rejects illegal state transitions.
 
 Still open:
 
-- **Phase 4:** replace the cache reveal's independent timers and boolean busy flag with the planned
-  transactional modal state machine, focus containment/restoration, reduced-motion/skip path,
-  stale-timer guards, committed-result-first rendering, and refresh recovery UI.
-- Run the broader multi-resolution/reduced-motion snapshot matrix and packaged Steam manual checks
-  after Phase 4 lands; the focused 1280×800 browser contracts are now automated.
+- Run the broader multi-resolution snapshot matrix and packaged Steam manual checks; the focused
+  1280×800 and reduced-motion browser contracts are now automated.
 
 ## Evidence reviewed
 

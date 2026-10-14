@@ -1269,7 +1269,8 @@
       "count_filtered": "{visible} / {total} 件 ({types} 種)",
       "no_matching_items": "該当するアイテムが見つかりません",
       "no_items": "STEAM保管庫にアイテムはありません",
-      "skip_reveal": "今すぐ公開"
+      "skip_reveal": "今すぐ公開",
+      "retry_sync": "再同期"
     },
     "lobby": {
       "connecting": "接続中...",

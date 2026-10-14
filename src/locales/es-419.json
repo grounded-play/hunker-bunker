@@ -1269,7 +1269,8 @@
       "count_filtered": "{visible} DE {total} OBJETOS ({types} TIPOS)",
       "no_matching_items": "NINGÚN OBJETO COINCIDE CON LOS FILTROS",
       "no_items": "NO SE DETECTARON OBJETOS EN LA BÓVEDA DE STEAM",
-      "skip_reveal": "REVELAR AHORA"
+      "skip_reveal": "REVELAR AHORA",
+      "retry_sync": "REINTENTAR SINCRONIZACIÓN"
     },
     "lobby": {
       "connecting": "CONECTANDO...",

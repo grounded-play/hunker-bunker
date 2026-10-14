@@ -1269,7 +1269,8 @@
       "count_filtered": "{visible} ИЗ {total} ПРЕДМЕТОВ ({types} ТИПОВ)",
       "no_matching_items": "НЕТ ПРЕДМЕТОВ ПО ВЫБРАННЫМ ФИЛЬТРАМ",
       "no_items": "В ХРАНИЛИЩЕ STEAM НЕТ ПРЕДМЕТОВ",
-      "skip_reveal": "ОТКРЫТЬ СЕЙЧАС"
+      "skip_reveal": "ОТКРЫТЬ СЕЙЧАС",
+      "retry_sync": "ПОВТОРИТЬ СИНХРОНИЗАЦИЮ"
     },
     "lobby": {
       "connecting": "ПОДКЛЮЧЕНИЕ...",

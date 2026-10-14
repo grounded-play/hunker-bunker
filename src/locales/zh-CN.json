@@ -1269,7 +1269,8 @@
       "count_filtered": "{visible} / {total} 件物品 ({types} 种)",
       "no_matching_items": "没有符合筛选条件的物品",
       "no_items": "STEAM 仓库中没有物品",
-      "skip_reveal": "立即揭晓"
+      "skip_reveal": "立即揭晓",
+      "retry_sync": "重试同步"
     },
     "lobby": {
       "connecting": "正在连接…",

@@ -28,7 +28,8 @@ import {
     adaptSteamCacheResult,
     createCacheOpeningResult,
     CACHE_ITEMDEFID,
-    CACHE_KEY_ITEMDEFID
+    CACHE_KEY_ITEMDEFID,
+    transitionCacheReveal
 } from './cacheOpening.js';
 import { t, getLocale, onLocaleChange } from './i18n.js';
 import { adaptStoreCatalogResponse, formatStorePrice } from './steamStoreCatalog.js';
@@ -145,7 +146,10 @@ let selectedVaultStackKey = null;
 let vaultViewState = { ...DEFAULT_VAULT_VIEW_STATE };
 let marketEligibility = 'unknown';
 let hudCardSeq = 0;
-let cacheOpeningBusy = false;
+let cacheRevealState = 'idle';
+let cacheRevealRunId = 0;
+let cacheRevealOrigin = null;
+const cacheRevealTimers = new Set();
 const DEV_VAULT_STORAGE_KEY = 'hb_dev_vault_inventory_v1';
 const EARNED_KEY_ITEMDEFID = 4154;
 const DEV_INFINITE_CACHE_STORAGE_KEY = 'hb_dev_infinite_cache_v1';
@@ -423,6 +427,7 @@ export function initSteamVaultUI() {
     }
 
     const closeModal = () => {
+        cancelCacheReveal('vault-closed');
         modal.classList.add('hidden');
         modal.setAttribute('aria-hidden', 'true');
     };
@@ -547,6 +552,7 @@ function wireVaultMarkup({ closeModal }) {
     });
 
     document.getElementById('vault-store-open-btn')?.addEventListener('click', openDeepRelicCache);
+    document.getElementById('vault-store-sync-btn')?.addEventListener('click', retryVaultInventorySync);
     document.getElementById('vault-store-hosted-btn')?.addEventListener('click', () => openHostedSteamItemStore());
     document.getElementById('vault-btn-view-market')?.addEventListener('click', () => {
         if (!window.electronAPI?.openSteamOverlayToUrl) return;
@@ -634,6 +640,7 @@ export async function loadVaultData() {
         reconcileCosmeticsOwnership(vaultItems);
         renderInventoryGrid();
         updateOpenCacheAvailability();
+        return Boolean(result?.ok && Array.isArray(result.inventory));
     } else {
         setMarketEligibilityFromResult({ ok: false, reason: 'unsupported' });
         if (playerEl) playerEl.textContent = t('ui.vault.local_operator');
@@ -645,7 +652,19 @@ export async function loadVaultData() {
         syncDevOwnership();
         renderInventoryGrid();
         updateOpenCacheAvailability();
+        return true;
     }
+}
+
+async function retryVaultInventorySync() {
+    const button = document.getElementById('vault-store-sync-btn');
+    const status = document.getElementById('vault-store-open-status');
+    if (button) button.disabled = true;
+    if (status) status.textContent = t('ui.vault.decrypting');
+    const synced = await loadVaultData().catch(() => false);
+    button?.classList.toggle('hidden', synced);
+    if (button) button.disabled = false;
+    if (status) status.textContent = synced ? t('ui.vault.steam_connected') : t('ui.vault.cache_failed');
 }
 
 export function renderInventoryGrid() {
@@ -1267,6 +1286,10 @@ export function updateOpenCacheAvailability() {
         }
         btn?.classList.add('hidden');
     }
+    if (btn) {
+        btn.disabled = cacheRevealState !== 'idle';
+        btn.setAttribute('aria-busy', String(cacheRevealState === 'submitting'));
+    }
 }
 
 function applyCacheOpeningRewards(result) {
@@ -1287,8 +1310,136 @@ function mountRevealOverlay(overlay) {
     if (host && overlay.parentElement !== host) host.appendChild(overlay);
 }
 
-export function playCacheRevealAnimation(openingOrReward, onClaim) {
+function clearCacheRevealTimers() {
+    for (const timer of cacheRevealTimers) clearTimeout(timer);
+    cacheRevealTimers.clear();
+}
+
+function scheduleCacheReveal(runId, callback, delay) {
+    const timer = setTimeout(() => {
+        cacheRevealTimers.delete(timer);
+        if (runId !== cacheRevealRunId || cacheRevealState === 'idle') return;
+        callback();
+    }, delay);
+    cacheRevealTimers.add(timer);
+    return timer;
+}
+
+function setCacheRevealState(next, { force = false } = {}) {
+    const previous = cacheRevealState;
+    cacheRevealState = force ? next : transitionCacheReveal(previous, next);
+    const overlay = document.getElementById('vault-reveal-overlay');
+    if (overlay) overlay.dataset.state = next;
+    const openButton = document.getElementById('vault-store-open-btn');
+    if (openButton) {
+        openButton.disabled = next !== 'idle';
+        openButton.setAttribute('aria-busy', String(next === 'submitting'));
+    }
+    storeLog('info', 'cache-reveal-state', {
+        from: previous,
+        to: next,
+        runId: cacheRevealRunId,
+        host: overlay?.closest('#foundry-hub-modal') ? 'foundry' : 'vault'
+    });
+}
+
+function revealFocusable(overlay) {
+    return [...overlay.querySelectorAll('button:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+        .filter((element) => !element.classList.contains('hidden') && element.offsetParent !== null);
+}
+
+function containCacheRevealFocus(event) {
+    if (cacheRevealState === 'idle') return;
+    const overlay = document.getElementById('vault-reveal-overlay');
+    if (!overlay || overlay.classList.contains('hidden')) return;
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+    }
+    if (event.key !== 'Tab') {
+        if (!overlay.contains(event.target) && event.key !== 'F12') overlay.focus({ preventScroll: true });
+        if (event.code === 'KeyQ' || event.code === 'KeyE') event.stopImmediatePropagation();
+        return;
+    }
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const focusable = revealFocusable(overlay);
+    if (!focusable.length) {
+        overlay.focus({ preventScroll: true });
+        return;
+    }
+    const current = focusable.indexOf(document.activeElement);
+    const offset = event.shiftKey ? -1 : 1;
+    focusable[(current + offset + focusable.length) % focusable.length]?.focus({ preventScroll: true });
+}
+
+function beginCacheRevealTransaction() {
+    if (cacheRevealState !== 'idle') return null;
     ensureVaultMarkup();
+    cacheRevealRunId += 1;
+    const grid = document.getElementById('vault-item-grid');
+    cacheRevealOrigin = {
+        focus: document.activeElement,
+        gridScrollTop: grid?.scrollTop ?? 0,
+        hubTab: document.getElementById('foundry-hub-modal')?.dataset.hubTab ?? null
+    };
+    setCacheRevealState('submitting');
+    const overlay = document.getElementById('vault-reveal-overlay');
+    mountRevealOverlay(overlay);
+    overlay?.classList.remove('hidden');
+    overlay?.setAttribute('aria-hidden', 'false');
+    const title = document.getElementById('vault-reveal-title');
+    const status = document.getElementById('vault-reveal-status');
+    if (title) title.textContent = t('ui.vault.decrypting');
+    if (status) status.textContent = t('ui.vault.decrypting');
+    window.addEventListener('keydown', containCacheRevealFocus, true);
+    overlay?.focus({ preventScroll: true });
+    updateOpenCacheAvailability();
+    return cacheRevealRunId;
+}
+
+function finishCacheRevealTransaction({ restoreFocus = true } = {}) {
+    clearCacheRevealTimers();
+    const overlay = document.getElementById('vault-reveal-overlay');
+    overlay?.classList.add('hidden');
+    overlay?.setAttribute('aria-hidden', 'true');
+    const skip = document.getElementById('vault-reveal-skip-btn');
+    const claim = document.getElementById('vault-reveal-claim-btn');
+    if (skip) skip.onclick = null;
+    if (claim) claim.onclick = null;
+    window.removeEventListener('keydown', containCacheRevealFocus, true);
+    setCacheRevealState('idle', { force: cacheRevealState === 'idle' });
+    const origin = cacheRevealOrigin;
+    cacheRevealOrigin = null;
+    updateOpenCacheAvailability();
+    const hub = document.getElementById('foundry-hub-modal');
+    if (origin?.hubTab && hub && !hub.classList.contains('hidden') && hub.dataset.hubTab !== origin.hubTab) {
+        window.foundryHub?.select?.(origin.hubTab);
+    }
+    const grid = document.getElementById('vault-item-grid');
+    if (grid && origin) grid.scrollTop = origin.gridScrollTop;
+    if (restoreFocus && origin?.focus?.isConnected && !origin.focus.closest?.('.hidden')) {
+        origin.focus.focus({ preventScroll: true });
+    }
+}
+
+export function cancelCacheReveal(reason = 'host-closed') {
+    if (cacheRevealState === 'idle') return false;
+    cacheRevealRunId += 1;
+    storeLog('info', 'cache-reveal-cancelled', { reason });
+    finishCacheRevealTransaction({ restoreFocus: false });
+    return true;
+}
+
+export function getCacheRevealState() {
+    return cacheRevealState;
+}
+
+export function playCacheRevealAnimation(openingOrReward, onClaim, { runId = null } = {}) {
+    ensureVaultMarkup();
+    const activeRunId = runId ?? (cacheRevealState === 'idle' ? beginCacheRevealTransaction() : cacheRevealRunId);
+    if (activeRunId == null || activeRunId !== cacheRevealRunId) return;
     const overlay = document.getElementById('vault-reveal-overlay');
     const titleEl = document.getElementById('vault-reveal-title');
     const statusEl = document.getElementById('vault-reveal-status');
@@ -1300,9 +1451,11 @@ export function playCacheRevealAnimation(openingOrReward, onClaim) {
     const nameEl = document.getElementById('vault-reveal-name');
     const descEl = document.getElementById('vault-reveal-desc');
     const claimBtn = document.getElementById('vault-reveal-claim-btn');
+    const skipBtn = document.getElementById('vault-reveal-skip-btn');
 
     if (!overlay) {
-        if (typeof onClaim === 'function') onClaim();
+        if (typeof onClaim === 'function') void onClaim();
+        finishCacheRevealTransaction({ restoreFocus: false });
         return;
     }
     mountRevealOverlay(overlay);
@@ -1320,9 +1473,11 @@ export function playCacheRevealAnimation(openingOrReward, onClaim) {
         localImg: '/favicon.png'
     };
 
+    clearCacheRevealTimers();
     overlay.classList.remove('hidden');
     overlay.setAttribute('aria-hidden', 'false');
-    overlay.dataset.state = 'spinning';
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true;
+    setCacheRevealState('spinning');
 
     if (titleEl) titleEl.textContent = t('ui.vault.decrypting');
     if (statusEl) statusEl.textContent = t('ui.vault.spinning_cipher');
@@ -1375,18 +1530,17 @@ export function playCacheRevealAnimation(openingOrReward, onClaim) {
         strip.style.transform = `translateY(-50%) translateX(${target}px)`;
     });
 
-    // Unblur and reveal winning tile under needle when it lands
-    setTimeout(() => {
+    const revealReward = () => {
+        if (activeRunId !== cacheRevealRunId || cacheRevealState === 'revealed') return;
+        clearCacheRevealTimers();
+        // Move focus before the state change hides the Skip button. Leaving a
+        // now-display:none control focused made the global controller-focus
+        // recovery loop fight the dialog's Claim handoff.
+        if (document.activeElement === skipBtn) overlay.focus({ preventScroll: true });
+        setCacheRevealState('revealed');
         const winnerEl = document.getElementById('vault-tile-winner');
-        if (winnerEl) {
-            winnerEl.classList.add('vault-tile--revealed');
-        }
+        winnerEl?.classList.add('vault-tile--revealed');
         window.AudioManager?.playProceduralLoot?.('weapon', (reward.rarity || 'rare').toLowerCase());
-    }, 2950);
-
-    // Reveal final grand showcase card
-    setTimeout(() => {
-        overlay.dataset.state = 'revealed';
         if (titleEl) titleEl.textContent = t('ui.vault.decryption_complete');
         if (statusEl) statusEl.textContent = t('ui.vault.item_secured');
 
@@ -1427,17 +1581,40 @@ export function playCacheRevealAnimation(openingOrReward, onClaim) {
         }
 
         window.AudioManager?.play?.('fx_achievement', { volume: 0.5, bus: 'sfx' });
-    }, 3200);
-
-    const handleClaim = () => {
-        overlay.classList.add('hidden');
-        overlay.setAttribute('aria-hidden', 'true');
-        overlay.dataset.state = 'idle';
-        claimBtn?.removeEventListener('click', handleClaim);
-        if (typeof onClaim === 'function') onClaim();
+        requestAnimationFrame(() => {
+            if (activeRunId === cacheRevealRunId && cacheRevealState === 'revealed') {
+                claimBtn?.focus({ preventScroll: true });
+            }
+        });
     };
 
-    claimBtn?.addEventListener('click', handleClaim, { once: true });
+    if (reducedMotion) {
+        // Render the committed receipt without animating a decorative reel.
+        revealReward();
+    } else {
+        scheduleCacheReveal(activeRunId, () => {
+            document.getElementById('vault-tile-winner')?.classList.add('vault-tile--revealed');
+        }, 2950);
+        scheduleCacheReveal(activeRunId, revealReward, 3200);
+        if (skipBtn) {
+            skipBtn.onclick = () => revealReward();
+            skipBtn.focus({ preventScroll: true });
+        }
+    }
+
+    const handleClaim = async () => {
+        if (activeRunId !== cacheRevealRunId || cacheRevealState !== 'revealed') return;
+        setCacheRevealState('settling');
+        if (claimBtn) claimBtn.disabled = true;
+        try {
+            if (typeof onClaim === 'function') await onClaim();
+        } finally {
+            if (claimBtn) claimBtn.disabled = false;
+            if (activeRunId === cacheRevealRunId) finishCacheRevealTransaction();
+        }
+    };
+
+    if (claimBtn) claimBtn.onclick = handleClaim;
 }
 
 // Season 0 Crafting Matrix panel (docs/season-zero-protocol/05) — 5:1 trade-up smelting
@@ -1817,8 +1994,8 @@ function handleDispensaryRedeem(targetItemdefid) {
 
 export async function openDeepRelicCache() {
     ensureVaultMarkup();
-    if (cacheOpeningBusy) return;
-    cacheOpeningBusy = true;
+    const runId = beginCacheRevealTransaction();
+    if (runId == null) return;
     if (!window.electronAPI?.openSteamCache && isDevInfiniteCacheMode()) {
         if (!vaultItems.some((item) => item.itemdefid === CACHE_ITEMDEFID && item.quantity > 0)) {
             vaultItems.push({ itemId: `dev_cache_${Date.now()}`, itemdefid: CACHE_ITEMDEFID, quantity: 1 });
@@ -1829,7 +2006,7 @@ export async function openDeepRelicCache() {
     }
     const pair = findOwnedCacheAndKey();
     if (!pair) {
-        cacheOpeningBusy = false;
+        finishCacheRevealTransaction();
         return;
     }
 
@@ -1849,14 +2026,13 @@ export async function openDeepRelicCache() {
         updateOpenCacheAvailability();
 
         playCacheRevealAnimation(opening, () => {
-            cacheOpeningBusy = false;
             const statusEl = document.getElementById('vault-store-open-status');
             if (statusEl) {
                 statusEl.classList.remove('hidden');
                 statusEl.textContent = t('ui.vault.cache_unlocked', { count: opening.rewards.length });
             }
             for (const reward of opening.rewards) showSteamDropToast(reward.itemdefid, reward.quantity ?? 1);
-        });
+        }, { runId });
         return;
     }
 
@@ -1864,13 +2040,14 @@ export async function openDeepRelicCache() {
     const result = await window.electronAPI.openSteamCache(pair.cache.itemId, pair.key.itemId)
         .catch((err) => ({ ok: false, message: err?.message }));
 
+    if (runId !== cacheRevealRunId || cacheRevealState === 'idle') {
+        // The host closed while Steam was working. Reconcile a committed
+        // exchange without reopening a stale reveal over a different screen.
+        if (result?.ok) await loadVaultData().catch(() => null);
+        return;
+    }
+
     if (result?.ok) {
-        // The inventory refresh is useful for counts, but a transient refresh
-        // failure must not swallow the successful cache reveal animation.
-        await loadVaultData().catch((error) => {
-            console.warn('[steam-store] inventory refresh after cache open failed:', error);
-        });
-        updateOpenCacheAvailability();
         const opening = adaptSteamCacheResult(result);
         storeLog('info', 'cache-opened', {
             granted: (result.granted ?? []).map((item) => ({ itemdefid: item.itemdefid ?? null, quantity: item.quantity ?? 1 })),
@@ -1880,16 +2057,23 @@ export async function openDeepRelicCache() {
         // Steam can legitimately return an empty `granted` array for a
         // duplicate/already-granted exchange. Still show the same decryptor
         // sequence so a successful OPEN action never appears to do nothing.
-        playCacheRevealAnimation(opening, () => {
-            cacheOpeningBusy = false;
+        playCacheRevealAnimation(opening, async () => {
             if (statusEl) {
                 statusEl.classList.remove('hidden');
                 statusEl.textContent = opening.complete ? t('ui.vault.cache_opened') : t('ui.vault.cache_partial');
             }
             for (const reward of opening.rewards) showSteamDropToast(reward.itemdefid, reward.quantity ?? 1);
-        });
+            // The committed receipt is shown first. Inventory sync happens
+            // during settling so a transient read failure cannot swallow it.
+            const synced = await loadVaultData().catch((error) => {
+                console.warn('[steam-store] inventory refresh after cache open failed:', error);
+                return false;
+            });
+            const retry = document.getElementById('vault-store-sync-btn');
+            retry?.classList.toggle('hidden', synced);
+            if (!synced && statusEl) statusEl.textContent = t('ui.vault.cache_failed');
+        }, { runId });
     } else {
-        cacheOpeningBusy = false;
         console.error('[steam-store] cache open failed:', result);
         if (statusEl) {
             statusEl.classList.remove('hidden');
@@ -1899,6 +2083,7 @@ export async function openDeepRelicCache() {
                 ? t('ui.vault.cache_pending_review')
                 : t('ui.vault.cache_failed');
         }
+        finishCacheRevealTransaction();
     }
 }
 import { assetUrl } from './assetUrl.js';
