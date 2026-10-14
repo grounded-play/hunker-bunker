@@ -327,7 +327,7 @@ describe('Gameplay regressions: damage, oxygen, and cliff falling', () => {
             expect(ThreeGame.prototype.canOccupyPosition.call(fakeGame, 2.0, 0.0)).toBe(true);
         });
 
-        it('triggers isPlayerOverAnyHole when player steps onto cliff or canyon tile', () => {
+        it('keeps an intact rock rim safe and falls only on collapsed rim or open canyon', () => {
             const tiles = new Map([
                 ['0,0', '.'],
                 ['1,0', CLIFF_TILE],
@@ -339,7 +339,9 @@ describe('Gameplay regressions: damage, oxygen, and cliff falling', () => {
                 getCachedTileType: (x, z) => tiles.get(`${x},${z}`) ?? '.',
                 getWallKey: (x, z) => `${x},${z}`,
                 filledHoleKeys: new Set(),
+                fragileLedgeStates: new Map(),
                 isCliffSecretPath: () => false,
+                getFragileLedgeState: ThreeGame.prototype.getFragileLedgeState,
                 getHoleVisualInfo: ThreeGame.prototype.getHoleVisualInfo,
                 isPlayerOverAnyHole: ThreeGame.prototype.isPlayerOverAnyHole
             };
@@ -347,14 +349,11 @@ describe('Gameplay regressions: damage, oxygen, and cliff falling', () => {
             // Standing safely on floor (0, 0)
             expect(fakeGame.isPlayerOverAnyHole(0.0, 0.0)).toBe(false);
 
-            // Stepped over cliff at (1, 0)
+            // The visible rock rim is real support until its staged lifecycle
+            // reaches collapsed.
+            expect(fakeGame.isPlayerOverAnyHole(1.0, 0.0)).toBe(false);
+            fakeGame.fragileLedgeStates.set('1,0', { state: 'collapsed' });
             expect(fakeGame.isPlayerOverAnyHole(1.0, 0.0)).toBe(true);
-
-            // Crossing the rendered lip must start the fall immediately;
-            // waiting until the tile center makes the edge feel like an
-            // invisible wall or leaves a narrow walkable shelf over the void.
-            expect(fakeGame.isPlayerOverAnyHole(0.51, 0.0)).toBe(true);
-            expect(fakeGame.isPlayerOverAnyHole(0.47, 0.0)).toBe(false);
 
             // Stepped over canyon at (2, 0)
             expect(fakeGame.isPlayerOverAnyHole(2.0, 0.0)).toBe(true);

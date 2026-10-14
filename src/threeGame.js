@@ -255,6 +255,14 @@ import { stampCrashSiteApproach, stampCrashSiteOrigin } from './crashSiteBuild.j
 import { CRASH_SITE_BUILD } from './data/crashSiteBuild.js';
 import { applyVerticalBridgeFeature, VERTICAL_TILE } from './verticalWfc.js';
 import {
+    FRAGILE_LEDGE_STATE,
+    advanceFragileLedgeOccupancy,
+    fragileLedgeKey,
+    readFragileLedgeState,
+    restoreFragileLedgeStates,
+    serializeFragileLedgeStates
+} from './fragileLedges.js';
+import {
     ROOM_FLOOR_MATERIAL_FAMILY,
     ROOM_FLOOR_WETNESS,
     ROOM_MATERIAL_ATLAS_SLOT,
@@ -592,7 +600,7 @@ export function planInstancedFloorCoverage(grid) {
                     repairedCells.push({ localX, localY });
                 }
             }
-            if (tileChar === LEDGE_TILE) exteriorGroundCells.push({ localX, localY });
+            if (tileChar === LEDGE_TILE || tileChar === CLIFF_TILE) exteriorGroundCells.push({ localX, localY });
             else if (tileChar !== EXTERIOR_CANYON_TILE && tileChar !== CLIFF_TILE) floorCells.push({ localX, localY });
         }
     }
@@ -2379,6 +2387,9 @@ export class ThreeGame {
         this.chunkResidentPadding = 1;
         this.destroyedWallKeys = new Set();
         this.destroyedExteriorWallKeys = new Set();
+        this.fragileLedgeStates = new Map();
+        this._activeFragileLedgeKey = null;
+        this._fragileLedgeVisuals = new Map();
         this.wallMeshes = [];
         // Identity record for instanced wall tiles (standard/damaged variants —
         // see mountChunk). Keyed by wallKey, same key space as
@@ -2966,6 +2977,24 @@ export class ThreeGame {
             blending: THREE.AdditiveBlending,
             depthWrite: false,
             side: THREE.DoubleSide
+        });
+        this.fragileLedgeCrackTexture = this.loadTerrainTexture(
+            '/hex_decal_cracks.png',
+            textureLoader,
+            maxAnisotropy
+        );
+        this.fragileLedgeCrackMaterial = new THREE.MeshBasicMaterial({
+            map: this.fragileLedgeCrackTexture,
+            color: 0xe0c2a0,
+            transparent: true,
+            opacity: 0.82,
+            alphaTest: 0.08,
+            depthWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: -2,
+            polygonOffsetUnits: -2,
+            side: THREE.DoubleSide,
+            vertexColors: true
         });
         this.playerTextures = Object.fromEntries(
             Object.entries(PLAYER_SPRITE_LAYOUTS).map(([type, layout]) => [
@@ -7345,6 +7374,8 @@ export class ThreeGame {
             // Irreversible co-op transitions carry their own keys.
         } else if (event === 'wall-destroyed') {
             dedupeKey = `${event}:${detail.wallKey ?? `${detail.worldX},${detail.worldZ}`}`;
+        } else if (event === 'fragile-ledge-state') {
+            dedupeKey = `${event}:${detail.key}:${detail.state}`;
         } else if (event === 'bunker-door-toggled' || event === 'procedural-door-toggled' || event === 'bunker-line' || event === 'enemy-projectile-spawned' || event === 'squad-progress' || event === 'mystery-boxes-sync') {
             // Door toggles are stateful transitions guarded by their respective states below;
             // bunker-line and enemy-projectile-spawned stream continuously without static dedupe blocking.
@@ -7414,6 +7445,20 @@ export class ThreeGame {
                 } else {
                     this.markWallTileDestroyed?.(worldX, worldZ);
                 }
+            }
+        } else if (event === 'fragile-ledge-state') {
+            if (typeof detail.key === 'string' && Object.values(FRAGILE_LEDGE_STATE).includes(detail.state)) {
+                const previous = readFragileLedgeState(this.fragileLedgeStates, detail.key).state;
+                this.fragileLedgeStates.set(detail.key, {
+                    state: detail.state,
+                    warningDeadline: null
+                });
+                this.applyFragileLedgeTransition({
+                    key: detail.key,
+                    previous,
+                    state: detail.state,
+                    warningDeadline: null
+                }, { fromRemote: true });
             }
         } else if (event === 'enemy-projectile-spawned') {
             this.spawnProjectile({
@@ -26690,6 +26735,9 @@ export class ThreeGame {
         this.brokenPropScatterKeys = new Set();
         this.spentPropScatterKeys = new Set();
         this.destroyedExteriorWallKeys?.clear();
+        this.fragileLedgeStates?.clear();
+        this._activeFragileLedgeKey = null;
+        this._fragileLedgeVisuals?.clear();
         this._dressingManifest = new Map();
         this._dressingHp = new Map();
         this._wallInstanceIndex?.clear();
@@ -26716,6 +26764,10 @@ export class ThreeGame {
             if (child.userData?.isInstancedWallPool || child.userData?.isWallRunFacadePool || child.userData?.isRoomCutawayCapPool
                 || (child.userData?.isCliff && child.geometry?.userData?.ownedByWallPool)) {
                 if (child.geometry?.userData?.ownedByWallPool) child.geometry.dispose();
+                child.dispose?.();
+            }
+            if (child.userData?.isFragileLedgeCrackPool) {
+                for (const key of child.userData.ledgeKeys ?? []) this._fragileLedgeVisuals?.delete?.(key);
                 child.dispose?.();
             }
             // Shared sheet geometry and material stay; the instance buffer goes.
@@ -28273,6 +28325,7 @@ export class ThreeGame {
         // in-browser verification pass: this spuriously fired near the
         // climb point, which sits close to the pocket's edge by design).
         if (this.player && this.performanceProfile === 'gameplay' && !this.isInPocket && !this.noclip) {
+            this.updateFragileLedgeOccupancy(performance.now());
             if (this.isPlayerOverAnyHole(this.player.position.x, this.player.position.z)) {
                 this.isPlayerFalling = true;
                 this._fallHoleX = Math.round(this.player.position.x);
@@ -28281,6 +28334,16 @@ export class ThreeGame {
                 this.setInputEnabled(false);
                 window.AudioManager?.playMetalStress?.({ volume: 0.8, playbackRate: 0.6, force: true });
                 this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0x111111, count: 12, upward: 0.2 });
+                if (typeof CustomEvent !== 'undefined') {
+                    window.dispatchEvent?.(new CustomEvent('pit-fall-started', {
+                        detail: {
+                            x: this._fallHoleX,
+                            z: this._fallHoleZ,
+                            tile: this.getTileType(this._fallHoleX, this._fallHoleZ),
+                            ledgeState: this.getFragileLedgeState(this._fallHoleX, this._fallHoleZ).state
+                        }
+                    }));
+                }
                 return;
             }
 
@@ -30227,7 +30290,7 @@ export class ThreeGame {
         const tile = typeof this.getCachedTileType === 'function'
             ? this.getCachedTileType(tileX, tileZ)
             : (typeof this.getTileType === 'function' ? this.getTileType(tileX, tileZ) : '.');
-        if (tile === EXTERIOR_CANYON_TILE || tile === CLIFF_TILE) {
+        if (tile === EXTERIOR_CANYON_TILE) {
             return { type: 'abyss', height: -15.0 };
         }
         if (tile === '#') {
@@ -35255,6 +35318,52 @@ export class ThreeGame {
             );
             chunkFloor.receiveShadow = true;
             group.add(chunkFloor);
+        }
+        const fragileLedgeCells = [];
+        for (let localY = 0; localY < grid.length; localY += 1) {
+            for (let localX = 0; localX < grid[localY].length; localX += 1) {
+                if (grid[localY][localX] === CLIFF_TILE) fragileLedgeCells.push({ localX, localY });
+            }
+        }
+        if (fragileLedgeCells.length > 0 && this.fragileLedgeCrackMaterial) {
+            const crackPool = new THREE.InstancedMesh(
+                this.floorGeometry,
+                this.fragileLedgeCrackMaterial,
+                fragileLedgeCells.length
+            );
+            const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+            const hidden = new THREE.Matrix4().makeScale(0, 0, 0);
+            const ledgeKeys = [];
+            const baseMatrices = [];
+            fragileLedgeCells.forEach((cell, instanceIndex) => {
+                const worldX = chunkX * this.chunkSize + cell.localX;
+                const worldZ = chunkY * this.chunkSize + cell.localY;
+                const key = fragileLedgeKey(worldX, worldZ);
+                const baseMatrix = new THREE.Matrix4().compose(
+                    new THREE.Vector3(worldX, 0.042, worldZ),
+                    rotation,
+                    new THREE.Vector3(0.94, 0.94, 0.94)
+                );
+                const state = this.getFragileLedgeState(worldX, worldZ).state;
+                const visible = state === FRAGILE_LEDGE_STATE.CRACKED || state === FRAGILE_LEDGE_STATE.WARNING;
+                crackPool.setMatrixAt(instanceIndex, visible ? baseMatrix : hidden);
+                crackPool.setColorAt(
+                    instanceIndex,
+                    new THREE.Color(state === FRAGILE_LEDGE_STATE.WARNING ? 0xff7a35 : 0xd7c0a4)
+                );
+                ledgeKeys.push(key);
+                baseMatrices.push(baseMatrix);
+                this._fragileLedgeVisuals.set(key, { pool: crackPool, instanceIndex, baseMatrix });
+            });
+            crackPool.instanceMatrix.needsUpdate = true;
+            if (crackPool.instanceColor) crackPool.instanceColor.needsUpdate = true;
+            crackPool.renderOrder = 6;
+            crackPool.userData = {
+                isFragileLedgeCrackPool: true,
+                ledgeKeys,
+                baseMatrices
+            };
+            group.add(crackPool);
         }
         if (chunkX === 0 && chunkY === 0 && this.crashSiteHeatMaterial) {
             // Damage albedo/roughness lives in the floor splat. Keep only a
@@ -43886,6 +43995,98 @@ export class ThreeGame {
         return false;
     }
 
+    getFragileLedgeState(worldX, worldZ) {
+        return readFragileLedgeState(
+            this.fragileLedgeStates,
+            fragileLedgeKey(worldX, worldZ)
+        );
+    }
+
+    setFragileLedgeVisualState(key, state) {
+        const visual = this._fragileLedgeVisuals?.get?.(key);
+        if (!visual?.pool) return false;
+        const visible = state === FRAGILE_LEDGE_STATE.CRACKED
+            || state === FRAGILE_LEDGE_STATE.WARNING;
+        visual.pool.setMatrixAt(
+            visual.instanceIndex,
+            visible ? visual.baseMatrix : new THREE.Matrix4().makeScale(0, 0, 0)
+        );
+        visual.pool.setColorAt(
+            visual.instanceIndex,
+            new THREE.Color(state === FRAGILE_LEDGE_STATE.WARNING ? 0xff7a35 : 0xd7c0a4)
+        );
+        visual.pool.instanceMatrix.needsUpdate = true;
+        if (visual.pool.instanceColor) visual.pool.instanceColor.needsUpdate = true;
+        return true;
+    }
+
+    remountChunkForWorldTile(worldX, worldZ) {
+        const coord = this.getChunkLocalFromWorld(worldX, worldZ);
+        const group = this.chunkMeshes?.get?.(coord.key);
+        if (!group) return false;
+        this.disposeChunkGroupResources(group);
+        this.chunkGroups?.remove?.(group);
+        this.chunkMeshes.delete(coord.key);
+        this.mountChunk(coord.chunkX, coord.chunkY);
+        return true;
+    }
+
+    applyFragileLedgeTransition(transition, { fromRemote = false } = {}) {
+        if (!transition?.key) return false;
+        const [worldX, worldZ] = transition.key.split(',').map(Number);
+        if (!Number.isFinite(worldX) || !Number.isFinite(worldZ)) return false;
+        this.setFragileLedgeVisualState(transition.key, transition.state);
+        if (transition.state === FRAGILE_LEDGE_STATE.CRACKED) {
+            this.spawnPhysicalBurst?.(worldX, worldZ, { color: 0x9b8068, count: 4, upward: 0.08, spread: 0.7 });
+            if (typeof window !== 'undefined') window.AudioManager?.playMetalStress?.({ volume: 0.22, playbackRate: 0.62, force: true });
+        } else if (transition.state === FRAGILE_LEDGE_STATE.WARNING) {
+            this.spawnPhysicalBurst?.(worldX, worldZ, { color: 0xc19a78, count: 7, upward: 0.12, spread: 0.9 });
+            this.triggerCameraShake?.(0.035, 0.16);
+            if (typeof window !== 'undefined') window.AudioManager?.playMetalStress?.({ volume: 0.38, playbackRate: 0.48, force: true });
+        } else if (transition.state === FRAGILE_LEDGE_STATE.COLLAPSED) {
+            const coord = this.getChunkLocalFromWorld(worldX, worldZ);
+            const grid = this.chunkCache?.get?.(coord.key);
+            if (grid?.[coord.localY]?.[coord.localX] === CLIFF_TILE) {
+                grid[coord.localY][coord.localX] = EXTERIOR_CANYON_TILE;
+            }
+            this.spawnPhysicalBurst?.(worldX, worldZ, { color: 0x70584a, count: 14, upward: 0.18, spread: 1.2 });
+            this.triggerCameraShake?.(0.09, 0.24);
+            if (typeof window !== 'undefined') window.AudioManager?.playMetalStress?.({ volume: 0.62, playbackRate: 0.38, force: true });
+            this.remountChunkForWorldTile(worldX, worldZ);
+        }
+        if (typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') {
+            window.dispatchEvent?.(new CustomEvent('ledge-state-changed', {
+                detail: { key: transition.key, x: worldX, z: worldZ, state: transition.state, fromRemote }
+            }));
+        }
+        if (!fromRemote) {
+            this.broadcastSharedWorldEvent?.('fragile-ledge-state', {
+                key: transition.key,
+                state: transition.state,
+                warningDeadline: transition.warningDeadline ?? null
+            });
+            this.persistCampaignWorld?.();
+        }
+        return true;
+    }
+
+    updateFragileLedgeOccupancy(now = performance.now()) {
+        if (!this.player || this.isInPocket || this.noclip) return [];
+        const tileX = Math.round(this.player.position.x);
+        const tileZ = Math.round(this.player.position.z);
+        const currentKey = this.getTileType(tileX, tileZ) === CLIFF_TILE
+            ? fragileLedgeKey(tileX, tileZ)
+            : null;
+        const result = advanceFragileLedgeOccupancy(this.fragileLedgeStates, {
+            previousKey: this._activeFragileLedgeKey,
+            currentKey,
+            now
+        });
+        this._activeFragileLedgeKey = result.activeKey;
+        for (const transition of result.transitions) this.applyFragileLedgeTransition(transition);
+        return result.transitions;
+    }
+
     getHoleVisualInfo(worldX, worldY, { requireCached = false } = {}) {
         const tileX = Math.round(worldX);
         const tileY = Math.round(worldY);
@@ -43922,6 +44123,7 @@ export class ThreeGame {
         }
         if (tileType === CLIFF_TILE) {
             if (this.isCliffSecretPath(tileX, tileY)) return null;
+            if (this.getFragileLedgeState(tileX, tileY).state !== FRAGILE_LEDGE_STATE.COLLAPSED) return null;
             return {
                 x: tileX,
                 z: tileY,
@@ -45691,6 +45893,7 @@ export class ThreeGame {
             worldChanges: {
                 destroyedWalls: [...(this.destroyedWallKeys ?? [])],
                 destroyedExteriorWalls: [...(this.destroyedExteriorWallKeys ?? [])],
+                fragileLedges: serializeFragileLedgeStates(this.fragileLedgeStates),
                 brokenRoomDressing: serializeBrokenRoomDressing(this.brokenPropScatterKeys),
                 discoveredChunks: [...(this.discoveredMapChunkKeys ?? [])],
                 discoveredRooms: [...(this.discoveredMapRoomKeys ?? [])],
@@ -45718,6 +45921,8 @@ export class ThreeGame {
                 ? values.filter((value) => typeof value === 'string') : []);
             this.destroyedWallKeys = strings(raw.worldChanges.destroyedWalls);
             this.destroyedExteriorWallKeys = strings(raw.worldChanges.destroyedExteriorWalls);
+            this.fragileLedgeStates = restoreFragileLedgeStates(raw.worldChanges.fragileLedges);
+            this._activeFragileLedgeKey = null;
             this.discoveredMapChunkKeys = strings(raw.worldChanges.discoveredChunks);
             this.discoveredMapChunkKeys.add('0,0');
             this.discoveredMapRoomKeys = strings(raw.worldChanges.discoveredRooms);
@@ -46494,6 +46699,18 @@ export class ThreeGame {
                 expandExistingCanyon: Boolean(mazeMetadata?.architectural)
             });
         }
+        // Reapply persisted collapses after deterministic generation and
+        // before route/render metadata sees the chunk.
+        for (const ledgeKey of this.fragileLedgeStates?.keys?.() ?? []) {
+            if (readFragileLedgeState(this.fragileLedgeStates, ledgeKey).state !== FRAGILE_LEDGE_STATE.COLLAPSED) continue;
+            const [worldX, worldZ] = ledgeKey.split(',').map(Number);
+            const ownerX = Math.floor(worldX / this.chunkSize);
+            const ownerY = Math.floor(worldZ / this.chunkSize);
+            if (ownerX !== chunkX || ownerY !== chunkY) continue;
+            const localX = worldX - ownerX * this.chunkSize;
+            const localY = worldZ - ownerY * this.chunkSize;
+            if (grid[localY]?.[localX] === CLIFF_TILE) grid[localY][localX] = EXTERIOR_CANYON_TILE;
+        }
         const chunkRouteRecord = {
             key: `${chunkX},${chunkY}`,
             chunkX,
@@ -47025,6 +47242,8 @@ export class ThreeGame {
         this.roomDecalMaterial = null;
         this.crashSiteHeatMaterial?.dispose?.();
         this.crashSiteHeatTexture?.dispose?.();
+        this.fragileLedgeCrackMaterial?.dispose?.();
+        this.fragileLedgeCrackTexture?.dispose?.();
         for (const material of this.roomFloorMaterials?.values?.() ?? []) {
             if (material?.userData?.ownsRoomAtlasTexture) material.map?.dispose?.();
             material?.dispose?.();

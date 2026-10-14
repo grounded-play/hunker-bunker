@@ -200,7 +200,8 @@ export class DebugLogger {
             'o2-bubble-activated', 'bunker-door-toggled', 'bunker-door-destroyed',
             'boss-attack-telegraph', 'boss-attack-resolved',
             'destructible-prop-broken', 'player-melee-attack',
-            'wall-impact', 'wall-damaged', 'wall-destroyed'
+            'wall-impact', 'wall-damaged', 'wall-destroyed',
+            'ledge-state-changed', 'pit-fall-started'
         ];
         for (const eventName of eventNames) {
             window.addEventListener(eventName, (event) => {
