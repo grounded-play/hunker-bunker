@@ -37,13 +37,25 @@ describe('weapon calibration profiles', () => {
             expect(cal.forwardAxis).toBe('+X');
             expect(cal.muzzleAxis).toBe('+X');
             expect(cal.handAimAxis).toBe('+Y');
-            expect(cal.rotation[0]).toBeCloseTo(Math.PI);
-            expect(cal.rotation[1]).toBeCloseTo(0);
-            expect(cal.rotation[2]).toBeCloseTo(-Math.PI / 2);
+            if (id === 'gg1') {
+                expect(cal.sightAxis).toBe('+Z');
+                expect(cal.rotation[0]).toBeCloseTo(Math.PI);
+                expect(cal.rotation[1]).toBeCloseTo(0);
+                expect(cal.rotation[2]).toBeCloseTo(-Math.PI / 2);
+            } else {
+                expect(cal.sightAxis).toBe('+Y');
+                expect(cal.rotation[0]).toBeCloseTo(0);
+                expect(cal.rotation[1]).toBeCloseTo(-Math.PI / 2);
+                expect(cal.rotation[2]).toBeCloseTo(Math.PI / 2);
+            }
             const muzzle = new THREE.Vector3(1, 0, 0)
                 .applyEuler(new THREE.Euler(...cal.rotation));
             const handAim = new THREE.Vector3(0, 1, 0);
             expect(THREE.MathUtils.radToDeg(muzzle.angleTo(handAim))).toBeLessThanOrEqual(15);
+
+            const sightVector = cal.sightAxis === '+Z' ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0);
+            const handSight = sightVector.applyEuler(new THREE.Euler(...cal.rotation));
+            expect(THREE.MathUtils.radToDeg(handSight.angleTo(new THREE.Vector3(0, 0, -1)))).toBeLessThanOrEqual(15);
         }
     });
 });
