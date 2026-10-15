@@ -12,7 +12,7 @@
 // go on in one final pass. Sound is mixed in Node at 48 kHz on five buses
 // (music, dialogue, game SFX from the capture event logs, kit FX, ambience)
 // and loudness-normalised with two-pass loudnorm. QA runs at the end.
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { placeGrid, resolveDuration, resolveTime, snap } from './edl-time.js';
@@ -29,6 +29,8 @@ const OUT_DIR = path.join(ROOT, 'dist/trailer/v4');
 
 const log = (...m) => console.log(`[trailer:${NAME}]`, ...m);
 const sh = (cmd, argv, opts = {}) => execFileSync(cmd, argv, { maxBuffer: 1 << 30, ...opts });
+// ffmpeg's analysis filters report on stderr; run it without a shell and read that.
+const ffmpegLog = (argv) => spawnSync('ffmpeg', ['-hide_banner', '-nostats', ...argv], { encoding: 'utf8', maxBuffer: 1 << 30 }).stderr ?? '';
 
 // ---------------------------------------------------------------- EDL ------
 
@@ -361,7 +363,11 @@ const FONT = {
     monoRegular: path.join(ROOT, 'trailer/fonts/SpaceMono-Regular.ttf')
 };
 
-const esc = (s) => String(s).replace(/\\/g, '\\\\\\\\').replace(/:/g, '\\:').replace(/'/g, "\u2019").replace(/%/g, '\\%').replace(/,/g, '\\,');
+// drawtext text, escaped in one pass: a backslash doubles twice (filtergraph
+// then drawtext), the separators get one backslash, and an apostrophe becomes
+// a typographic one so it cannot close the quoted option.
+const DRAWTEXT_ESCAPES = { '\\': '\\\\\\\\', ':': '\\:', '%': '\\%', ',': '\\,', "'": '\u2019' };
+const esc = (s) => String(s).replace(/[\\:%,']/g, (c) => DRAWTEXT_ESCAPES[c]);
 
 // Text styles: kinetic (slam-in word), type (typed terminal line), title, cta, small.
 function textFilters(item, T, D) {
@@ -608,7 +614,7 @@ function buildMix(edl, T, D, clipSounds) {
     const mute = new Set(edl.game_sfx?.mute ?? []);
     const busGain = dbToGain(edl.game_sfx?.gain ?? -4);
     for (const cs of clipSounds) {
-        const { clip, shot, src, times, gain } = cs;
+        const { clip, src, times, gain } = cs;
         if (!src.events?.length) continue;
         for (const e of src.events) {
             if (e.kind !== 'sfx' || !e.played || !e.buffer) continue;
@@ -677,7 +683,7 @@ function writeWav(file, [L, R]) {
 function loudnorm(input, output, target = -14) {
     // TP -3 plus a -3 dBFS limiter: the AAC encoder overshoots the PCM peak
     // by ~1.2 dB on this mix (measured), and the delivered file must stay under -1 dBTP.
-    const first = execFileSync('sh', ['-c', `ffmpeg -hide_banner -nostats -i "${input}" -af loudnorm=I=${target}:TP=-3:LRA=11:print_format=json -f null - 2>&1`], { encoding: 'utf8' });
+    const first = ffmpegLog(['-i', input, '-af', `loudnorm=I=${target}:TP=-3:LRA=11:print_format=json`, '-f', 'null', '-']);
     const json = JSON.parse(first.slice(first.lastIndexOf('{'), first.lastIndexOf('}') + 1));
     sh('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-i', input, '-af',
         `loudnorm=I=${target}:TP=-3:LRA=11:measured_I=${json.input_i}:measured_TP=${json.input_tp}:measured_LRA=${json.input_lra}:measured_thresh=${json.input_thresh}:offset=${json.target_offset}:linear=true,aresample=48000,alimiter=limit=0.708:attack=1:release=60:level=false`,
@@ -685,7 +691,7 @@ function loudnorm(input, output, target = -14) {
     // Short, dense cuts cannot reach the target linearly under the ceiling:
     // make up the remaining gain into the limiter, re-measure, up to 3 times.
     const measure = (file) => {
-        const out = execFileSync('sh', ['-c', `ffmpeg -hide_banner -nostats -i "${file}" -af ebur128 -f null - 2>&1`], { encoding: 'utf8' });
+        const out = ffmpegLog(['-i', file, '-af', 'ebur128', '-f', 'null', '-']);
         return Number(out.match(/I:\s+(-?[\d.]+) LUFS/g)?.pop()?.match(/-?[\d.]+/)?.[0]);
     };
     for (let pass = 0; pass < 3; pass += 1) {
@@ -703,7 +709,7 @@ function loudnorm(input, output, target = -14) {
 // ------------------------------------------------------------------ QA -----
 
 function qa(file, edl, T) {
-    const run = (vf, af) => execFileSync('sh', ['-c', `ffmpeg -hide_banner -nostats -i "${file}" ${vf ? `-vf "${vf}"` : '-vn'} ${af ? `-af "${af}"` : '-an'} -f null - 2>&1 || true`], { encoding: 'utf8' });
+    const run = (vf, af) => ffmpegLog(['-i', file, ...(vf ? ['-vf', vf] : ['-vn']), ...(af ? ['-af', af] : ['-an']), '-f', 'null', '-']);
     const probe = JSON.parse(sh('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', file], { encoding: 'utf8' }));
     const v = probe.streams.find((s) => s.codec_type === 'video');
     const a = probe.streams.find((s) => s.codec_type === 'audio');

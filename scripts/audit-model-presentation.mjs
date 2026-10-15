@@ -74,11 +74,15 @@ function discoverRuntimeGlbReferences() {
 function inspectGlb(relUrl) {
     if (!relUrl) return { error: 'empty_url' };
     const filePath = path.join(ROOT, 'public', relUrl.replace(/^\//, ''));
-    if (!fs.existsSync(filePath)) {
-        return { error: 'file_missing', path: filePath };
+    // One read, no exists-then-open race (CodeQL js/file-system-race).
+    let buf;
+    try {
+        buf = fs.readFileSync(filePath);
+    } catch (error) {
+        if (error.code === 'ENOENT') return { error: 'file_missing', path: filePath };
+        throw error;
     }
-    const stat = fs.statSync(filePath);
-    const buf = fs.readFileSync(filePath);
+    const stat = { size: buf.length };
     if (buf.length < 20 || buf.readUInt32LE(0) !== 0x46546c67) {
         return { error: 'invalid_gltf_magic', path: filePath };
     }

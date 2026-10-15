@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { bootForCapture, captureShot, RAW_ROOT, shotApi } from './capture.js';
@@ -23,7 +23,7 @@ const ffmpegStats = (file) => {
         .split('\n').filter((l) => l && !l.startsWith('#')).map((l) => l.split(',').pop().trim());
     let duplicates = 0;
     for (let i = 1; i < md5.length; i += 1) if (md5[i] === md5[i - 1]) duplicates += 1;
-    const freeze = execFileSync('sh', ['-c', `ffmpeg -hide_banner -nostats -i "${file}" -vf "freezedetect=n=0.0005:d=0.1" -an -f null - 2>&1 || true`], { encoding: 'utf8' });
+    const freeze = spawnSync('ffmpeg', ['-hide_banner', '-nostats', '-i', file, '-vf', 'freezedetect=n=0.0005:d=0.1', '-an', '-f', 'null', '-'], { encoding: 'utf8' }).stderr ?? '';
     return {
         frames: md5.length,
         duplicates,
