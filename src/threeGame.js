@@ -13590,7 +13590,8 @@ export class ThreeGame {
         // real GPU/CPU cost spent on a canvas nothing could see. No frame
         // skipped here is ever visible, on any hardware.
         if (this.container) {
-            const { width, height } = this.getContainerSize();
+            const { width, height } = this.getContainerSize?.()
+                ?? { width: this.container.clientWidth, height: this.container.clientHeight };
             if (width === 0 && height === 0) return;
         }
         // Keep the render guard callable with the deliberately minimal fake
@@ -30205,7 +30206,7 @@ export class ThreeGame {
         const overlay = this.darknessOverlay;
         const ctx = this.darknessOverlayContext;
         if (!overlay || !ctx || !this.player || !this.camera) return;
-        const size = this.getContainerSize();
+        const size = this.getContainerSize?.() ?? { width: this.container.clientWidth, height: this.container.clientHeight };
         const w = size.width || 1;
         const h = size.height || 1;
         // Match the WebGL framebuffer scale. A separate 2x fullscreen canvas
@@ -47544,6 +47545,9 @@ export class ThreeGame {
         this.renderer.domElement.removeEventListener('pointerleave', this.handleCanvasPointerCancel);
         this.darknessOverlay?.remove?.();
         this.tiltShiftOverlay?.remove?.();
+        this._containerSizeObserver?.disconnect?.();
+        this._containerSizeObserver = null;
+        this._containerSizeTarget = null;
         this.ambientVentSystem?.dispose();
         this.ambientVentSystem = null;
         this.floorFogSystem?.dispose();
