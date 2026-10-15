@@ -69,4 +69,32 @@ describe('WorldEmitterRuntime', () => {
         expect(stateA.phase).toBe(stateB.phase);
         expect(stateA.phaseTime).toBeCloseTo(stateB.phaseTime, 6);
     });
+
+    it('transfers a destroyed pipe into a timed world hazard after its root is removed', () => {
+        const runtime = new WorldEmitterRuntime();
+        const pipe = pipeAt();
+        const game = {
+            scatterSprites: [pipe],
+            player: { position: new THREE.Vector3(1.2, 0, 0) },
+            applyWorldEmitterPayload: vi.fn()
+        };
+        runtime.syncSources(game.scatterSprites);
+        const children = runtime.destroySource(pipe);
+        pipe.userData.world3dRoot.removeFromParent();
+        pipe.removeFromParent();
+        game.scatterSprites = [];
+
+        expect(children).toEqual([
+            expect.objectContaining({ id: 'pipe:0:0:destroyed:jet:0', kind: 'jet' })
+        ]);
+        expect(runtime.transients.has('pipe:0:0:destroyed:jet:0')).toBe(true);
+        runtime.step(game);
+        expect(game.applyWorldEmitterPayload).toHaveBeenCalledWith(
+            expect.objectContaining({ kind: 'damage', amount: 1.5, reason: 'steam-burn-rupture' }),
+            expect.any(Object),
+            expect.any(THREE.Vector3)
+        );
+        for (let i = 0; i < 20; i += 1) runtime.step(game);
+        expect(runtime.transients.size).toBe(0);
+    });
 });

@@ -39,6 +39,7 @@ export class WorldEmitterRuntime {
         this.fixedStep = fixedStep;
         this.accumulator = 0;
         this.sources = new Map();
+        this.transients = new Map();
         this.scratchPosition = new THREE.Vector3();
         this.scratchQuaternion = new THREE.Quaternion();
         this.scratchDirection = new THREE.Vector3();
@@ -89,7 +90,22 @@ export class WorldEmitterRuntime {
         const id = sourceId(sprite);
         const entry = this.sources.get(id) ?? this.registerSource(sprite);
         if (!entry) return [];
-        const children = destroyWorldEmitterState(entry.state);
+        const transform = this.resolveTransform(entry);
+        const children = destroyWorldEmitterState(entry.state).map((child) => ({
+            ...child,
+            origin: transform.position.clone(),
+            direction: transform.direction.clone(),
+            volume: entry.profile.volume,
+            payload: entry.profile.payload
+        }));
+        for (const child of children) {
+            if (child.kind !== 'jet') continue;
+            this.transients.set(child.id, {
+                ...child,
+                remaining: Math.max(0, Number(child.duration) || 0),
+                exposureRemaining: 0
+            });
+        }
         this.sources.delete(entry.id);
         return children;
     }
@@ -119,8 +135,42 @@ export class WorldEmitterRuntime {
         return pointSegmentDistance2d(playerPosition, position, end) <= volume.radius;
     }
 
+    containsTransient(transient, playerPosition) {
+        if (!playerPosition) return false;
+        const volume = transient.volume;
+        if (volume.shape === 'sphere') {
+            return Math.hypot(playerPosition.x - transient.origin.x, playerPosition.z - transient.origin.z) <= volume.radius;
+        }
+        const end = {
+            x: transient.origin.x + transient.direction.x * (volume.length ?? 0),
+            z: transient.origin.z + transient.direction.z * (volume.length ?? 0)
+        };
+        return pointSegmentDistance2d(playerPosition, transient.origin, end) <= volume.radius;
+    }
+
+    stepTransients(game) {
+        const playerPosition = game?.player?.position;
+        for (const [id, transient] of this.transients) {
+            transient.remaining -= this.fixedStep;
+            transient.exposureRemaining -= this.fixedStep;
+            if (transient.remaining <= 0) {
+                this.transients.delete(id);
+                continue;
+            }
+            if (!this.containsTransient(transient, playerPosition) || transient.exposureRemaining > 0) continue;
+            transient.exposureRemaining = transient.volume.tickInterval;
+            for (const payload of transient.payload) {
+                const scaled = payload.kind === 'damage'
+                    ? { ...payload, amount: (payload.amount ?? 1) * (transient.payloadScale ?? 1), reason: `${payload.reason ?? 'world-emitter'}-rupture` }
+                    : payload;
+                game?.applyWorldEmitterPayload?.(scaled, transient, transient.origin);
+            }
+        }
+    }
+
     step(game) {
         this.syncSources(game?.scatterSprites ?? []);
+        this.stepTransients(game);
         const playerPosition = game?.player?.position;
         for (const entry of this.sources.values()) {
             const distance = playerPosition
@@ -147,6 +197,7 @@ export class WorldEmitterRuntime {
 
     clear() {
         this.sources.clear();
+        this.transients.clear();
         this.accumulator = 0;
     }
 }

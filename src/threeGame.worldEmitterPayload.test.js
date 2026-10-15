@@ -26,6 +26,23 @@ describe('ThreeGame world emitter payload adapter', () => {
         expect(subject.takeDamage).toHaveBeenCalledWith(2, 'steam-burn', 3, 4);
     });
 
+    it('materializes rupture presentation and bio spills from destruction descriptors', () => {
+        const subject = game({
+            spawnTextureBurstEffect: vi.fn(),
+            spawnPhysicalBurst: vi.fn(),
+            spawnToxicSporePuddle: vi.fn(),
+            materializeWorldEmitterDestruction: ThreeGame.prototype.materializeWorldEmitterDestruction
+        });
+        const count = subject.materializeWorldEmitterDestruction([
+            { kind: 'jet', duration: 1.5, origin: { x: 2, z: 3 } },
+            { kind: 'pool', substance: 'bio_slime', radius: 0.8, origin: { x: 4, z: 5 } }
+        ]);
+        expect(count).toBe(2);
+        expect(subject.spawnTextureBurstEffect).toHaveBeenCalled();
+        expect(subject.spawnPhysicalBurst).toHaveBeenCalledWith(2, 3, expect.any(Object));
+        expect(subject.spawnToxicSporePuddle).toHaveBeenCalledWith(4, 5, false);
+    });
+
     it('applies infection without manufacturing an HP hit', () => {
         let load = 10;
         const subject = game({

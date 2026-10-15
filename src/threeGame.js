@@ -25667,6 +25667,32 @@ export class ThreeGame {
         return false;
     }
 
+    materializeWorldEmitterDestruction(children, sprite) {
+        if (!Array.isArray(children) || children.length === 0) return 0;
+        let created = 0;
+        for (const child of children) {
+            const x = child.origin?.x ?? sprite?.position?.x ?? 0;
+            const z = child.origin?.z ?? sprite?.position?.z ?? 0;
+            if (child.kind === 'jet') {
+                this.spawnTextureBurstEffect?.(x, z, {
+                    textureKey: 'fx_steam_puff',
+                    color: 0xdff6ff,
+                    count: 7,
+                    baseScale: 0.5,
+                    duration: Math.min(1.5, child.duration ?? 1),
+                    speed: 0.35,
+                    rise: 0.2
+                });
+                this.spawnPhysicalBurst?.(x, z, { color: 0xdff6ff, count: 8, upward: 0.25, spread: 1.1 });
+                created += 1;
+            } else if (child.kind === 'pool' && child.substance === 'bio_slime') {
+                this.spawnToxicSporePuddle?.(x, z, (child.radius ?? 0) > 1);
+                created += 1;
+            }
+        }
+        return created;
+    }
+
     resolveFallDamage() {
         const hardened = Boolean(this.bank?.getState?.()?.tier2Unlocks?.fallHardening);
         const raw = hardened ? FALL_DAMAGE_BASE / 2 : FALL_DAMAGE_BASE;
@@ -39957,7 +39983,8 @@ export class ThreeGame {
             if (attackerIndex >= 0) this.umbilicalAttackers.splice(attackerIndex, 1);
         }
         const world3dRoot = sprite.userData.world3dRoot;
-        this.worldEmitterRuntime?.destroySource?.(sprite);
+        const emitterChildren = this.worldEmitterRuntime?.destroySource?.(sprite) ?? [];
+        this.materializeWorldEmitterDestruction?.(emitterChildren, sprite);
         if (world3dRoot) {
             this.disposeWorld3dPropFx?.(world3dRoot);
             this.disposeWorld3dPropExperience?.(world3dRoot);

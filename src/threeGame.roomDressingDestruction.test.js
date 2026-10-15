@@ -186,6 +186,8 @@ describe('ThreeGame instanced room dressing destruction (G3.1)', () => {
             brokenPropScatterKeys: new Set(),
             disposeWorld3dPropFx: vi.fn(),
             disposeWorld3dPropExperience: vi.fn(),
+            worldEmitterRuntime: { destroySource: vi.fn(() => [{ kind: 'jet', id: 'pipe:teardown:destroyed:jet:0' }]) },
+            materializeWorldEmitterDestruction: vi.fn(),
             world3dMixers: new Set(),
             spawnGearPoofEffect: vi.fn(),
             spawnDestructiblePropDrops: vi.fn(),
@@ -196,6 +198,10 @@ describe('ThreeGame instanced room dressing destruction (G3.1)', () => {
         expect(fakeGame.disposeWorld3dPropFx).toHaveBeenCalledOnce();
         expect(fakeGame.disposeWorld3dPropFx).toHaveBeenCalledWith(root);
         expect(fakeGame.disposeWorld3dPropExperience).toHaveBeenCalledWith(root);
+        expect(fakeGame.materializeWorldEmitterDestruction).toHaveBeenCalledWith(
+            [expect.objectContaining({ id: 'pipe:teardown:destroyed:jet:0' })],
+            collider
+        );
         expect(root.parent).toBeNull();
         expect(collider.userData.world3dRoot).toBeNull();
     });

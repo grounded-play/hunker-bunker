@@ -106,6 +106,17 @@ Status: implemented.
 - The initial three assets are guarded by a test requiring either a recognized
   outlet transform or an explicit three-axis fallback direction.
 
+### 2026-10-15 — Slice 3A: realized destruction children
+
+Status: implemented for timed steam rupture and bio-spill descriptors.
+
+- Destruction snapshots the live outlet origin/direction before model teardown.
+- Rupture children transfer into the world runtime, continue applying scaled
+  directional damage on their own cadence, and expire without retaining the prop
+  model or FX hierarchy.
+- ThreeGame materializes one-shot rupture presentation and routes bio-spill
+  descriptors into the toxic-pool path.
+
 ## Decision summary
 
 Build one data-driven `WorldEmitterSystem` for prop-attached emissions and liquid
