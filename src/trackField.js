@@ -41,10 +41,11 @@ export function stepBoots(boots, underfoot) {
 }
 
 /** Opacity of a mark `age` seconds old: full, then easing out over its life. */
-export function trackAlpha(baseAlpha, age, life) {
+export function trackAlpha(baseAlpha, age, life, fadeThreshold = 0.6) {
     if (!(age >= 0) || !(life > 0) || age >= life) return 0;
     const t = age / life;
-    return baseAlpha * (t < 0.6 ? 1 : 1 - (t - 0.6) / 0.4);
+    const threshold = Number.isFinite(fadeThreshold) ? Math.min(0.99, Math.max(0.1, fadeThreshold)) : 0.6;
+    return baseAlpha * (t < threshold ? 1 : 1 - (t - threshold) / (1 - threshold));
 }
 
 // What a snail's slime looks like, by type.
@@ -58,8 +59,9 @@ export function slimeColorFor(type = '') {
 
 // How long a slime trail lingers on the terrain before decaying.
 export function slimeLifeFor(type = '', isBoss = false) {
-    if (isBoss) return 36;
+    if (isBoss) return 45;
     const t = String(type ?? '').toLowerCase();
+    if (t.includes('stalker') || t.includes('charger') || t.includes('claw')) return 16;
     if (t.includes('cryo')) return 22;
     if (t.includes('spore')) return 24;
     if (t.includes('cyber') || t.includes('mech')) return 25;

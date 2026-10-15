@@ -713,6 +713,7 @@ import { trimCampPromptActions } from './campActionMenu.js';
 import { MYSTERY_BOX_KINDS, MYSTERY_OUTCOME_LINE_KEYS, mysteryBoxChance, mysteryOpenSeconds, mysteryRewardDrops, pickMysteryBoxKind, rollMysteryOutcome, seededRandom } from './mysteryBoxes.js';
 import { createTrackField, slimeColorFor, slimeLifeFor, stepBoots, trackSurfaceForType } from './trackField.js';
 import { CasingSystem } from './casingSystem.js';
+import { PointAudioEmitterManager } from './pointAudioEmitter.js';
 import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
 import { groupDangerZones, lipEdgeQuads } from './dangerZones.js';
 import { GATE_CHALLENGES, GATE_CHALLENGE_TUNING, planGateChallenges } from './gateChallenges.js';
@@ -2650,6 +2651,8 @@ export class ThreeGame {
         this.scene.add(this.trackField.group);
         // Synchronized physical shell casings & landing Foley pool (src/casingSystem.js)
         this.casingSystem = new CasingSystem(this.scene);
+        // Hyper-localized point-source ambient audio (src/pointAudioEmitter.js)
+        this.pointAudioEmitters = new PointAudioEmitterManager();
         this.scene.background = new THREE.Color(0x0b0d0f);
         this.scene.fog = new THREE.Fog(0x0b0d0f, 18, 40);
         // Create all eight renderer-visible slots before the loading-screen
@@ -28383,6 +28386,12 @@ export class ThreeGame {
         // Update dynamic acoustic environment (outdoor wind vs indoor hum/reverb, room tone crossfades)
         this.updateRoomToneAcoustics?.(delta);
 
+        // Update hyper-localized point-source ambient audio (camps, forges, generators, hive sacs)
+        if (this.pointAudioEmitters && this.player?.position) {
+            this.pointAudioEmitters.syncCampsAndHives(this.camps, this.hives ?? this.hiveSites);
+            this.pointAudioEmitters.update(this.player.position, window.AudioManager, this);
+        }
+
         // Update kinetic control timers
         this.dashCooldownTimer = Math.max(0, (this.dashCooldownTimer ?? 0) - delta);
         this.meleeCooldownTimer = Math.max(0, (this.meleeCooldownTimer ?? 0) - delta);
@@ -47256,6 +47265,10 @@ export class ThreeGame {
         this.ambientVentSystem = null;
         this.floorFogSystem?.dispose();
         this.floorFogSystem = null;
+        this.pointAudioEmitters?.dispose?.();
+        this.pointAudioEmitters = null;
+        this.casingSystem?.dispose?.();
+        this.casingSystem = null;
         this.killstreakFeedback?.dispose?.();
         this.killstreakFeedback = null;
         Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());

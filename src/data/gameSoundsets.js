@@ -388,6 +388,30 @@ export const GAME_SOUNDSETS = Object.freeze({
         variants: Object.freeze(['tracer_flyby_chitin_000', 'tracer_flyby_chitin_001']),
         fallback: 'tracer_flyby_chitin_000', bus: 'sfx', gain: 0.34,
         pitch: Object.freeze([0.94, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+
+    // =========================================================================
+    // HYPER-LOCALIZED POINT-SOURCE AMBIENCE (CAMPS & HIVES)
+    // =========================================================================
+    amb_point_tallow_forge: Object.freeze({
+        variants: Object.freeze(['amb_point_tallow_forge']),
+        fallback: 'amb_point_tallow_forge', bus: 'world', gain: 0.45,
+        pitch: Object.freeze([0.98, 1.02]), noImmediateRepeat: false, retrigger: 'replace-oldest'
+    }),
+    amb_point_vesper_generator: Object.freeze({
+        variants: Object.freeze(['amb_point_vesper_generator']),
+        fallback: 'amb_point_vesper_generator', bus: 'world', gain: 0.42,
+        pitch: Object.freeze([0.98, 1.02]), noImmediateRepeat: false, retrigger: 'replace-oldest'
+    }),
+    amb_point_meridian_chimes: Object.freeze({
+        variants: Object.freeze(['amb_point_meridian_chimes']),
+        fallback: 'amb_point_meridian_chimes', bus: 'world', gain: 0.40,
+        pitch: Object.freeze([0.98, 1.02]), noImmediateRepeat: false, retrigger: 'replace-oldest'
+    }),
+    amb_point_hive_sac: Object.freeze({
+        variants: Object.freeze(['amb_point_hive_sac']),
+        fallback: 'amb_point_hive_sac', bus: 'world', gain: 0.44,
+        pitch: Object.freeze([0.98, 1.02]), noImmediateRepeat: false, retrigger: 'replace-oldest'
     })
 });
 
