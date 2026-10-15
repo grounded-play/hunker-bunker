@@ -326,7 +326,16 @@ export class DialogueManager {
         // Alternative Style A: Fullscreen Tactical Terminal Cutscene (verbatim & timed to voice)
         if (isDefaultVoice && introStyle === 'tactical_terminal' && typeof window !== 'undefined' && typeof window.playCutsceneVideo === 'function') {
             try {
-                await window.playCutsceneVideo('intro-mothership-briefing', { allowSkip: true });
+                await window.playCutsceneVideo('intro-mothership-briefing', {
+                    allowSkip: true,
+                    showSpeakerHeadshot: true,
+                    speaker: {
+                        name: 'MOTHERSHIP COMMAND',
+                        portrait: '/lore_portraits/survivor_00.webp',
+                        callout: 'ORBITAL COMMAND RELAY',
+                        channel: 'SEC-09 // CH 01 (142.8 MHz)'
+                    }
+                });
             } catch (err) {
                 console.warn('[Dialogue] Tactical terminal cutscene playback error, falling back to terminal:', err);
             }

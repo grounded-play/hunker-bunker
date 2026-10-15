@@ -127,7 +127,17 @@ describe('Intro Style & Verbatim Timed Presentation', () => {
 
         const introPromise = dialogue.openMothershipDialogue({ playerType: 'SCOUT' });
 
-        expect(cutsceneSpy).toHaveBeenCalledWith('intro-mothership-briefing', { allowSkip: true });
+        expect(cutsceneSpy).toHaveBeenCalledWith(
+            'intro-mothership-briefing',
+            expect.objectContaining({
+                allowSkip: true,
+                showSpeakerHeadshot: true,
+                speaker: expect.objectContaining({
+                    name: 'MOTHERSHIP COMMAND',
+                    portrait: '/lore_portraits/survivor_00.webp'
+                })
+            })
+        );
 
         // Wait until choice resolver is ready, then resolve
         await vi.waitFor(() => expect(dialogue.activeChoiceResolver).not.toBeNull());

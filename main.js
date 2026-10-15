@@ -8879,6 +8879,59 @@ function playCutsceneVideo(base, options = {}) {
             }
         }
 
+        const showSpeakerHeadshot = Boolean(
+            options.showSpeakerHeadshot ||
+            options.showHeadshot ||
+            resolvedBase === 'intro-mothership-briefing'
+        );
+
+        let headshotEl = null;
+        if (showSpeakerHeadshot) {
+            const speakerInfo = options.speaker || {
+                name: 'MOTHERSHIP COMMAND',
+                portrait: '/lore_portraits/survivor_00.webp',
+                callout: 'ORBITAL COMMAND RELAY',
+                channel: 'SEC-09 // CH 01 (142.8 MHz)'
+            };
+            headshotEl = document.createElement('div');
+            headshotEl.className = 'cinematic-headshot-hud';
+            headshotEl.innerHTML = `
+                <div class="cinematic-headshot-hud__header">
+                    <span class="cinematic-headshot-hud__beacon" aria-hidden="true"></span>
+                    <span class="cinematic-headshot-hud__status">LIVE TRANSMISSION</span>
+                    <span class="cinematic-headshot-hud__channel">${speakerInfo.channel || '142.8 MHz'}</span>
+                </div>
+                <div class="cinematic-headshot-hud__card">
+                    <div class="cinematic-headshot-hud__portrait-frame">
+                        <img class="cinematic-headshot-hud__img" src="${assetUrl(speakerInfo.portrait || '/lore_portraits/survivor_00.webp')}" alt="" />
+                        <span class="cinematic-headshot-hud__scanline" aria-hidden="true"></span>
+                        <span class="cinematic-headshot-hud__corner cinematic-headshot-hud__corner--tl" aria-hidden="true"></span>
+                        <span class="cinematic-headshot-hud__corner cinematic-headshot-hud__corner--tr" aria-hidden="true"></span>
+                        <span class="cinematic-headshot-hud__corner cinematic-headshot-hud__corner--bl" aria-hidden="true"></span>
+                        <span class="cinematic-headshot-hud__corner cinematic-headshot-hud__corner--br" aria-hidden="true"></span>
+                    </div>
+                    <div class="cinematic-headshot-hud__info">
+                        <div class="cinematic-headshot-hud__name">${speakerInfo.name || 'MOTHERSHIP COMMAND'}</div>
+                        <div class="cinematic-headshot-hud__callout">${speakerInfo.callout || 'ORBITAL COMMAND RELAY'}</div>
+                        <div class="cinematic-headshot-hud__meter" aria-hidden="true">
+                            <span class="cinematic-headshot-hud__bar"></span>
+                            <span class="cinematic-headshot-hud__bar"></span>
+                            <span class="cinematic-headshot-hud__bar"></span>
+                            <span class="cinematic-headshot-hud__bar"></span>
+                            <span class="cinematic-headshot-hud__status-pill">TRANSMITTING</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const portraitImg = headshotEl.querySelector('.cinematic-headshot-hud__img');
+            if (portraitImg) {
+                portraitImg.onerror = () => {
+                    portraitImg.onerror = null;
+                    portraitImg.src = assetUrl('/lore_portraits/survivor_00.webp');
+                };
+            }
+        }
+
         let settled = false;
         let played = false;
         let fadingOut = false;
@@ -9020,6 +9073,7 @@ function playCutsceneVideo(base, options = {}) {
         overlay.append(video);
         if (shade) overlay.append(shade);
         if (copy) overlay.append(copy);
+        if (headshotEl) overlay.append(headshotEl);
         overlay.append(skipHint);
         host.appendChild(overlay);
 
