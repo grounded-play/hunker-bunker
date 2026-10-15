@@ -21,6 +21,11 @@ const FIELD_WEAPON_PROFILES = Object.freeze({
 
 // Fabricated guns change actual projectile damage/range/cadence in the current
 // run. Cosmetic finishes never select this profile or change these values.
+// The short name a field weapon goes by on the HUD and drop prompts.
+export function getFieldWeaponLabel(id) {
+    return FIELD_WEAPON_PROFILES[id]?.label ?? null;
+}
+
 export function getFieldWeaponProfile(id, fabricated = false) {
     const profile = FIELD_WEAPON_PROFILES[id];
     return fabricated && profile ? { id, ...profile } : null;

@@ -2049,6 +2049,15 @@ html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui .hud-consol
   position: static !important;
   display: block !important;
   line-height: 1 !important;
+  /* The title names the gun in hand (Archival Constructor Arc Driver...). */
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui .hud-console__suit-slot #weapon-status-panel .weapon-status-panel__title[data-long] {
+  font-size: max(9px, calc(10 * var(--u))) !important;
+  letter-spacing: .03em !important;
 }
 
 html[data-hud-layout="dock"][data-operator-class] #game-viewport #ui .hud-console__suit-slot #weapon-status-panel .weapon-status-panel__ammo {

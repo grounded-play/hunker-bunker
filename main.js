@@ -25,6 +25,7 @@ import { FabricatorManager, FAB_RECIPES, getFabricatedOutputIds } from './src/fa
 import { createFabricationBay, fabMissingResourceText as fabMissingResourceTextFor } from './src/fabricationBay.js';
 import { ProfileManager, exportSaveCode, importSaveCode, resetAllDataFactory, startNewCampaign } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
+import { getHeldWeaponLabel } from './src/heldWeaponLabel.js';
 import { CutsceneManager } from './src/cutscene.js';
 import { DEPTH_TIER_NAMES } from './src/data/loot.js';
 import { getVoiceAudioManifest } from './src/data/voiceBanks.js';
@@ -4227,6 +4228,7 @@ window.addEventListener('enemy-hit', (event) => {
 });
 window.addEventListener('weapon-clip-updated', (event) => {
     renderWeaponClipState(event?.detail ?? {});
+    syncEquippedWeaponLabel(event?.detail?.fieldWeaponId ?? null);
 });
 let _lastShipHp = null;
 window.addEventListener('ship-health-changed', (event) => {
@@ -15466,9 +15468,27 @@ document.addEventListener('click', (event) => {
     }
 });
 
-function syncEquippedWeaponLabel() {
+// The gun in hand, not a generic SIDEARM: a field weapon picked up this run,
+// a Foundry weapon, or the class gun / its finish (src/heldWeaponLabel.js).
+let heldFieldWeaponId = null;
+function syncEquippedWeaponLabel(fieldWeaponId = heldFieldWeaponId) {
+    heldFieldWeaponId = fieldWeaponId ?? null;
     const titleEl = document.querySelector('#weapon-status-panel .weapon-status-panel__title');
-    if (titleEl) titleEl.textContent = loadout.getEquippedLabel(fabricator);
+    if (!titleEl) return;
+    const label = getHeldWeaponLabel({
+        loadout,
+        fabricator,
+        classId: window.game?.playerType ?? getSelectedHeroType?.(),
+        fieldWeaponId: heldFieldWeaponId
+    });
+    // The static key would put SIDEARM back on the next translation pass.
+    titleEl.removeAttribute('data-i18n');
+    if (titleEl.textContent !== label) {
+        titleEl.textContent = label;
+        titleEl.title = label;
+        // Long gun names step the type down before they need an ellipsis.
+        titleEl.toggleAttribute('data-long', label.length > 20);
+    }
 }
 
 const TACTICAL_CALLSIGNS = Object.freeze([
