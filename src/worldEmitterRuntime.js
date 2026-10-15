@@ -48,9 +48,13 @@ export class WorldEmitterRuntime {
     registerSource(sprite) {
         const id = sourceId(sprite);
         const profile = getWorldEmitterProfile(sprite?.userData?.world3dModelType ?? sprite?.userData?.type);
-        // Enemy vents retain their established eruption/attack path until that
-        // path is explicitly migrated; prop emitters require visible prop FX.
-        const visual = propFxSource(sprite);
+        const isFungalVent = sprite?.userData?.type === 'fungal_spore_vent';
+        const visual = propFxSource(sprite) ?? (isFungalVent ? {
+            root: sprite.userData?.enemy3dVisual?.root ?? null,
+            fx: null,
+            object: null,
+            virtual: true
+        } : null);
         if (!id || !profile || !visual) return null;
         const existing = this.sources.get(id);
         if (existing) {
@@ -176,11 +180,15 @@ export class WorldEmitterRuntime {
             const distance = playerPosition
                 ? Math.hypot(playerPosition.x - entry.sprite.position.x, playerPosition.z - entry.sprite.position.z)
                 : Infinity;
-            updateWorldEmitterState(entry.state, this.fixedStep, { distance });
+            const canAffectPlayer = game?.canEnemyTargetPlayer?.(entry.sprite) !== false;
+            const phaseEvents = updateWorldEmitterState(entry.state, this.fixedStep, {
+                distance: canAffectPlayer ? distance : Infinity
+            });
+            for (const event of phaseEvents) game?.presentWorldEmitterPhase?.(entry, event);
             const presenting = entry.state.enabled
                 && (entry.state.phase === EMITTER_PHASE.TELEGRAPH || entry.state.phase === EMITTER_PHASE.ACTIVE);
-            entry.visual.fx.setEnabled(presenting);
-            if (!presenting || !this.containsPlayer(entry, playerPosition)) continue;
+            entry.visual.fx?.setEnabled?.(presenting);
+            if (!canAffectPlayer || !presenting || !this.containsPlayer(entry, playerPosition)) continue;
             if (!tickWorldEmitterExposure(entry.state, game?.multiplayerLocalPlayerId ?? 'local', this.fixedStep)) continue;
             const transform = this.resolveTransform(entry);
             for (const payload of entry.profile.payload) game?.applyWorldEmitterPayload?.(payload, entry, transform.position);

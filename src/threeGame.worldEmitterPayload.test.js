@@ -43,6 +43,20 @@ describe('ThreeGame world emitter payload adapter', () => {
         expect(subject.spawnToxicSporePuddle).toHaveBeenCalledWith(4, 5, false);
     });
 
+    it('presents distinct fungal telegraph and active phases', () => {
+        const subject = game({
+            spawnPhysicalBurst: vi.fn(),
+            spawnGearPoofEffect: vi.fn(),
+            audioAt: vi.fn((x, z, options) => ({ ...options, worldX: x, worldZ: z })),
+            presentWorldEmitterPhase: ThreeGame.prototype.presentWorldEmitterPhase
+        });
+        const entry = { profile: { substance: 'spores' }, sprite: { position: { x: 2, z: 3 } } };
+        expect(subject.presentWorldEmitterPhase(entry, { phase: 'telegraph' })).toBe(true);
+        expect(subject.spawnPhysicalBurst).toHaveBeenCalledWith(2, 3, expect.any(Object));
+        expect(subject.presentWorldEmitterPhase(entry, { phase: 'active' })).toBe(true);
+        expect(subject.spawnGearPoofEffect).toHaveBeenCalledWith(2, 3, 'bio_spores');
+    });
+
     it('applies infection without manufacturing an HP hit', () => {
         let load = 10;
         const subject = game({

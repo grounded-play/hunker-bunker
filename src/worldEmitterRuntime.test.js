@@ -21,7 +21,7 @@ function pipeAt(x = 0, z = 0) {
 }
 
 describe('WorldEmitterRuntime', () => {
-    it('discovers prop emitters but leaves fungal enemy behavior on its existing path', () => {
+    it('discovers both prop emitters and a virtual fungal source', () => {
         const runtime = new WorldEmitterRuntime();
         const pipe = pipeAt();
         const enemy = new THREE.Object3D();
@@ -29,7 +29,41 @@ describe('WorldEmitterRuntime', () => {
         enemy.userData = { type: 'fungal_spore_vent', scatterKey: 'fungal:a' };
         runtime.syncSources([pipe, enemy]);
         expect(runtime.sources.has('pipe:0:0')).toBe(true);
-        expect(runtime.sources.has('fungal:a')).toBe(false);
+        expect(runtime.sources.has('fungal:a')).toBe(true);
+        expect(runtime.sources.get('fungal:a').visual.virtual).toBe(true);
+    });
+
+    it('telegraphs a nearby fungal vent before applying infection and poison', () => {
+        const runtime = new WorldEmitterRuntime();
+        const parent = new THREE.Group();
+        const vent = new THREE.Object3D();
+        vent.userData = { type: 'fungal_spore_vent', scatterKey: 'fungal:near' };
+        parent.add(vent);
+        const game = {
+            scatterSprites: [vent],
+            player: { position: new THREE.Vector3(0.5, 0, 0) },
+            canEnemyTargetPlayer: () => true,
+            presentWorldEmitterPhase: vi.fn(),
+            applyWorldEmitterPayload: vi.fn()
+        };
+
+        runtime.update(0.1, game);
+        expect(game.presentWorldEmitterPhase).toHaveBeenCalledWith(
+            expect.any(Object),
+            expect.objectContaining({ phase: EMITTER_PHASE.TELEGRAPH })
+        );
+        expect(game.applyWorldEmitterPayload).not.toHaveBeenCalled();
+        for (let i = 0; i < 8; i += 1) runtime.update(0.1, game);
+        expect(game.applyWorldEmitterPayload).toHaveBeenCalledWith(
+            expect.objectContaining({ kind: 'infect', reason: 'spore-vent' }),
+            expect.any(Object),
+            expect.any(THREE.Vector3)
+        );
+        expect(game.applyWorldEmitterPayload).toHaveBeenCalledWith(
+            expect.objectContaining({ kind: 'poison', reason: 'spore-vent' }),
+            expect.any(Object),
+            expect.any(THREE.Vector3)
+        );
     });
 
     it('uses the visible outlet transform for capsule exposure and applies payload on cadence', () => {

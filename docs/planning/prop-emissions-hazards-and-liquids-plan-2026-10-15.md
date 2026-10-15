@@ -117,6 +117,19 @@ Status: implemented for timed steam rupture and bio-spill descriptors.
 - ThreeGame materializes one-shot rupture presentation and routes bio-spill
   descriptors into the toxic-pool path.
 
+### 2026-10-15 — Slice 2C: fungal proximity migration
+
+Status: implemented.
+
+- Fungal vents register as virtual emitter sources even though their visual uses
+  the enemy-overlay path rather than prop FX.
+- Proximity now produces a distinct warning pulse, then an active spore puff that
+  applies infection and poison on the shared bounded cadence.
+- Proximity no longer causes an immediate stalker eruption; damaging the shell or
+  repairing its hole retains the established Stage-2 transformation.
+- Passive/contained targeting guards prevent a fungal source from activating or
+  applying exposure when the existing enemy-targeting rules reject the player.
+
 ## Decision summary
 
 Build one data-driven `WorldEmitterSystem` for prop-attached emissions and liquid

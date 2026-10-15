@@ -25667,6 +25667,35 @@ export class ThreeGame {
         return false;
     }
 
+    presentWorldEmitterPhase(entry, event) {
+        if (!entry || !event) return false;
+        const position = entry.sprite?.position;
+        if (entry.profile?.substance === 'spores' && event.phase === 'telegraph') {
+            this.spawnPhysicalBurst?.(position?.x ?? 0, position?.z ?? 0, {
+                color: 0xa3e635,
+                count: 4,
+                upward: 0.12,
+                spread: 0.55
+            });
+            globalThis.window?.AudioManager?.play?.('ui_scan_ping', this.audioAt?.(
+                position?.x ?? 0,
+                position?.z ?? 0,
+                { volume: 0.18, playbackRate: 0.7 }
+            ) ?? { volume: 0.18, playbackRate: 0.7 });
+            return true;
+        }
+        if (entry.profile?.substance === 'spores' && event.phase === 'active') {
+            this.spawnGearPoofEffect?.(position?.x ?? 0, position?.z ?? 0, 'bio_spores');
+            globalThis.window?.AudioManager?.play?.('hive_spores_puff', this.audioAt?.(
+                position?.x ?? 0,
+                position?.z ?? 0,
+                { volume: 0.42, playbackRate: 0.92 }
+            ) ?? { volume: 0.42, playbackRate: 0.92 });
+            return true;
+        }
+        return false;
+    }
+
     materializeWorldEmitterDestruction(children, sprite) {
         if (!Array.isArray(children) || children.length === 0) return 0;
         let created = 0;
@@ -41455,9 +41484,10 @@ export class ThreeGame {
         const distToPlayer = Math.hypot(dx, dz);
         const canTargetPlayer = this.canEnemyTargetPlayer?.(sprite) !== false;
 
-        // Stage 1 -> Stage 2 transition: Trigger eruption if player gets close (<=3.2) or vent takes damage
+        // Stage 1 proximity is now a telegraphed spore pulse owned by the
+        // WorldEmitterRuntime. Damage still ruptures the shell into Stage 2.
         const currentHp = Number.isFinite(data.hp) ? data.hp : 6;
-        if ((canTargetPlayer && distToPlayer <= 3.2) || currentHp < 6) {
+        if (currentHp < 6) {
             this.eruptFungalVent(sprite);
             return;
         }

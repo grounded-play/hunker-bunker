@@ -166,13 +166,13 @@ export function updateWorldEmitterState(state, delta, context = {}) {
     }
     state.phaseTime += dt;
     if (state.phase === EMITTER_PHASE.IDLE) {
-        if (trigger.kind === EMITTER_TRIGGER.CYCLE && state.phaseTime >= cooldownFor(state)) beginActivation(state, events);
+        if (trigger.kind === EMITTER_TRIGGER.CYCLE && state.phaseTime + 1e-9 >= cooldownFor(state)) beginActivation(state, events);
         else if (trigger.kind === EMITTER_TRIGGER.PROXIMITY && state.proximityLatched) beginActivation(state, events);
-    } else if (state.phase === EMITTER_PHASE.TELEGRAPH && state.phaseTime >= (trigger.telegraph ?? 0)) {
+    } else if (state.phase === EMITTER_PHASE.TELEGRAPH && state.phaseTime + 1e-9 >= (trigger.telegraph ?? 0)) {
         enterPhase(state, EMITTER_PHASE.ACTIVE, events);
-    } else if (state.phase === EMITTER_PHASE.ACTIVE && state.phaseTime >= (trigger.active ?? 0)) {
+    } else if (state.phase === EMITTER_PHASE.ACTIVE && state.phaseTime + 1e-9 >= (trigger.active ?? 0)) {
         enterPhase(state, EMITTER_PHASE.COOLDOWN, events);
-    } else if (state.phase === EMITTER_PHASE.COOLDOWN && state.phaseTime >= cooldownFor(state)) {
+    } else if (state.phase === EMITTER_PHASE.COOLDOWN && state.phaseTime + 1e-9 >= cooldownFor(state)) {
         if (trigger.kind === EMITTER_TRIGGER.CYCLE) beginActivation(state, events);
         else enterPhase(state, EMITTER_PHASE.IDLE, events);
     }
