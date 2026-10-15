@@ -81,6 +81,14 @@ Planning baseline: `bc3f5b30`
     names no longer start with `prop_` or `life_`.
 - Remaining: route special scatter/setpiece decals through the P2 registry and
   add contact-sheet visual regression probes (P5).
+
+Latest verification (2026-10-14):
+
+- full Vitest suite: **709 files / 6,088 tests passed**;
+- model presentation audit: **619 / 619 shipped GLBs**, **619 direct runtime
+  references**, **0 failures**;
+- production Vite build and required build-media audit: passed (the existing
+  large `threeGame` chunk warning remains non-blocking).
 Date: 2026-10-14
 
 ## Player-visible outcome
