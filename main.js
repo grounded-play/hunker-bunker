@@ -2155,11 +2155,32 @@ function isPresentationLayerActive() {
 // classes, which re-queued the observer forever and froze the page at the
 // title screen (found by bisecting a hang to 05c4300, 2026-09-24).
 let presentationCursorWasActive = false;
+let presentationPointerTimer = null;
+function handlePresentationPointerActivity() {
+    if (!document.documentElement.classList.contains('presentation-cursor-hidden')) return;
+    document.documentElement.classList.add('presentation-pointer-active');
+    if (presentationPointerTimer) {
+        clearTimeout(presentationPointerTimer);
+    }
+    presentationPointerTimer = setTimeout(() => {
+        document.documentElement.classList.remove('presentation-pointer-active');
+    }, 2500);
+}
+window.addEventListener('pointermove', handlePresentationPointerActivity, { passive: true });
+window.addEventListener('pointerdown', handlePresentationPointerActivity, { passive: true });
+
 function syncPresentationCursor() {
     const active = isPresentationLayerActive();
     const root = document.documentElement;
     if (root.classList.contains('presentation-cursor-hidden') !== active) {
         root.classList.toggle('presentation-cursor-hidden', active);
+    }
+    if (!active) {
+        root.classList.remove('presentation-pointer-active');
+        if (presentationPointerTimer) {
+            clearTimeout(presentationPointerTimer);
+            presentationPointerTimer = null;
+        }
     }
     const becameActive = active && !presentationCursorWasActive;
     presentationCursorWasActive = active;
@@ -8459,30 +8480,36 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         overlay.className = 'class-intro-overlay';
         overlay.style.setProperty('--class-intro-poster', `url('${assetUrl(`/cutscenes/${charBase}-poster.jpg`)}')`);
 
-        const skipHint = document.createElement('div');
+        const skipHint = document.createElement('button');
+        skipHint.type = 'button';
         skipHint.className = 'class-intro-skip';
         skipHint.textContent = t('ui.cinematic.skip_any');
+        skipHint.setAttribute('aria-label', t('ui.cinematic.skip_any'));
 
         let settled = false;
         let step = 'character'; // 'character' | 'launch' | 'done'
         let guardTimer = null;
         let videoElement = null;
         let checkSkipInterval = null;
-        let inputArmed = false;
-
-        const armTimer = window.setTimeout(() => {
-            inputArmed = true;
-        }, 500);
 
         const clearTimers = () => {
             if (guardTimer) {
                 window.clearTimeout(guardTimer);
                 guardTimer = null;
             }
-            if (armTimer) {
-                window.clearTimeout(armTimer);
-            }
         };
+
+        const triggerSkip = () => {
+            cleanupAndResolve();
+        };
+
+        const onSkipClick = (event) => {
+            event?.preventDefault?.();
+            event?.stopPropagation?.();
+            triggerSkip();
+        };
+        skipHint.addEventListener('click', onSkipClick);
+        skipHint.addEventListener('pointerup', onSkipClick);
 
         function cleanupAndResolve() {
             if (settled) return;
@@ -8493,6 +8520,8 @@ function playClassIntroSequence(playerType = 'SCOUT') {
                 clearInterval(checkSkipInterval);
                 checkSkipInterval = null;
             }
+            skipHint.removeEventListener('click', onSkipClick);
+            skipHint.removeEventListener('pointerup', onSkipClick);
             window.removeEventListener('keydown', onKey);
             overlay.removeEventListener('pointerup', onPointerUp);
             overlay.classList.add('is-closing');
@@ -8581,32 +8610,17 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             playVideoSource(launchBase, cleanupAndResolve);
         }
 
-        let lastInputTime = 0;
-        const handleAdvance = () => {
-            const now = Date.now();
-            if (now - lastInputTime < 300) return;
-            lastInputTime = now;
-            if (step === 'launch') {
-                cleanupAndResolve();
-            } else {
-                startLaunchStep();
-            }
-        };
+
 
         function onKey(event) {
-            if (!inputArmed && event.key !== 'Escape') return;
+            if (['Shift', 'Control', 'Alt', 'Meta'].includes(event.key)) return;
             event.preventDefault();
-            if (event.key === 'Escape') {
-                cleanupAndResolve();
-            } else {
-                handleAdvance();
-            }
+            triggerSkip();
         }
 
         function onPointerUp(event) {
-            if (!inputArmed) return;
             event.preventDefault();
-            handleAdvance();
+            triggerSkip();
         }
 
         window.addEventListener('keydown', onKey);
@@ -8618,13 +8632,12 @@ function playClassIntroSequence(playerType = 'SCOUT') {
                 cleanupAndResolve();
                 return;
             }
-            if (!inputArmed) return;
             if (typeof navigator !== 'undefined' && navigator.getGamepads) {
                 const pads = navigator.getGamepads() || [];
                 const anyPressed = Array.from(pads).some((gp) => gp?.connected && gp?.buttons?.some((b) => b?.pressed));
                 if (anyPressed && !lastGamepadPressed) {
                     lastGamepadPressed = true;
-                    handleAdvance();
+                    triggerSkip();
                 } else if (!anyPressed) {
                     lastGamepadPressed = false;
                 }
@@ -8837,9 +8850,11 @@ function playCutsceneVideo(base, options = {}) {
             video.appendChild(sourceEl);
         }
 
-        const skipHint = document.createElement('div');
+        const skipHint = document.createElement('button');
+        skipHint.type = 'button';
         skipHint.className = 'class-intro-skip cinematic-still-skip';
-        skipHint.textContent = t('ui.cinematic.skip_space');
+        skipHint.textContent = t('ui.cinematic.skip_any');
+        skipHint.setAttribute('aria-label', t('ui.cinematic.skip_any'));
 
         // Render text overlay on top of video when kicker/title/body are provided
         const resolvedKicker = kicker || fallback?.kicker || '';
@@ -8941,6 +8956,14 @@ function playCutsceneVideo(base, options = {}) {
         }, 15000);
 
         let checkGamepadInterval = null;
+        const onSkipClick = (event) => {
+            event?.preventDefault?.();
+            event?.stopPropagation?.();
+            finish({ skipped: true });
+        };
+        skipHint.addEventListener('click', onSkipClick);
+        skipHint.addEventListener('pointerup', onSkipClick);
+
         const finish = ({ skipped = false } = {}) => {
             if (settled) return;
             settled = true;
@@ -8950,6 +8973,8 @@ function playCutsceneVideo(base, options = {}) {
                 checkGamepadInterval = null;
             }
             window.clearTimeout(guardTimer);
+            skipHint.removeEventListener('click', onSkipClick);
+            skipHint.removeEventListener('pointerup', onSkipClick);
             window.removeEventListener('keydown', onKey);
             overlay.removeEventListener('pointerup', onPointer);
 
@@ -8998,16 +9023,13 @@ function playCutsceneVideo(base, options = {}) {
             }, cleanupDelay);
         };
 
-        const overlayMountTime = Date.now();
         const onKey = (event) => {
-            if (event.code !== 'Space' && event.code !== 'Enter' && event.code !== 'Escape') return;
-            if (Date.now() - overlayMountTime < 450) return;
+            if (['Shift', 'Control', 'Alt', 'Meta'].includes(event.key)) return;
             event.preventDefault();
             finish({ skipped: true });
         };
 
         const onPointer = (event) => {
-            if (Date.now() - overlayMountTime < 600) return;
             event.preventDefault();
             finish({ skipped: true });
         };
@@ -9018,7 +9040,6 @@ function playCutsceneVideo(base, options = {}) {
                 clearInterval(checkGamepadInterval);
                 return;
             }
-            if (Date.now() - overlayMountTime < 600) return;
             if (typeof navigator !== 'undefined' && navigator.getGamepads) {
                 const pads = navigator.getGamepads() || [];
                 const anyPressed = Array.from(pads).some((gp) => gp?.connected && gp?.buttons?.some((b) => b?.pressed));
@@ -9146,11 +9167,16 @@ function playCinematicStills(rawSpec = {}) {
         let settled = false;
         let frameTimer = 0;
         let finishTimer = 0;
+        let checkGamepadInterval = null;
         const finish = (skipped = false) => {
             if (settled) return;
             settled = true;
             window.clearTimeout(frameTimer);
             window.clearTimeout(finishTimer);
+            if (checkGamepadInterval) {
+                clearInterval(checkGamepadInterval);
+                checkGamepadInterval = null;
+            }
             window.removeEventListener('keydown', onKey);
             overlay.removeEventListener('pointerup', onPointer);
             skip.removeEventListener('click', onSkipClick);
@@ -9160,6 +9186,7 @@ function playCinematicStills(rawSpec = {}) {
         };
         const onKey = (event) => {
             if (!spec.allowSkip) return;
+            if (['Shift', 'Control', 'Alt', 'Meta'].includes(event.key)) return;
             event.preventDefault();
             finish(true);
         };
@@ -9178,6 +9205,24 @@ function playCinematicStills(rawSpec = {}) {
             overlay.addEventListener('pointerup', onPointer);
             skip.addEventListener('click', onSkipClick);
             skip.focus({ preventScroll: true });
+
+            let lastGamepadPressed = false;
+            checkGamepadInterval = setInterval(() => {
+                if (settled) {
+                    clearInterval(checkGamepadInterval);
+                    return;
+                }
+                if (typeof navigator !== 'undefined' && navigator.getGamepads) {
+                    const pads = navigator.getGamepads() || [];
+                    const anyPressed = Array.from(pads).some((gp) => gp?.connected && gp?.buttons?.some((b) => b?.pressed));
+                    if (anyPressed && !lastGamepadPressed) {
+                        lastGamepadPressed = true;
+                        finish(true);
+                    } else if (!anyPressed) {
+                        lastGamepadPressed = false;
+                    }
+                }
+            }, 50);
         }
         if (spec.images[1]) {
             frameTimer = window.setTimeout(() => {
