@@ -10,6 +10,22 @@ import {
 } from './worldEmitters.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
+const DEBUG_PHASE_COLORS = Object.freeze({
+    [EMITTER_PHASE.IDLE]: 0x48b9ff,
+    [EMITTER_PHASE.TELEGRAPH]: 0xffad33,
+    [EMITTER_PHASE.ACTIVE]: 0xff3b30,
+    [EMITTER_PHASE.COOLDOWN]: 0x88919a,
+    [EMITTER_PHASE.DESTROYED]: 0xb56cff
+});
+
+function disposeObjectTree(root) {
+    root?.traverse?.((object) => {
+        object.geometry?.dispose?.();
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        for (const material of materials) material?.dispose?.();
+    });
+    root?.removeFromParent?.();
+}
 
 function sourceId(sprite) {
     return sprite?.userData?.scatterKey ?? sprite?.userData?.dressingStableId ?? sprite?.uuid ?? null;
@@ -43,6 +59,8 @@ export class WorldEmitterRuntime {
         this.scratchPosition = new THREE.Vector3();
         this.scratchQuaternion = new THREE.Quaternion();
         this.scratchDirection = new THREE.Vector3();
+        this.debugGroup = null;
+        this.debugHelpers = new Map();
     }
 
     registerSource(sprite) {
@@ -193,6 +211,7 @@ export class WorldEmitterRuntime {
             const transform = this.resolveTransform(entry);
             for (const payload of entry.profile.payload) game?.applyWorldEmitterPayload?.(payload, entry, transform.position);
         }
+        this.updateDebugVisualization();
     }
 
     update(delta, game) {
@@ -203,9 +222,124 @@ export class WorldEmitterRuntime {
         }
     }
 
+    setDebugVisible(scene, visible) {
+        if (!visible) {
+            this.disposeDebugVisualization();
+            return;
+        }
+        if (!scene?.add || this.debugGroup) return;
+        this.debugGroup = new THREE.Group();
+        this.debugGroup.name = 'world-emitter-debug';
+        this.debugGroup.renderOrder = 1000;
+        scene.add(this.debugGroup);
+        this.updateDebugVisualization();
+    }
+
+    createDebugHelper(id, volume) {
+        const root = new THREE.Group();
+        root.name = `world-emitter-debug:${id}`;
+        const material = new THREE.MeshBasicMaterial({
+            color: DEBUG_PHASE_COLORS[EMITTER_PHASE.IDLE],
+            transparent: true,
+            opacity: 0.28,
+            wireframe: true,
+            depthTest: false,
+            depthWrite: false
+        });
+        let geometry;
+        if (volume.shape === 'sphere') {
+            geometry = new THREE.SphereGeometry(volume.radius, 12, 8);
+        } else {
+            geometry = new THREE.CapsuleGeometry(volume.radius, Math.max(0.01, volume.length ?? 0.01), 4, 8);
+        }
+        const volumeMesh = new THREE.Mesh(geometry, material);
+        volumeMesh.name = 'world-emitter-debug-volume';
+        if (volume.shape !== 'sphere') volumeMesh.position.y = (volume.length ?? 0) * 0.5;
+        volumeMesh.renderOrder = 1000;
+        root.add(volumeMesh);
+
+        const arrow = new THREE.ArrowHelper(
+            UP,
+            new THREE.Vector3(),
+            Math.max(0.5, volume.length ?? volume.radius),
+            DEBUG_PHASE_COLORS[EMITTER_PHASE.IDLE],
+            0.22,
+            0.12
+        );
+        arrow.name = 'world-emitter-debug-direction';
+        arrow.line.material.depthTest = false;
+        arrow.line.material.depthWrite = false;
+        arrow.cone.material.depthTest = false;
+        arrow.cone.material.depthWrite = false;
+        arrow.renderOrder = 1001;
+        root.add(arrow);
+        this.debugGroup.add(root);
+        const helper = { root, volume: volumeMesh, arrow };
+        this.debugHelpers.set(id, helper);
+        return helper;
+    }
+
+    updateDebugHelper(id, origin, direction, volume, phase) {
+        const helper = this.debugHelpers.get(id) ?? this.createDebugHelper(id, volume);
+        const color = DEBUG_PHASE_COLORS[phase] ?? DEBUG_PHASE_COLORS[EMITTER_PHASE.IDLE];
+        helper.root.position.copy(origin);
+        helper.root.quaternion.setFromUnitVectors(UP, direction);
+        helper.volume.material.color.setHex(color);
+        helper.arrow.setColor(color);
+        helper.arrow.setLength(Math.max(0.5, volume.length ?? volume.radius), 0.22, 0.12);
+    }
+
+    updateDebugVisualization() {
+        if (!this.debugGroup) return;
+        const live = new Set();
+        for (const entry of this.sources.values()) {
+            const transform = this.resolveTransform(entry);
+            live.add(entry.id);
+            this.updateDebugHelper(
+                entry.id,
+                transform.position,
+                transform.direction,
+                entry.profile.volume,
+                entry.state.phase
+            );
+        }
+        for (const transient of this.transients.values()) {
+            live.add(transient.id);
+            this.updateDebugHelper(
+                transient.id,
+                transient.origin,
+                transient.direction,
+                transient.volume,
+                EMITTER_PHASE.DESTROYED
+            );
+        }
+        for (const [id, helper] of this.debugHelpers) {
+            if (live.has(id)) continue;
+            disposeObjectTree(helper.root);
+            this.debugHelpers.delete(id);
+        }
+    }
+
+    clearDebugHelpers() {
+        for (const helper of this.debugHelpers.values()) disposeObjectTree(helper.root);
+        this.debugHelpers.clear();
+    }
+
+    disposeDebugVisualization() {
+        this.clearDebugHelpers();
+        this.debugGroup?.removeFromParent?.();
+        this.debugGroup = null;
+    }
+
     clear() {
         this.sources.clear();
         this.transients.clear();
         this.accumulator = 0;
+        this.clearDebugHelpers();
+    }
+
+    dispose() {
+        this.clear();
+        this.disposeDebugVisualization();
     }
 }

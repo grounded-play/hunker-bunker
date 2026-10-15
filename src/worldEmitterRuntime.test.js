@@ -131,4 +131,50 @@ describe('WorldEmitterRuntime', () => {
         for (let i = 0; i < 20; i += 1) runtime.step(game);
         expect(runtime.transients.size).toBe(0);
     });
+
+    it('visualizes authoritative outlet transforms, volumes, phases, and destroyed jets on demand', () => {
+        const runtime = new WorldEmitterRuntime();
+        const scene = new THREE.Scene();
+        const pipe = pipeAt();
+        const game = {
+            scatterSprites: [pipe],
+            player: { position: new THREE.Vector3(99, 0, 99) }
+        };
+
+        runtime.setDebugVisible(scene, true);
+        runtime.step(game);
+        const helper = runtime.debugHelpers.get('pipe:0:0');
+        expect(scene.getObjectByName('world-emitter-debug')).toBe(runtime.debugGroup);
+        expect(helper.root.position.distanceTo(runtime.resolveTransform(runtime.sources.get('pipe:0:0')).position)).toBeLessThan(1e-6);
+        expect(helper.volume.geometry.type).toBe('CapsuleGeometry');
+        expect(helper.volume.material.color.getHex()).toBe(0x48b9ff);
+
+        runtime.sources.get('pipe:0:0').state.phase = EMITTER_PHASE.ACTIVE;
+        runtime.updateDebugVisualization();
+        expect(helper.volume.material.color.getHex()).toBe(0xff3b30);
+
+        runtime.destroySource(pipe);
+        runtime.updateDebugVisualization();
+        expect(runtime.debugHelpers.has('pipe:0:0')).toBe(false);
+        expect(runtime.debugHelpers.get('pipe:0:0:destroyed:jet:0').volume.material.color.getHex()).toBe(0xb56cff);
+    });
+
+    it('cleans debug GPU resources and scene ownership when disabled or disposed', () => {
+        const runtime = new WorldEmitterRuntime();
+        const scene = new THREE.Scene();
+        const pipe = pipeAt();
+        runtime.setDebugVisible(scene, true);
+        runtime.step({ scatterSprites: [pipe], player: { position: new THREE.Vector3(99, 0, 99) } });
+        const helper = runtime.debugHelpers.get('pipe:0:0');
+        const geometryDispose = vi.spyOn(helper.volume.geometry, 'dispose');
+        const materialDispose = vi.spyOn(helper.volume.material, 'dispose');
+
+        runtime.setDebugVisible(scene, false);
+
+        expect(geometryDispose).toHaveBeenCalledOnce();
+        expect(materialDispose).toHaveBeenCalledOnce();
+        expect(runtime.debugHelpers.size).toBe(0);
+        expect(runtime.debugGroup).toBeNull();
+        expect(scene.getObjectByName('world-emitter-debug')).toBeUndefined();
+    });
 });

@@ -45078,6 +45078,10 @@ export class ThreeGame {
         }
     }
 
+    setWorldEmitterDebugVisible(visible) {
+        this.worldEmitterRuntime?.setDebugVisible(this.scene, Boolean(visible));
+    }
+
     addWfcDebugOverlay(group, chunkX, chunkY, metadata, grid) {
         if (!group || !metadata || !grid) return;
         const overlay = new THREE.Group();
@@ -47674,7 +47678,7 @@ export class ThreeGame {
         this._containerSizeTarget = null;
         this.ambientVentSystem?.dispose();
         this.ambientVentSystem = null;
-        this.worldEmitterRuntime?.clear();
+        this.worldEmitterRuntime?.dispose();
         this.worldEmitterRuntime = null;
         this.worldPoolSystem?.clear();
         this.worldPoolSystem = null;

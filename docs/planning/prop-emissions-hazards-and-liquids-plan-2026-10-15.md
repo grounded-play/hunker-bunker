@@ -2,7 +2,8 @@
 
 **Date:** 2026-10-15
 
-**Status:** In progress; directional steam vertical slice and pool foundation complete
+**Status:** In progress; directional steam/spore vertical slice, destruction
+transfer, pool foundation, asset audit, and live debug visualization complete
 
 **Scope:** Steam/frost/spore bursts, pipe and prop outlets, slime/liquid volumes,
 interaction and proximity triggers, gameplay payloads, destruction, persistence,
@@ -84,14 +85,13 @@ Status: green on `dev/sprint-53`.
 
 Open work retained from the plan:
 
-1. add the authored-anchor audit and in-world outlet/volume debug visualization;
-2. migrate fungal spore vents from their existing immediate eruption/projectile
-   behavior into the shared telegraph/exposure runtime without double effects;
-3. materialize destruction child descriptors as timed rupture jets and world
-   pools, including spent-state variants;
-4. add host-authoritative emitter/pool replication, late-join reconstruction,
+1. author `FX_EMITTER_00` transforms in the three proof assets currently covered
+   by explicit fallback directions;
+2. add spent-state destruction variants and broaden destruction transfers beyond
+   the initial steam rupture and bio-spill paths;
+3. add host-authoritative emitter/pool replication, late-join reconstruction,
    and persistence for charges and long-lived leaks; and
-5. expand the catalog to cryo, decon, healing, specimen, fuel, sluice, and
+4. expand the catalog to cryo, decon, healing, specimen, fuel, sluice, and
    severed-spline families after the first manual playtest/balance pass.
 
 ### 2026-10-15 — Slice 1B: asset outlet audit
@@ -129,6 +129,21 @@ Status: implemented.
   repairing its hole retains the established Stage-2 transformation.
 - Passive/contained targeting guards prevent a fungal source from activating or
   applying exposure when the existing enemy-targeting rules reject the player.
+
+### 2026-10-15 — Slice 1C: in-world outlet and volume debugger
+
+Status: implemented and opt-in.
+
+- `window.threeGame.setWorldEmitterDebugVisible(true)` adds live wireframe hazard
+  volumes and outlet-direction arrows sourced from the exact transform used by
+  exposure checks.
+- Idle, telegraph, active, cooldown, and transferred-destruction states use
+  distinct colors; destroyed rupture jets remain visible after their source prop
+  hierarchy is removed.
+- Disabling the view or destroying the game disposes every helper geometry and
+  material. Ordinary play performs no debug allocations or per-frame debug work.
+- Focused runtime verification: 7 tests passed; focused ESLint and
+  `git diff --check` passed.
 
 ## Decision summary
 
@@ -169,7 +184,7 @@ geysers are no longer a special gameplay island.
 - Player damage routes through `takeDamage()`, healing through `healPlayer()`, and
   Act 2 infection through `act2.addInfection()`/`adjustInfectionLoad()`.
 
-### What is not guaranteed today
+### Baseline gaps recorded when this plan was opened
 
 - **Prop steam is not directionally correct.** `createRisingPoints()` always
   advances particles along local `+Y`. `effectPosition()` uses an anchor's
@@ -193,10 +208,11 @@ geysers are no longer a special gameplay island.
   not yet defined for co-op.** A guest must not independently roll burst timing,
   healing charges, infection, or destruction spill results.
 
-So the direct answer is: steam bursts are still displayed, and floor vents point
-up correctly, but pipe/prop emissions are not yet guaranteed to originate from
-the exact outlet or travel in its authored direction. Interaction toggles exist;
-general proximity triggers and general damage/infect/heal payloads do not.
+The implementation log above is authoritative for gaps closed since this baseline
+was recorded. In particular, proof-source outlet direction, cycle/proximity/
+interaction control, gameplay payload routing, destruction transfer, and live
+volume visualization are now implemented; co-op replication and catalog breadth
+remain open.
 
 ## Design rules
 
