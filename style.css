@@ -8507,6 +8507,36 @@ body.mission-intro-active #game-container canvas {
   transform: translateY(calc(var(--vu) * 4));
   opacity: 0;
   transition: transform 300ms cubic-bezier(0.2, 0.7, 0.25, 1), opacity 260ms ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.mothership-panel-video-wrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.mothership-dialogue-video-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.32;
+  filter: contrast(1.18) brightness(0.9);
+  mix-blend-mode: screen;
+}
+
+.mothership-dialogue-panel > *:not(.mothership-panel-video-wrap) {
+  position: relative;
+  z-index: 3;
+}
+
+.mothership-dialogue-panel > .terminal-scanline,
+.mothership-dialogue-panel > .terminal-flicker {
+  z-index: 2;
 }
 
 .snail-encounter-panel {

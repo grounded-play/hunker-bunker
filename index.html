@@ -3066,6 +3066,12 @@
 
     <div id="mothership-dialogue" class="modal hidden" aria-hidden="true">
       <div class="modal-content console-terminal-content mothership-dialogue-panel" id="mothership-dialogue-panel">
+        <div class="mothership-panel-video-wrap" aria-hidden="true">
+          <video id="mothership-dialogue-video-bg" class="mothership-dialogue-video-bg" playsinline muted loop preload="auto">
+            <source src="/cutscenes/intro-mothership-briefing.webm" type="video/webm">
+            <source src="/cutscenes/intro-mothership-briefing.mp4" type="video/mp4">
+          </video>
+        </div>
         <button class="close-modal mothership-close-btn" id="close-mothership-dialogue" aria-label="Skip dialogue" data-i18n-aria-label="ui.dlg.skip_aria">×</button>
         <div class="terminal-scanline"></div>
         <div class="terminal-flicker"></div>

@@ -9083,6 +9083,7 @@ function playCutsceneVideo(base, options = {}) {
         }).catch(finish);
     });
 }
+window.playCutsceneVideo = playCutsceneVideo;
 
 function playCinematicStills(rawSpec = {}) {
     const spec = normalizeCinematicStillSpec(rawSpec);

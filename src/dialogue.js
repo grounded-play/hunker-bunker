@@ -211,6 +211,7 @@ export class DialogueManager {
         this.tutorialPromptTextEl = document.getElementById(tutorialPromptTextId);
         this.tutorialPromptIconEl = document.getElementById(tutorialPromptIconId);
         this.closeBtn = document.getElementById(closeButtonId);
+        this.bgVideo = document.getElementById('mothership-dialogue-video-bg');
 
         this.setInputEnabled = typeof setInputEnabled === 'function' ? setInputEnabled : null;
 
@@ -349,6 +350,14 @@ export class DialogueManager {
             this.choicesEl.classList.add('hidden');
             this.choicesEl.classList.remove('is-visible');
 
+            const bgVideo = this.bgVideo || document.getElementById('mothership-dialogue-video-bg');
+            if (bgVideo) {
+                try {
+                    bgVideo.currentTime = 0;
+                    bgVideo.play().catch(() => {});
+                } catch { /* ignore */ }
+            }
+
             this.dialogEl.classList.remove('hidden');
             this.dialogEl.classList.remove('is-revealed');
             this.dialogEl.setAttribute('aria-hidden', 'false');
@@ -395,6 +404,14 @@ export class DialogueManager {
         this.bodyEl.replaceChildren();
         this.choicesEl.classList.add('hidden');
         this.choicesEl.classList.remove('is-visible');
+
+        const bgVideo = this.bgVideo || document.getElementById('mothership-dialogue-video-bg');
+        if (bgVideo) {
+            try {
+                bgVideo.currentTime = 0;
+                bgVideo.play().catch(() => {});
+            } catch { /* ignore */ }
+        }
 
         this.dialogEl.classList.remove('hidden');
         this.dialogEl.classList.remove('is-revealed');
@@ -756,6 +773,11 @@ export class DialogueManager {
             window.speechSynthesis.cancel();
         }
 
+        const bgVideo = this.bgVideo || document.getElementById('mothership-dialogue-video-bg');
+        if (bgVideo) {
+            try { bgVideo.pause(); } catch { /* ignore */ }
+        }
+
         this.cleanupDialogueListeners();
         this.panelEl?.classList.remove('is-open', 'is-closing');
         this.dialogEl?.classList.add('hidden');
@@ -852,6 +874,11 @@ export class DialogueManager {
         const stablePortraitEl = document.getElementById('dialogue-stable-portrait');
         if (stablePortraitEl) stablePortraitEl.classList.add('hidden');
         this.panelEl.classList.remove('dialogue-layout--single-speaker');
+
+        const bgVideo = this.bgVideo || document.getElementById('mothership-dialogue-video-bg');
+        if (bgVideo) {
+            try { bgVideo.pause(); } catch { /* ignore */ }
+        }
 
         this.cleanupDialogueListeners();
 

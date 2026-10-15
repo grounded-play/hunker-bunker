@@ -25,6 +25,10 @@ export const NATURAL_END_EPSILON = 0.04;
 export function isOpeningCutscene(base) {
     const name = String(base ?? '');
     if (!name) return false;
+    // Full narrative briefings, boot sequences, and credits are watched to completion or skipped by the player.
+    if (name.includes('mothership') || name.includes('briefing') || name.includes('boot') || name.includes('credits')) {
+        return false;
+    }
     return name === 'DoorIntro' || name.includes('DoorIntro') || /\bintro\b|intro/i.test(name);
 }
 

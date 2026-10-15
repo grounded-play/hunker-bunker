@@ -63,7 +63,12 @@ describe('Intro Style & Verbatim Timed Presentation', () => {
             'tutorial-prompt': createMockElement('div'),
             'tutorial-prompt-text': createMockElement('div'),
             'tutorial-prompt-icon': createMockElement('div'),
-            'close-mothership-dialogue': createMockElement('button')
+            'close-mothership-dialogue': createMockElement('button'),
+            'mothership-dialogue-video-bg': Object.assign(createMockElement('video'), {
+                play: vi.fn(async () => {}),
+                pause: vi.fn(),
+                currentTime: 0
+            })
         };
 
         globalThis.window = {
@@ -163,9 +168,13 @@ describe('Intro Style & Verbatim Timed Presentation', () => {
         expect(speechCalls.length).toBe(1);
         expect(speechCalls[0][1]).toContain("YOU'RE ALIVE.");
 
+        const bgVideo = globalThis.document.getElementById('mothership-dialogue-video-bg');
+        expect(bgVideo.play).toHaveBeenCalled();
+
         dialogue.resolveChoice('tutorial');
         const result = await introPromise;
         expect(result).toBe('tutorial');
+        expect(bgVideo.pause).toHaveBeenCalled();
     });
 
     it('respects classic mode falling back to standard typewriter lines', async () => {
