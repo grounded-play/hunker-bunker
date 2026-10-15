@@ -14,19 +14,10 @@
  *
  * `mountY` lifts a wall prop off the floor (sconces, clocks, light cages).
  */
+import { WALL_FIXTURE_ELEVATIONS } from './modelPresentationRegistry.js';
+
 export const WALL_MOUNT_HEIGHT = Object.freeze({
-    fixture_sconce_vine: 1.45,
-    fixture_clock_dead: 1.65,
-    prop_overhead_cage_fluorescent: 1.95,
-    prop_wall_cable_tray_swag: 1.25,
-    prop_exhaust_blower_fan_hood: 1.85,
-    prop_ceiling_crane_hoist: 2.15,
-    arch_window_stained: 0.45,
-    prop_light_cluster_dripping: 1.35,
-    corp_biometric_wall_safe: 1.30,
-    vesper_trench_warning_klaxon: 1.70,
-    geo_pressure_relief_siren: 1.75,
-    tina_secret_distress_beacon: 1.40
+    ...WALL_FIXTURE_ELEVATIONS
 });
 
 const COMMON = Object.freeze({

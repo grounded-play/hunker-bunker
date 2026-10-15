@@ -23,9 +23,10 @@ describe('model presentation registry', () => {
                 surface: MODEL_SURFACE.WALL,
                 forwardAxis: '+Z',
                 upAxis: '+Y',
-                contact: { axis: 'z', side: 'min' }
+                contact: { axis: 'z', side: 'max' }
             });
             expect(isWallMountedModel(type)).toBe(true);
+            expect(typeof getModelPresentationProfile(type).depth).toBe('number');
         }
         expect(getModelPresentationProfile('prop_ceiling_crane_hoist')).toMatchObject({
             surface: MODEL_SURFACE.CEILING

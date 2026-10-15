@@ -15,6 +15,7 @@
  * share a cell with a planned hero prop (`occupied`).
  */
 import { decalWorldScale, dressingKitFor, dressingProfileFor, ROLE_VIGNETTES, vignettesFor, WALL_MOUNT_HEIGHT } from './roomDressingKits.js';
+import { getWallModelDepth } from './modelPresentationRegistry.js';
 import { DRESSING_TRIANGLES } from './data/dressingTriangles.js';
 import { roomDressingIdentity } from './roomDressingIdentity.js';
 import { computePropFacingYaw, chooseSpacedModel } from './propBehavior.js';
@@ -111,6 +112,8 @@ export const PROP_BOUNDING_DEPTHS = Object.freeze({
 
 export function getPropBoundingDepth(type) {
     if (PROP_BOUNDING_DEPTHS[type] !== undefined) return PROP_BOUNDING_DEPTHS[type];
+    const registryDepth = getWallModelDepth(type);
+    if (registryDepth != null) return Math.min(0.52, registryDepth);
     const id = String(type ?? '');
     if (id.includes('rack') || id.includes('cabinet') || id.includes('locker') || id.includes('machine')) return 0.52;
     if (id.includes('console') || id.includes('station') || id.includes('terminal')) return 0.46;

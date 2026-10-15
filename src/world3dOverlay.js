@@ -9,6 +9,7 @@ import { createPropFx } from './propFx.js';
 import { createPropExperience } from './propExperience.js';
 import { applyClothFlutter } from './clothFlutter.js';
 import { createGltfLoader as createSharedGltfLoader } from './gltfLoaderFactory.js';
+import { getModelPresentationProfile, getWallModelDepth } from './modelPresentationRegistry.js';
 
 // docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws without this registered first.
@@ -937,8 +938,14 @@ export function syncWorld3dReplacement(source, { scale = 1, visible, delta } = {
             root.rotation.y = Math.atan2(wn.x, wn.z);
         }
         if (source.userData.isWallBackedProp) {
-            root.position.x -= wn.x * 0.22;
-            root.position.z -= wn.z * 0.22;
+            const modelType = source.userData.world3dModelType ?? source.userData.type;
+            const profile = getModelPresentationProfile(modelType);
+            const depth = getWallModelDepth(modelType) ?? profile?.depth;
+            const halfDepth = Number.isFinite(depth) ? Math.min(0.52, depth) / 2 : 0.26;
+            const inset = profile?.contact?.inset ?? 0.02;
+            const offset = Math.max(0.12, Math.min(0.38, 0.50 - halfDepth - inset));
+            root.position.x -= wn.x * offset;
+            root.position.z -= wn.z * offset;
         }
     } else if (Number.isFinite(source.userData?.yaw)) {
         root.rotation.y = source.userData.yaw;
