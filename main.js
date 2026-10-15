@@ -9586,7 +9586,10 @@ function ensureScoutHeroPreview() {
 }
 
 const transitionFromTitleToMenu = (afterClosed = null) => {
-    ensureScoutHeroPreview();
+    // Build the 3D preview as the hero menu opens, then show the chosen class.
+    ensureScoutHeroPreview().then((preview) => {
+        if (preview && activePreviewType) void syncHeroPreview(activePreviewType);
+    });
     const currentSelectedType = document.querySelector('.char-card.selected')?.getAttribute('data-type') || 'SCOUT';
     warmClassIntroMedia?.(currentSelectedType);
     triggerDoorTransition(
@@ -15928,7 +15931,7 @@ function getPreviewSpriteImage(path, layout) {
     return imagePromise;
 }
 
-async function syncHeroPreview(type) {
+async function syncHeroPreview(type, { loadPreview = true } = {}) {
     const data = heroData[type];
     if (!data) return;
     // A door transition may still be closing for an older selection. Do not
@@ -15952,7 +15955,9 @@ async function syncHeroPreview(type) {
     if (summaryEl) summaryEl.textContent = `${t('ui.hero_detail.chassis_spec')} // ${activeChassisSpec}`;
     renderHeroLoadoutStrip(type);
 
-    const preview = scoutHeroPreview ?? await ensureScoutHeroPreview();
+    // The 3D preview loads with its screen, not at boot (issue #106): the
+    // boot-time sync only labels the class until the hero menu opens.
+    const preview = scoutHeroPreview ?? (loadPreview ? await ensureScoutHeroPreview() : null);
     if (requestGeneration !== heroPreviewRequestGeneration) return;
     if (preview) {
         const classId = String(type).toLowerCase();
@@ -15993,7 +15998,7 @@ async function syncHeroPreview(type) {
                 if (previewLoading) previewLoading.textContent = t('ui.hero_detail.preview_3d_unavailable', { type });
             }
         }
-    } else if (activePreviewType === type) {
+    } else if (loadPreview && activePreviewType === type) {
         previewLoading?.setAttribute('data-state', 'error');
         if (previewLoading) previewLoading.textContent = t('ui.hero_detail.preview_3d_unavailable', { type });
     }
@@ -16648,7 +16653,7 @@ whenDocumentParsed(async () => {
         // Class intro videos are not warmed here: boot already streams the
         // DoorIntro cinematic. They warm on menu entry and on class pick,
         // both well ahead of New Run's playClassIntroSequence.
-        syncHeroPreview(initialType);
+        syncHeroPreview(initialType, { loadPreview: false });
         updateHeroStats(initialType);
     }
     renderOperatorPolishUi();
