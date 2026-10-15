@@ -6,7 +6,7 @@
 
 ## Summary
 
-Sprint 52, from `v2.4.16-beta` (`920f2406`) to `dev/sprint-52`: 107 commits. Release notes: [`docs/releases/v2.4.17-beta.md`](https://github.com/grounded-play/hunker-bunker/blob/dev/sprint-52/docs/releases/v2.4.17-beta.md).
+Sprint 52, from `v2.4.16-beta` (`920f2406`) to `dev/sprint-52`: 110 commits. Release notes: [`docs/releases/v2.4.17-beta.md`](https://github.com/grounded-play/hunker-bunker/blob/dev/sprint-52/docs/releases/v2.4.17-beta.md).
 
 - **Base rebuild and carry:**
   - two-handed carry, with mass slowdown and stagger drops;
@@ -35,7 +35,10 @@ Sprint 52, from `v2.4.16-beta` (`920f2406`) to `dev/sprint-52`: 107 commits. Rel
   - one spatial menu navigation model (Start pauses again; destructive confirms open on CANCEL).
 - **Cinematics:** tactical terminal intro and credits, a comms HUD overlay, the briefing video behind dialogue, and skippable opening videos.
 - **Tooling:** trailer v4 (virtual-time capture, beat grid, SFX kit, EDL assembler, five cuts), the store page v2 plan, and a weapon-fit capture script.
-- **Security:** every CodeQL alert open on `dev/sprint-52` is fixed (`ee041c20`).
+- **Security and quality:**
+  - every CodeQL alert open on `dev/sprint-52` is fixed (`ee041c20`);
+  - the 19 unused Python imports and locals flagged by the code-quality bot, and found by the local quality suite, are removed (`e0539d5f`).
+- **Boot performance** (`56f74c81`): the title screen no longer loads the 22 MB briefing film or the 3D hero preview. Lighthouse is back to its release level (see Verification).
 
 ## Tickets
 
@@ -103,7 +106,8 @@ Internal tickets closed: playtest remediation T1–T10 ([plan](https://github.co
 - [x] `npm run audit:docs`: passing; a clean checkout still flags 9 links to gitignored local files (art sources, logs, Steam config), the same as at `v2.4.16-beta`
 - [x] `npm run build`: ok (build-media audit: 50 required door and cinematic assets)
 - [x] `npm audit --omit=dev`: 0 vulnerabilities
-- [x] CodeQL 2.27.2 locally with the CI suites (`security-extended`, `security-and-quality`): 2 results, both `js/http-to-file-access` already dismissed as won't fix on GitHub (#54, #60); no new alerts
+- [x] Lighthouse CI (`lighthouserc.json`, `lhci` locally): the first run on this PR failed (performance 0.61, TBT 990 ms). Fixed in `56f74c81`. Locally: performance 0.95–0.96, TBT 36–69 ms, LCP ~1.37 s, 954 KB; all assertions pass (v2.4.16-beta measured 0.96 and 41 ms on the same machine)
+- [x] CodeQL 2.27.2 locally with the CI suites (`security-extended`, `security-and-quality`; Python `security-and-quality`: 0 results after `e0539d5f`): 2 JS results, both `js/http-to-file-access` already dismissed as won't fix on GitHub (#54, #60); no new alerts
 
 ### Environment-specific / human
 
@@ -128,7 +132,7 @@ Internal tickets closed: playtest remediation T1–T10 ([plan](https://github.co
 
 ---
 
-## Commit ledger (107 commits, `v2.4.16-beta..dev/sprint-52`, oldest first)
+## Commit ledger (110 commits, `v2.4.16-beta..dev/sprint-52`, oldest first)
 
 | # | Commit | Date | Subject |
 | ---: | :--- | :--- | :--- |
@@ -238,4 +242,7 @@ Internal tickets closed: playtest remediation T1–T10 ([plan](https://github.co
 | 104 | `2029327d` | 2026-10-15 | feat(vfx): style damage popup as circular gradient with outlined drop-shadow text |
 | 105 | `4faf9b31` | 2026-10-15 | feat(hud): weapon panel names the gun in hand instead of SIDEARM |
 | 106 | `ee041c20` | 2026-10-15 | fix(security): clear the open CodeQL alerts on dev/sprint-52 |
-| 107 | (this commit) | 2026-10-15 | release: v2.4.17-beta — version, release notes, PR body, roadmap |
+| 107 | `a55d5928` | 2026-10-15 | release: v2.4.17-beta (Sprint 52) |
+| 108 | `e0539d5f` | 2026-10-15 | chore(quality): remove unused Python imports and locals flagged on PR #110 |
+| 109 | `56f74c81` | 2026-10-15 | perf(boot): stop loading the briefing film and the 3D hero at the title |
+| 110 | (this commit) | 2026-10-15 | docs(release): v2.4.17-beta notes and PR body cover the boot fix and the quality cleanup |
