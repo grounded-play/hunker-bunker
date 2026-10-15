@@ -170,7 +170,9 @@ describe('automatic doors', () => {
         expect(game.proceduralDoorStates.get('door').state).toBe('closed');
     });
 
-    it('animates crown, split, and swing families with distinct geometry poses', () => {
+    // Doors between rooms drop straight into the floor (owner, 2026-10-15),
+    // including doors saved by an older build with a lift, split or swing.
+    it('sinks every door family in place, whatever motion it was saved with', () => {
         installHudStubs();
         const makeMesh = (x) => {
             const mesh = new THREE.Object3D();
@@ -203,10 +205,14 @@ describe('automatic doors', () => {
             activeInteractiveConsole: null
         };
         ThreeGame.prototype.updateProceduralDoors.call(game, 1);
-        expect(crown.position.y).toBeGreaterThan(2);
-        expect(split.scale.x).toBeCloseTo(3.35 * 0.04);
-        expect(swing.rotation.y).toBeCloseTo(Math.PI / 2);
-        expect(swing.position.z).toBeLessThan(-1);
+        for (const [mesh, x] of [[crown, 0], [split, 5], [swing, 10]]) {
+            expect(mesh.position.y).toBeCloseTo(-4);
+            expect(mesh.position.x).toBeCloseTo(x);
+            expect(mesh.position.z).toBeCloseTo(0);
+            expect(mesh.rotation.y).toBe(0);
+            expect(mesh.scale.x).toBeCloseTo(3.35);
+            expect(mesh.scale.z).toBeCloseTo(0.58);
+        }
     });
 
     it('uses the same approach behavior for the crash-room blast door', () => {

@@ -22,10 +22,13 @@ export function portalKeyForDoorway(room, doorway) {
     return `${room?.chunkKey ?? 'unknown'}:${orientation}:${cells}`;
 }
 
+// Every family opens the same way: the slab drops straight into the floor
+// (owner, 2026-10-15 -- no hinge swing, sideways split or lift between
+// rooms). Families differ by frame and material only.
 export const DOOR_FAMILIES = Object.freeze({
     'blast-slab': Object.freeze({ motion: 'sink-floor', frameStyle: 'reinforced-bulkhead', materialVariant: 'bunker' }),
-    'split-bulkhead': Object.freeze({ motion: 'split-sideways', frameStyle: 'pressure-frame', materialVariant: 'industrial' }),
-    'arch-guillotine': Object.freeze({ motion: 'retract-crown', frameStyle: 'arched-rib', materialVariant: 'organic' }),
+    'split-bulkhead': Object.freeze({ motion: 'sink-floor', frameStyle: 'pressure-frame', materialVariant: 'industrial' }),
+    'arch-guillotine': Object.freeze({ motion: 'sink-floor', frameStyle: 'arched-rib', materialVariant: 'organic' }),
     'camp-barricade': Object.freeze({ motion: 'sink-floor', frameStyle: 'salvage-brace', materialVariant: 'camp' })
 });
 
@@ -59,36 +62,17 @@ export function doorClearanceEnvelope(door) {
     };
 }
 
-/** Presentation-only pose shared by every logical door state machine. */
-export function resolveDoorMotionPose(door, openness, {
-    span = PROCEDURAL_DOOR_SLAB_SPAN,
+/**
+ * Presentation-only pose shared by every logical door state machine: the slab
+ * sinks in place from closedY to openY. A door saved by an older build may
+ * still carry a swing, split or lift motion; it sinks too.
+ */
+export function resolveDoorMotionPose(_door, openness, {
     closedY = 2.4,
     openY = -4.8
 } = {}) {
     const t = Math.max(0, Math.min(1, Number(openness) || 0));
-    const motion = door?.motion ?? 'sink-floor';
-    const pose = { y: closedY, yaw: 0, offsetX: 0, offsetZ: 0, spanScale: 1 };
-    if (motion === 'retract-crown') {
-        pose.y = closedY + Math.abs(openY - closedY) * t;
-    } else if (motion === 'split-sideways') {
-        // One draw object represents the paired leaves; collapsing its long
-        // axis symmetrically reads as both halves withdrawing into the jambs.
-        pose.spanScale = Math.max(0.04, 1 - t);
-    } else if (motion === 'swing-fold') {
-        const yaw = t * Math.PI * 0.5;
-        const half = span * 0.5;
-        pose.yaw = yaw;
-        if (door?.orientation === 'vertical') {
-            pose.offsetX = half * Math.sin(yaw);
-            pose.offsetZ = half * (Math.cos(yaw) - 1);
-        } else {
-            pose.offsetX = half * (Math.cos(yaw) - 1);
-            pose.offsetZ = -half * Math.sin(yaw);
-        }
-    } else {
-        pose.y = closedY + (openY - closedY) * t;
-    }
-    return pose;
+    return { y: closedY + (openY - closedY) * t, yaw: 0, offsetX: 0, offsetZ: 0, spanScale: 1 };
 }
 
 export function doorPresentationForStyle(style = 'bunker') {

@@ -15043,8 +15043,7 @@ export class ThreeGame {
             const orientation = door.orientation ?? mesh.userData.doorOrientation;
             const pose = resolveDoorMotionPose({ ...door, orientation }, openness, {
                 closedY: mesh.userData.closedY ?? this.wallHeight / 2,
-                openY: mesh.userData.openY ?? -this.wallHeight,
-                span: PROCEDURAL_DOOR_SLAB_SPAN
+                openY: mesh.userData.openY ?? -this.wallHeight
             });
             const closedPosition = mesh.userData.closedPosition ?? { x: mesh.position.x, z: mesh.position.z };
             const closedScale = mesh.userData.closedScale ?? { x: mesh.scale.x, y: mesh.scale.y, z: mesh.scale.z };
@@ -35988,9 +35987,7 @@ export class ThreeGame {
                     doorMesh.userData.doorMotion = persistedDoor?.motion ?? 'sink-floor';
                     doorMesh.userData.doorOrientation = persistedDoor?.orientation ?? (horizontal ? 'horizontal' : 'vertical');
                     doorMesh.userData.closedY = (this.wallHeight * blastDoorHeightScale) / 2;
-                    doorMesh.userData.openY = persistedDoor?.motion === 'retract-crown'
-                        ? this.wallHeight * (blastDoorHeightScale + 1.05)
-                        : -(this.wallHeight * blastDoorHeightScale);
+                    doorMesh.userData.openY = -(this.wallHeight * blastDoorHeightScale);
                     doorMesh.userData.closedPosition = { x: worldX, z: worldZ };
                     doorMesh.userData.closedScale = {
                         x: doorMesh.scale.x,

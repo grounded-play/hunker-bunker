@@ -91,14 +91,19 @@ describe('procedural doors', () => {
     it('maps biome styles to distinct presentation families without changing door state', () => {
         expect(doorPresentationForStyle('hive')).toMatchObject({
             family: 'arch-guillotine',
-            motion: 'retract-crown',
             materialVariant: 'organic'
         });
-        expect(doorPresentationForStyle('cryo')).toMatchObject({
-            family: 'split-bulkhead',
-            motion: 'split-sideways'
-        });
+        expect(doorPresentationForStyle('cryo')).toMatchObject({ family: 'split-bulkhead' });
         expect(doorPresentationForStyle('camp')).toMatchObject({ family: 'camp-barricade' });
+    });
+
+    // Owner, 2026-10-15: doors between rooms drop straight into the floor --
+    // no hinge swing, no sideways split, no lift. The families still differ by
+    // frame and material.
+    it('opens every room door family by sinking it straight into the floor', () => {
+        for (const style of ['bunker', 'security', 'utility', 'medical-seal', 'cryo', 'cryo-security', 'hive', 'resin', 'camp']) {
+            expect(doorPresentationForStyle(style).motion, style).toBe('sink-floor');
+        }
     });
 
     it('gives each built door a controller-height clearance envelope', () => {
@@ -109,13 +114,14 @@ describe('procedural doors', () => {
         expect(doorClearanceEnvelope(door)).toEqual(door.clearanceEnvelope);
     });
 
-    it('resolves visibly different open poses while sharing logical states', () => {
-        expect(resolveDoorMotionPose({ motion: 'sink-floor' }, 1, { closedY: 2, openY: -4 }).y).toBe(-4);
-        expect(resolveDoorMotionPose({ motion: 'retract-crown' }, 1, { closedY: 2, openY: -4 }).y).toBe(8);
-        expect(resolveDoorMotionPose({ motion: 'split-sideways' }, 1).spanScale).toBe(0.04);
-        const swing = resolveDoorMotionPose({ motion: 'swing-fold', orientation: 'horizontal' }, 1);
-        expect(swing.yaw).toBeCloseTo(Math.PI / 2);
-        expect(Math.abs(swing.offsetX) + Math.abs(swing.offsetZ)).toBeGreaterThan(2);
+    it('sinks a door in place, even one saved with an older swing, split or lift motion', () => {
+        for (const motion of ['sink-floor', 'swing-fold', 'split-sideways', 'retract-crown', undefined]) {
+            for (const orientation of ['horizontal', 'vertical']) {
+                const open = resolveDoorMotionPose({ motion, orientation }, 1, { closedY: 2, openY: -4 });
+                expect(open, `${motion} ${orientation}`).toEqual({ y: -4, yaw: 0, offsetX: 0, offsetZ: 0, spanScale: 1 });
+            }
+        }
+        expect(resolveDoorMotionPose({ motion: 'sink-floor' }, 0.5, { closedY: 2, openY: -4 }).y).toBe(-1);
     });
 
     it('repairs both jamb supports for horizontal and vertical wide doors', () => {
