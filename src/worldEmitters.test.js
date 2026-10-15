@@ -42,6 +42,12 @@ describe('world emitter profiles and state', () => {
         expect(twin.activationCount).toBe(state.activationCount);
     });
 
+    it('starts the next cyclic telegraph directly after cooldown', () => {
+        const state = createWorldEmitterState(getWorldEmitterProfile('prop_pipe_rupture'), { id: 'pipe:repeat' });
+        advance(state, 18);
+        expect(state.activationCount).toBeGreaterThanOrEqual(2);
+    });
+
     it('uses proximity hysteresis and does not chatter at the boundary', () => {
         const state = createWorldEmitterState(getWorldEmitterProfile('fungal_spore_vent'), { id: 'spore:a' });
         updateWorldEmitterState(state, 0.1, { distance: 3.2 });

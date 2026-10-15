@@ -173,7 +173,8 @@ export function updateWorldEmitterState(state, delta, context = {}) {
     } else if (state.phase === EMITTER_PHASE.ACTIVE && state.phaseTime >= (trigger.active ?? 0)) {
         enterPhase(state, EMITTER_PHASE.COOLDOWN, events);
     } else if (state.phase === EMITTER_PHASE.COOLDOWN && state.phaseTime >= cooldownFor(state)) {
-        enterPhase(state, EMITTER_PHASE.IDLE, events);
+        if (trigger.kind === EMITTER_TRIGGER.CYCLE) beginActivation(state, events);
+        else enterPhase(state, EMITTER_PHASE.IDLE, events);
     }
     return events;
 }

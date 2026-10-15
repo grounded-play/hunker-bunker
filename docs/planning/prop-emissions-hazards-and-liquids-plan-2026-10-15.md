@@ -52,6 +52,9 @@ Status: implemented for the pipe/manifold vertical slice.
   `ThreeGame` adapter.
 - Interaction state now enables/disables the matching emitter, and prop
   destruction retires emitter state before visual teardown.
+- Generic FX switches also mirror their resulting enabled state into the emitter
+  runtime; cyclic sources re-enter telegraph directly after cooldown rather than
+  accidentally waiting through a second idle interval.
 - Fungal spore vents deliberately remain on their established enemy eruption and
   projectile path until that path can be migrated without double-triggering.
 - Runtime state is cleared on run reset and full game teardown; payload adapter
